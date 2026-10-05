@@ -266,7 +266,9 @@ internal partial class InferpalToolWindowData
 
             await RunOnVMContextAsync(() =>
             {
-                RestoreConversation(session.Messages, name);
+                // The auto-save slot carries the named session it continues: /branch keeps writing to that one.
+                RestoreConversation(session.Messages,
+                                    name == "last_session" && !string.IsNullOrEmpty(session.CurrentName) ? session.CurrentName : name);
                 IsSessionPanelOpen = false;
                 RefreshSessionsList();
                 ScrollToBottom();

@@ -62,7 +62,8 @@ internal sealed class InlineDiffController
 
         // Freshness gate: the preview positions only make sense over the exact text the code
         // action rewrote. A drifted buffer discards the request — the host's pickup wait then
-        // times out and it falls back to its usual direct apply (which fails safely on drift).
+        // times out and it falls back to its usual direct apply, which the editor refuses on drift — and which the host
+        // reports to the user as not applied.
         if (_view.TextBuffer.CurrentSnapshot.GetText() != request.OldText)
         {
             InlineDiffPreviewSignal.DiscardRequest();

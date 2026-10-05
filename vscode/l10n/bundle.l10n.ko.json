@@ -90,6 +90,7 @@
   "Export failed: {0}": "내보내기 실패: {0}",
   "A turn is still running — stop it before starting a new conversation.": "아직 진행 중인 턴이 있습니다. 새 대화를 시작하기 전에 중지하세요.",
   "A session named {0} already exists. Replace it?": "{0}(이)라는 세션이 이미 있습니다. 바꾸시겠습니까?",
+  "A session name cannot contain {0}": "세션 이름에는 {0}을(를) 사용할 수 없습니다",
   "Replace": "바꾸기",
   "📎 Attached: {0}": "📎 첨부: {0}",
   "The backend is unreachable — the last answer was kept and nothing was sent.": "백엔드에 연결할 수 없습니다. 마지막 답변은 그대로 유지되었으며 아무것도 전송되지 않았습니다.",

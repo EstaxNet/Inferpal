@@ -75,27 +75,36 @@ internal sealed class ProposalRecorder : IApprovalService
         string? subject = null, DiffInfo? diff = null, bool forcePrompt = false)
     {
         Interlocked.Increment(ref _requests);
-        Record(new TaskProposal(toolName, subject ?? details, details, diff));
+        lock (_gate) _lastRecords = [Record(new TaskProposal(toolName, subject ?? details, details, diff))];
         return Task.FromResult(false);   // never granted — see the class remarks
     }
 
-    private ProposalOutcome _lastOutcome;
-    private TaskProposal?   _lastRecorded;
-
-    /// <summary>The proposal the latest request left in the list — added, combined or replacing an earlier one.</summary>
-    /// <remarks>⚠ Not the list's last entry: a file proposed again is updated IN PLACE, so after A, B, A the last entry
-    /// is B's — and the model was told its third edit was "recorded for B, combined with your earlier proposal for this
-    /// file".</remarks>
-    public TaskProposal? LastRecorded
+    /// <summary>
+    /// A change to several files (<c>apply_edits</c>) is recorded as one proposal PER FILE, each with its own diff.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Recorded as one batch, keyed on the joined paths and without a diff, it could never be applied ("no reviewable
+    /// change was recorded"), never lined up with the same file's other proposals — and replaced a usable one.
+    /// </remarks>
+    public Task<bool> RequestBatchApprovalAsync(
+        string toolName, string details, IReadOnlyList<FileChange> files, CancellationToken ct, string? subject = null)
     {
-        get { lock (_gate) return _lastRecorded; }
+        Interlocked.Increment(ref _requests);
+        lock (_gate)
+            _lastRecords = [.. files.Select(f => Record(new TaskProposal(toolName, f.Diff.FilePath, f.Details, f.Diff)))];
+        return Task.FromResult(false);   // never granted — see the class remarks
     }
 
-    /// <summary>What the latest request did to the proposal list — read by the registry right after
-    /// the call, to tell the model.</summary>
-    public ProposalOutcome LastOutcome
+    private IReadOnlyList<(TaskProposal Proposal, ProposalOutcome Outcome)> _lastRecords = [];
+
+    /// <summary>The proposals the latest request left in the list — added, combined or replacing earlier ones — and what
+    /// it did to each: read by the registry right after the call, to tell the model.</summary>
+    /// <remarks>⚠ Not the list's last entries: a file proposed again is updated IN PLACE, so after A, B, A the last entry
+    /// is B's — and the model was told its third edit was "recorded for B, combined with your earlier proposal for this
+    /// file".</remarks>
+    public IReadOnlyList<(TaskProposal Proposal, ProposalOutcome Outcome)> LastRecords
     {
-        get { lock (_gate) return _lastOutcome; }
+        get { lock (_gate) return _lastRecords; }
     }
 
     /// <summary>
@@ -110,7 +119,7 @@ internal sealed class ProposalRecorder : IApprovalService
     /// (<see cref="ProposalMerge"/>); otherwise — the same lines touched again, a whole-file write, a
     /// file that changed in between — the last word still wins, and the registry says so.
     /// </remarks>
-    private void Record(TaskProposal proposal)
+    private (TaskProposal Proposal, ProposalOutcome Outcome) Record(TaskProposal proposal)
     {
         lock (_gate)
         {
@@ -120,15 +129,12 @@ internal sealed class ProposalRecorder : IApprovalService
             if (at < 0)
             {
                 _proposals.Add(proposal);
-                _lastOutcome  = ProposalOutcome.Added;
-                _lastRecorded = proposal;
-                return;
+                return (proposal, ProposalOutcome.Added);
             }
 
             var (kept, outcome) = Supersede(_proposals[at], proposal);
             _proposals[at] = kept;
-            _lastOutcome   = outcome;
-            _lastRecorded  = kept;
+            return (kept, outcome);
         }
     }
 

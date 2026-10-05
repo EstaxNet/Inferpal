@@ -58,13 +58,16 @@ internal class ConversationStore
     /// <param name="parent">Session this one was forked from (<c>/branch</c>); null for a root session.</param>
     /// <param name="forkTurn">Turn the fork happened at, meaningful only with <paramref name="parent"/>.</param>
     /// <param name="workspaceRoot">Workspace the conversation belongs to; recorded for the auto-save slot.</param>
+    /// <param name="currentName">The named session the conversation lives in; recorded for the auto-save slot.</param>
     public async Task SaveAsync(string sessionName, IEnumerable<SavedMessage> messages, CancellationToken ct,
-                                string? parent = null, int? forkTurn = null, string? workspaceRoot = null)
+                                string? parent = null, int? forkTurn = null, string? workspaceRoot = null,
+                                string? currentName = null)
     {
         Directory.CreateDirectory(Dir);
         var file = SessionPath(sessionName);
         var payload = new SessionData(DateTime.UtcNow, messages.ToList(), parent, forkTurn,
-                                      string.IsNullOrWhiteSpace(workspaceRoot) ? null : workspaceRoot);
+                                      string.IsNullOrWhiteSpace(workspaceRoot) ? null : workspaceRoot,
+                                      string.IsNullOrWhiteSpace(currentName) ? null : currentName);
 
         // Write-then-rename: a crash (or a full disk) mid-write must not leave a truncated
         // session behind. It matters more since /branch rewrites the parent file on every fork —
@@ -76,8 +79,9 @@ internal class ConversationStore
     }
 
     /// Auto-saves the current session to "last_session.json".
-    public Task AutoSaveAsync(IEnumerable<SavedMessage> messages, CancellationToken ct, string? workspaceRoot = null) =>
-        SaveAsync("last_session", messages, ct, workspaceRoot: workspaceRoot);
+    public Task AutoSaveAsync(IEnumerable<SavedMessage> messages, CancellationToken ct, string? workspaceRoot = null,
+                              string? currentName = null) =>
+        SaveAsync("last_session", messages, ct, workspaceRoot: workspaceRoot, currentName: currentName);
 
     /// <summary>
     /// Empties the auto-save slot when it holds THIS workspace's conversation — the one the user has just discarded
@@ -229,10 +233,14 @@ internal class ConversationStore
 
     private static readonly HashSet<char> _invalidChars = [..Path.GetInvalidFileNameChars()];
 
-    // Doctrine: flattening can make two names collide ("a/b" and "a_b" share
-    // the same file). Changing the encoding would break addressing for already saved sessions; and
-    // names come from the UI (timestamped title on the VS side, filtered InputBox on the VS Code
-    // side, where "last_session" is reserved on top of that), which makes the case marginal.
+    /// <summary>The name a session is listed under once saved: the file <see cref="SessionPath"/> writes.</summary>
+    /// <remarks>⚠ Whoever records "the session this conversation lives in" records THIS name: a typed name with a ':' or
+    /// a '/' is listed nowhere, so /branch takes the conversation for an unsaved one and writes a new dated parent.</remarks>
+    public static string StoredName(string name) => Sanitize(name);
+
+    // Doctrine: flattening can make two names collide ("a/b" and "a_b" share the same file). Changing the encoding would
+    // break addressing for already saved sessions; names come from the UI — a timestamped title on the VS side, and on the
+    // VS Code side an InputBox that refuses these characters ("last_session" is reserved on top of that).
     private static string Sanitize(string name) =>
         string.Concat(name.Select(c => _invalidChars.Contains(c) ? '_' : c));
 }
@@ -246,7 +254,10 @@ internal record SessionData(
     [property: JsonPropertyName("messages")]       List<SavedMessage> Messages,
     [property: JsonPropertyName("parent")]         string? Parent        = null,
     [property: JsonPropertyName("fork_turn")]      int?    ForkTurn      = null,
-    [property: JsonPropertyName("workspace_root")] string? WorkspaceRoot = null);
+    [property: JsonPropertyName("workspace_root")] string? WorkspaceRoot = null,
+    // The named session the auto-saved conversation lives in (last_session only): restored with it, so /branch keeps
+    // writing to that session after a restart instead of starting a new dated copy.
+    [property: JsonPropertyName("current_name")]   string? CurrentName   = null);
 
 internal record SavedMessage(
     [property: JsonPropertyName("role")]      string  Role,

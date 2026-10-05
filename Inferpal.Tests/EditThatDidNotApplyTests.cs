@@ -25,8 +25,8 @@ namespace Inferpal.Tests;
 /// ⚠ <b>And the wrong cause sends the reader to the wrong place</b>: "open a file" is not the remedy
 /// when the document changed under the edit or is read-only. On the VS Code side that is the real
 /// case — <c>editor.edit()</c> returns <c>false</c>, or the editor was disposed between two focus
-/// changes. On the VS side the edit <b>throws</b>, so the error surfaced as it was: the two
-/// front-ends did not even get it wrong in the same way.
+/// changes. On the VS side the editor <b>returns</b> its refusal in the edit's response (or throws for a disposed
+/// view): read by <c>VsEditResult.Applied</c>, see <c>VsEditResultTests</c>.
 /// </para>
 /// </remarks>
 [Collection(WorkingDirectoryCollection.Name)]

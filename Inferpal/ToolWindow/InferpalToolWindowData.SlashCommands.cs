@@ -158,6 +158,8 @@ internal partial class InferpalToolWindowData
             });
         else if (result.Outcome == InPlaceEditOutcome.PreviewShown)
             await ShowInfoAsync(Strings.CodeActionPreviewShown);
+        else if (result.Outcome == InPlaceEditOutcome.DocumentChanged)
+            await ShowInfoAsync(Strings.CodeActionDocumentChanged);
         // Model/network failure: tell the chat instead of leaving the turn silent.
         else if (result.Outcome == InPlaceEditOutcome.Failed)
             await ShowInfoAsync(InPlaceCodeEdit.FailureMessage(result.FailureDetail));

@@ -164,7 +164,8 @@ internal partial class InferpalToolWindowData
                 snapshot = SessionManager.BuildSnapshot(
                     Messages.Select(m => (m.Role, m.Content, m.ToolName, m.Timestamp)));
             });
-            await _store.AutoSaveAsync(snapshot, CancellationToken.None, _indexService.RootDir);
+            await _store.AutoSaveAsync(snapshot, CancellationToken.None, _indexService.RootDir,
+                                       currentName: string.IsNullOrEmpty(_currentSessionName) ? null : _currentSessionName);
             _autoSaveFailureTold = false;
         }
         catch (Exception ex)

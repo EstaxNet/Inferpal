@@ -177,13 +177,16 @@ internal class InlineEditSelectionCommand : Command
         // ── 5. Apply the edit ─────────────────────────────────────────────────
         try
         {
-            await Extensibility.Editor().EditAsync(
+            var response = await Extensibility.Editor().EditAsync(
                 batch =>
                 {
                     var doc = view.Document.AsEditable(batch);
                     doc.Replace(editRange, editedCode);
                 },
                 ct);
+            // Refused, not thrown: the user kept editing that region while the spinner turned.
+            if (!Services.VsIntegration.VsEditResult.Applied(response))
+                await Extensibility.Shell().ShowPromptAsync(Strings.CodeActionDocumentChanged, PromptOptions.OK, ct);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)

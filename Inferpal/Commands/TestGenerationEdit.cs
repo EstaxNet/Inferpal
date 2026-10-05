@@ -100,11 +100,14 @@ internal static class TestGenerationEdit
                 var range    = new TextRange(
                     new TextPosition(doc, 0),
                     new TextPosition(doc, fullText.Length));
-                await vs.Editor().EditAsync(batch =>
+                var response = await vs.Editor().EditAsync(batch =>
                 {
                     var editable = doc.AsEditable(batch);
                     editable.Replace(range, plan.Content);
                 }, ct);
+                if (!Services.VsIntegration.VsEditResult.Applied(response))
+                    return new Result(false, plan.TestFileName, plan.Extended,
+                                      Refusal: Localization.Strings.CodeActionDocumentChanged);
             }
 
             return new Result(true, plan.TestFileName, plan.Extended);

@@ -152,6 +152,12 @@ internal static class TestGenerationPlanner
         if (string.IsNullOrWhiteSpace(content))
             return TestGenerationPlan.Failed(testPath, extend);
 
+        // ⚠ An extended file keeps its OWN line endings and final line break, like every other rewrite of a file: the
+        // model writes LF without a final break, and both editors replace the whole file with this text — in a CRLF file
+        // every line shows as changed, under a diff ending on "\ No newline at end of file".
+        if (extend && existing!.Contains('\n'))
+            content = LineEndings.WithFinalBreakOf(existing, LineEndings.ToEol(content, LineEndings.Dominant(existing)));
+
         return new TestGenerationPlan(true, testPath, testName, extend, false, content);
     }
 }

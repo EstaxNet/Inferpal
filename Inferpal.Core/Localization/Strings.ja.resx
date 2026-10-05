@@ -309,6 +309,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="ActiveDocNoContext" xml:space="preserve"><value>VS コンテキストが利用できません — 表示メニューから Inferpal ウィンドウを開いてください。</value></data>
   <data name="EditNotApplied" xml:space="preserve"><value>{0} に編集を適用できませんでした。その間にドキュメントが変更されたか、読み取り専用です。何も書き込まれていません。</value></data>
   <data name="ActiveDocNoFile" xml:space="preserve"><value>エディターにファイルが開かれていません。</value></data>
+  <data name="ActiveDocNoFocus" xml:space="preserve"><value>ファイルは開いていますが、どれにもフォーカスがありません。作業するファイル内をクリックしてから、もう一度依頼してください。</value></data>
   <data name="ActiveDocResult" xml:space="preserve"><value>アクティブファイル：{0}
 
 {1}</value></data>
@@ -370,6 +371,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** は既に存在しますが読み取れませんでした。上書きは行っていません。ファイルを解放して (ビルドや別のエディターが保持している可能性があります)、コマンドをもう一度実行してください。</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ テストすべき有用なものはありません。重要なケースはすべて網羅済みです。</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ コードアクションに失敗しました。バックエンド接続とモデルを確認してください。</value></data>
+  <data name="CodeActionDocumentChanged" xml:space="preserve"><value>✋ 何も適用されませんでした: モデルの処理中にドキュメントが変更されたか、閉じられました。操作をもう一度実行してください。</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>使用法：`{0}`</value></data>
   <data name="SlashUsageRestore" xml:space="preserve"><value>使用法：`/restore &lt;パス&gt;` — `.inferpal/history/` から最新のバックアップを復元します</value></data>
   <data name="SlashUnknownCommand" xml:space="preserve"><value>不明なコマンド：`{0}`</value></data>

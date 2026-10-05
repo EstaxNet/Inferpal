@@ -90,6 +90,7 @@
   "Export failed: {0}": "Eksport nie powiódł się: {0}",
   "A turn is still running — stop it before starting a new conversation.": "Tura jest nadal w toku — zatrzymaj ją przed rozpoczęciem nowej rozmowy.",
   "A session named {0} already exists. Replace it?": "Sesja o nazwie {0} już istnieje. Zastąpić ją?",
+  "A session name cannot contain {0}": "Nazwa sesji nie może zawierać {0}",
   "Replace": "Zastąp",
   "📎 Attached: {0}": "📎 Załączono: {0}",
   "The backend is unreachable — the last answer was kept and nothing was sent.": "Backend jest nieosiągalny — ostatnia odpowiedź została zachowana i nic nie zostało wysłane.",

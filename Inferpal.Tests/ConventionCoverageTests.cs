@@ -272,8 +272,9 @@ public class ConventionCoverageTests
             var sink   = writeSinks.FirstOrDefault(s => source.Contains(s, StringComparison.Ordinal));
             if (sink is null) continue;
 
-            // Either the tool asks itself, or it goes through the shared gate.
+            // Either the tool asks itself — one file or a multi-file batch — or it goes through the shared gate.
             if (source.Contains("RequestApprovalAsync", StringComparison.Ordinal) ||
+                source.Contains("RequestBatchApprovalAsync", StringComparison.Ordinal) ||
                 source.Contains("EditorWriteGate.", StringComparison.Ordinal)) continue;
 
             offenders.Add($"{Rel(file)} (writes through '{sink}')");

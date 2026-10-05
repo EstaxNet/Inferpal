@@ -353,6 +353,7 @@ internal static class Strings
     public static string TestsNoChange    => Get(nameof(TestsNoChange));
     /// <summary>Shown when an in-place code action fails (model/network error, empty reply).</summary>
     public static string CodeActionFailed => Get(nameof(CodeActionFailed));
+    public static string CodeActionDocumentChanged => Get(nameof(CodeActionDocumentChanged));
 
     public static string LabelCommandTimeout      => Get(nameof(LabelCommandTimeout));
     public static string HintCommandTimeout       => Get(nameof(HintCommandTimeout));
@@ -762,6 +763,7 @@ internal static class Strings
     public static string ActiveDocNoContext => Get(nameof(ActiveDocNoContext));
     public static string EditNotApplied(string path) =>
         string.Format(Get(nameof(EditNotApplied)), path);
+    public static string ActiveDocNoFocus => Get(nameof(ActiveDocNoFocus));
     public static string ActiveDocNoFile   => Get(nameof(ActiveDocNoFile));
 
     public static string ToolFileNotFound(string path) =>

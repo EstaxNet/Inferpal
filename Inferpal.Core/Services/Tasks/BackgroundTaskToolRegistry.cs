@@ -129,20 +129,24 @@ internal sealed class BackgroundTaskToolRegistry(
 
         // What THIS request left in the list — never the list's last entry, which a file proposed again (updated in
         // place) is not; and never a lookup by tool name, which a composite tool asking under another name misses.
-        if (proposals.LastRecorded is not { } recorded) return result;
-        return $"Recorded as a proposal for {recorded.Subject} ({proposals.Count} pending in total). "
-             + proposals.LastOutcome switch
-               {
-                   ProposalOutcome.Combined =>
-                       "It was combined with your earlier proposal for this file: both changes are in it. ",
-                   // Without this sentence the model believes both changes are pending, and its
-                   // report describes one the user will never see.
-                   ProposalOutcome.Replaced =>
-                       "It REPLACES your earlier proposal for this file, which is dropped: edits are computed "
-                     + "from the file on disk, and these two could not be combined. If you meant both changes, "
-                     + "propose them together in one apply_edits call. ",
-                   _ => string.Empty,
-               }
+        var records = proposals.LastRecords;
+        if (records.Count == 0) return result;
+        // A multi-file apply_edits records one proposal per file: each is named, and so is each one it combined or replaced.
+        string Files(ProposalOutcome outcome) => records.Count == 1
+            ? "this file"
+            : string.Join(", ", records.Where(r => r.Outcome == outcome).Select(r => r.Proposal.Subject));
+        return $"Recorded as a proposal for {string.Join(", ", records.Select(r => r.Proposal.Subject))} "
+             + $"({proposals.Count} pending in total). "
+             + (records.Any(r => r.Outcome == ProposalOutcome.Combined)
+                   ? $"It was combined with your earlier proposal for {Files(ProposalOutcome.Combined)}: both changes are in it. "
+                   : string.Empty)
+             // Without this sentence the model believes both changes are pending, and its
+             // report describes one the user will never see.
+             + (records.Any(r => r.Outcome == ProposalOutcome.Replaced)
+                   ? $"It REPLACES your earlier proposal for {Files(ProposalOutcome.Replaced)}, which is dropped: edits are "
+                   + "computed from the file on disk, and these two could not be combined. If you meant both changes, "
+                   + "propose them together in one apply_edits call. "
+                   : string.Empty)
              + "Nothing was written: the user reviews this change when your report comes back. "
              + "Continue with the objective.";
     }

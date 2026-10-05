@@ -16,6 +16,8 @@ internal enum InPlaceEditOutcome
     /// <summary>The rewrite was handed to the in-editor inline diff preview — the user decides
     /// per hunk there; nothing has been applied yet.</summary>
     PreviewShown,
+    /// <summary>The editor refused the edit: the document changed or was closed while the model was working.</summary>
+    DocumentChanged,
 }
 
 /// <summary>Outcome of an in-place code edit plus, on <see cref="InPlaceEditOutcome.Failed"/>,
@@ -131,14 +133,16 @@ internal static class InPlaceCodeEdit
 
         try
         {
-            await vs.Editor().EditAsync(
+            var response = await vs.Editor().EditAsync(
                 batch =>
                 {
                     var doc = view.Document.AsEditable(batch);
                     doc.Replace(editRange, run.EditedCode!);
                 },
                 ct);
-            return new(InPlaceEditOutcome.Applied);
+            return new(Services.VsIntegration.VsEditResult.Applied(response)
+                ? InPlaceEditOutcome.Applied
+                : InPlaceEditOutcome.DocumentChanged);
         }
         catch (Exception ex)
         {

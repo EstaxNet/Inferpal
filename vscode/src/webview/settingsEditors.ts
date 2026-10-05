@@ -121,14 +121,20 @@ function lines(text: string): string[] {
 
 const NAME_VALUE: Record<string, {
   add: string; addTitle: string; name: string; value: string; empty: string; invalid: string; duplicate: string; monoValue: boolean;
+  /** The name the Core reads, '' when there is none — the Visual Studio panel's own normalisation (CommitSlash,
+   *  CommitTool). Stored as typed, `secreview` is saved and never exists (the Core drops a template without '/'), and
+   *  `My Tool` beside `my_tool` passes the duplicate check and loses to it. */
+  normalize: (name: string) => string;
 }> = {
   promptTemplates: {
     add: 'SlashAddCmd', addTitle: 'SlashAddTitle', name: 'LabelSlashName', value: 'LabelSlashText',
     empty: 'SlashEmptyTitle', invalid: 'SlashValidationNameText', duplicate: 'SlashValidationDuplicate', monoValue: false,
+    normalize: (n) => (n.length === 0 || n === '/' ? '' : n.startsWith('/') ? n : '/' + n),
   },
   customTools: {
     add: 'ToolAddTool', addTitle: 'ToolAddTitle', name: 'LabelToolName', value: 'LabelToolCommand',
     empty: 'ToolEmptyTitle', invalid: 'ToolValidationNameCommand', duplicate: 'ToolValidationDuplicate', monoValue: true,
+    normalize: (n) => n.toLowerCase().replace(/ /g, '_'),
   },
 };
 
@@ -206,12 +212,12 @@ function nameValueEditor(key: string, area: HTMLTextAreaElement, host: EditorHos
     const value = textArea(current?.value ?? '', 2);
     const title = current ? fill(host.res('RowEditTitle'), current.name) : host.res(words.addTitle);
     view.appendChild(inlineForm(host, title, [labelled(host.res(words.name), name), labelled(host.res(words.value), value)], () => {
-      const n = name.value.trim();
+      const n = words.normalize(name.value.trim());
       const v = value.value.replace(/\r?\n/g, ' ').trim();
       if (n.length === 0 || v.length === 0) {
         return host.res(words.invalid);
       }
-      if (items.some((i, idx) => i.readable && idx !== editing && i.name.toLowerCase() === n.toLowerCase())) {
+      if (items.some((i, idx) => i.readable && idx !== editing && words.normalize(i.name).toLowerCase() === n.toLowerCase())) {
         return host.res(words.duplicate);
       }
       if (current) {

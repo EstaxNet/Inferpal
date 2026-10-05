@@ -31,7 +31,7 @@ internal class GetActiveDocumentTool : ITool
 
         var doc = await _editor.GetActiveDocumentAsync(ct);
         if (doc is null)
-            return Strings.ActiveDocNoFile;
+            return EditorWriteGate.NoActiveDocument(_editor);
 
         // ⚠ Paged like read_file: whole, a long file entered the context cut in its MIDDLE, under a marker that named
         // no way to read what was cut — while this description promised the full content.

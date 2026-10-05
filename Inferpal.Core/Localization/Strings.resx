@@ -310,6 +310,7 @@ Backup: {0}</value></data>
   <data name="ActiveDocNoContext" xml:space="preserve"><value>VS context unavailable — open the Inferpal window via the View menu.</value></data>
   <data name="EditNotApplied" xml:space="preserve"><value>The edit was not applied to {0} — the document changed under it, or it is read-only. Nothing was written.</value></data>
   <data name="ActiveDocNoFile" xml:space="preserve"><value>No file open in the editor.</value></data>
+  <data name="ActiveDocNoFocus" xml:space="preserve"><value>Files are open, but none has the focus — click into the file to work on, then ask again.</value></data>
   <data name="ActiveDocResult" xml:space="preserve"><value>Active file: {0}
 
 {1}</value></data>
@@ -371,6 +372,7 @@ Backup: {0}</value></data>
   <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** already exists but could not be read — nothing was written over it. Free the file (a build or another editor may be holding it) and run the command again.</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ Nothing useful to test — every meaningful case is already covered.</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ The code action failed — check the backend connection and the model.</value></data>
+  <data name="CodeActionDocumentChanged" xml:space="preserve"><value>✋ Nothing was applied: the document changed or was closed while the model was working. Run the action again.</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>Usage: `{0}`</value></data>
   <data name="SlashUsageRestore" xml:space="preserve"><value>Usage: `/restore &lt;path&gt;` — restores the most recent backup from `.inferpal/history/`</value></data>
   <data name="SlashUnknownCommand" xml:space="preserve"><value>Unknown command: `{0}`</value></data>

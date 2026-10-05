@@ -48,6 +48,8 @@
     <!-- Interop types for the §27.4 BuildEventsBootstrap test (the VSIX project's SDK refs are
          PrivateAssets and do not flow through the ProjectReference). -->
     <PackageReference Include="Microsoft.VisualStudio.Shell.15.0" Version="17.14.40264" />
+    <!-- The editor's edit outcomes (EditResult), read by VsEditResultTests; same version as the SDK's own dependency. -->
+    <PackageReference Include="Microsoft.VisualStudio.Extensibility.Editor.Contracts" Version="17.14.275" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'net8.0-windows'">
     <Compile Remove="InlineEditResponseTests.cs" />
@@ -56,6 +58,8 @@
     <Compile Remove="ChatAutoScrollerTests.cs" />
     <Compile Remove="BuildEventsBootstrapTests.cs" />
     <Compile Remove="GhostTextKeysTests.cs" />
+    <Compile Remove="VsEditResultTests.cs" />
+    <Compile Remove="VsContextHolderTests.cs" />
     <Compile Remove="GlobalUsings.Windows.cs" />
   </ItemGroup>
 

@@ -1724,6 +1724,49 @@ public partial class HostServerTests
     }
 
     [Fact]
+    public async Task SessionSave_UnderANameTheStoreRewrites_IsTheParentABranchUpdates()
+    {
+        // The session is listed under its stored name ('/' → '_'): recorded under the typed one, /branch found no such
+        // session and wrote a new dated parent instead of updating the one just saved.
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+
+        var typed  = $"feat/branch-{Guid.NewGuid():N}";
+        var stored = typed.Replace('/', '_');
+        SessionBranchResult? branch = null;
+        try
+        {
+            object[] messages =
+            [
+                new { role = "user",      content = "first" },
+                new { role = "assistant", content = "answer one" },
+                new { role = "user",      content = "second" },
+                new { role = "assistant", content = "answer two" },
+            ];
+
+            await h.Client.InvokeWithParameterObjectAsync<object?>("session/save", new { name = typed, messages })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            Assert.Equal(stored, h.Server.CurrentSession!.CurrentSessionName);
+
+            branch = await h.Client.InvokeWithParameterObjectAsync<SessionBranchResult>(
+                "session/branch", new { turn = 1, messages }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            Assert.Equal(stored, branch!.Parent);
+            Assert.Equal($"{stored}__b2", branch.Name);
+        }
+        finally
+        {
+            await h.Client.InvokeWithParameterObjectAsync<bool>("session/delete", new { name = stored });
+            if (branch is not null)
+            {
+                await h.Client.InvokeWithParameterObjectAsync<bool>("session/delete", new { name = branch.Name });
+                if (branch.Parent is { } parent && parent != stored)
+                    await h.Client.InvokeWithParameterObjectAsync<bool>("session/delete", new { name = parent });
+            }
+        }
+    }
+
+    [Fact]
     public async Task SessionBranch_UnknownTurn_ReturnsNull()
     {
         using var h = CreateHarness();

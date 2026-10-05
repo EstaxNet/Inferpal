@@ -25,8 +25,9 @@ internal static class WebPage
         @"<meta\b[^>]*?charset\s*=\s*[""']?\s*([A-Za-z0-9_.:\-]+)",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexBudget.Default);
 
-    /// <summary>A response's text and the media type the server gave it (<c>null</c> when it gave none).</summary>
-    internal readonly record struct WebText(string Text, string? MediaType);
+    /// <summary>A response's text and the media type the server gave it (<c>null</c> when it gave none), its size in bytes,
+    /// and whether its bytes are binary (<see cref="TextFileEncoding.IsBinary"/>, the rule read_file follows).</summary>
+    internal readonly record struct WebText(string Text, string? MediaType, int Bytes = 0, bool Binary = false);
 
     internal static async Task<string> ReadTextAsync(HttpContent content, CancellationToken ct) =>
         (await ReadAsync(content, ct)).Text;
@@ -34,7 +35,8 @@ internal static class WebPage
     internal static async Task<WebText> ReadAsync(HttpContent content, CancellationToken ct)
     {
         var bytes = await content.ReadAsByteArrayAsync(ct);
-        return new WebText(Decode(bytes, content.Headers.ContentType?.CharSet), content.Headers.ContentType?.MediaType);
+        return new WebText(Decode(bytes, content.Headers.ContentType?.CharSet), content.Headers.ContentType?.MediaType,
+                           bytes.Length, TextFileEncoding.IsBinary(bytes));
     }
 
     /// <summary>

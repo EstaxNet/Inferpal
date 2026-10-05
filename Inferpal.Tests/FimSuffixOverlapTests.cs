@@ -28,6 +28,8 @@ public class FimSuffixOverlapTests
 
     [Theory]
     [InlineData("Math.Abs(x)", ");")]                                             // balanced: its ")" is its own
+    [InlineData("string.IsNullOrEmpty(name)", ")")]                               // balanced, ends like the line
+    [InlineData("items[0]", "]")]                                                  // same, with a bracket
     [InlineData("\"Invalid input. Please provide a list of integers.\"", ");")]  // repeats nothing
     [InlineData("x", "")]                                                          // nothing after the caret
     public void ACompletionThatRepeatsNothing_IsKept(string completion, string suffix)
@@ -67,6 +69,32 @@ public class FimSuffixOverlapTests
         var suffix     = "\n    }\n}\n";
 
         Assert.Equal("return a + b;", FimCompletion.Finish(completion, suffix));
+    }
+
+    [Fact]
+    public void AtTheEndOfALine_ABlockKeepsItsOwnClosingBrace()
+    {
+        // The method's "}" follows the caret; the block's own "}" is not a repetition of it.
+        var completion = "\n        if (user is null)\n        {\n            return;\n        }";
+
+        Assert.Equal(completion, FimCompletion.Finish(completion, "\n    }\n}\n"));
+    }
+
+    [Fact]
+    public void AtTheEndOfALine_ABlockFollowedByARepeatedBrace_LosesOnlyTheRepetition()
+    {
+        var completion = "if (x)\n{\n    y();\n}\n}";
+
+        Assert.Equal("if (x)\n{\n    y();\n}", FimCompletion.Finish(completion, "\n}\n}\n"));
+    }
+
+    [Fact]
+    public void AtTheEndOfALine_ARepeatedStatement_IsStillDropped()
+    {
+        // Reference arm: a repetition without brackets is still a repetition.
+        var completion = "var r = Compute();\nreturn r;";
+
+        Assert.Equal("var r = Compute();", FimCompletion.Finish(completion, "\n    return r;\n}\n"));
     }
 
     [Fact]

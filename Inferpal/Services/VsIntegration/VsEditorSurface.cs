@@ -19,7 +19,7 @@ internal sealed class VsEditorSurface : IEditorSurface
         _contextHolder = contextHolder;
     }
 
-    public bool IsAvailable => _contextHolder.Context is not null;
+    public bool IsAvailable => _contextHolder.LatestView is not null || _contextHolder.Context is not null;
 
     public string? ActiveDocumentPath => _contextHolder.LatestView?.Document.Uri.LocalPath;
 
@@ -41,11 +41,12 @@ internal sealed class VsEditorSurface : IEditorSurface
         var insertionPoint = view.Selection.InsertionPosition;
         var path           = view.FilePath ?? view.Document.Uri.LocalPath;
 
-        await _vs.Editor().EditAsync(
+        var response = await _vs.Editor().EditAsync(
             batch => view.Document.AsEditable(batch).Insert(insertionPoint, text),
             ct);
 
-        return path;
+        // null = the edit did not apply (the port's contract): the editor refuses rather than throws.
+        return VsEditResult.Applied(response) ? path : null;
     }
 
     public async Task<EditorEditResult?> ReplaceSelectionAsync(string text, CancellationToken ct)
@@ -56,7 +57,7 @@ internal sealed class VsEditorSurface : IEditorSurface
         var selection = view.Selection;
         var path      = view.FilePath ?? view.Document.Uri.LocalPath;
 
-        await _vs.Editor().EditAsync(
+        var response = await _vs.Editor().EditAsync(
             batch =>
             {
                 var docEditor = view.Document.AsEditable(batch);
@@ -67,18 +68,15 @@ internal sealed class VsEditorSurface : IEditorSurface
             },
             ct);
 
-        return new EditorEditResult(path, ReplacedSelection: !selection.IsEmpty);
+        // null = the edit did not apply (the port's contract): the editor refuses rather than throws.
+        return VsEditResult.Applied(response) ? new EditorEditResult(path, ReplacedSelection: !selection.IsEmpty) : null;
     }
 
     // VS has no cheap cross-language diagnostics query in the out-of-proc SDK; the tool's
     // dotnet-build flow (plus the VsBuildMonitor signals) covers diagnostics in VS.
     public Task<string?> GetEditorDiagnosticsAsync(CancellationToken ct) => Task.FromResult<string?>(null);
 
-    // Null when the extension has not yet received a client context (no editor activated
-    // since startup) or when no text view currently has focus.
-    private async Task<ITextViewSnapshot?> GetActiveViewAsync(CancellationToken ct)
-    {
-        if (_contextHolder.Context is null) return null;
-        return await _vs.Editor().GetActiveTextViewAsync(_contextHolder.Context, ct);
-    }
+    // Null when no view is known yet (none edited, moved in or opened, no Inferpal command run) or the active one closed.
+    private Task<ITextViewSnapshot?> GetActiveViewAsync(CancellationToken ct) =>
+        _contextHolder.ResolveActiveViewAsync(_vs, ct);
 }

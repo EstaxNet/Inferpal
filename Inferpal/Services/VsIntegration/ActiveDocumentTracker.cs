@@ -28,7 +28,7 @@ internal class ActiveDocumentTracker : ExtensionPart, ITextViewOpenClosedListene
 
     public Task TextViewClosedAsync(ITextViewSnapshot textView, CancellationToken ct)
     {
-        _contextHolder.RegisterClose(textView.Document.Uri.LocalPath);
+        _contextHolder.ViewClosed(textView.Document.Uri.LocalPath);
         return Task.CompletedTask;
     }
 

@@ -36,4 +36,20 @@ internal interface IApprovalService
     /// consent given to one's own agent is not consent to a stranger's command.
     /// </param>
     Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null, Services.CodeActions.DiffInfo? diff = null, bool forcePrompt = false);
+
+    /// <summary>
+    /// One approval for a change that spans several files (<c>apply_edits</c>): one prompt for the whole batch, with the
+    /// batch's combined <paramref name="details"/>.
+    /// </summary>
+    /// <param name="files">Each changed file's own old→new text and summary.</param>
+    /// <remarks>
+    /// ⚠ An implementation that KEEPS changes instead of applying them (the <c>/task</c> recorder) needs each file's own
+    /// change: a proposal is applied file by file, from its diff, and a batch recorded without one can never be applied.
+    /// </remarks>
+    Task<bool> RequestBatchApprovalAsync(string toolName, string details, IReadOnlyList<FileChange> files,
+                                         CancellationToken ct, string? subject = null) =>
+        RequestApprovalAsync(toolName, details, ct, subject: subject);
 }
+
+/// <summary>One file of a multi-file change: its old→new text, and the summary a reviewer reads for it.</summary>
+internal sealed record FileChange(Services.CodeActions.DiffInfo Diff, string Details);

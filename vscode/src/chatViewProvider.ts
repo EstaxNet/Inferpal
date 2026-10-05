@@ -789,6 +789,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     const name = await vscode.window.showInputBox({
       prompt: t('Session name'),
       value: suggested.replace(/[\\/:*?"<>|\n]+/g, ' ').trim(),
+      // The store writes these as '_' (no file name may hold them): accepted, two names would share one file, and the
+      // "replace?" question below — asked on the typed name — would never come before the other session is overwritten.
+      validateInput: (v) =>
+        /[\\/:*?"<>|\x00-\x1f]/.test(v) ? t('A session name cannot contain {0}', '\\ / : * ? " < > |') : undefined,
     });
     if (!name) {
       return;

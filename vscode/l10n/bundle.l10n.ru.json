@@ -90,6 +90,7 @@
   "Export failed: {0}": "Не удалось экспортировать: {0}",
   "A turn is still running — stop it before starting a new conversation.": "Ход ещё выполняется — остановите его, прежде чем начинать новый разговор.",
   "A session named {0} already exists. Replace it?": "Сеанс с именем {0} уже существует. Заменить его?",
+  "A session name cannot contain {0}": "Имя сеанса не может содержать {0}",
   "Replace": "Заменить",
   "📎 Attached: {0}": "📎 Вложено: {0}",
   "The backend is unreachable — the last answer was kept and nothing was sent.": "Бэкенд недоступен — последний ответ сохранён, ничего не отправлено.",

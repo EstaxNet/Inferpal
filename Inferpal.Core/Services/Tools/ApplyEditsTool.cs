@@ -160,7 +160,10 @@ internal sealed class ApplyEditsTool : ITool
         // ── Approval: one prompt with the combined diff across files ───────────
         var details = BuildApprovalDetails(root, changed, original, current);
         var subject = string.Join("\n", changed);   // permission rules match any affected path
-        if (!await _approval.RequestApprovalAsync("apply_edits", details, ct, subject: subject))
+        // Each file's own change travels with the batch: a /task proposal is applied file by file, from its diff.
+        var files = changed.Select(p => new FileChange(new DiffInfo(original[p], current[p], p),
+                                                       BuildApprovalDetails(root, [p], original, current))).ToList();
+        if (!await _approval.RequestBatchApprovalAsync("apply_edits", details, files, ct, subject: subject))
             return Strings.DiffCancelled;
 
         // ── Phase 2: back up EVERY file, then write (all edits already validated) ─

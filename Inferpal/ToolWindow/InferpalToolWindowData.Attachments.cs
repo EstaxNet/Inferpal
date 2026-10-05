@@ -125,15 +125,9 @@ internal partial class InferpalToolWindowData
 
     private async Task<ITextViewSnapshot?> ResolveActiveViewAsync(CancellationToken ct)
     {
-        if (_contextHolder.LatestView is not null)
-            return _contextHolder.LatestView;
-
-        if (_contextHolder.Context is not null)
-        {
-            try { return await _vs.Editor().GetActiveTextViewAsync(_contextHolder.Context, ct); }
-            catch (Exception ex) { Diagnostics.Swallow("Editor.ResolveActiveView", ex); }
-        }
-        return null;
+        try { return await _contextHolder.ResolveActiveViewAsync(_vs, ct); }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) { Diagnostics.Swallow("Editor.ResolveActiveView", ex); return null; }
     }
 
     private async Task AttachFileAsync(object? _, CancellationToken ct)

@@ -17,7 +17,8 @@ internal class VsContextHolder
     private readonly Dictionary<string, int> _openCounts = new(StringComparer.OrdinalIgnoreCase);
     private readonly object _lock = new();
 
-    /// <summary>Current VS client context; set by <c>ActiveDocumentTracker</c> on each editor activation.</summary>
+    /// <summary>The VS client context of the latest Inferpal command (a copy frozen when it ran — see
+    /// <see cref="ResolveActiveViewAsync"/>).</summary>
     public IClientContext? Context { get; set; }
 
     /// <summary>The chat window's X-Ray counts as they are now — what the settings' Context page shows. Set by the chat
@@ -48,28 +49,30 @@ internal class VsContextHolder
     public ITextViewSnapshot? LatestView
     {
         get => _latestView;
-        set
+        set => Activate(value, value?.Document.Uri.LocalPath);
+    }
+
+    /// <summary>The active document's path; empty when none is known.</summary>
+    public string ActiveFilePath => _activeFilePath;
+
+    /// <summary>Records <paramref name="view"/> as the latest view, of the document at <paramref name="path"/>.</summary>
+    internal void Activate(ITextViewSnapshot? view, string? path)
+    {
+        // Check-and-set under the lock: concurrent open+changed activations could interleave
+        // the test and the write (duplicate or out-of-order ActiveFileChanged), despite the
+        // "safe from any thread" contract of the class doc. The
+        // event itself fires outside the lock.
+        string? changed = null;
+        lock (_lock)
         {
-            // Check-and-set under the lock: concurrent open+changed activations could interleave
-            // the test and the write (duplicate or out-of-order ActiveFileChanged), despite the
-            // "safe from any thread" contract of the class doc. The
-            // event itself fires outside the lock.
-            string? changed = null;
-            lock (_lock)
+            _latestView = view;
+            if (path is not null && path != _activeFilePath)
             {
-                _latestView = value;
-                if (value is not null)
-                {
-                    var path = value.Document.Uri.LocalPath ?? string.Empty;
-                    if (path != _activeFilePath)
-                    {
-                        _activeFilePath = path;
-                        changed = path;
-                    }
-                }
+                _activeFilePath = path;
+                changed = path;
             }
-            if (changed is not null) ActiveFileChanged?.Invoke(this, changed);
         }
+        if (changed is not null) ActiveFileChanged?.Invoke(this, changed);
     }
 
     // ── Pending prompt (editor context menu → chat window) ─────────────────
@@ -116,7 +119,68 @@ internal class VsContextHolder
     {
         if (string.IsNullOrEmpty(path)) return;
         lock (_lock)
+        {
             _openCounts[path] = _openCounts.TryGetValue(path, out var c) ? c + 1 : 1;
+            _closed.Remove(path);
+        }
+    }
+
+    /// <summary>Documents whose last view closed since they were seen open.</summary>
+    private readonly HashSet<string> _closed = new(PathComparer.Default);
+
+    /// <summary>
+    /// A view closed. When it was the last view of the active document, that document stops being the active one.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Kept, the closed document stayed "active": the attach button, /explain and /doc took it, the welcome screen named
+    /// it, get_open_editors called it active while leaving it out of its own open list, and an agent edit went to a
+    /// document no longer open.
+    /// </remarks>
+    public void ViewClosed(string path)
+    {
+        if (string.IsNullOrEmpty(path)) return;
+        var cleared = false;
+        lock (_lock)
+        {
+            if (_openCounts.TryGetValue(path, out var c) && c > 1)
+            {
+                _openCounts[path] = c - 1;
+                return;
+            }
+            _openCounts.Remove(path);
+            _closed.Add(path);
+            if (string.Equals(path, _activeFilePath, PathComparer.Comparison))
+            {
+                _latestView     = null;
+                _activeFilePath = string.Empty;
+                cleared         = true;
+            }
+        }
+        if (cleared) ActiveFileChanged?.Invoke(this, string.Empty);
+    }
+
+    /// <summary>The document was seen open, and its last view has closed since.</summary>
+    public bool IsKnownClosed(string path)
+    {
+        lock (_lock) return _closed.Contains(path);
+    }
+
+    /// <summary>
+    /// The view the user works in: the one that took the latest edit, caret move or opening — or, before any, the one the
+    /// latest Inferpal command was run from. The ONE reader for the agent's editor tools and the chat window.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <see cref="Context"/> is a copy frozen when an Inferpal command ran: the active view it resolves is the one of
+    /// THAT moment, document version and selection included. Read first, it had the agent read and edit the file the chat
+    /// was opened from while the user worked in another — and get_active_document contradict get_open_editors.
+    /// </remarks>
+    public async Task<ITextViewSnapshot?> ResolveActiveViewAsync(VisualStudioExtensibility vs, CancellationToken ct)
+    {
+        if (LatestView is { } latest) return latest;
+        if (Context is not { } context) return null;
+        var view = await vs.Editor().GetActiveTextViewAsync(context, ct);
+        // The frozen context outlives the document it was taken on: a closed one is no active document.
+        return view is not null && IsKnownClosed(view.Document.Uri.LocalPath) ? null : view;
     }
 
     public void RegisterClose(string path)

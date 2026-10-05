@@ -144,6 +144,18 @@ internal static class SessionManager
     /// roots are known and differ: a file saved before the root was recorded, or a front-end that
     /// does not know its root yet, keeps the continuity it had.
     /// </remarks>
+    /// <summary>
+    /// The named session an auto-save records: the one this process knows — or, for a process that knows nothing yet (the
+    /// VS Code host started again after a crash or a settings change), the one the slot already carries for this workspace.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The restarted host rebuilds the conversation by saving the screen to the slot, then loading it back: recorded
+    /// from what it knows, that first save erases the name, and /branch then writes a fresh dated parent instead of
+    /// updating the session the conversation came from.
+    /// </remarks>
+    public static string? AutoSaveName(bool known, string? current, SessionData? slot, string? root) =>
+        known ? current : slot is not null && AutoSaveBelongsHere(slot, root) ? slot.CurrentName : null;
+
     public static bool AutoSaveBelongsHere(SessionData saved, string? currentRoot)
     {
         if (string.IsNullOrWhiteSpace(saved.WorkspaceRoot) || string.IsNullOrWhiteSpace(currentRoot))

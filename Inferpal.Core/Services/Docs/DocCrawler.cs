@@ -39,9 +39,12 @@ internal sealed class DocCrawler
     // ⚠ The whole value, anchor included, then the anchor cut in ExtractLinks: a pattern that stops at '#' and demands
     // the closing quote there matches nothing on "retries.html#options" — the shape of every Sphinx cross-reference —
     // and a page reached only through its sections is never indexed.
+    // ⚠ And the three forms HTML5 allows: double quotes, single quotes, NONE — a minified site (Hugo's minifier drops
+    // the quotes it can) offers only the last, and read with quotes alone its crawl stops at the start page under a ✅.
+    // An unquoted value never starts with '&': "href=&quot;…" is a code sample of a link, not a link.
     private static readonly Regex _hrefRegex = new(
-        "href\\s*=\\s*[\"']([^\"']+)[\"']",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
+        "href\\s*=\\s*(?:\"(?<v>[^\"]+)\"|'(?<v>[^']+)'|(?<v>[^\\s\"'<>`=&][^\\s\"'<>`]*))",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.ExplicitCapture, RegexBudget.Default);
 
     private static readonly Regex _titleRegex = new(
         @"<title[^>]*>([\s\S]*?)</title>",
@@ -248,7 +251,7 @@ internal sealed class DocCrawler
 
         foreach (Match m in matches)
         {
-            var raw = m.Groups[1].Value.Trim();
+            var raw = m.Groups["v"].Value.Trim();
             var hash = raw.IndexOf('#');
             if (hash >= 0) raw = raw[..hash];   // a section of a page is that page; "#top" alone is this one
             if (raw.Length == 0 ||

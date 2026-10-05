@@ -289,14 +289,19 @@ internal class FetchUrlTool : ITool
     private static string ReplaceBounded(string input, string pattern, string replacement, RegexOptions options) =>
         Regex.Replace(input, pattern, replacement, options, RegexTimeout);
 
-    /// <summary>What the model reads of a response: a web page as its text, anything else as the server sent it.</summary>
+    /// <summary>What the model reads of a response: a web page as its text, a binary response named, anything else as
+    /// the server sent it.</summary>
     /// <remarks>
     /// ⚠ A raw source file is one of the most common things an agent fetches (raw.githubusercontent.com): run through
     /// the HTML conversion, anything between '&lt;' and '&gt;' goes as a tag and every indent is trimmed —
     /// <c>List&lt;string&gt;</c> comes back <c>List</c>, <c>a &lt; b &amp;&amp; c &gt; d</c> comes back <c>a  d</c>.
+    /// ⚠ And a PDF or an image decoded as text is noise read as content — with a footer inviting the model to page
+    /// through it, one fetch per window. Named, like read_file names a binary file.
     /// </remarks>
     internal static string Readable(WebPage.WebText page) =>
-        WebPage.IsHtml(page) ? HtmlToText(page.Text) : page.Text.Replace("\r\n", "\n").TrimEnd();
+        page.Binary
+            ? $"The response is binary ({page.MediaType ?? "no media type"}, {page.Bytes} bytes): its content is not shown as text."
+            : WebPage.IsHtml(page) ? HtmlToText(page.Text) : page.Text.Replace("\r\n", "\n").TrimEnd();
 
     internal static string HtmlToText(string html)
     {

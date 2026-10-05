@@ -1063,14 +1063,26 @@ internal sealed partial class HostServer : IDisposable
     // ── Sessions (persisted store shared with the VS extension) ───────────────
 
     [JsonRpcMethod("session/save", UseSingleObjectParameterDeserialization = true)]
-    public Task SessionSaveAsync(SessionSaveParams p, CancellationToken ct)
+    public async Task SessionSaveAsync(SessionSaveParams p, CancellationToken ct)
     {
         var s = Session();
         // The auto-save slot is not "the file this conversation lives in" (see CurrentSessionName), and
         // neither is the archive of the conversation just left: /branch rewrites the current file.
-        if (p.Name != "last_session" && !p.Archive) s.CurrentSessionName = p.Name;
-        return s.Store.SaveAsync(p.Name, p.Messages.Select(ToSaved), ct,
-                                 workspaceRoot: p.Name == "last_session" ? s.RootDir : null);
+        if (p.Name != "last_session" && !p.Archive) s.CurrentSessionName = ConversationStore.StoredName(p.Name);
+
+        string? currentName = null;
+        if (p.Name == "last_session")
+        {
+            SessionData? slot = null;
+            if (!s.SessionNameKnown)
+            {
+                try { slot = await s.Store.LoadAsync("last_session", ct); }
+                catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("HostServer.SessionSave.Slot", ex); }
+            }
+            currentName = SessionManager.AutoSaveName(s.SessionNameKnown, s.CurrentSessionName, slot, s.RootDir);
+        }
+        await s.Store.SaveAsync(p.Name, p.Messages.Select(ToSaved), ct,
+                                workspaceRoot: p.Name == "last_session" ? s.RootDir : null, currentName: currentName);
     }
 
     /// <summary>Wire message → stored message (empty optional fields stay out of the JSON).</summary>
@@ -1121,7 +1133,7 @@ internal sealed partial class HostServer : IDisposable
             s.TemplateSuffix     = null;
             ForgetConversationState(s);
             s.History            = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), data.Messages);
-            s.CurrentSessionName = p.Name == "last_session" ? null : p.Name;
+            s.CurrentSessionName = p.Name == "last_session" ? data.CurrentName : p.Name;
             return new SessionLoadResult(
                 p.Name,
                 data.Messages.Select(m => new SavedMessageDto(m.Role, m.Content, m.ToolName, m.Timestamp)).ToList(),

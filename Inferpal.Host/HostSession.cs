@@ -126,7 +126,16 @@ internal sealed class HostSession : IDisposable
     /// <summary>Session file the conversation currently lives in (null = never saved, or reset).
     /// Mirror of the VS VM's <c>_currentSessionName</c>; <c>/branch</c> records it as the parent
     /// of a new branch. The <c>last_session</c> auto-save slot deliberately doesn't count.</summary>
-    public string? CurrentSessionName { get; set; }
+    public string? CurrentSessionName
+    {
+        get => _currentSessionName;
+        set { _currentSessionName = value; SessionNameKnown = true; }
+    }
+    private string? _currentSessionName;
+
+    /// <summary>The name above was set by this process (a load, a save, a branch, a new conversation). A host started
+    /// again knows nothing yet: see <see cref="SessionManager.AutoSaveName"/>.</summary>
+    public bool SessionNameKnown { get; private set; }
 
     /// <summary>Prompt-section ids switched off from the Context X-Ray panel (session-scoped;
     /// consumed by the system-prompt builder so the next turns skip those layers).</summary>
