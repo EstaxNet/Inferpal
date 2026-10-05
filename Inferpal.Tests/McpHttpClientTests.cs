@@ -366,6 +366,42 @@ public class McpHttpClientTests
     }
 
     [Fact]
+    public async Task Unauthorized401_ToTheUsersOwnApiKey_IsNotASignIn_AndNamesTheReasonAndTheUnsetVariable()
+    {
+        // The server authenticates by a configured key; the key is refused. Reading "sign in" here hid the reason and
+        // offered an OAuth flow the server does not have.
+        var handler = new StubHandler
+        {
+            Respond = _ => new HttpResponseMessage(HttpStatusCode.Unauthorized)
+            {
+                Content = new StringContent("{\"error\":\"invalid api key\"}"),
+            },
+        };
+        await using var client = new Inferpal.Services.Mcp.McpHttpClient(
+            HttpCfg(new Dictionary<string, string> { ["X-Api-Key"] = "${INFERPAL_UNSET_MCP_KEY_42}" }),
+            handler, new FakeTokenProvider(null));
+
+        var ok = await client.StartAsync(CancellationToken.None);
+
+        Assert.False(ok);
+        Assert.False(client.NeedsAuthorization);
+        Assert.Contains("invalid api key", client.LastError);
+        Assert.Contains("INFERPAL_UNSET_MCP_KEY_42", client.LastError);
+    }
+
+    [Fact]
+    public async Task Unauthorized401_ToTheOAuthToken_IsStillASignIn()
+    {
+        // Reference arm: the OAuth token went with the request — signing in again is the remedy.
+        var handler = new StubHandler { Respond = _ => new HttpResponseMessage(HttpStatusCode.Unauthorized) };
+        await using var client = new Inferpal.Services.Mcp.McpHttpClient(
+            HttpCfg(new Dictionary<string, string> { ["X-Api-Key"] = "k" }), handler, new FakeTokenProvider("expired"));
+
+        Assert.False(await client.StartAsync(CancellationToken.None));
+        Assert.True(client.NeedsAuthorization);
+    }
+
+    [Fact]
     public void ExpandEnv_ReplacesKnownVars_AndBlanksUnknown()
     {
         Environment.SetEnvironmentVariable("INFERPAL_EXP_A", "bar");

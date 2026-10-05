@@ -253,6 +253,7 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
 
 수정한 뒤 헤더의 ↻ 다시 시도를 클릭하세요.</value></data>
   <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ {0}에 다시 연결되었습니다 — 준비 완료.</value></data>
+  <data name="MsgBackendSwitchPending" xml:space="preserve"><value>설정의 백엔드는 이제 {0}입니다. 하지만 이 창은 아직 {1}에 연결되어 있습니다. 백엔드 변경은 Visual Studio를 다시 시작해야 적용됩니다. {0}을(를) 사용하려면 Visual Studio를 다시 시작하세요.</value></data>
   <data name="TooltipRetryConnection" xml:space="preserve"><value>지금 {0} 연결 확인</value></data>
 
   <!-- Approval dialog -->

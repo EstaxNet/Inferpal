@@ -254,6 +254,7 @@ If it needs an API key, check the key in Settings; otherwise check that the URL 
 
 Click ↻ Retry in the header once it is fixed.</value></data>
   <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ Reconnected to {0} — ready.</value></data>
+  <data name="MsgBackendSwitchPending" xml:space="preserve"><value>The backend in Settings is now {0}, but this window still talks to {1}: a backend switch applies when Visual Studio restarts. Restart Visual Studio to use {0}.</value></data>
   <data name="TooltipRetryConnection" xml:space="preserve"><value>Check connection to {0} now</value></data>
 
   <!-- Approval dialog -->

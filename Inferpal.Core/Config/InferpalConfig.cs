@@ -28,6 +28,10 @@ internal class InferpalConfig
 
     private static string EffectiveConfigPath => OverridePathForTests ?? ConfigPath;
 
+    /// <summary>Test seam of ONE instance: where its <see cref="Save"/> writes. A test that needs a file of its own
+    /// sets this — never <see cref="OverridePathForTests"/>, which belongs to the whole suite.</summary>
+    internal string? SavePathForTests { get; init; }
+
     /// <summary>BCP-47 culture code for the UI language (e.g. <c>"fr"</c>, <c>"zh-CN"</c>). Empty string = follow VS.</summary>
     [JsonPropertyName("language")]
     public string Language { get; set; } = string.Empty;
@@ -604,25 +608,29 @@ internal class InferpalConfig
 
     public void Save()
     {
-        var path = EffectiveConfigPath;
+        var path = SavePathForTests ?? EffectiveConfigPath;
         PreserveUnreadableFile(path);
 
         // Visual Studio and VS Code each keep their own copy of this file in memory. Written whole, a
         // save reverted every setting the other editor had changed since this copy was read — a
         // model, a backend, a deny rule. Only what THIS copy changed is laid over the file.
         var mine    = Snapshot(this);
-        var toWrite = _baseline is not null && TryReadSnapshot(path, out var onDisk)
-            ? MergeChanges(onDisk, mine, _baseline)
-            : mine;
+        var toWrite = _baseline is null                       ? mine
+                    : TryReadSnapshot(path, out var onDisk)  ? MergeChanges(onDisk, mine, _baseline)
+                    // No readable file (a fresh install): the factory values stand for it, so a value set for
+                    // the session only (UseDefaultModelForSession) stays out of it too.
+                    : MergeChanges(Snapshot(new InferpalConfig()), mine, _baseline);
 
         // Atomic: a torn write here leaves the user without a usable configuration, and this
         // runs on every /model, /hardware, /docs and settings save.
         Services.Persistence.AtomicFile.WriteAllText(path,
             toWrite.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
 
-        // The in-memory values are left alone: swapping BaseUrl or Provider under a client built for
-        // the previous backend would be worse than keeping them. The next save compares against what
-        // this copy holds now, so what it did not change keeps coming from the file.
+        // The in-memory values are left alone: the file's values are not reloaded here. ⚠ A backend
+        // switched in Settings IS laid over the live instance (ApplyChangesFrom) while Visual Studio's
+        // client stays the previous backend's until restart — InferenceProviderFactory.PendingSwitch
+        // is what the connection messages read to say so. The next save compares against what this
+        // copy holds now, so what it did not change keeps coming from the file.
         _baseline = mine;
 
         // Drop the cached parse: a save within the same file-time tick would otherwise keep
@@ -677,6 +685,24 @@ internal class InferpalConfig
 
     /// <summary>What this instance holds now, in the shape it is written.</summary>
     internal System.Text.Json.Nodes.JsonObject SnapshotNow() => Snapshot(this);
+
+    /// <summary>
+    /// Sets <see cref="DefaultModel"/> for this instance's life without it ever being saved: a later
+    /// <see cref="Save"/> — of any other setting — leaves the file's model alone.
+    /// </summary>
+    /// <remarks>⚠ <see cref="Save"/> writes what this copy changed since it was read, and a model set in
+    /// memory is a change: a pin, <c>/hardware</c>, <c>/docs</c>, the Agent switch would each have written
+    /// VS Code's window model into the file Visual Studio reads at its next start. Recorded in the
+    /// baseline, it is not a change; a model the user then picks is.</remarks>
+    internal void UseDefaultModelForSession(string model)
+    {
+        _baseline ??= Snapshot(this);
+        DefaultModel = model;
+        var key = typeof(InferpalConfig).GetProperty(nameof(DefaultModel))!
+            .GetCustomAttributes(typeof(JsonPropertyNameAttribute), false)
+            .Cast<JsonPropertyNameAttribute>().First().Name;
+        _baseline[key] = Snapshot(this)[key]?.DeepClone();
+    }
 
     /// <summary>
     /// Lays over this live instance every setting <paramref name="edited"/> changed since

@@ -76,7 +76,8 @@ internal sealed class RpcDebugSession(JsonRpc rpc, bool declared) : IDebugSessio
         }
 
         if (dto?.Failure is { Length: > 0 } failure) return DebugStartResult.Failed(failure);
-        return dto?.State is { } state ? DebugStartResult.Stopped(ToState(state)) : DebugStartResult.RanToCompletion;
+        if (dto?.State is { } state) return DebugStartResult.Stopped(ToState(state));
+        return dto?.StillRunning == true ? DebugStartResult.NoStopYet : DebugStartResult.RanToCompletion;
     }
 
     public Task<DebugStopState?> ContinueAsync(CancellationToken ct) => StateAsync("debug/continue", null, ct);

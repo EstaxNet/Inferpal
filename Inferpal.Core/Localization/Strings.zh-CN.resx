@@ -253,6 +253,7 @@
 
 修正后点击标题栏中的 ↻ 重试。</value></data>
   <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ 已重新连接到 {0} — 就绪。</value></data>
+  <data name="MsgBackendSwitchPending" xml:space="preserve"><value>设置中的后端现在是 {0}，但此窗口仍在与 {1} 通信：后端切换在 Visual Studio 重启后生效。请重启 Visual Studio 以使用 {0}。</value></data>
   <data name="TooltipRetryConnection" xml:space="preserve"><value>立即检查与 {0} 的连接</value></data>
 
   <!-- Approval dialog -->

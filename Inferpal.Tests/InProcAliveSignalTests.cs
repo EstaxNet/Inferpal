@@ -250,6 +250,22 @@ public sealed class InProcAliveSignalTests : IDisposable
     }
 
     [Fact]
+    public void ASidecarThatAnsweredThenDied_IsNoLongerAnswering_AndSaysWhy()
+    {
+        SignalScope.DeclareVsInstance(SignalFile.CurrentPid);
+        InProcAliveSignal.Record(InProcAliveSignal.ComponentMef);
+        InProcAliveSignal.Record(InProcAliveSignal.ComponentFim);
+        Assert.True(InProcAliveSignal.TryRead()!.HasFim);   // WITNESS: it did answer
+
+        InProcAliveSignal.RecordFimUnavailable("sidecar exited with code 1");
+
+        var state = InProcAliveSignal.TryRead()!;
+        Assert.False(state.HasFim);
+        Assert.Contains("FIM sidecar UNAVAILABLE (sidecar exited with code 1)", InProcAliveSignal.DescribeForBundle());
+        Assert.True(state.HasMef);   // the other doors stay
+    }
+
+    [Fact]
     public void TheTwoReasons_DoNotEraseEachOther()
     {
         // Reference arm: a driver failure and a sidecar failure are two facts, and the two doors

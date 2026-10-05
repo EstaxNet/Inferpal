@@ -109,8 +109,12 @@ internal static class InProcAliveSignal
             }
             if (component is not null && !known.Contains(component)) known.Add(component);
 
-            // Recording the debugger door clears the reason, and the converse does not exist: the
-            // two cannot both be true, and the door has the last word.
+            // A door and its reason cannot both be true, and the LATEST has the last word, both ways:
+            // recording the door clears the reason, recording a reason closes the door. ⚠ The FIM
+            // sidecar answers, then can die, be recycled or stop answering: a door kept open by its
+            // first answer made the bundle say "answering" forever, its reason written and never read.
+            if (debuggerReason is not null) known.Remove(ComponentDebugger);
+            if (fimReason is not null) known.Remove(ComponentFim);
             var finalDebuggerReason = component == ComponentDebugger ? null : debuggerReason ?? priorDebuggerReason;
             var finalFimReason      = component == ComponentFim      ? null : fimReason      ?? priorFimReason;
 

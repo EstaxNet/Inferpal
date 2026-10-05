@@ -276,8 +276,7 @@ public class SignalDebugSessionTests : IDisposable
 
         var result = await session.StartAsync(CancellationToken.None);
 
-        // The tranche-2 review flagged this exact confusion: under Visual Studio a launch whose
-        // build fails never leaves design mode, so nothing ever answers and the whole budget burns.
+        // A driver held by a dialog on the UI thread never answers and the whole budget burns.
         // Rendering that as "ran to completion without stopping" would send the agent looking for a
         // bug in code that was never executed.
         Assert.Null(result.State);
@@ -285,6 +284,19 @@ public class SignalDebugSessionTests : IDisposable
         // The point of the withdrawal: a devenv that wakes up two minutes later must not launch the
         // user's program because an agent asked for it and gave up.
         Assert.Null(DebugCommandSignal.ClaimRequest());
+    }
+
+    [Fact]
+    public async Task AStartTheDriverReportsStillRunning_IsNeitherAFailureNorACompletedRun()
+    {
+        _driver.Start(req => new DebugCommandResponse(req.Id, Ok: true, Flag: true));
+        var session = new SignalDebugSession();
+
+        var result = await session.StartAsync(CancellationToken.None);
+
+        Assert.True(result.StillRunning);
+        Assert.Null(result.Failure);
+        Assert.Null(result.State);
     }
 
     [Fact]

@@ -253,6 +253,7 @@ S'il exige une clé d'API, vérifiez-la dans les paramètres ; sinon, vérifiez 
 
 Cliquez sur ↻ Réessayer dans l'en-tête une fois corrigé.</value></data>
   <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ Reconnecté à {0} — prêt.</value></data>
+  <data name="MsgBackendSwitchPending" xml:space="preserve"><value>Le backend des Réglages est désormais {0}, mais cette fenêtre parle encore à {1} : un changement de backend s'applique au redémarrage de Visual Studio. Redémarrez Visual Studio pour utiliser {0}.</value></data>
   <data name="TooltipRetryConnection" xml:space="preserve"><value>Vérifier la connexion à {0} maintenant</value></data>
 
   <!-- Approval dialog -->

@@ -189,12 +189,14 @@ internal sealed class InlineDiffAdornment
         var first = true;
         foreach (var hunk in plan.Hunks)
         {
-            if (_decided.Contains(hunk.Index)) { first = false; continue; }
+            // ✓✓/✗✗ go on the first hunk that is still open AND drawn: a decided or scrolled-out
+            // hunk does not take them along, or they vanish as soon as the first hunk is answered.
+            if (_decided.Contains(hunk.Index)) continue;
 
             var anchorOffset = _hunkStartOffsets![hunk.Index - 1];
             var anchor       = new SnapshotPoint(snapshot, Math.Min(anchorOffset, snapshot.Length));
             var anchorLine   = TryGetViewLine(anchor);
-            if (anchorLine is null) { first = false; continue; }   // scrolled out of view
+            if (anchorLine is null) continue;   // scrolled out of view
 
             // 1. Red-tinted highlight over each removed/replaced line still in view.
             for (var l = 0; l < hunk.OldLines.Count; l++)

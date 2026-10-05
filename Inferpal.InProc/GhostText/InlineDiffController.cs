@@ -32,6 +32,7 @@ internal sealed class InlineDiffController
     private DiffPlan?     _plan;
     private InlineDiffNotices? _notices;   // localized sentences delivered WITH the request
     private HashSet<int>  _accepted = [];
+    private HashSet<int>  _decided  = [];   // hunks the user answered one by one (✓ or ✗)
     private bool          _applying;   // our own buffer edit must not be read as a user edit
 
     internal InlineDiffController(IWpfTextView view)
@@ -81,6 +82,7 @@ internal sealed class InlineDiffController
         _plan     = plan;
         _notices  = request.Notices;   // the host clears the request right after the ack: keep them now
         _accepted = [];
+        _decided  = [];
         _adornment.Show(plan, OnHunkDecision, OnDecideAll);
     }
 
@@ -89,6 +91,7 @@ internal sealed class InlineDiffController
     private void OnHunkDecision(int hunkIndex, bool accepted)
     {
         if (_plan is null) return;
+        _decided.Add(hunkIndex);
         if (accepted) _accepted.Add(hunkIndex);
         if (_adornment.MarkDecided(hunkIndex))
             ApplyAndClose();
@@ -97,8 +100,8 @@ internal sealed class InlineDiffController
     private void OnDecideAll(bool accepted)
     {
         if (_plan is null) return;
-        if (accepted)
-            foreach (var hunk in _plan.Hunks) _accepted.Add(hunk.Index);
+        // ✓✓ / ✗✗ decide the hunks still open; a ✗ already given stands (InlineDiffPlanner.DecideRest).
+        _accepted = InlineDiffPlanner.DecideRest(_plan, _accepted, _decided, accepted);
         ApplyAndClose();
     }
 

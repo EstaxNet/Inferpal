@@ -147,7 +147,8 @@ internal sealed class GhostTextController
         catch (Exception ex) { Services.Diagnostics.Swallow("GhostText.Trigger", ex); }
     }
 
-    /// <summary>How many lines of context the FIM prompt keeps on each side of the caret.</summary>
+    /// <summary>How many lines of context the FIM prompt keeps on each side of the caret — within the character caps
+    /// of <see cref="FimContextBuilder.Window"/>.</summary>
     /// <remarks>They bound the READ, rather than trimming after it. Asymmetric on purpose: the code before the caret is
     /// what the model continues; the code after it only tells it where to stop.</remarks>
     private const int PrefixLines = 64;
@@ -182,8 +183,9 @@ internal sealed class GhostTextController
         if (cursor > 0 && IsIntelliSenseTrigger(snapshot[cursor - 1])) return null;
         if (CompletionActive()) return null;
 
-        var prefix = snapshot.GetText(Span.FromBounds(firstLine.Start.Position, cursor));
-        var suffix = snapshot.GetText(Span.FromBounds(cursor, lastLine.End.Position));
+        var (start, end) = FimContextBuilder.Window(firstLine.Start.Position, cursor, lastLine.End.Position);
+        var prefix = snapshot.GetText(Span.FromBounds(start, cursor));
+        var suffix = snapshot.GetText(Span.FromBounds(cursor, end));
 
         return (prefix, suffix, caretPos, snapshot);
     }

@@ -49,6 +49,33 @@ public class InlineDiffPlannerTests
         Assert.Equal(Old, InlineDiffPlanner.Apply(plan, []));
     }
 
+    private const string Old3 = "a\nb\nc\nd\ne\nf\ng";
+    private const string New3 = "A\nb\nc\nD\ne\nf\nG";
+
+    [Fact]
+    public void AcceptingTheRest_LeavesAHunkTheUserRejected_AsItWas()
+    {
+        // ✗ on hunk 3 (its overlay disappears, the original shows), then ✓✓: the rest, not hunk 3.
+        var plan = InlineDiffPlanner.Plan(Old3, New3);
+        Assert.Equal(3, plan.Hunks.Count);   // WITNESS: three separate hunks
+
+        var accepted = InlineDiffPlanner.DecideRest(plan, accepted: [], decided: [3], accept: true);
+
+        Assert.Equal("A\nb\nc\nD\ne\nf\ng", InlineDiffPlanner.Apply(plan, accepted));
+    }
+
+    [Fact]
+    public void DecidingTheRest_KeepsEveryDecisionAlreadyGiven()
+    {
+        var plan = InlineDiffPlanner.Plan(Old3, New3);
+
+        // Reference arm: nothing decided, ✓✓ accepts everything, ✗✗ nothing.
+        Assert.Equal(New3, InlineDiffPlanner.Apply(plan, InlineDiffPlanner.DecideRest(plan, [], [], accept: true)));
+        Assert.Equal(Old3, InlineDiffPlanner.Apply(plan, InlineDiffPlanner.DecideRest(plan, [], [], accept: false)));
+        // ✓ on hunk 1, then ✗✗: hunk 1 stays accepted.
+        Assert.Equal([1], InlineDiffPlanner.DecideRest(plan, accepted: [1], decided: [1], accept: false));
+    }
+
     [Fact]
     public void Apply_SubsetOfHunks_MergesOnlyThose()
     {

@@ -50,6 +50,10 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
         _url    = new Uri(config.Url!);
         _headers = (config.Headers ?? new Dictionary<string, string>())
             .ToDictionary(kv => kv.Key, kv => ExpandEnv(kv.Value), StringComparer.OrdinalIgnoreCase);
+        _sendsOwnCredential = _headers.Keys.Any(IsCredentialHeader);
+        _unsetVariables = (config.Headers ?? new Dictionary<string, string>())
+            .SelectMany(kv => UnsetVariables(kv.Value).Select(v => $"header '{kv.Key}' uses ${{{v}}}"))
+            .ToList();
         _tokenProvider = tokenProvider;
         // An injected handler is owned by the caller (tests); a default one is owned by this client.
         // Redirects are NOT followed: the configured headers carry secrets (`${ENV}` expansion is
@@ -70,6 +74,29 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
     }
 
     public override string ServerName => _config.Name;
+
+    /// <summary>A configured header carries the user's own credential (an API key, a static token).</summary>
+    private readonly bool _sendsOwnCredential;
+
+    /// <summary>The <c>${VAR}</c> placeholders of the configured headers that the environment does not set.</summary>
+    private readonly List<string> _unsetVariables;
+
+    private static readonly HttpRequestOptionsKey<bool> OAuthTokenSent = new("inferpal.mcp.oauth-token");
+
+    /// <summary>A header name that carries a credential: <c>Authorization</c>, or a name speaking of a key, token,
+    /// secret or password.</summary>
+    internal static bool IsCredentialHeader(string name) =>
+        name.Equals("Authorization", StringComparison.OrdinalIgnoreCase)
+        || new[] { "key", "token", "secret", "password", "auth" }.Any(w => name.Contains(w, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// Whether a 401 asks for an OAuth sign-in: when the OAuth token went with the request, or when no credential of the
+    /// user's own did.
+    /// </summary>
+    /// <remarks>⚠ A server authenticated by a configured API key answers a refused key with 401 too. Read as "sign in",
+    /// the card showed <b>Needs sign-in</b> with the server's reason hidden, and <b>Sign in</b> ran an OAuth discovery the
+    /// server does not offer — while the key, or the <c>${VAR}</c> it was read from, was what to fix.</remarks>
+    internal static bool AsksForSignIn(bool oauthTokenSent, bool ownCredentialSent) => oauthTokenSent || !ownCredentialSent;
 
     /// <summary>Set when the server rejected the request with 401 and OAuth is configured — the user
     /// must (re-)authorize via the settings UI. Surfaced as a distinct connection status.</summary>
@@ -159,8 +186,11 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
             return await SendRequestAsync(method, @params, ct, allowReinit: false).ConfigureAwait(false);
         }
 
-        // 401 with OAuth configured ⇒ token absent/rejected; surface "authorize required".
-        if (resp.StatusCode == HttpStatusCode.Unauthorized && _tokenProvider is not null)
+        // 401 with OAuth configured ⇒ token absent/rejected; surface "authorize required" — unless the refused credential is
+        // the user's own (see AsksForSignIn).
+        if (resp.StatusCode == HttpStatusCode.Unauthorized && _tokenProvider is not null
+            && AsksForSignIn(resp.RequestMessage?.Options.TryGetValue(OAuthTokenSent, out var sent) == true && sent,
+                             _sendsOwnCredential))
             NeedsAuthorization = true;
         // And where the sign-in must look: the server may announce its metadata address in the challenge.
         if (resp.StatusCode == HttpStatusCode.Unauthorized
@@ -169,7 +199,11 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
             ResourceMetadataUrl = announced;
 
         CaptureSession(resp);
-        await ThrowIfRefusedAsync(resp, ct).ConfigureAwait(false);
+        // ⚠ A placeholder the environment does not set was sent as an empty value: on a refusal, it is the first suspect.
+        var unset = resp.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden && _unsetVariables.Count > 0
+            ? $"{string.Join(", ", _unsetVariables)}, not set in this editor's environment — sent empty"
+            : null;
+        await ThrowIfRefusedAsync(resp, ct, unset).ConfigureAwait(false);
         return await ReadResultAsync(resp, id, ct).ConfigureAwait(false);
     }
 
@@ -178,7 +212,7 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
     /// "No valid session ID provided" — and <c>EnsureSuccessStatusCode</c> keeps only the status line, which names
     /// nothing a user can act on. The status stays on the exception for whoever branches on it.
     /// </summary>
-    private static async Task ThrowIfRefusedAsync(HttpResponseMessage resp, CancellationToken ct)
+    private static async Task ThrowIfRefusedAsync(HttpResponseMessage resp, CancellationToken ct, string? note = null)
     {
         if (resp.IsSuccessStatusCode) return;
 
@@ -187,7 +221,8 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
         catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("McpHttpClient.RefusalBody", ex); }
 
         var head = $"HTTP {(int)resp.StatusCode} ({resp.ReasonPhrase ?? resp.StatusCode.ToString()})";
-        throw new HttpRequestException(detail.Length == 0 ? head : $"{head}: {detail}", null, resp.StatusCode);
+        var said = detail.Length == 0 ? head : $"{head}: {detail}";
+        throw new HttpRequestException(note is null ? said : $"{said} ({note})", null, resp.StatusCode);
     }
 
     /// <summary>
@@ -234,7 +269,10 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
             req.Headers.TryAddWithoutValidation("Mcp-Session-Id", _sessionId);
         await ApplyAuthHeadersAsync(req, ct).ConfigureAwait(false);
 
-        return await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+        var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+        // The 401 reading asks what went WITH the request (AsksForSignIn); not every handler links the two.
+        resp.RequestMessage ??= req;
+        return resp;
     }
 
     /// <summary>Adds the configured static headers, then overlays an OAuth <c>Bearer</c> token from the
@@ -249,6 +287,7 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
         {
             req.Headers.Remove("Authorization");
             req.Headers.TryAddWithoutValidation("Authorization", $"Bearer {token}");
+            req.Options.Set(OAuthTokenSent, true);
         }
     }
 
@@ -437,6 +476,12 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
         }
         if (data.Length > 0) yield return data.ToString();   // trailing event with no blank-line terminator
     }
+
+    /// <summary>The variables named by <c>${VAR}</c> placeholders of <paramref name="value"/> that the environment does not
+    /// set (or sets empty).</summary>
+    internal static IEnumerable<string> UnsetVariables(string value) =>
+        EnvPlaceholder().Matches(value).Select(m => m.Groups[1].Value)
+            .Where(v => string.IsNullOrEmpty(Environment.GetEnvironmentVariable(v))).Distinct();
 
     /// <summary>Replaces <c>${VAR}</c> placeholders with the matching environment variable (empty if unset).</summary>
     internal static string ExpandEnv(string value) =>

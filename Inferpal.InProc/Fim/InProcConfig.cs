@@ -15,17 +15,17 @@ namespace Inferpal.GhostText;
 /// file, three properties, cached and invalidated by the write timestamp.
 /// </para>
 /// <para>
-/// ⚠ The three property names are copied here from <c>InferpalConfig</c> — a silent rename would
-/// disable ghost text without a single message. That is exactly the kind of drift this repository
-/// pays for elsewhere, so it is locked by a test: <c>InProcConfigContractTests</c> checks that the
-/// three names still exist on <c>InferpalConfig</c>, with the right type and the right default.
+/// ⚠ The three keys are the JSON names <c>config.json</c> is written with — <c>InferpalConfig</c>'s
+/// <c>[JsonPropertyName]</c>, camelCase — and the lookup is case-sensitive. Copied with the C# property names
+/// instead, they never matched: ghost text ignored its on/off switch, its model and its mode, without a message.
+/// Locked by <c>InProcConfigKeyTests</c>, which compares them with the attributes, not with the property names.
 /// </para>
 /// </remarks>
 internal static class InProcConfig
 {
-    internal const string KeyEnabled = "InlineCompletionEnabled";
-    internal const string KeyMode    = "InlineCompletionMode";
-    internal const string KeyModel   = "InlineCompletionModel";
+    internal const string KeyEnabled = "inlineCompletionEnabled";
+    internal const string KeyMode    = "inlineCompletionMode";
+    internal const string KeyModel   = "inlineCompletionModel";
 
     /// <summary>Defaults, identical to those of <c>InferpalConfig</c>.</summary>
     internal sealed class Snapshot
@@ -89,21 +89,7 @@ internal static class InProcConfig
         try
         {
             if (!File.Exists(ConfigPath)) return snap;
-            using var doc = JsonDocument.Parse(File.ReadAllText(ConfigPath));
-            var root = doc.RootElement;
-
-            if (root.TryGetProperty(KeyEnabled, out var enabled) &&
-                (enabled.ValueKind == JsonValueKind.True || enabled.ValueKind == JsonValueKind.False))
-                snap.Enabled = enabled.GetBoolean();
-
-            if (root.TryGetProperty(KeyMode, out var mode) && mode.ValueKind == JsonValueKind.String)
-                snap.Mode = mode.GetString() ?? "Default";
-
-            if (root.TryGetProperty(KeyModel, out var model) && model.ValueKind == JsonValueKind.String)
-            {
-                var value = model.GetString();
-                snap.Model = string.IsNullOrEmpty(value) ? null : value;
-            }
+            Parse(File.ReadAllText(ConfigPath), snap);
         }
         catch (Exception ex)
         {
@@ -118,6 +104,29 @@ internal static class InProcConfig
                 Model   = _cached.Model,
                 Stamp   = stamp,
             };
+        }
+        return snap;
+    }
+
+    /// <summary>Fills <paramref name="snap"/> from the text of <c>config.json</c>; a key absent keeps its default. Throws
+    /// on text that is not JSON (the caller keeps the last values read).</summary>
+    internal static Snapshot Parse(string json, Snapshot? snap = null)
+    {
+        snap ??= new Snapshot();
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+
+        if (root.TryGetProperty(KeyEnabled, out var enabled) &&
+            (enabled.ValueKind == JsonValueKind.True || enabled.ValueKind == JsonValueKind.False))
+            snap.Enabled = enabled.GetBoolean();
+
+        if (root.TryGetProperty(KeyMode, out var mode) && mode.ValueKind == JsonValueKind.String)
+            snap.Mode = mode.GetString() ?? "Default";
+
+        if (root.TryGetProperty(KeyModel, out var model) && model.ValueKind == JsonValueKind.String)
+        {
+            var value = model.GetString();
+            snap.Model = string.IsNullOrEmpty(value) ? null : value;
         }
         return snap;
     }

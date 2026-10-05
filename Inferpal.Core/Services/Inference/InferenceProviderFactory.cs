@@ -55,6 +55,32 @@ internal static class InferenceProviderFactory
         };
     }
 
+    /// <summary>The backend <paramref name="client"/> was built for; null for a client this factory does not build.</summary>
+    public static string? CodeOf(IInferenceProvider client) => client switch
+    {
+        LmStudioClient         => LmStudio,          // before its base class
+        OpenAiCompatibleClient => OpenAiCompatible,
+        OllamaClient           => Ollama,
+        _                      => null,
+    };
+
+    /// <summary>
+    /// The backend <paramref name="configured"/> names, when <paramref name="client"/> was built for another one;
+    /// null when they agree, or when the client's backend is unknown.
+    /// </summary>
+    /// <remarks>⚠ Visual Studio builds its client once. A backend chosen in Settings, or detected by <c>/setup</c>,
+    /// lands in the live configuration at once, while requests keep going through the previous backend's client — its
+    /// protocol, to the new address. Every connection message then blamed the new backend ("cannot reach LM Studio —
+    /// start LM Studio") while it was running, and Retry could not help: only a restart applies the switch, and that
+    /// is what must be said.</remarks>
+    public static string? PendingSwitch(IInferenceProvider client, string? configured)
+    {
+        if (CodeOf(client) is not { } built) return null;
+        var now = Canonical(configured).Trim().ToLowerInvariant();
+        if (now is not (Ollama or LmStudio or OpenAiCompatible)) now = Ollama;   // what Create would build
+        return now == built ? null : now;
+    }
+
     /// <summary>
     /// The capabilities a given provider <paramref name="code"/> advertises, without instantiating a
     /// client. Lets the settings UI gate options to the <em>currently selected</em> provider in the

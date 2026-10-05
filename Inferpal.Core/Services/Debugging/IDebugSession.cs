@@ -44,7 +44,13 @@ internal sealed record DebugBreakpointInfo(string File, int Line, bool Enabled);
 /// <param name="Failure">
 /// Why the session could not run, in the adapter's own words. Non-null only when nothing ran.
 /// </param>
-internal sealed record DebugStartResult(DebugStopState? State, string? Failure)
+/// <param name="StillRunning">
+/// The program started and is still running under the debugger, with no stop within the start
+/// budget. ⚠ Neither "did not start" (the agent believes no session exists, and its next start is
+/// refused as "already running") nor "ran to completion" (the session's breakpoints would be
+/// removed from a live run).
+/// </param>
+internal sealed record DebugStartResult(DebugStopState? State, string? Failure, bool StillRunning = false)
 {
     /// <summary>The program started and reached a stop.</summary>
     internal static DebugStartResult Stopped(DebugStopState state) => new(state, null);
@@ -54,6 +60,9 @@ internal sealed record DebugStartResult(DebugStopState? State, string? Failure)
 
     /// <summary>Nothing ran.</summary>
     internal static DebugStartResult Failed(string reason) => new(null, reason);
+
+    /// <summary>The program started and is still running: no stop within the start budget.</summary>
+    internal static DebugStartResult NoStopYet { get; } = new(null, null, StillRunning: true);
 }
 
 /// <summary>

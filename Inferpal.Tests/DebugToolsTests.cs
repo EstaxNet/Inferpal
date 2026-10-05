@@ -70,11 +70,15 @@ public class DebugToolsTests
         /// <summary>Set to make the launch fail outright — no build, no run, nothing observed.</summary>
         public string? StartFailure { get; set; }
 
+        /// <summary>Set to make the launch start and keep running, with no stop within the budget.</summary>
+        public bool StartStillRunning { get; set; }
+
         public Task<DebugStartResult> StartAsync(CancellationToken ct)
         {
             Starts++;
             return Task.FromResult(
                 StartFailure is { } why ? DebugStartResult.Failed(why) :
+                StartStillRunning       ? DebugStartResult.NoStopYet :
                 State is { } state      ? DebugStartResult.Stopped(state)
                                         : DebugStartResult.RanToCompletion);
         }
@@ -622,6 +626,26 @@ public class DebugToolsTests
 
         Assert.Contains("ran to completion", reply);
         Assert.Equal(5, Assert.Single(editor.Breakpoints).Line);          // only the user's is left
+    }
+
+    /// <summary>
+    /// ⚠ A program still running with no stop yet — waiting for a request, for input — is neither a run that never
+    /// started (the agent believed no session existed, and its next start was refused as already running) nor a run
+    /// that ended (its breakpoints would leave a live session).
+    /// </summary>
+    [Fact]
+    public async Task AProgramStillRunning_IsSaidSo_AndKeepsTheAssistantsBreakpoints()
+    {
+        var (editor, _, tool) = WithUsersBreakpoint();
+        editor.StartStillRunning = true;
+        await tool.ExecuteAsync(Location("set_breakpoint", @"src\B.cs", 10), CancellationToken.None);
+
+        var reply = await tool.ExecuteAsync(Args("""{"action":"start"}"""), CancellationToken.None);
+
+        Assert.Contains("still running under the debugger", reply);
+        Assert.DoesNotContain("did not start", reply);
+        Assert.DoesNotContain("ran to completion", reply);
+        Assert.Equal(2, editor.Breakpoints.Count);
     }
 
     [Fact]

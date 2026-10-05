@@ -65,6 +65,7 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     private string _tooltipRetryConnection = string.Empty;
     // Volatile: written on VM context, read from SendAsync thread-pool path (pre-flight check).
     private volatile bool   _isBackendReachable = true; // optimistic start
+    private string? _announcedSwitch;                   // backend switch already said in the thread (heartbeat)
     private int    _firstRunInFlight;                   // 1 while a first-run discovery runs (Interlocked)
     private string _sendButtonColor = "#7C4DFF";
 

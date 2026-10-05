@@ -833,6 +833,23 @@ internal sealed partial class HostServer : IDisposable
     [JsonRpcMethod("models/adoptDefault")]
     public Task<ModelsAdoptResult> AdoptDefaultModelAsync(CancellationToken ct) => AdoptDefaultModelAsync(Session(), ct);
 
+    /// <summary>
+    /// This window's chat model, for this session only: every reader that falls back to the default model — bare
+    /// <c>/model</c>, titles, compaction summaries, the recap, <c>/commit</c>, <c>/check</c>, <c>/task</c> — then
+    /// answers with the model the window's chat uses.
+    /// </summary>
+    /// <remarks>⚠ VS Code's chat model is its workspace setting, which wins over <c>config.json</c> at start. Pushed to
+    /// the host only on a pick, the window's chat answered with one model and everything else with another workspace's
+    /// — or Visual Studio's — last choice: cold-loaded beside it on a single GPU, or no longer on the server. Never saved
+    /// here: opening a workspace is not a pick, and the other editor keeps its own model.</remarks>
+    [JsonRpcMethod("models/useForSession", UseSingleObjectParameterDeserialization = true)]
+    public void UseModelForSession(ModelUseParams p)
+    {
+        if (string.IsNullOrWhiteSpace(p.Model)) return;
+        var s = Session();
+        WithTurnSlot("models/useForSession", () => s.Config.UseDefaultModelForSession(p.Model.Trim()));
+    }
+
     /// <summary>The adoption itself: also run after a <c>/models pull</c>, the gesture that makes a model installed —
     /// without it the model just downloaded was not used until the next start.</summary>
     private static async Task<ModelsAdoptResult> AdoptDefaultModelAsync(HostSession s, CancellationToken ct)

@@ -450,6 +450,11 @@ export class HostClient {
     return this.connection().sendRequest<string[]>('models/list', overrides ?? {});
   }
 
+  /** This window's chat model as the host session's default — in memory, never saved. */
+  modelsUseForSession(model: string): Promise<void> {
+    return this.connection().sendRequest<void>('models/useForSession', { model });
+  }
+
   /** The default chat model, when nobody chose it and the backend lacks it, replaced by the best installed one. */
   modelsAdoptDefault(): Promise<ModelsAdoptResult> {
     return this.connection().sendRequest<ModelsAdoptResult>('models/adoptDefault');

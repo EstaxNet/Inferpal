@@ -204,10 +204,9 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
     if (transition === 'ended') {
       return { state: null, failure: null }; // ran to completion — an ordinary answer
     }
-    return {
-      state: null,
-      failure: `The session did not reach a stop within ${Math.round(START_TIMEOUT_MS / 60_000)} minute(s).`,
-    };
+    // Started, still running, no stop yet: not a failure ("did not start" would make the agent
+    // believe no session exists) and not a completed run (its breakpoints would be removed).
+    return { state: null, failure: null, stillRunning: true };
   }
 
   async continue(): Promise<DebugStopStateDto | null> {

@@ -642,10 +642,14 @@ export interface DebugStopStateDto {
   localsFrameId?: number | null;
 }
 
-/** `debug/start` answer — three outcomes: a stop, a completed run (both null), or a failure. */
+/**
+ * `debug/start` answer — four outcomes: a stop, a completed run (all null), a failure, or a program
+ * still running with no stop within the budget (`stillRunning`) — which is neither of the other two.
+ */
 export interface DebugStartDto {
   state: DebugStopStateDto | null;
   failure: string | null;
+  stillRunning?: boolean;
 }
 
 /** `debug/captureTest`: launch the repro runner under coreclr and capture the failure. */

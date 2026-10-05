@@ -171,6 +171,10 @@ internal partial class InferpalToolWindowData
             _config.Save();
         }
         var client = detected is not null ? Services.Inference.InferenceProviderFactory.Create(_config) : _client;
+        // The discovery below uses a matching client, the chat does not: without this, "auto-selected" is followed by
+        // turns that fail against a running server.
+        if (Services.Inference.InferenceProviderFactory.PendingSwitch(_client, _config.Provider) is { } switchTo)
+            await present(BackendSwitchPendingText(switchTo)).ConfigureAwait(false);
 
         // ── 1. Connectivity check ─────────────────────────────────────────────
         // A successful probe already proves reachability; otherwise fall back to the client's own check.

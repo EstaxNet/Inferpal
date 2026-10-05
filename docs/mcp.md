@@ -90,7 +90,10 @@ arbitrary external code, so the choice is deliberately not remembered across ses
 
 ## OAuth 2.1 (remote servers)
 
-When a Streamable HTTP server returns **401**, it requires OAuth. Inferpal implements the MCP
+When a Streamable HTTP server returns **401** and no credential of yours went with the request (no `Authorization`
+or API-key header configured), it requires OAuth. A 401 to a request that carried your own header is the server
+refusing that credential: the card shows **Failed** with the server's reason, and names a `${VAR}` the editor's
+environment does not set. Inferpal implements the MCP
 authorization spec (2025-06-18): discovery of the authorization server (RFC 9728 → RFC 8414),
 **PKCE**, the **`resource`** indicator (RFC 8707), and **dynamic client registration** (RFC 7591)
 when the server supports it.

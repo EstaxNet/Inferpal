@@ -38,6 +38,13 @@ internal static class DebugOps
     /// <summary>How long a resume or a step waits for the next stop. See <see cref="StartBudget"/>.</summary>
     internal static readonly TimeSpan ResumeBudget = TimeSpan.FromMinutes(2);
 
+    /// <summary>How much earlier than the host the driver ends its own wait.</summary>
+    /// <remarks>⚠ The driver starts its clock when it CLAIMS the request, after the host started its
+    /// own, and its answer still has to travel. Waiting the same budget, it answered after the host
+    /// had given up: the answer was discarded, and a program running under the debugger was reported
+    /// as one that "did not start".</remarks>
+    internal static readonly TimeSpan AnswerMargin = TimeSpan.FromSeconds(10);
+
     /// <summary>§25: attach to a waiting repro runner and capture the unhandled-exception stop.</summary>
     internal const string CaptureTest      = "capture_test";
 }

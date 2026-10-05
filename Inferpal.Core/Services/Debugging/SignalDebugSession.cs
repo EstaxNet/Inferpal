@@ -97,22 +97,25 @@ internal sealed class SignalDebugSession : IDebugSession
 
         var response = await SendAsync(new(Id: string.Empty, Pid: 0, Ts: 0, Op: OpStart), StartTimeout, ct);
 
-        // No answer at all within the start budget. The dominant cause is a launch that never left
-        // design mode — a failed build, or the "there were build errors" dialog waiting on a human —
-        // and the tranche-2 review flagged reporting that as "ran to completion" as the one place
-        // where this feature would lie to the agent. Say what is actually known instead.
+        // No answer at all within the start budget. The driver answers ahead of this budget
+        // (DebugOps.AnswerMargin) — a failed build, a launch stuck in design mode, a program still
+        // running — so silence means the driver itself is held, most often by a dialog on the UI
+        // thread. Never "ran to completion": say what is actually known.
         if (response is null)
             return DebugStartResult.Failed(
-                $"The debugger did not start within {Humanize(StartTimeout)}. The most likely cause is "
-              + "a build that failed or a dialog waiting in the IDE — check the Build output before "
-              + "assuming anything about the program's behaviour.");
+                $"No answer from the debugger within {Humanize(StartTimeout)}: the launch did not start, most "
+              + "likely because a dialog is waiting in Visual Studio — look at the IDE before assuming "
+              + "anything about the program's behaviour.");
 
         // The driver's own words, unchanged. The commonest one is a build that failed: the driver
         // refuses the launch itself rather than letting Visual Studio raise its modal.
         if (!response.Ok)
             return DebugStartResult.Failed(response.Error ?? "The debugger refused to start the session.");
 
-        return response.State is { } state ? DebugStartResult.Stopped(state) : DebugStartResult.RanToCompletion;
+        // Flag on a start = the program is still running, no stop within the budget (VsDebugDriver).
+        return response.State is { } state ? DebugStartResult.Stopped(state)
+             : response.Flag               ? DebugStartResult.NoStopYet
+                                           : DebugStartResult.RanToCompletion;
     }
 
     public Task<DebugStopState?> ContinueAsync(CancellationToken ct) =>

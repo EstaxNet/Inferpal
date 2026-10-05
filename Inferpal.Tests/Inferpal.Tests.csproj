@@ -60,6 +60,7 @@
     <Compile Remove="GhostTextKeysTests.cs" />
     <Compile Remove="VsEditResultTests.cs" />
     <Compile Remove="VsContextHolderTests.cs" />
+    <Compile Remove="InProcConfigKeyTests.cs" />
     <Compile Remove="GlobalUsings.Windows.cs" />
   </ItemGroup>
 

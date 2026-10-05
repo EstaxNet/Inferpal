@@ -31,9 +31,10 @@ public class InProcContractTests
         var property = typeof(InferpalConfig).GetProperty(name, BindingFlags.Public | BindingFlags.Instance);
 
         Assert.True(property is not null,
-            $"InferpalConfig.{name} no longer exists. Inferpal.InProc reads that name directly " +
+            $"InferpalConfig.{name} no longer exists. Inferpal.InProc reads its key directly " +
             "from config.json (it cannot load the Core): without it, ghost text falls back to its " +
-            "defaults instead of following the setting - with no message at all.");
+            "defaults instead of following the setting - with no message at all. The keys themselves are checked " +
+            "by InProcConfigKeyTests.");
         Assert.Equal(expected, property!.PropertyType);
     }
 

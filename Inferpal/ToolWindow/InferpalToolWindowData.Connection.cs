@@ -96,6 +96,12 @@ internal partial class InferpalToolWindowData
         catch (Exception ex) { Diagnostics.Swallow("Connection.AdoptModel", ex); }
     }
 
+    /// <summary>A backend chosen since this window's client was built applies at restart
+    /// (<see cref="InferenceProviderFactory.PendingSwitch"/>): said instead of a "cannot reach" that blames it.</summary>
+    private string BackendSwitchPendingText(string switchTo) => Strings.MsgBackendSwitchPending(
+        InferenceProviderFactory.DisplayName(switchTo),
+        InferenceProviderFactory.DisplayName(InferenceProviderFactory.CodeOf(_client)));
+
     private async Task StartHeartbeatAsync(CancellationToken? token = null)
     {
         var ct = token ?? _heartbeatCts.Token;
@@ -113,7 +119,10 @@ internal partial class InferpalToolWindowData
                 PinWorkspaceRoot();
 
                 var url = _config.BaseUrl;
-                var ok  = await _client.CheckConnectionAsync(url, ct);
+                // A backend switched in Settings applies at restart: probing the new address with the previous
+                // backend's client only yields a false "cannot reach" (InferenceProviderFactory.PendingSwitch).
+                var switchTo = InferenceProviderFactory.PendingSwitch(_client, _config.Provider);
+                var ok  = switchTo is null && await _client.CheckConnectionAsync(url, ct);
 
                 _isBackendReachable = ok; // volatile write — read by SendCoreAsync pre-flight
 
@@ -127,7 +136,9 @@ internal partial class InferpalToolWindowData
                     _refusal              = ok ? null : _client.ConnectionRefusal;
                     RefreshModelButton();
 
-                    var edgeMessage = status.Transition switch
+                    var edgeMessage = switchTo is not null
+                        ? (switchTo == _announcedSwitch ? null : BackendSwitchPendingText(switchTo))
+                        : status.Transition switch
                     {
                         ConnectionTransition.Restored => Strings.MsgHeartbeatRestored(
                                                              InferenceProviderFactory.DisplayName(_config.Provider)),
@@ -136,6 +147,7 @@ internal partial class InferpalToolWindowData
                                                              _client.ConnectionRefusal),
                         _                             => null,
                     };
+                    _announcedSwitch = switchTo;   // said once per switch; a switch back is said by "Restored"
                     if (edgeMessage is not null)
                     {
                         var msg = ChatMessageItem.NoticeMsg(edgeMessage);

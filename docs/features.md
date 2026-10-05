@@ -51,8 +51,10 @@ exists.
   removed, the last build or test check, and **Undo run** (`/undo-run`), offered on the latest run.
 - **Approvals in the conversation** *(both editors)* — during a turn, an approval is a card under
   the steps: what will happen, to what, the first lines of the change, then **Allow once**
-  (Enter), **Always this session** and **Deny** (Esc); *Open diff* shows the whole change. Outside
-  a turn (a code action, a slash command), the dialog asks as before.
+  (Enter), **Always this session** and **Deny** (Esc); *Open diff* shows the whole change. Enter
+  and Esc answer only from an empty message box: the card never takes the keyboard, so a key typed
+  for something else cannot approve. Outside a turn (a code action, a slash command), the dialog
+  asks as before.
 - **Undo a whole run** — `/undo-run` reverts every file changed during the last agent run
   (restores edited files, deletes files created that run); `/undo-run list` shows the
   session's tracked runs.
@@ -88,7 +90,8 @@ exists.
   entry point.
 - **Inline diff preview for code actions** — `/fix`, `/refactor` and `/doc` no longer rewrite
   the buffer blind: the change is shown in the editor with per-hunk accept/reject (Visual
-  Studio: a red/green adornment with ✓/✗ per hunk; VS Code: the native Refactor Preview).
+  Studio: a red/green adornment with ✓/✗ per hunk, and ✓✓/✗✗ on the first open hunk to decide
+  all the hunks not yet answered; VS Code: the native Refactor Preview).
   Accepted hunks apply as a single undo step. Toggle with `inlineDiffPreviewEnabled`
   (default on).
 - **Inline diff viewer** — an LCS-based diff is shown in the chat bubble after every

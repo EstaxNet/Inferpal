@@ -133,12 +133,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     if (!this.view) {
       return undefined;
     }
-    // Surface the card: reveal the view if it is hidden (agent runs can outlive focus).
+    // Surface the card: reveal the view if it is hidden (agent runs can outlive focus) — WITHOUT taking the keyboard:
+    // the user may be typing in an editor, and the keys that answer a card must never be ones typed for something else.
     if (!this.view.visible) {
       try {
-        await vscode.commands.executeCommand('inferpal.chat.focus');
+        this.view.show(true);
       } catch {
-        // focus command unavailable — the card still lands in the retained webview
+        // reveal unavailable — the card still lands in the retained webview
       }
       if (!this.view) {
         return undefined; // disposed while revealing
@@ -266,6 +267,16 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     });
 
     this.model = vscode.workspace.getConfiguration('inferpal').get<string>('model', '') || host.info?.defaultModel || '';
+    // ⚠ This window's model (its workspace setting) wins over the shared default, and the host must answer with it
+    // too: bare `/model`, titles, compaction summaries, `/commit`, `/check`, `/task` read the host's default. For this
+    // session only — opening a workspace is not a pick, and the other editor keeps its model.
+    if (this.model && this.model !== host.info?.defaultModel) {
+      try {
+        await host.modelsUseForSession(this.model);
+      } catch (err) {
+        this.log(`[chat] models/useForSession failed: ${String(err)}`);
+      }
+    }
     try {
       this.models = await host.modelsList();
     } catch (err) {

@@ -942,9 +942,22 @@ function addApprovalCard(id: number, message: string, card?: ApprovalCard | null
   // In the answer flow, in arrival order: the turn's body exists from its start, so a card put after it would
   // stand BELOW the answer that follows it — the answer then reads above the approvals it depends on, out of view.
   target.body.appendChild(el);
-  // Enter answers "Allow once", Esc "Deny": the card takes the keyboard while it waits.
-  allow.focus({ preventScroll: true });
+  // ⚠ The card never takes the keyboard: a key typed for the composer or the code — Enter, a space — would land on
+  // "Allow once" and approve a tool nobody read. Enter and Esc in an EMPTY composer answer it (answerWaitingCard), as
+  // in Visual Studio.
   scrollToBottom();
+}
+
+/** Answers the oldest card still waiting (1 allow once, 0 deny) through its own button; false when none waits. */
+function answerWaitingCard(value: 0 | 1): boolean {
+  const waiting = approvalCards.values().next().value as HTMLElement | undefined;
+  const button = waiting?.querySelector<HTMLButtonElement>(
+    value === 1 ? '.approval-actions button.primary' : '.approval-actions button.deny');
+  if (!button || button.disabled) {
+    return false;
+  }
+  button.click();
+  return true;
 }
 
 // §27.5 — the run this card belonged to was cancelled host-side: freeze it (same inert look as
@@ -1530,7 +1543,15 @@ promptEl.addEventListener('keydown', (e) => {
   }
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
+    // A card waiting and nothing typed: Enter is the "Allow once" the card names. With text, it never answers.
+    if (promptEl.value.trim() === '' && answerWaitingCard(1)) {
+      return;
+    }
     send();
+    return;
+  }
+  if (e.key === 'Escape' && promptEl.value.trim() === '' && answerWaitingCard(0)) {
+    e.preventDefault();
   }
 });
 

@@ -70,7 +70,8 @@ internal sealed class AgentCleaningDebugSession(IDebugSession inner, AgentBreakp
     public async Task<DebugStartResult> StartAsync(CancellationToken ct)
     {
         var result = await inner.StartAsync(ct);
-        if (result is { State: null, Failure: null }) await agent.RemoveAllAsync(inner, ct);
+        // Only a run that ENDED: a program still running keeps its session, and the breakpoints with it.
+        if (result is { State: null, Failure: null, StillRunning: false }) await agent.RemoveAllAsync(inner, ct);
         return result;
     }
     public Task<DebugStopState?> ContinueAsync(CancellationToken ct) => inner.ContinueAsync(ct);

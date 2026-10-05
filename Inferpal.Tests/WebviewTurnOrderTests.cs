@@ -14,6 +14,28 @@ namespace Inferpal.Tests;
 /// </remarks>
 public class WebviewTurnOrderTests
 {
+    /// <summary>
+    /// ⚠ The approval card is the boundary the human reads before a tool runs. It took the keyboard — focus on "Allow
+    /// once", and the view revealed WITH focus when hidden — so a key typed for the composer or the code (Enter, a space)
+    /// approved a command nobody saw. Visual Studio never moved focus: Enter in an empty composer answers.
+    /// </summary>
+    [Fact]
+    public void AnApprovalCard_NeverTakesTheKeyboard_AndOnlyAnEmptyComposerAnswersIt()
+    {
+        var webview = WebviewRebuildTests.TsCode("webview/main.ts");
+        var card = WebviewRebuildTests.Body(webview, "function addApprovalCard(");
+        Assert.Contains("const allow = document.createElement('button')", card, StringComparison.Ordinal);   // WITNESS
+        Assert.DoesNotContain(".focus(", card, StringComparison.Ordinal);
+
+        var composer = WebviewRebuildTests.Body(webview, "promptEl.addEventListener('keydown', (e) =>");
+        Assert.Contains("promptEl.value.trim() === '' && answerWaitingCard(1)", composer, StringComparison.Ordinal);
+        Assert.Contains("promptEl.value.trim() === '' && answerWaitingCard(0)", composer, StringComparison.Ordinal);
+
+        var reveal = WebviewRebuildTests.Body(WebviewRebuildTests.TsCode("chatViewProvider.ts"), "async requestApproval(");
+        Assert.DoesNotContain("inferpal.chat.focus", reveal, StringComparison.Ordinal);
+        Assert.Contains("this.view.show(true)", reveal, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void AnApprovalCard_JoinsTheAnswerFlow_SoTheAnswerThatFollowsItReadsBelowIt()
     {

@@ -49,6 +49,26 @@ public class InProcRegressionTests
         });
 
     /// <summary>
+    /// ✓✓ in the inline diff preview accepts the hunks still OPEN: written as "every hunk", it wrote
+    /// a hunk the user had just rejected with ✗ — whose overlay was gone — into the buffer. And the
+    /// bulk buttons go on the first hunk still open and drawn, not on hunk 1 only.
+    /// </summary>
+    [Fact]
+    public void AcceptAll_InTheInlineDiffPreview_DecidesOnlyTheHunksStillOpen()
+    {
+        var decideAll = Method("Inferpal.InProc/GhostText/InlineDiffController.cs", "OnDecideAll");
+        Assert.True(Calls(decideAll, "DecideRest"),
+            "OnDecideAll no longer goes through InlineDiffPlanner.DecideRest: ✓✓ would override a ✗ already given.");
+        Assert.DoesNotContain(decideAll.DescendantNodes().OfType<ForEachStatementSyntax>(),
+            loop => loop.Expression.ToString().Contains("Hunks"));
+
+        var repaint = Method("Inferpal.InProc/GhostText/InlineDiffAdornment.cs", "Repaint");
+        var resets = repaint.DescendantNodes().OfType<AssignmentExpressionSyntax>()
+            .Count(a => a.Left.ToString() == "first");
+        Assert.Equal(1, resets);   // only after a hunk was actually drawn with its buttons
+    }
+
+    /// <summary>
     /// The driver serves one request at a time: while it waited for a stop that never came, the
     /// host's next request — stop, typically — was never claimed, and every debugger tool went dead
     /// until the program ended.
@@ -67,6 +87,15 @@ public class InProcRegressionTests
         var driver = CodeOnly(driverFile);
         Assert.Contains("DebugOps.StartBudget", driver);
         Assert.Contains("DebugOps.ResumeBudget", driver);
+
+        // ⚠ The same budget is not enough: the driver starts its clock when it claims the request, after
+        // the host — its answer arrived after the host had given up. Every wait ends AnswerMargin early.
+        Assert.DoesNotContain("NowMs() + (long)DebugOps", driver);
+        Assert.Contains("DebugOps.AnswerMargin", driver);
+        // And an expired start says so (Flag), instead of the null that means "ran to completion".
+        var start = Root(driverFile).DescendantNodes().OfType<SwitchSectionSyntax>()
+            .Single(s => s.Labels.ToString().Contains("DebugOps.Start") && s.ToString().Contains("BuildBeforeLaunchAsync"));
+        Assert.Contains("Flag: true", start.ToString());
 
         // The host's side of the same budgets: one number, read by both ends of the wire.
         var host = Root("Inferpal.Core/Services/Debugging/SignalDebugSession.cs")

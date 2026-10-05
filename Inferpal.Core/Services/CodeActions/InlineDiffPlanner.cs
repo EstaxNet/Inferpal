@@ -82,6 +82,24 @@ internal static class InlineDiffPlanner
     }
 
     /// <summary>
+    /// The hunks to apply when the user decides every hunk still OPEN at once: accepting adds the
+    /// undecided hunks to <paramref name="accepted"/>, rejecting adds none. A hunk already decided
+    /// keeps its decision.
+    /// </summary>
+    /// <remarks>⚠ "Accept all" after a ✗ on one hunk means "accept the rest": the rejected hunk's
+    /// overlay is already gone, so the original text is what the user sees there — writing its new
+    /// text anyway changes code nobody is looking at.</remarks>
+    public static HashSet<int> DecideRest(
+        DiffPlan plan, IReadOnlyCollection<int> accepted, IReadOnlyCollection<int> decided, bool accept)
+    {
+        var result = new HashSet<int>(accepted);
+        if (accept)
+            foreach (var hunk in plan.Hunks)
+                if (!decided.Contains(hunk.Index)) result.Add(hunk.Index);
+        return result;
+    }
+
+    /// <summary>
     /// Merged text after applying only the hunks whose <see cref="DiffHunk.Index"/> is in
     /// <paramref name="acceptedHunks"/>; rejected hunks keep the original lines.
     /// </summary>

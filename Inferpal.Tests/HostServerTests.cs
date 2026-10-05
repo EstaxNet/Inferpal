@@ -1787,6 +1787,34 @@ public partial class HostServerTests
     /// it listed. The command now asks the adapter for its transcript.
     /// </summary>
     [Fact]
+    public async Task TheWindowsModel_IsTheSessionsDefault_WithoutBeingSaved()
+    {
+        // VS Code: the window's model (workspace setting) differs from the shared default another window saved.
+        using var h = CreateHarness(cfg => cfg.DefaultModel = "shared-default-m2");
+        await h.InitializeAsync();
+        var before = await h.Client.InvokeWithParameterObjectAsync<SlashCommandResult>(
+            "command/slash", new { text = "/model" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.Contains("shared-default-m2", before.Markdown);   // WITNESS: the host starts on the shared default
+
+        await h.Client.InvokeWithParameterObjectAsync("models/useForSession", new { model = "window-model-m1" })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var after = await h.Client.InvokeWithParameterObjectAsync<SlashCommandResult>(
+            "command/slash", new { text = "/model" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Contains("window-model-m1", after.Markdown);
+        var file = InferpalConfig.OverridePathForTests;
+        Assert.False(file is not null && File.Exists(file) && File.ReadAllText(file).Contains("window-model-m1"),
+            "opening a workspace is not a pick: the shared config must not be rewritten");
+
+        // ⚠ Nor by the next save of ANOTHER setting (a pin, /hardware, /docs, the Agent switch): the window's model
+        // would become Visual Studio's at its next start.
+        h.Server.CurrentSession!.Config.AgentModeEnabled = !h.Server.CurrentSession.Config.AgentModeEnabled;
+        h.Server.CurrentSession.Config.Save();
+        Assert.True(file is not null && File.Exists(file));   // WITNESS: the save did write the file
+        Assert.DoesNotContain("window-model-m1", File.ReadAllText(file!));
+    }
+
+    [Fact]
     public async Task SlashBranch_AsksTheAdapterToDecideOnItsTranscript()
     {
         using var h = CreateHarness();
@@ -3326,6 +3354,22 @@ public partial class HostServerTests
 
         Assert.Contains("did not start", output);
         Assert.Contains("No launch configuration", output);
+        Assert.DoesNotContain("ran to completion", output);
+    }
+
+    [Fact]
+    public async Task DebugStart_StillRunning_IsReportedAsALiveSession()
+    {
+        using var h = CreateHarness();
+        h.Target.ApprovalAnswer = 1;
+        h.Target.StartAnswer = new { state = (object?)null, failure = (string?)null, stillRunning = true };
+        await h.InitializeAsync(debug: true).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var output = await h.Server.CurrentSession!.Tools.ExecuteAsync(
+            "debug_control", System.Text.Json.JsonDocument.Parse("""{"action":"start"}""").RootElement,
+            CancellationToken.None);
+
+        Assert.Contains("still running under the debugger", output);
         Assert.DoesNotContain("ran to completion", output);
     }
 

@@ -214,11 +214,20 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
                 // hop to that thread: the whole driver stops, not just this call. Building through
                 // the automation instead reports the same failure with no dialog at all. The host's
                 // start budget covers the build too: it is measured from here, not after it.
-                var launchDeadline = NowMs() + (long)DebugOps.StartBudget.TotalMilliseconds;
+                var launchDeadline = DeadlineFor(DebugOps.StartBudget);
                 var failure = await BuildBeforeLaunchAsync(ct);
                 if (failure is not null) return new(request.Id, Ok: false, Error: failure);
 
-                return new(request.Id, Ok: true, State: await ResumeAndWaitAsync(request.Op, launchDeadline, ct));
+                var stop = await ResumeAndWaitAsync(request.Op, launchDeadline, ct);
+                // The wait EXPIRED (a null before the deadline is a run that ended): say which. Still
+                // in design mode, the launch never happened; otherwise the program is running —
+                // Flag tells the host, which must not read it as "ran to completion".
+                if (stop is null && !ct.IsCancellationRequested && NowMs() >= launchDeadline)
+                    return Volatile.Read(ref _mode) == (int)DBGMODE.DBGMODE_Design
+                        ? new(request.Id, Ok: false, Error:
+                            "The launch did not leave design mode within the start budget — a dialog may be waiting in Visual Studio.")
+                        : new(request.Id, Ok: true, Flag: true);
+                return new(request.Id, Ok: true, State: stop);
             }
 
             case DebugOps.Continue:
@@ -230,7 +239,7 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
                 // keeps the "build errors" modal away. Same answer as the VS Code bridge: no stop.
                 if (!IsPaused) return new(request.Id, Ok: true, State: null);
                 return new(request.Id, Ok: true, State: await ResumeAndWaitAsync(
-                    request.Op, NowMs() + (long)DebugOps.ResumeBudget.TotalMilliseconds, ct));
+                    request.Op, DeadlineFor(DebugOps.ResumeBudget), ct));
 
             case DebugOps.State:
             {
@@ -374,9 +383,9 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
         await TaskScheduler.Default.SwitchTo();
 
         var idleMs = 0;
-        // Bounded by the host's own budget (DebugOps): past it the host has given up, and this driver —
-        // which serves one request at a time — must be free for its next request, stop included. The
-        // program keeps running under the debugger; "no stop" is what the host reports, and it is true.
+        // Bounded just under the host's own budget (DeadlineFor): past it the host has given up, and this
+        // driver — which serves one request at a time — must be free for its next request, stop included.
+        // The program keeps running under the debugger; the caller says so (a start: Flag).
         while (!ct.IsCancellationRequested && NowMs() < deadlineMs)
         {
             // Only a transition counts. Being in break mode proves nothing: the resume may not have
@@ -533,6 +542,11 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
     /// <summary>Monotonic clock in milliseconds (stands in for the modern BCL's TickCount64).</summary>
     private static long NowMs() =>
         System.Diagnostics.Stopwatch.GetTimestamp() / (System.Diagnostics.Stopwatch.Frequency / 1000);
+
+    /// <summary>This driver's deadline for a wait the host budgets at <paramref name="hostBudget"/>: it ends
+    /// <see cref="DebugOps.AnswerMargin"/> earlier, so the answer reaches a host still waiting for it.</summary>
+    private static long DeadlineFor(TimeSpan hostBudget) =>
+        NowMs() + (long)(hostBudget - DebugOps.AnswerMargin).TotalMilliseconds;
 
     /// <summary>Kills the process and its descendants (stands in for Kill(entireProcessTree: true)).</summary>
     private static void KillTree(System.Diagnostics.Process process)

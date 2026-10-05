@@ -253,6 +253,7 @@ Jeśli wymaga klucza API, sprawdź go w Ustawieniach; w przeciwnym razie sprawd�
 
 Po poprawieniu kliknij ↻ Ponów w nagłówku.</value></data>
   <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ Ponownie połączono z {0} — gotowe.</value></data>
+  <data name="MsgBackendSwitchPending" xml:space="preserve"><value>Backend w Ustawieniach to teraz {0}, ale to okno nadal komunikuje się z {1}: zmiana backendu zostanie zastosowana po ponownym uruchomieniu Visual Studio. Uruchom ponownie Visual Studio, aby używać {0}.</value></data>
   <data name="TooltipRetryConnection" xml:space="preserve"><value>Sprawdź połączenie z {0} teraz</value></data>
 
   <!-- Approval dialog -->

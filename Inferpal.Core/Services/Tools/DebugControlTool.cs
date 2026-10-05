@@ -170,6 +170,12 @@ internal sealed class DebugControlTool(
         if (result.Failure is { } failure)
             return "The debugging session did not start. " + failure;
 
+        if (result.StillRunning)
+            return $"The program started and is still running under the debugger: it did not reach a stop within "
+                 + $"{(int)DebugOps.StartBudget.TotalMinutes} minute(s). The session is live and your breakpoints stay set — "
+                 + "it may be waiting for input or a request, or the breakpoint is on a line the run has not reached. "
+                 + "`get_debugger_state` shows a later stop; `stop` ends the session.";
+
         return result.State is { } state
             ? DebugStateFormatter.Format(state, root()) + budget.Trailer
             : "The program ran to completion without stopping. No breakpoint was hit — check that the "

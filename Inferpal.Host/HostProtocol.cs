@@ -161,7 +161,7 @@ internal sealed record DebugStopStateDto(
 /// wire because that is the whole point of <c>DebugStartResult</c>. A workspace with no launch
 /// configuration is the common case in VS Code, and it is neither a stop nor a completed run.
 /// </summary>
-internal sealed record DebugStartDto(DebugStopStateDto? State, string? Failure);
+internal sealed record DebugStartDto(DebugStopStateDto? State, string? Failure, bool StillRunning = false);
 
 /// <summary>`debug/captureTest`: the repro-runner launch the adapter debugs.</summary>
 internal sealed record DebugCaptureTestParams(string Program, List<string> Args, string Cwd, string ProjectRoot);
@@ -205,6 +205,9 @@ internal sealed record BackendStatusResult(bool Connected, string VramBadge, str
 /// <summary>`models/adoptDefault` — the model now used in place of a default nobody chose and the backend lacks, with
 /// the sentence that says so; both null when nothing changed.</summary>
 internal sealed record ModelsAdoptResult(string? Model, string? Notice);
+
+/// <summary>`models/useForSession` — the window's chat model, set for the host session without being saved.</summary>
+internal sealed record ModelUseParams(string Model);
 
 /// <param name="Refused">When nothing was detected but a server answered with a refusal (a wrong API key: 401), the
 /// status line to show in its place, in the user's language — "unreachable" sends them to check a server that is up.</param>

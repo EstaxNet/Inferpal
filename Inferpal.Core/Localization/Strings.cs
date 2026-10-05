@@ -726,6 +726,7 @@ internal static class Strings
     /// <summary>⚠ Name the CONFIGURED backend, like <see cref="MsgConnectionGuardFailed"/>: "Reconnected to Ollama"
     /// was said to every LM Studio user.</summary>
     public static string MsgHeartbeatRestored(string backend)   => string.Format(Get(nameof(MsgHeartbeatRestored)), backend);
+    public static string MsgBackendSwitchPending(string chosen, string inUse) => string.Format(Get(nameof(MsgBackendSwitchPending)), chosen, inUse);
     public static string TooltipRetryConnection(string backend) => string.Format(Get(nameof(TooltipRetryConnection)), backend);
 
     public static string MsgToolOutput(string input, string output) =>

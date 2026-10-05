@@ -9,7 +9,8 @@ import type { FimSettingsResult } from './protocol';
 /** How long a read of Inferpal's inline-completion settings is reused. The provider runs on every
  * keystroke; a change saved in either settings window still reaches it within this delay. */
 const SETTINGS_TTL_MS = 2000;
-/** Context window around the caret (chars). Generous prefix, lighter suffix. */
+/** Context window around the caret (chars). Generous prefix, lighter suffix. ⚠ The same numbers as Visual Studio's
+ * ghost text (FimContextBuilder.MaxPrefixChars / MaxSuffixChars), held by FimContextWindowTests. */
 const MAX_PREFIX_CHARS = 4000;
 const MAX_SUFFIX_CHARS = 1500;
 /** Documents above this size are skipped outright (getText cost + weak relevance). */
