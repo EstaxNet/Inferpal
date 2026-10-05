@@ -184,12 +184,14 @@ internal static class OnboardCommandHandler
         if (profile.Problem is { } problem)
             return new(Strings.OnboardProfileUnusable(ProjectProfile.PathIn(root), problem));
 
-        var changed = profile.Apply(config);
+        var changed = profile.Apply(config, out var refused);
+        var notApplied = string.Concat(refused.Select(r => "\n\n" + Strings.OnboardContextWindowRefused(r.Value)));
 
-        if (changed.Count == 0) return new(Strings.OnboardNothingToApply);
+        if (changed.Count == 0)
+            return new(refused.Count == 0 ? Strings.OnboardNothingToApply : notApplied.TrimStart('\n'));
 
         return new(
-            Strings.OnboardApplied(string.Join(", ", changed)),
+            Strings.OnboardApplied(string.Join(", ", changed)) + notApplied,
             SaveConfig:      true,
             NewDefaultModel: changed.Contains("defaultModel") ? config.DefaultModel : null);
     }

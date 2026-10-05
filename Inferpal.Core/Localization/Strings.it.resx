@@ -490,6 +490,7 @@ Fai clic su **Correggi con l'IA** per correggere automaticamente in loop, o digi
   <data name="PromptsNone" xml:space="preserve"><value>Nessun file di prompt. Crea `.inferpal/prompts/*.md` o esegui `/prompts init`.</value></data>
   <data name="PromptsListHeader" xml:space="preserve"><value>**File di prompt** (`.inferpal/prompts`) — ogni file è un comando slash, `{args}` viene sostituito:</value></data>
   <data name="PromptsShadowedByBuiltIn" xml:space="preserve"><value> — ⚠ non viene mai eseguito: `{0}` è un comando integrato</value></data>
+  <data name="PromptsShadowedByConfig" xml:space="preserve"><value> — ⚠ non viene mai eseguito: anche le impostazioni definiscono `{0}` (Comandi, uno per riga), ed è quello a prevalere</value></data>
   <data name="PromptsScaffolded" xml:space="preserve"><value>Prompt di esempio creato in {0}. Modificalo, poi digita `/review-security` (nome del file = comando).</value></data>
 
   <!-- analyze_impact tool -->
@@ -932,6 +933,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="OnboardContextMissing" xml:space="preserve"><value>Nessun `.inferpal/context.md` ancora — `/onboard context` ne redige uno dal repository.</value></data>
   <data name="OnboardNothingToApply" xml:space="preserve"><value>Niente da applicare — il profilo non consiglia nulla che questa macchina non usi già.</value></data>
   <data name="OnboardApplied" xml:space="preserve"><value>✅ Applicato a questa macchina: {0}.</value></data>
+  <data name="OnboardContextWindowRefused" xml:space="preserve"><value>⚠ `contextWindowSize` = `{0}` non è stato applicato: una finestra di contesto è 0 (quella del modello) oppure da 512 a 1.000.000 token.</value></data>
   <data name="OnboardContextExists" xml:space="preserve"><value>{0} esiste già e non è stato toccato. `/onboard context force` lo rigenera.</value></data>
   <data name="OnboardContextReadingLabel" xml:space="preserve"><value>Lettura del repository…</value></data>
   <data name="OnboardContextDraftingLabel" xml:space="preserve"><value>Redazione del contesto di progetto…</value></data>

@@ -491,6 +491,7 @@ Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</val
   <data name="PromptsNone" xml:space="preserve"><value>No prompt files. Create `.inferpal/prompts/*.md` or run `/prompts init`.</value></data>
   <data name="PromptsListHeader" xml:space="preserve"><value>**Prompt files** (`.inferpal/prompts`) — each file is a slash command, `{args}` expands:</value></data>
   <data name="PromptsShadowedByBuiltIn" xml:space="preserve"><value> — ⚠ never runs: `{0}` is a built-in command</value></data>
+  <data name="PromptsShadowedByConfig" xml:space="preserve"><value> — ⚠ never runs: the settings define `{0}` too (Commands, one per line), and that one wins</value></data>
   <data name="PromptsScaffolded" xml:space="preserve"><value>Example prompt ready at {0}. Edit it, then type `/review-security` (file name = command).</value></data>
 
   <!-- analyze_impact tool -->
@@ -936,6 +937,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="OnboardContextMissing" xml:space="preserve"><value>No `.inferpal/context.md` yet — `/onboard context` drafts one from the repository.</value></data>
   <data name="OnboardNothingToApply" xml:space="preserve"><value>Nothing to apply — the profile recommends nothing this machine is not already using.</value></data>
   <data name="OnboardApplied" xml:space="preserve"><value>✅ Applied to this machine: {0}.</value></data>
+  <data name="OnboardContextWindowRefused" xml:space="preserve"><value>⚠ `contextWindowSize` = `{0}` was not applied: a context window is 0 (the model's own) or from 512 to 1,000,000 tokens.</value></data>
   <data name="OnboardContextExists" xml:space="preserve"><value>{0} already exists and was left untouched. `/onboard context force` regenerates it.</value></data>
   <data name="OnboardContextReadingLabel" xml:space="preserve"><value>Reading the repository…</value></data>
   <data name="OnboardContextDraftingLabel" xml:space="preserve"><value>Drafting the project context…</value></data>

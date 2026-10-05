@@ -490,6 +490,7 @@ Klicken Sie auf **Mit KI reparieren**, um die automatische Korrektur in einer Sc
   <data name="PromptsNone" xml:space="preserve"><value>Keine Prompt-Dateien. Erstelle `.inferpal/prompts/*.md` oder führe `/prompts init` aus.</value></data>
   <data name="PromptsListHeader" xml:space="preserve"><value>**Prompt-Dateien** (`.inferpal/prompts`) — jede Datei ist ein Slash-Befehl, `{args}` wird ersetzt:</value></data>
   <data name="PromptsShadowedByBuiltIn" xml:space="preserve"><value> — ⚠ wird nie ausgeführt: `{0}` ist ein integrierter Befehl</value></data>
+  <data name="PromptsShadowedByConfig" xml:space="preserve"><value> — ⚠ wird nie ausgeführt: Die Einstellungen definieren `{0}` ebenfalls (Befehle, einer pro Zeile), und dieser Eintrag gewinnt</value></data>
   <data name="PromptsScaffolded" xml:space="preserve"><value>Beispiel-Prompt erstellt in {0}. Bearbeite ihn und tippe dann `/review-security` (Dateiname = Befehl).</value></data>
 
   <!-- analyze_impact tool -->
@@ -932,6 +933,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="OnboardContextMissing" xml:space="preserve"><value>Noch keine `.inferpal/context.md` — `/onboard context` entwirft eine aus dem Repository.</value></data>
   <data name="OnboardNothingToApply" xml:space="preserve"><value>Nichts anzuwenden — das Profil empfiehlt nichts, was diese Maschine nicht schon nutzt.</value></data>
   <data name="OnboardApplied" xml:space="preserve"><value>✅ Auf diese Maschine angewendet: {0}.</value></data>
+  <data name="OnboardContextWindowRefused" xml:space="preserve"><value>⚠ `contextWindowSize` = `{0}` wurde nicht übernommen: Ein Kontextfenster ist 0 (das des Modells) oder 512 bis 1.000.000 Tokens groß.</value></data>
   <data name="OnboardContextExists" xml:space="preserve"><value>{0} existiert bereits und blieb unberührt. `/onboard context force` erzeugt sie neu.</value></data>
   <data name="OnboardContextReadingLabel" xml:space="preserve"><value>Repository wird gelesen…</value></data>
   <data name="OnboardContextDraftingLabel" xml:space="preserve"><value>Projektkontext wird verfasst…</value></data>

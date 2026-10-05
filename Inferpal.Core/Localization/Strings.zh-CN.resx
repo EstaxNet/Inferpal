@@ -490,6 +490,7 @@
   <data name="PromptsNone" xml:space="preserve"><value>没有提示文件。请创建 `.inferpal/prompts/*.md` 或运行 `/prompts init`。</value></data>
   <data name="PromptsListHeader" xml:space="preserve"><value>**提示文件** (`.inferpal/prompts`) — 每个文件都是一个斜杠命令，`{args}` 会被替换：</value></data>
   <data name="PromptsShadowedByBuiltIn" xml:space="preserve"><value> — ⚠ 永远不会运行：`{0}` 是内置命令</value></data>
+  <data name="PromptsShadowedByConfig" xml:space="preserve"><value> — ⚠ 永远不会运行：设置中也定义了 `{0}`（命令，每行一条），以设置中的为准</value></data>
   <data name="PromptsScaffolded" xml:space="preserve"><value>已在 {0} 创建示例提示。请编辑它，然后输入 `/review-security`（文件名 = 命令）。</value></data>
 
   <!-- analyze_impact tool -->
@@ -932,6 +933,7 @@
   <data name="OnboardContextMissing" xml:space="preserve"><value>还没有 `.inferpal/context.md` — `/onboard context` 会根据仓库起草一份。</value></data>
   <data name="OnboardNothingToApply" xml:space="preserve"><value>没有可应用的内容 — 配置文件推荐的都是本机已在使用的值。</value></data>
   <data name="OnboardApplied" xml:space="preserve"><value>✅ 已应用到本机：{0}。</value></data>
+  <data name="OnboardContextWindowRefused" xml:space="preserve"><value>⚠ `contextWindowSize` = `{0}` 未应用：上下文窗口为 0（使用模型自身的窗口）或 512 到 1,000,000 个令牌。</value></data>
   <data name="OnboardContextExists" xml:space="preserve"><value>{0} 已存在且未被改动。`/onboard context force` 可重新生成。</value></data>
   <data name="OnboardContextReadingLabel" xml:space="preserve"><value>正在读取仓库…</value></data>
   <data name="OnboardContextDraftingLabel" xml:space="preserve"><value>正在撰写项目上下文…</value></data>

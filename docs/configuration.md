@@ -181,7 +181,7 @@ interpreted.**
 | Category | Keys | What happens |
 |---|---|---|
 | Applied | `indexExclude` | Kept out of the semantic index, **additively**: the profile can exclude more, never include more. It shrinks the index only — nothing is hidden from `read_file`, `list_files` or `search_in_files`, and `/onboard` prints every pattern. |
-| Recommended | `defaultModel`, `agentModel`, `utilityModel`, `codeActionsModel`, `inlineEditModel`, `inlineCompletionModel`, `ragEmbeddingModel`, `contextWindowSize` (under `recommend`) | Displayed next to the value currently in effect. Nothing changes until you type `/onboard apply`: which models are installed and how much VRAM you have are machine facts, not repository facts. |
+| Recommended | `defaultModel`, `agentModel`, `utilityModel`, `codeActionsModel`, `inlineEditModel`, `inlineCompletionModel`, `ragEmbeddingModel`, `contextWindowSize` (under `recommend`) | Displayed next to the value currently in effect. Nothing changes until you type `/onboard apply`: which models are installed and how much VRAM you have are machine facts, not repository facts. A `contextWindowSize` is applied when it is `0` (the model's own window) or from 512 to 1,000,000; any other value is named and left aside. |
 | Never | everything else — `validators`, `permissions`, `baseUrl`, `apiKey`, `customTools`, … | Ignored, and named in the `/onboard` report (⛔) plus `/diagnostics`. Nesting one of them under `recommend` does not launder it. |
 
 Nothing here raises an approval prompt, because nothing here executes: a file that cannot grant

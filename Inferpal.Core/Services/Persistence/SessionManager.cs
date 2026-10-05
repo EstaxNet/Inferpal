@@ -179,8 +179,23 @@ internal static class SessionManager
             .Select(c => char.IsLetterOrDigit(c) || c == ' ' ? c : ' ')
             .ToArray()).Trim();
         title = Regex.Replace(title, @"\s+", "_", RegexOptions.None, RegexBudget.Default);
+        if (title.Length > MaxTitleChars)
+        {
+            // On a word boundary when there is one past the middle, so the name does not end on half a word.
+            var cut = title.LastIndexOf('_', MaxTitleChars);
+            title = title[..(cut > MaxTitleChars / 2 ? cut : MaxTitleChars)];
+        }
         return string.IsNullOrWhiteSpace(title) ? fallback : title;
     }
+
+    /// <summary>The longest title a session's file name carries.</summary>
+    /// <remarks>
+    /// ⚠ The title is what a model wrote: told "4 to 5 words", a small one answers the message instead — a function, a
+    /// paragraph. Uncapped, it becomes the file name, and past the 255 characters a file name may hold (the staging
+    /// suffix of the atomic write included) the archive of <c>/clear</c> fails after the conversation has already been
+    /// cleared.
+    /// </remarks>
+    internal const int MaxTitleChars = 60;
 
     /// <summary>Fallback title: first 35 chars of the first user message, file-safe.</summary>
     public static string MakeSnippet(string content)

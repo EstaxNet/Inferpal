@@ -85,6 +85,10 @@ internal class UpdateMemoryTool : ITool
             return $"Unknown mode '{mode}'. Use one of: 'append' (default), 'replace', 'clear'.";
 
         var content = args.Str("content") ?? string.Empty;
+        // ⚠ Before the prompt, like the unknown mode: refused after it, the user approved a write that never happens, and
+        // the backup taken in between counted a write in the run — read by the end-of-turn checks as an edit that landed.
+        if (mode != "clear" && string.IsNullOrWhiteSpace(content))
+            return Strings.UpdateMemoryNoContent;
 
         var projectRoot = ResolveProjectRoot();
         if (string.IsNullOrEmpty(projectRoot))
@@ -126,14 +130,10 @@ internal class UpdateMemoryTool : ITool
                 return Strings.UpdateMemoryClear(memPath);
 
             case "replace":
-                if (string.IsNullOrWhiteSpace(content))
-                    return Strings.UpdateMemoryNoContent;
                 newContent = content;
                 break;
 
             default: // append
-                if (string.IsNullOrWhiteSpace(content))
-                    return Strings.UpdateMemoryNoContent;
                 // The shared reader: a memory the user wrote in an older editor is in the machine's legacy code page, and
                 // read as UTF-8 its accents came back as "�" — then written back over the user's own text.
                 var existing = File.Exists(memPath)

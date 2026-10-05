@@ -1465,6 +1465,14 @@ internal sealed partial class HostServer : IDisposable
     {
         s.TemplateSuffix = null;
         ResetHistory(s);
+        _ = ForgetAutoSaveAsync(s);
+    }
+
+    /// <summary>The conversation just discarded leaves the auto-save slot (<see cref="ConversationStore.ForgetAutoSaveAsync"/>).</summary>
+    private static async Task ForgetAutoSaveAsync(HostSession s)
+    {
+        try { await s.Store.ForgetAutoSaveAsync(s.RootDir, CancellationToken.None); }
+        catch (Exception ex) { Diagnostics.Swallow("HostServer.ForgetAutoSave", ex); }
     }
 
     /// <summary>Rebuilds the system prompt of the SAME conversation (settings saved, model picked):

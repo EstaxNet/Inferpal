@@ -590,7 +590,7 @@ internal partial class InferpalToolWindowData
 
     private async Task HandlePromptsCommandAsync(string[] parts, CancellationToken ct)
     {
-        var result = Services.Commands.RulesChecksPromptsCommandHandler.Prompts(FindProjectRoot(), parts);
+        var result = Services.Commands.RulesChecksPromptsCommandHandler.Prompts(FindProjectRoot(), parts, _config.PromptTemplates);
         if (result.Scaffold is { } s)
         {
             await ScaffoldFileAsync(s.Dir, s.FileName, s.Content, Strings.PromptsScaffolded);

@@ -924,6 +924,7 @@ internal static class Strings
     public static string SlashModelChanged(string model) => string.Format(Get(nameof(SlashModelChanged)), model);
     public static string SlashModelNotListed(string model) => string.Format(Get(nameof(SlashModelNotListed)), model);
     public static string PromptsShadowedByBuiltIn(string command) => string.Format(Get(nameof(PromptsShadowedByBuiltIn)), command);
+    public static string PromptsShadowedByConfig(string command) => string.Format(Get(nameof(PromptsShadowedByConfig)), command);
     public static string ReplayRunOutOfRange(int index, int count) => string.Format(Get(nameof(ReplayRunOutOfRange)), index, count);
     public static string SlashToolsCurrent(string state) => string.Format(Get(nameof(SlashToolsCurrent)), state);
     public static string SlashToolsChanged(string state) => string.Format(Get(nameof(SlashToolsChanged)), state);
@@ -1528,6 +1529,7 @@ internal static class Strings
     public static string OnboardContextMissing        => Get(nameof(OnboardContextMissing));
     public static string OnboardNothingToApply        => Get(nameof(OnboardNothingToApply));
     public static string OnboardApplied(string keys)  => string.Format(Get(nameof(OnboardApplied)), keys);
+    public static string OnboardContextWindowRefused(string value) => string.Format(Get(nameof(OnboardContextWindowRefused)), value);
     public static string OnboardContextExists(string path) => string.Format(Get(nameof(OnboardContextExists)), path);
     public static string OnboardContextReadingLabel   => Get(nameof(OnboardContextReadingLabel));
     public static string OnboardContextDraftingLabel  => Get(nameof(OnboardContextDraftingLabel));

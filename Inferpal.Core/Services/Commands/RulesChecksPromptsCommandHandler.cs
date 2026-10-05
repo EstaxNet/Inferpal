@@ -100,7 +100,8 @@ internal static class RulesChecksPromptsCommandHandler
         "\n" +
         "{args}\n";
 
-    public static CommandListResult Prompts(string projectRoot, string[] parts)
+    /// <param name="configTemplates">The settings' <c>PromptTemplates</c>: a template of the same name wins over a file.</param>
+    public static CommandListResult Prompts(string projectRoot, string[] parts, string? configTemplates = null)
     {
         var dir = Path.Combine(projectRoot, ".inferpal", "prompts");
         if (IsInit(parts))
@@ -110,12 +111,16 @@ internal static class RulesChecksPromptsCommandHandler
         if (prompts.Count == 0)
             return new(Unreadable(unreadable) is { } only ? Strings.PromptsNone + "\n\n" + only : Strings.PromptsNone);
 
+        // ⚠ The settings' templates come first (SlashTemplates.Load): a file of the same name is listed with its own
+        // description, and typing it runs the settings' text.
+        var fromSettings = SlashCommandRouter.ParseUserTemplates(configTemplates).Select(t => t.Name).ToHashSet();
         var sb = new StringBuilder(Strings.PromptsListHeader);
         foreach (var p in prompts)
         {
             sb.Append("\n- `").Append(p.Name).Append('`');
             // The router answers a built-in first: a file with that name is listed, but it never runs.
             if (SlashCommandRouter.IsBuiltIn(p.Name)) sb.Append(Strings.PromptsShadowedByBuiltIn(p.Name));
+            else if (fromSettings.Contains(p.Name)) sb.Append(Strings.PromptsShadowedByConfig(p.Name));
             if (p.Hint is not null) sb.Append(" — ").Append(p.Hint);
         }
         return new(Append(sb, unreadable));

@@ -243,9 +243,16 @@ internal sealed record ProjectProfile(
     /// and the only one: nothing else in the code base calls this. Returns the keys actually
     /// changed, so the command can report what it did rather than claim it did something.
     /// </summary>
-    public IReadOnlyList<string> Apply(InferpalConfig config)
+    public IReadOnlyList<string> Apply(InferpalConfig config) => Apply(config, out _);
+
+    /// <summary><see cref="Apply(InferpalConfig)"/>, with the recommendations it refused (<c>Key</c>, proposed value).</summary>
+    /// <remarks>⚠ Named, never skipped in silence: a refusal that is not said reads as "the profile recommends nothing
+    /// this machine is not already using" — false, and it hides the one value the profile did ask for.</remarks>
+    public IReadOnlyList<string> Apply(InferpalConfig config, out IReadOnlyList<(string Key, string Value)> refused)
     {
-        var changed = new List<string>();
+        var changed  = new List<string>();
+        var rejected = new List<(string Key, string Value)>();
+        refused      = rejected;
         foreach (var rec in Recommendations)
         {
             if (string.Equals(rec.Proposed, rec.Current, StringComparison.Ordinal)) continue;
@@ -263,8 +270,13 @@ internal sealed record ProjectProfile(
                 case "contextWindowSize":
                     // A context window is a VRAM commitment: an absurd value would not be a
                     // permission the repository gained, but it would still be the machine paying
-                    // for the repository's opinion. Same bounds as the settings form.
-                    if (!int.TryParse(rec.Proposed, out var ctx) || ctx < 512 || ctx > 1_000_000) continue;
+                    // for the repository's opinion. 0 is the settings form's own "the model's
+                    // window"; otherwise from 512 to 1 000 000.
+                    if (!int.TryParse(rec.Proposed, out var ctx) || ctx is not (0 or (>= 512 and <= 1_000_000)))
+                    {
+                        rejected.Add((rec.Key, rec.Proposed));
+                        continue;
+                    }
                     config.ContextWindowSize = ctx;
                     break;
 

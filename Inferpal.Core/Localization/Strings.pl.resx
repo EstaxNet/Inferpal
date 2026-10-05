@@ -490,6 +490,7 @@ Kliknij **Napraw z AI**, aby automatycznie naprawić w pętli, lub wpisz `/fix-b
   <data name="PromptsNone" xml:space="preserve"><value>Brak plików promptów. Utwórz `.inferpal/prompts/*.md` lub uruchom `/prompts init`.</value></data>
   <data name="PromptsListHeader" xml:space="preserve"><value>**Pliki promptów** (`.inferpal/prompts`) — każdy plik to polecenie slash, `{args}` jest podstawiane:</value></data>
   <data name="PromptsShadowedByBuiltIn" xml:space="preserve"><value> — ⚠ nigdy nie jest uruchamiany: `{0}` to wbudowane polecenie</value></data>
+  <data name="PromptsShadowedByConfig" xml:space="preserve"><value> — ⚠ nigdy nie jest uruchamiany: ustawienia także definiują `{0}` (Polecenia, jedno w wierszu) i to one mają pierwszeństwo</value></data>
   <data name="PromptsScaffolded" xml:space="preserve"><value>Przykładowy prompt utworzony w {0}. Edytuj go, następnie wpisz `/review-security` (nazwa pliku = polecenie).</value></data>
 
   <!-- analyze_impact tool -->
@@ -932,6 +933,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="OnboardContextMissing" xml:space="preserve"><value>Nie ma jeszcze `.inferpal/context.md` — `/onboard context` przygotuje go na podstawie repozytorium.</value></data>
   <data name="OnboardNothingToApply" xml:space="preserve"><value>Nie ma czego stosować — profil nie zaleca niczego, czego ta maszyna już nie używa.</value></data>
   <data name="OnboardApplied" xml:space="preserve"><value>✅ Zastosowano na tej maszynie: {0}.</value></data>
+  <data name="OnboardContextWindowRefused" xml:space="preserve"><value>⚠ `contextWindowSize` = `{0}` nie zostało zastosowane: okno kontekstu to 0 (okno modelu) albo od 512 do 1 000 000 tokenów.</value></data>
   <data name="OnboardContextExists" xml:space="preserve"><value>{0} już istnieje i pozostał nietknięty. `/onboard context force` generuje go ponownie.</value></data>
   <data name="OnboardContextReadingLabel" xml:space="preserve"><value>Odczyt repozytorium…</value></data>
   <data name="OnboardContextDraftingLabel" xml:space="preserve"><value>Redagowanie kontekstu projektu…</value></data>

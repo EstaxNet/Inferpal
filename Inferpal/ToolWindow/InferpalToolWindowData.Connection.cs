@@ -194,6 +194,11 @@ internal partial class InferpalToolWindowData
         if (hasMessages)
             _ = SaveNamedSessionAsync(firstUserContent, snapshot);
 
+        // The conversation just discarded leaves the auto-save slot, or the next start brings it back.
+        try { await _store.ForgetAutoSaveAsync(_indexService.RootDir, ct); }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { Diagnostics.Swallow("Session.ForgetAutoSave", ex); }
+
         await RunOnVMContextAsync(() =>
         {
             Messages.Clear();

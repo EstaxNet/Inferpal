@@ -140,4 +140,34 @@ public class RulesChecksPromptsCommandHandlerTests : IDisposable
         Assert.Contains("`/undo-run`" + Strings.PromptsShadowedByBuiltIn("/undo-run"), result.Message);
         Assert.DoesNotContain(Strings.PromptsShadowedByBuiltIn("/standup"), result.Message);   // witness: a free name
     }
+
+    /// <summary>
+    /// A prompt file named like a template of the settings is listed as one that never runs: the settings' template
+    /// wins, and the listing showed the file's description over a command that runs another text.
+    /// </summary>
+    [Fact]
+    public void Prompts_AFileNamedLikeASettingsTemplate_IsFlaggedAsNeverRunning()
+    {
+        WriteFile("prompts", "review-security.md", "---\ndescription: From the file\n---\nReview {args}\n");
+        WriteFile("prompts", "standup.md", "Summarize {args}\n");
+
+        var result = RulesChecksPromptsCommandHandler.Prompts(_root, List(), "/review-security=Check {args}");
+
+        Assert.Contains("`/review-security`" + Strings.PromptsShadowedByConfig("/review-security"), result.Message);
+        Assert.DoesNotContain(Strings.PromptsShadowedByConfig("/standup"), result.Message);   // reference arm: a free name
+    }
+
+    /// <summary>The settings' templates are optional to the handler: both front-ends hand them over, or the rule is mute.</summary>
+    [Theory]
+    [InlineData("Inferpal", "ToolWindow", "InferpalToolWindowData.PromptHistory.cs")]
+    [InlineData("Inferpal.Host", "HostSlashCommands.cs")]
+    public void BothFrontEnds_HandTheSettingsTemplatesToTheListing(params string[] parts)
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "README.md"))) dir = dir.Parent;
+        Assert.NotNull(dir);
+        var code = ConventionCoverageTests.CodeOnly(Path.Combine(dir!.FullName, Path.Combine(parts)));
+
+        Assert.Matches(@"RulesChecksPromptsCommandHandler\.Prompts\([^;]*PromptTemplates\)", code);
+    }
 }

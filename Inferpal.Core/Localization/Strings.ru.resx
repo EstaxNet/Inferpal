@@ -490,6 +490,7 @@
   <data name="PromptsNone" xml:space="preserve"><value>Нет файлов промптов. Создайте `.inferpal/prompts/*.md` или выполните `/prompts init`.</value></data>
   <data name="PromptsListHeader" xml:space="preserve"><value>**Файлы промптов** (`.inferpal/prompts`) — каждый файл является slash-командой, `{args}` подставляется:</value></data>
   <data name="PromptsShadowedByBuiltIn" xml:space="preserve"><value> — ⚠ никогда не выполняется: `{0}` — встроенная команда</value></data>
+  <data name="PromptsShadowedByConfig" xml:space="preserve"><value> — ⚠ никогда не выполняется: в настройках тоже определена `{0}` (Команды, по одной на строку), и используется она</value></data>
   <data name="PromptsScaffolded" xml:space="preserve"><value>Пример промпта создан в {0}. Отредактируйте его, затем введите `/review-security` (имя файла = команда).</value></data>
 
   <!-- analyze_impact tool -->
@@ -932,6 +933,7 @@
   <data name="OnboardContextMissing" xml:space="preserve"><value>Файла `.inferpal/context.md` пока нет — `/onboard context` составит его по репозиторию.</value></data>
   <data name="OnboardNothingToApply" xml:space="preserve"><value>Применять нечего — профиль не советует ничего, чего эта машина уже не использует.</value></data>
   <data name="OnboardApplied" xml:space="preserve"><value>✅ Применено к этой машине: {0}.</value></data>
+  <data name="OnboardContextWindowRefused" xml:space="preserve"><value>⚠ `contextWindowSize` = `{0}` не применено: окно контекста равно 0 (окно модели) или от 512 до 1 000 000 токенов.</value></data>
   <data name="OnboardContextExists" xml:space="preserve"><value>{0} уже существует и не был изменён. `/onboard context force` создаёт его заново.</value></data>
   <data name="OnboardContextReadingLabel" xml:space="preserve"><value>Чтение репозитория…</value></data>
   <data name="OnboardContextDraftingLabel" xml:space="preserve"><value>Составление контекста проекта…</value></data>

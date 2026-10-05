@@ -104,7 +104,7 @@ internal static class ShellLauncher
 
         if (dialect == ShellDialect.PowerShell)
         {
-            psi.Arguments = $"-NoProfile -NonInteractive -EncodedCommand {ShellSession.Encode(Utf8Console + script)}";
+            psi.Arguments = $"-NoProfile -NonInteractive -EncodedCommand {ShellSession.Encode(Utf8Console + PlainOutput + script)}";
         }
         else
         {
@@ -127,6 +127,16 @@ internal static class ShellLauncher
     /// follows the console, and PowerShell writes UTF-8 to our pipe. <c>$OutputEncoding</c> is what PowerShell pipes
     /// INTO a native tool. Best-effort: a host without a console keeps its defaults.
     /// </remarks>
+    /// <summary>
+    /// Asks PowerShell 7 for text without ANSI escape sequences.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ pwsh 7 colours its table headers — <c>\e[32;1mPath\e[0m</c> — even into a redirected stream, and it is the shell
+    /// preferred wherever it is on the PATH: every command, custom tool and validator hands those bytes to the model and
+    /// to the tool bubbles. Windows PowerShell 5.1 has no <c>$PSStyle</c>: the try keeps it silent there.
+    /// </remarks>
+    private const string PlainOutput = "try { $PSStyle.OutputRendering = 'PlainText' } catch { }\n";
+
     private const string Utf8Console =
         "try { $__u = New-Object System.Text.UTF8Encoding $false; [Console]::OutputEncoding = $__u; "
       + "[Console]::InputEncoding = $__u; $OutputEncoding = $__u } catch { }\n";

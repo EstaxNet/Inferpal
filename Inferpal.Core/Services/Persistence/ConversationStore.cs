@@ -79,6 +79,22 @@ internal class ConversationStore
     public Task AutoSaveAsync(IEnumerable<SavedMessage> messages, CancellationToken ct, string? workspaceRoot = null) =>
         SaveAsync("last_session", messages, ct, workspaceRoot: workspaceRoot);
 
+    /// <summary>
+    /// Empties the auto-save slot when it holds THIS workspace's conversation — the one the user has just discarded
+    /// (<c>/clear</c>, a new conversation). Another workspace's conversation in the slot is not this one's to empty.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The slot is what comes back when the editor starts — and in VS Code whenever its host restarts (a setting, a
+    /// crash), the blank screen reading as "nothing to keep". Left full, the conversation just discarded comes back
+    /// there. It is archived under a name by the adapter before it is cleared.
+    /// </remarks>
+    public async Task ForgetAutoSaveAsync(string? workspaceRoot, CancellationToken ct)
+    {
+        var slot = await LoadAsync("last_session", ct).ConfigureAwait(false);
+        if (slot is null || slot.Messages.Count == 0 || !SessionManager.AutoSaveBelongsHere(slot, workspaceRoot)) return;
+        await AutoSaveAsync([], ct, workspaceRoot).ConfigureAwait(false);
+    }
+
     /// Loads a session by file name (without extension).
     public async Task<SessionData?> LoadAsync(string sessionName, CancellationToken ct)
     {

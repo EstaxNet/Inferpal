@@ -490,6 +490,7 @@ Cliquez sur **Corriger avec l'IA** pour lancer la correction automatique en bouc
   <data name="PromptsNone" xml:space="preserve"><value>Aucun fichier de prompt. Crée `.inferpal/prompts/*.md` ou lance `/prompts init`.</value></data>
   <data name="PromptsListHeader" xml:space="preserve"><value>**Fichiers de prompt** (`.inferpal/prompts`) — chaque fichier est une commande slash, `{args}` est remplacé :</value></data>
   <data name="PromptsShadowedByBuiltIn" xml:space="preserve"><value> — ⚠ ne s'exécute jamais : `{0}` est une commande intégrée</value></data>
+  <data name="PromptsShadowedByConfig" xml:space="preserve"><value> — ⚠ ne s'exécute jamais : les réglages définissent aussi `{0}` (Commandes, une par ligne), et c'est celle-là qui l'emporte</value></data>
   <data name="PromptsScaffolded" xml:space="preserve"><value>Prompt d'exemple créé dans {0}. Modifie-le, puis tape `/review-security` (nom du fichier = commande).</value></data>
 
   <!-- analyze_impact tool -->
@@ -932,6 +933,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="OnboardContextMissing" xml:space="preserve"><value>Pas encore de `.inferpal/context.md` — `/onboard context` en rédige un à partir du dépôt.</value></data>
   <data name="OnboardNothingToApply" xml:space="preserve"><value>Rien à appliquer — le profil ne recommande rien que cette machine n'utilise déjà.</value></data>
   <data name="OnboardApplied" xml:space="preserve"><value>✅ Appliqué à cette machine : {0}.</value></data>
+  <data name="OnboardContextWindowRefused" xml:space="preserve"><value>⚠ `contextWindowSize` = `{0}` n'a pas été appliqué : une fenêtre de contexte vaut 0 (celle du modèle) ou de 512 à 1 000 000 jetons.</value></data>
   <data name="OnboardContextExists" xml:space="preserve"><value>{0} existe déjà et n'a pas été touché. `/onboard context force` le régénère.</value></data>
   <data name="OnboardContextReadingLabel" xml:space="preserve"><value>Lecture du dépôt…</value></data>
   <data name="OnboardContextDraftingLabel" xml:space="preserve"><value>Rédaction du contexte de projet…</value></data>

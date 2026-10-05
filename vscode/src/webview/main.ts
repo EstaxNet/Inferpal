@@ -1362,6 +1362,11 @@ function closeSlash(): void {
 /** Autocomplete on a spaceless "/prefix" (same trigger as the VS popup). */
 function detectSlash(): void {
   const text = promptEl.value;
+  // ⚠ The list is re-read as a command starts, as Visual Studio does at every keystroke: read only at start-up, a
+  // prompt file made by /prompts init (whose answer promises it in the autocomplete) or by hand never showed up.
+  if (text === '/') {
+    post({ type: 'listCommands' });
+  }
   if (!text.startsWith('/') || text.includes(' ') || text.includes('\n') || slashCommands.length === 0) {
     closeSlash();
     return;
@@ -1578,6 +1583,11 @@ function renderTranscript(transcript: WvTranscriptItem[], running = false): void
 window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
   const msg = event.data;
   switch (msg.type) {
+    case 'commands': {
+      slashCommands = msg.commands ?? slashCommands;
+      detectSlash();
+      break;
+    }
     case 'models': {
       models = msg.models ?? models;
       if (!modelPop.hidden) {

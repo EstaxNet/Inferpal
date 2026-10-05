@@ -77,14 +77,16 @@ internal static class ApplyDiffMatcher
         }
 
         // ── Fuzzy fallback: unique whitespace-tolerant line block ──────────────
-        return TryFuzzy(file, oldContent, newContent) ?? new Result(null, 0, false);
+        return TryFuzzy(file, oldContent, newContent, mode) ?? new Result(null, 0, false);
     }
 
     // Matches old_content against the file line-by-line, comparing each line trimmed (handles
-    // leading/trailing whitespace and \r). Applies only when exactly one contiguous block matches;
-    // several matches come back as ambiguous (Count > 1) — reporting them as "not found" sent the
-    // model looking for a whitespace mistake that did not exist.
-    private static Result? TryFuzzy(string file, string oldContent, string newContent)
+    // leading/trailing whitespace and \r), honouring the occurrence mode like the exact pass. Under
+    // "unique", several blocks come back as ambiguous (Count > 1) — reporting them as "not found" sent
+    // the model looking for a whitespace mistake that did not exist.
+    // ⚠ The mode reaches this pass too: ignored, "first" and "all" on two blocks answered "found 2 times — make the
+    // match unique", the one remedy the model had just declined by asking for every match.
+    private static Result? TryFuzzy(string file, string oldContent, string newContent, string mode)
     {
         var fileLines = file.Split('\n');
         var target    = oldContent.Replace("\r", "").Split('\n');
@@ -97,17 +99,25 @@ internal static class ApplyDiffMatcher
 
         var targetTrim = target.Select(l => l.Trim()).ToArray();
 
-        int matchStart = -1, matches = 0;
+        var starts = new List<int>();
         for (int s = 0; s + k <= fileLines.Length; s++)
         {
             var ok = true;
             for (int j = 0; j < k; j++)
                 if (!fileLines[s + j].Trim().Equals(targetTrim[j], StringComparison.Ordinal)) { ok = false; break; }
-            if (!ok) continue;
-            if (matches++ == 0) matchStart = s;
+            if (ok) starts.Add(s);
         }
-        if (matches > 1) return new Result(null, matches, true);   // ambiguous → too risky to fuzzy-apply
-        if (matches == 0) return null;
+        if (starts.Count == 0) return null;
+        if (starts.Count > 1 && mode is not ("first" or "all"))
+            return new Result(null, starts.Count, true);   // ambiguous → too risky to fuzzy-apply
+
+        // The blocks replaced: the first, or every one that does not overlap the previous — as the exact pass does.
+        var chosen = new List<int>();
+        foreach (var s in starts)
+        {
+            if (chosen.Count > 0 && (mode != "all" || s < chosen[^1] + k)) continue;
+            chosen.Add(s);
+        }
 
         // The line structure already provides the break after the block: drop the one new_content ends with.
         if (endsWithNewline)
@@ -115,16 +125,20 @@ internal static class ApplyDiffMatcher
             if (newContent.EndsWith("\r\n", StringComparison.Ordinal)) newContent = newContent[..^2];
             else if (newContent.EndsWith('\n'))                        newContent = newContent[..^1];
         }
-        // Split on '\n', a CRLF line keeps its "\r": the last replaced line must end the same way.
-        if (fileLines[matchStart + k - 1].EndsWith('\r') && !newContent.EndsWith('\r'))
-            newContent += "\r";
-
         // Replace the matched lines in place: joining the untouched lines back with "\n" restores the
         // file exactly, including a final newline (an empty last element).
-        var modified = string.Join("\n",
-            fileLines[..matchStart].Append(newContent).Concat(fileLines[(matchStart + k)..]));
+        var lines = new List<string>(fileLines.Length);
+        var at    = 0;
+        foreach (var start in chosen)
+        {
+            lines.AddRange(fileLines[at..start]);
+            // Split on '\n', a CRLF line keeps its "\r": the last replaced line must end the same way.
+            lines.Add(fileLines[start + k - 1].EndsWith('\r') && !newContent.EndsWith('\r') ? newContent + "\r" : newContent);
+            at = start + k;
+        }
+        lines.AddRange(fileLines[at..]);
 
-        return new Result(modified, 1, true);
+        return new Result(string.Join("\n", lines), chosen.Count, true);
     }
 
     private static string ReplaceFirst(string text, string oldValue, string newValue)

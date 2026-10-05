@@ -80,8 +80,10 @@ public sealed class SilentGestureTests
     /// the reason and not the entry.
     /// <c>refreshModelList</c> runs because the model menu opened, and nobody waits on it: the menu is already drawn from
     /// the list the view holds, and its own lines say when nothing is listed or the backend is down.
+    /// <c>refreshCommandList</c> likewise: typing "/" asks for it, and the popup works from the list it already has.
     /// </remarks>
-    private static readonly string[] BackgroundPaths = ["onHostReady", "configSaved", "pollBackendStatus", "refreshModelList"];
+    private static readonly string[] BackgroundPaths =
+        ["onHostReady", "configSaved", "pollBackendStatus", "refreshModelList", "refreshCommandList"];
 
     [Fact]
     public void EveryGestureThatNeedsTheHost_SaysWhenItCannotRun()

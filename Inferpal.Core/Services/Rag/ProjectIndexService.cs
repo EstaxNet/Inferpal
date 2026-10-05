@@ -56,6 +56,7 @@ internal sealed class ProjectIndexService : IDisposable
 
     private CancellationTokenSource?    _cts;
     private FileSystemWatcher?          _watcher;
+    private FileSystemWatcher?          _dirWatcher;   // folders: see SetupFileWatcher
     private System.Threading.Timer?     _debounceTimer;
 
     // The watcher raises changes on several thread-pool threads at once, and Dispose can land in
@@ -692,6 +693,8 @@ internal sealed class ProjectIndexService : IDisposable
 
         _watcher?.Dispose();
         _watcher     = null;
+        _dirWatcher?.Dispose();
+        _dirWatcher  = null;
         _watchedRoot = null;
         try
         {
@@ -712,9 +715,71 @@ internal sealed class ProjectIndexService : IDisposable
                 OnFileChangedCore(e.OldFullPath);
                 OnFileChangedCore(e.FullPath);
             };
+
+            // ⚠ Folders too: the watcher above sees source files, and a folder renamed, moved or sent to the Recycle Bin
+            // raises one event for the folder and none for the files inside. Without this second watcher both indexes
+            // kept the old paths for the life of the process and never learned the new ones.
+            _dirWatcher?.Dispose();
+            _dirWatcher = new FileSystemWatcher(rootDir)
+            {
+                IncludeSubdirectories = true,
+                NotifyFilter          = NotifyFilters.DirectoryName,
+                EnableRaisingEvents   = true,
+            };
+            _dirWatcher.Created += (_, e) => OnDirectoryChangedCore(e.FullPath);
+            _dirWatcher.Deleted += (_, e) => OnDirectoryChangedCore(e.FullPath);
+            _dirWatcher.Renamed += (_, e) =>
+            {
+                OnDirectoryChangedCore(e.OldFullPath);
+                OnDirectoryChangedCore(e.FullPath);
+            };
             _watchedRoot = rootDir;
         }
         catch { /* file watching is best-effort */ }
+    }
+
+    /// <summary>
+    /// A folder under the root was created, removed or renamed: the C# index re-reads it, and every indexed file under
+    /// its path — gone — and every source file under it now are queued like single-file changes.
+    /// </summary>
+    internal void OnDirectoryChangedCore(string dirPath)
+    {
+        if (IsExcluded(dirPath)) return;
+
+        Lsp.CSharpSemanticIndex.NotifyDirectoryChanged(dirPath);
+
+        if (string.IsNullOrEmpty(IndexedRoot)) return;
+        _ = QueueDirectoryAsync(dirPath);
+    }
+
+    private async Task QueueDirectoryAsync(string dirPath)
+    {
+        try
+        {
+            var prefix = dirPath.TrimEnd('\\', '/');
+            List<string> files;
+            await _chunkLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                files = _chunksByFile.Keys
+                    .Where(p => p.Length > prefix.Length && p.StartsWith(prefix, PathComparer.Comparison)
+                                && p[prefix.Length] is '\\' or '/')
+                    .ToList();
+            }
+            finally { _chunkLock.Release(); }
+
+            if (Directory.Exists(dirPath))
+                files.AddRange(WorkspaceScan.EnumerateFiles(dirPath, "*")
+                    .Where(f => CodeChunker.SupportedExtensions.Contains(Path.GetExtension(f)) && !IsExcluded(f)));
+            if (files.Count == 0) return;
+
+            lock (_pendingRebuild) foreach (var f in files) _pendingRebuild.Add(f);
+            lock (_notYetReindexed)
+                foreach (var f in files.Where(f => CodeChunker.SupportedExtensions.Contains(Path.GetExtension(f))))
+                    _notYetReindexed.Add(f);
+            ArmDebounce();
+        }
+        catch (Exception ex) { Diagnostics.Swallow("ProjectIndexService.QueueDirectory", ex); }
     }
 
     private void OnFileChanged(object _, FileSystemEventArgs e) => OnFileChangedCore(e.FullPath);
@@ -1168,6 +1233,7 @@ internal sealed class ProjectIndexService : IDisposable
         try { _cts?.Cancel(); } catch (ObjectDisposedException) { }
         _cts?.Dispose();
         _watcher?.Dispose();
+        _dirWatcher?.Dispose();
         _watchedRoot = null;
 
         // Deliberately NOT disposing _chunkLock/_shadowLock: a background indexing pass may still

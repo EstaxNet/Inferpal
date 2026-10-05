@@ -101,8 +101,19 @@ public class ProjectProfileTests
         Assert.Equal("repo-utility", config.UtilityModel);
     }
 
+    [Fact]
+    public void Apply_TakesZero_TheModelsOwnWindow()
+    {
+        // What the settings form documents: 0 is "the model's own window", not an absurd value.
+        var config  = Config();
+        var profile = ProjectProfile.Parse("""{ "recommend": { "contextWindowSize": 0 } }""", config);
+
+        Assert.Equal(["contextWindowSize"], profile.Apply(config));
+        Assert.Equal(0, config.ContextWindowSize);
+    }
+
     [Theory]
-    [InlineData("0")]
+    [InlineData("100")]
     [InlineData("-4096")]
     [InlineData("999999999")]
     [InlineData("plenty")]

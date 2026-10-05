@@ -490,6 +490,7 @@ Haga clic en **Corregir con IA** para corregirlo automáticamente en bucle, o es
   <data name="PromptsNone" xml:space="preserve"><value>Sin archivos de prompt. Crea `.inferpal/prompts/*.md` o ejecuta `/prompts init`.</value></data>
   <data name="PromptsListHeader" xml:space="preserve"><value>**Archivos de prompt** (`.inferpal/prompts`) — cada archivo es un comando slash, `{args}` se reemplaza:</value></data>
   <data name="PromptsShadowedByBuiltIn" xml:space="preserve"><value> — ⚠ nunca se ejecuta: `{0}` es un comando integrado</value></data>
+  <data name="PromptsShadowedByConfig" xml:space="preserve"><value> — ⚠ nunca se ejecuta: la configuración también define `{0}` (Comandos, uno por línea), y ese es el que se usa</value></data>
   <data name="PromptsScaffolded" xml:space="preserve"><value>Prompt de ejemplo creado en {0}. Edítalo y luego escribe `/review-security` (nombre del archivo = comando).</value></data>
 
   <!-- analyze_impact tool -->
@@ -932,6 +933,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="OnboardContextMissing" xml:space="preserve"><value>Aún no hay `.inferpal/context.md` — `/onboard context` redacta uno a partir del repositorio.</value></data>
   <data name="OnboardNothingToApply" xml:space="preserve"><value>Nada que aplicar — el perfil no recomienda nada que esta máquina no use ya.</value></data>
   <data name="OnboardApplied" xml:space="preserve"><value>✅ Aplicado a esta máquina: {0}.</value></data>
+  <data name="OnboardContextWindowRefused" xml:space="preserve"><value>⚠ `contextWindowSize` = `{0}` no se ha aplicado: una ventana de contexto es 0 (la del modelo) o de 512 a 1.000.000 tokens.</value></data>
   <data name="OnboardContextExists" xml:space="preserve"><value>{0} ya existe y no se tocó. `/onboard context force` lo regenera.</value></data>
   <data name="OnboardContextReadingLabel" xml:space="preserve"><value>Leyendo el repositorio…</value></data>
   <data name="OnboardContextDraftingLabel" xml:space="preserve"><value>Redactando el contexto del proyecto…</value></data>

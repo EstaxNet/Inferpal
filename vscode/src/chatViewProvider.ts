@@ -527,6 +527,26 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  /**
+   * The slash commands, re-read as one starts being typed — the popup already works from the list the view holds. A
+   * host that cannot answer leaves it as it is, an empty answer too.
+   */
+  private async refreshCommandList(): Promise<void> {
+    const host = this.getHost();
+    if (!host?.isRunning) {
+      return;
+    }
+    try {
+      const listed = await host.commandList();
+      if (listed.length > 0) {
+        this.commands = listed;
+        this.post({ type: 'commands', commands: listed });
+      }
+    } catch (err) {
+      this.log(`[chat] command/list on typing a slash command failed: ${String(err)}`);
+    }
+  }
+
   private async refreshModelsAfterReconnect(host: HostClient): Promise<void> {
     try {
       const listed = await host.modelsList();
@@ -1060,6 +1080,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         return;
       case 'listModels':
         await this.refreshModelList();
+        return;
+      case 'listCommands':
+        await this.refreshCommandList();
         return;
       case 'openSessions':
         await this.loadSessionCommand();

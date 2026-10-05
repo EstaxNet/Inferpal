@@ -138,7 +138,9 @@ export type ExtToWebview =
   | { type: 'stepPaused' }
   | { type: 'stepResumed' }
   /** The model picker's list, re-read from the server when the menu opened. */
-  | { type: 'models'; models: string[] };
+  | { type: 'models'; models: string[] }
+  /** The slash commands, re-read when a command starts being typed. */
+  | { type: 'commands'; commands: WvSlashCommand[] };
 
 export type WebviewToExt =
   | { type: 'ready' }
@@ -157,6 +159,8 @@ export type WebviewToExt =
   | { type: 'retryConnection' }
   /** The model picker opened: re-read the server's list. */
   | { type: 'listModels' }
+  /** A slash command starts being typed: re-read the commands (prompt files and templates change). */
+  | { type: 'listCommands' }
   | { type: 'openXray' }
   | { type: 'mentionSearch'; category: string; query: string }
   | { type: 'resolveMention'; category: string; value?: string }

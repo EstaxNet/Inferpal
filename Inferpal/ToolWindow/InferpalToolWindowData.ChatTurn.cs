@@ -160,7 +160,9 @@ internal partial class InferpalToolWindowData
             // claim (_sendStarting) is handed off / released.
             await RunOnVMContextAsync(() =>
             {
-                _config.Save();
+                // ⚠ No configuration save here: every setting the window changes saves itself, and a save per question
+                // rewrites config.json — the ghost-text sidecar restarts on the next completion (its stamp moved), and
+                // Saved re-measures the model's window and rebuilds the pinned chips, all for nothing changed.
                 if (_promptHistory.Append(userText)) // also resets navigation state
                     SavePromptHistory();
                 if (clearPrompt)

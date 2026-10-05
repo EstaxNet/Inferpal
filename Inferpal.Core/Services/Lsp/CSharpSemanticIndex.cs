@@ -163,6 +163,52 @@ internal sealed class CSharpSemanticIndex
         }
     }
 
+    /// <summary>
+    /// A folder under a workspace was renamed, moved or removed: the trees under its path are dropped when their file is
+    /// gone, and the C# files under it now are read.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A folder event names no file: without this, the index kept the moved files under their old paths and never
+    /// learned the new ones — and rename_symbol, whose spans come from here, renamed nothing inside the moved folder
+    /// while it reported the occurrences it found elsewhere.
+    /// </remarks>
+    public static void NotifyDirectoryChanged(string dirPath)
+    {
+        CSharpSemanticIndex[] indexes;
+        lock (_byRoot) indexes = _byRoot.Values.ToArray();
+
+        foreach (var index in indexes)
+        {
+            var root = index._root.TrimEnd('\\', '/');
+            if (dirPath.Length <= root.Length
+                || !dirPath.StartsWith(root, Services.PathComparer.Comparison)
+                || dirPath[root.Length] is not ('\\' or '/')) continue;
+            if (WorkspaceScan.IsExcludedPath(dirPath, root)) continue;
+            try { index.UpdateDirectory(dirPath); }
+            catch (Exception ex) { Diagnostics.Swallow("CSharpSemanticIndex.NotifyDirectoryChanged", ex); }
+        }
+    }
+
+    private void UpdateDirectory(string dirPath)
+    {
+        lock (_gate)
+        {
+            // Not built yet: the first query reads the disk as it is.
+            if (_compilation is null) return;
+
+            var prefix = dirPath.TrimEnd('\\', '/');
+            foreach (var known in _treesByPath.Keys
+                         .Where(p => p.Length > prefix.Length && p.StartsWith(prefix, Services.PathComparer.Comparison)
+                                     && p[prefix.Length] is '\\' or '/')
+                         .ToList())
+                UpdateLocked(known);   // gone from disk → removed
+
+            if (!Directory.Exists(dirPath)) return;
+            foreach (var file in EnumerateCSharpFiles(dirPath))
+                if (!WorkspaceScan.IsExcludedPath(file, _root)) UpdateLocked(file);
+        }
+    }
+
     /// <summary>Test seam: forget every cached workspace index.</summary>
     internal static void ResetCacheForTests()
     {

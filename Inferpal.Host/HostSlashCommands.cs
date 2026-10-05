@@ -260,7 +260,7 @@ internal sealed partial class HostServer
                 case SlashCommandId.Prompts:
                 {
                     var result = await HandleScaffoldSlashAsync(
-                        RulesChecksPromptsCommandHandler.Prompts(s.RootDir, parts), Strings.PromptsScaffolded, cts.Token);
+                        RulesChecksPromptsCommandHandler.Prompts(s.RootDir, parts, s.Config.PromptTemplates), Strings.PromptsScaffolded, cts.Token);
                     PromptFilesService.InvalidateCache();   // show up in autocomplete immediately
                     return result;
                 }

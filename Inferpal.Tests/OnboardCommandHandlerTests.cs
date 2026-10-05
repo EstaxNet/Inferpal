@@ -198,6 +198,32 @@ public class OnboardCommandHandlerTests : IDisposable
     }
 
     [Fact]
+    public async Task Apply_NamesAContextWindowItRefuses_InsteadOfSayingThereIsNothingToApply()
+    {
+        WriteProfile("""{ "recommend": { "contextWindowSize": "32k" } }""");
+        var config = new InferpalConfig { ContextWindowSize = 8192 };
+
+        var result = await Run(config, "apply");
+
+        Assert.NotEqual(Strings.OnboardNothingToApply, result.Message);
+        Assert.Equal(Strings.OnboardContextWindowRefused("32k"), result.Message);
+        Assert.False(result.SaveConfig);
+        Assert.Equal(8192, config.ContextWindowSize);
+    }
+
+    [Fact]
+    public async Task Apply_NamesTheRefusal_BesideWhatItApplied()
+    {
+        WriteProfile("""{ "recommend": { "agentModel": "repo-agent", "contextWindowSize": 5000000 } }""");
+        var config = new InferpalConfig { AgentModel = "mine" };
+
+        var result = await Run(config, "apply");
+
+        Assert.Contains(Strings.OnboardApplied("agentModel"), result.Message);
+        Assert.Contains(Strings.OnboardContextWindowRefused("5000000"), result.Message);
+    }
+
+    [Fact]
     public async Task Apply_DoesNothingWhenTheMachineAlreadyAgrees()
     {
         WriteProfile("""{ "recommend": { "agentModel": "same" } }""");

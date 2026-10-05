@@ -490,6 +490,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="PromptsNone" xml:space="preserve"><value>プロンプトファイルがありません。`.inferpal/prompts/*.md` を作成するか `/prompts init` を実行してください。</value></data>
   <data name="PromptsListHeader" xml:space="preserve"><value>**プロンプトファイル** (`.inferpal/prompts`) — 各ファイルはスラッシュコマンドになり、`{args}` が展開されます：</value></data>
   <data name="PromptsShadowedByBuiltIn" xml:space="preserve"><value> — ⚠ 実行されません: `{0}` は組み込みコマンドです</value></data>
+  <data name="PromptsShadowedByConfig" xml:space="preserve"><value> — ⚠ 実行されません: 設定にも `{0}` が定義されており (コマンド (1 行に 1 つ))、そちらが優先されます</value></data>
   <data name="PromptsScaffolded" xml:space="preserve"><value>サンプルプロンプトを {0} に作成しました。編集してから `/review-security` と入力してください（ファイル名 = コマンド）。</value></data>
 
   <!-- analyze_impact tool -->
@@ -932,6 +933,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="OnboardContextMissing" xml:space="preserve"><value>`.inferpal/context.md` はまだありません — `/onboard context` がリポジトリから起草します。</value></data>
   <data name="OnboardNothingToApply" xml:space="preserve"><value>適用するものはありません — このマシンがまだ使っていない推奨はプロファイルにありません。</value></data>
   <data name="OnboardApplied" xml:space="preserve"><value>✅ このマシンに適用しました: {0}。</value></data>
+  <data name="OnboardContextWindowRefused" xml:space="preserve"><value>⚠ `contextWindowSize` = `{0}` は適用されませんでした。コンテキストウィンドウは 0 (モデル自身の値) か、512〜1,000,000 トークンです。</value></data>
   <data name="OnboardContextExists" xml:space="preserve"><value>{0} は既に存在し、変更していません。`/onboard context force` で再生成します。</value></data>
   <data name="OnboardContextReadingLabel" xml:space="preserve"><value>リポジトリを読み込み中…</value></data>
   <data name="OnboardContextDraftingLabel" xml:space="preserve"><value>プロジェクトコンテキストを作成中…</value></data>
