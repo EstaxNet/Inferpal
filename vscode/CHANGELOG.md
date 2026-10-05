@@ -3,6 +3,24 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.7.2
+
+Forty-one fixes, most of them for something reported as done when it had not happened.
+
+- **Your work stays safe**: `/test` asks you to save a test file with unsaved changes instead of writing behind them,
+  restoring a backup can no longer destroy it, a cleared conversation stays cleared, and saving a session can no
+  longer silently replace another one.
+- **Edits do what they say**: renaming a symbol takes its constructors, implementations and overrides along, inline
+  completions keep their own closing brace, and "replace every match" works with different indentation.
+- **Search and review see the whole project**: one-line properties and enum values are found, `analyze_code` sees who
+  uses a React component, `@folder` reads C, Rust and other common languages, `/check` reviews new files anywhere in
+  the repository, and `@Docs` crawls minified sites.
+- **The agent** is no longer stopped "for repeating itself" while polling a build or checking again after a fix, and
+  `/commit-exec` waits for your git hooks.
+- **In VS Code**: the model menu lists the models your server has now, new prompt files appear in the `/` suggestions
+  at once, the pinned-file chips follow the settings, a slash command added without its `/` works, and a long answer
+  full of email addresses no longer freezes the chat.
+
 ## 1.7.1
 
 Two new things on the *Server and models* page, and fifty-one fixes.
