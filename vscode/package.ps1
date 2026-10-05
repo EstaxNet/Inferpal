@@ -43,15 +43,20 @@ try {
     if ($props -notmatch '<Version>([^<]+)</Version>') { throw 'No <Version> in Directory.Build.props' }
     $version = $Matches[1]
 
-    $pkgRaw = Get-Content package.json -Raw
+    # ⚠ Read as UTF-8, never through Get-Content: Windows PowerShell 5.1 decodes a BOM-less file as ANSI, which
+    # turns the display name's em dash into "â€”" in the VSIX — and in package.json itself if the finally block
+    # writes the misread text back. The finally block restores the original bytes instead.
+    $pkgPath  = "$PSScriptRoot\package.json"
+    $pkgBytes = [System.IO.File]::ReadAllBytes($pkgPath)
+    $pkgRaw   = (New-Object System.Text.UTF8Encoding($false, $true)).GetString($pkgBytes)
     $stamped = $pkgRaw -replace '"version":\s*"[^"]+"', "`"version`": `"$version`""
-    [System.IO.File]::WriteAllText("$PSScriptRoot\package.json", $stamped, (New-Object System.Text.UTF8Encoding($false)))
+    [System.IO.File]::WriteAllText($pkgPath, $stamped, (New-Object System.Text.UTF8Encoding($false)))
     try {
         npx vsce package --target $Target -o "inferpal-$Target-$version.vsix"
         if ($LASTEXITCODE -ne 0) { throw 'vsce package failed' }
     }
     finally {
-        [System.IO.File]::WriteAllText("$PSScriptRoot\package.json", $pkgRaw, (New-Object System.Text.UTF8Encoding($false)))
+        [System.IO.File]::WriteAllBytes($pkgPath, $pkgBytes)
     }
     Get-Item "inferpal-$Target-$version.vsix" | Select-Object Name, @{n='MB';e={[math]::Round($_.Length/1MB,1)}}
 }

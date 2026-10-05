@@ -234,10 +234,10 @@
   "devDependencies": {
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^20.14.0",
-    "markdown-it": "^14.1.0",
     "@types/vscode": "^1.100.0",
-    "@vscode/vsce": "^3.9.2",
+    "@vscode/vsce": "^4.0.0",
     "esbuild": "^0.25.0",
+    "markdown-it": "^14.1.0",
     "typescript": "^5.6.0"
   }
 }

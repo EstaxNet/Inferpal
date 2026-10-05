@@ -8,7 +8,7 @@ How to build, test, extend, and contribute to Inferpal. For how the pieces fit t
 - **.NET 8 SDK**
 - **Visual Studio 2026 (18.x)** with the Visual Studio extension development
   workload
-- **Node.js 20+** — only for the VS Code extension (`vscode/`)
+- **Node.js 22+** — only for the VS Code extension (`vscode/`); its packager, `@vscode/vsce` 4, requires it
 - A running model server for manual testing — see [Getting Started](getting-started.md)
 
 ## Build

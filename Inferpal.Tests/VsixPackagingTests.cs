@@ -390,6 +390,43 @@ public class VsixPackagingTests
             + "corrected by burning a version number.");
     }
 
+    [Fact]
+    public void VsCodeManifestText_IsNotUtf8ReadAsAnsi()
+    {
+        // ⚠ package.json is BOM-less UTF-8 and its display name carries an em dash. Windows PowerShell 5.1 — what
+        // deploy-release.ps1 runs under, calling vscode\package.ps1 in-process — decodes such a file as ANSI when
+        // Get-Content reads it: the VSIX's listing title becomes "Inferpal â€” …", and package.ps1's finally block,
+        // which restores the unstamped file, writes the misread text back into the repository. CI runs pwsh 7,
+        // so only a local release shows it. package.ps1 reads bytes for that reason; this test holds the damage that
+        // would persist in the repository.
+        var dir   = Path.Combine(RepoRoot(), "vscode");
+        var files = new[] { Path.Combine(dir, "package.json") }
+            .Concat(Directory.GetFiles(dir, "package.nls*.json", SearchOption.TopDirectoryOnly))
+            .ToArray();
+
+        // Witness: the manifest and its translations — fewer means the glob reads nothing and the test proves nothing.
+        Assert.True(files.Length >= 10, $"Only {files.Length} manifest file(s) found under vscode/.");
+
+        // The three signatures of UTF-8 decoded as Windows-1252, none of which occurs in the ten shipped languages:
+        // "â€" + one more char (U+2000–U+20FF punctuation: — – ' ' " " … €), "Ã" + a continuation (é è à ç…),
+        // "Â" + U+00A0–U+00BF (no-break space, « », °).
+        var mojibake = new System.Text.RegularExpressions.Regex(
+            "\u00E2\u20AC|\u00C3[\u0080-\u00BF\u0152-\u0178\u02C6\u02DC\u2013-\u2122]|\u00C2[\u00A0-\u00BF]");
+        var strict = new System.Text.UTF8Encoding(false, throwOnInvalidBytes: true);
+        foreach (var file in files)
+        {
+            var text = strict.GetString(File.ReadAllBytes(file));
+            var hit  = mojibake.Match(text);
+            Assert.False(hit.Success,
+                $"{Path.GetFileName(file)} carries \"{(hit.Success ? text.Substring(Math.Max(0, hit.Index - 20), Math.Min(50, text.Length - Math.Max(0, hit.Index - 20))) : "")}\": "
+                + "UTF-8 text that was read as ANSI and written back. It ships in all three VSIXes as the Marketplace "
+                + "listing — run vscode\\package.ps1 only in its fixed form, and restore the file from git.");
+        }
+
+        // Reference arm: the em dash itself is in the display name, read correctly.
+        Assert.Contains("Inferpal \u2014 ", strict.GetString(File.ReadAllBytes(files[0])));
+    }
+
     private static string RepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
