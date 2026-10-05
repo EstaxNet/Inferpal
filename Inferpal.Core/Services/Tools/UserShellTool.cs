@@ -64,7 +64,11 @@ internal sealed class UserShellTool(string name, string command, IApprovalServic
             // goes through a shell quoting layer. `args` are still appended INTO the script by
             // design — the approval prompt above (full command shown) is the actual guard.
             var (dialect, shell) = Shell.ShellLauncher.Resolve();
-            var psi = Shell.ShellLauncher.BuildStartInfo(dialect, shell, fullCmd);
+            // ⚠ The persistent shell's PowerShell preparation, both halves: a table view (`pwd`, `Get-ChildItem`, a
+            // module's own) is cut to the console's width — a path past it ends in "…" — unless the buffer is widened,
+            // and a widened table pads every line, which TrimLineEnds takes off.
+            var script = dialect == Shell.ShellDialect.PowerShell ? Shell.ShellStateProtocol.WidenConsole + fullCmd : fullCmd;
+            var psi = Shell.ShellLauncher.BuildStartInfo(dialect, shell, script);
             // ⚠ In the workspace, like run_command, run_tests and the build: started bare, the command inherits the
             // process's folder — the workspace in VS Code, the extension host's own start folder in Visual Studio, where
             // `dotnet test`, `npm run lint` or `git diff --quiet` answer "no project" / "not a git repository", read as a
@@ -88,7 +92,7 @@ internal sealed class UserShellTool(string name, string command, IApprovalServic
             // ⚠ The exit code is the whole answer of a custom tool as often as its output
             // (`git diff --quiet`, a linter that only sets it): the persistent shell's rule — a
             // silent failure must not read as success — holds here too, with the same note.
-            var result = (run.Stdout + run.Stderr).Trim();
+            var result = Shell.ShellStateProtocol.TrimLineEnds((run.Stdout + run.Stderr).Trim());
             if (run.ExitCode != 0)
                 result = (result + Shell.ShellStateProtocol.ExitNote(dialect, fullCmd, run.ExitCode)).TrimStart('\n');
             return string.IsNullOrEmpty(result) ? "(no output)" : result;

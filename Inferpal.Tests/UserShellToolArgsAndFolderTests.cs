@@ -63,12 +63,18 @@ public sealed class UserShellToolArgsAndFolderTests : IDisposable
     }
 
     [Fact]
-    public async Task TheCommand_RunsInTheWorkspace()
+    public async Task TheCommand_RunsInTheWorkspace_AndALongPathComesBackWhole()
     {
-        // The temp folder's name is unique: the test runner's own folder cannot print it.
-        var output = await new UserShellTool("probe", "pwd", new Approve(), new InferpalConfig(), () => _root)
+        // The folder's name is unique — the test runner's own folder cannot print it — and long: past a console's width,
+        // PowerShell's table view (what `pwd` prints there) cuts the path with "…" unless the buffer is widened.
+        var deep = Path.Combine(_root, "a-workspace-folder-whose-name-alone-is-longer-than-a-console-is-wide-"
+                                       + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(deep);
+        Assert.True(deep.Length > 130, $"The path ({deep.Length} characters) must outrun a 120-column console.");
+
+        var output = await new UserShellTool("probe", "pwd", new Approve(), new InferpalConfig(), () => deep)
             .ExecuteAsync(Args(null), CancellationToken.None);
 
-        Assert.Contains(Path.GetFileName(_root), output);
+        Assert.Contains(Path.GetFileName(deep), output);
     }
 }

@@ -135,7 +135,7 @@ internal static class ShellStateProtocol
     internal static string TrimLineEnds(string text) =>
         System.Text.RegularExpressions.Regex.Replace(text, @"[ \t]+(?=\r?\n|$)", string.Empty);
 
-    private const string WidenConsole =
+    internal const string WidenConsole =
         "try { $__r=$Host.UI.RawUI; $__r.BufferSize = New-Object Management.Automation.Host.Size(4096, $__r.BufferSize.Height) } catch { }\n";
 
     // ── POSIX dialect ─────────────────────────────────────────────────────
