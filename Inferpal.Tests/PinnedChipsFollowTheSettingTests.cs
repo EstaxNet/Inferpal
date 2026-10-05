@@ -30,6 +30,23 @@ public class PinnedChipsFollowTheSettingTests
     }
 
     [Fact]
+    public void VsCode_TheChips_AreRebuiltWhenTheSettingIsSaved()
+    {
+        // The same defect, the other front-end: VS Code read its chips at start-up and after a pin gesture in the chat,
+        // never after the settings panel saved — the parity is looked for in both directions.
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Inferpal.sln"))) dir = dir.Parent;
+        Assert.NotNull(dir);
+        var provider = SettingsSchemaDriftTests.NeutralizeTypeScriptComments(
+            File.ReadAllText(Path.Combine(dir!.FullName, "vscode", "src", "chatViewProvider.ts")));
+
+        var saved = WebviewRebuildTests.Body(provider, "async configSaved(");
+        var read  = saved.IndexOf("this.pins = (await host.pinsList()).pins", StringComparison.Ordinal);
+        var shown = saved.LastIndexOf("this.hydrate()", StringComparison.Ordinal);
+        Assert.True(read >= 0 && shown > read, "configSaved re-reads the pins, then redraws the view");
+    }
+
+    [Fact]
     public void TheChips_AreRebuiltWhenTheSettingIsSaved()
     {
         var attachments = Vm("InferpalToolWindowData.Attachments.cs");

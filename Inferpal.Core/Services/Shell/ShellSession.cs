@@ -11,8 +11,9 @@ namespace Inferpal.Services.Shell;
 /// preserved across <see cref="RunCommandTool"/> calls even though each command still runs in a
 /// fresh, isolated shell process — <c>powershell.exe</c>/<c>pwsh</c> or <c>bash</c> depending on
 /// the machine (<see cref="ShellLauncher"/>, §23; see <see cref="ShellStateProtocol"/> for why
-/// there is no live REPL pipe). One instance lives for the lifetime of the tool registry
-/// (i.e. per workspace).
+/// there is no live REPL pipe). One instance lives for the lifetime of the tool registry — in Visual Studio, a whole
+/// devenv session, during which the solution and so the workspace root can change: the state belongs to the root it was
+/// captured under, and is dropped when the root moves.
 /// </summary>
 internal sealed class ShellSession
 {
@@ -23,6 +24,8 @@ internal sealed class ShellSession
 
     private string? _cwd;
     private Dictionary<string, string> _overrides = new(ShellStateProtocol.EnvNameComparer);
+    // The workspace root _cwd and _overrides were captured under (null: nothing captured yet).
+    private string? _stateRoot;
 
     public ShellSession(Func<string> root, InferpalConfig config)
     {
@@ -34,7 +37,30 @@ internal sealed class ShellSession
     /// <summary>Current working directory of the session (workspace root until the model cd's).</summary>
     public string CurrentDirectory
     {
-        get { lock (_lock) return _cwd ?? _root(); }
+        get { lock (_lock) { DropIfRootMoved(); return _cwd ?? _root(); } }
+    }
+
+    /// <summary>The workspace root the session starts from.</summary>
+    internal string WorkspaceRoot => _root();
+
+    /// <summary>Whether two paths name the same folder, as the file system compares them.</summary>
+    internal static bool SameFolder(string a, string b) =>
+        string.Equals(Path.TrimEndingDirectorySeparator(a), Path.TrimEndingDirectorySeparator(b), PathComparer.Comparison);
+
+    /// <summary>
+    /// Forgets the folder and the environment captured under another workspace root. Called under <see cref="_lock"/>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Opening another solution in Visual Studio moves the root under this session: without this, the next command
+    /// runs in the previous solution's folder — <c>dotnet build</c>, <c>git commit -am</c> — while the system prompt names
+    /// the new root.
+    /// </remarks>
+    private void DropIfRootMoved()
+    {
+        if (_stateRoot is null || SameFolder(_stateRoot, _root())) return;
+        _cwd       = null;
+        _overrides = new(ShellStateProtocol.EnvNameComparer);
+        _stateRoot = null;
     }
 
     /// <summary>The cwd/env overrides a background job should inherit at launch time.</summary>
@@ -45,7 +71,7 @@ internal sealed class ShellSession
     internal (string Directory, string? Vanished) StartDirectory(string? workDirOverride)
     {
         string dir;
-        lock (_lock) dir = workDirOverride ?? _cwd ?? _root();
+        lock (_lock) { DropIfRootMoved(); dir = workDirOverride ?? _cwd ?? _root(); }
         return System.IO.Directory.Exists(dir) ? (dir, null) : (_root(), dir);
     }
 
@@ -56,7 +82,11 @@ internal sealed class ShellSession
 
     public (string Cwd, IReadOnlyDictionary<string, string> Env) Snapshot()
     {
-        lock (_lock) return (_cwd ?? _root(), new Dictionary<string, string>(_overrides, ShellStateProtocol.EnvNameComparer));
+        lock (_lock)
+        {
+            DropIfRootMoved();
+            return (_cwd ?? _root(), new Dictionary<string, string>(_overrides, ShellStateProtocol.EnvNameComparer));
+        }
     }
 
     /// <summary>
@@ -67,7 +97,7 @@ internal sealed class ShellSession
     public async Task<string> RunAsync(string command, string? workDirOverride, CancellationToken ct)
     {
         IReadOnlyDictionary<string, string> env;
-        lock (_lock) env = new Dictionary<string, string>(_overrides, ShellStateProtocol.EnvNameComparer);
+        lock (_lock) { DropIfRootMoved(); env = new Dictionary<string, string>(_overrides, ShellStateProtocol.EnvNameComparer); }
         var (startCwd, vanished) = StartDirectory(workDirOverride);
         var note = vanished is null ? "" : VanishedNote(vanished, startCwd);
 
@@ -115,7 +145,7 @@ internal sealed class ShellSession
         var drained = await ChildProcess.DrainAfterExitAsync(stdout, stderr, ct);
 
         var state = ShellStateProtocol.ParseForeground(stdout.Snapshot(), marker);
-        ApplyState(state);
+        ApplyState(state, keepFolder: workDirOverride is not null);
 
         var output     = ShellStateProtocol.TrimLineEnds(state.Output);   // a widened buffer pads tables
         var stderrText = PowerShellStderr.Decode(stderr.Snapshot());
@@ -134,13 +164,16 @@ internal sealed class ShellSession
         return note + output;
     }
 
-    private void ApplyState(ShellRunState state)
+    /// <param name="keepFolder">The command ran in a <c>working_directory</c> of its own: "for this command", as the
+    /// parameter says — taken as the session's folder, every later command runs there, under a prompt that names none.</param>
+    private void ApplyState(ShellRunState state, bool keepFolder)
     {
         if (!state.StateCaptured) return;
         lock (_lock)
         {
-            if (state.Cwd is not null) _cwd = state.Cwd;
+            if (state.Cwd is not null && !keepFolder) _cwd = state.Cwd;
             _overrides = ShellStateProtocol.ComputeOverrides(_baselineEnv, state.EnvFull);
+            _stateRoot = _root();
         }
     }
 

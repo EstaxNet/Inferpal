@@ -196,8 +196,8 @@
 [出力]
 {1}</value></data>
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>セッション</value></data>
-  <data name="MsgIterationLimit" xml:space="preserve"><value>（反復制限に達しました — 20 ターン）</value></data>
-  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ エージェントは反復回数の上限で停止しました。上の回答はそれまでに集めた内容の要約であり、完了したタスクではありません。</value></data>
+  <data name="MsgIterationLimit" xml:space="preserve"><value>（反復制限に達しました：{0}）</value></data>
+  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ エージェントは反復回数の上限で停止しました。タスクは完了しておらず、上の内容はそこまでに進んだ分だけです。</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ エージェントが同じツール呼び出しを繰り返したため停止しました。上の回答はそれまでに集めた内容の要約です。</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ 上の回答はモデルの長さ制限で止まっており、不完全です。続きを依頼するか、コンテキスト長を増やしてください。</value></data>
   <data name="AnswerStoppedRepeating" xml:space="preserve"><value>⚠ モデルが同じ内容を繰り返していたため停止しました。上の回答は不完全です。依頼の言い方を変えるか、別のモデルを使うと通常は解消します。</value></data>
@@ -743,6 +743,8 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>診断のファイル記録を無効にしました。</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>直近のエージェント実行によるファイル変更をすべて元に戻す</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>このセッションには元に戻せるファイル変更を伴うエージェント実行がありません。</value></data>
+  <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>直前のエージェント実行はすでに元に戻されています。何も変更していません。</value></data>
+  <data name="UndoRunWhileBusy" xml:space="preserve"><value>まだターンの実行中です。終わってから元に戻してください。</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>このセッションで追跡された実行（{0}）：</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>直前の状態は先に保存されています — `/restore &lt;フルパス&gt;` でファイルを復元できます。</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ 直近の実行を取り消しました — 復元 {0} 件、削除 {1} 件。</value></data>

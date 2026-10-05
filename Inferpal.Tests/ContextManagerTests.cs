@@ -60,6 +60,41 @@ public class ContextManagerTests
         Assert.Equal(string.Empty, decision.Notice);
     }
 
+    /// <summary>
+    /// The question about to go is in the history and not in the previous turn's measure: a large one, sent with the
+    /// conversation just under the trigger, makes the older turns give way before the request goes over the window.
+    /// </summary>
+    [Fact]
+    public async Task TheQuestionAboutToGo_IsCounted()
+    {
+        var history  = LongHistory();
+        var previous = AgentOrchestrator.EstimateTokens(history);   // what the previous turn left measured
+        Assert.True(previous < 800, $"The history alone ({previous} tokens) must sit under the trigger.");
+        history.Add(new ChatMessageDto("user",
+            "Review this file:\n" + string.Join(" ", Enumerable.Range(0, 600).Select(i => $"token{i}"))));
+
+        var decision = await ContextManager.PrepareAsync(
+            history, Config(compaction: false), new FakeInferenceProvider(),
+            lastPromptTokens: previous, onStep: null, ct: CancellationToken.None);
+
+        Assert.Equal(ContextOutcome.Truncated, decision.Outcome);
+    }
+
+    /// <summary>Reference arm: a short question under the trigger changes nothing.</summary>
+    [Fact]
+    public async Task AShortQuestion_UnderTheTrigger_ChangesNothing()
+    {
+        var history  = LongHistory();
+        var previous = AgentOrchestrator.EstimateTokens(history);
+        history.Add(new ChatMessageDto("user", "And the next one?"));
+
+        var decision = await ContextManager.PrepareAsync(
+            history, Config(compaction: false), new FakeInferenceProvider(),
+            lastPromptTokens: previous, onStep: null, ct: CancellationToken.None);
+
+        Assert.Equal(ContextOutcome.None, decision.Outcome);
+    }
+
     /// <summary>Compaction disabled: we truncate, and we SAY so — the conversation has just lost
     /// turns.</summary>
     [Fact]

@@ -1073,8 +1073,8 @@ internal sealed class AgentOrchestrator
         // the user gets a real reply instead of only the "iteration limit" notice.
         var (capFinal, capCut, capRepeating) = executions.Count > 0
             ? await SynthesizeFinalAnswerAsync(
-                model, messages, anchorCount, executions, userTask, Strings.MsgIterationLimit, onToken, onStreamReset, onStep, ct, onThinking)
-            : (Strings.MsgIterationLimit, false, false);
+                model, messages, anchorCount, executions, userTask, Strings.MsgIterationLimit(maxIter), onToken, onStreamReset, onStep, ct, onThinking)
+            : (Strings.MsgIterationLimit(maxIter), false, false);
         return new OrchestratorResult(
             capFinal, plan, executions, messages,
             totalTokens, lastPromptTokens, false, true, capCut, AnswerRepeating: capRepeating);

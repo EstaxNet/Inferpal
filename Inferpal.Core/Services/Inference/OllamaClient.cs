@@ -308,7 +308,7 @@ internal class OllamaClient : InferenceProviderBase
         if ((toolCalls is null || toolCalls.Count == 0) && contentBuilder.Length > 0)
         {
             var known = new HashSet<string>(tools.Definitions.Select(d => d.Function.Name), StringComparer.Ordinal);
-            var (inlineCalls, cleaned) = InlineToolCallParser.TryParse(contentBuilder.ToString(), known.Contains);
+            var (inlineCalls, cleaned) = InlineToolCallParser.FromContent(contentBuilder.ToString(), known);
             if (inlineCalls is { Count: > 0 })
                 return new ChatTurnResult(cleaned, inlineCalls, tokensUsed, promptTokens, cut, StoppedRepeating: looping);
         }
@@ -748,7 +748,10 @@ internal record AgentResult(
     bool                 AnswerRepeating = false,
     /// <summary>The final answer is the model's promoted reasoning, no answer written (<see cref="ChatTurnResult.AnswerIsReasoning"/>):
     /// fine for a bubble, never content — a recap folded into every following system prompt, a commit message, a name.</summary>
-    bool                 AnswerIsReasoning = false);
+    bool                 AnswerIsReasoning = false,
+    /// <summary>The loop stopped at its iteration cap, the task not carried to its end: the answer is the limit message,
+    /// and every reader adds the notice that says so (<see cref="Agent.ChatTurnPolicy.EndNotice"/>).</summary>
+    bool                 ReachedIterationLimit = false);
 
 /// <summary>A single tool invocation within an agentic loop run.</summary>
 internal record ToolExecution(

@@ -45,6 +45,7 @@ internal class ReadFileTool : ITool
         PathSanitizer.AssertUnderRoot(path, root);
 
         string content;
+        var capped = false;
         switch (Classify(path, _overlay))
         {
             // ⚠ A directory is not a missing file: "not found" sent the model looking for a path that is correct.
@@ -60,17 +61,25 @@ internal class ReadFileTool : ITool
                 content = buffered;
                 break;
             default:
-                content = Cap(await TextFileEncoding.ReadTextAsync(path, ct), path);
+                var text = await TextFileEncoding.ReadTextAsync(path, ct);
+                capped  = text.Length > MaxChars;
+                content = Cap(text, path);
                 break;
         }
 
-        _history?.NoteRead(path);
-
         // An empty tool result says nothing — not even "empty": the model cannot tell it from a call that did nothing.
         if (content.Length == 0)
+        {
+            _history?.NoteRead(path);
             return $"[{Path.GetFileName(path)} is empty: 0 characters]";
+        }
 
-        return Page(content, Path.GetFileName(path), args.Int("start_line", 0), args.Int("end_line", 0));
+        var shown = PageOf(content, Path.GetFileName(path), args.Int("start_line", 0), args.Int("end_line", 0));
+        // ⚠ What the model has SEEN, not what it asked for: a first page or a range is not the file, and write_file lets
+        // a whole-file rewrite through only once every line of it has been in front of the model. A file cut at
+        // MaxChars is never seen whole.
+        if (!capped) _history?.NoteReadLines(path, shown.First, shown.Last, shown.Total);
+        return shown.Text;
     }
 
     /// <summary>What a path holds, as this tool reads it.</summary>
@@ -109,22 +118,27 @@ internal class ReadFileTool : ITool
     /// <paramref name="end"/> is honoured as asked (the loop still caps it, and says so); the whole range
     /// comes back exactly as the file holds it, which is what <c>/read</c> relies on to attach a file.
     /// </remarks>
-    internal static string Page(string content, string name, int start, int end)
+    internal static string Page(string content, string name, int start, int end) => PageOf(content, name, start, end).Text;
+
+    /// <summary>What one read shows of a file: the text, and the lines it covers — none (0, 0) when it shows none.</summary>
+    internal readonly record struct Shown(string Text, int First, int Last, int Total);
+
+    /// <summary><see cref="Page"/>, with the lines the page covers.</summary>
+    internal static Shown PageOf(string content, string name, int start, int end)
     {
         var ranged = start > 0 || end > 0;
-        if (!ranged && content.Length <= PageChars) return content;
-
         var lines = content.Split('\n');
         // A trailing newline ends the last line; it does not open another.
         var total = content.EndsWith('\n') ? lines.Length - 1 : lines.Length;
-        if (total <= 0) return content;
+        if (!ranged && content.Length <= PageChars) return new(content, 1, total, total);
+        if (total <= 0) return new(content, 1, total, total);
 
         var first = Math.Max(1, start);
         if (first > total)
-            return $"[start_line {first} is past the end: {name} has {total} lines]";
+            return new($"[start_line {first} is past the end: {name} has {total} lines]", 0, 0, total);
         var last = end > 0 ? Math.Min(end, total) : total;
         if (last < first)
-            return $"[end_line {end} is before start_line {first}]";
+            return new($"[end_line {end} is before start_line {first}]", 0, 0, total);
 
         var shown = first - 1;
         var size  = 0;
@@ -137,14 +151,14 @@ internal class ReadFileTool : ITool
             shown = i;
         }
 
-        if (first == 1 && shown == total) return content;
+        if (first == 1 && shown == total) return new(content, 1, total, total);
 
         var body = string.Join('\n', lines[(first - 1)..shown]);
         if (shown < total || content.EndsWith('\n')) body += "\n";
 
-        return shown < total
+        return new(shown < total
             ? body + $"[{name}: lines {first}–{shown} of {total} shown — call read_file with start_line={shown + 1} to read on]"
-            : body + $"[{name}: lines {first}–{total} of {total} — the end of the file]";
+            : body + $"[{name}: lines {first}–{total} of {total} — the end of the file]", first, shown, total);
     }
 
     /// <summary>

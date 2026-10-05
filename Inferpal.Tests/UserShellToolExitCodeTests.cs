@@ -44,7 +44,7 @@ public class UserShellToolExitCodeTests
         ShellLauncher._overrideForTests = shell;
         try
         {
-            return await new UserShellTool("probe", command, new Approve(), new InferpalConfig())
+            return await new UserShellTool("probe", command, new Approve(), new InferpalConfig(), () => string.Empty)
                 .ExecuteAsync(NoArgs, CancellationToken.None);
         }
         finally { ShellLauncher._overrideForTests = null; }

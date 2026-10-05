@@ -138,6 +138,82 @@ public sealed class WriteUnreadFileTests : IDisposable
         Assert.Equal("replaced\n", File.ReadAllText(path));
     }
 
+    // ── Read means every line: a long file comes back a page at a time ─────
+
+    /// <summary>A file of numbered lines, several read_file pages long.</summary>
+    private string LongFile(int lines = 600)
+    {
+        var path = Path.Combine(_ws, "Long.cs");
+        File.WriteAllText(path, string.Concat(Enumerable.Range(1, lines)
+            .Select(i => $"// line {i} of the original file, long enough to fill several pages\n")));
+        return path;
+    }
+
+    [Fact]
+    public async Task AFirstPage_IsNotTheFile_AndTheRefusalNamesTheLineToReadOnFrom()
+    {
+        var path     = LongFile();
+        var original = File.ReadAllText(path);
+        var (write, read, history, approval) = Tools();
+        history.BeginRun();
+
+        var page = await read.ExecuteAsync(Args(new { path }), default);
+        // Witness: the file is paged, and the footer names where the next page starts.
+        var next = System.Text.RegularExpressions.Regex.Match(page, @"start_line=(\d+) to read on");
+        Assert.True(next.Success, page[^200..]);
+
+        var result = await write.ExecuteAsync(Args(new { path, content = "// rewritten\n" }), default);
+
+        Assert.Contains("only been read in part", result);
+        Assert.Contains("of 600 lines", result);
+        Assert.Contains($"start_line={next.Groups[1].Value}", result);
+        Assert.Equal(original, File.ReadAllText(path));
+        Assert.Equal(0, approval.Asked);
+    }
+
+    [Fact]
+    public async Task ARange_IsNotTheFileEither()
+    {
+        var path = LongFile();
+        var (write, read, history, approval) = Tools();
+        history.BeginRun();
+
+        await read.ExecuteAsync(Args(new { path, start_line = 1, end_line = 3 }), default);
+        var result = await write.ExecuteAsync(Args(new { path, content = "// rewritten\n" }), default);
+
+        Assert.Contains("(3 of 600 lines)", result);
+        Assert.Contains("start_line=4", result);
+        Assert.Equal(0, approval.Asked);
+    }
+
+    [Fact]
+    public async Task EveryPage_ReadInTurn_IsTheWholeFile()
+    {
+        // Reference arm: reading a long file to its end, page after page, is reading it — then rewriting it is not blind.
+        var path = LongFile();
+        var (write, read, history, approval) = Tools();
+        history.BeginRun();
+
+        var pages = 0;
+        var start = 0;
+        while (true)
+        {
+            var page = await read.ExecuteAsync(Args(new { path, start_line = start }), default);
+            pages++;
+            var next = System.Text.RegularExpressions.Regex.Match(page, @"start_line=(\d+) to read on");
+            if (!next.Success) break;
+            start = int.Parse(next.Groups[1].Value);
+            Assert.True(pages < 50, "the pages never reached the end of the file");
+        }
+        Assert.True(pages > 1, $"Only {pages} page: the file is not long enough to measure anything.");
+
+        var result = await write.ExecuteAsync(Args(new { path, content = "// rewritten\n" }), default);
+
+        Assert.DoesNotContain("read in part", result);
+        Assert.Equal("// rewritten\n", File.ReadAllText(path));
+        Assert.Equal(1, approval.Asked);
+    }
+
     // ── A /task proposal is applied through write_file, in a run of its own ─────
 
     /// <summary>The smallest registry that runs the real write tool.</summary>

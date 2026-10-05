@@ -136,7 +136,9 @@ export type ExtToWebview =
   | { type: 'chips'; chips: WvChip[] }
   | { type: 'pins'; pins: string[] }
   | { type: 'stepPaused' }
-  | { type: 'stepResumed' };
+  | { type: 'stepResumed' }
+  /** The model picker's list, re-read from the server when the menu opened. */
+  | { type: 'models'; models: string[] };
 
 export type WebviewToExt =
   | { type: 'ready' }
@@ -153,6 +155,8 @@ export type WebviewToExt =
   | { type: 'copyText'; text: string }
   | { type: 'regenerate' }
   | { type: 'retryConnection' }
+  /** The model picker opened: re-read the server's list. */
+  | { type: 'listModels' }
   | { type: 'openXray' }
   | { type: 'mentionSearch'; category: string; query: string }
   | { type: 'resolveMention'; category: string; value?: string }

@@ -452,6 +452,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // host or RPC failure: keep the previous list (see bootstrap for why this is not the
       // "backend unreachable" case).
     }
+    try {
+      // ⚠ The chips follow the setting, as in Visual Studio: a file pinned, unpinned or disabled (#) in the settings
+      // panel changes every prompt at once, and chips read only at start-up kept showing the old list.
+      this.pins = (await host.pinsList()).pins;
+    } catch (err) {
+      this.log(`[chat] pins/list after a settings save failed: ${String(err)}`);
+    }
     this.hydrate();
     void this.pollBackendStatus();
   }
@@ -496,6 +503,27 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // and every question on the default until a reload.
     if (wasDown && this.status.connected) {
       await this.refreshModelsAfterReconnect(host);
+    }
+  }
+
+  /**
+   * The model picker's list, re-read from the server when the menu opens — the menu is already drawn from the list the
+   * view holds. A host or a server that cannot answer leaves it as it is, an empty answer too (see configSaved): the
+   * menu's own lines say when nothing is listed or the backend is down.
+   */
+  private async refreshModelList(): Promise<void> {
+    const host = this.getHost();
+    if (!host?.isRunning) {
+      return;
+    }
+    try {
+      const listed = await host.modelsList();
+      if (listed.length > 0 && listed.join('\n') !== this.models.join('\n')) {
+        this.models = listed;
+        this.post({ type: 'models', models: listed });
+      }
+    } catch (err) {
+      this.log(`[chat] models/list on opening the model picker failed: ${String(err)}`);
     }
   }
 
@@ -1029,6 +1057,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         return;
       case 'retryConnection':
         await this.pollBackendStatus();
+        return;
+      case 'listModels':
+        await this.refreshModelList();
         return;
       case 'openSessions':
         await this.loadSessionCommand();

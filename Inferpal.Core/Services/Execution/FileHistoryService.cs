@@ -382,6 +382,24 @@ internal class FileHistoryService
     }
 
     /// <summary>
+    /// Records that the model has seen lines <paramref name="first"/>–<paramref name="last"/> of the
+    /// <paramref name="total"/> of <paramref name="filePath"/>: the file counts as read once its pages cover it.
+    /// </summary>
+    internal void NoteReadLines(string filePath, int first, int last, int total)
+    {
+        lock (_runLock) _currentRun?.NoteReadLines(filePath, first, last, total);
+    }
+
+    /// <summary>
+    /// Of a file the model has read only in part in the current run, how many lines it has seen and the first one it has
+    /// not; <c>null</c> when it has read all of it, none of it, or no run is active.
+    /// </summary>
+    internal (int Seen, int Total, int FirstUnseen)? PartialRead(string filePath)
+    {
+        lock (_runLock) return _currentRun?.PartialRead(filePath);
+    }
+
+    /// <summary>
     /// Whether the model has seen <paramref name="filePath"/> in the current run; <c>null</c> when no run is active.
     /// </summary>
     /// <remarks>
@@ -517,6 +535,7 @@ internal class FileHistoryService
             catch { failed.Add(change.OriginalPath); }
         }
 
+        lock (_runLock) run.MarkUndone();
         return new RunUndoResult(restored, deleted, failed, savedFirst);
     }
 
@@ -581,6 +600,45 @@ internal sealed record ToolCallRecord(int Seq, string Tool, string? Subject, lon
 internal sealed record RunUndoResult(List<string> Restored, List<string> Deleted, List<string> Failed,
                                      int SavedFirst = 0);
 
+/// <summary>The lines of one file the model has seen, as merged ranges.</summary>
+internal sealed class LinesSeen(int total)
+{
+    private readonly List<(int First, int Last)> _ranges = [];
+
+    public int Total { get; } = total;
+
+    /// <summary>How many lines have been seen.</summary>
+    public int Count => _ranges.Sum(r => r.Last - r.First + 1);
+
+    /// <summary>The first line not seen yet; <c>null</c> once every line has been.</summary>
+    public int? FirstUnseen
+    {
+        get
+        {
+            var next = 1;
+            foreach (var (first, last) in _ranges)
+            {
+                if (first > next) return next;
+                next = Math.Max(next, last + 1);
+            }
+            return next <= Total ? next : null;
+        }
+    }
+
+    public void Add(int first, int last)
+    {
+        _ranges.Add((first, Math.Min(last, Total)));
+        _ranges.Sort();
+        // Merge what overlaps or touches, so the ranges stay few and ordered.
+        for (var i = _ranges.Count - 1; i > 0; i--)
+        {
+            if (_ranges[i].First > _ranges[i - 1].Last + 1) continue;
+            _ranges[i - 1] = (_ranges[i - 1].First, Math.Max(_ranges[i - 1].Last, _ranges[i].Last));
+            _ranges.RemoveAt(i);
+        }
+    }
+}
+
 /// <summary>
 /// A change-tracking run: the set of files first touched between one <see cref="FileHistoryService.BeginRun"/>
 /// and the next. Keeps only the <em>first</em> change per file so undo reverts to the pre-run state
@@ -607,7 +665,41 @@ internal sealed class HistoryRun
 
     public HistoryRun(string id) { Id = id; StartedAt = DateTime.Now; }
 
-    public void NoteRead(string path) => _read.Add(path);
+    /// <summary>
+    /// The run has been undone. ⚠ It stays the most recent run with changes, so without this a second <c>/undo-run</c> — or
+    /// a second click on the still-visible Undo button — undoes it AGAIN: it overwrites whatever has been edited since with
+    /// the pre-run state, and answers "last run undone".
+    /// </summary>
+    public bool Undone { get; private set; }
+
+    public void MarkUndone() => Undone = true;
+
+    // Of a file read in part (a page, a range): the lines seen so far, promoted to _read once they cover the file.
+    private readonly Dictionary<string, LinesSeen> _partial = new(PathComparer.Default);
+
+    public void NoteRead(string path)
+    {
+        _read.Add(path);
+        _partial.Remove(path);
+    }
+
+    public void NoteReadLines(string path, int first, int last, int total)
+    {
+        if (first < 1 || last < first || _read.Contains(path)) return;
+        if (first == 1 && last >= total) { NoteRead(path); return; }
+
+        // Another line count: the file changed between two reads, and what was seen of the old one no longer counts.
+        if (!_partial.TryGetValue(path, out var seen) || seen.Total != total)
+            _partial[path] = seen = new LinesSeen(total);
+        seen.Add(first, last);
+        if (seen.FirstUnseen is null) NoteRead(path);
+    }
+
+    public (int Seen, int Total, int FirstUnseen)? PartialRead(string path) =>
+        !_read.Contains(path) && _partial.TryGetValue(path, out var seen) && seen.FirstUnseen is { } next
+            ? (seen.Count, seen.Total, next)
+            : null;
+
     public bool WasRead(string path) => _read.Contains(path);
 
     public void RecordFirst(string originalPath, string? snapshot, bool snapshotFailed = false)

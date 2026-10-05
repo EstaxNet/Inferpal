@@ -196,8 +196,8 @@ Pour chaque problème, cite la ligne ou le symbole, explique le risque et propos
 [sortie]
 {1}</value></data>
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>session</value></data>
-  <data name="MsgIterationLimit" xml:space="preserve"><value>(limite d'itérations atteinte — 20 tours)</value></data>
-  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ L'agent s'est arrêté à sa limite d'itérations : la réponse ci-dessus résume ce qu'il avait rassemblé, pas une tâche terminée.</value></data>
+  <data name="MsgIterationLimit" xml:space="preserve"><value>(limite d'itérations atteinte : {0})</value></data>
+  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ L'agent s'est arrêté à sa limite d'itérations : la tâche n'est pas terminée, et ce qui figure ci-dessus ne va que jusqu'où il en était.</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ L'agent répétait les mêmes appels d'outils et a été arrêté : la réponse ci-dessus résume ce qu'il avait rassemblé.</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ La réponse ci-dessus s'est arrêtée à la limite de longueur du modèle : elle est incomplète. Demandez-lui de continuer, ou augmentez la longueur de contexte.</value></data>
   <data name="AnswerStoppedRepeating" xml:space="preserve"><value>⚠ Le modèle se répétait et a été arrêté : la réponse ci-dessus est incomplète. Reformuler la demande, ou changer de modèle, permet en général d'en sortir.</value></data>
@@ -747,6 +747,8 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>Journalisation des diagnostics dans un fichier désactivée.</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Annule toutes les modifs de fichiers du dernier run agent</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>Aucun run agent avec des modifications de fichiers à annuler dans cette session.</value></data>
+  <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>Le dernier run agent a déjà été annulé — rien n'a été modifié.</value></data>
+  <data name="UndoRunWhileBusy" xml:space="preserve"><value>Un tour est encore en cours : attendez qu'il se termine, puis annulez.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Runs suivis cette session ({0}) :</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Leur état précédent a été sauvegardé avant — `/restore &lt;chemin complet&gt;` rend un fichier.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Dernier run annulé — {0} fichier(s) restauré(s), {1} supprimé(s).</value></data>

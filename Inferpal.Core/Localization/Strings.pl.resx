@@ -196,8 +196,8 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
 [wyjście]
 {1}</value></data>
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>sesja</value></data>
-  <data name="MsgIterationLimit" xml:space="preserve"><value>(osiągnięto limit iteracji — 20 tur)</value></data>
-  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ Agent zatrzymał się na limicie iteracji: powyższa odpowiedź podsumowuje to, co zebrał, a nie ukończone zadanie.</value></data>
+  <data name="MsgIterationLimit" xml:space="preserve"><value>(osiągnięto limit iteracji: {0})</value></data>
+  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ Agent zatrzymał się na limicie iteracji: zadanie nie jest ukończone, a to, co powyżej, sięga tylko tak daleko, jak zdążył dojść.</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ Agent powtarzał te same wywołania narzędzi i został zatrzymany: powyższa odpowiedź podsumowuje to, co zebrał.</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ Powyższa odpowiedź zatrzymała się na limicie długości modelu: jest niepełna. Poproś o kontynuację albo zwiększ długość kontekstu.</value></data>
   <data name="AnswerStoppedRepeating" xml:space="preserve"><value>⚠ Model zaczął się powtarzać i został zatrzymany: powyższa odpowiedź jest niepełna. Zwykle pomaga przeformułowanie prośby albo inny model.</value></data>
@@ -743,6 +743,8 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>Wyłączono zapis diagnostyki do pliku.</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Cofnij wszystkie zmiany plików z ostatniego uruchomienia agenta</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>Brak uruchomienia agenta ze zmianami plików do cofnięcia w tej sesji.</value></data>
+  <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>Ostatnie uruchomienie agenta zostało już cofnięte — nic nie zmieniono.</value></data>
+  <data name="UndoRunWhileBusy" xml:space="preserve"><value>Tura wciąż trwa: poczekaj, aż się skończy, a potem cofnij.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Śledzone uruchomienia w tej sesji ({0}):</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Ich poprzedni stan został wcześniej zapisany — `/restore &lt;pełna ścieżka&gt;` przywraca plik.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Cofnięto ostatnie uruchomienie — przywrócono {0} plik(ów), usunięto {1}.</value></data>

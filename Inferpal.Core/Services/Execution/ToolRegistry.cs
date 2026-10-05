@@ -237,7 +237,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
                 // remove the earlier declaration and this line works, put it back and the clash
                 // returns — silently, for the life of the process, without this.
                 Diagnostics.Forget("CustomTools", line);
-                tools.Add(new UserShellTool(name, cmd, _approval, _config));
+                tools.Add(new UserShellTool(name, cmd, _approval, _config, () => _indexService.RootDir));
             }
 
             return tools;

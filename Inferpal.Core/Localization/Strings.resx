@@ -197,8 +197,8 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
 [output]
 {1}</value></data>
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>session</value></data>
-  <data name="MsgIterationLimit" xml:space="preserve"><value>(iteration limit reached — 20 turns)</value></data>
-  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ The agent stopped at its iteration limit: the answer above summarises what it had gathered, not a finished task.</value></data>
+  <data name="MsgIterationLimit" xml:space="preserve"><value>(iteration limit reached: {0})</value></data>
+  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ The agent stopped at its iteration limit: the task is not finished, and what is above only goes as far as it got.</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ The agent was repeating the same tool calls and was stopped: the answer above summarises what it had gathered.</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ The answer above stopped at the model's length limit: it is incomplete. Ask it to continue, or increase the context length.</value></data>
   <data name="AnswerStoppedRepeating" xml:space="preserve"><value>⚠ The model was repeating itself and was stopped: the answer above is incomplete. Rephrasing the request, or another model, usually gets past it.</value></data>
@@ -751,6 +751,8 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>Diagnostics file logging disabled.</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Undo all file changes from the last agent run</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>No agent run with file changes to undo in this session.</value></data>
+  <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>The last agent run has already been undone — nothing was changed.</value></data>
+  <data name="UndoRunWhileBusy" xml:space="preserve"><value>A turn is still running: wait for it to finish, then undo.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Change-tracking runs this session ({0}):</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Their previous state was saved first — `/restore &lt;full path&gt;` brings a file back.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Last run undone — {0} file(s) restored, {1} deleted.</value></data>

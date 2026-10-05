@@ -23,13 +23,22 @@ internal static class FileTarget
     /// its <c>old_content</c>, <c>write_file</c> replaces everything. Without this, a model asked to change a file it
     /// has not opened writes the file from its idea of one: what it did not know was there is gone, and the project
     /// may well still build. Refused before the approval prompt, with the gesture that works.
+    /// <para>
+    /// ⚠ Read means EVERY line: a long file comes back a page at a time, and a first page is not the file. A file read
+    /// in part is named with the line to read on from.
+    /// </para>
     /// </remarks>
-    public static string? UnreadRefusal(FileHistoryService history, string path) =>
-        File.Exists(path) && new FileInfo(path).Length > 0 && history.WasRead(path) == false
-            ? $"'{path}' already exists and has not been read in this run: write_file replaces the whole file, "
+    public static string? UnreadRefusal(FileHistoryService history, string path)
+    {
+        if (!File.Exists(path) || new FileInfo(path).Length == 0 || history.WasRead(path) != false) return null;
+        return history.PartialRead(path) is { } part
+            ? $"'{path}' has only been read in part in this run ({part.Seen} of {part.Total} lines): write_file "
+            + "replaces the whole file, including every line you have not seen. Read on with read_file "
+            + $"(start_line={part.FirstUnseen}), or change only part of it with apply_diff."
+            : $"'{path}' already exists and has not been read in this run: write_file replaces the whole file, "
             + "including every line you have not seen. Read it with read_file first, or change only part of it "
-            + "with apply_diff."
-            : null;
+            + "with apply_diff.";
+    }
 
     /// <summary>The refusal for <paramref name="path"/> when it is a directory, else <c>null</c>.</summary>
     public static string? DirectoryRefusal(string path) =>

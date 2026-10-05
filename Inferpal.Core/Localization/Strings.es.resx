@@ -196,8 +196,8 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
 [salida]
 {1}</value></data>
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>sesión</value></data>
-  <data name="MsgIterationLimit" xml:space="preserve"><value>(límite de iteraciones alcanzado — 20 turnos)</value></data>
-  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ El agente se detuvo en su límite de iteraciones: la respuesta de arriba resume lo que había reunido, no una tarea terminada.</value></data>
+  <data name="MsgIterationLimit" xml:space="preserve"><value>(límite de iteraciones alcanzado: {0})</value></data>
+  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ El agente se detuvo en su límite de iteraciones: la tarea no está terminada, y lo de arriba solo llega hasta donde había avanzado.</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ El agente repetía las mismas llamadas a herramientas y fue detenido: la respuesta de arriba resume lo que había reunido.</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ La respuesta de arriba se detuvo en el límite de longitud del modelo: está incompleta. Pídele que continúe o aumenta la longitud de contexto.</value></data>
   <data name="AnswerStoppedRepeating" xml:space="preserve"><value>⚠ El modelo se estaba repitiendo y fue detenido: la respuesta de arriba está incompleta. Reformular la petición, o usar otro modelo, suele resolverlo.</value></data>
@@ -743,6 +743,8 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>Registro de diagnósticos en archivo desactivado.</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Deshacer todos los cambios de archivos del último run del agente</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>No hay ningún run del agente con cambios de archivos que deshacer en esta sesión.</value></data>
+  <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>El último run del agente ya se deshizo: no se ha cambiado nada.</value></data>
+  <data name="UndoRunWhileBusy" xml:space="preserve"><value>Todavía hay un turno en curso: espere a que termine y luego deshaga.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Runs rastreados en esta sesión ({0}):</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Su estado anterior se guardó antes — `/restore &lt;ruta completa&gt;` restaura un archivo.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Último run deshecho — {0} archivo(s) restaurado(s), {1} eliminado(s).</value></data>

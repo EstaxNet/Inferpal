@@ -580,7 +580,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         if (toolCalls is null && contentBuilder.Length > 0)
         {
             var known = new HashSet<string>(tools.Definitions.Select(d => d.Function.Name), StringComparer.Ordinal);
-            var (inlineCalls, cleaned) = InlineToolCallParser.TryParse(contentText, known.Contains);
+            var (inlineCalls, cleaned) = InlineToolCallParser.FromContent(contentText, known);
             if (inlineCalls is { Count: > 0 })
                 return new ChatTurnResult(cleaned, inlineCalls, tokensUsed, promptTokens, cut, StoppedRepeating: looping);
         }

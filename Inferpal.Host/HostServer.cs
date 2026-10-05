@@ -419,7 +419,7 @@ internal sealed partial class HostServer : IDisposable
                     durable.Add(new ChatMessageDto("assistant", answer));
                 s.History          = durable;
                 s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
-                var runEndNotice = NoticeOrNull(ChatTurnPolicy.EndNotice(false, run.WasLoopDetected, run.AnswerCut,
+                var runEndNotice = NoticeOrNull(ChatTurnPolicy.EndNotice(run.ReachedIterationLimit, run.WasLoopDetected, run.AnswerCut,
                     ChatTurnPolicy.EditsWithoutEffect(run.Executions, s.Tools.History.CurrentRunFileCount),
                     answerRepeating: run.AnswerRepeating,
                     lastCheckFailed: ChatTurnPolicy.LastCheckFailed(run.Executions, s.Tools.History.CurrentRunFileCount)));

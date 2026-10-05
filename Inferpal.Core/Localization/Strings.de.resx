@@ -196,8 +196,8 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
 [Ausgabe]
 {1}</value></data>
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>sitzung</value></data>
-  <data name="MsgIterationLimit" xml:space="preserve"><value>(Iterationslimit erreicht – 20 Runden)</value></data>
-  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ Der Agent hat sein Iterationslimit erreicht: Die Antwort oben fasst zusammen, was er gesammelt hatte — keine abgeschlossene Aufgabe.</value></data>
+  <data name="MsgIterationLimit" xml:space="preserve"><value>(Iterationslimit erreicht: {0})</value></data>
+  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ Der Agent hat sein Iterationslimit erreicht: Die Aufgabe ist nicht abgeschlossen — was oben steht, reicht nur so weit, wie er gekommen war.</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ Der Agent wiederholte dieselben Werkzeugaufrufe und wurde gestoppt: Die Antwort oben fasst zusammen, was er gesammelt hatte.</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ Die Antwort oben endete an der Längengrenze des Modells: Sie ist unvollständig. Bitten Sie um Fortsetzung oder erhöhen Sie die Kontextlänge.</value></data>
   <data name="AnswerStoppedRepeating" xml:space="preserve"><value>⚠ Das Modell wiederholte sich und wurde gestoppt: Die Antwort oben ist unvollständig. Die Anfrage anders zu formulieren oder ein anderes Modell zu wählen, hilft meist weiter.</value></data>
@@ -743,6 +743,8 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>Diagnose-Dateiprotokollierung deaktiviert.</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Alle Dateiänderungen des letzten Agent-Laufs rückgängig machen</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>Kein Agent-Lauf mit Dateiänderungen in dieser Sitzung zum Rückgängigmachen.</value></data>
+  <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>Der letzte Agent-Lauf wurde bereits rückgängig gemacht — nichts wurde geändert.</value></data>
+  <data name="UndoRunWhileBusy" xml:space="preserve"><value>Ein Durchgang läuft noch: Warten Sie, bis er beendet ist, und machen Sie dann rückgängig.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Verfolgte Läufe in dieser Sitzung ({0}):</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Ihr vorheriger Zustand wurde vorher gesichert — `/restore &lt;vollständiger Pfad&gt;` stellt eine Datei wieder her.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Letzter Lauf rückgängig gemacht — {0} Datei(en) wiederhergestellt, {1} gelöscht.</value></data>

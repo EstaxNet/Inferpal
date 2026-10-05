@@ -41,6 +41,9 @@ internal static class UndoRunCommandHandler
 
         var run = runs.FirstOrDefault(r => r.FileCount > 0);
         if (run is null) return Strings.UndoRunNone;
+        // Undone already: nothing is touched. Moving on to the run before would answer a click on THIS run's Undo button
+        // by undoing another one.
+        if (run.Undone) return Strings.UndoRunAlreadyUndone;
 
         var result = await history.UndoRunAsync(run, ct);
 

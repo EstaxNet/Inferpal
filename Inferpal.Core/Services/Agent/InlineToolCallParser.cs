@@ -116,6 +116,31 @@ internal static class InlineToolCallParser
     {
         if (string.IsNullOrWhiteSpace(content))
             return (null, content ?? string.Empty);
+        return ParseNonEmpty(content, isKnownTool);
+    }
+
+    /// <summary>
+    /// The tool calls a turn wrote as text in its CONTENT, the stream having carried no structured one — the decision
+    /// both chat clients make, with the names of the tools the request <paramref name="offered"/>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ With no tool offered — an inline edit, <c>/doc</c>, a summary, a commit message, a synthesis — text that SHOWS a
+    /// call is content: a source file holding a tool-call literal, an answer explaining a format. Read as a call, it is
+    /// cut out of the reply, and an inline edit drops those lines from the user's code. A reply that is nothing but a
+    /// call is still read as one: asked for an answer, the model has written none, and every reader of such a reply
+    /// refuses an empty one.
+    /// </remarks>
+    public static (List<ToolCallDto>? Calls, string Cleaned) FromContent(string content, IReadOnlyCollection<string> offered)
+    {
+        var (calls, cleaned) = TryParse(content, offered.Contains);
+        if (calls is not { Count: > 0 }) return (null, content);
+        if (offered.Count == 0 && MarkdownParser.HasPrintableText(MarkdownParser.StripThinkTags(cleaned)))
+            return (null, content);
+        return (calls, cleaned);
+    }
+
+    private static (List<ToolCallDto>? Calls, string Cleaned) ParseNonEmpty(string content, Func<string, bool>? isKnownTool)
+    {
 
         var calls = new List<ToolCallDto>();
 

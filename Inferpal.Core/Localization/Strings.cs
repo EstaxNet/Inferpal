@@ -615,7 +615,7 @@ internal static class Strings
     public static string MsgCancelled          => Get(nameof(MsgCancelled));
     public static string MsgTruncated          => Get(nameof(MsgTruncated));
     public static string DefaultSessionSnippet => Get(nameof(DefaultSessionSnippet));
-    public static string MsgIterationLimit     => Get(nameof(MsgIterationLimit));
+    public static string MsgIterationLimit(int limit) => string.Format(Get(nameof(MsgIterationLimit)), limit);
     // ⚠ How a run ENDED, when it is not because the model was done. The answer stays — that is the
     // original arbitration, "do not alarm when real work was done" — but it stops passing for a task
     // carried to its end. Both facts lived in OrchestratorResult all along and were read by NOBODY.
@@ -1259,6 +1259,8 @@ internal static class Strings
     // ── /undo-run command ───────────────────────────────────────────────────────
     public static string SlashHintUndoRun                    => Get(nameof(SlashHintUndoRun));
     public static string UndoRunNone                         => Get(nameof(UndoRunNone));
+    public static string UndoRunAlreadyUndone                => Get(nameof(UndoRunAlreadyUndone));
+    public static string UndoRunWhileBusy                    => Get(nameof(UndoRunWhileBusy));
     public static string UndoRunListHeader(int count)        => string.Format(Get(nameof(UndoRunListHeader)), count);
     public static string UndoRunResult(int restored, int deleted) => string.Format(Get(nameof(UndoRunResult)), restored, deleted);
     public static string UndoRunSavedFirst                    => Get(nameof(UndoRunSavedFirst));

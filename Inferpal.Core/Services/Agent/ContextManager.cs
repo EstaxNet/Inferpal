@@ -91,8 +91,13 @@ internal static class ContextManager
         int                           toolTokens = 0)
     {
         var window = await EffectiveWindowAsync(config, client, model, ct).ConfigureAwait(false);
+        // ⚠ The question about to go is already in the history — with its attachments, the auto-context and the
+        // workspace block — and not in lastPromptTokens, measured after the previous turn. Decided on that figure alone,
+        // a large attachment sent near the trigger goes out over the window: Ollama drops the head of the conversation
+        // in silence, LM Studio refuses a request that compaction would have made fit.
+        var measured = lastPromptTokens == 0 ? 0 : Math.Max(lastPromptTokens, AgentOrchestrator.EstimateTokens(history));
         var plan   = HistoryCompaction.Decide(
-            history, window, NextTurnLoad(lastPromptTokens, toolTokens),
+            history, window, NextTurnLoad(measured, toolTokens),
             config.ContextWindowKeepTurns, config.KvCacheAnchorMessages, config.CompactionEnabled, toolTokens);
 
         if (plan.Action == CompactionAction.None)

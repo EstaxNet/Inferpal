@@ -196,8 +196,8 @@ Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una 
 [output]
 {1}</value></data>
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>sessione</value></data>
-  <data name="MsgIterationLimit" xml:space="preserve"><value>(limite di iterazioni raggiunto — 20 turni)</value></data>
-  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ L'agente si è fermato al limite di iterazioni: la risposta qui sopra riassume ciò che aveva raccolto, non un compito completato.</value></data>
+  <data name="MsgIterationLimit" xml:space="preserve"><value>(limite di iterazioni raggiunto: {0})</value></data>
+  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ L'agente si è fermato al limite di iterazioni: il compito non è finito, e quanto sopra arriva solo fin dove era giunto.</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ L'agente ripeteva le stesse chiamate agli strumenti ed è stato fermato: la risposta qui sopra riassume ciò che aveva raccolto.</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ La risposta qui sopra si è interrotta al limite di lunghezza del modello: è incompleta. Chiedigli di continuare oppure aumenta la lunghezza del contesto.</value></data>
   <data name="AnswerStoppedRepeating" xml:space="preserve"><value>⚠ Il modello si stava ripetendo ed è stato fermato: la risposta qui sopra è incompleta. Riformulare la richiesta, o usare un altro modello, di solito risolve.</value></data>
@@ -743,6 +743,8 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>Registrazione su file della diagnostica disattivata.</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Annulla tutte le modifiche ai file dell'ultimo run dell'agente</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>Nessun run dell'agente con modifiche ai file da annullare in questa sessione.</value></data>
+  <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>L'ultimo run dell'agente è già stato annullato: non è stato modificato nulla.</value></data>
+  <data name="UndoRunWhileBusy" xml:space="preserve"><value>Un turno è ancora in corso: attendi che finisca, poi annulla.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Run tracciati in questa sessione ({0}):</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Il loro stato precedente è stato salvato prima — `/restore &lt;percorso completo&gt;` ripristina un file.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Ultimo run annullato — {0} file ripristinato/i, {1} eliminato/i.</value></data>

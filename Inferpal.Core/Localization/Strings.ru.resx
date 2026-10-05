@@ -196,8 +196,8 @@
 [вывод]
 {1}</value></data>
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>сессия</value></data>
-  <data name="MsgIterationLimit" xml:space="preserve"><value>(достигнут лимит итераций — 20 ходов)</value></data>
-  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ Агент остановился на пределе итераций: ответ выше — сводка собранного, а не завершённая задача.</value></data>
+  <data name="MsgIterationLimit" xml:space="preserve"><value>(достигнут лимит итераций: {0})</value></data>
+  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ Агент остановился на пределе итераций: задача не завершена, а то, что выше, доходит лишь до того места, где он остановился.</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ Агент повторял одни и те же вызовы инструментов и был остановлен: ответ выше — сводка собранного.</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ Ответ выше остановился на ограничении длины модели: он неполон. Попросите продолжить или увеличьте длину контекста.</value></data>
   <data name="AnswerStoppedRepeating" xml:space="preserve"><value>⚠ Модель начала повторяться и была остановлена: ответ выше неполный. Обычно помогает переформулировать запрос или выбрать другую модель.</value></data>
@@ -741,6 +741,8 @@
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>Запись диагностики в файл выключена.</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Отменить все изменения файлов из последнего запуска агента</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>В этой сессии нет запуска агента с изменениями файлов для отмены.</value></data>
+  <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>Последний запуск агента уже отменён — ничего не изменено.</value></data>
+  <data name="UndoRunWhileBusy" xml:space="preserve"><value>Ход ещё выполняется: дождитесь его окончания, затем отмените.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Отслеживаемые запуски в этой сессии ({0}):</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Их предыдущее состояние сохранено заранее — `/restore &lt;полный путь&gt;` восстановит файл.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Последний запуск отменён — восстановлено файлов: {0}, удалено: {1}.</value></data>

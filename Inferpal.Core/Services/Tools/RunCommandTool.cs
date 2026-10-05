@@ -90,10 +90,11 @@ internal sealed class RunCommandTool : ITool, IDisposable
             return $"Error: 'working_directory' {workDir} is not an existing folder — nothing ran. Check the path, or omit "
                  + $"it to run in {_session.CurrentDirectory}.";
 
-        // Surface a model-chosen working directory in the prompt: approving "git clean -fdx"
-        // reads very differently when it runs outside the session cwd the user has in mind.
+        // The folder is on the prompt whenever the command does not run at the workspace root — asked for, or where an
+        // earlier `cd` left the session: approving "git clean -fdx" with no folder named reads as the root.
         // Permission rules keep matching the raw command (the documented subject for run_command).
-        var details = workDir is null ? command : $"{command}\n[cwd: {workDir}]";
+        var runIn   = _session.StartDirectory(workDir).Directory;
+        var details = ShellSession.SameFolder(runIn, _session.WorkspaceRoot) ? command : $"{command}\n[cwd: {runIn}]";
         if (!await _approval.RequestApprovalAsync("run_command", details, ct, subject: command))
             return Strings.RunCancelled;
 

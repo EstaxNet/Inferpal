@@ -5,8 +5,16 @@ using Inferpal.Config;
 namespace Inferpal.Services.Tools;
 
 /// <summary>User-defined tool that runs a configurable shell command.</summary>
-internal sealed class UserShellTool(string name, string command, IApprovalService approval, InferpalConfig config) : ITool
+/// <param name="getRoot">The workspace root the command runs in (empty: none known yet).</param>
+internal sealed class UserShellTool(string name, string command, IApprovalService approval, InferpalConfig config,
+                                    Func<string> getRoot) : ITool
 {
+    /// <summary>Where the agent's arguments go in a command that names the spot — what both settings panels tell the
+    /// user to write.</summary>
+    internal const string ArgsPlaceholder = "{args}";
+
+    private bool HasPlaceholder => command.Contains(ArgsPlaceholder, StringComparison.Ordinal);
+
     public string Name        => name;
     public string Description => $"User-defined tool. Runs: {command}";
     public object Parameters  => new
@@ -14,15 +22,35 @@ internal sealed class UserShellTool(string name, string command, IApprovalServic
         type       = "object",
         properties = new
         {
-            args = new { type = "string", description = "Optional extra arguments appended to the command." }
+            args = new
+            {
+                type        = "string",
+                description = HasPlaceholder
+                    ? $"Text that replaces {ArgsPlaceholder} in the command."
+                    : "Optional extra arguments appended to the command.",
+            }
         },
         required = Array.Empty<string>(),
     };
 
+    /// <summary>
+    /// The command that runs: <paramref name="extra"/> in place of every <c>{args}</c> when the command names the spot,
+    /// appended after it otherwise.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The settings say "use {args} for arguments". Appended instead, the literal placeholder stays in the command — a
+    /// script block to PowerShell, a stray word to bash — and a mid-command one (<c>git grep -n {args} src</c>) searches
+    /// for the wrong thing, whose "no match" the model reads as "absent".
+    /// </remarks>
+    internal static string Expand(string command, string? extra) =>
+        command.Contains(ArgsPlaceholder, StringComparison.Ordinal)
+            ? command.Replace(ArgsPlaceholder, extra ?? string.Empty, StringComparison.Ordinal)
+            : string.IsNullOrEmpty(extra) ? command : $"{command} {extra}";
+
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
         var extra   = args.Str("args");
-        var fullCmd = string.IsNullOrEmpty(extra) ? command : $"{command} {extra}";
+        var fullCmd = Expand(command, extra);
 
         if (!await approval.RequestApprovalAsync(name, fullCmd, ct))
             return "Cancelled.";
@@ -37,6 +65,12 @@ internal sealed class UserShellTool(string name, string command, IApprovalServic
             // design — the approval prompt above (full command shown) is the actual guard.
             var (dialect, shell) = Shell.ShellLauncher.Resolve();
             var psi = Shell.ShellLauncher.BuildStartInfo(dialect, shell, fullCmd);
+            // ⚠ In the workspace, like run_command, run_tests and the build: started bare, the command inherits the
+            // process's folder — the workspace in VS Code, the extension host's own start folder in Visual Studio, where
+            // `dotnet test`, `npm run lint` or `git diff --quiet` answer "no project" / "not a git repository", read as a
+            // fact about the user's code.
+            var root = getRoot();
+            if (!string.IsNullOrEmpty(root) && Directory.Exists(root)) psi.WorkingDirectory = root;
 
             // Concurrent drain of both pipes and a killed process tree on timeout live in
             // ChildProcess, shared with every other child this product starts.

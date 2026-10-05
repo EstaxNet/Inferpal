@@ -117,7 +117,7 @@ function closeMenus(): void {
   plusMenu.hidden = true;
 }
 
-function openModelMenu(): void {
+function renderModelMenu(): void {
   modelPop.textContent = '';
   if (connection && !connection.connected) {
     modelPop.appendChild(menuItem(t('retry'), () => post({ type: 'retryConnection' })));
@@ -136,8 +136,16 @@ function openModelMenu(): void {
       post({ type: 'pickModel', model: name });
     }, name === currentModel));
   }
+}
+
+function openModelMenu(): void {
+  renderModelMenu();
   placeMenu(modelPop, modelBtn, false);
   modelPop.hidden = false;
+  // ⚠ The list the view holds is drawn at once, and the server is asked again, as Visual Studio does at every opening:
+  // read only at start-up, a model pulled or deleted with /models — or from a terminal — reached this menu at the next
+  // reload, and after a first /models pull the menu said "no model listed" under the model in use.
+  post({ type: 'listModels' });
 }
 
 modelBtn.addEventListener('click', () => {
@@ -1570,6 +1578,14 @@ function renderTranscript(transcript: WvTranscriptItem[], running = false): void
 window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
   const msg = event.data;
   switch (msg.type) {
+    case 'models': {
+      models = msg.models ?? models;
+      if (!modelPop.hidden) {
+        renderModelMenu();
+        placeMenu(modelPop, modelBtn, false);
+      }
+      break;
+    }
     case 'hydrate': {
       // Defensive defaults: survive a stale extension↔webview pair (in-place update).
       slashCommands = msg.commands ?? [];

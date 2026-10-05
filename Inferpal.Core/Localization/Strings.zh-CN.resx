@@ -196,8 +196,8 @@
 [输出]
 {1}</value></data>
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>session</value></data>
-  <data name="MsgIterationLimit" xml:space="preserve"><value>（已达到迭代上限 — 20 轮）</value></data>
-  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ 智能体在迭代上限处停止：上面的回答是它已收集内容的摘要，并非已完成的任务。</value></data>
+  <data name="MsgIterationLimit" xml:space="preserve"><value>（已达到迭代上限：{0}）</value></data>
+  <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ 智能体在迭代上限处停止：任务尚未完成，上面的内容只到它停下的地方为止。</value></data>
   <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ 智能体反复发出相同的工具调用而被停止：上面的回答是它已收集内容的摘要。</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ 上面的回答在模型的长度限制处中断，内容不完整。请让它继续，或增大上下文长度。</value></data>
   <data name="AnswerStoppedRepeating" xml:space="preserve"><value>⚠ 模型在重复自身内容，已被停止：上面的回答不完整。换一种方式表述请求，或换用其他模型，通常可以解决。</value></data>
@@ -743,6 +743,8 @@
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>已禁用诊断文件日志。</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>撤销上一次代理运行的所有文件更改</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>本会话中没有可撤销文件更改的代理运行。</value></data>
+  <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>上一次代理运行已经撤销过了——没有做任何更改。</value></data>
+  <data name="UndoRunWhileBusy" xml:space="preserve"><value>当前轮次仍在进行：请等它结束后再撤销。</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>本会话跟踪的运行（{0}）：</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>它们之前的状态已先行保存 — 使用 `/restore &lt;完整路径&gt;` 可恢复文件。</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ 已撤销上一次运行 — 恢复 {0} 个文件，删除 {1} 个。</value></data>

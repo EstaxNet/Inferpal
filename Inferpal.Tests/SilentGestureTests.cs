@@ -78,8 +78,10 @@ public sealed class SilentGestureTests
     /// ⚠ Calling it "background" is what hid its three silent catches from the rule above for so
     /// long: the wrong reason for a right exemption still costs, because the next reader applies
     /// the reason and not the entry.
+    /// <c>refreshModelList</c> runs because the model menu opened, and nobody waits on it: the menu is already drawn from
+    /// the list the view holds, and its own lines say when nothing is listed or the backend is down.
     /// </remarks>
-    private static readonly string[] BackgroundPaths = ["onHostReady", "configSaved", "pollBackendStatus"];
+    private static readonly string[] BackgroundPaths = ["onHostReady", "configSaved", "pollBackendStatus", "refreshModelList"];
 
     [Fact]
     public void EveryGestureThatNeedsTheHost_SaysWhenItCannotRun()

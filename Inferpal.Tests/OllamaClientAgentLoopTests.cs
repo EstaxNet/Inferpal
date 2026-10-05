@@ -105,7 +105,10 @@ public class OllamaClientAgentLoopTests
 
         var result = await RunAsync(client, registry);
 
-        Assert.Equal(Strings.MsgIterationLimit, result.FinalResponse);
+        // The cap the run had, not a fixed number — and flagged, so every reader adds the notice.
+        Assert.Equal(Strings.MsgIterationLimit(3), result.FinalResponse);
+        Assert.Contains("3", result.FinalResponse);
+        Assert.True(result.ReachedIterationLimit);
         Assert.Equal(3, result.Executions.Count);
     }
 

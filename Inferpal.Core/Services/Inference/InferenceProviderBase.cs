@@ -619,6 +619,9 @@ internal abstract class InferenceProviderBase : IInferenceProvider
             }
         }
 
-        return new AgentResult(Strings.MsgIterationLimit, executions, messages, totalTokens, lastPromptEval);
+        // ⚠ Flagged: without it, the default chat-with-tools path and /task end at the cap with no notice at all — the
+        // limit message reads as the answer, and a task finishes "done".
+        return new AgentResult(Strings.MsgIterationLimit(maxIterations), executions, messages, totalTokens, lastPromptEval,
+                               ReachedIterationLimit: true);
     }
 }

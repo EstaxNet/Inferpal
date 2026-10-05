@@ -55,6 +55,39 @@ public class AgentRunEndTests
         Assert.Contains(flag, host, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// ⚠ The basic loop — the default chat with tools, and <c>/task</c> — stops at its cap too. Its readers read its loop
+    /// flag and passed a constant for its limit, which the rule above cannot see: the name is in the file, on the
+    /// orchestrator's path. A run's two end facts are read together, wherever one of them is.
+    /// </summary>
+    [Theory]
+    [InlineData("Inferpal", "ToolWindow", "InferpalToolWindowData.ChatTurn.cs")]
+    [InlineData("Inferpal.Host", "HostServer.cs")]
+    [InlineData("Inferpal.Core", "Services", "Tasks", "BackgroundTaskQueue.cs")]
+    public void ARunsLimitFlag_IsReadWhereverItsLoopFlagIs(params string[] parts)
+    {
+        var code  = CoreCode(parts);
+        var reads = System.Text.RegularExpressions.Regex.Matches(
+            code, @"EndNotice\(\s*([\w.]+)\s*,\s*(\w+)\.WasLoopDetected");
+
+        Assert.NotEmpty(reads);   // witness: the readers are still where this looks
+        foreach (System.Text.RegularExpressions.Match read in reads)
+            Assert.Equal($"{read.Groups[2].Value}.ReachedIterationLimit", read.Groups[1].Value);
+    }
+
+    /// <summary>A task stopped at its cap says so in its report, read later, out of the conversation.</summary>
+    [Fact]
+    public void ATaskStoppedAtItsCap_SaysSo_InItsReport()
+    {
+        var run = new Inferpal.Services.Inference.AgentResult(
+            Inferpal.Localization.Strings.MsgIterationLimit(5), [], [], ReachedIterationLimit: true);
+
+        var outcome = Inferpal.Services.Tasks.BackgroundTaskQueue.TaskRunOutcome.Of(run, []);
+
+        Assert.Contains(Inferpal.Localization.Strings.AgentEndedAtIterationLimit, outcome.Report);
+        Assert.Contains("5", outcome.Report);
+    }
+
     /// <summary>And the sentence really does cross the RPC to the VS Code screen — otherwise the
     /// host would compose it for nobody.</summary>
     [Fact]

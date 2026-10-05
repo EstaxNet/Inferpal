@@ -117,7 +117,9 @@ tools**, one per line:
 name=command
 ```
 
-Each becomes a native tool (lower-cased, spaces → `_`) and requires approval on every call.
+Each becomes a native tool (lower-cased, spaces → `_`) and requires approval on every call. It runs in the
+workspace root. Write `{args}` where the agent's arguments go (`run_e2e=npm run test:e2e -- {args}`); without it,
+they are appended to the command.
 Built-in tools take priority over a custom tool with the same name; prefix a line with `#`
 to disable it.
 

@@ -493,9 +493,28 @@ internal partial class InferpalToolWindowData
             // /undo-run reverts the most recent run that changed files: only that run's bar offers it.
             foreach (var older in Messages.Where(m => m.Role == "result"))
                 older.CanUndo = false;
-            undo = () => _ = RunSuggestionAsync("/undo-run", CancellationToken.None);
+            undo = () => _ = UndoFromResultBarAsync();
         }
         InsertThemed(ChatMessageItem.ResultMsg(summary, undo, path => _ = OpenInEditorAsync(path)));
+    }
+
+    /// <summary>A result bar's Undo: <c>/undo-run</c>, run straight — never through the prompt box.</summary>
+    /// <remarks>
+    /// ⚠ Through the prompt and <c>SendAsync</c> the click IS the Send button: during a turn it stops that turn (or, with
+    /// an approval card waiting, types "/undo-run" over the draft and answers nothing), and idle it replaces the draft.
+    /// While a turn runs, its run is still writing: the undo waits for it, and says so.
+    /// </remarks>
+    private async Task UndoFromResultBarAsync()
+    {
+        var busy = false;
+        await RunOnVMContextAsync(() => busy = IsLoading || _sendStarting);
+        if (busy)
+        {
+            await ShowInfoAsync(Strings.UndoRunWhileBusy);
+            return;
+        }
+        PinWorkspaceRoot();
+        await HandleSlashCommandAsync("/undo-run", CancellationToken.None);
     }
 
     /// <summary>A file of a result bar opens in the editor; one that no longer opens is said, not a dead link.</summary>

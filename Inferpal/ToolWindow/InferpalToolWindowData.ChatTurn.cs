@@ -545,7 +545,7 @@ internal partial class InferpalToolWindowData
 
                 agentFinalResponse = result.FinalResponse;
                 agentFailed        = result.Failed;
-                agentEndNotice     = ChatTurnPolicy.EndNotice(false, result.WasLoopDetected, result.AnswerCut,
+                agentEndNotice     = ChatTurnPolicy.EndNotice(result.ReachedIterationLimit, result.WasLoopDetected, result.AnswerCut,
                     ChatTurnPolicy.EditsWithoutEffect(result.Executions, _tools.History.CurrentRunFileCount),
                     answerRepeating: result.AnswerRepeating,
                     lastCheckFailed: ChatTurnPolicy.LastCheckFailed(result.Executions, _tools.History.CurrentRunFileCount));
