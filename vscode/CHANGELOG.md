@@ -3,6 +3,22 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.7.1
+
+Two new things on the *Server and models* page, and fifty-one fixes.
+
+- **New**: *Suggest the best models* picks, among the models your server has, the best ones for your graphics card,
+  and *Loaded now* shows what sits in memory with **Unload** and **Unload all**.
+- **Your work stays safe**: starting VS Code before your model server no longer erases your last conversation, MCP
+  sign-in tokens stay with the server they were issued for, a rename aimed at one declaration never renames them all,
+  and a settings save that fails no longer looks saved.
+- **Stop stops** `/fix`, `/refactor` and `/doc`, and the agent's breakpoints no longer stay after a program that ran
+  to its end.
+- **The model sees the right context**: a context window of 0 means the model's own window, long answers count right
+  away, regenerating the first question keeps the workspace context, and `@Docs` survives a change of embedding model.
+- **Regenerate** keeps the files attached for your next question and your earlier exchange; plan mode survives a
+  restart of the assistant; `/explain` and `/review` answer from the code with the code-actions model.
+
 ## 1.7.0
 
 A new interface, the same as in Visual Studio: a chat that shows what the agent did and lets you
