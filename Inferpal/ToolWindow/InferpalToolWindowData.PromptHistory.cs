@@ -643,7 +643,7 @@ internal partial class InferpalToolWindowData
         }
 
         var result = await Services.Commands.CommitCommandHandler.ExecuteAsync(
-            message, Services.GitProcess.For(FindProjectRoot()), ct);
+            message, Services.GitProcess.ForCommit(FindProjectRoot()), ct);
 
         await RunOnVMContextAsync(() =>
         {

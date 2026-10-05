@@ -33,15 +33,17 @@ public sealed class ProjectIndexServiceWatcherTests : IDisposable
     }
 
     /// <summary>A C# class large enough to pass the chunkers' MinChunkLines threshold.</summary>
+    // Every line carries the class's name: a chunk of the file is recognised by it (the embedding stubs key on it), and
+    // a file saved under another name shares no chunk — no vector reused — with its previous version.
     private static string SampleClass(string name) => string.Join('\n',
         $"public class {name}",
         "{",
-        "    public int One()   => 1;",
-        "    public int Two()   => 2;",
-        "    public int Three() => 3;",
-        "    public int Four()  => 4;",
-        "    public int Five()  => 5;",
-        "    public int Six()   => 6;",
+        $"    public int One()   => 1; // {name}",
+        $"    public int Two()   => 2; // {name}",
+        $"    public int Three() => 3; // {name}",
+        $"    public int Four()  => 4; // {name}",
+        $"    public int Five()  => 5; // {name}",
+        $"    public int Six()   => 6; // {name}",
         "}");
 
     private ProjectIndexService NewService(FakeInferenceProvider provider)

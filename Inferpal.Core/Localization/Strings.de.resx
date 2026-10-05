@@ -198,7 +198,7 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>sitzung</value></data>
   <data name="MsgIterationLimit" xml:space="preserve"><value>(Iterationslimit erreicht: {0})</value></data>
   <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ Der Agent hat sein Iterationslimit erreicht: Die Aufgabe ist nicht abgeschlossen — was oben steht, reicht nur so weit, wie er gekommen war.</value></data>
-  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ Der Agent wiederholte dieselben Werkzeugaufrufe und wurde gestoppt: Die Antwort oben fasst zusammen, was er gesammelt hatte.</value></data>
+  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ Der Agent wiederholte dieselben Werkzeugaufrufe und wurde gestoppt: Die Aufgabe ist womöglich nicht abgeschlossen — was oben steht, reicht nur so weit, wie er gekommen war.</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ Die Antwort oben endete an der Längengrenze des Modells: Sie ist unvollständig. Bitten Sie um Fortsetzung oder erhöhen Sie die Kontextlänge.</value></data>
   <data name="AnswerStoppedRepeating" xml:space="preserve"><value>⚠ Das Modell wiederholte sich und wurde gestoppt: Die Antwort oben ist unvollständig. Die Anfrage anders zu formulieren oder ein anderes Modell zu wählen, hilft meist weiter.</value></data>
   <data name="AgentEditsNotApplied" xml:space="preserve"><value>⚠ Keine Datei wurde geändert: Die oben versuchten Bearbeitungen wurden abgelehnt oder nicht angewendet – unabhängig davon, was die Antwort sagt.</value></data>
@@ -369,6 +369,7 @@ Sicherung: {0}</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ Der Code ist bereits ausreichend dokumentiert.</value></data>
   <data name="InlineEditNoChange" xml:space="preserve"><value>✅ Das Modell hat den Code unverändert zurückgegeben — es wurde nichts angewendet.</value></data>
   <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** ist bereits vorhanden, konnte aber nicht gelesen werden — es wurde nichts überschrieben. Geben Sie die Datei frei (möglicherweise hält sie ein Build oder ein anderer Editor) und führen Sie den Befehl erneut aus.</value></data>
+  <data name="TestsFileUnsaved" xml:space="preserve"><value>⚠ **{0}** hat nicht gespeicherte Änderungen. Speichern Sie die Datei und führen Sie /test erneut aus: Die Tests werden in die Datei auf dem Datenträger geschrieben, der diese Änderungen fehlen.</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ Nichts Sinnvolles zu testen — alle relevanten Fälle sind bereits abgedeckt.</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ Die Codeaktion ist fehlgeschlagen — prüfen Sie die Backend-Verbindung und das Modell.</value></data>
   <data name="CodeActionDocumentChanged" xml:space="preserve"><value>✋ Nichts wurde angewendet: Das Dokument wurde geändert oder geschlossen, während das Modell arbeitete. Führen Sie die Aktion erneut aus.</value></data>

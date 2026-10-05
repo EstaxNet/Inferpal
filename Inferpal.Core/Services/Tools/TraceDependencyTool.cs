@@ -376,25 +376,9 @@ internal class TraceDependencyTool : ITool
 
     private static IEnumerable<string> EnumerateSourceFiles(string rootDir, string ext)
     {
-        var pattern = ext switch
-        {
-            ".cs"             => "*.cs",
-            ".py"             => "*.py",
-            ".js" or ".jsx"   => "*.js",
-            ".ts" or ".tsx"   => "*.ts",
-            ".java"           => "*.java",
-            ".go"             => "*.go",
-            ".rs"             => "*.rs",
-            ".rb"             => "*.rb",
-            ".php"            => "*.php",
-            ".cpp" or ".cxx"  => "*.cpp",
-            ".c"              => "*.c",
-            _                 => "*" + ext
-        };
-
         try
         {
-            return WorkspaceScan.EnumerateFiles(rootDir, pattern);
+            return WorkspaceScan.EnumerateSourceFamily(rootDir, ext);
         }
         catch { return []; }
     }

@@ -198,7 +198,7 @@ Pour chaque problème, cite la ligne ou le symbole, explique le risque et propos
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>session</value></data>
   <data name="MsgIterationLimit" xml:space="preserve"><value>(limite d'itérations atteinte : {0})</value></data>
   <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ L'agent s'est arrêté à sa limite d'itérations : la tâche n'est pas terminée, et ce qui figure ci-dessus ne va que jusqu'où il en était.</value></data>
-  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ L'agent répétait les mêmes appels d'outils et a été arrêté : la réponse ci-dessus résume ce qu'il avait rassemblé.</value></data>
+  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ L'agent répétait les mêmes appels d'outils et a été arrêté : la tâche n'est peut-être pas terminée, et ce qui figure ci-dessus ne va que jusqu'où il en était.</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ La réponse ci-dessus s'est arrêtée à la limite de longueur du modèle : elle est incomplète. Demandez-lui de continuer, ou augmentez la longueur de contexte.</value></data>
   <data name="AnswerStoppedRepeating" xml:space="preserve"><value>⚠ Le modèle se répétait et a été arrêté : la réponse ci-dessus est incomplète. Reformuler la demande, ou changer de modèle, permet en général d'en sortir.</value></data>
   <data name="AgentEditsNotApplied" xml:space="preserve"><value>⚠ Aucun fichier n'a été modifié : les éditions tentées ci-dessus ont été refusées ou n'ont pas abouti — quoi qu'en dise la réponse.</value></data>
@@ -369,6 +369,7 @@ Sauvegarde : {0}</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ Le code est déjà suffisamment documenté.</value></data>
   <data name="InlineEditNoChange" xml:space="preserve"><value>✅ Le modèle a rendu le code inchangé — rien n'a été appliqué.</value></data>
   <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** existe déjà mais n'a pas pu être lu — rien n'a été écrit par-dessus. Libérez le fichier (une compilation ou un autre éditeur le retient peut-être) puis relancez la commande.</value></data>
+  <data name="TestsFileUnsaved" xml:space="preserve"><value>⚠ **{0}** a des modifications non enregistrées. Enregistrez-le, puis relancez /test : les tests sont écrits dans le fichier sur disque, qui ne les contient pas.</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ Rien d'utile à tester — tous les cas pertinents sont déjà couverts.</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ L'action de code a échoué — vérifiez la connexion au backend et le modèle.</value></data>
   <data name="CodeActionDocumentChanged" xml:space="preserve"><value>✋ Rien n'a été appliqué : le document a changé ou a été fermé pendant que le modèle travaillait. Relancez l'action.</value></data>

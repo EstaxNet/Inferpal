@@ -198,7 +198,7 @@
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>сессия</value></data>
   <data name="MsgIterationLimit" xml:space="preserve"><value>(достигнут лимит итераций: {0})</value></data>
   <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ Агент остановился на пределе итераций: задача не завершена, а то, что выше, доходит лишь до того места, где он остановился.</value></data>
-  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ Агент повторял одни и те же вызовы инструментов и был остановлен: ответ выше — сводка собранного.</value></data>
+  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ Агент повторял одни и те же вызовы инструментов и был остановлен: задача, возможно, не завершена, а то, что выше, доходит лишь до того места, где он остановился.</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ Ответ выше остановился на ограничении длины модели: он неполон. Попросите продолжить или увеличьте длину контекста.</value></data>
   <data name="AnswerStoppedRepeating" xml:space="preserve"><value>⚠ Модель начала повторяться и была остановлена: ответ выше неполный. Обычно помогает переформулировать запрос или выбрать другую модель.</value></data>
   <data name="AgentEditsNotApplied" xml:space="preserve"><value>⚠ Ни один файл не изменён: попытки правок выше были отклонены или не применились — что бы ни говорилось в ответе.</value></data>
@@ -369,6 +369,7 @@
   <data name="DocNoChange" xml:space="preserve"><value>✅ Код уже достаточно документирован.</value></data>
   <data name="InlineEditNoChange" xml:space="preserve"><value>✅ Модель вернула код без изменений — ничего не применено.</value></data>
   <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** уже существует, но его не удалось прочитать — поверх ничего не записано. Освободите файл (его может удерживать сборка или другой редактор) и выполните команду ещё раз.</value></data>
+  <data name="TestsFileUnsaved" xml:space="preserve"><value>⚠ В **{0}** есть несохранённые изменения. Сохраните файл и снова запустите /test: тесты записываются в файл на диске, в котором этих изменений нет.</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ Тестировать нечего — все значимые случаи уже покрыты.</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ Не удалось выполнить действие с кодом — проверьте подключение к бэкенду и модель.</value></data>
   <data name="CodeActionDocumentChanged" xml:space="preserve"><value>✋ Ничего не применено: документ был изменён или закрыт, пока модель работала. Запустите действие ещё раз.</value></data>

@@ -158,12 +158,18 @@ internal static class CheckCommandHandler
     /// </summary>
     /// <param name="untracked">The status's own list, named whole when git cannot list the files one by one.</param>
     /// <param name="used">Characters of the review already taken by the status and the diff.</param>
+    /// <summary>The listing of the repository's new files, one path per file, from its top.</summary>
+    internal const string NewFilesListing = "ls-files --others --exclude-standard --full-name -- :/";
+
     private static async Task<(string Diff, List<string> NotRead)> NewFilesAsync(
         string projectRoot, GitRunner git, IReadOnlyList<string> untracked, int used, CancellationToken ct)
     {
         var notRead = new List<string>();
         // One path per file: the status collapses a new folder into "?? folder/".
-        var (listing, exit) = await git("ls-files --others --exclude-standard", ct);
+        // ⚠ The WHOLE repository (":/"), paths from its top (--full-name): `git status` lists every new file of the
+        // repository, `ls-files` only the folder it runs in — a solution in src/ or a monorepo opened on one package
+        // left a new file beside it ("?? ../deploy.yml") neither read nor named, under "the checks turned up nothing".
+        var (listing, exit) = await git(NewFilesListing, ct);
         if (exit != 0)
         {
             notRead.AddRange(untracked);
@@ -175,10 +181,11 @@ internal static class CheckCommandHandler
                            .Select(l => l.TrimEnd('\r'))
                            .Where(l => l.Length > 0)
                            .OrderBy(l => l, StringComparer.Ordinal);
+        var top = GitProcess.WorkTreeOf(projectRoot) ?? projectRoot;
         foreach (var relative in files)
         {
             if (used + sb.Length >= GitCommitPolicy.MaxDiffChars) { notRead.Add(relative); continue; }
-            var full = Path.Combine(projectRoot, relative);
+            var full = Path.Combine(top, relative);
             try
             {
                 if (!File.Exists(full)) continue;   // deleted since the listing: nothing to review

@@ -92,9 +92,28 @@ internal static class TestGenerationPlanner
 
     /// <param name="sourcePath">Path of the file under test — decides where the tests go.</param>
     /// <param name="sourceCode">Selection if the editor has one, otherwise the whole file.</param>
+    /// <param name="openText">The test file's text in the editor when it is open there, else null — given by an editor
+    /// that writes the result INTO that buffer (Visual Studio). ⚠ Planned from the disk, the result replaces a buffer
+    /// that holds unsaved tests the model never saw, and they disappear.</param>
+    /// <summary>
+    /// The refusal of <c>/test</c> when the test file it would rewrite ON DISK has unsaved changes in the editor; null
+    /// otherwise.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The VS Code host writes the file on disk: planned from the disk, the unsaved tests are not in the result, and
+    /// written behind the dirty buffer, the next save of that buffer undoes the new tests — or the old ones are lost.
+    /// </remarks>
+    public static string? UnsavedTestFile(Editor.OpenDocumentOverlay? overlay, string sourcePath)
+    {
+        var testPath = TestFilePathResolver.Resolve(sourcePath);
+        return overlay is not null && overlay.TryGetUnsaved(testPath, out _)
+            ? Strings.TestsFileUnsaved(Path.GetFileName(testPath))
+            : null;
+    }
+
     public static async Task<TestGenerationPlan> PlanAsync(
         IInferenceProvider client, string model, string sourcePath, string sourceCode,
-        CancellationToken ct)
+        CancellationToken ct, Func<string, CancellationToken, Task<string?>>? openText = null)
     {
         if (string.IsNullOrWhiteSpace(sourceCode)) return TestGenerationPlan.Failed();
 
@@ -107,7 +126,13 @@ internal static class TestGenerationPlanner
         // null, which is the very state that means "create a new one" — i.e. the clobbering this
         // read exists to prevent, on the branch that has no undo.
         string? existing = null;
-        if (File.Exists(testPath))
+        if (openText is not null)
+        {
+            try { existing = await openText(testPath, ct); }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex) { Diagnostics.Swallow($"TestGenerationPlanner.OpenText({testName})", ex); }
+        }
+        if (existing is null && File.Exists(testPath))
         {
             try { existing = await Tools.TextFileEncoding.ReadTextAsync(testPath, ct); }
             catch (OperationCanceledException) { throw; }

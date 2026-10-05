@@ -344,6 +344,8 @@ internal static class Strings
     public static string TestsGenerateFailed => Get(nameof(TestsGenerateFailed));
     public static string TestsFileUnreadable(string fileName) =>
         string.Format(Get(nameof(TestsFileUnreadable)), fileName);
+    public static string TestsFileUnsaved(string fileName) =>
+        string.Format(Get(nameof(TestsFileUnsaved)), fileName);
 
     // ── Code actions: "nothing to do" verdicts (the code is already good) ───────
     public static string RefactorNoChange => Get(nameof(RefactorNoChange));

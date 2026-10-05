@@ -24,6 +24,15 @@ internal static class GitProcess
     /// <summary>Binds a working directory, giving the <see cref="GitRunner"/> the handlers expect.</summary>
     public static GitRunner For(string? workDir) => (args, ct) => RunAsync(args, workDir, ct);
 
+    /// <summary>The runner of <c>/commit-exec</c>: a commit runs the repository's hooks, with their own budget.</summary>
+    /// <remarks>⚠ Under the 15 s read budget, a pre-commit hook that formats, lints or builds — or a GPG passphrase typed
+    /// slowly — was killed mid-run: the commit failed every time, and a kill during a post-commit hook reported a commit
+    /// that did happen as failed. Stop still cancels it.</remarks>
+    public static GitRunner ForCommit(string? workDir) => (args, ct) => RunAsync(args, workDir, ct, CommitTimeout);
+
+    /// <summary>Budget of a commit, hooks included.</summary>
+    internal static TimeSpan CommitTimeout => TimeSpan.FromMinutes(10);
+
     /// <summary>Wall-clock budget for one git invocation.</summary>
     /// <remarks>
     /// git is not supposed to take this long; the budget exists because a repository in a bad state
@@ -43,7 +52,7 @@ internal static class GitProcess
     /// is a legitimate answer, so a failure comes back as exit code -1.
     /// </remarks>
     public static async Task<ChildProcessResult> CaptureAsync(
-        string args, string? workDir, CancellationToken ct)
+        string args, string? workDir, CancellationToken ct, TimeSpan? budget = null)
     {
         try
         {
@@ -69,7 +78,7 @@ internal static class GitProcess
             // JSON-RPC pipe in VS Code — allocates a console and hangs at 0 % CPU forever, on a
             // call that takes 31 ms elsewhere. It also drains both pipes concurrently, without
             // which a chatty repository deadlocks git. See ChildProcess.
-            var run = await ChildProcess.RunAsync(psi, Timeout, ct);
+            var run = await ChildProcess.RunAsync(psi, budget ?? Timeout, ct);
             return run with { Stdout = DecodeCaptured(run.Stdout, workingTree: WorkingTreeEncoding(workDir)) };
         }
         catch (OperationCanceledException) { throw; }
@@ -261,13 +270,18 @@ internal static class GitProcess
     /// <param name="workDir">Working directory; null/empty = the process's own.</param>
     /// <returns>stdout (stderr appended when non-empty) and the exit code, -1 if git never ran.</returns>
     public static async Task<(string Output, int ExitCode)> RunAsync(
-        string args, string? workDir, CancellationToken ct)
+        string args, string? workDir, CancellationToken ct, TimeSpan? budget = null)
     {
-        var r = await CaptureAsync(args, workDir, ct);
+        var r = await CaptureAsync(args, workDir, ct, budget);
 
         var combined = r.Stdout.Trim();
         if (!string.IsNullOrWhiteSpace(r.Stderr))
             combined += (combined.Length > 0 ? "\n" : "") + r.Stderr.Trim();
+        // ⚠ Stopped at its budget, git answers -1 like a git that never started, and Detail named the second ("is it
+        // installed and on PATH?") — a remedy that cannot apply. Said first, it is the line every reader shows.
+        if (r.TimedOut)
+            combined = $"git gave no answer within {(budget ?? Timeout).TotalSeconds:0}s and was stopped."
+                     + (combined.Length > 0 ? "\n" + combined : string.Empty);
         return (combined, r.ExitCode);
     }
 

@@ -198,7 +198,7 @@
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>session</value></data>
   <data name="MsgIterationLimit" xml:space="preserve"><value>（已达到迭代上限：{0}）</value></data>
   <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ 智能体在迭代上限处停止：任务尚未完成，上面的内容只到它停下的地方为止。</value></data>
-  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ 智能体反复发出相同的工具调用而被停止：上面的回答是它已收集内容的摘要。</value></data>
+  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ 智能体反复发出相同的工具调用而被停止：任务可能尚未完成，上面的内容只到它停下的地方为止。</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ 上面的回答在模型的长度限制处中断，内容不完整。请让它继续，或增大上下文长度。</value></data>
   <data name="AnswerStoppedRepeating" xml:space="preserve"><value>⚠ 模型在重复自身内容，已被停止：上面的回答不完整。换一种方式表述请求，或换用其他模型，通常可以解决。</value></data>
   <data name="AgentEditsNotApplied" xml:space="preserve"><value>⚠ 没有任何文件被修改：上面尝试的编辑被拒绝或未能应用——无论回答怎么说。</value></data>
@@ -369,6 +369,7 @@
   <data name="DocNoChange" xml:space="preserve"><value>✅ 代码已有足够的文档说明。</value></data>
   <data name="InlineEditNoChange" xml:space="preserve"><value>✅ 模型原样返回了代码——未应用任何更改。</value></data>
   <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** 已存在但无法读取 —— 未覆盖任何内容。请释放该文件（可能被生成过程或其他编辑器占用），然后重新运行命令。</value></data>
+  <data name="TestsFileUnsaved" xml:space="preserve"><value>⚠ **{0}** 有未保存的更改。请先保存，然后重新运行 /test：测试会写入磁盘上的文件，而该文件不包含这些更改。</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ 没有需要测试的内容，所有重要情况都已覆盖。</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ 代码操作失败。请检查后端连接和模型。</value></data>
   <data name="CodeActionDocumentChanged" xml:space="preserve"><value>✋ 未应用任何内容：模型工作期间文档已更改或关闭。请重新运行该操作。</value></data>

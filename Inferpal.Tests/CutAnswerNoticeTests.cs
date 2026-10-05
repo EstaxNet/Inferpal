@@ -158,6 +158,25 @@ public class CutAnswerNoticeTests
         Assert.DoesNotContain("follow", match.Groups[1].Value, StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// ⚠ No end notice claims a summary: the basic loop — the default in both editors, and /task's — writes none, and the
+    /// orchestrator's synthesis may fail. "The answer above summarises what it had gathered" sat under a tool list, or
+    /// under nothing at all in a /task report.
+    /// </summary>
+    [Theory]
+    [InlineData("AgentEndedAtIterationLimit")]
+    [InlineData("AgentEndedOnRepeat")]
+    public void NoEndNotice_ClaimsASummary(string key)
+    {
+        var resx  = File.ReadAllText(Path.Combine(RepoRoot(), "Inferpal.Core", "Localization", "Strings.resx"));
+        var match = System.Text.RegularExpressions.Regex.Match(
+            resx, "<data name=\"" + key + "\" xml:space=\"preserve\"><value>(.*?)</value>");
+
+        Assert.True(match.Success, $"{key} is not in Strings.resx");                // WITNESS: the sentence was read
+        Assert.DoesNotContain("summar", match.Groups[1].Value, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("as far as it got", match.Groups[1].Value, StringComparison.Ordinal);
+    }
+
     private static string RepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);

@@ -533,7 +533,7 @@ internal sealed partial class HostServer
                         return new SlashCommandResult(true, Strings.SlashUsage("/commit-exec <message>"));
 
                     var run = await CommitCommandHandler.ExecuteAsync(
-                        message, GitProcess.For(s.RootDir), cts.Token);
+                        message, GitProcess.ForCommit(s.RootDir), cts.Token);
 
                     return new SlashCommandResult(true,
                         (run.Ok ? "✅ `git commit`" : "❌ `git commit`") + "\n\n```\n" + run.Output + "\n```");
@@ -655,6 +655,10 @@ internal sealed partial class HostServer
         var doc = await s.Editor.GetActiveDocumentAsync(ct);
         if (doc is null || string.IsNullOrWhiteSpace(doc.Text))
             return new SlashCommandResult(true, Strings.SlashNoActiveDocument);
+
+        // Before the model: the file is written on disk, behind a buffer whose unsaved tests it would not contain.
+        if (TestGenerationPlanner.UnsavedTestFile(s.Overlay, doc.Path) is { } unsaved)
+            return new SlashCommandResult(true, unsaved);
 
         var plan = await TestGenerationPlanner.PlanAsync(
             s.Client, ModelRouter.Resolve(s.Config, ModelRole.CodeActions), doc.Path, doc.Text, ct);

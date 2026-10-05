@@ -81,12 +81,11 @@ internal class RestoreFileTool : ITool
             return Strings.DiffCancelled;
 
         // Snapshot the current content first so the restore itself is undoable.
-        var (saved, preRestore) = await _history.BackUpBeforeChangeAsync(path, ct);
+        var (saved, preRestore) = await _history.RestoreWithBackupAsync(snapPath, path, ct);
         if (!saved) return FileHistoryService.BackupFailedMessage(path);
         // The next restore without an explicit snapshot must step back past this one, not undo this restore.
         if (preRestore.Length > 0) _history.MarkTakenByRestore(preRestore);
 
-        await _history.RestoreAsync(snapPath, path, ct);
         return Strings.RestoreOk(path, snapPath);
     }
 }

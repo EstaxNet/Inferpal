@@ -580,19 +580,9 @@ internal class AnalyzeImpactTool : ITool
 
     private static IEnumerable<string> EnumerateSourceFiles(string rootDir, string ext)
     {
-        var pattern = ext switch
-        {
-            ".cs"             => "*.cs",
-            ".py"             => "*.py",
-            ".js" or ".jsx"   => "*.js",
-            ".ts" or ".tsx"   => "*.ts",
-            ".java"           => "*.java",
-            ".go"             => "*.go",
-            _                 => "*" + ext
-        };
         try
         {
-            return WorkspaceScan.EnumerateFiles(rootDir, pattern);
+            return WorkspaceScan.EnumerateSourceFamily(rootDir, ext);
         }
         catch { return []; }
     }

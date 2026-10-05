@@ -58,8 +58,14 @@ internal static class TestGenerationEdit
         {
             try
             {
+                // The result replaces the open buffer, so it is planned from that buffer, unsaved tests included.
                 plan = await Services.CodeActions.TestGenerationPlanner.PlanAsync(
-                    client, model, sourcePath, sourceCode, generation.Token);
+                    client, model, sourcePath, sourceCode, generation.Token,
+                    openText: async (path, token) =>
+                    {
+                        var open = await vs.Documents().GetOpenDocumentAsync(new Uri(path), token);
+                        return open is null ? null : (await open.AsTextDocumentAsync(vs, token))?.Text.CopyToString();
+                    });
             }
             catch (OperationCanceledException) when (dlg.CancelledByUser.IsCancellationRequested)
             {

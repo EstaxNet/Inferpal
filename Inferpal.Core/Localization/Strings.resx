@@ -199,7 +199,7 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>session</value></data>
   <data name="MsgIterationLimit" xml:space="preserve"><value>(iteration limit reached: {0})</value></data>
   <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ The agent stopped at its iteration limit: the task is not finished, and what is above only goes as far as it got.</value></data>
-  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ The agent was repeating the same tool calls and was stopped: the answer above summarises what it had gathered.</value></data>
+  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ The agent was repeating the same tool calls and was stopped: the task may not be finished, and what is above only goes as far as it got.</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ The answer above stopped at the model's length limit: it is incomplete. Ask it to continue, or increase the context length.</value></data>
   <data name="AnswerStoppedRepeating" xml:space="preserve"><value>⚠ The model was repeating itself and was stopped: the answer above is incomplete. Rephrasing the request, or another model, usually gets past it.</value></data>
   <data name="AgentEditsNotApplied" xml:space="preserve"><value>⚠ No file was changed: the edits attempted above were refused or did not apply — whatever the answer says.</value></data>
@@ -370,6 +370,7 @@ Backup: {0}</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ The code is already adequately documented.</value></data>
   <data name="InlineEditNoChange" xml:space="preserve"><value>✅ The model returned the code unchanged — nothing was applied.</value></data>
   <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** already exists but could not be read — nothing was written over it. Free the file (a build or another editor may be holding it) and run the command again.</value></data>
+  <data name="TestsFileUnsaved" xml:space="preserve"><value>⚠ **{0}** has unsaved changes. Save it, then run /test again: the tests are written to the file on disk, which does not have them.</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ Nothing useful to test — every meaningful case is already covered.</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ The code action failed — check the backend connection and the model.</value></data>
   <data name="CodeActionDocumentChanged" xml:space="preserve"><value>✋ Nothing was applied: the document changed or was closed while the model was working. Run the action again.</value></data>

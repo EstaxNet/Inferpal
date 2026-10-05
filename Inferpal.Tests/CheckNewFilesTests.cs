@@ -33,7 +33,7 @@ public class CheckNewFilesTests
         return Task.FromResult(args switch
         {
             "status --short"                      => (status, 0),
-            "ls-files --others --exclude-standard" => (listing, 0),
+            CheckCommandHandler.NewFilesListing   => (listing, 0),
             _                                     => ("", 0),
         });
     };

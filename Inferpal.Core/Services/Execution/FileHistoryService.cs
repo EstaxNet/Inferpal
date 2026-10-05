@@ -227,10 +227,21 @@ internal class FileHistoryService
     /// Deletes the oldest snapshots carrying <paramref name="suffix"/> (path hash + file name)
     /// beyond <see cref="MaxSnapshotsPerFile"/>. Best-effort — never throws.
     /// </summary>
-    private static void PruneOldSnapshots(string historyDir, string suffix)
+    /// <remarks>
+    /// ⚠ A snapshot a retained run still refers to is never deleted: it is the version <c>/undo-run</c> puts back. Counted
+    /// like the others, a run that wrote one file twenty times — five <c>/tdd</c> rounds — lost its pre-run backup to its own
+    /// later snapshots, and the undo reported the file as failed.
+    /// </remarks>
+    private void PruneOldSnapshots(string historyDir, string suffix)
     {
         try
         {
+            HashSet<string> held;
+            lock (_runLock)
+                held = new HashSet<string>(
+                    _runs.Append(_currentRun).OfType<HistoryRun>()
+                         .SelectMany(r => r.Changes).Select(c => c.SnapshotPath).OfType<string>(),
+                    PathComparer.Default);
             // Same ordering as the lookup, and for the same reason: pruning by name would delete
             // the NEWEST snapshots for an hour every autumn.
             var snaps = Directory.EnumerateFiles(historyDir)
@@ -238,6 +249,7 @@ internal class FileHistoryService
                 .OrderByDescending(File.GetLastWriteTimeUtc)
                 .ThenByDescending(f => f)
                 .Skip(MaxSnapshotsPerFile)
+                .Where(f => !held.Contains(f))
                 .ToList();
 
             foreach (var old in snaps)
@@ -328,10 +340,22 @@ internal class FileHistoryService
         return null;
     }
 
-    internal async Task RestoreAsync(string snapPath, string targetPath, CancellationToken ct)
+    /// <summary>
+    /// Puts <paramref name="snapPath"/>'s content back over <paramref name="targetPath"/>, after backing up what the target
+    /// holds now; <c>false</c>, and nothing written, when that backup could not be saved.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The source is READ before the backup: the backup goes through the per-file cap, and when the source is the oldest
+    /// of the snapshots kept, taking the backup deleted it — the restore failed and the version just approved was gone.
+    /// </remarks>
+    internal async Task<(bool Saved, string PreRestore)> RestoreWithBackupAsync(
+        string snapPath, string targetPath, CancellationToken ct)
     {
         var bytes = await File.ReadAllBytesAsync(snapPath, ct);
+        var (saved, preRestore) = await BackUpBeforeChangeAsync(targetPath, ct);
+        if (!saved) return (false, string.Empty);
         await File.WriteAllBytesAsync(targetPath, bytes, ct);
+        return (true, preRestore);
     }
 
     // ── Run grouping (for /undo-run) ─────────────────────────────────────────────
@@ -510,6 +534,12 @@ internal class FileHistoryService
                 }
                 else if (change.SnapshotPath is null)
                 {
+                    // ⚠ No backup, no deletion: the file may hold work done since the run, and nothing could bring it back.
+                    if (File.Exists(change.OriginalPath) && await SnapshotAsync(change.OriginalPath, ct) is not { Length: > 0 })
+                    {
+                        failed.Add(change.OriginalPath);
+                        continue;
+                    }
                     // ⚠ The CURRENT state is captured first, and that is the half that was missing.
                     // Undoing a run writes with no approval prompt — the only write path of the
                     // product that does — and what the run wrote may have been edited since: by
@@ -517,13 +547,27 @@ internal class FileHistoryService
                     // and then filled in by the user was deleted without a trace, and a modified
                     // file was overwritten by a state older than the user's own corrections. The
                     // refusal two branches above already said it, for the other case.
-                    if (await SnapshotAsync(change.OriginalPath, ct) is { Length: > 0 }) savedFirst++;
-                    if (File.Exists(change.OriginalPath)) { File.Delete(change.OriginalPath); deleted.Add(change.OriginalPath); }
+                    if (File.Exists(change.OriginalPath))
+                    {
+                        savedFirst++;
+                        File.Delete(change.OriginalPath);
+                        deleted.Add(change.OriginalPath);
+                    }
                 }
                 else if (File.Exists(change.SnapshotPath))
                 {
-                    if (await SnapshotAsync(change.OriginalPath, ct) is { Length: > 0 }) savedFirst++;
-                    await RestoreAsync(change.SnapshotPath, change.OriginalPath, ct);
+                    // Read before the backup of the current state, which goes through the per-file cap.
+                    var bytes = await File.ReadAllBytesAsync(change.SnapshotPath, ct);
+                    if (File.Exists(change.OriginalPath))
+                    {
+                        if (await SnapshotAsync(change.OriginalPath, ct) is not { Length: > 0 })
+                        {
+                            failed.Add(change.OriginalPath);   // no backup, no overwrite
+                            continue;
+                        }
+                        savedFirst++;
+                    }
+                    await File.WriteAllBytesAsync(change.OriginalPath, bytes, ct);
                     restored.Add(change.OriginalPath);
                 }
                 else

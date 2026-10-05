@@ -106,6 +106,18 @@ internal static class LspChunker
         List<RagChunk> chunks,
         string? parentName)
     {
+        // ⚠ Consecutive one-line leaves form one chunk: alone, each is under the minimum and indexed nowhere (properties,
+        // fields, interface signatures, enum values). Same rule as the Roslyn tier.
+        var oneLiners = new List<(LspDocumentSymbol Symbol, string Name)>();
+        void FlushOneLiners()
+        {
+            if (oneLiners.Count == 0) return;
+            var name = oneLiners.Count == 1 ? oneLiners[0].Name : $"{oneLiners[0].Name}…{oneLiners[^1].Symbol.Name}";
+            TryAddChunk(name, oneLiners[0].Symbol.Range.Start.Line, oneLiners[^1].Symbol.Range.End.Line,
+                        lines, filePath, relPath, chunks, minLines: 1);
+            oneLiners.Clear();
+        }
+
         foreach (var sym in symbols)
         {
             var isContainer = sym.Kind is
@@ -128,14 +140,21 @@ internal static class LspChunker
                 // Recurse into children with the container as parent context
                 CollectSymbolChunks(sym.Children, lines, filePath, relPath, chunks, sym.Name);
             }
+            else if (sym.Range.End.Line <= sym.Range.Start.Line)
+            {
+                oneLiners.Add((sym, qualifiedName));
+                continue;
+            }
             else
             {
                 // Leaf symbol: emit the full range as one chunk
+                FlushOneLiners();
                 TryAddChunk(qualifiedName,
                             sym.Range.Start.Line, sym.Range.End.Line,
                             lines, filePath, relPath, chunks);
             }
         }
+        FlushOneLiners();
     }
 
     /// <summary>
@@ -149,13 +168,14 @@ internal static class LspChunker
         string[] lines,
         string   filePath,
         string   relPath,
-        List<RagChunk> chunks)
+        List<RagChunk> chunks,
+        int      minLines = 2)
     {
         if (endLine0 < startLine0 || startLine0 >= lines.Length) return;
         endLine0 = Math.Min(endLine0, lines.Length - 1);
 
         int lineCount = endLine0 - startLine0 + 1;
-        if (lineCount < 2) return; // skip trivial single-line entries
+        if (lineCount < minLines) return; // skip trivial single-line entries
 
         // ⚠ Past the budget, the symbol is SPLIT into consecutive pieces — never SHRUNK until it
         // fits, which indexes its tail nowhere: semantic search then cannot reach the end of a long

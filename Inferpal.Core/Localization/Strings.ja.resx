@@ -198,7 +198,7 @@
   <data name="DefaultSessionSnippet" xml:space="preserve"><value>セッション</value></data>
   <data name="MsgIterationLimit" xml:space="preserve"><value>（反復制限に達しました：{0}）</value></data>
   <data name="AgentEndedAtIterationLimit" xml:space="preserve"><value>⚠ エージェントは反復回数の上限で停止しました。タスクは完了しておらず、上の内容はそこまでに進んだ分だけです。</value></data>
-  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ エージェントが同じツール呼び出しを繰り返したため停止しました。上の回答はそれまでに集めた内容の要約です。</value></data>
+  <data name="AgentEndedOnRepeat" xml:space="preserve"><value>⚠ エージェントが同じツール呼び出しを繰り返したため停止しました。タスクは完了していない可能性があり、上の内容はそこまでに進んだ分だけです。</value></data>
   <data name="AnswerCutAtLimit" xml:space="preserve"><value>⚠ 上の回答はモデルの長さ制限で止まっており、不完全です。続きを依頼するか、コンテキスト長を増やしてください。</value></data>
   <data name="AnswerStoppedRepeating" xml:space="preserve"><value>⚠ モデルが同じ内容を繰り返していたため停止しました。上の回答は不完全です。依頼の言い方を変えるか、別のモデルを使うと通常は解消します。</value></data>
   <data name="AgentEditsNotApplied" xml:space="preserve"><value>⚠ ファイルは変更されていません。上で試みた編集は拒否されたか、適用されませんでした（回答の内容にかかわらず）。</value></data>
@@ -369,6 +369,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="DocNoChange" xml:space="preserve"><value>✅ コードはすでに十分に文書化されています。</value></data>
   <data name="InlineEditNoChange" xml:space="preserve"><value>✅ モデルはコードを変更せずに返しました — 何も適用されていません。</value></data>
   <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** は既に存在しますが読み取れませんでした。上書きは行っていません。ファイルを解放して (ビルドや別のエディターが保持している可能性があります)、コマンドをもう一度実行してください。</value></data>
+  <data name="TestsFileUnsaved" xml:space="preserve"><value>⚠ **{0}** に未保存の変更があります。保存してから /test をもう一度実行してください。テストはディスク上のファイルに書き込まれ、そのファイルには未保存の変更が含まれていません。</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ テストすべき有用なものはありません。重要なケースはすべて網羅済みです。</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ コードアクションに失敗しました。バックエンド接続とモデルを確認してください。</value></data>
   <data name="CodeActionDocumentChanged" xml:space="preserve"><value>✋ 何も適用されませんでした: モデルの処理中にドキュメントが変更されたか、閉じられました。操作をもう一度実行してください。</value></data>

@@ -1,4 +1,5 @@
 using Inferpal.Models;
+using Inferpal.Services.Tools;
 
 namespace Inferpal.Services.Agent;
 
@@ -41,6 +42,31 @@ internal static class AgentLoopPolicy
         || toolName.Equals("run_tests", StringComparison.OrdinalIgnoreCase)
         || toolName.Equals(Tools.DebugInspectTool.ToolName, StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// A call that ADVANCES something by design, so its verbatim repeat is the next step, not a stall: reading a
+    /// background job's new output (<c>run_command</c> <c>poll</c>), stepping or resuming the debugger. Not counted —
+    /// the run's iteration cap bounds them.
+    /// </summary>
+    /// <remarks>⚠ Counted, the second identical poll of a build still running ended the run — the tool's own answer says
+    /// "use action='poll' to read its output" — and so did the second <c>step_over</c> of a step → inspect cycle.</remarks>
+    internal static bool Advances(ToolCallDto call) => call.Function.Name.ToLowerInvariant() switch
+    {
+        "run_command"               => call.Function.Arguments.Keyword("action") is "poll",
+        Tools.DebugControlTool.ToolName
+                                    => call.Function.Arguments.Keyword("action")
+                                           is "continue" or "step_over" or "step_into" or "step_out",
+        _                           => false,
+    };
+
+    /// <summary>
+    /// A call whose repeat after a change is a re-check: an observation, or a shell command — the tool the product
+    /// itself names to re-run <c>tsc</c>, <c>mypy</c>, <c>cargo check</c> once a fix is written.
+    /// </summary>
+    /// <remarks>⚠ As a mutation, the second identical <c>run_command</c> anywhere in the run ended it — build, edit,
+    /// build again was stopped at the build that would have said whether the fix worked.</remarks>
+    private static bool RepeatsAsACheck(ToolCallDto call) =>
+        IsObservation(call.Function.Name) || call.Function.Name.Equals("run_command", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Stable signature of a tool-call batch (each call's name + JSON arguments).</summary>
     internal static string Signature(IReadOnlyList<ToolCallDto> calls) =>
         string.Join("|", calls.Select(c => $"{c.Function.Name}:{c.Function.Arguments}"));
@@ -61,8 +87,10 @@ internal static class AgentLoopPolicy
     /// identical <c>run_tests</c> of an edit → verify cycle stopped the run as a loop.</remarks>
     internal static bool IsLoop(Dictionary<string, int> counts, IReadOnlyList<ToolCallDto> calls)
     {
-        bool readOnlyBatch = calls.All(c => IsObservation(c.Function.Name));
-        var sig  = (readOnlyBatch ? ReadOnlyKey : string.Empty) + Signature(calls);
+        var counted = calls.Where(c => !Advances(c)).ToList();
+        if (counted.Count == 0) return false;
+        bool readOnlyBatch = counted.All(RepeatsAsACheck);
+        var sig  = (readOnlyBatch ? ReadOnlyKey : string.Empty) + Signature(counted);
         int seen = counts[sig] = counts.GetValueOrDefault(sig) + 1;
 
         if (readOnlyBatch) return seen >= 3;

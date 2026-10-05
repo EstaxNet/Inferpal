@@ -175,6 +175,24 @@ internal static class WorkspaceScan
     /// skips it at the source; the other options keep what <c>SearchOption.AllDirectories</c> did
     /// (no attribute skipped, Win32 wildcards).
     /// </remarks>
+    /// <summary>
+    /// The source files of <paramref name="ext"/>'s LANGUAGE under <paramref name="start"/>: a <c>.tsx</c> component is
+    /// imported by <c>.ts</c>, <c>.tsx</c>, <c>.js</c> and <c>.jsx</c> files alike.
+    /// </summary>
+    /// <remarks>⚠ Scanned by the exact extension, a React component had its consumers searched in <c>*.ts</c> only, and a
+    /// <c>.ts</c> hook was never seen used by the components importing it: "0 dependants — safe to refactor freely".
+    /// One reader for the analysis tools that look for dependants and callers.</remarks>
+    public static IEnumerable<string> EnumerateSourceFamily(string start, string ext) =>
+        SourcePatterns(ext).SelectMany(p => EnumerateFiles(start, p)).Distinct(PathComparer.Default);
+
+    internal static string[] SourcePatterns(string ext) => ext.ToLowerInvariant() switch
+    {
+        ".ts" or ".tsx" or ".js" or ".jsx" or ".mjs" or ".cjs" or ".mts" or ".cts"
+                         => ["*.ts", "*.tsx", "*.js", "*.jsx", "*.mjs", "*.cjs", "*.mts", "*.cts"],
+        ".cpp" or ".cxx" => ["*.cpp", "*.cxx"],
+        _                => ["*" + ext],
+    };
+
     public static IEnumerable<string> EnumerateFiles(string start, string pattern = "*.cs") =>
         EnumerateFiles(start, pattern, out _);
 

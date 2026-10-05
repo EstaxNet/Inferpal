@@ -117,7 +117,7 @@ public class MentionControllerTests
         var prefix   = tmp.AddFile(@"src\SvcHost.cs");         // prefix → score 2
         var contains = tmp.AddFile(@"src\MySvc.cs");           // contains → score 1
         tmp.AddFile(@"bin\svc.cs");                            // bin → skipped
-        tmp.AddFile(@"src\svc.txt");                           // extension not indexable
+        tmp.AddFile(@"src\svc.dll");                           // extension not indexable
         tmp.AddFile(@"src\Other.cs");                          // name does not contain query
 
         var found = MentionController.FindFiles(tmp.Path, "svc", CancellationToken.None);

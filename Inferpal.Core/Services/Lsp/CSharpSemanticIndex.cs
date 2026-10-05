@@ -388,19 +388,77 @@ internal sealed class CSharpSemanticIndex
         var declarations = ResolveDeclarations(snap, symbolName, declaringFile, ct)
             .Where(d => declaringLine is null || d.Location.Line == declaringLine)
             .ToList();
+        // ⚠ Members C# links by name — an interface member and its implementations, a virtual member and its overrides —
+        // are ONE rename: renamed alone, the other keeps the old name and the build breaks (CS0535, CS0115) under
+        // "✅ Applied". Families are formed over EVERY declaration of the name, so a narrowed one still brings its links.
+        var all = declaringFile is null && declaringLine is null ? declarations : ResolveDeclarations(snap, symbolName, null, ct);
+        var families = LinkedFamilies(all.Select(d => d.Symbol));
         var symbols = declarations
-            .GroupBy(d => d.Symbol, SymbolEqualityComparer.Default)
-            .Select(g => (Symbol: g.Key!, g.First().Location))
+            .GroupBy(d => families[d.Symbol])
+            .Select(g => (Family: g.Key, g.First().Symbol, g.First().Location))
             .ToList();
         if (symbols.Count == 0) return new RenamePlan(new Dictionary<string, IReadOnlyList<TextSpan>>(), []);
         if (symbols.Count > 1)
             return new RenamePlan(new Dictionary<string, IReadOnlyList<TextSpan>>(),
                 [.. symbols.Select(s => (s.Symbol.ToDisplayString(), s.Location))]);
-        return new RenamePlan(RenameSpans(snap, symbolName, symbols[0].Symbol, ct), []);
+        var targets = families.Where(f => f.Value == symbols[0].Family).Select(f => f.Key).ToList();
+        return new RenamePlan(RenameSpans(snap, symbolName, targets, ct), []);
+    }
+
+    /// <summary>Each symbol's family: symbols linked by an override or an interface implementation share one.</summary>
+    private static Dictionary<ISymbol, int> LinkedFamilies(IEnumerable<ISymbol> symbols)
+    {
+        var list = symbols.Distinct(SymbolEqualityComparer.Default).Cast<ISymbol>().ToList();
+        var parent = Enumerable.Range(0, list.Count).ToArray();
+        int Find(int i) => parent[i] == i ? i : (parent[i] = Find(parent[i]));
+        for (var i = 0; i < list.Count; i++)
+            for (var j = i + 1; j < list.Count; j++)
+                if (Linked(list[i], list[j])) parent[Find(i)] = Find(j);
+        var families = new Dictionary<ISymbol, int>(SymbolEqualityComparer.Default);
+        for (var i = 0; i < list.Count; i++) families[list[i]] = Find(i);
+        return families;
+    }
+
+    private static bool Linked(ISymbol a, ISymbol b) =>
+        Overrides(a, b) || Overrides(b, a) || Implements(a, b) || Implements(b, a);
+
+    private static bool Overrides(ISymbol member, ISymbol baseMember)
+    {
+        for (var s = Overridden(member); s is not null; s = Overridden(s))
+            if (SymbolEqualityComparer.Default.Equals(s.OriginalDefinition, baseMember.OriginalDefinition)) return true;
+        return false;
+    }
+
+    private static ISymbol? Overridden(ISymbol s) => s switch
+    {
+        IMethodSymbol m   => m.OverriddenMethod,
+        IPropertySymbol p => p.OverriddenProperty,
+        IEventSymbol e    => e.OverriddenEvent,
+        _                 => null,
+    };
+
+    /// <summary><paramref name="member"/> implements <paramref name="interfaceMember"/>, implicitly or explicitly, through
+    /// any construction of its interface.</summary>
+    private static bool Implements(ISymbol member, ISymbol interfaceMember)
+    {
+        if (interfaceMember.ContainingType is not { TypeKind: TypeKind.Interface } iface) return false;
+        if (member.ContainingType is not { } type) return false;
+        foreach (var implemented in type.AllInterfaces)
+        {
+            if (!SymbolEqualityComparer.Default.Equals(implemented.OriginalDefinition, iface.OriginalDefinition)) continue;
+            foreach (var candidate in implemented.GetMembers())
+            {
+                if (!SymbolEqualityComparer.Default.Equals(candidate.OriginalDefinition, interfaceMember.OriginalDefinition)) continue;
+                if (type.FindImplementationForInterfaceMember(candidate) is { } impl
+                    && SymbolEqualityComparer.Default.Equals(impl.OriginalDefinition, member.OriginalDefinition))
+                    return true;
+            }
+        }
+        return false;
     }
 
     private static IReadOnlyDictionary<string, IReadOnlyList<TextSpan>> RenameSpans(
-        Snapshot snap, string symbolName, ISymbol target, CancellationToken ct)
+        Snapshot snap, string symbolName, IReadOnlyList<ISymbol> targets, CancellationToken ct)
     {
         var byFile = new Dictionary<string, IReadOnlyList<TextSpan>>(Services.PathComparer.Default);
         // ⚠ The snapshot, never the live fields: a save during a rename (the watcher calls Update) made
@@ -423,9 +481,14 @@ internal sealed class CSharpSemanticIndex
                 if (parent is null) continue;
 
                 // A declaration binds through GetDeclaredSymbol, a use through GetSymbolInfo.
+                // ⚠ A constructor or a destructor carries its TYPE's name but declares a method: left out, renaming a class
+                // with a constructor wrote "class ShoppingCart { public Cart(…) }" — CS1520 — under "✅ Applied".
                 var declared = model.GetDeclaredSymbol(parent, ct);
-                var bound = declared is not null && SymbolEqualityComparer.Default.Equals(declared, target)
-                    || ResolvesTo(model, parent, target, ct);
+                var bound = declared is not null && targets.Any(t => SymbolEqualityComparer.Default.Equals(declared, t))
+                    || declared is IMethodSymbol { MethodKind: MethodKind.Constructor or MethodKind.StaticConstructor
+                                                   or MethodKind.Destructor } structor
+                       && targets.Any(t => SymbolEqualityComparer.Default.Equals(structor.ContainingType, t))
+                    || targets.Any(t => ResolvesTo(model, parent, t, ct));
 
                 if (bound) spans.Add(token.Span);
             }

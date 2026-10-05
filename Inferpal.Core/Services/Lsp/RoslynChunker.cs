@@ -106,19 +106,37 @@ internal static class RoslynChunker
             var headerEnd  = Math.Min(typeStart + 12, firstStart - 1);
             TryAddChunk(typeName, typeStart, headerEnd, lines, filePath, relPath, chunks);
 
-            // One chunk per member — includes the member's XML doc trivia
+            // One chunk per member — includes the member's XML doc trivia.
+            // ⚠ A member on ONE line (a property, a field, an interface signature, an enum value, an expression-bodied
+            // method) is under the chunk minimum: alone it was indexed nowhere, and the type's header kept the regex
+            // fallback from running — a DTO was indexed as "public class OrderDto {". Consecutive one-liners form one chunk.
+            var oneLiners = new List<MemberDeclarationSyntax>();
+            void FlushOneLiners()
+            {
+                if (oneLiners.Count == 0) return;
+                var name = oneLiners.Count == 1
+                    ? $"{typeName}.{MemberName(oneLiners[0])}"
+                    : $"{typeName}.{MemberName(oneLiners[0])}…{MemberName(oneLiners[^1])}";
+                TryAddChunk(name, NodeStartLine(oneLiners[0]), NodeEndLine(oneLiners[^1], lines),
+                            lines, filePath, relPath, chunks, minLines: 1);
+                oneLiners.Clear();
+            }
+
             foreach (var member in members)
-                TryAddChunk(
-                    $"{typeName}.{MemberName(member)}",
-                    NodeStartLine(member), NodeEndLine(member, lines),
-                    lines, filePath, relPath, chunks);
+            {
+                var (start, end) = (NodeStartLine(member), NodeEndLine(member, lines));
+                if (end - start + 1 < MinChunkLines) { oneLiners.Add(member); continue; }
+                FlushOneLiners();
+                TryAddChunk($"{typeName}.{MemberName(member)}", start, end, lines, filePath, relPath, chunks);
+            }
+            FlushOneLiners();
         }
         else
         {
-            // Whole type as one chunk (empty class, enum with no members, etc.)
+            // Whole type as one chunk (empty class, enum with no members, a positional record on one line, etc.)
             TryAddChunk(typeName,
                 NodeStartLine(typeDecl), NodeEndLine(typeDecl, lines),
-                lines, filePath, relPath, chunks);
+                lines, filePath, relPath, chunks, minLines: 1);
         }
     }
 
@@ -130,13 +148,14 @@ internal static class RoslynChunker
         string[] lines,
         string filePath,
         string relPath,
-        List<RagChunk> chunks)
+        List<RagChunk> chunks,
+        int minLines = MinChunkLines)
     {
         if (end0 < start0 || start0 >= lines.Length) return;
         end0 = Math.Min(end0, lines.Length - 1);
 
         int lineCount = end0 - start0 + 1;
-        if (lineCount < MinChunkLines) return;
+        if (lineCount < minLines) return;
 
         // Hard cap: past the budget the member is SPLIT into consecutive pieces. ⚠ Shrunk until it
         // fits instead, its tail is indexed nowhere — search never reaches the end of a long method.

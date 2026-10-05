@@ -62,14 +62,26 @@ internal static class MentionController
     ];
 
     /// <summary>File extensions eligible for <c>@file</c> search and folder context bodies.</summary>
+    /// <remarks>⚠ Everything the index reads (<see cref="Rag.CodeChunker.SupportedExtensions"/>) and the common text
+    /// formats besides: with <c>.c</c> and <c>.rs</c> missing, <c>@folder</c> on a C project listed only its headers and a
+    /// Rust crate an empty "Files:" — read as "this folder holds no source file".</remarks>
     internal static readonly HashSet<string> IndexableExtensions =
-        new(StringComparer.OrdinalIgnoreCase)
-        {
-            ".cs", ".ts", ".js", ".tsx", ".jsx", ".py", ".go", ".java",
-            ".cpp", ".h", ".hpp", ".razor", ".vue", ".fs",
-            ".json", ".xml", ".yaml", ".yml", ".md", ".config",
-            ".csproj", ".sln", ".slnx", ".props", ".targets",
-        };
+        new(Rag.CodeChunker.SupportedExtensions.Concat(
+            [
+                ".cs", ".ts", ".js", ".tsx", ".jsx", ".mjs", ".cjs", ".mts", ".cts", ".py", ".go", ".java",
+                ".c", ".cpp", ".cc", ".cxx", ".h", ".hpp", ".rs", ".razor", ".cshtml", ".vue", ".svelte", ".fs", ".vb",
+                ".kt", ".kts", ".swift", ".scala", ".rb", ".php", ".dart", ".lua", ".r", ".m", ".mm", ".ex", ".exs",
+                ".sql", ".sh", ".bash", ".ps1", ".psm1", ".bat", ".cmd", ".html", ".htm", ".css", ".scss", ".less",
+                ".json", ".xml", ".xaml", ".yaml", ".yml", ".toml", ".ini", ".md", ".txt", ".config", ".proto", ".graphql",
+                ".gradle", ".csproj", ".fsproj", ".vbproj", ".sln", ".slnx", ".props", ".targets", ".tf",
+            ]), StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Files read by NAME, having no extension that says what they are.</summary>
+    private static readonly HashSet<string> IndexableNames =
+        new(StringComparer.OrdinalIgnoreCase) { "Dockerfile", "Makefile", "Jenkinsfile", "Gemfile", "Rakefile", "CMakeLists.txt" };
+
+    internal static bool IsIndexable(string file) =>
+        IndexableExtensions.Contains(Path.GetExtension(file)) || IndexableNames.Contains(Path.GetFileName(file));
 
     private static bool IsSkippedDir(string dir) => WorkspaceScan.IsExcludedDirName(dir);
 
@@ -157,7 +169,7 @@ internal static class MentionController
             foreach (var file in Directory.GetFiles(dir))
             {
                 if (ct.IsCancellationRequested) return;
-                if (!IndexableExtensions.Contains(Path.GetExtension(file))) continue;
+                if (!IsIndexable(file)) continue;
 
                 var name = Path.GetFileName(file).ToLowerInvariant();
                 if (!name.Contains(query)) continue;
@@ -329,6 +341,13 @@ internal static class MentionController
         if (limits.UnlistableSub is { } sub)
             notes.Add($"(the subfolder {Path.GetRelativePath(folderPath, sub)} could not be listed — "
                     + "its files are missing from the list above)");
+        // ⚠ Files of a type this attachment does not read are left out of the list: said, or a folder of them reads as
+        // empty.
+        if (limits.OtherTypes.Count > 0)
+            notes.Add($"({limits.OtherTypes.Values.Sum()} file(s) of other types are not listed: "
+                    + string.Join(", ", limits.OtherTypes.OrderByDescending(t => t.Value).ThenBy(t => t.Key, StringComparer.Ordinal)
+                                                     .Take(5).Select(t => $"{t.Key} ×{t.Value}"))
+                    + (limits.OtherTypes.Count > 5 ? ", …" : string.Empty) + ")");
 
         if (notes.Count > 0) sb.Append('\n').AppendLine().AppendJoin('\n', notes);
         return sb.ToString();
@@ -355,6 +374,9 @@ internal static class MentionController
         /// <summary>First sub-directory that could not be listed — named, never counted: how many
         /// files it held is precisely what nobody can know.</summary>
         public string? UnlistableSub;
+
+        /// <summary>Files left out because of their type, counted per extension ("(none)" for a name without one).</summary>
+        public readonly Dictionary<string, int> OtherTypes = new(StringComparer.OrdinalIgnoreCase);
     }
 
     private static void CollectFolderFiles(
@@ -383,7 +405,12 @@ internal static class MentionController
             foreach (var file in Directory.GetFiles(dir).OrderBy(f => f, StringComparer.Ordinal))
             {
                 if (ct.IsCancellationRequested) return;
-                if (!IndexableExtensions.Contains(Path.GetExtension(file))) continue;
+                if (!IsIndexable(file))
+                {
+                    var type = Path.GetExtension(file) is { Length: > 0 } e ? e.ToLowerInvariant() : "(none)";
+                    limits.OtherTypes[type] = limits.OtherTypes.GetValueOrDefault(type) + 1;
+                    continue;
+                }
                 // ⚠ The ceiling is checked HERE too, not only on entry: a single folder holding
                 // five thousand files was listed whole, because the count was only ever consulted
                 // between directories. A cap that a common shape walks straight past is not a cap.
