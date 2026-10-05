@@ -63,10 +63,25 @@ public sealed class UserShellToolArgsAndFolderTests : IDisposable
     }
 
     [Fact]
-    public async Task TheCommand_RunsInTheWorkspace_AndALongPathComesBackWhole()
+    public async Task TheCommand_RunsInTheWorkspace()
     {
-        // The folder's name is unique — the test runner's own folder cannot print it — and long: past a console's width,
-        // PowerShell's table view (what `pwd` prints there) cuts the path with "…" unless the buffer is widened.
+        // The temp folder's name is unique: the test runner's own folder cannot print it. Printed as a plain string —
+        // `echo "$PWD"` reads the same in bash and PowerShell — so no table view stands between the path and the test.
+        var output = await new UserShellTool("probe", "echo \"$PWD\"", new Approve(), new InferpalConfig(), () => _root)
+            .ExecuteAsync(Args(null), CancellationToken.None);
+
+        Assert.Contains(Path.GetFileName(_root), output);
+    }
+
+    [Fact]
+    public async Task OnWindows_ATableViewOfALongPath_ComesBackWhole()
+    {
+        // Past the console's width a PowerShell table view (what `pwd` prints there) cuts the path with "…" unless the
+        // buffer is widened, which only Windows allows: pwsh on Linux and macOS formats at 80 columns, its buffer
+        // refuses to grow ("Operation is not supported on this platform", measured), and the one other lever —
+        // Out-String — would make the pipeline read native output. That limit is known, not tested here.
+        if (!OperatingSystem.IsWindows()) return;
+
         var deep = Path.Combine(_root, "a-workspace-folder-whose-name-alone-is-longer-than-a-console-is-wide-"
                                        + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(deep);
