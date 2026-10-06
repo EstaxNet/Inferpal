@@ -1001,6 +1001,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="DebugStopped" xml:space="preserve"><value>Sesión de depuración detenida.</value></data>
   <data name="DebugStatusHeader" xml:space="preserve"><value>**Depurador**</value></data>
   <data name="DebugStatusNotPaused" xml:space="preserve"><value>La ejecución no está pausada.</value></data>
+  <data name="DebugNoAnswer" xml:space="preserve"><value>⚠ El depurador no respondió, así que ahora mismo no se sabe nada de su estado — {0}</value></data>
   <data name="DebugStatusPaused" xml:space="preserve"><value>Pausado en {0}.</value></data>
   <data name="DebugStatusNoBreakpoints" xml:space="preserve"><value>No hay puntos de interrupción definidos.</value></data>
   <data name="DebugStatusBreakpoints" xml:space="preserve"><value>Puntos de interrupción:</value></data>

@@ -187,16 +187,40 @@ internal sealed class DebugControlTool(
     {
         if (!budget.TryConsume()) return budget.ExhaustedMessage;
 
-        var state = step is null
+        // Through the registry's session, an ended run has already taken the breakpoints set here with it; a bare
+        // session (a test, a front-end wired without the registry) gets the same cleanup from the tool itself.
+        var owned  = _agent.Snapshot().Count;
+        var result = step is null
             ? await session.ContinueAsync(ct)
             : await session.StepAsync(step.Value, ct);
 
-        // No stop is all that is known: the program may have ended, may still be running without reaching a
-        // breakpoint within the resume budget, or no session was paused — the ports answer null for each.
-        return state is null
-            ? "No stop was reached: the program ended, is still running without hitting a breakpoint, or no "
-            + "session was paused. Check with debug_inspect; stop the session before starting a new one."
-            : DebugStateFormatter.Format(state, root()) + budget.Trailer;
+        switch (result.Outcome)
+        {
+            case DebugResumeOutcome.Stopped when result.State is { } state:
+                return DebugStateFormatter.Format(state, root()) + budget.Trailer;
+
+            case DebugResumeOutcome.Ended:
+            {
+                var removed = session is AgentCleaningDebugSession ? owned : await _agent.RemoveAllAsync(session, ct);
+                return "The program ran to completion: no further stop. The session is over"
+                     + (removed == 0 ? "." : $", and the {removed} breakpoint(s) you set were removed.")
+                     + " Start it again to look at another run.";
+            }
+
+            case DebugResumeOutcome.StillRunning:
+                return $"The program is still running under the debugger: no stop within {(int)DebugOps.ResumeBudget.TotalMinutes} "
+                     + "minute(s). The session is live and your breakpoints stay set — it may be waiting for input, or the "
+                     + "next breakpoint is on a line the run has not reached. `get_debugger_state` shows a later stop; "
+                     + "`stop` ends the session.";
+
+            case DebugResumeOutcome.NotPaused:
+                return "No debugging session is paused, so there was nothing to resume. `start` begins one; "
+                     + "`get_debugger_state` says what the debugger is doing.";
+
+            default:
+                return "The program was not resumed. " + (result.Failure ?? "The debugger gave no reason.")
+                     + " Nothing is known about the program's state from this call.";
+        }
     }
 
     private async Task<string> StopAsync(CancellationToken ct)

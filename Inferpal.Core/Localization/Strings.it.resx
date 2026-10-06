@@ -1001,6 +1001,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="DebugStopped" xml:space="preserve"><value>Sessione di debug interrotta.</value></data>
   <data name="DebugStatusHeader" xml:space="preserve"><value>**Debugger**</value></data>
   <data name="DebugStatusNotPaused" xml:space="preserve"><value>L'esecuzione non è in pausa.</value></data>
+  <data name="DebugNoAnswer" xml:space="preserve"><value>⚠ Il debugger non ha risposto: al momento il suo stato è sconosciuto — {0}</value></data>
   <data name="DebugStatusPaused" xml:space="preserve"><value>In pausa in {0}.</value></data>
   <data name="DebugStatusNoBreakpoints" xml:space="preserve"><value>Nessun breakpoint impostato.</value></data>
   <data name="DebugStatusBreakpoints" xml:space="preserve"><value>Breakpoint:</value></data>

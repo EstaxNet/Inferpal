@@ -1001,6 +1001,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="DebugStopped" xml:space="preserve"><value>デバッグ セッションを停止しました。</value></data>
   <data name="DebugStatusHeader" xml:space="preserve"><value>**デバッガー**</value></data>
   <data name="DebugStatusNotPaused" xml:space="preserve"><value>実行は一時停止していません。</value></data>
+  <data name="DebugNoAnswer" xml:space="preserve"><value>⚠ デバッガーが応答しなかったため、現在の状態は不明です — {0}</value></data>
   <data name="DebugStatusPaused" xml:space="preserve"><value>{0} で停止中。</value></data>
   <data name="DebugStatusNoBreakpoints" xml:space="preserve"><value>ブレークポイントは設定されていません。</value></data>
   <data name="DebugStatusBreakpoints" xml:space="preserve"><value>ブレークポイント:</value></data>

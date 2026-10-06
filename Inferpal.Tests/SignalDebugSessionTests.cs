@@ -131,8 +131,11 @@ public class SignalDebugSessionTests : IDisposable
         var started = DateTimeOffset.UtcNow;
         Assert.False(session.IsAvailable);
         Assert.Null((await session.StartAsync(CancellationToken.None)).State);
-        Assert.Null(await session.AddBreakpointAsync(@"C:\p\a.cs", 3, CancellationToken.None));
-        Assert.Empty(await session.ListBreakpointsAsync(CancellationToken.None));
+        // Nobody to answer is not "no breakpoint" nor "none set": said as such, and at once.
+        var refused = await Assert.ThrowsAsync<DebuggerNotAnsweringException>(
+            () => session.AddBreakpointAsync(@"C:\p\a.cs", 3, CancellationToken.None));
+        Assert.Contains("in-process half is not running", refused.Message, StringComparison.Ordinal);
+        await Assert.ThrowsAsync<DebuggerNotAnsweringException>(() => session.ListBreakpointsAsync(CancellationToken.None));
         var elapsed = DateTimeOffset.UtcNow - started;
 
         Assert.True(elapsed < TimeSpan.FromSeconds(2), $"three calls took {elapsed.TotalSeconds:0.0}s");
@@ -320,10 +323,13 @@ public class SignalDebugSessionTests : IDisposable
         });
         SignalDebugSession.ResumeTimeout = TimeSpan.FromMilliseconds(400);
 
-        var state = await new SignalDebugSession().ContinueAsync(CancellationToken.None);
+        var result = await new SignalDebugSession().ContinueAsync(CancellationToken.None);
 
         await pump;
-        Assert.Null(state);
+        Assert.Null(result.State);
+        // And the silence is said as one: not an ended run, whose breakpoints would be removed.
+        Assert.Equal(DebugResumeOutcome.Failed, result.Outcome);
+        Assert.Contains("did not answer", result.Failure, StringComparison.Ordinal);
     }
 
     [Fact]

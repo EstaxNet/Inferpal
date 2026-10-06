@@ -218,11 +218,11 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
                 var failure = await BuildBeforeLaunchAsync(ct);
                 if (failure is not null) return new(request.Id, Ok: false, Error: failure);
 
-                var stop = await ResumeAndWaitAsync(request.Op, launchDeadline, ct);
-                // The wait EXPIRED (a null before the deadline is a run that ended): say which. Still
+                var (stop, outcome) = await ResumeAndWaitAsync(request.Op, launchDeadline, ct);
+                // The wait EXPIRED (a run that ended answers before the deadline): say which. Still
                 // in design mode, the launch never happened; otherwise the program is running —
                 // Flag tells the host, which must not read it as "ran to completion".
-                if (stop is null && !ct.IsCancellationRequested && NowMs() >= launchDeadline)
+                if (stop is null && outcome == DebugOps.Resumed.StillRunning)
                     return Volatile.Read(ref _mode) == (int)DBGMODE.DBGMODE_Design
                         ? new(request.Id, Ok: false, Error:
                             "The launch did not leave design mode within the start budget — a dialog may be waiting in Visual Studio.")
@@ -237,9 +237,17 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
                 // Only a paused session: in design mode Debug.Start and the steps BUILD AND LAUNCH the
                 // program — without the approval `start` asks for, and without the pre-launch build that
                 // keeps the "build errors" modal away. Same answer as the VS Code bridge: no stop.
-                if (!IsPaused) return new(request.Id, Ok: true, State: null);
-                return new(request.Id, Ok: true, State: await ResumeAndWaitAsync(
-                    request.Op, DeadlineFor(DebugOps.ResumeBudget), ct));
+                if (!IsPaused) return new(request.Id, Ok: true, Text: DebugOps.Resumed.NotPaused);
+                {
+                    // No stop is said with its reason (DebugOps): a run that ENDED takes the assistant's breakpoints with
+                    // it, one STILL RUNNING keeps them — an empty answer for both leaves them in the user's workspace.
+                    var (stop, outcome) = await ResumeAndWaitAsync(request.Op, DeadlineFor(DebugOps.ResumeBudget), ct);
+                    if (stop is not null) return new(request.Id, Ok: true, State: stop);
+                    return outcome == NoChange
+                        ? new(request.Id, Ok: false, Error:
+                            "The debugger did not resume: the command had no effect (no startup project, or the session is already gone).")
+                        : new(request.Id, Ok: true, Text: outcome);
+                }
 
             case DebugOps.State:
             {
@@ -363,7 +371,12 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
     /// Each hop back to <see cref="TaskScheduler.Default"/> is load-bearing, not tidiness: the wait
     /// below must not hold the UI thread, or the program it is waiting for would never get to run.
     /// </remarks>
-    private async Task<DebugStopState?> ResumeAndWaitAsync(string op, long deadlineMs, CancellationToken ct)
+    /// <summary>A resume from a break that moved nothing: the command did not take.</summary>
+    private const string NoChange = "no-change";
+
+    /// <returns>The stop, or why there is none: <see cref="DebugOps.Resumed.Ended"/>, <see cref="DebugOps.Resumed.StillRunning"/>
+    /// (the wait expired), <see cref="NoChange"/>, or <c>null</c> when the caller gave up.</returns>
+    private async Task<(DebugStopState? Stop, string? Outcome)> ResumeAndWaitAsync(string op, long deadlineMs, CancellationToken ct)
     {
         var generation       = Volatile.Read(ref _modeGen);
         var resumingFromBreak = IsPaused;
@@ -399,10 +412,10 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
                         await Jtf.SwitchToMainThreadAsync(ct);
                         var state = CaptureState();
                         await TaskScheduler.Default.SwitchTo();
-                        return state;
+                        return (state, null);
                     }
-                    case DBGMODE.DBGMODE_Design: return null;   // ran to completion
-                    default: break;                             // still running
+                    case DBGMODE.DBGMODE_Design: return (null, DebugOps.Resumed.Ended);   // ran to completion
+                    default: break;                                                     // still running
                 }
             }
             else if (resumingFromBreak && (idleMs += PollMs / 2) >= SettleMs)
@@ -414,11 +427,11 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
                 // ⚠ Only from a break. A launch legitimately stays in design mode for the whole
                 // build, so there the long host timeout is the right budget and this shortcut would
                 // cut a build short.
-                return null;
+                return (null, NoChange);
             }
             await Task.Delay(PollMs / 2, ct);
         }
-        return null;
+        return (null, ct.IsCancellationRequested ? null : DebugOps.Resumed.StillRunning);
     }
 
     // ── Capture one failing test under the debugger ──────────────────────────────────

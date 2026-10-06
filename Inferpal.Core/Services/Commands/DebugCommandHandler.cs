@@ -41,16 +41,25 @@ internal static class DebugCommandHandler
 
         var sub = parts.Length >= 2 ? parts[1].Trim() : string.Empty;
 
-        if (sub.Equals("stop", StringComparison.OrdinalIgnoreCase))
+        // ⚠ A debugger that did not answer is said as such: read as an answer, it says "not paused" about a debugger
+        // held by a dialog, and "stopped" for a stop that never reached it.
+        try
         {
-            await session.StopAsync(ct);
-            return new(Strings.DebugStopped);
-        }
+            if (sub.Equals("stop", StringComparison.OrdinalIgnoreCase))
+            {
+                await session.StopAsync(ct);
+                return new(Strings.DebugStopped);
+            }
 
-        // Bare `/debug` answers the only question worth asking before starting: what is the
-        // debugger actually doing right now?
-        if (sub.Length == 0 || sub.Equals("status", StringComparison.OrdinalIgnoreCase))
-            return new(await StatusAsync(session, ct));
+            // Bare `/debug` answers the only question worth asking before starting: what is the
+            // debugger actually doing right now?
+            if (sub.Length == 0 || sub.Equals("status", StringComparison.OrdinalIgnoreCase))
+                return new(await StatusAsync(session, ct));
+        }
+        catch (DebuggerNotAnsweringException ex)
+        {
+            return new(Strings.DebugNoAnswer(ex.Message));
+        }
 
         if (sub.Equals("help", StringComparison.OrdinalIgnoreCase))
             return new(Strings.DebugUsage);

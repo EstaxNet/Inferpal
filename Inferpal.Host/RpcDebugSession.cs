@@ -22,9 +22,9 @@ namespace Inferpal.Host;
 /// layer is responsible.
 /// </para>
 /// <para>
-/// Best-effort as the port demands: a missing handler, a dead adapter or an adapter-side throw
-/// degrades to <c>null</c>/empty and is traced through <see cref="Diagnostics"/>. Only
-/// <see cref="OperationCanceledException"/> propagates.
+/// A missing handler, a dead adapter or an adapter-side throw is NOT an ordinary debugger answer: it is traced
+/// through <see cref="Diagnostics"/> and thrown as <see cref="DebuggerNotAnsweringException"/>, the adapter's own words
+/// included (a start and a resume say it in their result instead).
 /// </para>
 /// </remarks>
 internal sealed class RpcDebugSession(JsonRpc rpc, bool declared) : IDebugSession
@@ -80,10 +80,10 @@ internal sealed class RpcDebugSession(JsonRpc rpc, bool declared) : IDebugSessio
         return dto?.StillRunning == true ? DebugStartResult.NoStopYet : DebugStartResult.RanToCompletion;
     }
 
-    public Task<DebugStopState?> ContinueAsync(CancellationToken ct) => StateAsync("debug/continue", null, ct);
+    public Task<DebugResumeResult> ContinueAsync(CancellationToken ct) => ResumeAsync("debug/continue", null, ct);
 
-    public Task<DebugStopState?> StepAsync(DebugStepKind kind, CancellationToken ct) =>
-        StateAsync("debug/step", new DebugStepParams(kind switch
+    public Task<DebugResumeResult> StepAsync(DebugStepKind kind, CancellationToken ct) =>
+        ResumeAsync("debug/step", new DebugStepParams(kind switch
         {
             DebugStepKind.Into => "into",
             DebugStepKind.Out  => "out",
@@ -105,6 +105,24 @@ internal sealed class RpcDebugSession(JsonRpc rpc, bool declared) : IDebugSessio
         return dto is null ? null : ToState(dto);
     }
 
+    /// <summary>A resume and what it came to, from the adapter's answer (the outcomes are <see cref="DebugOps"/>'s).</summary>
+    private async Task<DebugResumeResult> ResumeAsync(string method, object? p, CancellationToken ct)
+    {
+        DebugResumeDto? dto;
+        try { dto = await CallAsync<DebugResumeDto?>(method, p, ct); }
+        catch (DebuggerNotAnsweringException ex) { return DebugResumeResult.Failed(ex.Message); }
+
+        if (dto?.Failure is { Length: > 0 } failure) return DebugResumeResult.Failed(failure);
+        if (dto?.State is { } state) return DebugResumeResult.Stopped(ToState(state));
+        return dto?.Outcome switch
+        {
+            DebugOps.Resumed.NotPaused    => DebugResumeResult.NotPaused,
+            DebugOps.Resumed.StillRunning => DebugResumeResult.StillRunning,
+            DebugOps.Resumed.Ended        => DebugResumeResult.Ended,
+            _ => DebugResumeResult.Failed("The editor answered the resume without saying what came of it."),
+        };
+    }
+
     private async Task<T?> CallAsync<T>(string method, object? p, CancellationToken ct)
     {
         try
@@ -117,7 +135,8 @@ internal sealed class RpcDebugSession(JsonRpc rpc, bool declared) : IDebugSessio
         catch (Exception ex)
         {
             Diagnostics.Swallow($"RpcDebugSession.{method}", ex);
-            return default;
+            throw new DebuggerNotAnsweringException(
+                $"The debugger did not answer: the editor's request failed — {Diagnostics.RootMessage(ex).TrimEnd('.')}.", ex);
         }
     }
 

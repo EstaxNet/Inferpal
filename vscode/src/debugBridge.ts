@@ -11,6 +11,7 @@ import {
   DebugCaptureTestParams,
   DebugEvaluateParams,
   DebugFrameDto,
+  DebugResumeDto,
   DebugStartDto,
   DebugStepParams,
   DebugStopStateDto,
@@ -23,8 +24,8 @@ export interface DebugDelegate {
   removeBreakpoint(file: string, line: number): Promise<boolean>;
   listBreakpoints(): Promise<DebugBreakpointDto[]>;
   start(): Promise<DebugStartDto>;
-  continue(): Promise<DebugStopStateDto | null>;
-  step(p: DebugStepParams): Promise<DebugStopStateDto | null>;
+  continue(): Promise<DebugResumeDto>;
+  step(p: DebugStepParams): Promise<DebugResumeDto>;
   state(): Promise<DebugStopStateDto | null>;
   evaluate(p: DebugEvaluateParams): Promise<string | null>;
   stop(): Promise<void>;
@@ -209,11 +210,11 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
     return { state: null, failure: null, stillRunning: true };
   }
 
-  async continue(): Promise<DebugStopStateDto | null> {
+  async continue(): Promise<DebugResumeDto> {
     return this.resume((session, threadId) => session.customRequest('continue', { threadId }));
   }
 
-  async step(p: DebugStepParams): Promise<DebugStopStateDto | null> {
+  async step(p: DebugStepParams): Promise<DebugResumeDto> {
     const command = p.kind === 'into' ? 'stepIn' : p.kind === 'out' ? 'stepOut' : 'next';
     return this.resume((session, threadId) => session.customRequest(command, { threadId }));
   }
@@ -224,13 +225,17 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
    * The waiter is armed before the request goes out, and it keys on a transition rather than on
    * being stopped: a resume can answer in milliseconds, far faster than any check of the current
    * state could be trusted to happen after it.
+   *
+   * ⚠ No stop is said with its reason: a run that ENDED takes the assistant's breakpoints with it, one STILL RUNNING
+   * keeps them, and a resume the adapter refused is neither — one empty answer for all three leaves the assistant's
+   * breakpoints in the user's workspace.
    */
   private async resume(
     issue: (session: vscode.DebugSession, threadId: number) => Thenable<unknown>,
-  ): Promise<DebugStopStateDto | null> {
+  ): Promise<DebugResumeDto> {
     const session = vscode.debug.activeDebugSession;
     if (!session || this.stoppedThreadId === undefined) {
-      return null;
+      return { state: null, outcome: 'not-paused' };
     }
 
     const threadId = this.stoppedThreadId;
@@ -240,10 +245,17 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
     } catch (err) {
       this.release('ended');
       this.log?.(`[debug] resume failed: ${String(err)}`);
-      return null;
+      return { state: null, outcome: null, failure: `The debug adapter refused to resume: ${String(err)}` };
     }
 
-    return (await settled) === 'stopped' ? this.capture() : null;
+    const transition = await settled;
+    if (transition === 'stopped') {
+      const state = await this.capture();
+      return state
+        ? { state, outcome: null }
+        : { state: null, outcome: null, failure: 'The program stopped, but its state could not be read.' };
+    }
+    return { state: null, outcome: transition === 'ended' ? 'ended' : 'running' };
   }
 
   async stop(): Promise<void> {

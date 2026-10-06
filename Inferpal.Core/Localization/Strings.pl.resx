@@ -1001,6 +1001,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="DebugStopped" xml:space="preserve"><value>Sesja debugowania zatrzymana.</value></data>
   <data name="DebugStatusHeader" xml:space="preserve"><value>**Debuger**</value></data>
   <data name="DebugStatusNotPaused" xml:space="preserve"><value>Wykonanie nie jest wstrzymane.</value></data>
+  <data name="DebugNoAnswer" xml:space="preserve"><value>⚠ Debuger nie odpowiedział, więc jego stan jest teraz nieznany — {0}</value></data>
   <data name="DebugStatusPaused" xml:space="preserve"><value>Wstrzymano w {0}.</value></data>
   <data name="DebugStatusNoBreakpoints" xml:space="preserve"><value>Nie ustawiono żadnych pułapek.</value></data>
   <data name="DebugStatusBreakpoints" xml:space="preserve"><value>Pułapki:</value></data>

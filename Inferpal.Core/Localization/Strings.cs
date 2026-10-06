@@ -808,6 +808,7 @@ internal static class Strings
     public static string DebugUsage               => Get(nameof(DebugUsage));
     public static string DebugStatusHeader        => Get(nameof(DebugStatusHeader));
     public static string DebugStatusNotPaused     => Get(nameof(DebugStatusNotPaused));
+    public static string DebugNoAnswer(string reason) => string.Format(Get(nameof(DebugNoAnswer)), reason);
     public static string DebugStatusNoBreakpoints => Get(nameof(DebugStatusNoBreakpoints));
     public static string DebugStatusBreakpoints   => Get(nameof(DebugStatusBreakpoints));
 

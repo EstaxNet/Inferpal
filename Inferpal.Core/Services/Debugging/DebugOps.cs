@@ -27,6 +27,22 @@ internal static class DebugOps
     internal const string Evaluate         = "evaluate";
     internal const string Stop             = "stop";
 
+    /// <summary>
+    /// What a resume (continue / step) that reached no stop answers in <c>Text</c> — values, not operations, hence a
+    /// class of their own.
+    /// </summary>
+    /// <remarks>
+    /// Three different facts: the run ENDED (the assistant's breakpoints go with the session), it is STILL RUNNING past
+    /// the budget (they stay), or nothing was paused to resume. Collapsed into one empty answer, the first one leaves the
+    /// assistant's breakpoints in the editor's saved list for good. The VS Code bridge answers the same strings.
+    /// </remarks>
+    internal static class Resumed
+    {
+        internal const string Ended        = "ended";
+        internal const string StillRunning = "running";
+        internal const string NotPaused    = "not-paused";
+    }
+
     /// <summary>How long a launch may take to reach its first stop, pre-launch build included.</summary>
     /// <remarks>
     /// Shared by both ends because the driver serves one request at a time: a driver that waited

@@ -65,6 +65,50 @@ internal sealed record DebugStartResult(DebugStopState? State, string? Failure, 
     internal static DebugStartResult NoStopYet { get; } = new(null, null, StillRunning: true);
 }
 
+/// <summary>What a resume (continue or step) came to.</summary>
+internal enum DebugResumeOutcome
+{
+    /// <summary>Execution paused again: <see cref="DebugResumeResult.State"/> says where.</summary>
+    Stopped,
+    /// <summary>The program ran to its end: the session is over.</summary>
+    Ended,
+    /// <summary>The program is still running past the resume budget: the session is live.</summary>
+    StillRunning,
+    /// <summary>No session was paused, so there was nothing to resume.</summary>
+    NotPaused,
+    /// <summary>The resume itself failed or got no answer: <see cref="DebugResumeResult.Failure"/> says why.</summary>
+    Failed,
+}
+
+/// <summary>
+/// What a resume came to — five outcomes, because each one asks something different of the caller.
+/// </summary>
+/// <remarks>
+/// ⚠ Read as one "no stop", an ENDED run keeps the assistant's breakpoints: they go when the session ends, and only a
+/// start that ran to completion says so — while the commonest end of an agent's session is a <c>continue</c> after the
+/// last inspection. They then stay in the editor's saved list and stop the user's next run on lines they never chose.
+/// A run STILL RUNNING keeps them; a resume that FAILED is neither.
+/// </remarks>
+internal sealed record DebugResumeResult(DebugResumeOutcome Outcome, DebugStopState? State = null, string? Failure = null)
+{
+    internal static DebugResumeResult Stopped(DebugStopState state) => new(DebugResumeOutcome.Stopped, state);
+    internal static DebugResumeResult Ended { get; } = new(DebugResumeOutcome.Ended);
+    internal static DebugResumeResult StillRunning { get; } = new(DebugResumeOutcome.StillRunning);
+    internal static DebugResumeResult NotPaused { get; } = new(DebugResumeOutcome.NotPaused);
+    internal static DebugResumeResult Failed(string reason) => new(DebugResumeOutcome.Failed, Failure: reason);
+}
+
+/// <summary>
+/// The editor's debugger did not answer — the channel to it failed, or it never came back within its budget.
+/// </summary>
+/// <remarks>
+/// ⚠ Never an ordinary answer. Returned as one (<c>null</c>, <c>false</c>, an empty list), a debugger held by a dialog,
+/// or an editor whose request failed, reads as "the debugger refused a breakpoint (no executable code on that line?)",
+/// "no paused debug session", "the program ended" — and the model moves its breakpoint, or concludes the code never
+/// ran, about a debugger that was never reached. The message says so in words the model reads as they are.
+/// </remarks>
+internal sealed class DebuggerNotAnsweringException(string message, Exception? inner = null) : Exception(message, inner);
+
 /// <summary>
 /// The debugger's state while execution is paused.
 /// </summary>
@@ -117,8 +161,10 @@ internal sealed record DebugStopState(
 /// <para>
 /// Every operation is best-effort and must not throw for an ordinary debugger condition (no
 /// session, program exited, expression invalid): they return <c>null</c> or an empty list, which
-/// callers render as a plain sentence. <c>OperationCanceledException</c> is the only exception that
-/// propagates, as everywhere else in this codebase.
+/// callers render as a plain sentence. ⚠ A debugger that did not ANSWER is not one of them: the
+/// channel failing, or no answer within the budget, throws <see cref="DebuggerNotAnsweringException"/>
+/// — and <see cref="StartAsync"/> / the resumes say it in their result instead.
+/// <c>OperationCanceledException</c> propagates, as everywhere else in this codebase.
 /// </para>
 /// </remarks>
 internal interface IDebugSession
@@ -146,13 +192,13 @@ internal interface IDebugSession
     Task<DebugStartResult> StartAsync(CancellationToken ct);
 
     /// <summary>
-    /// Resumes and waits for the next stop. <c>null</c> when no stop came: the program ended, is still running past
-    /// the resume budget, or no session was paused — the port cannot tell these apart.
+    /// Resumes and waits for the next stop. The five outcomes are kept apart by <see cref="DebugResumeResult"/>: a run
+    /// that ended takes the assistant's breakpoints with it, one still running keeps them.
     /// </summary>
-    Task<DebugStopState?> ContinueAsync(CancellationToken ct);
+    Task<DebugResumeResult> ContinueAsync(CancellationToken ct);
 
-    /// <summary>Advances one step and waits for the stop that follows; <c>null</c> in the same cases as <see cref="ContinueAsync"/>.</summary>
-    Task<DebugStopState?> StepAsync(DebugStepKind kind, CancellationToken ct);
+    /// <summary>Advances one step and waits for the stop that follows; same outcomes as <see cref="ContinueAsync"/>.</summary>
+    Task<DebugResumeResult> StepAsync(DebugStepKind kind, CancellationToken ct);
 
     /// <summary>The current paused state, or <c>null</c> when execution is not paused.</summary>
     Task<DebugStopState?> GetStateAsync(CancellationToken ct);

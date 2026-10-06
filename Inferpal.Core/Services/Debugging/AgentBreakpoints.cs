@@ -32,6 +32,12 @@ internal sealed class AgentBreakpoints
                 if (await session.RemoveBreakpointAsync(file, line, ct)) removed++;
             }
             catch (OperationCanceledException) { throw; }
+            catch (DebuggerNotAnsweringException ex)
+            {
+                // Still there, as far as anyone knows: kept, so the next stop of the session removes it.
+                Diagnostics.Swallow("AgentBreakpoints.RemoveAll", ex);
+                continue;
+            }
             catch (Exception ex) { Diagnostics.Swallow("AgentBreakpoints.RemoveAll", ex); }
             Untrack(file, line);
         }
@@ -74,8 +80,18 @@ internal sealed class AgentCleaningDebugSession(IDebugSession inner, AgentBreakp
         if (result is { State: null, Failure: null, StillRunning: false }) await agent.RemoveAllAsync(inner, ct);
         return result;
     }
-    public Task<DebugStopState?> ContinueAsync(CancellationToken ct) => inner.ContinueAsync(ct);
-    public Task<DebugStopState?> StepAsync(DebugStepKind kind, CancellationToken ct) => inner.StepAsync(kind, ct);
+    /// <summary>
+    /// ⚠ A run that ends on a resume ends the session too — the commonest end of an agent's session: a <c>continue</c>
+    /// after its last inspection. Only an ENDED run: one still running keeps its breakpoints.
+    /// </summary>
+    public async Task<DebugResumeResult> ContinueAsync(CancellationToken ct) => await CleanedAfter(await inner.ContinueAsync(ct), ct);
+    public async Task<DebugResumeResult> StepAsync(DebugStepKind kind, CancellationToken ct) => await CleanedAfter(await inner.StepAsync(kind, ct), ct);
+
+    private async Task<DebugResumeResult> CleanedAfter(DebugResumeResult result, CancellationToken ct)
+    {
+        if (result.Outcome == DebugResumeOutcome.Ended) await agent.RemoveAllAsync(inner, ct);
+        return result;
+    }
     public Task<DebugStopState?> GetStateAsync(CancellationToken ct) => inner.GetStateAsync(ct);
     public Task<string?> EvaluateAsync(string expression, int? frameId, CancellationToken ct) => inner.EvaluateAsync(expression, frameId, ct);
 

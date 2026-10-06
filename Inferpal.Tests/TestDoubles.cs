@@ -52,10 +52,10 @@ internal sealed class NullDebugSession : Services.Debugging.IDebugSession
         Task.FromResult<IReadOnlyList<Services.Debugging.DebugBreakpointInfo>>([]);
     public Task<Services.Debugging.DebugStartResult> StartAsync(CancellationToken ct) =>
         Task.FromResult(Services.Debugging.DebugStartResult.RanToCompletion);
-    public Task<Services.Debugging.DebugStopState?> ContinueAsync(CancellationToken ct) =>
-        Task.FromResult<Services.Debugging.DebugStopState?>(null);
-    public Task<Services.Debugging.DebugStopState?> StepAsync(Services.Debugging.DebugStepKind kind, CancellationToken ct) =>
-        Task.FromResult<Services.Debugging.DebugStopState?>(null);
+    public Task<Services.Debugging.DebugResumeResult> ContinueAsync(CancellationToken ct) =>
+        Task.FromResult(Services.Debugging.DebugResumeResult.NotPaused);
+    public Task<Services.Debugging.DebugResumeResult> StepAsync(Services.Debugging.DebugStepKind kind, CancellationToken ct) =>
+        Task.FromResult(Services.Debugging.DebugResumeResult.NotPaused);
     public Task<Services.Debugging.DebugStopState?> GetStateAsync(CancellationToken ct) =>
         Task.FromResult<Services.Debugging.DebugStopState?>(null);
     public Task<string?> EvaluateAsync(string expression, int? frameId, CancellationToken ct) =>

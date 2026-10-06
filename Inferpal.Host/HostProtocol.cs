@@ -131,6 +131,13 @@ internal sealed record DebugBreakpointParams(string File, int Line);
 /// <summary>A breakpoint as the adapter's debugger bound it.</summary>
 internal sealed record DebugBreakpointDto(string File, int Line, bool Enabled);
 
+/// <summary>
+/// `debug/continue` and `debug/step`: the stop, or why there is none — <c>Outcome</c> is one of
+/// <c>DebugOps.Resumed.Ended</c> / <c>StillRunning</c> / <c>NotPaused</c>, <c>Failure</c> the editor's words
+/// when the resume itself failed.
+/// </summary>
+internal sealed record DebugResumeDto(DebugStopStateDto? State, string? Outcome, string? Failure = null);
+
 /// <summary>Reverse `debug/step` parameter: <c>over</c> | <c>into</c> | <c>out</c>.</summary>
 internal sealed record DebugStepParams(string Kind);
 

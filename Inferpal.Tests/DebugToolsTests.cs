@@ -83,12 +83,20 @@ public class DebugToolsTests
                                         : DebugStartResult.RanToCompletion);
         }
 
-        public Task<DebugStopState?> ContinueAsync(CancellationToken ct) { Continues++; return Task.FromResult(State); }
+        /// <summary>What a resume that reaches no stop (<see cref="State"/> null) came to.</summary>
+        public DebugResumeOutcome NoStopOutcome { get; set; } = DebugResumeOutcome.StillRunning;
 
-        public Task<DebugStopState?> StepAsync(DebugStepKind kind, CancellationToken ct)
+        private DebugResumeResult Resumed() =>
+            State is { } state ? DebugResumeResult.Stopped(state)
+            : NoStopOutcome == DebugResumeOutcome.Failed ? DebugResumeResult.Failed("the adapter refused")
+            : new DebugResumeResult(NoStopOutcome);
+
+        public Task<DebugResumeResult> ContinueAsync(CancellationToken ct) { Continues++; return Task.FromResult(Resumed()); }
+
+        public Task<DebugResumeResult> StepAsync(DebugStepKind kind, CancellationToken ct)
         {
             Steps++;
-            return Task.FromResult(State);
+            return Task.FromResult(Resumed());
         }
 
         public Task<DebugStopState?> GetStateAsync(CancellationToken ct) => Task.FromResult(State);
@@ -213,24 +221,22 @@ public class DebugToolsTests
     }
 
     /// <summary>
-    /// A resume that brings back no stop is not proof the program ended. Both ports answer null when the program is still
-    /// running past the resume budget, when the VS Code bridge failed, and when no session was paused. "The program
-    /// ended" had the model treat a live program as finished, and its advice — start a new session — met "a debugging
-    /// session is already running".
+    /// A program still running past the resume budget has not ended. "The program ended" had the model treat a live
+    /// program as finished, and its advice — start a new session — met "a debugging session is already running".
     /// </summary>
     [Theory]
     [InlineData("continue")]
     [InlineData("step_over")]
-    public async Task AResumeWithNoStop_DoesNotClaimTheProgramEnded(string action)
+    public async Task AResumeStillRunning_DoesNotClaimTheProgramEnded(string action)
     {
-        var session = new FakeDebugSession { State = null };
+        var session = new FakeDebugSession { State = null, NoStopOutcome = DebugResumeOutcome.StillRunning };
         var tool    = Control(session, new StubApproval(approve: true));
 
         var result = await tool.ExecuteAsync(Args($$"""{"action":"{{action}}"}"""), CancellationToken.None);
 
-        Assert.Contains("No stop", result);
         Assert.Contains("still running", result);
-        Assert.DoesNotContain("The program ended", result);
+        Assert.Contains("breakpoints stay set", result);
+        Assert.DoesNotContain("ran to completion", result);
     }
 
     // ── Budget: exhaustion is reported, never silently ignored (lesson of §20) ───────
@@ -626,6 +632,50 @@ public class DebugToolsTests
 
         Assert.Contains("ran to completion", reply);
         Assert.Equal(5, Assert.Single(editor.Breakpoints).Line);          // only the user's is left
+    }
+
+    /// <summary>
+    /// ⚠ The commonest end of the assistant's session: a <c>continue</c> after its last inspection, and the program
+    /// runs to its end. Only a START that ran to completion took the breakpoints with it — a resume could not say that
+    /// the run had ended, so they stayed in the editor's saved list and stopped the user's next F5 on lines they never
+    /// chose.
+    /// </summary>
+    [Theory]
+    [InlineData("continue")]
+    [InlineData("step_over")]
+    public async Task ARunThatEndsOnAResume_TakesTheAssistantsBreakpointsWithIt(string action)
+    {
+        var (editor, _, tool) = WithUsersBreakpoint();
+        await tool.ExecuteAsync(Location("set_breakpoint", @"src\B.cs", 10), CancellationToken.None);
+        Assert.Equal(2, editor.Breakpoints.Count);                       // witness: it was set
+        editor.State = null;
+        editor.NoStopOutcome = DebugResumeOutcome.Ended;                   // the run goes to its end
+
+        var reply = await tool.ExecuteAsync(Args($$"""{"action":"{{action}}"}"""), CancellationToken.None);
+
+        Assert.Contains("ran to completion", reply);
+        Assert.Contains("1 breakpoint(s) you set were removed", reply);
+        Assert.Equal(5, Assert.Single(editor.Breakpoints).Line);          // only the user's is left
+    }
+
+    [Theory]
+    [InlineData(nameof(DebugResumeOutcome.StillRunning), "still running")]
+    [InlineData(nameof(DebugResumeOutcome.NotPaused),    "No debugging session is paused")]
+    [InlineData(nameof(DebugResumeOutcome.Failed),       "was not resumed")]
+    public async Task AResumeThatDidNotEnd_KeepsTheAssistantsBreakpoints_AndSaysWhatHappened(string outcomeName, string said)
+    {
+        var outcome = Enum.Parse<DebugResumeOutcome>(outcomeName);
+        // Reference arms: a live run keeps its breakpoints; a resume that never happened says nothing about the program.
+        var (editor, _, tool) = WithUsersBreakpoint();
+        await tool.ExecuteAsync(Location("set_breakpoint", @"src\B.cs", 10), CancellationToken.None);
+        editor.State = null;
+        editor.NoStopOutcome = outcome;
+
+        var reply = await tool.ExecuteAsync(Args("""{"action":"continue"}"""), CancellationToken.None);
+
+        Assert.Contains(said, reply);
+        Assert.DoesNotContain("ran to completion", reply);
+        Assert.Equal(2, editor.Breakpoints.Count);
     }
 
     /// <summary>

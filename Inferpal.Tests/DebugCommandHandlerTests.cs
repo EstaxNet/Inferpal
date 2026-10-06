@@ -31,11 +31,11 @@ public class DebugCommandHandlerTests
         public Task<DebugStartResult> StartAsync(CancellationToken ct)
         { Calls.Add("start"); return Task.FromResult(DebugStartResult.RanToCompletion); }
 
-        public Task<DebugStopState?> ContinueAsync(CancellationToken ct)
-        { Calls.Add("continue"); return Task.FromResult(State); }
+        public Task<DebugResumeResult> ContinueAsync(CancellationToken ct)
+        { Calls.Add("continue"); return Task.FromResult(State is { } s ? DebugResumeResult.Stopped(s) : DebugResumeResult.Ended); }
 
-        public Task<DebugStopState?> StepAsync(DebugStepKind kind, CancellationToken ct)
-        { Calls.Add("step"); return Task.FromResult(State); }
+        public Task<DebugResumeResult> StepAsync(DebugStepKind kind, CancellationToken ct)
+        { Calls.Add("step"); return Task.FromResult(State is { } s ? DebugResumeResult.Stopped(s) : DebugResumeResult.Ended); }
 
         public Task<DebugStopState?> GetStateAsync(CancellationToken ct)
         { Calls.Add("state"); return Task.FromResult(State); }

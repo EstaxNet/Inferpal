@@ -1001,6 +1001,7 @@
   <data name="DebugStopped" xml:space="preserve"><value>调试会话已停止。</value></data>
   <data name="DebugStatusHeader" xml:space="preserve"><value>**调试器**</value></data>
   <data name="DebugStatusNotPaused" xml:space="preserve"><value>执行未暂停。</value></data>
+  <data name="DebugNoAnswer" xml:space="preserve"><value>⚠ 调试器没有响应，目前无法得知其状态 — {0}</value></data>
   <data name="DebugStatusPaused" xml:space="preserve"><value>已在 {0} 暂停。</value></data>
   <data name="DebugStatusNoBreakpoints" xml:space="preserve"><value>未设置断点。</value></data>
   <data name="DebugStatusBreakpoints" xml:space="preserve"><value>断点：</value></data>

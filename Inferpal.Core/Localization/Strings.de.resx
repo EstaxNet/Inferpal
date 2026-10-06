@@ -1001,6 +1001,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="DebugStopped" xml:space="preserve"><value>Debugsitzung beendet.</value></data>
   <data name="DebugStatusHeader" xml:space="preserve"><value>**Debugger**</value></data>
   <data name="DebugStatusNotPaused" xml:space="preserve"><value>Die Ausführung ist nicht angehalten.</value></data>
+  <data name="DebugNoAnswer" xml:space="preserve"><value>⚠ Der Debugger hat nicht geantwortet, sein Zustand ist gerade unbekannt — {0}</value></data>
   <data name="DebugStatusPaused" xml:space="preserve"><value>Angehalten in {0}.</value></data>
   <data name="DebugStatusNoBreakpoints" xml:space="preserve"><value>Es sind keine Haltepunkte gesetzt.</value></data>
   <data name="DebugStatusBreakpoints" xml:space="preserve"><value>Haltepunkte:</value></data>

@@ -1005,6 +1005,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="DebugStopped" xml:space="preserve"><value>Debugging session stopped.</value></data>
   <data name="DebugStatusHeader" xml:space="preserve"><value>**Debugger**</value></data>
   <data name="DebugStatusNotPaused" xml:space="preserve"><value>Execution is not paused.</value></data>
+  <data name="DebugNoAnswer" xml:space="preserve"><value>⚠ The debugger did not answer, so nothing is known about its state right now — {0}</value></data>
   <data name="DebugStatusPaused" xml:space="preserve"><value>Paused in {0}.</value></data>
   <data name="DebugStatusNoBreakpoints" xml:space="preserve"><value>No breakpoints are set.</value></data>
   <data name="DebugStatusBreakpoints" xml:space="preserve"><value>Breakpoints:</value></data>

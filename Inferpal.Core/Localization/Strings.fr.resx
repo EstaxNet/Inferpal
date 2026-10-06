@@ -1001,6 +1001,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="DebugStopped" xml:space="preserve"><value>Session de débogage arrêtée.</value></data>
   <data name="DebugStatusHeader" xml:space="preserve"><value>**Débogueur**</value></data>
   <data name="DebugStatusNotPaused" xml:space="preserve"><value>L'exécution n'est pas en pause.</value></data>
+  <data name="DebugNoAnswer" xml:space="preserve"><value>⚠ Le débogueur n'a pas répondu : on ne sait rien de son état pour l'instant — {0}</value></data>
   <data name="DebugStatusPaused" xml:space="preserve"><value>En pause dans {0}.</value></data>
   <data name="DebugStatusNoBreakpoints" xml:space="preserve"><value>Aucun point d'arrêt n'est posé.</value></data>
   <data name="DebugStatusBreakpoints" xml:space="preserve"><value>Points d'arrêt :</value></data>

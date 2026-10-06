@@ -20,9 +20,9 @@ namespace Inferpal.Services.Debugging;
 /// <see cref="DebugCommandSignal"/> can be a single pair of files instead of a queue.
 /// </para>
 /// <para>
-/// Every method is best-effort as the port requires: a timeout, a dead driver or an I/O failure
-/// yields <c>null</c>/<c>false</c>, which the tools render as a plain sentence.
-/// <see cref="OperationCanceledException"/> is the only exception that propagates.
+/// An ordinary debugger answer (no breakpoint there, nothing paused) is <c>null</c>/<c>false</c>, as the port requires;
+/// a driver that did not ANSWER — held by a dialog, gone, or failing the request — is not one, and throws
+/// <see cref="DebuggerNotAnsweringException"/> (a start and a resume say it in their result instead).
 /// </para>
 /// </remarks>
 internal sealed class SignalDebugSession : IDebugSession
@@ -65,27 +65,27 @@ internal sealed class SignalDebugSession : IDebugSession
 
     public async Task<DebugBreakpointInfo?> AddBreakpointAsync(string file, int line, CancellationToken ct)
     {
-        var response = await SendAsync(
+        var response = await AskAsync(
             new(Id: string.Empty, Pid: 0, Ts: 0, Op: OpAddBreakpoint, File: file, Line: line),
             QueryTimeout, ct);
         // The driver returns the breakpoint as the debugger bound it, which may differ from what
-        // was asked (VS moves a breakpoint to the next executable line).
-        return response is { Ok: true } ? response.Breakpoints?.FirstOrDefault() : null;
+        // was asked (VS moves a breakpoint to the next executable line). None bound = refused.
+        return response.Breakpoints?.FirstOrDefault();
     }
 
     public async Task<bool> RemoveBreakpointAsync(string file, int line, CancellationToken ct)
     {
-        var response = await SendAsync(
+        var response = await AskAsync(
             new(Id: string.Empty, Pid: 0, Ts: 0, Op: OpRemoveBreakpoint, File: file, Line: line),
             QueryTimeout, ct);
-        return response is { Ok: true, Flag: true };
+        return response.Flag;
     }
 
     public async Task<IReadOnlyList<DebugBreakpointInfo>> ListBreakpointsAsync(CancellationToken ct)
     {
-        var response = await SendAsync(
+        var response = await AskAsync(
             new(Id: string.Empty, Pid: 0, Ts: 0, Op: OpListBreakpoints), QueryTimeout, ct);
-        return response is { Ok: true, Breakpoints: { } bps } ? bps : [];
+        return response.Breakpoints ?? [];
     }
 
     public async Task<DebugStartResult> StartAsync(CancellationToken ct)
@@ -95,7 +95,7 @@ internal sealed class SignalDebugSession : IDebugSession
         if (!IsAvailable)
             return DebugStartResult.Failed("No debugger is reachable from this editor session.");
 
-        var response = await SendAsync(new(Id: string.Empty, Pid: 0, Ts: 0, Op: OpStart), StartTimeout, ct);
+        var (response, _) = await SendAsync(new(Id: string.Empty, Pid: 0, Ts: 0, Op: OpStart), StartTimeout, ct);
 
         // No answer at all within the start budget. The driver answers ahead of this budget
         // (DebugOps.AnswerMargin) — a failed build, a launch stuck in design mode, a program still
@@ -118,30 +118,32 @@ internal sealed class SignalDebugSession : IDebugSession
                                            : DebugStartResult.RanToCompletion;
     }
 
-    public Task<DebugStopState?> ContinueAsync(CancellationToken ct) =>
-        StopStateAsync(OpContinue, ResumeTimeout, ct);
+    public Task<DebugResumeResult> ContinueAsync(CancellationToken ct) => ResumeAsync(OpContinue, ct);
 
-    public Task<DebugStopState?> StepAsync(DebugStepKind kind, CancellationToken ct) =>
-        StopStateAsync(kind switch
+    public Task<DebugResumeResult> StepAsync(DebugStepKind kind, CancellationToken ct) =>
+        ResumeAsync(kind switch
         {
             DebugStepKind.Into => OpStepInto,
             DebugStepKind.Out  => OpStepOut,
             _                  => OpStepOver,
-        }, ResumeTimeout, ct);
+        }, ct);
 
-    public Task<DebugStopState?> GetStateAsync(CancellationToken ct) =>
-        StopStateAsync(OpState, QueryTimeout, ct);
+    public async Task<DebugStopState?> GetStateAsync(CancellationToken ct) =>
+        // No state = not paused (running, ended, or never started): an ordinary answer.
+        (await AskAsync(new(Id: string.Empty, Pid: 0, Ts: 0, Op: OpState), QueryTimeout, ct)).State;
 
     public async Task<string?> EvaluateAsync(string expression, int? frameId, CancellationToken ct)
     {
-        var response = await SendAsync(
+        var (response, silence) = await SendAsync(
             new(Id: string.Empty, Pid: 0, Ts: 0, Op: OpEvaluate, Expression: expression, FrameId: frameId),
             QueryTimeout, ct);
-        return response is { Ok: true } ? response.Text : null;
+        if (response is null) throw new DebuggerNotAnsweringException(silence!);
+        // A refused evaluation is the ordinary answer to an invalid expression.
+        return response.Ok ? response.Text : null;
     }
 
     public async Task StopAsync(CancellationToken ct) =>
-        await SendAsync(new(Id: string.Empty, Pid: 0, Ts: 0, Op: OpStop), QueryTimeout, ct);
+        await AskAsync(new(Id: string.Empty, Pid: 0, Ts: 0, Op: OpStop), QueryTimeout, ct);
 
     /// <summary>
     /// The budget as a sentence. Rounding a 20-second wait to "0 minutes" would read as a bug in
@@ -152,22 +154,46 @@ internal sealed class SignalDebugSession : IDebugSession
             ? $"{budget.TotalSeconds:0} second(s)"
             : $"{budget.TotalMinutes:0} minute(s)";
 
-    private async Task<DebugStopState?> StopStateAsync(string op, TimeSpan timeout, CancellationToken ct)
+    /// <summary>A resume, and what it came to — read from the driver's answer (<see cref="DebugOps"/>'s markers).</summary>
+    private async Task<DebugResumeResult> ResumeAsync(string op, CancellationToken ct)
     {
-        var response = await SendAsync(new(Id: string.Empty, Pid: 0, Ts: 0, Op: op), timeout, ct);
-        // A successful call with no state means the program is not paused — it ran to completion,
-        // or it was never started. That is an ordinary answer, so it is `null`, not an error.
-        return response is { Ok: true } ? response.State : null;
+        var (response, silence) = await SendAsync(new(Id: string.Empty, Pid: 0, Ts: 0, Op: op), ResumeTimeout, ct);
+        if (response is null) return DebugResumeResult.Failed(silence!);
+        if (!response.Ok) return DebugResumeResult.Failed(response.Error ?? "The debugger refused to resume.");
+        if (response.State is { } state) return DebugResumeResult.Stopped(state);
+        return response.Text switch
+        {
+            DebugOps.Resumed.NotPaused    => DebugResumeResult.NotPaused,
+            DebugOps.Resumed.StillRunning => DebugResumeResult.StillRunning,
+            _                           => DebugResumeResult.Ended,
+        };
+    }
+
+    /// <summary>
+    /// A question the driver must answer: its answer, or <see cref="DebuggerNotAnsweringException"/> when it did not —
+    /// no answer at all, or the request failed on its side.
+    /// </summary>
+    private async Task<DebugCommandResponse> AskAsync(DebugCommandRequest template, TimeSpan timeout, CancellationToken ct)
+    {
+        var (response, silence) = await SendAsync(template, timeout, ct);
+        if (response is null) throw new DebuggerNotAnsweringException(silence!);
+        if (!response.Ok)
+            throw new DebuggerNotAnsweringException(
+                "The debugger did not answer the request: " + (response.Error ?? "it failed without saying why") + ".");
+        return response;
     }
 
     /// <summary>
     /// Stamps the request with this process's identity and clock, publishes it, and waits for the
-    /// answer that carries its id. Serialised against every other call.
+    /// answer that carries its id. Serialised against every other call. No answer comes with the reason it did not
+    /// (<c>Silence</c>), in the model's words.
     /// </summary>
-    private async Task<DebugCommandResponse?> SendAsync(
+    private async Task<(DebugCommandResponse? Response, string? Silence)> SendAsync(
         DebugCommandRequest template, TimeSpan timeout, CancellationToken ct)
     {
-        if (!DebugCommandSignal.IsDriverReady()) return null;
+        if (!DebugCommandSignal.IsDriverReady())
+            return (null, "The debugger did not answer: Inferpal's in-process half is not running in Visual Studio, "
+                        + "so nothing can reach its debugger.");
 
         await _oneAtATime.WaitAsync(ct);
         try
@@ -180,13 +206,17 @@ internal sealed class SignalDebugSession : IDebugSession
             };
 
             var id = DebugCommandSignal.WriteRequest(request);
-            if (id is null) return null;
+            if (id is null) return (null, "The debugger did not answer: the request could not be handed to Visual Studio.");
 
             // WaitForAnswerAsync withdraws the request itself on every path that produces no
             // answer — timeout, driver gone, AND cancellation. Withdrawn on the timeout branch
             // only, a cancelled turn leaves a live request behind, and a driver waking up later
             // starts the user's program long after the agent gave up.
-            return await DebugCommandSignal.WaitForAnswerAsync(id, timeout, ct);
+            var answer = await DebugCommandSignal.WaitForAnswerAsync(id, timeout, ct);
+            return answer is not null
+                ? (answer, null)
+                : (null, $"The debugger did not answer within {Humanize(timeout)}: a dialog is probably waiting in Visual "
+                       + "Studio. Nothing is known about the program until it answers — look at the IDE first.");
         }
         finally
         {

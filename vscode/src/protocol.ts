@@ -654,6 +654,18 @@ export interface DebugStartDto {
   stillRunning?: boolean;
 }
 
+/**
+ * `debug/continue` and `debug/step` answer: the stop, or why there is none. `outcome` is `ended` (the run finished:
+ * the assistant's breakpoints go with the session), `running` (still running past the budget: they stay) or
+ * `not-paused`; `failure` is the editor's own words when the resume itself failed. The outcome strings are the host's
+ * (`DebugOps.Resumed`).
+ */
+export interface DebugResumeDto {
+  state: DebugStopStateDto | null;
+  outcome: 'ended' | 'running' | 'not-paused' | null;
+  failure?: string;
+}
+
 /** `debug/captureTest`: launch the repro runner under coreclr and capture the failure. */
 export interface DebugCaptureTestParams {
   program: string;
