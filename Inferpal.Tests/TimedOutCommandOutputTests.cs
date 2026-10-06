@@ -68,7 +68,7 @@ public class TimedOutCommandOutputTests
         var code = ConventionCoverageTests.CodeOnly(Path.Combine(RepoRoot(), Path.Combine(parts)));
 
         // WITNESS: this really is a file that runs a command under a fuse.
-        Assert.Contains("CommandTimeoutSeconds", code, StringComparison.Ordinal);
+        Assert.Contains("CommandDeadlineSeconds", code, StringComparison.Ordinal);
 
         Assert.Contains("ChildProcess.TimedOutMessage", code, StringComparison.Ordinal);
         Assert.DoesNotContain("command timed out after", code, StringComparison.Ordinal);

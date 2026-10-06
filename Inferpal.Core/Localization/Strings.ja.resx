@@ -840,6 +840,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**現在ロード中:** なし</value></data>
   <data name="HardwareLoadedUnknown" xml:space="preserve"><value>**現在ロード中:** 不明 — {0} のバックエンドに接続できません</value></data>
   <data name="HardwareLoadedRefused" xml:space="preserve"><value>**現在ロード中:** 不明 — {0} のバックエンドが確認を拒否しました ({1})</value></data>
+  <data name="HardwareLoadedNotSaid" xml:space="preserve"><value>**現在ロード中:** 不明 — バックエンドは応答しましたが、ロード中のモデルを示しませんでした</value></data>
   <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**現在ロード中:** {0} 個のモデル — このバックエンドは使用中の VRAM を報告しません（合計・空き容量・GPU/CPU は表示できません）</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### ロード済みモデル
 

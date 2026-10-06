@@ -178,18 +178,25 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     // ── Model listing / loaded state (native /api/v1 or /api/v0 /models) ───────
 
     /// <inheritdoc/>
-    public override async Task<IReadOnlyList<RunningModelInfo>> GetRunningModelsAsync(CancellationToken ct)
+    public override async Task<IReadOnlyList<RunningModelInfo>> GetRunningModelsAsync(CancellationToken ct) =>
+        await ReadRunningModelsAsync(ct) ?? [];
+
+    /// <inheritdoc/>
+    /// <remarks>⚠ The loaded state lives on the NATIVE surface only: a server that answers nothing there — a proxy that
+    /// routes only <c>/v1</c> — has not said that nothing is loaded.</remarks>
+    public override async Task<IReadOnlyList<RunningModelInfo>?> ReadRunningModelsAsync(CancellationToken ct)
     {
         try
         {
             var models = await GetNativeModelsAsync(ct);
+            if (models.Count == 0) return null;
             // Resident VRAM bytes aren't exposed (size_bytes is the on-disk weight); no expiry timestamp.
             return models
                 .Where(m => m.Loaded)
                 .Select(m => new RunningModelInfo(m.Id, RunningModelInfo.VramNotReported, string.Empty))
                 .ToList();
         }
-        catch { return []; }
+        catch { return null; }
     }
 
     /// <inheritdoc/>

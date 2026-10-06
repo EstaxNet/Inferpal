@@ -79,14 +79,14 @@ internal sealed class UserShellTool(string name, string command, IApprovalServic
             // Concurrent drain of both pipes and a killed process tree on timeout live in
             // ChildProcess, shared with every other child this product starts.
             var run = await ChildProcess.RunAsync(
-                psi, TimeSpan.FromSeconds(config.CommandTimeoutSeconds), ct);
+                psi, TimeSpan.FromSeconds(ChildProcess.CommandDeadlineSeconds(config)), ct);
             run = run with { Stderr = Shell.PowerShellStderr.Decode(run.Stderr) };   // CLIXML → text
 
             // Timeout is reported to the model, not thrown: it must not abort the whole agent run —
             // and it carries what the command had printed, like the persistent shell. ChildProcess
             // hands the partial streams back; dropping them tells the model only the time.
             if (run.TimedOut)
-                return ChildProcess.TimedOutMessage(config.CommandTimeoutSeconds,
+                return ChildProcess.TimedOutMessage(ChildProcess.CommandDeadlineSeconds(config),
                                                     (run.Stdout + run.Stderr).Trim());
 
             // ⚠ The exit code is the whole answer of a custom tool as often as its output

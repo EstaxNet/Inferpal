@@ -42,12 +42,16 @@ internal static class LoadedModelsCard
         var caps = client.Capabilities;
         if (!caps.VramMonitoring) return new(Strings.LoadedModelsUnknown, [], false, message);
 
-        var running = await client.GetRunningModelsAsync(ct);
-        if (running.Count == 0)
+        // ⚠ Not said is not empty: "No model is loaded" over loaded models is the answer of a server whose loaded list
+        // cannot be read while the rest of it answers.
+        var running = await client.ReadRunningModelsAsync(ct);
+        if (running is not { Count: > 0 })
         {
-            // Empty is also what an unreachable server answers: asked once, on this branch only.
+            // An unreachable server says nothing either: asked once, on this branch only.
             var silent = await ModelCatalog.UnreachableBackendAsync(client, config, ct);
-            return new(silent is null ? Strings.LoadedModelsNone : Strings.LoadedModelsUnreachable, [], false, message);
+            return new(silent is not null ? Strings.LoadedModelsUnreachable
+                     : running is null    ? Strings.LoadedModelsUnknown
+                     :                      Strings.LoadedModelsNone, [], false, message);
         }
 
         var sizes = running.Any(m => !m.ReportsVram)

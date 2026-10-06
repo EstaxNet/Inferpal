@@ -840,6 +840,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**Aktualnie załadowane:** brak</value></data>
   <data name="HardwareLoadedUnknown" xml:space="preserve"><value>**Aktualnie załadowane:** nieznane — backend pod adresem {0} jest nieosiągalny</value></data>
   <data name="HardwareLoadedRefused" xml:space="preserve"><value>**Aktualnie załadowane:** nieznane — backend pod adresem {0} odrzucił sprawdzenie ({1})</value></data>
+  <data name="HardwareLoadedNotSaid" xml:space="preserve"><value>**Aktualnie załadowane:** nieznane — backend odpowiedział, ale nie podał, które modele są załadowane</value></data>
   <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**Aktualnie załadowane:** modele: {0} — ten backend nie podaje zajmowanej przez nie pamięci VRAM (brak sumy, zapasu i informacji GPU/CPU)</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Załadowane modele
 

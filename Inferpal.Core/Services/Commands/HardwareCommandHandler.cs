@@ -48,10 +48,11 @@ internal static class HardwareCommandHandler
             return new(Strings.HardwareNoVramBackend);
 
         // Independent backend round-trips → run concurrently (Task.WhenAll observes both on fault).
-        var runningTask   = client.GetRunningModelsAsync(ct);
+        var runningTask   = client.ReadRunningModelsAsync(ct);
         var installedTask = client.ListInstalledModelsAsync(ct);
         await Task.WhenAll(runningTask, installedTask);
-        var running   = await runningTask;
+        var read      = await runningTask;
+        var running   = read ?? [];
         var installed = await installedTask;
 
         // Both listings read empty on any failure: two empty answers are a fresh backend OR a backend nobody
@@ -62,8 +63,10 @@ internal static class HardwareCommandHandler
             return new(new HardwareProfile(config.VramBudgetGb, running, installed,
                                            unreachableAt: silent.Url, refusedWith: silent.Refusal).FormatReport());
 
+        // ⚠ A backend that listed its installed models has answered: an unread loaded list is then "unknown", never "none".
         var ctxAdvice = await BuildContextWindowAdviceAsync(client, config, installed, ct);
-        var profile   = new HardwareProfile(config.VramBudgetGb, running, installed, ctxAdvice);
+        var profile   = new HardwareProfile(config.VramBudgetGb, running, installed, ctxAdvice,
+                                            runningNotSaid: read is null);
 
         return new(profile.FormatReport());
     }

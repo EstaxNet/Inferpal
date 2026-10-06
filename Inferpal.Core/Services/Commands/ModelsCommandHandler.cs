@@ -53,10 +53,12 @@ internal static class ModelsCommandHandler
 
         if (sub == "running")
         {
-            var running = await client.GetRunningModelsAsync(ct);
-            return new(running.Count == 0
-                ? await EmptyMeans(client, config, Strings.ModelsNoneRunning, ct)
-                : ModelCatalog.FormatRunningModels(running));
+            var running = await client.ReadRunningModelsAsync(ct);
+            if (running is { Count: > 0 }) return new(ModelCatalog.FormatRunningModels(running));
+            // Not said is not "none loaded": a server that answers everything else is asked, not concluded about.
+            if (running is null && await ModelCatalog.UnreachableBackendAsync(client, config, ct) is null)
+                return new(Strings.LoadedModelsUnknown);
+            return new(await EmptyMeans(client, config, Strings.ModelsNoneRunning, ct));
         }
 
         // /models and /models list.

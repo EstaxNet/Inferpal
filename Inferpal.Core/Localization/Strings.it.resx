@@ -840,6 +840,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**Attualmente caricato:** nessuno</value></data>
   <data name="HardwareLoadedUnknown" xml:space="preserve"><value>**Attualmente caricato:** sconosciuto — il backend su {0} non è raggiungibile</value></data>
   <data name="HardwareLoadedRefused" xml:space="preserve"><value>**Attualmente caricato:** sconosciuto — il backend su {0} ha rifiutato il controllo ({1})</value></data>
+  <data name="HardwareLoadedNotSaid" xml:space="preserve"><value>**Attualmente caricato:** sconosciuto — il backend ha risposto, ma non ha indicato quali modelli sono caricati</value></data>
   <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**Attualmente caricato:** {0} modello/i — questo backend non riporta la VRAM che occupano (nessun totale, margine o GPU/CPU)</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Modelli caricati
 

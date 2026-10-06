@@ -899,14 +899,14 @@ public class WebviewRebuildTests
         // Witness: the push at startup still exists, otherwise the rule has nothing to guard.
         Assert.Contains("await pushModelRouterSettings(log);", source, StringComparison.Ordinal);
 
-        var follow = Body(source, "async function followPanelModelRouterSettings(");
+        var follow = Body(TsCode("modelRouterSettings.ts"), "export async function followModelRouterSettings(");
         Assert.Contains("update('utilityModel'", follow, StringComparison.Ordinal);
         Assert.Contains("update('modelRouterAuto'", follow, StringComparison.Ordinal);
 
         var open = source.IndexOf("SettingsPanel.open(", StringComparison.Ordinal);
         Assert.True(open >= 0, "SettingsPanel.open moved — the rule measures nothing.");
         var call = source[open..source.IndexOf("log,", open, StringComparison.Ordinal)];
-        Assert.Contains("followPanelModelRouterSettings(", call, StringComparison.Ordinal);
+        Assert.Contains("followModelRouterSettings(", call, StringComparison.Ordinal);
     }
 
     /// <summary>

@@ -365,4 +365,51 @@ public class BenchTests : IDisposable
                                         Path.GetFileName(_tempFile) + ".unreadable-*"));
     }
 
+    // ── Embedding models are not contestants ─────────────────────────────────
+
+    private const string EmbeddingModel = "text-embedding-qwen3-embedding-0.6b";
+
+    /// <summary>A server listing an embedding model FIRST — Ollama lists the most recently downloaded model first.</summary>
+    private static FakeInferenceProvider ServerListingAnEmbeddingFirst(List<string> asked) => new()
+    {
+        Installed =
+        [
+            new(EmbeddingModel, 1), new("chat-a", 1), new("chat-b", 1), new("chat-c", 1), new("chat-d", 1), new("chat-e", 1),
+        ],
+        OnChatRequest = (model, _, _, _) =>
+        {
+            lock (asked) asked.Add(model);
+            return Task.FromResult(new ChatTurnResult("A short answer with a few varied words.", null, 10, 5));
+        },
+    };
+
+    /// <summary>
+    /// ⚠ An embedding model cannot answer a prompt: listed first, it took one of the five measured slots for an error row
+    /// and pushed a chat model out of the run.
+    /// </summary>
+    [Fact]
+    public async Task Handler_MeasuresTheChatModels_NotAnEmbeddingModelListedFirst()
+    {
+        var asked = new List<string>();
+
+        var result = await BenchCommandHandler.HandleAsync(
+            ServerListingAnEmbeddingFirst(asked), new Inferpal.Config.InferpalConfig(), ["/bench"], null, CancellationToken.None);
+
+        Assert.Contains("chat-a", asked);   // WITNESS: the run measured something
+        Assert.DoesNotContain(EmbeddingModel, asked);
+        Assert.Equal(["chat-a", "chat-b", "chat-c", "chat-d", "chat-e"], asked.Distinct().Order().ToList());
+        Assert.DoesNotContain(EmbeddingModel, result.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Handler_StillMeasuresAnEmbeddingModel_TheUserNamed()
+    {
+        // Reference arm: `/bench <name>` is explicit.
+        var asked = new List<string>();
+
+        await BenchCommandHandler.HandleAsync(
+            ServerListingAnEmbeddingFirst(asked), new Inferpal.Config.InferpalConfig(), ["/bench", EmbeddingModel], null, CancellationToken.None);
+
+        Assert.Contains(EmbeddingModel, asked);
+    }
 }

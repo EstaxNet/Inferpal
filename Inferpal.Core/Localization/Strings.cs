@@ -1447,6 +1447,7 @@ internal static class Strings
     public static string HardwareCompute(string kind)        => string.Format(Get(nameof(HardwareCompute)), kind);
     public static string HardwareLoadedNone                  => Get(nameof(HardwareLoadedNone));
     public static string HardwareLoadedUnknown(string url)   => string.Format(Get(nameof(HardwareLoadedUnknown)), url);
+    public static string HardwareLoadedNotSaid                => Get(nameof(HardwareLoadedNotSaid));
     public static string HardwareLoadedRefused(string url, string refusal) =>
         string.Format(Get(nameof(HardwareLoadedRefused)), url, refusal);
     public static string HardwareLoadedUnreported(int count) => string.Format(Get(nameof(HardwareLoadedUnreported)), count);

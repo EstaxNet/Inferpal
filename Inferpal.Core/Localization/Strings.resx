@@ -848,6 +848,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**Currently loaded:** none</value></data>
   <data name="HardwareLoadedUnknown" xml:space="preserve"><value>**Currently loaded:** unknown — the backend at {0} cannot be reached</value></data>
   <data name="HardwareLoadedRefused" xml:space="preserve"><value>**Currently loaded:** unknown — the backend at {0} refused the check ({1})</value></data>
+  <data name="HardwareLoadedNotSaid" xml:space="preserve"><value>**Currently loaded:** unknown — the backend answered, but did not say which models are loaded</value></data>
   <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**Currently loaded:** {0} model(s) — this backend does not report the VRAM they occupy (no total, headroom or GPU/CPU figure)</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Loaded models
 

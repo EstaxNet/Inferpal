@@ -134,13 +134,26 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     /// <summary>The check got a usable answer, or no answer at all: no refusal to name.</summary>
     protected void ClearCheckRefusal() => Volatile.Write(ref _connectionRefusal, null);
 
-    /// <summary>Resets the chat circuit breaker immediately (e.g. on manual Retry).</summary>
+    /// <summary>Resets the chat and inline-completion circuit breakers immediately — the manual Retry.</summary>
     public void ResetCircuit()
+    {
+        ResetChatCircuit();
+        Interlocked.Exchange(ref _fimConsecutiveFailures, 0);
+        Interlocked.Exchange(ref _fimCooldownUntilTicks,  0);
+    }
+
+    /// <summary>
+    /// Resets the chat circuit breaker only: what a successful connection check proves.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Never the inline-completion breaker: it opens on completions the server REFUSES (a model with no insert slot), on
+    /// a server that answers every check — and VS Code checks every 30 s: reset there, a five-minute pause lasts thirty
+    /// seconds at most and the refused completions go on.
+    /// </remarks>
+    protected void ResetChatCircuit()
     {
         Interlocked.Exchange(ref _consecutiveFailures, 0);
         Interlocked.Exchange(ref _cooldownUntilTicks,  0);
-        Interlocked.Exchange(ref _fimConsecutiveFailures, 0);
-        Interlocked.Exchange(ref _fimCooldownUntilTicks,  0);
     }
 
     // ── Embedding circuit breaker ──────────────────────────────────────────────
@@ -452,6 +465,10 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     /// <inheritdoc/>
     public virtual Task<IReadOnlyList<RunningModelInfo>> GetRunningModelsAsync(CancellationToken ct) =>
         Task.FromResult<IReadOnlyList<RunningModelInfo>>([]);
+
+    /// <inheritdoc/>
+    public virtual async Task<IReadOnlyList<RunningModelInfo>?> ReadRunningModelsAsync(CancellationToken ct) =>
+        await GetRunningModelsAsync(ct);
 
     /// <inheritdoc/>
     public virtual Task UnloadModelAsync(string model, CancellationToken ct) => Task.CompletedTask;

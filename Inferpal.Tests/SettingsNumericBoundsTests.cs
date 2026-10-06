@@ -25,6 +25,10 @@ public class SettingsNumericBoundsTests
     [InlineData("contextWindowSize",        0,  null)]
     [InlineData("agentMaxIterations",       0,  null)]
     [InlineData("oodaTurnThreshold",        0,  null)]
+    [InlineData("commandTimeoutSeconds",    1,  null)]
+    [InlineData("quickTimeoutSeconds",      10, null)]
+    [InlineData("normalTimeoutSeconds",     10, null)]
+    [InlineData("ragSimilarityThreshold",   0,  1)]
     public void TheSchema_DeclaresTheBounds_BothPanelsApply(string key, int min, int? max)
     {
         var field = SettingsSchema.Field(key);

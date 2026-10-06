@@ -1016,8 +1016,10 @@ function onSave(): void {
       case 'float': {
         const raw = input.value.trim().replace(',', '.');
         const ok = /^[+-]?(\d+(\.\d*)?|\.\d+)$/.test(raw);
-        if (ok) {
-          config[field.key] = parseFloat(raw);
+        const value = ok ? parseFloat(raw) : NaN;
+        // Same bounds as an integer box: a similarity threshold above 1 lets no semantic hit through.
+        if (ok && (field.min == null || value >= field.min) && (field.max == null || value <= field.max)) {
+          config[field.key] = value;
         } else if (raw === '') {
           applyDefault(config, field, parseFloat);
         } else {

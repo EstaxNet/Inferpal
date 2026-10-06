@@ -164,8 +164,15 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     public Task<IReadOnlyList<RunningModelInfo>> GetRunningModelsAsync(CancellationToken ct)
     {
         OnRunningModels?.Invoke();
-        return Task.FromResult<IReadOnlyList<RunningModelInfo>>(Running);
+        return Task.FromResult<IReadOnlyList<RunningModelInfo>>(RunningNotSaid ? [] : Running);
     }
+
+    /// <summary>The loaded list cannot be read (null from <see cref="ReadRunningModelsAsync"/>), as on LM Studio behind a
+    /// proxy that routes only <c>/v1</c>; <see cref="GetRunningModelsAsync"/> then reads empty, like the real clients.</summary>
+    public bool RunningNotSaid { get; set; }
+
+    public async Task<IReadOnlyList<RunningModelInfo>?> ReadRunningModelsAsync(CancellationToken ct) =>
+        RunningNotSaid ? null : await GetRunningModelsAsync(ct);
 
     /// <summary>The window the "server" reports a model loaded with; null = it cannot say.</summary>
     public int? LoadedContextWindow { get; set; }

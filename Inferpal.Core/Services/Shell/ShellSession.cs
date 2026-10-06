@@ -106,7 +106,7 @@ internal sealed class ShellSession
         var script = ShellStateProtocol.BuildForegroundScript(dialect, startCwd, env, command, marker);
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        cts.CancelAfter(TimeSpan.FromSeconds(_config.CommandTimeoutSeconds));
+        cts.CancelAfter(TimeSpan.FromSeconds(ChildProcess.CommandDeadlineSeconds(_config)));
 
         var psi = ShellLauncher.BuildStartInfo(dialect, shell, script);
 
@@ -139,7 +139,7 @@ internal sealed class ShellSession
             var salvaged = WithStderr(
                 ShellStateProtocol.TrimLineEnds(ShellStateProtocol.ParseForeground(stdout.Snapshot(), marker).Output),
                 stderr.Snapshot());
-            return note + ChildProcess.TimedOutMessage(_config.CommandTimeoutSeconds, salvaged);
+            return note + ChildProcess.TimedOutMessage(ChildProcess.CommandDeadlineSeconds(_config), salvaged);
         }
 
         // The shell exited; a background process it started may still hold the pipes (see

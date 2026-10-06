@@ -840,6 +840,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**Aktuell geladen:** keine</value></data>
   <data name="HardwareLoadedUnknown" xml:space="preserve"><value>**Aktuell geladen:** unbekannt — das Backend unter {0} ist nicht erreichbar</value></data>
   <data name="HardwareLoadedRefused" xml:space="preserve"><value>**Aktuell geladen:** unbekannt — das Backend unter {0} hat die Prüfung abgelehnt ({1})</value></data>
+  <data name="HardwareLoadedNotSaid" xml:space="preserve"><value>**Aktuell geladen:** unbekannt — das Backend hat geantwortet, aber nicht gesagt, welche Modelle geladen sind</value></data>
   <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**Aktuell geladen:** {0} Modell(e) — dieses Backend meldet nicht, wie viel VRAM sie belegen (keine Summe, kein Spielraum, keine GPU/CPU-Angabe)</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Geladene Modelle
 

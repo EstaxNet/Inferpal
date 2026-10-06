@@ -279,11 +279,16 @@ internal static class OnboardCommandHandler
             // reads as the Visual Studio front-end to anything that has not looked inside.
             if (dirs.Count > 0) sb.Append("\n## Inside each top-level folder (sample)\n");
             var nothingToSample = new List<string>();
+            var unreadable      = new List<string>();
             foreach (var dir in dirs.Take(MaxSampledDirs))
             {
-                var children = SampleChildren(Path.Combine(root, dir));
-                if (children.Count == 0) { nothingToSample.Add(dir); continue; }
-                sb.Append("- `").Append(dir).Append("/` → ").Append(string.Join(", ", children)).Append('\n');
+                var (children, failure) = SampleChildren(Path.Combine(root, dir));
+                // ⚠ A folder that could not be read is not an empty one: written "empty" here, the brief tells every later
+                // session that a folder full of code holds nothing.
+                if (failure is not null) unreadable.Add($"{dir} ({failure})");
+                if (children.Count == 0) { if (failure is null) nothingToSample.Add(dir); continue; }
+                sb.Append("- `").Append(dir).Append("/` → ").Append(string.Join(", ", children))
+                  .Append(failure is null ? "" : ", … (not read to the end)").Append('\n');
             }
 
             // ⚠ A folder listed above with no line here is back to being a NAME, which the remark
@@ -296,12 +301,15 @@ internal static class OnboardCommandHandler
             if (nothingToSample.Count > 0)
                 sb.Append("- ⚠ nothing to sample (empty, or only build/vendor folders): ")
                   .Append(string.Join(", ", nothingToSample)).Append('\n');
+            if (unreadable.Count > 0)
+                sb.Append("- ⚠ could not be read, so their content is unknown: ")
+                  .Append(string.Join(", ", unreadable)).Append('\n');
         }
         catch (Exception ex)
         {
             Diagnostics.Swallow("Onboard.Layout", ex);
             // A heading with nothing under it reads as "this repository has no top-level folders".
-            sb.Append("- ⚠ the layout could not be read: ").Append(Diagnostics.RootMessage(ex)).Append('\n');
+            sb.Append("- ⚠ the layout could not be read: ").Append(ReadFailure(ex)).Append('\n');
         }
 
         var readme = FindReadme(root);
@@ -334,8 +342,11 @@ internal static class OnboardCommandHandler
         return sb.ToString();
     }
 
-    /// <summary>A few immediate children of a folder — enough to tell what it holds, not a listing.</summary>
-    private static List<string> SampleChildren(string dir)
+    /// <summary>
+    /// A few immediate children of a folder — enough to tell what it holds, not a listing — and, when the folder could not
+    /// be read to the end, why (<c>null</c> otherwise).
+    /// </summary>
+    private static (List<string> Children, string? Failure) SampleChildren(string dir)
     {
         const int Max = 8;
         var result = new List<string>();
@@ -346,17 +357,33 @@ internal static class OnboardCommandHandler
                 var name = Path.GetFileName(sub);
                 if (WorkspaceScan.IsExcludedDirName(sub)) continue;
                 result.Add(name + "/");
-                if (result.Count >= Max) return result;
+                if (result.Count >= Max) return (result, null);
             }
             foreach (var file in Directory.EnumerateFiles(dir))
             {
                 result.Add(Path.GetFileName(file));
-                if (result.Count >= Max) return result;
+                if (result.Count >= Max) return (result, null);
             }
         }
-        catch (Exception ex) { Diagnostics.Swallow("Onboard.SampleChildren", ex); }
-        return result;
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("Onboard.SampleChildren", ex);
+            return (result, ReadFailure(ex));
+        }
+        return (result, null);
     }
+
+    /// <summary>
+    /// Why a folder could not be read, as the brief says it — the cause, never the exception's message: that message
+    /// carries the absolute path (the home directory), and <c>.inferpal/context.md</c> is committed with the repository.
+    /// </summary>
+    private static string ReadFailure(Exception ex) => ex switch
+    {
+        UnauthorizedAccessException => "access denied",
+        DirectoryNotFoundException  => "removed while being read",
+        IOException                 => "read error",
+        _                           => ex.GetType().Name,
+    };
 
     private static string? FindReadme(string root)
     {

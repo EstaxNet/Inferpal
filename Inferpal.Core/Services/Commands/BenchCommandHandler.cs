@@ -44,9 +44,12 @@ internal static class BenchCommandHandler
         }
         else
         {
-            var installed = await client.ListInstalledModelsAsync(ct);
-            models      = [.. installed.Select(m => m.Name).Take(MaxAutoModels)];
-            notMeasured = [.. installed.Select(m => m.Name).Skip(MaxAutoModels)];
+            // ⚠ Chat models only: an embedding model cannot answer a prompt. Kept, it takes a measured slot for an error
+            // row and pushes a chat model out of the run — and LM Studio may list its loaded embedding model first.
+            var chat = (await client.ListInstalledModelsAsync(ct))
+                .Select(m => m.Name).Where(n => !ModelCatalog.IsEmbeddingModel(n)).ToList();
+            models      = [.. chat.Take(MaxAutoModels)];
+            notMeasured = [.. chat.Skip(MaxAutoModels)];
         }
         // ⚠ An empty list is "nothing installed" OR "nobody answered" — an unreachable backend never
         // throws, it returns []. And this sentence names `/models pull`, which needs the very

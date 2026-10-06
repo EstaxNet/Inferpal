@@ -356,7 +356,7 @@ internal class OllamaClient : InferenceProviderBase
             var body = await response.Content.ReadAsStringAsync(cts.Token);
             if (ConfirmsBackendPayload(endpoint, body, "models", "Ollama.CheckConnection", _config.Provider))
             {
-                ResetCircuit();
+                ResetChatCircuit();
                 return true;
             }
             RecordFailure();
@@ -430,7 +430,11 @@ internal class OllamaClient : InferenceProviderBase
     /// Each entry includes the model name, VRAM usage in bytes, and expiry timestamp.
     /// Returns an empty list on any failure (Ollama unreachable, HTTP error, etc.).
     /// </summary>
-    public override async Task<IReadOnlyList<RunningModelInfo>> GetRunningModelsAsync(CancellationToken ct)
+    public override async Task<IReadOnlyList<RunningModelInfo>> GetRunningModelsAsync(CancellationToken ct) =>
+        await ReadRunningModelsAsync(ct) ?? [];
+
+    /// <inheritdoc/>
+    public override async Task<IReadOnlyList<RunningModelInfo>?> ReadRunningModelsAsync(CancellationToken ct)
     {
         try
         {
@@ -439,9 +443,10 @@ internal class OllamaClient : InferenceProviderBase
             cts.CancelAfter(TimeSpan.FromSeconds(5));
             var result = await _http.GetFromJsonAsync<RunningModelsResponse>(
                 $"{base_}/api/ps", cts.Token);
-            return result?.Models ?? [];
+            // An answer without its "models" list says nothing about what is loaded.
+            return result?.Models;
         }
-        catch { return []; }
+        catch { return null; }
     }
 
     /// <summary>

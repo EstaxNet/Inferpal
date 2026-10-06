@@ -81,6 +81,17 @@ internal interface IInferenceProvider : IOllamaChatClient
     /// <inheritdoc cref="OllamaClient.GetRunningModelsAsync"/>
     Task<IReadOnlyList<RunningModelInfo>> GetRunningModelsAsync(CancellationToken ct);
 
+    /// <summary>
+    /// The loaded models, or <c>null</c> when the server did not say — the call failed, or its answer could not be read.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <see cref="GetRunningModelsAsync"/> reads empty on any failure, and every reader that SAYS what is loaded reads
+    /// this one: LM Studio behind a proxy that routes only <c>/v1</c> lists its installed models (the fallback surface)
+    /// while its loaded state, native only, cannot be read — read empty, <c>/hardware</c>, <c>/models running</c> and the
+    /// settings page answer "nothing is loaded" over loaded models.
+    /// </remarks>
+    Task<IReadOnlyList<RunningModelInfo>?> ReadRunningModelsAsync(CancellationToken ct);
+
     /// <inheritdoc cref="OllamaClient.UnloadModelAsync"/>
     Task UnloadModelAsync(string model, CancellationToken ct);
 

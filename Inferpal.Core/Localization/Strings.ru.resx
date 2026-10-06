@@ -840,6 +840,7 @@
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**Сейчас загружено:** нет</value></data>
   <data name="HardwareLoadedUnknown" xml:space="preserve"><value>**Сейчас загружено:** неизвестно — бэкенд по адресу {0} недоступен</value></data>
   <data name="HardwareLoadedRefused" xml:space="preserve"><value>**Сейчас загружено:** неизвестно — бэкенд по адресу {0} отклонил проверку ({1})</value></data>
+  <data name="HardwareLoadedNotSaid" xml:space="preserve"><value>**Сейчас загружено:** неизвестно — бэкенд ответил, но не сообщил, какие модели загружены</value></data>
   <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**Сейчас загружено:** моделей: {0} — этот бэкенд не сообщает, сколько VRAM они занимают (нет итога, запаса и данных GPU/CPU)</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Загруженные модели
 

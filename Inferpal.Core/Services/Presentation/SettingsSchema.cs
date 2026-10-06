@@ -78,6 +78,10 @@ internal sealed record SettingField(
 {
     /// <summary>Is <paramref name="value"/> within the box's bounds?</summary>
     public bool Accepts(int value) => (Min is null || value >= Min) && (Max is null || value <= Max);
+
+    /// <summary>Is <paramref name="value"/>, a decimal box's, within the bounds?</summary>
+    public bool Accepts(double value) =>
+        double.IsFinite(value) && (Min is null || value >= Min) && (Max is null || value <= Max);
 }
 
 /// <summary>A group of fields under a title (empty = no heading), with an optional description.</summary>
@@ -274,9 +278,14 @@ internal static class SettingsSchema
             ]),
             new("SettingsSectionTimeLimits",
             [
-                new("commandTimeoutSeconds", SettingKind.Int, "LabelCommandTimeout",    "HintCommandTimeout",    Unit: "UnitSeconds"),
-                new("quickTimeoutSeconds",   SettingKind.Int, "LabelTaskTimeoutQuick",  "HintTaskTimeoutQuick",  Unit: "UnitSeconds"),
-                new("normalTimeoutSeconds",  SettingKind.Int, "LabelTaskTimeoutNormal", "HintTaskTimeoutNormal", Unit: "UnitSeconds"),
+                // ⚠ 0 stops every command the instant it starts, and a negative deadline throws; a task deadline
+                // under 10 s is raised to 10 by the client that applies it.
+                new("commandTimeoutSeconds", SettingKind.Int, "LabelCommandTimeout",    "HintCommandTimeout",    Unit: "UnitSeconds",
+                    Min: 1),
+                new("quickTimeoutSeconds",   SettingKind.Int, "LabelTaskTimeoutQuick",  "HintTaskTimeoutQuick",  Unit: "UnitSeconds",
+                    Min: 10),
+                new("normalTimeoutSeconds",  SettingKind.Int, "LabelTaskTimeoutNormal", "HintTaskTimeoutNormal", Unit: "UnitSeconds",
+                    Min: 10),
             ],
             Collapsible: true, Note: "SettingsTimeLimitsNote"),
         ]),
@@ -320,7 +329,10 @@ internal static class SettingsSchema
             [
                 new("ragTopK",                SettingKind.Int,   "LabelRagTopK",                "HintRagTopK",                Unit: "UnitChunks",
                     Min: 1, Max: 20),
-                new("ragSimilarityThreshold", SettingKind.Float, "LabelRagSimilarityThreshold", "HintRagSimilarityThreshold", Unit: "UnitRangeZeroToOne"),
+                // ⚠ A cosine similarity is at most 1: above it no semantic hit ever passes, and search falls back to
+                // keywords without a word.
+                new("ragSimilarityThreshold", SettingKind.Float, "LabelRagSimilarityThreshold", "HintRagSimilarityThreshold", Unit: "UnitRangeZeroToOne",
+                    Min: 0, Max: 1),
             ],
             Grid: true, Widget: "indexExclusions"),
             new("SettingsSectionDocs", [], Description: "SettingsSectionDocsDesc", Note: "SettingsDocsNote", Widget: "docsSites"),

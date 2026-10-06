@@ -1330,11 +1330,13 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         edited.RagTopK                   = ReadInt(ragTopKText, "ragTopK", () => Strings.LabelRagTopK,
                                                     edited.RagTopK, c => c.RagTopK);
         // ⚠ Inline, not ReadInt: invariant culture here (the threshold is written with a dot).
+        // Out of the schema's bounds it is named and kept, like an integer box — a clamp saves 1.5 as 1.0 in silence.
         var rstOk = float.TryParse(ragSimilarityThresholdText, System.Globalization.NumberStyles.Float,
-                                   System.Globalization.CultureInfo.InvariantCulture, out var rst);
+                                   System.Globalization.CultureInfo.InvariantCulture, out var rst)
+                    && SettingsSchema.Field("ragSimilarityThreshold").Accepts(rst);
         Note(ragSimilarityThresholdText, rstOk, () => Strings.LabelRagSimilarityThreshold);
-        edited.RagSimilarityThreshold    = rstOk ? Math.Clamp(rst, 0f, 1f)
-                                    : SettingsFallback.For(ragSimilarityThresholdText, edited.RagSimilarityThreshold, 0.20f);
+        edited.RagSimilarityThreshold    = rstOk ? rst
+                                    : SettingsFallback.For(ragSimilarityThresholdText, edited.RagSimilarityThreshold, factory.RagSimilarityThreshold);
         edited.LspEnabled                = lspEnabled;
         edited.McpEnabled                = mcpEnabled;
         edited.McpServersJson            = mcpServersJson;

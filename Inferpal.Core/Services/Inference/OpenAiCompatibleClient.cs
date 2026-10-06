@@ -856,7 +856,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             var body = await response.Content.ReadAsStringAsync(cts.Token);
             if (ConfirmsBackendPayload(endpoint, body, "data", "OpenAiCompatible.CheckConnection", _config.Provider))
             {
-                ResetCircuit();
+                ResetChatCircuit();
                 return true;
             }
             RecordFailure();

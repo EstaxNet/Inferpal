@@ -469,10 +469,13 @@ internal sealed partial class HostServer
                             Strings.OnboardProfileScaffolded, cts.Token);
 
                     if (result.SaveConfig) s.Config.Save();
+                    // ⚠ The extension keeps its own copy of some of these settings (the utility model) and pushes it back
+                    // at every host start: told nothing, it undoes the applied profile at the next restart, in silence.
+                    List<SlashEffectDto> saved = result.SaveConfig ? [new SlashEffectDto("configSaved")] : [];
 
                     if (result.NewDefaultModel is { } model)
                         return new SlashCommandResult(true, result.Message,
-                            [new SlashEffectDto("stateChange", model, "model")]);
+                            [new SlashEffectDto("stateChange", model, "model"), .. saved]);
 
                     if (result.Write is { } write)
                     {
@@ -489,7 +492,7 @@ internal sealed partial class HostServer
                             [new SlashEffectDto("openFile", write.Path)]);
                     }
 
-                    return new SlashCommandResult(true, result.Message);
+                    return new SlashCommandResult(true, result.Message, saved);
                 }
 
                 case SlashCommandId.Debug:

@@ -840,6 +840,7 @@
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**当前已加载：** 无</value></data>
   <data name="HardwareLoadedUnknown" xml:space="preserve"><value>**当前已加载：** 未知 — 无法连接到 {0} 的后端</value></data>
   <data name="HardwareLoadedRefused" xml:space="preserve"><value>**当前已加载：** 未知 — {0} 的后端拒绝了检查（{1}）</value></data>
+  <data name="HardwareLoadedNotSaid" xml:space="preserve"><value>**当前已加载：** 未知 — 后端已响应，但未说明加载了哪些模型</value></data>
   <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**当前已加载：** {0} 个模型 — 此后端不报告其占用的显存（无法显示总量、余量或 GPU/CPU）</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### 已加载模型
 

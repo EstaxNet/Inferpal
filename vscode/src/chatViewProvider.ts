@@ -7,6 +7,7 @@ import type { CancellationToken } from 'vscode-jsonrpc';
 import { HostClient } from './hostClient';
 import { hostErrorText, hostUnavailableMessage, promptOpenFolder } from './hostStatus';
 import { resolveMention } from './mentionPaths';
+import { followModelRouterSettings } from './modelRouterSettings';
 import { panelDiagnostics } from './editorBridge';
 import { capAttachment, CappedText } from './attachmentCap';
 import { renderChatHtml } from './webview/chatWebviewHtml';
@@ -1803,6 +1804,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
               notes.push(t('Inferpal could not save this setting: {0}', ChatViewProvider.errorText(err)));
             }
           }
+          break;
+        case 'configSaved':
+          // The command saved Inferpal's settings (`/onboard apply`): the explicit VS Code copies follow, or the next host
+          // start pushes the old utility model back; the chat re-reads its window, model and density.
+          await followModelRouterSettings(this.getHost(), this.log);
+          await this.configSaved();
           break;
         case 'openFile':
           if (e.value) {

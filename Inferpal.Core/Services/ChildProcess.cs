@@ -145,6 +145,18 @@ internal static class ChildProcess
     /// in the result this class returns.
     /// ⚠ Model-facing, so English: it corrects the model's next move, and the human cannot act on it.
     /// </remarks>
+    /// <summary>
+    /// The deadline of a command the model runs, in seconds — the factory value when the setting is not a positive number.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <c>config.json</c> is written by hand too: 0 stops every command the instant it starts (reported as a time-out),
+    /// and a negative value makes <c>CancelAfter</c> throw — the command never runs. A value that cannot be one is read
+    /// as not set, like a cleared box; a floor of one second would still kill a shell that takes longer to start. One
+    /// reader for the persistent shell and the user-defined tools, which read the same setting.
+    /// </remarks>
+    internal static int CommandDeadlineSeconds(Config.InferpalConfig config) =>
+        config.CommandTimeoutSeconds > 0 ? config.CommandTimeoutSeconds : new Config.InferpalConfig().CommandTimeoutSeconds;
+
     internal static string TimedOutMessage(int seconds, string? salvaged)
     {
         var head = $"Error: command timed out after {seconds}s.";

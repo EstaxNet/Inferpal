@@ -844,6 +844,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="HardwareLoadedNone" xml:space="preserve"><value>**Actuellement chargé :** aucun</value></data>
   <data name="HardwareLoadedUnknown" xml:space="preserve"><value>**Actuellement chargé :** inconnu — le backend à {0} est injoignable</value></data>
   <data name="HardwareLoadedRefused" xml:space="preserve"><value>**Actuellement chargé :** inconnu — le backend à {0} a refusé la vérification ({1})</value></data>
+  <data name="HardwareLoadedNotSaid" xml:space="preserve"><value>**Actuellement chargé :** inconnu — le backend a répondu, mais sans dire quels modèles sont chargés</value></data>
   <data name="HardwareLoadedUnreported" xml:space="preserve"><value>**Actuellement chargé :** {0} modèle(s) — ce backend ne publie pas la VRAM qu'ils occupent (ni total, ni marge, ni GPU/CPU)</value></data>
   <data name="HardwareLoadedModelsTable" xml:space="preserve"><value>### Modèles chargés
 

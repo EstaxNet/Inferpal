@@ -599,4 +599,40 @@ public class ArenaTests : IDisposable
         Assert.Contains(Strings.ArenaVotePrompt, result.Message);
         Assert.DoesNotContain(ArenaStore.FilePath, result.Message);
     }
+
+    // ── Embedding models are not contestants ─────────────────────────────────
+
+    private const string EmbeddingModel = "text-embedding-qwen3-embedding-0.6b";
+
+    /// <summary>A server listing an embedding model FIRST — Ollama lists the most recently downloaded model first.</summary>
+    private static FakeInferenceProvider ServerListingAnEmbeddingFirst(List<string> asked) => new()
+    {
+        Installed =
+        [
+            new(EmbeddingModel, 1), new("chat-a", 1), new("chat-b", 1), new("chat-c", 1), new("chat-d", 1), new("chat-e", 1),
+        ],
+        OnChatRequest = (model, _, _, _) =>
+        {
+            lock (asked) asked.Add(model);
+            return Task.FromResult(new ChatTurnResult("A short answer with a few varied words.", null, 10, 5));
+        },
+    };
+
+    /// <summary>
+    /// ⚠ With the chat and utility models the same, the opponent was the first other installed model — an embedding
+    /// model listed first, which cannot answer: the duel was lost to an error.
+    /// </summary>
+    [Fact]
+    public async Task TheFallbackOpponent_IsNeverAnEmbeddingModel()
+    {
+        var asked = new List<string>();
+        var config = new InferpalConfig { DefaultModel = "chat-c", UtilityModel = "chat-c" };
+
+        await ArenaCommandHandler.HandleAsync(ServerListingAnEmbeddingFirst(asked), config, ["/arena", "say", "hi"],
+            onProgress: null, CancellationToken.None, swapOrder: () => false);
+
+        Assert.Contains("chat-c", asked);   // WITNESS: the duel ran
+        Assert.DoesNotContain(EmbeddingModel, asked);
+        Assert.Contains("chat-a", asked);   // the first chat model that is not the chat model itself
+    }
 }

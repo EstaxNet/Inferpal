@@ -156,10 +156,12 @@ internal static class DiagnosticsCommandHandler
         if (!string.IsNullOrEmpty(ctx.BackendStatus))
             sb.Append("- **Backend**: ").Append(SanitizePaths(ctx.BackendStatus, ctx.WorkspaceRoot)).Append('\n');
 
-        sb.Append("- **Models**: default `").Append(c.DefaultModel).Append('`')
-          .Append(Role("agent", c.AgentModel)).Append(Role("utility", c.UtilityModel))
-          .Append(Role("FIM", c.InlineCompletionModel)).Append(Role("embedding", c.RagEmbeddingModel))
-          .Append('\n');
+        // ⚠ A model name can be a PATH — llama-server names its model after the file it loaded (`-m`) unless given an
+        // alias, and that path holds a home directory: the local one, or a remote server's that no local scrub knows.
+        var models = "default `" + ModelForExport(c.DefaultModel) + "`"
+                   + Role("agent", c.AgentModel) + Role("utility", c.UtilityModel)
+                   + Role("FIM", c.InlineCompletionModel) + Role("embedding", c.RagEmbeddingModel);
+        sb.Append("- **Models**: ").Append(SanitizePaths(models, ctx.WorkspaceRoot)).Append('\n');
         // ⚠ The loaded window is the one requests must fit: configured at 100 000 under LM Studio loading 4 096, a line
         // naming only the setting pointed whoever read the report away from the number that explained it.
         sb.Append("- **Context window**: ").Append(c.ContextWindowSize).Append(" tokens configured");
@@ -205,7 +207,7 @@ internal static class DiagnosticsCommandHandler
         return sb.ToString();
 
         static string Role(string label, string model) =>
-            $" · {label} {(string.IsNullOrEmpty(model) ? "(default)" : $"`{model}`")}";
+            $" · {label} {(string.IsNullOrEmpty(model) ? "(default)" : $"`{ModelForExport(model)}`")}";
 
         static string Toggle(string label, bool on) => $"{(label == "RAG" ? "" : " · ")}{label} {(on ? "on" : "off")}";
     }
@@ -223,6 +225,12 @@ internal static class DiagnosticsCommandHandler
         }
         catch { return "invalid endpoint"; }
     }
+
+    /// <summary>A model named by an absolute path (llama-server's default name) keeps its file name only.</summary>
+    internal static string ModelForExport(string model) =>
+        System.Text.RegularExpressions.Regex.IsMatch(model, @"^(?:[A-Za-z]:[\\/]|[\\/]|~[\\/])")
+            ? "…/" + model.Split('/', '\\')[^1]
+            : model;
 
     /// <summary>
     /// Everything a diagnostic entry must lose before it leaves the machine: absolute paths (the
