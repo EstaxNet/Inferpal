@@ -347,8 +347,17 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
         for (var j = 0; j < sent.Count; j++) allotted[sent[j]] = shares[j];
 
         for (var i = 0; i < files.Count; i++)
-            yield return files[i].Section(CapSection(files[i].Body, files[i].What, allotted[i]));
+            yield return files[i].Section(CapSection(files[i].Body, files[i].What, allotted[i], KeepsItsEnd(files[i].Kind)));
     }
+
+    /// <summary>
+    /// A file written by APPENDING keeps its end when it is cut: <c>memory.md</c> (<c>update_memory</c> appends) and
+    /// <c>notes.md</c> (<c>/note</c> appends) put their newest entries last.
+    /// </summary>
+    /// <remarks>⚠ Cut from the end like the others, the notes just written are the ones the next session never sees —
+    /// while the tool that wrote them answered "saved". A rule, a pinned file or the project context keep their head:
+    /// their structure starts there.</remarks>
+    internal static bool KeepsItsEnd(PromptSectionKind kind) => kind is PromptSectionKind.Memory or PromptSectionKind.Notes;
 
     /// <summary>
     /// Ceiling on ONE file-backed prompt section (~8k tokens), under the budget they all share
@@ -376,7 +385,7 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     /// question, so a capped pinned file wrote one entry per question and a long session flushed the ring — and the
     /// failure being looked for with it. The key IS the condition (size and share): when either moves, it is said
     /// again.</remarks>
-    internal static string CapSection(string text, string what, int allotted)
+    internal static string CapSection(string text, string what, int allotted, bool keepEnd = false)
     {
         if (text.Length <= allotted) return text;
 
@@ -384,9 +393,18 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
             $"'{what}' is {text.Length} chars; truncated to {allotted} for the system prompt "
             + "(the prompt's files share a budget set by the context window).",
             $"{what}|{text.Length}|{allotted}");
-        return SafeTruncate.Truncate(text, allotted)
-             + $"\n\n[... {what} truncated to {allotted} characters out of {text.Length} "
-             + "to keep the system prompt inside the context window]";
+        if (!keepEnd)
+            return SafeTruncate.Truncate(text, allotted)
+                 + $"\n\n[... {what} truncated to {allotted} characters out of {text.Length} "
+                 + "to keep the system prompt inside the context window]";
+
+        // The most recent part, from the start of a line: half an entry reads as a whole one.
+        var start = text.Length - Math.Max(0, allotted);
+        if (start < text.Length && char.IsLowSurrogate(text[start])) start++;
+        var lineStart = text.IndexOf('\n', start);
+        if (lineStart >= 0 && lineStart + 1 < text.Length) start = lineStart + 1;
+        return $"[... the earliest {start} characters of {what} omitted to keep the system prompt inside the context "
+             + $"window — its most recent {text.Length - start} follow]\n\n" + text[start..];
     }
 
     /// <summary>Adds a <c>## header</c> file-backed section; missing/empty/unreadable file ⇒ no-op.</summary>

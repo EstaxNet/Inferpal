@@ -36,3 +36,23 @@ export function resolveMention<T>(
   }
   return { folder: folders[0], relative: token };
 }
+
+/**
+ * The `@path` tokens a question names, in order, each once: `@src/app.ts`, or `@"docs/My Notes.md"` for a path that holds
+ * a space — the form the picker writes then.
+ *
+ * ⚠ A bare token ends at the first space: read that way, `@docs/My Notes.md` named `docs/My`, which is no file, and the
+ * file the person picked was not attached — with nothing said. Trailing punctuation of a bare token is the sentence's
+ * (`see @src/app.ts.`); a quoted path is taken as written.
+ */
+export function mentionTokens(prompt: string): string[] {
+  const tokens = [...prompt.matchAll(/@(?:"([^"\n]+)"|([^\s@"]+))/g)]
+    .map((m) => m[1] ?? m[2].replace(/[),.;:!?]+$/, ''))
+    .filter((token) => token.length > 0);
+  return [...new Set(tokens)];
+}
+
+/** How the picker writes a path into the question: quoted when it holds a space, so `mentionTokens` reads it whole. */
+export function mentionFor(path: string): string {
+  return /\s/.test(path) ? `@"${path}"` : `@${path}`;
+}

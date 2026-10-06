@@ -39,6 +39,9 @@ internal sealed class DocsIndexService
     /// <summary>Tests replace the network crawl (and its SSRF guard) with pages they control.</summary>
     internal Func<string, CancellationToken, Task<List<DocCrawler.Page>>>? CrawlForTests { get; init; }
 
+    /// <summary>Tests hand in a real crawler over a transport they control — its refusals and time-outs are counted.</summary>
+    internal Func<DocCrawler>? CrawlerForTests { get; init; }
+
     // ── Public state ──────────────────────────────────────────────────────────
 
     /// <summary>Human-readable status of the last/ongoing indexing pass.</summary>
@@ -236,7 +239,7 @@ internal sealed class DocsIndexService
         {
             // ── Crawl ──────────────────────────────────────────────────────────
             progress?.Report($"Docs: crawling {site.Title}…");
-            var crawler = new DocCrawler();
+            var crawler = CrawlerForTests?.Invoke() ?? new DocCrawler();
             var crawlProgress = new Progress<(int fetched, int total)>(p =>
                 Status = $"Docs: crawling {site.Title} — {p.fetched}/{Math.Max(p.fetched, p.total)} pages");
 
@@ -262,6 +265,25 @@ internal sealed class DocsIndexService
             var chunks = new List<DocChunk>();
             foreach (var page in pages)
                 chunks.AddRange(DocChunker.Chunk(site.Id, page.Url, page.Title, page.Text));
+
+            // ⚠ A crawl the site cut short (pages refused, pages that did not answer) is not the site: the pages this pass
+            // did not reach keep what the previous one stored. Replaced whole, a re-index during rate limiting shrinks a
+            // complete index to the pages fetched before the refusals, under a ✅. A crawl that ran to its end replaces
+            // the index, removed pages included.
+            var keptPages = 0;
+            if (crawler.Refusals.Values.Sum() + crawler.TimedOut > 0)
+            {
+                var fetched = pages.Select(p => p.Url).ToHashSet(StringComparer.Ordinal);
+                await _chunkLock.WaitAsync(ct);
+                try
+                {
+                    var kept = _chunks.Where(c => string.Equals(c.DocId, site.Id, StringComparison.OrdinalIgnoreCase)
+                                                  && !fetched.Contains(c.Url)).ToList();
+                    keptPages = kept.Select(c => c.Url).Distinct(StringComparer.Ordinal).Count();
+                    chunks.AddRange(kept);
+                }
+                finally { _chunkLock.Release(); }
+            }
 
             progress?.Report($"Docs: {site.Title} — {pages.Count} pages, {chunks.Count} chunks; embedding…");
 
@@ -319,7 +341,7 @@ internal sealed class DocsIndexService
 
             // ── Persist + refresh memory ─────────────────────────────────────────
             var db = new DocsDatabase();
-            await db.SaveSiteAsync(site, pages.Count, chunks, ct);
+            await db.SaveSiteAsync(site, pages.Count + keptPages, chunks, ct);
             // ⚠ ONE model is recorded for the whole corpus, and this pass may change it: the OTHER sites' vectors were made
             // by the model recorded before. Left in storage, the reload below compared them to the NEW record and brought
             // them back as valid — reused for good by their next pass, noise or a cosine of 0 under a ✅, the hole counter
@@ -339,7 +361,9 @@ internal sealed class DocsIndexService
             var crawlNote = pages.Count >= DocCrawler.MaxPages
                 ? $" (crawl limit of {DocCrawler.MaxPages} pages reached — the site may have more)"
                 : string.Empty;
-            Status = $"Docs: ✅ {site.Title} — {pages.Count} pages, {chunks.Count} chunks{crawlNote}"
+            var keptNote = keptPages == 0 ? string.Empty
+                : $" (kept {keptPages} page(s) from the previous index that this pass could not fetch)";
+            Status = $"Docs: ✅ {site.Title} — {pages.Count + keptPages} pages, {chunks.Count} chunks{crawlNote}{keptNote}"
                    + $"{RefusalNote(crawler.Refusals, site.Id)}{TimeoutNote(crawler.TimedOut, site.Id)}{embNote}";
             progress?.Report(Status);
         }

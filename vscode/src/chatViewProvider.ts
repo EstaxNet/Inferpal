@@ -6,7 +6,7 @@ import { t } from './i18n';
 import type { CancellationToken } from 'vscode-jsonrpc';
 import { HostClient } from './hostClient';
 import { hostErrorText, hostUnavailableMessage, promptOpenFolder } from './hostStatus';
-import { resolveMention } from './mentionPaths';
+import { mentionTokens, resolveMention } from './mentionPaths';
 import { followModelRouterSettings } from './modelRouterSettings';
 import { panelDiagnostics } from './editorBridge';
 import { capAttachment, CappedText } from './attachmentCap';
@@ -1406,8 +1406,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // budget before a real `@src/app.py` was even tried — and the file was silently left out.
     // The attempts themselves stay bounded.
     const MAX_ATTEMPTS = 25;
-    const tokens = [...new Set([...prompt.matchAll(/@([^\s@]+)/g)].map((m) => m[1].replace(/[),.;:!?]+$/, '')))]
-      .slice(0, MAX_ATTEMPTS);
+    const tokens = mentionTokens(prompt).slice(0, MAX_ATTEMPTS);
 
     let attachments = '';
     const paths: string[] = [];

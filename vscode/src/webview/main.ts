@@ -18,6 +18,7 @@ import { t } from './l10n';
 import { renderMarkdownInto, setCopySink, stripThinkTags } from './markdown';
 import { renderXray, setXraySink } from './xray';
 import { icon, iconButton, setIcon, type IconName } from './icons';
+import { mentionFor } from '../mentionPaths';
 
 const vscode = window.__vsapi ?? acquireVsCodeApi();
 const post = (msg: WebviewToExt) => vscode.postMessage(msg);
@@ -1245,8 +1246,10 @@ function stripMentionToken(): void {
 function insertMention(path: string): void {
   const caret = promptEl.selectionStart;
   const value = promptEl.value;
-  promptEl.value = value.slice(0, mentionStart) + '@' + path + ' ' + value.slice(caret);
-  const pos = mentionStart + path.length + 2;
+  // Quoted when the path holds a space: the extension reads a bare token up to the first space only.
+  const written = mentionFor(path);
+  promptEl.value = value.slice(0, mentionStart) + written + ' ' + value.slice(caret);
+  const pos = mentionStart + written.length + 1;
   promptEl.setSelectionRange(pos, pos);
   promptEl.focus();
   closeMentions();
@@ -1306,7 +1309,7 @@ function renderMentionResults(category: string, items: WvMentionItem[]): void {
         const caret = promptEl.selectionStart;
         const value = promptEl.value;
         const rel = item.detail.replace(/\\/g, '/');
-        const before = value.slice(0, caret).replace(COMMITTED_RE, '@' + rel + ' ');
+        const before = value.slice(0, caret).replace(COMMITTED_RE, mentionFor(rel) + ' ');
         promptEl.value = before + value.slice(caret);
         promptEl.setSelectionRange(before.length, before.length);
         promptEl.focus();
