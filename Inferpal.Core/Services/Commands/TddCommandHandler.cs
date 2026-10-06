@@ -237,7 +237,8 @@ internal static class TddCommandHandler
      || output.Contains(Tools.RunTestsTool.FilterRejected,      StringComparison.Ordinal)
      || output.Contains(Tools.RunTestsTool.NothingProven,       StringComparison.Ordinal)
      || output.Contains(Tools.RunTestsTool.NoTestScript,        StringComparison.Ordinal)
-     || output.Contains(Tools.RunTestsTool.PytestNotInstalled,  StringComparison.Ordinal);
+     || output.Contains(Tools.RunTestsTool.PytestNotInstalled,  StringComparison.Ordinal)
+     || output.Contains(Tools.RunTestsTool.DotnetCommandRejected, StringComparison.Ordinal);
 
     /// <summary>
     /// The runner was <b>killed at its budget</b> — the state that can carry a green summary and

@@ -172,7 +172,7 @@ internal sealed class SmartFixValidator
 
         try
         {
-            var (exitCode, output, timedOut) = await RunAsync(command, projectDir, ct);
+            var (exitCode, output, timedOut) = await Run(command, projectDir, ct);
             return Interpret(exitCode, output, validator.UseDotnetErrorFilter, timedOut);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -183,10 +183,12 @@ internal sealed class SmartFixValidator
         {
             return Strings.SmartFixTimeout;
         }
-        catch
+        catch (Exception ex)
         {
-            // Never crash the write tool — a failed build check is best-effort.
-            return null;
+            // Never crash the write tool — but a check that could not run is not "no validator": silent, the edit read
+            // as verified when nothing was.
+            Diagnostics.Swallow("SmartFixValidator.Run", ex);
+            return Strings.SmartFixCouldNotRun(Diagnostics.RootMessage(ex));
         }
     }
 
@@ -328,6 +330,9 @@ internal sealed class SmartFixValidator
     /// <remarks>pwsh 7's default ConciseView prints a missing command as a translated sentence and no id.</remarks>
     internal static string ValidatorScript(Shell.ShellDialect dialect, string command) =>
         dialect == Shell.ShellDialect.PowerShell ? "$ErrorView = 'NormalView'\n" + command : command;
+
+    /// <summary>What runs a validator's command in its project folder: <see cref="RunAsync"/>, replaced by tests.</summary>
+    internal Func<string, string, CancellationToken, Task<(int ExitCode, string Output, bool TimedOut)>> Run { get; init; } = RunAsync;
 
     private static async Task<(int ExitCode, string Output, bool TimedOut)> RunAsync(string command, string workDir, CancellationToken ct)
     {

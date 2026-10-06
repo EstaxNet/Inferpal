@@ -444,6 +444,7 @@ Fai clic su **Correggi con l'IA** per correggere automaticamente in loop, o digi
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: verifica build scaduta (60 s) — verificare manualmente.</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: il controllo di build è fallito senza indicare alcun errore — eseguilo tu stesso per capire perché.</value></data>
+  <data name="SmartFixCouldNotRun" xml:space="preserve"><value>⚠ Smart Fix: impossibile eseguire il controllo della build ({0}) — questa modifica non è stata verificata.</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>Verificare la build dopo ogni modifica</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>.NET, TypeScript, Rust e Go già pronti. Gli errori tornano subito all'agente.</value></data>
 

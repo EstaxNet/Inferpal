@@ -444,6 +444,7 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: 빌드 확인 시간 초과 (60초) — 수동으로 확인하세요.</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: 빌드 검사가 오류를 하나도 알리지 않고 실패했습니다 — 이유를 보려면 직접 실행하세요.</value></data>
+  <data name="SmartFixCouldNotRun" xml:space="preserve"><value>⚠ Smart Fix: 빌드 검사를 실행할 수 없었습니다({0}). 이 변경 사항은 검증되지 않았습니다.</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>편집할 때마다 빌드 확인</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>.NET, TypeScript, Rust, Go를 바로 지원합니다. 오류는 곧바로 에이전트에게 돌아갑니다.</value></data>
 

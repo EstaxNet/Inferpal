@@ -46,9 +46,8 @@ internal sealed class RepeatedCallDetector
         var (calls, _) = InlineToolCallParser.TryParse(reasoning.ToString());
         if (calls is not { Count: > 1 }) return false;
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        // ⚠ An unreadable call carries the empty object as its arguments: what it was written as is what tells two apart.
         foreach (var call in calls)
-            if (!seen.Add(call.Function.Name + "\0" + (call.Function.UnparsedArguments ?? call.Function.Arguments.GetRawText())))
+            if (!seen.Add(call.Function.Name + "\0" + call.Function.WrittenArguments))
                 return true;
         return false;
     }

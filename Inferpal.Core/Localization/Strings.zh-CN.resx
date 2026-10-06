@@ -444,6 +444,7 @@
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix：编译检查超时（60 秒）— 请手动检查。</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix：构建检查失败，但没有指出任何错误——请自行运行以查看原因。</value></data>
+  <data name="SmartFixCouldNotRun" xml:space="preserve"><value>⚠ Smart Fix：无法运行构建检查（{0}）——此更改未经验证。</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>每次编辑后检查构建</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>开箱即支持 .NET、TypeScript、Rust 和 Go。错误会直接返回给代理。</value></data>
 

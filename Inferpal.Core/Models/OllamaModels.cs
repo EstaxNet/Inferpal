@@ -108,6 +108,13 @@ record ToolCallFunction(
     /// (<c>ArgumentsShapeWatcher</c>); the client stopped reading there. Never executed; refused with that cause by
     /// <c>AgentOrchestrator.ExecuteToolSafeAsync</c>.</summary>
     [JsonIgnore] public string? BrokenShape { get; init; }
+
+    /// <summary>The arguments as the model wrote them: the raw text when they did not parse, their JSON otherwise.</summary>
+    /// <remarks>⚠ An unreadable call carries the empty object as its <see cref="Arguments"/>: compared on those, every
+    /// unreadable call of one tool is the same call — two different derailed edits were taken for a loop, and the run
+    /// was stopped at the model's second attempt.</remarks>
+    [JsonIgnore] public string WrittenArguments =>
+        UnparsedArguments ?? (Arguments.ValueKind == JsonValueKind.Undefined ? string.Empty : Arguments.GetRawText());
 }
 
 // ── Tool schema DTOs ─────────────────────────────────────────────────────────

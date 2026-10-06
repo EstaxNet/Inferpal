@@ -445,6 +445,7 @@ Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</val
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: build check timed out (60 s) — verify manually.</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: the build check failed without naming a single error — run it yourself to see why.</value></data>
+  <data name="SmartFixCouldNotRun" xml:space="preserve"><value>⚠ Smart Fix: the build check could not run ({0}) — this change was not verified.</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>Check the build after each edit</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>.NET, TypeScript, Rust and Go out of the box. Errors go straight back to the agent.</value></data>
 

@@ -444,6 +444,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: ビルド確認がタイムアウト (60 秒) — 手動で確認してください。</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: ビルドチェックはエラーを一つも示さずに失敗しました — 理由を確認するにはご自身で実行してください。</value></data>
+  <data name="SmartFixCouldNotRun" xml:space="preserve"><value>⚠ Smart Fix: ビルドチェックを実行できませんでした（{0}）。この変更は検証されていません。</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>編集のたびにビルドを確認する</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>.NET、TypeScript、Rust、Go にすぐ対応。エラーはそのままエージェントに返されます。</value></data>
 

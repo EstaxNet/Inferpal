@@ -444,6 +444,7 @@
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: время проверки сборки истекло (60 с) — проверьте вручную.</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: проверка сборки завершилась неудачей, не назвав ни одной ошибки — запустите её сами, чтобы понять причину.</value></data>
+  <data name="SmartFixCouldNotRun" xml:space="preserve"><value>⚠ Smart Fix: не удалось запустить проверку сборки ({0}) — это изменение не проверено.</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>Проверять сборку после каждой правки</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>.NET, TypeScript, Rust и Go сразу. Ошибки сразу возвращаются агенту.</value></data>
 

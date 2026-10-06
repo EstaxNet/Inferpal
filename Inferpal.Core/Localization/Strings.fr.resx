@@ -444,6 +444,7 @@ Cliquez sur **Corriger avec l'IA** pour lancer la correction automatique en bouc
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix : délai dépassé (60 s) — vérifiez manuellement.</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix : la vérification de build a échoué sans nommer la moindre erreur — lancez-la vous-même pour voir pourquoi.</value></data>
+  <data name="SmartFixCouldNotRun" xml:space="preserve"><value>⚠ Smart Fix : la vérification du build n'a pas pu s'exécuter ({0}) — cette modification n'a pas été vérifiée.</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>Vérifier le build après chaque modification</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>.NET, TypeScript, Rust et Go d'office. Les erreurs repartent aussitôt vers l'agent.</value></data>
 

@@ -67,9 +67,9 @@ internal static class AgentLoopPolicy
     private static bool RepeatsAsACheck(ToolCallDto call) =>
         IsObservation(call.Function.Name) || call.Function.Name.Equals("run_command", StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>Stable signature of a tool-call batch (each call's name + JSON arguments).</summary>
+    /// <summary>Stable signature of a tool-call batch (each call's name + the arguments as written).</summary>
     internal static string Signature(IReadOnlyList<ToolCallDto> calls) =>
-        string.Join("|", calls.Select(c => $"{c.Function.Name}:{c.Function.Arguments}"));
+        string.Join("|", calls.Select(c => $"{c.Function.Name}:{c.Function.WrittenArguments}"));
 
     /// <summary>Key prefix of read-only batches in the counts — control characters, which no tool name contains.</summary>
     /// <remarks>⚠ Written as escapes: typed raw they are invisible, the key reads as the letters "ro", and "ro" alone

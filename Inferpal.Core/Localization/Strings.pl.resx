@@ -444,6 +444,7 @@ Kliknij **Napraw z AI**, aby automatycznie naprawić w pętli, lub wpisz `/fix-b
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: sprawdzanie kompilacji przekroczyło limit czasu (60 s) — sprawdź ręcznie.</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: sprawdzenie kompilacji nie powiodło się, nie wskazując żadnego błędu — uruchom je samodzielnie, aby zobaczyć dlaczego.</value></data>
+  <data name="SmartFixCouldNotRun" xml:space="preserve"><value>⚠ Smart Fix: nie udało się uruchomić sprawdzenia kompilacji ({0}) — ta zmiana nie została zweryfikowana.</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>Sprawdzaj kompilację po każdej zmianie</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>.NET, TypeScript, Rust i Go od razu. Błędy wracają prosto do agenta.</value></data>
 

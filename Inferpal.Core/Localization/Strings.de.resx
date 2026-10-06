@@ -444,6 +444,7 @@ Klicken Sie auf **Mit KI reparieren**, um die automatische Korrektur in einer Sc
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: Build-Prüfung nach 60 s abgebrochen – bitte manuell prüfen.</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: Die Build-Prüfung ist fehlgeschlagen, ohne einen einzigen Fehler zu nennen — führen Sie sie selbst aus, um zu sehen, warum.</value></data>
+  <data name="SmartFixCouldNotRun" xml:space="preserve"><value>⚠ Smart Fix: Die Build-Prüfung konnte nicht ausgeführt werden ({0}) — diese Änderung wurde nicht überprüft.</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>Nach jeder Änderung den Build prüfen</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>.NET, TypeScript, Rust und Go sofort einsatzbereit. Fehler gehen direkt an den Agenten zurück.</value></data>
 

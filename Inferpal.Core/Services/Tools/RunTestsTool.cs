@@ -122,15 +122,21 @@ internal class RunTestsTool : ITool
             path = project;   // none found: dotnet's own error names what is missing
         }
 
-        var sb = new StringBuilder("test");
-        if (!string.IsNullOrWhiteSpace(path))
-            sb.Append($" \"{path}\"");
-        sb.Append(" --verbosity normal --nologo");
-        if (!string.IsNullOrWhiteSpace(filter))
-            sb.Append($" --filter \"{filter}\"");
-
-        var (output, exitCode) = await RunProcessAsync("dotnet", sb.ToString(), workDir, budget, ct);
+        var (output, exitCode) = await RunProcessAsync("dotnet", string.Empty, workDir, budget, ct, DotnetTestArguments(path, filter));
         return note + ParseDotnetOutput(output, exitCode);
+    }
+
+    /// <summary>The <c>dotnet test</c> command line, one element per argument.</summary>
+    /// <remarks>⚠ A list, never a string the values are quoted into: a folder ending with a separator,
+    /// <c>"src\Tests\"</c>, escapes its own closing quote under Windows' rules, swallows the switches after it, and
+    /// dotnet answers MSB1009 "Project file does not exist" for a folder that exists.</remarks>
+    internal static List<string> DotnetTestArguments(string? path, string? filter)
+    {
+        var args = new List<string> { "test" };
+        if (!string.IsNullOrWhiteSpace(path)) args.Add(path);
+        args.AddRange(["--verbosity", "normal", "--nologo"]);
+        if (!string.IsNullOrWhiteSpace(filter)) args.AddRange(["--filter", filter]);
+        return args;
     }
 
     private static readonly string[] DotnetProjectExtensions = [".csproj", ".fsproj", ".vbproj", ".proj"];
@@ -494,18 +500,17 @@ internal class RunTestsTool : ITool
     {
         // cargo searches up for Cargo.toml, but run from the crate/workspace root for predictability.
         var root = FindUp(workDir, "Cargo.toml") ?? workDir;
-        var args = "test --quiet";
-        if (!string.IsNullOrWhiteSpace(filter))
-            args += $" {filter}";
+        List<string> args = ["test", "--quiet"];
+        if (!string.IsNullOrWhiteSpace(filter)) args.Add(filter);
 
-        var (output, exitCode) = await RunProcessAsync("cargo", args, root, budget, ct);
+        var (output, exitCode) = await RunProcessAsync("cargo", string.Empty, root, budget, ct, args);
         return PathDoesNotNarrow("cargo", path, root) + ParseCargoOutput(output, exitCode);
     }
 
     private static async Task<string> RunGoAsync(string workDir, string? path, string? filter, RunBudget budget, CancellationToken ct)
     {
         var root = FindUp(workDir, "go.mod") ?? workDir;
-        var (output, exitCode) = await RunProcessAsync("go", GoTestArguments(filter), root, budget, ct);
+        var (output, exitCode) = await RunProcessAsync("go", string.Empty, root, budget, ct, GoTestArguments(filter));
         return PathDoesNotNarrow("go", path, root) + ParseGoOutput(output, exitCode);
     }
 
@@ -514,8 +519,8 @@ internal class RunTestsTool : ITool
     /// passing one, and a /tdd round that skips the failing test reads as green. Only a filtered run — a whole suite
     /// in -v is every passing test, which pushes failures out of a bounded capture.
     /// </remarks>
-    internal static string GoTestArguments(string? filter) =>
-        string.IsNullOrWhiteSpace(filter) ? "test ./..." : $"test ./... -v -run \"{filter}\"";
+    internal static List<string> GoTestArguments(string? filter) =>
+        string.IsNullOrWhiteSpace(filter) ? ["test", "./..."] : ["test", "./...", "-v", "-run", filter];
 
     // ── Output parsers ─────────────────────────────────────────────────────────
 
@@ -610,10 +615,19 @@ internal class RunTestsTool : ITool
     /// <summary>The heading of a run whose code did not compile: red, and no test ran.</summary>
     internal const string BuildFailed = "✗ BUILD FAILED — the code did not compile, so no test ran. Compiler errors:";
 
+    /// <summary>dotnet refused its own command line (MSB1xxx): nothing was built, nothing ran. Followed by its errors.</summary>
+    internal const string DotnetCommandRejected =
+        "⚠ dotnet refused its command line (an MSBuild switch error, not the code) — nothing ran, so nothing was "
+        + "proven. Give 'path' as one existing .csproj or .sln file. Its reason:";
+
+    /// <summary>An MSBuild command-line error (MSB1001–MSB1999): about the invocation, never about the code.</summary>
+    private static bool IsCommandLineError(string error) =>
+        Regex.IsMatch(error, @"\berror MSB1\d{3}:", RegexOptions.None, RegexBudget.Default);
+
     private const int MaxCompileErrorsListed = 20;
 
     /// <summary>
-    /// The distinct compiler errors of a build log (<c>File.cs(12,31): error CS1061: …</c>, <c>error MSB1009: …</c>),
+    /// The distinct errors of a build log (<c>File.cs(12,31): error CS1061: …</c>, <c>error MSB4019: …</c>),
     /// without MSBuild's node prefix and project suffix — each is printed twice, inline and in the final summary.
     /// </summary>
     internal static List<string> CompileErrors(string raw)
@@ -683,6 +697,14 @@ internal class RunTestsTool : ITool
         // No test summary and compiler errors: the code did not build, so no test ran — and the errors ARE the
         // verdict. Red (a test written before its code does not compile: that is TDD's first step, not "nothing to
         // fix"), and never inferred from "Build FAILED.", which `dotnet test` also prints when a test merely fails.
+        // MSBuild's MSB1xxx are COMMAND-LINE errors — which project, a file that does not exist, a bad switch: the code
+        // was never built. Read as compiler errors, "MSB1011: specify which project" made /tdd edit sound code.
+        else if (CompileErrors(raw) is { Count: > 0 } invocation && invocation.All(IsCommandLineError))
+        {
+            sb.AppendLine(DotnetCommandRejected);
+            foreach (var e in invocation.Take(3))
+                sb.AppendLine($"  {e}");
+        }
         else if (CompileErrors(raw) is { Count: > 0 } errors)
         {
             sb.AppendLine(BuildFailed);
@@ -909,26 +931,76 @@ internal class RunTestsTool : ITool
         else if (exitCode == 0)
             sb.AppendLine(NothingProven);
 
-        var allFailing = raw.Split('\n')
-            .Select(l => l.Trim())
-            .Where(l => l.StartsWith("test ", StringComparison.Ordinal) && l.EndsWith("... FAILED", StringComparison.Ordinal))
-            .Select(l => l["test ".Length..^"... FAILED".Length].Trim())
-            .Distinct()
-            .ToList();
-        var failing = allFailing.Take(MaxFailingListed).ToList();
+        var allFailing = CargoFailingTests(raw);
+        var failing    = allFailing.Take(MaxFailingListed).ToList();
+        var messages   = CargoFailureMessages(raw);
 
         if (failing.Count > 0)
         {
             sb.AppendLine();
             sb.AppendLine("Failing tests:");
             foreach (var name in failing)
+            {
                 sb.AppendLine($"  ✗ {name}");
+                foreach (var line in messages.GetValueOrDefault(name) ?? [])
+                    sb.AppendLine($"    {line}");
+            }
             AppendMoreFailures(sb, allFailing.Count, failing.Count);
         }
 
         var result = sb.ToString().Trim();
         return string.IsNullOrEmpty(result) ? Truncate(raw.Trim(), MaxRawChars) : result;
     }
+
+    /// <summary>The failing tests of a cargo run, in the order cargo lists them.</summary>
+    /// <remarks>⚠ Three shapes, all read: "test a::b ... FAILED" (verbose), "a::b --- FAILED" (what <c>--quiet</c> — the
+    /// flag this runner passes — prints today), and the names cargo lists under its closing "failures:" header, the one
+    /// form every version prints. Read on the first shape alone, a quiet run reported "1 failed" with no name.</remarks>
+    internal static List<string> CargoFailingTests(string raw)
+    {
+        var names = new List<string>();
+        var lines = raw.Replace("\r", "").Split('\n');
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var l = lines[i].Trim();
+            if (l.StartsWith("test ", StringComparison.Ordinal) && l.EndsWith("... FAILED", StringComparison.Ordinal))
+                names.Add(l["test ".Length..^"... FAILED".Length].Trim());
+            else if (l.EndsWith(" --- FAILED", StringComparison.Ordinal) && l[..^" --- FAILED".Length] is { Length: > 0 } quiet
+                     && !quiet.Contains(' '))
+                names.Add(quiet);
+            else if (l == "failures:")
+                // The closing list: indented names, no "----" block header, up to the blank line.
+                for (var j = i + 1; j < lines.Length && lines[j].StartsWith("    ", StringComparison.Ordinal); j++)
+                    names.Add(lines[j].Trim());
+        }
+        return names.Distinct().ToList();
+    }
+
+    /// <summary>Each failing test's own lines — where it panicked, what the assertion compared — from cargo's
+    /// "---- name stdout ----" blocks.</summary>
+    internal static Dictionary<string, List<string>> CargoFailureMessages(string raw)
+    {
+        var messages = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        List<string>? current = null;
+        foreach (var line in raw.Replace("\r", "").Split('\n'))
+        {
+            var l = line.Trim();
+            if (l.StartsWith("---- ", StringComparison.Ordinal) && l.EndsWith(" ----", StringComparison.Ordinal))
+            {
+                var name = l["---- ".Length..^" ----".Length];
+                name = name.EndsWith(" stdout", StringComparison.Ordinal) ? name[..^" stdout".Length] : name;
+                messages[name] = current = [];
+                continue;
+            }
+            if (l == "failures:" || l.StartsWith("test result:", StringComparison.Ordinal)) { current = null; continue; }
+            if (current is null || l.Length == 0 || l.StartsWith("note: run with `RUST_BACKTRACE", StringComparison.Ordinal))
+                continue;
+            if (current.Count < MaxMessageLines) current.Add(l);
+        }
+        return messages;
+    }
+
+    private const int MaxMessageLines = 6;
 
     // Go prints "--- FAIL: TestName (0.00s)" per failing test (even without -v) and per-package
     // "ok|FAIL  import/path  0.0s" lines. The exit code is the overall pass/fail signal.

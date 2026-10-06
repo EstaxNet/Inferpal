@@ -136,7 +136,9 @@ internal sealed class ShellSession
             await Task.WhenAny(Task.WhenAll(stdout.Completion, stderr.Completion),
                                Task.Delay(ChildProcess.PipeGraceAfterExit, CancellationToken.None));
 
-            var salvaged = ShellStateProtocol.TrimLineEnds(ShellStateProtocol.ParseForeground(stdout.Snapshot(), marker).Output);
+            var salvaged = WithStderr(
+                ShellStateProtocol.TrimLineEnds(ShellStateProtocol.ParseForeground(stdout.Snapshot(), marker).Output),
+                stderr.Snapshot());
             return note + ChildProcess.TimedOutMessage(_config.CommandTimeoutSeconds, salvaged);
         }
 
@@ -147,10 +149,7 @@ internal sealed class ShellSession
         var state = ShellStateProtocol.ParseForeground(stdout.Snapshot(), marker);
         ApplyState(state, keepFolder: workDirOverride is not null);
 
-        var output     = ShellStateProtocol.TrimLineEnds(state.Output);   // a widened buffer pads tables
-        var stderrText = PowerShellStderr.Decode(stderr.Snapshot());
-        if (!string.IsNullOrWhiteSpace(stderrText))
-            output += $"\n[stderr]\n{stderrText.Trim()}";
+        var output = WithStderr(ShellStateProtocol.TrimLineEnds(state.Output), stderr.Snapshot());   // a widened buffer pads tables
         // The wrapper's own shell always exits 0 (a finally, a trailing printf): the command's code
         // travels in the state block, and a silent failure (`git diff --quiet`) must not read as success.
         // ⚠ Except when the command calls `exit` (`test -f x || exit 1`, `exec ./server`): that ends
@@ -162,6 +161,15 @@ internal sealed class ShellSession
         if (!drained)
             output += ChildProcess.OutputHeldOpenNote;
         return note + output;
+    }
+
+    /// <summary>The command's output with what it wrote to stderr after it — the one way both paths say it.</summary>
+    /// <remarks>⚠ The timeout path too: a command killed at its budget is most often a build or a test run whose
+    /// errors went to stderr (cargo, pytest's tracebacks, npm), and the salvage kept stdout alone.</remarks>
+    private static string WithStderr(string output, string rawStderr)
+    {
+        var stderrText = PowerShellStderr.Decode(rawStderr);
+        return string.IsNullOrWhiteSpace(stderrText) ? output : $"{output}\n[stderr]\n{stderrText.Trim()}";
     }
 
     /// <param name="keepFolder">The command ran in a <c>working_directory</c> of its own: "for this command", as the

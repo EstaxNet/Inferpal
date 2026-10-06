@@ -141,11 +141,15 @@ internal class GetGitStatusTool : ITool
         sb.AppendLine();
 
         // ── diff stat ─────────────────────────────────────────────────────────
-        var diffStat = await GitAsync("diff --stat HEAD", root, ct);
-        if (!diffStat.Ok || diffStat.Output.Length == 0)
-            diffStat = await GitAsync("diff --stat", root, ct);   // fallback: no commits yet
+        // ⚠ No commit yet, there is no HEAD to diff against: the work is compared with the EMPTY TREE. The plain
+        // `git diff` it fell back to compares the working tree with the INDEX, so every file added with `git add` was
+        // missing — "(nothing to diff)" two lines under a status listing "A  b.txt". Only when HEAD is absent: on a
+        // clean repository with commits, the empty tree would list the whole project as added.
+        var hasHead  = (await GitAsync("rev-parse --verify --quiet HEAD", root, ct)).Ok;
+        var baseline = hasHead ? "HEAD" : await EmptyTreeAsync(root, ct);
+        var diffStat = await GitAsync($"diff --stat {baseline}", root, ct);
 
-        sb.AppendLine("=== diff summary (vs HEAD) ===");
+        sb.AppendLine(hasHead ? "=== diff summary (vs HEAD) ===" : "=== diff summary (no commit yet: vs nothing) ===");
         // The fallback is what covers the missing HEAD, so a failure of BOTH attempts is a real one.
         // Its last line is the total ("N files changed, …"): kept whatever the budget drops.
         sb.AppendLine(diffStat.Ok && diffStat.Output.Length > 0
@@ -165,11 +169,10 @@ internal class GetGitStatusTool : ITool
                 pathSpec = $" -- \"{relative}\"";
             }
 
-            var diff = await GitAsync("diff HEAD" + pathSpec, root, ct);
-            if (!diff.Ok || diff.Output.Length == 0)
-                diff = await GitAsync("diff" + pathSpec, root, ct);
+            var diff = await GitAsync($"diff {baseline}{pathSpec}", root, ct);
 
-            sb.AppendLine(diffPath is null ? "=== git diff HEAD ===" : $"=== git diff HEAD{pathSpec} ===");
+            var shownBase = hasHead ? "HEAD" : "(no commit yet: vs nothing)";
+            sb.AppendLine($"=== git diff {shownBase}{pathSpec} ===");
             if (!diff.Ok)
             {
                 sb.AppendLine(Strings.GitCommandFailed("diff", diff.Detail));
@@ -292,6 +295,13 @@ internal class GetGitStatusTool : ITool
     /// (it blocks writing, never closes stdout, and the read of stdout never returns) until the
     /// budget expires — after which the catch-all reports "no changes".
     /// </remarks>
+    /// <summary>The empty tree of this repository's object format — what a repository with no commit is compared with.
+    /// git knows it without storing it; its name depends on the hash (SHA-1, or SHA-256 since git 2.29).</summary>
+    private static async Task<string> EmptyTreeAsync(string root, CancellationToken ct) =>
+        (await GitAsync("rev-parse --show-object-format", root, ct)).Output.Trim() == "sha256"
+            ? "6ef19b41225c5369f1c104d45d8d85efa9b057b53b14b4b9b939dd74decc5321"
+            : "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
+
     private static async Task<GitAnswer> GitAsync(string arguments, string workDir, CancellationToken ct)
     {
         var r = await GitProcess.CaptureAsync(arguments, workDir, ct);

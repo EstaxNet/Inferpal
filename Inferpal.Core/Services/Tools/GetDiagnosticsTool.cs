@@ -221,10 +221,12 @@ internal class GetDiagnosticsTool : ITool
                    "For another language, call it without 'path' for the editor's live diagnostics, or run that " +
                    "language's own checker with run_command (tsc, mypy, cargo check, go vet…).";
 
+        // ⚠ Arguments as a list: quoted into a string, a folder ending with a separator escapes its own closing quote
+        // under Windows and dotnet answers MSB1009 "Project file does not exist" for a folder that exists.
         var psi = new ProcessStartInfo
         {
             FileName  = "dotnet",
-            Arguments = $"build \"{path}\" --no-restore -v minimal",
+            ArgumentList = { "build", path, "--no-restore", "-v", "minimal" },
             // ⚠ The SDK writes UTF-8. Left to the host's console code page, every French compiler error carried "┬á"
             // (the non-breaking space before its colon) and accented messages came back mangled — the text this tool,
             // /fix-build and "Fix with AI" hand the model.

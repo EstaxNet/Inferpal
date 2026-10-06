@@ -444,6 +444,7 @@ Haga clic en **Corregir con IA** para corregirlo automáticamente en bucle, o es
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: la verificación del build superó el tiempo límite (60 s) — verifique manualmente.</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: la comprobación de compilación ha fallado sin nombrar ningún error: ejecútala tú mismo para ver por qué.</value></data>
+  <data name="SmartFixCouldNotRun" xml:space="preserve"><value>⚠ Smart Fix: no se pudo ejecutar la comprobación de compilación ({0}); este cambio no se ha verificado.</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>Comprobar la compilación tras cada edición</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>.NET, TypeScript, Rust y Go de serie. Los errores vuelven directamente al agente.</value></data>
 
