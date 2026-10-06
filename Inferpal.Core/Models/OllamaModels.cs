@@ -103,6 +103,11 @@ record ToolCallFunction(
     /// reading (<c>ArgumentsLoopDetector</c>). Never executed; refused with that cause by
     /// <c>AgentOrchestrator.ExecuteToolSafeAsync</c>, whatever <see cref="Arguments"/> parsed into.</summary>
     [JsonIgnore] public bool StoppedRepeating { get; init; }
+
+    /// <summary>Why the arguments of this call, while they streamed, stopped being something its tool can read
+    /// (<c>ArgumentsShapeWatcher</c>); the client stopped reading there. Never executed; refused with that cause by
+    /// <c>AgentOrchestrator.ExecuteToolSafeAsync</c>.</summary>
+    [JsonIgnore] public string? BrokenShape { get; init; }
 }
 
 // ── Tool schema DTOs ─────────────────────────────────────────────────────────

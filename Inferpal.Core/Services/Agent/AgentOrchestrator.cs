@@ -148,6 +148,15 @@ internal sealed class AgentOrchestrator
         // string became the whole suite.
         // ⚠ Before the cut: a reply stopped because its call kept repeating is cut too, and "split the work" is not the
         // remedy — the model has to write the call once.
+        if (call.BrokenShape is { } broken)
+        {
+            Diagnostics.Record("Agent", $"Refused a '{call.Name}' call: its arguments stopped being readable ({broken}).");
+            return Task.FromResult(
+                $"Error: the arguments of this '{call.Name}' call stopped being something the tool can read — {broken} — "
+                + "so the reply was stopped there and the call was NOT executed. The usual cause is a quote inside a string "
+                + "value that was not escaped: send the call again with every quote inside a string written \\\" (the "
+                + "quote of a C# $\\\"…\\\" string included).");
+        }
         if (call.StoppedRepeating)
         {
             Diagnostics.Record("Agent", $"Refused a '{call.Name}' call: its arguments kept repeating the same text and were stopped.");

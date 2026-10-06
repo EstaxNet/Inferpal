@@ -81,7 +81,7 @@ internal static class ToolCallArguments
                 string? before = null;
                 foreach (var p in args.EnumerateObject())
                 {
-                    if (p.Name.Length == 0 || p.Name.Any(c => char.IsWhiteSpace(c) || CutMarks.Contains(c)))
+                    if (IsCutKey(p.Name))
                         return (p.Name, before);
                     if (StrayKey(p.Value) is { } nested) return nested;
                     before = p.Value.ValueKind == JsonValueKind.String ? p.Value.GetString() : null;
@@ -95,6 +95,11 @@ internal static class ToolCallArguments
                 return null;
         }
     }
+
+    /// <summary>A field name no schema declares: empty, or made of words, quotes or code punctuation — the rest of a
+    /// value cut by an unescaped quote (<see cref="StrayKey"/>).</summary>
+    internal static bool IsCutKey(string name) =>
+        name.Length == 0 || name.Any(c => char.IsWhiteSpace(c) || CutMarks.Contains(c));
 
     private const string CutMarks = "\"'(){}[];,=<>\\";
 

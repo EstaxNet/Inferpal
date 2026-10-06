@@ -374,11 +374,18 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // A structured call whose arguments repeat their own JSON: the third channel a model loops in.
         var  argumentsLoop = new ArgumentsLoopDetector();
         var  argsLooping   = false;
+        // A structured call whose arguments can no longer become what its tool reads: stopped there, not minutes later.
+        var  schemas       = new Dictionary<string, JsonElement?>(StringComparer.Ordinal);
+        var  argsShape     = new ArgumentsShapeWatcher(name =>
+            schemas.TryGetValue(name, out var known) ? known : schemas[name] = SchemaOf(defs, name));
+        string? brokenShape = null;
         // A model whose addressed messages the server streams as content (Muse Glimmer): reasoning split from answer.
         var  envelope      = new ChannelEnvelope();
 
         using var bodyCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         bodyCts.CancelAfter(deadline);
+        // Every call's arguments are closed: the end of the turn comes at once, so the wait for it is short.
+        var closedQuiet = false;
 
         try
         {
@@ -388,7 +395,9 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             string? line;
             while ((line = await reader.ReadLineAsync(bodyCts.Token)) is not null)
             {
-                bodyCts.CancelAfter(deadline); // re-arm: a chunk arrived, push the deadline back
+                // Re-arm: a chunk arrived, push the deadline back — a short one once every call's arguments are closed.
+                closedQuiet = argsShape.AllClosed;
+                bodyCts.CancelAfter(closedQuiet ? ClosedArgumentsSilence : deadline);
                 if (string.IsNullOrWhiteSpace(line)) continue;
                 if (!line.StartsWith("data:", StringComparison.Ordinal))
                 {
@@ -505,6 +514,14 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                         toolAcc.Add(tc.Index, tc.Id, tc.Function?.Name, tc.Function?.Arguments);
                         received += tc.Function?.Arguments?.Length ?? 0;
                         argsLooping |= argumentsLoop.Repeats(tc.Function?.Arguments ?? string.Empty);
+                        brokenShape ??= argsShape.Breaks(tc.Index, tc.Function?.Name, tc.Function?.Arguments);
+                    }
+                    if (brokenShape is not null)
+                    {
+                        Diagnostics.Record("OpenAiCompatibleClient.SendChat",
+                            $"Response from \"{model}\" stopped by Inferpal after {received} characters: the arguments of "
+                            + $"its tool call can no longer be read by the tool ({brokenShape}). The call is refused, not run.");
+                        break;
                     }
                     if (argsLooping)
                     {
@@ -526,6 +543,14 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             }
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (OperationCanceledException) when (closedQuiet)
+        {
+            // Not a dead server: the calls were complete and the model went on writing what the server keeps to itself.
+            brokenShape = ArgumentsShapeWatcher.ClosedThenSilent(ClosedArgumentsSilence);
+            Diagnostics.Record("OpenAiCompatibleClient.SendChat",
+                $"Response from \"{model}\" stopped by Inferpal: the arguments of its tool call were complete, then the "
+                + $"server sent nothing for {ClosedArgumentsSilence.TotalSeconds:0} s. The call is refused, not run.");
+        }
         catch (OperationCanceledException)
         {
             RecordFailure();
@@ -564,6 +589,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // Stopped mid-call: whatever its arguments parse into, it is not the call the model meant (the funnel refuses it).
         if (argsLooping && toolCalls is not null)
             toolCalls = toolCalls.Select(c => c with { Function = c.Function with { StoppedRepeating = true } }).ToList();
+        if (brokenShape is not null && toolCalls is not null)
+            toolCalls = toolCalls.Select(c => c with { Function = c.Function with { BrokenShape = brokenShape } }).ToList();
         var contentText = contentBuilder.ToString();
         // The answer stopped at the length limit, not where the model meant to end: a caller that turns it
         // into an edit must not apply it (CodeActionPipeline.Finish).
@@ -631,6 +658,13 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
 
         return new ChatTurnResult(contentText, toolCalls, tokensUsed, promptTokens, cut, StoppedRepeating: looping);
     }
+
+    /// <summary>The parameters schema the request declared for tool <paramref name="name"/>, as JSON; <c>null</c> when
+    /// it declared none — a call to a tool nobody offered is the funnel's to refuse.</summary>
+    private static JsonElement? SchemaOf(List<ToolDefinition>? defs, string name) =>
+        defs?.FirstOrDefault(d => d.Function.Name == name) is { } def
+            ? JsonSerializer.SerializeToElement(def.Function.Parameters)
+            : null;
 
     /// <summary>Turns the accumulated streamed fragments into structured tool calls (arguments parsed as JSON).</summary>
     internal static List<ToolCallDto>? BuildToolCalls(
@@ -718,6 +752,10 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             return BuildToolCalls(ordered);
         }
     }
+
+    /// <summary>How long the stream may stay silent once every call's arguments are closed
+    /// (<see cref="ArgumentsShapeWatcher.AllClosed"/>) before the call is refused as one the model wrote past.</summary>
+    internal TimeSpan ClosedArgumentsSilence { get; init; } = TimeSpan.FromSeconds(20);
 
     // ── Embeddings ─────────────────────────────────────────────────────────────
 
