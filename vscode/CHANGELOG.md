@@ -3,6 +3,26 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.7.3
+
+Forty-five fixes, most of them for the assistant being told something that was not true — or for something lost
+without a word.
+
+- **Safety**: an approval card no longer takes the keyboard, so a key typed for the message box or your code can no
+  longer approve a command you had not read.
+- **Edits and renames hold**: a garbled edit is stopped in seconds and never applied halfway, the agent no longer stops
+  before the change it planned, a refused edit names the line that differs, and renames succeed far more often.
+- **Tests, builds and debugging read right**: `/tdd` no longer edits sound code when dotnet cannot pick a project, a
+  failing run is reported however it was launched, an unresponsive debugger is no longer taken for an answer, and the
+  breakpoints the assistant set go when your program finishes.
+- **Models, servers and MCP**: "nothing is loaded" only when the server said so, `/bench` and `/arena` skip embedding
+  models, refused completions really pause, and an MCP server that stops accepting your sign-in asks for it again.
+- **Memory and search**: the memory keeps its newest notes, a throttled @Docs re-index no longer shrinks the index, and
+  code search says when the project is still being indexed.
+- **In VS Code**: "Regenerate" asks the model again instead of re-running a command, each answer is shown once, a file
+  whose name holds a space is attached, everything in a window uses that window's model, and the context ring keeps the
+  model's real window after a settings save.
+
 ## 1.7.2
 
 Forty-one fixes, most of them for something reported as done when it had not happened.
