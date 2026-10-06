@@ -462,6 +462,11 @@ export class HostClient {
 
   /** Renders the export document - the same one the Visual Studio window produces, because it is
    *  the same Core exporter. The adapter picks the format and supplies its bubbles. */
+  /** The window the conversation is measured against: the loaded one when smaller than configured. */
+  contextWindow(): Promise<number> {
+    return this.connection().sendRequest<number>('context/window');
+  }
+
   chatExport(params: ChatExportParams): Promise<string> {
     return this.connection().sendRequest<string>('chat/export', params);
   }

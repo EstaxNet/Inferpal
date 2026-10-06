@@ -15,9 +15,10 @@ const md = new MarkdownIt({
 // disabled, so a tag left in place shows the chain of thought as text.
 export { stripThinkTags };
 
-/** Renders markdown into `target` and decorates code blocks with a copy button. */
-export function renderMarkdownInto(target: HTMLElement, text: string): void {
-  target.innerHTML = md.render(stripThinkTags(text));
+/** Renders markdown into `target` and decorates code blocks with a copy button.
+ *  ⚠ Only an ANSWER loses its reasoning: a question may quote the tag, and shown stripped it read cut. */
+export function renderMarkdownInto(target: HTMLElement, text: string, stripReasoning = true): void {
+  target.innerHTML = stripReasoning ? md.render(stripThinkTags(text)) : md.render(text);
   for (const pre of target.querySelectorAll('pre')) {
     decorateCodeBlock(pre as HTMLElement);
   }

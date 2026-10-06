@@ -162,6 +162,8 @@ export interface ChatExportMessage {
   name?: string;
   content: string;
   timestamp?: string;
+  /** A notice (a slash command shown as typed): exported, not counted as a turn. */
+  notice?: boolean;
 }
 
 /** `chat/export` — the adapter sends what it SHOWS, the Core renders the document. The whole

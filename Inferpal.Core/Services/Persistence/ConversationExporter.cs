@@ -4,7 +4,8 @@ using Inferpal.Localization;
 namespace Inferpal.Services.Persistence;
 
 /// <summary>A chat bubble flattened for export (role filtered upstream by the VM).</summary>
-internal sealed record ExportMessage(string Role, string Label, string Content, string Timestamp);
+/// <param name="IsNotice">A notice in the user's place (VS Code shows a slash command as typed): not a turn.</param>
+internal sealed record ExportMessage(string Role, string Label, string Content, string Timestamp, bool IsNotice = false);
 
 /// <summary>
 /// Pure document formatting for "Export Conversation" extracted from the tool-window
@@ -58,7 +59,7 @@ internal static class ConversationExporter
         string date,
         string durationStr)
     {
-        var turns     = messages.Count(m => m.Role == "user");
+        var turns     = messages.Count(m => m.Role == "user" && !m.IsNotice);
         var toolCalls = messages.Count(m => m.Role == "tool");
         var sb        = new StringBuilder();
 

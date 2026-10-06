@@ -780,7 +780,8 @@ internal sealed partial class HostServer : IDisposable
             .Select(m => new ExportMessage(m.Role,
                                            ConversationExporter.RoleLabel(m.Role, m.Name),
                                            m.Content ?? string.Empty,
-                                           m.Timestamp ?? string.Empty))
+                                           m.Timestamp ?? string.Empty,
+                                           m.Notice))
             .ToList();
 
         var duration = p.DurationSeconds is int seconds && seconds > 0
@@ -998,6 +999,14 @@ internal sealed partial class HostServer : IDisposable
     /// defaults). Values are copied onto the shared instance so every live service sees them;
     /// switching <c>Provider</c>/<c>BaseUrl</c> still requires a new `initialize`.
     /// </summary>
+    /// <summary>
+    /// The window the conversation is measured against — the loaded one when the server reports a smaller one than
+    /// configured, remeasured by every <c>config/update</c>. The adapter's context ring shows this, never the setting:
+    /// read from the configuration after a save, the ring fell back to the configured window.
+    /// </summary>
+    [JsonRpcMethod("context/window")]
+    public int ContextWindow() => Session().ContextWindowInUse;
+
     [JsonRpcMethod("config/update", UseSingleObjectParameterDeserialization = true)]
     public async Task<ConfigUpdateResult> ConfigUpdate(ConfigUpdateParams p, CancellationToken ct)
     {

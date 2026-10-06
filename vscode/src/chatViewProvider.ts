@@ -313,7 +313,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         contextWindowSize?: number; toolBubblesExpanded?: boolean; defaultModel?: string; agentModeEnabled?: boolean;
         chatDensity?: string;
       };
-      this.contextWindow = cfg.contextWindowSize ?? 0;
+      // The window the host measures against (the loaded one when smaller), not the setting: read from the
+      // configuration, the ring fell back to the configured window after every save.
+      this.contextWindow = await host.contextWindow().catch(() => cfg.contextWindowSize ?? 0);
       this.toolBubblesExpanded = cfg.toolBubblesExpanded === true;
       this.compact = cfg.chatDensity === 'compact';
       this.sharedEcho = { defaultModel: cfg.defaultModel, agentModeEnabled: cfg.agentModeEnabled };
@@ -411,7 +413,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         contextWindowSize?: number; toolBubblesExpanded?: boolean; defaultModel?: string; agentModeEnabled?: boolean;
         chatDensity?: string;
       };
-      this.contextWindow = cfg.contextWindowSize ?? 0;
+      // The window the host measures against (the loaded one when smaller), not the setting: read from the
+      // configuration, the ring fell back to the configured window after every save.
+      this.contextWindow = await host.contextWindow().catch(() => cfg.contextWindowSize ?? 0);
       this.toolBubblesExpanded = cfg.toolBubblesExpanded === true;
       // The open conversation follows a new density at once.
       this.compact = cfg.chatDensity === 'compact';
@@ -914,7 +918,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * *Text* writes Markdown into a `.txt`.
    */
   async exportCommand(): Promise<void> {
-    if (this.transcript.length === 0) {
+    // A thread of notices alone (a slash command's output, "backend unreachable") is not a conversation.
+    if (!this.hasConversation()) {
       void vscode.window.showInformationMessage(t('Nothing to export — the conversation is empty.'));
       return;
     }
@@ -939,6 +944,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           name: item.role === 'tool' ? item.text : undefined,
           content: (item.role === 'tool' ? item.toolOutput : item.text) ?? '',
           timestamp: item.timestamp,
+          // A slash command shown as typed is a notice: exported, never counted as a turn.
+          notice: item.notice === true,
         })),
         sessionTokens: this.sessionTokens,
         durationSeconds: this.sessionStart === null
@@ -2017,9 +2024,18 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** Set while Regenerate re-asks a question: the chips in the composer belong to the NEXT question, not to this one. */
   private regenerating = false;
 
+  /** A question meant for the model: anything typed, or a refused /explain or /review — never a command served
+   *  without it (/note, /commit-exec, a code action), whose bubble is a notice that starts with its slash. */
+  private static isModelQuestion(m: WvTranscriptItem): boolean {
+    return m.role === 'user'
+      && (!m.notice || !m.text.startsWith('/') || /^\/(explain|review)\b/i.test(m.text));
+  }
+
   private async regenerate(): Promise<void> {
     const host = this.getHost();
-    const question = [...this.transcript].reverse().find((m) => m.role === 'user');
+    // ⚠ The last question meant for the MODEL: the last user bubble may be a slash command shown as typed, and
+    // resending it ran it again — a second /note, a /commit-exec repeated.
+    const question = [...this.transcript].reverse().find((m) => ChatViewProvider.isModelQuestion(m));
     if (this.busy || !host?.isRunning || !question) {
       return;
     }

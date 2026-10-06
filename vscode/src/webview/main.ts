@@ -36,6 +36,8 @@ let agentMode = true;
 let currentModel = '';
 let streamEl: HTMLElement | null = null; // live assistant bubble while tokens stream
 let streamRaw = '';
+// The act's narration an approval card sealed (the card comes after it): dropped with the stream at the act's reset.
+let actNarration: HTMLElement[] = [];
 let transcriptEmpty = true;
 let slashCommands: WvSlashCommand[] = [];
 let toolBubblesExpanded = false;
@@ -517,8 +519,8 @@ function addUser(item: WvTranscriptItem): void {
   bubble.className = 'bubble user';
   const body = document.createElement('div');
   body.className = 'bubble-body';
-  renderMarkdownInto(body, text);
-  // A question is copied whole (it may quote a reasoning tag); only an answer's hidden reasoning stays out.
+  renderMarkdownInto(body, text, false);
+  // A question is shown and copied whole (it may quote a reasoning tag); only an answer's hidden reasoning stays out.
   bubble.append(body, metaRow(item, item.role === 'assistant' ? stripThinkTags(item.text) : undefined));
   row.appendChild(bubble);
   if (names.length > 0) {
@@ -858,6 +860,9 @@ function kbd(text: string): HTMLElement {
 }
 
 function addApprovalCard(id: number, message: string, card?: ApprovalCard | null): void {
+  if (streamEl) {
+    actNarration.push(streamEl);
+  }
   finishStream();
   const target = ensureTurn();
   target.when.textContent = t('turnWaiting');
@@ -1651,6 +1656,7 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       break;
     }
     case 'turnStarted':
+      actNarration = [];
       historyEntries = msg.history;
       // The question just sent must be visible, wherever the user had scrolled to.
       following = true;
@@ -1685,7 +1691,9 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       }
       break;
     case 'tool':
-      finishStream();
+      // ⚠ The stream bubble stays open: the steps go to the run list ABOVE the answer area, so nothing needs it
+      // sealed. Sealed here, the act's narration outlived the stream reset that drops it (and was gone on reload),
+      // and an answer followed by a tool notice (the session recap) was drawn a second time at the end of the turn.
       addToolBubble(
         {
           role: 'tool',
@@ -1716,11 +1724,16 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       renderXray(msg.panel);
       break;
     case 'streamReset':
+      // The host drops what the act streamed — its narration is not the answer, and it is not in the saved thread.
       if (streamEl) {
         streamEl.remove();
         streamEl = null;
         streamRaw = '';
       }
+      for (const sealed of actNarration) {
+        sealed.remove();
+      }
+      actNarration = [];
       break;
     case 'backendStatus':
       setBackendStatus(msg.status);

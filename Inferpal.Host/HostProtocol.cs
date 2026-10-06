@@ -228,7 +228,8 @@ internal sealed record ModelsListParams(string? BaseUrl = null, string? Provider
 /// <param name="Role">"user", "assistant" or "tool" — anything else is ignored.</param>
 /// <param name="Name">Model name (assistant turn) or tool name (tool turn).</param>
 /// <param name="Timestamp">Already-formatted local time, exactly as the adapter shows it.</param>
-internal sealed record ChatExportMessage(string Role, string? Name, string Content, string? Timestamp);
+/// <param name="Notice">A slash command shown as typed: exported, never counted as a turn.</param>
+internal sealed record ChatExportMessage(string Role, string? Name, string Content, string? Timestamp, bool Notice = false);
 
 /// <summary>
 /// `chat/export` — the adapter sends what it SHOWS, the Core renders the document.
