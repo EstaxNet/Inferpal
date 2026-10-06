@@ -131,7 +131,7 @@ internal sealed class SemanticSearchTool : ITool
 
         // ⚠ Said on BOTH branches, and above the report: "nothing found" about a class the agent has
         // just written is the costliest answer this tool can give while the index is behind.
-        var behind = NotReindexedNote();
+        var behind = StillIndexingNote() + NotReindexedNote();
 
         if (results.Count == 0)
             // A "nothing found" does not say the same thing depending on whether the FULL search
@@ -198,6 +198,19 @@ internal sealed class SemanticSearchTool : ITool
     /// A file saved while the chat is busy is re-indexed once it is idle: the agent's own writes stay
     /// out of the index for the rest of its turn. Model-facing and structural: English.
     /// </remarks>
+    // ⚠ A pass still running serves what it has published — the first file, then every twentieth: on an
+    // eighteen-file project the index held one file for most of the pass, and results from it read as results from
+    // the project. The status line below says "RAG: 2/18", which a model does not read as "most of the code is
+    // missing"; this sentence does.
+    private string StillIndexingNote()
+    {
+        if (!_index.IsIndexing) return string.Empty;
+        var (done, total) = _index.PassProgress;
+        var reached = total > 0 ? $" ({done} of {total} files read so far)" : string.Empty;
+        return $"Note: the index is still being built{reached} — code in the files not reached yet can be missing "
+             + "below, or shown as it was. search_in_files finds exact text across every file now.\n\n";
+    }
+
     private string NotReindexedNote()
     {
         var behind = _index.NotYetReindexed;

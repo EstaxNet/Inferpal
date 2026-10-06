@@ -147,7 +147,8 @@ internal sealed class ApplyEditsTool : ITool
                 var rel    = RelPath(root, edit.Path);
                 var hint   = RenameIntent.Of(edits.Select(e => (e.Old, e.New))) is { } rename
                     ? RenameIntent.RefusalHint(rename) : string.Empty;
-                return Aborted(i + 1, edits.Count, $"edit #{i + 1} in {rel}: {reason} for old_content") + hint;
+                var closest = res.Count > 1 ? null : ApplyDiffMatcher.Closest(current[edit.Path], edit.Old);
+                return Aborted(i + 1, edits.Count, $"edit #{i + 1} in {rel}: {reason} for old_content") + closest + hint;
             }
             current[edit.Path] = res.Modified;
         }

@@ -62,6 +62,42 @@ internal static class ToolCallArguments
             ? call
             : Parse(call.Name, call.Arguments.GetRawText());
 
+    /// <summary>
+    /// The first field name in the arguments — at any depth — that cannot be a field name, with the string value
+    /// written just before it; <c>null</c> when every name is one.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A quote left unescaped inside a string value (a C# <c>$"…"</c> copied into <c>old_content</c>) does not
+    /// always make the JSON invalid: the value ends at that quote, and the code after it becomes the NAME of the next
+    /// field. The object parses, the tool ignores the field it does not know, and runs on the truncated value —
+    /// <c>apply_edits</c> replaced the prefix <c>…InvalidOperationException($</c> of a method and broke the build. A
+    /// name made of words, quotes or code punctuation is that cut, never a field anyone declared.
+    /// </remarks>
+    internal static (string Key, string? Before)? StrayKey(JsonElement args)
+    {
+        switch (args.ValueKind)
+        {
+            case JsonValueKind.Object:
+                string? before = null;
+                foreach (var p in args.EnumerateObject())
+                {
+                    if (p.Name.Length == 0 || p.Name.Any(c => char.IsWhiteSpace(c) || CutMarks.Contains(c)))
+                        return (p.Name, before);
+                    if (StrayKey(p.Value) is { } nested) return nested;
+                    before = p.Value.ValueKind == JsonValueKind.String ? p.Value.GetString() : null;
+                }
+                return null;
+            case JsonValueKind.Array:
+                foreach (var item in args.EnumerateArray())
+                    if (StrayKey(item) is { } nested) return nested;
+                return null;
+            default:
+                return null;
+        }
+    }
+
+    private const string CutMarks = "\"'(){}[];,=<>\\";
+
     internal static JsonElement Empty()
     {
         using var doc = JsonDocument.Parse("{}");

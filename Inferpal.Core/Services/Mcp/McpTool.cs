@@ -80,7 +80,13 @@ internal sealed class McpTool : ITool
     /// character outside <c>[a-zA-Z0-9_]</c> replaced by <c>_</c> (Ollama tool-name constraint).
     /// </summary>
     internal static string BuildName(string server, string tool)
-        => $"mcp__{Sanitize(server)}__{Sanitize(tool)}";
+        => $"{Prefix}{Sanitize(server)}__{Sanitize(tool)}";
+
+    private const string Prefix = "mcp__";
+
+    /// <summary>True when <paramref name="toolName"/> is a tool served by an MCP server — whose schema a third party
+    /// wrote, free-form objects included.</summary>
+    internal static bool IsMcpName(string toolName) => toolName.StartsWith(Prefix, StringComparison.Ordinal);
 
     /// <summary>
     /// True when <paramref name="toolName"/> is a name this server's tools would carry.

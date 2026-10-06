@@ -141,6 +141,90 @@ internal static class ApplyDiffMatcher
         return new Result(string.Join("\n", lines), chosen.Count, true);
     }
 
+    /// <summary>Above this many line comparisons, <see cref="Closest"/> says nothing rather than stall the reply.</summary>
+    private const long MaxClosestComparisons = 2_000_000;
+
+    /// <summary>A line no closer than this to its counterpart is a different line, not a near copy.</summary>
+    private const double CloseLineRatio = 0.6;
+
+    /// <summary>
+    /// For an <c>old_content</c> that matched nothing: the file's closest block, and its first line that differs from
+    /// <c>old_content</c>, copied from the file — or <c>null</c> when no block of the file is close.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The tolerant pass already ignores indentation, trailing spaces and line endings, so what is left between a
+    /// near copy and the file is a character inside a line — a dropped <c>$</c> before an interpolated string, a
+    /// changed quote. A model that re-reads the file sees the line it believes it copied and sends the same call
+    /// again, until the loop detector stops the run. The line from the file, and where it differs, is what it can act
+    /// on. Addressed to the model, so in English.
+    /// </remarks>
+    internal static string? Closest(string file, string oldContent)
+    {
+        var fileLines = file.Replace("\r", "").Split('\n');
+        var trimmed   = fileLines.Select(l => l.Trim()).ToArray();
+        var target    = oldContent.Replace("\r", "").Split('\n').Select(l => l.Trim()).ToList();
+        while (target.Count > 0 && target[^1].Length == 0) target.RemoveAt(target.Count - 1);
+        while (target.Count > 0 && target[0].Length == 0)  target.RemoveAt(0);
+        int k = target.Count;
+        if (k == 0 || k > trimmed.Length || (long)k * (trimmed.Length - k + 1) > MaxClosestComparisons) return null;
+
+        var (bestStart, bestScore) = (-1, 0.0);
+        for (int s = 0; s + k <= trimmed.Length; s++)
+        {
+            var score = 0.0;
+            for (int j = 0; j < k; j++) score += Similarity(trimmed[s + j], target[j]);
+            if (score > bestScore) (bestStart, bestScore) = (s, score);
+        }
+        if (bestStart < 0 || bestScore < k * CloseLineRatio) return null;
+
+        var differing = Enumerable.Range(0, k)
+            .Where(j => !trimmed[bestStart + j].Equals(target[j], StringComparison.Ordinal)).ToList();
+        if (differing.Count == 0) return null;
+        var first    = differing[0];
+        var inFile   = trimmed[bestStart + first];
+        var inOld    = target[first];
+        var lineNo   = bestStart + first + 1;
+        var common   = CommonPrefix(inFile, inOld);
+        var after    = common == 0 ? "at the start of the line"
+                     : $"after \"{(common > 30 ? "…" + inFile[(common - 30)..common] : inFile[..common])}\"";
+        var range    = k == 1 ? $"line {lineNo}" : $"lines {bestStart + 1}–{bestStart + k}";
+        var others   = differing.Count > 1 ? $" {differing.Count - 1} other line(s) of that block differ too." : string.Empty;
+        return $"\nClosest text in the file: {range}. Line {lineNo} differs from old_content, first {after}:\n"
+             + $"  file:        {Shown(inFile, common)}\n"
+             + $"  old_content: {Shown(inOld, common)}\n"
+             + $"Copy the line from the file exactly (indentation and trailing spaces do not matter).{others}";
+    }
+
+    // How close two trimmed lines are: what they share at both ends, over the longer one (1 = identical).
+    private static double Similarity(string a, string b)
+    {
+        if (a.Equals(b, StringComparison.Ordinal)) return 1;
+        var longer = Math.Max(a.Length, b.Length);
+        if (longer == 0) return 1;
+        var prefix = CommonPrefix(a, b);
+        var suffix = 0;
+        while (suffix < Math.Min(a.Length, b.Length) - prefix && a[^(suffix + 1)] == b[^(suffix + 1)]) suffix++;
+        var ratio = (double)(prefix + suffix) / longer;
+        return ratio >= CloseLineRatio ? ratio : 0;
+    }
+
+    private static int CommonPrefix(string a, string b)
+    {
+        var n = 0;
+        while (n < a.Length && n < b.Length && a[n] == b[n]) n++;
+        return n;
+    }
+
+    // A long line is shown around its first difference, and says so: a model copies what it is shown.
+    private static string Shown(string line, int at)
+    {
+        if (line.Length == 0) return "(empty line)";
+        if (line.Length <= 240) return line;
+        var from = Math.Max(0, at - 100);
+        var to   = Math.Min(line.Length, at + 100);
+        return $"{(from > 0 ? "…" : "")}{line[from..to]}{(to < line.Length ? "…" : "")} (part of a {line.Length}-character line)";
+    }
+
     private static string ReplaceFirst(string text, string oldValue, string newValue)
     {
         var idx = text.IndexOf(oldValue, StringComparison.Ordinal);

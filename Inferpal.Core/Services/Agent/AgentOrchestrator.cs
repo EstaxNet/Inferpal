@@ -160,7 +160,20 @@ internal sealed class AgentOrchestrator
         call = ToolCallArguments.Judge(call);
 
         if (call.UnparsedArguments is not { } raw)
-            return ExecuteToolSafeAsync(tools, call.Name, call.Arguments, ct);
+        {
+            // An MCP tool's schema is a third party's, and may declare a free-form object whose keys are text.
+            if (Mcp.McpTool.IsMcpName(call.Name) || ToolCallArguments.StrayKey(call.Arguments) is not { } stray)
+                return ExecuteToolSafeAsync(tools, call.Name, call.Arguments, ct);
+            Diagnostics.Record("Agent", $"Refused a '{call.Name}' call: a field name was code, cut by an unescaped quote.");
+            var interpolated = stray.Before?.EndsWith('$') == true
+                ? " The code there is a C# interpolated string: inside JSON it is written $\\\"…\\\", the $ included."
+                : string.Empty;
+            return Task.FromResult(
+                $"Error: the arguments of this '{call.Name}' call have a field named \"{SafeTruncate.Truncate(stray.Key, 80)}\": "
+                + "a quote inside a string value was not escaped, so that value was cut short there and the rest became a "
+                + "field name. The call was NOT executed. Send it again with every quote inside a string written \\\"."
+                + interpolated);
+        }
 
         Diagnostics.Record("Agent", $"Refused a '{call.Name}' call: its arguments were not a JSON object"
                                     + (replyCut ? " (the reply stopped at the length limit)." : "."));
@@ -956,7 +969,13 @@ internal sealed class AgentOrchestrator
                                          && iterExecs.Any(e => ChatTurnPolicy.IsFileEdit(e.Name));
 
                 // ── Mark step done, advance ────────────────────────────────────
-                if (stepIdx < plan.Steps.Count && !editChangedNothing)
+                // ⚠ A step whose expected tool WRITES is done only when a file was written. Advanced per tool call, five
+                // reads ticked off "fix the bug" as well, the plan read complete, and the answer-now prompt ("WITHOUT
+                // calling any more tools") made the model describe the fix instead of applying it.
+                var stepAwaitsWrite = stepIdx < plan.Steps.Count
+                                      && plan.Steps[stepIdx].ToolHint is { } hint && ChatTurnPolicy.IsFileEdit(hint.Trim())
+                                      && writesBefore is { } wrote && tools.WritesInRun == wrote;
+                if (stepIdx < plan.Steps.Count && !editChangedNothing && !stepAwaitsWrite)
                 {
                     plan.Steps[stepIdx].Status = AgentStepStatus.Done;
                     onStepUpdate?.Invoke(stepIdx, AgentStepStatus.Done);

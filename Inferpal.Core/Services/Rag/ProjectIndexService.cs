@@ -99,6 +99,9 @@ internal sealed class ProjectIndexService : IDisposable
     /// <summary><c>true</c> while the indexing pass is in progress.</summary>
     public bool   IsIndexing { get; private set; }
 
+    /// <summary>The running pass's progress: files read, out of the files it lists (0 of 0 while it loads).</summary>
+    internal (int Done, int Total) PassProgress => (_progressDone, _progressTotal);
+
     /// <summary>Number of chunks currently in memory.</summary>
     public int    ChunkCount { get; private set; }
 

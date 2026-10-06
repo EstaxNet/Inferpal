@@ -78,6 +78,7 @@ internal class ApplyDiffTool : ITool
             return resolution.Count > 1
                 ? Strings.DiffAmbiguous(resolution.Count, path)
                 : Strings.DiffOldNotFound(path)
+                  + ApplyDiffMatcher.Closest(fileContent, oldContent)
                   + (RenameIntent.Of([(oldContent, newContent)]) is { } rename ? RenameIntent.RefusalHint(rename) : string.Empty);
 
         var modified = resolution.Modified;
