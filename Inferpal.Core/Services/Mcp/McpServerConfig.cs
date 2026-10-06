@@ -56,6 +56,9 @@ internal sealed record McpServerConfig(
     /// </summary>
     public static IReadOnlyList<McpServerConfig> Parse(string? json) => Parse(json, out _);
 
+    /// <summary>The name a rejection carries when it is the WHOLE list that could not be read, not one entry.</summary>
+    internal const string WholeList = "mcpServers";
+
     /// <summary>
     /// A server rebuilt from the fields the settings editor shows. What the editor does not show — the
     /// OAuth block — is carried over from <paramref name="source"/>.
@@ -110,8 +113,13 @@ internal sealed record McpServerConfig(
                 && wrapped.ValueKind == JsonValueKind.Object)
                 root = wrapped;
 
+            // ⚠ Not an object (an array, a string): no server can be read from it, and that is said like invalid JSON —
+            // returned empty in silence, every server vanished, and the list read as one with no server at all.
             if (root.ValueKind != JsonValueKind.Object)
+            {
+                Reject(problems, string.Empty, $"the server list is a JSON {root.ValueKind}, not an object of servers");
                 return [];
+            }
 
             foreach (var entry in root.EnumerateObject())
             {
@@ -178,7 +186,7 @@ internal sealed record McpServerConfig(
         // A PAIR, not "name: reason" inside one string: the reason for invalid JSON carries the
         // exception message, which itself contains colons (LineNumber, BytePositionInLine). Joining
         // then splitting again would have produced an absurd server name on screen.
-        problems.Add(new McpRejectedServer(string.IsNullOrEmpty(name) ? "mcpServers" : name, reason));
+        problems.Add(new McpRejectedServer(string.IsNullOrEmpty(name) ? WholeList : name, reason));
         Diagnostics.Record("Mcp", string.IsNullOrEmpty(name)
             ? $"Server list ignored: {reason}."
             : $"Server '{name}' ignored: {reason}.");

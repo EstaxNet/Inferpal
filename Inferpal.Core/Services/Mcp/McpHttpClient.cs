@@ -103,6 +103,9 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
     public bool NeedsAuthorization { get; private set; }
 
     /// <inheritdoc/>
+    public event Action? AuthorizationRequired;
+
+    /// <inheritdoc/>
     public string? ResourceMetadataUrl { get; private set; }
 
     /// <summary>Raised when the server's GET notification stream delivers <c>tools/list_changed</c>.</summary>
@@ -190,8 +193,13 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
         // the user's own (see AsksForSignIn).
         if (resp.StatusCode == HttpStatusCode.Unauthorized && _tokenProvider is not null
             && AsksForSignIn(resp.RequestMessage?.Options.TryGetValue(OAuthTokenSent, out var sent) == true && sent,
-                             _sendsOwnCredential))
+                             _sendsOwnCredential)
+            && !NeedsAuthorization)
+        {
             NeedsAuthorization = true;
+            // Said to whoever holds this client: in the middle of a session nothing else would read the flag.
+            AuthorizationRequired?.Invoke();
+        }
         // And where the sign-in must look: the server may announce its metadata address in the challenge.
         if (resp.StatusCode == HttpStatusCode.Unauthorized
             && resp.Headers.TryGetValues("WWW-Authenticate", out var challenges)

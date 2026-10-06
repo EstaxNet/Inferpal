@@ -103,6 +103,19 @@ internal sealed class McpTokenStore
         lock (_lock) { var map = Load(); if (map.Remove(serverName)) Persist(map); }
     }
 
+    /// <summary>Removes the sign-in of every server not named in <paramref name="keep"/>; returns the names removed.</summary>
+    public IReadOnlyList<string> RemoveAllExcept(IReadOnlySet<string> keep)
+    {
+        lock (_lock)
+        {
+            var map  = Load();
+            var gone = map.Keys.Where(name => !keep.Contains(name)).ToList();
+            foreach (var name in gone) map.Remove(name);
+            if (gone.Count > 0) Persist(map);
+            return gone;
+        }
+    }
+
     // ⚠ The file is shared by Visual Studio and the VS Code host: the cache is only valid while the file
     // is still the one it was read from. Rewritten whole from a stale cache, a save erased the token the
     // other editor had just stored — or put back a refresh token the server had already rotated.

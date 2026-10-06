@@ -53,6 +53,8 @@ internal sealed class McpToolService : IAsyncDisposable
         public IReadOnlyList<ITool> Tools { get; set; } = [];
         public bool Connected { get; set; } = true;
         public string? Error { get; set; }
+        /// <summary>The server refused its sign-in during the session: the card offers "Sign in" again.</summary>
+        public bool AuthRequired { get; set; }
 
         private int _reconnecting;
         private IMcpClient? _closedDuringReconnect;
@@ -205,6 +207,7 @@ internal sealed class McpToolService : IAsyncDisposable
             // someone wondering why their tools are missing eventually looks.
             foreach (var r in _rejected)
                 Diagnostics.Record("Mcp", $"Server '{r.Name}' rejected by the configuration: {r.Error}");
+            ForgetSignInsOfRemovedServers(servers, rejected);
             // ⚠ In PARALLEL, keeping the configured order. Each start has its own handshake budget:
             // serially, an unreachable server made every later one pay it, lock held — and so did
             // the Save button, which waits for this refresh.
@@ -219,6 +222,28 @@ internal sealed class McpToolService : IAsyncDisposable
         {
             _gate.Release();
         }
+    }
+
+    /// <summary>
+    /// A server taken out of the configuration takes its sign-in with it.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Kept, its access and refresh tokens stay on disk for a service the user no longer uses — nothing else ever
+    /// removes them. Only when the list is KNOWN: a list that does not parse says nothing about what was removed, and an
+    /// entry the parser rejected is still being written (its name keeps its sign-in). MCP turned off never reaches here.
+    /// </remarks>
+    private void ForgetSignInsOfRemovedServers(IReadOnlyList<McpServerConfig> servers, IReadOnlyList<McpRejectedServer> rejected)
+    {
+        if (rejected.Any(r => r.Name == McpServerConfig.WholeList)) return;   // the whole list is unreadable
+        try
+        {
+            var known = servers.Select(s => s.Name).Concat(rejected.Select(r => r.Name)).ToHashSet(StringComparer.Ordinal);
+            var gone  = _tokenStore.RemoveAllExcept(known);
+            if (gone.Count > 0)
+                Diagnostics.Record("Mcp",
+                    $"Sign-in removed for {gone.Count} MCP server(s) no longer configured: {string.Join(", ", gone)}.");
+        }
+        catch (Exception ex) { Diagnostics.Swallow("McpToolService.ForgetSignIns", ex); }
     }
 
     /// <summary>
@@ -249,8 +274,9 @@ internal sealed class McpToolService : IAsyncDisposable
             // Wire lifecycle events before discovery so a death mid-listing still triggers reconnect.
             var entry  = new ServerEntry(server, client);
             var events = client;
-            client.ToolsChanged += () => OnServerToolsChanged(entry);
-            client.Closed       += () => OnServerClosed(entry, events);
+            client.ToolsChanged          += () => OnServerToolsChanged(entry);
+            client.Closed                += () => OnServerClosed(entry, events);
+            client.AuthorizationRequired += () => OnServerSignInRefused(entry, events);
 
             var listed = await client.ListToolsAsync(CancellationToken.None).ConfigureAwait(false);
             if (listed is null)
@@ -395,8 +421,9 @@ internal sealed class McpToolService : IAsyncDisposable
                     await client.DisposeAsync().ConfigureAwait(false);
                     continue;
                 }
-                client.ToolsChanged += () => OnServerToolsChanged(entry);
-                client.Closed       += () => OnServerClosed(entry, client);
+                client.ToolsChanged          += () => OnServerToolsChanged(entry);
+                client.Closed                += () => OnServerClosed(entry, client);
+                client.AuthorizationRequired += () => OnServerSignInRefused(entry, client);
                 var discovered = await client.ListToolsAsync(CancellationToken.None).ConfigureAwait(false);
                 if (discovered is null)
                 {
@@ -432,10 +459,11 @@ internal sealed class McpToolService : IAsyncDisposable
                         await client.DisposeAsync().ConfigureAwait(false);
                         return;
                     }
-                    entry.Client    = client;
-                    entry.Tools     = BuildTools(client, discovered);
-                    entry.Connected = true;
-                    entry.Error     = null;
+                    entry.Client       = client;
+                    entry.Tools        = BuildTools(client, discovered);
+                    entry.Connected    = true;
+                    entry.AuthRequired = false;
+                    entry.Error        = null;
                     RebuildSnapshot();
                     return;
                 }
@@ -464,6 +492,41 @@ internal sealed class McpToolService : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// A server that accepted the session and now refuses its sign-in (an expired or revoked token).
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Left "connected", its card offers no "Sign in" and every call of its tools fails with a 401 the model can do
+    /// nothing about. Its tools are withdrawn (a call of one names the cause, <see cref="DescribeMissingTool"/>) and its
+    /// client closed until the user signs in, which restarts the servers.
+    /// </remarks>
+    private void OnServerSignInRefused(ServerEntry entry, IMcpClient client) => _ = MarkSignInRefusedAsync(entry, client);
+
+    private async Task MarkSignInRefusedAsync(ServerEntry entry, IMcpClient client)
+    {
+        try
+        {
+            await _gate.WaitAsync().ConfigureAwait(false);
+        }
+        catch (ObjectDisposedException) { return; }
+        try
+        {
+            if (_disposed || !_servers.Contains(entry) || !ReferenceEquals(entry.Client, client)) return;
+            if (client.ResourceMetadataUrl is { Length: > 0 } announced)
+                _announcedMetadata[(entry.Config.Name, entry.Config.Url)] = announced;
+            entry.Tools        = [];
+            entry.Connected    = false;
+            entry.AuthRequired = true;
+            entry.Error        = "the server refused its sign-in during the session — sign in again";
+            Diagnostics.Record("Mcp",
+                $"Server '{entry.Config.Name}' refused its sign-in during the session (401): its tools are withdrawn until you sign in again.");
+            try { await client.DisposeAsync().ConfigureAwait(false); }
+            catch (Exception ex) { Diagnostics.Swallow($"McpToolService.SignInRefused({entry.Config.Name})", ex); }
+            RebuildSnapshot();
+        }
+        finally { _gate.Release(); }
+    }
+
     private List<ITool> BuildTools(IMcpClient client, IReadOnlyList<McpToolInfo> infos) =>
         infos.Select(info => (ITool)new McpTool(client, info, _approval)).ToList();
 
@@ -489,7 +552,7 @@ internal sealed class McpToolService : IAsyncDisposable
         [
             .. _rejected,
             .. _failed,
-            .. _servers.Select(e => new McpServerStatus(e.Config.Name, e.Connected, e.Tools.Count, e.Error)),
+            .. _servers.Select(e => new McpServerStatus(e.Config.Name, e.Connected, e.Tools.Count, e.Error, e.AuthRequired)),
         ]);
     }
 

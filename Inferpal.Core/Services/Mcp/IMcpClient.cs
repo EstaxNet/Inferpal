@@ -38,6 +38,12 @@ internal interface IMcpClient : IAsyncDisposable
     /// <summary>Raised once when the connection drops unexpectedly (not via <see cref="IAsyncDisposable.DisposeAsync"/>).</summary>
     event Action? Closed;
 
+    /// <summary>
+    /// Raised when a server that accepted the session refuses its sign-in (expired, revoked): <see cref="NeedsAuthorization"/>
+    /// has just become true. Only an HTTP client signs in; the others never raise it.
+    /// </summary>
+    event Action? AuthorizationRequired { add { } remove { } }
+
     /// <summary>Connects and performs the handshake. Returns <c>false</c> (never throws) on failure.</summary>
     Task<bool> StartAsync(CancellationToken ct);
 
