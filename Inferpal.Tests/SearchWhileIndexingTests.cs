@@ -29,8 +29,9 @@ public sealed class SearchWhileIndexingTests : IDisposable
         try { Directory.Delete(_root, recursive: true); } catch { }
     }
 
+    // Every member carries the class name: each chunk the pass embeds then says which file it comes from.
     private static string Class(string name) =>
-        $"public class {name}\n{{\n    public int One() => 1;\n    public int Two() => 2;\n}}\n";
+        $"public class {name}\n{{\n    public int {name}One() => 1;\n    public int {name}Two() => 2;\n}}\n";
 
     private static Task<string> Search(SemanticSearchTool tool, string query) =>
         tool.ExecuteAsync(JsonSerializer.SerializeToElement(new { query }), CancellationToken.None);
@@ -40,11 +41,19 @@ public sealed class SearchWhileIndexingTests : IDisposable
     {
         await File.WriteAllTextAsync(Path.Combine(_root, "Alpha.cs"), Class("Alpha"));
         await File.WriteAllTextAsync(Path.Combine(_root, "Beta.cs"), Class("Beta"));
-        // The second file's embedding waits: the pass stays running with only the first file published.
+        // The SECOND file's embedding waits: the pass stays running with only the first file published. Which file
+        // comes first is the file system's order — arbitrary under POSIX (Beta first on macOS).
+        string? first = null;
         var provider = new FakeInferenceProvider
         {
             Embedding   = [0.1f, 0.2f],
-            OnEmbedding = text => { if (text.Contains("Beta")) _gate.Wait(TimeSpan.FromSeconds(30)); return [0.1f, 0.2f]; },
+            OnEmbedding = text =>
+            {
+                var name = text.Contains("Alpha") ? "Alpha" : "Beta";
+                first ??= name;
+                if (name != first) _gate.Wait(TimeSpan.FromSeconds(30));
+                return [0.1f, 0.2f];
+            },
         };
         var config = new InferpalConfig { RagEnabled = true, RagEmbeddingModel = "embed" };
         var index  = new ProjectIndexService(provider, config, new LspSemanticProvider());
@@ -55,10 +64,10 @@ public sealed class SearchWhileIndexingTests : IDisposable
         var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
         while (!(index.IsIndexing && index.ChunkCount > 0 && index.PassProgress.Done == 1) && DateTime.UtcNow < deadline)
             await Task.Delay(20);
-        Assert.True(index.IsIndexing && index.ChunkCount > 0,          // WITNESS: mid-pass, Alpha published
+        Assert.True(index.IsIndexing && index.ChunkCount > 0,          // WITNESS: mid-pass, the first file published
             $"indexing={index.IsIndexing} chunks={index.ChunkCount} progress={index.PassProgress} status={index.Status} embeds={provider.EmbeddingRequests.Count}");
 
-        var during = await Search(tool, "Alpha");
+        var during = await Search(tool, first!);
         Assert.StartsWith("Note: the index is still being built (1 of 2 files read so far)", during);
         Assert.Contains("search_in_files", during[..during.IndexOf("\n\n", StringComparison.Ordinal)]);
 
@@ -67,6 +76,6 @@ public sealed class SearchWhileIndexingTests : IDisposable
         Assert.Contains("✅", index.Status);                             // WITNESS: the pass ended
 
         // Reference arm: the same search once the pass is over says nothing more.
-        Assert.DoesNotContain("still being built", await Search(tool, "Alpha"));
+        Assert.DoesNotContain("still being built", await Search(tool, first!));
     }
 }
