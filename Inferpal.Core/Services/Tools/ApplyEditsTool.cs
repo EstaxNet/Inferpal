@@ -145,7 +145,9 @@ internal sealed class ApplyEditsTool : ITool
             {
                 var reason = res.Count > 1 ? $"ambiguous ({res.Count} matches)" : "no exact or fuzzy match";
                 var rel    = RelPath(root, edit.Path);
-                return Aborted(i + 1, edits.Count, $"edit #{i + 1} in {rel}: {reason} for old_content");
+                var hint   = RenameIntent.Of(edits.Select(e => (e.Old, e.New))) is { } rename
+                    ? RenameIntent.RefusalHint(rename) : string.Empty;
+                return Aborted(i + 1, edits.Count, $"edit #{i + 1} in {rel}: {reason} for old_content") + hint;
             }
             current[edit.Path] = res.Modified;
         }
@@ -197,7 +199,11 @@ internal sealed class ApplyEditsTool : ITool
             ? "\n\n" + (await _smartFix.ValidateManyAsync(changed, ct) ?? string.Empty)
             : string.Empty;
 
-        return Strings.ApplyEditsOk(edits.Count, changed.Count) + smartFixNote.TrimEnd();
+        var staleNote = RenameIntent.Of(edits.Select(e => (e.Old, e.New))) is { } renamed && !string.IsNullOrEmpty(root)
+            ? RenameIntent.StaleNote(renamed, root, changed[0])
+            : string.Empty;
+
+        return Strings.ApplyEditsOk(edits.Count, changed.Count) + staleNote + smartFixNote.TrimEnd();
     }
 
     private static string BuildApprovalDetails(

@@ -38,12 +38,13 @@ internal sealed class RenameSymbolTool : ITool
     // to dislodge than a footnote. What the description may state is the CONTRACT (all-or-nothing),
     // which is a fact about this tool; how much of the tree was reached is a fact about the world.
     public string Description =>
-        "Renames an identifier across the source files found under 'root'. Uses Roslyn for C# (no false " +
+        "Use this for ANY rename of a method, class, property, function or variable, instead of editing each file by " +
+        "hand: it renames every occurrence — callers and tests included — in one call, after the user approves the " +
+        "diff. Renames an identifier across the source files found under 'root'. Uses Roslyn for C# (no false " +
         "matches in strings or comments; when the name designates several symbols it lists them and renames nothing " +
         "until declaring_file says which) and word-boundary regex for other languages. The report states " +
         "what was actually scanned — files it could not read, folders it could not list — and the write " +
-        "is all-or-nothing: nothing is changed if any file cannot be. Always call with dry_run=true " +
-        "first to preview, then dry_run=false to apply.";
+        "is all-or-nothing: nothing is changed if any file cannot be. dry_run=true only previews, and writes nothing.";
 
     public object Parameters => new
     {
@@ -100,7 +101,9 @@ internal sealed class RenameSymbolTool : ITool
         var oldName     = args.Trimmed("old_name") ?? string.Empty;
         var newName     = args.Trimmed("new_name") ?? string.Empty;
         var filePattern = args.Str("file_pattern");
-        var dryRun      = args.Bool("dry_run", true);
+        // ⚠ Applies by default: the approval prompt already shows the human every changed line. A preview first cost a
+        // second call, and the second call is where a model lost the rename — it switched to editing by hand.
+        var dryRun      = args.Bool("dry_run", false);
         var declaringFile = args.Trimmed("declaring_file");
         int? declaringLine = args.Has("declaring_line") ? args.Int("declaring_line", 0) : null;
 
@@ -142,6 +145,14 @@ internal sealed class RenameSymbolTool : ITool
         if ((declaringFile is not null || declaringLine is not null) && plan is not { Spans.Count: > 0 })
             return NarrowingMatchedNothing(oldName, declaringFile, declaringLine, indexAvailable: plan is not null);
         var semanticSpans = plan is { Spans.Count: > 0 } ? plan.Spans : null;
+
+        // ⚠ A root narrowed below the workspace hides every caller outside it: the narrowed compilation does not contain
+        // them, so the rename covered the folder, left them on the old name, and the build broke under "Applied to 4
+        // file(s)". The symbol is resolved over the whole workspace too; references outside the root refuse the rename,
+        // before anything is written.
+        if (semanticSpans is not null && NarrowerThanWorkspace(root, workspace)
+            && ReferencesOutside(oldName, root, workspace, declaringFile, declaringLine, ct) is { Count: > 0 } outside)
+            return OutsideRootRefusal(oldName, root, workspace, outside);
 
         var hits            = new List<(string FilePath, int Count, string OldContent, string NewContent)>();
         var stale           = new List<string>();
@@ -280,7 +291,13 @@ internal sealed class RenameSymbolTool : ITool
         if (write.Ok)
             // The coverage line is already in the header of this same report — saying it twice in
             // the text the model reads is noise, and noise is how a warning stops being read.
+        {
             sb.AppendLine($"✅ Applied to {hits.Count} file(s). Use `restore_file` to undo individual files.");
+            // The text-based path has no compiler to find the callers outside a narrowed root: it says where the old
+            // name is left (the compiler-resolved path refused above instead).
+            if (NarrowerThanWorkspace(root, workspace))
+                sb.Append(RenameIntent.StaleNote((oldName, newName), workspace, hits[0].FilePath).TrimStart('\n')).AppendLine();
+        }
         else
         {
             var failed = Path.GetRelativePath(root, write.FailedPath!);
@@ -302,6 +319,42 @@ internal sealed class RenameSymbolTool : ITool
     /// (no workspace, symbol unresolved, index failure), in which case the caller falls back to
     /// the syntactic path.
     /// </summary>
+    /// <summary>Whether <paramref name="root"/> is a folder strictly inside <paramref name="workspace"/>.</summary>
+    private static bool NarrowerThanWorkspace(string root, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? workspace)
+    {
+        if (string.IsNullOrEmpty(workspace)) return false;
+        var sep = Path.DirectorySeparatorChar;
+        var r = Path.GetFullPath(root).TrimEnd(sep, '/');
+        var w = Path.GetFullPath(workspace).TrimEnd(sep, '/');
+        return !PathComparer.Default.Equals(r, w) && r.StartsWith(w + sep, PathComparer.Comparison);
+    }
+
+    private static bool IsUnder(string file, string folder) =>
+        Path.GetFullPath(file).StartsWith(Path.GetFullPath(folder).TrimEnd(Path.DirectorySeparatorChar, '/') + Path.DirectorySeparatorChar,
+                                          PathComparer.Comparison);
+
+    /// <summary>The files outside <paramref name="root"/> that reference the symbol, resolved over the whole workspace;
+    /// when the workspace names several symbols this way, every file outside the root that spells the name.</summary>
+    private static List<string> ReferencesOutside(
+        string oldName, string root, string workspace, string? declaringFile, int? declaringLine, CancellationToken ct)
+    {
+        var wide = TryPlanRename(oldName, workspace, declaringFile, declaringLine, ct);
+        if (wide is { Spans.Count: > 0 })
+            return [.. wide.Spans.Keys.Where(f => !IsUnder(f, root)).OrderBy(f => f, StringComparer.Ordinal)];
+        return [.. (RenameIntent.FilesStillNaming(workspace, ".cs", oldName) ?? []).Where(f => !IsUnder(f, root))
+                   .OrderBy(f => f, StringComparer.Ordinal)];
+    }
+
+    private static string OutsideRootRefusal(string oldName, string root, string workspace, List<string> outside)
+    {
+        var named = string.Join(", ", outside.Take(5).Select(f => Path.GetRelativePath(workspace, f)))
+                  + (outside.Count > 5 ? $" and {outside.Count - 5} more" : string.Empty);
+        return $"Error: `{oldName}` is also used outside '{Path.GetRelativePath(workspace, root)}': {named}. Renaming inside "
+             + "that folder only would leave those on the old name and break the build; nothing was renamed. Call again "
+             + "without 'root' to rename across the whole workspace (with declaring_file when the name designates several "
+             + "symbols).";
+    }
+
     private static Lsp.RenamePlan? TryPlanRename(
         string oldName, string root, string? declaringFile, int? declaringLine, CancellationToken ct)
     {

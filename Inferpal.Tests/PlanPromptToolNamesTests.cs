@@ -58,7 +58,7 @@ public sealed class PlanPromptToolNamesTests
 
         var plan = client.Requests[0][^1].Content!;
         Assert.StartsWith(ModelPrompts.AgentPlanPrompt, plan, StringComparison.Ordinal);             // witness: the plan request
-        Assert.EndsWith("Tools you can call (use these names for \"tool\"): read_file, search_in_files, rename_symbol.",
+        Assert.Contains("Tools you can call (use these names for \"tool\"): read_file, search_in_files, rename_symbol.",
                         plan, StringComparison.Ordinal);
         Assert.True(client.Requests.Count > 1);
         Assert.Contains(client.Requests[1], m => m.Role == "user" && m.Content == plan);         // the anchored copy

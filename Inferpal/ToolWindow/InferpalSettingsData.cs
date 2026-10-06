@@ -1137,6 +1137,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         string ctxSizeText = string.Empty, ctxKeepText = string.Empty, oodaThreshText = string.Empty, vramBudgetText = string.Empty;
         string kvAnchorText = string.Empty;
         var selectedInlineModeIndex = -1;
+        var selectedLangIndex = -1;
         string ragTopKText = string.Empty, ragSimilarityThresholdText = string.Empty;
         string agentMaxIterationsText = string.Empty;
         // h/min/s composites recombined into total seconds inside the VM-context capture below.
@@ -1179,6 +1180,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             compactTimeoutSec    = CombineDuration(CompactionTimeoutHoursText, CompactionTimeoutMinutesText, CompactionTimeoutSecondsText);
             kvAnchorText         = KvCacheAnchorMessagesText.Trim();
             selectedLangName     = SelectedLanguage;
+            selectedLangIndex    = SelectedLanguage is null ? -1 : AvailableLanguages.IndexOf(SelectedLanguage);
             selectedInlineModeName  = SelectedInlineMode;
             selectedInlineModeIndex = SelectedInlineMode is null ? -1 : AvailableInlineModes.IndexOf(SelectedInlineMode);
             inlineEnabled          = InlineCompletionEnabled;
@@ -1225,12 +1227,12 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             return value;
         }
 
-        // Resolve language code from display name (index 0 = auto = "").
-        // ⚠ Same class as the inline mode just below: what cannot be read is KEPT. The original
-        // fallback wrote "" -- that is, "follow Visual Studio" -- so an unrecognised label quietly
-        // reset the language to its factory setting. And it gets named.
+        // Resolve the language code BY INDEX (index 0 = auto = ""): the list is the schema's, in its
+        // order. ⚠ Not by label: entry 0 is shown as "Automatic — same as your editor (…)", a
+        // translated text the schema's "Auto" never equals, so choosing it was never saved. What
+        // cannot be read is KEPT, and named.
         var langCode = SettingsFallback.ResolveSelection(
-            LanguageOptions, index: -1, selectedLangName, _config.Language, out var langOk);
+            LanguageOptions, selectedLangIndex, selectedLangName, _config.Language, out var langOk);
         Note(selectedLangName, langOk, () => Strings.LabelLanguage);
         // By INDEX, not by text: these labels are translated, so a string comparison fails as soon
         // as the language has changed, and a fallback to "Default" turns a language change into a

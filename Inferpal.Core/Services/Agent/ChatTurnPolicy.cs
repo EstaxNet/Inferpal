@@ -116,12 +116,16 @@ internal static class ChatTurnPolicy
         // ⚠ Three checks, not two: an edit's Smart Fix note is a build too, and a turn that ENDED on its compilation
         // errors — the model answering "updated" over a page that no longer builds — said nothing.
         var last = executions.LastOrDefault(e => e.Name is "run_tests" or "get_diagnostics"
-                                              || (IsFileEdit(e.Name) && CodeActions.SmartFixValidator.ReadVerdict(e.Output) is not null));
+                                              || (IsFileEdit(e.Name) && CodeActions.SmartFixValidator.ReadVerdict(e.Output) is not null)
+                                              || (e.Name == "run_command" && CheckCommand.Failed(e.Input, e.Output) is not null));
         return last switch
         {
             null                            => false,
             { Name: "get_diagnostics" }     => Tools.GetDiagnosticsTool.ReadVerdict(last.Output) == Tools.GetDiagnosticsTool.BuildVerdict.Errors,
             { Name: "run_tests" }           => Commands.TddCommandHandler.TestsFailed(last.Output),
+            // ⚠ A test or build run through the shell is a check like any other: the model ran pytest by hand, the run
+            // failed, and the turn ended on "renamed everywhere" without a word. Judged on the exit code, never on words.
+            { Name: "run_command" }         => CheckCommand.Failed(last.Input, last.Output) == true,
             _                               => CodeActions.SmartFixValidator.ReadVerdict(last.Output) == true,
         };
     }

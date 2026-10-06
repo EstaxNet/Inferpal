@@ -52,6 +52,31 @@ public class SettingsSaveMergeTests
         Assert.Contains("SnapshotNow()", Body(code, "public InferpalSettingsData("), StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// ⚠ The language box shows its first entry as "Automatic — same as your editor (Français)", a translated text the
+    /// schema's "Auto" never equals: resolved by label, choosing it was never saved ("1 field could not be read:
+    /// Language"), and the window had no way back to following the editor. Resolved by index, like the inline mode.
+    /// </summary>
+    [Fact]
+    public void TheAutomaticLanguage_IsSaved()
+    {
+        var languages = Services.Presentation.SettingsSchema.Languages.Select(o => (o.Value, o.Text)).ToList();
+        var shown = Localization.Strings.LangAuto(Services.Presentation.SettingsSchema.AutoLanguageName(
+            new System.Globalization.CultureInfo("fr-FR")));
+        // Witness: the label alone cannot name the entry — the reason the index is needed.
+        Services.Presentation.SettingsFallback.ResolveSelection(languages, -1, shown, "fr", out var byLabel);
+        Assert.False(byLabel);
+
+        Assert.Equal("", Services.Presentation.SettingsFallback.ResolveSelection(languages, 0, shown, "fr", out var ok));
+        Assert.True(ok);
+
+        var code = ConventionCoverageTests.CodeOnly(
+            Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalSettingsData.cs"));
+        var save = Body(code, "private async Task SaveCoreAsync(");
+        Assert.Contains("AvailableLanguages.IndexOf(SelectedLanguage)", save, StringComparison.Ordinal);
+        Assert.Contains("LanguageOptions, selectedLangIndex,", save, StringComparison.Ordinal);
+    }
+
     // The chat strip writes the pinned files too: the window lays its edits over them line by line,
     // on an immediate row change as on the global save.
     [Theory]

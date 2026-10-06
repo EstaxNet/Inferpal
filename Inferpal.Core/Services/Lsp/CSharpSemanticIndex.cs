@@ -242,11 +242,61 @@ internal sealed class CSharpSemanticIndex
             catch (Exception ex) { Diagnostics.Swallow($"CSharpSemanticIndex.Parse({Path.GetFileName(path)})", ex); }
         }
 
+        // ⚠ The SDK's implicit global usings (ImplicitUsings, on by default since .NET 6) live in a file the build
+        // GENERATES under obj/, which the walk skips. Without them `System.Linq` is missing, `rules.ToList()` does not
+        // bind, and a call reached through it — `foreach (var rule in _rules) rule.Apply(x)` — is not a reference:
+        // rename_symbol renamed the declarations and left that call, and the build broke under "applied". The tree
+        // joins the compilation only, never _treesByPath: nothing searches or rewrites it.
+        var trees = _treesByPath.Values.ToList();
+        if (ImplicitUsingsTree(_root) is { } implicitUsings) trees.Add(implicitUsings);
+
         _compilation = CSharpCompilation.Create(
             "inferpal.semantic",
-            _treesByPath.Values,
+            trees,
             _runtimeReferences.Value,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+    }
+
+    /// <summary>The namespaces every C# file of an SDK project sees without writing them (Microsoft.NET.Sdk).</summary>
+    internal static readonly string[] SdkImplicitUsings =
+    [
+        "System", "System.Collections.Generic", "System.IO", "System.Linq", "System.Net.Http", "System.Threading",
+        "System.Threading.Tasks",
+    ];
+
+    private static readonly System.Text.RegularExpressions.Regex ImplicitUsingsOn = new(
+        @"<ImplicitUsings>\s*(?:enable|true)\s*</ImplicitUsings>",
+        System.Text.RegularExpressions.RegexOptions.IgnoreCase, RegexBudget.Default);
+
+    // <Using Include="Ns" /> — the project's own global usings; a Static or Alias one is not a namespace import.
+    private static readonly System.Text.RegularExpressions.Regex UsingInclude = new(
+        @"<Using\s+Include\s*=\s*""([A-Za-z_][\w.]*)""\s*/>",
+        System.Text.RegularExpressions.RegexOptions.IgnoreCase, RegexBudget.Default);
+
+    /// <summary>
+    /// The global usings the build would generate for the projects under <paramref name="root"/>, as a syntax tree;
+    /// null when no project asks for any.
+    /// </summary>
+    internal static SyntaxTree? ImplicitUsingsTree(string root)
+    {
+        var namespaces = new SortedSet<string>(StringComparer.Ordinal);
+        foreach (var file in WorkspaceScan.EnumerateFiles(root, "*.csproj").Concat(WorkspaceScan.EnumerateFiles(root, "Directory.Build.props")))
+        {
+            string text;
+            try { text = Tools.TextFileEncoding.ReadText(file); }
+            catch (Exception ex) { Diagnostics.Swallow($"CSharpSemanticIndex.ImplicitUsings({Path.GetFileName(file)})", ex); continue; }
+            try
+            {
+                if (ImplicitUsingsOn.IsMatch(text)) namespaces.UnionWith(SdkImplicitUsings);
+                foreach (System.Text.RegularExpressions.Match m in UsingInclude.Matches(text))
+                    namespaces.Add(m.Groups[1].Value);
+            }
+            catch (System.Text.RegularExpressions.RegexMatchTimeoutException) { }
+        }
+        return namespaces.Count == 0
+            ? null
+            : CSharpSyntaxTree.ParseText(string.Concat(namespaces.Select(ns => $"global using global::{ns};\n")),
+                                         path: "<implicit global usings>");
     }
 
     /// <summary>

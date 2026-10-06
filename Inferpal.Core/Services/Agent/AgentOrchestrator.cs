@@ -92,7 +92,8 @@ internal sealed class AgentOrchestrator
         tools.Definitions.Count == 0
             ? ModelPrompts.AgentPlanPrompt
             : ModelPrompts.AgentPlanPrompt + "\nTools you can call (use these names for \"tool\"): "
-              + string.Join(", ", tools.Definitions.Select(d => d.Function.Name)) + ".";
+              + string.Join(", ", tools.Definitions.Select(d => d.Function.Name)) + "."
+              + (tools.Definitions.Any(d => d.Function.Name == "rename_symbol") ? "\n" + ModelPrompts.AgentPlanRename : string.Empty);
 
     // Read-only tools safe to run concurrently within one batch: pure filesystem reads, no GPU work,
     // no approval prompt, no VS UI-thread affinity. Deliberately EXCLUDES search_codebase/search_docs

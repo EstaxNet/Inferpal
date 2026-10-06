@@ -26,6 +26,11 @@ internal static class ModelPrompts
         + "Before creating a file, plan to read an existing file of the same kind next to it.\n"
         + "After outputting the JSON, stop — do not call any tools yet.";
 
+    /// <summary>Added to the plan prompt when rename_symbol is offered (AgentOrchestrator.PlanPrompt).</summary>
+    public const string AgentPlanRename =
+        "To rename a symbol (a method, class, property, function or variable), plan ONE rename_symbol step: it renames "
+        + "every occurrence, callers and tests included — do not plan to edit each file by hand.";
+
     /// <summary>User message injected after the plan to start execution.</summary>
     public const string AgentExecutePlan =
         "Good. Now execute the plan step by step, starting from step 1. Do NOT write any explanatory text — immediately call the appropriate tool for step 1 right now.";

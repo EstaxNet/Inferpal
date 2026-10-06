@@ -75,7 +75,10 @@ internal class ApplyDiffTool : ITool
 
         var resolution = ApplyDiffMatcher.Resolve(fileContent, oldContent, newContent, occurrence);
         if (resolution.Modified is null)
-            return resolution.Count > 1 ? Strings.DiffAmbiguous(resolution.Count, path) : Strings.DiffOldNotFound(path);
+            return resolution.Count > 1
+                ? Strings.DiffAmbiguous(resolution.Count, path)
+                : Strings.DiffOldNotFound(path)
+                  + (RenameIntent.Of([(oldContent, newContent)]) is { } rename ? RenameIntent.RefusalHint(rename) : string.Empty);
 
         var modified = resolution.Modified;
         if (FileTarget.EncodingRefusal(path, modified) is { } cannotHold) return cannotHold;
@@ -99,6 +102,10 @@ internal class ApplyDiffTool : ITool
             ? "\n\n" + (await _smartFix.ValidateAsync(path, ct) ?? string.Empty)
             : string.Empty;
 
-        return Strings.DiffOk(path) + snapNote + smartFixNote;
+        var staleNote = RenameIntent.Of([(oldContent, newContent)]) is { } renamed && !string.IsNullOrEmpty(root)
+            ? RenameIntent.StaleNote(renamed, root, path)
+            : string.Empty;
+
+        return Strings.DiffOk(path) + snapNote + staleNote + smartFixNote;
     }
 }
