@@ -17,15 +17,33 @@ namespace Inferpal.Services.CodeActions;
 /// </remarks>
 internal static class FimCompletion
 {
+    /// <summary>Whether the caret's line goes on after it: a completion there is ONE line (<see cref="Finish"/>).</summary>
+    internal static bool IsMidLine(string suffix) => RestOfLine(suffix).Trim().Length > 0;
+
+    private static string RestOfLine(string suffix)
+    {
+        var newline = suffix.IndexOf('\n');
+        return (newline < 0 ? suffix : suffix[..newline]).TrimEnd('\r');
+    }
+
+    /// <summary>The stop sequences of a completion requested at a caret followed by <paramref name="suffix"/>.</summary>
+    /// <remarks>
+    /// ⚠ Mid-line, only the completion's first line is ever inserted. Without a line-break stop the model writes on —
+    /// lines <see cref="Finish"/> throws away — and the suggestion waits for every one of them. Stopped at the first
+    /// line break, the server returns exactly the line that would have been kept.
+    /// </remarks>
+    internal static string[] Stops(string suffix, string[] stops) =>
+        IsMidLine(suffix) && !stops.Contains("\n") ? [.. stops, "\n"] : stops;
+
     /// <summary>The text to insert at the caret, given the <paramref name="suffix"/> that follows it.</summary>
     public static string Finish(string completion, string suffix)
     {
         if (string.IsNullOrEmpty(completion)) return completion;
 
         var newline    = suffix.IndexOf('\n');
-        var restOfLine = (newline < 0 ? suffix : suffix[..newline]).TrimEnd('\r');
+        var restOfLine = RestOfLine(suffix);
 
-        if (restOfLine.Trim().Length > 0)
+        if (IsMidLine(suffix))
         {
             var cut  = completion.IndexOf('\n');
             var line = (cut < 0 ? completion : completion[..cut]).TrimEnd('\r');
@@ -46,6 +64,21 @@ internal static class FimCompletion
             .Select(l => l.Trim()).Where(l => l.Length > 0).ToList();
         var lines = completion.Split('\n').ToList();
         while (lines.Count > 0 && lines[^1].Trim().Length == 0) lines.RemoveAt(lines.Count - 1);
+
+        // ⚠ A model that does not stop writes the gap, then the lines that follow the caret, then whatever comes
+        // after them (another method, a Markdown fence, prose): trimming the completion's LAST lines finds nothing to
+        // trim, and the whole run-on is inserted. Cut where it STARTS repeating what follows — the first
+        // min(2, following) lines, in order —, never at its first line: a completion that is only the repeat is the
+        // case of the tail rule below.
+        var repeat = Math.Min(2, following.Count);
+        for (var i = 1; repeat > 0 && i + repeat <= lines.Count; i++)
+        {
+            if (!lines.Skip(i).Take(repeat).Select(l => l.Trim()).SequenceEqual(following.Take(repeat), StringComparer.Ordinal))
+                continue;
+            var kept = string.Join('\n', lines.Take(i)).TrimEnd();
+            // Repeated lines that close what the kept part opened are the completion's own closers, not a repetition.
+            if (!Balance(kept).LeavesOpenMoreThan(Balance(string.Join('\n', lines.Take(i + repeat))))) return kept;
+        }
 
         var whole = Balance(completion);
         for (var k = Math.Min(lines.Count, following.Count); k > 0; k--)

@@ -271,6 +271,14 @@ internal class RunTestsTool : ITool
     /// <summary>What the pytest runner answers when the interpreter it ran has no pytest: nothing ran.</summary>
     internal const string PytestNotInstalled = "⚠ pytest is not installed for the Python interpreter that ran";
 
+    /// <summary>
+    /// Whether <paramref name="output"/> is <c>python -m pytest</c> run by an interpreter that has no pytest — the
+    /// interpreter's own line, "…python3: No module named pytest". Unquoted: a test's <c>ModuleNotFoundError</c> quotes
+    /// the module, and is a real failure.
+    /// </summary>
+    internal static bool PytestModuleMissing(string output) =>
+        output.Contains("No module named pytest", StringComparison.Ordinal);
+
     private static async Task<string> RunNpmAsync(string workDir, string? root, string? path, string? filter, RunBudget budget, CancellationToken ct)
     {
         if (ResolveNpm(OperatingSystem.IsWindows(), Shell.ShellLauncher.FindOnPath, File.Exists) is not { } npm)
@@ -852,7 +860,7 @@ internal class RunTestsTool : ITool
 
         // "…python3: No module named pytest" (unquoted: `python -m`'s own line, not a test's ModuleNotFoundError).
         // Read raw, it is a red suite, and /tdd spends its rounds patching code against a runner that never ran.
-        if (!summaryMatch.Success && raw.Contains("No module named pytest", StringComparison.Ordinal))
+        if (!summaryMatch.Success && PytestModuleMissing(raw))
             return $"{PytestNotInstalled}: {interpreter ?? "python"}. Install it in the project's virtual environment " +
                    "(.venv or venv — this runner uses it when it exists) or run the tests with run_command. Nothing ran." +
                    "\n\n" + Truncate(raw.Trim(), MaxRawChars);

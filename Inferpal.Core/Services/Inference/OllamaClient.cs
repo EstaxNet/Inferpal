@@ -647,7 +647,7 @@ internal class OllamaClient : InferenceProviderBase
             // family's FIM tokens when measured better, the prefix alone otherwise — and sent past the template.
             var spec = FimTemplate.Build(m, prefix, suffix);
             request = new GenerateRequest(m, spec.Prompt, Suffix: null, Stream: true,
-                                          new GenerateOptions(temperature, maxTokens, Stop: spec.Stop),
+                                          new GenerateOptions(temperature, maxTokens, Stop: FimCompletion.Stops(suffix, spec.Stop)),
                                           ComputeKeepAlive(), Raw: true);
         }
         else
@@ -656,7 +656,7 @@ internal class OllamaClient : InferenceProviderBase
                 Prompt:    prefix,
                 Suffix:    suffix,
                 Stream:    true,
-                Options:   new GenerateOptions(temperature, maxTokens, Stop: ["\n\n\n"]),
+                Options:   new GenerateOptions(temperature, maxTokens, Stop: FimCompletion.Stops(suffix, ["\n\n\n"])),
                 KeepAlive: ComputeKeepAlive());
 
         // 60 s bounds time-to-first-byte, then chunk inactivity (see SendChatAsync).

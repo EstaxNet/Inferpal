@@ -68,6 +68,42 @@ public sealed class ShellCheckVerdictTests
         Assert.True(ChatTurnPolicy.LastCheckFailed([Ran("apply_edits"), red, Shell("pytest", "Started background job 'bg1'. Use action='poll'…")], 1));
     }
 
+    // What run_command returned on the battery (bash) and under Windows PowerShell for a runner that is not installed.
+    private const string BashPytestNotFound  = "\n[stderr]\n/usr/bin/bash: line 4: pytest: command not found\n[exit code 127]";
+    private const string BashPythonNotFound  = "\n[stderr]\n/usr/bin/bash: line 4: python: command not found\n[exit code 127]";
+    private const string PythonWithoutPytest = "\n[stderr]\n/usr/bin/python3: No module named pytest\n[exit code 1]";
+    private const string PowerShellNotFound  =
+        "\n[stderr]\nInvoke-Expression : Le terme «pytest» n'est pas reconnu comme nom d'applet de commande, fonction, fichier de script ou programme exécutable.\n" +
+        "    + CategoryInfo          : ObjectNotFound: (pytest:String) [Invoke-Expression], CommandNotFoundException\n" +
+        "    + FullyQualifiedErrorId : CommandNotFoundException,Microsoft.PowerShell.Commands.InvokeExpressionCommand\n[exit code 1]";
+
+    /// <summary>
+    /// ⚠ A runner that never started is not a red run: on the battery, 27 turns whose code passed its tests ended on
+    /// "the last test or build run of this turn failed" — pytest was not installed for the shell.
+    /// </summary>
+    [Theory]
+    [InlineData("pytest -q", BashPytestNotFound)]
+    [InlineData("python -m pytest -q", BashPythonNotFound)]
+    [InlineData("python3 -m pytest -q", PythonWithoutPytest)]
+    [InlineData("pytest -q", PowerShellNotFound)]
+    public void ARunnerThatNeverStarted_IsNotAVerdict(string command, string output)
+    {
+        Assert.Null(CheckCommand.Failed(System.Text.Json.JsonSerializer.Serialize(new { command }), output));
+        Assert.False(ChatTurnPolicy.LastCheckFailed([Ran("apply_edits"), Shell(command, output)], filesChangedInRun: 1));
+    }
+
+    [Fact]
+    public void ARunnerThatNeverStarted_LeavesTheLastRunThatDidAsTheVerdict()
+    {
+        // Reference arms: a red run is not hidden by a later runner that never started, and a TEST that cannot import
+        // a module — quoted by Python — is a red run, not a missing runner.
+        Assert.True(ChatTurnPolicy.LastCheckFailed(
+            [Ran("apply_edits"), Shell("pytest", PytestRed), Shell("python3 -m pytest", PythonWithoutPytest)], filesChangedInRun: 1));
+        Assert.True(ChatTurnPolicy.LastCheckFailed(
+            [Ran("apply_edits"), Shell("pytest -q", "E   ModuleNotFoundError: No module named 'shop'\n1 error in 0.05s\n[exit code 2]")],
+            filesChangedInRun: 1));
+    }
+
     [Fact]
     public void ATurnThatChangedNothing_StillSaysNothing()
     {

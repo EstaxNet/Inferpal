@@ -389,7 +389,12 @@ internal sealed class AgentOrchestrator
         if (budget <= 0) return alreadySummarized;
         if (EstimateTokens(messages) + toolTokens <= budget * 8 / 10) return alreadySummarized;
 
-        if (!alreadySummarized && _config.CompactionEnabled)
+        // ⚠ A summary that cannot bring the run under the target is not asked for. When the anchored head and the tool
+        // definitions alone fill the 70 % target — the default 8K window with the built-in tools — the summary is a whole
+        // extra inference call, rewrites the context, and elision follows anyway.
+        var cannotFit = EstimateTokens(messages.Take(anchorCount)) + toolTokens >= budget * 7 / 10;
+
+        if (!alreadySummarized && _config.CompactionEnabled && !cannotFit)
         {
             switch (await TrySummarizeOldTurnsAsync(messages, anchorCount, model, onStep, ct))
             {
@@ -749,6 +754,9 @@ internal sealed class AgentOrchestrator
         // A plan written instead of a step (LooksLikePlanEcho) is sent back at most this many times per run.
         const int MaxPlanEchoNudges = 2;
         int planEchoNudges = 0;
+        // A plan exhausted on an edit that broke the build asks for the fix at most this many times per run (see buildFixAsked).
+        const int MaxBuildFixRounds = 2;
+        int buildFixRounds = 0;
         // Set by a stall-retry: forces a tool call on the RETRIED act only. ⚠ Deriving it from
         // actRetries > 0 kept every later act forced for the rest of the run once one stall happened,
         // and the model could no longer finish in prose.
@@ -977,6 +985,12 @@ internal sealed class AgentOrchestrator
                 var editChangedNothing = writesBefore is { } before && tools.WritesInRun == before
                                          && iterExecs.Any(e => ChatTurnPolicy.IsFileEdit(e.Name));
 
+                // Whether the round's last checked edit was written but left the project unable to build.
+                var editBrokeBuild = !editChangedNothing && buildFixRounds < MaxBuildFixRounds
+                                     && iterExecs.LastOrDefault(e => ChatTurnPolicy.IsFileEdit(e.Name)
+                                                                     && CodeActions.SmartFixValidator.ReadVerdict(e.Output) is not null) is { } checkedEdit
+                                     && CodeActions.SmartFixValidator.ReadVerdict(checkedEdit.Output) == true;
+
                 // ── Mark step done, advance ────────────────────────────────────
                 // ⚠ A step whose expected tool WRITES is done only when a file was written. Advanced per tool call, five
                 // reads ticked off "fix the bug" as well, the plan read complete, and the answer-now prompt ("WITHOUT
@@ -1002,9 +1016,20 @@ internal sealed class AgentOrchestrator
                 // Once the plan is exhausted, the generic observe prompt ("call the tool for the
                 // next step") makes the model invent an extra call whose result then displaces
                 // the real answer — switch to the answer-now variant anchored on the user task.
-                answerRequested = remaining == 0 && !editChangedNothing;
+                // ⚠ A plan exhausted on an edit that BROKE THE BUILD does not get the answer-now prompt: Smart Fix listed
+                // the compilation errors, the prompt then said "WITHOUT calling any more tools", and the run ended on code
+                // that no longer compiled — on the bench, every run that ended there failed. Only there: mid-plan,
+                // a build broken between two edits of one change (a type created in its new file before it leaves the old
+                // one) is the expected state, and asked to fix it, models deleted the file they had just created
+                // (measured: hard-move-class 6 of 8 → 3 of 8). Bounded: errors that predate the run would otherwise hold
+                // the run open until the iteration limit.
+                var buildFixAsked = remaining == 0 && editBrokeBuild;
+                if (buildFixAsked) buildFixRounds++;
+                answerRequested = remaining == 0 && !editChangedNothing && !buildFixAsked;
                 var observeMsg = editChangedNothing
                     ? ModelPrompts.AgentObservePromptEditUnchanged(iteration + 1, maxIter, toolNames)
+                    : buildFixAsked
+                    ? ModelPrompts.AgentObservePromptBuildBroken(iteration + 1, maxIter, toolNames)
                     : answerRequested
                         ? ModelPrompts.AgentObservePromptComplete(iteration + 1, maxIter, toolNames, TaskSnippet(userTask))
                         : ModelPrompts.AgentObservePrompt(iteration + 1, maxIter, toolNames, remaining);

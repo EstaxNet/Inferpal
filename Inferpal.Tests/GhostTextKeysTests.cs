@@ -41,4 +41,34 @@ public class GhostTextKeysTests
         Assert.Matches(@"\[Import\(AllowDefault = true\)\]\s*internal IAsyncCompletionBroker\? CompletionBroker", listener);
         Assert.Contains("new GhostTextController(textView, CompletionBroker)", listener, StringComparison.Ordinal);
     }
+
+    [Theory]
+    [InlineData(' ',  true,  false, true)]    // after "return ", "= ": the positions a suggestion is worth most at
+    [InlineData('.',  true,  false, true)]    // after "user." with the list closed (a comment, a string, a number)
+    [InlineData('(',  true,  false, true)]
+    [InlineData('x',  true,  false, true)]
+    [InlineData('.',  true,  true,  false)]   // the list is open: Tab is its key
+    [InlineData('x',  true,  true,  false)]
+    [InlineData('.',  false, false, false)]   // no broker: the character that opens the list is the only sign of it
+    [InlineData(' ',  false, false, false)]
+    [InlineData('x',  false, false, true)]
+    public void ASuggestionIsAsked_UnlessTheCompletionListOwnsTheCaret(
+        char previous, bool brokerKnown, bool completionActive, bool expected) =>
+        Assert.Equal(expected, GhostTextTrigger.Asks(previous, brokerKnown, completionActive));
+
+    [Fact]
+    public void TheStartOfTheDocument_AsksToo() => Assert.True(GhostTextTrigger.Asks(null, false, false));
+
+    [Fact]
+    public void TheController_AsksThroughTheRule_NeverThroughItsOwnCharacterList()
+    {
+        // ⚠ The controller refused after any of `. ( [ < " ' ,` or a space, on top of the open-list check: no
+        // suggestion after "return ", "= ", "user." or at the start of an indented line — where VS Code suggests.
+        var dir        = Path.Combine(ConversationPersistenceSilenceTests.RepoRoot(), "Inferpal.InProc", "GhostText");
+        var controller = ConventionCoverageTests.CodeOnly(Path.Combine(dir, "GhostTextController.cs"));
+
+        Assert.Contains("GhostTextTrigger.Asks(cursor > 0 ? snapshot[cursor - 1] : null, _completion is not null, CompletionActive())",
+                        controller, StringComparison.Ordinal);
+        Assert.DoesNotContain("IntelliSenseTrigger", controller, StringComparison.Ordinal);
+    }
 }

@@ -440,7 +440,7 @@
 
   <!-- Smart Fix Protocol -->
   <data name="SmartFixBuildOk" xml:space="preserve"><value>✅ Smart Fix：编译通过 — 无编译错误。</value></data>
-  <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix：检测到 {0} 个编译错误 — 请在继续之前修复：
+  <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix：此次编辑后有 {0} 个编译错误 — 如果更改还涉及其他文件，请先完成；否则请修复：
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix：编译检查超时（60 秒）— 请手动检查。</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix：构建检查失败，但没有指出任何错误——请自行运行以查看原因。</value></data>

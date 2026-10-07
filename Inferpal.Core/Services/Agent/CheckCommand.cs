@@ -48,10 +48,20 @@ internal static class CheckCommand
     /// <summary>
     /// The verdict of a run_command call: <c>true</c> a test run or build that failed, <c>false</c> one that passed,
     /// <c>null</c> when the call is not a check that RAN — another command, a refusal, an error before anything ran, a
-    /// background job, a pipeline stopped early.
+    /// background job, a pipeline stopped early, a runner that never started.
     /// </summary>
+    /// <remarks>
+    /// ⚠ A runner that never STARTED proves nothing either way: <c>pytest: command not found</c> (exit 127), PowerShell's
+    /// <c>CommandNotFoundException</c> (exit 1), <c>python -m pytest</c> without pytest installed (exit 1). Read as a
+    /// failed run, a turn whose code passes its tests ended on "the last test or build run of this turn failed —
+    /// whatever the answer says". Judged as Smart Fix judges a missing toolchain (what the shell says, never a build's
+    /// words), and by run_tests' own reading of the interpreter's line.
+    /// </remarks>
     public static bool? Failed(string? input, string output) =>
-        IsCheck(CommandOf(input)) && ExitCode(output) is { } code ? code != 0 : null;
+        IsCheck(CommandOf(input)) && ExitCode(output) is { } code && !NeverStarted(code, output) ? code != 0 : null;
+
+    private static bool NeverStarted(int code, string output) =>
+        code != 0 && (CodeActions.SmartFixValidator.IsToolMissing(code, output) || Tools.RunTestsTool.PytestModuleMissing(output));
 
     /// <summary>The exit code run_command reported: 0 when no note follows the output; null when nothing ran to its
     /// end (an error or refusal before the run, a background job, a pipeline stopped early).</summary>

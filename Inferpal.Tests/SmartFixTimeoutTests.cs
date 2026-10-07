@@ -12,9 +12,9 @@ namespace Inferpal.Tests;
 /// <para>
 /// ⚠ <b>Measured</b>: <c>Interpret(-1, "Determining projects to restore...\nRestored App.csproj")</c>
 /// — the partial output of a build killed on the 60 s fuse — came back as
-/// <i>"🔨 Smart Fix: 2 compilation error(s) detected — please fix before continuing:"</i> followed
+/// <i>"🔨 Smart Fix: 2 compilation error(s)"</i> followed
 /// by those two restore lines, presented to the model as compilation errors. With no output at all
-/// it said <i>"0 compilation error(s) detected — please fix before continuing"</i>.
+/// it said <i>"0 compilation error(s)"</i>.
 /// </para>
 /// <para>
 /// ⚠ This runs after <b>every write</b>, and it is the same family the file's own remark documents

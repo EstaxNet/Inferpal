@@ -193,7 +193,9 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
   reasoning switchable (thought channel), up to 262,144-token context.
 - **Tool calls.** `<|tool_call>call:name{key:<|"|>value<|"|>}<tool_call|>` — strings wrapped in `<|"|>`, numbers and
   booleans bare. The models also write some strings and keys in plain JSON quotes (`path:"src/a.cs"`, Gemma 4 12B in
-  about one call in eleven on our bench): Inferpal reads those as the string inside the quotes.
+  about one call in eleven on our bench): Inferpal reads those as the string inside the quotes. When the tools are
+  described in the system prompt, they sometimes write the JSON call asked there inside their own tags
+  (`<|tool_call>call:{"name":…,"arguments":{…}}<tool_call|>`): read as that call.
 - **Inferpal.** On LM Studio, the bundled chat template fails whenever a request carries tools (see below): Inferpal
   describes the tools in the system prompt instead, reads the calls from the text, and stops the model where it opens
   the tool's response — Gemma's own format ends a call with `<tool_call|><|tool_response>`, and a model nobody stops
@@ -300,6 +302,9 @@ Which one fits beside your agent depends on your card: see [By graphics card](#b
 Inferpal's battery runs real tasks on real projects with each model — fix a bug so the tests pass, add a class,
 rename a method everywhere, answer a question about the code, run a command — in C#/.NET, JavaScript (jest) and
 Python (pytest), and judges the outcome only. LM Studio, 32K context, the Linux host built from source.
+Inferpal's default context window is 8K (*Settings → Server and models*): on the same tasks, Devstral Small 2 and
+Gemma 4 12B passed as often at 8K (27 of 28 against 28 of 28) but took 1.5 to 2.3 times as long. If your card has the
+memory, a 32K window makes the agent faster; projects larger than the battery's were not measured at 8K.
 
 | Model | Result | Measured |
 |---|---|---|

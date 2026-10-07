@@ -440,7 +440,7 @@ Fai clic su **Correggi con l'IA** per correggere automaticamente in loop, o digi
 
   <!-- Smart Fix Protocol -->
   <data name="SmartFixBuildOk" xml:space="preserve"><value>✅ Smart Fix: build OK — nessun errore di compilazione.</value></data>
-  <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix: rilevato/i {0} errore/i di compilazione — correggere prima di continuare:
+  <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix: {0} errore/i di compilazione dopo questa modifica — se la modifica prosegue in altri file, completala; altrimenti correggili:
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: verifica build scaduta (60 s) — verificare manualmente.</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: il controllo di build è fallito senza indicare alcun errore — eseguilo tu stesso per capire perché.</value></data>

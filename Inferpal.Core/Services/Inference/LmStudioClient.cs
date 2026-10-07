@@ -393,7 +393,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
 
         var m    = string.IsNullOrEmpty(model) ? _config.DefaultModel : model;
         var spec = FimTemplate.Build(m, prefix, suffix);
-        var request = new OpenAiCompletionRequest(m, spec.Prompt, maxTokens, temperature, Stream: true, Stop: spec.Stop);
+        var request = new OpenAiCompletionRequest(m, spec.Prompt, maxTokens, temperature, Stream: true, Stop: FimCompletion.Stops(suffix, spec.Stop));
 
         var deadline = TimeSpan.FromSeconds(60);
 

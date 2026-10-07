@@ -440,7 +440,7 @@ Kliknij **Napraw z AI**, aby automatycznie naprawić w pętli, lub wpisz `/fix-b
 
   <!-- Smart Fix Protocol -->
   <data name="SmartFixBuildOk" xml:space="preserve"><value>✅ Smart Fix: kompilacja OK — brak błędów.</value></data>
-  <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix: wykryto {0} błąd/błędy kompilacji — popraw przed kontynuowaniem:
+  <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix: {0} błąd/błędy kompilacji po tej zmianie — jeśli zmiana obejmuje kolejne pliki, dokończ ją; w przeciwnym razie popraw błędy:
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: sprawdzanie kompilacji przekroczyło limit czasu (60 s) — sprawdź ręcznie.</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: sprawdzenie kompilacji nie powiodło się, nie wskazując żadnego błędu — uruchom je samodzielnie, aby zobaczyć dlaczego.</value></data>

@@ -440,7 +440,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
 
   <!-- Smart Fix Protocol -->
   <data name="SmartFixBuildOk" xml:space="preserve"><value>✅ Smart Fix: ビルドOK — コンパイルエラーなし。</value></data>
-  <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix: {0} 件のコンパイルエラーを検出 — 続行前に修正してください:
+  <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix: この編集後に {0} 件のコンパイルエラー — 変更が他のファイルに続く場合は完了させ、そうでなければ修正してください:
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: ビルド確認がタイムアウト (60 秒) — 手動で確認してください。</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: ビルドチェックはエラーを一つも示さずに失敗しました — 理由を確認するにはご自身で実行してください。</value></data>

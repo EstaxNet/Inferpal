@@ -62,7 +62,7 @@ internal sealed class PermissionRule
         if (Tool != "*" && !string.Equals(Tool, toolName, StringComparison.OrdinalIgnoreCase))
             return false;
 
-        try { return Pattern.IsMatch(subject); }
+        try { return RegexBudget.IsMatch(Pattern, subject); }
         catch (RegexMatchTimeoutException)
         {
             unreadable = true;
@@ -200,7 +200,7 @@ internal sealed class PermissionPolicy
         {
             try
             {
-                if (pattern.IsMatch(subject)) return true;
+                if (RegexBudget.IsMatch(pattern, subject)) return true;
             }
             catch (RegexMatchTimeoutException)
             {

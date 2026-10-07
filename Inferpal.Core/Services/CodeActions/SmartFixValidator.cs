@@ -251,7 +251,7 @@ internal sealed class SmartFixValidator
         if (IsToolMissing(exitCode, output)) return null;   // toolchain absent → stay silent
 
         var lines = ExtractErrorLines(output);
-        // ⚠ "0 compilation error(s) detected — please fix before continuing" is not a sentence:
+        // ⚠ "0 compilation error(s)" is not a sentence:
         // the build failed and named nothing, which is a different thing to go and look at.
         return lines.Count == 0
             ? Strings.SmartFixBuildFailedNoErrors
@@ -349,8 +349,8 @@ internal sealed class SmartFixValidator
         //
         // ⚠ And the FACT travels with it. Flattened to -1 alone, a killed build reaches Interpret
         // with a partial output carrying no `: error XX:` line and comes out as "N compilation
-        // error(s) detected" — restore lines presented to the model as compilation errors, an empty
-        // output as "0 error(s) — please fix before continuing", and Strings.SmartFixTimeout
+        // error(s)" — restore lines presented to the model as compilation errors, an empty
+        // output as "0 compilation error(s)", and Strings.SmartFixTimeout
         // unreachable.
         return (run.TimedOut ? -1 : run.ExitCode, run.Combined, run.TimedOut);
     }

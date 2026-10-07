@@ -1,4 +1,6 @@
-﻿namespace Inferpal.Services;
+﻿using System.Text.RegularExpressions;
+
+namespace Inferpal.Services;
 
 /// <summary>
 /// Match budget for every regex in this repository that meets input the process did not write.
@@ -30,4 +32,23 @@ internal static class RegexBudget
 {
     /// <summary>Per-match ceiling for source-scanning regexes.</summary>
     public static readonly TimeSpan Default = TimeSpan.FromSeconds(2);
+
+    /// <summary>
+    /// <paramref name="regex"/> matched against <paramref name="input"/>, run once more when its budget runs out; the
+    /// second timeout propagates.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A match timeout is wall-clock, and the FIRST match of a freshly built regex allocates its runner inside that
+    /// clock: under load a garbage collection lands there, and a short budget (a glob's 50 ms, a permission rule's
+    /// 100 ms) expires on an ordinary pattern — measured, 6 of 120,105 first matches under heavy collection, none of
+    /// 9 million warm ones. The rule was then not applied, the exclusion not honoured, the approval forced to a prompt.
+    /// The second run is warm; a pattern that genuinely backtracks out of its budget times out twice.
+    /// </remarks>
+    public static bool IsMatch(Regex regex, string input) => RetryOnce(() => regex.IsMatch(input));
+
+    internal static bool RetryOnce(Func<bool> match)
+    {
+        try { return match(); }
+        catch (RegexMatchTimeoutException) { return match(); }
+    }
 }

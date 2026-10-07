@@ -440,7 +440,7 @@ Klicken Sie auf **Mit KI reparieren**, um die automatische Korrektur in einer Sc
 
   <!-- Smart Fix Protocol -->
   <data name="SmartFixBuildOk" xml:space="preserve"><value>✅ Smart Fix: Build OK – keine Kompilierfehler.</value></data>
-  <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix: {0} Kompilierfehler gefunden – bitte vor dem Fortfahren beheben:
+  <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix: {0} Kompilierfehler nach dieser Änderung – wenn die Änderung in anderen Dateien weitergeht, schließen Sie sie ab; andernfalls beheben Sie die Fehler:
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: Build-Prüfung nach 60 s abgebrochen – bitte manuell prüfen.</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: Die Build-Prüfung ist fehlgeschlagen, ohne einen einzigen Fehler zu nennen — führen Sie sie selbst aus, um zu sehen, warum.</value></data>

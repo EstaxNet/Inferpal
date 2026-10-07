@@ -172,7 +172,7 @@ internal static class RulesService
 
     private static bool SafeIsMatch(Regex rx, string input, string glob)
     {
-        try { return rx.IsMatch(input); }
+        try { return RegexBudget.IsMatch(rx, input); }
         catch (RegexMatchTimeoutException)
         {
             // ⚠ Once per GLOB, not per evaluation: `Matches()` runs on every rebuild of the system

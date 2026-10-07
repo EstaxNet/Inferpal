@@ -83,11 +83,11 @@ internal static class IndexExclusions
 
         try
         {
-            if (regex.IsMatch(relPath)) return true;
+            if (RegexBudget.IsMatch(regex, relPath)) return true;
             // Bare patterns (no separator) also match the file name at any depth — same rule as
             // the project rules' globs, so `*.generated.cs` works without writing `**/`.
             if (!glob.Contains('/'))
-                return regex.IsMatch(relPath[(relPath.LastIndexOf('/') + 1)..]);
+                return RegexBudget.IsMatch(regex, relPath[(relPath.LastIndexOf('/') + 1)..]);
             return false;
         }
         catch (RegexMatchTimeoutException)

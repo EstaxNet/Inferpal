@@ -53,6 +53,12 @@ internal static class ModelPrompts
         + "Read the error above, correct the call — copy old_content exactly from the file — and send it again with every edit it contained: when apply_edits is refused, none of its edits is written, the correct ones included. Do not answer as if the change had been made.",
                       iteration, max, toolNames);
 
+    /// <summary>OBSERVE injection when the plan is exhausted on an edit that was written but Smart Fix found compilation errors: fix them, never "the plan is complete".</summary>
+    public static string AgentObservePromptBuildBroken(int iteration, int max, string toolNames) =>
+        string.Format("[OBSERVE — {0}/{1}] Tools executed: {2}. The edit was written, but the project no longer builds: the compilation errors are listed above.\n"
+        + "Fix them now with another edit — read the lines they name first if you need to. Do not answer as if the change were done while the build fails.",
+                      iteration, max, toolNames);
+
     /// <summary>Nudge when an ACT response is a new JSON plan instead of a tool call or an answer (AgentOrchestrator.LooksLikePlanEcho).</summary>
     public const string AgentPlanEchoNudge =
         "That is a plan, not a step carried out. Do not write another plan. Call the tool for the next step now "

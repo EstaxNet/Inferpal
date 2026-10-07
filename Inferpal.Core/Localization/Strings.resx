@@ -441,7 +441,7 @@ Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</val
 
   <!-- Smart Fix Protocol -->
   <data name="SmartFixBuildOk" xml:space="preserve"><value>✅ Smart Fix: build OK — no compilation errors.</value></data>
-  <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix: {0} compilation error(s) detected — please fix before continuing:
+  <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix: {0} compilation error(s) after this edit — if the change continues in other files, finish it; otherwise fix them:
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: build check timed out (60 s) — verify manually.</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: the build check failed without naming a single error — run it yourself to see why.</value></data>

@@ -616,10 +616,14 @@ internal sealed class CSharpSemanticIndex
     {
         var sep  = Path.DirectorySeparatorChar;
         var name = declaringFile.Replace('/', sep).Replace('\\', sep);
-        if (Path.IsPathRooted(name))
-            return Services.PathComparer.Default.Equals(Path.GetFullPath(name), Path.GetFullPath(path));
-        while (name.StartsWith("." + sep, StringComparison.Ordinal)) name = name[2..];
         var full = path.Replace('/', sep);
+        if (Path.IsPathRooted(name))
+            return Services.PathComparer.Default.Equals(Path.GetFullPath(name), Path.GetFullPath(path))
+                // ⚠ "/src/Shop/Rules/IPriceRule.cs" — the workspace path written with a leading separator — names the
+                // trailing components it spells, as a relative name does; an absolute path elsewhere matches nothing.
+                // Compared as a full path only, the narrowing matched no declaration and the rename was refused.
+                || full.EndsWith(name, Services.PathComparer.Comparison);
+        while (name.StartsWith("." + sep, StringComparison.Ordinal)) name = name[2..];
         return full.Equals(name, Services.PathComparer.Comparison)
             || full.EndsWith(sep + name, Services.PathComparer.Comparison);
     }

@@ -179,9 +179,9 @@ internal sealed class GhostTextController
         var lastLine  = snapshot.GetLineFromLineNumber(
             Math.Min(snapshot.LineCount - 1, caretLine.LineNumber + SuffixLines));
 
-        // Don't fire when IntelliSense trigger chars were just typed, nor while its list is open: Tab belongs to it.
-        if (cursor > 0 && IsIntelliSenseTrigger(snapshot[cursor - 1])) return null;
-        if (CompletionActive()) return null;
+        // Not while the completion list is open: Tab belongs to it.
+        if (!GhostTextTrigger.Asks(cursor > 0 ? snapshot[cursor - 1] : null, _completion is not null, CompletionActive()))
+            return null;
 
         var (start, end) = FimContextBuilder.Window(firstLine.Start.Position, cursor, lastLine.End.Position);
         var prefix = snapshot.GetText(Span.FromBounds(start, cursor));
@@ -276,11 +276,4 @@ internal sealed class GhostTextController
 
         _ = _dispatcher.InvokeAsync(() => _adornment.Hide());
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private static readonly HashSet<char> IntelliSenseTriggers =
-        ['.', '(', '[', '<', '"', '\'', ',', ' '];
-
-    private static bool IsIntelliSenseTrigger(char c) => IntelliSenseTriggers.Contains(c);
 }

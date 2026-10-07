@@ -29,7 +29,8 @@ namespace Inferpal.Services.Agent;
 ///   <item><description>Meta Muse Glimmer's ATEM shape
 ///     <c>&lt;atem:function_calls&gt;&lt;atem:invoke name="name"&gt;&lt;atem:parameter name="key"&gt;value&lt;/atem:parameter&gt;…&lt;/atem:invoke&gt;&lt;/atem:function_calls&gt;</c>.</description></item>
 ///   <item><description>GLM's shape <c>&lt;tool_call&gt;name&lt;arg_key&gt;key&lt;/arg_key&gt;&lt;arg_value&gt;value&lt;/arg_value&gt;&lt;/tool_call&gt;</c>.</description></item>
-///   <item><description>Gemma 4's shape <c>&lt;|tool_call&gt;call:name{key:&lt;|"|&gt;value&lt;|"|&gt;}&lt;tool_call|&gt;</c>.</description></item>
+///   <item><description>Gemma 4's shape <c>&lt;|tool_call&gt;call:name{key:&lt;|"|&gt;value&lt;|"|&gt;}&lt;tool_call|&gt;</c>, and the
+///     JSON object of the first shape inside its tags, <c>&lt;|tool_call&gt;call:{"name":…,"arguments":…}&lt;tool_call|&gt;</c>.</description></item>
 ///   <item><description>Mistral's shape <c>[TOOL_CALLS]name[ARGS]{json}</c> (Devstral), and the older <c>[TOOL_CALLS][{…}]</c> list.</description></item>
 ///   <item><description>Cohere's shape <c>&lt;|START_ACTION|&gt;[{"tool_call_id":…,"tool_name":…,"parameters":{…}}]&lt;|END_ACTION|&gt;</c> (North Mini Code).</description></item>
 ///   <item><description>A bare object <c>{"name":…,"arguments":{…}}</c> (optionally with an <c>id</c>).</description></item>
@@ -41,8 +42,13 @@ namespace Inferpal.Services.Agent;
 /// </remarks>
 internal static class InlineToolCallParser
 {
+    // The end of a call written between tags: </tool_call>, Gemma's <tool_call|>, or a misspelled </tool_…> — Gemma 4
+    // under PromptedTools writes </tool__call>, or </tool_class> followed by </tool_call>. Matched strictly, the call
+    // stays in the content, becomes the answer, and nothing runs.
+    private const string TagCloser = @"(?:<tool_call\|>|</tool_\w*>)(?:\s*</tool_call>)?";
+
     private static readonly Regex ToolCallTagRegex =
-        new(@"<tool_call>\s*(\{.*?\})\s*</tool_call>", RegexOptions.Singleline | RegexOptions.Compiled, RegexBudget.Default);
+        new(@"<tool_call>\s*(\{.*?\})\s*" + TagCloser, RegexOptions.Singleline | RegexOptions.Compiled, RegexBudget.Default);
 
     // Qwen/GLM-style XML call: <tool_call><function=NAME>…params…</function></tool_call>.
     // Group 1 is the function name; group 2 is the (possibly empty) parameter block.
@@ -77,9 +83,11 @@ internal static class InlineToolCallParser
     private static readonly Regex GlmArgRegex =
         new(@"<arg_key>(.*?)</arg_key>\s*<arg_value>(.*?)</arg_value>", RegexOptions.Singleline | RegexOptions.Compiled, RegexBudget.Default);
 
-    // Gemma 4: <|tool_call>call:NAME{…}<tool_call|>, the arguments in Gemma's own syntax (GemmaCallArguments).
+    // Gemma 4: <|tool_call>call:NAME{…}<tool_call|>, the arguments in Gemma's own syntax (GemmaCallArguments). Group 1 is
+    // empty — or the tag's own name, "tool_call" — when the JSON object PromptedTools asks for follows, written inside
+    // Gemma's tags.
     private static readonly Regex GemmaCallRegex =
-        new(@"<\|tool_call>\s*call:([^\s{]+?)\s*(\{.*?\})\s*<tool_call\|>", RegexOptions.Singleline | RegexOptions.Compiled, RegexBudget.Default);
+        new(@"<\|tool_call>\s*call:([^\s{]*?)\s*(\{.*?\})\s*" + TagCloser, RegexOptions.Singleline | RegexOptions.Compiled, RegexBudget.Default);
 
     // Cohere (North Mini Code, Command): <|START_ACTION|>[{"tool_call_id":…,"tool_name":…,"parameters":{…}},…]<|END_ACTION|>,
     // written after the reasoning's <|END_THINKING|>. LM Studio leaves it as text for North Mini Code: unread, no call runs.
@@ -207,8 +215,25 @@ internal static class InlineToolCallParser
         var gemmaMatched = false;
         foreach (Match m in GemmaCallRegex.Matches(content))
         {
-            var name = m.Groups[1].Value.Trim();
-            if (name.Length == 0) continue;
+            var name = m.Groups[1].Value.Trim().TrimEnd('>');
+            if (name.Length == 0 || name == "tool_call")
+            {
+                // ⚠ <|tool_call>call:{"name":…,"arguments":…}<tool_call|> — the JSON object of shape (1) inside Gemma's
+                // tags, what Gemma 4 writes under PromptedTools, sometimes after "call:tool_call". Unread, the run ends
+                // on the raw call as its answer and nothing executes. Read by shape (1)'s reader, or — written in
+                // Gemma's own syntax, {name:<|"|>read_file<|"|>,arguments:{…}} — as the call it wraps.
+                var body = m.Groups[2].Value;
+                if (TryAddFromJson(body, calls) || TryAddMalformedTagCall(body, calls)
+                    || (GemmaCallArguments.ToJson(body) is { } wrapped && TryAddFromJson(wrapped, calls)))
+                {
+                    cleaned      = cleaned.Replace(m.Value, string.Empty);
+                    gemmaMatched = true;
+                    continue;
+                }
+                // A body that names no call: without a name it stays text; after "call:tool_call" it stays the call of
+                // that name, as before — the registry answers "Unknown tool" with the list, and the model sends it again.
+                if (name.Length == 0) continue;
+            }
             var json = GemmaCallArguments.ToJson(m.Groups[2].Value);
             calls.Add(json is null
                 ? new ToolCallDto(new ToolCallFunction(name, EmptyObject()) { UnparsedArguments = m.Groups[2].Value })
@@ -346,6 +371,16 @@ internal static class InlineToolCallParser
             return true;
         }
 
+        // ⚠ Arguments written at the TOP LEVEL, beside the name — {"name":"run_tests","filter":"Pricing"}, which Gemma 4
+        // writes under PromptedTools — are the arguments the model meant. Read as a call without arguments they were
+        // dropped: the call ran with {} (run_tests then runs the WHOLE suite) or was refused for a parameter the model
+        // did write.
+        if (RawArguments(obj) is null && FlatArguments(obj) is { } flat)
+        {
+            calls.Add(new ToolCallDto(new ToolCallFunction(name!, ParseObject(flat))));
+            return true;
+        }
+
         // ⚠ <b>UNREADABLE arguments are not ABSENT arguments.</b> This site fell back to `{}` in
         // both cases, so a `run_tests` whose filter the model wrote as raw text — the commonest shape
         // from small models — became a `run_tests` with no filter, that is, the WHOLE suite. The rule
@@ -355,6 +390,19 @@ internal static class InlineToolCallParser
         calls.Add(new ToolCallDto(
             new ToolCallFunction(name!, EmptyObject()) { UnparsedArguments = RawArguments(obj) }));
         return true;
+    }
+
+    // The keys of a call object that say WHICH call it is, never what it is called with.
+    private static readonly string[] CallKeys = ["name", "tool_name", "id", "tool_call_id", "type", "arguments", "parameters"];
+
+    /// <summary>The properties of a call object written beside its name, as a JSON object; <c>null</c> when it has
+    /// none — a legitimate call without arguments.</summary>
+    private static string? FlatArguments(JsonElement obj)
+    {
+        var props = obj.EnumerateObject().Where(p => !CallKeys.Contains(p.Name, StringComparer.Ordinal)).ToList();
+        return props.Count == 0
+            ? null
+            : "{" + string.Join(",", props.Select(p => JsonSerializer.Serialize(p.Name) + ":" + p.Value.GetRawText())) + "}";
     }
 
     /// <summary>

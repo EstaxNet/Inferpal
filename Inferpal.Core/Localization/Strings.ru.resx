@@ -440,7 +440,7 @@
 
   <!-- Smart Fix Protocol -->
   <data name="SmartFixBuildOk" xml:space="preserve"><value>✅ Smart Fix: сборка OK — ошибок компиляции нет.</value></data>
-  <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix: обнаружено {0} ошибок(а) компиляции — исправьте перед продолжением:
+  <data name="SmartFixBuildErrors" xml:space="preserve"><value>🔨 Smart Fix: {0} ошибок(а) компиляции после этого изменения — если изменение продолжается в других файлах, завершите его; иначе исправьте ошибки:
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: время проверки сборки истекло (60 с) — проверьте вручную.</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: проверка сборки завершилась неудачей, не назвав ни одной ошибки — запустите её сами, чтобы понять причину.</value></data>
