@@ -43,7 +43,7 @@ public partial class HostServerTests
             .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
         Assert.True(result.Cancelled);
-        Assert.Contains(session.History, m => m.Content.StartsWith("[Context Note]", StringComparison.Ordinal));  // witness
+        Assert.Contains(session.History, m => m.Content?.StartsWith("[Context Note]", StringComparison.Ordinal) == true);  // witness
         Assert.Equal(AgentOrchestrator.EstimateTokens(session.History), session.LastPromptTokens);
         Assert.True(result.NextTurnTokens >= session.LastPromptTokens, $"ring: {result.NextTurnTokens}");
     }

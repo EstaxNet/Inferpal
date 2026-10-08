@@ -5,7 +5,6 @@ using Inferpal.Localization;
 using Inferpal.Models;
 using Inferpal.Services;
 using Inferpal.Services.Commands;
-using Inferpal.Services.Shell;
 using Inferpal.Services.Tools;
 using Xunit;
 
@@ -54,12 +53,19 @@ public sealed class RunnerNeverStartedTests : IDisposable
         }
     }
 
+    private static bool CargoOnPath() =>
+        (Environment.GetEnvironmentVariable("PATH") ?? string.Empty)
+            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Any(dir => new[] { "cargo", "cargo.exe", "cargo.cmd", "cargo.bat" }.Any(n => File.Exists(Path.Combine(dir, n))));
+
     [Fact]
     public async Task Tdd_OnAToolchainThatIsNotInstalled_StopsAtOnce_AndPatchesNothing()
     {
         // A Rust project on a machine without cargo. Where cargo IS installed this arm measures nothing: the theory above
         // holds the rule, this one the real start failure.
-        if (ShellLauncher.FindOnPath("cargo") is not null) return;
+        // ⚠ With its Windows extensions: ShellLauncher.FindOnPath reads the exact name (a POSIX shell's lookup), and the
+        // GitHub Windows runner's cargo.exe went unseen — the arm then ran a real cargo on a project with no source.
+        if (CargoOnPath()) return;
         File.WriteAllText(Path.Combine(_root, "Cargo.toml"), "[package]\nname = \"shop\"\nversion = \"0.1.0\"\n");
         var tools  = new RunTestsOnly(new RunTestsTool(() => _root));
         var client = new FakeInferenceProvider();
