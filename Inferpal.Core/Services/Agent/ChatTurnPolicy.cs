@@ -110,23 +110,48 @@ internal static class ChatTurnPolicy
     /// </remarks>
     /// <param name="filesChangedInRun"><see cref="Execution.FileHistoryService.CurrentRunFileCount"/>; <c>null</c> (no
     /// run) or 0 says nothing.</param>
-    public static bool LastCheckFailed(IEnumerable<ToolExecution> executions, int? filesChangedInRun)
+    public static bool LastCheckFailed(IEnumerable<ToolExecution> executions, int? filesChangedInRun) =>
+        filesChangedInRun is > 0 && LastCheck(executions)?.Failed == true;
+
+    /// <summary>What a check of a turn checked.</summary>
+    internal enum CheckKind { Build, Tests }
+
+    /// <summary>A check's kind and verdict: <c>true</c> failed, <c>false</c> passed, <c>null</c> nothing proven.</summary>
+    internal readonly record struct CheckVerdict(CheckKind Kind, bool? Failed);
+
+    /// <summary>
+    /// The last check of a turn — a build (<c>get_diagnostics</c>), the tests (<c>run_tests</c>), the build an edit's
+    /// Smart Fix ran, or a test run or build through the shell —, or <c>null</c> when nothing checked.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ One reader for the end-of-turn notice and the run's result bar: read twice, the notice counted a test run
+    /// through the shell and the bar did not — "the last test or build of this turn failed" printed beside
+    /// "✓ build passed". ⚠ Four checks, not two: an edit's Smart Fix note is a build too (a turn that ENDED on its
+    /// compilation errors said nothing), and the model running pytest by hand is a check like any other, judged on
+    /// the exit code, never on words.
+    /// </remarks>
+    internal static CheckVerdict? LastCheck(IEnumerable<ToolExecution> executions)
     {
-        if (filesChangedInRun is not > 0) return false;
-        // ⚠ Three checks, not two: an edit's Smart Fix note is a build too, and a turn that ENDED on its compilation
-        // errors — the model answering "updated" over a page that no longer builds — said nothing.
         var last = executions.LastOrDefault(e => e.Name is "run_tests" or "get_diagnostics"
                                               || (IsFileEdit(e.Name) && CodeActions.SmartFixValidator.ReadVerdict(e.Output) is not null)
                                               || (e.Name == "run_command" && CheckCommand.Failed(e.Input, e.Output) is not null));
         return last switch
         {
-            null                            => false,
-            { Name: "get_diagnostics" }     => Tools.GetDiagnosticsTool.ReadVerdict(last.Output) == Tools.GetDiagnosticsTool.BuildVerdict.Errors,
-            { Name: "run_tests" }           => Commands.TddCommandHandler.TestsFailed(last.Output),
-            // ⚠ A test or build run through the shell is a check like any other: the model ran pytest by hand, the run
-            // failed, and the turn ended on "renamed everywhere" without a word. Judged on the exit code, never on words.
-            { Name: "run_command" }         => CheckCommand.Failed(last.Input, last.Output) == true,
-            _                               => CodeActions.SmartFixValidator.ReadVerdict(last.Output) == true,
+            null => null,
+            { Name: "get_diagnostics" } => new CheckVerdict(CheckKind.Build, Tools.GetDiagnosticsTool.ReadVerdict(last.Output) switch
+            {
+                Tools.GetDiagnosticsTool.BuildVerdict.Errors => true,
+                Tools.GetDiagnosticsTool.BuildVerdict.Clean  => false,
+                _                                            => null,
+            }),
+            { Name: "run_tests" } => new CheckVerdict(CheckKind.Tests,
+                Commands.TddCommandHandler.TestsFailed(last.Output) ? true
+                : Commands.TddCommandHandler.TestsPassed(last.Output) ? false
+                : null),
+            { Name: "run_command" } => new CheckVerdict(
+                CheckCommand.RunsTests(CheckCommand.CommandOf(last.Input)) ? CheckKind.Tests : CheckKind.Build,
+                CheckCommand.Failed(last.Input, last.Output)),
+            _ => new CheckVerdict(CheckKind.Build, CodeActions.SmartFixValidator.ReadVerdict(last.Output)),
         };
     }
 

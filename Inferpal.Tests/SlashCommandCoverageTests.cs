@@ -10,6 +10,9 @@ namespace Inferpal.Tests;
 // tool — the exact layer where the "/search → web instead of codebase" mismatch lived.
 // This is the automatable half of "test every command"; executing the resulting actions
 // needs a live VS + Ollama and is exercised manually in the Exp hive.
+// ⚠ It compares localized text read at two moments (the help built, then a category title): a class flipping the
+// culture in parallel made the two disagree — "**Meta**" built, "**Méta**" expected.
+[Collection(CultureSerialCollection.Name)]
 public class SlashCommandCoverageTests
 {
     private static readonly UserSlashTemplate[] NoTemplates = [];

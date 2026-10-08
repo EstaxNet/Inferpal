@@ -375,9 +375,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         var  argumentsLoop = new ArgumentsLoopDetector();
         var  argsLooping   = false;
         // A structured call whose arguments can no longer become what its tool reads: stopped there, not minutes later.
-        var  schemas       = new Dictionary<string, JsonElement?>(StringComparer.Ordinal);
-        var  argsShape     = new ArgumentsShapeWatcher(name =>
-            schemas.TryGetValue(name, out var known) ? known : schemas[name] = SchemaOf(defs, name));
+        var  schemaOf      = ToolSchemas.Of(defs);
+        var  argsShape     = new ArgumentsShapeWatcher(schemaOf);
         string? brokenShape = null;
         // A model whose addressed messages the server streams as content (Muse Glimmer): reasoning split from answer.
         var  envelope      = new ChannelEnvelope();
@@ -607,7 +606,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         if (toolCalls is null && contentBuilder.Length > 0)
         {
             var known = new HashSet<string>(tools.Definitions.Select(d => d.Function.Name), StringComparer.Ordinal);
-            var (inlineCalls, cleaned) = InlineToolCallParser.FromContent(contentText, known);
+            var (inlineCalls, cleaned) = InlineToolCallParser.FromContent(contentText, known, schemaOf);
             if (inlineCalls is { Count: > 0 })
                 return new ChatTurnResult(cleaned, inlineCalls, tokensUsed, promptTokens, cut, StoppedRepeating: looping);
         }
@@ -621,7 +620,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // reasoning channel, and is promoted rather than dropped — the UI already streamed it as "💭".
         if (toolCalls is null && !contentPrintable && reasoningBuilder.Length > 0)
             return ReasoningOnlyTurn.Recover(reasoningBuilder.ToString(), tokensUsed, promptTokens, cut, looping,
-                                             stoppedEarly: bounded || repeated || looping);
+                                             stoppedEarly: bounded || repeated || looping, schemaOf);
 
         // Empty turn under tool_choice:"required": some models/runtimes (e.g. devstral/Mistral on
         // LM Studio) return *nothing at all* — no content, no structured tool_calls, no reasoning —
@@ -658,13 +657,6 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
 
         return new ChatTurnResult(contentText, toolCalls, tokensUsed, promptTokens, cut, StoppedRepeating: looping);
     }
-
-    /// <summary>The parameters schema the request declared for tool <paramref name="name"/>, as JSON; <c>null</c> when
-    /// it declared none — a call to a tool nobody offered is the funnel's to refuse.</summary>
-    private static JsonElement? SchemaOf(List<ToolDefinition>? defs, string name) =>
-        defs?.FirstOrDefault(d => d.Function.Name == name) is { } def
-            ? JsonSerializer.SerializeToElement(def.Function.Parameters)
-            : null;
 
     /// <summary>Turns the accumulated streamed fragments into structured tool calls (arguments parsed as JSON).</summary>
     internal static List<ToolCallDto>? BuildToolCalls(

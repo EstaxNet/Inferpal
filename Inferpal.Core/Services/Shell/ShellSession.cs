@@ -78,7 +78,25 @@ internal sealed class ShellSession
     /// <summary>The line above a command's output when it did not run where the session was: read as the session's
     /// folder, its output describes another one.</summary>
     internal static string VanishedNote(string gone, string ranIn) =>
-        $"[{gone} no longer exists — this ran in {ranIn}]\n";
+        $"[{gone}{VanishedMiddle}{ranIn}]\n";
+
+    private const string VanishedMiddle = " no longer exists — this ran in ";
+
+    /// <summary>
+    /// What the command printed, without the notes the session writes around it: the vanished folder above
+    /// (<see cref="VanishedNote"/>), the output a background process held open below (<see cref="ChildProcess.OutputHeldOpenNote"/>).
+    /// </summary>
+    /// <remarks>⚠ A reader of the command's own end — its exit note, its "Error:" — reads through these: the exit code
+    /// stood before the held-open note and was read as 0, and a timeout under the vanished note was a run that passed.</remarks>
+    internal static string WithoutNotes(string output)
+    {
+        if (output.StartsWith('[') && output.IndexOf('\n') is var eol and > 0
+            && output.IndexOf(VanishedMiddle, 0, eol, StringComparison.Ordinal) > 0 && output[eol - 1] == ']')
+            output = output[(eol + 1)..];
+        return output.EndsWith(ChildProcess.OutputHeldOpenNote, StringComparison.Ordinal)
+            ? output[..^ChildProcess.OutputHeldOpenNote.Length]
+            : output;
+    }
 
     public (string Cwd, IReadOnlyDictionary<string, string> Env) Snapshot()
     {

@@ -440,7 +440,10 @@ internal class RunTestsTool : ITool
         }
 
         if (NpmSummary(raw) is not { } s)
-            return exitCode == 0 ? NothingProven + "\n\n" + rawTail : rawTail;
+            return exitCode == 0          ? NothingProven + "\n\n" + rawTail
+                 : exitCode == NoExitCode ? rawTail
+                 : CompileErrors(raw) is { Count: > 0 } errors ? CompileFailure(errors) + "\n\n" + rawTail
+                 : NoSummaryFailure("npm test", exitCode) + "\n\n" + rawTail;
 
         var counts = $"Failed: {s.Failed}, Passed: {s.Passed}, Skipped: {s.Skipped}, Total: {s.Total}";
         // ⚠ "Tests: 0 total" is ALSO what a test file that failed to load looks like — the test imports a module that
@@ -623,6 +626,72 @@ internal class RunTestsTool : ITool
     /// <summary>The heading of a run whose code did not compile: red, and no test ran.</summary>
     internal const string BuildFailed = "✗ BUILD FAILED — the code did not compile, so no test ran. Compiler errors:";
 
+    /// <summary>
+    /// The verdict of a run that FAILED before printing any test summary: red, with the output below it.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Every runner's failing exit code gets a verdict line. Without one, the parser handed back the raw output —
+    /// a <c>tsc &amp;&amp; jest</c> whose compilation failed, a crate that did not compile, a runner that crashed — and no reader
+    /// saw a failure in it: no end-of-turn notice, no failed check on the result bar.
+    /// </remarks>
+    internal static string NoSummaryFailure(string runner, int exitCode) =>
+        $"✗ FAILED — {runner} exited with code {exitCode} before printing a test summary; its output is below";
+
+    /// <summary><see cref="BuildFailed"/> and the compiler errors, at most <see cref="MaxCompileErrorsListed"/> of them.</summary>
+    private static string CompileFailure(List<string> errors)
+    {
+        var sb = new StringBuilder().AppendLine(BuildFailed);
+        foreach (var e in errors.Take(MaxCompileErrorsListed)) sb.AppendLine($"  {e}");
+        if (errors.Count > MaxCompileErrorsListed)
+            sb.AppendLine($"  … +{errors.Count - MaxCompileErrorsListed} more error(s) not listed");
+        return sb.ToString().TrimEnd();
+    }
+
+    /// <summary>The errors of a crate that did not compile (<c>error[E0425]: …</c> and the <c>--&gt;</c> line that places it);
+    /// empty unless cargo said it could not compile.</summary>
+    internal static List<string> CargoCompileErrors(string raw)
+    {
+        if (!raw.Contains("error: could not compile", StringComparison.Ordinal)) return [];
+        var lines  = raw.Replace("\r", "").Split('\n');
+        var errors = new List<string>();
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var l = lines[i].Trim();
+            if (!Regex.IsMatch(l, @"^error(?:\[E\d+\])?:", RegexOptions.None, RegexBudget.Default)
+                || l.StartsWith("error: could not compile", StringComparison.Ordinal)
+                || l.StartsWith("error: aborting", StringComparison.Ordinal))
+                continue;
+            var at = i + 1 < lines.Length && lines[i + 1].Trim().StartsWith("--> ", StringComparison.Ordinal)
+                ? " (" + lines[i + 1].Trim()[4..] + ")"
+                : "";
+            errors.Add(l + at);
+        }
+        return errors.Distinct().ToList();
+    }
+
+    /// <summary>The heading of a run in which some test projects compiled and ran while others did not compile.</summary>
+    internal const string PartlyBuilt =
+        "✗ BUILD FAILED in part — some test projects did not compile, so their tests did not run. Compiler errors:";
+
+    /// <summary>The heading of a run whose test host crashed: red, the tests after the crash did not run. Followed by
+    /// vstest's reason.</summary>
+    internal const string TestRunAborted =
+        "✗ TEST RUN ABORTED — the test host crashed, so the tests after the crash did not run. Reason:";
+
+    /// <summary>The exit code of a run that has none: killed at its budget (the budget says so), or never started.</summary>
+    private const int NoExitCode = -1;
+
+    /// <summary>vstest's reason for an aborted run ("Test host process crashed : Stack overflow."), or <c>null</c>.</summary>
+    private static string? AbortReason(string raw)
+    {
+        const string marker = "The active test run was aborted. Reason:";
+        var at = raw.IndexOf(marker, StringComparison.Ordinal);
+        if (at < 0)
+            return raw.Contains("Test Run Aborted.", StringComparison.Ordinal) ? "(none given)" : null;
+        var end = raw.IndexOf('\n', at);
+        return raw[(at + marker.Length)..(end < 0 ? raw.Length : end)].Trim();
+    }
+
     /// <summary>dotnet refused its own command line (MSB1xxx): nothing was built, nothing ran. Followed by its errors.</summary>
     internal const string DotnetCommandRejected =
         "⚠ dotnet refused its command line (an MSBuild switch error, not the code) — nothing ran, so nothing was "
@@ -697,10 +766,42 @@ internal class RunTestsTool : ITool
             sb.AppendLine(OnlySkipped);
             sb.AppendLine($"Failed: 0, Passed: 0, Skipped: {totalSkipped}, Total: {totalTotal}");
         }
+        // ⚠ A summary is the verdict of the test projects that RAN, never the verdict of the run: in a solution, the
+        // projects that compile still run when another does not ("Test Run Successful", exit code 1), and a project
+        // whose test host crashes prints "Test Run Aborted." with no totals. Read from the totals alone, both runs
+        // were "✓ PASSED" — /tdd declared victory over a test that never compiled, or that blew the stack.
+        else if (totalTotal > 0 && totalFailed == 0 && exitCode is not (0 or NoExitCode))
+        {
+            var counts = $"Failed: 0, Passed: {totalPassed}, Skipped: {totalSkipped}, Total: {totalTotal}";
+            if (CompileErrors(raw).Where(e => !IsCommandLineError(e)).ToList() is { Count: > 0 } unbuilt)
+            {
+                sb.AppendLine(PartlyBuilt);
+                foreach (var e in unbuilt.Take(MaxCompileErrorsListed))
+                    sb.AppendLine($"  {e}");
+                if (unbuilt.Count > MaxCompileErrorsListed)
+                    sb.AppendLine($"  … +{unbuilt.Count - MaxCompileErrorsListed} more error(s) not listed");
+                sb.AppendLine($"Tests of the projects that compiled — {counts}");
+            }
+            else if (AbortReason(raw) is { } reason)
+            {
+                sb.AppendLine($"{TestRunAborted} {reason}");
+                sb.AppendLine($"Tests that ran — {counts}");
+            }
+            else
+            {
+                sb.AppendLine($"✗ FAILED — every test that ran passed, but dotnet test exited with code {exitCode}: part of "
+                              + $"the run failed. {counts}");
+                sb.AppendLine(Truncate(raw.Trim(), MaxRawChars));
+            }
+        }
         else if (totalTotal > 0)
         {
             var status = totalFailed == 0 ? "✓ PASSED" : "✗ FAILED";
             sb.AppendLine($"{status} — Failed: {totalFailed}, Passed: {totalPassed}, Skipped: {totalSkipped}, Total: {totalTotal}");
+        }
+        else if (AbortReason(raw) is { } alone)
+        {
+            sb.AppendLine($"{TestRunAborted} {alone}");
         }
         // No test summary and compiler errors: the code did not build, so no test ran — and the errors ARE the
         // verdict. Red (a test written before its code does not compile: that is TDD's first step, not "nothing to
@@ -741,6 +842,11 @@ internal class RunTestsTool : ITool
         else if (exitCode == 0)
         {
             sb.AppendLine(NothingProven);
+        }
+        else if (exitCode != NoExitCode)
+        {
+            sb.AppendLine(NoSummaryFailure("dotnet test", exitCode));
+            sb.AppendLine(Truncate(raw.Trim(), MaxRawChars));
         }
 
         // Extract failed test blocks (name + error message, skip stack traces)
@@ -887,6 +993,8 @@ internal class RunTestsTool : ITool
             sb.AppendLine(summaryMatch.Groups[1].Value.Trim());
         else if (exitCode == 0)
             sb.AppendLine(NothingProven);
+        else if (exitCode != NoExitCode)
+            sb.AppendLine(NoSummaryFailure("pytest", exitCode)).AppendLine(Truncate(raw.Trim(), MaxRawChars));
 
         // FAILED lines: "FAILED tests/test_x.py::test_name - AssertionError: ..."
         var allFailedLines = raw.Split('\n')
@@ -938,6 +1046,10 @@ internal class RunTestsTool : ITool
             sb.AppendLine($"{(failed == 0 ? "✓ PASSED" : "✗ FAILED")} — Failed: {failed}, Passed: {passed}, Ignored: {ignored}, Total: {passed + failed + ignored}");
         else if (exitCode == 0)
             sb.AppendLine(NothingProven);
+        else if (CargoCompileErrors(raw) is { Count: > 0 } errors)
+            sb.AppendLine(CompileFailure(errors));
+        else if (exitCode != NoExitCode)
+            sb.AppendLine(NoSummaryFailure("cargo test", exitCode)).AppendLine(Truncate(raw.Trim(), MaxRawChars));
 
         var allFailing = CargoFailingTests(raw);
         var failing    = allFailing.Take(MaxFailingListed).ToList();
@@ -1014,6 +1126,11 @@ internal class RunTestsTool : ITool
     // "ok|FAIL  import/path  0.0s" lines. The exit code is the overall pass/fail signal.
     internal static string ParseGoOutput(string raw, int exitCode)
     {
+        // No exit code: go never started (its reason is the text), or it was killed at its budget (which the funnel
+        // says above). "✗ FAILED — see output" WITHOUT the output dropped the reason, and /tdd patched code for a go
+        // that was not installed.
+        if (exitCode == NoExitCode) return Truncate(raw.Trim(), MaxRawChars);
+
         // A -run the test binary cannot parse: it says so on a "testing: invalid regexp" line and fails without a single
         // "--- FAIL:" — the report was "see output" without the output, read as red by /tdd.
         var rejected = raw.Split('\n').Select(l => l.Trim())
@@ -1142,14 +1259,25 @@ internal class RunTestsTool : ITool
             if (run.TimedOut)
             {
                 budget.Expired = true;
-                return (run.Combined, -1);
+                return (run.Combined, NoExitCode);
             }
+
+            // ⚠ 9009 is Windows' "command not found": Python's Store alias prints its install advice and exits with it
+            // when no Python is installed. The tests did not run — read as a failing run, /tdd patched sound code.
+            if (run.ExitCode == CommandNotFoundExitCode)
+                return ($"{RunnerNotStarted} '{fileName}' (exit code {CommandNotFoundExitCode}): {run.Combined.Trim()}", NoExitCode);
 
             return (run.Combined, run.ExitCode);
         }
         catch (OperationCanceledException) { throw; }
-        catch (Exception ex)               { return ($"Failed to start '{fileName}': {ex.Message}", -1); }
+        catch (Exception ex)               { return ($"{RunnerNotStarted} '{fileName}': {ex.Message}", NoExitCode); }
     }
+
+    /// <summary>The test runner itself could not be launched — not installed, not on the PATH. Followed by its name and
+    /// the reason. A state in which nothing ran, read as such by <c>/tdd</c> (<c>TddCommandHandler.NothingRan</c>).</summary>
+    internal const string RunnerNotStarted = "⚠ The test runner could not be started — nothing ran, so nothing was proven:";
+
+    private const int CommandNotFoundExitCode = 9009;
 
     /// <summary>
     /// "Nothing here to run" — plus, when it is true, "and there is a folder I could not look in".

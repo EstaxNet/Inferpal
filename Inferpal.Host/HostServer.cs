@@ -314,7 +314,11 @@ internal sealed partial class HostServer : IDisposable
                 else
                     Services.Agent.HistoryCompaction.ApplyTruncation(s.History, ctxDecision.Plan);
 
-                s.LastPromptTokens = 0;
+                // ⚠ Measured, never zeroed: 0 is the measure of a first turn, which the next check reads as "nothing to
+                // decide". A turn stopped after this point ends without a count of its own, and the next question —
+                // whatever its attachments — went out with no context check, under a gauge showing the tools alone.
+                // The Visual Studio window measures the history it is about to send the same way.
+                s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
                 // ⚠ All three outcomes went out as the SAME collapsed bubble: "your conversation
                 // lost turns, with no summary" looked exactly like a successful compaction. The VS
                 // window has always told them apart; the rule now lives in ContextDecision, and

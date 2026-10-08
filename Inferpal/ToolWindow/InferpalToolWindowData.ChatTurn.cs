@@ -687,8 +687,6 @@ internal partial class InferpalToolWindowData
 
             if (_config.OodaTurnThreshold > 0 && _conversationTurnCount % _config.OodaTurnThreshold == 0)
                 await RunOodaSummaryAsync(localCts.Token);
-
-            _ = AutoSaveAsync();
         }
         catch (OperationCanceledException)
         {
@@ -740,6 +738,11 @@ internal partial class InferpalToolWindowData
                 // Only the turn that still owns the state releases it (see EndOwnedTurn).
                 EndOwnedTurn(localCts);
             });
+
+            // ⚠ Every way out of the turn saves it, a stopped or failed one included: the window restores the auto-saved
+            // session when it opens, and a turn stopped by the user — its question, its partial answer, the steps of a run
+            // that changed files — was missing from it after a restart. The VS Code side saves in its finally too.
+            _ = AutoSaveAsync();
 
             // Beep when a long agent run completes, so the user can work elsewhere
             if ((DateTime.UtcNow - sendStart).TotalSeconds > 30)

@@ -53,7 +53,12 @@ internal class GetDiagnosticsTool : ITool
         @":\s*(error|warning)\s+\w+\s*:", RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
 
     internal static bool OutputHasErrors(string output) =>
-        !string.IsNullOrEmpty(output) && _diagLine.IsMatch(output);
+        !string.IsNullOrEmpty(output) && (_diagLine.IsMatch(output) || _panelLine.IsMatch(output));
+
+    // A diagnostic line of the editor panel (`rel(l,c): error ts 2304: …`): its source stands between the severity and
+    // the code, which the build's shape does not allow.
+    private static readonly Regex _panelLine = new(
+        @"\(\d+,\d+\):\s*(error|warning)\s", RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
 
     // Errors only — warnings don't warrant auto-fix iterations.
     // Exposed as internal so SmartFixValidator can reuse without duplicating the pattern.
@@ -152,7 +157,10 @@ internal class GetDiagnosticsTool : ITool
         // compiler had already printed, so it usually DOES contain error lines — and "Errors" sends
         // the /fix-build loop patching a fragment of a build that never finished.
         if (FirstLineIs(Strings.DiagBuildStopped(CountSentinel))) return BuildVerdict.NotBuilt;
-        if (OutputHasBuildErrors(output))                         return BuildVerdict.Errors;
+        // ⚠ The editor panel's errors are errors too: its answer is only ever served when it lists one, and with the
+        // source between the severity and the code (`error ts 2304:`) it read as "not built" — no end-of-turn notice,
+        // and a ✓ on the run of a turn that ended on a broken file.
+        if (OutputHasBuildErrors(output) || PanelReportsErrors(output)) return BuildVerdict.Errors;
 
         foreach (var shape in new[] { Strings.DiagBuildOk(NameSentinel), Strings.DiagSummary(0, CountSentinel, NameSentinel) })
             if (FirstLineIs(shape)) return BuildVerdict.Clean;

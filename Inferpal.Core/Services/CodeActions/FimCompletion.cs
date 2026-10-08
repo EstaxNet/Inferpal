@@ -92,19 +92,26 @@ internal static class FimCompletion
         return completion;
     }
 
-    /// <summary>Each bracket kind's openers minus closers, outside double-quoted strings, and whether a string is left
-    /// open.</summary>
-    private readonly record struct Brackets(int Round, int Square, int Curly, bool OpenString)
+    /// <summary>Each bracket kind's openers minus closers, and markup elements opened minus closed, outside strings and
+    /// character literals; and whether a string is left open.</summary>
+    private readonly record struct Brackets(int Round, int Square, int Curly, int Elements, bool OpenString)
     {
-        public bool ClosesInExcess => Round < 0 || Square < 0 || Curly < 0 || OpenString;
+        public bool ClosesInExcess => Round < 0 || Square < 0 || Curly < 0 || Elements < 0 || OpenString;
 
         public bool LeavesOpenMoreThan(Brackets whole) =>
-            Round > Math.Max(0, whole.Round) || Square > Math.Max(0, whole.Square) || Curly > Math.Max(0, whole.Curly);
+            Round > Math.Max(0, whole.Round) || Square > Math.Max(0, whole.Square) || Curly > Math.Max(0, whole.Curly)
+            || Elements > Math.Max(0, whole.Elements);
     }
 
+    /// <remarks>
+    /// ⚠ What a completion closes is read from its brackets, so what is NOT a bracket must be read for what it is: the
+    /// <c>"</c> of <c>'"'</c> taken for a string hid every brace after it, and a <c>'{'</c> counted as one opened a
+    /// block — either way a block's own closing lines were cut as a repetition, and the method no longer compiled. A
+    /// page closes with tags, not braces: a nested <c>&lt;div&gt;</c> lost its closing tags the same way.
+    /// </remarks>
     private static Brackets Balance(string text)
     {
-        int round = 0, square = 0, curly = 0;
+        int round = 0, square = 0, curly = 0, elements = 0;
         var inString = false;
         for (var i = 0; i < text.Length; i++)
         {
@@ -118,6 +125,8 @@ internal static class FimCompletion
             switch (c)
             {
                 case '"': inString = true; break;
+                case '\'': if (CharacterLiteralEnd(text, i) is var end and > 0) i = end; break;
+                case '<': elements += Element(text, i); break;
                 case '(': round++;  break;
                 case ')': round--;  break;
                 case '[': square++; break;
@@ -126,6 +135,43 @@ internal static class FimCompletion
                 case '}': curly--;  break;
             }
         }
-        return new(round, square, curly, inString);
+        return new(round, square, curly, elements, inString);
+    }
+
+    // Where the character literal opened at `at` ends — 'x', '\n', '\'', 'A' —, or -1: a lone quote is an
+    // apostrophe or a Rust lifetime, and a longer single-quoted text is not read as a literal.
+    private static int CharacterLiteralEnd(string text, int at)
+    {
+        var n = at + 1;
+        if (n >= text.Length || text[n] == '\n') return -1;
+        if (text[n] != '\\')
+            return n + 1 < text.Length && text[n + 1] == '\'' ? n + 1 : -1;
+        for (var j = n + 2; j < text.Length && j <= n + 10 && text[j] != '\n'; j++)
+            if (text[j] == '\'') return j;
+        return -1;
+    }
+
+    // +1 for an element's opening tag at `at`, -1 for its closing tag, 0 for anything else: a self-closing tag, a
+    // comment, a comparison (a < b), a generic argument (List<int>: a tag never follows a name).
+    private static int Element(string text, int at)
+    {
+        var n       = at + 1;
+        var closing = n < text.Length && text[n] == '/';
+        if (closing) n++;
+        if (n >= text.Length || !char.IsLetter(text[n])) return 0;
+        if (!closing && at > 0 && (char.IsLetterOrDigit(text[at - 1]) || text[at - 1] is '_' or ')' or ']')) return 0;
+        for (var j = n; j < text.Length; j++)
+        {
+            var c = text[j];
+            if (c is '"' or '\'')
+            {
+                var close = text.IndexOf(c, j + 1);   // an attribute's value, which may hold a '>'
+                if (close < 0) return 0;
+                j = close;
+            }
+            else if (c == '<') return 0;
+            else if (c == '>') return closing ? -1 : text[j - 1] == '/' ? 0 : 1;
+        }
+        return 0;
     }
 }

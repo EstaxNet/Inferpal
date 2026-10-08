@@ -119,12 +119,17 @@ internal static class InlineToolCallParser
     /// consumed tool-call JSON stripped out (so it is not also shown to the user as text).
     /// When nothing is recovered, the original content is returned unchanged.
     /// </returns>
+    /// <param name="schemaOf">
+    /// The JSON Schema of a tool's parameters, by tool name (<c>null</c> for a tool the request did not offer). The
+    /// shapes that write values as TEXT — Qwen's <c>&lt;parameter=…&gt;</c>, GLM's <c>&lt;arg_value&gt;</c>, ATEM — say
+    /// nothing of a value's type: only the schema does (<see cref="DecodeTextValue"/>).
+    /// </param>
     public static (List<ToolCallDto>? Calls, string Cleaned) TryParse(
-        string? content, Func<string, bool>? isKnownTool = null)
+        string? content, Func<string, bool>? isKnownTool = null, Func<string, JsonElement?>? schemaOf = null)
     {
         if (string.IsNullOrWhiteSpace(content))
             return (null, content ?? string.Empty);
-        return ParseNonEmpty(content, isKnownTool);
+        return ParseNonEmpty(content, isKnownTool, schemaOf);
     }
 
     /// <summary>
@@ -138,16 +143,18 @@ internal static class InlineToolCallParser
     /// call is still read as one: asked for an answer, the model has written none, and every reader of such a reply
     /// refuses an empty one.
     /// </remarks>
-    public static (List<ToolCallDto>? Calls, string Cleaned) FromContent(string content, IReadOnlyCollection<string> offered)
+    public static (List<ToolCallDto>? Calls, string Cleaned) FromContent(
+        string content, IReadOnlyCollection<string> offered, Func<string, JsonElement?>? schemaOf = null)
     {
-        var (calls, cleaned) = TryParse(content, offered.Contains);
+        var (calls, cleaned) = TryParse(content, offered.Contains, schemaOf);
         if (calls is not { Count: > 0 }) return (null, content);
         if (offered.Count == 0 && MarkdownParser.HasPrintableText(MarkdownParser.StripThinkTags(cleaned)))
             return (null, content);
         return (calls, cleaned);
     }
 
-    private static (List<ToolCallDto>? Calls, string Cleaned) ParseNonEmpty(string content, Func<string, bool>? isKnownTool)
+    private static (List<ToolCallDto>? Calls, string Cleaned) ParseNonEmpty(
+        string content, Func<string, bool>? isKnownTool, Func<string, JsonElement?>? schemaOf)
     {
 
         var calls = new List<ToolCallDto>();
@@ -172,7 +179,7 @@ internal static class InlineToolCallParser
         var xmlMatched = false;
         foreach (Match m in FunctionCallXmlRegex.Matches(content))
         {
-            if (TryAddFromFunctionXml(m.Groups[1].Value, m.Groups[2].Value, calls))
+            if (TryAddFromXmlParameters(m.Groups[1].Value, m.Groups[2].Value, ParameterXmlRegex, calls, schemaOf))
             {
                 cleaned    = cleaned.Replace(m.Value, string.Empty);
                 xmlMatched = true;
@@ -188,7 +195,7 @@ internal static class InlineToolCallParser
         {
             var before = calls.Count;
             foreach (Match invoke in AtemInvokeRegex.Matches(block.Groups[1].Value))
-                TryAddFromXmlParameters(invoke.Groups[1].Value, invoke.Groups[2].Value, AtemParameterRegex, calls);
+                TryAddFromXmlParameters(invoke.Groups[1].Value, invoke.Groups[2].Value, AtemParameterRegex, calls, schemaOf);
             if (calls.Count > before)
             {
                 cleaned     = cleaned.Replace(block.Value, string.Empty);
@@ -202,7 +209,7 @@ internal static class InlineToolCallParser
         var glmMatched = false;
         foreach (Match m in GlmCallRegex.Matches(content))
         {
-            if (TryAddFromXmlParameters(m.Groups[1].Value, m.Groups[2].Value, GlmArgRegex, calls))
+            if (TryAddFromXmlParameters(m.Groups[1].Value, m.Groups[2].Value, GlmArgRegex, calls, schemaOf))
             {
                 cleaned    = cleaned.Replace(m.Value, string.Empty);
                 glmMatched = true;
@@ -426,19 +433,16 @@ internal static class InlineToolCallParser
         return null;
     }
 
-    /// <summary>Builds a tool call from the Qwen/GLM XML shape: a function name plus a block of
-    /// <c>&lt;parameter=key&gt;value&lt;/parameter&gt;</c> pairs, assembled into a JSON arguments object.</summary>
-    private static bool TryAddFromFunctionXml(string name, string paramsBlock, List<ToolCallDto> calls) =>
-        TryAddFromXmlParameters(name, paramsBlock, ParameterXmlRegex, calls);
-
     /// <summary>A call from a name and a block of key/value parameter elements matched by <paramref name="parameter"/>
     /// (group 1 the key, group 2 the value) — the shape the Qwen/GLM XML and the ATEM calls share.</summary>
-    private static bool TryAddFromXmlParameters(string name, string paramsBlock, Regex parameter, List<ToolCallDto> calls)
+    private static bool TryAddFromXmlParameters(
+        string name, string paramsBlock, Regex parameter, List<ToolCallDto> calls, Func<string, JsonElement?>? schemaOf)
     {
         name = name.Trim();
         if (string.IsNullOrEmpty(name)) return false;
 
-        var sb    = new System.Text.StringBuilder("{");
+        var schema = schemaOf?.Invoke(name);
+        var sb     = new System.Text.StringBuilder("{");
         var first = true;
         foreach (Match pm in parameter.Matches(paramsBlock))
         {
@@ -447,7 +451,7 @@ internal static class InlineToolCallParser
             if (!first) sb.Append(',');
             first = false;
             sb.Append(JsonSerializer.Serialize(key)).Append(':')
-              .Append(EncodeXmlValue(pm.Groups[2].Value.Trim()));
+              .Append(DecodeTextValue(pm.Groups[2].Value, schema, key));
         }
         sb.Append('}');
 
@@ -459,10 +463,71 @@ internal static class InlineToolCallParser
         return true;
     }
 
-    /// <summary>Encodes an XML parameter value as JSON: kept verbatim when it already is a valid JSON
-    /// scalar/object/array, otherwise quoted as a JSON string.</summary>
-    private static string EncodeXmlValue(string raw)
+    /// <summary>
+    /// A value written as text between tags, as the JSON the tool reads: a string unless the tool's schema declares
+    /// another type for <paramref name="key"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠ Text carries no type. Guessed from its first character, <c>write_file</c> of a <c>package.json</c> received an
+    /// OBJECT for <c>content</c>, and <c>apply_diff</c> from <c>false</c> to <c>true</c> two booleans: a string reader
+    /// gets nothing, the tool answers that the argument is required, and the model resends the same call. Only the
+    /// schema says a value is a number, a boolean, an array or an object — the rule of the templates that write these
+    /// shapes.
+    /// </para>
+    /// <para>
+    /// ⚠ The templates frame a value with a line break on each side: exactly those come off. Trimmed whole, a file lost
+    /// its final line break and a block of code the indentation of its first line. A one-line value is trimmed: the
+    /// spaces around it are layout.
+    /// </para>
+    /// <para>
+    /// Without a schema — a tool the request did not offer, which the registry refuses anyway, or a reader that only
+    /// compares calls — the type is guessed from the text.
+    /// </para>
+    /// </remarks>
+    internal static string DecodeTextValue(string written, JsonElement? toolSchema, string key)
     {
+        var text = UnframedText(written);
+        if (toolSchema is not { ValueKind: JsonValueKind.Object } schema)
+            return GuessedJson(text);
+
+        var types = DeclaredTypes(PropertySchema(schema, key));
+        if (types.Count == 0 || types.Contains("string"))
+            return JsonSerializer.Serialize(text);
+
+        var trimmed = text.Trim();
+        if (types.Contains("boolean") && (trimmed.Equals("true", StringComparison.OrdinalIgnoreCase)
+                                         || trimmed.Equals("false", StringComparison.OrdinalIgnoreCase)))
+            return trimmed.ToLowerInvariant();
+        try
+        {
+            using var doc = JsonDocument.Parse(trimmed);
+            var kind = doc.RootElement.ValueKind;
+            if (kind == JsonValueKind.Number && (types.Contains("number") || types.Contains("integer"))
+                || kind == JsonValueKind.Array && types.Contains("array")
+                || kind == JsonValueKind.Object && types.Contains("object")
+                || kind == JsonValueKind.Null && types.Contains("null"))
+                return trimmed;
+        }
+        catch (JsonException) { /* not the declared type: the tool reads the text and names what it expected */ }
+        return JsonSerializer.Serialize(text);
+    }
+
+    // The value without the line break the template writes on each side of it; a one-line value trimmed.
+    private static string UnframedText(string written)
+    {
+        var text = written;
+        if (text.StartsWith("\r\n", StringComparison.Ordinal)) text = text[2..];
+        else if (text.StartsWith('\n')) text = text[1..];
+        if (text.EndsWith("\r\n", StringComparison.Ordinal)) text = text[..^2];
+        else if (text.EndsWith('\n')) text = text[..^1];
+        return text.Contains('\n') ? text : text.Trim();
+    }
+
+    // The type guessed from the text: kept verbatim when it already is a valid JSON scalar, object or array.
+    private static string GuessedJson(string text)
+    {
+        var raw = text.Trim();
         if (raw.Length > 0)
         {
             var c = raw[0];
@@ -472,7 +537,32 @@ internal static class InlineToolCallParser
                 catch (JsonException) { /* not valid JSON → treat as a string below */ }
             }
         }
-        return JsonSerializer.Serialize(raw);
+        return JsonSerializer.Serialize(text);
+    }
+
+    private static JsonElement? PropertySchema(JsonElement schema, string key) =>
+        schema.TryGetProperty("properties", out var props) && props.ValueKind == JsonValueKind.Object
+        && props.TryGetProperty(key, out var p)
+            ? p
+            : null;
+
+    // The types a property schema allows: its "type" (a name or a list of names), and the types of its anyOf/oneOf.
+    private static HashSet<string> DeclaredTypes(JsonElement? property)
+    {
+        var types = new HashSet<string>(StringComparer.Ordinal);
+        if (property is not { ValueKind: JsonValueKind.Object } p) return types;
+        if (p.TryGetProperty("type", out var t))
+        {
+            if (t.ValueKind == JsonValueKind.String) types.Add(t.GetString()!);
+            else if (t.ValueKind == JsonValueKind.Array)
+                foreach (var e in t.EnumerateArray())
+                    if (e.ValueKind == JsonValueKind.String) types.Add(e.GetString()!);
+        }
+        foreach (var alt in (string[])["anyOf", "oneOf"])
+            if (p.TryGetProperty(alt, out var list) && list.ValueKind == JsonValueKind.Array)
+                foreach (var branch in list.EnumerateArray())
+                    types.UnionWith(DeclaredTypes(branch));
+        return types;
     }
 
     private static bool TryGetArgs(JsonElement obj, string prop, out JsonElement args)

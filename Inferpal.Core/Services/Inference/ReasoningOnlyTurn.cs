@@ -21,10 +21,12 @@ internal static class ReasoningOnlyTurn
     /// </summary>
     /// <param name="stoppedEarly">The client stopped the stream (bound, loop, repeated call): the reasoning is a model
     /// going round in circles, so the first call it wrote is its intent and every later one is the loop — or its decay.</param>
+    /// <param name="schemaOf">The offered tools' schemas (<see cref="ToolSchemas.Of"/>): a call written as text has its
+    /// values typed by them.</param>
     public static ChatTurnResult Recover(string reasoning, int tokensUsed, int promptTokens, bool cut, bool looping,
-                                         bool stoppedEarly)
+                                         bool stoppedEarly, Func<string, System.Text.Json.JsonElement?> schemaOf)
     {
-        var (calls, _) = InlineToolCallParser.TryParse(reasoning);
+        var (calls, _) = InlineToolCallParser.TryParse(reasoning, schemaOf: schemaOf);
         if (stoppedEarly && calls is { Count: > 1 })
             calls = calls.Take(1).ToList();
         if (calls is { Count: > 0 })

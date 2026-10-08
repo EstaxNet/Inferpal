@@ -31,6 +31,18 @@ internal static class CheckCommand
         catch (RegexMatchTimeoutException) { return false; }
     }
 
+    // A check that runs tests rather than a build: dotnet test, pytest, npm test, cargo test, go test, mvn test…
+    private static readonly Regex Tests = new(@"\b(?:test|pytest|jest|vitest|mocha)\b",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexBudget.Default);
+
+    /// <summary>Whether a check command runs tests (otherwise it builds).</summary>
+    public static bool RunsTests(string? command)
+    {
+        if (string.IsNullOrWhiteSpace(command)) return false;
+        try { return Tests.IsMatch(command); }
+        catch (RegexMatchTimeoutException) { return false; }
+    }
+
     /// <summary>The <c>command</c> argument of a run_command call, from its JSON input.</summary>
     public static string? CommandOf(string? input)
     {
@@ -56,9 +68,50 @@ internal static class CheckCommand
     /// failed run, a turn whose code passes its tests ended on "the last test or build run of this turn failed —
     /// whatever the answer says". Judged as Smart Fix judges a missing toolchain (what the shell says, never a build's
     /// words), and by run_tests' own reading of the interpreter's line.
+    /// <para>
+    /// ⚠ The exit code is the check's only when nothing after it can replace it. Under bash, <c>pytest | tail -30</c>
+    /// exits with <c>tail</c>'s 0 whatever the tests said, a native filter does the same under PowerShell
+    /// (<c>findstr</c>'s 1 over a 3), and <c>pytest; echo done</c> or <c>pytest || true</c> end on the last command's
+    /// code. A failing check stops a <c>&amp;&amp;</c> chain, and a PowerShell cmdlet (<c>Select-Object</c>,
+    /// <c>Tee-Object</c>) leaves the command's code in place. Read as the check's, a red run piped through <c>tail</c>
+    /// showed "tests passed" on the run's result bar.
+    /// </para>
     /// </remarks>
     public static bool? Failed(string? input, string output) =>
-        IsCheck(CommandOf(input)) && ExitCode(output) is { } code && !NeverStarted(code, output) ? code != 0 : null;
+        CommandOf(input) is { } command && IsCheck(command) && OwnsExitCode(command)
+        && ExitCode(output) is { } code && !NeverStarted(code, output) ? code != 0 : null;
+
+    // Whether the shell's exit code is the check's: after it, only "&&" chains and pipes into PowerShell cmdlets
+    // (Verb-Noun) — never ";", "||", a newline, a background "&", or a pipe into another program.
+    private static bool OwnsExitCode(string command)
+    {
+        Match start;
+        try { start = Check.Match(command); }
+        catch (RegexMatchTimeoutException) { return false; }
+        if (!start.Success) return false;
+
+        var quote = '\0';
+        for (var i = start.Index + start.Length; i < command.Length; i++)
+        {
+            var c = command[i];
+            if (quote != '\0') { if (c == quote) quote = '\0'; continue; }
+            if (c is '"' or '\'') { quote = c; continue; }
+            var next = i + 1 < command.Length ? command[i + 1] : '\0';
+            if (c is ';' or '\n') return false;
+            if (c == '&')
+            {
+                if (next == '&') { i++; continue; }                                   // "&&": a failure stops here
+                if (next == '>' || (i > 0 && command[i - 1] == '>')) continue;         // "2>&1", "&>": a redirection
+                return false;                                                          // "&": the check runs in the background
+            }
+            if (c != '|') continue;
+            if (next == '|') return false;                                             // "||": runs exactly when it failed
+            if (!Cmdlet.IsMatch(command[(i + 1)..].TrimStart())) return false;
+        }
+        return true;
+    }
+
+    private static readonly Regex Cmdlet = new(@"^[A-Za-z]+-[A-Za-z]+\b", RegexOptions.CultureInvariant, RegexBudget.Default);
 
     private static bool NeverStarted(int code, string output) =>
         code != 0 && (CodeActions.SmartFixValidator.IsToolMissing(code, output) || Tools.RunTestsTool.PytestModuleMissing(output));
@@ -67,6 +120,7 @@ internal static class CheckCommand
     /// end (an error or refusal before the run, a background job, a pipeline stopped early).</summary>
     public static int? ExitCode(string output)
     {
+        output = Shell.ShellSession.WithoutNotes(output);
         if (output.StartsWith("Error:", StringComparison.Ordinal)
             || string.Equals(output.Trim(), Localization.Strings.RunCancelled.Trim(), StringComparison.Ordinal)
             || output.Contains("Started background job '", StringComparison.Ordinal)

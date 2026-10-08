@@ -11,7 +11,10 @@ namespace Inferpal.Tests;
 /// ⚠ These rules read the extension's source (it has no TypeScript test runner). What they guard is MEASURED on the
 /// real bundle by <c>docs/probes/ui-render/vscode-chat-dom.ps1</c>, which plays host messages into the webview and
 /// reads the bubbles it draws.
+/// ⚠ One of them flips the process-wide language (<c>Strings.ApplyLanguage("en")</c>): outside the serial collection it
+/// turned the French expectations of classes running beside it red, one run in several.
 /// </remarks>
+[Collection(CultureSerialCollection.Name)]
 public class VsCodeConversationTests
 {
     private static string Case(string source, string label)

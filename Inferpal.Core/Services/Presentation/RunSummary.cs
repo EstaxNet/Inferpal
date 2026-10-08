@@ -75,30 +75,18 @@ internal static class RunSummary
     };
 
     /// <summary>
-    /// The last check of the run, read the way <see cref="ChatTurnPolicy.LastCheckFailed"/> reads it — a build
-    /// (<c>get_diagnostics</c>), the tests (<c>run_tests</c>), or the build check an edit ran — and passed only on a
-    /// verdict that says so: a run where nothing was proven passes nothing.
+    /// The last check of the run — <see cref="ChatTurnPolicy.LastCheck"/>, the reader of the end-of-turn notice too —,
+    /// passed only on a verdict that says so: a run where nothing was proven passes nothing.
     /// </summary>
-    internal static RunCheck LastCheck(IReadOnlyList<ToolExecution> executions)
-    {
-        var last = executions.LastOrDefault(e => e.Name is "run_tests" or "get_diagnostics"
-                                              || (ChatTurnPolicy.IsFileEdit(e.Name)
-                                                  && CodeActions.SmartFixValidator.ReadVerdict(e.Output) is not null));
-        return last switch
+    internal static RunCheck LastCheck(IReadOnlyList<ToolExecution> executions) =>
+        ChatTurnPolicy.LastCheck(executions) switch
         {
-            null => RunCheck.None,
-            { Name: "get_diagnostics" } => Tools.GetDiagnosticsTool.ReadVerdict(last.Output) switch
-            {
-                Tools.GetDiagnosticsTool.BuildVerdict.Clean  => RunCheck.BuildPassed,
-                Tools.GetDiagnosticsTool.BuildVerdict.Errors => RunCheck.BuildFailed,
-                _                                            => RunCheck.None,
-            },
-            { Name: "run_tests" } => Commands.TddCommandHandler.TestsFailed(last.Output) ? RunCheck.TestsFailed
-                                   : Commands.TddCommandHandler.TestsPassed(last.Output) ? RunCheck.TestsPassed
-                                   : RunCheck.None,
-            _ => CodeActions.SmartFixValidator.ReadVerdict(last.Output) == true ? RunCheck.BuildFailed : RunCheck.BuildPassed,
+            null or { Failed: null }                               => RunCheck.None,
+            { Kind: ChatTurnPolicy.CheckKind.Tests, Failed: true } => RunCheck.TestsFailed,
+            { Kind: ChatTurnPolicy.CheckKind.Tests }               => RunCheck.TestsPassed,
+            { Failed: true }                                       => RunCheck.BuildFailed,
+            _                                                      => RunCheck.BuildPassed,
         };
-    }
 
     /// <summary>The files the run changed, each with its lines added and removed since the run's backup.</summary>
     internal static IReadOnlyList<RunFileLine> Files(HistoryRun run) =>

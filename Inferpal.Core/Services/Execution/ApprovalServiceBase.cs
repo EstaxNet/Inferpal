@@ -26,6 +26,10 @@ internal abstract class ApprovalServiceBase : IApprovalService
     /// </summary>
     private readonly ConcurrentDictionary<string, byte> _sessionAllowed = new(StringComparer.Ordinal);
 
+    // The workspace root the session grants were given under, and the lock that keeps the pair consistent.
+    private string?         _grantsRoot;
+    private readonly object _grantsLock = new();
+
     // Cached compiled policy, rebuilt only when the config rule text or the workspace overlay file
     // changes. Regex compilation is non-trivial and RequestApprovalAsync runs on every tool call
     // (including the auto-approved ones inside an agent loop), so we must not reparse each time.
@@ -100,7 +104,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
                      || unreadableDeny;
         if (opaque && (decision == PermissionDecision.Allow
                        || _config.SecurityAlertsDisabled
-                       || _sessionAllowed.ContainsKey(toolName)))
+                       || Granted(toolName)))
             Diagnostics.Record("Permission",
                 $"Force-prompt ({(forcePrompt ? "repository-authored"
                                  : instructions ? "agent instructions"
@@ -113,7 +117,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
 
             // decision == Prompt — fall through to the global YOLO switch, then the session grant.
             if (_config.SecurityAlertsDisabled)        return true;
-            if (_sessionAllowed.ContainsKey(toolName)) return true;
+            if (Granted(toolName))                     return true;
         }
 
         var message = Strings.ApprovalMessage(toolName, details);
@@ -121,9 +125,55 @@ internal abstract class ApprovalServiceBase : IApprovalService
         var promptDecision = await PromptUserAsync(
             new Services.Presentation.ApprovalPrompt(toolName, details, subject, diff, message), ct);
         if (promptDecision == ApprovalDecision.Always)
-            _sessionAllowed[toolName] = 0;
+            Grant(toolName);
 
         return promptDecision != ApprovalDecision.Deny;
+    }
+
+    /// <summary>Whether the user chose "Always" for <paramref name="toolName"/> — in THIS workspace.</summary>
+    /// <remarks>
+    /// ⚠ A grant is trust given to one workspace. Kept by tool name alone, "Always" on <c>run_command</c>, clicked in
+    /// solution A, ran the commands of a freshly cloned repository B without a prompt once the root moved under it:
+    /// Visual Studio keeps one approval service for the life of the process (VS Code restarts its host instead). Grants
+    /// given under another root are forgotten before any is read.
+    /// </remarks>
+    private bool Granted(string toolName)
+    {
+        lock (_grantsLock)
+        {
+            ForgetGrantsOfAnotherRoot();
+            return _sessionAllowed.ContainsKey(toolName);
+        }
+    }
+
+    private void Grant(string toolName)
+    {
+        lock (_grantsLock)
+        {
+            ForgetGrantsOfAnotherRoot();
+            _grantsRoot = _rootDir();
+            _sessionAllowed[toolName] = 0;
+        }
+    }
+
+    private void ForgetGrantsOfAnotherRoot()
+    {
+        if (!_sessionAllowed.IsEmpty && !SameRoot(_grantsRoot, _rootDir()))
+            _sessionAllowed.Clear();
+    }
+
+    private static bool SameRoot(string? a, string? b)
+    {
+        if (string.IsNullOrEmpty(a) || string.IsNullOrEmpty(b)) return string.IsNullOrEmpty(a) && string.IsNullOrEmpty(b);
+        try
+        {
+            return string.Equals(Path.TrimEndingDirectorySeparator(Path.GetFullPath(a)),
+                                 Path.TrimEndingDirectorySeparator(Path.GetFullPath(b)), PathComparer.Comparison);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return false;   // a root that cannot be read as a path is not the one the grants were given under
+        }
     }
 
     /// <summary>
