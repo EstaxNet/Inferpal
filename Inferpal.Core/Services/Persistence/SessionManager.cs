@@ -278,6 +278,8 @@ internal static class SessionManager
             sb.AppendLine($"### {m.Name}  *({FormatAge(m.SavedAt, nowUtc)})*");
             foreach (var snip in m.Snippets)
                 sb.AppendLine($"  > {snip}");
+            if (m.MoreMatches > 0)
+                sb.AppendLine($"  *{Strings.HistorySearchMoreMatches(m.MoreMatches)}*");
             sb.AppendLine();
         }
 

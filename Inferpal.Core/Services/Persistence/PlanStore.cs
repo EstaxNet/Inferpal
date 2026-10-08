@@ -88,7 +88,7 @@ internal static class PlanStore
         var typed = (name ?? string.Empty).Trim();
         if (typed.Length > 0 && Directory.Exists(dir))
         {
-            var existing = Directory.EnumerateFiles(dir, "*.md", SearchOption.TopDirectoryOnly)
+            var existing = Directory.EnumerateFiles(dir, "*.md", SearchOption.TopDirectoryOnly).Order(StringComparer.Ordinal)
                 .FirstOrDefault(f => PathComparer.Default.Equals(Path.GetFileNameWithoutExtension(f), typed));
             if (existing is not null) return existing;
         }

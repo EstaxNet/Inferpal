@@ -148,7 +148,7 @@ internal class RunTestsTool : ITool
     /// <summary>The files directly in <paramref name="dir"/>; none when it cannot be listed.</summary>
     private static IEnumerable<string> FilesIn(string dir)
     {
-        try { return Directory.GetFiles(dir); }
+        try { return [.. Directory.GetFiles(dir).Order(StringComparer.Ordinal)]; }   // a choice is made among them
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             Diagnostics.Swallow("RunTestsTool.FilesIn", ex);

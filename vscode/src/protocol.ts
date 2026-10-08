@@ -70,6 +70,8 @@ export interface ChatSendResult {
   duration?: string | null;
   /** The model that answered. */
   model?: string | null;
+  /** False when the turn stopped before its question entered the host's history (a Stop during the context build). */
+  questionKept?: boolean;
 }
 
 export interface ToolNotice {

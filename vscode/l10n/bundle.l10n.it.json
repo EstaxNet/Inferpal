@@ -1,4 +1,6 @@
 ﻿{
+  "A turn is still running — wait for it to finish or stop it, then try again.": "Un turno è ancora in corso: attendi che finisca o interrompilo, poi riprova.",
+  "Inferpal is starting — your message is sent as soon as it is ready.": "Inferpal si sta avviando: il messaggio verrà inviato appena è pronto.",
   "Allow once": "Consenti una volta",
   "Inferpal needs an open folder to start.": "Inferpal richiede una cartella aperta per avviarsi.",
   "Inferpal.Host binary not found. Set \"inferpal.hostPath\" in settings.": "Binario Inferpal.Host non trovato. Impostare «inferpal.hostPath» nelle impostazioni.",

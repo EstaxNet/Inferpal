@@ -70,7 +70,8 @@ internal static class TestFilePathResolver
             if (!relative.StartsWith("..", StringComparison.Ordinal) && !Path.IsPathRooted(relative)) return null;
 
             var existing = Directory.Exists(testsDir)
-                ? WorkspaceScan.EnumerateFiles(testsDir, testFile).FirstOrDefault(f => PathComparer.Default.Equals(Path.GetFileName(f), testFile))
+                ? WorkspaceScan.ShallowestFirst(WorkspaceScan.EnumerateFiles(testsDir, testFile))
+                               .FirstOrDefault(f => PathComparer.Default.Equals(Path.GetFileName(f), testFile))
                 : null;
             return existing ?? Path.Combine(testsDir, testFile);
         }
@@ -145,7 +146,7 @@ internal static class TestFilePathResolver
                 ?? new[] { "tests", "test" }.Select(d => Path.Combine(projectRoot, d)).FirstOrDefault(Directory.Exists);
             if (testDir is null) return null;
 
-            var existing = WorkspaceScan.EnumerateFiles(testDir, testFile)
+            var existing = WorkspaceScan.ShallowestFirst(WorkspaceScan.EnumerateFiles(testDir, testFile))
                 .FirstOrDefault(f => PathComparer.Default.Equals(Path.GetFileName(f), testFile));
             return existing ?? Path.Combine(testDir, testFile);
         }
@@ -220,7 +221,7 @@ internal static class TestFilePathResolver
             var testDir = Path.GetDirectoryName(testProject)!;
 
             // An existing test file of that name, anywhere in the test project, is the one to extend.
-            var existing = WorkspaceScan.EnumerateFiles(testDir, testFile)
+            var existing = WorkspaceScan.ShallowestFirst(WorkspaceScan.EnumerateFiles(testDir, testFile))
                 .FirstOrDefault(f => PathComparer.Default.Equals(Path.GetFileName(f), testFile));
             if (existing is not null) return existing;
 
@@ -309,7 +310,7 @@ internal static class TestFilePathResolver
         for (var i = 0; i < levels && !string.IsNullOrEmpty(dir); i++, dir = Path.GetDirectoryName(dir))
         {
             if (!Directory.Exists(dir)) continue;
-            var hit = Directory.EnumerateFiles(dir).FirstOrDefault(matches);
+            var hit = Directory.EnumerateFiles(dir).Order(StringComparer.Ordinal).FirstOrDefault(matches);
             if (hit is not null) return hit;
         }
         return null;

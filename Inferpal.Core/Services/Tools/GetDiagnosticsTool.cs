@@ -139,6 +139,13 @@ internal class GetDiagnosticsTool : ITool
     internal static BuildVerdict ReadVerdict(string output)
     {
         if (string.IsNullOrEmpty(output)) return BuildVerdict.NotBuilt;
+        // The verdict is under the note that names what a build made by choice did not cover.
+        if (output.StartsWith(NotBuiltPrefix, StringComparison.Ordinal))
+        {
+            var after = output.IndexOf("\n\n", StringComparison.Ordinal);
+            output = after < 0 ? string.Empty : output[(after + 2)..];
+            if (output.Length == 0) return BuildVerdict.NotBuilt;
+        }
 
         const string NameSentinel  = "\u0001";
         const int    CountSentinel = 918273645;
@@ -198,6 +205,7 @@ internal class GetDiagnosticsTool : ITool
             // asks no approval (plan mode and background /task runs offer it as a read).
             PathSanitizer.AssertUnderRoot(path, root);
         }
+        var chosen = path is null;   // built by choice, not as asked: what it leaves out is named
         path ??= FindProjectFile(root);
 
         if (path is null)
@@ -244,8 +252,39 @@ internal class GetDiagnosticsTool : ITool
 
         // 90 s, after which the build tree is killed: abandoned instead, MSBuild node processes
         // outlive the turn that started them.
-        var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(BudgetSeconds), ct);
-        return Interpret(run, Path.GetFileName(path), BudgetSeconds);
+        var run    = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(BudgetSeconds), ct);
+        var report = Interpret(run, Path.GetFileName(path), BudgetSeconds);
+        return chosen && NotBuiltNote(root, path) is { } note ? note + "\n\n" + report : report;
+    }
+
+    /// <summary>How the note above a build made by choice starts — <see cref="ReadVerdict"/> reads under it.</summary>
+    internal const string NotBuiltPrefix = "(This build covered ";
+
+    /// <summary>
+    /// The solutions — or, with none, the projects — of the workspace that a build of <paramref name="built"/> chosen by
+    /// this tool does not cover; <c>null</c> when there are none.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ "✓ Build successful (Lib.csproj)" reads as "the code compiles": with a test project beside it — the ordinary
+    /// layout of a folder opened in VS Code — the edited test project was not built, the verdict was Clean, and no
+    /// end-of-turn notice fired. A solution builds its projects, so with one only the other SOLUTIONS are named; a
+    /// project builds what it references, said in the note.
+    /// </remarks>
+    internal static string? NotBuiltNote(string? root, string built)
+    {
+        var start    = SearchStart(root);
+        var solution = SolutionFiles.IsSolution(built);
+        var kind     = solution
+            ? WorkspaceScan.EnumerateFiles(start, "*").Where(SolutionFiles.IsSolution)
+            : WorkspaceScan.EnumerateFiles(start, "*.csproj");
+        var others = WorkspaceScan.ShallowestFirst(kind.Where(f => !PathComparer.Default.Equals(f, built)))
+                                  .Select(f => Path.GetRelativePath(start, f).Replace('\\', '/'))
+                                  .ToList();
+        if (others.Count == 0) return null;
+
+        var named = string.Join(", ", others.Take(5)) + (others.Count > 5 ? $" and {others.Count - 5} more" : "");
+        return NotBuiltPrefix + Path.GetFileName(built) + (solution ? "" : " and what it references")
+             + $". Not built: {named} — pass 'path' to build one.)";
     }
 
     /// <summary>The answer when no .NET project is found: the user's remedy, then the model's — in a workspace of
@@ -307,13 +346,13 @@ internal class GetDiagnosticsTool : ITool
             : body;
     }
 
-    /// <summary>The first solution or project under <paramref name="root"/> — the working
-    /// directory only when no workspace root is known.</summary>
     /// <summary>Where the search for a project starts — the one reader, so the gap reported to the
     /// caller is the gap of the walk that actually ran.</summary>
     private static string SearchStart(string? root) =>
         string.IsNullOrEmpty(root) ? Directory.GetCurrentDirectory() : root;
 
+    /// <summary>The solution or project under <paramref name="root"/> that is built — the working directory only when no
+    /// workspace root is known: the shallowest, then the first in ordinal order (<see cref="WorkspaceScan.ShallowestFirst"/>).</summary>
     internal static string? FindProjectFile(string? root)
     {
         var start = SearchStart(root);
@@ -321,7 +360,7 @@ internal class GetDiagnosticsTool : ITool
         {
             // WorkspaceScan: lazy + excluded dirs skipped — a stray .csproj under node_modules
             // or bin/ must not become "the" project file.
-            var found = WorkspaceScan.EnumerateFiles(start, ext).FirstOrDefault();
+            var found = WorkspaceScan.ShallowestFirst(WorkspaceScan.EnumerateFiles(start, ext)).FirstOrDefault();
             if (found is not null) return found;
         }
         return null;

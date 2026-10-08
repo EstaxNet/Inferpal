@@ -203,6 +203,8 @@ async function startHostCore(
     }
   }
 
+  // Until the restore is done, a question waits (chatView.onHostStarting).
+  chatView.onHostStarting();
   const client = new HostClient(
     {
       hostPath,
@@ -242,12 +244,13 @@ async function startHostCore(
     } catch (err) {
       log(`[inferpal] language sync failed: ${String(err)}`);
     }
-    await chatView.onHostReady();
+    await chatView.onHostStarted();
     await pushModelRouterSettings(log);
     log(`[inferpal] host ready (${hostPath})`);
   } catch (err) {
     log(`[inferpal] host start failed: ${String(err)}`);
     await client.stop();
+    chatView.onHostStartFailed();
     if (interactive) {
       void vscode.window.showErrorMessage(t('Inferpal host failed to start: {0}', hostErrorText(err)));
     }

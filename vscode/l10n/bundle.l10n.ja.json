@@ -1,4 +1,6 @@
 ﻿{
+  "A turn is still running — wait for it to finish or stop it, then try again.": "ターンがまだ実行中です — 終了を待つか停止してから、もう一度お試しください。",
+  "Inferpal is starting — your message is sent as soon as it is ready.": "Inferpal を起動しています — 準備ができ次第、メッセージを送信します。",
   "Allow once": "1 回許可",
   "Inferpal needs an open folder to start.": "Inferpal を開始するには開いたフォルダーが必要です。",
   "Inferpal.Host binary not found. Set \"inferpal.hostPath\" in settings.": "Inferpal.Host バイナリが見つかりません。設定で「inferpal.hostPath」を指定してください。",

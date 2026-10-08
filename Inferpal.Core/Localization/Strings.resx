@@ -386,6 +386,7 @@ Backup: {0}</value></data>
   <data name="HistoryMessageCount" xml:space="preserve"><value>{0} messages</value></data>
   <data name="HistorySearchHint" xml:space="preserve"><value>→ `/history &lt;term&gt;` to search in session content</value></data>
   <data name="HistorySearchHeader" xml:space="preserve"><value>## History: "{0}" — {1} session(s)</value></data>
+  <data name="HistorySearchMoreMatches" xml:space="preserve"><value>+{0} more matching message(s) in this session</value></data>
   <data name="AgeMinutesAgo" xml:space="preserve"><value>{0}m ago</value></data>
   <data name="AgeHoursAgo" xml:space="preserve"><value>{0}h ago</value></data>
   <data name="AgeDaysAgo" xml:space="preserve"><value>{0}d ago</value></data>

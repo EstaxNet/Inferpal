@@ -45,7 +45,6 @@ internal class ReadFileTool : ITool
         PathSanitizer.AssertUnderRoot(path, root);
 
         string content;
-        var capped = false;
         switch (Classify(path, _overlay))
         {
             // ⚠ A directory is not a missing file: "not found" sent the model looking for a path that is correct.
@@ -61,9 +60,7 @@ internal class ReadFileTool : ITool
                 content = buffered;
                 break;
             default:
-                var text = await TextFileEncoding.ReadTextAsync(path, ct);
-                capped  = text.Length > MaxChars;
-                content = Cap(text, path);
+                content = await TextFileEncoding.ReadTextAsync(path, ct);
                 break;
         }
 
@@ -76,9 +73,10 @@ internal class ReadFileTool : ITool
 
         var shown = PageOf(content, Path.GetFileName(path), args.Int("start_line", 0), args.Int("end_line", 0));
         // ⚠ What the model has SEEN, not what it asked for: a first page or a range is not the file, and write_file lets
-        // a whole-file rewrite through only once every line of it has been in front of the model. A file cut at
-        // MaxChars is never seen whole.
-        if (!capped) _history?.NoteReadLines(path, shown.First, shown.Last, shown.Total);
+        // a whole-file rewrite through only once every line of it has been in front of the model. A read cut at
+        // MaxChars is not seen whole.
+        if (shown.Text.Length > MaxChars) return Cap(shown.Text, Path.GetFileName(path));
+        _history?.NoteReadLines(path, shown.First, shown.Last, shown.Total);
         return shown.Text;
     }
 
@@ -124,12 +122,18 @@ internal class ReadFileTool : ITool
     internal readonly record struct Shown(string Text, int First, int Last, int Total);
 
     /// <summary><see cref="Page"/>, with the lines the page covers.</summary>
+    /// <remarks>
+    /// ⚠ Lines are found by index in the WHOLE text, never in a prefix: paged after a cut, the footer gave the prefix's
+    /// line count as the file's, a line past it — one <c>search_in_files</c> had just reported — was "past the end", and
+    /// the last page said "the end of the file" under the cut. And no copy of the file is split into lines: only the page.
+    /// </remarks>
     internal static Shown PageOf(string content, string name, int start, int end)
     {
         var ranged = start > 0 || end > 0;
-        var lines = content.Split('\n');
+        var breaks = 0;
+        foreach (var c in content) if (c == '\n') breaks++;
         // A trailing newline ends the last line; it does not open another.
-        var total = content.EndsWith('\n') ? lines.Length - 1 : lines.Length;
+        var total = content.EndsWith('\n') ? breaks : breaks + 1;
         if (!ranged && content.Length <= PageChars) return new(content, 1, total, total);
         if (total <= 0) return new(content, 1, total, total);
 
@@ -140,21 +144,29 @@ internal class ReadFileTool : ITool
         if (last < first)
             return new($"[end_line {end} is before start_line {first}]", 0, 0, total);
 
-        var shown = first - 1;
-        var size  = 0;
+        var from = 0;
+        for (var line = 1; line < first; line++) from = content.IndexOf('\n', from) + 1;
+
+        var shown  = first - 1;
+        var size   = 0;
+        var cursor = from;
         for (var i = first; i <= last; i++)
         {
-            var add = lines[i - 1].Length + 1;
+            var nl      = content.IndexOf('\n', cursor);
+            var lineEnd = nl < 0 ? content.Length : nl;
+            var add     = lineEnd - cursor + 1;
             // With no end asked for, whole lines up to the page — at least one, even an over-long one.
             if (end <= 0 && shown >= first && size + add > PageChars) break;
-            size += add;
-            shown = i;
+            size  += add;
+            shown  = i;
+            cursor = nl < 0 ? content.Length : nl + 1;
         }
 
         if (first == 1 && shown == total) return new(content, 1, total, total);
 
-        var body = string.Join('\n', lines[(first - 1)..shown]);
-        if (shown < total || content.EndsWith('\n')) body += "\n";
+        // The lines shown, each with its own break: the last one has none only when it is the file's last.
+        var body = content[from..cursor];
+        if (shown < total && !body.EndsWith('\n')) body += "\n";
 
         return new(shown < total
             ? body + $"[{name}: lines {first}–{shown} of {total} shown — call read_file with start_line={shown + 1} to read on]"
@@ -162,27 +174,17 @@ internal class ReadFileTool : ITool
     }
 
     /// <summary>
-    /// Ceiling on what one <c>read_file</c> hands back. Generous — two orders of magnitude above
-    /// any source file, and above the 200 KB the indexer itself refuses to chunk.
+    /// Ceiling on what one <c>read_file</c> hands back — a range asked with an explicit <c>end_line</c>, which is
+    /// returned as asked. Generous — two orders of magnitude above any source file.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// The agent loop caps what reaches the <em>context</em> (<c>MaxToolResultCharsInContext</c>),
-    /// but that happens after the whole file is a string: reading a multi-hundred-megabyte file —
-    /// a database dump, a captured log, a bundled asset the model was curious about — materialised
-    /// all of it, twice while it was copied, in the extension host.
-    /// </para>
-    /// <para>
     /// The cut is <b>announced to the model</b>, and it names the way out. Silently handing back a
-    /// prefix would let it conclude a symbol is absent from a file it only read the start of.
-    /// </para>
+    /// prefix would let it conclude a symbol is absent from a range it only read the start of.
     /// </remarks>
     internal const int MaxChars = 2_000_000;
 
-    private static string Cap(string content, string path) =>
-        content.Length <= MaxChars
-            ? content
-            : SafeTruncate.Truncate(content, MaxChars)
-              + $"\n\n[... {Path.GetFileName(path)} is {content.Length} characters; the first {MaxChars} "
-              + "are shown. Use search_in_files to find what you need in the rest.]";
+    private static string Cap(string read, string name) =>
+        SafeTruncate.Truncate(read, MaxChars)
+        + $"\n\n[... this read of {name} is {read.Length} characters; the first {MaxChars} are shown. Ask for a "
+        + "narrower start_line/end_line range, or use search_in_files to find what you need.]";
 }

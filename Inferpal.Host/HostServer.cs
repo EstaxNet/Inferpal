@@ -249,6 +249,7 @@ internal sealed partial class HostServer : IDisposable
             Notify("chat/thinking", new { text = showReasoningTail ? tail : null });
         }
 
+        var questionKept = false;
         try
         {
             // Auto-context: inject the most relevant indexed chunks for this turn (same
@@ -257,11 +258,7 @@ internal sealed partial class HostServer : IDisposable
             // the per-turn RAG block ahead of it).
             string? workspace = null;
             if (!s.WorkspaceContextSent)
-            {
                 workspace = await BuildWorkspaceContextAsync(s, cts.Token);
-                if (workspace.Length > 0)
-                    s.WorkspaceContextSent = true;
-            }
 
             // ⚠ The question, not the expanded prompt: searched with the attached files' bodies, retrieval follows the
             // attachment, the shadow pre-computed on the typed text never matches, and a small embedding model is sent
@@ -274,6 +271,10 @@ internal sealed partial class HostServer : IDisposable
             // notification; it is rebuilt here, inside the turn slot, never from the notification itself.
             RefreshSystemPrompt(s);
             s.History.Add(new ChatMessageDto("user", promptText));
+            questionKept = true;
+            // ⚠ Sent once the question carrying it is in the history: set when the block was BUILT, a Stop during the
+            // auto-context build that follows dropped the question — block included — and no later question had it.
+            if (!string.IsNullOrEmpty(workspace)) s.WorkspaceContextSent = true;
 
             // The session-scoped `/tools off` switch forces plain chat, like the VS VM.
             // ⚠ A code action answers from the code it was given, without tools — as in Visual Studio. Sent with
@@ -466,7 +467,8 @@ internal sealed partial class HostServer : IDisposable
         {
             // Stopped before anything visible (reasoning only): no partial answer, as Visual Studio drops that bubble.
             var partial = streamed.ToString();
-            return new ChatSendResult(ChatTurnPolicy.IsVisiblyEmpty(partial) ? string.Empty : partial, true, 0, 0);
+            return new ChatSendResult(ChatTurnPolicy.IsVisiblyEmpty(partial) ? string.Empty : partial, true, 0, 0,
+                                      QuestionKept: questionKept);
         }
         catch (Exception ex)
         {
@@ -1501,10 +1503,14 @@ internal sealed partial class HostServer : IDisposable
     }
 
     /// <summary>A new conversation leaves the <c>/template</c> mode behind, as the VS view model does
-    /// on <c>/clear</c>, session load and <c>/branch</c>; prompt rebuilds (config, plan mode) keep it.</summary>
-    private static void StartNewConversation(HostSession s)
+    /// on <c>/clear</c>, session load and <c>/branch</c>; prompt rebuilds (config, plan mode) keep it. <c>/template</c>
+    /// starts its own with <paramref name="templateSuffix"/>.</summary>
+    /// <remarks>⚠ The one door to a discarded conversation: it also leaves the auto-save slot. Reset on its own, the
+    /// history of <c>/template</c> was new while <c>last_session</c> still held the old one, brought back at the next
+    /// start.</remarks>
+    private static void StartNewConversation(HostSession s, string? templateSuffix = null)
     {
-        s.TemplateSuffix = null;
+        s.TemplateSuffix = templateSuffix;
         ResetHistory(s);
         _ = ForgetAutoSaveAsync(s);
     }

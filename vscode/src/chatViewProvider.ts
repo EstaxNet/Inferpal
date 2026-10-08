@@ -208,8 +208,47 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.hydrate();
   }
 
+  /**
+   * Set from the host's spawn until its first restore is done (or the start failed): a question sent meanwhile waits.
+   * ⚠ The start brings the last conversation back only when the thread shows none: a question asked during it became
+   * "the conversation on screen", was saved over `last_session`, and the conversation it should have restored was gone.
+   */
+  private hostStarting = false;
+  private readonly queuedPrompts: string[] = [];
+
+  /** Called by the activator just before it spawns the host. */
+  onHostStarting(): void {
+    this.hostStarting = true;
+  }
+
+  /** Called by the activator when the host could not start: what waited goes to the "not running" answer. */
+  onHostStartFailed(): void {
+    this.releaseQueuedPrompts();
+  }
+
+  /** The start is over: the questions that waited are sent now, in order. */
+  private releaseQueuedPrompts(): void {
+    this.hostStarting = false;
+    const queued = this.queuedPrompts.splice(0);
+    if (queued.length > 0) {
+      void (async () => {
+        for (const prompt of queued) {
+          await this.send(prompt);
+        }
+      })();
+    }
+  }
+
   /** Called by the activator once the host handshake finished. */
-  async onHostReady(): Promise<void> {
+  async onHostStarted(): Promise<void> {
+    try {
+      await this.onHostReady();
+    } finally {
+      this.releaseQueuedPrompts();
+    }
+  }
+
+  private async onHostReady(): Promise<void> {
     const host = this.getHost();
     if (!host?.isRunning) {
       return;
@@ -1625,13 +1664,25 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private async send(text: string): Promise<void> {
     const prompt = text.trim();
     const host = this.getHost();
-    if (!prompt || this.busy) {
+    if (!prompt) {
+      return;
+    }
+    // ⚠ The composer cannot send during a turn, but other gestures come here too — the editor's context menu
+    // (Explain, Fix, Refactor, Doc), the result bar's Undo: dropped in silence, the click did nothing at all.
+    if (this.busy) {
+      void vscode.window.showWarningMessage(t('A turn is still running — wait for it to finish or stop it, then try again.'));
+      return;
+    }
+    if (this.hostStarting) {
+      this.queuedPrompts.push(prompt);
+      this.post({ type: 'status', text: t('Inferpal is starting — your message is sent as soon as it is ready.') });
       return;
     }
     if (!host?.isRunning) {
       // Two states, two remedies: with no folder open the host was never spawned, and
-      // "Restart Host" cannot change that (hostStatus.ts).
-      this.append({ role: 'error', text: hostUnavailableMessage(), timestamp: ChatViewProvider.now() });
+      // "Restart Host" cannot change that (hostStatus.ts). A notice: read as a conversation, the host's next start
+      // saved this line over the last one instead of bringing it back.
+      this.append({ role: 'error', text: hostUnavailableMessage(), timestamp: ChatViewProvider.now(), notice: true });
       this.hydrate();
       promptOpenFolder();
       return;
@@ -1982,6 +2033,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         // resent on top of itself, and a reload dropped what the live history still held.
         this.append({ role: 'error', text: result.error, timestamp: ChatViewProvider.now() });
       } else if (result.cancelled) {
+        // Stopped before the question entered the host's history (during the context build): a notice, like a refused
+        // request — Regenerate resends it without taking back the exchange before it, which the screen still shows.
+        if (result.questionKept === false) {
+          const asked = [...this.transcript].reverse().find((m) => m.role === 'user');
+          if (asked) {
+            asked.notice = true;
+          }
+        }
         // Like the VS window: a visible partial answer stays, an empty one is not saved, and the stop
         // is a lasting line — the webview's own note is gone after a reload.
         if (finalText.trim().length > 0) {

@@ -43,8 +43,12 @@ public sealed class WorkspaceBlockFollowsTheSolutionTests
         Assert.True(guard is not null, "the workspace block's guard was not found: check what replaced it.");
         Assert.Contains("SameDirectory(_workspaceContextRoot", guard!.Condition.ToString(), StringComparison.Ordinal);
 
-        // …and a block that was built records that root.
+        // …the build notes the root it describes…
         Assert.Contains(guard.Statement.DescendantNodes().OfType<AssignmentExpressionSyntax>(),
-                        a => a.Left.ToString() == "_workspaceContextRoot");
+                        a => a.Left.ToString() == "describedRoot");
+        // …and once the question carrying the block is in the history, that root is recorded
+        // (StopBeforeTheQuestionTests: recorded at the build, a Stop before the history left the block unsent).
+        Assert.Contains(send.DescendantNodes().OfType<AssignmentExpressionSyntax>(),
+                        a => a.Left.ToString() == "_workspaceContextRoot" && a.Right.ToString() == "describedRoot");
     }
 }

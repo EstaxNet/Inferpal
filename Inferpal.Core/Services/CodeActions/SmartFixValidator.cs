@@ -293,7 +293,7 @@ internal sealed class SmartFixValidator
 
     private string? FindMarker(string dir, string glob)
     {
-        try { return Directory.GetFiles(dir, glob, SearchOption.TopDirectoryOnly).FirstOrDefault(); }
+        try { return Directory.GetFiles(dir, glob, SearchOption.TopDirectoryOnly).Order(StringComparer.Ordinal).FirstOrDefault(); }
         catch { return null; }
     }
 

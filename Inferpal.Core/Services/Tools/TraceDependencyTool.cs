@@ -201,7 +201,7 @@ internal class TraceDependencyTool : ITool
         }
 
         // ── Summary ───────────────────────────────────────────────────────────
-        var allCallees = methods.SelectMany(m => m.Calls)
+        var allCallees = methods.SelectMany(m => ShownCalls(m, index))
                                 .Distinct(StringComparer.OrdinalIgnoreCase)
                                 .ToList();
         int resolved = index is null ? 0
@@ -234,19 +234,20 @@ internal class TraceDependencyTool : ITool
         HashSet<string>  visited,
         string           indent)
     {
-        if (method.Calls.Count == 0)
+        var calls = ShownCalls(method, index);
+        if (calls.Count == 0)
         {
             sb.AppendLine($"{indent}*(no outgoing calls detected)*");
             return;
         }
 
-        var shown = Math.Min(method.Calls.Count, MaxCallsPerMethod);
+        var shown = Math.Min(calls.Count, MaxCallsPerMethod);
         for (int i = 0; i < shown; i++)
         {
-            bool   isLast     = i == method.Calls.Count - 1;
+            bool   isLast     = i == calls.Count - 1;
             string conn       = isLast ? "└── " : "├── ";
             string childIndent = indent + (isLast ? "    " : "│   ");
-            var    call       = method.Calls[i];
+            var    call       = calls[i];
 
             // Resolve to definition
             MethodInfo? callee = null;
@@ -282,9 +283,13 @@ internal class TraceDependencyTool : ITool
                 visited.Remove(call);
             }
         }
-        if (method.Calls.Count > shown)
-            sb.AppendLine($"{indent}└── … +{method.Calls.Count - shown} more call(s) not shown");
+        if (calls.Count > shown)
+            sb.AppendLine($"{indent}└── … +{calls.Count - shown} more call(s) not shown");
     }
+
+    /// <summary>The calls a tree shows: all of them, but a framework name only when the workspace defines it.</summary>
+    private static List<string> ShownCalls(MethodInfo method, DefinitionIndex? index) =>
+        method.Calls.Where(c => !CSharpAnalyzer.IsFrameworkName(c) || (index is not null && index.TryFind(c, out _))).ToList();
 
     // ── Callers ───────────────────────────────────────────────────────────────
 
@@ -463,8 +468,10 @@ internal class TraceDependencyTool : ITool
             @"\b([A-Za-z_][\w]*)\s*(?:<[^>()]{0,80}>)?\s*\(",
             RegexOptions.Compiled, RegexBudget.Default);
 
-        // C# keywords and common non-method identifiers to suppress
-        private static readonly HashSet<string> _skip = new(StringComparer.OrdinalIgnoreCase)
+        // C# keywords — contextual ones included — and literals: never a method, whatever the file. Case-SENSITIVE:
+        // compared without case, `get`, `add`, `remove`, `value`, `select` hide the user's own Get, Add, Remove, Value,
+        // Select — their declarations ("Symbol 'Add' not found") and every call to them.
+        private static readonly HashSet<string> _keywords = new(StringComparer.Ordinal)
         {
             // Control flow
             "if", "else", "while", "for", "foreach", "do", "switch", "case", "default",
@@ -482,6 +489,12 @@ internal class TraceDependencyTool : ITool
             "string", "int", "long", "short", "byte", "uint", "ulong", "ushort", "sbyte",
             "float", "double", "decimal", "bool", "char", "object", "dynamic",
             "var", "params", "readonly",
+        };
+
+        // Framework names that flood a call tree as [external]: dropped from it only when the workspace defines no
+        // method of that name — a user's Count, Match or Max is shown, and resolved, like any other (ShownCalls).
+        private static readonly HashSet<string> _frameworkNames = new(StringComparer.Ordinal)
+        {
             // Generic container types (usually appear as new T<…>())
             "List", "Dictionary", "HashSet", "Queue", "Stack", "LinkedList", "SortedList",
             "SortedDictionary", "SortedSet", "IList", "ICollection", "IEnumerable",
@@ -506,6 +519,9 @@ internal class TraceDependencyTool : ITool
             "Assert", "Equals", "GetHashCode", "ToString", "GetType", "MemberwiseClone",
         };
 
+        /// <summary>A framework name (List, Where, Count…): shown in a call tree only when the workspace defines it.</summary>
+        public static bool IsFrameworkName(string name) => _frameworkNames.Contains(name);
+
         public static List<MethodInfo> Parse(string source)
         {
             var methods = new List<MethodInfo>();
@@ -516,8 +532,8 @@ internal class TraceDependencyTool : ITool
                 var m    = matchList[i];
                 var name = m.Groups[1].Value;
 
-                // Skip if the captured name is a keyword or very short
-                if (_skip.Contains(name) || name.Length <= 1) continue;
+                // Skip if the captured name is a keyword or very short — a framework name declared here is the user's
+                if (_keywords.Contains(name) || name.Length <= 1) continue;
 
                 int line = CountNewlines(source, m.Index) + 1;
                 var sig  = ParseSignature(m.Value);
@@ -563,7 +579,7 @@ internal class TraceDependencyTool : ITool
             foreach (Match m in _call.Matches(body))
             {
                 var n = m.Groups[1].Value;
-                if (!_skip.Contains(n) && n != ownerName && n.Length > 1)
+                if (!_keywords.Contains(n) && n != ownerName && n.Length > 1)
                     set.Add(n);
             }
 

@@ -379,7 +379,7 @@ internal sealed class ProjectMapService
         {
             if (SolutionFiles.DirectoryHasSolution(dir))
                 return dir;
-            foreach (var sub in Directory.GetDirectories(dir))
+            foreach (var sub in Directory.GetDirectories(dir).Order(StringComparer.Ordinal))
                 if (SolutionFiles.DirectoryHasSolution(sub))
                     return sub;
 

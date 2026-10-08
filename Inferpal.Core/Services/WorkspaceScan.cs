@@ -197,6 +197,17 @@ internal static class WorkspaceScan
         EnumerateFiles(start, pattern, out _);
 
     /// <summary>
+    /// <paramref name="paths"/> shallowest first, then in ordinal order — the order a CHOICE among walked paths is made
+    /// in ("the" solution, "the" test file).
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Never the first the walk meets: the file system's order is arbitrary under POSIX, so the project
+    /// <c>get_diagnostics</c> builds, or the file a test is written to, would depend on the machine.
+    /// </remarks>
+    public static IEnumerable<string> ShallowestFirst(IEnumerable<string> paths) =>
+        paths.OrderBy(p => p.Count(c => c is '/' or '\\')).ThenBy(p => p, StringComparer.Ordinal);
+
+    /// <summary>
     /// The same walk, plus whether it <b>could not even start</b>.
     /// </summary>
     /// <remarks>

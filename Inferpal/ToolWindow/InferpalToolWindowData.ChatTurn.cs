@@ -170,6 +170,11 @@ internal partial class InferpalToolWindowData
                     SavePromptHistory();
                 if (clearPrompt)
                 {
+                    // ⚠ A send that clears the chips SENDS them: a template, /explain, /review and /debug come here with
+                    // their own attachments only, and the chips waiting in the composer vanished unsent and unnamed
+                    // (VS Code sends them). The ordinary send passes them already: not added twice.
+                    foreach (var pending in Attachments)
+                        if (!attachments.Contains(pending)) attachments.Add(pending);
                     Prompt         = string.Empty;
                     Attachments.Clear();
                     HasAttachments = false;
@@ -200,6 +205,7 @@ internal partial class InferpalToolWindowData
 
             // First-turn workspace context: silently prepend solution + open editors
             string? workspaceCtx = null;
+            string? describedRoot = null;
             // ⚠ The block describes the solution the ROOT holds: after a solution switch the conversation goes on, and the
             // model worked in solution B under A's projects and paths — the block was sent once per conversation.
             if ((!_workspaceContextInjected || !PathComparer.SameDirectory(_workspaceContextRoot, _indexService.RootDir))
@@ -211,13 +217,8 @@ internal partial class InferpalToolWindowData
                 // still loading its solution. Set before, a timeout consumes the flag and the model
                 // NEVER AGAIN gets the session's workspace context, with nothing saying so. "No
                 // solution open" is not that case: get_solution_info then returns text.
-                var describedRoot = _indexService.RootDir;
+                describedRoot = _indexService.RootDir;
                 workspaceCtx = await BuildWorkspaceContextAsync(localCts!.Token);
-                if (!string.IsNullOrEmpty(workspaceCtx))
-                {
-                    _workspaceContextInjected = true;
-                    _workspaceContextRoot     = describedRoot;
-                }
             }
 
             // Auto-context: retrieve and inject the most relevant indexed chunks for this turn,
@@ -237,6 +238,14 @@ internal partial class InferpalToolWindowData
                 // edited file reached the model in its OLD version for the rest of the session.
                 RefreshSystemPrompt();
                 _history.Add(new ChatMessageDto("user", historyText));
+                _questionInHistory = _lastSent?.Question;
+                // ⚠ Sent once the question carrying it is in the history: set when the block was BUILT, a Stop during
+                // the auto-context build that follows dropped the question — block included — and no later one had it.
+                if (!string.IsNullOrEmpty(workspaceCtx))
+                {
+                    _workspaceContextInjected = true;
+                    _workspaceContextRoot     = describedRoot;
+                }
                 // Shadow search is no longer needed — agent is running
                 _shadowSearchCts?.Cancel();
                 _shadowSearchCts?.Dispose();

@@ -1,4 +1,6 @@
 ﻿{
+  "A turn is still running — wait for it to finish or stop it, then try again.": "仍有一个回合正在运行——请等待其结束或将其停止，然后重试。",
+  "Inferpal is starting — your message is sent as soon as it is ready.": "Inferpal 正在启动——准备就绪后会立即发送你的消息。",
   "Allow once": "允许一次",
   "Inferpal needs an open folder to start.": "Inferpal 需要打开一个文件夹才能启动。",
   "Inferpal.Host binary not found. Set \"inferpal.hostPath\" in settings.": "未找到 Inferpal.Host 二进制文件。请在设置中配置 “inferpal.hostPath”。",

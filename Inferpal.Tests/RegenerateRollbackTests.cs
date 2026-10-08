@@ -40,9 +40,16 @@ public class RegenerateRollbackTests
         var refused  = turn.IndexOf("} catch (err) {", StringComparison.Ordinal);
         Assert.True(answered > 0 && refused > answered, "the two failure branches moved: the rule measures nothing");   // WITNESS
 
+        // Two marks, never in the answered-error branch: a refused request, and a turn the host says stopped before its
+        // question entered the history (StopBeforeTheQuestionTests).
+        var cancelled = turn.IndexOf("} else if (result.cancelled) {", StringComparison.Ordinal);
+        Assert.True(cancelled > answered, "the stopped-turn branch moved: the rule measures nothing");   // WITNESS
         var marks = System.Text.RegularExpressions.Regex.Matches(turn, @"asked\.notice = true;");
-        Assert.Single(marks);
-        Assert.True(marks[0].Index > refused, "a failed turn's question is marked, though the host keeps it");
+        Assert.Equal(2, marks.Count);
+        Assert.DoesNotContain(marks, m => m.Index > answered && m.Index < cancelled);
+        Assert.Contains(marks, m => m.Index > refused);
+        var stopMark = marks.Single(m => m.Index > cancelled && m.Index < refused);
+        Assert.Contains("result.questionKept === false", turn[cancelled..stopMark.Index], StringComparison.Ordinal);
 
         // The host side of the contract: a failed run restores the durable history, which already holds the question.
         var host  = File.ReadAllText(Path.Combine(ConversationPersistenceSilenceTests.RepoRoot(), "Inferpal.Host", "HostServer.cs"));

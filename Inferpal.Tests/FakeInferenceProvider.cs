@@ -49,6 +49,10 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     /// embedding calls and act mid-pass (e.g. rewrite a file while it is being indexed).</summary>
     public Func<string, float[]?>? OnEmbedding { get; set; }
 
+    /// <summary>Asynchronous override of <see cref="GetEmbeddingAsync"/>, given the request's token: lets a test hold an
+    /// embedding until the turn is stopped. Wins over <see cref="OnEmbedding"/> when set.</summary>
+    public Func<string, CancellationToken, Task<float[]?>>? OnEmbeddingAsync { get; set; }
+
     /// <summary>Result of <see cref="DeleteModelAsync"/> (keyed by model name).</summary>
     public Func<string, bool>          OnDelete { get; set; } = _ => true;
     /// <summary>Result of <see cref="PullModelAsync"/> (keyed by model name).</summary>
@@ -124,6 +128,7 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     public Task<float[]?> GetEmbeddingAsync(string text, string model, CancellationToken ct)
     {
         EmbeddingRequests.Enqueue((text, model));
+        if (OnEmbeddingAsync is { } held) return held(text, ct);
         return Task.FromResult(OnEmbedding is not null ? OnEmbedding(text) : Embedding);
     }
 

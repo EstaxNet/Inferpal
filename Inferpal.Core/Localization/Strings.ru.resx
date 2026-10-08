@@ -385,6 +385,7 @@
   <data name="HistoryMessageCount" xml:space="preserve"><value>сообщений: {0}</value></data>
   <data name="HistorySearchHint" xml:space="preserve"><value>→ `/history &lt;запрос&gt;` — поиск по содержимому сеансов</value></data>
   <data name="HistorySearchHeader" xml:space="preserve"><value>## История: «{0}» — сеансов: {1}</value></data>
+  <data name="HistorySearchMoreMatches" xml:space="preserve"><value>в этом сеансе ещё совпадающих сообщений: {0}</value></data>
   <data name="AgeMinutesAgo" xml:space="preserve"><value>{0} мин назад</value></data>
   <data name="AgeHoursAgo" xml:space="preserve"><value>{0} ч назад</value></data>
   <data name="AgeDaysAgo" xml:space="preserve"><value>{0} дн. назад</value></data>

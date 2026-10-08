@@ -625,8 +625,7 @@ internal sealed partial class HostServer
         if (result.Apply is not { } tmpl)
             return new SlashCommandResult(true, result.Message);
 
-        s.TemplateSuffix = tmpl.SystemSuffix;
-        ResetHistory(s);
+        StartNewConversation(s, tmpl.SystemSuffix);
         return new SlashCommandResult(true, tmpl.Greeting, [new SlashEffectDto("clearTranscript")]);
     }
 

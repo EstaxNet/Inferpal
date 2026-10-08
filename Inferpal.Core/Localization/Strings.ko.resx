@@ -385,6 +385,7 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
   <data name="HistoryMessageCount" xml:space="preserve"><value>메시지 {0}개</value></data>
   <data name="HistorySearchHint" xml:space="preserve"><value>→ `/history &lt;검색어&gt;`로 세션 내용 검색</value></data>
   <data name="HistorySearchHeader" xml:space="preserve"><value>## 기록: "{0}" — 세션 {1}개</value></data>
+  <data name="HistorySearchMoreMatches" xml:space="preserve"><value>이 세션에 일치하는 메시지 {0}개 더</value></data>
   <data name="AgeMinutesAgo" xml:space="preserve"><value>{0}분 전</value></data>
   <data name="AgeHoursAgo" xml:space="preserve"><value>{0}시간 전</value></data>
   <data name="AgeDaysAgo" xml:space="preserve"><value>{0}일 전</value></data>

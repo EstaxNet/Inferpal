@@ -282,7 +282,7 @@ internal static class DocContextExtractor
             if (filesScanned >= MaxInterfaceFiles) break;
 
             IEnumerable<string> candidates;
-            try { candidates = Directory.EnumerateFiles(searchDir, "I*.cs", SearchOption.TopDirectoryOnly); }
+            try { candidates = Directory.EnumerateFiles(searchDir, "I*.cs", SearchOption.TopDirectoryOnly).Order(StringComparer.Ordinal); }
             catch { continue; }
 
             foreach (var candidate in candidates)

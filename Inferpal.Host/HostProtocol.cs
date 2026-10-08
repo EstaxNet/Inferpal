@@ -77,7 +77,10 @@ internal sealed record ChatSendResult(
     /// <summary>How long the turn took, as the answer's header shows it ("21 s").</summary>
     string? Duration = null,
     /// <summary>The model that answered.</summary>
-    string? Model = null);
+    string? Model = null,
+    /// <summary>False when the turn stopped before its question entered the history (a Stop during the context build):
+    /// Regenerate then has nothing to take back — taking back "the last question" would remove the one before.</summary>
+    bool    QuestionKept = true);
 
 /// <summary>One agent run as the chat shows it (<see cref="Services.Presentation.RunSummaryModel"/>).</summary>
 /// <param name="Check"><c>none</c>, <c>buildPassed</c>, <c>buildFailed</c>, <c>testsPassed</c> or <c>testsFailed</c>.</param>

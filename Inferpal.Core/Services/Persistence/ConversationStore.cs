@@ -185,10 +185,12 @@ internal class ConversationStore
     /// <summary>
     /// Full-text search across all named sessions.
     /// Returns sessions that contain at least one message matching <paramref name="term"/>,
-    /// with up to 3 surrounding snippets per session.
+    /// with up to 3 surrounding snippets per session — and how many more messages match, said under them: three
+    /// snippets read as "the word appears three times" otherwise.
     /// </summary>
     public async Task<SessionScan<SessionMatch>> SearchAsync(string term, CancellationToken ct)
     {
+        const int MaxSnippets = 3;
         var results    = new List<SessionMatch>();
         var unreadable = new List<string>();
         foreach (var name in ListSessions().Where(n => n != "last_session"))
@@ -199,16 +201,15 @@ internal class ConversationStore
                 var data = await LoadAsync(name, ct);
                 if (data is null) { if (File.Exists(SessionPath(name))) unreadable.Add(name); continue; }
 
-                var snippets = data.Messages
+                var matching = data.Messages
                     // What the chat shows: a word found only in the model's hidden reasoning is not a hit.
                     .Select(m => MarkdownParser.ShownText(m.Role, m.Content))
                     .Where(text => text.Contains(term, StringComparison.OrdinalIgnoreCase))
-                    .Take(3)
-                    .Select(text => ExtractSnippet(text, term, 90))
                     .ToList();
+                var snippets = matching.Take(MaxSnippets).Select(text => ExtractSnippet(text, term, 90)).ToList();
 
                 if (snippets.Count > 0)
-                    results.Add(new SessionMatch(name, data.SavedAt, snippets));
+                    results.Add(new SessionMatch(name, data.SavedAt, snippets, matching.Count - snippets.Count));
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)
@@ -271,7 +272,8 @@ internal record SessionSummary(string Name, DateTime SavedAt, int MessageCount, 
                                string? Parent = null, int? ForkTurn = null);
 
 /// <summary>Search hit returned by <see cref="ConversationStore.SearchAsync"/>.</summary>
-internal record SessionMatch(string Name, DateTime SavedAt, List<string> Snippets);
+/// <param name="MoreMatches">Matching messages of the session beyond the snippets shown.</param>
+internal record SessionMatch(string Name, DateTime SavedAt, List<string> Snippets, int MoreMatches = 0);
 
 /// <summary>
 /// What a pass over the session folder found, <b>and what it could not read</b>.

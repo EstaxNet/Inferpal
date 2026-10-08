@@ -1,4 +1,6 @@
 ﻿{
+  "A turn is still running — wait for it to finish or stop it, then try again.": "Ход ещё выполняется — дождитесь его завершения или остановите его, затем повторите попытку.",
+  "Inferpal is starting — your message is sent as soon as it is ready.": "Inferpal запускается — сообщение будет отправлено, как только он будет готов.",
   "Allow once": "Разрешить один раз",
   "Inferpal needs an open folder to start.": "Для запуска Inferpal нужна открытая папка.",
   "Inferpal.Host binary not found. Set \"inferpal.hostPath\" in settings.": "Двоичный файл Inferpal.Host не найден. Укажите «inferpal.hostPath» в настройках.",

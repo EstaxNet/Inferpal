@@ -968,6 +968,7 @@ internal static class Strings
     public static string HistoryMessageCount(int count) => string.Format(Get(nameof(HistoryMessageCount)), count);
     public static string HistorySearchHint => Get(nameof(HistorySearchHint));
     public static string HistorySearchHeader(string term, int count) => string.Format(Get(nameof(HistorySearchHeader)), term, count);
+    public static string HistorySearchMoreMatches(int count) => string.Format(Get(nameof(HistorySearchMoreMatches)), count);
     public static string AgeMinutesAgo(int n) => string.Format(Get(nameof(AgeMinutesAgo)), n);
     public static string AgeHoursAgo(int n) => string.Format(Get(nameof(AgeHoursAgo)), n);
     public static string AgeDaysAgo(int n) => string.Format(Get(nameof(AgeDaysAgo)), n);

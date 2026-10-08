@@ -152,10 +152,17 @@ internal partial class InferpalToolWindowData
             _lastRegenerableMsg = null;
         }
 
-        // Roll _history back to just before the last user turn (_history[0] is always the system prompt)
-        for (var i = _history.Count - 1; i >= 1; i--)
+        // Roll _history back to just before the last user turn (_history[0] is always the system prompt) — only when that
+        // turn IS this bubble's: a question stopped during its context build never entered the history, and the last
+        // user turn there is the one before, which the screen still shows. A restored bubble's question is in it.
+        var inHistory = !(_lastSent is { } last && ReferenceEquals(last.Question, lastUserItem))
+                     || ReferenceEquals(_questionInHistory, lastUserItem);
+        if (inHistory)
         {
-            if (_history[i].Role == "user") { _history.RemoveRange(i, _history.Count - i); break; }
+            for (var i = _history.Count - 1; i >= 1; i--)
+            {
+                if (_history[i].Role == "user") { _history.RemoveRange(i, _history.Count - i); break; }
+            }
         }
         // The workspace block rode with the question taken back: the question asked again carries it again.
         if (!Services.Prompting.WorkspaceContext.IsIn(_history)) _workspaceContextInjected = false;

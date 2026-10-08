@@ -180,7 +180,7 @@ internal partial class InferpalToolWindowData
             {
                 var root = FindProjectRoot();
                 slnPath = Services.SolutionFiles.FirstIn(root)
-                       ?? Directory.GetFiles(root, "*.csproj", SearchOption.TopDirectoryOnly).FirstOrDefault();
+                       ?? Directory.GetFiles(root, "*.csproj", SearchOption.TopDirectoryOnly).Order(StringComparer.Ordinal).FirstOrDefault();
             }
 
             var diagArgsJson = slnPath is not null

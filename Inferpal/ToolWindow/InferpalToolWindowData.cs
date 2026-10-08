@@ -111,6 +111,9 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     // What the last question shown was sent WITH — the text, a one-time model (a code action's), its attachments —, so
     // Regenerate resends that, not the bubble's words. Tied to its bubble: another last question resends its words.
     private (ChatMessageItem Question, string Text, string? Model, List<AttachmentItem> Attachments)? _lastSent;
+    // The question bubble whose text entered _history. A Stop during the context build leaves the bubble on screen and
+    // the history without it: Regenerate then takes nothing back (the last user entry is the question BEFORE).
+    private ChatMessageItem?         _questionInHistory;
     private CancellationTokenSource? _mentionCts;
     private CancellationTokenSource? _shadowSearchCts;
     private bool _toolsEnabled = true;
