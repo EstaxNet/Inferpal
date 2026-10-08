@@ -182,6 +182,29 @@ internal sealed class DocsIndexService
     }
 
     /// <summary>
+    /// Which bound stopped a crawl that indexed something, said with the result — or nothing when it ran out of links.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Three bounds, three sentences: the page cap, the depth from the start page, the link frontier. Only the first was
+    /// said, so a site deeper than <see cref="DocCrawler.MaxDepth"/> levels read as indexed in full under a ✅ — and
+    /// <c>@Docs</c> answered "not in the documentation" about pages it never fetched. Indexing a deeper page as its own
+    /// site reaches them.
+    /// </remarks>
+    internal static string CrawlLimitNote(int pageCount, int beyondDepth, int beyondFrontier)
+    {
+        if (pageCount >= DocCrawler.MaxPages)
+            return $" (crawl limit of {DocCrawler.MaxPages} pages reached — the site may have more)";
+        var notes = new List<string>(2);
+        if (beyondDepth > 0)
+            notes.Add($"{beyondDepth} link(s) deeper than {DocCrawler.MaxDepth} levels from the start page not followed — "
+                    + "index a deeper page as its own site to reach them");
+        if (beyondFrontier > 0)
+            notes.Add($"{beyondFrontier} link(s) not followed: the crawl's limit of {DocCrawler.MaxKnownLinks} known links "
+                    + "was reached");
+        return notes.Count == 0 ? string.Empty : $" (the site may have more: {string.Join("; ", notes)})";
+    }
+
+    /// <summary>
     /// The pages a crawl that DID index something was refused, said with the result — or nothing.
     /// </summary>
     /// <remarks>
@@ -358,9 +381,7 @@ internal sealed class DocsIndexService
             // is the one that survives into the next session.
             var embNote = (_client.IsEmbeddingCircuitOpen ? " (⚠ embedding circuit open, keyword fallback)" : string.Empty)
                         + HoleNote(UnembeddedCount, ChunkCount);
-            var crawlNote = pages.Count >= DocCrawler.MaxPages
-                ? $" (crawl limit of {DocCrawler.MaxPages} pages reached — the site may have more)"
-                : string.Empty;
+            var crawlNote = CrawlLimitNote(pages.Count, crawler.BeyondDepth, crawler.BeyondFrontier);
             var keptNote = keptPages == 0 ? string.Empty
                 : $" (kept {keptPages} page(s) from the previous index that this pass could not fetch)";
             Status = $"Docs: ✅ {site.Title} — {pages.Count + keptPages} pages, {chunks.Count} chunks{crawlNote}{keptNote}"

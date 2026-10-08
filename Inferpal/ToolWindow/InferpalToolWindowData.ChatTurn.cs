@@ -187,6 +187,7 @@ internal partial class InferpalToolWindowData
                     userText, attachments.Select(a => a.Label).ToList()));
                 ApplyItemTheme(userItem);
                 Messages.Insert(Messages.Count - 2, userItem);
+                _lastSent = (userItem, userText, oneTimeModel, attachments.ToList());
                 ScrollToBottom();
             });
 
@@ -199,7 +200,10 @@ internal partial class InferpalToolWindowData
 
             // First-turn workspace context: silently prepend solution + open editors
             string? workspaceCtx = null;
-            if (!_workspaceContextInjected && !userText.StartsWith('/'))
+            // ⚠ The block describes the solution the ROOT holds: after a solution switch the conversation goes on, and the
+            // model worked in solution B under A's projects and paths — the block was sent once per conversation.
+            if ((!_workspaceContextInjected || !PathComparer.SameDirectory(_workspaceContextRoot, _indexService.RootDir))
+                && !userText.StartsWith('/'))
             {
                 // ⚠ The flag is set AFTER success. BuildWorkspaceContextAsync is best-effort —
                 // both of its tools carry a 5-second deadline and return an empty string when they
@@ -207,9 +211,13 @@ internal partial class InferpalToolWindowData
                 // still loading its solution. Set before, a timeout consumes the flag and the model
                 // NEVER AGAIN gets the session's workspace context, with nothing saying so. "No
                 // solution open" is not that case: get_solution_info then returns text.
+                var describedRoot = _indexService.RootDir;
                 workspaceCtx = await BuildWorkspaceContextAsync(localCts!.Token);
                 if (!string.IsNullOrEmpty(workspaceCtx))
+                {
                     _workspaceContextInjected = true;
+                    _workspaceContextRoot     = describedRoot;
+                }
             }
 
             // Auto-context: retrieve and inject the most relevant indexed chunks for this turn,
@@ -587,6 +595,11 @@ internal partial class InferpalToolWindowData
                 if (streamingMsg is not null)
                     lastAssistant = streamingMsg;
 
+                var finalKind = Services.Agent.ChatTurnPolicy.DecideFinalAnswer(
+                    streamingBubbleVisible: streamingMsg is not null,
+                    finalResponse:          agentFinalResponse,
+                    executionCount:         agentExecutions.Count);
+
                 // ⚠ A FAILED run returns its error as the answer (the loop never throws): shown as a notice, like the
                 // plain chat whose request threw — kept as the answer, the model re-read "the backend refused" as
                 // what it had said, and a reload handed it back.
@@ -599,10 +612,7 @@ internal partial class InferpalToolWindowData
                 }
                 // Fallback chain when the streamed bubble was absent or visibly empty:
                 // stored final response → tool summary → absolute "empty response" fallback.
-                else switch (Services.Agent.ChatTurnPolicy.DecideFinalAnswer(
-                            streamingBubbleVisible: streamingMsg is not null,
-                            finalResponse:          agentFinalResponse,
-                            executionCount:         agentExecutions.Count))
+                else switch (finalKind)
                 {
                     case Services.Agent.FinalAnswerKind.FinalText:
                         var finalMsg = ChatMessageItem.AssistantMsg(
@@ -670,8 +680,8 @@ internal partial class InferpalToolWindowData
                 // example to replay its previous final answer verbatim instead of answering the
                 // new question (observed with devstral: turn 2 returned turn 1's answer
                 // word-for-word). This also matches what a session save/reload would rebuild.
-                var persistedAnswer = Services.Agent.ChatTurnPolicy.ChoosePersistedAnswer(
-                    lastAssistant?.Content, agentFinalResponse);
+                var persistedAnswer = Services.Agent.ChatTurnPolicy.PersistedAnswer(
+                    finalKind, lastAssistant?.Content, agentFinalResponse, agentExecutions, agentEndNotice);
                 if (persistedAnswer.Length > 0 && !agentFailed)
                     _history.Add(new ChatMessageDto("assistant", persistedAnswer));
                 // The real prompt size of the run's last call reflects the discarded internal

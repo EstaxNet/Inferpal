@@ -20,6 +20,9 @@ internal class AnalyzeImpactTool : ITool
     internal const int MaxAllowedDepth     = 3;
     internal const int DefaultDepth        = 2;
     private const int MaxFilesScanned      = 500;
+    /// <summary>Layer-2 dependants LISTED; the search itself is bounded by the files it reads (×3, declared).</summary>
+    /// <remarks>⚠ A display cap, never a search cap: stopped at 60, the search printed "Layer 2 (60)" as the total, and
+    /// the tests, entry points and risk built from it were undercounted with nothing said.</remarks>
     private const int MaxTransitiveFiles   = 60;
     private const int MaxTransitivePerFile = 8;   // layer-2 entries shown per layer-1 file
 
@@ -565,14 +568,11 @@ internal class AnalyzeImpactTool : ITool
                     results.Add(new DependantFile(file, relPath, kind, refTypes, role,
                         EntryPointName: DependantScanner.ExtractEntryPointName(file, src),
                         ViaFile: dep.RelPath));
-
-                    if (results.Count >= MaxTransitiveFiles) goto Done;
                 }
                 catch (OperationCanceledException) { }
                 catch (Exception ex) { unreadable++; Diagnostics.Swallow("AnalyzeImpactTool.Transitive", ex); }
             }
         }
-        Done:
         return (results, unreadable);
     }
 

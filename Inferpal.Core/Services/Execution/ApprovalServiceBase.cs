@@ -158,22 +158,8 @@ internal abstract class ApprovalServiceBase : IApprovalService
 
     private void ForgetGrantsOfAnotherRoot()
     {
-        if (!_sessionAllowed.IsEmpty && !SameRoot(_grantsRoot, _rootDir()))
+        if (!_sessionAllowed.IsEmpty && !PathComparer.SameDirectory(_grantsRoot, _rootDir()))
             _sessionAllowed.Clear();
-    }
-
-    private static bool SameRoot(string? a, string? b)
-    {
-        if (string.IsNullOrEmpty(a) || string.IsNullOrEmpty(b)) return string.IsNullOrEmpty(a) && string.IsNullOrEmpty(b);
-        try
-        {
-            return string.Equals(Path.TrimEndingDirectorySeparator(Path.GetFullPath(a)),
-                                 Path.TrimEndingDirectorySeparator(Path.GetFullPath(b)), PathComparer.Comparison);
-        }
-        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
-        {
-            return false;   // a root that cannot be read as a path is not the one the grants were given under
-        }
     }
 
     /// <summary>

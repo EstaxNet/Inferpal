@@ -193,8 +193,9 @@ function renderModelButton(): void {
   const status = connection;
   modelDot.className = 'dot ' + (status === null ? '' : status.connected ? 'ok' : status.refused ? 'warn' : 'ko');
   modelName.textContent = currentModel || '—';
-  // A server that refused the check (a wrong API key) is running: the host's sentence names it.
-  const state = status && !status.connected ? (status.refused ?? t('statusUnreachable')) : '';
+  // A server that refused the check (a wrong API key) is running: the host's sentence names it. A host that is not
+  // running asked nobody: its own sentence, never "unreachable".
+  const state = status && !status.connected ? (status.hostDown ?? status.refused ?? t('statusUnreachable')) : '';
   const parts = [status?.server ?? '', state, status?.connected && status.vramBadge ? 'VRAM ' + status.vramBadge : '']
     .filter((p) => p);
   modelMeta.textContent = parts.join(' · ');

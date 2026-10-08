@@ -291,6 +291,26 @@ internal static class ChatTurnPolicy
     }
 
     /// <summary>
+    /// What the durable history keeps as the answer of an agent or tool turn that did not fail — one decision for both
+    /// front-ends: the answer when the model wrote one, the tool-summary line when it only called tools, nothing for an
+    /// empty response.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Decided twice, the two front-ends disagreed on the two text-less endings. Tools called without a word: Visual
+    /// Studio kept the "✓ Done — write_file ×2" line, the VS Code host kept nothing — the next question then followed
+    /// the previous one with no answer between them, the clients merge consecutive user messages, and the model read
+    /// both tasks as one request (and redid the first). An empty response: the host kept nothing, Visual Studio kept the
+    /// "empty response from model X" diagnostic as what the model had said — a notice is never an answer.
+    /// </remarks>
+    public static string PersistedAnswer(FinalAnswerKind kind, string? shownBubbleContent, string? finalResponse,
+                                         IReadOnlyList<ToolExecution> executions, string? endNotice) => kind switch
+    {
+        FinalAnswerKind.ToolSummary   => ToolSummaryAnswer(executions, endNotice),
+        FinalAnswerKind.EmptyFallback => string.Empty,
+        _                             => ChoosePersistedAnswer(shownBubbleContent, finalResponse),
+    };
+
+    /// <summary>
     /// Appends a prompt to the recall history (no duplicate at the top, oldest evicted
     /// past <paramref name="max"/>). Returns <c>true</c> when the list changed and
     /// should be saved.

@@ -16,7 +16,8 @@ public class ToolArgsTests
     [InlineData("""{"q":"  hello  "}""", "hello")]
     [InlineData("""{"q":"   "}""", null)]
     [InlineData("""{"q":null}""", null)]
-    [InlineData("""{"q":42}""", null)]      // wrong type is absent, not a crash
+    [InlineData("""{"q":42}""", "42")]      // a scalar is the text it was written as (TextArgumentWrittenAsNumberTests)
+    [InlineData("""{"q":[42]}""", null)]    // a structure is absent, not a crash
     [InlineData("""{}""", null)]
     public void Trimmed_DegradesToNull(string json, string? expected) =>
         Assert.Equal(expected, Args(json).Trimmed("q"));

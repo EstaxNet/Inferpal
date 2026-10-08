@@ -117,6 +117,34 @@ public sealed class EditThatBrokeTheBuildTests
         Assert.True(AsksForTheAnswer(ObserveAfter(fake, 3)));
     }
 
+    /// <summary>
+    /// The repair prompt tells the model to read the lines the errors name first: a round spent reading has no edit, and
+    /// the build state read from that round alone made the plan "complete" — the answer-now prompt ended the run there.
+    /// </summary>
+    [Fact]
+    public async Task ARoundSpentReadingTheErrors_KeepsTheRepairPrompt()
+    {
+        var fake = await RunAsync(new Registry(Broken, Clean),
+                                  Call("read_file"), Call("apply_diff"), Call("read_file"), Call("apply_diff"));
+
+        Assert.True(AsksToFixTheBuild(ObserveAfter(fake, 2)));
+        Assert.True(AsksToFixTheBuild(ObserveAfter(fake, 3)));       // the read: still broken, still asked
+        Assert.False(AsksForTheAnswer(ObserveAfter(fake, 3)));
+        Assert.True(AsksForTheAnswer(ObserveAfter(fake, 4)));        // the mending edit completes the plan
+    }
+
+    /// <summary>A model that answers the repair prompt in prose ("those errors were there before") has answered: told to
+    /// "call the first tool from your plan", it was sent back to a plan it had finished.</summary>
+    [Fact]
+    public async Task AProseReplyToTheRepairPrompt_IsTheAnswer_NotANarrationToNudge()
+    {
+        var fake = await RunAsync(new Registry(Broken), Call("read_file"), Call("apply_diff"),
+                                  new ChatTurnResult("These four errors were already there before my change.", null, 0, 0));
+
+        Assert.True(AsksToFixTheBuild(ObserveAfter(fake, 2)));                  // witness: the repair was asked
+        Assert.DoesNotContain(fake.Seen, s => s.Any(m => m.Content == ModelPrompts.AgentNudgeToolCall));
+    }
+
     [Fact]
     public async Task AnEditThatBuilds_CompletesThePlan_AsBefore()
     {

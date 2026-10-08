@@ -108,6 +108,9 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     // responding would each fire a full SendCoreAsync. See SendAsync.
     private bool                     _sendStarting;
     private ChatMessageItem?         _lastRegenerableMsg;
+    // What the last question shown was sent WITH — the text, a one-time model (a code action's), its attachments —, so
+    // Regenerate resends that, not the bubble's words. Tied to its bubble: another last question resends its words.
+    private (ChatMessageItem Question, string Text, string? Model, List<AttachmentItem> Attachments)? _lastSent;
     private CancellationTokenSource? _mentionCts;
     private CancellationTokenSource? _shadowSearchCts;
     private bool _toolsEnabled = true;
@@ -140,6 +143,8 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     private bool             _isSearchOpen;
     private string           _activeTemplateSuffix     = string.Empty;
     private bool             _workspaceContextInjected;
+    // The workspace root the block above described: another root is another solution, whose block has not been sent.
+    private string?          _workspaceContextRoot;
     private DateTime?        _sessionStartTime;
     private bool             _agentStepMode;
     /// <summary>Bindable mirror of <see cref="_agentStepMode"/> for the toolbar toggle button's active state.</summary>

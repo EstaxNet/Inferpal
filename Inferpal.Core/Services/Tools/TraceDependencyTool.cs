@@ -20,6 +20,10 @@ internal class TraceDependencyTool : ITool
     internal const int MinAllowedDepth  = 0;
     internal const int MaxAllowedDepth  = 3;
     internal const int DefaultDepth     = 1;
+    /// <summary>Calls SHOWN per method in the callee tree, the rest counted.</summary>
+    /// <remarks>⚠ A display cap, never a parse cap: the caller search reads every method's call list, and capped at
+    /// parse time a method that called the target after its first 30 distinct calls was not its caller — "no callers
+    /// found in scanned files", with every file scanned and no warning.</remarks>
     private const int MaxCallsPerMethod = 30;
     /// <summary>Files read per cross-file scan. ⚠ This is NOT the 500 of the two other
     /// analysis tools: each has its own, and assuming they shared one produced a wrong
@@ -236,7 +240,8 @@ internal class TraceDependencyTool : ITool
             return;
         }
 
-        for (int i = 0; i < method.Calls.Count; i++)
+        var shown = Math.Min(method.Calls.Count, MaxCallsPerMethod);
+        for (int i = 0; i < shown; i++)
         {
             bool   isLast     = i == method.Calls.Count - 1;
             string conn       = isLast ? "└── " : "├── ";
@@ -277,6 +282,8 @@ internal class TraceDependencyTool : ITool
                 visited.Remove(call);
             }
         }
+        if (method.Calls.Count > shown)
+            sb.AppendLine($"{indent}└── … +{method.Calls.Count - shown} more call(s) not shown");
     }
 
     // ── Callers ───────────────────────────────────────────────────────────────
@@ -558,7 +565,6 @@ internal class TraceDependencyTool : ITool
                 var n = m.Groups[1].Value;
                 if (!_skip.Contains(n) && n != ownerName && n.Length > 1)
                     set.Add(n);
-                if (set.Count >= MaxCallsPerMethod) break;
             }
 
             return [.. set];
@@ -624,7 +630,6 @@ internal class TraceDependencyTool : ITool
                     var n = c.Groups[1].Value;
                     if (!_pyKeywords.Contains(n) && n != name && n.Length > 1)
                         calls.Add(n);
-                    if (calls.Count >= MaxCallsPerMethod) break;
                 }
 
                 methods.Add(new MethodInfo(name, sig, lineNo, [.. calls]));
@@ -692,7 +697,6 @@ internal class TraceDependencyTool : ITool
                     var n = c.Groups[1].Value;
                     if (!_jsKeywords.Contains(n) && n != name && n.Length > 1)
                         calls.Add(n);
-                    if (calls.Count >= MaxCallsPerMethod) break;
                 }
 
                 methods.Add(new MethodInfo(name, "()", lineNo, [.. calls]));
@@ -781,7 +785,6 @@ internal class TraceDependencyTool : ITool
                     var n = c.Groups[1].Value;
                     if (!skipSet.Contains(n) && n != name && n.Length > 1)
                         calls.Add(n);
-                    if (calls.Count >= MaxCallsPerMethod) break;
                 }
 
                 methods.Add(new MethodInfo(name, "()", lineNo, [.. calls]));

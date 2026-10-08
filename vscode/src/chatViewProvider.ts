@@ -492,7 +492,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     const host = this.getHost();
     if (!host?.isRunning) {
       this.status = null;
-      this.post({ type: 'backendStatus', status: { connected: false, vramBadge: '' } });
+      this.post({ type: 'backendStatus', status: { connected: false, vramBadge: '', hostDown: hostUnavailableMessage() } });
       return;
     }
     // Known down, not unknown: at start the status is null and the bootstrap has just listed the models itself.
@@ -1099,6 +1099,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         await this.regenerate();
         return;
       case 'retryConnection':
+        // ⚠ A retry is a gesture: with no host to ask, it names the host's remedy (open a folder, restart the host).
+        this.hostForGesture();
         await this.pollBackendStatus();
         return;
       case 'listModels':

@@ -118,6 +118,21 @@ internal sealed class DocCrawler
 
     private int _timedOut;
 
+    /// <summary>Same-site links the last crawl found but did not follow because they lay deeper than
+    /// <see cref="MaxDepth"/>.</summary>
+    /// <remarks>⚠ Said with the result: a crawl that stops at its depth before <see cref="MaxPages"/> ended under a bare
+    /// "✅ N pages", and <c>@Docs</c> then answered "not in the documentation" about pages it never fetched.</remarks>
+    public int BeyondDepth => _beyondDepth.Count;
+
+    /// <summary>Same-site links the last crawl found but did not follow because its frontier was full.</summary>
+    public int BeyondFrontier => _beyondFrontier.Count;
+
+    private readonly HashSet<string> _beyondDepth    = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _beyondFrontier = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Links known to the crawl (fetched or queued) beyond which no new link is queued.</summary>
+    internal const int MaxKnownLinks = MaxPages * 4;
+
     internal static bool IsRefusal(int status) => status is 401 or 403 or 429 || status >= 500;
 
     /// <summary>
@@ -174,6 +189,8 @@ internal sealed class DocCrawler
         var pages = new List<Page>();
         _refusals.Clear();
         _timedOut = 0;
+        _beyondDepth.Clear();
+        _beyondFrontier.Clear();
 
         if (!Uri.TryCreate(startUrl, UriKind.Absolute, out var start) ||
             FetchUrlTool.IsPrivateOrLoopback(startUrl))
@@ -217,14 +234,18 @@ internal sealed class DocCrawler
 
             progress?.Report((pages.Count, pages.Count + queue.Count));
 
-            // Enqueue child links (until the page cap is reached).
-            if (depth < MaxDepth)
+            // Enqueue child links; the ones a bound leaves out are COUNTED, never just dropped.
+            // ⚠ `visited` already holds every queued link: adding `queue.Count` to it counted each one twice and closed
+            // the frontier at half its bound.
+            foreach (var link in ExtractLinks(html, pageUrl, host, pathPrefix))
             {
-                foreach (var link in ExtractLinks(html, pageUrl, host, pathPrefix))
+                if (visited.Contains(link.normalized)) continue;
+                if (depth >= MaxDepth)                 _beyondDepth.Add(link.normalized);
+                else if (visited.Count >= MaxKnownLinks) _beyondFrontier.Add(link.normalized);
+                else
                 {
-                    if (visited.Count + queue.Count >= MaxPages * 4) break; // bound the frontier
-                    if (visited.Add(link.normalized))
-                        queue.Enqueue((link.uri, depth + 1));
+                    visited.Add(link.normalized);
+                    queue.Enqueue((link.uri, depth + 1));
                 }
             }
 

@@ -134,7 +134,12 @@ internal partial class InferpalToolWindowData
         }
         if (lastUserItem is null) return;
 
-        var userText = lastUserItem.Content;
+        // ⚠ What the question was sent WITH, when the bubble is that turn's: resent from its words alone, a /explain or a
+        // context-menu action lost its code and became an ordinary agent turn (agent model, tools, approvals), and a
+        // question lost the file attached to it. A bubble from a restored session has only its words.
+        var (userText, oneTimeModel, attachments) = _lastSent is { } sent && ReferenceEquals(sent.Question, lastUserItem)
+            ? (sent.Text, sent.Model, sent.Attachments)
+            : (lastUserItem.Content, null, []);
 
         // Remove everything from the user message onward (keep only what came before)
         while (Messages.Count - 2 > lastUserIdx)
@@ -155,7 +160,7 @@ internal partial class InferpalToolWindowData
         // The workspace block rode with the question taken back: the question asked again carries it again.
         if (!Services.Prompting.WorkspaceContext.IsIn(_history)) _workspaceContextInjected = false;
 
-        await SendCoreAsync(userText, oneTimeModel: null, attachments: [], ct: CancellationToken.None, clearPrompt: false);
+        await SendCoreAsync(userText, oneTimeModel, attachments, ct: CancellationToken.None, clearPrompt: false);
     }
 
     private Task ShowInfoAsync(string markdown) =>

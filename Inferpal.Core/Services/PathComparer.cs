@@ -35,4 +35,21 @@ internal static class PathComparer
     /// <summary>The same rule, for <c>string.Equals</c> / <c>StartsWith</c> on a path.</summary>
     public static StringComparison Comparison =>
         OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+
+    /// <summary>Whether two folders are the same — a trailing separator or, where the volume folds it, a different case
+    /// changes nothing; two empty roots are the same "no workspace". The reader of "has the workspace root moved?" for the
+    /// state that belongs to one root.</summary>
+    public static bool SameDirectory(string? a, string? b)
+    {
+        if (string.IsNullOrEmpty(a) || string.IsNullOrEmpty(b)) return string.IsNullOrEmpty(a) && string.IsNullOrEmpty(b);
+        try
+        {
+            return string.Equals(Path.TrimEndingDirectorySeparator(Path.GetFullPath(a)),
+                                 Path.TrimEndingDirectorySeparator(Path.GetFullPath(b)), Comparison);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return false;   // a root that cannot be read as a path is not the same one
+        }
+    }
 }

@@ -365,16 +365,6 @@ internal sealed partial class HostServer : IDisposable
                     return new ChatSendResult(streamed.ToString(), false, result.TokensUsed, result.PromptTokens,
                                               result.FinalResponse, ContextWindow: ctxDecision.Window);
                 }
-                // The answer the user saw — the streamed bubble when there was one, the final response otherwise.
-                var persisted = ChatTurnPolicy.ChoosePersistedAnswer(
-                    !ChatTurnPolicy.IsVisiblyEmpty(streamed.ToString()) ? streamed.ToString() : null,
-                    result.FinalResponse);
-                if (persisted.Length > 0)
-                    durable.Add(new ChatMessageDto("assistant", persisted));
-                s.History          = durable;
-                // The run's last call measured the discarded transcript, not what the next turn sends:
-                // compaction decides on the durable history instead.
-                s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
                 // How the run ended, when not because the model had finished — iteration limit, repeat,
                 // an answer cut at the length limit, or edits that changed nothing. One policy for both front-ends.
                 var endNotice = NoticeOrNull(ChatTurnPolicy.EndNotice(
@@ -382,6 +372,15 @@ internal sealed partial class HostServer : IDisposable
                     ChatTurnPolicy.EditsWithoutEffect(result.Executions, s.Tools.History.CurrentRunFileCount),
                     answerRepeating: result.AnswerRepeating,
                     lastCheckFailed: ChatTurnPolicy.LastCheckFailed(result.Executions, s.Tools.History.CurrentRunFileCount)));
+                // The answer the user saw — the streamed bubble when there was one, the final response otherwise, the
+                // tool-summary line for a run that only called tools; nothing for an empty response.
+                var persisted = PersistedAnswer(streamed.ToString(), result.FinalResponse, result.Executions, endNotice);
+                if (persisted.Length > 0)
+                    durable.Add(new ChatMessageDto("assistant", persisted));
+                s.History          = durable;
+                // The run's last call measured the discarded transcript, not what the next turn sends:
+                // compaction decides on the durable history instead.
+                s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
                 await CountTurnAsync(s, cts.Token);
                 return new ChatSendResult(
                     FinalAnswer(result.FinalResponse, streamed.ToString(), result.Executions, endNotice, model, s),
@@ -416,17 +415,15 @@ internal sealed partial class HostServer : IDisposable
                     return new ChatSendResult(streamed.ToString(), false, run.TokensUsed, run.PromptTokens,
                                               run.FinalResponse, ContextWindow: ctxDecision.Window);
                 }
-                var answer = ChatTurnPolicy.ChoosePersistedAnswer(
-                    !ChatTurnPolicy.IsVisiblyEmpty(streamed.ToString()) ? streamed.ToString() : null,
-                    run.FinalResponse);
-                if (answer.Length > 0)
-                    durable.Add(new ChatMessageDto("assistant", answer));
-                s.History          = durable;
-                s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
                 var runEndNotice = NoticeOrNull(ChatTurnPolicy.EndNotice(run.ReachedIterationLimit, run.WasLoopDetected, run.AnswerCut,
                     ChatTurnPolicy.EditsWithoutEffect(run.Executions, s.Tools.History.CurrentRunFileCount),
                     answerRepeating: run.AnswerRepeating,
                     lastCheckFailed: ChatTurnPolicy.LastCheckFailed(run.Executions, s.Tools.History.CurrentRunFileCount)));
+                var answer = PersistedAnswer(streamed.ToString(), run.FinalResponse, run.Executions, runEndNotice);
+                if (answer.Length > 0)
+                    durable.Add(new ChatMessageDto("assistant", answer));
+                s.History          = durable;
+                s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
                 await CountTurnAsync(s, cts.Token);
                 return new ChatSendResult(
                     FinalAnswer(run.FinalResponse, streamed.ToString(), run.Executions, runEndNotice, model, s),
@@ -1583,6 +1580,17 @@ internal sealed partial class HostServer : IDisposable
     /// The decision is <see cref="ChatTurnPolicy.DecideFinalAnswer"/>, the same one the VM uses -
     /// not a second implementation.
     /// </remarks>
+    /// <summary>What the durable history keeps of a tool turn's answer — <see cref="ChatTurnPolicy.PersistedAnswer"/>, the
+    /// decision Visual Studio makes too.</summary>
+    private static string PersistedAnswer(
+        string streamed, string? finalResponse, IReadOnlyList<ToolExecution> executions, string? endNotice)
+    {
+        var visible = !ChatTurnPolicy.IsVisiblyEmpty(streamed);
+        return ChatTurnPolicy.PersistedAnswer(
+            ChatTurnPolicy.DecideFinalAnswer(visible, finalResponse, executions.Count),
+            visible ? streamed : null, finalResponse, executions, endNotice);
+    }
+
     private static string FinalAnswer(
         string? finalResponse, string streamed, IReadOnlyList<ToolExecution> executions, string? endNotice,
         string model, HostSession s) =>

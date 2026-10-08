@@ -334,6 +334,32 @@ public class AgentOrchestratorSynthesisTests
         Assert.DoesNotContain("### old", digest);
     }
 
+    /// <summary>The digest is the synthesis model's only record of the run: the results it leaves out are named, or the
+    /// final answer — kept in the history — can deny the early work.</summary>
+    [Fact]
+    public void BuildToolDigest_OverBudget_NamesWhatItLeftOut()
+    {
+        var execs = new[]
+        {
+            new ToolExecution("write_file", "{}", new string('a', 5000)),
+            new ToolExecution("write_file", "{}", new string('b', 5000)),
+            new ToolExecution("run_tests",  "{}", "✓ PASSED"),
+        };
+        var digest = AgentOrchestrator.BuildToolDigest(execs, 1000);
+
+        Assert.StartsWith("[2 earlier tool result(s) of this run did not fit", digest, StringComparison.Ordinal);
+        Assert.Contains("write_file ×2", digest, StringComparison.Ordinal);
+        Assert.Contains("### run_tests", digest, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BuildToolDigest_WhenEverythingFits_SaysNothingLeftOut()
+    {
+        // Reference arm.
+        var execs = new[] { new ToolExecution("read_file", "{}", "a"), new ToolExecution("run_tests", "{}", "b") };
+        Assert.DoesNotContain("did not fit", AgentOrchestrator.BuildToolDigest(execs, 10000), StringComparison.Ordinal);
+    }
+
     [Fact]
     public void BuildToolDigest_KeepsMostRecentEvenIfAloneOverBudget()
     {

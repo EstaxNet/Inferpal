@@ -160,8 +160,9 @@ public class ApplyEditsToolTests
     // old_content missing.
     [InlineData("""{"edits":[{"path":"@A","new_content":"x = 10"},{"path":"@B","old_content":"y = 2","new_content":"y = 20"}]}""",
                 "old_content")]
-    // a wrong-typed value is the same event as a missing one: it is not a string.
-    [InlineData("""{"edits":[{"path":"@A","old_content":"x = 1","new_content":42},{"path":"@B","old_content":"y = 2","new_content":"y = 20"}]}""",
+    // a structure where text goes is the same event as a missing value: it is not text. (A bare number IS its text —
+    // ToolArgs.Str, TextArgumentWrittenAsNumberTests.)
+    [InlineData("""{"edits":[{"path":"@A","old_content":"x = 1","new_content":{"v":42}},{"path":"@B","old_content":"y = 2","new_content":"y = 20"}]}""",
                 "new_content")]
     // not an object at all.
     [InlineData("""{"edits":["oops",{"path":"@B","old_content":"y = 2","new_content":"y = 20"}]}""",

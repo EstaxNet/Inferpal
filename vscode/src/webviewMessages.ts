@@ -29,6 +29,9 @@ export interface WvBackendStatus {
   vramBadge: string;
   /** The server refused the check (see `BackendStatusResult.refused`). */
   refused?: string | null;
+  /** The HOST is not running (no folder open, a start that failed): the badge text naming its remedy, already
+   *  localized. The backend was not asked — "unreachable" would send the user to check a server that is fine. */
+  hostDown?: string | null;
   /** The configured backend, for the header ("LM Studio"). */
   server?: string | null;
 }

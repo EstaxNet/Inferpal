@@ -618,6 +618,14 @@ internal sealed class AgentOrchestrator
             blocks.Insert(0, block);
             used += block.Length;
         }
+        // ⚠ The oldest results left out are SAID: this digest is the synthesis model's only record of the run, and
+        // read as the whole of it, the final answer — the one the user reads and the history keeps — could deny the
+        // early work ("no file was modified" over a run whose first calls wrote two).
+        var dropped = executions.Count - blocks.Count;
+        if (dropped > 0)
+            blocks.Insert(0, $"[{dropped} earlier tool result(s) of this run did not fit and are not shown: "
+                             + $"{ChatTurnPolicy.BuildToolSummary(executions.Take(dropped))}. They happened — account for "
+                             + "them in the answer.]\n");
         return string.Join("\n", blocks);
     }
 
@@ -985,11 +993,12 @@ internal sealed class AgentOrchestrator
                 var editChangedNothing = writesBefore is { } before && tools.WritesInRun == before
                                          && iterExecs.Any(e => ChatTurnPolicy.IsFileEdit(e.Name));
 
-                // Whether the round's last checked edit was written but left the project unable to build.
-                var editBrokeBuild = !editChangedNothing && buildFixRounds < MaxBuildFixRounds
-                                     && iterExecs.LastOrDefault(e => ChatTurnPolicy.IsFileEdit(e.Name)
-                                                                     && CodeActions.SmartFixValidator.ReadVerdict(e.Output) is not null) is { } checkedEdit
-                                     && CodeActions.SmartFixValidator.ReadVerdict(checkedEdit.Output) == true;
+                // Whether the build is broken as the RUN's last check left it — an edit's Smart Fix note, get_diagnostics, a
+                // build through the shell. ⚠ Read from the run, never from this round alone: asked to fix the build, a
+                // model reads the lines the errors name first — the prompt tells it to —, that round has no edit, and the
+                // plan read "complete": the answer-now prompt ended the run on code that no longer built.
+                var buildBroken = !editChangedNothing && buildFixRounds < MaxBuildFixRounds
+                                  && ChatTurnPolicy.LastCheck(executions) is { Kind: ChatTurnPolicy.CheckKind.Build, Failed: true };
 
                 // ── Mark step done, advance ────────────────────────────────────
                 // ⚠ A step whose expected tool WRITES is done only when a file was written. Advanced per tool call, five
@@ -1023,9 +1032,13 @@ internal sealed class AgentOrchestrator
                 // one) is the expected state, and asked to fix it, models deleted the file they had just created
                 // (measured: hard-move-class 6 of 8 → 3 of 8). Bounded: errors that predate the run would otherwise hold
                 // the run open until the iteration limit.
-                var buildFixAsked = remaining == 0 && editBrokeBuild;
-                if (buildFixAsked) buildFixRounds++;
-                answerRequested = remaining == 0 && !editChangedNothing && !buildFixAsked;
+                // The bound counts repair ATTEMPTS — rounds that edited and still left the build broken —, never a round
+                // spent reading what to fix.
+                var buildFixAsked = remaining == 0 && buildBroken;
+                if (buildFixAsked && iterExecs.Any(e => ChatTurnPolicy.IsFileEdit(e.Name))) buildFixRounds++;
+                // ⚠ A prose answer after the repair prompt IS an answer ("these errors were there before my change"):
+                // counted as a narration, it was told to "call the first tool from your plan".
+                answerRequested = remaining == 0 && !editChangedNothing;
                 var observeMsg = editChangedNothing
                     ? ModelPrompts.AgentObservePromptEditUnchanged(iteration + 1, maxIter, toolNames)
                     : buildFixAsked

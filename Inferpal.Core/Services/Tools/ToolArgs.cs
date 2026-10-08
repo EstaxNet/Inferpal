@@ -21,12 +21,22 @@ namespace Inferpal.Services.Tools;
 /// </remarks>
 internal static class ToolArgs
 {
-    /// <summary>A string argument, or <c>null</c> when absent, null, or not a string.</summary>
+    /// <summary>A string argument — a number or a boolean read as the text it was written as —, or <c>null</c> when
+    /// absent, null, an object or an array.</summary>
+    /// <remarks>
+    /// ⚠ The mirror of <see cref="Int"/> reading <c>"5"</c>: a text argument the model wrote as a number is still the
+    /// text. Gemma writes its values bare (<c>search_in_files{pattern:404}</c>, <c>run_tests{filter:1234}</c>), JSON callers
+    /// write <c>"query": 2024</c>: read as absent, the search was refused as "pattern is required" and the test run ran
+    /// the WHOLE suite instead of the tests asked for.
+    /// </remarks>
     public static string? Str(this JsonElement args, string name) =>
-        args.ValueKind == JsonValueKind.Object &&
-        args.TryGetProperty(name, out var v) &&
-        v.ValueKind == JsonValueKind.String
-            ? v.GetString()
+        args.ValueKind == JsonValueKind.Object && args.TryGetProperty(name, out var v)
+            ? v.ValueKind switch
+            {
+                JsonValueKind.String                                              => v.GetString(),
+                JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False => v.GetRawText(),
+                _                                                                 => null,
+            }
             : null;
 
     /// <summary>A trimmed string argument, or <c>null</c> when absent or blank.</summary>
