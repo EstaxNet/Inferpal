@@ -334,10 +334,15 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>デバッガーの状態を添付（スタック、変数、例外）</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ 一時停止中のデバッグセッションがありません。まずブレークポイントまたは例外で停止してから @debugger を使用してください。</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ クリップボードが空です。</value></data>
+  <data name="ApprovalDiffNotOpened" xml:space="preserve"><value>⚠ 差分を開けませんでした ({0})。変更はまだ応答を待っています — 承認する前にファイルで確認してください。</value></data>
+  <data name="DocsNotLoaded" xml:space="preserve"><value>⚠ インデックス済みのドキュメントを読み込めませんでした ({0}): ソースは 0 ページと表示され、@Docs で検索できません。`/docs reindex` で再構築できます。</value></data>
+  <data name="AutoSaveNotForgotten" xml:space="preserve"><value>⚠ 終了した会話を自動保存から削除できませんでした ({0}): 次回 Inferpal の起動時に戻ってくる可能性があります。その場合は、もう一度新しい会話を始めてください。</value></data>
   <data name="SessionUnreadableKept" xml:space="preserve"><value>⚠ セッション「{0}」を読み込めませんでした — ファイルが破損しているため、何も読み込まれていません。コピーを保存しました: {1}</value></data>
   <data name="ClipboardNotCopied" xml:space="preserve"><value>⚠ コピーされていません: 別のプログラムがクリップボードを使用中で、以前の内容が残っています — 貼り付けないでください。少し待ってから再試行してください。</value></data>
   <data name="MentionProblemsNotBuilt" xml:space="preserve"><value>@problems には何も添付されていません — ビルドは実行されていません: {0}</value></data>
   <data name="StoppedWorkNotice" xml:space="preserve"><value>⚠ Inferpal の再起動で、まだ実行中だった処理が停止しました — 何も保持されていません。必要なら再度開始してください:
+{0}</value></data>
+  <data name="StoppedWorkCrashedNotice" xml:space="preserve"><value>⚠ Inferpal が予期せず停止し、実行中だった処理も一緒に停止しました (最後に確認した状態) — 何も保持されていません。必要なら再度開始してください:
 {0}</value></data>
   <data name="StoppedWorkTask" xml:space="preserve"><value>バックグラウンドタスク {0} — {1}</value></data>
   <data name="StoppedWorkCommand" xml:space="preserve"><value>バックグラウンドコマンド {0} — {1}</value></data>
@@ -1165,6 +1170,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ContextUsageNoChat" xml:space="preserve"><value>チャット ウィンドウが開いていません。開くと会話が集計されます。</value></data>
   <data name="PinnedFilesCount" xml:space="preserve"><value>{1} 件中 {0}</value></data>
   <data name="PinnedFileTokens" xml:space="preserve"><value>{0} トークン</value></data>
+  <data name="PinnedFileTokensSent" xml:space="preserve"><value>{1} トークン中 {0} トークンを送信 — プロンプトに収まるよう切り詰め</value></data>
   <data name="PinnedFileMissing" xml:space="preserve"><value>見つかりません</value></data>
   <data name="ProjectFilesTitle" xml:space="preserve"><value>このプロジェクトから</value></data>
   <data name="ProjectFileContext" xml:space="preserve"><value>プロジェクトの概要</value></data>

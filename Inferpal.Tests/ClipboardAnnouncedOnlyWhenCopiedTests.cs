@@ -42,8 +42,27 @@ public class ClipboardAnnouncedOnlyWhenCopiedTests
             Assert.True(call > 0, $"{context}: the copy moved — the rule reads nothing");   // WITNESS
             var line = slash[slash.LastIndexOf('\n', call)..slash.IndexOf('\n', call)];
             Assert.Contains("!ClipboardHelper.TrySet(", line);
-            var after = slash[call..Math.Min(slash.Length, call + 200)];
-            Assert.Contains("Strings.ClipboardNotCopied", after);
+            // Not announced over a failed copy: the window says that one (below).
+            var after = slash[call..Math.Min(slash.Length, call + 120)];
+            Assert.Contains("return;", after);
         }
+    }
+
+    /// <summary>
+    /// The copy BUTTONS (a message, a code block, the X-Ray prompt) announce nothing and give no other sign: a copy that
+    /// did not land is said by the window, whoever asked — one place for every caller.
+    /// </summary>
+    [Fact]
+    public void ACopyThatDidNotLand_IsSaid_WhoeverAsked()
+    {
+        var helper = ToolWindow("ClipboardHelper.cs");
+        var trySet = helper[helper.IndexOf("public static bool TrySet(", StringComparison.Ordinal)..helper.IndexOf("internal static event Action? NotCopied;", StringComparison.Ordinal)];
+        Assert.Contains("if (!landed)", trySet);
+        Assert.Contains("NotCopied?.Invoke();", trySet);
+
+        var construction = ToolWindow("InferpalToolWindowData.Construction.cs");
+        var subscribe = construction.IndexOf("ClipboardHelper.NotCopied", StringComparison.Ordinal);
+        Assert.True(subscribe > 0, "the window no longer listens for a failed copy");
+        Assert.Contains("ChatMessageItem.NoticeMsg(Strings.ClipboardNotCopied)", construction[subscribe..Math.Min(construction.Length, subscribe + 200)]);
     }
 }

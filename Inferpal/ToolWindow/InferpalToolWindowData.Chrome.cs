@@ -463,7 +463,14 @@ internal partial class InferpalToolWindowData
                 await RunOnVMContextAsync(() => card.Answer(decision));
         }
         catch (OperationCanceledException) { }
-        catch (Exception ex) { Diagnostics.Swallow("Chat.ApprovalOpenDiff", ex); }
+        catch (Exception ex)
+        {
+            // ⚠ Swallowed, the click did nothing — and the card still asked for an answer: approved, the change was one
+            // nobody had seen in full.
+            Diagnostics.Swallow("Chat.ApprovalOpenDiff", ex);
+            var reason = Diagnostics.RootMessage(ex);
+            await RunOnVMContextAsync(() => InsertThemed(ChatMessageItem.NoticeMsg(Strings.ApprovalDiffNotOpened(reason))));
+        }
     }
 
     /// <summary>A step of the running turn, under its run line (created with the first step), at <paramref name="idx"/>;

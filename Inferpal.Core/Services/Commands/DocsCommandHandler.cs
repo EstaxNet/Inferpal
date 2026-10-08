@@ -113,7 +113,9 @@ internal static class DocsCommandHandler
                 if (shown.Count == 0) return Strings.DocsNoSites;
 
                 var stats = indexed.ToDictionary(x => x.Site.Id, x => (x.PageCount, x.ChunkCount));
-                return DocSite.FormatList(shown, stats, docs.UnembeddedBySite);
+                var list  = DocSite.FormatList(shown, stats, docs.UnembeddedBySite);
+                // Above the list it qualifies: "0 pages" there is a load that failed, not sources never indexed.
+                return docs.LoadFailure is { } failure ? failure + "\n\n" + list : list;
             }
         }
     }

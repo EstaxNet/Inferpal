@@ -334,10 +334,15 @@ Sauvegarde : {0}</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>attacher l'état du débogueur (pile, variables, exception)</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ Aucune session de débogage en pause. Atteins d'abord un point d'arrêt ou une exception, puis utilise @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Presse-papier vide.</value></data>
+  <data name="ApprovalDiffNotOpened" xml:space="preserve"><value>⚠ Le diff n’a pas pu être ouvert ({0}). Le changement attend toujours votre réponse — regardez-le dans le fichier avant de l’approuver.</value></data>
+  <data name="DocsNotLoaded" xml:space="preserve"><value>⚠ La documentation indexée n’a pas pu être chargée ({0}) : ses sources affichent 0 page et @Docs ne peut pas y chercher. `/docs reindex` les reconstruit.</value></data>
+  <data name="AutoSaveNotForgotten" xml:space="preserve"><value>⚠ La conversation que vous venez de quitter n’a pas pu être retirée de la sauvegarde automatique ({0}) : elle peut revenir au prochain démarrage d’Inferpal. Si c’est le cas, recommencez une nouvelle conversation.</value></data>
   <data name="SessionUnreadableKept" xml:space="preserve"><value>⚠ La session « {0} » n’a pas pu être lue — son fichier est endommagé, rien n’a été chargé. Une copie en a été gardée : {1}</value></data>
   <data name="ClipboardNotCopied" xml:space="preserve"><value>⚠ NON copié : un autre programme tient le presse-papiers, qui contient encore ce qui s’y trouvait avant — ne le collez pas. Réessayez dans un instant.</value></data>
   <data name="MentionProblemsNotBuilt" xml:space="preserve"><value>Rien de joint pour @problems — aucun build n’a eu lieu : {0}</value></data>
   <data name="StoppedWorkNotice" xml:space="preserve"><value>⚠ Le redémarrage d’Inferpal a arrêté ce qui tournait encore — rien n’en a été gardé, relancez-le si vous en avez encore besoin :
+{0}</value></data>
+  <data name="StoppedWorkCrashedNotice" xml:space="preserve"><value>⚠ Inferpal s’est arrêté de façon inattendue, et ce qui tournait encore s’est arrêté avec lui (dernier état connu) — rien n’en a été gardé, relancez-le si vous en avez encore besoin :
 {0}</value></data>
   <data name="StoppedWorkTask" xml:space="preserve"><value>tâche de fond {0} — {1}</value></data>
   <data name="StoppedWorkCommand" xml:space="preserve"><value>commande de fond {0} — {1}</value></data>
@@ -1165,6 +1170,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="ContextUsageNoChat" xml:space="preserve"><value>La fenêtre de chat n'est pas ouverte : sa conversation sera comptée dès qu'elle le sera.</value></data>
   <data name="PinnedFilesCount" xml:space="preserve"><value>{0} sur {1}</value></data>
   <data name="PinnedFileTokens" xml:space="preserve"><value>{0} jetons</value></data>
+  <data name="PinnedFileTokensSent" xml:space="preserve"><value>{0} jetons envoyés sur {1} — coupé pour tenir dans le prompt</value></data>
   <data name="PinnedFileMissing" xml:space="preserve"><value>introuvable</value></data>
   <data name="ProjectFilesTitle" xml:space="preserve"><value>De ce projet</value></data>
   <data name="ProjectFileContext" xml:space="preserve"><value>présentation du projet</value></data>

@@ -1,4 +1,5 @@
 ﻿{
+  "The utility model setting could not be kept in step between VS Code and Inferpal ({0}) — it may change back at the next start. If a settings file has unsaved changes, save it, then save again.": "Die Einstellung des Hilfsmodells konnte zwischen VS Code und Inferpal nicht abgeglichen werden ({0}) — sie kann sich beim nächsten Start zurücksetzen. Hat eine Einstellungsdatei ungespeicherte Änderungen, speichern Sie sie und speichern Sie dann erneut.",
   "⚠ The last conversation could not be restored: {0}": "⚠ Die letzte Unterhaltung konnte nicht wiederhergestellt werden: {0}",
   "Inferpal is starting — the settings load as soon as it is ready.": "Inferpal startet — die Einstellungen werden geladen, sobald es bereit ist.",
   "A turn is still running — wait for it to finish or stop it, then try again.": "Ein Durchlauf läuft noch — warten Sie, bis er fertig ist, oder beenden Sie ihn, und versuchen Sie es dann erneut.",

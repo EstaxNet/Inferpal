@@ -334,10 +334,15 @@ Copia de seguridad: {0}</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>adjuntar el estado del depurador (pila, variables, excepción)</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ No hay sesión de depuración en pausa. Alcanza primero un punto de interrupción o una excepción y luego usa @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ El portapapeles está vacío.</value></data>
+  <data name="ApprovalDiffNotOpened" xml:space="preserve"><value>⚠ No se pudo abrir el diff ({0}). El cambio sigue esperando su respuesta: revíselo en el archivo antes de aprobarlo.</value></data>
+  <data name="DocsNotLoaded" xml:space="preserve"><value>⚠ No se pudo cargar la documentación indexada ({0}): sus fuentes muestran 0 páginas y @Docs no puede buscar en ellas. `/docs reindex` las reconstruye.</value></data>
+  <data name="AutoSaveNotForgotten" xml:space="preserve"><value>⚠ No se pudo quitar de la copia automática la conversación que acaba de dejar ({0}): puede volver la próxima vez que se inicie Inferpal. Si ocurre, vuelva a empezar una conversación nueva.</value></data>
   <data name="SessionUnreadableKept" xml:space="preserve"><value>⚠ No se pudo leer la sesión "{0}": su archivo está dañado y no se cargó nada. Se guardó una copia: {1}</value></data>
   <data name="ClipboardNotCopied" xml:space="preserve"><value>⚠ NO se copió: otro programa está usando el portapapeles, que aún tiene lo que había antes; no lo pegue. Vuelva a intentarlo en un momento.</value></data>
   <data name="MentionProblemsNotBuilt" xml:space="preserve"><value>No se adjuntó nada para @problems: no se ejecutó ninguna compilación: {0}</value></data>
   <data name="StoppedWorkNotice" xml:space="preserve"><value>⚠ Al reiniciar Inferpal se detuvo lo que aún se ejecutaba; no se conservó nada. Vuelva a iniciarlo si todavía lo necesita:
+{0}</value></data>
+  <data name="StoppedWorkCrashedNotice" xml:space="preserve"><value>⚠ Inferpal se detuvo inesperadamente y lo que aún se ejecutaba se detuvo con él (último estado conocido); no se conservó nada. Vuelva a iniciarlo si todavía lo necesita:
 {0}</value></data>
   <data name="StoppedWorkTask" xml:space="preserve"><value>tarea en segundo plano {0} — {1}</value></data>
   <data name="StoppedWorkCommand" xml:space="preserve"><value>comando en segundo plano {0} — {1}</value></data>
@@ -1165,6 +1170,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="ContextUsageNoChat" xml:space="preserve"><value>La ventana de chat no está abierta: su conversación se contará en cuanto lo esté.</value></data>
   <data name="PinnedFilesCount" xml:space="preserve"><value>{0} de {1}</value></data>
   <data name="PinnedFileTokens" xml:space="preserve"><value>{0} tokens</value></data>
+  <data name="PinnedFileTokensSent" xml:space="preserve"><value>{0} tokens enviados de {1}: recortado para caber en el prompt</value></data>
   <data name="PinnedFileMissing" xml:space="preserve"><value>no encontrado</value></data>
   <data name="ProjectFilesTitle" xml:space="preserve"><value>De este proyecto</value></data>
   <data name="ProjectFileContext" xml:space="preserve"><value>resumen del proyecto</value></data>

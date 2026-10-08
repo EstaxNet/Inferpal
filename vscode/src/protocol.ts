@@ -143,6 +143,8 @@ export interface BackendStatusResult {
 /** `host/runningWork` — what the host runs beyond a turn, as the notice to show once it is stopped. */
 export interface RunningWorkResult {
   notice?: string | null;
+  /** The same work, worded for a host that crashed — kept by the adapter as last seen. */
+  ifItCrashes?: string | null;
 }
 
 /** `models/adoptDefault` — the model now used in place of a default nobody chose and the backend lacks, with the

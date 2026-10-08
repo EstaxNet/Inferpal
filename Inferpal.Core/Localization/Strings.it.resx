@@ -334,10 +334,15 @@ Backup: {0}</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>allega lo stato del debugger (stack, variabili, eccezione)</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ Nessuna sessione di debug in pausa. Raggiungi prima un breakpoint o un'eccezione, poi usa @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Appunti vuoti.</value></data>
+  <data name="ApprovalDiffNotOpened" xml:space="preserve"><value>⚠ Impossibile aprire il diff ({0}). La modifica attende ancora la tua risposta — guardala nel file prima di approvarla.</value></data>
+  <data name="DocsNotLoaded" xml:space="preserve"><value>⚠ Impossibile caricare la documentazione indicizzata ({0}): le sue fonti mostrano 0 pagine e @Docs non può cercarvi. `/docs reindex` le ricostruisce.</value></data>
+  <data name="AutoSaveNotForgotten" xml:space="preserve"><value>⚠ Non è stato possibile rimuovere dal salvataggio automatico la conversazione appena lasciata ({0}): potrebbe ricomparire al prossimo avvio di Inferpal. In tal caso, avvia di nuovo una nuova conversazione.</value></data>
   <data name="SessionUnreadableKept" xml:space="preserve"><value>⚠ Impossibile leggere la sessione "{0}": il file è danneggiato e non è stato caricato nulla. È stata conservata una copia: {1}</value></data>
   <data name="ClipboardNotCopied" xml:space="preserve"><value>⚠ NON copiato: un altro programma sta usando gli appunti, che contengono ancora ciò che c’era prima — non incollarli. Riprova tra un momento.</value></data>
   <data name="MentionProblemsNotBuilt" xml:space="preserve"><value>Nessun allegato per @problems — nessuna build eseguita: {0}</value></data>
   <data name="StoppedWorkNotice" xml:space="preserve"><value>⚠ Il riavvio di Inferpal ha fermato ciò che era ancora in esecuzione — non è stato conservato nulla, riavvialo se ti serve ancora:
+{0}</value></data>
+  <data name="StoppedWorkCrashedNotice" xml:space="preserve"><value>⚠ Inferpal si è arrestato in modo imprevisto e ciò che era ancora in esecuzione si è fermato con lui (ultimo stato noto) — non è stato conservato nulla, riavvialo se ti serve ancora:
 {0}</value></data>
   <data name="StoppedWorkTask" xml:space="preserve"><value>attività in background {0} — {1}</value></data>
   <data name="StoppedWorkCommand" xml:space="preserve"><value>comando in background {0} — {1}</value></data>
@@ -1165,6 +1170,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="ContextUsageNoChat" xml:space="preserve"><value>La finestra della chat non è aperta: la conversazione verrà conteggiata non appena lo sarà.</value></data>
   <data name="PinnedFilesCount" xml:space="preserve"><value>{0} di {1}</value></data>
   <data name="PinnedFileTokens" xml:space="preserve"><value>{0} token</value></data>
+  <data name="PinnedFileTokensSent" xml:space="preserve"><value>{0} token inviati su {1} — tagliato per stare nel prompt</value></data>
   <data name="PinnedFileMissing" xml:space="preserve"><value>non trovato</value></data>
   <data name="ProjectFilesTitle" xml:space="preserve"><value>Da questo progetto</value></data>
   <data name="ProjectFileContext" xml:space="preserve"><value>presentazione del progetto</value></data>

@@ -113,7 +113,7 @@ internal sealed partial class HostServer : IDisposable
         // ⚠ The documentation index only ever HYDRATES: nothing re-crawls it at start, so a host that does not load it
         // serves none of the sites indexed in an earlier session — search_docs not even offered, /docs listing them with
         // no page. Visual Studio loads it when its window opens. Never awaited: docs.db can be large.
-        _ = docs.LoadAsync(CancellationToken.None);
+        _ = LoadDocsAsync(docs);
         // Registered only when the adapter declared `debug/*` support: an unimplemented handler
         // would answer "method not found" to every call, and the model would spend tokens each turn
         // on two tools that can only fail.
@@ -653,7 +653,10 @@ internal sealed partial class HostServer : IDisposable
     [JsonRpcMethod("host/runningWork")]
     public RunningWorkResult RunningWork() => _session is not { } s
         ? new RunningWorkResult(null)
-        : new RunningWorkResult(StoppedWork.Notice(s.UnfinishedTasks, s.Tools.RunningJobs, s.Docs.IndexingSiteId));
+        : new RunningWorkResult(
+            StoppedWork.Notice(s.UnfinishedTasks, s.Tools.RunningJobs, s.Docs.IndexingSiteId),
+            // Kept by the adapter as it last saw it: a host that crashes cannot be asked any more.
+            StoppedWork.Notice(s.UnfinishedTasks, s.Tools.RunningJobs, s.Docs.IndexingSiteId, crashed: true));
 
     [JsonRpcMethod("chat/reset")]
     public void ChatReset()
@@ -1522,7 +1525,7 @@ internal sealed partial class HostServer : IDisposable
     /// <remarks>⚠ The one door to a discarded conversation: it also leaves the auto-save slot. Reset on its own, the
     /// history of <c>/template</c> was new while <c>last_session</c> still held the old one, brought back at the next
     /// start.</remarks>
-    private static void StartNewConversation(HostSession s, string? templateSuffix = null)
+    private void StartNewConversation(HostSession s, string? templateSuffix = null)
     {
         s.DiscardedTemplateSuffix = s.TemplateSuffix;
         s.TemplateSuffix = templateSuffix;
@@ -1530,10 +1533,26 @@ internal sealed partial class HostServer : IDisposable
         _ = ForgetAutoSaveAsync(s);
     }
 
-    /// <summary>The conversation just discarded leaves the auto-save slot (<see cref="ConversationStore.ForgetAutoSaveAsync"/>).</summary>
-    private static async Task ForgetAutoSaveAsync(HostSession s)
+    /// <summary>Loads the indexed documentation, and says in the thread when it could not be loaded.</summary>
+    private async Task LoadDocsAsync(DocsIndexService docs)
     {
-        try { await s.Store.ForgetAutoSaveAsync(s.RootDir, CancellationToken.None); }
+        try
+        {
+            if (await docs.LoadAsync(CancellationToken.None) is { } notice)
+                Notify("host/notice", new { text = notice });
+        }
+        catch (Exception ex) { Diagnostics.Swallow("HostServer.LoadDocs", ex); }
+    }
+
+    /// <summary>The conversation just discarded leaves the auto-save slot (<see cref="ConversationStore.ForgetAutoSaveAsync"/>);
+    /// when it cannot, the thread says so — it would come back at the next start.</summary>
+    private async Task ForgetAutoSaveAsync(HostSession s)
+    {
+        try
+        {
+            if (await s.Store.ForgetAutoSaveOrSayAsync(s.RootDir, CancellationToken.None) is { } notice)
+                Notify("host/notice", new { text = notice });
+        }
         catch (Exception ex) { Diagnostics.Swallow("HostServer.ForgetAutoSave", ex); }
     }
 

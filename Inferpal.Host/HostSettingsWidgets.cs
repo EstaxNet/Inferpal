@@ -76,9 +76,17 @@ internal sealed partial class HostServer
     /// <summary>`settings/pinSizes` — what each pinned file the panel holds costs the prompt (unsaved edits included),
     /// switched off or past the cap too: the list shows every line, as Visual Studio's does.</summary>
     [JsonRpcMethod("settings/pinSizes", UseSingleObjectParameterDeserialization = true)]
-    public IReadOnlyList<PinnedFileSize> SettingsPinSizes(SettingsPinSizesParams p) =>
-        SettingsWidgets.PinnedSizes((p.Pins ?? string.Empty).Split('\n')
-            .Select(l => l.Trim().TrimStart('#').Trim()).Where(l => l.Length > 0));
+    public IReadOnlyList<PinnedFileSize> SettingsPinSizes(SettingsPinSizesParams p)
+    {
+        var s = Session();
+        // The prompt as it is sent: a pinned file it carries in part is shown with the part that goes.
+        var prompt = XRayPanelPresenter.Build(
+            BuildPromptSections(s), s.XrayDisabledSections,
+            AgentOrchestrator.EstimateConversationTokens(SnapshotHistory(s)), s.ContextWindowInUse,
+            toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode));
+        return SettingsWidgets.PinnedSizes((p.Pins ?? string.Empty).Split('\n')
+            .Select(l => l.Trim().TrimStart('#').Trim()).Where(l => l.Length > 0), prompt);
+    }
 
     /// <summary>`settings/loadedModels` — what the server holds in memory, and what Inferpal uses each model for.</summary>
     [JsonRpcMethod("settings/loadedModels")]

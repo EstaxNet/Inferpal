@@ -50,6 +50,9 @@ internal partial class InferpalToolWindowData
         _config.AgentModeEnabledChanged += OnAgentModeConfigChanged;   // live-sync with the Settings checkbox
         _config.LanguageChanged         += OnLanguageChanged;          // re-localize labels when the Settings language changes
         _config.Saved                   += OnConfigSaved;              // a new window or model: measure the window again
+        // A copy that did not land — a button, a command — is said: the clipboard still holds what was there before.
+        ClipboardHelper.NotCopied       += () => _ = RunOnVMContextAsync(
+            () => InsertThemed(ChatMessageItem.NoticeMsg(Strings.ClipboardNotCopied)));
         _baseSystemPrompt = BuildSystemPrompt();
         _history          = [new("system", _baseSystemPrompt)];
         LoadPromptHistory();
@@ -95,7 +98,7 @@ internal partial class InferpalToolWindowData
 
         _ = StartHeartbeatAsync();
         _ = StartRagIndexingAsync();
-        _ = _docsIndex.LoadAsync(CancellationToken.None);
+        _ = LoadDocsAsync();
         // The settings window's Context page reads the conversation from here, and opens the X-Ray panel through here.
         _contextHolder.ConversationUsage = CurrentXrayModelAsync;
         _contextHolder.OpenXray          = OpenXrayFromSettingsAsync;

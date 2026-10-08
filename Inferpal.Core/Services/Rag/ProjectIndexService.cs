@@ -584,7 +584,6 @@ internal sealed class ProjectIndexService : IDisposable
                 Diagnostics.Record("ProjectIndexService",
                     $"{unembedded} of {newChunks.Count} chunk(s) without embedding; semantic search misses them until /index rebuild");
 
-            _passFileCount = files.Count;
             _passCompleted = true;
             _updatedAt     = DateTime.Now;
             Status = await ReadyStatusAsync(ct);
@@ -884,9 +883,14 @@ internal sealed class ProjectIndexService : IDisposable
     /// <summary>Bumped under <see cref="_chunkLock"/> whenever the published chunks change.</summary>
     private int _contentVersion;
 
-    /// <summary>Source files the last full pass listed, and whether it completed — only then is the index "✅".</summary>
-    private int  _passFileCount;
+    /// <summary>Whether the last full pass completed — only then is the index "✅".</summary>
+    /// <remarks>⚠ No file count is kept from the pass: the files a pass LISTED (those that failed included) were shown as
+    /// "N files" until the next pass, while saves, deletions and moved folders changed the chunks under it. The count
+    /// is read from the index as it is now (<see cref="FilesWithChunks"/>).</remarks>
     private bool _passCompleted;
+
+    /// <summary>The files the index holds chunks of, now. Under <see cref="_chunkLock"/>.</summary>
+    private int FilesWithChunks() => _chunksByFile.Count(kv => kv.Value.Count > 0);
 
     // What the settings card reads (Snapshot): the pass's progress, when the published index last changed, and how
     // the last pass ended when it did not complete. Status carries the same facts as an English sentence.
@@ -900,12 +904,16 @@ internal sealed class ProjectIndexService : IDisposable
     /// it is now, re-indexed files included.</remarks>
     public async Task<IndexSnapshot> SnapshotAsync(CancellationToken ct)
     {
-        int unembedded;
+        int unembedded, files;
         await _chunkLock.WaitAsync(ct);
-        try { unembedded = _chunksByFile.Values.Sum(l => l.Count(c => c.Embedding is not { Length: > 0 })); }
+        try
+        {
+            unembedded = _chunksByFile.Values.Sum(l => l.Count(c => c.Embedding is not { Length: > 0 }));
+            files      = FilesWithChunks();
+        }
         finally { _chunkLock.Release(); }
         return new IndexSnapshot(
-            RootDir, IsIndexing, _progressDone, _progressTotal, _passCompleted, _passFileCount, ChunkCount, unembedded,
+            RootDir, IsIndexing, _progressDone, _progressTotal, _passCompleted, files, ChunkCount, unembedded,
             SkippedBySize, OversizeFiles, SkippedFolder, QueryEmbeddingModel, _client.IsEmbeddingCircuitOpen,
             _updatedAt, _failure, _stopped);
     }
@@ -921,12 +929,13 @@ internal sealed class ProjectIndexService : IDisposable
     /// </remarks>
     private async Task<string> ReadyStatusAsync(CancellationToken ct)
     {
-        int total, unembedded;
+        int total, unembedded, files;
         await _chunkLock.WaitAsync(ct);
         try
         {
             total      = _chunksByFile.Values.Sum(l => l.Count);
             unembedded = _chunksByFile.Values.Sum(l => l.Count(c => c.Embedding is not { Length: > 0 }));
+            files      = FilesWithChunks();
         }
         finally { _chunkLock.Release(); }
 
@@ -942,7 +951,7 @@ internal sealed class ProjectIndexService : IDisposable
             ? $" ({unembedded} of {total} chunks without embedding — semantic search misses them; run /index rebuild)"
             : string.Empty;
         var embStatus = _client.IsEmbeddingCircuitOpen ? " (embedding ⚠ circuit open, keyword fallback)" : string.Empty;
-        return $"RAG: ✅ {total} chunks from {_passFileCount} files{holeStatus}{embStatus}";
+        return $"RAG: ✅ {total} chunks from {files} files{holeStatus}{embStatus}";
     }
 
     /// <summary>

@@ -1,4 +1,5 @@
 ﻿{
+  "The utility model setting could not be kept in step between VS Code and Inferpal ({0}) — it may change back at the next start. If a settings file has unsaved changes, save it, then save again.": "无法在 VS Code 与 Inferpal 之间保持辅助模型设置一致（{0}）——下次启动时可能会恢复原值。如果某个设置文件有未保存的更改，请先保存，再重新保存。",
   "⚠ The last conversation could not be restored: {0}": "⚠ 无法恢复上一次对话：{0}",
   "Inferpal is starting — the settings load as soon as it is ready.": "Inferpal 正在启动——准备就绪后会立即加载设置。",
   "A turn is still running — wait for it to finish or stop it, then try again.": "仍有一个回合正在运行——请等待其结束或将其停止，然后重试。",

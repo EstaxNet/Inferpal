@@ -584,10 +584,7 @@ internal partial class InferpalToolWindowData
 
         // The message announces the copy: shown only over a copy that landed.
         if (result.CopyToClipboard is { } bundle && !ClipboardHelper.TrySet(bundle, "Clipboard.CopyDiagnostics"))
-        {
-            await ShowInfoAsync(Strings.ClipboardNotCopied);
-            return;
-        }
+            return;   // the failed copy is said by the window (ClipboardHelper.NotCopied)
 
         await ShowInfoAsync(result.Message);
     }
@@ -600,10 +597,7 @@ internal partial class InferpalToolWindowData
 
         // The message announces the copy: shown only over a copy that landed.
         if (result.CopyToClipboard is { } code && !ClipboardHelper.TrySet(code, "Clipboard.CopySnippet"))
-        {
-            await ShowInfoAsync(Strings.ClipboardNotCopied);
-            return;
-        }
+            return;   // the failed copy is said by the window (ClipboardHelper.NotCopied)
 
         await ShowInfoAsync(result.Message);
     }

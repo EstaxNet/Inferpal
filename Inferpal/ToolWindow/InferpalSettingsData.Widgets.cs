@@ -395,8 +395,12 @@ internal partial class InferpalSettingsData
         _          => "#808080",
     };
 
+    /// <summary>The prompt as last measured for the page: what the pinned-file sizes are read against.</summary>
+    private XRayPanelModel? _lastPrompt;
+
     private void ApplyUsage(XRayPanelModel? xray)
     {
+        _lastPrompt = xray;
         UsageNoChat = xray is null;
         HasUsage    = xray is not null;
         if (xray is null) return;
@@ -424,7 +428,7 @@ internal partial class InferpalSettingsData
     /// <summary>What each pinned file costs the prompt, read again with the page (an edit to the file counts at once).</summary>
     private void RefreshPinnedSizes()
     {
-        var sizes = SettingsWidgets.PinnedSizes(PinnedFileRows.Select(r => r.Field1));
+        var sizes = SettingsWidgets.PinnedSizes(PinnedFileRows.Select(r => r.Field1), _lastPrompt);
         for (var i = 0; i < PinnedFileRows.Count && i < sizes.Count; i++)
             PinnedFileRows[i].Size = sizes[i].Size;
     }

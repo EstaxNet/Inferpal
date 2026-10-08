@@ -96,6 +96,26 @@ internal class ConversationStore
     /// crash), the blank screen reading as "nothing to keep". Left full, the conversation just discarded comes back
     /// there. It is archived under a name by the adapter before it is cleared.
     /// </remarks>
+    /// <summary>
+    /// <see cref="ForgetAutoSaveAsync"/>, or — when the slot could not be emptied — the notice that says so.
+    /// </summary>
+    /// <remarks>⚠ Swallowed, a slot left full brought the conversation just discarded back at the next start of either
+    /// editor, with nothing said: the one gesture meant to get rid of it had silently failed.</remarks>
+    public async Task<string?> ForgetAutoSaveOrSayAsync(string? workspaceRoot, CancellationToken ct)
+    {
+        try
+        {
+            await ForgetAutoSaveAsync(workspaceRoot, ct).ConfigureAwait(false);
+            return null;
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("ConversationStore.ForgetAutoSave", ex);
+            return Strings.AutoSaveNotForgotten(Diagnostics.RootMessage(ex));
+        }
+    }
+
     public async Task ForgetAutoSaveAsync(string? workspaceRoot, CancellationToken ct)
     {
         var slot = await LoadAsync("last_session", ct).ConfigureAwait(false);

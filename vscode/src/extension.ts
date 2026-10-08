@@ -10,7 +10,7 @@ import { EditorBridge } from './editorBridge';
 import { HostClient } from './hostClient';
 import { hostErrorText, otherWorkspaceFolders, promptOpenFolder, workspaceRoot } from './hostStatus';
 import { FimProvider } from './inlineCompletions';
-import { followModelRouterSettings } from './modelRouterSettings';
+import { followModelRouterSettings, initModelRouterSync, syncModelRouterSettings } from './modelRouterSettings';
 import { setLanguage, t } from './i18n';
 
 let host: HostClient | undefined;
@@ -18,6 +18,7 @@ let bridge: EditorBridge | undefined;
 let debugBridge: DebugBridge | undefined;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
+  initModelRouterSync(context.workspaceState);
   const output = vscode.window.createOutputChannel('Inferpal');
   context.subscriptions.push(output);
   const log = (line: string) => output.appendLine(line);
@@ -120,36 +121,8 @@ async function stoppedWorkNotice(client: HostClient): Promise<string | undefined
  * the shared config (e.g. set from VS) wins for that setting.
  */
 async function pushModelRouterSettings(log: (line: string) => void): Promise<void> {
-  if (!host) {
-    return;
-  }
-  const config = vscode.workspace.getConfiguration('inferpal');
-  const utilityInspected = config.inspect<string>('utilityModel');
-  const utility = utilityInspected?.workspaceValue ?? utilityInspected?.globalValue;
-  const autoInspected = config.inspect<boolean>('modelRouterAuto');
-  const auto = autoInspected?.workspaceValue ?? autoInspected?.globalValue;
-  if (utility === undefined && auto === undefined) {
-    return;
-  }
-  try {
-    const cfg = JSON.parse(await host.configGet()) as { utilityModel?: string; modelRouterAuto?: boolean };
-    let changed = false;
-    if (utility !== undefined && cfg.utilityModel !== utility) {
-      cfg.utilityModel = utility;
-      changed = true;
-      log(`[inferpal] utility model → "${utility || '(chat model)'}"`);
-    }
-    if (auto !== undefined && cfg.modelRouterAuto !== auto) {
-      cfg.modelRouterAuto = auto;
-      changed = true;
-      log(`[inferpal] model router auto → ${auto}`);
-    }
-    if (changed) {
-      await host.configUpdate(JSON.stringify(cfg));
-    }
-  } catch (err) {
-    log(`[inferpal] model router settings sync failed: ${String(err)}`);
-  }
+  // Decided on what changed since VS Code and the shared config last agreed (syncModelRouterSettings).
+  await syncModelRouterSettings(host, log);
 }
 
 export async function deactivate(): Promise<void> {
@@ -241,6 +214,8 @@ async function startHostCore(
         host = undefined;
         // The breakpoints its agent set go with the host, as on a restart: no one is left to remove them.
         debugBridge?.releaseAgentBreakpoints();
+        // And what it was running, as last seen: no one is left to ask either.
+        chatView.onHostCrashed();
         // vscode-jsonrpc does not cancel the host's pending requests to us: without this, an
         // approval card of the dead host stays clickable, and hydrate re-posts it on every reveal.
         chatView.onHostStopped();

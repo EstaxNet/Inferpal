@@ -334,10 +334,15 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>디버거 상태 첨부(스택, 변수, 예외)</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ 일시 중지된 디버그 세션이 없습니다. 먼저 중단점이나 예외에서 멈춘 후 @debugger를 사용하세요.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ 클립보드가 비어 있습니다.</value></data>
+  <data name="ApprovalDiffNotOpened" xml:space="preserve"><value>⚠ 차이를 열 수 없습니다({0}). 변경은 아직 응답을 기다리고 있습니다 — 승인하기 전에 파일에서 확인하세요.</value></data>
+  <data name="DocsNotLoaded" xml:space="preserve"><value>⚠ 색인된 문서를 불러올 수 없습니다({0}): 소스가 0페이지로 표시되며 @Docs로 검색할 수 없습니다. `/docs reindex`로 다시 만들 수 있습니다.</value></data>
+  <data name="AutoSaveNotForgotten" xml:space="preserve"><value>⚠ 방금 나온 대화를 자동 저장에서 제거하지 못했습니다({0}): 다음에 Inferpal을 시작할 때 다시 나타날 수 있습니다. 그러면 새 대화를 다시 시작하세요.</value></data>
   <data name="SessionUnreadableKept" xml:space="preserve"><value>⚠ 세션 "{0}"을(를) 읽을 수 없습니다 — 파일이 손상되어 아무것도 불러오지 않았습니다. 사본을 보관했습니다: {1}</value></data>
   <data name="ClipboardNotCopied" xml:space="preserve"><value>⚠ 복사되지 않았습니다: 다른 프로그램이 클립보드를 사용 중이라 이전 내용이 그대로 남아 있습니다 — 붙여넣지 마세요. 잠시 후 다시 시도하세요.</value></data>
   <data name="MentionProblemsNotBuilt" xml:space="preserve"><value>@problems에 첨부된 내용이 없습니다 — 빌드가 실행되지 않았습니다: {0}</value></data>
   <data name="StoppedWorkNotice" xml:space="preserve"><value>⚠ Inferpal을 다시 시작하면서 아직 실행 중이던 작업이 중지되었습니다 — 아무것도 유지되지 않았습니다. 아직 필요하면 다시 시작하세요:
+{0}</value></data>
+  <data name="StoppedWorkCrashedNotice" xml:space="preserve"><value>⚠ Inferpal이 예기치 않게 중지되어 실행 중이던 작업도 함께 중지되었습니다(마지막으로 확인된 상태) — 아무것도 유지되지 않았습니다. 아직 필요하면 다시 시작하세요:
 {0}</value></data>
   <data name="StoppedWorkTask" xml:space="preserve"><value>백그라운드 작업 {0} — {1}</value></data>
   <data name="StoppedWorkCommand" xml:space="preserve"><value>백그라운드 명령 {0} — {1}</value></data>
@@ -1165,6 +1170,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="ContextUsageNoChat" xml:space="preserve"><value>채팅 창이 열려 있지 않습니다. 열리면 대화가 집계됩니다.</value></data>
   <data name="PinnedFilesCount" xml:space="preserve"><value>{1}개 중 {0}</value></data>
   <data name="PinnedFileTokens" xml:space="preserve"><value>{0} 토큰</value></data>
+  <data name="PinnedFileTokensSent" xml:space="preserve"><value>{1}토큰 중 {0}토큰 전송 — 프롬프트에 맞게 잘림</value></data>
   <data name="PinnedFileMissing" xml:space="preserve"><value>찾을 수 없음</value></data>
   <data name="ProjectFilesTitle" xml:space="preserve"><value>이 프로젝트에서</value></data>
   <data name="ProjectFileContext" xml:space="preserve"><value>프로젝트 개요</value></data>

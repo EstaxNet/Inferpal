@@ -334,10 +334,15 @@ Sicherung: {0}</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>Debugger-Zustand anhängen (Stack, Variablen, Ausnahme)</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ Keine angehaltene Debugsitzung. Erreiche zuerst einen Haltepunkt oder eine Ausnahme, dann nutze @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Zwischenablage ist leer.</value></data>
+  <data name="ApprovalDiffNotOpened" xml:space="preserve"><value>⚠ Der Diff konnte nicht geöffnet werden ({0}). Die Änderung wartet weiter auf Ihre Antwort — sehen Sie sie in der Datei an, bevor Sie zustimmen.</value></data>
+  <data name="DocsNotLoaded" xml:space="preserve"><value>⚠ Die indizierte Dokumentation konnte nicht geladen werden ({0}): Ihre Quellen zeigen 0 Seiten und @Docs kann sie nicht durchsuchen. `/docs reindex` baut sie neu auf.</value></data>
+  <data name="AutoSaveNotForgotten" xml:space="preserve"><value>⚠ Die gerade verlassene Unterhaltung konnte nicht aus der automatischen Sicherung entfernt werden ({0}): Sie kann beim nächsten Start von Inferpal zurückkehren. Beginnen Sie dann erneut eine neue Unterhaltung.</value></data>
   <data name="SessionUnreadableKept" xml:space="preserve"><value>⚠ Die Sitzung „{0}“ konnte nicht gelesen werden — ihre Datei ist beschädigt, nichts wurde geladen. Eine Kopie wurde aufbewahrt: {1}</value></data>
   <data name="ClipboardNotCopied" xml:space="preserve"><value>⚠ NICHT kopiert: Ein anderes Programm hält die Zwischenablage, die noch den vorherigen Inhalt hat — nicht einfügen. Versuchen Sie es gleich noch einmal.</value></data>
   <data name="MentionProblemsNotBuilt" xml:space="preserve"><value>Für @problems wurde nichts angehängt — es lief kein Build: {0}</value></data>
   <data name="StoppedWorkNotice" xml:space="preserve"><value>⚠ Der Neustart von Inferpal hat beendet, was noch lief — nichts davon wurde behalten. Starten Sie es erneut, wenn Sie es noch brauchen:
+{0}</value></data>
+  <data name="StoppedWorkCrashedNotice" xml:space="preserve"><value>⚠ Inferpal wurde unerwartet beendet, und was noch lief, wurde mit beendet (letzter bekannter Stand) — nichts davon wurde behalten. Starten Sie es erneut, wenn Sie es noch brauchen:
 {0}</value></data>
   <data name="StoppedWorkTask" xml:space="preserve"><value>Hintergrundaufgabe {0} — {1}</value></data>
   <data name="StoppedWorkCommand" xml:space="preserve"><value>Hintergrundbefehl {0} — {1}</value></data>
@@ -1165,6 +1170,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="ContextUsageNoChat" xml:space="preserve"><value>Das Chatfenster ist nicht geöffnet: Seine Unterhaltung wird gezählt, sobald es offen ist.</value></data>
   <data name="PinnedFilesCount" xml:space="preserve"><value>{0} von {1}</value></data>
   <data name="PinnedFileTokens" xml:space="preserve"><value>{0} Tokens</value></data>
+  <data name="PinnedFileTokensSent" xml:space="preserve"><value>{0} von {1} Token gesendet — gekürzt, damit es in den Prompt passt</value></data>
   <data name="PinnedFileMissing" xml:space="preserve"><value>nicht gefunden</value></data>
   <data name="ProjectFilesTitle" xml:space="preserve"><value>Aus diesem Projekt</value></data>
   <data name="ProjectFileContext" xml:space="preserve"><value>Projektüberblick</value></data>

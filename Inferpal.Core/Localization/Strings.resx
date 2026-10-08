@@ -335,10 +335,15 @@ Backup: {0}</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>attach debugger state (stack, locals, exception)</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ No paused debug session. Hit a breakpoint or exception first, then use @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Clipboard is empty.</value></data>
+  <data name="ApprovalDiffNotOpened" xml:space="preserve"><value>⚠ The diff could not be opened ({0}). The change is still waiting for your answer — look at it in the file before approving.</value></data>
+  <data name="DocsNotLoaded" xml:space="preserve"><value>⚠ The indexed documentation could not be loaded ({0}): its sources show 0 pages and @Docs cannot search them. `/docs reindex` rebuilds them.</value></data>
+  <data name="AutoSaveNotForgotten" xml:space="preserve"><value>⚠ The conversation you just left could not be removed from the automatic save ({0}): it may come back the next time Inferpal starts. If it does, start a new conversation again.</value></data>
   <data name="SessionUnreadableKept" xml:space="preserve"><value>⚠ Session "{0}" could not be read — its file is damaged, and nothing was loaded. A copy of it was kept: {1}</value></data>
   <data name="ClipboardNotCopied" xml:space="preserve"><value>⚠ NOT copied: another program is holding the clipboard, which still has what was there before — do not paste it. Try again in a moment.</value></data>
   <data name="MentionProblemsNotBuilt" xml:space="preserve"><value>Nothing attached for @problems — no build ran: {0}</value></data>
   <data name="StoppedWorkNotice" xml:space="preserve"><value>⚠ Restarting Inferpal stopped what was still running — none of it was kept, start it again if you still need it:
+{0}</value></data>
+  <data name="StoppedWorkCrashedNotice" xml:space="preserve"><value>⚠ Inferpal stopped unexpectedly, and what it was still running stopped with it (as last seen) — none of it was kept, start it again if you still need it:
 {0}</value></data>
   <data name="StoppedWorkTask" xml:space="preserve"><value>background task {0} — {1}</value></data>
   <data name="StoppedWorkCommand" xml:space="preserve"><value>background command {0} — {1}</value></data>
@@ -1169,6 +1174,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="ContextUsageNoChat" xml:space="preserve"><value>The chat window is not open: its conversation is counted once it is.</value></data>
   <data name="PinnedFilesCount" xml:space="preserve"><value>{0} of {1}</value></data>
   <data name="PinnedFileTokens" xml:space="preserve"><value>{0} tokens</value></data>
+  <data name="PinnedFileTokensSent" xml:space="preserve"><value>{0} tokens sent of {1} — cut to fit the prompt</value></data>
   <data name="PinnedFileMissing" xml:space="preserve"><value>not found</value></data>
   <data name="ProjectFilesTitle" xml:space="preserve"><value>From this project</value></data>
   <data name="ProjectFileContext" xml:space="preserve"><value>project brief</value></data>

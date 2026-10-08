@@ -373,6 +373,17 @@ internal partial class InferpalToolWindowData
     /// <summary>Removes the trailing @mention token (committed "@file foo" or bare "@foo").</summary>
     private void StripMentionToken() => Prompt = MentionController.StripMentionToken(_prompt);
 
+    /// <summary>Loads the indexed documentation, and says in the conversation when it could not be loaded.</summary>
+    private async Task LoadDocsAsync()
+    {
+        try
+        {
+            if (await _docsIndex.LoadAsync(CancellationToken.None) is { } notice)
+                await RunOnVMContextAsync(() => InsertThemed(ChatMessageItem.NoticeMsg(notice)));
+        }
+        catch (Exception ex) { Diagnostics.Swallow("Docs.Load", ex); }
+    }
+
     private async Task SelectFolderMentionAsync(string folderPath, CancellationToken ct)
     {
         try

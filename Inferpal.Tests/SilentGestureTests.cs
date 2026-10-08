@@ -89,10 +89,12 @@ public sealed class SilentGestureTests
     /// <c>refreshCommandList</c> likewise: typing "/" asks for it, and the popup works from the list it already has.
     /// <c>autoSaveLast</c> runs at the end of every turn, unasked. <c>archiveConversation</c> is reached from gestures
     /// that decide first: "New conversation" refuses, through the funnel, to clear a conversation it cannot archive.
+    /// <c>refreshRunningWork</c> runs with the status poll and at each turn's end, unasked: it only keeps what a crash would
+    /// take with it, and with no host there is nothing to keep.
     /// </remarks>
     private static readonly string[] BackgroundPaths =
         ["onHostReady", "configSaved", "pollBackendStatus", "refreshModelList", "refreshCommandList",
-         "autoSaveLast", "archiveConversation"];
+         "autoSaveLast", "archiveConversation", "refreshRunningWork"];
 
     [Fact]
     public void EveryGestureThatNeedsTheHost_SaysWhenItCannotRun()

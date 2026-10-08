@@ -160,14 +160,27 @@ internal static class SettingsWidgets
     }
 
     /// <summary>What each pinned file costs the prompt, estimated like the X-Ray panel does.</summary>
-    public static IReadOnlyList<PinnedFileSize> PinnedSizes(IEnumerable<string> paths) =>
+    /// <param name="prompt">The X-Ray panel of the prompt as it is sent: a pinned file the prompt carries only part of is
+    /// shown with the part that goes, not with its whole size.</param>
+    /// <remarks>
+    /// ⚠ The file sections share one budget (a character per token of the window): estimated on the whole file, a 120 KB
+    /// log read "30.0k tokens" where each question carried about 2k — while the usage bar and the X-Ray on the same page
+    /// measured the cut text.
+    /// </remarks>
+    public static IReadOnlyList<PinnedFileSize> PinnedSizes(IEnumerable<string> paths, XRayPanelModel? prompt = null) =>
         [.. paths.Select(path =>
         {
             try
             {
                 if (!System.IO.File.Exists(path)) return new PinnedFileSize(path, Strings.PinnedFileMissing, Missing: true);
                 var tokens = Commands.XRayCommandHandler.EstimateTokens(Tools.TextFileEncoding.ReadText(path));
-                return new PinnedFileSize(path, Strings.PinnedFileTokens(Amount(tokens)), Missing: false);
+                var sent   = prompt?.Sections.FirstOrDefault(s => s.Enabled && s.Id.StartsWith("Pinned|", StringComparison.Ordinal)
+                                                                 && PathComparer.Default.Equals(s.Id["Pinned|".Length..], path));
+                return new PinnedFileSize(path,
+                    sent is not null && sent.Tokens < tokens
+                        ? Strings.PinnedFileTokensSent(Amount(sent.Tokens), Amount(tokens))
+                        : Strings.PinnedFileTokens(Amount(tokens)),
+                    Missing: false);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {

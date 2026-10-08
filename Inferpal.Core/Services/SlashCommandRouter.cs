@@ -220,6 +220,15 @@ internal static class SlashCommandRouter
         Strings.SlashUnknownCommand(cmd) + "\n\n" + BuildHelp();
 
     /// <summary>
+    /// True when <paramref name="prompt"/> is <c>/resume</c> — what both editors let through during a step pause, the one
+    /// moment it means anything, while every other send waits for the turn.
+    /// </summary>
+    /// <remarks>⚠ The pause notice says "or type /resume": in Visual Studio Enter during a turn is Stop, so typing it
+    /// CANCELLED the paused run; in VS Code the composer ignores a send during a turn, so nothing happened.</remarks>
+    internal static bool IsResume(string? prompt) =>
+        string.Equals(prompt?.Trim(), "/resume", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
     /// True when the router answers <paramref name="cmd"/> itself — a catalog command or a legacy alias. A
     /// user template with that name can never run: templates are only consulted for unknown commands.
     /// </summary>

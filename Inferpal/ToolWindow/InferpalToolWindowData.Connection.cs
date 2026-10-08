@@ -214,10 +214,10 @@ internal partial class InferpalToolWindowData
         if (hasMessages)
             _ = SaveNamedSessionAsync(firstUserContent, snapshot, templateSuffix);
 
-        // The conversation just discarded leaves the auto-save slot, or the next start brings it back.
-        try { await _store.ForgetAutoSaveAsync(_indexService.RootDir, ct); }
+        // The conversation just discarded leaves the auto-save slot, or the next start brings it back — said when it cannot.
+        string? notForgotten = null;
+        try { notForgotten = await _store.ForgetAutoSaveOrSayAsync(_indexService.RootDir, ct); }
         catch (OperationCanceledException) { }
-        catch (Exception ex) { Diagnostics.Swallow("Session.ForgetAutoSave", ex); }
 
         await RunOnVMContextAsync(() =>
         {
@@ -235,6 +235,8 @@ internal partial class InferpalToolWindowData
             _currentSessionName    = string.Empty;   // the archived conversation keeps its own file
             ResetTurnAccounting();
             HasBuildFailedBanner   = false;   // dismiss banner on /clear
+            // After the clear, or it would be cleared with the rest.
+            if (notForgotten is not null) InsertThemed(ChatMessageItem.NoticeMsg(notForgotten));
         });
     }
 

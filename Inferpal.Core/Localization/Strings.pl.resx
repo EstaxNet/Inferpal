@@ -334,10 +334,15 @@ Kopia zapasowa: {0}</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>dołącz stan debugera (stos, zmienne, wyjątek)</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ Brak wstrzymanej sesji debugowania. Najpierw zatrzymaj się na punkcie przerwania lub wyjątku, potem użyj @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Schowek jest pusty.</value></data>
+  <data name="ApprovalDiffNotOpened" xml:space="preserve"><value>⚠ Nie udało się otworzyć różnic ({0}). Zmiana nadal czeka na odpowiedź — obejrzyj ją w pliku przed zatwierdzeniem.</value></data>
+  <data name="DocsNotLoaded" xml:space="preserve"><value>⚠ Nie udało się wczytać zindeksowanej dokumentacji ({0}): jej źródła pokazują 0 stron, a @Docs nie może ich przeszukać. `/docs reindex` odbudowuje je.</value></data>
+  <data name="AutoSaveNotForgotten" xml:space="preserve"><value>⚠ Nie udało się usunąć z automatycznego zapisu rozmowy, którą właśnie opuszczono ({0}): może wrócić przy następnym uruchomieniu Inferpal. Jeśli tak się stanie, rozpocznij ponownie nową rozmowę.</value></data>
   <data name="SessionUnreadableKept" xml:space="preserve"><value>⚠ Nie udało się odczytać sesji „{0}” — jej plik jest uszkodzony, niczego nie wczytano. Zachowano kopię: {1}</value></data>
   <data name="ClipboardNotCopied" xml:space="preserve"><value>⚠ NIE skopiowano: inny program trzyma schowek, w którym wciąż jest poprzednia zawartość — nie wklejaj jej. Spróbuj ponownie za chwilę.</value></data>
   <data name="MentionProblemsNotBuilt" xml:space="preserve"><value>Nic nie dołączono dla @problems — nie uruchomiono kompilacji: {0}</value></data>
   <data name="StoppedWorkNotice" xml:space="preserve"><value>⚠ Ponowne uruchomienie Inferpal zatrzymało to, co jeszcze działało — nic z tego nie zachowano, uruchom to ponownie, jeśli nadal tego potrzebujesz:
+{0}</value></data>
+  <data name="StoppedWorkCrashedNotice" xml:space="preserve"><value>⚠ Inferpal nieoczekiwanie się zatrzymał, a to, co jeszcze działało, zatrzymało się razem z nim (ostatni znany stan) — nic z tego nie zachowano, uruchom to ponownie, jeśli nadal tego potrzebujesz:
 {0}</value></data>
   <data name="StoppedWorkTask" xml:space="preserve"><value>zadanie w tle {0} — {1}</value></data>
   <data name="StoppedWorkCommand" xml:space="preserve"><value>polecenie w tle {0} — {1}</value></data>
@@ -1165,6 +1170,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="ContextUsageNoChat" xml:space="preserve"><value>Okno czatu nie jest otwarte: rozmowa zostanie policzona, gdy się otworzy.</value></data>
   <data name="PinnedFilesCount" xml:space="preserve"><value>{0} z {1}</value></data>
   <data name="PinnedFileTokens" xml:space="preserve"><value>{0} tokenów</value></data>
+  <data name="PinnedFileTokensSent" xml:space="preserve"><value>wysłano {0} z {1} tokenów — przycięte, by zmieścić się w prompcie</value></data>
   <data name="PinnedFileMissing" xml:space="preserve"><value>nie znaleziono</value></data>
   <data name="ProjectFilesTitle" xml:space="preserve"><value>Z tego projektu</value></data>
   <data name="ProjectFileContext" xml:space="preserve"><value>opis projektu</value></data>

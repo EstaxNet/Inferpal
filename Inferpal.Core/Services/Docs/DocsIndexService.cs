@@ -1,5 +1,6 @@
 ﻿using Inferpal.Config;
 
+using Inferpal.Localization;
 using Inferpal.Services.Rag;
 
 namespace Inferpal.Services.Docs;
@@ -76,6 +77,18 @@ internal sealed class DocsIndexService
     public IReadOnlyDictionary<string, int> UnembeddedBySite { get; private set; } =
         new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>A source's published chunks, and how many of them have no vector (none counted without a query model).</summary>
+    private async Task<(int Chunks, int Unembedded)> SiteCountsAsync(string siteId, CancellationToken ct)
+    {
+        await _chunkLock.WaitAsync(ct);
+        try
+        {
+            var chunks = _chunks.Count(c => string.Equals(c.DocId, siteId, StringComparison.OrdinalIgnoreCase));
+            return (chunks, UnembeddedBySite.TryGetValue(siteId, out var hole) ? hole : 0);
+        }
+        finally { _chunkLock.Release(); }
+    }
+
     /// <summary>
     /// The sentence a hole gets, or an empty string. One reader for the status, the listing and
     /// <c>search_docs</c> — three sites that would otherwise each phrase the same gap differently.
@@ -114,7 +127,13 @@ internal sealed class DocsIndexService
     // ── Load ─────────────────────────────────────────────────────────────────
 
     /// <summary>Hydrates the in-memory index from <c>docs.db</c>. Safe to call once at startup.</summary>
-    public async Task LoadAsync(CancellationToken ct)
+    /// <returns>The notice for the user when the indexed documentation could not be loaded, <c>null</c> otherwise.</returns>
+    /// <remarks>
+    /// ⚠ Failed, the load left every source at "0 pages" and <c>search_docs</c> never offered — indexed documentation that
+    /// looked never indexed. The only trace was <see cref="Status"/>, which nobody reads: the cause is said in the
+    /// conversation at start, and above <c>/docs</c>'s listing (<see cref="LoadFailure"/>).
+    /// </remarks>
+    public async Task<string?> LoadAsync(CancellationToken ct)
     {
         try
         {
@@ -123,16 +142,25 @@ internal sealed class DocsIndexService
 
             await PublishAsync(sites, chunks, ct);
 
+            LoadFailure = null;
             Status = chunks.Count > 0
                 ? $"Docs: {chunks.Count} chunks from {sites.Count} source(s)"
                   + HoleNote(UnembeddedCount, chunks.Count)
                 : "Docs: no documentation indexed";
+            return null;
         }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
+            Diagnostics.Swallow("DocsIndexService.Load", ex);
             Status = $"Docs: load error — {ex.Message}";
+            LoadFailure = Strings.DocsNotLoaded(Diagnostics.RootMessage(ex));
+            return LoadFailure;
         }
     }
+
+    /// <summary>Why the indexed documentation could not be loaded at start, in the user's language; <c>null</c> when it was.</summary>
+    public string? LoadFailure { get; private set; }
 
     // ── Add / re-index ─────────────────────────────────────────────────────────
 
@@ -379,8 +407,15 @@ internal sealed class DocsIndexService
 
             // The circuit note says WHY; the hole note says HOW MUCH and what to do about it — and it
             // is the one that survives into the next session.
+            // ⚠ The hole of THIS source, against its own chunks — the corpus-wide count read as this source's: "Vue — 120
+            // chunks (50 of 520 without embedding)" for a Vue fully embedded and React's holes. The others are said apart.
+            var (siteChunks, siteHole) = await SiteCountsAsync(site.Id, ct);
+            var otherHole = UnembeddedCount - siteHole;
             var embNote = (_client.IsEmbeddingCircuitOpen ? " (⚠ embedding circuit open, keyword fallback)" : string.Empty)
-                        + HoleNote(UnembeddedCount, ChunkCount);
+                        + HoleNote(siteHole, siteChunks, site.Id)
+                        + (otherHole > 0
+                            ? $" (other sources: {otherHole} of {ChunkCount - siteChunks} chunks without embedding — run /docs reindex)"
+                            : string.Empty);
             var crawlNote = CrawlLimitNote(pages.Count, crawler.BeyondDepth, crawler.BeyondFrontier);
             var keptNote = keptPages == 0 ? string.Empty
                 : $" (kept {keptPages} page(s) from the previous index that this pass could not fetch)";

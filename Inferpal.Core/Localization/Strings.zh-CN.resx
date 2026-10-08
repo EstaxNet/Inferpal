@@ -334,10 +334,15 @@
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>附加调试器状态（调用堆栈、局部变量、异常）</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ 没有暂停的调试会话。请先在断点或异常处暂停，然后使用 @debugger。</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ 剪贴板为空。</value></data>
+  <data name="ApprovalDiffNotOpened" xml:space="preserve"><value>⚠ 无法打开差异（{0}）。该更改仍在等待你的答复——批准前请在文件中查看。</value></data>
+  <data name="DocsNotLoaded" xml:space="preserve"><value>⚠ 无法加载已索引的文档（{0}）：其来源显示 0 页，@Docs 无法搜索。`/docs reindex` 可重建。</value></data>
+  <data name="AutoSaveNotForgotten" xml:space="preserve"><value>⚠ 无法从自动保存中移除刚离开的对话（{0}）：下次启动 Inferpal 时它可能会再次出现。如果出现，请重新开始一个新对话。</value></data>
   <data name="SessionUnreadableKept" xml:space="preserve"><value>⚠ 无法读取会话“{0}”——其文件已损坏，未加载任何内容。已保留一份副本：{1}</value></data>
   <data name="ClipboardNotCopied" xml:space="preserve"><value>⚠ 未复制：另一个程序正占用剪贴板，其中仍是之前的内容——请不要粘贴。请稍后重试。</value></data>
   <data name="MentionProblemsNotBuilt" xml:space="preserve"><value>@problems 未附加任何内容——没有运行生成：{0}</value></data>
   <data name="StoppedWorkNotice" xml:space="preserve"><value>⚠ 重启 Inferpal 停止了仍在运行的工作——均未保留，如仍需要请重新启动：
+{0}</value></data>
+  <data name="StoppedWorkCrashedNotice" xml:space="preserve"><value>⚠ Inferpal 意外停止，仍在运行的工作也随之停止（最后已知状态）——均未保留，如仍需要请重新启动：
 {0}</value></data>
   <data name="StoppedWorkTask" xml:space="preserve"><value>后台任务 {0} — {1}</value></data>
   <data name="StoppedWorkCommand" xml:space="preserve"><value>后台命令 {0} — {1}</value></data>
@@ -1165,6 +1170,7 @@
   <data name="ContextUsageNoChat" xml:space="preserve"><value>聊天窗口未打开：打开后会统计其对话。</value></data>
   <data name="PinnedFilesCount" xml:space="preserve"><value>{0}/{1}</value></data>
   <data name="PinnedFileTokens" xml:space="preserve"><value>{0} 个 token</value></data>
+  <data name="PinnedFileTokensSent" xml:space="preserve"><value>发送 {1} 个令牌中的 {0} 个——已截断以适应提示</value></data>
   <data name="PinnedFileMissing" xml:space="preserve"><value>未找到</value></data>
   <data name="ProjectFilesTitle" xml:space="preserve"><value>来自此项目</value></data>
   <data name="ProjectFileContext" xml:space="preserve"><value>项目简介</value></data>

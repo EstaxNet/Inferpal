@@ -90,6 +90,8 @@ export interface ChatEvents {
   onStepResumed?(): void;
   /** A background `/task` reached a terminal state — rendered as a persistent bubble, like VS. */
   onTaskFinished?(text: string): void;
+  /** Something that failed after the fact (the auto-save slot not emptied…), said in the thread. */
+  onNotice?(text: string): void;
 }
 
 export interface HostClientOptions {
@@ -318,6 +320,7 @@ export class HostClient {
     // Dedicated channel: as a `chat/step` status line the notice was wiped by the next
     // setBusy(false) — a task finishing while the user looked away left no trace.
     conn.onNotification('task/finished', (n: TextNote) => this.events.onTaskFinished?.(n.text));
+    conn.onNotification('host/notice', (n: TextNote) => this.events.onNotice?.(n.text));
 
     conn.onError((err) => this.options.log?.(`[rpc] error: ${String(err)}`));
     conn.listen();

@@ -229,6 +229,31 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.hostStarting = true;
   }
 
+  /** What the host runs beyond a turn, as last seen (status poll, end of each turn), worded for a crash. */
+  private runningIfItCrashes: string | undefined;
+
+  /** Refreshes {@link runningIfItCrashes}; a failed read keeps the last one. */
+  private async refreshRunningWork(): Promise<void> {
+    const host = this.getHost();
+    if (!host?.isRunning) {
+      return;
+    }
+    try {
+      this.runningIfItCrashes = (await host.runningWork()).ifItCrashes ?? undefined;
+    } catch {
+      // keeps what was last seen
+    }
+  }
+
+  /**
+   * Called by the activator when the host crashed: what it was running stopped with it, and no one is left to ask —
+   * said from the last list seen (at most a status poll old).
+   */
+  onHostCrashed(): void {
+    this.sayStoppedWork(this.runningIfItCrashes);
+    this.runningIfItCrashes = undefined;
+  }
+
   /** Called by the activator after it stopped a host: the work that host took with it, said in the thread. */
   sayStoppedWork(notice: string | undefined): void {
     if (notice) {
@@ -327,6 +352,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         const item: WvTranscriptItem = { role: 'assistant', text, timestamp: ChatViewProvider.now(), notice: true };
         this.append(item);
         this.post({ type: 'assistant', text, timestamp: item.timestamp! });
+      },
+      onNotice: (text) => {
+        this.append({ role: 'assistant', text, timestamp: ChatViewProvider.now(), notice: true });
       },
     });
 
@@ -577,6 +605,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       this.status = { connected: false, vramBadge: '' };
     }
     this.post({ type: 'backendStatus', status: this.status });
+    await this.refreshRunningWork();
     // ⚠ An outage ANNOUNCES itself, it is not to be guessed. Without this line, losing the backend
     // mid-session only changed the colour of a dot here - the Visual Studio window has always put
     // the sentence in the thread. The Core says WHEN (edge crossed, first successful check silent);
@@ -2145,6 +2174,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
       this.autoSaveLast();
       this.flushPendingModelPush();
+      void this.refreshRunningWork();
     }
   }
 
@@ -2348,6 +2378,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       canRegenerate: this.canRegenerate(),
     });
     this.autoSaveLast();
+    void this.refreshRunningWork();   // a /task submitted, a docs source added: seen before a crash can take them
   }
 
   // ── In-place code actions (/fix /refactor /doc) ─────────────────────────────

@@ -218,7 +218,7 @@ internal sealed record ModelsAdoptResult(string? Model, string? Notice);
 
 /// <summary>`host/runningWork` — what this host runs beyond a turn, as the notice to show once it is stopped (null when
 /// nothing runs).</summary>
-internal sealed record RunningWorkResult(string? Notice);
+internal sealed record RunningWorkResult(string? Notice, string? IfItCrashes = null);
 
 /// <summary>`models/useForSession` — the window's chat model, set for the host session without being saved.</summary>
 internal sealed record ModelUseParams(string Model);

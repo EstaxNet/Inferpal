@@ -334,10 +334,15 @@
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>прикрепить состояние отладчика (стек, переменные, исключение)</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ Нет приостановленной сессии отладки. Сначала остановитесь на точке останова или исключении, затем используйте @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Буфер обмена пуст.</value></data>
+  <data name="ApprovalDiffNotOpened" xml:space="preserve"><value>⚠ Не удалось открыть различия ({0}). Изменение всё ещё ждёт вашего ответа — посмотрите его в файле, прежде чем одобрить.</value></data>
+  <data name="DocsNotLoaded" xml:space="preserve"><value>⚠ Не удалось загрузить проиндексированную документацию ({0}): её источники показывают 0 страниц, и @Docs не может по ним искать. `/docs reindex` перестроит их.</value></data>
+  <data name="AutoSaveNotForgotten" xml:space="preserve"><value>⚠ Не удалось удалить из автосохранения только что оставленный разговор ({0}): он может вернуться при следующем запуске Inferpal. В этом случае снова начните новый разговор.</value></data>
   <data name="SessionUnreadableKept" xml:space="preserve"><value>⚠ Не удалось прочитать сеанс «{0}» — его файл повреждён, ничего не загружено. Копия сохранена: {1}</value></data>
   <data name="ClipboardNotCopied" xml:space="preserve"><value>⚠ НЕ скопировано: буфер обмена занят другой программой, в нём осталось прежнее содержимое — не вставляйте его. Повторите через минуту.</value></data>
   <data name="MentionProblemsNotBuilt" xml:space="preserve"><value>Для @problems ничего не прикреплено — сборка не выполнялась: {0}</value></data>
   <data name="StoppedWorkNotice" xml:space="preserve"><value>⚠ Перезапуск Inferpal остановил то, что ещё выполнялось — ничего не сохранилось, запустите заново, если это ещё нужно:
+{0}</value></data>
+  <data name="StoppedWorkCrashedNotice" xml:space="preserve"><value>⚠ Inferpal неожиданно остановился, и то, что ещё выполнялось, остановилось вместе с ним (последнее известное состояние) — ничего не сохранилось, запустите заново, если это ещё нужно:
 {0}</value></data>
   <data name="StoppedWorkTask" xml:space="preserve"><value>фоновая задача {0} — {1}</value></data>
   <data name="StoppedWorkCommand" xml:space="preserve"><value>фоновая команда {0} — {1}</value></data>
@@ -1165,6 +1170,7 @@
   <data name="ContextUsageNoChat" xml:space="preserve"><value>Окно чата не открыто: разговор будет подсчитан, когда оно откроется.</value></data>
   <data name="PinnedFilesCount" xml:space="preserve"><value>{0} из {1}</value></data>
   <data name="PinnedFileTokens" xml:space="preserve"><value>{0} токенов</value></data>
+  <data name="PinnedFileTokensSent" xml:space="preserve"><value>отправлено {0} из {1} токенов — обрезано, чтобы поместиться в промпт</value></data>
   <data name="PinnedFileMissing" xml:space="preserve"><value>не найден</value></data>
   <data name="ProjectFilesTitle" xml:space="preserve"><value>Из этого проекта</value></data>
   <data name="ProjectFileContext" xml:space="preserve"><value>описание проекта</value></data>

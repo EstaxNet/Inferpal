@@ -33,6 +33,8 @@ const toolbarEl = document.getElementById('toolbar')!;
 
 // ── Local state (rebuilt from hydrate) ───────────────────────────────────────
 let busy = false;
+/** The agent waits at a step pause: `/resume` typed in the composer resumes it. */
+let stepPausedNow = false;
 /** The extension's word on whether Regenerate has a question to ask again (hydrate, turnEnded). */
 let canRegenerate = false;
 let agentMode = true;
@@ -1491,6 +1493,12 @@ function historyDown(): void {
 // ── Composer events ──────────────────────────────────────────────────────────
 function send(): void {
   const text = promptEl.value;
+  // A step pause takes /resume, the remedy the step-mode notice names: the only send let through during a turn.
+  if (busy && stepPausedNow && text.trim().toLowerCase() === '/resume') {
+    promptEl.value = '';
+    post({ type: 'resumeStep' });
+    return;
+  }
   if (!text.trim() || busy) {
     return;
   }
@@ -1782,6 +1790,7 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       renderPins(msg.pins);
       break;
     case 'stepPaused': {
+      stepPausedNow = true;
       finishStream();
       hideWelcome();
       const pause = document.createElement('div');
@@ -1799,11 +1808,13 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       break;
     }
     case 'stepResumed':
+      stepPausedNow = false;
       for (const el of messagesEl.querySelectorAll('.step-pause')) {
         el.remove();
       }
       break;
     case 'turnEnded': {
+      stepPausedNow = false;
       if (streamEl && msg.cancelled && !msg.text) {
         // Stopped before anything visible (reasoning only): no empty bubble, as in Visual Studio.
         streamEl.remove();

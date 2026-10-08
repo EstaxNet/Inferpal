@@ -47,6 +47,13 @@ internal partial class InferpalToolWindowData
                     if (string.IsNullOrWhiteSpace(Prompt)) card.Answer(ApprovalDecision.Once);
                     return;
                 }
+                // A step pause takes /resume, the remedy its notice names — never Stop.
+                if (_stepResume is not null && SlashCommandRouter.IsResume(Prompt))
+                {
+                    Prompt = string.Empty;
+                    ResumeStep();
+                    return;
+                }
                 _currentCts?.Cancel();
             });
             return;

@@ -27,6 +27,24 @@ internal static class ClipboardHelper
     /// </returns>
     public static bool TrySet(string? text, string context)
     {
+        var landed = Copy(text, context);
+        if (!landed)
+        {
+            try { NotCopied?.Invoke(); }
+            catch (Exception ex) { Diagnostics.Swallow(context, ex); }
+        }
+        return landed;
+    }
+
+    /// <summary>
+    /// Raised when a copy did not land, whoever asked: the window says it in the conversation.
+    /// </summary>
+    /// <remarks>⚠ A copy button announces nothing and gives no other sign: the user went on to paste what the clipboard
+    /// held before.</remarks>
+    internal static event Action? NotCopied;
+
+    private static bool Copy(string? text, string context)
+    {
         // Clipboard.SetText(string.Empty) throws: keep the historical single-space placeholder.
         var payload = string.IsNullOrEmpty(text) ? " " : text;
         var copied  = false;

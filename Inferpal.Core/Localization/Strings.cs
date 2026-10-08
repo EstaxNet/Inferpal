@@ -255,6 +255,7 @@ internal static class Strings
     public static string ContextUsageNoChat => Get(nameof(ContextUsageNoChat));
     public static string PinnedFilesCount(int count, int cap) => string.Format(Get(nameof(PinnedFilesCount)), count, cap);
     public static string PinnedFileTokens(string tokens) => string.Format(Get(nameof(PinnedFileTokens)), tokens);
+    public static string PinnedFileTokensSent(string sent, string whole) => string.Format(Get(nameof(PinnedFileTokensSent)), sent, whole);
     public static string PinnedFileMissing => Get(nameof(PinnedFileMissing));
     public static string ProjectFilesTitle => Get(nameof(ProjectFilesTitle));
     public static string ProjectFileContext => Get(nameof(ProjectFileContext));
@@ -893,6 +894,7 @@ internal static class Strings
     public static string MentionDiffUnavailable(string reason) => string.Format(Get(nameof(MentionDiffUnavailable)), reason);
     public static string MentionDiffEmpty => Get(nameof(MentionDiffEmpty));
     public static string MentionDiffCutLabel(string label, int shown, int total) => string.Format(Get(nameof(MentionDiffCutLabel)), label, shown, total);
+    public static string StoppedWorkCrashedNotice(string items) => string.Format(Get(nameof(StoppedWorkCrashedNotice)), items);
     public static string StoppedWorkNotice(string items) => string.Format(Get(nameof(StoppedWorkNotice)), items);
     public static string StoppedWorkTask(string id, string objective) => string.Format(Get(nameof(StoppedWorkTask)), id, objective);
     public static string StoppedWorkCommand(string id, string command) => string.Format(Get(nameof(StoppedWorkCommand)), id, command);
@@ -900,6 +902,9 @@ internal static class Strings
     public static string MentionProblemsNotBuilt(string reason) => string.Format(Get(nameof(MentionProblemsNotBuilt)), reason);
     public static string ClipboardNotCopied => Get(nameof(ClipboardNotCopied));
     public static string SessionUnreadableKept(string name, string copy) => string.Format(Get(nameof(SessionUnreadableKept)), name, copy);
+    public static string AutoSaveNotForgotten(string reason) => string.Format(Get(nameof(AutoSaveNotForgotten)), reason);
+    public static string DocsNotLoaded(string reason) => string.Format(Get(nameof(DocsNotLoaded)), reason);
+    public static string ApprovalDiffNotOpened(string reason) => string.Format(Get(nameof(ApprovalDiffNotOpened)), reason);
     public static string MentionClipboardEmpty => Get(nameof(MentionClipboardEmpty));
     public static string MentionNothingToAttach(string category) =>
         string.Format(Get(nameof(MentionNothingToAttach)), category);

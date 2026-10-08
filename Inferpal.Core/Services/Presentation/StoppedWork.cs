@@ -14,10 +14,12 @@ namespace Inferpal.Services.Presentation;
 /// </remarks>
 internal static class StoppedWork
 {
+    /// <param name="crashed">The wording for a host that died rather than one restarted — said from the last list seen.</param>
     internal static string? Notice(
         IReadOnlyList<BackgroundTaskSnapshot> tasks,
         IReadOnlyList<(string Id, string Command)> commands,
-        string? indexingSite)
+        string? indexingSite,
+        bool crashed = false)
     {
         var items = new List<string>();
         foreach (var t in tasks.Where(t => t.State is BackgroundTaskState.Queued or BackgroundTaskState.Running))
@@ -27,6 +29,8 @@ internal static class StoppedWork
         if (!string.IsNullOrEmpty(indexingSite))
             items.Add(Strings.StoppedWorkDocs(indexingSite));
 
-        return items.Count == 0 ? null : Strings.StoppedWorkNotice(string.Join("\n", items.Select(i => "- " + i)));
+        if (items.Count == 0) return null;
+        var list = string.Join("\n", items.Select(i => "- " + i));
+        return crashed ? Strings.StoppedWorkCrashedNotice(list) : Strings.StoppedWorkNotice(list);
     }
 }
