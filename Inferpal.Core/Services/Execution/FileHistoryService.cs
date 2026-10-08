@@ -471,6 +471,13 @@ internal class FileHistoryService
         lock (_runLock) _currentRun?.NoteRead(filePath);
     }
 
+    /// <summary>Records that <c>read_file</c> read <paramref name="filePath"/> in the current run — a page of it counts,
+    /// a write does not (see <see cref="HistoryRun.FilesOpened"/>).</summary>
+    internal void NoteOpened(string filePath)
+    {
+        lock (_runLock) _currentRun?.NoteOpened(filePath);
+    }
+
     /// <summary>
     /// Records that the model has seen lines <paramref name="first"/>–<paramref name="last"/> of the
     /// <paramref name="total"/> of <paramref name="filePath"/>: the file counts as read once its pages cover it.
@@ -811,6 +818,15 @@ internal sealed class HistoryRun
             : null;
 
     public bool WasRead(string path) => _read.Contains(path);
+
+    // Files read_file read in this run, a page being enough: what the run line counts. Distinct from _read, which a
+    // write_file also feeds (the model knows what it wrote) and which waits for every line.
+    private readonly HashSet<string> _opened = new(PathComparer.Default);
+
+    public void NoteOpened(string path) => _opened.Add(path);
+
+    /// <summary>How many files <c>read_file</c> read in this run — each once, however many pages or reads.</summary>
+    public int FilesOpened => _opened.Count;
 
     public bool Has(string path) => _firstByPath.ContainsKey(path);
 

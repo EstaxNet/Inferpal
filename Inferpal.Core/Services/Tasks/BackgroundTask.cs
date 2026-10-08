@@ -31,6 +31,10 @@ internal enum BackgroundTaskState
 /// Changes the task wanted to make, none of them applied. Reviewed when the report comes back and
 /// applied one at a time through the ordinary approval prompt.
 /// </param>
+/// <param name="StepsTaken">
+/// How many steps the task took. <paramref name="Steps"/> keeps only the last ones: a report that counted them would
+/// read "200 steps" for a run of 600.
+/// </param>
 internal sealed record BackgroundTaskSnapshot(
     string              Id,
     string              Objective,
@@ -43,8 +47,12 @@ internal sealed record BackgroundTaskSnapshot(
     IReadOnlyList<string> Steps,
     int                 QueuePosition,
     bool                ProposeWrites = false,
-    IReadOnlyList<TaskProposal>? Proposals = null)
+    IReadOnlyList<TaskProposal>? Proposals = null,
+    int                 StepsTaken = 0)
 {
+    /// <summary>Steps taken that the journal no longer holds.</summary>
+    internal int StepsNotKept => Math.Max(0, StepsTaken - Steps.Count);
+
     /// <summary>Proposals, never null — the callers all enumerate it.</summary>
     internal IReadOnlyList<TaskProposal> PendingProposals => Proposals ?? [];
 

@@ -327,9 +327,12 @@ public class BackgroundTaskQueueTests
         released.SetResult("done");
         await WaitUntil(() => queue.Get(id)!.IsFinished, "task to finish");
 
-        var steps = queue.Get(id)!.Steps;
+        var task = queue.Get(id)!;
+        var steps = task.Steps;
         Assert.Equal(BackgroundTaskQueue.MaxSteps, steps.Count);
-        Assert.StartsWith("[…", steps[0]);                                        // the drop is marked
+        Assert.Equal(50, task.StepsNotKept);                                      // the drop is counted
+        Assert.Equal(BackgroundTaskQueue.MaxSteps + 50, task.StepsTaken);
+        Assert.Equal("step 50", steps[0]);                                        // every kept entry is a step
         Assert.Equal($"step {BackgroundTaskQueue.MaxSteps + 49}", steps[^1]);      // the tail survived
     }
 

@@ -398,7 +398,7 @@ Copia de seguridad: {0}</value></data>
   <data name="HistoryNoSessions" xml:space="preserve"><value>No hay sesiones guardadas. Las sesiones se archivan automáticamente con `/clear`.</value></data>
   <data name="HistoryNoResults" xml:space="preserve"><value>No hay sesiones que coincidan con "{0}".</value></data>
   <data name="HistoryListHeader" xml:space="preserve"><value>## Sesiones guardadas ({0})</value></data>
-  <data name="HistoryMessageCount" xml:space="preserve"><value>{0} mensajes</value></data>
+  <data name="HistoryMessageCount" xml:space="preserve"><value>{0} {0:mensaje|mensajes}</value></data>
   <data name="HistorySearchHint" xml:space="preserve"><value>→ `/history &lt;término&gt;` para buscar en el contenido de las sesiones</value></data>
   <data name="HistorySearchHeader" xml:space="preserve"><value>## Historial: «{0}» — {1} sesión(es)</value></data>
   <data name="HistorySearchMoreMatches" xml:space="preserve"><value>+{0} mensaje(s) coincidente(s) más en esta sesión</value></data>
@@ -461,6 +461,8 @@ Haga clic en **Corregir con IA** para corregirlo automáticamente en bucle, o es
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: la verificación del build superó el tiempo límite (60 s) — verifique manualmente.</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: la comprobación de compilación ha fallado sin nombrar ningún error: ejecútala tú mismo para ver por qué.</value></data>
+  <data name="SmartFixBuildFailed" xml:space="preserve"><value>🔨 Smart Fix: la compilación falló tras esta edición — si el cambio continúa en otros archivos, termínelo; si no, corrija lo que indica:
+{0}</value></data>
   <data name="SmartFixCouldNotRun" xml:space="preserve"><value>⚠ Smart Fix: no se pudo ejecutar la comprobación de compilación ({0}); este cambio no se ha verificado.</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>Comprobar la compilación tras cada edición</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>.NET, TypeScript, Rust y Go de serie. Los errores vuelven directamente al agente.</value></data>
@@ -518,7 +520,7 @@ Haga clic en **Corregir con IA** para corregirlo automáticamente en bucle, o es
   <!-- analyze_impact tool -->
   <data name="ImpactHeader"         xml:space="preserve"><value>Análisis de impacto — {0}</value></data>
   <data name="ImpactNoPublicApi"    xml:space="preserve"><value>No se encontraron tipos públicos ni símbolos exportados en {0}.</value></data>
-  <data name="ImpactFooter"         xml:space="preserve"><value>📊 Radio de impacto: {0} directo(s) · {1} transitivo(s) · {2} test(s) · {3} punto(s) de entrada</value></data>
+  <data name="ImpactFooter"         xml:space="preserve"><value>📊 Radio de impacto: {0} {0:directo|directos} · {1} {1:transitivo|transitivos} · {2} {2:test|tests} · {3} {3:punto de entrada|puntos de entrada}</value></data>
 
   <!-- trace_dependency tool -->
   <data name="TraceDepsHeader"          xml:space="preserve"><value>Grafo de llamadas — {0}</value></data>
@@ -925,6 +927,8 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="TaskStateCancelled" xml:space="preserve"><value>cancelada</value></data>
   <data name="TaskStillRunning" xml:space="preserve"><value>_Todavía en curso: el informe aparecerá aquí al terminar._</value></data>
   <data name="TaskStepsTitle" xml:space="preserve"><value>Pasos</value></data>
+  <data name="TaskStepsTitleCut" xml:space="preserve"><value>Pasos ({0}: se conservan los últimos {1})</value></data>
+  <data name="TaskStepsNotKept" xml:space="preserve"><value>… {0} {0:paso anterior no conservado|pasos anteriores no conservados}</value></data>
   <data name="TaskDuration" xml:space="preserve"><value>_Duración: {0}._</value></data>
   <data name="TaskFailedNotice" xml:space="preserve"><value>La tarea en segundo plano `{0}` ha fallado: {1}. `/task {0}` para ver los detalles.</value></data>
   <data name="TaskCancelledNotice" xml:space="preserve"><value>La tarea en segundo plano `{0}` se canceló: no se produjo nada.</value></data>
@@ -1076,7 +1080,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="HintAskBeforeActions" xml:space="preserve"><value>Ve el diff real o el comando exacto. Desactivado: todo se aprueba en silencio — los comandos catastróficos se siguen rechazando.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Mostrar el cambio antes de aplicarlo</value></data>
   <data name="HintInlineDiffPreview" xml:space="preserve"><value>Líneas añadidas y quitadas en el editor: conserve o descarte cada cambio, o todos a la vez. Desactivado: se aplica enseguida, Ctrl+Z lo deshace.</value></data>
-  <data name="McpCardConnected" xml:space="preserve"><value>Conectado · {0} herramientas</value></data>
+  <data name="McpCardConnected" xml:space="preserve"><value>Conectado · {0} {0:herramienta|herramientas}</value></data>
   <data name="McpCardSignIn" xml:space="preserve"><value>Requiere iniciar sesión</value></data>
   <data name="McpCardDidNotStart" xml:space="preserve"><value>No se inició</value></data>
   <data name="McpCardNotStarted" xml:space="preserve"><value>Aún no iniciado</value></data>
@@ -1130,8 +1134,8 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="IndexCardFailed" xml:space="preserve"><value>La indexación falló</value></data>
   <data name="IndexCardNoWorkspace" xml:space="preserve"><value>Ningún espacio de trabajo abierto</value></data>
   <data name="IndexCardNoWorkspaceDetail" xml:space="preserve"><value>Abra una solución o una carpeta: el índice se construye para ella.</value></data>
-  <data name="IndexCardFilesUpdated" xml:space="preserve"><value>{0} archivos · actualizado a las {1}</value></data>
-  <data name="IndexCardProgress" xml:space="preserve"><value>{0} de {1} archivos leídos</value></data>
+  <data name="IndexCardFilesUpdated" xml:space="preserve"><value>{0:N0} {0:archivo|archivos} · actualizado a las {1}</value></data>
+  <data name="IndexCardProgress" xml:space="preserve"><value>{0:N0} de {1:N0} {1:archivo leído|archivos leídos}</value></data>
   <data name="IndexCardNotBuiltDetail" xml:space="preserve"><value>La indexación en segundo plano está desactivada: el agente busca por palabras clave.</value></data>
   <data name="IndexCardStoppedDetail" xml:space="preserve"><value>La última pasada no terminó: el índice está incompleto.</value></data>
   <data name="IndexCardFailedDetail" xml:space="preserve"><value>{0}. Detalles en /diagnostics.</value></data>
@@ -1141,7 +1145,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="IndexCardShowThem" xml:space="preserve"><value>Verlos</value></data>
   <data name="IndexCardHideThem" xml:space="preserve"><value>Ocultarlos</value></data>
   <data name="IndexCardMoreFiles" xml:space="preserve"><value>…y {0} más.</value></data>
-  <data name="IndexCardHoles" xml:space="preserve"><value>Sin vector, {0} de {1} fragmentos solo se encuentran por palabras clave. Reconstruir los completa.</value></data>
+  <data name="IndexCardHoles" xml:space="preserve"><value>Solo se encuentran por palabras clave, sin vector: {0:N0} de {1:N0} {1:fragmento|fragmentos}. Reconstruir añade los vectores que faltan.</value></data>
   <data name="IndexCardModelSemantic" xml:space="preserve"><value>Búsqueda por significado con {0}, más nombres exactos y palabras clave.</value></data>
   <data name="IndexCardModelKeywords" xml:space="preserve"><value>Solo búsqueda por palabras clave: no hay ningún modelo de embeddings elegido ni instalado.</value></data>
   <data name="IndexCardModelOff" xml:space="preserve"><value>Solo búsqueda por palabras clave: la búsqueda por significado está desactivada.</value></data>
@@ -1151,9 +1155,9 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="IndexExclusionsHowTo" xml:space="preserve"><value>Las carpetas de compilación y dependencias siempre se excluyen. Para excluir más, liste patrones en indexExclude de .inferpal/project.json — /onboard init lo crea.</value></data>
   <data name="SettingsEditFile" xml:space="preserve"><value>Editar</value></data>
   <data name="SettingsOpenFile" xml:space="preserve"><value>Abrir</value></data>
-  <data name="DocsSiteIndexed" xml:space="preserve"><value>{0} páginas · indexado</value></data>
-  <data name="DocsSiteHoles" xml:space="preserve"><value>{0} páginas · {1} sin búsqueda por significado</value></data>
-  <data name="DocsSiteHolesNote" xml:space="preserve"><value>{0} fragmentos se leyeron mientras el modelo de embeddings no respondía: solo se encuentran por palabras clave hasta que reindexe.</value></data>
+  <data name="DocsSiteIndexed" xml:space="preserve"><value>{0} {0:página|páginas} · indexado</value></data>
+  <data name="DocsSiteHoles" xml:space="preserve"><value>{0} {0:página|páginas} · {1} {1:fragmento|fragmentos} sin búsqueda por significado</value></data>
+  <data name="DocsSiteHolesNote" xml:space="preserve"><value>{0} {0:fragmento se leyó|fragmentos se leyeron} mientras el modelo de embeddings no respondía: solo se {0:encuentra|encuentran} por palabras clave hasta que reindexe.</value></data>
   <data name="DocsSiteIndexing" xml:space="preserve"><value>Indexando…</value></data>
   <data name="DocsReindex" xml:space="preserve"><value>Reindexar</value></data>
   <data name="DocsAddSite" xml:space="preserve"><value>Añadir un sitio</value></data>
@@ -1178,16 +1182,11 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="ProjectFileNotes" xml:space="preserve"><value>sus notas</value></data>
   <data name="ProjectFileRules" xml:space="preserve"><value>reglas por archivo: {0}</value></data>
   <data name="ProjectFileNotYet" xml:space="preserve"><value>aún no creado</value></data>
-  <data name="RunSteps1" xml:space="preserve"><value>1 paso</value></data>
-  <data name="RunSteps" xml:space="preserve"><value>{0} pasos</value></data>
-  <data name="RunRead1" xml:space="preserve"><value>1 archivo leído</value></data>
-  <data name="RunRead" xml:space="preserve"><value>{0} archivos leídos</value></data>
-  <data name="RunSearched1" xml:space="preserve"><value>1 búsqueda</value></data>
-  <data name="RunSearched" xml:space="preserve"><value>{0} búsquedas</value></data>
-  <data name="RunEdited1" xml:space="preserve"><value>1 modificado</value></data>
-  <data name="RunEdited" xml:space="preserve"><value>{0} modificados</value></data>
-  <data name="RunCommand1" xml:space="preserve"><value>1 comando ejecutado</value></data>
-  <data name="RunCommands" xml:space="preserve"><value>{0} comandos ejecutados</value></data>
+  <data name="RunSteps" xml:space="preserve"><value>{0} {0:paso|pasos}</value></data>
+  <data name="RunRead" xml:space="preserve"><value>{0} {0:archivo leído|archivos leídos}</value></data>
+  <data name="RunSearched" xml:space="preserve"><value>{0} {0:búsqueda|búsquedas}</value></data>
+  <data name="RunEdited" xml:space="preserve"><value>{0} {0:modificado|modificados}</value></data>
+  <data name="RunCommands" xml:space="preserve"><value>{0} {0:comando ejecutado|comandos ejecutados}</value></data>
   <data name="RunBuildPassed" xml:space="preserve"><value>compilación correcta</value></data>
   <data name="RunBuildFailed" xml:space="preserve"><value>compilación fallida</value></data>
   <data name="RunTestsPassed" xml:space="preserve"><value>pruebas superadas</value></data>
@@ -1201,8 +1200,8 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="ApprovalReadPage" xml:space="preserve"><value>Leer una página web</value></data>
   <data name="ApprovalSearchWeb" xml:space="preserve"><value>Buscar en la web</value></data>
   <data name="ApprovalUseTool" xml:space="preserve"><value>Usar {0}</value></data>
-  <data name="ApprovalLineCount" xml:space="preserve"><value>{0} líneas</value></data>
-  <data name="ApprovalMoreLines" xml:space="preserve"><value>… {0} líneas más</value></data>
+  <data name="ApprovalLineCount" xml:space="preserve"><value>{0} {0:línea|líneas}</value></data>
+  <data name="ApprovalMoreLines" xml:space="preserve"><value>… {0} {0:línea más|líneas más}</value></data>
   <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Permite {0} sin preguntar hasta que se reinicie el editor.</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>Abrir diff</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>Nueva conversación</value></data>

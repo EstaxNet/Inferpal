@@ -59,9 +59,9 @@ internal static class SettingsWidgets
 
         var (state, title, detail) =
               s.IsIndexing         ? ("indexing", Strings.IndexCardIndexing,
-                                      s.Total > 0 ? Strings.IndexCardProgress(N(s.Done), N(s.Total)) : string.Empty)
+                                      s.Total > 0 ? Strings.IndexCardProgress(s.Done, s.Total) : string.Empty)
             : s.Failure is { } why ? ("failed",   Strings.IndexCardFailed, Strings.IndexCardFailedDetail(why.TrimEnd('.', ' ')))
-            : s.Completed          ? ("ready",    Strings.IndexCardReady,  Strings.IndexCardFilesUpdated(N(s.Files), At(s.UpdatedAt, now)))
+            : s.Completed          ? ("ready",    Strings.IndexCardReady,  Strings.IndexCardFilesUpdated(s.Files, At(s.UpdatedAt, now)))
             : s.Stopped            ? ("stopped",  Strings.IndexCardStopped, Strings.IndexCardStoppedDetail)
             :                        ("notBuilt", Strings.IndexCardNotBuilt, ragEnabled ? string.Empty : Strings.IndexCardNotBuiltDetail);
 
@@ -72,7 +72,7 @@ internal static class SettingsWidgets
         if (state is "ready" or "stopped" or "failed")
         {
             if (s.SkippedFolder is { } gap) notes.Add(gap.Sentence());
-            if (s.Model is not null && s.Unembedded > 0) notes.Add(Strings.IndexCardHoles(N(s.Unembedded), N(s.Chunks)));
+            if (s.Model is not null && s.Unembedded > 0) notes.Add(Strings.IndexCardHoles(s.Unembedded, s.Chunks));
             if (s.Oversize > 0)
             {
                 oversizeNote  = Strings.IndexCardOversize(s.Oversize, CodeChunker.MaxFileSizeKilobytes);

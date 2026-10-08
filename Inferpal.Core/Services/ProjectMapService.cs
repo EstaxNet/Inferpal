@@ -269,15 +269,6 @@ internal sealed class ProjectMapService
         @"(?m)^[ \t]*namespace\s+([\w][\w\.]*)",
         RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
 
-    // type declarations: class, interface, record, enum, struct
-    private static readonly Regex _typeRx = new(
-        @"(?m)^[ \t]*(?:(?:public|internal|private|protected|sealed|abstract|static|partial|readonly)\s+)*" +
-        @"(class|interface|record|enum|struct)\s+([\w]+)" +
-        @"(?:\s*<[^{;]*?)?" +                       // optional generics
-        @"(?:\s*:\s*([\w,\s<>\[\]\.]+?))?" +        // optional base list
-        @"\s*(?:\{|where\b)",
-        RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
-
     // using directives (project-internal will be detected by matching known NS)
     private static readonly Regex _usingRx = new(
         @"(?m)^[ \t]*using\s+([\w][\w\.]*)\s*;",
@@ -291,24 +282,8 @@ internal sealed class ProjectMapService
 
     private static List<TypeEntry> ExtractTypes(string src, string ns, string relFile)
     {
-        var results = new List<TypeEntry>();
-        foreach (Match m in _typeRx.Matches(src))
-        {
-            var kind  = m.Groups[1].Value;
-            var name  = m.Groups[2].Value;
-            var bases = m.Groups[3].Value;
-
-            // Extract simple type names from base list (remove generics, whitespace)
-            var baseTypes = string.IsNullOrWhiteSpace(bases)
-                ? []
-                : bases.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                       .Select(b => Regex.Replace(b, @"<.+>", "", RegexOptions.None, RegexBudget.Default).Trim())
-                       .Where(b => b.Length > 0)
-                       .ToList();
-
-            results.Add(new TypeEntry(name, kind, ns, relFile, baseTypes));
-        }
-        return results;
+        return [.. CSharpTypeDeclarations.Read(src)
+                      .Select(t => new TypeEntry(t.Name, t.Kind, ns, relFile, [.. t.BaseTypes]))];
     }
 
     private static List<string> ExtractUsings(string src)

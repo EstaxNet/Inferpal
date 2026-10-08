@@ -201,7 +201,7 @@ internal partial class InferpalToolWindowData
             // Decided on the snapshot, never on Messages: the two scroll anchors are always there,
             // so counting them archived an empty, titled session on every /clear and /template.
             snapshot    = SessionManager.BuildSnapshot(
-                Messages.Select(m => (m.Role, m.Content, m.ToolName, m.Timestamp)));
+                Messages.Select(m => m.Saved));
             hasMessages = snapshot.Count > 0;
             if (!hasMessages) return;
             templateSuffix = _activeTemplateSuffix;
@@ -250,6 +250,10 @@ internal partial class InferpalToolWindowData
             await RunOnVMContextAsync(() =>
                 name = string.IsNullOrWhiteSpace(SelectedSession) ? "last_session" : SelectedSession);
 
+            // The auto-save slot is the workspace's. The applied root may not be pinned yet at start-up, hence the
+            // solution-anchored fallback.
+            var here = string.IsNullOrEmpty(_indexService.RootDir) ? FindReliableProjectRoot() : _indexService.RootDir;
+
             // ⚠ A load that returns nothing is indistinguishable, on screen, from an ignored
             // click: the conversation does not move, the panel stays open, nothing is said.
             // LoadAsync returns null when the file is gone and THROWS on unreadable JSON — both
@@ -257,7 +261,9 @@ internal partial class InferpalToolWindowData
             SessionData? session;
             try
             {
-                session = await _store.LoadAsync(name, ct);
+                session = name == ConversationStore.AutoSaveSlot
+                    ? await _store.LoadAutoSaveAsync(here, ct)
+                    : await _store.LoadAsync(name, ct);
             }
             catch (Exception ex)
             {
@@ -268,10 +274,6 @@ internal partial class InferpalToolWindowData
                 return;
             }
 
-            // The auto-save slot is one file for every project and both editors: another workspace's
-            // conversation is not this one's to restore. The applied root may not be pinned yet at
-            // start-up, hence the solution-anchored fallback.
-            var here = string.IsNullOrEmpty(_indexService.RootDir) ? FindReliableProjectRoot() : _indexService.RootDir;
             if (session is null || session.Messages.Count == 0
                 || (name == "last_session" && !SessionManager.AutoSaveBelongsHere(session, here)))
             {

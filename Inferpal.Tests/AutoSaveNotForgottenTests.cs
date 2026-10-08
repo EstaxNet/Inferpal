@@ -38,12 +38,12 @@ public sealed class AutoSaveNotForgottenTests : IDisposable
         var store = await StoreWithAConversationAsync();
 
         string? notice;
-        using (new FileStream(Path.Combine(_dir, "last_session.json"), FileMode.Open, FileAccess.Read, FileShare.None))
+        using (new FileStream(store.AutoSaveFile(_root), FileMode.Open, FileAccess.Read, FileShare.None))
             notice = await store.ForgetAutoSaveOrSayAsync(_root, CancellationToken.None);
 
         Assert.NotNull(notice);
         Assert.StartsWith(Strings.AutoSaveNotForgotten("\u0000").Split('\u0000')[0], notice);
-        Assert.NotEmpty((await store.LoadAsync("last_session", CancellationToken.None))!.Messages);   // witness: still there
+        Assert.NotEmpty((await store.LoadAutoSaveAsync(_root, CancellationToken.None))!.Messages);   // witness: still there
     }
 
     /// <summary>Reference arm: an ordinary new conversation empties the slot and says nothing.</summary>
@@ -53,7 +53,7 @@ public sealed class AutoSaveNotForgottenTests : IDisposable
         var store = await StoreWithAConversationAsync();
 
         Assert.Null(await store.ForgetAutoSaveOrSayAsync(_root, CancellationToken.None));
-        Assert.Empty((await store.LoadAsync("last_session", CancellationToken.None))!.Messages);
+        Assert.Empty((await store.LoadAutoSaveAsync(_root, CancellationToken.None))!.Messages);
     }
 
     [Fact]

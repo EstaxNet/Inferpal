@@ -461,6 +461,8 @@ API キーが必要な場合は設定でキーを確認してください。そ�
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: ビルド確認がタイムアウト (60 秒) — 手動で確認してください。</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: ビルドチェックはエラーを一つも示さずに失敗しました — 理由を確認するにはご自身で実行してください。</value></data>
+  <data name="SmartFixBuildFailed" xml:space="preserve"><value>🔨 Smart Fix: この編集後にビルドが失敗しました — 変更が他のファイルに続く場合は完了させ、そうでなければ報告された内容を修正してください:
+{0}</value></data>
   <data name="SmartFixCouldNotRun" xml:space="preserve"><value>⚠ Smart Fix: ビルドチェックを実行できませんでした（{0}）。この変更は検証されていません。</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>編集のたびにビルドを確認する</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>.NET、TypeScript、Rust、Go にすぐ対応。エラーはそのままエージェントに返されます。</value></data>
@@ -925,6 +927,8 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="TaskStateCancelled" xml:space="preserve"><value>キャンセル</value></data>
   <data name="TaskStillRunning" xml:space="preserve"><value>_実行中です。完了するとここにレポートが表示されます。_</value></data>
   <data name="TaskStepsTitle" xml:space="preserve"><value>ステップ</value></data>
+  <data name="TaskStepsTitleCut" xml:space="preserve"><value>ステップ（{0} 件 — 最後の {1} 件を保持）</value></data>
+  <data name="TaskStepsNotKept" xml:space="preserve"><value>… それ以前の {0} 件は保持されていません</value></data>
   <data name="TaskDuration" xml:space="preserve"><value>_所要時間: {0}_</value></data>
   <data name="TaskFailedNotice" xml:space="preserve"><value>バックグラウンドタスク `{0}` が失敗しました — {1}。詳細は `/task {0}`。</value></data>
   <data name="TaskCancelledNotice" xml:space="preserve"><value>バックグラウンドタスク `{0}` はキャンセルされました — 何も生成されていません。</value></data>
@@ -1130,8 +1134,8 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="IndexCardFailed" xml:space="preserve"><value>インデックス作成に失敗しました</value></data>
   <data name="IndexCardNoWorkspace" xml:space="preserve"><value>ワークスペースが開かれていません</value></data>
   <data name="IndexCardNoWorkspaceDetail" xml:space="preserve"><value>ソリューションかフォルダーを開いてください。そのためのインデックスが作成されます。</value></data>
-  <data name="IndexCardFilesUpdated" xml:space="preserve"><value>{0} ファイル · {1} に更新</value></data>
-  <data name="IndexCardProgress" xml:space="preserve"><value>{1} ファイル中 {0} を読み込み済み</value></data>
+  <data name="IndexCardFilesUpdated" xml:space="preserve"><value>{0:N0} ファイル · {1} に更新</value></data>
+  <data name="IndexCardProgress" xml:space="preserve"><value>{1:N0} ファイル中 {0:N0} を読み込み済み</value></data>
   <data name="IndexCardNotBuiltDetail" xml:space="preserve"><value>バックグラウンドのインデックス作成はオフです。エージェントはキーワードで検索します。</value></data>
   <data name="IndexCardStoppedDetail" xml:space="preserve"><value>前回の処理が完了していないため、インデックスは不完全です。</value></data>
   <data name="IndexCardFailedDetail" xml:space="preserve"><value>{0}。詳細は /diagnostics にあります。</value></data>
@@ -1141,7 +1145,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="IndexCardShowThem" xml:space="preserve"><value>表示</value></data>
   <data name="IndexCardHideThem" xml:space="preserve"><value>非表示</value></data>
   <data name="IndexCardMoreFiles" xml:space="preserve"><value>…ほか {0} 件。</value></data>
-  <data name="IndexCardHoles" xml:space="preserve"><value>ベクトルがないため、{1} 件中 {0} 件のスニペットはキーワードでしか見つかりません。再構築で補完されます。</value></data>
+  <data name="IndexCardHoles" xml:space="preserve"><value>ベクトルがないため、{1:N0} 件中 {0:N0} 件のスニペットはキーワードでしか見つかりません。再構築で補完されます。</value></data>
   <data name="IndexCardModelSemantic" xml:space="preserve"><value>{0} による意味検索に加え、正確な名前とキーワードでも検索します。</value></data>
   <data name="IndexCardModelKeywords" xml:space="preserve"><value>キーワード検索のみ: 埋め込みモデルが設定もインストールもされていません。</value></data>
   <data name="IndexCardModelOff" xml:space="preserve"><value>キーワード検索のみ: 意味検索はオフです。</value></data>
@@ -1152,7 +1156,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SettingsEditFile" xml:space="preserve"><value>編集</value></data>
   <data name="SettingsOpenFile" xml:space="preserve"><value>開く</value></data>
   <data name="DocsSiteIndexed" xml:space="preserve"><value>{0} ページ · インデックス済み</value></data>
-  <data name="DocsSiteHoles" xml:space="preserve"><value>{0} ページ · 意味検索なし {1}</value></data>
+  <data name="DocsSiteHoles" xml:space="preserve"><value>{0} ページ · 意味検索なしの文章 {1} 件</value></data>
   <data name="DocsSiteHolesNote" xml:space="preserve"><value>埋め込みモデルが応答しない間に {0} 件の文章を読み込みました。再インデックスするまでキーワードでしか見つかりません。</value></data>
   <data name="DocsSiteIndexing" xml:space="preserve"><value>インデックス作成中…</value></data>
   <data name="DocsReindex" xml:space="preserve"><value>再インデックス</value></data>
@@ -1178,15 +1182,10 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ProjectFileNotes" xml:space="preserve"><value>あなたのメモ</value></data>
   <data name="ProjectFileRules" xml:space="preserve"><value>ファイル別ルール: {0}</value></data>
   <data name="ProjectFileNotYet" xml:space="preserve"><value>まだ作成されていません</value></data>
-  <data name="RunSteps1" xml:space="preserve"><value>1 ステップ</value></data>
   <data name="RunSteps" xml:space="preserve"><value>{0} ステップ</value></data>
-  <data name="RunRead1" xml:space="preserve"><value>1 ファイルを読み込み</value></data>
   <data name="RunRead" xml:space="preserve"><value>{0} ファイルを読み込み</value></data>
-  <data name="RunSearched1" xml:space="preserve"><value>1 回検索</value></data>
   <data name="RunSearched" xml:space="preserve"><value>{0} 回検索</value></data>
-  <data name="RunEdited1" xml:space="preserve"><value>1 件編集</value></data>
   <data name="RunEdited" xml:space="preserve"><value>{0} 件編集</value></data>
-  <data name="RunCommand1" xml:space="preserve"><value>1 コマンドを実行</value></data>
   <data name="RunCommands" xml:space="preserve"><value>{0} コマンドを実行</value></data>
   <data name="RunBuildPassed" xml:space="preserve"><value>ビルド成功</value></data>
   <data name="RunBuildFailed" xml:space="preserve"><value>ビルド失敗</value></data>

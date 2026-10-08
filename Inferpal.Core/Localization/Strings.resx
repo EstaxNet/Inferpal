@@ -399,7 +399,7 @@ Backup: {0}</value></data>
   <data name="HistoryNoSessions" xml:space="preserve"><value>No saved sessions found. Sessions are archived automatically on `/clear`.</value></data>
   <data name="HistoryNoResults" xml:space="preserve"><value>No sessions match "{0}".</value></data>
   <data name="HistoryListHeader" xml:space="preserve"><value>## Saved sessions ({0})</value></data>
-  <data name="HistoryMessageCount" xml:space="preserve"><value>{0} messages</value></data>
+  <data name="HistoryMessageCount" xml:space="preserve"><value>{0} {0:message|messages}</value></data>
   <data name="HistorySearchHint" xml:space="preserve"><value>→ `/history &lt;term&gt;` to search in session content</value></data>
   <data name="HistorySearchHeader" xml:space="preserve"><value>## History: "{0}" — {1} session(s)</value></data>
   <data name="HistorySearchMoreMatches" xml:space="preserve"><value>+{0} more matching message(s) in this session</value></data>
@@ -462,6 +462,8 @@ Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</val
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: build check timed out (60 s) — verify manually.</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: the build check failed without naming a single error — run it yourself to see why.</value></data>
+  <data name="SmartFixBuildFailed" xml:space="preserve"><value>🔨 Smart Fix: the build failed after this edit — if the change continues in other files, finish it; otherwise fix what it reports:
+{0}</value></data>
   <data name="SmartFixCouldNotRun" xml:space="preserve"><value>⚠ Smart Fix: the build check could not run ({0}) — this change was not verified.</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>Check the build after each edit</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>.NET, TypeScript, Rust and Go out of the box. Errors go straight back to the agent.</value></data>
@@ -519,7 +521,7 @@ Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</val
   <!-- analyze_impact tool -->
   <data name="ImpactHeader"         xml:space="preserve"><value>Impact Analysis — {0}</value></data>
   <data name="ImpactNoPublicApi"    xml:space="preserve"><value>No public types or exported symbols found in {0}.</value></data>
-  <data name="ImpactFooter"         xml:space="preserve"><value>📊 Blast radius: {0} direct · {1} transitive · {2} tests · {3} entry points</value></data>
+  <data name="ImpactFooter"         xml:space="preserve"><value>📊 Blast radius: {0} direct · {1} transitive · {2} {2:test|tests} · {3} {3:entry point|entry points}</value></data>
 
   <!-- trace_dependency tool -->
   <data name="TraceDepsHeader"          xml:space="preserve"><value>Call Graph — {0}</value></data>
@@ -929,6 +931,8 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="TaskStateCancelled" xml:space="preserve"><value>cancelled</value></data>
   <data name="TaskStillRunning" xml:space="preserve"><value>_Still running — its report will appear here once it finishes._</value></data>
   <data name="TaskStepsTitle" xml:space="preserve"><value>Steps</value></data>
+  <data name="TaskStepsTitleCut" xml:space="preserve"><value>Steps ({0} — the last {1} kept)</value></data>
+  <data name="TaskStepsNotKept" xml:space="preserve"><value>… {0} earlier {0:step|steps} not kept</value></data>
   <data name="TaskDuration" xml:space="preserve"><value>_Ran for {0}._</value></data>
   <data name="TaskFailedNotice" xml:space="preserve"><value>Background task `{0}` failed — {1}. `/task {0}` for the details.</value></data>
   <data name="TaskCancelledNotice" xml:space="preserve"><value>Background task `{0}` was cancelled — nothing was produced.</value></data>
@@ -1080,7 +1084,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="HintAskBeforeActions" xml:space="preserve"><value>You see the real diff or the exact command. Off: everything is approved silently — catastrophic commands are still refused.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Show the change before applying it</value></data>
   <data name="HintInlineDiffPreview" xml:space="preserve"><value>Added and removed lines in the editor: keep or drop each change, or all at once. Off: applied at once, Ctrl+Z undoes it.</value></data>
-  <data name="McpCardConnected" xml:space="preserve"><value>Connected · {0} tools</value></data>
+  <data name="McpCardConnected" xml:space="preserve"><value>Connected · {0} {0:tool|tools}</value></data>
   <data name="McpCardSignIn" xml:space="preserve"><value>Needs sign-in</value></data>
   <data name="McpCardDidNotStart" xml:space="preserve"><value>Did not start</value></data>
   <data name="McpCardNotStarted" xml:space="preserve"><value>Not started yet</value></data>
@@ -1134,8 +1138,8 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="IndexCardFailed" xml:space="preserve"><value>Indexing failed</value></data>
   <data name="IndexCardNoWorkspace" xml:space="preserve"><value>No workspace open</value></data>
   <data name="IndexCardNoWorkspaceDetail" xml:space="preserve"><value>Open a solution or a folder: the index is built for it.</value></data>
-  <data name="IndexCardFilesUpdated" xml:space="preserve"><value>{0} files · updated at {1}</value></data>
-  <data name="IndexCardProgress" xml:space="preserve"><value>{0} of {1} files read</value></data>
+  <data name="IndexCardFilesUpdated" xml:space="preserve"><value>{0:N0} {0:file|files} · updated at {1}</value></data>
+  <data name="IndexCardProgress" xml:space="preserve"><value>{0:N0} of {1:N0} {1:file|files} read</value></data>
   <data name="IndexCardNotBuiltDetail" xml:space="preserve"><value>Background indexing is off: the agent searches by keywords.</value></data>
   <data name="IndexCardStoppedDetail" xml:space="preserve"><value>The last pass did not finish: the index is incomplete.</value></data>
   <data name="IndexCardFailedDetail" xml:space="preserve"><value>{0}. Details in /diagnostics.</value></data>
@@ -1145,7 +1149,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="IndexCardShowThem" xml:space="preserve"><value>Show them</value></data>
   <data name="IndexCardHideThem" xml:space="preserve"><value>Hide them</value></data>
   <data name="IndexCardMoreFiles" xml:space="preserve"><value>…and {0} more.</value></data>
-  <data name="IndexCardHoles" xml:space="preserve"><value>Without a vector, {0} of {1} snippets are found by keywords only. Rebuild fills them.</value></data>
+  <data name="IndexCardHoles" xml:space="preserve"><value>Found by keywords only, without a vector: {0:N0} of {1:N0} {1:snippet|snippets}. Rebuild adds the missing vectors.</value></data>
   <data name="IndexCardModelSemantic" xml:space="preserve"><value>Meaning-based search with {0}, plus exact names and keywords.</value></data>
   <data name="IndexCardModelKeywords" xml:space="preserve"><value>Keyword search only: no embedding model is set or installed.</value></data>
   <data name="IndexCardModelOff" xml:space="preserve"><value>Keyword search only: search by meaning is off.</value></data>
@@ -1155,9 +1159,9 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="IndexExclusionsHowTo" xml:space="preserve"><value>Build and dependency folders are always left out. To leave more out, list patterns under indexExclude in .inferpal/project.json — /onboard init creates it.</value></data>
   <data name="SettingsEditFile" xml:space="preserve"><value>Edit</value></data>
   <data name="SettingsOpenFile" xml:space="preserve"><value>Open</value></data>
-  <data name="DocsSiteIndexed" xml:space="preserve"><value>{0} pages · indexed</value></data>
-  <data name="DocsSiteHoles" xml:space="preserve"><value>{0} pages · {1} without search by meaning</value></data>
-  <data name="DocsSiteHolesNote" xml:space="preserve"><value>{0} passages were read while the embedding model did not answer: they are found by keywords only until you reindex.</value></data>
+  <data name="DocsSiteIndexed" xml:space="preserve"><value>{0} {0:page|pages} · indexed</value></data>
+  <data name="DocsSiteHoles" xml:space="preserve"><value>{0} {0:page|pages} · {1} {1:passage|passages} without search by meaning</value></data>
+  <data name="DocsSiteHolesNote" xml:space="preserve"><value>{0} {0:passage was|passages were} read while the embedding model did not answer: {0:it is|they are} found by keywords only until you reindex.</value></data>
   <data name="DocsSiteIndexing" xml:space="preserve"><value>Indexing…</value></data>
   <data name="DocsReindex" xml:space="preserve"><value>Reindex</value></data>
   <data name="DocsAddSite" xml:space="preserve"><value>Add a site</value></data>
@@ -1182,16 +1186,11 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="ProjectFileNotes" xml:space="preserve"><value>your notes</value></data>
   <data name="ProjectFileRules" xml:space="preserve"><value>rules by file: {0}</value></data>
   <data name="ProjectFileNotYet" xml:space="preserve"><value>not created yet</value></data>
-  <data name="RunSteps1" xml:space="preserve"><value>1 step</value></data>
-  <data name="RunSteps" xml:space="preserve"><value>{0} steps</value></data>
-  <data name="RunRead1" xml:space="preserve"><value>read 1 file</value></data>
-  <data name="RunRead" xml:space="preserve"><value>read {0} files</value></data>
-  <data name="RunSearched1" xml:space="preserve"><value>1 search</value></data>
-  <data name="RunSearched" xml:space="preserve"><value>{0} searches</value></data>
-  <data name="RunEdited1" xml:space="preserve"><value>edited 1</value></data>
+  <data name="RunSteps" xml:space="preserve"><value>{0} {0:step|steps}</value></data>
+  <data name="RunRead" xml:space="preserve"><value>read {0} {0:file|files}</value></data>
+  <data name="RunSearched" xml:space="preserve"><value>{0} {0:search|searches}</value></data>
   <data name="RunEdited" xml:space="preserve"><value>edited {0}</value></data>
-  <data name="RunCommand1" xml:space="preserve"><value>ran 1 command</value></data>
-  <data name="RunCommands" xml:space="preserve"><value>ran {0} commands</value></data>
+  <data name="RunCommands" xml:space="preserve"><value>ran {0} {0:command|commands}</value></data>
   <data name="RunBuildPassed" xml:space="preserve"><value>build passed</value></data>
   <data name="RunBuildFailed" xml:space="preserve"><value>build failed</value></data>
   <data name="RunTestsPassed" xml:space="preserve"><value>tests passed</value></data>
@@ -1205,8 +1204,8 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="ApprovalReadPage" xml:space="preserve"><value>Read a web page</value></data>
   <data name="ApprovalSearchWeb" xml:space="preserve"><value>Search the web</value></data>
   <data name="ApprovalUseTool" xml:space="preserve"><value>Use {0}</value></data>
-  <data name="ApprovalLineCount" xml:space="preserve"><value>{0} lines</value></data>
-  <data name="ApprovalMoreLines" xml:space="preserve"><value>… {0} more lines</value></data>
+  <data name="ApprovalLineCount" xml:space="preserve"><value>{0} {0:line|lines}</value></data>
+  <data name="ApprovalMoreLines" xml:space="preserve"><value>… {0} more {0:line|lines}</value></data>
   <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Allows {0} without asking until the editor restarts.</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>Open diff</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>New conversation</value></data>

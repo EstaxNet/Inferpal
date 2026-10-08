@@ -58,13 +58,19 @@ internal static class RagAutoContext
         int count   = 0;
         int skipped = 0;          // already attached: their content IS in the prompt
         int stale   = 0;          // changed since indexed: their content is NOT
+        int notFit  = 0;          // retrieved, and left out by the caps alone
         bool capped = false;      // a retrieved chunk did not make it in
 
-        foreach (var chunk in results.Select(r => r.Chunk))
+        bool Attached(RagChunk c) => c.FilePath is { Length: > 0 } fp && attachedPaths.Contains(fp);
+        bool Stale(RagChunk c)    => c.FilePath is { Length: > 0 } sp && notYetReindexed?.Contains(sp) == true;
+
+        var next = 0;
+        for (; next < results.Count; next++)
         {
+            var chunk = results[next].Chunk;
             if (count >= maxChunks) { capped = true; break; }
-            if (chunk.FilePath is { Length: > 0 } fp && attachedPaths.Contains(fp)) { skipped++; continue; }
-            if (chunk.FilePath is { Length: > 0 } sp && notYetReindexed?.Contains(sp) == true) { stale++; continue; }
+            if (Attached(chunk)) { skipped++; continue; }
+            if (Stale(chunk))    { stale++;   continue; }
 
             var body = chunk.Content.Length > MaxChunkChars
                 ? SafeTruncate.Truncate(chunk.Content, MaxChunkChars) + "\n…(truncated)"
@@ -79,6 +85,17 @@ internal static class RagAutoContext
             count++;
         }
 
+        // ⚠ What follows the cut is counted by what happens to it, not lumped as "did not fit": a snippet of an attached
+        // file is in the prompt already, a stale one is left out for its own reason and says so. Lumped, the note read
+        // "3 of 7" for 3 of 4, and the stale ones after the cut went unsaid.
+        if (capped)
+            foreach (var chunk in results.Skip(next).Select(r => r.Chunk))
+            {
+                if (Attached(chunk))   skipped++;
+                else if (Stale(chunk)) stale++;
+                else                   notFit++;
+            }
+
         if (count == 0)
             return stale == 0
                 ? string.Empty
@@ -89,7 +106,7 @@ internal static class RagAutoContext
         // ~375, and it is what keeps "here is the relevant code" from being read as "here is all
         // of it".
         var note = capped
-            ? $"_{count} of {results.Count - skipped - stale} retrieved snippets — the rest did not fit. "
+            ? $"_{count} of {count + notFit} retrieved snippets — the rest did not fit. "
             : $"_Top {count} match(es) of the semantic index. ";
         if (stale > 0)
             note += $"{stale} snippet(s) of files changed since they were indexed were left out — `read_file` shows them as they are now. ";

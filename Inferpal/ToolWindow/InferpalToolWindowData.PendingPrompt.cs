@@ -165,7 +165,7 @@ internal partial class InferpalToolWindowData
             await RunOnVMContextAsync(() =>
             {
                 snapshot = SessionManager.BuildSnapshot(
-                    Messages.Select(m => (m.Role, m.Content, m.ToolName, m.Timestamp)));
+                    Messages.Select(m => m.Saved));
                 templateSuffix = _activeTemplateSuffix;
             });
             await _store.AutoSaveAsync(snapshot, CancellationToken.None, _indexService.RootDir,

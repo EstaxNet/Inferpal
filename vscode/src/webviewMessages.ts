@@ -1,7 +1,7 @@
 // Typed postMessage protocol between the extension host (chatViewProvider.ts) and the
 // chat webview (src/webview/main.ts). Both sides are bundled from this repo, so the
 // types are shared instead of mirrored. No 'vscode' import — the webview bundle uses it.
-import type { ApprovalCard, RunSummary, XRayPanel } from './protocol';
+import type { ApprovalCard, RunSummary, SavedMessage, XRayPanel } from './protocol';
 
 /** One rendered transcript entry (the extension host owns the list). */
 export interface WvTranscriptItem {
@@ -21,6 +21,9 @@ export interface WvTranscriptItem {
   model?: string;
   duration?: string;
   run?: RunSummary | null;
+  /** A saved message of a role this window does not draw (Visual Studio's plan card): shown as a notice, written
+   *  back exactly as it was read. */
+  savedAs?: SavedMessage;
 }
 
 /** Header connection badge (mirror of `backend/status`). */

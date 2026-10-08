@@ -28,7 +28,7 @@ public partial class HostServerTests
                 [new SavedMessageDto("user", "the old question"), new SavedMessageDto("assistant", "the old answer")]))
             .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
         var store = h.Server.CurrentSession!.Store;
-        Assert.NotNull(await store.LoadAsync("last_session", CancellationToken.None));   // witness: the slot was written
+        Assert.NotNull(await store.LoadAutoSaveAsync(h.Server.CurrentSession!.RootDir, CancellationToken.None));   // witness: the slot was written
 
         await h.Client.InvokeWithParameterObjectAsync<SlashCommandResult>(
             "command/slash", new { text = "/template code-review" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
@@ -37,7 +37,7 @@ public partial class HostServerTests
         Services.Persistence.SessionData? slot = null;
         for (var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30); DateTime.UtcNow < deadline; await Task.Delay(50))
         {
-            slot = await store.LoadAsync("last_session", CancellationToken.None);
+            slot = await store.LoadAutoSaveAsync(h.Server.CurrentSession!.RootDir, CancellationToken.None);
             if (slot is null || slot.Messages.Count == 0) break;
         }
         Assert.True(slot is null || slot.Messages.Count == 0, "the replaced conversation is still in the auto-save slot.");

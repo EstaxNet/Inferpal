@@ -461,6 +461,8 @@
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix：编译检查超时（60 秒）— 请手动检查。</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix：构建检查失败，但没有指出任何错误——请自行运行以查看原因。</value></data>
+  <data name="SmartFixBuildFailed" xml:space="preserve"><value>🔨 Smart Fix：此次编辑后构建失败 — 如果更改还涉及其他文件，请先完成；否则请修复它报告的问题：
+{0}</value></data>
   <data name="SmartFixCouldNotRun" xml:space="preserve"><value>⚠ Smart Fix：无法运行构建检查（{0}）——此更改未经验证。</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>每次编辑后检查构建</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>开箱即支持 .NET、TypeScript、Rust 和 Go。错误会直接返回给代理。</value></data>
@@ -925,6 +927,8 @@
   <data name="TaskStateCancelled" xml:space="preserve"><value>已取消</value></data>
   <data name="TaskStillRunning" xml:space="preserve"><value>_仍在运行 —— 完成后报告将显示在此处。_</value></data>
   <data name="TaskStepsTitle" xml:space="preserve"><value>步骤</value></data>
+  <data name="TaskStepsTitleCut" xml:space="preserve"><value>步骤（{0} 步——仅保留最后 {1} 步）</value></data>
+  <data name="TaskStepsNotKept" xml:space="preserve"><value>… 更早的 {0} 步未保留</value></data>
   <data name="TaskDuration" xml:space="preserve"><value>_耗时：{0}。_</value></data>
   <data name="TaskFailedNotice" xml:space="preserve"><value>后台任务 `{0}` 失败 — {1}。使用 `/task {0}` 查看详情。</value></data>
   <data name="TaskCancelledNotice" xml:space="preserve"><value>后台任务 `{0}` 已取消 — 未产生任何结果。</value></data>
@@ -1130,8 +1134,8 @@
   <data name="IndexCardFailed" xml:space="preserve"><value>索引失败</value></data>
   <data name="IndexCardNoWorkspace" xml:space="preserve"><value>未打开工作区</value></data>
   <data name="IndexCardNoWorkspaceDetail" xml:space="preserve"><value>打开一个解决方案或文件夹，即会为其建立索引。</value></data>
-  <data name="IndexCardFilesUpdated" xml:space="preserve"><value>{0} 个文件 · 更新于 {1}</value></data>
-  <data name="IndexCardProgress" xml:space="preserve"><value>已读取 {0}/{1} 个文件</value></data>
+  <data name="IndexCardFilesUpdated" xml:space="preserve"><value>{0:N0} 个文件 · 更新于 {1}</value></data>
+  <data name="IndexCardProgress" xml:space="preserve"><value>已读取 {0:N0}/{1:N0} 个文件</value></data>
   <data name="IndexCardNotBuiltDetail" xml:space="preserve"><value>后台索引已关闭：代理按关键词搜索。</value></data>
   <data name="IndexCardStoppedDetail" xml:space="preserve"><value>上一次处理未完成：索引不完整。</value></data>
   <data name="IndexCardFailedDetail" xml:space="preserve"><value>{0}。详情见 /diagnostics。</value></data>
@@ -1141,7 +1145,7 @@
   <data name="IndexCardShowThem" xml:space="preserve"><value>查看</value></data>
   <data name="IndexCardHideThem" xml:space="preserve"><value>隐藏</value></data>
   <data name="IndexCardMoreFiles" xml:space="preserve"><value>……另有 {0} 个。</value></data>
-  <data name="IndexCardHoles" xml:space="preserve"><value>{1} 个片段中有 {0} 个没有向量，只能按关键词找到。重建会补齐它们。</value></data>
+  <data name="IndexCardHoles" xml:space="preserve"><value>{1:N0} 个片段中有 {0:N0} 个没有向量，只能按关键词找到。重建会补齐它们。</value></data>
   <data name="IndexCardModelSemantic" xml:space="preserve"><value>使用 {0} 按语义搜索，同时匹配确切名称和关键词。</value></data>
   <data name="IndexCardModelKeywords" xml:space="preserve"><value>仅按关键词搜索：未设置或未安装嵌入模型。</value></data>
   <data name="IndexCardModelOff" xml:space="preserve"><value>仅按关键词搜索：语义搜索已关闭。</value></data>
@@ -1152,7 +1156,7 @@
   <data name="SettingsEditFile" xml:space="preserve"><value>编辑</value></data>
   <data name="SettingsOpenFile" xml:space="preserve"><value>打开</value></data>
   <data name="DocsSiteIndexed" xml:space="preserve"><value>{0} 页 · 已索引</value></data>
-  <data name="DocsSiteHoles" xml:space="preserve"><value>{0} 页 · {1} 个无法按语义搜索</value></data>
+  <data name="DocsSiteHoles" xml:space="preserve"><value>{0} 页 · {1} 个段落无法按语义搜索</value></data>
   <data name="DocsSiteHolesNote" xml:space="preserve"><value>在嵌入模型无响应期间读取了 {0} 个段落：重新索引之前只能按关键词找到。</value></data>
   <data name="DocsSiteIndexing" xml:space="preserve"><value>正在索引…</value></data>
   <data name="DocsReindex" xml:space="preserve"><value>重新索引</value></data>
@@ -1178,15 +1182,10 @@
   <data name="ProjectFileNotes" xml:space="preserve"><value>你的笔记</value></data>
   <data name="ProjectFileRules" xml:space="preserve"><value>按文件的规则：{0}</value></data>
   <data name="ProjectFileNotYet" xml:space="preserve"><value>尚未创建</value></data>
-  <data name="RunSteps1" xml:space="preserve"><value>1 个步骤</value></data>
   <data name="RunSteps" xml:space="preserve"><value>{0} 个步骤</value></data>
-  <data name="RunRead1" xml:space="preserve"><value>读取了 1 个文件</value></data>
   <data name="RunRead" xml:space="preserve"><value>读取了 {0} 个文件</value></data>
-  <data name="RunSearched1" xml:space="preserve"><value>搜索 1 次</value></data>
   <data name="RunSearched" xml:space="preserve"><value>搜索 {0} 次</value></data>
-  <data name="RunEdited1" xml:space="preserve"><value>修改了 1 个</value></data>
   <data name="RunEdited" xml:space="preserve"><value>修改了 {0} 个</value></data>
-  <data name="RunCommand1" xml:space="preserve"><value>运行了 1 条命令</value></data>
   <data name="RunCommands" xml:space="preserve"><value>运行了 {0} 条命令</value></data>
   <data name="RunBuildPassed" xml:space="preserve"><value>构建成功</value></data>
   <data name="RunBuildFailed" xml:space="preserve"><value>构建失败</value></data>

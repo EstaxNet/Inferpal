@@ -1123,7 +1123,7 @@ internal sealed partial class HostServer : IDisposable
             SessionData? slot = null;
             if (!s.SessionNameKnown)
             {
-                try { slot = await s.Store.LoadAsync("last_session", ct); }
+                try { slot = await s.Store.LoadAutoSaveAsync(s.RootDir, ct); }
                 catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("HostServer.SessionSave.Slot", ex); }
             }
             currentName = SessionManager.AutoSaveName(s.SessionNameKnown, s.CurrentSessionName, slot, s.RootDir);
@@ -1172,11 +1172,11 @@ internal sealed partial class HostServer : IDisposable
         WithTurnSlotAsync<SessionLoadResult?>("session/load", ct, async token =>
         {
             var s    = Session();
-            var data = await s.Store.LoadAsync(p.Name, token);
+            // The auto-save slot is the workspace's: another workspace's conversation is not this one's to restore.
+            var data = p.Name == ConversationStore.AutoSaveSlot
+                ? await s.Store.LoadAutoSaveAsync(s.RootDir, token)
+                : await s.Store.LoadAsync(p.Name, token);
             if (data is null) return null;
-            // The auto-save slot is one file for every project: another workspace's conversation
-            // is not this one's to restore.
-            if (p.Name == "last_session" && !SessionManager.AutoSaveBelongsHere(data, s.RootDir)) return null;
 
             s.TemplateSuffix     = data.TemplateSuffix;   // the mode the conversation was held in, its greeting with it
             ForgetConversationState(s);

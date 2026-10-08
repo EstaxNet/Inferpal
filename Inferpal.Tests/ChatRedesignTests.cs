@@ -105,6 +105,7 @@ public sealed class ChatRedesignTests : IDisposable
         File.WriteAllText(file, "<h1>Counter</h1>\n<button>Click me</button>\n<button>Reset</button>\n@code { }\n");
         var run = new HistoryRun("r1");
         run.RecordFirst(file, snapshot);
+        run.NoteOpened(file);                                    // what read_file records when it reads
 
         var summary = RunSummary.Build(
         [
@@ -115,7 +116,7 @@ public sealed class ChatRedesignTests : IDisposable
 
         Assert.Equal(3, summary.Steps);
         Assert.Equal(Strings.RunSteps(3), summary.Title);
-        Assert.Equal(string.Join(" · ", Strings.RunRead1, Strings.RunEdited1, Strings.RunBuildPassed), summary.Detail);
+        Assert.Equal(string.Join(" · ", Strings.RunRead(1), Strings.RunEdited(1), Strings.RunBuildPassed), summary.Detail);
         Assert.Equal(RunCheck.BuildPassed, summary.Check);
         var changed = Assert.Single(summary.Files);
         Assert.Equal(("Counter.razor", 2, 0, false, false), (changed.Name, changed.Added, changed.Removed, changed.Created, changed.Gone));
@@ -130,7 +131,7 @@ public sealed class ChatRedesignTests : IDisposable
         Assert.Empty(summary.Files);
         Assert.Equal(RunCheck.None, summary.Check);
         Assert.Equal("", summary.RunId);
-        Assert.Equal(Strings.RunSteps1, summary.Title);
+        Assert.Equal(Strings.RunSteps(1), summary.Title);
     }
 
     [Fact]

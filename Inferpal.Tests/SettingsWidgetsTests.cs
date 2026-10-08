@@ -57,7 +57,7 @@ public class SettingsWidgetsTests
                      oversize: 3, oversizeFiles: ["big/a.json", "big/b.json"]),
             ragEnabled: true, configuredModel: null, Now);
 
-        Assert.Contains(Strings.IndexCardHoles("4", "40"), card.Notes);
+        Assert.Contains(Strings.IndexCardHoles(4, 40), card.Notes);
         Assert.Equal(Strings.IndexCardOversize(3, CodeChunker.MaxFileSizeKilobytes), card.OversizeNote);
         // Two names kept, three dropped: the third is counted, never silently missing from the list.
         Assert.Equal(["big/a.json", "big/b.json", Strings.IndexCardMoreFiles(1)], card.OversizeFiles);
@@ -70,7 +70,7 @@ public class SettingsWidgetsTests
         var card = SettingsWidgets.IndexCard(Snapshot(indexing: true, done: 12, total: 300), true, "nomic", Now);
 
         Assert.Equal("indexing", card.State);
-        Assert.Equal(Strings.IndexCardProgress("12", "300"), card.Detail);
+        Assert.Equal(Strings.IndexCardProgress(12, 300), card.Detail);
         Assert.False(card.CanRebuild);
         // Before a first pass has recorded one, the model is the one the settings name — not "no model installed".
         Assert.Equal(Strings.IndexCardModelSemantic("nomic"), card.ModelLine);

@@ -43,7 +43,8 @@ public class SmartFixInterpretTests
 
         var note = SmartFixValidator.Interpret(exitCode, output, dotnetFilter: true);
 
-        Assert.Equal(Strings.SmartFixBuildErrors(2, "Build FAILED.\nMSBuild node crashed"), note);
+        // Failed, and never counted: these lines are not compiler errors.
+        Assert.Equal(Strings.SmartFixBuildFailed("Build FAILED.\nMSBuild node crashed"), note);
     }
 
     [Fact]
@@ -62,7 +63,7 @@ public class SmartFixInterpretTests
     {
         Assert.Equal(Strings.SmartFixBuildOk, SmartFixValidator.Interpret(0, "", dotnetFilter: false));
         Assert.Equal(
-            Strings.SmartFixBuildErrors(1, "src/main.rs:3:5: expected `;`"),
+            Strings.SmartFixBuildFailed("src/main.rs:3:5: expected `;`"),
             SmartFixValidator.Interpret(101, "src/main.rs:3:5: expected `;`", dotnetFilter: false));
     }
 }

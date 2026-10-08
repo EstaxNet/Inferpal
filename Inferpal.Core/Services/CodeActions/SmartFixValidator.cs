@@ -208,11 +208,13 @@ internal sealed class SmartFixValidator
         const int CountSentinel = 918273645;
         var errorsLine = "^" + Regex.Escape(Strings.SmartFixBuildErrors(CountSentinel, string.Empty).Split('\n')[0].TrimEnd('\r'))
                                     .Replace(CountSentinel.ToString(), @"\d+") + "$";
-        var okLine = Strings.SmartFixBuildOk.Trim();
+        var okLine     = Strings.SmartFixBuildOk.Trim();
+        var failedLine = Strings.SmartFixBuildFailed(string.Empty).Split('\n')[0].TrimEnd('\r').Trim();
         bool? verdict = null;
         foreach (var raw in toolOutput.Split('\n'))
         {
             var line = raw.TrimEnd('\r').Trim();
+            if (line == failedLine) return true;                                                          // failed, uncounted: red
             try
             {
                 if (Regex.IsMatch(line, errorsLine, RegexOptions.None, RegexBudget.Default)) return true;   // one project red: red
@@ -253,9 +255,12 @@ internal sealed class SmartFixValidator
         var lines = ExtractErrorLines(output);
         // ⚠ "0 compilation error(s)" is not a sentence:
         // the build failed and named nothing, which is a different thing to go and look at.
+        // ⚠ And the lines are not the errors: one Rust error prints three lines that say "error", a Go build its package
+        // header, a .NET build that died "Build FAILED." and why — counted, one error read "3 compilation error(s)".
+        // Only the .NET compiler's error lines above are a count; here the build is said failed, with its output.
         return lines.Count == 0
             ? Strings.SmartFixBuildFailedNoErrors
-            : Strings.SmartFixBuildErrors(lines.Count, Listed(lines));
+            : Strings.SmartFixBuildFailed(Listed(lines));
     }
 
     /// <summary>Error lines rendered into the note. The COUNT that goes with them is the count of

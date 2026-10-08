@@ -1867,7 +1867,7 @@ public class ConventionCoverageTests
         source.Substring(index, Math.Min(60, source.Length - index)).ReplaceLineEndings(" ");
 
     /// <summary>Repo root = first ancestor of the test bin folder containing README.md.</summary>
-    private static string RepoRoot()
+    internal static string RepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "README.md")))

@@ -26,10 +26,9 @@ internal sealed class BackgroundTaskQueue : IDisposable
     /// <summary>Hard cap on unfinished tasks. Submitting beyond it is refused, not silently dropped.</summary>
     internal const int MaxPending = 10;
 
-    /// <summary>Cap on a task's step journal; past it the oldest entries go, with a marker.</summary>
+    /// <summary>Cap on a task's step journal; past it the oldest entries go, and the report counts them
+    /// (<see cref="BackgroundTaskSnapshot.StepsTaken"/>).</summary>
     internal const int MaxSteps = 200;
-
-    private const string TrimMarker = "[… earlier steps dropped …]";
 
     /// <summary>What a completed run hands back: its report, and the changes it proposed.</summary>
     /// <param name="Report">Final markdown answer.</param>
@@ -88,6 +87,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
         public string? Result;
         public string? Error;
         public readonly List<string> Steps = [];
+        public int StepsTaken;
         public CancellationTokenSource? Cts;
     }
 
@@ -326,12 +326,12 @@ internal sealed class BackgroundTaskQueue : IDisposable
         if (string.IsNullOrWhiteSpace(step)) return;
         lock (_lock)
         {
+            job.StepsTaken++;
             job.Steps.Add(step);
             if (job.Steps.Count <= MaxSteps) return;
 
             // Keep the tail: on a long run the recent steps explain where it got to.
             job.Steps.RemoveRange(0, job.Steps.Count - MaxSteps);
-            job.Steps[0] = TrimMarker;
         }
     }
 
@@ -377,7 +377,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
         return new BackgroundTaskSnapshot(
             job.Id, job.Objective, job.State, job.CreatedAt, job.StartedAt, job.FinishedAt,
             job.Result, job.Error, job.Steps.ToArray(), position,
-            job.ProposeWrites, job.Proposals);
+            job.ProposeWrites, job.Proposals, job.StepsTaken);
     }
 
     private void RaiseFinished(BackgroundTaskSnapshot snapshot)

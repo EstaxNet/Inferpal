@@ -461,6 +461,8 @@
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: время проверки сборки истекло (60 с) — проверьте вручную.</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: проверка сборки завершилась неудачей, не назвав ни одной ошибки — запустите её сами, чтобы понять причину.</value></data>
+  <data name="SmartFixBuildFailed" xml:space="preserve"><value>🔨 Smart Fix: сборка не удалась после этого изменения — если изменение продолжается в других файлах, завершите его; иначе исправьте то, о чём она сообщает:
+{0}</value></data>
   <data name="SmartFixCouldNotRun" xml:space="preserve"><value>⚠ Smart Fix: не удалось запустить проверку сборки ({0}) — это изменение не проверено.</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>Проверять сборку после каждой правки</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>.NET, TypeScript, Rust и Go сразу. Ошибки сразу возвращаются агенту.</value></data>
@@ -518,7 +520,7 @@
   <!-- analyze_impact tool -->
   <data name="ImpactHeader"         xml:space="preserve"><value>Анализ влияния — {0}</value></data>
   <data name="ImpactNoPublicApi"    xml:space="preserve"><value>Публичные типы или экспортируемые символы в {0} не найдены.</value></data>
-  <data name="ImpactFooter"         xml:space="preserve"><value>📊 Радиус поражения: {0} прямых · {1} транзитивных · {2} тест(ов) · {3} точек входа</value></data>
+  <data name="ImpactFooter"         xml:space="preserve"><value>📊 Радиус поражения: прямых — {0} · транзитивных — {1} · тестов — {2} · точек входа — {3}</value></data>
 
   <!-- trace_dependency tool -->
   <data name="TraceDepsHeader"          xml:space="preserve"><value>Граф вызовов — {0}</value></data>
@@ -925,6 +927,8 @@
   <data name="TaskStateCancelled" xml:space="preserve"><value>отменена</value></data>
   <data name="TaskStillRunning" xml:space="preserve"><value>_Ещё выполняется — отчёт появится здесь после завершения._</value></data>
   <data name="TaskStepsTitle" xml:space="preserve"><value>Шаги</value></data>
+  <data name="TaskStepsTitleCut" xml:space="preserve"><value>Шаги ({0} — сохранены последние {1})</value></data>
+  <data name="TaskStepsNotKept" xml:space="preserve"><value>… не сохранено ранних шагов: {0}</value></data>
   <data name="TaskDuration" xml:space="preserve"><value>_Длительность: {0}._</value></data>
   <data name="TaskFailedNotice" xml:space="preserve"><value>Фоновая задача `{0}` завершилась ошибкой — {1}. `/task {0}` — подробности.</value></data>
   <data name="TaskCancelledNotice" xml:space="preserve"><value>Фоновая задача `{0}` отменена — результата нет.</value></data>
@@ -1130,8 +1134,8 @@
   <data name="IndexCardFailed" xml:space="preserve"><value>Индексация не удалась</value></data>
   <data name="IndexCardNoWorkspace" xml:space="preserve"><value>Рабочая область не открыта</value></data>
   <data name="IndexCardNoWorkspaceDetail" xml:space="preserve"><value>Откройте решение или папку: индекс строится для них.</value></data>
-  <data name="IndexCardFilesUpdated" xml:space="preserve"><value>Файлов: {0} · обновлено в {1}</value></data>
-  <data name="IndexCardProgress" xml:space="preserve"><value>Прочитано {0} из {1} файлов</value></data>
+  <data name="IndexCardFilesUpdated" xml:space="preserve"><value>Файлов: {0:N0} · обновлено в {1}</value></data>
+  <data name="IndexCardProgress" xml:space="preserve"><value>Прочитано {0:N0} из {1:N0} {1:файла|файлов|файлов}</value></data>
   <data name="IndexCardNotBuiltDetail" xml:space="preserve"><value>Фоновая индексация выключена: агент ищет по ключевым словам.</value></data>
   <data name="IndexCardStoppedDetail" xml:space="preserve"><value>Последний проход не завершился: индекс неполный.</value></data>
   <data name="IndexCardFailedDetail" xml:space="preserve"><value>{0}. Подробности в /diagnostics.</value></data>
@@ -1141,7 +1145,7 @@
   <data name="IndexCardShowThem" xml:space="preserve"><value>Показать</value></data>
   <data name="IndexCardHideThem" xml:space="preserve"><value>Скрыть</value></data>
   <data name="IndexCardMoreFiles" xml:space="preserve"><value>…и ещё {0}.</value></data>
-  <data name="IndexCardHoles" xml:space="preserve"><value>Без вектора {0} из {1} фрагментов находятся только по ключевым словам. «Перестроить» их дополнит.</value></data>
+  <data name="IndexCardHoles" xml:space="preserve"><value>Находятся только по ключевым словам, без вектора: {0:N0} из {1:N0} {1:фрагмента|фрагментов|фрагментов}. «Перестроить» добавит недостающие векторы.</value></data>
   <data name="IndexCardModelSemantic" xml:space="preserve"><value>Поиск по смыслу с {0}, плюс точные имена и ключевые слова.</value></data>
   <data name="IndexCardModelKeywords" xml:space="preserve"><value>Только поиск по ключевым словам: модель эмбеддингов не выбрана и не установлена.</value></data>
   <data name="IndexCardModelOff" xml:space="preserve"><value>Только поиск по ключевым словам: поиск по смыслу выключен.</value></data>
@@ -1152,8 +1156,8 @@
   <data name="SettingsEditFile" xml:space="preserve"><value>Изменить</value></data>
   <data name="SettingsOpenFile" xml:space="preserve"><value>Открыть</value></data>
   <data name="DocsSiteIndexed" xml:space="preserve"><value>Страниц: {0} · проиндексировано</value></data>
-  <data name="DocsSiteHoles" xml:space="preserve"><value>Страниц: {0} · без поиска по смыслу: {1}</value></data>
-  <data name="DocsSiteHolesNote" xml:space="preserve"><value>{0} фрагментов прочитано, пока модель эмбеддингов не отвечала: до переиндексации они находятся только по ключевым словам.</value></data>
+  <data name="DocsSiteHoles" xml:space="preserve"><value>Страниц: {0} · фрагментов без поиска по смыслу: {1}</value></data>
+  <data name="DocsSiteHolesNote" xml:space="preserve"><value>Прочитано, пока модель эмбеддингов не отвечала, фрагментов: {0}. До переиндексации они находятся только по ключевым словам.</value></data>
   <data name="DocsSiteIndexing" xml:space="preserve"><value>Индексация…</value></data>
   <data name="DocsReindex" xml:space="preserve"><value>Переиндексировать</value></data>
   <data name="DocsAddSite" xml:space="preserve"><value>Добавить сайт</value></data>
@@ -1178,16 +1182,11 @@
   <data name="ProjectFileNotes" xml:space="preserve"><value>ваши заметки</value></data>
   <data name="ProjectFileRules" xml:space="preserve"><value>правила по файлам: {0}</value></data>
   <data name="ProjectFileNotYet" xml:space="preserve"><value>ещё не создан</value></data>
-  <data name="RunSteps1" xml:space="preserve"><value>1 шаг</value></data>
-  <data name="RunSteps" xml:space="preserve"><value>Шагов: {0}</value></data>
-  <data name="RunRead1" xml:space="preserve"><value>прочитан 1 файл</value></data>
-  <data name="RunRead" xml:space="preserve"><value>прочитано файлов: {0}</value></data>
-  <data name="RunSearched1" xml:space="preserve"><value>1 поиск</value></data>
-  <data name="RunSearched" xml:space="preserve"><value>поисков: {0}</value></data>
-  <data name="RunEdited1" xml:space="preserve"><value>изменён 1</value></data>
-  <data name="RunEdited" xml:space="preserve"><value>изменено: {0}</value></data>
-  <data name="RunCommand1" xml:space="preserve"><value>выполнена 1 команда</value></data>
-  <data name="RunCommands" xml:space="preserve"><value>выполнено команд: {0}</value></data>
+  <data name="RunSteps" xml:space="preserve"><value>{0} {0:шаг|шага|шагов}</value></data>
+  <data name="RunRead" xml:space="preserve"><value>{0:прочитан|прочитано|прочитано} {0} {0:файл|файла|файлов}</value></data>
+  <data name="RunSearched" xml:space="preserve"><value>{0} {0:поиск|поиска|поисков}</value></data>
+  <data name="RunEdited" xml:space="preserve"><value>{0:изменён|изменено|изменено} {0}</value></data>
+  <data name="RunCommands" xml:space="preserve"><value>{0:выполнена|выполнено|выполнено} {0} {0:команда|команды|команд}</value></data>
   <data name="RunBuildPassed" xml:space="preserve"><value>сборка прошла</value></data>
   <data name="RunBuildFailed" xml:space="preserve"><value>сборка не прошла</value></data>
   <data name="RunTestsPassed" xml:space="preserve"><value>тесты пройдены</value></data>

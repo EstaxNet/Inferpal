@@ -255,7 +255,7 @@ internal sealed partial class HostServer
 
                 case SlashCommandId.Permissions:
                     return new SlashCommandResult(true,
-                        PermissionsCommandHandler.Permissions(s.RootDir, s.Config.PermissionRules));
+                        PermissionsCommandHandler.Permissions(s.RootDir, s.Config.SharedPermissionRules));
 
                 case SlashCommandId.Prompts:
                 {

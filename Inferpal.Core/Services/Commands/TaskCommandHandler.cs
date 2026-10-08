@@ -161,7 +161,12 @@ internal static class TaskCommandHandler
         if (task.Steps.Count > 0)
         {
             sb.AppendLine().AppendLine("<details>");
-            sb.AppendLine($"<summary>{Strings.TaskStepsTitle} ({task.Steps.Count})</summary>").AppendLine();
+            // The title counts the steps TAKEN; the journal keeps the last ones, and says how many went.
+            var title = task.StepsNotKept > 0
+                ? Strings.TaskStepsTitleCut(task.StepsTaken, task.Steps.Count)
+                : $"{Strings.TaskStepsTitle} ({task.Steps.Count})";
+            sb.AppendLine($"<summary>{title}</summary>").AppendLine();
+            if (task.StepsNotKept > 0) sb.AppendLine($"- {Strings.TaskStepsNotKept(task.StepsNotKept)}");
             foreach (var step in task.Steps) sb.AppendLine($"- {Escape(step)}");
             sb.AppendLine().AppendLine("</details>");
         }

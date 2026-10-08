@@ -31,6 +31,10 @@ internal static class Strings
         catch { return key; }
     }
 
+    /// <summary>Fills a resource through <see cref="CountedForms"/>, so that a counted noun agrees with its number
+    /// (<c>{0:file|files}</c>) in the interface language. Every accessor that takes arguments formats here.</summary>
+    private static string Format(string template, params object?[] args) => string.Format(CountedForms.Instance, template, args);
+
     /// <summary>
     /// A resource by its name, for the names a declarative description carries as data (the settings
     /// schema's labels, hints and titles). Everything else reads its typed accessor.
@@ -41,7 +45,7 @@ internal static class Strings
     public static string LabelLanguage        => Get(nameof(LabelLanguage));
     public static string HintLanguage         => Get(nameof(HintLanguage));
     /// <summary>The automatic language entry, naming the language it resolves to — {0}=that language's own name.</summary>
-    public static string LangAuto(string language) => string.Format(Get(nameof(LangAuto)), language);
+    public static string LangAuto(string language) => Format(Get(nameof(LangAuto)), language);
     public static string LabelProvider        => Get(nameof(LabelProvider));
     public static string HintProvider         => Get(nameof(HintProvider));
     public static string LabelApiKey          => Get(nameof(LabelApiKey));
@@ -70,35 +74,35 @@ internal static class Strings
     public static string SettingsSearchPlaceholder => Get(nameof(SettingsSearchPlaceholder));
     public static string SettingsSearchNoMatch => Get(nameof(SettingsSearchNoMatch));
     /// <summary>How many fields differ from the saved configuration — {0}=count.</summary>
-    public static string SettingsUnsavedChanges(int count) => string.Format(Get(nameof(SettingsUnsavedChanges)), count);
+    public static string SettingsUnsavedChanges(int count) => Format(Get(nameof(SettingsUnsavedChanges)), count);
     /// <summary>The raw template of <see cref="SettingsUnsavedChanges"/>, filled by the VS Code panel.</summary>
     public static string SettingsUnsavedChangesTemplate => Get(nameof(SettingsUnsavedChanges));
     public static string SettingsNoUnsavedChanges => Get(nameof(SettingsNoUnsavedChanges));
     public static string SettingsCancel => Get(nameof(SettingsCancel));
     public static string SettingsShowAdvanced => Get(nameof(SettingsShowAdvanced));
     /// <summary>The approval rules in effect, counted — {0}=count.</summary>
-    public static string SettingsApprovalRulesCount(int count) => string.Format(Get(nameof(SettingsApprovalRulesCount)), count);
+    public static string SettingsApprovalRulesCount(int count) => Format(Get(nameof(SettingsApprovalRulesCount)), count);
     /// <summary>The raw template of <see cref="SettingsApprovalRulesCount"/>, filled by the VS Code panel.</summary>
     public static string SettingsApprovalRulesCountTemplate => Get(nameof(SettingsApprovalRulesCount));
     /// <summary>Where the rules in effect come from — {0}=this machine's, {1}=the team's.</summary>
     public static string SettingsApprovalRulesFrom(int machine, int team) =>
-        string.Format(Get(nameof(SettingsApprovalRulesFrom)), machine, team);
+        Format(Get(nameof(SettingsApprovalRulesFrom)), machine, team);
     public static string SettingsEditRules => Get(nameof(SettingsEditRules));
     public static string SettingsEditAsJson => Get(nameof(SettingsEditAsJson));
     public static string SettingsEditAsText => Get(nameof(SettingsEditAsText));
     public static string SettingsEditAsList => Get(nameof(SettingsEditAsList));
 
     // ── Settings: MCP server cards ───────────────────────────────────────────
-    public static string McpCardConnected(int tools) => string.Format(Get(nameof(McpCardConnected)), tools);
+    public static string McpCardConnected(int tools) => Format(Get(nameof(McpCardConnected)), tools);
     public static string McpCardSignIn => Get(nameof(McpCardSignIn));
     public static string McpCardDidNotStart => Get(nameof(McpCardDidNotStart));
     public static string McpCardNotStarted => Get(nameof(McpCardNotStarted));
     public static string McpCardOff => Get(nameof(McpCardOff));
     public static string McpCardRetry => Get(nameof(McpCardRetry));
     public static string McpCardSignInButton => Get(nameof(McpCardSignInButton));
-    public static string McpCardsSummary(int count) => string.Format(Get(nameof(McpCardsSummary)), count);
+    public static string McpCardsSummary(int count) => Format(Get(nameof(McpCardsSummary)), count);
     public static string McpCardsSummaryAttention(int count, int attention) =>
-        string.Format(Get(nameof(McpCardsSummaryAttention)), count, attention);
+        Format(Get(nameof(McpCardsSummaryAttention)), count, attention);
 
     // ── Settings: approval rules table ───────────────────────────────────────
     public static string RuleAllow => Get(nameof(RuleAllow));
@@ -120,32 +124,27 @@ internal static class Strings
     public static string PinnedOverCap => Get(nameof(PinnedOverCap));
 
     // ── Chat panel: run summary, approval card, header, composer, welcome ────────
-    public static string RunSteps1 => Get(nameof(RunSteps1));
-    public static string RunSteps(int count) => string.Format(Get(nameof(RunSteps)), count);
-    public static string RunRead1 => Get(nameof(RunRead1));
-    public static string RunRead(int count) => string.Format(Get(nameof(RunRead)), count);
-    public static string RunSearched1 => Get(nameof(RunSearched1));
-    public static string RunSearched(int count) => string.Format(Get(nameof(RunSearched)), count);
-    public static string RunEdited1 => Get(nameof(RunEdited1));
-    public static string RunEdited(int count) => string.Format(Get(nameof(RunEdited)), count);
-    public static string RunCommand1 => Get(nameof(RunCommand1));
-    public static string RunCommands(int count) => string.Format(Get(nameof(RunCommands)), count);
+    public static string RunSteps(int count) => Format(Get(nameof(RunSteps)), count);
+    public static string RunRead(int count) => Format(Get(nameof(RunRead)), count);
+    public static string RunSearched(int count) => Format(Get(nameof(RunSearched)), count);
+    public static string RunEdited(int count) => Format(Get(nameof(RunEdited)), count);
+    public static string RunCommands(int count) => Format(Get(nameof(RunCommands)), count);
     public static string RunBuildPassed => Get(nameof(RunBuildPassed));
     public static string RunBuildFailed => Get(nameof(RunBuildFailed));
     public static string RunTestsPassed => Get(nameof(RunTestsPassed));
     public static string RunTestsFailed => Get(nameof(RunTestsFailed));
-    public static string TurnSeconds(int seconds) => string.Format(Get(nameof(TurnSeconds)), seconds);
-    public static string TurnMinutes(int minutes, string seconds) => string.Format(Get(nameof(TurnMinutes)), minutes, seconds);
+    public static string TurnSeconds(int seconds) => Format(Get(nameof(TurnSeconds)), seconds);
+    public static string TurnMinutes(int minutes, string seconds) => Format(Get(nameof(TurnMinutes)), minutes, seconds);
     public static string ApprovalCreateFile => Get(nameof(ApprovalCreateFile));
     public static string ApprovalChangeFile => Get(nameof(ApprovalChangeFile));
     public static string ApprovalDeleteFile => Get(nameof(ApprovalDeleteFile));
     public static string ApprovalRunCommand => Get(nameof(ApprovalRunCommand));
     public static string ApprovalReadPage => Get(nameof(ApprovalReadPage));
     public static string ApprovalSearchWeb => Get(nameof(ApprovalSearchWeb));
-    public static string ApprovalUseTool(string tool) => string.Format(Get(nameof(ApprovalUseTool)), tool);
-    public static string ApprovalLineCount(int count) => string.Format(Get(nameof(ApprovalLineCount)), count);
-    public static string ApprovalMoreLines(int count) => string.Format(Get(nameof(ApprovalMoreLines)), count);
-    public static string ApprovalAlwaysTooltip(string tool) => string.Format(Get(nameof(ApprovalAlwaysTooltip)), tool);
+    public static string ApprovalUseTool(string tool) => Format(Get(nameof(ApprovalUseTool)), tool);
+    public static string ApprovalLineCount(int count) => Format(Get(nameof(ApprovalLineCount)), count);
+    public static string ApprovalMoreLines(int count) => Format(Get(nameof(ApprovalMoreLines)), count);
+    public static string ApprovalAlwaysTooltip(string tool) => Format(Get(nameof(ApprovalAlwaysTooltip)), tool);
     public static string ApprovalOpenDiff => Get(nameof(ApprovalOpenDiff));
     public static string ChatNewConversation => Get(nameof(ChatNewConversation));
     public static string ChatConversations => Get(nameof(ChatConversations));
@@ -156,7 +155,7 @@ internal static class Strings
     public static string ChatMenuSettings => Get(nameof(ChatMenuSettings));
     public static string ChatMenuStepMode => Get(nameof(ChatMenuStepMode));
     public static string ChatNoModelListed => Get(nameof(ChatNoModelListed));
-    public static string ChatModelButton(string model) => string.Format(Get(nameof(ChatModelButton)), model);
+    public static string ChatModelButton(string model) => Format(Get(nameof(ChatModelButton)), model);
     public static string ModeChat => Get(nameof(ModeChat));
     public static string ModeAgent => Get(nameof(ModeAgent));
     public static string ModePlan => Get(nameof(ModePlan));
@@ -165,22 +164,22 @@ internal static class Strings
     public static string ModePlanTip => Get(nameof(ModePlanTip));
     public static string ComposerPlaceholder => Get(nameof(ComposerPlaceholder));
     public static string ChatAttach => Get(nameof(ChatAttach));
-    public static string ContextRingTip(int percent, string window) => string.Format(Get(nameof(ContextRingTip)), percent, window);
-    public static string TurnWorking(int step) => string.Format(Get(nameof(TurnWorking)), step);
+    public static string ContextRingTip(int percent, string window) => Format(Get(nameof(ContextRingTip)), percent, window);
+    public static string TurnWorking(int step) => Format(Get(nameof(TurnWorking)), step);
     public static string TurnWaiting => Get(nameof(TurnWaiting));
     public static string RunUndo => Get(nameof(RunUndo));
     public static string WelcomeTitle => Get(nameof(WelcomeTitle));
-    public static string WelcomeLine(string model, string server) => string.Format(Get(nameof(WelcomeLine)), model, server);
+    public static string WelcomeLine(string model, string server) => Format(Get(nameof(WelcomeLine)), model, server);
     public static string WelcomeLocal => Get(nameof(WelcomeLocal));
-    public static string WelcomeForFile(string file) => string.Format(Get(nameof(WelcomeForFile)), file);
+    public static string WelcomeForFile(string file) => Format(Get(nameof(WelcomeForFile)), file);
     public static string WelcomeExplainFile => Get(nameof(WelcomeExplainFile));
     public static string WelcomeExplainFileDesc => Get(nameof(WelcomeExplainFileDesc));
     public static string WelcomeTestsFile => Get(nameof(WelcomeTestsFile));
     public static string WelcomeTestsFileDesc => Get(nameof(WelcomeTestsFileDesc));
     public static string WelcomeUsagesFile => Get(nameof(WelcomeUsagesFile));
     public static string WelcomeUsagesFileDesc => Get(nameof(WelcomeUsagesFileDesc));
-    public static string WelcomeUsagesPrompt(string file) => string.Format(Get(nameof(WelcomeUsagesPrompt)), file);
-    public static string WelcomeBuildFailed(int errors) => string.Format(Get(nameof(WelcomeBuildFailed)), errors);
+    public static string WelcomeUsagesPrompt(string file) => Format(Get(nameof(WelcomeUsagesPrompt)), file);
+    public static string WelcomeBuildFailed(int errors) => Format(Get(nameof(WelcomeBuildFailed)), errors);
     public static string WelcomeBuildFailedUncounted => Get(nameof(WelcomeBuildFailedUncounted));
     public static string WelcomeFixThem => Get(nameof(WelcomeFixThem));
     public static string WelcomeHintAttach => Get(nameof(WelcomeHintAttach));
@@ -191,7 +190,7 @@ internal static class Strings
     public static string SettingsSameAsChat => Get(nameof(SettingsSameAsChat));
     public static string SettingsSameAsCodeActions => Get(nameof(SettingsSameAsCodeActions));
     public static string SettingsAutomaticBest => Get(nameof(SettingsAutomaticBest));
-    public static string SettingsModelUsed(string model) => string.Format(Get(nameof(SettingsModelUsed)), model);
+    public static string SettingsModelUsed(string model) => Format(Get(nameof(SettingsModelUsed)), model);
     public static string SettingsChangeInServer => Get(nameof(SettingsChangeInServer));
     public static string SlashColCommand => Get(nameof(SlashColCommand));
     public static string SlashColSends => Get(nameof(SlashColSends));
@@ -213,19 +212,19 @@ internal static class Strings
     public static string IndexCardFailed => Get(nameof(IndexCardFailed));
     public static string IndexCardNoWorkspace => Get(nameof(IndexCardNoWorkspace));
     public static string IndexCardNoWorkspaceDetail => Get(nameof(IndexCardNoWorkspaceDetail));
-    public static string IndexCardFilesUpdated(string files, string at) => string.Format(Get(nameof(IndexCardFilesUpdated)), files, at);
-    public static string IndexCardProgress(string done, string total) => string.Format(Get(nameof(IndexCardProgress)), done, total);
+    public static string IndexCardFilesUpdated(int files, string at) => Format(Get(nameof(IndexCardFilesUpdated)), files, at);
+    public static string IndexCardProgress(int done, int total) => Format(Get(nameof(IndexCardProgress)), done, total);
     public static string IndexCardNotBuiltDetail => Get(nameof(IndexCardNotBuiltDetail));
     public static string IndexCardStoppedDetail => Get(nameof(IndexCardStoppedDetail));
-    public static string IndexCardFailedDetail(string cause) => string.Format(Get(nameof(IndexCardFailedDetail)), cause);
+    public static string IndexCardFailedDetail(string cause) => Format(Get(nameof(IndexCardFailedDetail)), cause);
     public static string IndexCardRebuild => Get(nameof(IndexCardRebuild));
     public static string IndexCardBuild => Get(nameof(IndexCardBuild));
-    public static string IndexCardOversize(int count, int kilobytes) => string.Format(Get(nameof(IndexCardOversize)), count, kilobytes);
+    public static string IndexCardOversize(int count, int kilobytes) => Format(Get(nameof(IndexCardOversize)), count, kilobytes);
     public static string IndexCardShowThem => Get(nameof(IndexCardShowThem));
     public static string IndexCardHideThem => Get(nameof(IndexCardHideThem));
-    public static string IndexCardMoreFiles(int count) => string.Format(Get(nameof(IndexCardMoreFiles)), count);
-    public static string IndexCardHoles(string holes, string total) => string.Format(Get(nameof(IndexCardHoles)), holes, total);
-    public static string IndexCardModelSemantic(string model) => string.Format(Get(nameof(IndexCardModelSemantic)), model);
+    public static string IndexCardMoreFiles(int count) => Format(Get(nameof(IndexCardMoreFiles)), count);
+    public static string IndexCardHoles(int holes, int total) => Format(Get(nameof(IndexCardHoles)), holes, total);
+    public static string IndexCardModelSemantic(string model) => Format(Get(nameof(IndexCardModelSemantic)), model);
     public static string IndexCardModelKeywords => Get(nameof(IndexCardModelKeywords));
     public static string IndexCardModelOff => Get(nameof(IndexCardModelOff));
     public static string IndexCardEmbeddingDown => Get(nameof(IndexCardEmbeddingDown));
@@ -234,34 +233,34 @@ internal static class Strings
     public static string IndexExclusionsHowTo => Get(nameof(IndexExclusionsHowTo));
 
     // ── Settings: @Docs sites ────────────────────────────────────────────────
-    public static string DocsSiteIndexed(int pages) => string.Format(Get(nameof(DocsSiteIndexed)), pages);
-    public static string DocsSiteHoles(int pages, int holes) => string.Format(Get(nameof(DocsSiteHoles)), pages, holes);
-    public static string DocsSiteHolesNote(int holes) => string.Format(Get(nameof(DocsSiteHolesNote)), holes);
+    public static string DocsSiteIndexed(int pages) => Format(Get(nameof(DocsSiteIndexed)), pages);
+    public static string DocsSiteHoles(int pages, int holes) => Format(Get(nameof(DocsSiteHoles)), pages, holes);
+    public static string DocsSiteHolesNote(int holes) => Format(Get(nameof(DocsSiteHolesNote)), holes);
     public static string DocsSiteIndexing => Get(nameof(DocsSiteIndexing));
     public static string DocsReindex => Get(nameof(DocsReindex));
     public static string DocsAddSite => Get(nameof(DocsAddSite));
     public static string DocsAddUrlLabel => Get(nameof(DocsAddUrlLabel));
     public static string DocsAddButton => Get(nameof(DocsAddButton));
-    public static string DocsRemoveSite(string title) => string.Format(Get(nameof(DocsRemoveSite)), title);
+    public static string DocsRemoveSite(string title) => Format(Get(nameof(DocsRemoveSite)), title);
     public static string DocsNoSitesYet => Get(nameof(DocsNoSitesYet));
 
     // ── Settings: this conversation, pinned files, the project's files ───────
-    public static string ContextUsageTokens(string used, string window) => string.Format(Get(nameof(ContextUsageTokens)), used, window);
+    public static string ContextUsageTokens(string used, string window) => Format(Get(nameof(ContextUsageTokens)), used, window);
     public static string ContextUsageOpenXray => Get(nameof(ContextUsageOpenXray));
     public static string ContextUsageInstructions => Get(nameof(ContextUsageInstructions));
     public static string ContextUsageTools => Get(nameof(ContextUsageTools));
     public static string ContextUsageConversation => Get(nameof(ContextUsageConversation));
     public static string ContextUsageChangeWindow => Get(nameof(ContextUsageChangeWindow));
     public static string ContextUsageNoChat => Get(nameof(ContextUsageNoChat));
-    public static string PinnedFilesCount(int count, int cap) => string.Format(Get(nameof(PinnedFilesCount)), count, cap);
-    public static string PinnedFileTokens(string tokens) => string.Format(Get(nameof(PinnedFileTokens)), tokens);
-    public static string PinnedFileTokensSent(string sent, string whole) => string.Format(Get(nameof(PinnedFileTokensSent)), sent, whole);
+    public static string PinnedFilesCount(int count, int cap) => Format(Get(nameof(PinnedFilesCount)), count, cap);
+    public static string PinnedFileTokens(string tokens) => Format(Get(nameof(PinnedFileTokens)), tokens);
+    public static string PinnedFileTokensSent(string sent, string whole) => Format(Get(nameof(PinnedFileTokensSent)), sent, whole);
     public static string PinnedFileMissing => Get(nameof(PinnedFileMissing));
     public static string ProjectFilesTitle => Get(nameof(ProjectFilesTitle));
     public static string ProjectFileContext => Get(nameof(ProjectFileContext));
     public static string ProjectFileMemory => Get(nameof(ProjectFileMemory));
     public static string ProjectFileNotes => Get(nameof(ProjectFileNotes));
-    public static string ProjectFileRules(int count) => string.Format(Get(nameof(ProjectFileRules)), count);
+    public static string ProjectFileRules(int count) => Format(Get(nameof(ProjectFileRules)), count);
     public static string ProjectFileNotYet => Get(nameof(ProjectFileNotYet));
 
     public static string SettingsSectionModelPerTask => Get(nameof(SettingsSectionModelPerTask));
@@ -295,7 +294,7 @@ internal static class Strings
 
     /// <summary>What the save could not read, named — {0}=count, {1}=field labels.</summary>
     public static string SettingsFieldsIgnored(int count, string labels) =>
-        string.Format(Get(nameof(SettingsFieldsIgnored)), count, labels);
+        Format(Get(nameof(SettingsFieldsIgnored)), count, labels);
 
     /// <summary>
     /// The raw template of <see cref="SettingsFieldsIgnored"/>, for the front-end that substitutes
@@ -309,7 +308,7 @@ internal static class Strings
     // it is right there. Said AT SAVE TIME, because nobody opens /diagnostics after writing a rule
     // they believe they just put in place.
     public static string SettingsPermissionRulesIgnored(int count) =>
-        string.Format(Get(nameof(SettingsPermissionRulesIgnored)), count);
+        Format(Get(nameof(SettingsPermissionRulesIgnored)), count);
 
     /// <inheritdoc cref="SettingsFieldsIgnoredTemplate"/>
     public static string SettingsPermissionRulesIgnoredTemplate => Get(nameof(SettingsPermissionRulesIgnored));
@@ -323,7 +322,7 @@ internal static class Strings
     public static string BtnResume                => Get(nameof(BtnResume));
 
     public static string PromptFixErrors(string errors) =>
-        string.Format(Get(nameof(PromptFixErrors)), errors);
+        Format(Get(nameof(PromptFixErrors)), errors);
 
     // ── Editor context menu prompts ────────────────────────────────────────────
     // Legacy two-arg overloads kept for reference; all active call sites use the
@@ -333,20 +332,20 @@ internal static class Strings
     // {1} (code block) is intentionally omitted: the file is attached separately so
     // it appears as a chip in the chat and is formatted uniformly by SendCoreAsync.
     public static string PromptExplain(string fileName) =>
-        string.Format(Get("PromptExplainSelection"), fileName, string.Empty).TrimEnd();
+        Format(Get("PromptExplainSelection"), fileName, string.Empty).TrimEnd();
     public static string PromptReview(string fileName) =>
-        string.Format(Get("PromptReviewSelection"), fileName, string.Empty).TrimEnd();
+        Format(Get("PromptReviewSelection"), fileName, string.Empty).TrimEnd();
 
     // ── /test — tests generated into a separate file ───────────────────────────
     public static string TestsGenerated(string fileName) =>
-        string.Format(Get(nameof(TestsGenerated)), fileName);
+        Format(Get(nameof(TestsGenerated)), fileName);
     public static string TestsExtended(string fileName) =>
-        string.Format(Get(nameof(TestsExtended)), fileName);
+        Format(Get(nameof(TestsExtended)), fileName);
     public static string TestsGenerateFailed => Get(nameof(TestsGenerateFailed));
     public static string TestsFileUnreadable(string fileName) =>
-        string.Format(Get(nameof(TestsFileUnreadable)), fileName);
+        Format(Get(nameof(TestsFileUnreadable)), fileName);
     public static string TestsFileUnsaved(string fileName) =>
-        string.Format(Get(nameof(TestsFileUnsaved)), fileName);
+        Format(Get(nameof(TestsFileUnsaved)), fileName);
 
     // ── Code actions: "nothing to do" verdicts (the code is already good) ───────
     public static string RefactorNoChange => Get(nameof(RefactorNoChange));
@@ -371,7 +370,7 @@ internal static class Strings
     public static string ThemeLight                    => Get(nameof(ThemeLight));
     public static string ThemeDark                     => Get(nameof(ThemeDark));
     public static string ThemeHighContrast             => Get(nameof(ThemeHighContrast));
-    public static string ThemeInUse(string theme)      => string.Format(Get(nameof(ThemeInUse)), theme);
+    public static string ThemeInUse(string theme)      => Format(Get(nameof(ThemeInUse)), theme);
     public static string LabelContextWindowSize      => Get(nameof(LabelContextWindowSize));
     public static string HintContextWindowSize       => Get(nameof(HintContextWindowSize));
     public static string HintContextWindowSizeClientTrim => Get(nameof(HintContextWindowSizeClientTrim));
@@ -393,7 +392,7 @@ internal static class Strings
     public static string HintRowEdit                 => Get(nameof(HintRowEdit));
     public static string HintRowDelete               => Get(nameof(HintRowDelete));
     public static string BtnRowImport                => Get(nameof(BtnRowImport));
-    public static string RowEditTitle(string name)   => string.Format(Get(nameof(RowEditTitle)), name);
+    public static string RowEditTitle(string name)   => Format(Get(nameof(RowEditTitle)), name);
     public static string PinnedAddFile               => Get(nameof(PinnedAddFile));
     public static string PinnedAddTitle              => Get(nameof(PinnedAddTitle));
     public static string LabelPinnedPath             => Get(nameof(LabelPinnedPath));
@@ -500,7 +499,7 @@ internal static class Strings
     public static string McpCancelled           => Get(nameof(McpCancelled));
     public static string McpAddServer                => Get(nameof(McpAddServer));
     public static string McpAddTitle                 => Get(nameof(McpAddTitle));
-    public static string McpEditTitle(string name)   => string.Format(Get(nameof(McpEditTitle)), name);
+    public static string McpEditTitle(string name)   => Format(Get(nameof(McpEditTitle)), name);
     public static string LabelMcpName                => Get(nameof(LabelMcpName));
     public static string LabelMcpCommand             => Get(nameof(LabelMcpCommand));
     public static string LabelMcpArgs                => Get(nameof(LabelMcpArgs));
@@ -525,48 +524,48 @@ internal static class Strings
     public static string DocsListHeader              => Get(nameof(DocsListHeader));
     public static string DocsNoSites                 => Get(nameof(DocsNoSites));
     public static string DocsSourcesUnreadable(string detail) =>
-        string.Format(Get(nameof(DocsSourcesUnreadable)), detail);
-    public static string DocsUnknownId(string id)    => string.Format(Get(nameof(DocsUnknownId)), id);
+        Format(Get(nameof(DocsSourcesUnreadable)), detail);
+    public static string DocsUnknownId(string id)    => Format(Get(nameof(DocsUnknownId)), id);
     public static string DocsUsage                   => Get(nameof(DocsUsage));
-    public static string DocsAdded(string title)     => string.Format(Get(nameof(DocsAdded)), title);
-    public static string DocsRemoved(string id)      => string.Format(Get(nameof(DocsRemoved)), id);
-    public static string DocsReindexing(string label) => string.Format(Get(nameof(DocsReindexing)), label);
-    public static string DocsNotReady(string status) => string.Format(Get(nameof(DocsNotReady)), status);
-    public static string DocsNoResults(string query) => string.Format(Get(nameof(DocsNoResults)), query);
+    public static string DocsAdded(string title)     => Format(Get(nameof(DocsAdded)), title);
+    public static string DocsRemoved(string id)      => Format(Get(nameof(DocsRemoved)), id);
+    public static string DocsReindexing(string label) => Format(Get(nameof(DocsReindexing)), label);
+    public static string DocsNotReady(string status) => Format(Get(nameof(DocsNotReady)), status);
+    public static string DocsNoResults(string query) => Format(Get(nameof(DocsNoResults)), query);
     public static string StatusOodaSummarizing       => Get(nameof(StatusOodaSummarizing));
     public static string StatusCompacting            => Get(nameof(StatusCompacting));
     public static string OodaSummarizePrompt         => Get(nameof(OodaSummarizePrompt));
 
     public static string CompactionSummarizePrompt(string conversationText) =>
-        string.Format(Get(nameof(CompactionSummarizePrompt)), conversationText);
+        Format(Get(nameof(CompactionSummarizePrompt)), conversationText);
 
     public static string MsgContextCompacted(int removed, int keepTurns) =>
-        string.Format(Get(nameof(MsgContextCompacted)), removed, keepTurns);
+        Format(Get(nameof(MsgContextCompacted)), removed, keepTurns);
 
     public static string MsgKvCacheAnchorNote(int count) =>
-        string.Format(Get(nameof(MsgKvCacheAnchorNote)), count);
+        Format(Get(nameof(MsgKvCacheAnchorNote)), count);
 
     /// <summary>Names the setting by its current label and its page, both passed in (a copy drifts).</summary>
     public static string MsgContextCompactionFallback =>
-        string.Format(Get(nameof(MsgContextCompactionFallback)), LabelCompactionTimeout, SettingsPageContext);
+        Format(Get(nameof(MsgContextCompactionFallback)), LabelCompactionTimeout, SettingsPageContext);
     public static string MsgContextCompactionFailed(string cause) =>
-        string.Format(Get(nameof(MsgContextCompactionFailed)), cause);
+        Format(Get(nameof(MsgContextCompactionFailed)), cause);
     public static string MsgContextCompactionEmpty => Get(nameof(MsgContextCompactionEmpty));
     public static string MsgContextSummaryTooLong  => Get(nameof(MsgContextSummaryTooLong));
     public static string MsgContextCompactionOnlyReasoning => Get(nameof(MsgContextCompactionOnlyReasoning));
     public static string MsgContextCompactionRepeating => Get(nameof(MsgContextCompactionRepeating));
     public static string MsgContextSummaryCut => Get(nameof(MsgContextSummaryCut));
     public static string MsgContextSummaryPartial(int omitted, int total) =>
-        string.Format(Get(nameof(MsgContextSummaryPartial)), omitted, total);
+        Format(Get(nameof(MsgContextSummaryPartial)), omitted, total);
     public static string MsgOodaRecap(int turn, string summary) =>
-        string.Format(Get(nameof(MsgOodaRecap)), turn) + "\n\n" + summary;
+        Format(Get(nameof(MsgOodaRecap)), turn) + "\n\n" + summary;
 
     public static string MsgContextTruncated(int removed, int keepTurns) =>
-        string.Format(Get(nameof(MsgContextTruncated)), removed, keepTurns);
+        Format(Get(nameof(MsgContextTruncated)), removed, keepTurns);
     public static string TooltipSessionPicker  => Get(nameof(TooltipSessionPicker));
     public static string TooltipLoadSession    => Get(nameof(TooltipLoadSession));
     public static string TooltipDeleteSession  => Get(nameof(TooltipDeleteSession));
-    public static string DeleteSessionConfirm(string name) => string.Format(Get(nameof(DeleteSessionConfirm)), name);
+    public static string DeleteSessionConfirm(string name) => Format(Get(nameof(DeleteSessionConfirm)), name);
     public static string TooltipAttachFile       => Get(nameof(TooltipAttachFile));
     public static string TooltipAttachSelection  => Get(nameof(TooltipAttachSelection));
     public static string TooltipBrowseFile       => Get(nameof(TooltipBrowseFile));
@@ -599,14 +598,14 @@ internal static class Strings
     public static string StatusConnecting      => Get(nameof(StatusConnecting));
     public static string StatusConnected       => Get(nameof(StatusConnected));
     public static string StatusUnreachable     => Get(nameof(StatusUnreachable));
-    public static string StatusRefused(string refusal) => string.Format(Get(nameof(StatusRefused)), refusal);
+    public static string StatusRefused(string refusal) => Format(Get(nameof(StatusRefused)), refusal);
     public static string StatusThinking        => Get(nameof(StatusThinking));
     public static string StatusAgentPlanning   => Get(nameof(StatusAgentPlanning));
     public static string StatusAgentObserving  => Get(nameof(StatusAgentObserving));
     public static string StatusAgentSynthesizing => Get(nameof(StatusAgentSynthesizing));
 
     public static string StatusCallingTool(string toolName) =>
-        string.Format(Get(nameof(StatusCallingTool)), toolName);
+        Format(Get(nameof(StatusCallingTool)), toolName);
 
     // ── Agent Mode ─────────────────────────────────────────────────────────────
     /// <summary>Fallback plan goal when JSON parsing fails.</summary>
@@ -619,7 +618,7 @@ internal static class Strings
     public static string MsgCancelled          => Get(nameof(MsgCancelled));
     public static string MsgTruncated          => Get(nameof(MsgTruncated));
     public static string DefaultSessionSnippet => Get(nameof(DefaultSessionSnippet));
-    public static string MsgIterationLimit(int limit) => string.Format(Get(nameof(MsgIterationLimit)), limit);
+    public static string MsgIterationLimit(int limit) => Format(Get(nameof(MsgIterationLimit)), limit);
     // ⚠ How a run ENDED, when it is not because the model was done. The answer stays — that is the
     // original arbitration, "do not alarm when real work was done" — but it stops passing for a task
     // carried to its end. Both facts lived in OrchestratorResult all along and were read by NOBODY.
@@ -638,13 +637,13 @@ internal static class Strings
     public static string MsgLoopDetected      => Get(nameof(MsgLoopDetected));
     public static string MsgCircuitOpen       => Get(nameof(MsgCircuitOpen));
     public static string TokenUsage(string last, string session) =>
-        string.Format(Get(nameof(TokenUsage)), last, session);
+        Format(Get(nameof(TokenUsage)), last, session);
 
     public static string MsgAgentDone(string toolSummary) =>
-        string.Format(Get(nameof(MsgAgentDone)), toolSummary);
+        Format(Get(nameof(MsgAgentDone)), toolSummary);
 
     public static string MsgAgentToolsCalled(string toolSummary) =>
-        string.Format(Get(nameof(MsgAgentToolsCalled)), toolSummary);
+        Format(Get(nameof(MsgAgentToolsCalled)), toolSummary);
 
     public static string MsgNoUrl => Get(nameof(MsgNoUrl));
 
@@ -661,8 +660,8 @@ internal static class Strings
     /// message therefore sent the user to change a model that was not the cause.
     /// </remarks>
     public static string MsgEmptyResponseFrom(string model, string server) =>
-        string.Format(Get(nameof(MsgEmptyResponseFrom)), model, server);
-    public static string MsgOnlyReasoningFrom(string model) => string.Format(Get(nameof(MsgOnlyReasoningFrom)), model);
+        Format(Get(nameof(MsgEmptyResponseFrom)), model, server);
+    public static string MsgOnlyReasoningFrom(string model) => Format(Get(nameof(MsgOnlyReasoningFrom)), model);
 
     /// <summary>An in-place rewrite that stopped at the model's length limit: nothing was applied.</summary>
     public static string CodeActionReplyCut => Get(nameof(CodeActionReplyCut));
@@ -671,43 +670,43 @@ internal static class Strings
     public static string OnboardContextCut => Get(nameof(OnboardContextCut));
 
     public static string MsgError(string message) =>
-        string.Format(Get(nameof(MsgError)), message);
+        Format(Get(nameof(MsgError)), message);
 
     public static string MsgTimeout(string url) =>
-        string.Format(Get(nameof(MsgTimeout)), url);
+        Format(Get(nameof(MsgTimeout)), url);
 
     public static string MsgUnreachable(string url) =>
-        string.Format(Get(nameof(MsgUnreachable)), url);
+        Format(Get(nameof(MsgUnreachable)), url);
 
     /// <summary>The stream broke after the server had answered (crash, out of memory, restart): reached, so not
     /// "cannot reach… check the URL".</summary>
-    public static string MsgStreamDropped(string url) => string.Format(Get(nameof(MsgStreamDropped)), url);
+    public static string MsgStreamDropped(string url) => Format(Get(nameof(MsgStreamDropped)), url);
 
     /// <summary>The server answered the check with a refusal (<paramref name="refusal"/>): running, so not "cannot reach".</summary>
     public static string MsgBackendRefused(string url, string refusal) =>
-        string.Format(Get(nameof(MsgBackendRefused)), url, refusal);
+        Format(Get(nameof(MsgBackendRefused)), url, refusal);
 
     public static string MsgServerError(string url, string detail) =>
-        string.Format(Get(nameof(MsgServerError)), url, detail);
+        Format(Get(nameof(MsgServerError)), url, detail);
 
     public static string MsgContextOverflow(string detail, string breakdown) =>
-        string.Format(Get(nameof(MsgContextOverflow)), detail, breakdown);
+        Format(Get(nameof(MsgContextOverflow)), detail, breakdown);
 
     public static string MsgContextWontFit(int estimateTokens, int loadedContext, string breakdown) =>
-        string.Format(Get(nameof(MsgContextWontFit)), estimateTokens, loadedContext, breakdown);
+        Format(Get(nameof(MsgContextWontFit)), estimateTokens, loadedContext, breakdown);
 
     // One line per part of an oversized request (RequestSize.Breakdown): its size and what shrinks it.
     public static string ContextPartTools(int tokens) =>
-        string.Format(Get(nameof(ContextPartTools)), tokens);
+        Format(Get(nameof(ContextPartTools)), tokens);
 
     public static string ContextPartSystem(int tokens) =>
-        string.Format(Get(nameof(ContextPartSystem)), tokens);
+        Format(Get(nameof(ContextPartSystem)), tokens);
 
     public static string ContextPartEarlier(int tokens) =>
-        string.Format(Get(nameof(ContextPartEarlier)), tokens);
+        Format(Get(nameof(ContextPartEarlier)), tokens);
 
     public static string ContextPartLast(int tokens) =>
-        string.Format(Get(nameof(ContextPartLast)), tokens);
+        Format(Get(nameof(ContextPartLast)), tokens);
 
     /// <summary>
     /// The backend is not usable — one reader for the heartbeat, the send pre-flight and the regenerate guard of both
@@ -719,23 +718,23 @@ internal static class Strings
         refusal is null ? MsgConnectionGuardFailed(url, backend) : MsgConnectionRefused(url, backend, refusal);
 
     internal static string MsgConnectionGuardFailed(string url, string backend) =>
-        string.Format(Get(nameof(MsgConnectionGuardFailed)), url, backend);
+        Format(Get(nameof(MsgConnectionGuardFailed)), url, backend);
 
     internal static string MsgConnectionRefused(string url, string backend, string refusal) =>
-        string.Format(Get(nameof(MsgConnectionRefused)), url, backend, refusal);
+        Format(Get(nameof(MsgConnectionRefused)), url, backend, refusal);
 
     /// <summary>⚠ Name the CONFIGURED backend, like <see cref="MsgConnectionGuardFailed"/>: "Reconnected to Ollama"
     /// was said to every LM Studio user.</summary>
-    public static string MsgHeartbeatRestored(string backend)   => string.Format(Get(nameof(MsgHeartbeatRestored)), backend);
-    public static string MsgBackendSwitchPending(string chosen, string inUse) => string.Format(Get(nameof(MsgBackendSwitchPending)), chosen, inUse);
-    public static string TooltipRetryConnection(string backend) => string.Format(Get(nameof(TooltipRetryConnection)), backend);
+    public static string MsgHeartbeatRestored(string backend)   => Format(Get(nameof(MsgHeartbeatRestored)), backend);
+    public static string MsgBackendSwitchPending(string chosen, string inUse) => Format(Get(nameof(MsgBackendSwitchPending)), chosen, inUse);
+    public static string TooltipRetryConnection(string backend) => Format(Get(nameof(TooltipRetryConnection)), backend);
 
     public static string MsgToolOutput(string input, string output) =>
-        string.Format(Get(nameof(MsgToolOutput)), input, output);
+        Format(Get(nameof(MsgToolOutput)), input, output);
 
     // ── Approval ───────────────────────────────────────────────────────────────
     public static string ApprovalMessage(string toolName, string details) =>
-        string.Format(Get(nameof(ApprovalMessage)), toolName, details);
+        Format(Get(nameof(ApprovalMessage)), toolName, details);
 
     public static string ApprovalAllowOnce   => Get(nameof(ApprovalAllowOnce));
     public static string ApprovalAlwaysAllow => Get(nameof(ApprovalAlwaysAllow));
@@ -746,11 +745,11 @@ internal static class Strings
 
     /// <summary>Action blocked by a user-defined <c>deny</c> permission rule.</summary>
     public static string PermissionBlockedRule(string subject) =>
-        string.Format(Get(nameof(PermissionBlockedRule)), subject);
+        Format(Get(nameof(PermissionBlockedRule)), subject);
 
     /// <summary>Action blocked by the built-in catastrophic-command hard denylist.</summary>
     public static string PermissionBlockedHard(string subject) =>
-        string.Format(Get(nameof(PermissionBlockedHard)), subject);
+        Format(Get(nameof(PermissionBlockedHard)), subject);
 
     // ── Tool messages ──────────────────────────────────────────────────────────
     public static string ToolPathRequired  => Get(nameof(ToolPathRequired));
@@ -763,45 +762,45 @@ internal static class Strings
     public static string DiagNoProject     => Get(nameof(DiagNoProject));
     public static string DiagFromEditor    => Get(nameof(DiagFromEditor));
     public static string CodeExcerptLabel(string label, int shown, int total) =>
-        string.Format(Get(nameof(CodeExcerptLabel)), label, shown, total);
+        Format(Get(nameof(CodeExcerptLabel)), label, shown, total);
     public static string ActiveDocNoContext => Get(nameof(ActiveDocNoContext));
     public static string EditNotApplied(string path) =>
-        string.Format(Get(nameof(EditNotApplied)), path);
+        Format(Get(nameof(EditNotApplied)), path);
     public static string ActiveDocNoFocus => Get(nameof(ActiveDocNoFocus));
     public static string ActiveDocNoFile   => Get(nameof(ActiveDocNoFile));
 
     public static string ToolFileNotFound(string path) =>
-        string.Format(Get(nameof(ToolFileNotFound)), path);
+        Format(Get(nameof(ToolFileNotFound)), path);
 
     public static string SlashToolNoOutput => Get(nameof(SlashToolNoOutput));
     public static string MentionFolderIsFile(string name) =>
-        string.Format(Get(nameof(MentionFolderIsFile)), name);
+        Format(Get(nameof(MentionFolderIsFile)), name);
     public static string DirNotFound(string path) =>
-        string.Format(Get(nameof(DirNotFound)), path);
+        Format(Get(nameof(DirNotFound)), path);
 
     public static string ToolPathInvalid(string path, string reason) =>
-        string.Format(Get(nameof(ToolPathInvalid)), path, reason);
+        Format(Get(nameof(ToolPathInvalid)), path, reason);
 
     public static string WriteOverwrite(string path, int chars) =>
-        string.Format(Get(nameof(WriteOverwrite)), path, chars);
+        Format(Get(nameof(WriteOverwrite)), path, chars);
 
     public static string WriteCreate(string path, int chars) =>
-        string.Format(Get(nameof(WriteCreate)), path, chars);
+        Format(Get(nameof(WriteCreate)), path, chars);
 
     public static string WriteOk(string path, int chars) =>
-        string.Format(Get(nameof(WriteOk)), path, chars);
+        Format(Get(nameof(WriteOk)), path, chars);
 
     public static string DeleteConfirm(string path) =>
-        string.Format(Get(nameof(DeleteConfirm)), path);
+        Format(Get(nameof(DeleteConfirm)), path);
 
     public static string DeleteOk(string path) =>
-        string.Format(Get(nameof(DeleteOk)), path);
+        Format(Get(nameof(DeleteOk)), path);
 
     public static string DiffConfirm(string path) =>
-        string.Format(Get(nameof(DiffConfirm)), path);
+        Format(Get(nameof(DiffConfirm)), path);
 
     public static string DebugStartConfirm(string workspace) =>
-        string.Format(Get(nameof(DebugStartConfirm)), workspace);
+        Format(Get(nameof(DebugStartConfirm)), workspace);
 
     // ── /debug ───────────────────────────────────────────────
     public static string DebugUnavailable         => Get(nameof(DebugUnavailable));
@@ -809,74 +808,74 @@ internal static class Strings
     public static string DebugUsage               => Get(nameof(DebugUsage));
     public static string DebugStatusHeader        => Get(nameof(DebugStatusHeader));
     public static string DebugStatusNotPaused     => Get(nameof(DebugStatusNotPaused));
-    public static string DebugNoAnswer(string reason) => string.Format(Get(nameof(DebugNoAnswer)), reason);
+    public static string DebugNoAnswer(string reason) => Format(Get(nameof(DebugNoAnswer)), reason);
     public static string DebugStatusNoBreakpoints => Get(nameof(DebugStatusNoBreakpoints));
     public static string DebugStatusBreakpoints   => Get(nameof(DebugStatusBreakpoints));
 
     public static string DebugStatusPaused(string location) =>
-        string.Format(Get(nameof(DebugStatusPaused)), location);
+        Format(Get(nameof(DebugStatusPaused)), location);
 
     public static string DiffCancelled => Get(nameof(DiffCancelled));
 
     public static string DiffOldNotFound(string path) =>
-        string.Format(Get(nameof(DiffOldNotFound)), path);
+        Format(Get(nameof(DiffOldNotFound)), path);
 
     public static string DiffAmbiguous(int count, string path) =>
-        string.Format(Get(nameof(DiffAmbiguous)), count, path);
+        Format(Get(nameof(DiffAmbiguous)), count, path);
 
     public static string DiffOk(string path) =>
-        string.Format(Get(nameof(DiffOk)), path);
+        Format(Get(nameof(DiffOk)), path);
 
     // The three lines the diff renderer writes ITSELF (as opposed to the file content, which it
     // only copies). They reach the user in a DiffLineModel with the "…" prefix, at the approval
     // prompt and in the chat bubble — interface text, in a product that speaks ten languages, so
     // they belong here and not in the renderer.
     public static string DiffTooLarge(int oldLines, int newLines) =>
-        string.Format(Get(nameof(DiffTooLarge)), oldLines, newLines);
+        Format(Get(nameof(DiffTooLarge)), oldLines, newLines);
     public static string DiffUnchangedLines(int lines) =>
-        string.Format(Get(nameof(DiffUnchangedLines)), lines);
+        Format(Get(nameof(DiffUnchangedLines)), lines);
     public static string DiffMoreLines(int lines) =>
-        string.Format(Get(nameof(DiffMoreLines)), lines);
+        Format(Get(nameof(DiffMoreLines)), lines);
 
     public static string ApplyEditsEmpty => Get(nameof(ApplyEditsEmpty));
     public static string ApplyEditsConfirm(int files) =>
-        string.Format(Get(nameof(ApplyEditsConfirm)), files);
+        Format(Get(nameof(ApplyEditsConfirm)), files);
     public static string ApplyEditsAborted(string detail) =>
-        string.Format(Get(nameof(ApplyEditsAborted)), detail);
+        Format(Get(nameof(ApplyEditsAborted)), detail);
     public static string ApplyEditsOk(int edits, int files) =>
-        string.Format(Get(nameof(ApplyEditsOk)), edits, files);
+        Format(Get(nameof(ApplyEditsOk)), edits, files);
 
     public static string HistoryNote(string snapPath) =>
-        string.Format(Get(nameof(HistoryNote)), snapPath);
+        Format(Get(nameof(HistoryNote)), snapPath);
 
     public static string RestoreOk(string path, string snapPath) =>
-        string.Format(Get(nameof(RestoreOk)), path, snapPath);
+        Format(Get(nameof(RestoreOk)), path, snapPath);
 
     public static string RestoreNotFound(string path) =>
-        string.Format(Get(nameof(RestoreNotFound)), path);
+        Format(Get(nameof(RestoreNotFound)), path);
 
     public static string DiagBuildOk(string filename) =>
-        string.Format(Get(nameof(DiagBuildOk)), filename);
+        Format(Get(nameof(DiagBuildOk)), filename);
 
     public static string DiagBuildFailed(int exitCode, string output) =>
-        string.Format(Get(nameof(DiagBuildFailed)), exitCode, output);
+        Format(Get(nameof(DiagBuildFailed)), exitCode, output);
 
     public static string DiagBuildStopped(int seconds) =>
-        string.Format(Get(nameof(DiagBuildStopped)), seconds);
+        Format(Get(nameof(DiagBuildStopped)), seconds);
 
     public static string DiagSummary(int errors, int warnings, string filename) =>
-        string.Format(Get(nameof(DiagSummary)), errors, warnings, filename);
+        Format(Get(nameof(DiagSummary)), errors, warnings, filename);
 
     public static string ActiveDocResult(string path, string content) =>
-        string.Format(Get(nameof(ActiveDocResult)), path, content);
+        Format(Get(nameof(ActiveDocResult)), path, content);
 
     // ── Attachment / Browse ────────────────────────────────────────────────────
-    public static string AttachError(string msg)              => string.Format(Get(nameof(AttachError)),              msg);
+    public static string AttachError(string msg)              => Format(Get(nameof(AttachError)),              msg);
     /// <summary>What went with the question, named under the bubble: "📎 Attached: Foo.cs · Selection (Bar.cs)".</summary>
-    public static string MsgAttachedRecap(string labels)      => string.Format(Get(nameof(MsgAttachedRecap)),          labels);
-    public static string AttachReadError(string msg)          => string.Format(Get(nameof(AttachReadError)),          msg);
-    public static string AttachSelectionError(string msg)     => string.Format(Get(nameof(AttachSelectionError)),     msg);
-    public static string AttachSelectionReadError(string msg) => string.Format(Get(nameof(AttachSelectionReadError)), msg);
+    public static string MsgAttachedRecap(string labels)      => Format(Get(nameof(MsgAttachedRecap)),          labels);
+    public static string AttachReadError(string msg)          => Format(Get(nameof(AttachReadError)),          msg);
+    public static string AttachSelectionError(string msg)     => Format(Get(nameof(AttachSelectionError)),     msg);
+    public static string AttachSelectionReadError(string msg) => Format(Get(nameof(AttachSelectionReadError)), msg);
     public static string AttachFileTooLarge                   => Get(nameof(AttachFileTooLarge));
     public static string AttachNoActiveFile                   => Get(nameof(AttachNoActiveFile));
 
@@ -891,25 +890,25 @@ internal static class Strings
     public static string MentionProblemsDesc  => Get(nameof(MentionProblemsDesc));
     public static string MentionDebuggerDesc  => Get(nameof(MentionDebuggerDesc));
     public static string MentionDebuggerNone  => Get(nameof(MentionDebuggerNone));
-    public static string MentionDiffUnavailable(string reason) => string.Format(Get(nameof(MentionDiffUnavailable)), reason);
+    public static string MentionDiffUnavailable(string reason) => Format(Get(nameof(MentionDiffUnavailable)), reason);
     public static string MentionDiffEmpty => Get(nameof(MentionDiffEmpty));
-    public static string MentionDiffCutLabel(string label, int shown, int total) => string.Format(Get(nameof(MentionDiffCutLabel)), label, shown, total);
-    public static string StoppedWorkCrashedNotice(string items) => string.Format(Get(nameof(StoppedWorkCrashedNotice)), items);
-    public static string StoppedWorkNotice(string items) => string.Format(Get(nameof(StoppedWorkNotice)), items);
-    public static string StoppedWorkTask(string id, string objective) => string.Format(Get(nameof(StoppedWorkTask)), id, objective);
-    public static string StoppedWorkCommand(string id, string command) => string.Format(Get(nameof(StoppedWorkCommand)), id, command);
-    public static string StoppedWorkDocs(string site) => string.Format(Get(nameof(StoppedWorkDocs)), site);
-    public static string MentionProblemsNotBuilt(string reason) => string.Format(Get(nameof(MentionProblemsNotBuilt)), reason);
+    public static string MentionDiffCutLabel(string label, int shown, int total) => Format(Get(nameof(MentionDiffCutLabel)), label, shown, total);
+    public static string StoppedWorkCrashedNotice(string items) => Format(Get(nameof(StoppedWorkCrashedNotice)), items);
+    public static string StoppedWorkNotice(string items) => Format(Get(nameof(StoppedWorkNotice)), items);
+    public static string StoppedWorkTask(string id, string objective) => Format(Get(nameof(StoppedWorkTask)), id, objective);
+    public static string StoppedWorkCommand(string id, string command) => Format(Get(nameof(StoppedWorkCommand)), id, command);
+    public static string StoppedWorkDocs(string site) => Format(Get(nameof(StoppedWorkDocs)), site);
+    public static string MentionProblemsNotBuilt(string reason) => Format(Get(nameof(MentionProblemsNotBuilt)), reason);
     public static string ClipboardNotCopied => Get(nameof(ClipboardNotCopied));
-    public static string SessionUnreadableKept(string name, string copy) => string.Format(Get(nameof(SessionUnreadableKept)), name, copy);
-    public static string AutoSaveNotForgotten(string reason) => string.Format(Get(nameof(AutoSaveNotForgotten)), reason);
-    public static string DocsNotLoaded(string reason) => string.Format(Get(nameof(DocsNotLoaded)), reason);
-    public static string ApprovalDiffNotOpened(string reason) => string.Format(Get(nameof(ApprovalDiffNotOpened)), reason);
+    public static string SessionUnreadableKept(string name, string copy) => Format(Get(nameof(SessionUnreadableKept)), name, copy);
+    public static string AutoSaveNotForgotten(string reason) => Format(Get(nameof(AutoSaveNotForgotten)), reason);
+    public static string DocsNotLoaded(string reason) => Format(Get(nameof(DocsNotLoaded)), reason);
+    public static string ApprovalDiffNotOpened(string reason) => Format(Get(nameof(ApprovalDiffNotOpened)), reason);
     public static string MentionClipboardEmpty => Get(nameof(MentionClipboardEmpty));
     public static string MentionNothingToAttach(string category) =>
-        string.Format(Get(nameof(MentionNothingToAttach)), category);
-    public static string BrowseError(string msg)              => string.Format(Get(nameof(BrowseError)),              msg);
-    public static string PinLimitReached(int max)            => string.Format(Get(nameof(PinLimitReached)),           max);
+        Format(Get(nameof(MentionNothingToAttach)), category);
+    public static string BrowseError(string msg)              => Format(Get(nameof(BrowseError)),              msg);
+    public static string PinLimitReached(int max)            => Format(Get(nameof(PinLimitReached)),           max);
 
     // ── Export ─────────────────────────────────────────────────────────────────
     /// <summary>Label of the "user" bubble. ⚠ It was hardcoded, in FRENCH (<c>Label = "Vous"</c>),
@@ -919,8 +918,8 @@ internal static class Strings
     /// <inheritdoc cref="ChatRoleYou"/>
     public static string ChatRoleAssistant       => Get(nameof(ChatRoleAssistant));
     public static string ExportNoMessages        => Get(nameof(ExportNoMessages));
-    public static string ExportSuccess(string f) => string.Format(Get(nameof(ExportSuccess)), f);
-    public static string ExportFailed(string e)  => string.Format(Get(nameof(ExportFailed)),  e);
+    public static string ExportSuccess(string f) => Format(Get(nameof(ExportSuccess)), f);
+    public static string ExportFailed(string e)  => Format(Get(nameof(ExportFailed)),  e);
     /// <summary>Header of the exported document: same reader as the turn labels.</summary>
     public static string ExportTitle             => Get(nameof(ExportTitle));
     /// <inheritdoc cref="ExportTitle"/>
@@ -941,16 +940,16 @@ internal static class Strings
     public static string HostTurnBusy            => Get(nameof(HostTurnBusy));
 
     // ── Slash commands ─────────────────────────────────────────────────────────
-    public static string SlashModelCurrent(string model) => string.Format(Get(nameof(SlashModelCurrent)), model);
-    public static string SlashModelChanged(string model) => string.Format(Get(nameof(SlashModelChanged)), model);
-    public static string SlashModelNotListed(string model) => string.Format(Get(nameof(SlashModelNotListed)), model);
-    public static string PromptsShadowedByBuiltIn(string command) => string.Format(Get(nameof(PromptsShadowedByBuiltIn)), command);
-    public static string PromptsShadowedByConfig(string command) => string.Format(Get(nameof(PromptsShadowedByConfig)), command);
-    public static string ReplayRunOutOfRange(int index, int count) => string.Format(Get(nameof(ReplayRunOutOfRange)), index, count);
-    public static string SlashToolsCurrent(string state) => string.Format(Get(nameof(SlashToolsCurrent)), state);
-    public static string SlashToolsChanged(string state) => string.Format(Get(nameof(SlashToolsChanged)), state);
+    public static string SlashModelCurrent(string model) => Format(Get(nameof(SlashModelCurrent)), model);
+    public static string SlashModelChanged(string model) => Format(Get(nameof(SlashModelChanged)), model);
+    public static string SlashModelNotListed(string model) => Format(Get(nameof(SlashModelNotListed)), model);
+    public static string PromptsShadowedByBuiltIn(string command) => Format(Get(nameof(PromptsShadowedByBuiltIn)), command);
+    public static string PromptsShadowedByConfig(string command) => Format(Get(nameof(PromptsShadowedByConfig)), command);
+    public static string ReplayRunOutOfRange(int index, int count) => Format(Get(nameof(ReplayRunOutOfRange)), index, count);
+    public static string SlashToolsCurrent(string state) => Format(Get(nameof(SlashToolsCurrent)), state);
+    public static string SlashToolsChanged(string state) => Format(Get(nameof(SlashToolsChanged)), state);
     public static string SlashNoActiveDocument            => Get(nameof(SlashNoActiveDocument));
-    public static string SlashUsage(string syntax)        => string.Format(Get(nameof(SlashUsage)),        syntax);
+    public static string SlashUsage(string syntax)        => Format(Get(nameof(SlashUsage)),        syntax);
     public static string SlashUsageRestore                => Get(nameof(SlashUsageRestore));
     /// <summary>Header alone: the command list that follows is generated from the Catalog.</summary>
     /// <remarks>
@@ -958,7 +957,7 @@ internal static class Strings
     /// is shown at the worst possible moment — the user has just typed a command the product did
     /// not recognise. The list comes from <c>SlashCommandRouter.Catalog</c>, like <c>/help</c>.
     /// </remarks>
-    public static string SlashUnknownCommand(string cmd)  => string.Format(Get(nameof(SlashUnknownCommand)), cmd);
+    public static string SlashUnknownCommand(string cmd)  => Format(Get(nameof(SlashUnknownCommand)), cmd);
 
     // `/help` section titles — the help text itself is generated from SlashCommandRouter.Catalog
     // (the hand-written SlashHelpAll had drifted from the shipped commands and was dropped).
@@ -978,15 +977,15 @@ internal static class Strings
     public static string SlashHintDocs                    => Get(nameof(SlashHintDocs));
     public static string SlashHeadlessUnavailable         => Get(nameof(SlashHeadlessUnavailable));
     public static string HistoryNoSessions                => Get(nameof(HistoryNoSessions));
-    public static string HistoryNoResults(string term)    => string.Format(Get(nameof(HistoryNoResults)),   term);
-    public static string HistoryListHeader(int count) => string.Format(Get(nameof(HistoryListHeader)), count);
-    public static string HistoryMessageCount(int count) => string.Format(Get(nameof(HistoryMessageCount)), count);
+    public static string HistoryNoResults(string term)    => Format(Get(nameof(HistoryNoResults)),   term);
+    public static string HistoryListHeader(int count) => Format(Get(nameof(HistoryListHeader)), count);
+    public static string HistoryMessageCount(int count) => Format(Get(nameof(HistoryMessageCount)), count);
     public static string HistorySearchHint => Get(nameof(HistorySearchHint));
-    public static string HistorySearchHeader(string term, int count) => string.Format(Get(nameof(HistorySearchHeader)), term, count);
-    public static string HistorySearchMoreMatches(int count) => string.Format(Get(nameof(HistorySearchMoreMatches)), count);
-    public static string AgeMinutesAgo(int n) => string.Format(Get(nameof(AgeMinutesAgo)), n);
-    public static string AgeHoursAgo(int n) => string.Format(Get(nameof(AgeHoursAgo)), n);
-    public static string AgeDaysAgo(int n) => string.Format(Get(nameof(AgeDaysAgo)), n);
+    public static string HistorySearchHeader(string term, int count) => Format(Get(nameof(HistorySearchHeader)), term, count);
+    public static string HistorySearchMoreMatches(int count) => Format(Get(nameof(HistorySearchMoreMatches)), count);
+    public static string AgeMinutesAgo(int n) => Format(Get(nameof(AgeMinutesAgo)), n);
+    public static string AgeHoursAgo(int n) => Format(Get(nameof(AgeHoursAgo)), n);
+    public static string AgeDaysAgo(int n) => Format(Get(nameof(AgeDaysAgo)), n);
     public static string TemplateListHeader => Get(nameof(TemplateListHeader));
     public static string TemplateLabelCodeReview => Get(nameof(TemplateLabelCodeReview));
     public static string TemplateLabelBugHunt => Get(nameof(TemplateLabelBugHunt));
@@ -1001,54 +1000,56 @@ internal static class Strings
 
     // ── Project context ────────────────────────────────────────────────────────
     public static string SlashContextNoSln                              => Get(nameof(SlashContextNoSln));
-    public static string SlashContextNotFound(string path)             => string.Format(Get(nameof(SlashContextNotFound)), path);
+    public static string SlashContextNotFound(string path)             => Format(Get(nameof(SlashContextNotFound)), path);
     public static string SlashContextLoaded(string path, int chars, string preview) =>
-        string.Format(Get(nameof(SlashContextLoaded)), path, chars, preview);
+        Format(Get(nameof(SlashContextLoaded)), path, chars, preview);
 
     // ── Git / Solution tool outputs ────────────────────────────────────────────
     public static string GitNotRepo                        => Get(nameof(GitNotRepo));
     /// <param name="command">The git arguments, without the leading <c>git</c>.</param>
     /// <param name="detail">What git itself said — its own words, never a phrase of ours.</param>
     public static string GitCommandFailed(string command, string detail) =>
-        string.Format(Get(nameof(GitCommandFailed)), command, detail);
+        Format(Get(nameof(GitCommandFailed)), command, detail);
     /// <summary>
     /// The conversation being left could not be archived. Shown <b>after</b> the transcript was
     /// cleared, which is why it says what was lost rather than only why.
     /// </summary>
     public static string SessionArchiveFailed(string reason) =>
-        string.Format(Get(nameof(SessionArchiveFailed)), reason);
+        Format(Get(nameof(SessionArchiveFailed)), reason);
 
     public static string SessionAutoSaveFailed(string reason) =>
-        string.Format(Get(nameof(SessionAutoSaveFailed)), reason);
+        Format(Get(nameof(SessionAutoSaveFailed)), reason);
     public static string SolutionNoSln                     => Get(nameof(SolutionNoSln));
-    public static string SolutionPathNotFound(string path) => string.Format(Get(nameof(SolutionPathNotFound)), path);
+    public static string SolutionPathNotFound(string path) => Format(Get(nameof(SolutionPathNotFound)), path);
 
     // ── Editor insertion / replacement ─────────────────────────────────────────
-    public static string InsertOk(string path, int chars)  => string.Format(Get(nameof(InsertOk)),  path, chars);
-    public static string ReplaceOk(string path, int chars) => string.Format(Get(nameof(ReplaceOk)), path, chars);
+    public static string InsertOk(string path, int chars)  => Format(Get(nameof(InsertOk)),  path, chars);
+    public static string ReplaceOk(string path, int chars) => Format(Get(nameof(ReplaceOk)), path, chars);
 
     // ── Fix-build loop ─────────────────────────────────────────────────────────
-    public static string FixBuildSuccess(int rounds)        => string.Format(Get(nameof(FixBuildSuccess)),    rounds);
-    public static string FixBuildGiveUp(int maxRounds)      => string.Format(Get(nameof(FixBuildGiveUp)),     maxRounds);
+    public static string FixBuildSuccess(int rounds)        => Format(Get(nameof(FixBuildSuccess)),    rounds);
+    public static string FixBuildGiveUp(int maxRounds)      => Format(Get(nameof(FixBuildGiveUp)),     maxRounds);
     public static string FixBuildCouldNotBuild              => Get(nameof(FixBuildCouldNotBuild));
     // ⚠ The two progress labels of the SAME loop, left as literals while its two end messages
     // were localized.
-    public static string FixBuildBuildingRound(int round, int total) => string.Format(Get(nameof(FixBuildBuildingRound)), round, total);
-    public static string FixBuildFixingRound(int round)     => string.Format(Get(nameof(FixBuildFixingRound)), round);
-    public static string BuildFailedProposal(int errorCount) => string.Format(Get(nameof(BuildFailedProposal)), errorCount);
+    public static string FixBuildBuildingRound(int round, int total) => Format(Get(nameof(FixBuildBuildingRound)), round, total);
+    public static string FixBuildFixingRound(int round)     => Format(Get(nameof(FixBuildFixingRound)), round);
+    public static string BuildFailedProposal(int errorCount) => Format(Get(nameof(BuildFailedProposal)), errorCount);
 
     // ── Smart Fix Protocol ─────────────────────────────────────────────────────
     public static string SmartFixBuildOk                                   => Get(nameof(SmartFixBuildOk));
-    public static string SmartFixBuildErrors(int count, string errorLines) => string.Format(Get(nameof(SmartFixBuildErrors)), count, errorLines);
+    public static string SmartFixBuildErrors(int count, string errorLines) => Format(Get(nameof(SmartFixBuildErrors)), count, errorLines);
     public static string SmartFixTimeout                                    => Get(nameof(SmartFixTimeout));
     public static string SmartFixBuildFailedNoErrors                        => Get(nameof(SmartFixBuildFailedNoErrors));
-    public static string SmartFixCouldNotRun(string reason)                 => string.Format(Get(nameof(SmartFixCouldNotRun)), reason);
+    /// <summary>A failed build whose errors cannot be counted (another toolchain, or no compiler error line): {0} = its output lines.</summary>
+    public static string SmartFixBuildFailed(string lines) => Format(Get(nameof(SmartFixBuildFailed)), lines);
+    public static string SmartFixCouldNotRun(string reason)                 => Format(Get(nameof(SmartFixCouldNotRun)), reason);
     /// <summary>
     /// A multi-file batch spanned more projects than Smart Fix builds in one call. Said rather than
     /// trimmed in silence: the files were written either way.
     /// </summary>
     public static string SmartFixBatchCapped(int checkedCount, int skipped) =>
-        string.Format(Get(nameof(SmartFixBatchCapped)), checkedCount, skipped);
+        Format(Get(nameof(SmartFixBatchCapped)), checkedCount, skipped);
     public static string LabelSmartFixEnabled                               => Get(nameof(LabelSmartFixEnabled));
     public static string HintSmartFixEnabled                                => Get(nameof(HintSmartFixEnabled));
 
@@ -1056,12 +1057,12 @@ internal static class Strings
     public static string CommitNothingToCommit  => Get(nameof(CommitNothingToCommit));
     public static string CommitNothingStaged    => Get(nameof(CommitNothingStaged));
     public static string CommitUntrackedLeftOut(int count, string names) =>
-        string.Format(Get(nameof(CommitUntrackedLeftOut)), count, names);
+        Format(Get(nameof(CommitUntrackedLeftOut)), count, names);
     public static string CommitOnlyUntracked(string names) =>
-        string.Format(Get(nameof(CommitOnlyUntracked)), names);
+        Format(Get(nameof(CommitOnlyUntracked)), names);
     /// <summary>The proposal describes only what fit in the prompt — said before the message.</summary>
     public static string CommitDiffTruncated(int kept, int total) =>
-        string.Format(Get(nameof(CommitDiffTruncated)), kept, total);
+        Format(Get(nameof(CommitDiffTruncated)), kept, total);
     public static string CommitProposingLabel   => Get(nameof(CommitProposingLabel));
     public static string CommitConfirmHint      => Get(nameof(CommitConfirmHint));
 
@@ -1070,17 +1071,17 @@ internal static class Strings
     // model, the check stops being applied, and the list gets shorter without a word. This is the
     // rule PlanStore.List had already written, for itself alone.
     public static string GovernanceFilesUnreadable(int count, string names) =>
-        string.Format(Get(nameof(GovernanceFilesUnreadable)), count, names);
+        Format(Get(nameof(GovernanceFilesUnreadable)), count, names);
     /// <summary>Saved sessions missing from a listing because they could not be read.</summary>
     public static string SessionsUnreadableListed(int count, string names) =>
-        string.Format(Get(nameof(SessionsUnreadableListed)), count, names);
+        Format(Get(nameof(SessionsUnreadableListed)), count, names);
     /// <summary>
     /// Saved sessions a search could not open. Deliberately a <b>second</b> sentence rather than a
     /// reuse of the one above: "missing from the list" and "not searched — this is not «absent»"
     /// send the reader to two different conclusions, and it is the second that gets acted on.
     /// </summary>
     public static string SessionsUnreadableSearched(int count, string names) =>
-        string.Format(Get(nameof(SessionsUnreadableSearched)), count, names);
+        Format(Get(nameof(SessionsUnreadableSearched)), count, names);
     public static string RulesNone               => Get(nameof(RulesNone));
     public static string ChecksNone              => Get(nameof(ChecksNone));
     public static string RulesListHeader         => Get(nameof(RulesListHeader));
@@ -1097,72 +1098,72 @@ internal static class Strings
     public static string PermissionsOverlayUnusable    => Get(nameof(PermissionsOverlayUnusable));
     public static string PermissionsOverlayEmpty       => Get(nameof(PermissionsOverlayEmpty));
     public static string PermissionsOverlayMalformed(int count) =>
-        string.Format(Get(nameof(PermissionsOverlayMalformed)), count);
+        Format(Get(nameof(PermissionsOverlayMalformed)), count);
     public static string PermissionsOverlayAllowIgnored(int count) =>
-        string.Format(Get(nameof(PermissionsOverlayAllowIgnored)), count);
+        Format(Get(nameof(PermissionsOverlayAllowIgnored)), count);
     public static string PermissionsConfigSection      => Get(nameof(PermissionsConfigSection));
     public static string PermissionsConfigEmpty        => Get(nameof(PermissionsConfigEmpty));
     public static string PermissionsConfigDropped(int count) =>
-        string.Format(Get(nameof(PermissionsConfigDropped)), count);
+        Format(Get(nameof(PermissionsConfigDropped)), count);
     public static string PermissionsDenylistNote       => Get(nameof(PermissionsDenylistNote));
     public static string ChecksListHeader        => Get(nameof(ChecksListHeader));
     public static string CheckNoDiff             => Get(nameof(CheckNoDiff));
     public static string CheckReviewingLabel     => Get(nameof(CheckReviewingLabel));
     public static string CheckReviewSystemPrompt => Get(nameof(CheckReviewSystemPrompt));
-    public static string CheckUnknownName(string name) => string.Format(Get(nameof(CheckUnknownName)), name);
+    public static string CheckUnknownName(string name) => Format(Get(nameof(CheckUnknownName)), name);
     public static string CheckNoFindings         => Get(nameof(CheckNoFindings));
-    public static string CheckReviewOnlyReasoning(string model) => string.Format(Get(nameof(CheckReviewOnlyReasoning)), model);
+    public static string CheckReviewOnlyReasoning(string model) => Format(Get(nameof(CheckReviewOnlyReasoning)), model);
     /// <summary>The verdict below covers only what fit — said above the findings, which it qualifies.</summary>
     public static string CheckDiffTruncated(int kept, int total) =>
-        string.Format(Get(nameof(CheckDiffTruncated)), kept, total);
+        Format(Get(nameof(CheckDiffTruncated)), kept, total);
     public static string CheckNewFilesNotReviewed(int count, string names) =>
-        string.Format(Get(nameof(CheckNewFilesNotReviewed)), count, names);
+        Format(Get(nameof(CheckNewFilesNotReviewed)), count, names);
     public static string CheckSeverityBlocker    => Get(nameof(CheckSeverityBlocker));
     public static string CheckSeverityWarning    => Get(nameof(CheckSeverityWarning));
     public static string CheckSeverityNit        => Get(nameof(CheckSeverityNit));
     public static string CheckAnchorUnanchored   => Get(nameof(CheckAnchorUnanchored));
-    public static string CheckFindingsHeader(int count) => string.Format(Get(nameof(CheckFindingsHeader)), count);
-    public static string CheckAnchorAdjusted(int reported) => string.Format(Get(nameof(CheckAnchorAdjusted)), reported);
-    public static string RulesScaffolded(string path)  => string.Format(Get(nameof(RulesScaffolded)),  path);
-    public static string ChecksScaffolded(string path) => string.Format(Get(nameof(ChecksScaffolded)), path);
+    public static string CheckFindingsHeader(int count) => Format(Get(nameof(CheckFindingsHeader)), count);
+    public static string CheckAnchorAdjusted(int reported) => Format(Get(nameof(CheckAnchorAdjusted)), reported);
+    public static string RulesScaffolded(string path)  => Format(Get(nameof(RulesScaffolded)),  path);
+    public static string ChecksScaffolded(string path) => Format(Get(nameof(ChecksScaffolded)), path);
     public static string PromptsNone             => Get(nameof(PromptsNone));
     public static string PromptsListHeader       => Get(nameof(PromptsListHeader));
-    public static string PromptsScaffolded(string path) => string.Format(Get(nameof(PromptsScaffolded)), path);
+    public static string PromptsScaffolded(string path) => Format(Get(nameof(PromptsScaffolded)), path);
 
     // ── analyze_impact tool ───────────────────────────────────────────────────
-    public static string ImpactHeader(string fileName)                          => string.Format(Get(nameof(ImpactHeader)),         fileName);
-    public static string ImpactNoPublicApi(string fileName)                     => string.Format(Get(nameof(ImpactNoPublicApi)),    fileName);
+    public static string ImpactHeader(string fileName)                          => Format(Get(nameof(ImpactHeader)),         fileName);
+    public static string ImpactNoPublicApi(string fileName)                     => Format(Get(nameof(ImpactNoPublicApi)),    fileName);
     public static string ImpactFooter(int direct, int transitive, int tests, int entries) =>
-        string.Format(Get(nameof(ImpactFooter)), direct, transitive, tests, entries);
+        Format(Get(nameof(ImpactFooter)), direct, transitive, tests, entries);
 
     // ── trace_dependency tool ──────────────────────────────────────────────────
-    public static string TraceDepsHeader(string fileName)                        => string.Format(Get(nameof(TraceDepsHeader)),         fileName);
-    public static string TraceDepsNoMethods(string fileName)                     => string.Format(Get(nameof(TraceDepsNoMethods)),       fileName);
-    public static string TraceDepsSymbolNotFound(string symbol, string fileName) => string.Format(Get(nameof(TraceDepsSymbolNotFound)), symbol, fileName);
-    public static string TraceDepsFooter(int methods, int callees, int resolved) => string.Format(Get(nameof(TraceDepsFooter)),         methods, callees, resolved);
+    public static string TraceDepsHeader(string fileName)                        => Format(Get(nameof(TraceDepsHeader)),         fileName);
+    public static string TraceDepsNoMethods(string fileName)                     => Format(Get(nameof(TraceDepsNoMethods)),       fileName);
+    public static string TraceDepsSymbolNotFound(string symbol, string fileName) => Format(Get(nameof(TraceDepsSymbolNotFound)), symbol, fileName);
+    public static string TraceDepsFooter(int methods, int callees, int resolved) => Format(Get(nameof(TraceDepsFooter)),         methods, callees, resolved);
 
     // ── First-Run Auto-Discovery ───────────────────────────────────────────────
     public static string MsgFirstRunWelcome(string models, string selected) =>
-        string.Format(Get(nameof(MsgFirstRunWelcome)), models, selected);
+        Format(Get(nameof(MsgFirstRunWelcome)), models, selected);
     /// <summary>The default model was never chosen and is not installed: the best installed one is used, and said.</summary>
     public static string MsgModelAdopted(string configured, string adopted) =>
-        string.Format(Get(nameof(MsgModelAdopted)), configured, adopted);
+        Format(Get(nameof(MsgModelAdopted)), configured, adopted);
     /// <summary>The backend answered with no chat model: named (it is not always Ollama), with the slash command that
     /// downloads one when the backend can (<paramref name="canPull"/>), and no model of our own choosing — the measured
     /// ones live in docs/models.md, where they are kept current.</summary>
     public static string MsgFirstRunNoModels(string backend, bool canPull) =>
-        string.Format(Get(nameof(MsgFirstRunNoModels)), backend)
+        Format(Get(nameof(MsgFirstRunNoModels)), backend)
         + (canPull ? "\n\n" + MsgFirstRunPullHint : string.Empty);
     private static string MsgFirstRunPullHint => Get(nameof(MsgFirstRunPullHint));
 
     /// <summary>The first run could not complete — said in the conversation, which is empty
     /// and waiting, and naming the gesture that re-runs it.</summary>
     public static string FirstRunFailed(string detail) =>
-        string.Format(Get(nameof(FirstRunFailed)), detail);
+        Format(Get(nameof(FirstRunFailed)), detail);
     public static string MsgFirstRunBackendDown(string url, string backend) =>
-        string.Format(Get(nameof(MsgFirstRunBackendDown)), url, backend);
+        Format(Get(nameof(MsgFirstRunBackendDown)), url, backend);
     public static string MsgFirstRunVramWarning(string neededGb, string budgetGb) =>
-        string.Format(Get(nameof(MsgFirstRunVramWarning)), neededGb, budgetGb);
+        Format(Get(nameof(MsgFirstRunVramWarning)), neededGb, budgetGb);
 
     // ── Slash-command autocomplete hints ───────────────────────────────────────
     public static string SlashHintExplain   => Get(nameof(SlashHintExplain));
@@ -1195,7 +1196,7 @@ internal static class Strings
     public static string SlashHintIndex     => Get(nameof(SlashHintIndex));
     public static string SlashHintHistory   => Get(nameof(SlashHintHistory));
     public static string SlashHintTemplate  => Get(nameof(SlashHintTemplate));
-    public static string TemplateUnknown(string id) => string.Format(Get(nameof(TemplateUnknown)), id);
+    public static string TemplateUnknown(string id) => Format(Get(nameof(TemplateUnknown)), id);
     public static string SlashHintDiff      => Get(nameof(SlashHintDiff));
     public static string SlashHintCheck     => Get(nameof(SlashHintCheck));
     public static string SlashHintRules     => Get(nameof(SlashHintRules));
@@ -1218,11 +1219,11 @@ internal static class Strings
 
     // ── /snippets, /note(s), /phistory, /models command messages ────────────────
     public static string SnippetsCleared                     => Get(nameof(SnippetsCleared));
-    public static string SnippetsNoSuch(int idx)             => string.Format(Get(nameof(SnippetsNoSuch)), idx);
-    public static string SnippetsCopied(int idx)             => string.Format(Get(nameof(SnippetsCopied)), idx);
-    public static string SnippetsDeleted(int idx)            => string.Format(Get(nameof(SnippetsDeleted)), idx);
+    public static string SnippetsNoSuch(int idx)             => Format(Get(nameof(SnippetsNoSuch)), idx);
+    public static string SnippetsCopied(int idx)             => Format(Get(nameof(SnippetsCopied)), idx);
+    public static string SnippetsDeleted(int idx)            => Format(Get(nameof(SnippetsDeleted)), idx);
     /// <summary>A snippets or arena save failed: nothing changed on disk.</summary>
-    public static string SnippetsFull(int max) => string.Format(Get(nameof(SnippetsFull)), max);
+    public static string SnippetsFull(int max) => Format(Get(nameof(SnippetsFull)), max);
     public static string SnippetsWriteFailed                 => Get(nameof(SnippetsWriteFailed));
     /// <inheritdoc cref="SnippetsWriteFailed"/>
     public static string ArenaVoteNotSaved                   => Get(nameof(ArenaVoteNotSaved));
@@ -1230,40 +1231,40 @@ internal static class Strings
     public static string ArenaPendingNotSaved                => Get(nameof(ArenaPendingNotSaved));
     public static string SnippetsNone                        => Get(nameof(SnippetsNone));
     /// <summary>The snippet file exists and did not open — never "none saved yet".</summary>
-    public static string SnippetsUnreadable(string path) => string.Format(Get(nameof(SnippetsUnreadable)), path);
+    public static string SnippetsUnreadable(string path) => Format(Get(nameof(SnippetsUnreadable)), path);
 
     public static string NoteUsage                           => Get(nameof(NoteUsage));
-    public static string NoteSaved(string text)              => string.Format(Get(nameof(NoteSaved)), text);
+    public static string NoteSaved(string text)              => Format(Get(nameof(NoteSaved)), text);
     public static string NoteCannotHold(string character, string encoding) =>
-        string.Format(Get(nameof(NoteCannotHold)), character, encoding);
+        Format(Get(nameof(NoteCannotHold)), character, encoding);
     public static string NotesCleared                        => Get(nameof(NotesCleared));
     public static string NotesNoneYet                        => Get(nameof(NotesNoneYet));
     public static string NotesEmpty                          => Get(nameof(NotesEmpty));
     public static string NotesHeading                        => Get(nameof(NotesHeading));
 
-    public static string PHistoryNoEntry(string target)      => string.Format(Get(nameof(PHistoryNoEntry)), target);
+    public static string PHistoryNoEntry(string target)      => Format(Get(nameof(PHistoryNoEntry)), target);
     public static string PHistoryEmpty                       => Get(nameof(PHistoryEmpty));
     /// <summary>The history file exists and did not open — never "history is empty".</summary>
-    public static string PHistoryUnreadable(string path) => string.Format(Get(nameof(PHistoryUnreadable)), path);
-    public static string PHistoryNoMatch(string? term)       => string.Format(Get(nameof(PHistoryNoMatch)), term);
+    public static string PHistoryUnreadable(string path) => Format(Get(nameof(PHistoryUnreadable)), path);
+    public static string PHistoryNoMatch(string? term)       => Format(Get(nameof(PHistoryNoMatch)), term);
 
     public static string ModelsDeleteUsage                   => Get(nameof(ModelsDeleteUsage));
-    public static string ModelsDeleted(string model)         => string.Format(Get(nameof(ModelsDeleted)), model);
-    public static string ModelsDeleteFailed(string model)    => string.Format(Get(nameof(ModelsDeleteFailed)), model);
+    public static string ModelsDeleted(string model)         => Format(Get(nameof(ModelsDeleted)), model);
+    public static string ModelsDeleteFailed(string model)    => Format(Get(nameof(ModelsDeleteFailed)), model);
     public static string ModelsDeleteUnsupported => Get(nameof(ModelsDeleteUnsupported));
     public static string ModelsNoneRunning                   => Get(nameof(ModelsNoneRunning));
     public static string ModelsNoneInstalled                 => Get(nameof(ModelsNoneInstalled));
     public static string ModelsPullUsage                     => Get(nameof(ModelsPullUsage));
-    public static string ModelsPulling(string model)         => string.Format(Get(nameof(ModelsPulling)), model);
-    public static string ModelsPullingStatus(string model, string status) => string.Format(Get(nameof(ModelsPullingStatus)), model, status);
-    public static string ModelsPulled(string model)          => string.Format(Get(nameof(ModelsPulled)), model);
-    public static string ModelsPullFailed(string model)      => string.Format(Get(nameof(ModelsPullFailed)), model);
+    public static string ModelsPulling(string model)         => Format(Get(nameof(ModelsPulling)), model);
+    public static string ModelsPullingStatus(string model, string status) => Format(Get(nameof(ModelsPullingStatus)), model, status);
+    public static string ModelsPulled(string model)          => Format(Get(nameof(ModelsPulled)), model);
+    public static string ModelsPullFailed(string model)      => Format(Get(nameof(ModelsPullFailed)), model);
 
     // ── List/table formatters (/snippets, /phistory, /models) ───────────────────
     public static string SnippetsListHeader                  => Get(nameof(SnippetsListHeader));
-    public static string SnippetsSavedAt(string date)        => string.Format(Get(nameof(SnippetsSavedAt)), date);
+    public static string SnippetsSavedAt(string date)        => Format(Get(nameof(SnippetsSavedAt)), date);
     public static string PHistoryListHeader                  => Get(nameof(PHistoryListHeader));
-    public static string PHistoryListHeaderTerm(string term) => string.Format(Get(nameof(PHistoryListHeaderTerm)), term);
+    public static string PHistoryListHeaderTerm(string term) => Format(Get(nameof(PHistoryListHeaderTerm)), term);
     public static string ModelsRunningHeader                 => Get(nameof(ModelsRunningHeader));
     public static string ModelsInstalledHeader               => Get(nameof(ModelsInstalledHeader));
     public static string ModelsTableModel                    => Get(nameof(ModelsTableModel));
@@ -1274,7 +1275,7 @@ internal static class Strings
     public static string DiagnosticsHeader                   => Get(nameof(DiagnosticsHeader));
     public static string DiagnosticsEmpty                    => Get(nameof(DiagnosticsEmpty));
     public static string DiagnosticsShowing(int shown, int total) =>
-        string.Format(Get(nameof(DiagnosticsShowing)), shown, total);
+        Format(Get(nameof(DiagnosticsShowing)), shown, total);
     public static string DiagnosticsInProcDead               => Get(nameof(DiagnosticsInProcDead));
     public static string DiagnosticsCleared                  => Get(nameof(DiagnosticsCleared));
     public static string DiagnosticsExported                 => Get(nameof(DiagnosticsExported));
@@ -1286,14 +1287,14 @@ internal static class Strings
     public static string UndoRunNone                         => Get(nameof(UndoRunNone));
     public static string UndoRunAlreadyUndone                => Get(nameof(UndoRunAlreadyUndone));
     public static string UndoRunWhileBusy                    => Get(nameof(UndoRunWhileBusy));
-    public static string UndoRunListHeader(int count)        => string.Format(Get(nameof(UndoRunListHeader)), count);
-    public static string UndoRunResult(int restored, int deleted) => string.Format(Get(nameof(UndoRunResult)), restored, deleted);
+    public static string UndoRunListHeader(int count)        => Format(Get(nameof(UndoRunListHeader)), count);
+    public static string UndoRunResult(int restored, int deleted) => Format(Get(nameof(UndoRunResult)), restored, deleted);
     public static string UndoRunSavedFirst                    => Get(nameof(UndoRunSavedFirst));
 
     // ── /replay command ─────────────────────────────────────────────────────────
     public static string SlashHintReplay                     => Get(nameof(SlashHintReplay));
     public static string ReplayNone                          => Get(nameof(ReplayNone));
-    public static string ReplayHeader(string time, int tools, int files) => string.Format(Get(nameof(ReplayHeader)), time, tools, files);
+    public static string ReplayHeader(string time, int tools, int files) => Format(Get(nameof(ReplayHeader)), time, tools, files);
     public static string ReplayFileUnprotected              => Get(nameof(ReplayFileUnprotected));
     public static string ReplayFilesHeader                   => Get(nameof(ReplayFilesHeader));
 
@@ -1302,10 +1303,10 @@ internal static class Strings
     public static string SlashHintBench                      => Get(nameof(SlashHintBench));
     public static string BenchTitle                          => Get(nameof(BenchTitle));
     public static string BenchRunning(string model, int index, int total)
-        => string.Format(Get(nameof(BenchRunning)), model, index, total);
+        => Format(Get(nameof(BenchRunning)), model, index, total);
     public static string BenchNoModels                       => Get(nameof(BenchNoModels));
     public static string BenchNoSaved                        => Get(nameof(BenchNoSaved));
-    public static string BenchSavedAt(string when)           => string.Format(Get(nameof(BenchSavedAt)), when);
+    public static string BenchSavedAt(string when)           => Format(Get(nameof(BenchSavedAt)), when);
     public static string BenchColModel                       => Get(nameof(BenchColModel));
     public static string BenchColTtft                        => Get(nameof(BenchColTtft));
     public static string BenchColSpeed                       => Get(nameof(BenchColSpeed));
@@ -1314,7 +1315,7 @@ internal static class Strings
     public static string BenchRecoHeader                     => Get(nameof(BenchRecoHeader));
     /// <summary>The installed models /bench left out of an automatic run, named above the table.</summary>
     public static string BenchNotMeasured(int measured, int installed, string names) =>
-        string.Format(Get(nameof(BenchNotMeasured)), measured, installed, names);
+        Format(Get(nameof(BenchNotMeasured)), measured, installed, names);
     public static string BenchRecoAgent                      => Get(nameof(BenchRecoAgent));
     public static string BenchRecoUtility                    => Get(nameof(BenchRecoUtility));
     public static string BenchRecoFim                        => Get(nameof(BenchRecoFim));
@@ -1323,15 +1324,15 @@ internal static class Strings
     public static string SlashHintArena                      => Get(nameof(SlashHintArena));
     public static string ArenaUsage                          => Get(nameof(ArenaUsage));
     public static string ArenaNeedTwoModels                  => Get(nameof(ArenaNeedTwoModels));
-    public static string ArenaRunning(string label)          => string.Format(Get(nameof(ArenaRunning)), label);
+    public static string ArenaRunning(string label)          => Format(Get(nameof(ArenaRunning)), label);
     public static string ArenaTitle                          => Get(nameof(ArenaTitle));
     public static string ArenaAnswerHeader(string label, string seconds)
-        => string.Format(Get(nameof(ArenaAnswerHeader)), label, seconds);
+        => Format(Get(nameof(ArenaAnswerHeader)), label, seconds);
     public static string ArenaVotePrompt                     => Get(nameof(ArenaVotePrompt));
     public static string ArenaNoPending                      => Get(nameof(ArenaNoPending));
     public static string ArenaReveal(string modelA, string modelB)
-        => string.Format(Get(nameof(ArenaReveal)), modelA, modelB);
-    public static string ArenaVoteRecordedWin(string model)  => string.Format(Get(nameof(ArenaVoteRecordedWin)), model);
+        => Format(Get(nameof(ArenaReveal)), modelA, modelB);
+    public static string ArenaVoteRecordedWin(string model)  => Format(Get(nameof(ArenaVoteRecordedWin)), model);
     public static string ArenaVoteRecordedTie                => Get(nameof(ArenaVoteRecordedTie));
     public static string ArenaStatsTitle                     => Get(nameof(ArenaStatsTitle));
     public static string ArenaColModel                       => Get(nameof(ArenaColModel));
@@ -1341,18 +1342,18 @@ internal static class Strings
     public static string ArenaColWinRate                     => Get(nameof(ArenaColWinRate));
     public static string ArenaNoStats                        => Get(nameof(ArenaNoStats));
     /// <summary>The arena file exists and did not open — never "no vote recorded yet".</summary>
-    public static string ArenaUnreadable(string path) => string.Format(Get(nameof(ArenaUnreadable)), path);
+    public static string ArenaUnreadable(string path) => Format(Get(nameof(ArenaUnreadable)), path);
     /// <summary>What the vote itself became, said before the cause: nothing was written.</summary>
     public static string ArenaVoteNotRead                    => Get(nameof(ArenaVoteNotRead));
-    public static string ArenaPendingIsAnother(string prompt) => string.Format(Get(nameof(ArenaPendingIsAnother)), prompt);
-    public static string ArenaFailed(string error)           => string.Format(Get(nameof(ArenaFailed)), error);
+    public static string ArenaPendingIsAnother(string prompt) => Format(Get(nameof(ArenaPendingIsAnother)), prompt);
+    public static string ArenaFailed(string error)           => Format(Get(nameof(ArenaFailed)), error);
 
     // ── /tdd command ────────────────────────────────────────────────────────────
     public static string SlashHintTdd                        => Get(nameof(SlashHintTdd));
-    public static string TddRunningTests(int round, int max) => string.Format(Get(nameof(TddRunningTests)), round, max);
-    public static string TddFixing(int round)                => string.Format(Get(nameof(TddFixing)), round);
-    public static string TddSuccess(int rounds)              => string.Format(Get(nameof(TddSuccess)), rounds);
-    public static string TddGiveUp(int maxRounds)            => string.Format(Get(nameof(TddGiveUp)), maxRounds);
+    public static string TddRunningTests(int round, int max) => Format(Get(nameof(TddRunningTests)), round, max);
+    public static string TddFixing(int round)                => Format(Get(nameof(TddFixing)), round);
+    public static string TddSuccess(int rounds)              => Format(Get(nameof(TddSuccess)), rounds);
+    public static string TddGiveUp(int maxRounds)            => Format(Get(nameof(TddGiveUp)), maxRounds);
     /// <summary>
     /// The loop stopped because the run executed no test — a third state, between "green" and
     /// "failing", that must not be folded into the second: doing so spends agent rounds patching
@@ -1360,21 +1361,21 @@ internal static class Strings
     /// </summary>
     public static string TddNothingRan                       => Get(nameof(TddNothingRan));
     public static string TddStoppedAtBudget                  => Get(nameof(TddStoppedAtBudget));
-    public static string TddDebugCaptureApproval(string test) => string.Format(Get(nameof(TddDebugCaptureApproval)), test);
+    public static string TddDebugCaptureApproval(string test) => Format(Get(nameof(TddDebugCaptureApproval)), test);
     public static string TddDebugCapturing                   => Get(nameof(TddDebugCapturing));
     public static string TddDebugCaptureFailed               => Get(nameof(TddDebugCaptureFailed));
     public static string TddDebugCaptureUnavailable          => Get(nameof(TddDebugCaptureUnavailable));
-    public static string XrayHeader(string tokens)           => string.Format(Get(nameof(XrayHeader)), tokens);
+    public static string XrayHeader(string tokens)           => Format(Get(nameof(XrayHeader)), tokens);
     public static string XrayLabelBase                       => Get(nameof(XrayLabelBase));
     public static string XrayLabelPersona                    => Get(nameof(XrayLabelPersona));
     public static string XrayLabelCustom                     => Get(nameof(XrayLabelCustom));
     public static string XrayLabelTemplate                   => Get(nameof(XrayLabelTemplate));
-    public static string XrayLabelRules(string count)        => string.Format(Get(nameof(XrayLabelRules)), count);
-    public static string XrayHistory(string tokens)          => string.Format(Get(nameof(XrayHistory)), tokens);
-    public static string XrayTools(string tokens)            => string.Format(Get(nameof(XrayTools)), tokens);
-    public static string XrayRag(string state)               => string.Format(Get(nameof(XrayRag)), state);
+    public static string XrayLabelRules(string count)        => Format(Get(nameof(XrayLabelRules)), count);
+    public static string XrayHistory(string tokens)          => Format(Get(nameof(XrayHistory)), tokens);
+    public static string XrayTools(string tokens)            => Format(Get(nameof(XrayTools)), tokens);
+    public static string XrayRag(string state)               => Format(Get(nameof(XrayRag)), state);
     public static string XrayRagNoIndexing                   => Get(nameof(XrayRagNoIndexing));
-    public static string XrayBudget(string used, string limit, string pct) => string.Format(Get(nameof(XrayBudget)), used, limit, pct);
+    public static string XrayBudget(string used, string limit, string pct) => Format(Get(nameof(XrayBudget)), used, limit, pct);
     // Interactive X-Ray panel (V2)
     public static string XrayPanelHint                       => Get(nameof(XrayPanelHint));
     public static string XrayPanelWarning                    => Get(nameof(XrayPanelWarning));
@@ -1386,62 +1387,65 @@ internal static class Strings
 
     // ── Analysis-tool scan coverage ────────────────────────────────────────────
     public static string ScanPartial(int scanned, int total) =>
-        string.Format(Get(nameof(ScanPartial)), scanned, total);
+        Format(Get(nameof(ScanPartial)), scanned, total);
     public static string ScanUnreadable(int count) =>
-        string.Format(Get(nameof(ScanUnreadable)), count);
+        Format(Get(nameof(ScanUnreadable)), count);
     public static string ScanFolderSkipped(string folder) =>
-        string.Format(Get(nameof(ScanFolderSkipped)), folder);
+        Format(Get(nameof(ScanFolderSkipped)), folder);
 
     /// <summary>Files the indexing pass dropped for their size — said by <c>/index</c>, because
     /// the index is persisted and a chunk count reads as complete.</summary>
     public static string IndexFilesTooLarge(int count, int kilobytes) =>
-        string.Format(Get(nameof(IndexFilesTooLarge)), count, kilobytes);
+        Format(Get(nameof(IndexFilesTooLarge)), count, kilobytes);
     public static string ScanFolderNotFollowed(string folder) =>
-        string.Format(Get(nameof(ScanFolderNotFollowed)), folder);
+        Format(Get(nameof(ScanFolderNotFollowed)), folder);
 
     // ── /branch command (conversation branching) ───────────────────────────────
     public static string SlashHintBranch                     => Get(nameof(SlashHintBranch));
     public static string BranchNoConversation                => Get(nameof(BranchNoConversation));
-    public static string BranchHeader(int turns)             => string.Format(Get(nameof(BranchHeader)), turns);
+    public static string BranchHeader(int turns)             => Format(Get(nameof(BranchHeader)), turns);
     public static string BranchUsage                         => Get(nameof(BranchUsage));
     public static string BranchTreeHeader                    => Get(nameof(BranchTreeHeader));
     public static string BranchCurrent                       => Get(nameof(BranchCurrent));
-    public static string BranchForkedAt(int turn)            => string.Format(Get(nameof(BranchForkedAt)), turn);
-    public static string BranchInvalidTurn(int turns)        => string.Format(Get(nameof(BranchInvalidTurn)), turns);
-    public static string BranchUnknown(string name)          => string.Format(Get(nameof(BranchUnknown)), name);
+    public static string BranchForkedAt(int turn)            => Format(Get(nameof(BranchForkedAt)), turn);
+    public static string BranchInvalidTurn(int turns)        => Format(Get(nameof(BranchInvalidTurn)), turns);
+    public static string BranchUnknown(string name)          => Format(Get(nameof(BranchUnknown)), name);
     public static string BranchCreated(string branch, int turn, string parent) =>
-        string.Format(Get(nameof(BranchCreated)), branch, turn, parent);
-    public static string BranchSwitched(string name)         => string.Format(Get(nameof(BranchSwitched)), name);
+        Format(Get(nameof(BranchCreated)), branch, turn, parent);
+    public static string BranchSwitched(string name)         => Format(Get(nameof(BranchSwitched)), name);
 
     // ── /task command (background agent tasks) ─────────────────────────────────
     public static string SlashHintTask                       => Get(nameof(SlashHintTask));
     public static string SlashHintDebug                      => Get(nameof(SlashHintDebug));
     public static string TaskSubmitted(string id, string objective) =>
-        string.Format(Get(nameof(TaskSubmitted)), id, objective);
-    public static string TaskQueueFull(int max)              => string.Format(Get(nameof(TaskQueueFull)), max);
-    public static string TaskUnknown(string id)              => string.Format(Get(nameof(TaskUnknown)), id);
-    public static string TaskStopRequested(string id)        => string.Format(Get(nameof(TaskStopRequested)), id);
-    public static string TaskAlreadyFinished(string id)      => string.Format(Get(nameof(TaskAlreadyFinished)), id);
-    public static string TaskForgot(int count)               => string.Format(Get(nameof(TaskForgot)), count);
+        Format(Get(nameof(TaskSubmitted)), id, objective);
+    public static string TaskQueueFull(int max)              => Format(Get(nameof(TaskQueueFull)), max);
+    public static string TaskUnknown(string id)              => Format(Get(nameof(TaskUnknown)), id);
+    public static string TaskStopRequested(string id)        => Format(Get(nameof(TaskStopRequested)), id);
+    public static string TaskAlreadyFinished(string id)      => Format(Get(nameof(TaskAlreadyFinished)), id);
+    public static string TaskForgot(int count)               => Format(Get(nameof(TaskForgot)), count);
     public static string TaskListEmpty                       => Get(nameof(TaskListEmpty));
     public static string TaskListTitle                       => Get(nameof(TaskListTitle));
     public static string TaskListHint                        => Get(nameof(TaskListHint));
     public static string TaskColumnState                     => Get(nameof(TaskColumnState));
     public static string TaskColumnObjective                 => Get(nameof(TaskColumnObjective));
     public static string TaskStateQueued                     => Get(nameof(TaskStateQueued));
-    public static string TaskStateQueuedAt(int position)     => string.Format(Get(nameof(TaskStateQueuedAt)), position);
+    public static string TaskStateQueuedAt(int position)     => Format(Get(nameof(TaskStateQueuedAt)), position);
     public static string TaskStateRunning                    => Get(nameof(TaskStateRunning));
     public static string TaskStateSucceeded                  => Get(nameof(TaskStateSucceeded));
     public static string TaskStateFailed                     => Get(nameof(TaskStateFailed));
     public static string TaskStateCancelled                  => Get(nameof(TaskStateCancelled));
     public static string TaskStillRunning                    => Get(nameof(TaskStillRunning));
     public static string TaskStepsTitle                      => Get(nameof(TaskStepsTitle));
-    public static string TaskDuration(string duration)       => string.Format(Get(nameof(TaskDuration)), duration);
-    public static string TaskFinishedNotice(string id)       => string.Format(Get(nameof(TaskFinishedNotice)), id);
+    /// <summary>{0} = steps the task took, {1} = the last ones its journal keeps.</summary>
+    public static string TaskStepsTitleCut(int taken, int kept) => Format(Get(nameof(TaskStepsTitleCut)), taken, kept);
+    public static string TaskStepsNotKept(int count)         => Format(Get(nameof(TaskStepsNotKept)), count);
+    public static string TaskDuration(string duration)       => Format(Get(nameof(TaskDuration)), duration);
+    public static string TaskFinishedNotice(string id)       => Format(Get(nameof(TaskFinishedNotice)), id);
     /// <summary>A background task that FAILED: the failure is named in the bubble, not only in `/task`.</summary>
-    public static string TaskFailedNotice(string id, string reason) => string.Format(Get(nameof(TaskFailedNotice)), id, reason);
+    public static string TaskFailedNotice(string id, string reason) => Format(Get(nameof(TaskFailedNotice)), id, reason);
     /// <summary>A cancelled background task: nothing was produced, and "finished" suggested otherwise.</summary>
-    public static string TaskCancelledNotice(string id)      => string.Format(Get(nameof(TaskCancelledNotice)), id);
+    public static string TaskCancelledNotice(string id)      => Format(Get(nameof(TaskCancelledNotice)), id);
 
     // ── Inline diff preview ─────────────────────────────────────────────────────
     public static string CodeActionPreviewShown              => Get(nameof(CodeActionPreviewShown));
@@ -1455,48 +1459,48 @@ internal static class Strings
 
     // ── /hardware command ──────────────────────────────────────────────────────
     public static string HardwareUsage                       => Get(nameof(HardwareUsage));
-    public static string HardwareBudgetSet(string gb)        => string.Format(Get(nameof(HardwareBudgetSet)), gb);
+    public static string HardwareBudgetSet(string gb)        => Format(Get(nameof(HardwareBudgetSet)), gb);
     public static string HardwareReportHeading               => Get(nameof(HardwareReportHeading));
-    public static string HardwareBudgetLine(string gb)       => string.Format(Get(nameof(HardwareBudgetLine)), gb);
+    public static string HardwareBudgetLine(string gb)       => Format(Get(nameof(HardwareBudgetLine)), gb);
     public static string HardwareBudgetNotSet                => Get(nameof(HardwareBudgetNotSet));
     public static string HardwareLoadedLine(string gb, string ofBudget, string headroom) =>
-        string.Format(Get(nameof(HardwareLoadedLine)), gb, ofBudget, headroom);
-    public static string HardwareOfBudget(string gb)         => string.Format(Get(nameof(HardwareOfBudget)), gb);
-    public static string HardwareHeadroom(string gb)         => string.Format(Get(nameof(HardwareHeadroom)), gb);
-    public static string HardwareCompute(string kind)        => string.Format(Get(nameof(HardwareCompute)), kind);
+        Format(Get(nameof(HardwareLoadedLine)), gb, ofBudget, headroom);
+    public static string HardwareOfBudget(string gb)         => Format(Get(nameof(HardwareOfBudget)), gb);
+    public static string HardwareHeadroom(string gb)         => Format(Get(nameof(HardwareHeadroom)), gb);
+    public static string HardwareCompute(string kind)        => Format(Get(nameof(HardwareCompute)), kind);
     public static string HardwareLoadedNone                  => Get(nameof(HardwareLoadedNone));
-    public static string HardwareLoadedUnknown(string url)   => string.Format(Get(nameof(HardwareLoadedUnknown)), url);
+    public static string HardwareLoadedUnknown(string url)   => Format(Get(nameof(HardwareLoadedUnknown)), url);
     public static string HardwareLoadedNotSaid                => Get(nameof(HardwareLoadedNotSaid));
     public static string HardwareLoadedRefused(string url, string refusal) =>
-        string.Format(Get(nameof(HardwareLoadedRefused)), url, refusal);
-    public static string HardwareLoadedUnreported(int count) => string.Format(Get(nameof(HardwareLoadedUnreported)), count);
+        Format(Get(nameof(HardwareLoadedRefused)), url, refusal);
+    public static string HardwareLoadedUnreported(int count) => Format(Get(nameof(HardwareLoadedUnreported)), count);
     public static string HardwareLoadedModelsTable           => Get(nameof(HardwareLoadedModelsTable));
     public static string HardwareInstalledModelsTable        => Get(nameof(HardwareInstalledModelsTable));
     public static string HardwareInstalledNote               => Get(nameof(HardwareInstalledNote));
     public static string HardwareContextHeading              => Get(nameof(HardwareContextHeading));
-    public static string HardwareConfiguredCtx(int ctx)      => string.Format(Get(nameof(HardwareConfiguredCtx)), ctx);
+    public static string HardwareConfiguredCtx(int ctx)      => Format(Get(nameof(HardwareConfiguredCtx)), ctx);
     public static string HardwareRecommendedCtx(string model, int recommended, string modelMax) =>
-        string.Format(Get(nameof(HardwareRecommendedCtx)), model, recommended, modelMax);
-    public static string HardwareModelMax(int max)           => string.Format(Get(nameof(HardwareModelMax)), max);
+        Format(Get(nameof(HardwareRecommendedCtx)), model, recommended, modelMax);
+    public static string HardwareModelMax(int max)           => Format(Get(nameof(HardwareModelMax)), max);
     public static string HardwareCtxWarn(int configured, int recommended) =>
-        string.Format(Get(nameof(HardwareCtxWarn)), configured, recommended);
+        Format(Get(nameof(HardwareCtxWarn)), configured, recommended);
 
     public static string HardwareCtxExceedsModel(int configured, int modelMax) =>
-        string.Format(Get(nameof(HardwareCtxExceedsModel)), configured, modelMax);
+        Format(Get(nameof(HardwareCtxExceedsModel)), configured, modelMax);
 
     public static string HardwareCtxNoVramRecommendation(string model, int modelMax) =>
-        string.Format(Get(nameof(HardwareCtxNoVramRecommendation)), model, modelMax);
+        Format(Get(nameof(HardwareCtxNoVramRecommendation)), model, modelMax);
 
     // ── RAG / semantic search ──────────────────────────────────────────────────
     public static string RagIndexNotReady(string status) =>
-        string.Format(Get(nameof(RagIndexNotReady)), status);
+        Format(Get(nameof(RagIndexNotReady)), status);
 
     /// <summary>The <c>/index</c> report, served to both front-ends.</summary>
     public static string IndexTitle                      => Get(nameof(IndexTitle));
     /// <inheritdoc cref="IndexTitle"/>
     public static string IndexNoRoot                     => Get(nameof(IndexNoRoot));
     /// <inheritdoc cref="IndexTitle"/>
-    public static string IndexRebuildStarted(string root) => string.Format(Get(nameof(IndexRebuildStarted)), root);
+    public static string IndexRebuildStarted(string root) => Format(Get(nameof(IndexRebuildStarted)), root);
     /// <inheritdoc cref="IndexTitle"/>
     public static string IndexDisabled                   => Get(nameof(IndexDisabled));
     /// <inheritdoc cref="IndexTitle"/>
@@ -1508,72 +1512,72 @@ internal static class Strings
     /// <inheritdoc cref="IndexTitle"/>
     public static string IndexForceHint                  => Get(nameof(IndexForceHint));
     /// <inheritdoc cref="IndexTitle"/>
-    public static string IndexStatusLine(string status)  => string.Format(Get(nameof(IndexStatusLine)), status);
+    public static string IndexStatusLine(string status)  => Format(Get(nameof(IndexStatusLine)), status);
     /// <inheritdoc cref="IndexTitle"/>
-    public static string IndexChunksLine(string chunks)  => string.Format(Get(nameof(IndexChunksLine)), chunks);
+    public static string IndexChunksLine(string chunks)  => Format(Get(nameof(IndexChunksLine)), chunks);
     /// <inheritdoc cref="IndexTitle"/>
-    public static string IndexRootLine(string root)      => string.Format(Get(nameof(IndexRootLine)), root);
+    public static string IndexRootLine(string root)      => Format(Get(nameof(IndexRootLine)), root);
     /// <inheritdoc cref="IndexTitle"/>
-    public static string IndexModelLine(string model)    => string.Format(Get(nameof(IndexModelLine)), model);
+    public static string IndexModelLine(string model)    => Format(Get(nameof(IndexModelLine)), model);
     /// <inheritdoc cref="IndexTitle"/>
-    public static string IndexTopKLine(int topK)         => string.Format(Get(nameof(IndexTopKLine)), topK);
+    public static string IndexTopKLine(int topK)         => Format(Get(nameof(IndexTopKLine)), topK);
 
     public static string RagNoResults(string query) =>
-        string.Format(Get(nameof(RagNoResults)), query);
+        Format(Get(nameof(RagNoResults)), query);
     // What is ADDED to a "nothing found" when the semantic half did not run. Without these two
     // sentences an absent capability and an absence of results came out as the same words — and a
     // model reading "nothing found" stops looking. See SearchDegradation.
     public static string SearchKeywordOnlySemanticOff => Get(nameof(SearchKeywordOnlySemanticOff));
     public static string SearchKeywordOnlyNoEmbeddingModel => Get(nameof(SearchKeywordOnlyNoEmbeddingModel));
     public static string SearchKeywordOnlyEmbeddingUnavailable(string model) =>
-        string.Format(Get(nameof(SearchKeywordOnlyEmbeddingUnavailable)), model);
+        Format(Get(nameof(SearchKeywordOnlyEmbeddingUnavailable)), model);
 
     // ── Agent memory ───────────────────────────────────────────────────────────
     public static string UpdateMemoryNoProject => Get(nameof(UpdateMemoryNoProject));
     public static string UpdateMemoryNoContent => Get(nameof(UpdateMemoryNoContent));
-    public static string UpdateMemoryOk(string path, int chars)    => string.Format(Get(nameof(UpdateMemoryOk)),    path, chars);
-    public static string UpdateMemoryClear(string path)            => string.Format(Get(nameof(UpdateMemoryClear)), path);
-    public static string SlashMemoryNotFound(string path)          => string.Format(Get(nameof(SlashMemoryNotFound)), path);
+    public static string UpdateMemoryOk(string path, int chars)    => Format(Get(nameof(UpdateMemoryOk)),    path, chars);
+    public static string UpdateMemoryClear(string path)            => Format(Get(nameof(UpdateMemoryClear)), path);
+    public static string SlashMemoryNotFound(string path)          => Format(Get(nameof(SlashMemoryNotFound)), path);
     public static string SlashMemoryLoaded(string path, int chars, string preview) =>
-        string.Format(Get(nameof(SlashMemoryLoaded)), path, chars, preview);
+        Format(Get(nameof(SlashMemoryLoaded)), path, chars, preview);
 
     // ── /onboard — committable project profile ───────────────────
     public static string SlashHintOnboard             => Get(nameof(SlashHintOnboard));
     public static string OnboardUsage                 => Get(nameof(OnboardUsage));
     public static string OnboardHeading               => Get(nameof(OnboardHeading));
-    public static string OnboardNoProfile(string path) => string.Format(Get(nameof(OnboardNoProfile)), path);
+    public static string OnboardNoProfile(string path) => Format(Get(nameof(OnboardNoProfile)), path);
     public static string OnboardProfileUnusable(string path, string detail) =>
-        string.Format(Get(nameof(OnboardProfileUnusable)), path, detail);
+        Format(Get(nameof(OnboardProfileUnusable)), path, detail);
     public static string OnboardProfileNotAnObject    => Get(nameof(OnboardProfileNotAnObject));
-    public static string OnboardExcludesNotApplied(int count) => string.Format(Get(nameof(OnboardExcludesNotApplied)), count);
+    public static string OnboardExcludesNotApplied(int count) => Format(Get(nameof(OnboardExcludesNotApplied)), count);
     public static string OnboardAppliedHeading        => Get(nameof(OnboardAppliedHeading));
     public static string OnboardRecommendedHeading    => Get(nameof(OnboardRecommendedHeading));
     public static string OnboardRecommendLine(string key, string proposed, string current) =>
-        string.Format(Get(nameof(OnboardRecommendLine)), key, proposed, current);
+        Format(Get(nameof(OnboardRecommendLine)), key, proposed, current);
     public static string OnboardApplyHint             => Get(nameof(OnboardApplyHint));
     public static string OnboardIgnoredHeading        => Get(nameof(OnboardIgnoredHeading));
-    public static string OnboardContextPresent(string path) => string.Format(Get(nameof(OnboardContextPresent)), path);
+    public static string OnboardContextPresent(string path) => Format(Get(nameof(OnboardContextPresent)), path);
     public static string OnboardContextMissing        => Get(nameof(OnboardContextMissing));
     public static string OnboardNothingToApply        => Get(nameof(OnboardNothingToApply));
-    public static string OnboardApplied(string keys)  => string.Format(Get(nameof(OnboardApplied)), keys);
-    public static string OnboardContextWindowRefused(string value) => string.Format(Get(nameof(OnboardContextWindowRefused)), value);
-    public static string OnboardContextExists(string path) => string.Format(Get(nameof(OnboardContextExists)), path);
+    public static string OnboardApplied(string keys)  => Format(Get(nameof(OnboardApplied)), keys);
+    public static string OnboardContextWindowRefused(string value) => Format(Get(nameof(OnboardContextWindowRefused)), value);
+    public static string OnboardContextExists(string path) => Format(Get(nameof(OnboardContextExists)), path);
     public static string OnboardContextReadingLabel   => Get(nameof(OnboardContextReadingLabel));
     public static string OnboardContextDraftingLabel  => Get(nameof(OnboardContextDraftingLabel));
     public static string OnboardContextEmpty          => Get(nameof(OnboardContextEmpty));
     public static string OnboardContextGenerated(string path, int chars) =>
-        string.Format(Get(nameof(OnboardContextGenerated)), path, chars);
+        Format(Get(nameof(OnboardContextGenerated)), path, chars);
     public static string FilePreviousVersionSaved(string path) =>
-        string.Format(Get(nameof(FilePreviousVersionSaved)), path);
+        Format(Get(nameof(FilePreviousVersionSaved)), path);
     public static string FileNotReplacedNoBackup(string path) =>
-        string.Format(Get(nameof(FileNotReplacedNoBackup)), path);
+        Format(Get(nameof(FileNotReplacedNoBackup)), path);
     public static string OnboardContextSystemPrompt   => Get(nameof(OnboardContextSystemPrompt));
     public static string OnboardContextUserPrompt(string brief) =>
-        string.Format(Get(nameof(OnboardContextUserPrompt)), brief);
+        Format(Get(nameof(OnboardContextUserPrompt)), brief);
     public static string OnboardProfileScaffolded(string path) =>
-        string.Format(Get(nameof(OnboardProfileScaffolded)), path);
+        Format(Get(nameof(OnboardProfileScaffolded)), path);
     public static string OnboardProfileExists(string path) =>
-        string.Format(Get(nameof(OnboardProfileExists)), path);
+        Format(Get(nameof(OnboardProfileExists)), path);
 
     // ── /plan — plan mode and persistent plans ────────────────────
     public static string PlanUsage           => Get(nameof(PlanUsage));
@@ -1594,9 +1598,9 @@ internal static class Strings
     public static string DialogExportFilter  => Get(nameof(DialogExportFilter));
 
     /// <summary>Three failures that must not pass in silence.</summary>
-    public static string SessionLoadFailed(string name)  => string.Format(Get(nameof(SessionLoadFailed)),  name);
-    public static string PlanOpenFailed(string path)     => string.Format(Get(nameof(PlanOpenFailed)),     path);
-    public static string SettingsSaveFailed(string error) => string.Format(Get(nameof(SettingsSaveFailed)), error);
+    public static string SessionLoadFailed(string name)  => Format(Get(nameof(SessionLoadFailed)),  name);
+    public static string PlanOpenFailed(string path)     => Format(Get(nameof(PlanOpenFailed)),     path);
+    public static string SettingsSaveFailed(string error) => Format(Get(nameof(SettingsSaveFailed)), error);
     public static string PlanListEmpty       => Get(nameof(PlanListEmpty));
     public static string PlanListHeader      => Get(nameof(PlanListHeader));
     public static string PlanNoSteps         => Get(nameof(PlanNoSteps));
@@ -1605,53 +1609,53 @@ internal static class Strings
     public static string PlanStateDone       => Get(nameof(PlanStateDone));
     public static string PlanStateTodo       => Get(nameof(PlanStateTodo));
     public static string PlanSaved(string name, int steps, string path) =>
-        string.Format(Get(nameof(PlanSaved)), name, steps, path);
+        Format(Get(nameof(PlanSaved)), name, steps, path);
     public static string PlanNotFound(string name) =>
-        string.Format(Get(nameof(PlanNotFound)), name);
+        Format(Get(nameof(PlanNotFound)), name);
     public static string PlanHeader(string title, string name, int done, int total) =>
-        string.Format(Get(nameof(PlanHeader)), title, name, done, total);
+        Format(Get(nameof(PlanHeader)), title, name, done, total);
     public static string PlanNextStep(int number, string text) =>
-        string.Format(Get(nameof(PlanNextStep)), number, text);
+        Format(Get(nameof(PlanNextStep)), number, text);
     public static string PlanComplete(string title) =>
-        string.Format(Get(nameof(PlanComplete)), title);
+        Format(Get(nameof(PlanComplete)), title);
     /// <summary>A plan whose file holds no step at all — which is not the same as a finished one.</summary>
     public static string PlanNoStepsYet(string title) =>
-        string.Format(Get(nameof(PlanNoStepsYet)), title);
+        Format(Get(nameof(PlanNoStepsYet)), title);
     public static string PlanStepTicked(int number, string text) =>
-        string.Format(Get(nameof(PlanStepTicked)), number, text);
+        Format(Get(nameof(PlanStepTicked)), number, text);
     public static string PlanStepUnticked(int number) =>
-        string.Format(Get(nameof(PlanStepUnticked)), number);
+        Format(Get(nameof(PlanStepUnticked)), number);
     public static string PlanStepUnknown(int number, int total) =>
-        string.Format(Get(nameof(PlanStepUnknown)), number, total);
+        Format(Get(nameof(PlanStepUnknown)), number, total);
     public static string PlanStepAlready(int number, string state) =>
-        string.Format(Get(nameof(PlanStepAlready)), number, state);
+        Format(Get(nameof(PlanStepAlready)), number, state);
 
     // ── /task proposals — background tasks that propose writes ────
     public static string TaskProposalsHeader(int count) =>
-        string.Format(Get(nameof(TaskProposalsHeader)), count);
+        Format(Get(nameof(TaskProposalsHeader)), count);
     public static string TaskProposalItem(int number, string tool, string details) =>
-        string.Format(Get(nameof(TaskProposalItem)), number, tool, details);
+        Format(Get(nameof(TaskProposalItem)), number, tool, details);
     public static string TaskProposalsApplyHint(string taskId) =>
-        string.Format(Get(nameof(TaskProposalsApplyHint)), taskId);
+        Format(Get(nameof(TaskProposalsApplyHint)), taskId);
     public static string TaskSubmittedProposing(string id, string objective) =>
-        string.Format(Get(nameof(TaskSubmittedProposing)), id, objective);
+        Format(Get(nameof(TaskSubmittedProposing)), id, objective);
     public static string TaskNoProposals(string id) =>
-        string.Format(Get(nameof(TaskNoProposals)), id);
+        Format(Get(nameof(TaskNoProposals)), id);
     public static string TaskProposalUnknown(int number, int total) =>
-        string.Format(Get(nameof(TaskProposalUnknown)), number, total);
+        Format(Get(nameof(TaskProposalUnknown)), number, total);
     public static string TaskProposalStale(string path) =>
-        string.Format(Get(nameof(TaskProposalStale)), path);
+        Format(Get(nameof(TaskProposalStale)), path);
     public static string TaskProposalAlreadyApplied(string path) =>
-        string.Format(Get(nameof(TaskProposalAlreadyApplied)), path);
+        Format(Get(nameof(TaskProposalAlreadyApplied)), path);
     public static string TaskProposalFileMissing(string path) =>
-        string.Format(Get(nameof(TaskProposalFileMissing)), path);
+        Format(Get(nameof(TaskProposalFileMissing)), path);
 
     public static string TaskProposalUnreadable(string path) =>
-        string.Format(Get(nameof(TaskProposalUnreadable)), path);
+        Format(Get(nameof(TaskProposalUnreadable)), path);
     public static string TaskProposalUnusable(string path) =>
-        string.Format(Get(nameof(TaskProposalUnusable)), path);
+        Format(Get(nameof(TaskProposalUnusable)), path);
     public static string TaskProposalApplied(string path) =>
-        string.Format(Get(nameof(TaskProposalApplied)), path);
+        Format(Get(nameof(TaskProposalApplied)), path);
 
     // ── Models page: the suggestion, what is loaded, unloading ─────────────────────────────────────────
     public static string ModelRoleChat => Get(nameof(ModelRoleChat));
@@ -1666,54 +1670,54 @@ internal static class Strings
     public static string SuggestOnlyEmbedding => Get(nameof(SuggestOnlyEmbedding));
     public static string SuggestNothingListed => Get(nameof(SuggestNothingListed));
     public static string SuggestChatRecommended(string a) =>
-        string.Format(Get(nameof(SuggestChatRecommended)), a);
+        Format(Get(nameof(SuggestChatRecommended)), a);
     public static string SuggestChatUsable(string a) =>
-        string.Format(Get(nameof(SuggestChatUsable)), a);
+        Format(Get(nameof(SuggestChatUsable)), a);
     public static string SuggestChatNotRecommended(string a) =>
-        string.Format(Get(nameof(SuggestChatNotRecommended)), a);
+        Format(Get(nameof(SuggestChatNotRecommended)), a);
     public static string SuggestChatUnmeasured(string a) =>
-        string.Format(Get(nameof(SuggestChatUnmeasured)), a);
+        Format(Get(nameof(SuggestChatUnmeasured)), a);
     public static string SuggestInstallRecommended(string a) =>
-        string.Format(Get(nameof(SuggestInstallRecommended)), a);
+        Format(Get(nameof(SuggestInstallRecommended)), a);
     public static string SuggestEmbeddingNone => Get(nameof(SuggestEmbeddingNone));
     public static string SuggestEmbeddingAuto(string a) =>
-        string.Format(Get(nameof(SuggestEmbeddingAuto)), a);
+        Format(Get(nameof(SuggestEmbeddingAuto)), a);
     public static string SuggestEmbeddingReindex => Get(nameof(SuggestEmbeddingReindex));
     public static string SuggestFimMeasured(string a) =>
-        string.Format(Get(nameof(SuggestFimMeasured)), a);
+        Format(Get(nameof(SuggestFimMeasured)), a);
     public static string SuggestFimDoesNotFit(string a, string b, string c) =>
-        string.Format(Get(nameof(SuggestFimDoesNotFit)), a, b, c);
+        Format(Get(nameof(SuggestFimDoesNotFit)), a, b, c);
     public static string SuggestFimChatCompletes => Get(nameof(SuggestFimChatCompletes));
     public static string SuggestFimSameAsChat => Get(nameof(SuggestFimSameAsChat));
     public static string SuggestOverrides(string a) =>
-        string.Format(Get(nameof(SuggestOverrides)), a);
+        Format(Get(nameof(SuggestOverrides)), a);
     public static string LoadedModelsUnknown => Get(nameof(LoadedModelsUnknown));
     public static string LoadedModelsNone => Get(nameof(LoadedModelsNone));
     public static string LoadedModelsUnreachable => Get(nameof(LoadedModelsUnreachable));
     public static string LoadedModelsCount(int a) =>
-        string.Format(Get(nameof(LoadedModelsCount)), a);
+        Format(Get(nameof(LoadedModelsCount)), a);
     public static string LoadedModelVram(string a) =>
-        string.Format(Get(nameof(LoadedModelVram)), a);
+        Format(Get(nameof(LoadedModelVram)), a);
     public static string LoadedModelCpu => Get(nameof(LoadedModelCpu));
     public static string LoadedModelDiskSize(string a) =>
-        string.Format(Get(nameof(LoadedModelDiskSize)), a);
+        Format(Get(nameof(LoadedModelDiskSize)), a);
     public static string LoadedModelContext(string a) =>
-        string.Format(Get(nameof(LoadedModelContext)), a);
+        Format(Get(nameof(LoadedModelContext)), a);
     public static string LoadedModelStays => Get(nameof(LoadedModelStays));
     public static string LoadedModelUnloadsIn(int a) =>
-        string.Format(Get(nameof(LoadedModelUnloadsIn)), a);
+        Format(Get(nameof(LoadedModelUnloadsIn)), a);
     public static string LoadedModelUses(string a) =>
-        string.Format(Get(nameof(LoadedModelUses)), a);
+        Format(Get(nameof(LoadedModelUses)), a);
     public static string LoadedModelUnused => Get(nameof(LoadedModelUnused));
     public static string UnloadNotSupported => Get(nameof(UnloadNotSupported));
     public static string UnloadWhileAnswering => Get(nameof(UnloadWhileAnswering));
     public static string UnloadNothing => Get(nameof(UnloadNothing));
     public static string UnloadDone(string a) =>
-        string.Format(Get(nameof(UnloadDone)), a);
+        Format(Get(nameof(UnloadDone)), a);
     public static string UnloadKept(string a) =>
-        string.Format(Get(nameof(UnloadKept)), a);
+        Format(Get(nameof(UnloadKept)), a);
     public static string UnloadUnverified(string a) =>
-        string.Format(Get(nameof(UnloadUnverified)), a);
+        Format(Get(nameof(UnloadUnverified)), a);
     public static string BtnSuggestModels => Get(nameof(BtnSuggestModels));
     public static string HintSuggestModels => Get(nameof(HintSuggestModels));
     public static string SettingsSectionLoadedModels => Get(nameof(SettingsSectionLoadedModels));

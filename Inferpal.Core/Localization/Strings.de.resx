@@ -398,7 +398,7 @@ Sicherung: {0}</value></data>
   <data name="HistoryNoSessions" xml:space="preserve"><value>Keine gespeicherten Sitzungen. Sitzungen werden automatisch beim `/clear` archiviert.</value></data>
   <data name="HistoryNoResults" xml:space="preserve"><value>Keine Sitzungen entsprechen „{0}".</value></data>
   <data name="HistoryListHeader" xml:space="preserve"><value>## Gespeicherte Sitzungen ({0})</value></data>
-  <data name="HistoryMessageCount" xml:space="preserve"><value>{0} Nachrichten</value></data>
+  <data name="HistoryMessageCount" xml:space="preserve"><value>{0} {0:Nachricht|Nachrichten}</value></data>
   <data name="HistorySearchHint" xml:space="preserve"><value>→ `/history &lt;Begriff&gt;`, um im Inhalt der Sitzungen zu suchen</value></data>
   <data name="HistorySearchHeader" xml:space="preserve"><value>## Verlauf: „{0}“ — {1} Sitzung(en)</value></data>
   <data name="HistorySearchMoreMatches" xml:space="preserve"><value>+{0} weitere passende Nachricht(en) in dieser Sitzung</value></data>
@@ -461,6 +461,8 @@ Klicken Sie auf **Mit KI reparieren**, um die automatische Korrektur in einer Sc
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: Build-Prüfung nach 60 s abgebrochen – bitte manuell prüfen.</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: Die Build-Prüfung ist fehlgeschlagen, ohne einen einzigen Fehler zu nennen — führen Sie sie selbst aus, um zu sehen, warum.</value></data>
+  <data name="SmartFixBuildFailed" xml:space="preserve"><value>🔨 Smart Fix: Der Build ist nach dieser Änderung fehlgeschlagen – wenn die Änderung in anderen Dateien weitergeht, schließen Sie sie ab; andernfalls beheben Sie, was er meldet:
+{0}</value></data>
   <data name="SmartFixCouldNotRun" xml:space="preserve"><value>⚠ Smart Fix: Die Build-Prüfung konnte nicht ausgeführt werden ({0}) — diese Änderung wurde nicht überprüft.</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>Nach jeder Änderung den Build prüfen</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>.NET, TypeScript, Rust und Go sofort einsatzbereit. Fehler gehen direkt an den Agenten zurück.</value></data>
@@ -518,7 +520,7 @@ Klicken Sie auf **Mit KI reparieren**, um die automatische Korrektur in einer Sc
   <!-- analyze_impact tool -->
   <data name="ImpactHeader"         xml:space="preserve"><value>Impaktanalyse — {0}</value></data>
   <data name="ImpactNoPublicApi"    xml:space="preserve"><value>Keine öffentlichen Typen oder exportierten Symbole in {0} gefunden.</value></data>
-  <data name="ImpactFooter"         xml:space="preserve"><value>📊 Blast Radius: {0} direkt · {1} transitiv · {2} Tests · {3} Einstiegspunkte</value></data>
+  <data name="ImpactFooter"         xml:space="preserve"><value>📊 Blast Radius: {0} direkt · {1} transitiv · {2} {2:Test|Tests} · {3} {3:Einstiegspunkt|Einstiegspunkte}</value></data>
 
   <!-- trace_dependency tool -->
   <data name="TraceDepsHeader"          xml:space="preserve"><value>Aufrufgraph — {0}</value></data>
@@ -925,6 +927,8 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="TaskStateCancelled" xml:space="preserve"><value>abgebrochen</value></data>
   <data name="TaskStillRunning" xml:space="preserve"><value>_Läuft noch — der Bericht erscheint hier, sobald sie fertig ist._</value></data>
   <data name="TaskStepsTitle" xml:space="preserve"><value>Schritte</value></data>
+  <data name="TaskStepsTitleCut" xml:space="preserve"><value>Schritte ({0} — die letzten {1} behalten)</value></data>
+  <data name="TaskStepsNotKept" xml:space="preserve"><value>… {0} {0:früherer Schritt nicht behalten|frühere Schritte nicht behalten}</value></data>
   <data name="TaskDuration" xml:space="preserve"><value>_Dauer: {0}._</value></data>
   <data name="TaskFailedNotice" xml:space="preserve"><value>Hintergrundaufgabe `{0}` fehlgeschlagen — {1}. `/task {0}` für die Details.</value></data>
   <data name="TaskCancelledNotice" xml:space="preserve"><value>Hintergrundaufgabe `{0}` wurde abgebrochen — es wurde nichts erzeugt.</value></data>
@@ -1076,7 +1080,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="HintAskBeforeActions" xml:space="preserve"><value>Sie sehen den echten Diff oder den genauen Befehl. Aus: Alles wird stillschweigend freigegeben — katastrophale Befehle werden weiterhin abgelehnt.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Die Änderung vor dem Anwenden zeigen</value></data>
   <data name="HintInlineDiffPreview" xml:space="preserve"><value>Hinzugefügte und entfernte Zeilen im Editor: jede Änderung behalten oder verwerfen, oder alle auf einmal. Aus: sofort angewendet, Strg+Z macht sie rückgängig.</value></data>
-  <data name="McpCardConnected" xml:space="preserve"><value>Verbunden · {0} Werkzeuge</value></data>
+  <data name="McpCardConnected" xml:space="preserve"><value>Verbunden · {0} {0:Werkzeug|Werkzeuge}</value></data>
   <data name="McpCardSignIn" xml:space="preserve"><value>Anmeldung nötig</value></data>
   <data name="McpCardDidNotStart" xml:space="preserve"><value>Nicht gestartet</value></data>
   <data name="McpCardNotStarted" xml:space="preserve"><value>Noch nicht gestartet</value></data>
@@ -1130,8 +1134,8 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="IndexCardFailed" xml:space="preserve"><value>Indizierung fehlgeschlagen</value></data>
   <data name="IndexCardNoWorkspace" xml:space="preserve"><value>Kein Arbeitsbereich geöffnet</value></data>
   <data name="IndexCardNoWorkspaceDetail" xml:space="preserve"><value>Öffnen Sie eine Projektmappe oder einen Ordner: Der Index wird dafür erstellt.</value></data>
-  <data name="IndexCardFilesUpdated" xml:space="preserve"><value>{0} Dateien · aktualisiert um {1}</value></data>
-  <data name="IndexCardProgress" xml:space="preserve"><value>{0} von {1} Dateien gelesen</value></data>
+  <data name="IndexCardFilesUpdated" xml:space="preserve"><value>{0:N0} {0:Datei|Dateien} · aktualisiert um {1}</value></data>
+  <data name="IndexCardProgress" xml:space="preserve"><value>{0:N0} von {1:N0} {1:Datei|Dateien} gelesen</value></data>
   <data name="IndexCardNotBuiltDetail" xml:space="preserve"><value>Die Hintergrundindizierung ist aus: Der Agent sucht nach Stichwörtern.</value></data>
   <data name="IndexCardStoppedDetail" xml:space="preserve"><value>Der letzte Durchlauf wurde nicht beendet: Der Index ist unvollständig.</value></data>
   <data name="IndexCardFailedDetail" xml:space="preserve"><value>{0}. Details unter /diagnostics.</value></data>
@@ -1141,7 +1145,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="IndexCardShowThem" xml:space="preserve"><value>Anzeigen</value></data>
   <data name="IndexCardHideThem" xml:space="preserve"><value>Ausblenden</value></data>
   <data name="IndexCardMoreFiles" xml:space="preserve"><value>…und {0} weitere.</value></data>
-  <data name="IndexCardHoles" xml:space="preserve"><value>Ohne Vektor werden {0} von {1} Ausschnitten nur über Stichwörter gefunden. Neu erstellen ergänzt sie.</value></data>
+  <data name="IndexCardHoles" xml:space="preserve"><value>Nur über Stichwörter auffindbar, ohne Vektor: {0:N0} von {1:N0} {1:Ausschnitt|Ausschnitten}. Neu erstellen ergänzt die fehlenden Vektoren.</value></data>
   <data name="IndexCardModelSemantic" xml:space="preserve"><value>Suche nach Bedeutung mit {0}, dazu exakte Namen und Stichwörter.</value></data>
   <data name="IndexCardModelKeywords" xml:space="preserve"><value>Nur Stichwortsuche: Kein Embedding-Modell ist gewählt oder installiert.</value></data>
   <data name="IndexCardModelOff" xml:space="preserve"><value>Nur Stichwortsuche: Die Suche nach Bedeutung ist aus.</value></data>
@@ -1151,9 +1155,9 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="IndexExclusionsHowTo" xml:space="preserve"><value>Build- und Abhängigkeitsordner sind immer ausgenommen. Um mehr auszuschließen, listen Sie Muster unter indexExclude in .inferpal/project.json auf — /onboard init erstellt die Datei.</value></data>
   <data name="SettingsEditFile" xml:space="preserve"><value>Bearbeiten</value></data>
   <data name="SettingsOpenFile" xml:space="preserve"><value>Öffnen</value></data>
-  <data name="DocsSiteIndexed" xml:space="preserve"><value>{0} Seiten · indiziert</value></data>
-  <data name="DocsSiteHoles" xml:space="preserve"><value>{0} Seiten · {1} ohne Suche nach Bedeutung</value></data>
-  <data name="DocsSiteHolesNote" xml:space="preserve"><value>{0} Abschnitte wurden gelesen, während das Embedding-Modell nicht antwortete: Bis zur Neuindizierung werden sie nur über Stichwörter gefunden.</value></data>
+  <data name="DocsSiteIndexed" xml:space="preserve"><value>{0} {0:Seite|Seiten} · indiziert</value></data>
+  <data name="DocsSiteHoles" xml:space="preserve"><value>{0} {0:Seite|Seiten} · {1} {1:Abschnitt|Abschnitte} ohne Suche nach Bedeutung</value></data>
+  <data name="DocsSiteHolesNote" xml:space="preserve"><value>{0} {0:Abschnitt wurde|Abschnitte wurden} gelesen, während das Embedding-Modell nicht antwortete: Bis zur Neuindizierung {0:wird er|werden sie} nur über Stichwörter gefunden.</value></data>
   <data name="DocsSiteIndexing" xml:space="preserve"><value>Indizierung…</value></data>
   <data name="DocsReindex" xml:space="preserve"><value>Neu indizieren</value></data>
   <data name="DocsAddSite" xml:space="preserve"><value>Website hinzufügen</value></data>
@@ -1178,16 +1182,11 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="ProjectFileNotes" xml:space="preserve"><value>Ihre Notizen</value></data>
   <data name="ProjectFileRules" xml:space="preserve"><value>Regeln nach Datei: {0}</value></data>
   <data name="ProjectFileNotYet" xml:space="preserve"><value>noch nicht erstellt</value></data>
-  <data name="RunSteps1" xml:space="preserve"><value>1 Schritt</value></data>
-  <data name="RunSteps" xml:space="preserve"><value>{0} Schritte</value></data>
-  <data name="RunRead1" xml:space="preserve"><value>1 Datei gelesen</value></data>
-  <data name="RunRead" xml:space="preserve"><value>{0} Dateien gelesen</value></data>
-  <data name="RunSearched1" xml:space="preserve"><value>1 Suche</value></data>
-  <data name="RunSearched" xml:space="preserve"><value>{0} Suchen</value></data>
-  <data name="RunEdited1" xml:space="preserve"><value>1 geändert</value></data>
+  <data name="RunSteps" xml:space="preserve"><value>{0} {0:Schritt|Schritte}</value></data>
+  <data name="RunRead" xml:space="preserve"><value>{0} {0:Datei|Dateien} gelesen</value></data>
+  <data name="RunSearched" xml:space="preserve"><value>{0} {0:Suche|Suchen}</value></data>
   <data name="RunEdited" xml:space="preserve"><value>{0} geändert</value></data>
-  <data name="RunCommand1" xml:space="preserve"><value>1 Befehl ausgeführt</value></data>
-  <data name="RunCommands" xml:space="preserve"><value>{0} Befehle ausgeführt</value></data>
+  <data name="RunCommands" xml:space="preserve"><value>{0} {0:Befehl|Befehle} ausgeführt</value></data>
   <data name="RunBuildPassed" xml:space="preserve"><value>Build erfolgreich</value></data>
   <data name="RunBuildFailed" xml:space="preserve"><value>Build fehlgeschlagen</value></data>
   <data name="RunTestsPassed" xml:space="preserve"><value>Tests bestanden</value></data>
@@ -1201,8 +1200,8 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="ApprovalReadPage" xml:space="preserve"><value>Webseite lesen</value></data>
   <data name="ApprovalSearchWeb" xml:space="preserve"><value>Im Web suchen</value></data>
   <data name="ApprovalUseTool" xml:space="preserve"><value>{0} verwenden</value></data>
-  <data name="ApprovalLineCount" xml:space="preserve"><value>{0} Zeilen</value></data>
-  <data name="ApprovalMoreLines" xml:space="preserve"><value>… {0} weitere Zeilen</value></data>
+  <data name="ApprovalLineCount" xml:space="preserve"><value>{0} {0:Zeile|Zeilen}</value></data>
+  <data name="ApprovalMoreLines" xml:space="preserve"><value>… {0} {0:weitere Zeile|weitere Zeilen}</value></data>
   <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Erlaubt {0} ohne Rückfrage bis zum Neustart des Editors.</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>Diff öffnen</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>Neue Unterhaltung</value></data>

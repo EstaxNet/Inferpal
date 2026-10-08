@@ -461,6 +461,8 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: 빌드 확인 시간 초과 (60초) — 수동으로 확인하세요.</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: 빌드 검사가 오류를 하나도 알리지 않고 실패했습니다 — 이유를 보려면 직접 실행하세요.</value></data>
+  <data name="SmartFixBuildFailed" xml:space="preserve"><value>🔨 Smart Fix: 이 편집 후 빌드가 실패했습니다 — 변경이 다른 파일로 이어지면 마저 완료하고, 그렇지 않으면 보고된 내용을 수정하세요:
+{0}</value></data>
   <data name="SmartFixCouldNotRun" xml:space="preserve"><value>⚠ Smart Fix: 빌드 검사를 실행할 수 없었습니다({0}). 이 변경 사항은 검증되지 않았습니다.</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>편집할 때마다 빌드 확인</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>.NET, TypeScript, Rust, Go를 바로 지원합니다. 오류는 곧바로 에이전트에게 돌아갑니다.</value></data>
@@ -925,6 +927,8 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="TaskStateCancelled" xml:space="preserve"><value>취소됨</value></data>
   <data name="TaskStillRunning" xml:space="preserve"><value>_아직 실행 중입니다. 완료되면 여기에 보고서가 표시됩니다._</value></data>
   <data name="TaskStepsTitle" xml:space="preserve"><value>단계</value></data>
+  <data name="TaskStepsTitleCut" xml:space="preserve"><value>단계 ({0}개 — 마지막 {1}개만 보관)</value></data>
+  <data name="TaskStepsNotKept" xml:space="preserve"><value>… 이전 단계 {0}개는 보관되지 않음</value></data>
   <data name="TaskDuration" xml:space="preserve"><value>_소요 시간: {0}._</value></data>
   <data name="TaskFailedNotice" xml:space="preserve"><value>백그라운드 작업 `{0}`이(가) 실패했습니다 — {1}. 자세한 내용은 `/task {0}`.</value></data>
   <data name="TaskCancelledNotice" xml:space="preserve"><value>백그라운드 작업 `{0}`이(가) 취소되었습니다 — 생성된 결과가 없습니다.</value></data>
@@ -1130,8 +1134,8 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="IndexCardFailed" xml:space="preserve"><value>인덱싱 실패</value></data>
   <data name="IndexCardNoWorkspace" xml:space="preserve"><value>열린 작업 영역 없음</value></data>
   <data name="IndexCardNoWorkspaceDetail" xml:space="preserve"><value>솔루션이나 폴더를 여세요. 그에 대한 인덱스가 만들어집니다.</value></data>
-  <data name="IndexCardFilesUpdated" xml:space="preserve"><value>파일 {0}개 · {1}에 업데이트</value></data>
-  <data name="IndexCardProgress" xml:space="preserve"><value>파일 {1}개 중 {0}개 읽음</value></data>
+  <data name="IndexCardFilesUpdated" xml:space="preserve"><value>파일 {0:N0}개 · {1}에 업데이트</value></data>
+  <data name="IndexCardProgress" xml:space="preserve"><value>파일 {1:N0}개 중 {0:N0}개 읽음</value></data>
   <data name="IndexCardNotBuiltDetail" xml:space="preserve"><value>백그라운드 인덱싱이 꺼져 있습니다. 에이전트는 키워드로 검색합니다.</value></data>
   <data name="IndexCardStoppedDetail" xml:space="preserve"><value>마지막 작업이 끝나지 않아 인덱스가 불완전합니다.</value></data>
   <data name="IndexCardFailedDetail" xml:space="preserve"><value>{0}. 자세한 내용은 /diagnostics에 있습니다.</value></data>
@@ -1141,7 +1145,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="IndexCardShowThem" xml:space="preserve"><value>보기</value></data>
   <data name="IndexCardHideThem" xml:space="preserve"><value>숨기기</value></data>
   <data name="IndexCardMoreFiles" xml:space="preserve"><value>…외 {0}개.</value></data>
-  <data name="IndexCardHoles" xml:space="preserve"><value>벡터가 없어 조각 {1}개 중 {0}개는 키워드로만 찾을 수 있습니다. 다시 빌드하면 채워집니다.</value></data>
+  <data name="IndexCardHoles" xml:space="preserve"><value>벡터가 없어 조각 {1:N0}개 중 {0:N0}개는 키워드로만 찾을 수 있습니다. 다시 빌드하면 채워집니다.</value></data>
   <data name="IndexCardModelSemantic" xml:space="preserve"><value>{0}(으)로 의미 검색, 그리고 정확한 이름과 키워드 검색.</value></data>
   <data name="IndexCardModelKeywords" xml:space="preserve"><value>키워드 검색만 가능: 임베딩 모델이 설정되거나 설치되어 있지 않습니다.</value></data>
   <data name="IndexCardModelOff" xml:space="preserve"><value>키워드 검색만 가능: 의미 검색이 꺼져 있습니다.</value></data>
@@ -1152,7 +1156,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="SettingsEditFile" xml:space="preserve"><value>편집</value></data>
   <data name="SettingsOpenFile" xml:space="preserve"><value>열기</value></data>
   <data name="DocsSiteIndexed" xml:space="preserve"><value>{0}페이지 · 인덱싱됨</value></data>
-  <data name="DocsSiteHoles" xml:space="preserve"><value>{0}페이지 · 의미 검색 불가 {1}</value></data>
+  <data name="DocsSiteHoles" xml:space="preserve"><value>{0}페이지 · 의미 검색 불가 구절 {1}개</value></data>
   <data name="DocsSiteHolesNote" xml:space="preserve"><value>임베딩 모델이 응답하지 않는 동안 {0}개 구절을 읽었습니다. 다시 인덱싱할 때까지 키워드로만 찾을 수 있습니다.</value></data>
   <data name="DocsSiteIndexing" xml:space="preserve"><value>인덱싱 중…</value></data>
   <data name="DocsReindex" xml:space="preserve"><value>다시 인덱싱</value></data>
@@ -1178,15 +1182,10 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="ProjectFileNotes" xml:space="preserve"><value>내 메모</value></data>
   <data name="ProjectFileRules" xml:space="preserve"><value>파일별 규칙: {0}개</value></data>
   <data name="ProjectFileNotYet" xml:space="preserve"><value>아직 만들어지지 않음</value></data>
-  <data name="RunSteps1" xml:space="preserve"><value>1단계</value></data>
   <data name="RunSteps" xml:space="preserve"><value>{0}단계</value></data>
-  <data name="RunRead1" xml:space="preserve"><value>파일 1개 읽음</value></data>
   <data name="RunRead" xml:space="preserve"><value>파일 {0}개 읽음</value></data>
-  <data name="RunSearched1" xml:space="preserve"><value>검색 1회</value></data>
   <data name="RunSearched" xml:space="preserve"><value>검색 {0}회</value></data>
-  <data name="RunEdited1" xml:space="preserve"><value>1개 수정</value></data>
   <data name="RunEdited" xml:space="preserve"><value>{0}개 수정</value></data>
-  <data name="RunCommand1" xml:space="preserve"><value>명령 1개 실행</value></data>
   <data name="RunCommands" xml:space="preserve"><value>명령 {0}개 실행</value></data>
   <data name="RunBuildPassed" xml:space="preserve"><value>빌드 성공</value></data>
   <data name="RunBuildFailed" xml:space="preserve"><value>빌드 실패</value></data>

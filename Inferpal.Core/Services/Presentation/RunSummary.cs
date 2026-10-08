@@ -42,23 +42,23 @@ internal static class RunSummary
     {
         if (executions.Count == 0) return null;
 
-        var reads    = executions.Count(e => e.Name == "read_file");
+        var reads    = run is not null ? run.FilesOpened : FilesNamed(executions, "read_file");
         var searches = executions.Count(e => Searches.Contains(e.Name));
         var commands = executions.Count(e => e.Name == "run_command");
         var files    = run is null ? [] : Files(run);
         var check    = LastCheck(executions);
 
         var parts = new List<string>();
-        if (reads > 0)       parts.Add(reads == 1 ? Strings.RunRead1 : Strings.RunRead(reads));
-        if (searches > 0)    parts.Add(searches == 1 ? Strings.RunSearched1 : Strings.RunSearched(searches));
-        if (files.Count > 0) parts.Add(files.Count == 1 ? Strings.RunEdited1 : Strings.RunEdited(files.Count));
-        if (commands > 0)    parts.Add(commands == 1 ? Strings.RunCommand1 : Strings.RunCommands(commands));
+        if (reads > 0)       parts.Add(Strings.RunRead(reads));
+        if (searches > 0)    parts.Add(Strings.RunSearched(searches));
+        if (files.Count > 0) parts.Add(Strings.RunEdited(files.Count));
+        if (commands > 0)    parts.Add(Strings.RunCommands(commands));
         var checkText = CheckText(check);
         if (checkText.Length > 0) parts.Add(checkText);
 
         return new RunSummaryModel(
             executions.Count,
-            executions.Count == 1 ? Strings.RunSteps1 : Strings.RunSteps(executions.Count),
+            Strings.RunSteps(executions.Count),
             string.Join(" · ", parts),
             files, check, checkText,
             files.Count > 0 ? run!.Id : string.Empty);
@@ -89,6 +89,34 @@ internal static class RunSummary
         };
 
     /// <summary>The files the run changed, each with its lines added and removed since the run's backup.</summary>
+    /// <summary>
+    /// The files the calls to <paramref name="tool"/> name, each once — for a turn without a history run. With one, the
+    /// run counts what <c>read_file</c> actually read (<see cref="HistoryRun.FilesOpened"/>).
+    /// </summary>
+    /// <remarks>⚠ The calls are not the files: <c>read_file</c> pages a long file, a model reads a file again after an
+    /// edit, and a read of a missing file answers in text — counted by call, one file read showed "read 4 files".</remarks>
+    private static int FilesNamed(IReadOnlyList<ToolExecution> executions, string tool) =>
+        executions.Where(e => e.Name == tool)
+                  .Select(e => PathOf(e.Input))
+                  .Where(p => p.Length > 0)
+                  .Distinct(PathComparer.Default)
+                  .Count();
+
+    private static string PathOf(string input)
+    {
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(input);
+            if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object
+                || !doc.RootElement.TryGetProperty("path", out var p) || p.ValueKind != System.Text.Json.JsonValueKind.String)
+                return string.Empty;
+            var path = (p.GetString() ?? string.Empty).Trim().Replace('\\', '/');
+            while (path.StartsWith("./", StringComparison.Ordinal)) path = path[2..];
+            return path;
+        }
+        catch (System.Text.Json.JsonException) { return string.Empty; }
+    }
+
     internal static IReadOnlyList<RunFileLine> Files(HistoryRun run) =>
         [.. run.Changes.OrderBy(c => c.OriginalPath, StringComparer.OrdinalIgnoreCase).Select(change =>
         {

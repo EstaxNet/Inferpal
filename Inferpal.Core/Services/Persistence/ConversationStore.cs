@@ -65,8 +65,8 @@ internal class ConversationStore
                                 string? parent = null, int? forkTurn = null, string? workspaceRoot = null,
                                 string? currentName = null, string? templateSuffix = null)
     {
-        Directory.CreateDirectory(Dir);
-        var file = SessionPath(sessionName);
+        var file = sessionName == AutoSaveSlot ? AutoSaveFile(workspaceRoot) : SessionPath(sessionName);
+        Directory.CreateDirectory(Path.GetDirectoryName(file)!);
         var payload = new SessionData(DateTime.UtcNow, messages.ToList(), parent, forkTurn,
                                       string.IsNullOrWhiteSpace(workspaceRoot) ? null : workspaceRoot,
                                       string.IsNullOrWhiteSpace(currentName) ? null : currentName,
@@ -118,16 +118,55 @@ internal class ConversationStore
 
     public async Task ForgetAutoSaveAsync(string? workspaceRoot, CancellationToken ct)
     {
-        var slot = await LoadAsync("last_session", ct).ConfigureAwait(false);
-        if (slot is null || slot.Messages.Count == 0 || !SessionManager.AutoSaveBelongsHere(slot, workspaceRoot)) return;
+        // Emptied here, the workspace's own slot also stops the shared one of older versions from being read for it.
+        var slot = await LoadAutoSaveAsync(workspaceRoot, ct).ConfigureAwait(false);
+        if (slot is null || slot.Messages.Count == 0) return;
         await AutoSaveAsync([], ct, workspaceRoot).ConfigureAwait(false);
+    }
+
+    /// <summary>The name the editors save and load the auto-save slot under: "the last conversation" of a workspace.</summary>
+    internal const string AutoSaveSlot = "last_session";
+
+    /// <summary>
+    /// The last conversation of <paramref name="workspaceRoot"/>: its own slot, or — for a workspace that has none yet —
+    /// the single slot older versions shared, when it is this workspace's.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The slot is per workspace. Shared by every window of both editors, it held the conversation of whichever wrote
+    /// last: two solutions open side by side, and the first one closed found nothing at its next start — its
+    /// conversation overwritten by the other's, never archived.
+    /// </remarks>
+    /// <exception cref="UnreadableSessionException">The file is damaged: a copy is kept, and the message says where.</exception>
+    public async Task<SessionData?> LoadAutoSaveAsync(string? workspaceRoot, CancellationToken ct)
+    {
+        var own = AutoSaveFile(workspaceRoot);
+        if (File.Exists(own)) return await LoadFileAsync(own, AutoSaveSlot, ct).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(workspaceRoot)) return null;
+
+        var shared = await LoadAsync(AutoSaveSlot, ct).ConfigureAwait(false);
+        return shared is not null && SessionManager.AutoSaveBelongsHere(shared, workspaceRoot) ? shared : null;
+    }
+
+    /// <summary>The auto-save slot of a workspace, in a folder of its own that the session list never reads; without a
+    /// workspace, the shared slot older versions wrote.</summary>
+    internal string AutoSaveFile(string? workspaceRoot)
+    {
+        if (string.IsNullOrWhiteSpace(workspaceRoot)) return SessionPath(AutoSaveSlot);
+        var root = SessionManager.NormalizeRoot(workspaceRoot);
+        // The key folds case where the file system does: one workspace, one slot (PathComparer).
+        var key  = PathComparer.Comparison == StringComparison.Ordinal ? root : root.ToUpperInvariant();
+        var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(key)))[..16];
+        var name = Sanitize(Path.GetFileName(root));
+        return Path.Combine(Dir, "autosave", $"{(name.Length > 0 ? name + "-" : "")}{hash.ToLowerInvariant()}.json");
     }
 
     /// Loads a session by file name (without extension).
     /// <exception cref="UnreadableSessionException">The file is damaged: a copy is kept, and the message says where.</exception>
-    public async Task<SessionData?> LoadAsync(string sessionName, CancellationToken ct)
+    public Task<SessionData?> LoadAsync(string sessionName, CancellationToken ct) =>
+        LoadFileAsync(SessionPath(sessionName), sessionName, ct);
+
+    private async Task<SessionData?> LoadFileAsync(string file, string sessionName, CancellationToken ct)
     {
-        var file = SessionPath(sessionName);
         if (!File.Exists(file)) return null;
         string json;
         await using (var stream = OpenSessionForRead(file))
@@ -227,7 +266,7 @@ internal class ConversationStore
                 if (data is null) { if (File.Exists(SessionPath(name))) unreadable.Add(name); continue; }
                 var preview = data.Messages.FirstOrDefault(SessionManager.IsQuestion)?.Content ?? string.Empty;
                 if (preview.Length > 80) preview = preview[..80] + "…";
-                result.Add(new SessionSummary(name, data.SavedAt, data.Messages.Count,
+                result.Add(new SessionSummary(name, data.SavedAt, SessionManager.ConversationMessageCount(data.Messages),
                     preview.Replace('\n', ' '), data.Parent, data.ForkTurn));
             }
             catch (OperationCanceledException) { throw; }
@@ -337,7 +376,8 @@ internal record SavedMessage(
     [property: JsonPropertyName("toolName")]  string? ToolName  = null,
     [property: JsonPropertyName("timestamp")] string? Timestamp = null);
 
-/// <summary>Lightweight session descriptor returned by <see cref="ConversationStore.ListWithPreviewAsync"/>.
+/// <summary>Lightweight session descriptor returned by <see cref="ConversationStore.ListWithPreviewAsync"/>;
+/// <paramref name="MessageCount"/> counts its questions and answers (<see cref="SessionManager.ConversationMessageCount"/>).
 /// <paramref name="Parent"/>/<paramref name="ForkTurn"/> are non-null for branches.</summary>
 internal record SessionSummary(string Name, DateTime SavedAt, int MessageCount, string FirstUserPreview,
                                string? Parent = null, int? ForkTurn = null);

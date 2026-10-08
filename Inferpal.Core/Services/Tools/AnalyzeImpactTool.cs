@@ -642,14 +642,6 @@ internal class AnalyzeImpactTool : ITool
             @"(?m)^\s*namespace\s+([\w\.]+)\s*[;{]",
             RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
 
-        // Type declarations visible outside their file: `public`, `internal`, or no access modifier at all — `class
-        // Program`, `static class Extensions`, the second file of a `partial class` are internal by default, and required
-        // here they made the whole report "no public API".
-        private static readonly Regex _typeDecl = new(
-            @"(?m)^\s*(?:(?:public|internal)\s+)?" +
-            @"(?:(abstract|sealed|static|readonly|partial)\s+)*" +
-            @"(class|interface|enum|struct|record)\s+([\w]+)",
-            RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
 
         // (The per-type reference/kind patterns are built through ScanRegex — bounded + cached.)
 
@@ -661,13 +653,13 @@ internal class AnalyzeImpactTool : ITool
 
             // Public types
             var types = new List<TypeDef>();
-            foreach (Match m in _typeDecl.Matches(source))
+            // Visible outside their file: `public`, `internal`, or no access modifier at all — `class Program`, `static
+            // class Extensions`, the second file of a `partial class` are internal by default, and required here they made
+            // the whole report "no public API".
+            foreach (var t in CSharpTypeDeclarations.Read(source))
             {
-                var modifier  = m.Groups[1].Value;
-                var kind      = m.Groups[2].Value;
-                var name      = m.Groups[3].Value;
-                var isAbstract = modifier is "abstract";
-                types.Add(new TypeDef(name, kind, isAbstract));
+                if (t.Modifiers.Any(m => m is "private" or "protected" or "file")) continue;
+                types.Add(new TypeDef(t.Name, t.Kind, t.Modifiers.Contains("abstract")));
             }
 
             return new PublicApi(ns, types, [], filePath);
@@ -850,16 +842,14 @@ internal class AnalyzeImpactTool : ITool
             return FileRole.Source;
         }
 
-        // Extract a human-readable entry-point name from VS commands / controllers
-        private static readonly Regex _cmdClass = new(
-            @"(?:class|record)\s+([\w]+Command|[\w]+Controller|[\w]+Handler|[\w]+Endpoint)\b",
-            RegexOptions.Compiled, RegexBudget.Default);
+        // A human-readable entry-point name: the first class or record named like a VS command or a controller.
+        private static readonly string[] EntryPointSuffixes = ["Command", "Controller", "Handler", "Endpoint"];
 
-        public static string? ExtractEntryPointName(string filePath, string source)
-        {
-            var m = _cmdClass.Match(source);
-            return m.Success ? m.Groups[1].Value : null;
-        }
+        public static string? ExtractEntryPointName(string filePath, string source) =>
+            CSharpTypeDeclarations.Read(source)
+                .FirstOrDefault(t => t.Kind is "class" or "record"
+                                     && EntryPointSuffixes.Any(s => t.Name.Length > s.Length && t.Name.EndsWith(s, StringComparison.Ordinal)))
+                ?.Name;
     }
 
     // ═════════════════════════════════════════════════════════════════════════

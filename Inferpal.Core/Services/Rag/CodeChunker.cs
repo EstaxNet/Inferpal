@@ -52,13 +52,6 @@ internal static class CodeChunker
 
     // ── Regex patterns for C# ─────────────────────────────────────────────────
 
-    // Top-level type declaration (class / interface / struct / record / enum)
-    private static readonly Regex _typeDecl = new(
-        @"^\s*(?:(?:public|internal|private|protected|file)\s+)*" +
-        @"(?:(?:abstract|sealed|static|partial|readonly|new)\s+)*" +
-        @"(?:class|interface|struct|record|enum)\s+(\w+)",
-        RegexOptions.Compiled, RegexBudget.Default);
-
     // Method or property declaration (used for intra-type splitting)
     private static readonly Regex _methodDecl = new(
         @"^\s*(?:(?:public|private|protected|internal|static|virtual|override|abstract|async|new|sealed|extern)\s+)+" +
@@ -101,10 +94,10 @@ internal static class CodeChunker
 
         for (int i = 0; i < lines.Length; i++)
         {
-            var m = _typeDecl.Match(lines[i]);
+            var m = CSharpTypeDeclarations.LineStart.Match(lines[i]);
             // Skip lines inside comments (very rough heuristic: starts with //)
             if (m.Success && !lines[i].TrimStart().StartsWith("//", StringComparison.Ordinal))
-                typeStarts.Add((i, m.Groups[1].Value));
+                typeStarts.Add((i, m.Groups["name"].Value));
         }
 
         // Fallback to sliding window if no type declarations found

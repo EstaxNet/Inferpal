@@ -177,7 +177,7 @@ internal static class DiagnosticsCommandHandler
           .Append(Toggle("compaction", c.CompactionEnabled))
           // Called out loudly rather than folded into the on/off list: a report from a machine
           // with approvals muted reads very differently.
-          .Append(c.SecurityAlertsDisabled ? " · **security alerts DISABLED**" : " · security alerts on")
+          .Append(c.SharedSecurityAlertsDisabled ? " · **security alerts DISABLED**" : " · security alerts on")
           .Append('\n');
 
         // ⚠ "MCP: on" said nothing about what is ACTUALLY running: a

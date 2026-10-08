@@ -31,7 +31,7 @@ public sealed class AutoSaveSessionNameTests : IDisposable
         var store = new ConversationStore(_dir);
         await store.AutoSaveAsync([new SavedMessage("user", "q")], CancellationToken.None, Here, currentName: "feature-x");
 
-        var slot = await store.LoadAsync("last_session", CancellationToken.None);
+        var slot = await store.LoadAutoSaveAsync(Here, CancellationToken.None);
 
         Assert.Equal("feature-x", slot!.CurrentName);
     }

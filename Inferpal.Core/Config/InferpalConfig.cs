@@ -721,12 +721,55 @@ internal class InferpalConfig
     /// after the other window had set it — a budget the user typed, a model they picked — and the automatic value was
     /// written over it.
     /// </remarks>
+    /// <summary>The permission rules that decide NOW: see <see cref="Shared{T}"/>.</summary>
+    internal string SharedPermissionRules => Shared(nameof(PermissionRules), PermissionRules) ?? string.Empty;
+
+    /// <summary>Whether security alerts are off NOW: see <see cref="Shared{T}"/>.</summary>
+    internal bool SharedSecurityAlertsDisabled => Shared(nameof(SecurityAlertsDisabled), SecurityAlertsDisabled);
+
+    private sealed record FileSeen(string Path, DateTime Stamp, System.Text.Json.Nodes.JsonObject Snapshot);
+    private readonly object _sharedLock = new();
+    private FileSeen? _fileSeen;
+
+    /// <summary>
+    /// A setting that DECIDES (an approval), as it stands now: this copy's own value when it changed it since it was
+    /// read, else the file's — which the other editor, or another window, may have changed since.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Each window of both editors reads the file once and keeps its copy: an <c>allow</c> rule removed, or security
+    /// alerts turned back on, in one window went on approving unasked in the others until they restarted. A copy built
+    /// in code (no baseline) is its own truth. The file is read again only when its stamp moves.
+    /// </remarks>
+    private T Shared<T>(string property, T mine)
+    {
+        lock (_sharedLock)
+        {
+            if (_baseline is null) return mine;
+            var key = JsonNameOf(property);
+            if (!System.Text.Json.Nodes.JsonNode.DeepEquals(Snapshot(this)[key], _baseline[key])) return mine;   // changed here
+
+            var path  = SavePathForTests ?? EffectiveConfigPath;
+            var stamp = StampOf(path);
+            if (_fileSeen is not { } seen || seen.Path != path || seen.Stamp != stamp)
+            {
+                if (!TryReadSnapshot(path, out var onDisk)) return mine;
+                _fileSeen = seen = new FileSeen(path, stamp, onDisk);
+            }
+            try { return seen.Snapshot[key] is { } value ? value.Deserialize<T>()! : mine; }
+            catch (JsonException) { return mine; }
+        }
+    }
+
+    private static string JsonNameOf(string property) =>
+        (typeof(InferpalConfig).GetProperty(property)
+            ?? throw new ArgumentException($"No setting named {property}.", nameof(property)))
+        .GetCustomAttributes(typeof(JsonPropertyNameAttribute), false).OfType<JsonPropertyNameAttribute>().Single().Name;
+
     internal bool FillFromFile(string property)
     {
         var p = typeof(InferpalConfig).GetProperty(property)
                 ?? throw new ArgumentException($"No setting named {property}.", nameof(property));
-        var key = p.GetCustomAttributes(typeof(JsonPropertyNameAttribute), false)
-                   .OfType<JsonPropertyNameAttribute>().Single().Name;
+        var key = JsonNameOf(property);
 
         var factory = Snapshot(new InferpalConfig())[key];
         if (!System.Text.Json.Nodes.JsonNode.DeepEquals(Snapshot(this)[key], factory)) return false;   // set here: it stands

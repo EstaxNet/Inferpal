@@ -25,12 +25,34 @@ internal static class SessionManager
     public const string NoticeMarker = "notice";
 
     /// <summary>
+    /// The saved roles Visual Studio draws a bubble for. Any other — a role only VS Code draws, its <c>error</c> — is
+    /// shown there as a notice and saved back exactly as it was read; VS Code does the same for the roles only Visual
+    /// Studio draws (<c>plan</c>).
+    /// </summary>
+    /// <remarks>⚠ Both editors write the same session files: a role one of them has no bubble for came back invisible,
+    /// or was dropped and then erased from the file by the next save.</remarks>
+    public static readonly IReadOnlySet<string> VisualStudioBubbleRoles =
+        new HashSet<string>(StringComparer.Ordinal) { "user", "assistant", "tool", "plan" };
+
+    /// <summary>
     /// Whether a saved message is a QUESTION the model was asked. A <c>user</c> message marked as a notice is a slash
     /// command an editor served without the model (VS Code shows what was typed; Visual Studio shows nothing): restored
     /// as a question, the model read "/models" as something it was asked and never answered, and two questions in a
     /// row are refused by a strict chat template. Every reader that counts, names or replays questions asks this.
     /// </summary>
     public static bool IsQuestion(SavedMessage m) => m.Role == "user" && m.ToolName != NoticeMarker;
+
+    /// <summary>Whether a saved message is an ANSWER the model gave — an assistant bubble that is not a notice.</summary>
+    public static bool IsAnswer(SavedMessage m) => m.Role == "assistant" && m.ToolName != NoticeMarker;
+
+    /// <summary>
+    /// The messages of a saved conversation, as a session listing counts them: its questions and answers — the history
+    /// the model has (<see cref="BuildRestoredHistory"/>), never the tool steps and notices saved with it.
+    /// </summary>
+    /// <remarks>⚠ Counted on the whole transcript, two questions answered after thirty tool steps read "34 messages",
+    /// beside a fork point counted in turns.</remarks>
+    public static int ConversationMessageCount(IEnumerable<SavedMessage> messages) =>
+        messages.Count(m => IsQuestion(m) || IsAnswer(m));
 
     // ── /template presets ─────────────────────────────────────────────────────
 
@@ -121,7 +143,7 @@ internal static class SessionManager
             if (IsQuestion(m))
                 history.Add(new ChatMessageDto(m.Role, m.Content));
             // A notice is an assistant bubble on screen, never an answer: live, a turn keeps one (see NoticeMarker).
-            else if (m.Role == "assistant" && m.ToolName != NoticeMarker)
+            else if (IsAnswer(m))
             {
                 // The rule of the live history: a streamed bubble is saved with the model's inline reasoning, and
                 // restored as is it handed the model its old chain of thought back.
@@ -138,11 +160,11 @@ internal static class SessionManager
     /// Whether the auto-save slot may be restored into the workspace open now.
     /// </summary>
     /// <remarks>
-    /// <c>last_session</c> is ONE file under <c>%AppData%</c>, shared by both editors and every
-    /// project: restored blindly, it brings another project's conversation — its transcript, and the
-    /// tool results rebuilt into the model's history — into this one. It is refused only when both
-    /// roots are known and differ: a file saved before the root was recorded, or a front-end that
-    /// does not know its root yet, keeps the continuity it had.
+    /// The slot is per workspace (<see cref="ConversationStore.LoadAutoSaveAsync"/>), but the single slot older versions
+    /// shared by every project is still read for a workspace that has none yet: restored blindly, it would bring another
+    /// project's conversation — its transcript, and the tool results rebuilt into the model's history — into this one.
+    /// It is refused only when both roots are known and differ: a file saved before the root was recorded, or a
+    /// front-end that does not know its root yet, keeps the continuity it had.
     /// </remarks>
     /// <summary>
     /// The named session an auto-save records: the one this process knows — or, for a process that knows nothing yet (the
@@ -165,7 +187,7 @@ internal static class SessionManager
             PathComparer.Comparison);
     }
 
-    private static string NormalizeRoot(string root)
+    internal static string NormalizeRoot(string root)
     {
         try { root = System.IO.Path.GetFullPath(root); }
         catch (Exception ex) when (ex is ArgumentException or NotSupportedException or System.IO.PathTooLongException)

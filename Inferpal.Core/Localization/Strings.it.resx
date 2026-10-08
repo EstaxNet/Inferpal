@@ -398,7 +398,7 @@ Backup: {0}</value></data>
   <data name="HistoryNoSessions" xml:space="preserve"><value>Nessuna sessione salvata. Le sessioni vengono archiviate automaticamente con `/clear`.</value></data>
   <data name="HistoryNoResults" xml:space="preserve"><value>Nessuna sessione corrisponde a "{0}".</value></data>
   <data name="HistoryListHeader" xml:space="preserve"><value>## Sessioni salvate ({0})</value></data>
-  <data name="HistoryMessageCount" xml:space="preserve"><value>{0} messaggi</value></data>
+  <data name="HistoryMessageCount" xml:space="preserve"><value>{0} {0:messaggio|messaggi}</value></data>
   <data name="HistorySearchHint" xml:space="preserve"><value>→ `/history &lt;termine&gt;` per cercare nel contenuto delle sessioni</value></data>
   <data name="HistorySearchHeader" xml:space="preserve"><value>## Cronologia: «{0}» — {1} sessione/i</value></data>
   <data name="HistorySearchMoreMatches" xml:space="preserve"><value>+{0} altro/i messaggio/i corrispondente/i in questa sessione</value></data>
@@ -461,6 +461,8 @@ Fai clic su **Correggi con l'IA** per correggere automaticamente in loop, o digi
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix: verifica build scaduta (60 s) — verificare manualmente.</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix: il controllo di build è fallito senza indicare alcun errore — eseguilo tu stesso per capire perché.</value></data>
+  <data name="SmartFixBuildFailed" xml:space="preserve"><value>🔨 Smart Fix: la build non è riuscita dopo questa modifica — se la modifica prosegue in altri file, completala; altrimenti correggi ciò che segnala:
+{0}</value></data>
   <data name="SmartFixCouldNotRun" xml:space="preserve"><value>⚠ Smart Fix: impossibile eseguire il controllo della build ({0}) — questa modifica non è stata verificata.</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>Verificare la build dopo ogni modifica</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>.NET, TypeScript, Rust e Go già pronti. Gli errori tornano subito all'agente.</value></data>
@@ -518,7 +520,7 @@ Fai clic su **Correggi con l'IA** per correggere automaticamente in loop, o digi
   <!-- analyze_impact tool -->
   <data name="ImpactHeader"         xml:space="preserve"><value>Analisi d'impatto — {0}</value></data>
   <data name="ImpactNoPublicApi"    xml:space="preserve"><value>Nessun tipo pubblico o simbolo esportato trovato in {0}.</value></data>
-  <data name="ImpactFooter"         xml:space="preserve"><value>📊 Raggio di impatto: {0} diretto/i · {1} transitivo/i · {2} test · {3} punto/i di ingresso</value></data>
+  <data name="ImpactFooter"         xml:space="preserve"><value>📊 Raggio di impatto: {0} {0:diretto|diretti} · {1} {1:transitivo|transitivi} · {2} {2:test|test} · {3} {3:punto di ingresso|punti di ingresso}</value></data>
 
   <!-- trace_dependency tool -->
   <data name="TraceDepsHeader"          xml:space="preserve"><value>Grafo delle chiamate — {0}</value></data>
@@ -925,6 +927,8 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="TaskStateCancelled" xml:space="preserve"><value>annullata</value></data>
   <data name="TaskStillRunning" xml:space="preserve"><value>_Ancora in corso: il rapporto apparirà qui al termine._</value></data>
   <data name="TaskStepsTitle" xml:space="preserve"><value>Passaggi</value></data>
+  <data name="TaskStepsTitleCut" xml:space="preserve"><value>Passaggi ({0} — conservati gli ultimi {1})</value></data>
+  <data name="TaskStepsNotKept" xml:space="preserve"><value>… {0} {0:passaggio precedente non conservato|passaggi precedenti non conservati}</value></data>
   <data name="TaskDuration" xml:space="preserve"><value>_Durata: {0}._</value></data>
   <data name="TaskFailedNotice" xml:space="preserve"><value>L'attività in background `{0}` non è riuscita — {1}. `/task {0}` per i dettagli.</value></data>
   <data name="TaskCancelledNotice" xml:space="preserve"><value>L'attività in background `{0}` è stata annullata — non è stato prodotto nulla.</value></data>
@@ -1076,7 +1080,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="HintAskBeforeActions" xml:space="preserve"><value>Vedete il diff reale o il comando esatto. Disattivato: tutto viene approvato in silenzio — i comandi catastrofici restano rifiutati.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Mostrare la modifica prima di applicarla</value></data>
   <data name="HintInlineDiffPreview" xml:space="preserve"><value>Righe aggiunte e rimosse nell'editor: tenete o scartate ogni modifica, o tutte insieme. Disattivato: applicata subito, Ctrl+Z la annulla.</value></data>
-  <data name="McpCardConnected" xml:space="preserve"><value>Connesso · {0} strumenti</value></data>
+  <data name="McpCardConnected" xml:space="preserve"><value>Connesso · {0} {0:strumento|strumenti}</value></data>
   <data name="McpCardSignIn" xml:space="preserve"><value>Accesso richiesto</value></data>
   <data name="McpCardDidNotStart" xml:space="preserve"><value>Non avviato</value></data>
   <data name="McpCardNotStarted" xml:space="preserve"><value>Non ancora avviato</value></data>
@@ -1130,8 +1134,8 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="IndexCardFailed" xml:space="preserve"><value>Indicizzazione non riuscita</value></data>
   <data name="IndexCardNoWorkspace" xml:space="preserve"><value>Nessuno spazio di lavoro aperto</value></data>
   <data name="IndexCardNoWorkspaceDetail" xml:space="preserve"><value>Aprite una soluzione o una cartella: l'indice viene creato per essa.</value></data>
-  <data name="IndexCardFilesUpdated" xml:space="preserve"><value>{0} file · aggiornato alle {1}</value></data>
-  <data name="IndexCardProgress" xml:space="preserve"><value>{0} di {1} file letti</value></data>
+  <data name="IndexCardFilesUpdated" xml:space="preserve"><value>{0:N0} {0:file|file} · aggiornato alle {1}</value></data>
+  <data name="IndexCardProgress" xml:space="preserve"><value>{0:N0} di {1:N0} {1:file letto|file letti}</value></data>
   <data name="IndexCardNotBuiltDetail" xml:space="preserve"><value>L'indicizzazione in background è disattivata: l'agente cerca per parole chiave.</value></data>
   <data name="IndexCardStoppedDetail" xml:space="preserve"><value>L'ultimo passaggio non è terminato: l'indice è incompleto.</value></data>
   <data name="IndexCardFailedDetail" xml:space="preserve"><value>{0}. Dettagli in /diagnostics.</value></data>
@@ -1141,7 +1145,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="IndexCardShowThem" xml:space="preserve"><value>Mostrali</value></data>
   <data name="IndexCardHideThem" xml:space="preserve"><value>Nascondili</value></data>
   <data name="IndexCardMoreFiles" xml:space="preserve"><value>…e altri {0}.</value></data>
-  <data name="IndexCardHoles" xml:space="preserve"><value>Senza vettore, {0} frammenti su {1} si trovano solo per parole chiave. Ricostruisci li completa.</value></data>
+  <data name="IndexCardHoles" xml:space="preserve"><value>Si trovano solo per parole chiave, senza vettore: {0:N0} su {1:N0} {1:frammento|frammenti}. Ricostruisci aggiunge i vettori mancanti.</value></data>
   <data name="IndexCardModelSemantic" xml:space="preserve"><value>Ricerca per significato con {0}, più nomi esatti e parole chiave.</value></data>
   <data name="IndexCardModelKeywords" xml:space="preserve"><value>Solo ricerca per parole chiave: nessun modello di embedding scelto o installato.</value></data>
   <data name="IndexCardModelOff" xml:space="preserve"><value>Solo ricerca per parole chiave: la ricerca per significato è disattivata.</value></data>
@@ -1151,9 +1155,9 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="IndexExclusionsHowTo" xml:space="preserve"><value>Le cartelle di build e delle dipendenze sono sempre escluse. Per escludere altro, elencate dei modelli sotto indexExclude in .inferpal/project.json — /onboard init lo crea.</value></data>
   <data name="SettingsEditFile" xml:space="preserve"><value>Modifica</value></data>
   <data name="SettingsOpenFile" xml:space="preserve"><value>Apri</value></data>
-  <data name="DocsSiteIndexed" xml:space="preserve"><value>{0} pagine · indicizzato</value></data>
-  <data name="DocsSiteHoles" xml:space="preserve"><value>{0} pagine · {1} senza ricerca per significato</value></data>
-  <data name="DocsSiteHolesNote" xml:space="preserve"><value>{0} passaggi sono stati letti mentre il modello di embedding non rispondeva: si trovano solo per parole chiave finché non reindicizzate.</value></data>
+  <data name="DocsSiteIndexed" xml:space="preserve"><value>{0} {0:pagina|pagine} · indicizzato</value></data>
+  <data name="DocsSiteHoles" xml:space="preserve"><value>{0} {0:pagina|pagine} · {1} {1:passaggio|passaggi} senza ricerca per significato</value></data>
+  <data name="DocsSiteHolesNote" xml:space="preserve"><value>{0} {0:passaggio è stato letto|passaggi sono stati letti} mentre il modello di embedding non rispondeva: si {0:trova|trovano} solo per parole chiave finché non reindicizzate.</value></data>
   <data name="DocsSiteIndexing" xml:space="preserve"><value>Indicizzazione…</value></data>
   <data name="DocsReindex" xml:space="preserve"><value>Reindicizza</value></data>
   <data name="DocsAddSite" xml:space="preserve"><value>Aggiungi un sito</value></data>
@@ -1178,16 +1182,11 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="ProjectFileNotes" xml:space="preserve"><value>le vostre note</value></data>
   <data name="ProjectFileRules" xml:space="preserve"><value>regole per file: {0}</value></data>
   <data name="ProjectFileNotYet" xml:space="preserve"><value>non ancora creato</value></data>
-  <data name="RunSteps1" xml:space="preserve"><value>1 passaggio</value></data>
-  <data name="RunSteps" xml:space="preserve"><value>{0} passaggi</value></data>
-  <data name="RunRead1" xml:space="preserve"><value>1 file letto</value></data>
-  <data name="RunRead" xml:space="preserve"><value>{0} file letti</value></data>
-  <data name="RunSearched1" xml:space="preserve"><value>1 ricerca</value></data>
-  <data name="RunSearched" xml:space="preserve"><value>{0} ricerche</value></data>
-  <data name="RunEdited1" xml:space="preserve"><value>1 modificato</value></data>
-  <data name="RunEdited" xml:space="preserve"><value>{0} modificati</value></data>
-  <data name="RunCommand1" xml:space="preserve"><value>1 comando eseguito</value></data>
-  <data name="RunCommands" xml:space="preserve"><value>{0} comandi eseguiti</value></data>
+  <data name="RunSteps" xml:space="preserve"><value>{0} {0:passaggio|passaggi}</value></data>
+  <data name="RunRead" xml:space="preserve"><value>{0} {0:file letto|file letti}</value></data>
+  <data name="RunSearched" xml:space="preserve"><value>{0} {0:ricerca|ricerche}</value></data>
+  <data name="RunEdited" xml:space="preserve"><value>{0} {0:modificato|modificati}</value></data>
+  <data name="RunCommands" xml:space="preserve"><value>{0} {0:comando eseguito|comandi eseguiti}</value></data>
   <data name="RunBuildPassed" xml:space="preserve"><value>build riuscita</value></data>
   <data name="RunBuildFailed" xml:space="preserve"><value>build non riuscita</value></data>
   <data name="RunTestsPassed" xml:space="preserve"><value>test superati</value></data>
@@ -1201,8 +1200,8 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="ApprovalReadPage" xml:space="preserve"><value>Leggere una pagina web</value></data>
   <data name="ApprovalSearchWeb" xml:space="preserve"><value>Cercare sul web</value></data>
   <data name="ApprovalUseTool" xml:space="preserve"><value>Usare {0}</value></data>
-  <data name="ApprovalLineCount" xml:space="preserve"><value>{0} righe</value></data>
-  <data name="ApprovalMoreLines" xml:space="preserve"><value>… altre {0} righe</value></data>
+  <data name="ApprovalLineCount" xml:space="preserve"><value>{0} {0:riga|righe}</value></data>
+  <data name="ApprovalMoreLines" xml:space="preserve"><value>… {0} {0:riga in più|righe in più}</value></data>
   <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Consente {0} senza chiedere fino al riavvio dell'editor.</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>Apri diff</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>Nuova conversazione</value></data>

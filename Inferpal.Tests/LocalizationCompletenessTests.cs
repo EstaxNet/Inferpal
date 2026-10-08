@@ -682,7 +682,7 @@ public class LocalizationCompletenessTests
             // The arguments actually passed to string.Format, minus the format string itself.
             var format = body.DescendantNodesAndSelf()
                 .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.InvocationExpressionSyntax>()
-                .FirstOrDefault(i => i.Expression.ToString() is "string.Format" or "String.Format");
+                .FirstOrDefault(i => i.Expression.ToString() is "Format" or "string.Format" or "String.Format");
             var supplied = format is null ? 0 : Math.Max(0, format.ArgumentList.Arguments.Count - 1);
 
             compared++;

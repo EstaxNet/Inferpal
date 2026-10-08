@@ -67,7 +67,9 @@ internal abstract class ApprovalServiceBase : IApprovalService
         // provided, otherwise the details (already the raw command/url/query for the other tools).
         var matchOn = subject ?? details;
 
-        var decision = GetPolicy().Evaluate(toolName, matchOn, out var unreadableDeny);
+        // The settings that decide, as the file holds them now: another window may have changed them.
+        var alertsOff = _config.SharedSecurityAlertsDisabled;
+        var decision  = GetPolicy().Evaluate(toolName, matchOn, out var unreadableDeny);
         if (decision == PermissionDecision.Deny)
         {
             // Always enforced — even under SecurityAlertsDisabled. Recorded (visible via /diagnostics).
@@ -103,7 +105,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
         var opaque = PermissionPolicy.IsOpaqueExecution(matchOn) || instructions || forcePrompt
                      || unreadableDeny;
         if (opaque && (decision == PermissionDecision.Allow
-                       || _config.SecurityAlertsDisabled
+                       || alertsOff
                        || Granted(toolName)))
             Diagnostics.Record("Permission",
                 $"Force-prompt ({(forcePrompt ? "repository-authored"
@@ -116,7 +118,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
             if (decision == PermissionDecision.Allow)  return true;   // rule auto-approved
 
             // decision == Prompt — fall through to the global YOLO switch, then the session grant.
-            if (_config.SecurityAlertsDisabled)        return true;
+            if (alertsOff)                             return true;
             if (Granted(toolName))                     return true;
         }
 
@@ -170,7 +172,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
     /// </summary>
     private PermissionPolicy GetPolicy()
     {
-        var configRules = _config.PermissionRules ?? string.Empty;
+        var configRules = _config.SharedPermissionRules;
         var overlayPath = OverlayPath();
         var overlayStamp = OverlayStamp(overlayPath);
 

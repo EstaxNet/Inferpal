@@ -208,7 +208,7 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     {
         Steps.Add(step);
         step.IsFolded = !IsExpanded;
-        Label = Steps.Count == 1 ? Strings.RunSteps1 : Strings.RunSteps(Steps.Count);
+        Label = Strings.RunSteps(Steps.Count);
         if (step.HasErrors)
             SetRunOpen(true);
     }
@@ -477,8 +477,29 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
         while (PlanSteps.Count > card.Steps.Count) PlanSteps.RemoveAt(PlanSteps.Count - 1);
     }
 
+    /// <summary>The message as the other editor saved it, for a role this one does not draw (VS Code's <c>error</c>).</summary>
+    private SavedMessage? _foreign;
+
+    /// <summary>What a session save writes for this bubble: the message as it was read, when it came from a role this
+    /// editor does not draw — shown as a notice, never rewritten as one.</summary>
+    internal (string Role, string Content, string ToolName, string Timestamp) Saved =>
+        _foreign is { } f ? (f.Role, f.Content, f.ToolName ?? string.Empty, f.Timestamp ?? string.Empty)
+                          : (Role, Content, ToolName, Timestamp);
+
     internal static ChatMessageItem FromSaved(string role, string content, string toolName, bool toolBubblesExpanded = false, string timestamp = "")
     {
+        // ⚠ Both editors write the same session files. A role only the other draws (a failed turn, "Cancelled.", a
+        // backend that did not answer: VS Code's `error`) had no template here — restored, the bubble was there and
+        // invisible. Shown as a notice, it is kept as read for the next save.
+        if (!Services.Persistence.SessionManager.VisualStudioBubbleRoles.Contains(role))
+        {
+            var notice = NoticeMsg(content);
+            notice.Timestamp = timestamp;
+            notice._foreign  = new SavedMessage(role, content, string.IsNullOrEmpty(toolName) ? null : toolName,
+                                                string.IsNullOrEmpty(timestamp) ? null : timestamp);
+            return notice;
+        }
+
         var item = new ChatMessageItem
         {
             Role       = role,

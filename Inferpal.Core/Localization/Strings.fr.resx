@@ -398,7 +398,7 @@ Sauvegarde : {0}</value></data>
   <data name="HistoryNoSessions" xml:space="preserve"><value>Aucune session sauvegardée. Les sessions sont archivées automatiquement via `/clear`.</value></data>
   <data name="HistoryNoResults" xml:space="preserve"><value>Aucune session ne correspond à « {0} ».</value></data>
   <data name="HistoryListHeader" xml:space="preserve"><value>## Sessions enregistrées ({0})</value></data>
-  <data name="HistoryMessageCount" xml:space="preserve"><value>{0} messages</value></data>
+  <data name="HistoryMessageCount" xml:space="preserve"><value>{0} {0:message|messages}</value></data>
   <data name="HistorySearchHint" xml:space="preserve"><value>→ `/history &lt;terme&gt;` pour chercher dans le contenu des sessions</value></data>
   <data name="HistorySearchHeader" xml:space="preserve"><value>## Historique : « {0} » — {1} session(s)</value></data>
   <data name="HistorySearchMoreMatches" xml:space="preserve"><value>+{0} autre(s) message(s) correspondant(s) dans cette session</value></data>
@@ -461,6 +461,8 @@ Cliquez sur **Corriger avec l'IA** pour lancer la correction automatique en bouc
 {1}</value></data>
   <data name="SmartFixTimeout" xml:space="preserve"><value>⚠ Smart Fix : délai dépassé (60 s) — vérifiez manuellement.</value></data>
   <data name="SmartFixBuildFailedNoErrors" xml:space="preserve"><value>⚠ Smart Fix : la vérification de build a échoué sans nommer la moindre erreur — lancez-la vous-même pour voir pourquoi.</value></data>
+  <data name="SmartFixBuildFailed" xml:space="preserve"><value>🔨 Smart Fix : le build a échoué après cette modification — si le changement se poursuit dans d'autres fichiers, terminez-le ; sinon corrigez ce qu'il signale :
+{0}</value></data>
   <data name="SmartFixCouldNotRun" xml:space="preserve"><value>⚠ Smart Fix : la vérification du build n'a pas pu s'exécuter ({0}) — cette modification n'a pas été vérifiée.</value></data>
   <data name="LabelSmartFixEnabled" xml:space="preserve"><value>Vérifier le build après chaque modification</value></data>
   <data name="HintSmartFixEnabled" xml:space="preserve"><value>.NET, TypeScript, Rust et Go d'office. Les erreurs repartent aussitôt vers l'agent.</value></data>
@@ -518,7 +520,7 @@ Cliquez sur **Corriger avec l'IA** pour lancer la correction automatique en bouc
   <!-- analyze_impact tool -->
   <data name="ImpactHeader"         xml:space="preserve"><value>Analyse d'impact — {0}</value></data>
   <data name="ImpactNoPublicApi"    xml:space="preserve"><value>Aucun type public ni symbole exporté trouvé dans {0}.</value></data>
-  <data name="ImpactFooter"         xml:space="preserve"><value>📊 Rayon d'impact : {0} direct(s) · {1} transitif(s) · {2} test(s) · {3} point(s) d'entrée</value></data>
+  <data name="ImpactFooter"         xml:space="preserve"><value>📊 Rayon d'impact : {0} {0:direct|directs} · {1} {1:transitif|transitifs} · {2} {2:test|tests} · {3} {3:point d'entrée|points d'entrée}</value></data>
 
   <!-- trace_dependency tool -->
   <data name="TraceDepsHeader"          xml:space="preserve"><value>Graphe d'appels — {0}</value></data>
@@ -925,6 +927,8 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="TaskStateCancelled" xml:space="preserve"><value>annulée</value></data>
   <data name="TaskStillRunning" xml:space="preserve"><value>_Toujours en cours — le rapport s'affichera ici à la fin._</value></data>
   <data name="TaskStepsTitle" xml:space="preserve"><value>Étapes</value></data>
+  <data name="TaskStepsTitleCut" xml:space="preserve"><value>Étapes ({0} — les {1} dernières gardées)</value></data>
+  <data name="TaskStepsNotKept" xml:space="preserve"><value>… {0} {0:étape antérieure non gardée|étapes antérieures non gardées}</value></data>
   <data name="TaskDuration" xml:space="preserve"><value>_Durée : {0}._</value></data>
   <data name="TaskFailedNotice" xml:space="preserve"><value>La tâche de fond `{0}` a échoué — {1}. `/task {0}` pour le détail.</value></data>
   <data name="TaskCancelledNotice" xml:space="preserve"><value>La tâche de fond `{0}` a été annulée — rien n'a été produit.</value></data>
@@ -1076,7 +1080,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="HintAskBeforeActions" xml:space="preserve"><value>Vous voyez le vrai diff ou la commande exacte. Désactivé : tout est approuvé sans bruit — les commandes catastrophiques restent refusées.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Montrer la modification avant de l'appliquer</value></data>
   <data name="HintInlineDiffPreview" xml:space="preserve"><value>Lignes ajoutées et retirées dans l'éditeur : gardez ou écartez chaque modification, ou toutes d'un coup. Désactivé : appliquée tout de suite, Ctrl+Z l'annule.</value></data>
-  <data name="McpCardConnected" xml:space="preserve"><value>Connecté · {0} outils</value></data>
+  <data name="McpCardConnected" xml:space="preserve"><value>Connecté · {0} {0:outil|outils}</value></data>
   <data name="McpCardSignIn" xml:space="preserve"><value>Connexion requise</value></data>
   <data name="McpCardDidNotStart" xml:space="preserve"><value>N'a pas démarré</value></data>
   <data name="McpCardNotStarted" xml:space="preserve"><value>Pas encore démarré</value></data>
@@ -1130,8 +1134,8 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="IndexCardFailed" xml:space="preserve"><value>L'indexation a échoué</value></data>
   <data name="IndexCardNoWorkspace" xml:space="preserve"><value>Aucun espace de travail ouvert</value></data>
   <data name="IndexCardNoWorkspaceDetail" xml:space="preserve"><value>Ouvrez une solution ou un dossier : l'index est construit pour lui.</value></data>
-  <data name="IndexCardFilesUpdated" xml:space="preserve"><value>{0} fichiers · à jour à {1}</value></data>
-  <data name="IndexCardProgress" xml:space="preserve"><value>{0} fichiers lus sur {1}</value></data>
+  <data name="IndexCardFilesUpdated" xml:space="preserve"><value>{0:N0} {0:fichier|fichiers} · à jour à {1}</value></data>
+  <data name="IndexCardProgress" xml:space="preserve"><value>{0:N0} sur {1:N0} {1:fichier lu|fichiers lus}</value></data>
   <data name="IndexCardNotBuiltDetail" xml:space="preserve"><value>L'indexation en arrière-plan est coupée : l'agent cherche par mots-clés.</value></data>
   <data name="IndexCardStoppedDetail" xml:space="preserve"><value>La dernière passe ne s'est pas terminée : l'index est incomplet.</value></data>
   <data name="IndexCardFailedDetail" xml:space="preserve"><value>{0}. Détails dans /diagnostics.</value></data>
@@ -1141,7 +1145,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="IndexCardShowThem" xml:space="preserve"><value>Les voir</value></data>
   <data name="IndexCardHideThem" xml:space="preserve"><value>Les masquer</value></data>
   <data name="IndexCardMoreFiles" xml:space="preserve"><value>…et {0} de plus.</value></data>
-  <data name="IndexCardHoles" xml:space="preserve"><value>Sans vecteur, {0} extraits sur {1} ne se trouvent que par mots-clés. Reconstruire les complète.</value></data>
+  <data name="IndexCardHoles" xml:space="preserve"><value>Trouvés par mots-clés seulement, sans vecteur : {0:N0} sur {1:N0} {1:extrait|extraits}. Reconstruire ajoute les vecteurs manquants.</value></data>
   <data name="IndexCardModelSemantic" xml:space="preserve"><value>Recherche par le sens avec {0}, plus les noms exacts et les mots-clés.</value></data>
   <data name="IndexCardModelKeywords" xml:space="preserve"><value>Recherche par mots-clés seulement : aucun modèle d'embedding n'est choisi ni installé.</value></data>
   <data name="IndexCardModelOff" xml:space="preserve"><value>Recherche par mots-clés seulement : la recherche par le sens est coupée.</value></data>
@@ -1151,9 +1155,9 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="IndexExclusionsHowTo" xml:space="preserve"><value>Les dossiers de build et de dépendances sont toujours laissés de côté. Pour en exclure davantage, listez des motifs sous indexExclude dans .inferpal/project.json — /onboard init le crée.</value></data>
   <data name="SettingsEditFile" xml:space="preserve"><value>Modifier</value></data>
   <data name="SettingsOpenFile" xml:space="preserve"><value>Ouvrir</value></data>
-  <data name="DocsSiteIndexed" xml:space="preserve"><value>{0} pages · indexé</value></data>
-  <data name="DocsSiteHoles" xml:space="preserve"><value>{0} pages · {1} sans recherche par le sens</value></data>
-  <data name="DocsSiteHolesNote" xml:space="preserve"><value>{0} passages ont été lus pendant que le modèle d'embedding ne répondait pas : ils ne se trouvent que par mots-clés jusqu'à la réindexation.</value></data>
+  <data name="DocsSiteIndexed" xml:space="preserve"><value>{0} {0:page|pages} · indexé</value></data>
+  <data name="DocsSiteHoles" xml:space="preserve"><value>{0} {0:page|pages} · {1} {1:passage|passages} sans recherche par le sens</value></data>
+  <data name="DocsSiteHolesNote" xml:space="preserve"><value>{0} {0:passage a été lu|passages ont été lus} pendant que le modèle d'embedding ne répondait pas : {0:il ne se trouve|ils ne se trouvent} que par mots-clés jusqu'à la réindexation.</value></data>
   <data name="DocsSiteIndexing" xml:space="preserve"><value>Indexation…</value></data>
   <data name="DocsReindex" xml:space="preserve"><value>Réindexer</value></data>
   <data name="DocsAddSite" xml:space="preserve"><value>Ajouter un site</value></data>
@@ -1178,16 +1182,11 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="ProjectFileNotes" xml:space="preserve"><value>vos notes</value></data>
   <data name="ProjectFileRules" xml:space="preserve"><value>règles par fichier : {0}</value></data>
   <data name="ProjectFileNotYet" xml:space="preserve"><value>pas encore créé</value></data>
-  <data name="RunSteps1" xml:space="preserve"><value>1 étape</value></data>
-  <data name="RunSteps" xml:space="preserve"><value>{0} étapes</value></data>
-  <data name="RunRead1" xml:space="preserve"><value>1 fichier lu</value></data>
-  <data name="RunRead" xml:space="preserve"><value>{0} fichiers lus</value></data>
-  <data name="RunSearched1" xml:space="preserve"><value>1 recherche</value></data>
-  <data name="RunSearched" xml:space="preserve"><value>{0} recherches</value></data>
-  <data name="RunEdited1" xml:space="preserve"><value>1 modifié</value></data>
-  <data name="RunEdited" xml:space="preserve"><value>{0} modifiés</value></data>
-  <data name="RunCommand1" xml:space="preserve"><value>1 commande lancée</value></data>
-  <data name="RunCommands" xml:space="preserve"><value>{0} commandes lancées</value></data>
+  <data name="RunSteps" xml:space="preserve"><value>{0} {0:étape|étapes}</value></data>
+  <data name="RunRead" xml:space="preserve"><value>{0} {0:fichier lu|fichiers lus}</value></data>
+  <data name="RunSearched" xml:space="preserve"><value>{0} {0:recherche|recherches}</value></data>
+  <data name="RunEdited" xml:space="preserve"><value>{0} {0:modifié|modifiés}</value></data>
+  <data name="RunCommands" xml:space="preserve"><value>{0} {0:commande lancée|commandes lancées}</value></data>
   <data name="RunBuildPassed" xml:space="preserve"><value>build réussi</value></data>
   <data name="RunBuildFailed" xml:space="preserve"><value>build en échec</value></data>
   <data name="RunTestsPassed" xml:space="preserve"><value>tests réussis</value></data>
@@ -1201,8 +1200,8 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="ApprovalReadPage" xml:space="preserve"><value>Lire une page web</value></data>
   <data name="ApprovalSearchWeb" xml:space="preserve"><value>Chercher sur le web</value></data>
   <data name="ApprovalUseTool" xml:space="preserve"><value>Utiliser {0}</value></data>
-  <data name="ApprovalLineCount" xml:space="preserve"><value>{0} lignes</value></data>
-  <data name="ApprovalMoreLines" xml:space="preserve"><value>… {0} lignes de plus</value></data>
+  <data name="ApprovalLineCount" xml:space="preserve"><value>{0} {0:ligne|lignes}</value></data>
+  <data name="ApprovalMoreLines" xml:space="preserve"><value>… {0} {0:ligne|lignes} de plus</value></data>
   <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Autorise {0} sans demander jusqu'au redémarrage de l'éditeur.</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>Ouvrir le diff</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>Nouvelle conversation</value></data>

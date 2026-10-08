@@ -10,12 +10,14 @@ import { WvTranscriptItem } from './webviewMessages';
 /** Persistable view of a transcript (the shape the VS extension saves). */
 export function toSavedMessages(transcript: readonly WvTranscriptItem[]): SavedMessage[] {
   return transcript.map((item) =>
-    item.role === 'tool'
-      ? { role: 'tool', content: item.toolOutput ?? '', toolName: item.text, timestamp: item.timestamp }
-      : item.notice
-        // The Core's SessionManager.NoticeMarker: the restore leaves a notice on screen, out of the model's history.
-        ? { role: item.role, content: item.text, toolName: NOTICE_MARKER, timestamp: item.timestamp }
-        : { role: item.role, content: item.text, timestamp: item.timestamp },
+    item.savedAs
+      ? item.savedAs
+      : item.role === 'tool'
+        ? { role: 'tool', content: item.toolOutput ?? '', toolName: item.text, timestamp: item.timestamp }
+        : item.notice
+          // The Core's SessionManager.NoticeMarker: the restore leaves a notice on screen, out of the model's history.
+          ? { role: item.role, content: item.text, toolName: NOTICE_MARKER, timestamp: item.timestamp }
+          : { role: item.role, content: item.text, timestamp: item.timestamp },
   );
 }
 
@@ -41,6 +43,10 @@ export function toTranscript(messages: readonly SavedMessage[]): WvTranscriptIte
         // Kept across a reload, or the next save would turn the notice back into an answer (or a question).
         ...(m.toolName === NOTICE_MARKER ? { notice: true } : {}),
       });
+    } else if (m.role !== 'status') {
+      // ⚠ Both editors write the same session files. A role only the other draws (Visual Studio's plan card) was
+      // dropped here — and the next save of this conversation erased it from the file. Shown as a notice, kept as read.
+      items.push({ role: 'assistant', text: m.content, notice: true, timestamp: m.timestamp ?? undefined, savedAs: m });
     }
   }
   return items;

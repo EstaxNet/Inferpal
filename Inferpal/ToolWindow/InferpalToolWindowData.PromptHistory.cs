@@ -87,7 +87,7 @@ internal partial class InferpalToolWindowData
         await RunOnVMContextAsync(() =>
         {
             snapshot    = SessionManager.BuildSnapshot(
-                Messages.Select(m => (m.Role, m.Content, m.ToolName, m.Timestamp)));
+                Messages.Select(m => m.Saved));
             currentName = _currentSessionName;
         });
 
@@ -582,7 +582,7 @@ internal partial class InferpalToolWindowData
     /// and the command then listed an overlay nothing applied.</remarks>
     private async Task HandlePermissionsCommandAsync() =>
         await ShowInfoAsync(Services.Commands.PermissionsCommandHandler.Permissions(
-            _indexService.RootDir, _config.PermissionRules));
+            _indexService.RootDir, _config.SharedPermissionRules));
 
     private async Task HandlePromptsCommandAsync(string[] parts, CancellationToken ct)
     {

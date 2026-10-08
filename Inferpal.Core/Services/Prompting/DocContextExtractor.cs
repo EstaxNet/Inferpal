@@ -154,15 +154,6 @@ internal static class DocContextExtractor
         @"(?m)^[ \t]*namespace\s+([\w][\w\.]*)",
         RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
 
-    // type declarations: class, interface, record, enum, struct (with optional modifiers + generics + base list)
-    private static readonly Regex _typeRx = new(
-        @"(?m)^[ \t]*(?:(?:public|internal|private|protected|file|sealed|abstract|static|partial|readonly|new)\s+)*" +
-        @"(class|interface|record|enum|struct)\s+([\w]+)" +
-        @"(?:\s*<[^{;]*?)?" +                            // optional generics
-        @"(?:\s*:\s*([\w,\s<>\[\]\.]+?))?" +             // optional base list
-        @"\s*(?:\{|where\b|;)",
-        RegexOptions.Compiled | RegexOptions.Multiline, RegexBudget.Default);
-
     // members with `override` modifier (method / property / indexer)
     private static readonly Regex _overrideRx = new(
         @"(?m)^[ \t]*(?:(?:public|protected|internal|private|static|async|sealed|new|unsafe|partial|readonly|virtual|abstract)\s+)*" +
@@ -191,24 +182,7 @@ internal static class DocContextExtractor
 
     private static List<TypeInfo> ExtractTypes(string src)
     {
-        var results = new List<TypeInfo>();
-        foreach (Match m in _typeRx.Matches(src))
-        {
-            var kind      = m.Groups[1].Value;
-            var name      = m.Groups[2].Value;
-            var rawBases  = m.Groups[3].Value;
-
-            var baseTypes = string.IsNullOrWhiteSpace(rawBases)
-                ? new List<string>()
-                : rawBases
-                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    .Select(b => Regex.Replace(b, @"<.+?>", "", RegexOptions.None, RegexBudget.Default).Trim())
-                    .Where(b => b.Length > 0 && !string.Equals(b, "where", StringComparison.Ordinal))
-                    .ToList();
-
-            results.Add(new TypeInfo(kind, name, baseTypes));
-        }
-        return results;
+        return [.. CSharpTypeDeclarations.Read(src).Select(t => new TypeInfo(t.Kind, t.Name, [.. t.BaseTypes]))];
     }
 
     private static List<string> ExtractOverrideMembers(string src)

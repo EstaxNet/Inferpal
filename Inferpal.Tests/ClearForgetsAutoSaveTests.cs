@@ -33,7 +33,7 @@ public sealed class ClearForgetsAutoSaveTests : IDisposable
 
         await store.ForgetAutoSaveAsync(Here, CancellationToken.None);
 
-        var slot = await store.LoadAsync("last_session", CancellationToken.None);
+        var slot = await store.LoadAutoSaveAsync(Here, CancellationToken.None);
         Assert.NotNull(slot);   // witness: the slot is read, not missing
         Assert.Empty(slot!.Messages);
     }
@@ -41,13 +41,13 @@ public sealed class ClearForgetsAutoSaveTests : IDisposable
     [Fact]
     public async Task AnotherWorkspacesConversation_StaysInTheSlot()
     {
-        // Reference arm: the slot is one file for every project and both editors.
+        // Reference arm: forgetting this workspace's conversation leaves another workspace's alone.
         var store = new ConversationStore(_dir);
         await store.AutoSaveAsync([new SavedMessage("user", "elsewhere")], CancellationToken.None, Other);
 
         await store.ForgetAutoSaveAsync(Here, CancellationToken.None);
 
-        var slot = await store.LoadAsync("last_session", CancellationToken.None);
+        var slot = await store.LoadAutoSaveAsync(Other, CancellationToken.None);
         Assert.Single(slot!.Messages);
     }
 

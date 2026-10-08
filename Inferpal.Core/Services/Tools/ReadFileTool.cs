@@ -63,6 +63,7 @@ internal class ReadFileTool : ITool
                 content = await TextFileEncoding.ReadTextAsync(path, ct);
                 break;
         }
+        _history?.NoteOpened(path);
 
         // An empty tool result says nothing — not even "empty": the model cannot tell it from a call that did nothing.
         if (content.Length == 0)
