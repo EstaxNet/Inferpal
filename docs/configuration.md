@@ -105,8 +105,8 @@ Every persisted setting, its type, and default value.
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| `quickTimeoutSeconds` | int | `120` | Quick tasks (explain/fix/doc/inline edit/plan) |
-| `normalTimeoutSeconds` | int | `300` | Per-turn timeout for tooled chat and the orchestrator |
+| `quickTimeoutSeconds` | int | `120` | Quick tasks (explain/review/fix/doc/inline edit/plan) |
+| `normalTimeoutSeconds` | int | `300` | Per-turn timeout for chat questions, with or without tools, and the orchestrator |
 | `deepTimeoutSeconds` | int | `600` | Extended-reasoning timeout. Not in the Settings window: no request uses this budget today |
 
 These budgets wait for the model. Connecting to the backend has its own fixed budget of 15 s: a backend that never

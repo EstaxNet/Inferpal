@@ -567,7 +567,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>Expliquer, corriger, modifier avec l'IA</value></data>
   <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>Les actions courtes, et le plan de l'agent.</value></data>
   <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>Un tour d'agent</value></data>
-  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Chaque échange d'une conversation avec outils.</value></data>
+  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Chaque échange d'une conversation, avec ou sans outils.</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 Planification…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 Observation…</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>Exécuter la demande</value></data>

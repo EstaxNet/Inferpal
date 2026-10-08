@@ -567,7 +567,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>Wyjaśnij, popraw, edytuj z AI</value></data>
   <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>Krótkie akcje i plan agenta.</value></data>
   <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>Jedna tura agenta</value></data>
-  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Każda runda rozmowy z narzędziami.</value></data>
+  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Każda runda rozmowy, z narzędziami lub bez.</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 Planowanie…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 Obserwacja…</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>Wykonaj żądanie</value></data>

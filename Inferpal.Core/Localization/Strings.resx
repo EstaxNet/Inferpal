@@ -552,7 +552,7 @@ Edit the file or ask the agent to use `update_memory`. It is read again before e
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>Explain, fix, edit with AI</value></data>
   <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>Short actions, and the agent's plan.</value></data>
   <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>One agent turn</value></data>
-  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Each round of a conversation with tools.</value></data>
+  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Each round of a conversation, with or without tools.</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 Planning…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 Observing…</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>Execute the request</value></data>

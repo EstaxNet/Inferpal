@@ -75,6 +75,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         // config/update is refused while a turn runs: the push waits for it to end.
         chatView.runWhenIdle('modelRouter', () => pushModelRouterSettings(log));
       }
+      if (e.affectsConfiguration('inferpal.model')) {
+        void chatView.followModelSetting();
+      }
     }),
     // A folder opened (or changed) after startup: (re)start the host against the new root — only when
     // that root changed. Adding a second folder restarted it anyway, killing the turn in flight, its

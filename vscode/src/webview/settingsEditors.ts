@@ -615,9 +615,24 @@ function mcpServersEditor(area: HTMLTextAreaElement, host: EditorHost): Structur
 
 // ── Approval rules ───────────────────────────────────────────────────────────
 
+/** The table once the machine setting's line `line` is removed: its row goes, the machine rows below move up one. */
+export function withoutMachineLine(table: ApprovalRuleTable, line: number): ApprovalRuleTable {
+  return {
+    teamUnusable: table.teamUnusable,
+    rows: table.rows
+      .filter((r) => r.source !== 'machine' || r.machineLine !== line)
+      .map((r) => (r.source === 'machine' && r.machineLine > line ? { ...r, machineLine: r.machineLine - 1 } : r)),
+  };
+}
+
 function approvalRulesEditor(area: HTMLTextAreaElement, host: EditorHost): StructuredEditor {
   const view = el('div', 'listeditor ruleseditor');
   let table: ApprovalRuleTable | null = null;
+  // ⚠ A row deletes by the INDEX of its line in the text the table was built from: applied to any other text, it
+  // removes another rule. The host answers asynchronously, and not at all while it is down, so the shown table can
+  // describe an older text — after a delete, or an edit as text.
+  let tableText: string | null = null;
+  let askedText = '';
   let request = 0;
   let pendingAdd = 0;
   let addError = '';
@@ -625,6 +640,7 @@ function approvalRulesEditor(area: HTMLTextAreaElement, host: EditorHost): Struc
 
   const ask = (): void => {
     request += 1;
+    askedText = area.value;
     host.post({ type: 'rulesTable', rules: area.value, requestId: request });
   };
 
@@ -662,11 +678,19 @@ function approvalRulesEditor(area: HTMLTextAreaElement, host: EditorHost): Struc
           pattern.appendChild(el('span', 'lnote', r.noteText));
         }
         const actions = el('td', 'ractions');
-        if (r.source === 'machine' && r.machineLine >= 0) {
+        if (r.source === 'machine' && r.machineLine >= 0 && tableText === area.value) {
           actions.append(...rowActions(host, null, () => {
+            if (tableText !== area.value || table === null) {
+              ask();   // the text changed since this row was drawn: its index points at another line
+              return;
+            }
             const all = area.value.split('\n');
             all.splice(r.machineLine, 1);
             host.commit(area, all.join('\n'));
+            // The rows below moved up a line: the table follows the text at once, without waiting for the host.
+            table = withoutMachineLine(table, r.machineLine);
+            tableText = area.value;
+            draw();
             ask();
           }));
         }
@@ -715,11 +739,13 @@ function approvalRulesEditor(area: HTMLTextAreaElement, host: EditorHost): Struc
   ask();
   return {
     view,
-    refresh: ask,
+    // Redrawn at once: a text changed elsewhere leaves the rows without their delete buttons until the host answers.
+    refresh: () => { ask(); draw(); },
     onMessage(msg) {
       if (msg.type === 'rulesTable') {
         if (msg.requestId === request) {
           table = msg.table as ApprovalRuleTable;
+          tableText = askedText;
           draw();
         }
         return true;

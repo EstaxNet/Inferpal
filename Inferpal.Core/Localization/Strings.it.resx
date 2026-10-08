@@ -567,7 +567,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>Spiegare, correggere, modificare con l'IA</value></data>
   <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>Le azioni brevi e il piano dell'agente.</value></data>
   <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>Un turno dell'agente</value></data>
-  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Ogni giro di una conversazione con strumenti.</value></data>
+  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Ogni giro di una conversazione, con o senza strumenti.</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 Pianificazione…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 Osservazione…</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>Eseguire la richiesta</value></data>

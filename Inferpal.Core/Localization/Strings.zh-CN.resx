@@ -567,7 +567,7 @@
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>解释、修复、用 AI 编辑</value></data>
   <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>简短的操作，以及代理的计划。</value></data>
   <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>代理的一轮</value></data>
-  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>使用工具的对话中的每一轮。</value></data>
+  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>对话中的每一轮，无论是否使用工具。</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 规划中…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 观察中…</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>执行请求</value></data>

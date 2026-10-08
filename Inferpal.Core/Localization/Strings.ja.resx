@@ -567,7 +567,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>説明・修正・AI で編集</value></data>
   <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>短いアクションと、エージェントの計画。</value></data>
   <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>エージェントの 1 ターン</value></data>
-  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>ツールを使う会話の各ラウンド。</value></data>
+  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>会話の各ラウンド（ツールの有無を問わず）。</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 計画中…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 観察中…</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>リクエストを実行する</value></data>

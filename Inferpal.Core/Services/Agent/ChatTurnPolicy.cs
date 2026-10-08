@@ -1,5 +1,6 @@
 using System.Text;
 using Inferpal.Localization;
+using Inferpal.Models;
 
 namespace Inferpal.Services.Agent;
 
@@ -32,6 +33,17 @@ internal enum FinalAnswerKind
 /// </summary>
 internal static class ChatTurnPolicy
 {
+    /// <summary>
+    /// The time budget of a chat turn: the "quick" one for a code action sent through the chat (explain, review), the
+    /// "normal" one for a question — with tools or without. One decision for both front-ends.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Decided here, never at the call site: chosen by each front-end, the same question asked with tools off waits
+    /// 120 s for a slow or cold model in one editor and 300 s in the other — and the settings call explain a quick task.
+    /// </remarks>
+    public static TaskComplexity TurnComplexity(bool codeAction) =>
+        codeAction ? TaskComplexity.Quick : TaskComplexity.Normal;
+
     /// <summary>
     /// Triple guard against visually empty assistant bubbles (see bug history): content
     /// is "visibly empty" when it parses to no markdown blocks, contains no printable

@@ -405,6 +405,7 @@ internal sealed partial class HostServer : IDisposable
                     onStep:         step => Notify("chat/step", new { text = step }),
                     onToken:        OnToken,
                     ct:             cts.Token,
+                    complexity:     ChatTurnPolicy.TurnComplexity(codeAction: false),
                     onToolExecuted: te => Notify("chat/tool", new ToolNotice(te.Name, te.Input, te.Output, te.HasErrors)),
                     onThinking:     OnThinking);
 
@@ -435,7 +436,8 @@ internal sealed partial class HostServer : IDisposable
             }
 
             var turn = await s.Client.SendChatAsync(
-                model, s.History, EmptyToolRegistry.Instance, OnToken, cts.Token, onThinking: OnThinking);
+                model, s.History, EmptyToolRegistry.Instance, OnToken, cts.Token,
+                complexity: ChatTurnPolicy.TurnComplexity(p.CodeAction), onThinking: OnThinking);
             // The answer the user saw, as on the two paths above and in Visual Studio: without the model's reasoning.
             var said = ChatTurnPolicy.ChoosePersistedAnswer(
                 !ChatTurnPolicy.IsVisiblyEmpty(streamed.ToString()) ? streamed.ToString() : null, turn.TextContent);

@@ -567,7 +567,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>설명, 수정, AI로 편집</value></data>
   <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>짧은 작업과 에이전트의 계획.</value></data>
   <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>에이전트 한 차례</value></data>
-  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>도구를 쓰는 대화의 각 차례.</value></data>
+  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>대화의 각 차례 (도구 사용 여부와 무관).</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 계획 중…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 관찰 중…</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>요청 실행</value></data>

@@ -164,7 +164,7 @@ internal static class InlineToolCallParser
         var tagMatched = false;
         foreach (Match m in ToolCallTagRegex.Matches(content))
         {
-            if (TryAddFromJson(m.Groups[1].Value, calls) || TryAddMalformedTagCall(m.Groups[1].Value, calls))
+            if (TryAddFromJson(m.Groups[1].Value, calls, schemaOf) || TryAddMalformedTagCall(m.Groups[1].Value, calls, schemaOf))
             {
                 cleaned    = cleaned.Replace(m.Value, string.Empty);
                 tagMatched = true;
@@ -230,8 +230,8 @@ internal static class InlineToolCallParser
                 // on the raw call as its answer and nothing executes. Read by shape (1)'s reader, or — written in
                 // Gemma's own syntax, {name:<|"|>read_file<|"|>,arguments:{…}} — as the call it wraps.
                 var body = m.Groups[2].Value;
-                if (TryAddFromJson(body, calls) || TryAddMalformedTagCall(body, calls)
-                    || (GemmaCallArguments.ToJson(body) is { } wrapped && TryAddFromJson(wrapped, calls)))
+                if (TryAddFromJson(body, calls, schemaOf) || TryAddMalformedTagCall(body, calls, schemaOf)
+                    || (GemmaCallArguments.ToJson(body) is { } wrapped && TryAddFromJson(wrapped, calls, schemaOf)))
                 {
                     cleaned      = cleaned.Replace(m.Value, string.Empty);
                     gemmaMatched = true;
@@ -252,14 +252,14 @@ internal static class InlineToolCallParser
             return (calls, cleaned.Trim());
 
         // (1f) Mistral's shape: [TOOL_CALLS]name[ARGS]{json}
-        if (TryAddMistralCalls(content, calls, ref cleaned))
+        if (TryAddMistralCalls(content, calls, ref cleaned, schemaOf))
             return (calls, cleaned.Trim());
 
         // (1g) Cohere's shape: <|START_ACTION|>[{"tool_name":…,"parameters":{…}}]<|END_ACTION|>
         var cohereMatched = false;
         foreach (Match m in CohereActionRegex.Matches(content))
         {
-            if (TryAddFromJson(m.Groups[1].Value, calls))
+            if (TryAddFromJson(m.Groups[1].Value, calls, schemaOf))
             {
                 cleaned       = cleaned.Replace(m.Value, string.Empty);
                 cohereMatched = true;
@@ -271,7 +271,7 @@ internal static class InlineToolCallParser
         // (2) The whole content is a JSON payload (optionally fenced in ```json … ```).
         var payload = StripCodeFence(content.Trim());
         if ((payload.StartsWith('{') || payload.StartsWith('['))
-            && TryAddFromJson(payload, calls)
+            && TryAddFromJson(payload, calls, schemaOf)
             && calls.Count > 0
             // All-or-nothing gate: a payload with ANY unrecognised name is an answer, not a call.
             && (isKnownTool is null || calls.All(c => isKnownTool(c.Function.Name))))
@@ -297,9 +297,9 @@ internal static class InlineToolCallParser
     /// </list>
     /// A body with no readable name names no call and stays text.
     /// </remarks>
-    private static bool TryAddMalformedTagCall(string body, List<ToolCallDto> calls)
+    private static bool TryAddMalformedTagCall(string body, List<ToolCallDto> calls, Func<string, JsonElement?>? schemaOf)
     {
-        if (Unfinished(body) is { } completed && TryAddFromJson(completed, calls))
+        if (Unfinished(body) is { } completed && TryAddFromJson(completed, calls, schemaOf))
             return true;
 
         var name = LeadingNameRegex.Match(body);
@@ -335,7 +335,7 @@ internal static class InlineToolCallParser
     }
 
     /// <summary>Parses a JSON object — or array of objects — appending any valid tool calls.</summary>
-    private static bool TryAddFromJson(string json, List<ToolCallDto> calls)
+    private static bool TryAddFromJson(string json, List<ToolCallDto> calls, Func<string, JsonElement?>? schemaOf)
     {
         JsonDocument doc;
         try   { doc = JsonDocument.Parse(json); }
@@ -348,14 +348,14 @@ internal static class InlineToolCallParser
             {
                 var any = false;
                 foreach (var el in root.EnumerateArray())
-                    any |= TryAddObject(el, calls);
+                    any |= TryAddObject(el, calls, schemaOf);
                 return any;
             }
-            return TryAddObject(root, calls);
+            return TryAddObject(root, calls, schemaOf);
         }
     }
 
-    private static bool TryAddObject(JsonElement obj, List<ToolCallDto> calls)
+    private static bool TryAddObject(JsonElement obj, List<ToolCallDto> calls, Func<string, JsonElement?>? schemaOf)
     {
         if (obj.ValueKind != JsonValueKind.Object) return false;
 
@@ -382,7 +382,7 @@ internal static class InlineToolCallParser
         // writes under PromptedTools — are the arguments the model meant. Read as a call without arguments they were
         // dropped: the call ran with {} (run_tests then runs the WHOLE suite) or was refused for a parameter the model
         // did write.
-        if (RawArguments(obj) is null && FlatArguments(obj) is { } flat)
+        if (RawArguments(obj) is null && FlatArguments(obj, schemaOf?.Invoke(name!)) is { } flat)
         {
             calls.Add(new ToolCallDto(new ToolCallFunction(name!, ParseObject(flat))));
             return true;
@@ -404,9 +404,18 @@ internal static class InlineToolCallParser
 
     /// <summary>The properties of a call object written beside its name, as a JSON object; <c>null</c> when it has
     /// none — a legitimate call without arguments.</summary>
-    private static string? FlatArguments(JsonElement obj)
+    /// <remarks>
+    /// ⚠ A call key the tool DECLARES as a parameter is an argument: <c>run_command</c>'s <c>id</c> (the background job
+    /// to poll or stop), an MCP tool's <c>id</c> or <c>type</c>. Read as the call's identity, it was dropped, and poll
+    /// answered "requires 'id'" to a call that wrote it. The name keys stay the tool's: the name is read from them.
+    /// </remarks>
+    private static string? FlatArguments(JsonElement obj, JsonElement? schema)
     {
-        var props = obj.EnumerateObject().Where(p => !CallKeys.Contains(p.Name, StringComparer.Ordinal)).ToList();
+        var props = obj.EnumerateObject()
+                       .Where(p => !CallKeys.Contains(p.Name, StringComparer.Ordinal)
+                                || (p.Name is not ("name" or "tool_name")
+                                    && schema is { ValueKind: JsonValueKind.Object } s && PropertySchema(s, p.Name) is not null))
+                       .ToList();
         return props.Count == 0
             ? null
             : "{" + string.Join(",", props.Select(p => JsonSerializer.Serialize(p.Name) + ":" + p.Value.GetRawText())) + "}";
@@ -601,7 +610,7 @@ internal static class InlineToolCallParser
     /// Mistral's calls, <c>[TOOL_CALLS]name[ARGS]{json}</c> (and the older <c>[TOOL_CALLS][{"name":…}]</c> list); each
     /// one read is removed from <paramref name="cleaned"/>.
     /// </summary>
-    private static bool TryAddMistralCalls(string content, List<ToolCallDto> calls, ref string cleaned)
+    private static bool TryAddMistralCalls(string content, List<ToolCallDto> calls, ref string cleaned, Func<string, JsonElement?>? schemaOf)
     {
         var found = false;
         var i     = content.IndexOf(MistralCallsToken, StringComparison.Ordinal);
@@ -612,7 +621,7 @@ internal static class InlineToolCallParser
             if (p < content.Length && content[p] == '[')
             {
                 end = ClosingBracket(content, p);
-                if (end < 0 || !TryAddFromJson(content[p..(end + 1)], calls)) break;
+                if (end < 0 || !TryAddFromJson(content[p..(end + 1)], calls, schemaOf)) break;
             }
             else
             {

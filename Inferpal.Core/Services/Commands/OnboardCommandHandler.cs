@@ -259,17 +259,21 @@ internal static class OnboardCommandHandler
         sb.Append("## Top-level layout\n");
         try
         {
-            var dirs    = new List<string>();
-            var entries = new List<string>();
+            var dirs  = new List<string>();
+            var files = new List<string>();
             foreach (var dir in Directory.EnumerateDirectories(root))
             {
-                var name = Path.GetFileName(dir);
                 if (WorkspaceScan.IsExcludedDirName(dir)) continue;
-                dirs.Add(name);
-                entries.Add(name + "/");
+                dirs.Add(Path.GetFileName(dir));
             }
             foreach (var file in Directory.EnumerateFiles(root))
-                entries.Add(Path.GetFileName(file));
+                files.Add(Path.GetFileName(file));
+            // ⚠ Sorted BEFORE the caps below: the file system's order is arbitrary under POSIX, so unsorted, which 40
+            // entries and which 12 folders make it into the brief — a file committed with the repository, the system
+            // prompt of every later session — depends on the machine that writes it.
+            dirs.Sort(StringComparer.Ordinal);
+            files.Sort(StringComparer.Ordinal);
+            var entries = dirs.Select(d => d + "/").Concat(files).ToList();
 
             foreach (var entry in entries.Take(MaxEntries)) sb.Append("- ").Append(entry).Append('\n');
             if (entries.Count > MaxEntries) sb.Append("- … +").Append(entries.Count - MaxEntries).Append('\n');
@@ -282,12 +286,13 @@ internal static class OnboardCommandHandler
             var unreadable      = new List<string>();
             foreach (var dir in dirs.Take(MaxSampledDirs))
             {
-                var (children, failure) = SampleChildren(Path.Combine(root, dir));
+                var (children, more, failure) = SampleChildren(Path.Combine(root, dir));
                 // ⚠ A folder that could not be read is not an empty one: written "empty" here, the brief tells every later
                 // session that a folder full of code holds nothing.
                 if (failure is not null) unreadable.Add($"{dir} ({failure})");
                 if (children.Count == 0) { if (failure is null) nothingToSample.Add(dir); continue; }
                 sb.Append("- `").Append(dir).Append("/` → ").Append(string.Join(", ", children))
+                  .Append(more > 0 ? $", … +{more}" : "")
                   .Append(failure is null ? "" : ", … (not read to the end)").Append('\n');
             }
 
@@ -343,34 +348,38 @@ internal static class OnboardCommandHandler
     }
 
     /// <summary>
-    /// A few immediate children of a folder — enough to tell what it holds, not a listing — and, when the folder could not
-    /// be read to the end, why (<c>null</c> otherwise).
+    /// A few immediate children of a folder — enough to tell what it holds, not a listing —, how many more it holds, and,
+    /// when the folder could not be read to the end, why (<c>null</c> otherwise).
     /// </summary>
-    private static (List<string> Children, string? Failure) SampleChildren(string dir)
+    /// <remarks>
+    /// ⚠ The first ones in ORDINAL order, folders first: the first ones the file system hands out are an arbitrary pick
+    /// under POSIX. And the rest is counted — eight names read as the whole folder otherwise.
+    /// </remarks>
+    private static (List<string> Children, int More, string? Failure) SampleChildren(string dir)
     {
         const int Max = 8;
-        var result = new List<string>();
+        var subs    = new List<string>();
+        var files   = new List<string>();
+        string? failure = null;
         try
         {
             foreach (var sub in Directory.EnumerateDirectories(dir))
             {
-                var name = Path.GetFileName(sub);
                 if (WorkspaceScan.IsExcludedDirName(sub)) continue;
-                result.Add(name + "/");
-                if (result.Count >= Max) return (result, null);
+                subs.Add(Path.GetFileName(sub) + "/");
             }
             foreach (var file in Directory.EnumerateFiles(dir))
-            {
-                result.Add(Path.GetFileName(file));
-                if (result.Count >= Max) return (result, null);
-            }
+                files.Add(Path.GetFileName(file));
         }
         catch (Exception ex)
         {
             Diagnostics.Swallow("Onboard.SampleChildren", ex);
-            return (result, ReadFailure(ex));
+            failure = ReadFailure(ex);
         }
-        return (result, null);
+        subs.Sort(StringComparer.Ordinal);
+        files.Sort(StringComparer.Ordinal);
+        var all = subs.Concat(files).ToList();
+        return (all.Take(Max).ToList(), Math.Max(0, all.Count - Max), failure);
     }
 
     /// <summary>

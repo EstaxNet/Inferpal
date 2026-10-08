@@ -66,10 +66,65 @@ public class FixPromptBuilderTests
     }
 
     [Fact]
-    public void Build_OmitsAffectedFilesSection_WhenNothingReadable()
+    public void Build_NothingReadable_SaysSo_WithNoFileBlock()
     {
         var prompt = FixPromptBuilder.Build(TwoErrors, _ => null);
+        Assert.Contains("(could not be read, not shown: C:\\proj\\Foo.cs, C:\\proj\\Bar.cs)", prompt);
+        Assert.DoesNotContain("###", prompt);
+    }
+
+    [Fact]
+    public void Build_NoDiagnosticSite_AddsNoSection()
+    {
+        var prompt = FixPromptBuilder.Build("Build FAILED. 1 error", _ => "never read");
         Assert.DoesNotContain("Affected files:", prompt);
+    }
+
+    [Fact]
+    public void Build_NamesTheUnreadableFile_AboveTheFilesShown()
+    {
+        var prompt = FixPromptBuilder.Build(TwoErrors, path => path.EndsWith("Foo.cs") ? "class Foo {}" : null);
+
+        var note = prompt.IndexOf("(could not be read, not shown: C:\\proj\\Bar.cs)", StringComparison.Ordinal);
+        Assert.True(note >= 0, prompt);
+        Assert.True(note < prompt.IndexOf("### C:\\proj\\Foo.cs", StringComparison.Ordinal), "the note comes after the files it qualifies");
+    }
+
+    [Fact]
+    public void Build_NamesTheFilesPastTheCap_AboveTheFilesShown()
+    {
+        var lines = new List<string>();
+        for (var i = 0; i < 8; i++)
+            lines.Add($"C:\\p\\File{i}.cs(1,1): error CS1: x");
+        var prompt = FixPromptBuilder.Build(string.Join('\n', lines), _ => "class C {}");
+
+        var note = prompt.IndexOf("(3 more file(s) with diagnostics past the first 5, not shown here: "
+                                + "C:\\p\\File5.cs, C:\\p\\File6.cs, C:\\p\\File7.cs — read_file gives them)", StringComparison.Ordinal);
+        Assert.True(note >= 0, prompt);
+        Assert.True(note < prompt.IndexOf("### ", StringComparison.Ordinal), "the note comes after the files it qualifies");
+        Assert.Contains("### C:\\p\\File4.cs", prompt);
+        Assert.DoesNotContain("### C:\\p\\File5.cs", prompt);
+    }
+
+    [Fact]
+    public void Build_ManyFilesPastTheCap_AreCounted_NotAllListed()
+    {
+        var lines = new List<string>();
+        for (var i = 0; i < 20; i++)
+            lines.Add($"C:\\p\\F{i}.cs(1,1): error CS1: x");
+        var prompt = FixPromptBuilder.Build(string.Join('\n', lines), _ => "class C {}");
+
+        Assert.Contains("(15 more file(s) with diagnostics past the first 5", prompt);
+        Assert.Contains("C:\\p\\F14.cs and 5 more — read_file gives them)", prompt);
+    }
+
+    [Fact]
+    public void Build_AllFilesShown_SaysNothingLeftOut()
+    {
+        // Reference arm: a note on every prompt is the noise that gets it ignored.
+        var prompt = FixPromptBuilder.Build(TwoErrors, _ => "class C {}");
+        Assert.DoesNotContain("more file(s)", prompt);
+        Assert.DoesNotContain("could not be read", prompt);
     }
 
     [Fact]

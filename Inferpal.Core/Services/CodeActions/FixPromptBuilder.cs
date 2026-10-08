@@ -54,39 +54,53 @@ internal static class FixPromptBuilder
     /// The localized fix prompt followed by an "Affected files" section: up to
     /// <see cref="MaxFiles"/> files named in the diagnostics, each whole when it fits in
     /// <see cref="MaxFileChars"/>, otherwise as the windows <see cref="AppendWindows"/> picks.
-    /// <paramref name="tryReadFile"/> returns the file's content, or <c>null</c> to skip it
-    /// (missing/unreadable).
+    /// <paramref name="tryReadFile"/> returns the file's content, or <c>null</c> when it cannot be read.
     /// </summary>
+    /// <remarks>
+    /// ⚠ The section reads as "the files in error": a file past the cap, or one that could not be read, is NAMED above
+    /// the files shown — left out in silence, the five shown pass for the whole build, and a fix of those five for a
+    /// finished one.
+    /// </remarks>
     public static string Build(string rawErrors, Func<string, string?> tryReadFile)
     {
-        var sb = new StringBuilder(Strings.PromptFixErrors(rawErrors));
+        var sb    = new StringBuilder(Strings.PromptFixErrors(rawErrors));
+        var sites = ExtractErrorSites(rawErrors);
 
-        var headerWritten = false;
-        foreach (var (path, lines) in ExtractErrorSites(rawErrors))
+        var files  = new StringBuilder();
+        var unread = new List<string>();
+        foreach (var (path, lines) in sites.Take(MaxFiles))
         {
             var content = tryReadFile(path);
-            if (content is null) continue;
+            if (content is null) { unread.Add(path); continue; }
 
-            if (!headerWritten)
-            {
-                sb.AppendLine("\n\nAffected files:");
-                headerWritten = true;
-            }
-            sb.AppendLine($"\n### {path}");
+            files.AppendLine($"\n### {path}");
             if (content.Length <= MaxFileChars)
             {
-                sb.AppendLine("```");
-                sb.AppendLine(content);
-                sb.AppendLine("```");
+                files.AppendLine("```");
+                files.AppendLine(content);
+                files.AppendLine("```");
             }
             else
             {
-                AppendWindows(sb, content, lines);
+                AppendWindows(files, content, lines);
             }
         }
+        var notShown = sites.Skip(MaxFiles).Select(s => s.Path).ToList();
+        if (files.Length == 0 && unread.Count == 0 && notShown.Count == 0) return sb.ToString();
 
+        sb.AppendLine("\n\nAffected files:");
+        if (notShown.Count > 0)
+            sb.AppendLine($"({notShown.Count} more file(s) with diagnostics past the first {MaxFiles}, not shown here: "
+                        + $"{Named(notShown)} — read_file gives them)");
+        if (unread.Count > 0)
+            sb.AppendLine($"(could not be read, not shown: {Named(unread)})");
+        sb.Append(files);
         return sb.ToString();
     }
+
+    /// <summary>Paths for a note: the first ten, and how many more — a note does not become the list it qualifies.</summary>
+    private static string Named(List<string> paths) =>
+        paths.Count <= 10 ? string.Join(", ", paths) : $"{string.Join(", ", paths.Take(10))} and {paths.Count - 10} more";
 
     /// <summary>
     /// A file that does not fit: its head, then the lines around each diagnostic, each window in its own
@@ -152,10 +166,11 @@ internal static class FixPromptBuilder
     /// only, in order of first appearance.
     /// </summary>
     public static List<string> ExtractErrorPaths(string diagnosticOutput) =>
-        ExtractErrorSites(diagnosticOutput).Select(s => s.Path).ToList();
+        ExtractErrorSites(diagnosticOutput).Select(s => s.Path).Take(MaxFiles).ToList();
 
     /// <summary>
-    /// <see cref="ExtractErrorPaths"/> with, for each path, the lines its diagnostics point at.
+    /// Every distinct path named, in order of first appearance, with the lines its diagnostics point at — the cap
+    /// is <see cref="Build"/>'s, which names what it leaves out.
     /// </summary>
     private static List<(string Path, List<int> Lines)> ExtractErrorSites(string diagnosticOutput)
     {
@@ -166,7 +181,6 @@ internal static class FixPromptBuilder
             var line = int.TryParse(m.Groups[2].ValueSpan, out var n) ? n : 0;
             var at   = sites.FindIndex(s => string.Equals(s.Path, path, StringComparison.OrdinalIgnoreCase));
             if (at >= 0) { sites[at].Lines.Add(line); continue; }
-            if (sites.Count == MaxFiles) continue;
             sites.Add((path, [line]));
         }
         return sites;

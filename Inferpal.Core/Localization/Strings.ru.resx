@@ -565,7 +565,7 @@
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>Объяснить, исправить, правка с ИИ</value></data>
   <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>Короткие действия и план агента.</value></data>
   <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>Один ход агента</value></data>
-  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Каждый раунд разговора с инструментами.</value></data>
+  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Каждый раунд разговора, с инструментами или без.</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 Планирование…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 Наблюдение…</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>Выполнить запрос</value></data>

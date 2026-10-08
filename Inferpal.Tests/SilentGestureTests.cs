@@ -63,8 +63,14 @@ public sealed class SilentGestureTests
             $"Only {found} webview host(s) discovered under vscode/src: the scan no longer reads them all.");
     }
 
-    /// <summary>The bare guard, as it reads when nothing is said.</summary>
-    private const string BareGuard = "if (!host?.isRunning) {";
+    /// <summary>A host guard, as it reads when nothing is said: bare, or one test among others.</summary>
+    /// <remarks>
+    /// ⚠ The CONDITION is matched, never a spelling of the whole line: read as the bare
+    /// <c>if (!host?.isRunning) {</c> only, the rule let <c>if (this.busy || !host?.isRunning || !question)</c> through —
+    /// Regenerate with no host returned in silence under a rule written for exactly that.
+    /// </remarks>
+    private static readonly Regex HostGuard =
+        new(@"if \([^\n{]*!host\?\.isRunning[^\n{]*\) \{", RegexOptions.None, TimeSpan.FromSeconds(5));
 
     /// <summary>
     /// Paths whose bare host guard may stay silent.
@@ -81,9 +87,12 @@ public sealed class SilentGestureTests
     /// <c>refreshModelList</c> runs because the model menu opened, and nobody waits on it: the menu is already drawn from
     /// the list the view holds, and its own lines say when nothing is listed or the backend is down.
     /// <c>refreshCommandList</c> likewise: typing "/" asks for it, and the popup works from the list it already has.
+    /// <c>autoSaveLast</c> runs at the end of every turn, unasked. <c>archiveConversation</c> is reached from gestures
+    /// that decide first: "New conversation" refuses, through the funnel, to clear a conversation it cannot archive.
     /// </remarks>
     private static readonly string[] BackgroundPaths =
-        ["onHostReady", "configSaved", "pollBackendStatus", "refreshModelList", "refreshCommandList"];
+        ["onHostReady", "configSaved", "pollBackendStatus", "refreshModelList", "refreshCommandList",
+         "autoSaveLast", "archiveConversation"];
 
     [Fact]
     public void EveryGestureThatNeedsTheHost_SaysWhenItCannotRun()
@@ -95,7 +104,7 @@ public sealed class SilentGestureTests
 
         var seen = 0;
         foreach (var (file, src) in GestureSources())
-        foreach (Match m in Regex.Matches(src, Regex.Escape(BareGuard), RegexOptions.None, TimeSpan.FromSeconds(5)))
+        foreach (Match m in HostGuard.Matches(src))
         {
             seen++;
             var before = src[..m.Index];
@@ -116,7 +125,7 @@ public sealed class SilentGestureTests
             // a window cut to the guard itself reports a site that does speak as if it did not.
             var body    = src.Substring(m.Index, Math.Min(700, src.Length - m.Index));
 
-            Assert.True(allowed || body.Contains("sayOnce") || body.Contains("hostUnavailable"),
+            Assert.True(allowed || body.Contains("sayOnce") || body.Contains("hostUnavailable") || body.Contains("hostForGesture()"),
                         $"{file}: gesture '{name}' returns without saying why the host could not serve it");
         }
 

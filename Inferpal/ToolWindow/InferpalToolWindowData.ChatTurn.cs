@@ -540,11 +540,9 @@ internal partial class InferpalToolWindowData
             }
             else
             {
-                // Basic path: unchanged 20-turn reactive loop.
-                // Code actions use EmptyToolRegistry → Quick timeout; tool-enabled chat → Normal.
-                var loopComplexity = effectiveTools == EmptyToolRegistry.Instance
-                    ? TaskComplexity.Quick
-                    : TaskComplexity.Normal;
+                // Basic path: unchanged 20-turn reactive loop. A code action (its one-off model) has the quick
+                // budget, a question the normal one, tools or not.
+                var loopComplexity = ChatTurnPolicy.TurnComplexity(codeAction: oneTimeModel is not null);
                 var result = await _client.RunAgentAsync(
                     model:      effectiveModel,
                     history:    _history,

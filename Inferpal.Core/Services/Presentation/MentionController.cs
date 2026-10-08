@@ -138,7 +138,8 @@ internal static class MentionController
     public static IReadOnlyList<string> FindFiles(string rootDir, string queryLower, CancellationToken ct)
     {
         var results = new List<(string Path, int Score)>();
-        CollectFiles(rootDir, queryLower, results, 0, ct);
+        var visited = 0;
+        CollectFiles(rootDir, queryLower, results, 0, ref visited, ct);
         return Rank(results);
     }
 
@@ -146,7 +147,8 @@ internal static class MentionController
     public static IReadOnlyList<string> FindFolders(string rootDir, string queryLower, CancellationToken ct)
     {
         var results = new List<(string Path, int Score)>();
-        CollectFolders(rootDir, queryLower, results, 0, ct);
+        var visited = 0;
+        CollectFolders(rootDir, queryLower, results, 0, ref visited, ct);
         return Rank(results);
     }
 
@@ -158,17 +160,26 @@ internal static class MentionController
             .Select(r => r.Path)
             .ToList();
 
+    /// <summary>Entries a search walks at most — a bound on the WORK, never on the matches.</summary>
+    /// <remarks>
+    /// ⚠ The ranking comes after the walk: a walk stopped at a number of MATCHES keeps the first ones it meets — a
+    /// hundred names that merely contain the query, found first, and the file named exactly as typed is never collected,
+    /// the picker offering eight lesser matches. Each level is read in ordinal order, so the bound cuts the same tree
+    /// everywhere.
+    /// </remarks>
+    internal const int MaxVisitedEntries = 20_000;
+
     private static void CollectFiles(
-        string dir, string query, List<(string, int)> results, int depth, CancellationToken ct)
+        string dir, string query, List<(string, int)> results, int depth, ref int visited, CancellationToken ct)
     {
-        if (depth > 8 || ct.IsCancellationRequested || results.Count >= 100) return;
+        if (depth > 8 || ct.IsCancellationRequested || visited >= MaxVisitedEntries) return;
         if (IsSkippedDir(dir)) return;
 
         try
         {
-            foreach (var file in Directory.GetFiles(dir))
+            foreach (var file in Directory.GetFiles(dir).OrderBy(f => f, StringComparer.Ordinal))
             {
-                if (ct.IsCancellationRequested) return;
+                if (ct.IsCancellationRequested || ++visited > MaxVisitedEntries) return;
                 if (!IsIndexable(file)) continue;
 
                 var name = Path.GetFileName(file).ToLowerInvariant();
@@ -179,23 +190,23 @@ internal static class MentionController
                 results.Add((file, score));
             }
 
-            foreach (var sub in Directory.GetDirectories(dir))
-                CollectFiles(sub, query, results, depth + 1, ct);
+            foreach (var sub in Directory.GetDirectories(dir).OrderBy(d => d, StringComparer.Ordinal))
+                CollectFiles(sub, query, results, depth + 1, ref visited, ct);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { Diagnostics.Swallow("MentionController.CollectFiles", ex); }
     }
 
     private static void CollectFolders(
-        string dir, string query, List<(string, int)> results, int depth, CancellationToken ct)
+        string dir, string query, List<(string, int)> results, int depth, ref int visited, CancellationToken ct)
     {
-        if (depth > 6 || ct.IsCancellationRequested || results.Count >= 60) return;
+        if (depth > 6 || ct.IsCancellationRequested || visited >= MaxVisitedEntries) return;
 
         try
         {
-            foreach (var subDir in Directory.GetDirectories(dir))
+            foreach (var subDir in Directory.GetDirectories(dir).OrderBy(d => d, StringComparer.Ordinal))
             {
-                if (ct.IsCancellationRequested) return;
+                if (ct.IsCancellationRequested || ++visited > MaxVisitedEntries) return;
                 if (IsSkippedDir(subDir)) continue;
 
                 var nl = Path.GetFileName(subDir).ToLowerInvariant();
@@ -205,7 +216,7 @@ internal static class MentionController
                     if (nl == query) score = 3;
                     results.Add((subDir, score));
                 }
-                CollectFolders(subDir, query, results, depth + 1, ct);
+                CollectFolders(subDir, query, results, depth + 1, ref visited, ct);
             }
         }
         catch (OperationCanceledException) { }

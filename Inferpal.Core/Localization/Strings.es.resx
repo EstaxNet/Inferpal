@@ -567,7 +567,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>Explicar, corregir, editar con IA</value></data>
   <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>Las acciones cortas y el plan del agente.</value></data>
   <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>Un turno del agente</value></data>
-  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Cada ronda de una conversación con herramientas.</value></data>
+  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Cada ronda de una conversación, con o sin herramientas.</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 Planificando…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 Observando…</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>Ejecutar la solicitud</value></data>

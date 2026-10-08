@@ -47,6 +47,43 @@ public class FlatToolCallArgumentsTests
         Assert.Equal(["path"], Assert.Single(ids!).Function.Arguments.EnumerateObject().Select(p => p.Name));
     }
 
+    /// <summary>The real schema of <c>run_command</c>, which declares <c>id</c>: the background job to poll or stop.</summary>
+    private static System.Text.Json.JsonElement RunCommandSchema()
+    {
+        using var tool = new Inferpal.Services.Tools.RunCommandTool(new NoopApproval(), new Inferpal.Config.InferpalConfig(), () => ".");
+        return System.Text.Json.JsonSerializer.SerializeToElement(tool.Parameters);
+    }
+
+    [Fact]
+    public void ACallKey_TheToolDeclares_IsItsArgument()
+    {
+        var schema = RunCommandSchema();
+        Assert.True(schema.GetProperty("properties").TryGetProperty("id", out _), "witness: run_command no longer declares 'id'");
+
+        var (calls, _) = InlineToolCallParser.TryParse(
+            "<tool_call>{\"name\":\"run_command\",\"action\":\"poll\",\"id\":\"bg1\"}</tool_call>",
+            schemaOf: name => name == "run_command" ? schema : null);
+
+        var args = Assert.Single(calls!).Function.Arguments;
+        Assert.Equal("poll", args.GetProperty("action").GetString());
+        Assert.Equal("bg1", args.GetProperty("id").GetString());
+        Assert.False(args.TryGetProperty("name", out _));   // the name key stays the tool's
+    }
+
+    [Fact]
+    public void ACallKey_TheToolDoesNotDeclare_StillIdentifiesTheCall()
+    {
+        // Reference arms: a tool without an 'id' parameter, and no schema at all, read 'id' as the call's — as before.
+        var schema = RunCommandSchema();
+        var (declared, _) = InlineToolCallParser.TryParse(
+            "<tool_call>{\"id\":\"call_1\",\"name\":\"list_files\",\"path\":\"src\"}</tool_call>",
+            schemaOf: name => name == "run_command" ? schema : null);
+        Assert.Equal(["path"], Assert.Single(declared!).Function.Arguments.EnumerateObject().Select(p => p.Name));
+
+        var (unknown, _) = InlineToolCallParser.TryParse("<tool_call>{\"name\":\"run_command\",\"action\":\"poll\",\"id\":\"bg1\"}</tool_call>");
+        Assert.Equal(["action"], Assert.Single(unknown!).Function.Arguments.EnumerateObject().Select(p => p.Name));
+    }
+
     /// <summary>⚠ Reference arms: a call with no arguments still has none, and nested arguments are read as before.</summary>
     [Fact]
     public void NoArguments_AndNestedArguments_AreUnchanged()

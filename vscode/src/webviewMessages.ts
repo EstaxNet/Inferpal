@@ -77,6 +77,8 @@ export interface WvPlan {
 export interface WvHydrate {
   type: 'hydrate';
   transcript: WvTranscriptItem[];
+  /** A question meant for the model is in the thread: Regenerate is offered only then. */
+  canRegenerate?: boolean;
   models: string[];
   model: string;
   busy: boolean;
@@ -127,7 +129,7 @@ export type ExtToWebview =
   | { type: 'mentionSuggestions'; items: string[]; query: string }
   | { type: 'xrayPanel'; panel: XRayPanel }
   | { type: 'streamReset' }
-  | { type: 'turnEnded'; text: string; error: string | null; cancelled: boolean; tokens: number; promptTokens: number; timestamp: string; endNotice?: string | null; contextWindow?: number; run?: RunSummary | null; duration?: string | null; model?: string | null }
+  | { type: 'turnEnded'; text: string; error: string | null; cancelled: boolean; tokens: number; promptTokens: number; timestamp: string; endNotice?: string | null; contextWindow?: number; run?: RunSummary | null; duration?: string | null; model?: string | null; canRegenerate?: boolean }
   | { type: 'editorContext'; file: string | null; problems: number }
   | { type: 'planMode'; enabled: boolean }
   | { type: 'backendStatus'; status: WvBackendStatus }
@@ -140,8 +142,9 @@ export type ExtToWebview =
   | { type: 'pins'; pins: string[] }
   | { type: 'stepPaused' }
   | { type: 'stepResumed' }
-  /** The model picker's list, re-read from the server when the menu opened. */
-  | { type: 'models'; models: string[] }
+  /** The model picker's list, re-read from the server when the menu opened; `model`: the window's model, when its
+   *  setting changed outside the picker. */
+  | { type: 'models'; models: string[]; model?: string }
   /** The slash commands, re-read when a command starts being typed. */
   | { type: 'commands'; commands: WvSlashCommand[] };
 

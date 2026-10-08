@@ -336,11 +336,12 @@ internal class InferpalConfig
 
     // ── Task timeouts ─────────────────────────────────────────────────────────
 
-    /// <summary>Deadline in seconds for quick tasks: explain, fix, doc, inline edit, agent plan. Default: 120.</summary>
+    /// <summary>Deadline in seconds for quick tasks: explain, review, fix, doc, inline edit, agent plan. Default: 120.</summary>
     [JsonPropertyName("quickTimeoutSeconds")]
     public int QuickTimeoutSeconds { get; set; } = 120;
 
-    /// <summary>Deadline in seconds per agent turn for tool-enabled chat and orchestrator steps. Default: 300.</summary>
+    /// <summary>Deadline in seconds per turn for a chat question, with or without tools, and orchestrator steps
+    /// (<see cref="Services.Agent.ChatTurnPolicy.TurnComplexity"/>). Default: 300.</summary>
     [JsonPropertyName("normalTimeoutSeconds")]
     public int NormalTimeoutSeconds { get; set; } = 300;
 

@@ -34,6 +34,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private models: string[] = [];
   private model = '';
   private busy = false;
+  /** A code action's changes wait in the Refactor Preview: the model step is over, so Stop has nothing left to cancel
+   *  in the host — what it stops is the preview, closed by the preview's own Discard. */
+  private codeActionPreviewOpen = false;
 
   /** Channels that have already said why they are degraded, so a per-keystroke path says it once. */
   private readonly saidOnce = new Set<string>();
@@ -172,6 +175,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** New conversation: clears both the host history and the local transcript. */
   async resetConversation(): Promise<void> {
     const host = this.getHost();
+    // ⚠ Without the host, a new conversation is only a blank screen: the one shown is not archived, and the host's
+    // next start brings it back (a thread with no conversation reloads `last_session`). It stays, and the remedy is said.
+    if (!host?.isRunning && this.hasConversation()) {
+      this.hostForGesture();
+      return;
+    }
     if (host?.isRunning) {
       try {
         await host.chatReset();
@@ -1014,6 +1023,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         return;
       }
       case 'cancel':
+        if (this.codeActionPreviewOpen) {
+          try {
+            // Discarding resolves the pending applyEdit with false: the turn ends on "Rewrite discarded".
+            await vscode.commands.executeCommand('refactorPreview.discard');
+          } catch (err) {
+            this.gestureFailed('cancel', err);
+          }
+          return;
+        }
         try {
           await this.getHost()?.chatCancel();
         } catch (err) {
@@ -1541,6 +1559,32 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * Runs a push that calls config/update now, or when the running turn ends: the host refuses config/update while
    * a turn holds its slot, and a refused push is lost.
    */
+  /**
+   * The window's model setting changed outside the picker (the Settings editor, settings.json): the chat follows it,
+   * as the host's next start would — for this session (`models/useForSession`), never written to the shared default.
+   * Without it, the button and every question kept the old model until the host restarted. The picker's own write
+   * lands here too, already applied.
+   */
+  async followModelSetting(): Promise<void> {
+    const configured = vscode.workspace.getConfiguration('inferpal').get<string>('model', '');
+    if (!configured || configured === this.model) {
+      return;
+    }
+    this.model = configured;
+    this.post({ type: 'models', models: this.models, model: configured });
+    // Refused by the host while a turn runs: pushed when it ends. Without a host, its start reads the setting.
+    this.runWhenIdle('modelSetting', async () => {
+      const host = this.getHost();
+      if (host?.isRunning) {
+        try {
+          await host.modelsUseForSession(configured);
+        } catch (err) {
+          this.gestureFailed('model setting → host', err);
+        }
+      }
+    });
+  }
+
   runWhenIdle(key: string, work: () => Promise<void>): void {
     if (!this.busy) {
       void work();
@@ -1977,6 +2021,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         run: result.run ?? null,
         duration: result.duration ?? null,
         model: result.model ?? null,
+        canRegenerate: this.canRegenerate(),
       });
       void this.pollBackendStatus(); // the turn may have loaded a model — refresh the VRAM badge
     } catch (err) {
@@ -1999,6 +2044,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         tokens: 0,
         promptTokens: this.promptTokens,
         timestamp: ChatViewProvider.now(),
+        canRegenerate: this.canRegenerate(),
       });
     } finally {
       this.busy = false;
@@ -2039,12 +2085,21 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       && (!m.notice || !m.text.startsWith('/') || /^\/(explain|review)\b/i.test(m.text));
   }
 
+  /** Regenerate has a question to ask again — the button is offered only then: under a thread of notices alone (a
+   *  backend down at start, a slash command's output), it was offered and did nothing. */
+  private canRegenerate(): boolean {
+    return this.transcript.some((m) => ChatViewProvider.isModelQuestion(m));
+  }
+
   private async regenerate(): Promise<void> {
-    const host = this.getHost();
     // ⚠ The last question meant for the MODEL: the last user bubble may be a slash command shown as typed, and
     // resending it ran it again — a second /note, a /commit-exec repeated.
     const question = [...this.transcript].reverse().find((m) => ChatViewProvider.isModelQuestion(m));
-    if (this.busy || !host?.isRunning || !question) {
+    if (this.busy || !question) {
+      return;
+    }
+    const host = this.hostForGesture();
+    if (!host) {
       return;
     }
     if (this.status?.connected === false) {
@@ -2197,6 +2252,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       tokens,
       promptTokens: this.promptTokens,
       timestamp,
+      canRegenerate: this.canRegenerate(),
     });
     this.autoSaveLast();
   }
@@ -2304,7 +2360,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
     // With confirmable entries this opens the Refactor Preview and resolves on the user's
     // decision; false = discarded (or nothing left checked).
-    const applied = await vscode.workspace.applyEdit(edit, { isRefactoring: true });
+    let applied: boolean;
+    this.codeActionPreviewOpen = preview;
+    try {
+      applied = await vscode.workspace.applyEdit(edit, { isRefactoring: true });
+    } finally {
+      this.codeActionPreviewOpen = false;
+    }
     if (!applied) {
       finish('assistant', t('Rewrite discarded — no changes were applied.'));
     } else if (preview) {
@@ -2336,6 +2398,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       models: this.models,
       model: this.model,
       busy: this.busy,
+      canRegenerate: this.canRegenerate(),
       stream: this.streamText,
       status,
       commands: this.commands,

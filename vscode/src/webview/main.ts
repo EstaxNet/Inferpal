@@ -33,6 +33,8 @@ const toolbarEl = document.getElementById('toolbar')!;
 
 // ── Local state (rebuilt from hydrate) ───────────────────────────────────────
 let busy = false;
+/** The extension's word on whether Regenerate has a question to ask again (hydrate, turnEnded). */
+let canRegenerate = false;
 let agentMode = true;
 let currentModel = '';
 let streamEl: HTMLElement | null = null; // live assistant bubble while tokens stream
@@ -825,7 +827,7 @@ function refreshRegenerate(): void {
   }
   const answers = messagesEl.querySelectorAll<HTMLElement>('.bubble.assistant');
   const last = answers.length > 0 ? answers[answers.length - 1] : null;
-  if (!last || busy) {
+  if (!last || busy || !canRegenerate) {
     return;
   }
   const btn = document.createElement('button');
@@ -1620,6 +1622,10 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
     }
     case 'models': {
       models = msg.models ?? models;
+      if (msg.model !== undefined) {
+        currentModel = msg.model;
+        renderModelButton();
+      }
       if (!modelPop.hidden) {
         renderModelMenu();
         placeMenu(modelPop, modelBtn, false);
@@ -1635,6 +1641,7 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       historyEntries = msg.history ?? [];
       currentModel = msg.model ?? '';
       models = msg.models ?? [];
+      canRegenerate = msg.canRegenerate === true;
       planMode = msg.planMode === true;
       editorFile = msg.editorFile ?? null;
       problems = msg.problems ?? 0;
@@ -1836,6 +1843,7 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
         contextWindow = msg.contextWindow;
       }
       updateGauge(msg.promptTokens, msg.tokens);
+      canRegenerate = msg.canRegenerate === true;
       refreshRegenerate();
       scrollToBottom();
       break;

@@ -567,7 +567,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>Erklären, korrigieren, mit KI bearbeiten</value></data>
   <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>Kurze Aktionen und der Plan des Agenten.</value></data>
   <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>Ein Agent-Durchgang</value></data>
-  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Jede Runde eines Gesprächs mit Werkzeugen.</value></data>
+  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Jede Runde eines Gesprächs, mit oder ohne Werkzeuge.</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 Planung…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 Beobachte…</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>Anfrage ausführen</value></data>
