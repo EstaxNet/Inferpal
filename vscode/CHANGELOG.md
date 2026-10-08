@@ -3,6 +3,26 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.7.4
+
+Eighty-two fixes, most of them for something that failed, or was lost, without a word.
+
+- **Nothing lost in silence**: a cleared conversation stays cleared, a damaged one is kept, documentation that cannot
+  be loaded says so, and a restart or a crash of Inferpal names the background work it stopped — its breakpoints go
+  with it.
+- **Two windows, one set of settings**: a list changed in one window (pinned files, documentation sources, MCP
+  servers, approval rules) no longer erases what another window added, a utility model picked elsewhere is no longer
+  set back at start, and `inferpal.model` takes effect at once.
+- **The agent's edits and checks**: an edit that could not be written no longer counts as a change, the agent fixes
+  the build it broke, a test runner that never started is no longer read as failing tests, and a run piped through
+  `tail` no longer counts as passing.
+- **More models' tool calls run**: Qwen and GLM values written as text, Gemma 4's unusual forms, arguments written
+  beside the tool name, and numbers where text was expected.
+- **Inline completions** stop where the code below the cursor begins, and arrive much sooner in the middle of a line.
+- **In VS Code**: the settings page fills in once Inferpal has started, Regenerate resends the question's files, Stop
+  works while a change waits in the Refactor Preview, deleting an approval rule deletes that rule, and a question asked
+  while Inferpal starts waits instead of replacing your previous conversation.
+
 ## 1.7.3
 
 Forty-five fixes, most of them for the assistant being told something that was not true — or for something lost
