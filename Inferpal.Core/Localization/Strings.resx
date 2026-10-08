@@ -715,6 +715,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="SnippetsCopied" xml:space="preserve"><value>Snippet #{0} copied to clipboard.</value></data>
   <data name="SnippetsDeleted" xml:space="preserve"><value>Snippet #{0} deleted.</value></data>
   <data name="SnippetsWriteFailed" xml:space="preserve"><value>The snippet library could not be saved — nothing was changed. `/diagnostics` has the cause.</value></data>
+  <data name="SnippetsFull" xml:space="preserve"><value>Not saved: the snippet library is full ({0} snippets). Delete one with /snippets delete &lt;n&gt;, then save again.</value></data>
   <data name="SnippetsNone" xml:space="preserve"><value>No snippets saved yet. Use the ⭐ button on any code block to save one.</value></data>
   <data name="SnippetsUnreadable" xml:space="preserve"><value>⚠ The snippet library could not be read ({0}) — this is NOT "no snippets saved". Your snippets are still in that file; Inferpal sets it aside before writing anything new. See /diagnostics for the reason.</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>Usage: `/note &lt;text&gt;` — appends a timestamped note to `.inferpal/notes.md`.</value></data>
@@ -808,6 +809,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="ArenaNoStats" xml:space="preserve"><value>No arena vote recorded yet.</value></data>
   <data name="ArenaUnreadable" xml:space="preserve"><value>⚠ The arena history could not be read ({0}) — this is NOT "no vote recorded". Your past votes are still in that file; Inferpal sets it aside before writing anything new. See /diagnostics for the reason.</value></data>
   <data name="ArenaVoteNotRead" xml:space="preserve"><value>Your vote was not recorded: the pending battle could not be read. Hold a new one with /arena &lt;prompt&gt;.</value></data>
+  <data name="ArenaPendingIsAnother" xml:space="preserve"><value>Your vote was not recorded: the battle awaiting a vote was started in another window — “{0}”. Vote there, or hold one here with /arena &lt;prompt&gt;.</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>Arena failed: {0}</value></data>
   <data name="SlashHintTdd" xml:space="preserve"><value>run the tests → AI fixes → re-run until green (optional test filter)</value></data>
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 Tests {0}/{1}…</value></data>
@@ -936,6 +938,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="OnboardProfileUnusable" xml:space="preserve"><value>⚠ `{0}` exists but could not be read, so none of it applies — index exclusions included: {1}</value></data>
   <data name="OnboardProfileNotAnObject" xml:space="preserve"><value>the file must contain a JSON object.</value></data>
   <data name="OnboardAppliedHeading" xml:space="preserve"><value>**Applied** — index exclusions. Additive only: they keep files out of the semantic index and hide nothing from `read_file` or `search_in_files`.</value></data>
+  <data name="OnboardExcludesNotApplied" xml:space="preserve"><value>⚠ {0} `indexExclude` entry(ies) NOT applied — only the first 100 text patterns of up to 200 characters are read: those files stay in the semantic index.</value></data>
   <data name="OnboardRecommendedHeading" xml:space="preserve"><value>**Recommended** — machine choices, never applied on their own:</value></data>
   <data name="OnboardRecommendLine" xml:space="preserve"><value>`{0}` → **{1}** (current: {2})</value></data>
   <data name="OnboardApplyHint" xml:space="preserve"><value>`/onboard apply` writes these into this machine's configuration.</value></data>

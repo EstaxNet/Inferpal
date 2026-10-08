@@ -36,6 +36,8 @@ internal sealed class McpToolService : IAsyncDisposable
     private readonly Func<McpServerConfig, IMcpClient> _clientFactory;
     private readonly IReadOnlyList<TimeSpan> _reconnectBackoff;
     private readonly McpTokenStore _tokenStore;
+    /// <summary>The server list as the configuration FILE holds it now — the other editor writes it too.</summary>
+    private readonly Func<string?> _sharedServersJson;
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     /// <summary>The authorization metadata address each server announced when it refused us (see
@@ -101,13 +103,15 @@ internal sealed class McpToolService : IAsyncDisposable
     internal McpToolService(InferpalConfig config, IApprovalService approval,
                             Func<McpServerConfig, IMcpClient>? clientFactory,
                             IReadOnlyList<TimeSpan>? reconnectBackoff = null,
-                            McpTokenStore? tokenStore = null)
+                            McpTokenStore? tokenStore = null,
+                            Func<string?>? sharedServersJson = null)
     {
-        _config           = config;
-        _approval         = approval;
-        _clientFactory    = clientFactory ?? DefaultClientFactory;
-        _reconnectBackoff = reconnectBackoff ?? DefaultReconnectBackoff;
-        _tokenStore       = tokenStore ?? new McpTokenStore(McpTokenStore.DefaultPath);
+        _config            = config;
+        _approval          = approval;
+        _clientFactory     = clientFactory ?? DefaultClientFactory;
+        _reconnectBackoff  = reconnectBackoff ?? DefaultReconnectBackoff;
+        _tokenStore        = tokenStore ?? new McpTokenStore(McpTokenStore.DefaultPath);
+        _sharedServersJson = sharedServersJson ?? (() => InferpalConfig.Load().McpServersJson);
         if (_config.McpEnabled)
             _ = RefreshAsync();
     }
@@ -231,13 +235,20 @@ internal sealed class McpToolService : IAsyncDisposable
     /// ⚠ Kept, its access and refresh tokens stay on disk for a service the user no longer uses — nothing else ever
     /// removes them. Only when the list is KNOWN: a list that does not parse says nothing about what was removed, and an
     /// entry the parser rejected is still being written (its name keeps its sign-in). MCP turned off never reaches here.
+    /// ⚠ The token file is SHARED by the two editors, the configuration in memory is THIS process's: a server the other
+    /// editor has just added — and signed in to — is absent from it, and judged by it alone its sign-in would be erased
+    /// at the next settings save here. "Gone" is gone from BOTH: the list in memory and the list the file holds now.
     /// </remarks>
     private void ForgetSignInsOfRemovedServers(IReadOnlyList<McpServerConfig> servers, IReadOnlyList<McpRejectedServer> rejected)
     {
         if (rejected.Any(r => r.Name == McpServerConfig.WholeList)) return;   // the whole list is unreadable
         try
         {
-            var known = servers.Select(s => s.Name).Concat(rejected.Select(r => r.Name)).ToHashSet(StringComparer.Ordinal);
+            var shared = McpServerConfig.Parse(_sharedServersJson(), out var sharedRejected);
+            if (sharedRejected.Any(r => r.Name == McpServerConfig.WholeList)) return;   // the file's list is unreadable
+            var known = servers.Select(s => s.Name).Concat(rejected.Select(r => r.Name))
+                               .Concat(shared.Select(s => s.Name)).Concat(sharedRejected.Select(r => r.Name))
+                               .ToHashSet(StringComparer.Ordinal);
             var gone  = _tokenStore.RemoveAllExcept(known);
             if (gone.Count > 0)
                 Diagnostics.Record("Mcp",

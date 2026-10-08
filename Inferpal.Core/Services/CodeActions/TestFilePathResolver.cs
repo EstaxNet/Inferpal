@@ -211,7 +211,9 @@ internal static class TestFilePathResolver
             var root = FindUp(projectDir, SolutionFiles.IsSolution, levels: 6);
             var searchRoot = root is not null ? Path.GetDirectoryName(root)! : Path.GetDirectoryName(projectDir) ?? projectDir;
 
-            var testProject = WorkspaceScan.EnumerateFiles(searchRoot, "*.csproj")
+            // The one named after the project first; among equals, the shallowest then the ordinal first — the sort is
+            // stable, so the boolean key keeps that order (alone, it left ties to the file system's).
+            var testProject = WorkspaceScan.ShallowestFirst(WorkspaceScan.EnumerateFiles(searchRoot, "*.csproj"))
                 .Where(p => !PathComparer.Default.Equals(p, project))
                 .Where(p => IsTestProject(p) && References(p, project))
                 .OrderByDescending(p => Path.GetFileNameWithoutExtension(p)

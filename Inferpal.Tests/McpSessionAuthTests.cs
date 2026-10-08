@@ -192,6 +192,39 @@ public sealed class McpSessionAuthTests : IDisposable
         Assert.Null(store.Get("removed"));
     }
 
+    /// <summary>
+    /// The token file is shared by the two editors: a server the OTHER editor added — absent from this process's
+    /// configuration in memory, present in the file — keeps its sign-in. Erased, its live session in the other editor
+    /// got a 401 at the next request after an unrelated settings save here.
+    /// </summary>
+    [Fact]
+    public async Task AServerTheOtherEditorAdded_KeepsItsSignIn()
+    {
+        var store = Store();
+        store.Save("added-elsewhere", SignedIn());
+        store.Save("removed", SignedIn());
+        var service = new McpToolService(OneRemoteServer("kept"), new Approves(), cfg => new Offline(cfg), tokenStore: store,
+            sharedServersJson: () => """{ "kept": { "url": "https://mcp.example.com/mcp" }, "added-elsewhere": { "url": "https://o.example.com/mcp" } }""");
+        await service.RefreshAsync();
+
+        var after = Store();
+        Assert.NotNull(after.Get("added-elsewhere"));
+        Assert.Null(after.Get("removed"));   // WITNESS: a server gone from both lists still takes its sign-in with it
+    }
+
+    [Fact]
+    public async Task AnUnreadableFileList_ForgetsNothing()
+    {
+        // Reference arm: what the file holds cannot be known, so nothing is known to be gone.
+        var store = Store();
+        store.Save("removed", SignedIn());
+        var service = new McpToolService(OneRemoteServer("kept"), new Approves(), cfg => new Offline(cfg), tokenStore: store,
+            sharedServersJson: () => """{ "kept": """);
+        await service.RefreshAsync();
+
+        Assert.NotNull(Store().Get("removed"));
+    }
+
     [Theory]
     [InlineData("""{ "kept": { "url": "https://mcp.example.com/mcp" }, """, true)]        // unreadable list
     [InlineData("""{ "kept": { "url": "https://mcp.example.com/mcp" } }""", false)]      // MCP turned off

@@ -11,9 +11,12 @@ internal record Snippet(
     string Code,
     string CreatedAt);
 
+/// <summary>What saving a snippet did.</summary>
+internal enum SnippetSaveResult { Saved, Full, NotWritten }
+
 internal static class SnippetStore
 {
-    private const int MaxSnippets = 100;
+    internal const int MaxSnippets = 100;
 
     private static readonly AppDataJsonFile<List<Snippet>> _file = new("snippets.json", "SnippetStore", preserveUnreadable: true);
 
@@ -24,21 +27,23 @@ internal static class SnippetStore
         set => _file.PathOverride = value;
     }
 
-    // Save, Delete and Clear return false when nothing was written: a caller that announces the change
+    // Delete and Clear return false when nothing was written, Save says what it did: a caller that announces the change
     // must check it.
-    public static async Task<bool> SaveAsync(string language, string code, CancellationToken ct)
+    /// <remarks>
+    /// ⚠ A snippet is something the user chose to keep: with the library full the new one is refused, and the reason is
+    /// said. Making room by dropping the oldest deleted a kept snippet without a word.
+    /// </remarks>
+    public static async Task<SnippetSaveResult> SaveAsync(string language, string code, CancellationToken ct)
     {
         var snippets = await LoadAllAsync(ct);
+        if (snippets.Count >= MaxSnippets) return SnippetSaveResult.Full;
         snippets.Add(new Snippet(
             Guid.NewGuid().ToString("N")[..8],
             language,
             code,
             DateTime.Now.ToString("s")));
 
-        if (snippets.Count > MaxSnippets)
-            snippets.RemoveAt(0);
-
-        return await _file.SaveAsync(snippets, ct);
+        return await _file.SaveAsync(snippets, ct) ? SnippetSaveResult.Saved : SnippetSaveResult.NotWritten;
     }
 
     public static Task<List<Snippet>> LoadAllAsync(CancellationToken ct) =>

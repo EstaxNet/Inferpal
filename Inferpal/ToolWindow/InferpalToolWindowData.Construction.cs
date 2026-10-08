@@ -123,7 +123,6 @@ internal partial class InferpalToolWindowData
         TooltipRetryConnection   = Strings.TooltipRetryConnection(
             Services.Inference.InferenceProviderFactory.DisplayName(_config.Provider));
         TooltipCloseSearch        = Strings.TooltipCloseSearch;
-        TooltipSaveSnippet        = Strings.TooltipSaveSnippet;
         LabelCopyCode             = Strings.LabelCopyCode;
         WelcomeCardProject        = Strings.WelcomeCardProject;
         WelcomeProjectPrompt      = Strings.WelcomeProjectPrompt;
@@ -185,7 +184,6 @@ internal partial class InferpalToolWindowData
     [DataMember] public string TooltipPinFile          { get => _tooltipPinFile;          set => SetProperty(ref _tooltipPinFile,          value); }
     [DataMember] public string TooltipPinChip          { get => _tooltipPinChip;          set => SetProperty(ref _tooltipPinChip,          value); }
     [DataMember] public string TooltipCloseSearch        { get => _tooltipCloseSearch;        set => SetProperty(ref _tooltipCloseSearch,        value); }
-    [DataMember] public string TooltipSaveSnippet        { get => _tooltipSaveSnippet;        set => SetProperty(ref _tooltipSaveSnippet,        value); }
     [DataMember] public string LabelCopyCode             { get => _labelCopyCode;             set => SetProperty(ref _labelCopyCode,             value); }
 
     // ── Build Failed banner ────────────────────────────────────────────────────

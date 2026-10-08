@@ -64,10 +64,12 @@ internal static class ArenaCommandHandler
             }
 
             var (state, unreadable) = await ArenaStore.ReadAsync();
+            var id = Guid.NewGuid().ToString("N");
             var pendingSaved = await ArenaStore.SaveAsync(state with
             {
-                Pending = new ArenaPending(DateTime.UtcNow, prompt, modelA, modelB),
+                Pending = new ArenaPending(DateTime.UtcNow, prompt, modelA, modelB, id),
             });
+            if (pendingSaved) _shownBattle = id;
 
             var sb = new System.Text.StringBuilder();
             sb.Append("### ").AppendLine(Strings.ArenaTitle).AppendLine();
@@ -90,6 +92,9 @@ internal static class ArenaCommandHandler
         }
     }
 
+    /// <summary>The battle this process showed and has not seen voted on: a process is one editor.</summary>
+    internal static string? _shownBattle;
+
     /// <summary>Records the vote against the pending battle, reveals the mapping and shows the
     /// refreshed standings.</summary>
     private static async Task<string> VoteAsync(string vote)
@@ -101,6 +106,11 @@ internal static class ArenaCommandHandler
         if (unreadable)
             return Strings.ArenaVoteNotRead + "\n\n" + Strings.ArenaUnreadable(ArenaStore.FilePath);
         if (state.Pending is not { } pending) return Strings.ArenaNoPending;
+        // ⚠ The pending slot is ONE, in a file both editors write: a battle started in the other window replaces the one
+        // shown here, and the vote cast here credited its shuffled models for a prompt this user never read. A process
+        // that showed a battle votes on THAT one, or says which is waiting; one that showed none votes on the latest.
+        if (_shownBattle is { } shown && pending.Id != shown)
+            return Strings.ArenaPendingIsAnother(pending.Prompt.Length > 80 ? pending.Prompt[..80] + "…" : pending.Prompt);
 
         var battles = new List<ArenaBattle>(state.Battles)
         {
@@ -110,6 +120,7 @@ internal static class ArenaCommandHandler
         // that would count it.
         if (!await ArenaStore.SaveAsync(new ArenaSavedState(battles, Pending: null)))
             return Strings.ArenaVoteNotSaved;
+        _shownBattle = null;
 
         var verdict = vote switch
         {

@@ -9,9 +9,10 @@ internal sealed record ArenaBattle(
     DateTime TimestampUtc, string Prompt, string ModelA, string ModelB, string Vote);
 
 /// <summary>A battle whose answers were shown but not voted on yet. The blind A/B → model mapping
-/// lives here so the reveal happens only at vote time.</summary>
+/// lives here so the reveal happens only at vote time. <paramref name="Id"/> names the battle: the slot is one, in a file
+/// both editors write — <c>null</c> in a file written before ids.</summary>
 internal sealed record ArenaPending(
-    DateTime TimestampUtc, string Prompt, string ModelA, string ModelB);
+    DateTime TimestampUtc, string Prompt, string ModelA, string ModelB, string? Id = null);
 
 /// <summary>Everything <c>/arena</c> persists: the cumulative battle log plus the pending vote.</summary>
 internal sealed record ArenaSavedState(List<ArenaBattle> Battles, ArenaPending? Pending);

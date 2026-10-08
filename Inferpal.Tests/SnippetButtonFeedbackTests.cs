@@ -36,4 +36,19 @@ public class SnippetButtonFeedbackTests
         Assert.Contains("SaveSnippetGlyph =", block, StringComparison.Ordinal);
         Assert.Contains("Content=\"{Binding SaveSnippetGlyph}\"", xaml, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void ARefusedSave_SaysWhy_OnTheBlocksOwnTooltip()
+    {
+        // The glyph alone says "not saved"; a full library is a reason the user can act on: it goes on the tooltip of THIS
+        // block (the window's shared tooltip cannot carry one block's answer).
+        var toolWindow = Path.Combine(RepoRoot(), "Inferpal", "ToolWindow");
+        var block = ConventionCoverageTests.CodeOnly(Path.Combine(toolWindow, "MarkdownBlock.cs"));
+        var xaml  = File.ReadAllText(Path.Combine(toolWindow, "InferpalToolWindowContent.xaml"));
+
+        Assert.Contains("SnippetSaveResult.Full", block, StringComparison.Ordinal);
+        Assert.Contains("Strings.SnippetsFull(", block, StringComparison.Ordinal);
+        Assert.Contains("SaveSnippetTip   = result switch", block, StringComparison.Ordinal);
+        Assert.Contains("ToolTip=\"{Binding SaveSnippetTip}\"", xaml, StringComparison.Ordinal);
+    }
 }

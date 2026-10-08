@@ -47,11 +47,6 @@ internal partial class InferpalToolWindowData
         _promptHistory.Load(entries);
     }
 
-    private void SavePromptHistory()
-    {
-        _promptHistoryStore.Save([.. _promptHistory.Entries]);
-    }
-
     // AsyncCommand handlers run off the VM context; the navigator and the prompt box are VM state.
     private Task HistoryUpAsync(object? _, CancellationToken ct) => RunOnVMContextAsync(() =>
     {

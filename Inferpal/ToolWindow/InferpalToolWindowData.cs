@@ -228,7 +228,6 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     private string _tooltipPinFile          = string.Empty;
     private string _tooltipPinChip          = string.Empty;
     private string _tooltipCloseSearch        = string.Empty;
-    private string _tooltipSaveSnippet        = string.Empty;
     private string _labelCopyCode             = string.Empty;
 
     // ── Context X-Ray panel (V2) ───────────────────────────────────────────────

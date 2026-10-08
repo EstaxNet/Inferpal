@@ -62,6 +62,16 @@ public class ProjectProfileTests
         Assert.DoesNotContain(profile.IndexExcludes, p => p.Length > 200);
     }
 
+    [Fact]
+    public void IndexExclude_CountsWhatItLeavesOut_ByCause()
+    {
+        var many    = string.Join(",", Enumerable.Range(0, 105).Select(i => $"\"dir{i}\""));
+        var profile = ProjectProfile.Parse($$"""{ "indexExclude": [{{many}}, "{{new string('x', 400)}}", 42] }""");
+
+        Assert.Equal(new ExcludesNotApplied(OverLimit: 5, TooLong: 1, NotText: 1), profile.NotApplied);
+        Assert.Null(ProjectProfile.Parse("""{ "indexExclude": ["vendor"] }""").NotApplied);   // reference arm
+    }
+
     // ── Category 2 — recommended, shown next to what it would replace ─────────
 
     [Fact]

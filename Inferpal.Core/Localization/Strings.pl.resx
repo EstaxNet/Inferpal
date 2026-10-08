@@ -707,6 +707,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="SnippetsCopied" xml:space="preserve"><value>Fragment nr {0} skopiowano do schowka.</value></data>
   <data name="SnippetsDeleted" xml:space="preserve"><value>Usunięto fragment nr {0}.</value></data>
   <data name="SnippetsWriteFailed" xml:space="preserve"><value>Nie udało się zapisać biblioteki fragmentów — nic nie zostało zmienione. Przyczynę znajdziesz w `/diagnostics`.</value></data>
+  <data name="SnippetsFull" xml:space="preserve"><value>Nie zapisano: biblioteka fragmentów jest pełna ({0}). Usuń jeden przez /snippets delete &lt;n&gt;, a potem zapisz ponownie.</value></data>
   <data name="SnippetsNone" xml:space="preserve"><value>Nie zapisano jeszcze żadnych fragmentów. Użyj przycisku ⭐ na bloku kodu, aby zapisać.</value></data>
   <data name="SnippetsUnreadable" xml:space="preserve"><value>⚠ Nie udało się odczytać biblioteki fragmentów ({0}) — to NIE znaczy „brak zapisanych fragmentów”. Twoje fragmenty nadal są w tym pliku; Inferpal odkłada go na bok przed zapisaniem czegokolwiek nowego. Przyczynę zobaczysz w /diagnostics.</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>Użycie: `/note &lt;tekst&gt;` — dodaje notatkę ze znacznikiem czasu do `.inferpal/notes.md`.</value></data>
@@ -800,6 +801,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="ArenaNoStats" xml:space="preserve"><value>Nie zapisano jeszcze żadnego głosu areny.</value></data>
   <data name="ArenaUnreadable" xml:space="preserve"><value>⚠ Nie udało się odczytać historii areny ({0}) — to NIE znaczy „brak zapisanych głosów”. Twoje głosy nadal są w tym pliku; Inferpal odkłada go na bok przed zapisaniem czegokolwiek nowego. Przyczynę zobaczysz w /diagnostics.</value></data>
   <data name="ArenaVoteNotRead" xml:space="preserve"><value>Twój głos nie został zapisany: nie udało się odczytać oczekującego pojedynku. Rozpocznij nowy przez /arena &lt;prompt&gt;.</value></data>
+  <data name="ArenaPendingIsAnother" xml:space="preserve"><value>Twój głos nie został zapisany: oczekujący pojedynek rozpoczęto w innym oknie — „{0}”. Zagłosuj tam albo rozpocznij nowy tutaj przez /arena &lt;prompt&gt;.</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>Arena nie powiodła się: {0}</value></data>
   <data name="SlashHintTdd" xml:space="preserve"><value>uruchom testy → AI poprawia → ponowne uruchomienie aż do zieleni (opcjonalny filtr testów)</value></data>
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 Testy {0}/{1}…</value></data>
@@ -932,6 +934,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="OnboardProfileUnusable" xml:space="preserve"><value>⚠ `{0}` istnieje, ale nie udało się go odczytać, więc nic z niego nie jest stosowane, łącznie z wykluczeniami z indeksu: {1}</value></data>
   <data name="OnboardProfileNotAnObject" xml:space="preserve"><value>plik musi zawierać obiekt JSON.</value></data>
   <data name="OnboardAppliedHeading" xml:space="preserve"><value>**Zastosowane** — wykluczenia indeksu. Tylko dodające: usuwają pliki z indeksu semantycznego i nie ukrywają niczego przed `read_file` ani `search_in_files`.</value></data>
+  <data name="OnboardExcludesNotApplied" xml:space="preserve"><value>⚠ Niezastosowane wpisy `indexExclude`: {0} — czytane jest tylko pierwszych 100 wzorców tekstowych do 200 znaków; te pliki zostają w indeksie semantycznym.</value></data>
   <data name="OnboardRecommendedHeading" xml:space="preserve"><value>**Zalecane** — wybory maszyny, nigdy nie stosowane samoczynnie:</value></data>
   <data name="OnboardRecommendLine" xml:space="preserve"><value>`{0}` → **{1}** (obecnie: {2})</value></data>
   <data name="OnboardApplyHint" xml:space="preserve"><value>`/onboard apply` zapisuje je w konfiguracji tej maszyny.</value></data>

@@ -707,6 +707,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="SnippetsCopied" xml:space="preserve"><value>Snippet #{0} in die Zwischenablage kopiert.</value></data>
   <data name="SnippetsDeleted" xml:space="preserve"><value>Snippet #{0} gelöscht.</value></data>
   <data name="SnippetsWriteFailed" xml:space="preserve"><value>Die Snippet-Bibliothek konnte nicht gespeichert werden — nichts wurde geändert. Die Ursache steht in `/diagnostics`.</value></data>
+  <data name="SnippetsFull" xml:space="preserve"><value>Nicht gespeichert: Die Snippet-Bibliothek ist voll ({0} Snippets). Löschen Sie eines mit /snippets delete &lt;n&gt; und speichern Sie dann erneut.</value></data>
   <data name="SnippetsNone" xml:space="preserve"><value>Noch keine Snippets gespeichert. Nutzen Sie die ⭐-Schaltfläche an einem Codeblock, um eines zu speichern.</value></data>
   <data name="SnippetsUnreadable" xml:space="preserve"><value>⚠ Die Snippet-Bibliothek konnte nicht gelesen werden ({0}) — das heißt NICHT „keine Snippets gespeichert“. Ihre Snippets sind weiterhin in dieser Datei; Inferpal legt sie beiseite, bevor etwas Neues geschrieben wird. Ursache siehe /diagnostics.</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>Verwendung: `/note &lt;Text&gt;` — fügt eine Notiz mit Zeitstempel zu `.inferpal/notes.md` hinzu.</value></data>
@@ -800,6 +801,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="ArenaNoStats" xml:space="preserve"><value>Noch keine Arena-Stimme erfasst.</value></data>
   <data name="ArenaUnreadable" xml:space="preserve"><value>⚠ Der Arena-Verlauf konnte nicht gelesen werden ({0}) — das heißt NICHT „keine Stimme gespeichert“. Ihre Stimmen sind weiterhin in dieser Datei; Inferpal legt sie beiseite, bevor etwas Neues geschrieben wird. Ursache siehe /diagnostics.</value></data>
   <data name="ArenaVoteNotRead" xml:space="preserve"><value>Ihre Stimme wurde nicht gespeichert: Das offene Duell konnte nicht gelesen werden. Starten Sie mit /arena &lt;prompt&gt; ein neues.</value></data>
+  <data name="ArenaPendingIsAnother" xml:space="preserve"><value>Ihre Stimme wurde nicht gespeichert: Das offene Duell wurde in einem anderen Fenster gestartet — „{0}“. Stimmen Sie dort ab oder starten Sie hier eines mit /arena &lt;prompt&gt;.</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>Arena fehlgeschlagen: {0}</value></data>
   <data name="SlashHintTdd" xml:space="preserve"><value>Tests ausführen → KI korrigiert → erneut ausführen bis grün (optionaler Testfilter)</value></data>
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 Tests {0}/{1}…</value></data>
@@ -932,6 +934,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="OnboardProfileUnusable" xml:space="preserve"><value>⚠ `{0}` existiert, konnte aber nicht gelesen werden – nichts davon wird angewendet, auch keine Index-Ausschlüsse: {1}</value></data>
   <data name="OnboardProfileNotAnObject" xml:space="preserve"><value>die Datei muss ein JSON-Objekt enthalten.</value></data>
   <data name="OnboardAppliedHeading" xml:space="preserve"><value>**Angewendet** — Index-Ausschlüsse. Nur additiv: Sie halten Dateien aus dem semantischen Index heraus und verbergen nichts vor `read_file` oder `search_in_files`.</value></data>
+  <data name="OnboardExcludesNotApplied" xml:space="preserve"><value>⚠ {0} `indexExclude`-Eintrag/Einträge NICHT angewendet — gelesen werden nur die ersten 100 Textmuster mit bis zu 200 Zeichen: diese Dateien bleiben im semantischen Index.</value></data>
   <data name="OnboardRecommendedHeading" xml:space="preserve"><value>**Empfohlen** — Maschinenentscheidungen, nie von selbst angewendet:</value></data>
   <data name="OnboardRecommendLine" xml:space="preserve"><value>`{0}` → **{1}** (aktuell: {2})</value></data>
   <data name="OnboardApplyHint" xml:space="preserve"><value>`/onboard apply` schreibt sie in die Konfiguration dieser Maschine.</value></data>

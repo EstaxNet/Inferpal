@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Inferpal.Localization;
 using System.Runtime.Serialization;
 using System.Threading;
 using Microsoft.VisualStudio.Extensibility.UI;
@@ -82,10 +83,20 @@ internal sealed class MarkdownBlock : NotifyPropertyChangedObject
     private string _saveSnippetGlyph = GlyphSaveSnippet;
     [DataMember] public string SaveSnippetGlyph { get => _saveSnippetGlyph; set => SetProperty(ref _saveSnippetGlyph, value); }
 
+    // The block's own tooltip: what the button does, and once clicked, why it did not save.
+    private string _saveSnippetTip = Strings.TooltipSaveSnippet;
+    [DataMember] public string SaveSnippetTip { get => _saveSnippetTip; set => SetProperty(ref _saveSnippetTip, value); }
+
     private async Task SaveSnippetAsync(object? _, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(Text)) return;
-        var saved = await Inferpal.Services.Persistence.SnippetStore.SaveAsync(Language, Text, ct);
-        SaveSnippetGlyph = saved ? GlyphSaved : GlyphNotSaved;
+        var result = await Inferpal.Services.Persistence.SnippetStore.SaveAsync(Language, Text, ct);
+        SaveSnippetGlyph = result == Inferpal.Services.Persistence.SnippetSaveResult.Saved ? GlyphSaved : GlyphNotSaved;
+        SaveSnippetTip   = result switch
+        {
+            Inferpal.Services.Persistence.SnippetSaveResult.Full       => Strings.SnippetsFull(Inferpal.Services.Persistence.SnippetStore.MaxSnippets),
+            Inferpal.Services.Persistence.SnippetSaveResult.NotWritten => Strings.SnippetsWriteFailed,
+            _                                                          => Strings.TooltipSaveSnippet,
+        };
     }
 }

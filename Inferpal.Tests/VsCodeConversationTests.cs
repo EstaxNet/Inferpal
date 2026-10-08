@@ -79,7 +79,7 @@ public class VsCodeConversationTests
         var provider = WebviewRebuildTests.TsCode("chatViewProvider.ts");
 
         var regenerate = WebviewRebuildTests.Body(provider, "private async regenerate(");
-        Assert.Contains("this.send(question.text)", regenerate, StringComparison.Ordinal);   // WITNESS
+        Assert.Contains("this.send(sent?.text ?? question.text)", regenerate, StringComparison.Ordinal);   // WITNESS
         Assert.Contains("ChatViewProvider.isModelQuestion(m)", regenerate, StringComparison.Ordinal);
         Assert.DoesNotContain(".find((m) => m.role === 'user')", regenerate, StringComparison.Ordinal);
 

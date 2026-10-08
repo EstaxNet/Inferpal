@@ -707,6 +707,7 @@
   <data name="SnippetsCopied" xml:space="preserve"><value>已将第 {0} 个代码片段复制到剪贴板。</value></data>
   <data name="SnippetsDeleted" xml:space="preserve"><value>已删除第 {0} 个代码片段。</value></data>
   <data name="SnippetsWriteFailed" xml:space="preserve"><value>无法保存代码片段库——未做任何更改。原因见 `/diagnostics`。</value></data>
+  <data name="SnippetsFull" xml:space="preserve"><value>未保存：代码片段库已满（{0} 个）。请用 /snippets delete &lt;n&gt; 删除一个后再保存。</value></data>
   <data name="SnippetsNone" xml:space="preserve"><value>尚未保存任何代码片段。点击代码块上的 ⭐ 按钮即可保存。</value></data>
   <data name="SnippetsUnreadable" xml:space="preserve"><value>⚠ 无法读取代码片段库（{0}）—— 这并不是“未保存任何片段”。您的片段仍在该文件中；Inferpal 会在写入新内容前将其另存。原因请见 /diagnostics。</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>用法：`/note &lt;文本&gt;` — 向 `.inferpal/notes.md` 追加一条带时间戳的笔记。</value></data>
@@ -800,6 +801,7 @@
   <data name="ArenaNoStats" xml:space="preserve"><value>尚未记录任何竞技场投票。</value></data>
   <data name="ArenaUnreadable" xml:space="preserve"><value>⚠ 无法读取竞技场记录（{0}）—— 这并不是“没有任何投票”。您的投票仍在该文件中；Inferpal 会在写入新内容前将其另存。原因请见 /diagnostics。</value></data>
   <data name="ArenaVoteNotRead" xml:space="preserve"><value>您的投票未被记录：无法读取待投票的对局。请用 /arena &lt;prompt&gt; 重新发起一局。</value></data>
+  <data name="ArenaPendingIsAnother" xml:space="preserve"><value>您的投票未被记录：待投票的对局是在另一个窗口中发起的——“{0}”。请在那里投票，或在此处用 /arena &lt;prompt&gt; 发起一局。</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>竞技场失败：{0}</value></data>
   <data name="SlashHintTdd" xml:space="preserve"><value>运行测试 → AI 修复 → 重新运行直到通过（可选测试过滤器）</value></data>
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 测试 {0}/{1}…</value></data>
@@ -932,6 +934,7 @@
   <data name="OnboardProfileUnusable" xml:space="preserve"><value>⚠ `{0}` 存在但无法读取，因此其中的内容（包括索引排除项）均未生效：{1}</value></data>
   <data name="OnboardProfileNotAnObject" xml:space="preserve"><value>文件必须包含一个 JSON 对象。</value></data>
   <data name="OnboardAppliedHeading" xml:space="preserve"><value>**已应用** — 索引排除项。只增不减：它们把文件排除在语义索引之外，不会对 `read_file` 或 `search_in_files` 隐藏任何内容。</value></data>
+  <data name="OnboardExcludesNotApplied" xml:space="preserve"><value>⚠ 有 {0} 项 `indexExclude` 未应用——只读取前 100 个不超过 200 个字符的文本模式：这些文件仍在语义索引中。</value></data>
   <data name="OnboardRecommendedHeading" xml:space="preserve"><value>**建议** — 属于本机的选择，绝不会自行应用：</value></data>
   <data name="OnboardRecommendLine" xml:space="preserve"><value>`{0}` → **{1}**（当前：{2}）</value></data>
   <data name="OnboardApplyHint" xml:space="preserve"><value>`/onboard apply` 会把它们写入本机配置。</value></data>

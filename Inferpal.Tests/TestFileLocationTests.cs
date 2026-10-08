@@ -65,6 +65,20 @@ public sealed class TestFileLocationTests : IDisposable
     }
 
     [Fact]
+    public void TwoTestProjectsNamedAfterTheProject_TheSameOneIsPicked_OnEveryMachine()
+    {
+        // Both start with "Lib" and both reference it: a tie on the boolean key. The ordinal order puts "Lib.UnitTests"
+        // (upper-case L) before "lib.Tests"; the file system (NTFS, case-insensitive) lists "lib.Tests" first.
+        Write("App.sln");
+        Write("Lib/Lib.csproj", """<Project Sdk="Microsoft.NET.Sdk" />""");
+        Write("lib.Tests/lib.Tests.csproj", TestProject);
+        Write("Lib.UnitTests/Lib.UnitTests.csproj", TestProject);
+        var source = Write("Lib/Parser.cs");
+
+        Assert.Equal(Path.Combine(_root, "Lib.UnitTests", "ParserTests.cs"), TestFilePathResolver.Resolve(source));
+    }
+
+    [Fact]
     public void ASrcAndTestsLayout_IsFoundFromTheSolution()
     {
         Write("App.sln");

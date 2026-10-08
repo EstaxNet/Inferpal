@@ -50,7 +50,11 @@ public sealed class FileSystemOrderChoiceTests : IDisposable
     // ── The rule: no First / FirstOrDefault / Take straight off a directory listing or a walk ─────────────────────
 
     private static readonly string[] Choosers = ["First", "FirstOrDefault", "Single", "SingleOrDefault", "Last", "LastOrDefault", "Take"];
-    private static readonly string[] Orderings = ["Order", "OrderBy", "OrderByDescending", "OrderDescending", "ShallowestFirst"];
+    /// <summary>A total order: the elements themselves, or a chain already ordered (<c>ThenBy</c> follows an order).</summary>
+    private static readonly string[] Orderings = ["Order", "OrderDescending", "ShallowestFirst", "ThenBy", "ThenByDescending"];
+    /// <summary>An order by a KEY — total only when the key is the element itself; a partial key (a boolean, a depth)
+    /// leaves its ties to what comes before it, so the scan reads on past it.</summary>
+    private static readonly string[] KeyOrderings = ["OrderBy", "OrderByDescending"];
     private static readonly string[] Listings = ["GetFiles", "EnumerateFiles", "GetDirectories", "EnumerateDirectories",
                                                  "GetFileSystemEntries", "EnumerateFileSystemEntries"];
 
@@ -76,6 +80,7 @@ public sealed class FileSystemOrderChoiceTests : IDisposable
         {
             var name = Name(inv.Expression);
             if (Orderings.Contains(name)) return false;
+            if (KeyOrderings.Contains(name) && IsIdentityKey(inv)) return false;
             if (Listings.Contains(name)
                 && inv.Expression is MemberAccessExpressionSyntax { Expression: IdentifierNameSyntax { Identifier.Text: "Directory" or "WorkspaceScan" } })
                 return true;
@@ -83,6 +88,13 @@ public sealed class FileSystemOrderChoiceTests : IDisposable
         }
         return false;
     }
+
+    /// <summary><c>OrderBy(x =&gt; x, …)</c>: the key is the element — a total order.</summary>
+    private static bool IsIdentityKey(InvocationExpressionSyntax orderBy) =>
+        orderBy.ArgumentList.Arguments.FirstOrDefault()?.Expression is SimpleLambdaExpressionSyntax
+        {
+            Body: IdentifierNameSyntax body, Parameter.Identifier.Text: var p
+        } && body.Identifier.Text == p;
 
     [Fact]
     public void NoChoiceIsMade_InTheOrderTheFileSystemLists()

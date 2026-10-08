@@ -30,11 +30,13 @@ public class ArenaTests : IDisposable
         Directory.CreateDirectory(_dir);
         _tempFile = Path.Combine(_dir, "arena.json");
         ArenaStore._fileOverride = _tempFile;
+        ArenaCommandHandler._shownBattle = null;   // process-wide, like the file override: each test starts unseen
     }
 
     public void Dispose()
     {
         ArenaStore._fileOverride = null;
+        ArenaCommandHandler._shownBattle = null;
         try { Directory.Delete(_dir, recursive: true); } catch { }
     }
 
@@ -78,6 +80,54 @@ public class ArenaTests : IDisposable
 
         Assert.Contains("second answer", Inferpal.Services.Presentation.MarkdownParser.ShownText("assistant", result.Message));
         Assert.DoesNotContain("<think>", result.Message);
+    }
+
+    /// <summary>
+    /// The pending battle is one slot in a file both editors write: a vote cast here goes to the battle shown HERE, and a
+    /// battle the other window started in between is named, never voted on blind.
+    /// </summary>
+    [Fact]
+    public async Task AVote_GoesToTheBattleShownHere_NotOneStartedInAnotherWindow()
+    {
+        var fake = new FakeInferenceProvider
+        {
+            Installed = [new InstalledModelInfo("big:latest", 1), new InstalledModelInfo("small:latest", 1)],
+            OnChatRequest = (_, _, _, _) => Task.FromResult(new ChatTurnResult("an answer", null, 0, 0)),
+        };
+        await ArenaCommandHandler.HandleAsync(fake, Config(), ["/arena", "my", "question"], null, CancellationToken.None,
+                                              swapOrder: () => false);
+        // The other editor starts its own battle: same file, the slot is replaced.
+        var (state, _) = await ArenaStore.ReadAsync();
+        await ArenaStore.SaveAsync(state with
+        {
+            Pending = new ArenaPending(DateTime.UtcNow, "the other window's question", "small", "big", "other-id"),
+        });
+
+        var vote = (await ArenaCommandHandler.HandleAsync(fake, Config(), ["/arena", "a"], null, CancellationToken.None)).Message;
+
+        Assert.Equal(Strings.ArenaPendingIsAnother("the other window's question"), vote);
+        var (after, _) = await ArenaStore.ReadAsync();
+        Assert.Empty(after.Battles);                    // nothing recorded against a battle not seen here
+        Assert.NotNull(after.Pending);                  // the other window can still vote on it
+    }
+
+    [Fact]
+    public async Task AVote_OnTheBattleShownHere_IsRecorded()
+    {
+        // Reference arm: the battle shown is the one waiting — recorded as before.
+        var fake = new FakeInferenceProvider
+        {
+            Installed = [new InstalledModelInfo("big:latest", 1), new InstalledModelInfo("small:latest", 1)],
+            OnChatRequest = (_, _, _, _) => Task.FromResult(new ChatTurnResult("an answer", null, 0, 0)),
+        };
+        await ArenaCommandHandler.HandleAsync(fake, Config(), ["/arena", "my", "question"], null, CancellationToken.None,
+                                              swapOrder: () => false);
+
+        await ArenaCommandHandler.HandleAsync(fake, Config(), ["/arena", "a"], null, CancellationToken.None);
+
+        var (after, _) = await ArenaStore.ReadAsync();
+        Assert.Single(after.Battles);
+        Assert.Null(after.Pending);
     }
 
     /// <summary>

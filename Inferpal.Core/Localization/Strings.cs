@@ -1207,6 +1207,7 @@ internal static class Strings
     public static string SnippetsCopied(int idx)             => string.Format(Get(nameof(SnippetsCopied)), idx);
     public static string SnippetsDeleted(int idx)            => string.Format(Get(nameof(SnippetsDeleted)), idx);
     /// <summary>A snippets or arena save failed: nothing changed on disk.</summary>
+    public static string SnippetsFull(int max) => string.Format(Get(nameof(SnippetsFull)), max);
     public static string SnippetsWriteFailed                 => Get(nameof(SnippetsWriteFailed));
     /// <inheritdoc cref="SnippetsWriteFailed"/>
     public static string ArenaVoteNotSaved                   => Get(nameof(ArenaVoteNotSaved));
@@ -1328,6 +1329,7 @@ internal static class Strings
     public static string ArenaUnreadable(string path) => string.Format(Get(nameof(ArenaUnreadable)), path);
     /// <summary>What the vote itself became, said before the cause: nothing was written.</summary>
     public static string ArenaVoteNotRead                    => Get(nameof(ArenaVoteNotRead));
+    public static string ArenaPendingIsAnother(string prompt) => string.Format(Get(nameof(ArenaPendingIsAnother)), prompt);
     public static string ArenaFailed(string error)           => string.Format(Get(nameof(ArenaFailed)), error);
 
     // ── /tdd command ────────────────────────────────────────────────────────────
@@ -1528,6 +1530,7 @@ internal static class Strings
     public static string OnboardProfileUnusable(string path, string detail) =>
         string.Format(Get(nameof(OnboardProfileUnusable)), path, detail);
     public static string OnboardProfileNotAnObject    => Get(nameof(OnboardProfileNotAnObject));
+    public static string OnboardExcludesNotApplied(int count) => string.Format(Get(nameof(OnboardExcludesNotApplied)), count);
     public static string OnboardAppliedHeading        => Get(nameof(OnboardAppliedHeading));
     public static string OnboardRecommendedHeading    => Get(nameof(OnboardRecommendedHeading));
     public static string OnboardRecommendLine(string key, string proposed, string current) =>

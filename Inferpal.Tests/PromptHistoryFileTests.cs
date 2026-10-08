@@ -41,6 +41,44 @@ public class PromptHistoryFileTests : IDisposable
         return string.Empty;
     }
 
+    /// <summary>
+    /// The file is shared by every Visual Studio window: a send appends to what the file holds NOW, not to the copy this
+    /// window read when it opened — written from that copy, each send erased the prompts the other window added.
+    /// </summary>
+    [Fact]
+    public void ASend_KeepsThePromptsAnotherWindowAdded()
+    {
+        var path = Path.Combine(_dir, "prompt_history.json");
+        var file = PromptHistoryFile.Create();
+        file.PathOverride = path;
+        file.Save(["first"]);
+
+        var windowA = new PromptHistoryNavigator();
+        windowA.Load(file.Load([]));                                   // window A opens: ["first"]
+        PromptHistoryFile.Append(file, new PromptHistoryNavigator(), "from window B");   // window B sends
+
+        PromptHistoryFile.Append(file, windowA, "from window A");      // window A sends
+
+        Assert.Equal(new[] { "first", "from window B", "from window A" }, file.Load([]));
+        Assert.Equal(new[] { "first", "from window B", "from window A" }, windowA.Entries);   // ↑ sees B's prompt too
+    }
+
+    [Fact]
+    public void ASend_WithAnUnreadableFile_KeepsTheWindowsOwnList()
+    {
+        // Reference arm: a file that cannot be read says nothing about what the other window added.
+        var path = Path.Combine(_dir, "prompt_history.json");
+        var file = PromptHistoryFile.Create();
+        file.PathOverride = path;
+        File.WriteAllText(path, "[ \"torn");
+        var window = new PromptHistoryNavigator();
+        window.Load(["mine"]);
+
+        PromptHistoryFile.Append(file, window, "next");
+
+        Assert.Equal(new[] { "mine", "next" }, window.Entries);
+    }
+
     [Fact]
     public void SavingAfterAnUnreadableHistory_KeepsTheOriginalBytes()
     {
@@ -70,11 +108,11 @@ public class PromptHistoryFileTests : IDisposable
     {
         var code = ConventionCoverageTests.CodeOnly(
             Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowData.PromptHistory.cs"));
-        var save = Body(code, "private void SavePromptHistory(");
-
-        Assert.Contains("_promptHistory.Entries", save, StringComparison.Ordinal);
-        Assert.Contains("_promptHistoryStore.Save(", save, StringComparison.Ordinal);
-        Assert.DoesNotContain("File.WriteAllText", save, StringComparison.Ordinal);
+        // A send writes through the shared funnel, which reads the file again first (ASend_KeepsThePromptsAnotherWindowAdded).
+        var turn = ConventionCoverageTests.CodeOnly(
+            Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowData.ChatTurn.cs"));
+        Assert.Contains("PromptHistoryFile.Append(_promptHistoryStore, _promptHistory, userText)", turn, StringComparison.Ordinal);
+        Assert.DoesNotContain("_promptHistory.Append(", turn, StringComparison.Ordinal);
 
         // ⚠ Through the half that REPORTS a failed read, not the one that throws it away: this is
         // the only moment the failure is observable, and `/phistory` would otherwise call a history

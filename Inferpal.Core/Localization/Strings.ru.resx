@@ -705,6 +705,7 @@
   <data name="SnippetsCopied" xml:space="preserve"><value>Сниппет №{0} скопирован в буфер обмена.</value></data>
   <data name="SnippetsDeleted" xml:space="preserve"><value>Сниппет №{0} удалён.</value></data>
   <data name="SnippetsWriteFailed" xml:space="preserve"><value>Не удалось сохранить библиотеку фрагментов — ничего не изменено. Причина — в `/diagnostics`.</value></data>
+  <data name="SnippetsFull" xml:space="preserve"><value>Не сохранено: библиотека фрагментов заполнена ({0}). Удалите один командой /snippets delete &lt;n&gt; и сохраните снова.</value></data>
   <data name="SnippetsNone" xml:space="preserve"><value>Сниппеты ещё не сохранены. Нажмите кнопку ⭐ на любом блоке кода, чтобы сохранить.</value></data>
   <data name="SnippetsUnreadable" xml:space="preserve"><value>⚠ Не удалось прочитать библиотеку фрагментов ({0}) — это НЕ «фрагменты не сохранены». Ваши фрагменты по-прежнему в этом файле; Inferpal откладывает его перед записью нового. Причина — в /diagnostics.</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>Использование: `/note &lt;текст&gt;` — добавляет заметку с отметкой времени в `.inferpal/notes.md`.</value></data>
@@ -798,6 +799,7 @@
   <data name="ArenaNoStats" xml:space="preserve"><value>Голосов арены пока нет.</value></data>
   <data name="ArenaUnreadable" xml:space="preserve"><value>⚠ Не удалось прочитать историю арены ({0}) — это НЕ «голосов нет». Ваши голоса по-прежнему в этом файле; Inferpal откладывает его перед записью нового. Причина — в /diagnostics.</value></data>
   <data name="ArenaVoteNotRead" xml:space="preserve"><value>Ваш голос не записан: не удалось прочитать ожидающий поединок. Начните новый командой /arena &lt;prompt&gt;.</value></data>
+  <data name="ArenaPendingIsAnother" xml:space="preserve"><value>Ваш голос не записан: ожидающий поединок начат в другом окне — «{0}». Проголосуйте там или начните поединок здесь командой /arena &lt;prompt&gt;.</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>Сбой арены: {0}</value></data>
   <data name="SlashHintTdd" xml:space="preserve"><value>запустить тесты → ИИ исправляет → перезапуск до зелёного (необязательный фильтр тестов)</value></data>
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 Тесты {0}/{1}…</value></data>
@@ -932,6 +934,7 @@
   <data name="OnboardProfileUnusable" xml:space="preserve"><value>⚠ `{0}` существует, но его не удалось прочитать, поэтому ничего из него не применяется, включая исключения индекса: {1}</value></data>
   <data name="OnboardProfileNotAnObject" xml:space="preserve"><value>файл должен содержать объект JSON.</value></data>
   <data name="OnboardAppliedHeading" xml:space="preserve"><value>**Применено** — исключения индекса. Только дополняющие: они убирают файлы из семантического индекса и ничего не скрывают от `read_file` и `search_in_files`.</value></data>
+  <data name="OnboardExcludesNotApplied" xml:space="preserve"><value>⚠ Не применено записей `indexExclude`: {0} — читаются только первые 100 текстовых шаблонов длиной до 200 символов; эти файлы остаются в семантическом индексе.</value></data>
   <data name="OnboardRecommendedHeading" xml:space="preserve"><value>**Рекомендовано** — выбор машины, сам по себе никогда не применяется:</value></data>
   <data name="OnboardRecommendLine" xml:space="preserve"><value>`{0}` → **{1}** (сейчас: {2})</value></data>
   <data name="OnboardApplyHint" xml:space="preserve"><value>`/onboard apply` записывает это в конфигурацию данной машины.</value></data>

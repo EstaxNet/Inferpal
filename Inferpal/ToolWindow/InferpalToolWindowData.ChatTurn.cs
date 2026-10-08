@@ -166,8 +166,7 @@ internal partial class InferpalToolWindowData
                 // ⚠ No configuration save here: every setting the window changes saves itself, and a save per question
                 // rewrites config.json — the ghost-text sidecar restarts on the next completion (its stamp moved), and
                 // Saved re-measures the model's window and rebuilds the pinned chips, all for nothing changed.
-                if (_promptHistory.Append(userText)) // also resets navigation state
-                    SavePromptHistory();
+                PromptHistoryFile.Append(_promptHistoryStore, _promptHistory, userText);   // also resets navigation state
                 if (clearPrompt)
                 {
                     // ⚠ A send that clears the chips SENDS them: a template, /explain, /review and /debug come here with

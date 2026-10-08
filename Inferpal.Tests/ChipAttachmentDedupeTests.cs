@@ -29,7 +29,7 @@ public class ChipAttachmentDedupeTests
     public void TheHost_ReceivesTheChipsFilePath_NeverItsLabel()
     {
         var chat = Chat();
-        Assert.Contains("for (const a of this.pendingAttachments)", chat, StringComparison.Ordinal);   // witness
+        Assert.Contains("for (const a of chips)", chat, StringComparison.Ordinal);   // witness: the chips the turn sends
 
         Assert.Contains("attachedPaths.push(a.sourcePath)", chat, StringComparison.Ordinal);
         Assert.DoesNotContain("attachedPaths.push(a.name)", chat, StringComparison.Ordinal);

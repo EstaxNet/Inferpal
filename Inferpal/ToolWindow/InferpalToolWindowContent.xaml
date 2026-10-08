@@ -857,7 +857,7 @@
                                                                 Content="{Binding SaveSnippetGlyph}" FontFamily="Segoe MDL2 Assets"
                                                                 Margin="0,0,4,0" Padding="5,2" FontSize="11"
                                                                 Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}" Cursor="Hand"
-                                                                ToolTip="{Binding DataContext.TooltipSaveSnippet, ElementName=root}" AutomationProperties.Name="{Binding DataContext.TooltipSaveSnippet, ElementName=root}">
+                                                                ToolTip="{Binding SaveSnippetTip}" AutomationProperties.Name="{Binding SaveSnippetTip}">
                                                             <Button.Template>
                                                                 <ControlTemplate TargetType="Button">
                                                                     <Border x:Name="bd" CornerRadius="3"

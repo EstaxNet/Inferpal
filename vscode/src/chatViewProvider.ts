@@ -26,6 +26,9 @@ const HISTORY_KEY = 'inferpal.promptHistory';
 const HISTORY_MAX = 50;
 const STATUS_POLL_MS = 30_000;
 
+/** A context chip waiting for the next question: its label, its content, and the file it came from. */
+type PendingAttachment = { name: string; content: string; sourcePath?: string };
+
 export class ChatViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewId = 'inferpal.chat';
 
@@ -72,7 +75,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private sessionStart: number | null = null;
   private statusTimer: NodeJS.Timeout | undefined;
   /** Context chips (slash attachChip effects, @-mentions, "+" menu), consumed by the next turn. */
-  private pendingAttachments: { name: string; content: string; sourcePath?: string }[] = [];
+  private pendingAttachments: PendingAttachment[] = [];
+  /** What the last question was sent WITH — its words before the "📎 Attached" line, and its chips —, tied to its
+   *  bubble: Regenerate resends that, as the Visual Studio window resends `_lastSent`. A reloaded bubble has its words. */
+  private lastSent: { question: WvTranscriptItem; text: string; attachments: PendingAttachment[] } | undefined;
+  /** The chips a regenerated question carries again — never the ones waiting in the composer for the next question. */
+  private resendAttachments: PendingAttachment[] | undefined;
   /** Files pinned into every request, as the host reports them. */
   private pins: string[] = [];
   private mentionCats: WvMentionCategory[] = [];
@@ -1996,8 +2004,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       const attachedPaths = [...mentions.paths];
       // Under the question: the chips, and any typed @file that was cut or not sent.
       const named = [...mentions.labels];
-      if (this.pendingAttachments.length > 0 && !this.regenerating) {
-        for (const a of this.pendingAttachments) {
+      const chips = this.regenerating ? this.resendAttachments ?? [] : this.pendingAttachments;
+      if (chips.length > 0) {
+        for (const a of chips) {
           expanded += `\n\n## Attached: ${a.name}\n\`\`\`\n${a.content}\n\`\`\``;
           // The file's path, never the chip's label: the host resolves these against the root to skip the RAG
           // chunks of a file already in the prompt, and "📄 src/x.ts" names no file — the same content went in twice.
@@ -2005,9 +2014,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             attachedPaths.push(a.sourcePath);
           }
         }
-        named.push(...this.pendingAttachments.map((a) => a.name));
-        this.pendingAttachments = [];
-        this.postChips();
+        named.push(...chips.map((a) => a.name));
+        if (!this.regenerating) {
+          this.pendingAttachments = [];
+          this.postChips();
+        }
+      }
+      const asked = [...this.transcript].reverse().find((m) => m.role === 'user');
+      if (asked) {
+        this.lastSent = { question: asked, text: prompt, attachments: [...chips] };
       }
       if (named.length > 0) {
         this.nameAttachmentsInQuestion(named);
@@ -2196,12 +2211,16 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.transcript.splice(at);
     this.hydrate();
     // ⚠ The chips waiting in the composer were attached for the NEXT question: sent with this one, they left the
-    // composer and went to the model with the old question (Visual Studio resends with no attachment).
+    // composer and went to the model with the old question. The question's OWN chips go again — resent from its
+    // words alone, "explain this file" went without the file (Visual Studio resends `_lastSent`).
+    const sent = this.lastSent?.question === question ? this.lastSent : undefined;
     this.regenerating = true;
+    this.resendAttachments = sent?.attachments;
     try {
-      await this.send(question.text);
+      await this.send(sent?.text ?? question.text);
     } finally {
       this.regenerating = false;
+      this.resendAttachments = undefined;
     }
   }
 

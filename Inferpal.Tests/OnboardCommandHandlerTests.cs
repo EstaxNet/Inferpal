@@ -55,6 +55,33 @@ public class OnboardCommandHandlerTests : IDisposable
         Assert.Null(result.Write);
     }
 
+    /// <summary>
+    /// An <c>indexExclude</c> entry the profile does not apply is said ABOVE the applied list — even when nothing was
+    /// applied: listed under "applied" alone, the kept patterns read as everything the team asked for.
+    /// </summary>
+    [Fact]
+    public async Task IndexExcludesLeftOut_AreSaid_AboveTheAppliedList()
+    {
+        var many = string.Join(",", Enumerable.Range(0, 103).Select(i => $"\"dir{i}\""));
+        WriteProfile($$"""{ "indexExclude": [{{many}}] }""");
+
+        var message = (await Run(new InferpalConfig())).Message!;
+
+        var note    = message.IndexOf(Strings.OnboardExcludesNotApplied(3), StringComparison.Ordinal);
+        var heading = message.IndexOf(Strings.OnboardAppliedHeading, StringComparison.Ordinal);
+        Assert.True(heading >= 0, "witness: the applied list is shown");
+        Assert.True(note >= 0 && note < heading, "the entries left out are not said above the applied list");
+    }
+
+    [Fact]
+    public async Task AnOrdinaryProfile_HasNoLeftOutNote()
+    {
+        // Reference arm.
+        WriteProfile("""{ "indexExclude": ["vendor"] }""");
+
+        Assert.DoesNotContain("indexExclude", (await Run(new InferpalConfig())).Message!.Replace("`vendor`", ""), StringComparison.Ordinal);
+    }
+
     // The context line is its own paragraph whatever the profile branch: the two branches that
     // print one sentence glued it on ("…a commented example.No `.inferpal/context.md` yet…").
     [Fact]

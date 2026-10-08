@@ -707,6 +707,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="SnippetsCopied" xml:space="preserve"><value>{0}번 스니펫을 클립보드에 복사했습니다.</value></data>
   <data name="SnippetsDeleted" xml:space="preserve"><value>{0}번 스니펫을 삭제했습니다.</value></data>
   <data name="SnippetsWriteFailed" xml:space="preserve"><value>스니펫 라이브러리를 저장하지 못했습니다. 아무것도 변경되지 않았습니다. 원인은 `/diagnostics`에 있습니다.</value></data>
+  <data name="SnippetsFull" xml:space="preserve"><value>저장되지 않았습니다. 스니펫 라이브러리가 가득 찼습니다({0}개). /snippets delete &lt;n&gt; 로 하나를 삭제한 뒤 다시 저장하세요.</value></data>
   <data name="SnippetsNone" xml:space="preserve"><value>저장된 스니펫이 아직 없습니다. 코드 블록의 ⭐ 버튼으로 저장하세요.</value></data>
   <data name="SnippetsUnreadable" xml:space="preserve"><value>⚠ 스니펙 라이브러리를 읽지 못했습니다 ({0}). “저장된 스니펙 없음”이 아닙니다. 스니펙은 그 파일에 그대로 있으며, Inferpal은 새로 쓰기 전에 파일을 따로 보관합니다. 원인은 /diagnostics를 보세요.</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>사용법: `/note &lt;텍스트&gt;` — 타임스탬프가 있는 메모를 `.inferpal/notes.md`에 추가합니다.</value></data>
@@ -800,6 +801,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="ArenaNoStats" xml:space="preserve"><value>아직 기록된 아레나 투표가 없습니다.</value></data>
   <data name="ArenaUnreadable" xml:space="preserve"><value>⚠ 아레나 기록을 읽지 못했습니다 ({0}). “기록된 투표 없음”이 아닙니다. 투표는 그 파일에 그대로 있으며, Inferpal은 새로 쓰기 전에 파일을 따로 보관합니다. 원인은 /diagnostics를 보세요.</value></data>
   <data name="ArenaVoteNotRead" xml:space="preserve"><value>투표가 기록되지 않았습니다. 대기 중인 대결을 읽지 못했습니다. /arena &lt;prompt&gt; 로 새 대결을 시작하세요.</value></data>
+  <data name="ArenaPendingIsAnother" xml:space="preserve"><value>투표가 기록되지 않았습니다. 대기 중인 대결은 다른 창에서 시작되었습니다 — "{0}". 그 창에서 투표하거나, 여기서 /arena &lt;prompt&gt; 로 대결을 시작하세요.</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>아레나 실패: {0}</value></data>
   <data name="SlashHintTdd" xml:space="preserve"><value>테스트 실행 → AI 수정 → 통과할 때까지 재실행(테스트 필터 선택)</value></data>
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 테스트 {0}/{1}…</value></data>
@@ -932,6 +934,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="OnboardProfileUnusable" xml:space="preserve"><value>⚠ `{0}` 파일이 있지만 읽을 수 없어 인덱스 제외를 포함해 아무것도 적용되지 않습니다: {1}</value></data>
   <data name="OnboardProfileNotAnObject" xml:space="preserve"><value>파일에는 JSON 개체가 있어야 합니다.</value></data>
   <data name="OnboardAppliedHeading" xml:space="preserve"><value>**적용됨** — 인덱스 제외. 추가만 가능: 시맨틱 인덱스에서 파일을 빼낼 뿐, `read_file` 이나 `search_in_files` 로부터 아무것도 숨기지 않습니다.</value></data>
+  <data name="OnboardExcludesNotApplied" xml:space="preserve"><value>⚠ `indexExclude` 항목 {0}개가 적용되지 않았습니다 — 200자 이하의 텍스트 패턴 중 처음 100개만 읽습니다. 해당 파일은 시맨틱 인덱스에 남습니다.</value></data>
   <data name="OnboardRecommendedHeading" xml:space="preserve"><value>**권장** — 머신의 선택이며 저절로 적용되지 않습니다:</value></data>
   <data name="OnboardRecommendLine" xml:space="preserve"><value>`{0}` → **{1}** (현재: {2})</value></data>
   <data name="OnboardApplyHint" xml:space="preserve"><value>`/onboard apply` 가 이 머신의 설정에 기록합니다.</value></data>

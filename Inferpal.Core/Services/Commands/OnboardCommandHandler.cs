@@ -140,6 +140,9 @@ internal static class OnboardCommandHandler
         }
         else
         {
+            // The entries left out qualify the list kept: said above it, even when nothing was kept.
+            if (profile.NotApplied is { Total: > 0 } notApplied)
+                sb.Append(Strings.OnboardExcludesNotApplied(notApplied.Total)).Append("\n\n");
             if (profile.IndexExcludes.Count > 0)
             {
                 sb.Append(Strings.OnboardAppliedHeading).Append('\n');

@@ -711,6 +711,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="SnippetsCopied" xml:space="preserve"><value>Snippet n°{0} copié dans le presse-papier.</value></data>
   <data name="SnippetsDeleted" xml:space="preserve"><value>Snippet n°{0} supprimé.</value></data>
   <data name="SnippetsWriteFailed" xml:space="preserve"><value>La bibliothèque de snippets n'a pas pu être enregistrée — rien n'a été modifié. `/diagnostics` en donne la cause.</value></data>
+  <data name="SnippetsFull" xml:space="preserve"><value>Non enregistré : la bibliothèque d'extraits est pleine ({0} extraits). Supprimez-en un avec /snippets delete &lt;n&gt;, puis enregistrez à nouveau.</value></data>
   <data name="SnippetsNone" xml:space="preserve"><value>Aucun snippet enregistré. Utilisez le bouton ⭐ sur un bloc de code pour en enregistrer un.</value></data>
   <data name="SnippetsUnreadable" xml:space="preserve"><value>⚠ La bibliothèque d'extraits n'a pas pu être lue ({0}) — ce n'est PAS « aucun extrait enregistré ». Vos extraits sont toujours dans ce fichier ; Inferpal le met de côté avant d'écrire quoi que ce soit. Voir /diagnostics pour la cause.</value></data>
   <data name="NoteUsage" xml:space="preserve"><value>Utilisation : `/note &lt;texte&gt;` — ajoute une note horodatée à `.inferpal/notes.md`.</value></data>
@@ -804,6 +805,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="ArenaNoStats" xml:space="preserve"><value>Aucun vote d'arène enregistré pour l'instant.</value></data>
   <data name="ArenaUnreadable" xml:space="preserve"><value>⚠ L'historique de l'arène n'a pas pu être lu ({0}) — ce n'est PAS « aucun vote enregistré ». Vos votes sont toujours dans ce fichier ; Inferpal le met de côté avant d'écrire quoi que ce soit. Voir /diagnostics pour la cause.</value></data>
   <data name="ArenaVoteNotRead" xml:space="preserve"><value>Votre vote n'a pas été enregistré : le duel en attente n'a pas pu être lu. Relancez-en un avec /arena &lt;prompt&gt;.</value></data>
+  <data name="ArenaPendingIsAnother" xml:space="preserve"><value>Votre vote n'a pas été enregistré : le duel en attente a été lancé dans une autre fenêtre — « {0} ». Votez là-bas, ou lancez-en un ici avec /arena &lt;prompt&gt;.</value></data>
   <data name="ArenaFailed" xml:space="preserve"><value>Échec de l'arène : {0}</value></data>
   <data name="SlashHintTdd" xml:space="preserve"><value>lancer les tests → l'IA corrige → relancer jusqu'au vert (filtre de test optionnel)</value></data>
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 Tests {0}/{1}…</value></data>
@@ -932,6 +934,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="OnboardProfileUnusable" xml:space="preserve"><value>⚠ `{0}` existe mais n’a pas pu être lu : rien ne s’en applique, exclusions d’index comprises. {1}</value></data>
   <data name="OnboardProfileNotAnObject" xml:space="preserve"><value>le fichier doit contenir un objet JSON.</value></data>
   <data name="OnboardAppliedHeading" xml:space="preserve"><value>**Appliqué** — exclusions d'index. Additif uniquement : elles retirent des fichiers de l'index sémantique et ne cachent rien à `read_file` ni à `search_in_files`.</value></data>
+  <data name="OnboardExcludesNotApplied" xml:space="preserve"><value>⚠ {0} entrée(s) `indexExclude` NON appliquée(s) — seuls les 100 premiers motifs texte d'au plus 200 caractères sont lus : ces fichiers restent dans l'index sémantique.</value></data>
   <data name="OnboardRecommendedHeading" xml:space="preserve"><value>**Recommandé** — choix machine, jamais appliqués d'eux-mêmes :</value></data>
   <data name="OnboardRecommendLine" xml:space="preserve"><value>`{0}` → **{1}** (actuel : {2})</value></data>
   <data name="OnboardApplyHint" xml:space="preserve"><value>`/onboard apply` les écrit dans la configuration de cette machine.</value></data>

@@ -176,7 +176,7 @@ internal class TraceDependencyTool : ITool
             sb.AppendLine("### Callers");
             sb.AppendLine();
             var callerBlocks = new List<(string Name, string Text)>();
-            coverage = AppendCallers(callerBlocks, methods, rootDir, ext, filePath, ct);
+            coverage = AppendCallers(callerBlocks, methods, rootDir, ext, filePath, index, ct);
             AppendBlocks(callerBlocks, showCallees ? room * 2 / 5 : room);
         }
 
@@ -205,7 +205,7 @@ internal class TraceDependencyTool : ITool
                                 .Distinct(StringComparer.OrdinalIgnoreCase)
                                 .ToList();
         int resolved = index is null ? 0
-                     : allCallees.Count(c => index.TryFind(c, out _));
+                     : allCallees.Count(c => index.Resolve(c, filePath).Definition is not null);
 
         sb.AppendLine("---");
         sb.AppendLine(Strings.TraceDepsFooter(methods.Count, allCallees.Count, resolved));
@@ -252,7 +252,8 @@ internal class TraceDependencyTool : ITool
             // Resolve to definition
             MethodInfo? callee = null;
             string loc;
-            if (index is not null && index.TryFind(call, out var def))
+            var resolution = index?.Resolve(call, baseFile);
+            if (resolution is { Definition: { } def })
             {
                 callee = def;
                 if (def.FilePath == baseFile)
@@ -262,6 +263,14 @@ internal class TraceDependencyTool : ITool
                     var rel = Path.GetRelativePath(Path.GetDirectoryName(baseFile)!, def.FilePath);
                     loc = $"[{rel}:{def.Line}]";
                 }
+            }
+            else if (resolution is { IsAmbiguous: true } amb)
+            {
+                // Named, never expanded: which one the call reaches is exactly what a name cannot say.
+                var where = amb.Candidates.Take(3).Select(d =>
+                    $"{Path.GetRelativePath(Path.GetDirectoryName(baseFile)!, d.FilePath)}:{d.Line}");
+                loc = $"[ambiguous: defined in {amb.Candidates.Select(d => d.FilePath).Distinct(PathComparer.Default).Count()} files — "
+                    + string.Join(", ", where) + (amb.Candidates.Count > 3 ? ", …" : "") + "]";
             }
             else
             {
@@ -289,7 +298,7 @@ internal class TraceDependencyTool : ITool
 
     /// <summary>The calls a tree shows: all of them, but a framework name only when the workspace defines it.</summary>
     private static List<string> ShownCalls(MethodInfo method, DefinitionIndex? index) =>
-        method.Calls.Where(c => !CSharpAnalyzer.IsFrameworkName(c) || (index is not null && index.TryFind(c, out _))).ToList();
+        method.Calls.Where(c => !CSharpAnalyzer.IsFrameworkName(c) || (index is not null && index.Contains(c))).ToList();
 
     // ── Callers ───────────────────────────────────────────────────────────────
 
@@ -301,6 +310,7 @@ internal class TraceDependencyTool : ITool
         string           rootDir,
         string           ext,
         string           targetFile,
+        DefinitionIndex? index,
         CancellationToken ct)
     {
         var targetNames = targets.Select(m => m.Name)
@@ -344,6 +354,9 @@ internal class TraceDependencyTool : ITool
         {
             var sb = new StringBuilder();
             sb.AppendLine($"▶ **{t.Name}**() ← called by:");
+            // Callers are matched by NAME: with the name defined elsewhere too, some may call another method.
+            if (index?.FileCount(t.Name) is > 1 and var files)
+                sb.AppendLine($"  ⚠ {t.Name} is defined in {files} files: a caller listed here may call another of them.");
             if (callerMap.TryGetValue(t.Name, out var callers) && callers.Count > 0)
                 foreach (var (caller, relFile, line) in callers.OrderBy(x => x.relFile).ThenBy(x => x.line))
                     sb.AppendLine($"  • {caller}()  [{relFile}:{line}]");
@@ -376,7 +389,7 @@ internal class TraceDependencyTool : ITool
                 var fext    = Path.GetExtension(file).ToLowerInvariant();
                 var methods = ParseMethods(src, fext, file);
                 foreach (var m in methods)
-                    index.TryAdd(m.Name, m);
+                    index.Add(m.Name, m);
             }
             catch (OperationCanceledException) { }
             catch (Exception ex) { unreadable++; Diagnostics.Swallow("TraceDependencyTool.IndexMethods", ex); }
@@ -423,17 +436,49 @@ internal class TraceDependencyTool : ITool
         List<string> Calls,
         string       FilePath = "");
 
+    /// <summary>What a called name resolves to: one definition, or — defined in several files — none and the candidates.</summary>
+    private readonly record struct Resolution(MethodInfo? Definition, IReadOnlyList<MethodInfo> Candidates)
+    {
+        public bool IsAmbiguous => Definition is null && Candidates.Count > 1;
+    }
+
     private sealed class DefinitionIndex
     {
-        private readonly Dictionary<string, MethodInfo> _defs =
+        private readonly Dictionary<string, List<MethodInfo>> _defs =
             new(StringComparer.OrdinalIgnoreCase);
 
-        public void TryAdd(string name, MethodInfo info) =>
-            _defs.TryAdd(name, info);
+        public void Add(string name, MethodInfo info)
+        {
+            if (!_defs.TryGetValue(name, out var list)) _defs[name] = list = [];
+            list.Add(info);
+        }
 
-        public bool TryFind(string name,
-            [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out MethodInfo def) =>
-            _defs.TryGetValue(name, out def);
+        public bool Contains(string name) => _defs.ContainsKey(name);
+
+        /// <summary>
+        /// The definition a call to <paramref name="name"/> from <paramref name="fromFile"/> reaches — the exact-case ones
+        /// first; several in ONE file (overloads, a partial) are one; in several files, the caller's own file wins, else
+        /// it is ambiguous.
+        /// </summary>
+        /// <remarks>
+        /// ⚠ A name is matched, not a symbol: letting the first definition indexed win shows <c>[Alpha.cs:12]</c> for a
+        /// call to <c>Validate</c> and expands Alpha's callees while the analysed file means its own or another class's —
+        /// a wrong tree, with nothing saying the name is shared.
+        /// </remarks>
+        public Resolution Resolve(string name, string fromFile)
+        {
+            if (!_defs.TryGetValue(name, out var all)) return new(null, []);
+            var exact = all.Where(d => d.Name == name).ToList();
+            var candidates = exact.Count > 0 ? exact : all;
+            if (candidates.Select(d => d.FilePath).Distinct(PathComparer.Default).Count() == 1)
+                return new(candidates[0], candidates);
+            var own = candidates.FirstOrDefault(d => PathComparer.Default.Equals(d.FilePath, fromFile));
+            return own is not null ? new(own, candidates) : new(null, candidates);
+        }
+
+        /// <summary>The files defining <paramref name="name"/> — more than one makes a caller list by name ambiguous.</summary>
+        public int FileCount(string name) =>
+            _defs.TryGetValue(name, out var all) ? all.Select(d => d.FilePath).Distinct(PathComparer.Default).Count() : 0;
     }
 
     // ═════════════════════════════════════════════════════════════════════════

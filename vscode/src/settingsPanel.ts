@@ -48,8 +48,14 @@ interface SettingsInbound {
 
 export class SettingsPanel {
   private static current: SettingsPanel | undefined;
+  /** Set by the activator from the host's spawn until its start ends: the panel then says "starting", not "restart". */
+  private static hostStarting = false;
 
   private lastConfigJson = '';
+  /** Whether the form was sent. Until then the host coming back loads it; a form already shown is never reloaded — it
+   *  may hold unsaved edits. */
+  private loaded = false;
+  private loading: Promise<void> | undefined;
 
   private constructor(
     private readonly panel: vscode.WebviewPanel,
@@ -96,48 +102,91 @@ export class SettingsPanel {
     SettingsPanel.current = new SettingsPanel(panel, extensionUri, getHost, onSaved, onLanguageChanged, openXray, log);
   }
 
+  /** Called by the activator just before it spawns the host. */
+  static onHostStarting(): void {
+    SettingsPanel.hostStarting = true;
+  }
+
+  /**
+   * The host is up: a panel opened while it was starting, stopped or missing its folder loads its form now. Without
+   * this it stayed on "Loading settings…" under a remedy that no longer applied, until closed and reopened.
+   */
+  static onHostReady(): void {
+    SettingsPanel.hostStarting = false;
+    const panel = SettingsPanel.current;
+    if (panel && !panel.loaded) {
+      void panel.load();
+    }
+  }
+
+  /** The start failed: a panel waiting on "starting" says what applies now. */
+  static onHostStartFailed(): void {
+    SettingsPanel.hostStarting = false;
+    const panel = SettingsPanel.current;
+    if (panel && !panel.loaded) {
+      void panel.load();
+    }
+  }
+
+  private load(): Promise<void> {
+    return (this.loading ??= this.loadCore().finally(() => {
+      this.loading = undefined;
+    }));
+  }
+
+  private async loadCore(): Promise<void> {
+    const host = this.getHost();
+    if (!host?.isRunning) {
+      if (SettingsPanel.hostStarting) {
+        // Starting is not stopped: "Restart Host" would kill the start in progress, and the form comes on its own.
+        this.post({ type: 'error', message: t('Inferpal is starting — the settings load as soon as it is ready.') });
+        return;
+      }
+      // Same two states as the chat bubble — an empty form telling the user to restart a
+      // host that no folder allowed to start is the worst of the two wordings.
+      this.post({ type: 'error', message: hostUnavailableMessage() });
+      promptOpenFolder();
+      return;
+    }
+    try {
+      this.lastConfigJson = await host.configGet();
+      let models: string[] = [];
+      try {
+        models = await host.modelsList();
+      } catch {
+        // ⚠ A host or RPC failure, NOT an unreachable backend: that one does not fail, it
+        // returns an empty list through the success path. Both end up
+        // as `models = []` here, and the popup is what names them.
+      }
+      // Labels/hints/sections from the host's .resx — identical wording to the VS window.
+      let strings: Record<string, string> = {};
+      try {
+        strings = await host.settingsStrings();
+      } catch (err) {
+        this.log(`[settings] settings/strings failed: ${String(err)}`);
+      }
+      // The form itself is declared in the Core and served over RPC: adding a setting no
+      // longer means editing a TypeScript table too.
+      let schema: SettingsSchema | null = null;
+      try {
+        schema = await host.settingsSchema();
+      } catch (err) {
+        this.log(`[settings] settings/schema failed: ${String(err)}`);
+      }
+      this.post({ type: 'init', configJson: this.lastConfigJson, models, strings, schema });
+      // A form the webview could not render (no schema) is not loaded: the host's next start tries again.
+      this.loaded = (schema?.tabs.length ?? 0) > 0;
+    } catch (err) {
+      this.post({ type: 'error', message: hostErrorText(err) });
+    }
+  }
+
   private async onMessage(msg: SettingsInbound): Promise<void> {
     const host = this.getHost();
     switch (msg.type) {
-      case 'ready': {
-        if (!host?.isRunning) {
-          // Same two states as the chat bubble — an empty form telling the user to restart a
-          // host that no folder allowed to start is the worst of the two wordings.
-          this.post({ type: 'error', message: hostUnavailableMessage() });
-          promptOpenFolder();
-          return;
-        }
-        try {
-          this.lastConfigJson = await host.configGet();
-          let models: string[] = [];
-          try {
-            models = await host.modelsList();
-          } catch {
-            // ⚠ A host or RPC failure, NOT an unreachable backend: that one does not fail, it
-            // returns an empty list through the success path. Both end up
-            // as `models = []` here, and the popup is what names them.
-          }
-          // Labels/hints/sections from the host's .resx — identical wording to the VS window.
-          let strings: Record<string, string> = {};
-          try {
-            strings = await host.settingsStrings();
-          } catch (err) {
-            this.log(`[settings] settings/strings failed: ${String(err)}`);
-          }
-          // The form itself is declared in the Core and served over RPC: adding a setting no
-          // longer means editing a TypeScript table too.
-          let schema: SettingsSchema | null = null;
-          try {
-            schema = await host.settingsSchema();
-          } catch (err) {
-            this.log(`[settings] settings/schema failed: ${String(err)}`);
-          }
-          this.post({ type: 'init', configJson: this.lastConfigJson, models, strings, schema });
-        } catch (err) {
-          this.post({ type: 'error', message: hostErrorText(err) });
-        }
+      case 'ready':
+        await this.load();
         return;
-      }
       case 'testConnection': {
         if (!host?.isRunning) {
           // ⚠ On its own, `ok: false` reads as "Backend unreachable" — the wrong cause when it is

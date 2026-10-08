@@ -51,21 +51,23 @@ public class SnippetStoreTests : IDisposable
         Assert.Equal("second", snippets[1].Code);
     }
 
+    /// <summary>
+    /// A snippet is something the user chose to keep: with the library full, a new one is refused and the caller is told
+    /// why — making room by dropping the oldest deleted a kept snippet without a word.
+    /// </summary>
     [Fact]
-    public async Task SaveAsync_ExceedsMaxSnippets_RemovesOldest()
+    public async Task SaveAsync_IntoAFullLibrary_IsRefused_AndKeepsEverySnippet()
     {
-        // Fill to 100
-        for (var i = 0; i < 100; i++)
-            await SnippetStore.SaveAsync("js", $"snippet_{i}", CancellationToken.None);
+        for (var i = 0; i < SnippetStore.MaxSnippets; i++)
+            Assert.Equal(SnippetSaveResult.Saved, await SnippetStore.SaveAsync("js", $"snippet_{i}", CancellationToken.None));
 
-        // 101st save must drop snippet_0
-        await SnippetStore.SaveAsync("js", "snippet_100", CancellationToken.None);
+        var result = await SnippetStore.SaveAsync("js", "snippet_100", CancellationToken.None);
 
+        Assert.Equal(SnippetSaveResult.Full, result);
         var snippets = await SnippetStore.LoadAllAsync(CancellationToken.None);
-
-        Assert.Equal(100, snippets.Count);
-        Assert.Equal("snippet_1",   snippets[0].Code);
-        Assert.Equal("snippet_100", snippets[99].Code);
+        Assert.Equal(SnippetStore.MaxSnippets, snippets.Count);
+        Assert.Equal("snippet_0", snippets[0].Code);   // the oldest is still there
+        Assert.DoesNotContain(snippets, s => s.Code == "snippet_100");
     }
 
     [Fact]

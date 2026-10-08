@@ -50,11 +50,18 @@ internal sealed record ProfileIgnoredKey(string Key, bool Sensitive);
 /// no approval to ask for. That is the whole point of restricting it to preferences.
 /// </para>
 /// </remarks>
+/// <summary>The <c>indexExclude</c> entries the profile does not apply, by cause.</summary>
+internal sealed record ExcludesNotApplied(int OverLimit, int TooLong, int NotText)
+{
+    public int Total => OverLimit + TooLong + NotText;
+}
+
 internal sealed record ProjectProfile(
     IReadOnlyList<string>                 IndexExcludes,
     IReadOnlyList<ProfileRecommendation>  Recommendations,
     IReadOnlyList<ProfileIgnoredKey>      Ignored,
-    string?                               Problem = null)
+    string?                               Problem = null,
+    ExcludesNotApplied?                   NotApplied = null)
 {
     /// <summary>An empty profile — what a repository without the file gets.</summary>
     public static readonly ProjectProfile Empty = new([], [], []);
@@ -65,7 +72,7 @@ internal sealed record ProjectProfile(
     /// an unreadable profile is reported as a missing one.
     /// </remarks>
     public bool IsEmpty =>
-        IndexExcludes.Count == 0 && Recommendations.Count == 0 && Ignored.Count == 0;
+        IndexExcludes.Count == 0 && Recommendations.Count == 0 && Ignored.Count == 0 && (NotApplied?.Total ?? 0) == 0;
 
     /// <summary>Path of the profile inside a workspace.</summary>
     public static string PathIn(string root) => Path.Combine(root, ".inferpal", "project.json");
@@ -132,9 +139,10 @@ internal sealed record ProjectProfile(
     {
         if (string.IsNullOrWhiteSpace(json)) return Empty;
 
-        var excludes = new List<string>();
-        var recs     = new List<ProfileRecommendation>();
-        var ignored  = new List<ProfileIgnoredKey>();
+        var excludes   = new List<string>();
+        var recs       = new List<ProfileRecommendation>();
+        var ignored    = new List<ProfileIgnoredKey>();
+        var notApplied = new ExcludesNotApplied(0, 0, 0);
 
         try
         {
@@ -153,7 +161,7 @@ internal sealed record ProjectProfile(
                 switch (prop.Name)
                 {
                     case "indexExclude":
-                        ReadExcludes(prop.Value, excludes);
+                        notApplied = ReadExcludes(prop.Value, excludes);
                         break;
 
                     case "recommend":
@@ -172,20 +180,28 @@ internal sealed record ProjectProfile(
             return Empty with { Problem = ex.Message };
         }
 
-        return new ProjectProfile(excludes, recs, ignored);
+        return new ProjectProfile(excludes, recs, ignored, NotApplied: notApplied.Total > 0 ? notApplied : null);
     }
 
-    private static void ReadExcludes(JsonElement value, List<string> into)
+    /// <summary>Reads the patterns into <paramref name="into"/>, and counts the entries left out.</summary>
+    /// <remarks>
+    /// ⚠ Each left-out entry is a folder the team meant to keep out of the semantic index — indexed anyway, and fed to
+    /// the auto-context — while <c>/onboard</c> lists only what it kept under "applied". Counted, so it is said.
+    /// </remarks>
+    private static ExcludesNotApplied ReadExcludes(JsonElement value, List<string> into)
     {
-        if (value.ValueKind != JsonValueKind.Array) return;
+        if (value.ValueKind != JsonValueKind.Array) return new(0, 0, 0);
+        int overLimit = 0, tooLong = 0, notText = 0;
         foreach (var item in value.EnumerateArray())
         {
-            if (item.ValueKind != JsonValueKind.String) continue;
+            if (item.ValueKind != JsonValueKind.String) { notText++; continue; }
             var pattern = item.GetString()?.Trim();
-            if (string.IsNullOrEmpty(pattern) || pattern!.Length > MaxPatternLength) continue;
-            if (into.Count >= MaxExcludes) break;
+            if (string.IsNullOrEmpty(pattern)) continue;
+            if (pattern!.Length > MaxPatternLength) { tooLong++; continue; }
+            if (into.Count >= MaxExcludes) { overLimit++; continue; }
             into.Add(pattern);
         }
+        return new(overLimit, tooLong, notText);
     }
 
     private static void ReadRecommendations(

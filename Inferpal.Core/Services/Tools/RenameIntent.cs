@@ -19,7 +19,8 @@ internal static class RenameIntent
     private static readonly Regex Token = new(@"[\p{L}_][\p{L}\p{Nd}_]*|\s+|.",
         RegexOptions.CultureInvariant | RegexOptions.Singleline, RegexBudget.Default);
 
-    /// <summary>Most source files the stale-name scan reads: past it the note says nothing rather than guess.</summary>
+    /// <summary>Most source files the stale-name scan reads — the first in ordinal order; past it the note says what was
+    /// not read.</summary>
     internal const int MaxFilesScanned = 3000;
 
     /// <summary>
@@ -55,39 +56,57 @@ internal static class RenameIntent
     /// The note after a hand rename that leaves <paramref name="rename"/>'s old name in other source files of the same
     /// language under <paramref name="root"/>; empty when none does, or when the scan cannot say.
     /// </summary>
+    /// <remarks>
+    /// ⚠ A scan that read PART of the workspace says so, found or not: silent past its cap, its absence of note read as
+    /// "renamed everywhere" on exactly the repositories where a hand rename is the likeliest to miss one.
+    /// </remarks>
     public static string StaleNote((string Old, string New) rename, string root, string editedFile)
     {
-        var still = FilesStillNaming(root, Path.GetExtension(editedFile), rename.Old);
-        if (still is null || still.Count == 0) return string.Empty;
-        var named = string.Join(", ", still.Take(5).Select(p => Path.GetRelativePath(root, p)))
-                  + (still.Count > 5 ? $" and {still.Count - 5} more" : string.Empty);
-        return $"\n⚠ `{rename.Old}` still appears in {still.Count} file(s): {named}. If it is the same symbol, "
-             + $"{Call(rename)} renames every remaining occurrence in one call.";
+        if (Scan(root, Path.GetExtension(editedFile), rename.Old) is not var (still, coverage)) return string.Empty;
+        var note = string.Empty;
+        if (still.Count > 0)
+        {
+            var named = string.Join(", ", still.Take(5).Select(p => Path.GetRelativePath(root, p)))
+                      + (still.Count > 5 ? $" and {still.Count - 5} more" : string.Empty);
+            note = $"\n⚠ `{rename.Old}` still appears in {still.Count} file(s): {named}. If it is the same symbol, "
+                 + $"{Call(rename)} renames every remaining occurrence in one call.";
+        }
+        if (coverage.IsIncomplete)
+            note += still.Count > 0
+                ? "\n" + coverage.Warning()
+                : $"\n⚠ `{rename.Old}` was looked for in part of the workspace only:\n{coverage.Warning()}\n"
+                  + $"It may remain in the files not read — {Call(rename)} finds every occurrence.";
+        return note;
     }
 
     /// <summary>Source files of <paramref name="ext"/>'s language under <paramref name="root"/> that contain
-    /// <paramref name="name"/> as a whole word; null when the scan cannot say (no root, too many files, unreadable).</summary>
-    internal static List<string>? FilesStillNaming(string root, string ext, string name)
+    /// <paramref name="name"/> as a whole word, among those the scan read; null when it cannot say (no root, a pattern
+    /// over budget).</summary>
+    internal static List<string>? FilesStillNaming(string root, string ext, string name) => Scan(root, ext, name)?.Found;
+
+    /// <summary><see cref="FilesStillNaming"/>, with what the scan covered: the first <see cref="MaxFilesScanned"/>
+    /// files in ordinal order, the unreadable ones counted.</summary>
+    internal static (List<string> Found, ScanCoverage Coverage)? Scan(string root, string ext, string name)
     {
         if (string.IsNullOrEmpty(root) || !Directory.Exists(root) || string.IsNullOrEmpty(ext)) return null;
         var word = new Regex($@"(?<![\p{{L}}\p{{Nd}}_]){Regex.Escape(name)}(?![\p{{L}}\p{{Nd}}_])",
                              RegexOptions.CultureInvariant, RegexBudget.Default);
-        var found = new List<string>();
-        var scanned = 0;
+        var (files, coverage) = ScanCoverage.Take(WorkspaceScan.EnumerateSourceFamily(root, ext), MaxFilesScanned);
+        var found      = new List<string>();
+        var unreadable = 0;
         try
         {
-            foreach (var file in WorkspaceScan.EnumerateSourceFamily(root, ext))
+            foreach (var file in files)
             {
-                if (++scanned > MaxFilesScanned) return null;
                 string text;
                 try { text = TextFileEncoding.ReadText(file); }
-                catch (IOException) { continue; }
-                catch (UnauthorizedAccessException) { continue; }
+                catch (IOException) { unreadable++; continue; }
+                catch (UnauthorizedAccessException) { unreadable++; continue; }
                 if (word.IsMatch(text)) found.Add(file);
             }
         }
         catch (RegexMatchTimeoutException) { return null; }
-        return found;
+        return (found, coverage.WithUnreadable(unreadable));
     }
 
     private static string Call((string Old, string New) rename) =>
