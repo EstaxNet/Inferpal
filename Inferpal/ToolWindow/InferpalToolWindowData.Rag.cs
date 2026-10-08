@@ -213,7 +213,9 @@ internal partial class InferpalToolWindowData
 
         // ── 3. Auto-configure ─────────────────────────────────────────────────
         // A model the user CHOSE (not the code's default) that the backend has is kept: the first run can now
-        // complete late — after a model was picked in the settings while the backend was down.
+        // complete late — after a model was picked in the settings while the backend was down, or in another window.
+        _config.FillFromFile(nameof(InferpalConfig.DefaultModel));
+        _config.FillFromFile(nameof(InferpalConfig.RagEmbeddingModel));
         var chosen = !Services.Inference.ModelCatalog.SameModelName(_config.DefaultModel, new InferpalConfig().DefaultModel)
                      && chatModels.Any(m => Services.Inference.ModelCatalog.SameModelName(m, _config.DefaultModel));
         var best = chosen ? _config.DefaultModel : Services.Inference.ModelCatalog.PickBestChatModel(chatModels);

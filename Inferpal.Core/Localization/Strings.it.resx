@@ -334,6 +334,17 @@ Backup: {0}</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>allega lo stato del debugger (stack, variabili, eccezione)</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ Nessuna sessione di debug in pausa. Raggiungi prima un breakpoint o un'eccezione, poi usa @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Appunti vuoti.</value></data>
+  <data name="SessionUnreadableKept" xml:space="preserve"><value>⚠ Impossibile leggere la sessione "{0}": il file è danneggiato e non è stato caricato nulla. È stata conservata una copia: {1}</value></data>
+  <data name="ClipboardNotCopied" xml:space="preserve"><value>⚠ NON copiato: un altro programma sta usando gli appunti, che contengono ancora ciò che c’era prima — non incollarli. Riprova tra un momento.</value></data>
+  <data name="MentionProblemsNotBuilt" xml:space="preserve"><value>Nessun allegato per @problems — nessuna build eseguita: {0}</value></data>
+  <data name="StoppedWorkNotice" xml:space="preserve"><value>⚠ Il riavvio di Inferpal ha fermato ciò che era ancora in esecuzione — non è stato conservato nulla, riavvialo se ti serve ancora:
+{0}</value></data>
+  <data name="StoppedWorkTask" xml:space="preserve"><value>attività in background {0} — {1}</value></data>
+  <data name="StoppedWorkCommand" xml:space="preserve"><value>comando in background {0} — {1}</value></data>
+  <data name="StoppedWorkDocs" xml:space="preserve"><value>indicizzazione della fonte di documentazione {0} (`/docs reindex {0}`)</value></data>
+  <data name="MentionDiffUnavailable" xml:space="preserve"><value>Nessun allegato per @diff — {0}</value></data>
+  <data name="MentionDiffEmpty" xml:space="preserve"><value>Nessun allegato per @diff: non c’è alcuna modifica non committata in un file tracciato. Un nuovo file mai aggiunto a git non fa parte di un diff — allegalo con @file.</value></data>
+  <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — primi {1} di {2} caratteri</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Non è stato possibile allegare nulla per @{0}.</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>«{0}» è un file, non una cartella: allegalo con @file.</value></data>
   <data name="SlashToolNoOutput" xml:space="preserve"><value>Fatto — nessun output.</value></data>

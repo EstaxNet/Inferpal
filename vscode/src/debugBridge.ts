@@ -95,10 +95,18 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
 
   // ── Breakpoints ───────────────────────────────────────────────────────────
 
+  /**
+   * The breakpoints added for the host. The host asks for one only where none was set (a breakpoint already there is
+   * used as it is), so each is the assistant's; the host's own record of them dies with its process.
+   */
+  private readonly agentBreakpointIds = new Set<string>();
+
   async addBreakpoint(file: string, line: number): Promise<DebugBreakpointDto | null> {
     const location = new vscode.Location(vscode.Uri.file(file), new vscode.Position(Math.max(0, line - 1), 0));
     const before = vscode.debug.breakpoints.length;
-    vscode.debug.addBreakpoints([new vscode.SourceBreakpoint(location, true)]);
+    const created = new vscode.SourceBreakpoint(location, true);
+    vscode.debug.addBreakpoints([created]);
+    this.agentBreakpointIds.add(created.id);
 
     // Report it as the debugger holds it, not as it was asked for: a breakpoint may bind to
     // another line, and one that was already there is not a failure. The line asked for comes
@@ -117,7 +125,24 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
       return false;
     }
     vscode.debug.removeBreakpoints(doomed);
+    for (const b of doomed) {
+      this.agentBreakpointIds.delete(b.id);
+    }
     return true;
+  }
+
+  /**
+   * Removes the breakpoints added for a host that is gone (restarted, crashed). Its record of them died with its
+   * process: no later stop of a session would remove them, and the user's next debugging session stopped on lines they
+   * never chose — the editor saves its breakpoint list with the workspace.
+   */
+  releaseAgentBreakpoints(): number {
+    const doomed = vscode.debug.breakpoints.filter((b) => this.agentBreakpointIds.has(b.id));
+    this.agentBreakpointIds.clear();
+    if (doomed.length > 0) {
+      vscode.debug.removeBreakpoints(doomed);
+    }
+    return doomed.length;
   }
 
   async listBreakpoints(): Promise<DebugBreakpointDto[]> {

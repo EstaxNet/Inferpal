@@ -890,6 +890,16 @@ internal static class Strings
     public static string MentionProblemsDesc  => Get(nameof(MentionProblemsDesc));
     public static string MentionDebuggerDesc  => Get(nameof(MentionDebuggerDesc));
     public static string MentionDebuggerNone  => Get(nameof(MentionDebuggerNone));
+    public static string MentionDiffUnavailable(string reason) => string.Format(Get(nameof(MentionDiffUnavailable)), reason);
+    public static string MentionDiffEmpty => Get(nameof(MentionDiffEmpty));
+    public static string MentionDiffCutLabel(string label, int shown, int total) => string.Format(Get(nameof(MentionDiffCutLabel)), label, shown, total);
+    public static string StoppedWorkNotice(string items) => string.Format(Get(nameof(StoppedWorkNotice)), items);
+    public static string StoppedWorkTask(string id, string objective) => string.Format(Get(nameof(StoppedWorkTask)), id, objective);
+    public static string StoppedWorkCommand(string id, string command) => string.Format(Get(nameof(StoppedWorkCommand)), id, command);
+    public static string StoppedWorkDocs(string site) => string.Format(Get(nameof(StoppedWorkDocs)), site);
+    public static string MentionProblemsNotBuilt(string reason) => string.Format(Get(nameof(MentionProblemsNotBuilt)), reason);
+    public static string ClipboardNotCopied => Get(nameof(ClipboardNotCopied));
+    public static string SessionUnreadableKept(string name, string copy) => string.Format(Get(nameof(SessionUnreadableKept)), name, copy);
     public static string MentionClipboardEmpty => Get(nameof(MentionClipboardEmpty));
     public static string MentionNothingToAttach(string category) =>
         string.Format(Get(nameof(MentionNothingToAttach)), category);

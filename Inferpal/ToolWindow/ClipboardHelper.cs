@@ -20,15 +20,21 @@ internal static class ClipboardHelper
     /// the clipboard) is swallowed — a copy button must never crash the tool window.
     /// </summary>
     /// <param name="context">Diagnostics context, e.g. <c>"Clipboard.CopyMessage"</c>.</param>
-    public static void TrySet(string? text, string context)
+    /// <returns>
+    /// <c>true</c> only when the text is on the clipboard: an error, or a copy still waiting when the budget ran out, is
+    /// <c>false</c>. ⚠ A caller that ANNOUNCES the copy reads it: "copied — paste it into an issue" over a failed copy
+    /// has the user paste whatever the clipboard held before, a secret as likely as not.
+    /// </returns>
+    public static bool TrySet(string? text, string context)
     {
         // Clipboard.SetText(string.Empty) throws: keep the historical single-space placeholder.
         var payload = string.IsNullOrEmpty(text) ? " " : text;
+        var copied  = false;
         try
         {
             var thread = new Thread(() =>
             {
-                try { System.Windows.Clipboard.SetText(payload); }
+                try { System.Windows.Clipboard.SetText(payload); copied = true; }
                 catch (Exception ex) { Diagnostics.Swallow(context, ex); }
             })
             {
@@ -49,10 +55,14 @@ internal static class ClipboardHelper
             // The copy may still land after we stop waiting; that is the best-effort contract this
             // method already has. What must not happen is the window freezing with it.
             if (!thread.Join(JoinBudget))
+            {
                 Diagnostics.Record(context,
                     $"The clipboard was still held after {JoinBudget.TotalSeconds:0}s; the copy was "
                     + "left to finish on its own. Another process holds the clipboard.");
+                return false;   // not known to have landed
+            }
+            return copied;
         }
-        catch (Exception ex) { Diagnostics.Swallow(context, ex); }
+        catch (Exception ex) { Diagnostics.Swallow(context, ex); return false; }
     }
 }

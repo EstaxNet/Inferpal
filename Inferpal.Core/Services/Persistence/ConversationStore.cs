@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Inferpal.Localization;
 using Inferpal.Models;
 
 namespace Inferpal.Services.Persistence;
@@ -59,15 +60,17 @@ internal class ConversationStore
     /// <param name="forkTurn">Turn the fork happened at, meaningful only with <paramref name="parent"/>.</param>
     /// <param name="workspaceRoot">Workspace the conversation belongs to; recorded for the auto-save slot.</param>
     /// <param name="currentName">The named session the conversation lives in; recorded for the auto-save slot.</param>
+    /// <param name="templateSuffix">The <c>/template</c> mode the conversation is held in, restored with it.</param>
     public async Task SaveAsync(string sessionName, IEnumerable<SavedMessage> messages, CancellationToken ct,
                                 string? parent = null, int? forkTurn = null, string? workspaceRoot = null,
-                                string? currentName = null)
+                                string? currentName = null, string? templateSuffix = null)
     {
         Directory.CreateDirectory(Dir);
         var file = SessionPath(sessionName);
         var payload = new SessionData(DateTime.UtcNow, messages.ToList(), parent, forkTurn,
                                       string.IsNullOrWhiteSpace(workspaceRoot) ? null : workspaceRoot,
-                                      string.IsNullOrWhiteSpace(currentName) ? null : currentName);
+                                      string.IsNullOrWhiteSpace(currentName) ? null : currentName,
+                                      string.IsNullOrWhiteSpace(templateSuffix) ? null : templateSuffix);
 
         // Write-then-rename: a crash (or a full disk) mid-write must not leave a truncated
         // session behind. It matters more since /branch rewrites the parent file on every fork —
@@ -80,8 +83,9 @@ internal class ConversationStore
 
     /// Auto-saves the current session to "last_session.json".
     public Task AutoSaveAsync(IEnumerable<SavedMessage> messages, CancellationToken ct, string? workspaceRoot = null,
-                              string? currentName = null) =>
-        SaveAsync("last_session", messages, ct, workspaceRoot: workspaceRoot, currentName: currentName);
+                              string? currentName = null, string? templateSuffix = null) =>
+        SaveAsync("last_session", messages, ct, workspaceRoot: workspaceRoot, currentName: currentName,
+                  templateSuffix: templateSuffix);
 
     /// <summary>
     /// Empties the auto-save slot when it holds THIS workspace's conversation — the one the user has just discarded
@@ -100,14 +104,50 @@ internal class ConversationStore
     }
 
     /// Loads a session by file name (without extension).
+    /// <exception cref="UnreadableSessionException">The file is damaged: a copy is kept, and the message says where.</exception>
     public async Task<SessionData?> LoadAsync(string sessionName, CancellationToken ct)
     {
         var file = SessionPath(sessionName);
         if (!File.Exists(file)) return null;
-        await using var stream = OpenSessionForRead(file);
-        using var reader = new StreamReader(stream);
-        var json = await reader.ReadToEndAsync(ct);
-        return JsonSerializer.Deserialize<SessionData>(json, _opts);
+        string json;
+        await using (var stream = OpenSessionForRead(file))
+        using (var reader = new StreamReader(stream))
+            json = await reader.ReadToEndAsync(ct);
+        try
+        {
+            return JsonSerializer.Deserialize<SessionData>(json, _opts);
+        }
+        catch (JsonException ex)
+        {
+            // ⚠ Damaged, the file is still the conversation — and the auto-save slot is rewritten at the next turn of
+            // either editor, the conversation then gone for good. A copy out of the session list keeps it.
+            throw new UnreadableSessionException(sessionName, SetAside(file), ex);
+        }
+    }
+
+    /// <summary>
+    /// A copy of a session file that cannot be read, next to it under a name the session list does not read
+    /// (<c>.unreadable-…</c>); the copy already made of the same bytes is reused. <c>null</c> when none could be made.
+    /// </summary>
+    private static string? SetAside(string file)
+    {
+        try
+        {
+            var bytes = File.ReadAllBytes(file);
+            var dir   = Path.GetDirectoryName(file)!;
+            var name  = Path.GetFileName(file);
+            foreach (var kept in Directory.EnumerateFiles(dir, name + ".unreadable-*"))
+                if (File.ReadAllBytes(kept).AsSpan().SequenceEqual(bytes)) return kept;
+            var aside = file + ".unreadable-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss",
+                                                                         System.Globalization.CultureInfo.InvariantCulture);
+            AtomicFile.WriteAllBytes(aside, bytes);
+            return aside;
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("ConversationStore.SetAside", ex);
+            return null;
+        }
     }
 
     /// <summary>The file a session name maps to in this instance's folder.</summary>
@@ -246,6 +286,14 @@ internal class ConversationStore
         string.Concat(name.Select(c => _invalidChars.Contains(c) ? '_' : c));
 }
 
+/// <summary>A session file that is there but cannot be read; its message, in the user's language, says where the copy
+/// kept of it is.</summary>
+internal sealed class UnreadableSessionException(string sessionName, string? copy, Exception inner)
+    : Exception(copy is null ? Strings.SessionLoadFailed(sessionName) : Strings.SessionUnreadableKept(sessionName, copy), inner)
+{
+    public string? Copy { get; } = copy;
+}
+
 /// <summary>A session file. <c>Parent</c>/<c>ForkTurn</c> are set only on a branch
 /// (<c>/branch</c>); older files simply have neither, which keeps the format backward compatible.
 /// <c>WorkspaceRoot</c> is recorded on the auto-save slot only — see
@@ -258,7 +306,10 @@ internal record SessionData(
     [property: JsonPropertyName("workspace_root")] string? WorkspaceRoot = null,
     // The named session the auto-saved conversation lives in (last_session only): restored with it, so /branch keeps
     // writing to that session after a restart instead of starting a new dated copy.
-    [property: JsonPropertyName("current_name")]   string? CurrentName   = null);
+    [property: JsonPropertyName("current_name")]   string? CurrentName   = null,
+    // ⚠ The /template mode the conversation was held in: its greeting ("Code Review mode active") is in the messages, so
+    // a load that drops the mode shows a mode no answer follows — a restart of VS Code's host reloads every time.
+    [property: JsonPropertyName("template_suffix")] string? TemplateSuffix = null);
 
 internal record SavedMessage(
     [property: JsonPropertyName("role")]      string  Role,

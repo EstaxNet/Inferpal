@@ -334,6 +334,17 @@ Kopia zapasowa: {0}</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>dołącz stan debugera (stos, zmienne, wyjątek)</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ Brak wstrzymanej sesji debugowania. Najpierw zatrzymaj się na punkcie przerwania lub wyjątku, potem użyj @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Schowek jest pusty.</value></data>
+  <data name="SessionUnreadableKept" xml:space="preserve"><value>⚠ Nie udało się odczytać sesji „{0}” — jej plik jest uszkodzony, niczego nie wczytano. Zachowano kopię: {1}</value></data>
+  <data name="ClipboardNotCopied" xml:space="preserve"><value>⚠ NIE skopiowano: inny program trzyma schowek, w którym wciąż jest poprzednia zawartość — nie wklejaj jej. Spróbuj ponownie za chwilę.</value></data>
+  <data name="MentionProblemsNotBuilt" xml:space="preserve"><value>Nic nie dołączono dla @problems — nie uruchomiono kompilacji: {0}</value></data>
+  <data name="StoppedWorkNotice" xml:space="preserve"><value>⚠ Ponowne uruchomienie Inferpal zatrzymało to, co jeszcze działało — nic z tego nie zachowano, uruchom to ponownie, jeśli nadal tego potrzebujesz:
+{0}</value></data>
+  <data name="StoppedWorkTask" xml:space="preserve"><value>zadanie w tle {0} — {1}</value></data>
+  <data name="StoppedWorkCommand" xml:space="preserve"><value>polecenie w tle {0} — {1}</value></data>
+  <data name="StoppedWorkDocs" xml:space="preserve"><value>indeksowanie źródła dokumentacji {0} (`/docs reindex {0}`)</value></data>
+  <data name="MentionDiffUnavailable" xml:space="preserve"><value>Nic nie dołączono dla @diff — {0}</value></data>
+  <data name="MentionDiffEmpty" xml:space="preserve"><value>Nic nie dołączono dla @diff: brak niezatwierdzonych zmian w śledzonym pliku. Nowy plik, którego nigdy nie dodano do git, nie należy do diffu — dołącz go przez @file.</value></data>
+  <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — pierwsze {1} z {2} znaków</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Nie udało się niczego dołączyć dla @{0}.</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>„{0}” to plik, nie folder — dołącz go przez @file.</value></data>
   <data name="SlashToolNoOutput" xml:space="preserve"><value>Gotowe — brak wyjścia.</value></data>

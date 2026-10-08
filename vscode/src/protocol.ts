@@ -140,6 +140,11 @@ export interface BackendStatusResult {
   refused?: string | null;
 }
 
+/** `host/runningWork` — what the host runs beyond a turn, as the notice to show once it is stopped. */
+export interface RunningWorkResult {
+  notice?: string | null;
+}
+
 /** `models/adoptDefault` — the model now used in place of a default nobody chose and the backend lacks, with the
  *  sentence that says so (already localized); both null when nothing changed. */
 export interface ModelsAdoptResult {

@@ -216,6 +216,10 @@ internal sealed record BackendStatusResult(bool Connected, string VramBadge, str
 /// the sentence that says so; both null when nothing changed.</summary>
 internal sealed record ModelsAdoptResult(string? Model, string? Notice);
 
+/// <summary>`host/runningWork` — what this host runs beyond a turn, as the notice to show once it is stopped (null when
+/// nothing runs).</summary>
+internal sealed record RunningWorkResult(string? Notice);
+
 /// <summary>`models/useForSession` — the window's chat model, set for the host session without being saved.</summary>
 internal sealed record ModelUseParams(string Model);
 

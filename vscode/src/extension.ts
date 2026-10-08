@@ -96,6 +96,23 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   await startHost(context, chatView, log, false);
 }
 
+/** The host's notice for the work it is running, or undefined — never waited on for more than two seconds: a host
+ *  that does not answer is being stopped anyway. */
+async function stoppedWorkNotice(client: HostClient): Promise<string | undefined> {
+  if (!client.isRunning) {
+    return undefined;
+  }
+  try {
+    const result = await Promise.race([
+      client.runningWork(),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000)),
+    ]);
+    return result?.notice ?? undefined;
+  } catch {
+    return undefined;   // the host is going away; its stop is what matters here
+  }
+}
+
 /**
  * Pushes the explicitly-set Model Router settings (utility model + auto mode) into the host's
  * shared config. Read-modify-write on the full JSON: `config/update` replaces the whole config
@@ -164,9 +181,15 @@ async function startHostCore(
   interactive: boolean,
 ): Promise<void> {
   if (host) {
+    // What runs in the host beyond a turn (a /task, a background command, a docs indexing pass) dies with it: asked
+    // before the stop, said once it is done — nothing else would.
+    const stopped = await stoppedWorkNotice(host);
     await host.stop();
     host = undefined;
     chatView.onHostStopped();
+    chatView.sayStoppedWork(stopped);
+    // The host's record of the breakpoints its agent set died with it: they go with it.
+    debugBridge?.releaseAgentBreakpoints();
   }
 
   const rootDir = workspaceRoot();
@@ -216,6 +239,8 @@ async function startHostCore(
       log,
       onCrash: () => {
         host = undefined;
+        // The breakpoints its agent set go with the host, as on a restart: no one is left to remove them.
+        debugBridge?.releaseAgentBreakpoints();
         // vscode-jsonrpc does not cancel the host's pending requests to us: without this, an
         // approval card of the dead host stays clickable, and hydrate re-posts it on every reveal.
         chatView.onHostStopped();

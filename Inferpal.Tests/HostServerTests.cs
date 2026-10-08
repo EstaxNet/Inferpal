@@ -2708,10 +2708,11 @@ public partial class HostServerTests
     [InlineData("/clear")]
     [InlineData("chat/reset")]
     [InlineData("session/load")]
-    [InlineData("session/branch")]
     public async Task ANewConversation_LeavesTheTemplateModeBehind(string how)
     {
-        // VS leaves the /template mode on /clear, session load and /branch; the host kept it in the system prompt, with nothing on screen.
+        // A new conversation, or another one loaded that was held in no mode, leaves the /template mode behind, as VS does;
+        // the host kept it in the system prompt, with nothing on screen. (A conversation HELD in the mode is reloaded in
+        // it, and a branch keeps it: TemplateRestoredWithConversationTests.)
         using var h = CreateHarness();
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
         await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
@@ -2739,8 +2740,9 @@ public partial class HostServerTests
                     await h.Client.InvokeAsync("chat/reset").WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
                     break;
                 case "session/load":
-                    await h.Client.InvokeWithParameterObjectAsync<object?>("session/save", new { name, messages })
-                        .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+                    // A conversation saved in no mode (written as the other editor or an older version would).
+                    await h.Server.CurrentSession!.Store.SaveAsync(name,
+                        [new("user", "first"), new("assistant", "answer one")], CancellationToken.None);
                     await h.Client.InvokeWithParameterObjectAsync<SessionLoadResult?>(
                         "session/load", new { name }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
                     break;

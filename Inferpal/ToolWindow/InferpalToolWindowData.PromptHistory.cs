@@ -108,7 +108,7 @@ internal partial class InferpalToolWindowData
 
             await RunOnVMContextAsync(() =>
             {
-                RestoreConversation(session.Messages, target);
+                RestoreConversation(session.Messages, target, session.TemplateSuffix);
                 RefreshSessionsList();
                 ScrollToBottom();
             });
@@ -122,15 +122,16 @@ internal partial class InferpalToolWindowData
 
         // The parent goes to disk first — with the conversation as it stands now, which may have
         // moved on since it was loaded: forking must never be what loses the discarded half.
+        var templateSuffix = _activeTemplateSuffix;   // the branch is the same conversation, cut: same mode
         await _store.SaveAsync(plan.ParentName, plan.ParentMessages, ct,
-                               parent: plan.ParentParent, forkTurn: plan.ParentForkTurn);
+                               parent: plan.ParentParent, forkTurn: plan.ParentForkTurn, templateSuffix: templateSuffix);
 
         await _store.SaveAsync(plan.BranchName, plan.BranchMessages, ct,
-                               parent: plan.ParentName, forkTurn: plan.ForkTurn);
+                               parent: plan.ParentName, forkTurn: plan.ForkTurn, templateSuffix: templateSuffix);
 
         await RunOnVMContextAsync(() =>
         {
-            RestoreConversation(plan.BranchMessages, plan.BranchName);
+            RestoreConversation(plan.BranchMessages, plan.BranchName, templateSuffix);
             RefreshSessionsList();
             ScrollToBottom();
         });

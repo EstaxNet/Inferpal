@@ -334,6 +334,17 @@ Sicherung: {0}</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>Debugger-Zustand anhängen (Stack, Variablen, Ausnahme)</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ Keine angehaltene Debugsitzung. Erreiche zuerst einen Haltepunkt oder eine Ausnahme, dann nutze @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Zwischenablage ist leer.</value></data>
+  <data name="SessionUnreadableKept" xml:space="preserve"><value>⚠ Die Sitzung „{0}“ konnte nicht gelesen werden — ihre Datei ist beschädigt, nichts wurde geladen. Eine Kopie wurde aufbewahrt: {1}</value></data>
+  <data name="ClipboardNotCopied" xml:space="preserve"><value>⚠ NICHT kopiert: Ein anderes Programm hält die Zwischenablage, die noch den vorherigen Inhalt hat — nicht einfügen. Versuchen Sie es gleich noch einmal.</value></data>
+  <data name="MentionProblemsNotBuilt" xml:space="preserve"><value>Für @problems wurde nichts angehängt — es lief kein Build: {0}</value></data>
+  <data name="StoppedWorkNotice" xml:space="preserve"><value>⚠ Der Neustart von Inferpal hat beendet, was noch lief — nichts davon wurde behalten. Starten Sie es erneut, wenn Sie es noch brauchen:
+{0}</value></data>
+  <data name="StoppedWorkTask" xml:space="preserve"><value>Hintergrundaufgabe {0} — {1}</value></data>
+  <data name="StoppedWorkCommand" xml:space="preserve"><value>Hintergrundbefehl {0} — {1}</value></data>
+  <data name="StoppedWorkDocs" xml:space="preserve"><value>Indizierung der Dokumentationsquelle {0} (`/docs reindex {0}`)</value></data>
+  <data name="MentionDiffUnavailable" xml:space="preserve"><value>Für @diff wurde nichts angehängt — {0}</value></data>
+  <data name="MentionDiffEmpty" xml:space="preserve"><value>Für @diff wurde nichts angehängt: Es gibt keine nicht committete Änderung an einer verfolgten Datei. Eine neue Datei, die nie zu git hinzugefügt wurde, gehört nicht zu einem Diff — hängen Sie sie mit @file an.</value></data>
+  <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — die ersten {1} von {2} Zeichen</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Für @{0} konnte nichts angehängt werden.</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>„{0}“ ist eine Datei, kein Ordner — hänge sie mit @file an.</value></data>
   <data name="SlashToolNoOutput" xml:space="preserve"><value>Fertig — keine Ausgabe.</value></data>

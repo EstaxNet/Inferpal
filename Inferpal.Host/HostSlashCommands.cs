@@ -769,9 +769,10 @@ internal sealed partial class HostServer
                 }
                 case "diff":
                 {
-                    var diff = await s.Tools.ExecuteAsync(
-                        "get_git_status", JsonSerializer.SerializeToElement(new { include_diff = true }), ct);
-                    return new MentionResolveResult("📊 git diff", diff);
+                    // Decided on the report's state: no repository, git refusing or no change is a notice, not a chip.
+                    var report = await s.Tools.GitStatus.ReportAsync(null, includeDiff: true, diffPath: null, ct);
+                    var diff   = MentionController.DiffMention(report, "📊 git diff");
+                    return new MentionResolveResult(diff.Label, diff.Content, diff.Notice);
                 }
                 case "debugger":
                 {

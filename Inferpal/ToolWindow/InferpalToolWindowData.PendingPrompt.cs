@@ -121,14 +121,16 @@ internal partial class InferpalToolWindowData
 
     // ── Helpers ────────────────────────────────────────────────────────────────
 
-    private async Task SaveNamedSessionAsync(string firstUserContent, List<SavedMessage> snapshot)
+    /// <param name="templateSuffix">The mode the conversation was held in, read with the snapshot: by the time the title
+    /// comes back, the mode is already the new conversation's.</param>
+    private async Task SaveNamedSessionAsync(string firstUserContent, List<SavedMessage> snapshot, string templateSuffix)
     {
         try
         {
             var title = await GenerateSessionTitleAsync(firstUserContent);
             var name  = SessionManager.UniqueSessionName(
                 SessionManager.SessionFileName(DateTime.Now, title), _store.ListSessions());
-            await _store.SaveAsync(name, snapshot, CancellationToken.None);
+            await _store.SaveAsync(name, snapshot, CancellationToken.None, templateSuffix: templateSuffix);
             await RunOnVMContextAsync(RefreshSessionsList);
         }
         catch (Exception ex)
@@ -159,13 +161,16 @@ internal partial class InferpalToolWindowData
         try
         {
             List<SavedMessage> snapshot = [];
+            var templateSuffix = string.Empty;
             await RunOnVMContextAsync(() =>
             {
                 snapshot = SessionManager.BuildSnapshot(
                     Messages.Select(m => (m.Role, m.Content, m.ToolName, m.Timestamp)));
+                templateSuffix = _activeTemplateSuffix;
             });
             await _store.AutoSaveAsync(snapshot, CancellationToken.None, _indexService.RootDir,
-                                       currentName: string.IsNullOrEmpty(_currentSessionName) ? null : _currentSessionName);
+                                       currentName: string.IsNullOrEmpty(_currentSessionName) ? null : _currentSessionName,
+                                       templateSuffix: templateSuffix);
             _autoSaveFailureTold = false;
         }
         catch (Exception ex)

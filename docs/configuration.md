@@ -29,6 +29,13 @@ without a word on screen, which model answers or how are never hidden.
 > The system prompt is rebuilt before every question: an edit to the custom system prompt or to
 > `.inferpal/context.md` applies from the next one — no need to clear the conversation.
 
+> [!NOTE]
+> **Visual Studio, VS Code and every open window share one `config.json`.** A save writes only the settings that
+> window changed, and the lists — pinned files, approval rules, your slash commands and agent tools, MCP servers,
+> documentation sources — are merged item by item: a file pinned in one window and an MCP server added in another
+> both stay. An item both windows changed keeps the last save. A value Inferpal fills in by itself (the graphics memory
+> it detects, the model it picks on a first start) never replaces one set in another window meanwhile.
+
 ## Config key reference
 
 Every persisted setting, its type, and default value.

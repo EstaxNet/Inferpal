@@ -134,6 +134,7 @@ internal class InferpalConfig
     /// Newline-separated list of absolute file paths (max 3) always injected into the system prompt.
     /// Each file's content is read on every request and prepended as a named context block.
     /// </summary>
+    [CollectionSetting(CollectionShape.Lines)]
     [JsonPropertyName("pinnedContextFiles")]
     public string PinnedContextFiles { get; set; } = string.Empty;
 
@@ -141,6 +142,7 @@ internal class InferpalConfig
     /// User-defined slash command templates, one per line in the format <c>/name=text</c>.
     /// Use <c>{args}</c> as a placeholder for extra words typed after the command name.
     /// </summary>
+    [CollectionSetting(CollectionShape.Lines)]
     [JsonPropertyName("promptTemplates")]
     public string PromptTemplates { get; set; } = string.Empty;
 
@@ -149,6 +151,7 @@ internal class InferpalConfig
     /// The tool name must be snake_case. The command runs in PowerShell with an optional
     /// <c>args</c> parameter appended when the model provides extra arguments.
     /// </summary>
+    [CollectionSetting(CollectionShape.Lines)]
     [JsonPropertyName("customTools")]
     public string CustomTools { get; set; } = string.Empty;
 
@@ -160,6 +163,7 @@ internal class InferpalConfig
     /// interactive prompt. Evaluated before the workspace <c>.inferpal/permissions.json</c> overlay;
     /// first match wins. A built-in denylist of catastrophic shell commands always applies on top.
     /// </summary>
+    [CollectionSetting(CollectionShape.Lines)]
     [JsonPropertyName("permissionRules")]
     public string PermissionRules { get; set; } = string.Empty;
 
@@ -311,6 +315,7 @@ internal class InferpalConfig
     /// <code>{ "filesystem": { "command": "npx", "args": ["-y","@modelcontextprotocol/server-filesystem","C:\\dev"], "env": {} } }</code>
     /// Empty = no servers. Parsed by <see cref="Services.Mcp.McpServerConfig.Parse"/>.
     /// </summary>
+    [CollectionSetting(CollectionShape.JsonObjectByName)]
     [JsonPropertyName("mcpServersJson")]
     public string McpServersJson { get; set; } = string.Empty;
 
@@ -324,6 +329,7 @@ internal class InferpalConfig
     /// retrieve relevant passages. Parsed by <see cref="Services.Docs.DocSite.Parse"/>.
     /// Embeddings reuse <see cref="RagEmbeddingModel"/>.
     /// </summary>
+    [CollectionSetting(CollectionShape.JsonArrayById)]
     [JsonPropertyName("docSitesJson")]
     public string DocSitesJson { get; set; } = string.Empty;
 
@@ -670,7 +676,7 @@ internal class InferpalConfig
     /// <summary>
     /// <paramref name="onDisk"/>, with every setting <paramref name="mine"/> changed since
     /// <paramref name="baseline"/> laid over it. A setting both sides changed goes to
-    /// <paramref name="mine"/>.
+    /// <paramref name="mine"/> — element by element for a collection (<see cref="CollectionSettingAttribute"/>).
     /// </summary>
     internal static System.Text.Json.Nodes.JsonObject MergeChanges(
         System.Text.Json.Nodes.JsonObject onDisk,
@@ -679,13 +685,60 @@ internal class InferpalConfig
     {
         var merged = (System.Text.Json.Nodes.JsonObject)onDisk.DeepClone();
         foreach (var (key, value) in mine)
-            if (!System.Text.Json.Nodes.JsonNode.DeepEquals(value, baseline[key]))
-                merged[key] = value?.DeepClone();
+        {
+            if (System.Text.Json.Nodes.JsonNode.DeepEquals(value, baseline[key])) continue;
+            merged[key] = CollectionSettings.TryGetValue(key, out var shape)
+                          && !System.Text.Json.Nodes.JsonNode.DeepEquals(onDisk[key], baseline[key])
+                          && CollectionMerge.Merge(shape, Text(baseline[key]), Text(onDisk[key]), Text(value)) is { } both
+                ? System.Text.Json.Nodes.JsonValue.Create(both)
+                : value?.DeepClone();
+        }
         return merged;
     }
 
+    private static string Text(System.Text.Json.Nodes.JsonNode? node) =>
+        node is System.Text.Json.Nodes.JsonValue v && v.TryGetValue<string>(out var s) ? s : string.Empty;
+
+    /// <summary>The JSON key of every setting that holds a collection, with its shape — read from the properties.</summary>
+    internal static readonly IReadOnlyDictionary<string, CollectionShape> CollectionSettings =
+        typeof(InferpalConfig).GetProperties()
+            .Select(p => (Json: p.GetCustomAttributes(typeof(JsonPropertyNameAttribute), false).OfType<JsonPropertyNameAttribute>().FirstOrDefault(),
+                          Shape: p.GetCustomAttributes(typeof(CollectionSettingAttribute), false).OfType<CollectionSettingAttribute>().FirstOrDefault()))
+            .Where(x => x.Json is not null && x.Shape is not null)
+            .ToDictionary(x => x.Json!.Name, x => x.Shape!.Shape, StringComparer.Ordinal);
+
     /// <summary>What this instance holds now, in the shape it is written.</summary>
     internal System.Text.Json.Nodes.JsonObject SnapshotNow() => Snapshot(this);
+
+    /// <summary>
+    /// Before an AUTOMATIC decision fills a setting nobody set (a first run, a model adopted, a VRAM budget detected):
+    /// when this copy still holds the setting's factory value and the FILE holds another, this copy takes the file's.
+    /// </summary>
+    /// <param name="property">The C# property name (<c>nameof</c>).</param>
+    /// <returns><c>true</c> when the file's value was taken — the decision is then the other window's, already made.</returns>
+    /// <remarks>
+    /// ⚠ Every window of both editors keeps its own copy, read once. "Still unset?" asked of this copy alone said yes
+    /// after the other window had set it — a budget the user typed, a model they picked — and the automatic value was
+    /// written over it.
+    /// </remarks>
+    internal bool FillFromFile(string property)
+    {
+        var p = typeof(InferpalConfig).GetProperty(property)
+                ?? throw new ArgumentException($"No setting named {property}.", nameof(property));
+        var key = p.GetCustomAttributes(typeof(JsonPropertyNameAttribute), false)
+                   .OfType<JsonPropertyNameAttribute>().Single().Name;
+
+        var factory = Snapshot(new InferpalConfig())[key];
+        if (!System.Text.Json.Nodes.JsonNode.DeepEquals(Snapshot(this)[key], factory)) return false;   // set here: it stands
+        if (!TryReadSnapshot(SavePathForTests ?? EffectiveConfigPath, out var onDisk)
+            || System.Text.Json.Nodes.JsonNode.DeepEquals(onDisk[key], factory))
+            return false;
+
+        p.SetValue(this, onDisk[key].Deserialize(p.PropertyType));
+        // Taken from the file, so not a change of this copy: a later save leaves it to the file.
+        if (_baseline is not null) _baseline[key] = onDisk[key]?.DeepClone();
+        return true;
+    }
 
     /// <summary>
     /// Sets <see cref="DefaultModel"/> for this instance's life without it ever being saved: a later

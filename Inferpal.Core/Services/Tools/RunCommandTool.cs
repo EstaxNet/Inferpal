@@ -18,6 +18,10 @@ internal sealed class RunCommandTool : ITool, IDisposable
     private readonly ShellSession _session;
     private readonly BackgroundShellRegistry _background = new();
 
+    /// <summary>The background commands still running — they die with this process.</summary>
+    internal IReadOnlyList<(string Id, string Command)> RunningJobs =>
+        _background.List().Where(j => j.Running).Select(j => (j.Id, j.Command)).ToList();
+
     public RunCommandTool(IApprovalService approval, InferpalConfig config, Func<string> root)
     {
         _approval = approval;

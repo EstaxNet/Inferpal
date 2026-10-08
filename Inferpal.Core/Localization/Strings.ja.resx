@@ -334,6 +334,17 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>デバッガーの状態を添付（スタック、変数、例外）</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ 一時停止中のデバッグセッションがありません。まずブレークポイントまたは例外で停止してから @debugger を使用してください。</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ クリップボードが空です。</value></data>
+  <data name="SessionUnreadableKept" xml:space="preserve"><value>⚠ セッション「{0}」を読み込めませんでした — ファイルが破損しているため、何も読み込まれていません。コピーを保存しました: {1}</value></data>
+  <data name="ClipboardNotCopied" xml:space="preserve"><value>⚠ コピーされていません: 別のプログラムがクリップボードを使用中で、以前の内容が残っています — 貼り付けないでください。少し待ってから再試行してください。</value></data>
+  <data name="MentionProblemsNotBuilt" xml:space="preserve"><value>@problems には何も添付されていません — ビルドは実行されていません: {0}</value></data>
+  <data name="StoppedWorkNotice" xml:space="preserve"><value>⚠ Inferpal の再起動で、まだ実行中だった処理が停止しました — 何も保持されていません。必要なら再度開始してください:
+{0}</value></data>
+  <data name="StoppedWorkTask" xml:space="preserve"><value>バックグラウンドタスク {0} — {1}</value></data>
+  <data name="StoppedWorkCommand" xml:space="preserve"><value>バックグラウンドコマンド {0} — {1}</value></data>
+  <data name="StoppedWorkDocs" xml:space="preserve"><value>ドキュメントソース {0} のインデックス作成 (`/docs reindex {0}`)</value></data>
+  <data name="MentionDiffUnavailable" xml:space="preserve"><value>@diff には何も添付されていません — {0}</value></data>
+  <data name="MentionDiffEmpty" xml:space="preserve"><value>@diff には何も添付されていません: 追跡対象ファイルに未コミットの変更はありません。git に一度も追加されていない新しいファイルは diff に含まれません — @file で添付してください。</value></data>
+  <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — {2} 文字中の先頭 {1} 文字</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>@{0} に添付できるものがありませんでした。</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>「{0}」はフォルダーではなくファイルです。@file で添付してください。</value></data>
   <data name="SlashToolNoOutput" xml:space="preserve"><value>完了 — 出力はありません。</value></data>

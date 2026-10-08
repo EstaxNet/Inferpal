@@ -1,4 +1,5 @@
 ﻿{
+  "⚠ The last conversation could not be restored: {0}": "⚠ Die letzte Unterhaltung konnte nicht wiederhergestellt werden: {0}",
   "Inferpal is starting — the settings load as soon as it is ready.": "Inferpal startet — die Einstellungen werden geladen, sobald es bereit ist.",
   "A turn is still running — wait for it to finish or stop it, then try again.": "Ein Durchlauf läuft noch — warten Sie, bis er fertig ist, oder beenden Sie ihn, und versuchen Sie es dann erneut.",
   "Inferpal is starting — your message is sent as soon as it is ready.": "Inferpal startet — Ihre Nachricht wird gesendet, sobald es bereit ist.",

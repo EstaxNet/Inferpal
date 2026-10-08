@@ -334,6 +334,17 @@
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>прикрепить состояние отладчика (стек, переменные, исключение)</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ Нет приостановленной сессии отладки. Сначала остановитесь на точке останова или исключении, затем используйте @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Буфер обмена пуст.</value></data>
+  <data name="SessionUnreadableKept" xml:space="preserve"><value>⚠ Не удалось прочитать сеанс «{0}» — его файл повреждён, ничего не загружено. Копия сохранена: {1}</value></data>
+  <data name="ClipboardNotCopied" xml:space="preserve"><value>⚠ НЕ скопировано: буфер обмена занят другой программой, в нём осталось прежнее содержимое — не вставляйте его. Повторите через минуту.</value></data>
+  <data name="MentionProblemsNotBuilt" xml:space="preserve"><value>Для @problems ничего не прикреплено — сборка не выполнялась: {0}</value></data>
+  <data name="StoppedWorkNotice" xml:space="preserve"><value>⚠ Перезапуск Inferpal остановил то, что ещё выполнялось — ничего не сохранилось, запустите заново, если это ещё нужно:
+{0}</value></data>
+  <data name="StoppedWorkTask" xml:space="preserve"><value>фоновая задача {0} — {1}</value></data>
+  <data name="StoppedWorkCommand" xml:space="preserve"><value>фоновая команда {0} — {1}</value></data>
+  <data name="StoppedWorkDocs" xml:space="preserve"><value>индексация источника документации {0} (`/docs reindex {0}`)</value></data>
+  <data name="MentionDiffUnavailable" xml:space="preserve"><value>Для @diff ничего не прикреплено — {0}</value></data>
+  <data name="MentionDiffEmpty" xml:space="preserve"><value>Для @diff ничего не прикреплено: в отслеживаемых файлах нет незакоммиченных изменений. Новый файл, который ни разу не добавляли в git, не входит в diff — прикрепите его через @file.</value></data>
+  <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — первые {1} из {2} символов</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Для @{0} не удалось ничего прикрепить.</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>«{0}» — это файл, а не папка: прикрепите его через @file.</value></data>
   <data name="SlashToolNoOutput" xml:space="preserve"><value>Готово — вывода нет.</value></data>

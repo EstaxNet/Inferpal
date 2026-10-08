@@ -645,6 +645,16 @@ internal sealed partial class HostServer : IDisposable
         return new PinsResult(Services.Prompting.PinnedFilesPolicy.ParseActive(s.Config.PinnedContextFiles), notice);
     }
 
+    /// <summary>
+    /// What this host runs beyond a turn — background tasks, background commands, a documentation indexing pass — as the
+    /// notice the adapter shows once it has stopped the host (<see cref="StoppedWork"/>). Asked just before a restart:
+    /// all three die with this process, and nothing else would say so.
+    /// </summary>
+    [JsonRpcMethod("host/runningWork")]
+    public RunningWorkResult RunningWork() => _session is not { } s
+        ? new RunningWorkResult(null)
+        : new RunningWorkResult(StoppedWork.Notice(s.UnfinishedTasks, s.Tools.RunningJobs, s.Docs.IndexingSiteId));
+
     [JsonRpcMethod("chat/reset")]
     public void ChatReset()
     {
@@ -860,6 +870,9 @@ internal sealed partial class HostServer : IDisposable
     /// without it the model just downloaded was not used until the next start.</summary>
     private static async Task<ModelsAdoptResult> AdoptDefaultModelAsync(HostSession s, CancellationToken ct)
     {
+        // A model chosen in another window since this host read the settings is that choice, not a default to replace.
+        if (s.Config.FillFromFile(nameof(InferpalConfig.DefaultModel)))
+            return new ModelsAdoptResult(s.Config.DefaultModel, null);
         var listed = await s.Client.ListModelsAsync(ct);
         if (ModelCatalog.FirstModelToAdopt(s.Config, listed) is not { } adopted)
             return new ModelsAdoptResult(null, null);
@@ -1113,7 +1126,8 @@ internal sealed partial class HostServer : IDisposable
             currentName = SessionManager.AutoSaveName(s.SessionNameKnown, s.CurrentSessionName, slot, s.RootDir);
         }
         await s.Store.SaveAsync(p.Name, p.Messages.Select(ToSaved), ct,
-                                workspaceRoot: p.Name == "last_session" ? s.RootDir : null, currentName: currentName);
+                                workspaceRoot: p.Name == "last_session" ? s.RootDir : null, currentName: currentName,
+                                templateSuffix: p.Archive ? s.DiscardedTemplateSuffix : s.TemplateSuffix);
     }
 
     /// <summary>Wire message → stored message (empty optional fields stay out of the JSON).</summary>
@@ -1161,7 +1175,7 @@ internal sealed partial class HostServer : IDisposable
             // is not this one's to restore.
             if (p.Name == "last_session" && !SessionManager.AutoSaveBelongsHere(data, s.RootDir)) return null;
 
-            s.TemplateSuffix     = null;
+            s.TemplateSuffix     = data.TemplateSuffix;   // the mode the conversation was held in, its greeting with it
             ForgetConversationState(s);
             s.History            = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), data.Messages);
             s.CurrentSessionName = p.Name == "last_session" ? data.CurrentName : p.Name;
@@ -1205,12 +1219,12 @@ internal sealed partial class HostServer : IDisposable
             // The parent is rewritten with the conversation as it stands now (it may have moved on
             // since it was loaded), keeping its own parent link when it is itself a branch.
             await s.Store.SaveAsync(plan.ParentName, plan.ParentMessages, token,
-                                    parent: plan.ParentParent, forkTurn: plan.ParentForkTurn);
+                                    parent: plan.ParentParent, forkTurn: plan.ParentForkTurn, templateSuffix: s.TemplateSuffix);
 
+            // The branch is the same conversation, cut: it keeps the mode its turns were held in.
             await s.Store.SaveAsync(plan.BranchName, plan.BranchMessages, token,
-                                    parent: plan.ParentName, forkTurn: plan.ForkTurn);
+                                    parent: plan.ParentName, forkTurn: plan.ForkTurn, templateSuffix: s.TemplateSuffix);
 
-            s.TemplateSuffix     = null;
             ForgetConversationState(s);
             s.History            = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), plan.BranchMessages);
             s.CurrentSessionName = plan.BranchName;
@@ -1510,6 +1524,7 @@ internal sealed partial class HostServer : IDisposable
     /// start.</remarks>
     private static void StartNewConversation(HostSession s, string? templateSuffix = null)
     {
+        s.DiscardedTemplateSuffix = s.TemplateSuffix;
         s.TemplateSuffix = templateSuffix;
         ResetHistory(s);
         _ = ForgetAutoSaveAsync(s);

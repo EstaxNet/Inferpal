@@ -229,6 +229,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.hostStarting = true;
   }
 
+  /** Called by the activator after it stopped a host: the work that host took with it, said in the thread. */
+  sayStoppedWork(notice: string | undefined): void {
+    if (notice) {
+      this.append({ role: 'assistant', text: notice, timestamp: ChatViewProvider.now(), notice: true });
+    }
+  }
+
   /** Called by the activator when the host could not start: what waited goes to the "not running" answer. */
   onHostStartFailed(): void {
     this.releaseQueuedPrompts();
@@ -453,7 +460,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           return; // applySession hydrates
         }
       } catch (err) {
+        // Said where the conversation is: the first turn's auto-save writes over the slot (the host kept a copy of a
+        // damaged file, and its message names it).
         this.log(`[chat] last-session restore failed: ${String(err)}`);
+        this.append({
+          role: 'assistant',
+          text: t('⚠ The last conversation could not be restored: {0}', ChatViewProvider.errorText(err)),
+          timestamp: ChatViewProvider.now(),
+          notice: true,
+        });
       }
     }
     this.hydrate();

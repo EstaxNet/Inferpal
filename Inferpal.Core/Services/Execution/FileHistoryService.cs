@@ -201,6 +201,9 @@ internal class FileHistoryService
     /// delete what it could not save.</remarks>
     internal async Task<(bool Saved, string Snapshot)> BackUpBeforeChangeAsync(string filePath, CancellationToken ct)
     {
+        bool firstInRun;
+        lock (_runLock) firstInRun = _currentRun is not null && !_currentRun.Has(filePath);
+
         if (!File.Exists(filePath))
         {
             // ⚠ Nothing to back up, and that is precisely the moment we know the write that follows
@@ -212,10 +215,73 @@ internal class FileHistoryService
             // re-injected into the system prompt of every later session. Said here, the property
             // holds for all eight callers instead of being a list to remember.
             NoteCreated(filePath);
+            Pending(new PendingWrite(filePath, Snapshot: null, Failed: false, firstInRun));
             return (true, string.Empty);
         }
         var snapshot = await SnapshotAsync(filePath, ct);
+        Pending(new PendingWrite(filePath, snapshot.Length > 0 ? snapshot : null, Failed: snapshot.Length == 0, firstInRun));
         return (snapshot.Length > 0, snapshot);
+    }
+
+    /// <summary>A backup taken for a write of the tool call in flight, checked when the call ends.</summary>
+    private sealed record PendingWrite(string Path, string? Snapshot, bool Failed, bool FirstInRun);
+
+    // The backups of the tool call in flight: async-local, so a call's own awaits keep its list and a parallel batch of
+    // reads (which never writes) has none of its own.
+    private static readonly AsyncLocal<List<PendingWrite>?> _callWrites = new();
+
+    private static void Pending(PendingWrite write) => _callWrites.Value?.Add(write);
+
+    /// <summary>
+    /// Brackets one tool call (<see cref="ToolRegistry.ExecuteAsync"/>): when it ends, each backup it took is checked
+    /// against the file, and a write that did not LAND leaves the run as if never attempted.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A file enters the run when its backup is taken — before the write. A read-only file (a TFVC or Perforce
+    /// checkout), a batch rolled back, a backup that failed (the write is then refused) or the same content written back
+    /// left it counted: "edited 1" on the result bar with Undo offered, no "edits without effect" notice, the plan step
+    /// marked done, a failed last check said to "a turn that changed files". Checked here, once, for every tool.
+    /// </remarks>
+    internal IDisposable TrackCall()
+    {
+        var writes = new List<PendingWrite>();
+        _callWrites.Value = writes;
+        return new CallScope(this, writes);
+    }
+
+    private sealed class CallScope(FileHistoryService owner, List<PendingWrite> writes) : IDisposable
+    {
+        public void Dispose()
+        {
+            _callWrites.Value = null;
+            foreach (var write in writes)
+            {
+                if (Landed(write)) continue;
+                lock (owner._runLock)
+                {
+                    // A failed backup was entered in the run without being counted as a write.
+                    if (!write.Failed) owner._currentRun?.UncountWrite();
+                    if (write.FirstInRun) owner._currentRun?.Forget(write.Path);
+                }
+            }
+        }
+    }
+
+    /// <summary>Whether a backed-up write changed the file. Unknown (unreadable) counts as landed, as before.</summary>
+    private static bool Landed(PendingWrite write)
+    {
+        try
+        {
+            if (write.Failed) return false;                          // refused: a change with no backup is never made
+            if (write.Snapshot is null) return File.Exists(write.Path); // a creation
+            if (!File.Exists(write.Path)) return true;               // a deletion
+            return !File.ReadAllBytes(write.Path).AsSpan().SequenceEqual(File.ReadAllBytes(write.Snapshot));
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("FileHistoryService.Landed", ex);
+            return true;
+        }
     }
 
     /// <summary>The model-facing refusal when <see cref="BackUpBeforeChangeAsync"/> could not save a backup.</summary>
@@ -746,6 +812,11 @@ internal sealed class HistoryRun
 
     public bool WasRead(string path) => _read.Contains(path);
 
+    public bool Has(string path) => _firstByPath.ContainsKey(path);
+
+    /// <summary>A file whose only write in the run did not land: out of the run, as if never attempted.</summary>
+    public void Forget(string path) => _firstByPath.Remove(path);
+
     public void RecordFirst(string originalPath, string? snapshot, bool snapshotFailed = false)
     {
         if (!_firstByPath.ContainsKey(originalPath))
@@ -764,6 +835,7 @@ internal sealed class HistoryRun
     // Every write, where _firstByPath keeps each file once. Mutated under FileHistoryService's run lock.
     public int WriteCount { get; private set; }
     public void CountWrite() => WriteCount++;
+    public void UncountWrite() => WriteCount = Math.Max(0, WriteCount - 1);
 
     /// <summary>Snapshot copy — safe to enumerate while the run is still recording.</summary>
     public IReadOnlyList<ToolCallRecord> ToolCalls

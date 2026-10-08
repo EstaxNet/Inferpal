@@ -40,6 +40,7 @@ import {
   MentionItem,
   MentionResolveResult,
   ModelsAdoptResult,
+  RunningWorkResult,
   PlanNotice,
   SavedMessage,
   SessionBranchCommandResult,
@@ -456,6 +457,10 @@ export class HostClient {
   }
 
   /** The default chat model, when nobody chose it and the backend lacks it, replaced by the best installed one. */
+  runningWork(): Promise<RunningWorkResult> {
+    return this.connection().sendRequest<RunningWorkResult>('host/runningWork');
+  }
+
   modelsAdoptDefault(): Promise<ModelsAdoptResult> {
     return this.connection().sendRequest<ModelsAdoptResult>('models/adoptDefault');
   }

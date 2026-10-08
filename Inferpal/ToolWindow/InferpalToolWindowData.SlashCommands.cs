@@ -582,8 +582,12 @@ internal partial class InferpalToolWindowData
                 WindowInUse: ContextWindowInUse),
             Services.Signals.InProcAliveSignal.IsLoadedOrNull());
 
-        if (result.CopyToClipboard is { } bundle)
-            ClipboardHelper.TrySet(bundle, "Clipboard.CopyDiagnostics");
+        // The message announces the copy: shown only over a copy that landed.
+        if (result.CopyToClipboard is { } bundle && !ClipboardHelper.TrySet(bundle, "Clipboard.CopyDiagnostics"))
+        {
+            await ShowInfoAsync(Strings.ClipboardNotCopied);
+            return;
+        }
 
         await ShowInfoAsync(result.Message);
     }
@@ -594,8 +598,12 @@ internal partial class InferpalToolWindowData
         // UI/OS side effects it returns — clipboard copy on an STA thread and the info bubble.
         var result = await Services.Commands.SnippetsCommandHandler.HandleAsync(parts, ct);
 
-        if (result.CopyToClipboard is { } code)
-            ClipboardHelper.TrySet(code, "Clipboard.CopySnippet");
+        // The message announces the copy: shown only over a copy that landed.
+        if (result.CopyToClipboard is { } code && !ClipboardHelper.TrySet(code, "Clipboard.CopySnippet"))
+        {
+            await ShowInfoAsync(Strings.ClipboardNotCopied);
+            return;
+        }
 
         await ShowInfoAsync(result.Message);
     }

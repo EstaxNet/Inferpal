@@ -335,6 +335,17 @@ Backup: {0}</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>attach debugger state (stack, locals, exception)</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ No paused debug session. Hit a breakpoint or exception first, then use @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Clipboard is empty.</value></data>
+  <data name="SessionUnreadableKept" xml:space="preserve"><value>⚠ Session "{0}" could not be read — its file is damaged, and nothing was loaded. A copy of it was kept: {1}</value></data>
+  <data name="ClipboardNotCopied" xml:space="preserve"><value>⚠ NOT copied: another program is holding the clipboard, which still has what was there before — do not paste it. Try again in a moment.</value></data>
+  <data name="MentionProblemsNotBuilt" xml:space="preserve"><value>Nothing attached for @problems — no build ran: {0}</value></data>
+  <data name="StoppedWorkNotice" xml:space="preserve"><value>⚠ Restarting Inferpal stopped what was still running — none of it was kept, start it again if you still need it:
+{0}</value></data>
+  <data name="StoppedWorkTask" xml:space="preserve"><value>background task {0} — {1}</value></data>
+  <data name="StoppedWorkCommand" xml:space="preserve"><value>background command {0} — {1}</value></data>
+  <data name="StoppedWorkDocs" xml:space="preserve"><value>indexing of the documentation source {0} (`/docs reindex {0}`)</value></data>
+  <data name="MentionDiffUnavailable" xml:space="preserve"><value>Nothing attached for @diff — {0}</value></data>
+  <data name="MentionDiffEmpty" xml:space="preserve"><value>Nothing attached for @diff: there is no uncommitted change to a tracked file. A new file that was never added to git is not part of a diff — attach it with @file.</value></data>
+  <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — first {1} of {2} characters</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Nothing could be attached for @{0}.</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>'{0}' is a file, not a folder — attach it with @file.</value></data>
   <data name="SlashToolNoOutput" xml:space="preserve"><value>Done — no output.</value></data>

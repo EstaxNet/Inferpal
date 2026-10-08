@@ -149,6 +149,11 @@ internal sealed class HostSession : IDisposable
     /// <c>_activeTemplateSuffix</c>); appended by the host's system-prompt builder.</summary>
     public string? TemplateSuffix { get; set; }
 
+    /// <summary>The <c>/template</c> mode of the conversation just discarded: the adapter archives that conversation
+    /// AFTER the reset (<c>session/save</c> with <c>archive</c>), when <see cref="TemplateSuffix"/> is already the new
+    /// one's.</summary>
+    public string? DiscardedTemplateSuffix { get; set; }
+
     /// <summary>Plan mode (`/plan`): read-only tool registry + plan-mode prompt suffix.</summary>
     public bool PlanMode { get; set; }
 
@@ -179,6 +184,9 @@ internal sealed class HostSession : IDisposable
         _tasks.TaskFinished += onFinished;
         return _tasks;
     }
+
+    /// <summary>The background tasks not finished yet — they die with this process.</summary>
+    public IReadOnlyList<BackgroundTaskSnapshot> UnfinishedTasks => _tasks?.List() ?? [];
 
     public void Dispose()
     {

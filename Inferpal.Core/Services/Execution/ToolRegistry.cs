@@ -297,6 +297,8 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         }
 
         var sw = System.Diagnostics.Stopwatch.StartNew();
+        // Every write this call backs up is checked when it ends: one that did not land leaves the run.
+        using var writes = _fileHistory.TrackCall();
         try
         {
             var result = await tool.ExecuteAsync(args, ct);
@@ -358,6 +360,13 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     }
 
     private void Register(ITool tool) => _tools[tool.Name] = tool;
+
+    /// <summary>The background commands <c>run_command</c> started that still run.</summary>
+    internal IReadOnlyList<(string Id, string Command)> RunningJobs =>
+        _tools.TryGetValue("run_command", out var tool) && tool is RunCommandTool run ? run.RunningJobs : [];
+
+    /// <summary>The git status tool, for a reader that decides on its structured report (the @diff mention).</summary>
+    internal GetGitStatusTool GitStatus => (GetGitStatusTool)_tools["get_git_status"];
 
     /// <summary>
     /// Disposes the tools that own OS resources (today: <c>run_command</c> and its detached

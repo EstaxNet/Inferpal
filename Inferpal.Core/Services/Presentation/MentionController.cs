@@ -2,11 +2,15 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using Inferpal.Localization;
+using Inferpal.Services.Tools;
 
 namespace Inferpal.Services.Presentation;
 
 /// <summary>Context-provider categories offered when typing <c>@</c> in the chat prompt.</summary>
 internal enum MentionKind { File, Code, Folder, Clipboard, Tree, Diff, Problems, Debugger }
+
+/// <summary>What a mention resolves to: a chip (label and content), or a notice when there is nothing to attach.</summary>
+internal readonly record struct MentionOutcome(string? Label, string? Content, string? Notice);
 
 /// <summary>
 /// One @mention category. <see cref="Desc"/> is a factory so the popup text follows the
@@ -109,6 +113,36 @@ internal static class MentionController
     /// <summary>Replaces the trailing partial token with the committed <c>@token␠</c> so the user types the query.</summary>
     public static string CommitCategory(string prompt, string token) =>
         MentionRegex.Replace(prompt, token + " ");
+
+    /// <summary>
+    /// What <c>@diff</c> attaches, decided on the git report's state, never on its text: the diff — its chip named as cut
+    /// when the report holds part of it — or a notice when there is nothing to attach.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Outside a repository, with git refusing, or with no change, the report is still a report: attached, it made a
+    /// chip that held no diff, and the question went to the model as if it carried one. And the diff is cut to one tool
+    /// result: the note that says so is written for the model, so the chip says it to the person.
+    /// </remarks>
+    internal static MentionOutcome DiffMention(GetGitStatusTool.Report report, string label) => report.Outcome switch
+    {
+        GetGitStatusTool.State.NotARepository or GetGitStatusTool.State.Refused
+            => new MentionOutcome(null, null, Strings.MentionDiffUnavailable(report.Refusal ?? report.Text)),
+        GetGitStatusTool.State.Clean => new MentionOutcome(null, null, Strings.MentionDiffEmpty),
+        _ => new MentionOutcome(
+            report.DiffCut ? Strings.MentionDiffCutLabel(label, report.DiffShown, report.DiffTotal) : label, report.Text, null),
+    };
+
+    /// <summary>
+    /// What <c>@problems</c> attaches in Visual Studio, decided on the build verdict's single reader: the build's answer,
+    /// or — when no build ran (no project to build, a build stopped at its time limit, a path refused) — a notice saying
+    /// why, never a chip whose text is that reason.
+    /// </summary>
+    /// <remarks>⚠ Attached as it came, "no project found" left a "⚠ @problems" chip, and the question went to the model as
+    /// if it carried the build's errors.</remarks>
+    internal static MentionOutcome ProblemsMention(string diagnostics, string label) =>
+        GetDiagnosticsTool.ReadVerdict(diagnostics) == GetDiagnosticsTool.BuildVerdict.NotBuilt
+            ? new MentionOutcome(null, null, Strings.MentionProblemsNotBuilt(ChatTurnPolicy.OneLinePreview(diagnostics, 240)))
+            : new MentionOutcome(label, diagnostics, null);
 
     /// <summary>Removes the trailing @mention token (committed <c>@file foo</c> or bare <c>@foo</c>).</summary>
     public static string StripMentionToken(string prompt)

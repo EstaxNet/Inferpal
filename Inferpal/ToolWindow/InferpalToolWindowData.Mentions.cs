@@ -313,15 +313,27 @@ internal partial class InferpalToolWindowData
                 }
                 case MentionKind.Diff:
                 {
-                    var diff = await _tools.ExecuteAsync(
-                        "get_git_status", MentionArgs(new { include_diff = true }), ct);
-                    await RunOnVMContextAsync(() => AddAttachment("📊 @diff", diff));
+                    // Decided on the report's state: no repository, git refusing or no change is a notice, not a chip.
+                    var report = await _tools.GitStatus.ReportAsync(null, includeDiff: true, diffPath: null, ct);
+                    var diff   = MentionController.DiffMention(report, "📊 @diff");
+                    if (diff.Notice is not null)
+                    {
+                        await NotifyMentionAsync(diff.Notice);
+                        return;
+                    }
+                    await RunOnVMContextAsync(() => AddAttachment(diff.Label!, diff.Content!));
                     break;
                 }
                 case MentionKind.Problems:
                 {
-                    var diags = await _tools.ExecuteAsync("get_diagnostics", MentionArgs(), ct);
-                    await RunOnVMContextAsync(() => AddAttachment("⚠ @problems", diags));
+                    var diags    = await _tools.ExecuteAsync("get_diagnostics", MentionArgs(), ct);
+                    var problems = MentionController.ProblemsMention(diags, "⚠ @problems");
+                    if (problems.Notice is not null)
+                    {
+                        await NotifyMentionAsync(problems.Notice);
+                        return;
+                    }
+                    await RunOnVMContextAsync(() => AddAttachment(problems.Label!, problems.Content!));
                     break;
                 }
                 case MentionKind.Debugger:

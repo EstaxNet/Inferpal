@@ -334,6 +334,17 @@ Sauvegarde : {0}</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>attacher l'état du débogueur (pile, variables, exception)</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ Aucune session de débogage en pause. Atteins d'abord un point d'arrêt ou une exception, puis utilise @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Presse-papier vide.</value></data>
+  <data name="SessionUnreadableKept" xml:space="preserve"><value>⚠ La session « {0} » n’a pas pu être lue — son fichier est endommagé, rien n’a été chargé. Une copie en a été gardée : {1}</value></data>
+  <data name="ClipboardNotCopied" xml:space="preserve"><value>⚠ NON copié : un autre programme tient le presse-papiers, qui contient encore ce qui s’y trouvait avant — ne le collez pas. Réessayez dans un instant.</value></data>
+  <data name="MentionProblemsNotBuilt" xml:space="preserve"><value>Rien de joint pour @problems — aucun build n’a eu lieu : {0}</value></data>
+  <data name="StoppedWorkNotice" xml:space="preserve"><value>⚠ Le redémarrage d’Inferpal a arrêté ce qui tournait encore — rien n’en a été gardé, relancez-le si vous en avez encore besoin :
+{0}</value></data>
+  <data name="StoppedWorkTask" xml:space="preserve"><value>tâche de fond {0} — {1}</value></data>
+  <data name="StoppedWorkCommand" xml:space="preserve"><value>commande de fond {0} — {1}</value></data>
+  <data name="StoppedWorkDocs" xml:space="preserve"><value>indexation de la source de documentation {0} (`/docs reindex {0}`)</value></data>
+  <data name="MentionDiffUnavailable" xml:space="preserve"><value>Rien de joint pour @diff — {0}</value></data>
+  <data name="MentionDiffEmpty" xml:space="preserve"><value>Rien de joint pour @diff : aucun changement non commité dans un fichier suivi. Un nouveau fichier jamais ajouté à git ne fait pas partie d’un diff — joignez-le avec @file.</value></data>
+  <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — {1} premiers caractères sur {2}</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Rien n'a pu être joint pour @{0}.</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>« {0} » est un fichier, pas un dossier — joins-le avec @file.</value></data>
   <data name="SlashToolNoOutput" xml:space="preserve"><value>Terminé — aucune sortie.</value></data>

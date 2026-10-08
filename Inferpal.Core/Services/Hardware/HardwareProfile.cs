@@ -72,11 +72,14 @@ internal sealed class HardwareProfile
     /// </summary>
     public static async Task EnsureBudgetAsync(InferpalConfig config, CancellationToken ct)
     {
-        if (config.VramBudgetGb > 0) return;
+        // Decided on the file too: a budget set in another window (`/hardware 10` on a shared GPU) is not "unset".
+        if (config.VramBudgetGb > 0 || config.FillFromFile(nameof(InferpalConfig.VramBudgetGb))) return;
 
         var bytes = await HardwareProbe.TryDetectLocalVramBytesAsync(config.BaseUrl, ct).ConfigureAwait(false);
         if (bytes is not { } b || b <= 0) return;
 
+        // And again after the probe, which takes a while: set elsewhere meanwhile, it is not overwritten.
+        if (config.FillFromFile(nameof(InferpalConfig.VramBudgetGb))) return;
         config.VramBudgetGb = Math.Round(b / ModelCatalog.BytesPerGb, 1);
         config.Save();
     }

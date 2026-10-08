@@ -334,6 +334,17 @@ Copia de seguridad: {0}</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>adjuntar el estado del depurador (pila, variables, excepción)</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ No hay sesión de depuración en pausa. Alcanza primero un punto de interrupción o una excepción y luego usa @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ El portapapeles está vacío.</value></data>
+  <data name="SessionUnreadableKept" xml:space="preserve"><value>⚠ No se pudo leer la sesión "{0}": su archivo está dañado y no se cargó nada. Se guardó una copia: {1}</value></data>
+  <data name="ClipboardNotCopied" xml:space="preserve"><value>⚠ NO se copió: otro programa está usando el portapapeles, que aún tiene lo que había antes; no lo pegue. Vuelva a intentarlo en un momento.</value></data>
+  <data name="MentionProblemsNotBuilt" xml:space="preserve"><value>No se adjuntó nada para @problems: no se ejecutó ninguna compilación: {0}</value></data>
+  <data name="StoppedWorkNotice" xml:space="preserve"><value>⚠ Al reiniciar Inferpal se detuvo lo que aún se ejecutaba; no se conservó nada. Vuelva a iniciarlo si todavía lo necesita:
+{0}</value></data>
+  <data name="StoppedWorkTask" xml:space="preserve"><value>tarea en segundo plano {0} — {1}</value></data>
+  <data name="StoppedWorkCommand" xml:space="preserve"><value>comando en segundo plano {0} — {1}</value></data>
+  <data name="StoppedWorkDocs" xml:space="preserve"><value>indexación de la fuente de documentación {0} (`/docs reindex {0}`)</value></data>
+  <data name="MentionDiffUnavailable" xml:space="preserve"><value>No se adjuntó nada para @diff — {0}</value></data>
+  <data name="MentionDiffEmpty" xml:space="preserve"><value>No se adjuntó nada para @diff: no hay ningún cambio sin confirmar en un archivo con seguimiento. Un archivo nuevo que nunca se añadió a git no forma parte de un diff; adjúntelo con @file.</value></data>
+  <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — primeros {1} de {2} caracteres</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>No se pudo adjuntar nada para @{0}.</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>«{0}» es un archivo, no una carpeta: adjúntalo con @file.</value></data>
   <data name="SlashToolNoOutput" xml:space="preserve"><value>Hecho — sin salida.</value></data>

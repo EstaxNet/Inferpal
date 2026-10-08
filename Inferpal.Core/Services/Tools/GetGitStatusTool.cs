@@ -81,6 +81,25 @@ internal class GetGitStatusTool : ITool
             PathSanitizer.AssertUnderRoot(startPath, workspace);
         }
 
+        return (await ReportAsync(startPath, includeDiff, diffPath, ct)).Text;
+    }
+
+    /// <summary>What the report found, for a reader that DECIDES on it (the @diff mention) — never by reading its text.</summary>
+    internal enum State { NotARepository, Refused, Clean, Changes }
+
+    /// <param name="Text">The report the model reads.</param>
+    /// <param name="Outcome">Whether there are uncommitted changes to tracked files, or why nothing could be read.</param>
+    /// <param name="Refusal">Why nothing was read (no repository, git refused).</param>
+    /// <param name="DiffShown">With the diff: the characters of it the report holds, out of <paramref name="DiffTotal"/>.</param>
+    internal sealed record Report(string Text, State Outcome, string? Refusal = null, int DiffShown = 0, int DiffTotal = 0)
+    {
+        /// <summary>The report holds part of the diff only (its budget is one tool result's).</summary>
+        public bool DiffCut => DiffShown < DiffTotal;
+    }
+
+    /// <summary>The report, for paths already sanitized and confined to the workspace.</summary>
+    internal async Task<Report> ReportAsync(string? startPath, bool includeDiff, string? diffPath, CancellationToken ct)
+    {
         // Without a path, the workspace's repository: under VS the process's current directory is
         // not the workspace, and an open file may belong to another repository. Those two only
         // stand in when no root is known. A path outside any repository is simply not a repository.
@@ -92,7 +111,7 @@ internal class GetGitStatusTool : ITool
                 : FindGitRootFromOpenFiles() ?? FindGitRoot(Directory.GetCurrentDirectory());
 
         if (root is null)
-            return Strings.GitNotRepo;
+            return new Report(Strings.GitNotRepo, State.NotARepository, Strings.GitNotRepo);
 
         // ── status ────────────────────────────────────────────────────────────
         var status = await GitAsync("status", root, ct);
@@ -103,7 +122,10 @@ internal class GetGitStatusTool : ITool
         // dubious-ownership refusal, a half-deleted worktree) exits 128 with everything on stderr,
         // and this tool keeps stdout alone.
         if (!status.Ok)
-            return $"Repository root: {root}\n\n{Strings.GitCommandFailed("status", status.Detail)}";
+        {
+            var refused = Strings.GitCommandFailed("status", status.Detail);
+            return new Report($"Repository root: {root}\n\n{refused}", State.Refused, refused);
+        }
 
         var sb = new StringBuilder();
         sb.AppendLine($"Repository root: {root}");
@@ -155,6 +177,9 @@ internal class GetGitStatusTool : ITool
         sb.AppendLine(diffStat.Ok && diffStat.Output.Length > 0
             ? Fit(diffStat.Output, DiffStatChars, "changed file(s) in this summary", keepLast: true)
             : diffStat.OrFailure("diff --stat", "(nothing to diff)"));
+        var outcome = !diffStat.Ok ? State.Refused : diffStat.Output.Length > 0 ? State.Changes : State.Clean;
+        string? refusal = diffStat.Ok ? null : Strings.GitCommandFailed("diff --stat", diffStat.Detail);
+        int diffShown = 0, diffTotal = 0;
 
         // ── full diff (optional) ──────────────────────────────────────────────
         if (includeDiff)
@@ -165,7 +190,10 @@ internal class GetGitStatusTool : ITool
             {
                 var relative = Path.GetRelativePath(root, diffPath).Replace('\\', '/');
                 if (relative.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(relative))
-                    return sb.Append($"Error: diff_path '{diffPath}' is outside the repository {root}.").ToString();
+                {
+                    var outside = $"Error: diff_path '{diffPath}' is outside the repository {root}.";
+                    return new Report(sb.Append(outside).ToString(), State.Refused, outside);
+                }
                 pathSpec = $" -- \"{relative}\"";
             }
 
@@ -175,10 +203,13 @@ internal class GetGitStatusTool : ITool
             sb.AppendLine($"=== git diff {shownBase}{pathSpec} ===");
             if (!diff.Ok)
             {
-                sb.AppendLine(Strings.GitCommandFailed("diff", diff.Detail));
+                refusal = Strings.GitCommandFailed("diff", diff.Detail);
+                outcome = State.Refused;
+                sb.AppendLine(refusal);
             }
             else if (diff.Output.Length == 0)
             {
+                outcome = State.Clean;
                 sb.AppendLine("(no diff)");
             }
             else
@@ -186,10 +217,13 @@ internal class GetGitStatusTool : ITool
                 var (shown, note) = CutDiff(diff.Output, DiffBudget(sb.Length), restricted: diffPath is not null);
                 if (note is not null) sb.AppendLine(note);   // above the diff: it qualifies what follows
                 sb.AppendLine(shown);
+                outcome   = State.Changes;
+                diffShown = shown.Length;
+                diffTotal = diff.Output.Length;
             }
         }
 
-        return sb.ToString().TrimEnd();
+        return new Report(sb.ToString().TrimEnd(), outcome, refusal, diffShown, diffTotal);
     }
 
     // ⚠ The report reaches the model as ONE tool result, and the loop cuts a longer one in its MIDDLE: with three

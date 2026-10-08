@@ -83,6 +83,12 @@ internal partial class InferpalToolWindowData
         }
         try
         {
+            // A model chosen in another window since this one read the settings is that choice, not a default to replace.
+            if (_config.FillFromFile(nameof(InferpalConfig.DefaultModel)))
+            {
+                await RunOnVMContextAsync(() => ActiveModelLabel = _config.DefaultModel).ConfigureAwait(false);
+                return;
+            }
             var listed = await _client.ListModelsAsync(CancellationToken.None).ConfigureAwait(false);
             if (ModelCatalog.FirstModelToAdopt(_config, listed) is not { } adopted) return;
 
@@ -188,6 +194,7 @@ internal partial class InferpalToolWindowData
         bool hasMessages = false;
         string firstUserContent = string.Empty;
         List<SavedMessage> snapshot = [];
+        var templateSuffix = string.Empty;
 
         await RunOnVMContextAsync(() =>
         {
@@ -197,6 +204,7 @@ internal partial class InferpalToolWindowData
                 Messages.Select(m => (m.Role, m.Content, m.ToolName, m.Timestamp)));
             hasMessages = snapshot.Count > 0;
             if (!hasMessages) return;
+            templateSuffix = _activeTemplateSuffix;
 
             var firstUser    = Messages.FirstOrDefault(m => m.Role == "user");
             firstUserContent = firstUser?.Content ?? string.Empty;
@@ -204,7 +212,7 @@ internal partial class InferpalToolWindowData
 
         // Fire save+title generation in background so the UI clears immediately.
         if (hasMessages)
-            _ = SaveNamedSessionAsync(firstUserContent, snapshot);
+            _ = SaveNamedSessionAsync(firstUserContent, snapshot, templateSuffix);
 
         // The conversation just discarded leaves the auto-save slot, or the next start brings it back.
         try { await _store.ForgetAutoSaveAsync(_indexService.RootDir, ct); }
@@ -252,8 +260,9 @@ internal partial class InferpalToolWindowData
             catch (Exception ex)
             {
                 Diagnostics.Swallow($"Session.Load({name})", ex);
-                await RunOnVMContextAsync(() => InsertThemed(
-                    ChatMessageItem.NoticeMsg(Strings.SessionLoadFailed(name))));
+                // A damaged file names the copy kept of it — the auto-save writes over the original at the next turn.
+                var said = ex is UnreadableSessionException damaged ? damaged.Message : Strings.SessionLoadFailed(name);
+                await RunOnVMContextAsync(() => InsertThemed(ChatMessageItem.NoticeMsg(said)));
                 return;
             }
 
@@ -280,7 +289,8 @@ internal partial class InferpalToolWindowData
             {
                 // The auto-save slot carries the named session it continues: /branch keeps writing to that one.
                 RestoreConversation(session.Messages,
-                                    name == "last_session" && !string.IsNullOrEmpty(session.CurrentName) ? session.CurrentName : name);
+                                    name == "last_session" && !string.IsNullOrEmpty(session.CurrentName) ? session.CurrentName : name,
+                                    session.TemplateSuffix);
                 IsSessionPanelOpen = false;
                 RefreshSessionsList();
                 ScrollToBottom();
@@ -294,10 +304,12 @@ internal partial class InferpalToolWindowData
     /// re-rendered bubbles. Shared by session loading and <c>/branch</c> (which restores the
     /// truncated transcript of the new branch). Must run on the VM context.
     /// </summary>
-    private void RestoreConversation(IReadOnlyList<SavedMessage> messages, string sessionName)
+    /// <param name="templateSuffix">The <c>/template</c> mode the conversation was held in — its greeting is among the
+    /// messages, so a restore without it shows a mode no answer follows.</param>
+    private void RestoreConversation(IReadOnlyList<SavedMessage> messages, string sessionName, string? templateSuffix)
     {
         Messages.Clear();
-        _activeTemplateSuffix     = string.Empty;
+        _activeTemplateSuffix     = templateSuffix ?? string.Empty;
         _workspaceContextInjected = false;
         _sessionStartTime         = null;
         _lastRegenerableMsg       = null;
