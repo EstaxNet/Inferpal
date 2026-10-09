@@ -159,3 +159,14 @@ Licensed under the [GNU GPL v3](https://www.gnu.org/licenses/gpl-3.0).
 ## Acknowledgments
 
 Developed with the assistance of **Claude** (Anthropic).
+
+---
+
+## Not finding Inferpal on Google?
+
+As of October 2026, Google no longer returns any result for *Inferpal* — not this repository, not its releases, not
+its Marketplace listings — while other search engines, such as Bing, DuckDuckGo and Brave, still do. If a search
+brought you nothing, the official sources are the ones named above: this repository, its
+[releases](https://github.com/EstaxNet/Inferpal/releases), and the Marketplace listings for
+[Visual Studio](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs) and
+[VS Code](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode).

@@ -362,7 +362,10 @@ public sealed class RepoMcpServersTests : IDisposable
         await service.RefreshAsync();                                     // the handshake fails: the witness exits
         for (var waited = 0; !File.Exists(witness) && waited < 30_000; waited += 100) await Task.Delay(100);
         Assert.True(File.Exists(witness), "the agreed server never ran");
-        Assert.Equal(Path.GetFullPath(_repo), File.ReadAllText(witness).Trim());
+        // The same FOLDER, not the same spelling: on macOS the temporary folder is reached through a link
+        // (/var → /private/var), and the shell reports the resolved path.
+        var ranIn = File.ReadAllText(witness).Trim();
+        Assert.True(File.Exists(Path.Combine(ranIn, ".mcp.json")), $"the server ran in '{ranIn}', not in the repository '{_repo}'");
         await service.DisposeAsync();
     }
 }
