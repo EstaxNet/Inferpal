@@ -106,7 +106,7 @@ internal static class TestGenerationPlanner
     public static string? UnsavedTestFile(Editor.OpenDocumentOverlay? overlay, string sourcePath)
     {
         var testPath = TestFilePathResolver.Resolve(sourcePath);
-        return overlay is not null && overlay.TryGetUnsaved(testPath, out _)
+        return overlay is not null && overlay.HasUnsavedChanges(testPath)
             ? Strings.TestsFileUnsaved(Path.GetFileName(testPath))
             : null;
     }

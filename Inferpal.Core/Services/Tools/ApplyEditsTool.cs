@@ -168,6 +168,9 @@ internal sealed class ApplyEditsTool : ITool
                                                        BuildApprovalDetails(root, [p], original, current))).ToList();
         if (!await _approval.RequestBatchApprovalAsync("apply_edits", details, files, ct, subject: subject))
             return Strings.DiffCancelled;
+        // Before the first backup: the batch stays all or nothing.
+        if (await FileTarget.UnsavedSinceApprovalAsync(_overlay, changed, ct) is { } typedMeanwhile)
+            return Strings.ApplyEditsAborted(typedMeanwhile);
 
         // ── Phase 2: back up EVERY file, then write (all edits already validated) ─
         // A backup that cannot be saved stops the batch before anything is written.

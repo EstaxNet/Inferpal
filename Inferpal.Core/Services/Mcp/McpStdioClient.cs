@@ -98,6 +98,8 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
                 return false;
             }
             _started = true;
+            // A server stops when its stdin closes; the children it started (npx → node) do not.
+            ProcessLifetime.Bind(_process);
 
             // Drain stderr so a chatty server never blocks on a full pipe — keeping its edges for a failed start.
             var stderr = _process.StandardError;

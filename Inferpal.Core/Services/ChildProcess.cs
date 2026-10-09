@@ -57,6 +57,7 @@ internal static class ChildProcess
         psi.RedirectStandardInput = true;
 
         var process = Process.Start(psi)!;
+        ProcessLifetime.Bind(process);
         CloseInput(process);
         return process;
     }

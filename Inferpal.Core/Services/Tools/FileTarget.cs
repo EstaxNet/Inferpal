@@ -48,7 +48,7 @@ internal static class FileTarget
 
     /// <summary>
     /// The refusal for writing <paramref name="path"/> while the editor holds unsaved changes to it; <c>null</c>
-    /// otherwise, and always when the editor mirrors no buffer (<paramref name="overlay"/> null: Visual Studio).
+    /// otherwise, and always when the editor mirrors no buffer (<paramref name="overlay"/> null).
     /// </summary>
     /// <remarks>
     /// ⚠ read_file shows the unsaved buffer, and every writing tool reads and writes the DISK: the model quoted a line
@@ -57,11 +57,37 @@ internal static class FileTarget
     /// asking — so the file is named, and saving it stays the user's gesture.
     /// </remarks>
     public static string? UnsavedRefusal(Editor.OpenDocumentOverlay? overlay, string path) =>
-        overlay is not null && overlay.TryGetUnsaved(path, out _)
+        overlay is not null && overlay.HasUnsavedChanges(path)
             ? $"'{path}' has unsaved changes in the editor. read_file shows them, but this tool works on the file on " +
               "disk, which does not have them: the edit would miss them, or the user's next save would undo it. " +
               "Ask the user to save the file, then try again."
             : null;
+
+    /// <summary>
+    /// The refusal for writing any of <paramref name="paths"/> when the editor holds unsaved changes to it NOW — asked
+    /// after the approval, right before writing; <c>null</c> when nothing is in the way.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <see cref="UnsavedRefusal"/> runs before the card, and the card can wait for minutes while the user keeps
+    /// working in that very file. Written anyway, the edit reloads the buffer over the typing (Visual Studio asks
+    /// "reload?", and yes erases it) or is undone by the user's next save (VS Code) — under a success already reported.
+    /// Every tool that checks before its card checks again here, before its first write.
+    /// </remarks>
+    public static async Task<string?> UnsavedSinceApprovalAsync(
+        Editor.OpenDocumentOverlay? overlay, IEnumerable<string> paths, CancellationToken ct)
+    {
+        if (overlay is null) return null;
+        await overlay.RefreshAsync(ct);
+        foreach (var path in paths)
+            if (overlay.HasUnsavedChanges(path))
+                return $"'{path}' got unsaved changes in the editor while the approval was pending: nothing was " +
+                       "written, so what the user typed is kept. Ask the user to save the file, then try again.";
+        return null;
+    }
+
+    /// <inheritdoc cref="UnsavedSinceApprovalAsync(Editor.OpenDocumentOverlay?, IEnumerable{string}, CancellationToken)"/>
+    public static Task<string?> UnsavedSinceApprovalAsync(Editor.OpenDocumentOverlay? overlay, string path, CancellationToken ct) =>
+        UnsavedSinceApprovalAsync(overlay, [path], ct);
 
     /// <summary>
     /// The refusal for writing <paramref name="content"/> to <paramref name="path"/> when the file's own encoding — a

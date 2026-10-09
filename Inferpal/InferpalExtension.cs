@@ -121,6 +121,10 @@ public class InferpalExtension : Extension
         // answers "unavailable" until an in-process driver advertises itself, so a devenv whose
         // package failed to load degrades to no debugger rather than to a hang.
         services.AddSingleton<Services.Debugging.IDebugSession, Services.Debugging.SignalDebugSession>();
+        // The editor's unsaved buffers, asked of Visual Studio before every tool call: a write over one of them is
+        // refused, or VS reloads the file over what the user typed.
+        services.AddSingleton(sp => new Services.Editor.OpenDocumentOverlay(ct =>
+            VsUnsavedDocuments.ReadAsync(sp.GetRequiredService<VisualStudioExtensibility>(), ct)));
         services.AddSingleton<ToolRegistry>();
         services.AddSingleton<ModelLifetimeService>();
         services.AddSingleton<VsBuildMonitor>();

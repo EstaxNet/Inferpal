@@ -395,7 +395,9 @@ internal partial class InferpalToolWindowData
                 await NotifyMentionAsync(why);
                 return;
             }
-            var content = await Task.Run(() => MentionController.BuildFolderContext(folderPath, ct), ct);
+            // The unsaved buffers, as read_file shows them: the folder's files as the user sees them in the editor.
+            if (_tools.Overlay is { } overlay) await overlay.RefreshAsync(ct);
+            var content = await Task.Run(() => MentionController.BuildFolderContext(folderPath, ct, _tools.Overlay), ct);
             var label   = "📁 " + Path.GetFileName(folderPath);
             await RunOnVMContextAsync(() =>
             {

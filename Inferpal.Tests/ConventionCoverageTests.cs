@@ -2504,4 +2504,43 @@ public class ConventionCoverageTests
             + "approval prompt. Call PathSanitizer.AssertUnderRoot(path, root). Sites:"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
+
+    // ── 34. A child process the Core starts dies with the process that started it ──────
+
+    [Fact]
+    public void ChildProcesses_AreBoundToTheLifetimeOfTheirOwner()
+    {
+        // Killed with its host, a background job, its shell and an MCP server's own child kept running, owned by
+        // nobody (measured: 3 on Linux, 4 on Windows). An orderly close stops them; a crash runs no code, so the only
+        // place to tie them is the start. Three of the four places that start a process had their own copy of the
+        // start and none of the binding.
+        // ⚠ The subject is the FILE that starts a process (`Process.Start(`, `new Process`), never ChildProcess.Start,
+        // which binds for its callers.
+        var exempt = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            // The binder itself: its watchdog IS the mechanism, it must not be a member of what it kills.
+            ["ProcessLifetime.cs"] = "starts the group watchdog",
+            // The browser a sign-in opens by shell execute must outlive the host.
+            ["LoopbackAuthCodeReceiver.cs"] = "the browser outlives us",
+        };
+
+        var offenders = new List<string>();
+        var starting  = 0;
+        foreach (var file in ServicesSources())
+        {
+            var code = CodeOnly(file);
+            if (!Regex.IsMatch(code, @"\bProcess\.Start\s*\(|\bnew Process\s*[({]")) continue;
+            starting++;
+            if (exempt.ContainsKey(Path.GetFileName(file))) continue;
+            if (!code.Contains("ProcessLifetime.Bind(", StringComparison.Ordinal)) offenders.Add(Rel(file));
+        }
+
+        // Witness: the files that start a process really are read (six today), otherwise "no offender" means nothing.
+        Assert.True(starting >= 4, $"Only {starting} file(s) starting a process read: the scan measures nothing any more.");
+        Assert.True(offenders.Count == 0,
+            "These files start a child process without tying it to the host's lifetime: a crash of the host leaves it "
+            + "running, owned by nobody. Call ProcessLifetime.Bind(process) right after the start, or start it through "
+            + "ChildProcess.Start. Sites:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
 }

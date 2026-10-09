@@ -166,21 +166,42 @@ internal sealed class RagDatabase
     /// Replaces chunks for a single source file (surgical incremental update).
     /// Far cheaper than <see cref="SaveAsync"/> when only one file changed.
     /// </summary>
-    public async Task SaveFileAsync(string filePath, IReadOnlyList<RagChunk> chunks, CancellationToken ct)
+    public Task SaveFileAsync(string filePath, IReadOnlyList<RagChunk> chunks, CancellationToken ct) =>
+        SaveFilesAsync([(filePath, chunks)], ct);
+
+    /// <summary>
+    /// Replaces the chunks of several source files in ONE transaction; files not named keep their rows. What a full
+    /// pass writes as it goes, so that a pass interrupted before its final save keeps the vectors it computed.
+    /// </summary>
+    public async Task SaveFilesAsync(IReadOnlyList<(string FilePath, IReadOnlyList<RagChunk> Chunks)> files,
+                                     CancellationToken ct)
     {
         await using var conn = OpenConnection();
         await using var tx   = await conn.BeginTransactionAsync(ct) as SqliteTransaction
                                ?? throw new InvalidOperationException("Could not begin transaction.");
 
-        await using var del = conn.CreateCommand();
-        del.Transaction  = tx;
-        del.CommandText  = "DELETE FROM chunks WHERE root_hash = $rh AND file_path = $fp";
-        del.Parameters.AddWithValue("$rh", _rootHash);
-        del.Parameters.AddWithValue("$fp", filePath);
-        await del.ExecuteNonQueryAsync(ct);
+        foreach (var (filePath, chunks) in files)
+        {
+            await using var del = conn.CreateCommand();
+            del.Transaction  = tx;
+            del.CommandText  = "DELETE FROM chunks WHERE root_hash = $rh AND file_path = $fp";
+            del.Parameters.AddWithValue("$rh", _rootHash);
+            del.Parameters.AddWithValue("$fp", filePath);
+            await del.ExecuteNonQueryAsync(ct);
 
-        await InsertChunksAsync(conn, tx, chunks, ct);
+            await InsertChunksAsync(conn, tx, chunks, ct);
+        }
         await tx.CommitAsync(ct);
+    }
+
+    /// <summary>Drops every stored vector of this root, the rows staying: their model is no longer the index's.</summary>
+    public async Task ClearEmbeddingsAsync(CancellationToken ct)
+    {
+        await using var conn = OpenConnection();
+        await using var cmd  = conn.CreateCommand();
+        cmd.CommandText      = "UPDATE chunks SET embedding = NULL WHERE root_hash = $rh";
+        cmd.Parameters.AddWithValue("$rh", _rootHash);
+        await cmd.ExecuteNonQueryAsync(ct);
     }
 
     /// <summary>Removes all chunks for a deleted source file.</summary>

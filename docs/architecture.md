@@ -21,7 +21,9 @@ Two adapters consume it:
   `chat/send` with streamed notifications, `models/list`, `fim/complete`, `textDocument/did*`
   sync…), with reverse ports `RpcEditorSurface` and `RpcApprovalService` (fail-closed). The
   TypeScript extension spawns and supervises it, renders the sidebar webview chat, and feeds
-  dirty buffers through `OpenDocumentOverlay` so `read_file` sees unsaved edits.
+  dirty buffers through `OpenDocumentOverlay` so `read_file` sees unsaved edits. Visual Studio
+  fills the same overlay on demand (`VsUnsavedDocuments`, asked before every tool call), so the
+  writing tools refuse an unsaved file in both editors.
 
 ## Process model
 

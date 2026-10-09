@@ -73,6 +73,7 @@ internal class WriteFileTool : ITool
         if (!await _approval.RequestApprovalAsync("write_file", details, ct, subject: path,
                 diff: new DiffInfo(oldContent, content, path)))
             return Strings.WriteCancelled;
+        if (await FileTarget.UnsavedSinceApprovalAsync(_overlay, path, ct) is { } typedMeanwhile) return typedMeanwhile;
 
         // One branch only: the net KNOWS how to tell "nothing to back up, so this write creates the
         // file" from "the backup failed". The `else` that declared the creation by hand was the only

@@ -81,12 +81,16 @@ public partial class HostServerTests
         public readonly TaskCompletionSource<bool> ApprovalCancelled =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+        /// <summary>What the user does in the editor while the approval card is shown, before answering it.</summary>
+        public Func<Task>? WhileTheCardWaits;
+
         [JsonRpcMethod("approval/request", UseSingleObjectParameterDeserialization = true)]
         public async Task<int> ApprovalRequest(ApprovalNote note, CancellationToken ct)
         {
             ApprovalPrompts++;
             LastApprovalMessage = note.Message;
             ApprovalEntered.TrySetResult(true);
+            if (WhileTheCardWaits is { } typing) await typing();
 
             if (ApprovalHangs)
             {
@@ -2112,6 +2116,51 @@ public partial class HostServerTests
         }), CancellationToken.None);
 
         Assert.Equal("int x = 2;\n", File.ReadAllText(path));
+    }
+
+    [Fact]
+    public async Task ALineTypedWhileTheCardWaits_IsNotOverwritten_ByTheEditTheUserThenAccepts()
+    {
+        // The check before the card cannot see what the user types while the card is shown — and the card can wait for
+        // minutes while the user keeps working in that very file. Written anyway, the edit is undone by the user's next
+        // save (VS Code) or reloads the buffer over the typing (Visual Studio).
+        using var h = CreateHarness();
+        h.Target.ApprovalAnswer = 1;
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var path = Path.Combine(h.RootDir, "Calc.cs");
+        File.WriteAllText(path, "int x = 1;\n");
+        await h.Client.NotifyWithParameterObjectAsync("textDocument/didOpen", new { path, text = "int x = 1;\n", dirty = false });
+        await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Target.WhileTheCardWaits = async () =>
+        {
+            await h.Client.NotifyWithParameterObjectAsync("textDocument/didChange",
+                new { path, text = "int x = 1;\nint typedWhileTheCardWaited;\n", dirty = true });
+            await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { });   // the change has landed
+        };
+
+        var edit = await h.Server.CurrentSession!.Tools.ExecuteAsync("apply_diff", System.Text.Json.JsonSerializer.SerializeToElement(new
+        {
+            path, old_content = "int x = 1;", new_content = "int x = 2;",
+        }), CancellationToken.None);
+
+        Assert.Equal(1, h.Target.ApprovalPrompts);                       // witness: the card WAS shown and accepted
+        Assert.Equal("int x = 1;\n", File.ReadAllText(path));
+        Assert.Contains("unsaved changes", edit);
+    }
+
+    [Fact]
+    public void EveryToolThatRefusesAnUnsavedFile_ChecksAgainAfterTheApproval()
+    {
+        // Derived property, like the one below: whoever checks before the card checks again after it.
+        var writers = ConventionCoverageTests.ProjectSources("Inferpal.Core")
+            .Select(f => (File: Path.GetFileName(f), Code: ConventionCoverageTests.CodeOnly(f)))
+            .Where(s => s.Code.Contains("FileTarget.UnsavedRefusal(", StringComparison.Ordinal)
+                        && !s.File.Equals("FileTarget.cs", StringComparison.Ordinal))
+            .ToList();
+
+        Assert.True(writers.Count >= 5, $"the scan found {writers.Count} writing tools: it reads nothing any more");   // WITNESS
+        Assert.Empty(writers.Where(s => !s.Code.Contains("FileTarget.UnsavedSinceApprovalAsync(", StringComparison.Ordinal))
+                            .Select(s => s.File));
     }
 
     [Fact]

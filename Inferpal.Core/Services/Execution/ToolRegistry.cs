@@ -56,8 +56,8 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// `/tdd`'s debugger capture asks consent through the same prompt as everything else.</summary>
     public IApprovalService Approval => _approval;
 
-    /// <param name="overlay">Open-document mirror for dirty-buffer reads;
-    /// null when the editor feeds no overlay (VS in-proc today).</param>
+    /// <param name="overlay">The editor's unsaved buffers, for dirty-buffer reads and the writing tools' refusal:
+    /// pushed by VS Code, pulled from Visual Studio before every call; null when the editor gives none.</param>
     /// <param name="debug">Debugger surface of the host editor; null when this front-end has none,
     /// in which case the two debug tools are not registered at all — the model is never shown a
     /// tool that can only answer that it is unavailable.</param>
@@ -296,6 +296,10 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             return _mcp.DescribeMissingTool(name) ?? UnknownTool(name);
         }
 
+        // An editor that answers on demand (Visual Studio) is asked now which buffers hold unsaved changes: what the
+        // tool reads, and what it refuses to write over, is the state of the editor at this call.
+        if (_overlay is not null) await _overlay.RefreshAsync(ct);
+
         var sw = System.Diagnostics.Stopwatch.StartNew();
         // Every write this call backs up is checked when it ends: one that did not land leaves the run.
         using var writes = _fileHistory.TrackCall();
@@ -364,6 +368,10 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// <summary>The background commands <c>run_command</c> started that still run.</summary>
     internal IReadOnlyList<(string Id, string Command)> RunningJobs =>
         _tools.TryGetValue("run_command", out var tool) && tool is RunCommandTool run ? run.RunningJobs : [];
+
+    /// <summary>The editor's unsaved buffers, for a reader outside the tools that must see them as read_file does
+    /// (the @folder mention); <c>null</c> when the editor mirrors none.</summary>
+    internal OpenDocumentOverlay? Overlay => _overlay;
 
     /// <summary>The git status tool, for a reader that decides on its structured report (the @diff mention).</summary>
     internal GetGitStatusTool GitStatus => (GetGitStatusTool)_tools["get_git_status"];

@@ -90,6 +90,7 @@ internal class ApplyDiffTool : ITool
         if (!await _approval.RequestApprovalAsync("apply_diff", details, ct, subject: path,
                 diff: new DiffInfo(fileContent, modified, path)))
             return Strings.DiffCancelled;
+        if (await FileTarget.UnsavedSinceApprovalAsync(_overlay, path, ct) is { } typedMeanwhile) return typedMeanwhile;
 
         var (saved, snapPath) = await _history.BackUpBeforeChangeAsync(path, ct);
         if (!saved) return FileHistoryService.BackupFailedMessage(path);

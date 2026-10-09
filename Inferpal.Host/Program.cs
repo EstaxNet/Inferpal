@@ -1,4 +1,10 @@
 using Inferpal.Host;
+using Inferpal.Services;
+
+// ── Children die with the host ───────────────────────────────────────────────
+// First, before anything starts a child: on Linux and macOS the host leads a process group of its own, and a watchdog
+// kills that group when the host ends, crash included (Windows binds each child to a job instead).
+ProcessLifetime.LeadOwnProcessGroup();
 
 // ── stdout discipline ─────────────────────────────────────────────────────────
 // The real stdout belongs to JSON-RPC framing: a single stray Console.WriteLine

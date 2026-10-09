@@ -452,6 +452,15 @@ internal sealed class ProjectIndexService : IDisposable
             if (storedModel is not null && !string.Equals(storedModel, embIdentity, StringComparison.Ordinal))
                 foreach (var c in loaded) c.Embedding = null;
             _indexedEmbeddingModel = embIdentity;
+            // ⚠ The pass saves its new vectors as it goes (below). Vectors of the PREVIOUS model left in the store under
+            // the new model's name would be read back as valid by the next start if this pass were interrupted: a
+            // changed model clears the stored vectors and records its name before anything else is written.
+            var modelChanged = !string.Equals(storedModel, embIdentity, StringComparison.Ordinal);
+            if (modelChanged)
+            {
+                await db.ClearEmbeddingsAsync(ct);
+                await db.SetMetaAsync(EmbeddingModelMetaKey, embIdentity, ct);
+            }
             // Replaced even when this root has nothing on disk yet: the service outlives its root,
             // and a first pass on a new workspace would otherwise serve the PREVIOUS workspace's
             // chunks for as long as it runs — and forever when the new one has no source file.
@@ -494,6 +503,10 @@ internal sealed class ProjectIndexService : IDisposable
             }
 
             var newChunks  = new List<RagChunk>(loaded.Count + 64);
+            // Files whose chunks got NEW vectors since the last write, saved by batches. Saved only at the end, a first
+            // pass interrupted by the editor closing or the host restarting loses every vector it computed, and on a
+            // machine that embeds slowly a large repository never finishes its first index.
+            var unsaved = new List<(string FilePath, IReadOnlyList<RagChunk> Chunks)>();
 
             for (int fi = 0; fi < files.Count; fi++)
             {
@@ -506,6 +519,7 @@ internal sealed class ProjectIndexService : IDisposable
                     // Decoded like the file an edit rewrites: an indexed excerpt is code the model quotes back.
                     var content    = await Tools.TextFileEncoding.ReadTextAsync(files[fi], ct);
                     var fileChunks = await ChunkFileAsync(files[fi], content, rootDir, ct);
+                    var embedded   = false;
 
                     foreach (var chunk in fileChunks)
                     {
@@ -535,10 +549,12 @@ internal sealed class ProjectIndexService : IDisposable
                             await GpuScheduler.WaitForChatIdleAsync(ct);
                             var emb = await EmbeddingModels.EmbedCodeDocumentAsync(_client, embModel, chunk.Content, ct);
                             chunk.Embedding = emb; // null if model unavailable
+                            embedded |= emb is { Length: > 0 };
                         }
 
                         newChunks.Add(chunk);
                     }
+                    if (embedded) unsaved.Add((files[fi], fileChunks));
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex)
@@ -554,6 +570,12 @@ internal sealed class ProjectIndexService : IDisposable
                 if (fi % 20 == 0 || fi == files.Count - 1)
                     await ApplyChunksAsync(newChunks, replaceAll: false, ct);
 
+                if (unsaved.Count >= CheckpointFiles)
+                {
+                    await SaveProgressAsync(db, unsaved, ct);
+                    unsaved.Clear();
+                }
+
                 // Small throttle every 5 files to avoid flooding Ollama
                 if (fi % 5 == 4)
                     await Task.Delay(80, ct);
@@ -565,11 +587,8 @@ internal sealed class ProjectIndexService : IDisposable
             // pass, and rewriting every row and vector for the same content cost the whole index in
             // disk writes. A changed embedding model is always saved — with the embedding circuit
             // open, its cleared vectors would compare equal to vectors that were never recomputed.
-            var modelChanged = !string.Equals(storedModel, embIdentity, StringComparison.Ordinal);
             if (modelChanged || !SameAsStored(loaded, newChunks))
                 await db.SaveAsync(newChunks, ct);
-            if (modelChanged)
-                await db.SetMetaAsync(EmbeddingModelMetaKey, embIdentity, ct);
             // ⚠ Reported even when the pass "succeeds": a full index built on zero files read
             // otherwise reads as normal.
             if (skipped > 0)
@@ -619,6 +638,26 @@ internal sealed class ProjectIndexService : IDisposable
         finally
         {
             IsIndexing = false;
+        }
+    }
+
+    /// <summary>Files with new vectors written at once during a pass; the rest of the store keeps its rows.</summary>
+    internal const int CheckpointFiles = 20;
+
+    /// <summary>
+    /// Writes the files a pass has embedded so far. A failure costs the progress only — the final save still writes
+    /// the whole index — and is said once, by its exception type: a full disk fails at every batch.
+    /// </summary>
+    private static async Task SaveProgressAsync(RagDatabase db,
+        IReadOnlyList<(string FilePath, IReadOnlyList<RagChunk> Chunks)> files, CancellationToken ct)
+    {
+        try { await db.SaveFilesAsync(files, ct); }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Diagnostics.RecordOnce("ProjectIndexService.SaveProgress",
+                $"the index progress could not be saved during the pass ({ex.GetType().Name}: {ex.Message}); " +
+                "an interrupted pass starts over, a finished one still saves everything", ex.GetType().Name);
         }
     }
 

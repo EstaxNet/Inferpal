@@ -79,6 +79,7 @@ internal class RestoreFileTool : ITool
 
         if (!await _approval.RequestApprovalAsync("restore_file", details, ct, subject: path))
             return Strings.DiffCancelled;
+        if (await FileTarget.UnsavedSinceApprovalAsync(_overlay, path, ct) is { } typedMeanwhile) return typedMeanwhile;
 
         // Snapshot the current content first so the restore itself is undoable.
         var (saved, preRestore) = await _history.RestoreWithBackupAsync(snapPath, path, ct);

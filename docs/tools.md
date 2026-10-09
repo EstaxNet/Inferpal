@@ -60,6 +60,10 @@ prompt:
 - Default action is *Allow once*; dismissing the prompt denies the call.
 - For file edits (`write_file`, `apply_diff`, `apply_edits`, `delete_file`), the prompt shows
   the **actual diff** so you confirm the change, not just a path.
+- A file with **unsaved changes** in the editor is never written over, in Visual Studio as in VS
+  Code: the edit is refused before the prompt, and checked again after you approve — so what you
+  type while the prompt waits is kept. Save the file and ask again. `read_file` shows the unsaved
+  text.
 - Gated tools: `write_file`, `apply_diff`, `apply_edits`, `delete_file`, `run_command`,
   `rename_symbol`, `fetch_url`, `web_search`, custom shell tools, and every MCP tool call.
 

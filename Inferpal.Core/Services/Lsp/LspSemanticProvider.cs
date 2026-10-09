@@ -431,7 +431,9 @@ internal sealed class LspSemanticProvider : IDisposable
                     StandardErrorEncoding  = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
                 };
 
-                return Process.Start(psi);
+                var server = Process.Start(psi);
+                if (server is not null) ProcessLifetime.Bind(server);
+                return server;
             }
             catch { return null; }
         }

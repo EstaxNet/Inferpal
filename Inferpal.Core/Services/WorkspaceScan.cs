@@ -197,6 +197,27 @@ internal static class WorkspaceScan
         EnumerateFiles(start, pattern, out _);
 
     /// <summary>
+    /// Every file under <paramref name="start"/> matching <paramref name="pattern"/>, in every subfolder whatever its
+    /// name — for a folder written by hand, such as a rules folder.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Not <see cref="EnumerateFiles(string, string)"/>: its exclusions are build output and dependencies, and in a
+    /// rules folder <c>build/</c> or <c>packages/</c> is a topic — the rules filed under it would vanish in silence.
+    /// The same walk otherwise: links are not followed (<see cref="FirstWalkGap"/> names them), and a pattern with a
+    /// directory part never reaches it.
+    /// </remarks>
+    public static IEnumerable<string> EnumerateAll(string start, string pattern)
+    {
+        if (NormalizeFilePattern(pattern) is not { } safePattern) return [];
+        try { return Walk(start, safePattern); }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("WorkspaceScan.EnumerateAll", ex);
+            return [];
+        }
+    }
+
+    /// <summary>
     /// <paramref name="paths"/> shallowest first, then in ordinal order — the order a CHOICE among walked paths is made
     /// in ("the" solution, "the" test file).
     /// </summary>

@@ -75,6 +75,7 @@ internal sealed class BackgroundShellRegistry : IDisposable
         };
 
         process.Start();
+        ProcessLifetime.Bind(process);   // detached from the run, never from the host: a crash takes it along
         ChildProcess.CloseInput(process);
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
