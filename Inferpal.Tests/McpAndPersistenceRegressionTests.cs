@@ -187,7 +187,7 @@ public class McpAndPersistenceRegressionTests
     private sealed class NoBrowser : IAuthCodeReceiver
     {
         public string RedirectUri => "http://127.0.0.1:1/callback";
-        public Task<(string Code, string State)> GetAuthorizationCodeAsync(string authorizationUrl, CancellationToken ct) =>
+        public Task<AuthorizationResponse> GetAuthorizationCodeAsync(string authorizationUrl, CancellationToken ct) =>
             throw new InvalidOperationException("no browser in a test");
     }
 

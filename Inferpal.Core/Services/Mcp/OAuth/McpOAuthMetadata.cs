@@ -8,13 +8,18 @@ internal sealed record ProtectedResourceMetadata(string? Resource, IReadOnlyList
 
 /// <summary>OAuth 2.0 Authorization Server Metadata (RFC 8414) — the endpoints and capabilities an MCP
 /// client needs to run the authorization-code flow.</summary>
+/// <param name="Issuer">The issuer the metadata document names; <c>null</c> without a document — then no response can
+/// be compared with it.</param>
+/// <param name="IssParameterSupported"><c>authorization_response_iss_parameter_supported</c> (RFC 9207 §2.3): the server
+/// names itself in every authorization response, so a response without <c>iss</c> is refused.</param>
 internal sealed record AuthServerMetadata(
     string? Issuer,
     string AuthorizationEndpoint,
     string TokenEndpoint,
     string? RegistrationEndpoint,
     IReadOnlyList<string> ScopesSupported,
-    IReadOnlyList<string> CodeChallengeMethodsSupported);
+    IReadOnlyList<string> CodeChallengeMethodsSupported,
+    bool IssParameterSupported = false);
 
 /// <summary>
 /// Pure parsing/derivation for MCP authorization discovery: the <c>WWW-Authenticate</c> challenge, the
@@ -66,7 +71,34 @@ internal static partial class McpOAuthMetadata
             token!,
             registration,
             ReadStringArray(root, "scopes_supported"),
-            ReadStringArray(root, "code_challenge_methods_supported"));
+            ReadStringArray(root, "code_challenge_methods_supported"),
+            root.TryGetProperty("authorization_response_iss_parameter_supported", out var iss) && iss.ValueKind == JsonValueKind.True);
+    }
+
+    /// <summary>
+    /// Why an authorization response may not be redeemed, by RFC 9207 §2.4 as the MCP specification applies it — or
+    /// <c>null</c> when it may.
+    /// </summary>
+    /// <param name="recorded">The issuer of the validated metadata the sign-in started from.</param>
+    /// <param name="advertised">The server said it always sends <c>iss</c>.</param>
+    /// <param name="returned">The <c>iss</c> of the response, as decoded — compared without any normalisation.</param>
+    /// <remarks>
+    /// ⚠ The defence against a mix-up attack: a code delivered by ANOTHER authorization server must never reach this
+    /// one's token endpoint. A present <c>iss</c> is compared even when the metadata does not advertise it. Without a
+    /// recorded issuer (no metadata document) there is nothing authentic to compare with, and the flow proceeds as the
+    /// specification's last row does.
+    /// </remarks>
+    public static string? IssuerRefusal(string? recorded, bool advertised, string? returned)
+    {
+        if (returned is null)
+            return advertised
+                ? "The authorization server says it names itself in every authorization response, and this one does not: " +
+                  "the code was not used (RFC 9207). Retry the sign-in."
+                : null;
+        if (recorded is null || string.Equals(returned, recorded, StringComparison.Ordinal)) return null;
+        return $"The authorization response comes from issuer '{returned}', not from '{recorded}', the authorization server " +
+               "this sign-in started with: the code was not used (RFC 9207). Retry the sign-in; if it happens again, the " +
+               "sign-in is misconfigured or something is interfering with it.";
     }
 
     /// <summary>Well-known Protected Resource Metadata URL for an MCP server (used when the
@@ -84,7 +116,8 @@ internal static partial class McpOAuthMetadata
     public static AuthServerMetadata DefaultEndpoints(Uri authServer)
     {
         var origin = Origin(authServer);
-        return new AuthServerMetadata(origin, $"{origin}/authorize", $"{origin}/token", $"{origin}/register", [], [Pkce.Method]);
+        // No issuer: none was published, and a guessed one would be compared as if it were authentic.
+        return new AuthServerMetadata(null, $"{origin}/authorize", $"{origin}/token", $"{origin}/register", [], [Pkce.Method]);
     }
 
     /// <summary>The canonical resource identifier of an MCP server (RFC 8707 / the <c>resource</c>

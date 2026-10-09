@@ -143,7 +143,7 @@ public sealed class OAuthRedirectTests : IDisposable
     {
         public int Port => 0;
         public string RedirectUri => "http://127.0.0.1:0/callback";
-        public Task<(string Code, string State)> GetAuthorizationCodeAsync(string authorizationUrl, CancellationToken ct) =>
+        public Task<AuthorizationResponse> GetAuthorizationCodeAsync(string authorizationUrl, CancellationToken ct) =>
             throw new InvalidOperationException("the browser step is not part of these tests");
     }
 }

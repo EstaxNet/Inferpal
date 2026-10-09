@@ -97,6 +97,11 @@ internal static class McpJsonRpc
         }
 
         var text = sb.ToString().TrimEnd();
+        // ⚠ A result may carry its answer as structuredContent alone — any JSON value since 2026-07-28. Without content
+        // blocks it read "(no output)": the model concluded the tool did nothing.
+        if (text.Length == 0 && dropped.Count == 0 && result.ValueKind == JsonValueKind.Object
+            && result.TryGetProperty("structuredContent", out var structured) && structured.ValueKind != JsonValueKind.Null)
+            text = structured.GetRawText();
         // Named, and named as NOT an empty result: that is the conclusion the model would otherwise draw.
         var note = dropped.Count == 0
             ? string.Empty
@@ -129,13 +134,44 @@ internal static class McpJsonRpc
     /// <summary>What <see cref="ErrorMessage"/> answers when the error carries no text.</summary>
     internal const string UnknownError = "unknown error";
 
-    /// <summary>A string member of an object; null when the element is not an object or the member not a string.</summary>
+    /// <summary>The integer <c>code</c> of a JSON-RPC <c>error</c> member; <c>null</c> when there is none.</summary>
+    internal static long? ErrorCode(JsonElement error) =>
+        error.ValueKind == JsonValueKind.Object && error.TryGetProperty("code", out var c)
+        && c.ValueKind == JsonValueKind.Number && c.TryGetInt64(out var code)
+            ? code
+            : null;
+
+    /// <summary>The <c>resultType</c> of a result: <c>complete</c> when absent, as a server of the earlier revisions
+    /// never writes it.</summary>
+    internal static string ResultTypeOf(JsonElement result) =>
+        StringProperty(result, "resultType") ?? CompleteResult;
+
+    internal const string CompleteResult      = "complete";
+    internal const string InputRequiredResult = "input_required";
+
+    /// <summary>The methods an <c>input_required</c> result asks the client to answer (<c>elicitation/create</c>…),
+    /// distinct; empty when it asks for none.</summary>
+    internal static IReadOnlyList<string> InputRequestMethods(JsonElement result)
+    {
+        if (result.ValueKind != JsonValueKind.Object
+            || !result.TryGetProperty("inputRequests", out var asks) || asks.ValueKind != JsonValueKind.Object)
+            return [];
+        return asks.EnumerateObject()
+                   .Select(a => StringProperty(a.Value, "method") ?? "an unnamed request")
+                   .Distinct(StringComparer.Ordinal)
+                   .ToList();
+    }
+
+    /// <summary>The opaque <c>requestState</c> of an <c>input_required</c> result, to echo verbatim on the retry.</summary>
+    internal static string? RequestState(JsonElement result) => StringProperty(result, "requestState");
+
     /// <summary>The cursor of the next page of a paginated listing; <c>null</c> when this page is the last.</summary>
     public static string? NextCursor(JsonElement result) =>
         result.ValueKind == JsonValueKind.Object && StringProperty(result, "nextCursor") is { Length: > 0 } cursor
             ? cursor
             : null;
 
+    /// <summary>A string member of an object; null when the element is not an object or the member not a string.</summary>
     private static string? StringProperty(JsonElement element, string name) =>
         element.ValueKind == JsonValueKind.Object
         && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String

@@ -35,12 +35,17 @@ public class McpOAuthFlowTests
         public bool ReturnWrongState { get; set; }
         public string? LastAuthUrl { get; private set; }
 
-        public Task<(string Code, string State)> GetAuthorizationCodeAsync(string authorizationUrl, CancellationToken ct)
+        /// <summary>The <c>iss</c> the redirect carries; <c>null</c> for one that names no issuer.</summary>
+        public string? Iss { get; set; }
+        public string? Error { get; set; }
+
+        public Task<AuthorizationResponse> GetAuthorizationCodeAsync(string authorizationUrl, CancellationToken ct)
         {
             LastAuthUrl = authorizationUrl;
             var m = Regex.Match(authorizationUrl, @"[?&]state=([^&]+)");
             var state = ReturnWrongState ? "WRONG" : (m.Success ? Uri.UnescapeDataString(m.Groups[1].Value) : "");
-            return Task.FromResult((Code, state));
+            return Task.FromResult(new AuthorizationResponse(Error is null ? Code : null, state, Iss, Error,
+                                                             Error is null ? null : "the user said no"));
         }
     }
 
@@ -48,6 +53,8 @@ public class McpOAuthFlowTests
     {
         public List<(string Method, string Url, string Body)> Calls { get; } = [];
         public bool IncludeRegistration { get; set; } = true;
+        /// <summary>The metadata says the server names itself in every authorization response (RFC 9207 §2.3).</summary>
+        public bool IssAdvertised { get; set; }
         public string TokenJson { get; set; } = """{ "access_token":"AT", "refresh_token":"RT", "expires_in":3600 }""";
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
@@ -59,7 +66,9 @@ public class McpOAuthFlowTests
             if (request.Method == HttpMethod.Get && url.Contains("oauth-protected-resource"))
                 return Json("""{ "resource":"https://mcp.example.com", "authorization_servers":["https://auth.example.com"] }""");
             if (request.Method == HttpMethod.Get && url.Contains("oauth-authorization-server"))
-                return Json(IncludeRegistration ? AsmWithRegistration : AsmNoRegistration);
+                return Json(!IncludeRegistration ? AsmNoRegistration
+                    : IssAdvertised ? AsmWithRegistration.Replace("\"scopes_supported\"", "\"authorization_response_iss_parameter_supported\": true, \"scopes_supported\"", StringComparison.Ordinal)
+                    : AsmWithRegistration);
             if (request.Method == HttpMethod.Post && url.EndsWith("/register"))
                 return Json("""{ "client_id":"dcr-client-123" }""");
             if (request.Method == HttpMethod.Post && url.EndsWith("/token"))
@@ -221,5 +230,153 @@ public class McpOAuthFlowTests
         var flow = new McpOAuthFlow(new FakeReceiver(), new FlowHandler());
 
         Assert.Null(await flow.RefreshAsync(new McpOAuthState { ClientId = "c" }, CancellationToken.None));
+    }
+
+    // ── RFC 9207: the issuer of the authorization response ────────────────────
+
+    private const string Issuer = "https://auth.example.com";
+
+    private static bool RedeemedACode(FlowHandler h) => h.Calls.Any(c => c.Url.EndsWith("/token") && c.Body.Contains("grant_type=authorization_code"));
+
+    [Fact]
+    public async Task AResponseFromTheRecordedIssuer_IsRedeemed_AndTheIssuerKept()
+    {
+        var handler = new FlowHandler { IssAdvertised = true };
+        var flow = new McpOAuthFlow(new FakeReceiver { Iss = Issuer }, handler);
+
+        var state = await flow.AuthorizeAsync(new McpOAuthServer(Server), existing: null, CancellationToken.None);
+
+        Assert.Equal("AT", state.AccessToken);
+        Assert.Equal(Issuer, state.Issuer);
+    }
+
+    [Theory]
+    [InlineData(false)]   // a present iss is compared even when the metadata does not advertise it
+    [InlineData(true)]
+    public async Task AResponseFromAnotherIssuer_NeverReachesTheTokenEndpoint(bool advertised)
+    {
+        // ⚠ The mix-up attack: a code another authorization server delivered must not be sent to this one's token endpoint.
+        var handler = new FlowHandler { IssAdvertised = advertised };
+        var flow = new McpOAuthFlow(new FakeReceiver { Iss = "https://evil.example.com" }, handler);
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => flow.AuthorizeAsync(new McpOAuthServer(Server), existing: null, CancellationToken.None));
+
+        Assert.Contains("https://evil.example.com", ex.Message);
+        Assert.Contains("RFC 9207", ex.Message);
+        Assert.False(RedeemedACode(handler));
+    }
+
+    [Fact]
+    public async Task AnIssuerComparedAsWritten_NotNormalised()
+    {
+        // RFC 9207 §2.4: no case folding, no trailing-slash rule — a different string is a different issuer.
+        var handler = new FlowHandler();
+        var flow = new McpOAuthFlow(new FakeReceiver { Iss = Issuer + "/" }, handler);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => flow.AuthorizeAsync(new McpOAuthServer(Server), existing: null, CancellationToken.None));
+        Assert.False(RedeemedACode(handler));
+    }
+
+    [Fact]
+    public async Task AnAdvertisedIssuerThatTheResponseLeavesOut_IsRefused()
+    {
+        var handler = new FlowHandler { IssAdvertised = true };
+        var flow = new McpOAuthFlow(new FakeReceiver { Iss = null }, handler);
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => flow.AuthorizeAsync(new McpOAuthServer(Server), existing: null, CancellationToken.None));
+
+        Assert.Contains("RFC 9207", ex.Message);
+        Assert.False(RedeemedACode(handler));
+    }
+
+    [Fact]
+    public async Task NeitherAdvertisedNorSent_TheResponseIsRedeemed()
+    {
+        // Reference arm: the authorization servers of today, which do not send iss, keep signing in.
+        var handler = new FlowHandler();
+        var flow = new McpOAuthFlow(new FakeReceiver { Iss = null }, handler);
+
+        Assert.Equal("AT", (await flow.AuthorizeAsync(new McpOAuthServer(Server), existing: null, CancellationToken.None)).AccessToken);
+        Assert.True(RedeemedACode(handler));
+    }
+
+    [Fact]
+    public async Task AnErrorFromAnotherIssuer_IsNeitherActedOnNorShown()
+    {
+        var flow = new McpOAuthFlow(new FakeReceiver { Iss = "https://evil.example.com", Error = "access_denied" }, new FlowHandler());
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => flow.AuthorizeAsync(new McpOAuthServer(Server), existing: null, CancellationToken.None));
+
+        Assert.Contains("RFC 9207", ex.Message);
+        Assert.DoesNotContain("access_denied", ex.Message);
+        Assert.DoesNotContain("the user said no", ex.Message);
+    }
+
+    [Fact]
+    public async Task AnErrorFromTheRightIssuer_IsNamed_WithItsDescription()
+    {
+        var flow = new McpOAuthFlow(new FakeReceiver { Iss = Issuer, Error = "access_denied" }, new FlowHandler());
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => flow.AuthorizeAsync(new McpOAuthServer(Server), existing: null, CancellationToken.None));
+
+        Assert.Contains("Authorization denied: access_denied (the user said no)", ex.Message);
+    }
+
+    [Fact]
+    public async Task ARedirectWithoutACode_IsNamed()
+    {
+        var flow = new McpOAuthFlow(new FakeReceiver { Code = "" }, new FlowHandler());
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => flow.AuthorizeAsync(new McpOAuthServer(Server), existing: null, CancellationToken.None));
+
+        Assert.Contains("no code", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // ── Registration bound to its issuer ──────────────────────────────────────
+
+    [Fact]
+    public async Task ARegistration_SaysTheClientIsNative()
+    {
+        // A desktop client with a loopback redirect: left out, an OpenID provider assumes "web" and refuses the redirect.
+        var handler = new FlowHandler();
+        await new McpOAuthFlow(new FakeReceiver(), handler).AuthorizeAsync(new McpOAuthServer(Server), existing: null, CancellationToken.None);
+
+        var register = handler.Calls.Single(c => c.Url.EndsWith("/register")).Body;
+        Assert.Contains("\"application_type\":\"native\"", register);
+    }
+
+    [Fact]
+    public async Task AClientRegisteredWithAnotherIssuer_IsRegisteredAgain()
+    {
+        var handler  = new FlowHandler();
+        var existing = new McpOAuthState
+        {
+            ClientId = "client-of-the-old-as", Issuer = "https://old-as.example.com", Resource = "https://mcp.example.com/mcp",
+        };
+
+        var state = await new McpOAuthFlow(new FakeReceiver(), handler).AuthorizeAsync(new McpOAuthServer(Server), existing, CancellationToken.None);
+
+        Assert.Equal("dcr-client-123", state.ClientId);
+        Assert.Equal(Issuer, state.Issuer);
+        Assert.Contains(handler.Calls, c => c.Url.EndsWith("/register"));
+    }
+
+    [Fact]
+    public async Task AClientRegisteredWithTheSameIssuer_IsReused()
+    {
+        // Reference arm of the one above.
+        var handler  = new FlowHandler();
+        var existing = new McpOAuthState { ClientId = "same-as-client", Issuer = Issuer, Resource = "https://mcp.example.com/mcp" };
+
+        var state = await new McpOAuthFlow(new FakeReceiver(), handler).AuthorizeAsync(new McpOAuthServer(Server), existing, CancellationToken.None);
+
+        Assert.Equal("same-as-client", state.ClientId);
+        Assert.DoesNotContain(handler.Calls, c => c.Url.EndsWith("/register"));
     }
 }

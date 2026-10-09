@@ -52,12 +52,32 @@ public class OAuthCallbackCauseTests
         var receiver = new LoopbackAuthCodeReceiver();
         var waiting  = receiver.GetAuthorizationCodeAsync(NoBrowser, CancellationToken.None);
 
-        var page = await GetAsync($"{receiver.RedirectUri}?code=abc123&state=xyz");
-        var (code, state) = await waiting;
+        var page = await GetAsync($"{receiver.RedirectUri}?code=abc123&state=xyz&iss=https%3A%2F%2Fauth.example.com");
+        var response = await waiting;
 
-        Assert.Equal("abc123", code);
-        Assert.Equal("xyz", state);
+        Assert.Equal("abc123", response.Code);
+        Assert.Equal("xyz", response.State);
+        Assert.Equal("https://auth.example.com", response.Issuer);   // RFC 9207: the issuer travels to the flow, decoded
         Assert.Contains("authorization complete", page, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ARefusedRedirect_IsReturned_AndThePageDoesNotRepeatTheServersError()
+    {
+        // ⚠ Before the flow has checked the issuer, the server's error may be neither acted on nor shown: the page says
+        // only that the sign-in did not complete, and the error travels to the flow untouched.
+        var receiver = new LoopbackAuthCodeReceiver();
+        var waiting  = receiver.GetAuthorizationCodeAsync(NoBrowser, CancellationToken.None);
+
+        var page = await GetAsync($"{receiver.RedirectUri}?error=access_denied&error_description=evil%20text&state=xyz");
+        var response = await waiting;
+
+        Assert.Null(response.Code);
+        Assert.Equal("access_denied", response.Error);
+        Assert.Equal("evil text", response.ErrorDescription);
+        Assert.DoesNotContain("access_denied", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("evil text", page, StringComparison.Ordinal);
+        Assert.Contains("did not complete", page, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -155,32 +175,19 @@ public class OAuthCallbackCauseTests
     }
 
     [Fact]
-    public async Task ARefusalFromTheServer_KeepsNamingItself()
+    public async Task ARedirectWithoutACode_IsReturnedAsItCame()
     {
-        // WITNESS: the named outcomes that already existed were not swallowed by the new handling
-        // of interruptions.
+        // The receiver decides nothing about what the redirect carried: the flow names a missing code, after it has
+        // checked the state and the issuer (McpOAuthFlowTests).
         var receiver = new LoopbackAuthCodeReceiver();
         var waiting  = receiver.GetAuthorizationCodeAsync(NoBrowser, CancellationToken.None);
 
-        var page = await GetAsync($"{receiver.RedirectUri}?error=access_denied");
-        var ex   = await Record.ExceptionAsync(() => waiting);
+        var page = await GetAsync($"{receiver.RedirectUri}?state=xyz");
+        var response = await waiting;
 
-        Assert.Contains("access_denied", Assert.IsType<InvalidOperationException>(ex).Message,
-                        StringComparison.Ordinal);
-        Assert.Contains("access_denied", page, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task ARedirectWithoutACode_KeepsNamingItself()
-    {
-        var receiver = new LoopbackAuthCodeReceiver();
-        var waiting  = receiver.GetAuthorizationCodeAsync(NoBrowser, CancellationToken.None);
-
-        await GetAsync($"{receiver.RedirectUri}?state=xyz");
-        var ex = await Record.ExceptionAsync(() => waiting);
-
-        Assert.Contains("no code", Assert.IsType<InvalidOperationException>(ex).Message,
-                        StringComparison.OrdinalIgnoreCase);
+        Assert.Null(response.Code);
+        Assert.Null(response.Error);
+        Assert.Contains("did not complete", page, StringComparison.Ordinal);
     }
 
     [Fact]

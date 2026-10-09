@@ -10,6 +10,9 @@ namespace Inferpal.Services.Mcp.OAuth;
 /// tokens. Mutable for JSON (de)serialization.</summary>
 internal sealed class McpOAuthState
 {
+    /// <summary>The authorization server that issued the client id and the tokens: a registered client is reused only
+    /// with it.</summary>
+    [JsonPropertyName("issuer")]        public string? Issuer { get; set; }
     [JsonPropertyName("clientId")]      public string? ClientId { get; set; }
     [JsonPropertyName("clientSecret")]  public string? ClientSecret { get; set; }
     [JsonPropertyName("accessToken")]   public string? AccessToken { get; set; }

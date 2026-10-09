@@ -11,23 +11,26 @@ using System.Text.RegularExpressions;
 namespace Inferpal.Services.Mcp;
 
 /// <summary>
-/// MCP client over the <b>Streamable HTTP</b> transport (spec 2025-03-26): JSON-RPC requests are
-/// POSTed to a single endpoint, and the server replies either with a single <c>application/json</c>
-/// body or a <c>text/event-stream</c> (SSE) carrying the response. The optional <c>Mcp-Session-Id</c>
-/// header returned by <c>initialize</c> is echoed on every subsequent request.
+/// MCP client over the <b>Streamable HTTP</b> transport: JSON-RPC requests are POSTed to a single endpoint, and the
+/// server replies either with a single <c>application/json</c> body or a <c>text/event-stream</c> (SSE) carrying the
+/// response.
 /// </summary>
 /// <remarks>
-/// Auth is header-based: each configured header is sent on every request, with <c>${ENV_VAR}</c>
-/// placeholders expanded from the environment at construction time (so tokens stay out of the stored
-/// config). After the handshake the client opens the optional server→client GET stream and raises
-/// <see cref="ToolsChanged"/> on a <c>tools/list_changed</c> notification (live re-discovery). An ended
-/// GET stream is a normal rotation, not a disconnect, so <see cref="Closed"/> is never raised — HTTP
-/// session-expiry reconnect and interactive OAuth are out of scope for this cut.
+/// <para>
+/// Two eras. With a 2026-07-28 server — one that answers the <c>server/discover</c> the client opens with — there is no
+/// session: every request carries its <c>_meta</c> and the request headers (<c>MCP-Protocol-Version</c>,
+/// <c>Mcp-Method</c>, <c>Mcp-Name</c>, the tool's <c>Mcp-Param-*</c>), and tool-list changes arrive on a
+/// <c>subscriptions/listen</c> stream. With an earlier server, the <c>initialize</c> handshake, the <c>Mcp-Session-Id</c>
+/// it returns echoed on every later request, and the optional GET stream for list changes.
+/// </para>
+/// <para>
+/// Auth is header-based: each configured header is sent on every request, with <c>${ENV_VAR}</c> placeholders expanded
+/// from the environment at construction time (so tokens stay out of the stored config). An ended notification stream is
+/// a normal rotation, not a disconnect, so <see cref="Closed"/> is never raised.
+/// </para>
 /// </remarks>
 internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
 {
-    private const string ProtocolVersion = "2024-11-05";
-
     private readonly McpServerConfig _config;
     private readonly Uri _url;
     private readonly IReadOnlyDictionary<string, string> _headers;
@@ -42,6 +45,10 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
     private long _nextId;
     private string? _sessionId;
     private volatile bool _disposed;
+
+    /// <summary>The <c>x-mcp-header</c> parameters of each tool of the last listing (modern era only).</summary>
+    private volatile IReadOnlyDictionary<string, IReadOnlyList<McpParamHeaders.Annotation>> _paramHeaders =
+        new Dictionary<string, IReadOnlyList<McpParamHeaders.Annotation>>(StringComparer.Ordinal);
 
     public McpHttpClient(McpServerConfig config, HttpMessageHandler? handler = null,
                          OAuth.IMcpTokenProvider? tokenProvider = null)
@@ -108,7 +115,8 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
     /// <inheritdoc/>
     public string? ResourceMetadataUrl { get; private set; }
 
-    /// <summary>Raised when the server's GET notification stream delivers <c>tools/list_changed</c>.</summary>
+    /// <summary>Raised when the notification stream (the GET stream, or <c>subscriptions/listen</c> in the modern era)
+    /// delivers <c>tools/list_changed</c>.</summary>
     public event Action? ToolsChanged;
 
     // HTTP has no process-death signal: an ended GET stream is a normal rotation, not a disconnect,
@@ -121,8 +129,12 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(HandshakeTimeout);
-            await HandshakeAsync(cts.Token).ConfigureAwait(false);
-            // Best-effort: listen on the optional server→client stream for tool-list changes.
+            var discovery = await DiscoverAsync(cts.Token).ConfigureAwait(false);
+            if (discovery.Failure is { } failure) throw new InvalidOperationException(failure);
+            Era                    = discovery.Era;
+            ServerToolsListChanged = discovery.ToolsListChanged;
+            if (Era == McpEra.Legacy) await HandshakeAsync(cts.Token).ConfigureAwait(false);
+            // Best-effort: listen on the server→client stream for tool-list changes.
             _listenLoop = Task.Run(() => ListenForNotificationsAsync(_listenCts.Token));
             return true;
         }
@@ -133,6 +145,28 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
         }
     }
 
+    /// <summary>
+    /// The first exchange, which decides the era: a modern request, <c>server/discover</c>.
+    /// </summary>
+    /// <remarks>
+    /// A <c>DiscoverResult</c> or a recognised modern error is a modern server; anything else — a 400, 404 or 405 without
+    /// one, <c>-32601</c>, a 2025 session error, a body that is not JSON — is a server of the earlier revisions, and the
+    /// handshake follows (the binding's backward-compatibility rule). ⚠ A refused credential (401, 403) is not an era: it
+    /// stops the start here, as the handshake's refusal did — the sign-in state is set on the way
+    /// (<see cref="SendRequestAsync(string, JsonNode, CancellationToken, bool)"/>).
+    /// </remarks>
+    private async Task<McpDiscovery> DiscoverAsync(CancellationToken ct)
+    {
+        try
+        {
+            return McpModern.Classify(
+                await SendRequestAsync("server/discover", McpModern.WithMeta(null), ct, allowReinit: false).ConfigureAwait(false));
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden) { throw; }
+        catch (Exception ex) { return McpModern.FromError(ex); }
+    }
+
     /// <summary>Performs the <c>initialize</c> → <c>notifications/initialized</c> handshake, starting a
     /// fresh session. Also used to re-establish a session that the server has expired (see 404 handling
     /// in <see cref="SendRequestAsync"/>).</summary>
@@ -140,12 +174,39 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
     {
         var initParams = new JsonObject
         {
-            ["protocolVersion"] = ProtocolVersion,
+            ["protocolVersion"] = McpModern.LegacyVersion,
             ["capabilities"]    = new JsonObject(),
-            ["clientInfo"]      = new JsonObject { ["name"] = "Inferpal", ["version"] = "1.0" },
+            ["clientInfo"]      = McpModern.ClientInfo(),
         };
         await SendRequestAsync("initialize", initParams, ct, allowReinit: false).ConfigureAwait(false);
         await SendNotificationAsync("notifications/initialized", ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// ⚠ The client MUST leave out a tool whose <c>x-mcp-header</c> annotations break the rules, and send the headers of
+    /// the others: a modern server refuses a call without them. Both are decided here, at the listing.
+    /// </summary>
+    private protected override IReadOnlyList<McpToolInfo> Admit(IReadOnlyList<McpToolInfo> tools)
+    {
+        if (Era != McpEra.Modern) return tools;
+        var admitted = new List<McpToolInfo>(tools.Count);
+        var headers  = new Dictionary<string, IReadOnlyList<McpParamHeaders.Annotation>>(StringComparer.Ordinal);
+        foreach (var tool in tools)
+        {
+            var (annotations, rejection) = McpParamHeaders.Read(tool.InputSchema);
+            if (rejection is not null)
+            {
+                Diagnostics.RecordOnce("Mcp",
+                    $"'{ServerName}' tool '{tool.Name}' is not offered: {rejection}. The MCP specification has the client " +
+                    "leave out a tool whose x-mcp-header annotation is invalid.",
+                    $"{ServerName}\u0001{tool.Name}\u0001{rejection}");
+                continue;
+            }
+            if (annotations.Count > 0) headers[tool.Name] = annotations;
+            admitted.Add(tool);
+        }
+        _paramHeaders = headers;
+        return admitted;
     }
 
 
@@ -178,11 +239,12 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
             ["params"]  = @params.DeepClone(),
         };
 
+        var modern = McpModern.IsModern(payload);
         using var resp = await PostAsync(payload, ct).ConfigureAwait(false);
 
         // A 404 on a request that carried a session id means the server expired it: start a fresh
-        // session and replay the request once (allowReinit guards against looping).
-        if (allowReinit && resp.StatusCode == HttpStatusCode.NotFound && _sessionId is not null)
+        // session and replay the request once (allowReinit guards against looping). The modern era has no session.
+        if (allowReinit && !modern && resp.StatusCode == HttpStatusCode.NotFound && _sessionId is not null)
         {
             _sessionId = null;
             await HandshakeAsync(ct).ConfigureAwait(false);
@@ -206,7 +268,7 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
             && OAuth.McpOAuthMetadata.ParseResourceMetadataUrl(string.Join(", ", challenges)) is { } announced)
             ResourceMetadataUrl = announced;
 
-        CaptureSession(resp);
+        if (!modern) CaptureSession(resp);
         // ⚠ A placeholder the environment does not set was sent as an empty value: on a refusal, it is the first suspect.
         var unset = resp.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden && _unsetVariables.Count > 0
             ? $"{string.Join(", ", _unsetVariables)}, not set in this editor's environment — sent empty"
@@ -224,13 +286,31 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
     {
         if (resp.IsSuccessStatusCode) return;
 
-        var detail = string.Empty;
-        try { detail = RefusalDetail(await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false)); }
+        var body = string.Empty;
+        try { body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false); }
         catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("McpHttpClient.RefusalBody", ex); }
+        var detail = RefusalDetail(body);
+        var (code, data) = RefusalRpcError(body);
 
         var head = $"HTTP {(int)resp.StatusCode} ({resp.ReasonPhrase ?? resp.StatusCode.ToString()})";
         var said = detail.Length == 0 ? head : $"{head}: {detail}";
-        throw new HttpRequestException(note is null ? said : $"{said} ({note})", null, resp.StatusCode);
+        // The JSON-RPC code travels with the refusal: a modern server refuses with 400 and a code that names the era.
+        throw new McpHttpRefusedException(note is null ? said : $"{said} ({note})", resp.StatusCode, code, data, detail);
+    }
+
+    /// <summary>The <c>code</c> and <c>data</c> of the JSON-RPC error a refusal's body carries, when it carries one.</summary>
+    private static (long? Code, JsonElement? Data) RefusalRpcError(string body)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(body.Trim());
+            if (doc.RootElement.ValueKind == JsonValueKind.Object
+                && doc.RootElement.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object)
+                return (McpJsonRpc.ErrorCode(error),
+                        error.TryGetProperty("data", out var data) ? data.Clone() : null);
+        }
+        catch (JsonException) { /* not a JSON-RPC body */ }
+        return (null, null);
     }
 
     /// <summary>
@@ -273,7 +353,9 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
         // Streamable HTTP requires the client to accept both response shapes.
         req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
-        if (_sessionId is not null)
+        if (McpModern.IsModern(payload))
+            AddModernHeaders(req, payload);
+        else if (_sessionId is not null)
             req.Headers.TryAddWithoutValidation("Mcp-Session-Id", _sessionId);
         await ApplyAuthHeadersAsync(req, ct).ConfigureAwait(false);
 
@@ -281,6 +363,29 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
         // The 401 reading asks what went WITH the request (AsksForSignIn); not every handler links the two.
         resp.RequestMessage ??= req;
         return resp;
+    }
+
+    /// <summary>
+    /// The request headers of the modern era, mirrored from the body: the version, the method, the name a call targets,
+    /// and the tool's <c>x-mcp-header</c> parameters — a server validates each against the body and refuses a call
+    /// whose headers are missing.
+    /// </summary>
+    private void AddModernHeaders(HttpRequestMessage req, JsonNode payload)
+    {
+        req.Headers.TryAddWithoutValidation("MCP-Protocol-Version", McpModern.Version);
+        var method = payload["method"] is JsonValue m && m.TryGetValue<string>(out var s) ? s : null;
+        if (method is null) return;
+        req.Headers.TryAddWithoutValidation("Mcp-Method", method);
+
+        var @params = payload["params"] as JsonObject;
+        var target  = method is "tools/call" or "prompts/get" ? @params?["name"] : method == "resources/read" ? @params?["uri"] : null;
+        if (target is not JsonValue t || !t.TryGetValue<string>(out var name)) return;
+        req.Headers.TryAddWithoutValidation("Mcp-Name", McpParamHeaders.Encode(name));
+
+        if (method == "tools/call" && _paramHeaders.TryGetValue(name, out var annotations))
+            foreach (var a in annotations)
+                if (McpParamHeaders.ValueFor(@params?["arguments"], a.Path) is { } value)
+                    req.Headers.TryAddWithoutValidation($"Mcp-Param-{a.Name}", McpParamHeaders.Encode(value));
     }
 
     /// <summary>Adds the configured static headers, then overlays an OAuth <c>Bearer</c> token from the
@@ -361,22 +466,24 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
             return false;
 
         if (msg.TryGetProperty("error", out var error))
-        {
-            var m = McpJsonRpc.ErrorMessage(error);
-            throw new InvalidOperationException($"MCP error: {m}");
-        }
+            throw new McpRpcException(error);   // code and data kept: the era decision reads them
 
         result = msg.TryGetProperty("result", out var r) ? r.Clone() : McpJsonRpc.EmptyObject();
         return true;
     }
 
-    // ── Server→client notification stream (optional GET) ──────────────────────
+    // ── Server→client notification stream ────────────────────────────────────
 
-    /// <summary>Opens the server's GET SSE stream and raises <see cref="ToolsChanged"/> on each
+    /// <summary>Opens the server's notification stream — the GET stream of the earlier revisions, a
+    /// <c>subscriptions/listen</c> in the modern era — and raises <see cref="ToolsChanged"/> on each
     /// <c>tools/list_changed</c>. A cleanly ended stream is re-opened after a pause (the server may
     /// rotate it); a non-stream response or any error stops listening for good. Never throws.</summary>
     private async Task ListenForNotificationsAsync(CancellationToken ct)
     {
+        // ⚠ A modern server sends a list change only on a subscription, and only one it announced: without the
+        // subscription its new tools stay unseen until a reconnect; without the announcement there is nothing to ask for.
+        if (Era == McpEra.Modern && !ServerToolsListChanged) return;
+
         // Back-off between re-openings. A server that accepts the GET and closes the stream at once
         // would otherwise be hammered once a second for the whole session, forever; a healthy
         // stream that ran for a while resets the delay.
@@ -387,12 +494,9 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
             HttpResponseMessage resp;
             try
             {
-                using var req = new HttpRequestMessage(HttpMethod.Get, _url);
-                req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
-                if (_sessionId is not null)
-                    req.Headers.TryAddWithoutValidation("Mcp-Session-Id", _sessionId);
-                await ApplyAuthHeadersAsync(req, ct).ConfigureAwait(false);
-                resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+                resp = Era == McpEra.Modern
+                    ? await OpenSubscriptionAsync(ct).ConfigureAwait(false)
+                    : await OpenGetStreamAsync(ct).ConfigureAwait(false);
             }
             catch
             {
@@ -403,8 +507,14 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
                 && string.Equals(resp.Content.Headers.ContentType?.MediaType, "text/event-stream", StringComparison.OrdinalIgnoreCase);
             if (!isStream)
             {
+                // A server that announced list changes and refuses the subscription is worth a word; one without a GET
+                // stream is the ordinary case of the earlier revisions.
+                if (Era == McpEra.Modern)
+                    Diagnostics.RecordOnce("Mcp",
+                        $"'{ServerName}' announced tool-list changes but refused the subscription (HTTP {(int)resp.StatusCode}); " +
+                        "a later change to its tools is seen on the next connection.", ServerName);
                 resp.Dispose();
-                return;   // the server doesn't offer a notification stream
+                return;
             }
 
             var openedAt = DateTime.UtcNow;
@@ -427,6 +537,29 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
             try { await Task.Delay(delay, ct).ConfigureAwait(false); }
             catch { return; }
         }
+    }
+
+    private async Task<HttpResponseMessage> OpenGetStreamAsync(CancellationToken ct)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Get, _url);
+        req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
+        if (_sessionId is not null)
+            req.Headers.TryAddWithoutValidation("Mcp-Session-Id", _sessionId);
+        await ApplyAuthHeadersAsync(req, ct).ConfigureAwait(false);
+        return await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>A <c>subscriptions/listen</c> for tool-list changes: its response is the long-lived stream.</summary>
+    private Task<HttpResponseMessage> OpenSubscriptionAsync(CancellationToken ct)
+    {
+        var payload = new JsonObject
+        {
+            ["jsonrpc"] = "2.0",
+            ["id"]      = Interlocked.Increment(ref _nextId),
+            ["method"]  = "subscriptions/listen",
+            ["params"]  = McpModern.WithMeta(new JsonObject { ["notifications"] = new JsonObject { ["toolsListChanged"] = true } }),
+        };
+        return PostAsync(payload, ct);
     }
 
     private static bool IsToolsListChanged(string data)

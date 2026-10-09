@@ -29,7 +29,8 @@ internal sealed class McpTool : ITool
         Description      = string.IsNullOrWhiteSpace(info.Description)
             ? $"MCP tool '{info.Name}' from server '{client.ServerName}'."
             : info.Description;
-        Parameters       = info.InputSchema;
+        // Local $refs inlined: Ollama drops a $ref, and the parameter it named would reach the model untyped.
+        Parameters       = McpSchemaRefs.Inline(info.InputSchema);
     }
 
     private McpTool(McpTool source, IApprovalService approval, string? name = null)

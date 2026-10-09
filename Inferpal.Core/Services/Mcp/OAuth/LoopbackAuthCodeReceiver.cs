@@ -27,7 +27,7 @@ internal sealed class LoopbackAuthCodeReceiver : IAuthCodeReceiver
     public int Port { get; }
     public string RedirectUri { get; }
 
-    public async Task<(string Code, string State)> GetAuthorizationCodeAsync(string authorizationUrl, CancellationToken ct)
+    public async Task<AuthorizationResponse> GetAuthorizationCodeAsync(string authorizationUrl, CancellationToken ct)
     {
         var listener = new HttpListener();
         listener.Prefixes.Add($"http://127.0.0.1:{Port}/");
@@ -60,16 +60,14 @@ internal sealed class LoopbackAuthCodeReceiver : IAuthCodeReceiver
                 var context = await AwaitCallbackAsync(contextTask, ct, cts.Token).ConfigureAwait(false);
                 var query   = context.Request.QueryString;
                 var error   = query["error"];
-                var code    = query["code"];
-                var state   = query["state"] ?? string.Empty;
 
-                await WriteResponseAsync(context.Response, error).ConfigureAwait(false);
+                await WriteResponseAsync(context.Response, completed: string.IsNullOrEmpty(error) && !string.IsNullOrEmpty(query["code"]))
+                    .ConfigureAwait(false);
 
-                if (!string.IsNullOrEmpty(error))
-                    throw new InvalidOperationException($"Authorization denied: {error}");
-                if (string.IsNullOrEmpty(code))
-                    throw new InvalidOperationException("Authorization redirect carried no code.");
-                return (code!, state);
+                // ⚠ Returned as it came, error included: the flow checks the state and the issuer FIRST — an error page
+                // from another issuer is neither acted on nor shown (RFC 9207).
+                return new AuthorizationResponse(query["code"], query["state"] ?? string.Empty, query["iss"],
+                                                 error, query["error_description"]);
             }
         }
         finally
@@ -191,11 +189,13 @@ internal sealed class LoopbackAuthCodeReceiver : IAuthCodeReceiver
         catch { /* if the browser can't be launched the listener simply times out */ }
     }
 
-    private static async Task WriteResponseAsync(HttpListenerResponse response, string? error)
+    /// <remarks>The page never repeats the server's error: before the issuer is checked, it may not be shown — Inferpal
+    /// says why the sign-in did not complete.</remarks>
+    private static async Task WriteResponseAsync(HttpListenerResponse response, bool completed)
     {
-        var html = error is null
+        var html = completed
             ? "<html><body style='font-family:sans-serif'><h3>Inferpal — authorization complete</h3>You can close this tab.</body></html>"
-            : $"<html><body style='font-family:sans-serif'><h3>Inferpal — authorization failed</h3>{WebUtility.HtmlEncode(error)}</body></html>";
+            : "<html><body style='font-family:sans-serif'><h3>Inferpal — authorization did not complete</h3>Return to Inferpal: it says why.</body></html>";
         var bytes = System.Text.Encoding.UTF8.GetBytes(html);
         response.ContentType = "text/html";
         response.ContentLength64 = bytes.Length;

@@ -60,7 +60,7 @@ Measured on our test server — one 24 GB card, LM Studio, 32K context — with 
 - **Typed mentions** — `@file` `@folder` `@code` `@diff` `@problems` `@debugger` `@clipboard` `@tree` attach exactly what you mean.
 - **Inline completions** — ghost text as you type (needs Ollama or LM Studio); Tab to accept.
 - **Code actions** — Fix, Refactor and Add docstring on a selection, shown in VS Code's Refactor Preview before anything is applied.
-- **MCP servers** — any stdio or Streamable HTTP server (with OAuth), every call behind an approval.
+- **MCP servers** — any stdio or Streamable HTTP server, of the 2026-07-28 revision or an earlier one (with OAuth), every call behind an approval.
 - **Project rules and AI checks** — markdown rules scoped to the files you edit, and `/check` to review your git diff against your own criteria.
 - **Background tasks** — `/task` investigates in the background while you keep working; with `/task propose`, the edits it suggests wait for your review.
 - **Your models at a glance** — `/models`, `/hardware`, `/bench` (measure your installed models) and `/arena` (compare two answers blind).

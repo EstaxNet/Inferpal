@@ -11,17 +11,26 @@ namespace Inferpal.Services.Mcp;
 /// newline-delimited JSON-RPC 2.0 on its stdin/stdout. Zero external dependencies.
 /// </summary>
 /// <remarks>
-/// Implements only the handshake (<c>initialize</c> → <c>notifications/initialized</c>) plus
-/// <c>tools/list</c> and <c>tools/call</c> — enough to surface MCP tools to the agent.
-/// HTTP/SSE transport is intentionally out of scope for v1.
+/// Speaks both eras: the 2026-07-28 revision (no handshake, <c>_meta</c> on every request) when the server answers the
+/// <c>server/discover</c> probe, the <c>initialize</c> → <c>notifications/initialized</c> handshake otherwise — then
+/// <c>tools/list</c> and <c>tools/call</c>, enough to surface MCP tools to the agent.
 /// </remarks>
 internal sealed class McpStdioClient : McpClientBase, IMcpClient
 {
-    private const string ProtocolVersion = "2024-11-05";
+    /// <summary>
+    /// How long the server may stay silent on the discovery probe before the handshake is sent too.
+    /// </summary>
+    /// <remarks>
+    /// A server of the earlier revisions may ignore anything before its <c>initialize</c> — the binding's "does not respond
+    /// within a reasonable timeout". This is not a verdict: a slow server reads its input in order, so its late answer to
+    /// the probe still decides, and the handshake budget stays the one it was.
+    /// </remarks>
+    private static readonly TimeSpan ProbeWait = TimeSpan.FromSeconds(3);
 
     private readonly McpServerConfig _config;
     private readonly ConcurrentDictionary<long, TaskCompletionSource<JsonElement>> _pending = new();
     private readonly SemaphoreSlim _writeLock = new(1, 1);
+    private readonly CancellationTokenSource _listenCts = new();
 
     private Process? _process;
     private Task?    _readLoop;
@@ -110,25 +119,120 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
 
             _readLoop = Task.Run(() => ReadLoopAsync());
 
-            // ── MCP handshake ────────────────────────────────────────────────
-            var initParams = new JsonObject
-            {
-                ["protocolVersion"] = ProtocolVersion,
-                ["capabilities"]    = new JsonObject(),
-                ["clientInfo"]      = new JsonObject { ["name"] = "Inferpal", ["version"] = "1.0" },
-            };
+            // ── Era, and the handshake when it is the earlier one ────────────
             using var initCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             initCts.CancelAfter(HandshakeTimeout);
-            await SendRequestAsync("initialize", initParams, initCts.Token).ConfigureAwait(false);
-
-            await SendNotificationAsync("notifications/initialized").ConfigureAwait(false);
+            var discovery = await OpenAsync(initCts.Token).ConfigureAwait(false);
+            Era                    = discovery.Era;
+            ServerToolsListChanged = discovery.ToolsListChanged;
             _ready = true;
+            // ⚠ A modern server sends list_changed only on a subscription asked for: without one, a server whose tools
+            // change would keep its old tools here until a reconnect.
+            if (Era == McpEra.Modern && ServerToolsListChanged)
+                _ = ListenForToolChangesAsync();
             return true;
         }
         catch (Exception ex)
         {
             LastError = await DescribeStartFailureAsync(ex, ct).ConfigureAwait(false);
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Decides the era by the probe the stdio binding prescribes — <c>server/discover</c> first — and completes the
+    /// legacy handshake when that is the answer.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A <c>DiscoverResult</c> or a recognised modern error is a modern server (<see cref="McpModern"/>); any other error
+    /// is a server of the earlier revisions, and <c>initialize</c> follows. A server that stays silent past
+    /// <see cref="ProbeWait"/> is sent <c>initialize</c> as well, and whichever answer comes first decides: a merely slow
+    /// server answers the probe first, since it reads in order; a silent one answers only the handshake.
+    /// </para>
+    /// <para>
+    /// ⚠ The handshake's version is unchanged (<see cref="McpModern.LegacyVersion"/>): a server that works today keeps
+    /// receiving exactly what it received, preceded by one request it refuses.
+    /// </para>
+    /// </remarks>
+    private async Task<McpDiscovery> OpenAsync(CancellationToken ct)
+    {
+        var discover = SendRequestAsync("server/discover", McpModern.WithMeta(null), ct);
+        Task<JsonElement>? initialize = null;
+        using (var wait = CancellationTokenSource.CreateLinkedTokenSource(ct))
+        {
+            if (await Task.WhenAny(discover, Task.Delay(ProbeWait, wait.Token)).ConfigureAwait(false) != discover)
+                initialize = SendRequestAsync("initialize", InitializeParams(), ct);
+            await wait.CancelAsync().ConfigureAwait(false);
+        }
+
+        while (!discover.IsCompleted)
+        {
+            // Silent so far, and the handshake sent: whichever answers first.
+            var first = await Task.WhenAny(discover, initialize!).ConfigureAwait(false);
+            if (first == initialize && initialize.IsCompletedSuccessfully)
+            {
+                Observe(discover);
+                await SendNotificationAsync("notifications/initialized").ConfigureAwait(false);
+                return McpDiscovery.Legacy;
+            }
+            // The handshake refused: a modern server refuses it — and answers the probe. Wait for that answer.
+            if (first == initialize)
+                try { await discover.ConfigureAwait(false); } catch (Exception) { /* decided below */ }
+        }
+
+        var decided = Decide(discover);
+        if (decided.Era == McpEra.Modern || decided.Failure is not null)
+        {
+            Observe(initialize);
+            return decided.Failure is { } failure ? throw new InvalidOperationException(failure) : decided;
+        }
+
+        initialize ??= SendRequestAsync("initialize", InitializeParams(), ct);
+        await initialize.ConfigureAwait(false);
+        await SendNotificationAsync("notifications/initialized").ConfigureAwait(false);
+        return McpDiscovery.Legacy;
+    }
+
+    /// <summary>The era the probe's outcome names: its answer, its refusal, or — no answer at all — the earlier one.</summary>
+    private static McpDiscovery Decide(Task<JsonElement> probe) =>
+        probe.Status switch
+        {
+            TaskStatus.RanToCompletion => McpModern.Classify(probe.Result),
+            TaskStatus.Faulted         => McpModern.FromError(probe.Exception!.InnerException ?? probe.Exception),
+            _                          => McpDiscovery.Legacy,
+        };
+
+    /// <summary>The losing request of the race is not awaited: its failure is observed, never raised later.</summary>
+    private static void Observe(Task? task) =>
+        task?.ContinueWith(static t => _ = t.Exception, CancellationToken.None,
+                           TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+
+    private static JsonObject InitializeParams() => new()
+    {
+        ["protocolVersion"] = McpModern.LegacyVersion,
+        ["capabilities"]    = new JsonObject(),
+        ["clientInfo"]      = McpModern.ClientInfo(),
+    };
+
+    /// <summary>
+    /// The subscription a modern server delivers <c>notifications/tools/list_changed</c> on, kept for the session: the
+    /// request stays open, and the notifications reach <see cref="Dispatch"/> like any other.
+    /// </summary>
+    private async Task ListenForToolChangesAsync()
+    {
+        try
+        {
+            var subscribe = new JsonObject { ["notifications"] = new JsonObject { ["toolsListChanged"] = true } };
+            await SendRequestAsync("subscriptions/listen", McpModern.WithMeta(subscribe), _listenCts.Token).ConfigureAwait(false);
+            if (!_disposed)
+                Diagnostics.Record("Mcp", $"'{ServerName}' ended its tools/list_changed subscription; a later change to its tools is seen on the next connection.");
+        }
+        catch (OperationCanceledException) { /* disposed */ }
+        catch (Exception ex)
+        {
+            if (!_disposed)
+                Diagnostics.Record("Mcp", $"'{ServerName}' refused the tools/list_changed subscription ({ex.Message}); a later change to its tools is seen on the next connection.");
         }
     }
 
@@ -203,13 +307,30 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
         try
         {
             await WriteLineAsync(request.ToJsonString(), ct).ConfigureAwait(false);
-            using (ct.Register(() => tcs.TrySetCanceled(ct)))
+            // ⚠ On stdio a request goes on running in the server unless it is told: closing a stream is HTTP's signal,
+            // not this binding's — and the modern era requires the notification.
+            using (ct.Register(() =>
+                   {
+                       if (tcs.TrySetCanceled(ct) && Era == McpEra.Modern && !_disposed) _ = SendCancelledAsync(id);
+                   }))
                 return await tcs.Task.ConfigureAwait(false);
         }
         finally
         {
             _pending.TryRemove(id, out _);
         }
+    }
+
+    private async Task SendCancelledAsync(long id)
+    {
+        var notification = new JsonObject
+        {
+            ["jsonrpc"] = "2.0",
+            ["method"]  = "notifications/cancelled",
+            ["params"]  = new JsonObject { ["requestId"] = id },
+        };
+        try { await WriteLineAsync(notification.ToJsonString(), CancellationToken.None).ConfigureAwait(false); }
+        catch (Exception ex) { Diagnostics.Swallow($"McpStdioClient.Cancel({_config.Name})", ex); }
     }
 
     private Task SendNotificationAsync(string method)
@@ -288,10 +409,7 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
                 return;
 
             if (root.TryGetProperty("error", out var error))
-            {
-                var msg = McpJsonRpc.ErrorMessage(error);
-                tcs.TrySetException(new InvalidOperationException($"MCP error: {msg}"));
-            }
+                tcs.TrySetException(new McpRpcException(error));   // code and data kept: the era decision reads them
             else if (root.TryGetProperty("result", out var result))
             {
                 tcs.TrySetResult(result.Clone());
@@ -341,6 +459,7 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
         if (_disposed) return;
         _disposed = true;
 
+        await _listenCts.CancelAsync().ConfigureAwait(false);
         FailAllPending(new ObjectDisposedException(nameof(McpStdioClient)));
 
         try
@@ -358,5 +477,6 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
 
         _process?.Dispose();
         _writeLock.Dispose();
+        _listenCts.Dispose();
     }
 }

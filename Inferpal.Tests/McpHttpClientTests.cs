@@ -98,8 +98,8 @@ public class McpHttpClientTests
         var tools = await client.ListToolsAsync(CancellationToken.None);
 
         Assert.Equal("mcp__remote__do_it", McpTool.BuildName(client.ServerName, tools!.Single().Name));
-        // initialize carries no session yet; it's echoed on every later request.
-        Assert.Equal([null, "sess-1", "sess-1"], handler.SessionHeaders);
+        // The discovery probe and initialize carry no session yet; it's echoed on every later request.
+        Assert.Equal([null, null, "sess-1", "sess-1"], handler.SessionHeaders);
         Assert.All(handler.AuthHeaders, h => Assert.Equal("Bearer abc", h));
     }
 
@@ -166,9 +166,10 @@ public class McpHttpClientTests
         await using var client = Client(handler);
         await client.StartAsync(CancellationToken.None);
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+        var ex = await Assert.ThrowsAsync<McpRpcException>(
             () => client.CallToolAsync("do_it", NoArgs(), CancellationToken.None));
         Assert.Contains("nope", ex.Message);
+        Assert.Equal(-32000, ex.Code);   // the code travels with the text
     }
 
     [Fact]

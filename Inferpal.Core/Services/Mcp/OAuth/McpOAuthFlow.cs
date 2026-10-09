@@ -60,14 +60,23 @@ internal sealed class McpOAuthFlow
         var state = Pkce.NewState();
         var authUrl = BuildAuthorizationUrl(asm.AuthorizationEndpoint, clientId, challenge, state, scopes, resource);
 
-        var (code, returnedState) = await _receiver.GetAuthorizationCodeAsync(authUrl, ct).ConfigureAwait(false);
-        if (!string.Equals(returnedState, state, StringComparison.Ordinal))
+        var response = await _receiver.GetAuthorizationCodeAsync(authUrl, ct).ConfigureAwait(false);
+        if (!string.Equals(response.State, state, StringComparison.Ordinal))
             throw new InvalidOperationException("OAuth state mismatch — possible CSRF; aborting.");
+        // ⚠ Before ANYTHING in the response is acted on or shown — its code, its error: a response from another issuer
+        // is a mix-up attack, and its code must never reach this server's token endpoint.
+        if (McpOAuthMetadata.IssuerRefusal(asm.Issuer, asm.IssParameterSupported, response.Issuer) is { } refusal)
+            throw new InvalidOperationException(refusal);
+        if (!string.IsNullOrEmpty(response.Error))
+            throw new InvalidOperationException(
+                $"Authorization denied: {response.Error}" + (string.IsNullOrEmpty(response.ErrorDescription) ? "" : $" ({response.ErrorDescription})"));
+        if (string.IsNullOrEmpty(response.Code))
+            throw new InvalidOperationException("Authorization redirect carried no code.");
 
         var form = new Dictionary<string, string>
         {
             ["grant_type"]    = "authorization_code",
-            ["code"]          = code,
+            ["code"]          = response.Code,
             ["redirect_uri"]  = _receiver.RedirectUri,
             ["client_id"]     = clientId,
             ["code_verifier"] = verifier,
@@ -76,7 +85,7 @@ internal sealed class McpOAuthFlow
         if (!string.IsNullOrEmpty(clientSecret)) form["client_secret"] = clientSecret!;
 
         var token = await PostTokenAsync(asm.TokenEndpoint, form, ct).ConfigureAwait(false);
-        return BuildState(token, clientId, clientSecret, asm.TokenEndpoint, resource, scopes);
+        return BuildState(token, clientId, clientSecret, asm.TokenEndpoint, resource, scopes, asm.Issuer);
     }
 
     /// <summary>Exchanges the stored refresh token for a fresh access token. Returns the updated state,
@@ -101,7 +110,7 @@ internal sealed class McpOAuthFlow
             var token = await PostTokenAsync(state.TokenEndpoint!, form, ct).ConfigureAwait(false);
             // A refresh response may omit a new refresh token — keep the old one then.
             return BuildState(token, state.ClientId!, state.ClientSecret, state.TokenEndpoint!, state.Resource,
-                              state.Scopes, fallbackRefreshToken: state.RefreshToken);
+                              state.Scopes, state.Issuer, fallbackRefreshToken: state.RefreshToken);
         }
         catch
         {
@@ -143,7 +152,12 @@ internal sealed class McpOAuthFlow
         // A client id the user CONFIGURED wins over one registered earlier: written in the settings to fix a sign-in,
         // it was ignored as long as a stored one existed. Otherwise reuse the registered one.
         if (!string.IsNullOrEmpty(server.ClientId))    return (server.ClientId!, server.ClientSecret);
-        if (!string.IsNullOrEmpty(existing?.ClientId)) return (existing!.ClientId!, existing.ClientSecret);
+        // ⚠ A registered client belongs to the authorization server that registered it: offered to another one — the
+        // resource moved to a new issuer — it is refused at best, and the specification has the client register again.
+        // A state that recorded no issuer (written before issuers were kept) is unknown, not different: reused.
+        if (!string.IsNullOrEmpty(existing?.ClientId)
+            && (existing!.Issuer is null || string.Equals(existing.Issuer, asm.Issuer, StringComparison.Ordinal)))
+            return (existing.ClientId!, existing.ClientSecret);
 
         if (string.IsNullOrEmpty(asm.RegistrationEndpoint))
             throw new InvalidOperationException(
@@ -161,6 +175,9 @@ internal sealed class McpOAuthFlow
             grant_types              = GrantTypes,
             response_types           = new[] { "code" },
             token_endpoint_auth_method = "none",
+            // A desktop client redirecting to loopback: "native" (OpenID Connect Registration). Left out, an OpenID
+            // provider takes the default "web", which forbids a loopback redirect URI.
+            application_type         = "native",
         };
         using var content = new StringContent(JsonSerializer.Serialize(body), System.Text.Encoding.UTF8, "application/json");
         using var resp = await _http.PostAsync(endpoint, content, ct).ConfigureAwait(false);
@@ -265,8 +282,9 @@ internal sealed class McpOAuthFlow
 
     private static McpOAuthState BuildState(TokenResponse token, string clientId, string? clientSecret,
                                             string tokenEndpoint, string? resource, IReadOnlyList<string>? scopes,
-                                            string? fallbackRefreshToken = null) => new()
+                                            string? issuer, string? fallbackRefreshToken = null) => new()
     {
+        Issuer        = issuer,
         ClientId      = clientId,
         ClientSecret  = clientSecret,
         AccessToken   = token.AccessToken,

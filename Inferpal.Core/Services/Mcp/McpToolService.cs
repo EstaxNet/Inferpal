@@ -142,7 +142,7 @@ internal sealed class McpToolService : IAsyncDisposable
     private sealed class RefreshOnlyReceiver : IAuthCodeReceiver
     {
         public string RedirectUri => "http://127.0.0.1/callback";
-        public Task<(string Code, string State)> GetAuthorizationCodeAsync(string authorizationUrl, CancellationToken ct)
+        public Task<AuthorizationResponse> GetAuthorizationCodeAsync(string authorizationUrl, CancellationToken ct)
             => throw new InvalidOperationException("Interactive authorization is not available on the refresh path.");
     }
 

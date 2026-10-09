@@ -96,22 +96,28 @@ public class McpJsonRpcTests
         Assert.Equal("unknown error", McpJsonRpc.ErrorMessage(El("null")));
     }
 
-    /// <summary>The two transports read the error the same way: they held two identical copies of the throwing read.</summary>
+    /// <summary>The two transports read the error the same way: they held two identical copies of the throwing read.
+    /// The shared reader is now the exception both throw, which keeps the code as well as the text.</summary>
     [Theory]
     [InlineData("McpStdioClient.cs")]
     [InlineData("McpHttpClient.cs")]
     public void BothTransports_ReadTheErrorThroughTheSharedReader(string file)
     {
+        var code = ConventionCoverageTests.CodeOnly(McpSource(file));
+
+        Assert.Contains("new McpRpcException(", code);
+        Assert.DoesNotContain("TryGetProperty(\"message\"", code);
+        // And that exception reads its text through the one reader.
+        Assert.Contains("McpJsonRpc.ErrorMessage(", ConventionCoverageTests.CodeOnly(McpSource("McpModern.cs")));
+    }
+
+    private static string McpSource(string file)
+    {
         var dir = new System.IO.DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null && !System.IO.File.Exists(System.IO.Path.Combine(dir.FullName, "README.md")))
             dir = dir.Parent;
         Assert.NotNull(dir);
-
-        var code = ConventionCoverageTests.CodeOnly(
-            System.IO.Path.Combine(dir!.FullName, "Inferpal.Core", "Services", "Mcp", file));
-
-        Assert.Contains("McpJsonRpc.ErrorMessage(", code);
-        Assert.DoesNotContain("TryGetProperty(\"message\"", code);
+        return System.IO.Path.Combine(dir!.FullName, "Inferpal.Core", "Services", "Mcp", file);
     }
 
     [Fact]

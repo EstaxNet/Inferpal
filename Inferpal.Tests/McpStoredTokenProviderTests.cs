@@ -31,7 +31,7 @@ public class McpStoredTokenProviderTests : IDisposable
     private sealed class ThrowingReceiver : IAuthCodeReceiver
     {
         public string RedirectUri => "http://127.0.0.1/callback";
-        public Task<(string Code, string State)> GetAuthorizationCodeAsync(string url, CancellationToken ct)
+        public Task<AuthorizationResponse> GetAuthorizationCodeAsync(string url, CancellationToken ct)
             => throw new InvalidOperationException("should not be called");
     }
 
