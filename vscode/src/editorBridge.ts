@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import { t } from './i18n';
 import type { CancellationToken } from 'vscode-jsonrpc';
 import { HostClient, EditorDelegate } from './hostClient';
-import { ActiveDocumentDto, ApprovalAnswer, ApprovalNote, EditResultDto } from './protocol';
+import { ActiveDocumentDto, ApprovalAnswer, ApprovalNote, EditResultDto, InputRequest } from './protocol';
 
 /** Documents above this size are not mirrored (the host reads them from disk instead). */
 const MAX_MIRRORED_BYTES = 1024 * 1024;
@@ -216,6 +216,17 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
   }
 
   // ── EditorDelegate (host → editor requests) ────────────────────────────────
+
+  async inputRequest(request: InputRequest): Promise<string | null> {
+    // Kept open when the focus moves: the value may have to be looked up elsewhere first.
+    const value = await vscode.window.showInputBox({
+      prompt: request.prompt,
+      password: request.password,
+      value: request.value ?? undefined,
+      ignoreFocusOut: true,
+    });
+    return value ?? null;
+  }
 
   async approvalRequest(note: ApprovalNote, token?: CancellationToken): Promise<number> {
     // §27.5 — the token relays the host's $/cancelRequest (turn cancelled/timeout): a card that

@@ -52,6 +52,9 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// </summary>
     public IDebugSession? Debug => _debug;
 
+    /// <summary>The MCP servers behind the registry's MCP tools — refreshed when the workspace's repository changes.</summary>
+    internal McpToolService Mcp => _mcp;
+
     /// <summary>The approval pipeline this registry gates its tools with — exposed so that
     /// `/tdd`'s debugger capture asks consent through the same prompt as everything else.</summary>
     public IApprovalService Approval => _approval;
@@ -114,6 +117,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new SemanticSearchTool(indexService, client, config));
         Register(new SearchDocsTool(docsIndex, client, config));
         Register(new GenerateProjectMapTool(mapService));
+        Register(new ReadSkillFileTool(() => indexService.RootDir, config));
 
         // Registered only when the front-end can actually drive a debugger: a tool whose every
         // answer is "unavailable here" costs prompt tokens on every turn and teaches a small model

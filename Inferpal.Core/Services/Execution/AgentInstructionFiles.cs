@@ -13,6 +13,11 @@ namespace Inferpal.Services.Execution;
 /// where the content can come from a web page, a file the model was asked to read, or an MCP server.
 /// </para>
 /// <para>
+/// So are the files a repository writes for coding agents (<see cref="RepoInstructionFormats"/>: AGENTS.md, CLAUDE.md,
+/// Copilot's, Cursor's, Cline's, Roo's, Continue's): read back by the next question's prompt, and by every other agent
+/// the user runs in that repository. Recognised by the table's own reader — one list, the table's.
+/// </para>
+/// <para>
 /// ⚠ <b>Every write path reaches them</b> — <c>update_memory</c>, <c>write_file</c>,
 /// <c>apply_diff</c>, <c>apply_edits</c>, <c>delete_file</c>, <c>restore_file</c> and the caret
 /// writes behind <c>EditorWriteGate</c> — and each is reachable unattended: an <c>allow</c> rule,
@@ -65,6 +70,14 @@ internal static class AgentInstructionFiles
             if (path.Length == 0) continue;
 
             var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+            // A file the repository gives agents as instructions — AGENTS.md, CLAUDE.md, Copilot's, Cursor's… The
+            // table's own reader, never a second list: a row added there is a write that asks here.
+            if (RepoInstructionFormats.AnyEndsAt(segments)) return true;
+
+            // A file of a skill — its SKILL.md, a script it runs, a template it fills: the catalog's own folders.
+            if (RepoSkills.IsInASkill(segments)) return true;
+
             for (int i = 0; i < segments.Length - 1; i++)
             {
                 if (!segments[i].Equals(Dir, StringComparison.OrdinalIgnoreCase)) continue;

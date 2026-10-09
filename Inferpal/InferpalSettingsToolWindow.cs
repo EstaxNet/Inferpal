@@ -49,6 +49,7 @@ internal class InferpalSettingsToolWindow : VsToolWindow
         // The workspace root the approval service reads the team rules from: the table shows the same file.
         var live = new SettingsLiveSources(_index, _docs,
             ConversationUsage: () => _context.ConversationUsage?.Invoke() ?? Task.FromResult<Services.Presentation.XRayPanelModel?>(null),
+            RepoInstructions: async () => _context.RepoInstructions is { } rows ? await rows() : null,
             OpenXray: OpenXrayAsync,
             OpenFile: OpenFileAsync);
         var data = new InferpalSettingsData(_config, _client, Extensibility, _mcp, () => _index.RootDir, live);

@@ -14,6 +14,7 @@ interface SettingsInbound {
   type: 'ready' | 'save' | 'testConnection' | 'refreshModels'
     | 'mcpCards' | 'mcpRetry' | 'mcpAuthorize' | 'rulesTable' | 'newRule' | 'browsePinned'
     | 'indexCard' | 'indexRebuild' | 'exclusions' | 'docsSites' | 'docsAction' | 'contextUsage' | 'projectFiles'
+    | 'repoInstructions'
     | 'pinSizes' | 'openFile' | 'openXray' | 'loadedModels' | 'unloadModels' | 'suggestModels';
   /** unloadModels: the models to unload; absent = every loaded one. */
   names?: string[];
@@ -286,6 +287,7 @@ export class SettingsPanel {
       case 'docsAction':
       case 'contextUsage':
       case 'projectFiles':
+      case 'repoInstructions':
       case 'pinSizes':
       case 'loadedModels':
       case 'unloadModels':
@@ -306,6 +308,9 @@ export class SettingsPanel {
               break;
             case 'contextUsage': this.post({ type: 'contextUsage', usage: await host.settingsContextUsage() }); break;
             case 'projectFiles': this.post({ type: 'projectFiles', files: await host.settingsProjectFiles() }); break;
+            case 'repoInstructions':
+              this.post({ type: 'repoInstructions', rows: await host.settingsRepoInstructions() });
+              break;
             case 'pinSizes':     this.post({ type: 'pinSizes', sizes: await host.settingsPinSizes(msg.pins ?? '') }); break;
             case 'loadedModels': this.post({ type: 'loadedModels', models: await host.settingsLoadedModels() }); break;
             case 'unloadModels': this.post({ type: 'loadedModels', models: await host.settingsUnloadModels(msg.names) }); break;

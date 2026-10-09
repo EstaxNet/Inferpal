@@ -139,6 +139,20 @@ internal class InferpalConfig
     public string PinnedContextFiles { get; set; } = string.Empty;
 
     /// <summary>
+    /// The families of instruction files the repository gives coding agents that are read and sent with questions —
+    /// <c>agents, copilot, claude, cursor, cline, roo, continue</c>, comma-separated; all by default, empty = none.
+    /// </summary>
+    [JsonPropertyName("repoInstructionFamilies")]
+    public string RepoInstructionFamilies { get; set; } = "agents, copilot, claude, cursor, cline, roo, continue";
+
+    /// <summary>
+    /// The skills' automatic mode: their names and descriptions in every question's prompt, the model loading the one a
+    /// request needs (<c>read_skill_file</c>). Off by default: <c>/skill</c> is then the only way to use one.
+    /// </summary>
+    [JsonPropertyName("skillsAutoMode")]
+    public bool SkillsAutoMode { get; set; } = false;
+
+    /// <summary>
     /// User-defined slash command templates, one per line in the format <c>/name=text</c>.
     /// Use <c>{args}</c> as a placeholder for extra words typed after the command name.
     /// </summary>

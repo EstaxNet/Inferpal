@@ -46,7 +46,7 @@ internal partial class InferpalToolWindowData
         var root     = FindProjectRoot();
         var sections = new SystemPromptBuilder(_config, EditorName, ContextWindowInUse, _indexService.RootDir).BuildSections(
             ModelPrompts.SystemPrompt, PersonaLanguage, _activeTemplateSuffix, root, ActiveFileRelativeTo(root),
-            _xrayDisabledSections);
+            _xrayDisabledSections, _activeFilePath);
         return XRayPanelPresenter.Build(
             sections, _xrayDisabledSections,
             AgentOrchestrator.EstimateConversationTokens(_history), ContextWindowInUse,
@@ -59,6 +59,24 @@ internal partial class InferpalToolWindowData
         XRayPanelModel? model = null;
         await RunOnVMContextAsync(() => model = BuildXrayModel());
         return model;
+    }
+
+    /// <summary>
+    /// The repository's instruction files and what the next question sends of each — built from the inputs
+    /// <see cref="BuildSystemPrompt"/> takes and the X-Ray of that prompt: <c>/instructions</c> and the settings' Context
+    /// page read this. VM thread: the history lives there.
+    /// </summary>
+    private async Task<IReadOnlyList<RepoInstructionRow>> CurrentRepoInstructionRowsAsync()
+    {
+        IReadOnlyList<RepoInstructionRow> rows = [];
+        await RunOnVMContextAsync(() =>
+        {
+            var root = FindProjectRoot();
+            var plan = new SystemPromptBuilder(_config, EditorName, ContextWindowInUse, _indexService.RootDir)
+                .RepoInstructions(root, ActiveFileRelativeTo(root), _activeFilePath);
+            rows = RepoInstructionsReport.Rows(plan, BuildXrayModel());
+        });
+        return rows;
     }
 
     /// <summary>The settings' "Open Context X-Ray": the panel opens with the counts of now.</summary>

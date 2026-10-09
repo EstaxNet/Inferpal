@@ -260,7 +260,7 @@ internal sealed partial class HostServer
                 case SlashCommandId.Prompts:
                 {
                     var result = await HandleScaffoldSlashAsync(
-                        RulesChecksPromptsCommandHandler.Prompts(s.RootDir, parts, s.Config.PromptTemplates), Strings.PromptsScaffolded, cts.Token);
+                        RulesChecksPromptsCommandHandler.Prompts(s.RootDir, parts, s.Config), Strings.PromptsScaffolded, cts.Token);
                     PromptFilesService.InvalidateCache();   // show up in autocomplete immediately
                     return result;
                 }
@@ -306,6 +306,21 @@ internal sealed partial class HostServer
 
                 case SlashCommandId.Branch:
                     return await HandleBranchSlashAsync(s, parts, cts.Token);
+
+                case SlashCommandId.Instructions:
+                    return new SlashCommandResult(true, RepoInstructionsReport.Markdown(RepoInstructionRows(s)));
+
+                case SlashCommandId.Skill:
+                {
+                    // The workspace read_skill_file reads, so /skill and the tool see one catalog. The skill is joined
+                    // as a chip BEFORE the question is sent: the adapter sends the chips it holds with it.
+                    var skill = SkillCommandHandler.Run(s.Config, s.Index.RootDir ?? (string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir), parts);
+                    return skill.Message is { } listing
+                        ? new SlashCommandResult(true, listing)
+                        : new SlashCommandResult(true, null,
+                            [new SlashEffectDto("attachChip", skill.Attachment!.Content, skill.Attachment.Label),
+                             new SlashEffectDto("sendAsPrompt", skill.Question)]);
+                }
 
                 case SlashCommandId.Xray:
                 {

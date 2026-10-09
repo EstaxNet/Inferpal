@@ -167,7 +167,8 @@ internal static class TextFileEncoding
         return lines;
     }
 
-    private static string Decode(byte[] bytes)
+    /// <summary><see cref="ReadText"/> of bytes already read — for a reader that judged them first (binary, size).</summary>
+    internal static string Decode(byte[] bytes)
     {
         var encoding = Of(bytes);
         var preamble = encoding.GetPreamble();

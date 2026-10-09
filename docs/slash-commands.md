@@ -31,6 +31,8 @@ editor with tools disabled).
 |---|---|
 | `/context` | Show the active `.inferpal/context.md` |
 | `/xray` | Context X-Ray: interactive panel breaking down everything composing the system prompt (base, custom, pinned, project files, scoped rules) — token bars, exact content per section, per-section on/off toggle for the next turn, copy of the raw prompt; the window fill counts the conversation and the tool definitions each turn carries. Also opens by clicking the context gauge. Headless adapters get the markdown breakdown instead |
+| `/skill [name request]` | List the skills — `SKILL.md` folders the repository wrote for Copilot (`.github/skills`), Claude Code (`.claude/skills`), any agent (`.agents/skills`), Cline or Roo, and your own in `~/.copilot/skills`, `~/.claude/skills`, `~/.agents/skills` — or ask with one: `/skill <name> <request>` joins its instructions and the list of its files to your question. Its files are read with `read_skill_file`; a script runs only through `run_command`, with your approval (`allowed-tools` grants nothing) |
+| `/instructions` | List the instruction files the repository gives coding agents (`AGENTS.md`, `CLAUDE.md`, Copilot's, Cursor's, Cline's, Roo's, Continue's): the tool each is for, when it applies, what the next question sends of it, and why not when it does not. The same rows are on the Context settings page |
 | `/memory` | Show `.inferpal/memory.md` (the agent's persistent memory) |
 | `/onboard` | Report the committed project profile (`.inferpal/project.json`): what it applied, what it recommends, what was refused |
 | `/onboard init` | Write a commented example profile |
@@ -82,7 +84,7 @@ editor with tools disabled).
 | `/docs list \| remove <id> \| reindex [id]` | Manage indexed documentation sources |
 | `/snippets` | `list` / `copy <n>` / `delete <n>` / `clear` saved code snippets |
 | `/template [id]` | Load a session template (code-review / bug-hunt / architecture / refactoring / tests); a conversation started in a template is reloaded in it |
-| `/prompts [init]` | List reusable prompt files in `.inferpal/prompts/*.md`, or scaffold an example |
+| `/prompts [init]` | List the custom commands — `.inferpal/prompts/*.md` and the commands the repository wrote for Copilot (`.github/prompts/*.prompt.md`), Claude Code (`.claude/commands/**/*.md`) and Continue (`.continue/prompts/`) — with where each comes from, which one a clash hides, and the variables Inferpal leaves as written; or scaffold an example |
 
 ## Models & hardware
 

@@ -255,6 +255,49 @@ internal static class Strings
     public static string PinnedFilesCount(int count, int cap) => Format(Get(nameof(PinnedFilesCount)), count, cap);
     public static string PinnedFileTokens(string tokens) => Format(Get(nameof(PinnedFileTokens)), tokens);
     public static string PinnedFileTokensSent(string sent, string whole) => Format(Get(nameof(PinnedFileTokensSent)), sent, whole);
+    public static string LabelSkillsAutoMode => Get(nameof(LabelSkillsAutoMode));
+    public static string HintSkillsAutoMode => Get(nameof(HintSkillsAutoMode));
+    public static string XrayLabelSkills(string count) => Format(Get(nameof(XrayLabelSkills)), count);
+    public static string SlashHintSkill => Get(nameof(SlashHintSkill));
+    public static string SkillsTitle => Get(nameof(SkillsTitle));
+    public static string SkillsNone => Get(nameof(SkillsNone));
+    public static string SkillsUsage => Get(nameof(SkillsUsage));
+    public static string SkillsNotLoaded => Get(nameof(SkillsNotLoaded));
+    public static string SkillNoDescription => Get(nameof(SkillNoDescription));
+    public static string SkillUnreadable => Get(nameof(SkillUnreadable));
+    public static string SkillLinkLeaves => Get(nameof(SkillLinkLeaves));
+    public static string SkillShadowed(string skill) => Format(Get(nameof(SkillShadowed)), skill);
+    public static string SkillUnknown(string name) => Format(Get(nameof(SkillUnknown)), name);
+    public static string SkillUnreadableNow(string skill) => Format(Get(nameof(SkillUnreadableNow)), skill);
+    public static string SkillApplyDefault(string name) => Format(Get(nameof(SkillApplyDefault)), name);
+    public static string SkillAttachmentLabel(string name) => Format(Get(nameof(SkillAttachmentLabel)), name);
+    public static string RepoInstructionsTitle => Get(nameof(RepoInstructionsTitle));
+    public static string RepoInstructionsNone => Get(nameof(RepoInstructionsNone));
+    public static string RepoInstructionsNoChat => Get(nameof(RepoInstructionsNoChat));
+    public static string RepoInstructionsColFamily => Get(nameof(RepoInstructionsColFamily));
+    public static string RepoInstructionsColFile => Get(nameof(RepoInstructionsColFile));
+    public static string RepoInstructionsColScope => Get(nameof(RepoInstructionsColScope));
+    public static string RepoInstructionsColSent => Get(nameof(RepoInstructionsColSent));
+    public static string RepoInstructionsColState => Get(nameof(RepoInstructionsColState));
+    public static string RepoInstructionScopeAlways => Get(nameof(RepoInstructionScopeAlways));
+    public static string RepoInstructionScopeFiles(string globs) => Format(Get(nameof(RepoInstructionScopeFiles)), globs);
+    public static string RepoInstructionScopeOnDemand => Get(nameof(RepoInstructionScopeOnDemand));
+    public static string RepoInstructionScopeManual => Get(nameof(RepoInstructionScopeManual));
+    public static string RepoInstructionScopeNever => Get(nameof(RepoInstructionScopeNever));
+    public static string RepoInstructionStateSent => Get(nameof(RepoInstructionStateSent));
+    public static string RepoInstructionStateSwitchedOff => Get(nameof(RepoInstructionStateSwitchedOff));
+    public static string RepoInstructionStateNotThisFile => Get(nameof(RepoInstructionStateNotThisFile));
+    public static string RepoInstructionStateOnDemand => Get(nameof(RepoInstructionStateOnDemand));
+    public static string RepoInstructionStateManual => Get(nameof(RepoInstructionStateManual));
+    public static string RepoInstructionStateNever => Get(nameof(RepoInstructionStateNever));
+    public static string RepoInstructionStateDuplicate(string file) => Format(Get(nameof(RepoInstructionStateDuplicate)), file);
+    public static string RepoInstructionStateNotRead => Get(nameof(RepoInstructionStateNotRead));
+    public static string RepoInstructionStateFamilyOff => Get(nameof(RepoInstructionStateFamilyOff));
+    public static string SlashHintInstructions => Get(nameof(SlashHintInstructions));
+    public static string SettingsSectionRepoInstructions => Get(nameof(SettingsSectionRepoInstructions));
+    public static string SettingsSectionRepoInstructionsDesc => Get(nameof(SettingsSectionRepoInstructionsDesc));
+    public static string LabelRepoInstructionFamilies => Get(nameof(LabelRepoInstructionFamilies));
+    public static string HintRepoInstructionFamilies => Get(nameof(HintRepoInstructionFamilies));
     public static string PinnedFileMissing => Get(nameof(PinnedFileMissing));
     public static string ProjectFilesTitle => Get(nameof(ProjectFilesTitle));
     public static string ProjectFileContext => Get(nameof(ProjectFileContext));
@@ -945,6 +988,12 @@ internal static class Strings
     public static string SlashModelNotListed(string model) => Format(Get(nameof(SlashModelNotListed)), model);
     public static string PromptsShadowedByBuiltIn(string command) => Format(Get(nameof(PromptsShadowedByBuiltIn)), command);
     public static string PromptsShadowedByConfig(string command) => Format(Get(nameof(PromptsShadowedByConfig)), command);
+    public static string SlashCategoryCustom => Get(nameof(SlashCategoryCustom));
+    public static string PromptsRepoHeader => Get(nameof(PromptsRepoHeader));
+    public static string PromptsShadowedByFile(string command, string file) => Format(Get(nameof(PromptsShadowedByFile)), command, file);
+    public static string PromptsUnfilled(string variables) => Format(Get(nameof(PromptsUnfilled)), variables);
+    public static string PromptsCommandsNotRun(string commands) => Format(Get(nameof(PromptsCommandsNotRun)), commands);
+    public static string PromptsLinkLeaves(string file) => Format(Get(nameof(PromptsLinkLeaves)), file);
     public static string ReplayRunOutOfRange(int index, int count) => Format(Get(nameof(ReplayRunOutOfRange)), index, count);
     public static string SlashToolsCurrent(string state) => Format(Get(nameof(SlashToolsCurrent)), state);
     public static string SlashToolsChanged(string state) => Format(Get(nameof(SlashToolsChanged)), state);
@@ -1383,6 +1432,9 @@ internal static class Strings
     public static string TooltipXrayClose                    => Get(nameof(TooltipXrayClose));
 
     // ── MCP OAuth ──────────────────────────────────────────────────────────────
+    public static string McpRepoServerQuestion(string name, string source, string runs) => Format(Get(nameof(McpRepoServerQuestion)), name, source, runs);
+    public static string McpRepoInputQuestion(string server, string description) => Format(Get(nameof(McpRepoInputQuestion)), server, description);
+    public static string McpRepoInputNotMasked => Get(nameof(McpRepoInputNotMasked));
     public static string McpOAuthUnsupportedPlatform => Get(nameof(McpOAuthUnsupportedPlatform));
 
     // ── Analysis-tool scan coverage ────────────────────────────────────────────

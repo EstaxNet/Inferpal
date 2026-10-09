@@ -108,7 +108,16 @@ internal sealed partial class HostServer : IDisposable
         var tokens   = secrets is null
             ? new McpTokenStore(McpTokenStore.DefaultPath)
             : new McpTokenStore(McpTokenStore.DefaultPath, secrets.Protect, secrets.Unprotect);
-        var mcp      = new McpToolService(config, approval, clientFactory: null, tokenStore: tokens);
+        // The repository's MCP servers start in its root, once the user agrees; the values they ask for are asked in
+        // the editor (input/request).
+        var mcp      = new McpToolService(config, approval, clientFactory: null, tokenStore: tokens,
+                                          workspaceRoot: () => p.RootDir,
+                                          askInput: (server, input, ct) => rpc.InvokeWithParameterObjectAsync<string?>("input/request", new
+                                          {
+                                              prompt   = Strings.McpRepoInputQuestion(server.Name, input.Description),
+                                              password = input.Password,
+                                              value    = input.Default,
+                                          }, ct));
         var docs     = new DocsIndexService(client, config);
         // ⚠ The documentation index only ever HYDRATES: nothing re-crawls it at start, so a host that does not load it
         // serves none of the sites indexed in an earlier session — search_docs not even offered, /docs listing them with
@@ -1456,7 +1465,8 @@ internal sealed partial class HostServer : IDisposable
             templateSuffix:     s.TemplateSuffix,
             projectRoot:        root,
             activeFileRelPath:  SystemPromptBuilder.RelativeActivePath(root, s.ActiveFilePath),
-            disabledSectionIds: s.XrayDisabledSections);
+            disabledSectionIds: s.XrayDisabledSections,
+            activeFilePath:     s.ActiveFilePath);
         if (s.PlanMode)                              prompt += PlanModeToolRegistry.SystemPromptSuffix;
         if (!string.IsNullOrEmpty(s.OodaSummary))    prompt += "\n\n## Session Summary\n\n" + s.OodaSummary;
         return prompt;
@@ -1472,15 +1482,32 @@ internal sealed partial class HostServer : IDisposable
             templateSuffix:    s.TemplateSuffix,
             projectRoot:       root,
             activeFileRelPath: SystemPromptBuilder.RelativeActivePath(root, s.ActiveFilePath),
-            disabledSectionIds: s.XrayDisabledSections);
+            disabledSectionIds: s.XrayDisabledSections,
+            activeFilePath:    s.ActiveFilePath);
+    }
+
+    /// <summary>The X-Ray of the prompt the next question sends — what <c>xray/panel</c> renders.</summary>
+    private static XRayPanelModel XRayModel(HostSession s) =>
+        XRayPanelPresenter.Build(
+            BuildPromptSections(s), s.XrayDisabledSections,
+            AgentOrchestrator.EstimateConversationTokens(SnapshotHistory(s)), s.ContextWindowInUse,
+            toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode));
+
+    /// <summary>
+    /// The repository's instruction files and what the next question sends of each — <c>/instructions</c> and the
+    /// Context page read this, built from the same inputs as the prompt (<see cref="BuildPromptSections"/>).
+    /// </summary>
+    private static IReadOnlyList<RepoInstructionRow> RepoInstructionRows(HostSession s)
+    {
+        var root = string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir;
+        var plan = new SystemPromptBuilder(s.Config, EditorName, s.ContextWindowInUse, s.Index.RootDir, s.FoldersOutOfReach)
+            .RepoInstructions(root, SystemPromptBuilder.RelativeActivePath(root, s.ActiveFilePath), s.ActiveFilePath);
+        return RepoInstructionsReport.Rows(plan, XRayModel(s));
     }
 
     private static XRayPanelDto ToXRayPanelDto(HostSession s)
     {
-        var model = XRayPanelPresenter.Build(
-            BuildPromptSections(s), s.XrayDisabledSections,
-            AgentOrchestrator.EstimateConversationTokens(SnapshotHistory(s)), s.ContextWindowInUse,
-            toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode));
+        var model = XRayModel(s);
         return new XRayPanelDto(
             model.Sections.Select(x => new XRaySectionDto(
                 x.Id, x.Label, x.Tokens, x.Percent, x.Content, x.Enabled, x.CanToggle)).ToList(),

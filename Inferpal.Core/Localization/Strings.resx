@@ -723,7 +723,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="SlashHintAgentStep" xml:space="preserve"><value>toggle agent step mode — pause after each tool call</value></data>
   <data name="SlashHintResume" xml:space="preserve"><value>resume agent after a step-mode pause</value></data>
   <data name="SlashHintPlan" xml:space="preserve"><value>plan mode and saved plans — /plan [list|save|next|done n|&lt;name&gt;]</value></data>
-  <data name="SlashHintPrompts" xml:space="preserve"><value>list reusable prompt files (.inferpal/prompts) — /prompts [init]</value></data>
+  <data name="SlashHintPrompts" xml:space="preserve"><value>list custom commands: .inferpal/prompts and the repository's (Copilot, Claude Code, Continue) — /prompts [init]</value></data>
   <data name="SlashHintHardware" xml:space="preserve"><value>show GPU/VRAM profile — /hardware [gb] to set the VRAM budget</value></data>
   <data name="SlashHintSetup" xml:space="preserve"><value>re-run first-run setup — re-detect backend, re-pick models</value></data>
   <data name="HardwareNoVramBackend" xml:space="preserve"><value>ℹ️ Live VRAM and per-model monitoring isn't available with this backend. The manual VRAM budget (`/hardware &lt;gb&gt;`) still drives fit-checks.</value></data>
@@ -1301,4 +1301,56 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="WelcomeCardChanges" xml:space="preserve"><value>Review my changes</value></data>
   <data name="WelcomeChangesPrompt" xml:space="preserve"><value>Review my uncommitted changes: point out bugs, risks and anything missing, such as tests.</value></data>
   <data name="WelcomeOpenFileHint" xml:space="preserve"><value>Open a file to explain it, write its tests or find its usages.</value></data>
+  <data name="RepoInstructionsTitle" xml:space="preserve"><value>Repository instructions</value></data>
+  <data name="RepoInstructionsNone" xml:space="preserve"><value>This repository gives coding agents no instruction file (AGENTS.md, CLAUDE.md, or those of Copilot, Cursor, Cline, Roo or Continue).</value></data>
+  <data name="RepoInstructionsNoChat" xml:space="preserve"><value>The chat window is not open: what its next question sends is listed once it is.</value></data>
+  <data name="RepoInstructionsColFamily" xml:space="preserve"><value>Tool</value></data>
+  <data name="RepoInstructionsColFile" xml:space="preserve"><value>File</value></data>
+  <data name="RepoInstructionsColScope" xml:space="preserve"><value>Applies</value></data>
+  <data name="RepoInstructionsColSent" xml:space="preserve"><value>Sent</value></data>
+  <data name="RepoInstructionsColState" xml:space="preserve"><value>State</value></data>
+  <data name="RepoInstructionScopeAlways" xml:space="preserve"><value>always</value></data>
+  <data name="RepoInstructionScopeFiles" xml:space="preserve"><value>files: {0}</value></data>
+  <data name="RepoInstructionScopeOnDemand" xml:space="preserve"><value>on demand</value></data>
+  <data name="RepoInstructionScopeManual" xml:space="preserve"><value>by hand</value></data>
+  <data name="RepoInstructionScopeNever" xml:space="preserve"><value>never</value></data>
+  <data name="RepoInstructionStateSent" xml:space="preserve"><value>sent</value></data>
+  <data name="RepoInstructionStateSwitchedOff" xml:space="preserve"><value>switched off in the X-Ray</value></data>
+  <data name="RepoInstructionStateNotThisFile" xml:space="preserve"><value>not for the active file</value></data>
+  <data name="RepoInstructionStateOnDemand" xml:space="preserve"><value>not sent: Inferpal does not load on-demand files yet</value></data>
+  <data name="RepoInstructionStateManual" xml:space="preserve"><value>not sent: attach it to a question to use it</value></data>
+  <data name="RepoInstructionStateNever" xml:space="preserve"><value>switched off by its own front matter</value></data>
+  <data name="RepoInstructionStateDuplicate" xml:space="preserve"><value>duplicate of {0}</value></data>
+  <data name="RepoInstructionStateNotRead" xml:space="preserve"><value>could not be read</value></data>
+  <data name="RepoInstructionStateFamilyOff" xml:space="preserve"><value>not read: this tool is off in the settings</value></data>
+  <data name="SlashHintInstructions" xml:space="preserve"><value>List the repository's instructions for coding agents, and what this question sends</value></data>
+  <data name="SettingsSectionRepoInstructions" xml:space="preserve"><value>Repository instructions</value></data>
+  <data name="SettingsSectionRepoInstructionsDesc" xml:space="preserve"><value>Instruction files this repository gives coding agents, read and sent with your questions: always, or when the active file matches. Inferpal's own project files come after them and win a conflict.</value></data>
+  <data name="LabelRepoInstructionFamilies" xml:space="preserve"><value>Tools whose files are read</value></data>
+  <data name="HintRepoInstructionFamilies" xml:space="preserve"><value>Comma-separated: agents, copilot, claude, cursor, cline, roo, continue. Empty reads none.</value></data>
+  <data name="SlashCategoryCustom" xml:space="preserve"><value>Custom commands</value></data>
+  <data name="PromptsRepoHeader" xml:space="preserve"><value>**The repository's commands** — written for Copilot, Claude Code or Continue; the words typed after one go where it asks for them, else at the end:</value></data>
+  <data name="PromptsShadowedByFile" xml:space="preserve"><value> — ⚠ never runs: `{1}` defines `{0}` too, and that one wins</value></data>
+  <data name="PromptsUnfilled" xml:space="preserve"><value> — not filled in by Inferpal, left as written: {0}</value></data>
+  <data name="PromptsCommandsNotRun" xml:space="preserve"><value> — its tool runs {0} before sending: Inferpal does not, it asks the model to (with your approval)</value></data>
+  <data name="PromptsLinkLeaves" xml:space="preserve"><value>`{0}` is not read: its link leads out of the repository.</value></data>
+  <data name="SlashHintSkill" xml:space="preserve"><value>list the skills of the repository and yours, or ask with one — /skill [name request]</value></data>
+  <data name="SkillsTitle" xml:space="preserve"><value>Skills</value></data>
+  <data name="SkillsNone" xml:space="preserve"><value>No skill: neither this repository nor your skill folders hold a SKILL.md (.github/skills, .claude/skills, .agents/skills, ~/.claude/skills…).</value></data>
+  <data name="SkillsUsage" xml:space="preserve"><value>Type `/skill &lt;name&gt; &lt;request&gt;` to ask with one: the skill is joined to your question.</value></data>
+  <data name="SkillsNotLoaded" xml:space="preserve"><value>Not loaded:</value></data>
+  <data name="SkillNoDescription" xml:space="preserve"><value>its SKILL.md has no description</value></data>
+  <data name="SkillUnreadable" xml:space="preserve"><value>its SKILL.md could not be read</value></data>
+  <data name="SkillLinkLeaves" xml:space="preserve"><value>its SKILL.md is a link that leads out of the skills folder</value></data>
+  <data name="SkillShadowed" xml:space="preserve"><value>`{0}` has the same name and wins</value></data>
+  <data name="SkillUnknown" xml:space="preserve"><value>No skill named `{0}`.</value></data>
+  <data name="SkillUnreadableNow" xml:space="preserve"><value>The skill `{0}` could not be read.</value></data>
+  <data name="SkillApplyDefault" xml:space="preserve"><value>Apply the skill {0}.</value></data>
+  <data name="SkillAttachmentLabel" xml:space="preserve"><value>Skill: {0}</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>This repository declares an MCP server: {0} ({1}). Starting it runs `{2}`. Start it? If you agree, it starts on its own from now on, until its definition changes.</value></data>
+  <data name="McpRepoInputQuestion" xml:space="preserve"><value>The MCP server {0} of this repository asks for a value: {1}</value></data>
+  <data name="McpRepoInputNotMasked" xml:space="preserve"><value>(Visual Studio shows what you type: it is not hidden.)</value></data>
+  <data name="LabelSkillsAutoMode" xml:space="preserve"><value>Let the model load a skill when it fits</value></data>
+  <data name="HintSkillsAutoMode" xml:space="preserve"><value>Every question carries the skills' names and descriptions; the model loads the one a request needs. Off: only /skill uses them.</value></data>
+  <data name="XrayLabelSkills" xml:space="preserve"><value>Skills ({0})</value></data>
 </root>

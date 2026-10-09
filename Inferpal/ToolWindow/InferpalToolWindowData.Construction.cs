@@ -101,6 +101,7 @@ internal partial class InferpalToolWindowData
         _ = LoadDocsAsync();
         // The settings window's Context page reads the conversation from here, and opens the X-Ray panel through here.
         _contextHolder.ConversationUsage = CurrentXrayModelAsync;
+        _contextHolder.RepoInstructions  = CurrentRepoInstructionRowsAsync;
         _contextHolder.OpenXray          = OpenXrayFromSettingsAsync;
         _ = StartFirstRunDiscoveryAsync();
         _ = _buildMonitor.InitializeAsync();

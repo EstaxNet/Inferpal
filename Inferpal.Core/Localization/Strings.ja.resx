@@ -715,7 +715,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SlashHintAgentStep" xml:space="preserve"><value>エージェントのステップモードを切り替え — 各ツール呼び出し後に一時停止</value></data>
   <data name="SlashHintResume" xml:space="preserve"><value>ステップモードの一時停止後にエージェントを再開</value></data>
   <data name="SlashHintPlan" xml:space="preserve"><value>プランモードと保存済みプラン — /plan [list|save|next|done n|&lt;名前&gt;]</value></data>
-  <data name="SlashHintPrompts" xml:space="preserve"><value>再利用可能なプロンプトファイルを一覧表示（.inferpal/prompts） — /prompts [init]</value></data>
+  <data name="SlashHintPrompts" xml:space="preserve"><value>カスタムコマンドを一覧表示: .inferpal/prompts とリポジトリのもの（Copilot、Claude Code、Continue） — /prompts [init]</value></data>
   <data name="SlashHintHardware" xml:space="preserve"><value>GPU/VRAM プロファイルを表示 — /hardware [gb] で VRAM バジェットを設定</value></data>
   <data name="SlashHintSetup" xml:space="preserve"><value>初回セットアップを再実行 — バックエンド再検出、モデル再選択</value></data>
   <data name="HardwareNoVramBackend" xml:space="preserve"><value>ℹ️ このバックエンドではリアルタイムの VRAM とモデル別の監視は利用できません。手動の VRAM バジェット（`/hardware &lt;gb&gt;`）は引き続き適合チェックに使用されます。</value></data>
@@ -1297,4 +1297,56 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="WelcomeCardChanges" xml:space="preserve"><value>変更をレビュー</value></data>
   <data name="WelcomeChangesPrompt" xml:space="preserve"><value>未コミットの変更をレビューしてください。バグ、リスク、テストなどの不足を指摘してください。</value></data>
   <data name="WelcomeOpenFileHint" xml:space="preserve"><value>ファイルを開くと、その説明、テストの作成、使用箇所の検索ができます。</value></data>
+  <data name="RepoInstructionsTitle" xml:space="preserve"><value>リポジトリの指示</value></data>
+  <data name="RepoInstructionsNone" xml:space="preserve"><value>このリポジトリには、コーディングエージェント向けの指示ファイル（AGENTS.md、CLAUDE.md、または Copilot・Cursor・Cline・Roo・Continue のもの）がありません。</value></data>
+  <data name="RepoInstructionsNoChat" xml:space="preserve"><value>チャットウィンドウが開いていません。次の質問で送信されるものは、開いたときに表示されます。</value></data>
+  <data name="RepoInstructionsColFamily" xml:space="preserve"><value>ツール</value></data>
+  <data name="RepoInstructionsColFile" xml:space="preserve"><value>ファイル</value></data>
+  <data name="RepoInstructionsColScope" xml:space="preserve"><value>適用</value></data>
+  <data name="RepoInstructionsColSent" xml:space="preserve"><value>送信量</value></data>
+  <data name="RepoInstructionsColState" xml:space="preserve"><value>状態</value></data>
+  <data name="RepoInstructionScopeAlways" xml:space="preserve"><value>常に</value></data>
+  <data name="RepoInstructionScopeFiles" xml:space="preserve"><value>ファイル: {0}</value></data>
+  <data name="RepoInstructionScopeOnDemand" xml:space="preserve"><value>必要時</value></data>
+  <data name="RepoInstructionScopeManual" xml:space="preserve"><value>手動</value></data>
+  <data name="RepoInstructionScopeNever" xml:space="preserve"><value>なし</value></data>
+  <data name="RepoInstructionStateSent" xml:space="preserve"><value>送信</value></data>
+  <data name="RepoInstructionStateSwitchedOff" xml:space="preserve"><value>X-Ray でオフ</value></data>
+  <data name="RepoInstructionStateNotThisFile" xml:space="preserve"><value>アクティブなファイルには該当しない</value></data>
+  <data name="RepoInstructionStateOnDemand" xml:space="preserve"><value>未送信: Inferpal はまだ必要時のファイルを読み込みません</value></data>
+  <data name="RepoInstructionStateManual" xml:space="preserve"><value>未送信: 使うには質問に添付してください</value></data>
+  <data name="RepoInstructionStateNever" xml:space="preserve"><value>自身のフロントマターで無効</value></data>
+  <data name="RepoInstructionStateDuplicate" xml:space="preserve"><value>{0} の重複</value></data>
+  <data name="RepoInstructionStateNotRead" xml:space="preserve"><value>読み取れません</value></data>
+  <data name="RepoInstructionStateFamilyOff" xml:space="preserve"><value>未読: このツールは設定でオフです</value></data>
+  <data name="SlashHintInstructions" xml:space="preserve"><value>コーディングエージェント向けのリポジトリの指示と、この質問で送信されるものを一覧表示します</value></data>
+  <data name="SettingsSectionRepoInstructions" xml:space="preserve"><value>リポジトリの指示</value></data>
+  <data name="SettingsSectionRepoInstructionsDesc" xml:space="preserve"><value>このリポジトリがコーディングエージェントに与える指示ファイルです。質問とともに読み込まれ送信されます（常に、またはアクティブなファイルが一致するとき）。Inferpal 自身のプロジェクトファイルはその後に置かれ、矛盾する場合は優先されます。</value></data>
+  <data name="LabelRepoInstructionFamilies" xml:space="preserve"><value>ファイルを読み込むツール</value></data>
+  <data name="HintRepoInstructionFamilies" xml:space="preserve"><value>カンマ区切り: agents, copilot, claude, cursor, cline, roo, continue。空の場合は何も読み込みません。</value></data>
+  <data name="SlashCategoryCustom" xml:space="preserve"><value>カスタムコマンド</value></data>
+  <data name="PromptsRepoHeader" xml:space="preserve"><value>**リポジトリのコマンド** — Copilot、Claude Code、Continue 向けに書かれたもの。コマンドの後に入力した語は、コマンドが求める場所に、なければ末尾に入ります:</value></data>
+  <data name="PromptsShadowedByFile" xml:space="preserve"><value> — ⚠ 実行されません: `{1}` も `{0}` を定義しており、そちらが優先されます</value></data>
+  <data name="PromptsUnfilled" xml:space="preserve"><value> — Inferpal は埋めず、そのまま残します: {0}</value></data>
+  <data name="PromptsCommandsNotRun" xml:space="preserve"><value> — 元のツールは送信前に {0} を実行します。Inferpal は実行せず、モデルに実行を求めます（承認が必要）</value></data>
+  <data name="PromptsLinkLeaves" xml:space="preserve"><value>`{0}` は読み込まれません: リンク先がリポジトリの外です。</value></data>
+  <data name="SlashHintSkill" xml:space="preserve"><value>リポジトリと自分のスキルを一覧表示、またはスキルを使って質問 — /skill [名前 依頼]</value></data>
+  <data name="SkillsTitle" xml:space="preserve"><value>スキル</value></data>
+  <data name="SkillsNone" xml:space="preserve"><value>スキルがありません: このリポジトリにもスキルフォルダーにも SKILL.md がありません（.github/skills、.claude/skills、.agents/skills、~/.claude/skills…）。</value></data>
+  <data name="SkillsUsage" xml:space="preserve"><value>`/skill &lt;名前&gt; &lt;依頼&gt;` と入力すると、スキルを使って質問できます。スキルは質問に添付されます。</value></data>
+  <data name="SkillsNotLoaded" xml:space="preserve"><value>読み込まれていないもの:</value></data>
+  <data name="SkillNoDescription" xml:space="preserve"><value>SKILL.md に description がありません</value></data>
+  <data name="SkillUnreadable" xml:space="preserve"><value>SKILL.md を読み取れません</value></data>
+  <data name="SkillLinkLeaves" xml:space="preserve"><value>SKILL.md がスキルフォルダーの外を指すリンクです</value></data>
+  <data name="SkillShadowed" xml:space="preserve"><value>`{0}` が同じ名前で、そちらが優先されます</value></data>
+  <data name="SkillUnknown" xml:space="preserve"><value>`{0}` という名前のスキルはありません。</value></data>
+  <data name="SkillUnreadableNow" xml:space="preserve"><value>スキル `{0}` を読み取れませんでした。</value></data>
+  <data name="SkillApplyDefault" xml:space="preserve"><value>スキル {0} を適用してください。</value></data>
+  <data name="SkillAttachmentLabel" xml:space="preserve"><value>スキル: {0}</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>このリポジトリは MCP サーバーを宣言しています: {0}（{1}）。起動すると `{2}` を実行します。起動しますか？同意すると、定義が変わるまで以後は自動で起動します。</value></data>
+  <data name="McpRepoInputQuestion" xml:space="preserve"><value>このリポジトリの MCP サーバー {0} が値を求めています: {1}</value></data>
+  <data name="McpRepoInputNotMasked" xml:space="preserve"><value>（Visual Studio は入力内容を表示します。伏せ字にはなりません。）</value></data>
+  <data name="LabelSkillsAutoMode" xml:space="preserve"><value>適したスキルをモデルに読み込ませる</value></data>
+  <data name="HintSkillsAutoMode" xml:space="preserve"><value>各質問にスキルの名前と説明が含まれ、モデルが依頼に必要なものを読み込みます。オフ: /skill のみが使用します。</value></data>
+  <data name="XrayLabelSkills" xml:space="preserve"><value>スキル（{0}）</value></data>
 </root>

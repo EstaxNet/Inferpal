@@ -99,6 +99,8 @@ Every persisted setting, its type, and default value.
 | `oodaTurnThreshold` | int | `10` | Turns before an OODA recap (0 = off) |
 | `customSystemPrompt` | string | `""` | Appended to the base system prompt |
 | `pinnedContextFiles` | string | `""` | Up to 3 paths (`\n`-separated) always injected; also pinned and unpinned from the chat in both editors |
+| `repoInstructionFamilies` | string | `"agents, copilot, claude, cursor, cline, roo, continue"` | Whose files the repository wrote for coding agents are read: instructions sent with questions, and commands offered as slash commands (comma-separated; empty = none). An unknown name is said once in `/diagnostics`; `/instructions` lists what each file does |
+| `skillsAutoMode` | bool | `false` | List the skills' names and descriptions in every question's prompt, so the model loads the one a request needs (`read_skill_file`). Measured before it shipped: the right skill 8/10 and 10/10 with two local models, none loaded wrongly in 20 questions. Off: only `/skill` uses them |
 
 ### Hardware & model lifetime
 
@@ -131,7 +133,7 @@ reported as unreachable after 15 s, not after the operating system's own retries
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| `promptTemplates` | string | `""` | User slash templates, one per line: `/name=text` (placeholder `{args}`) |
+| `promptTemplates` | string | `""` | User slash templates, one per line: `/name=text` (placeholder `{args}`; without it, the words typed after the command are added at the end). They win over a command file of the same name |
 | `customTools` | string | `""` | Custom shell tools, one per line: `name=command` |
 | `personaAutoSwitch` | bool | `true` | Persona adapts to the active file's language |
 | `mcpEnabled` | bool | `false` | Spawn MCP servers at startup and expose their tools |

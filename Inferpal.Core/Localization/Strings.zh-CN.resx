@@ -715,7 +715,7 @@
   <data name="SlashHintAgentStep" xml:space="preserve"><value>切换代理单步模式 — 每次工具调用后暂停</value></data>
   <data name="SlashHintResume" xml:space="preserve"><value>单步模式暂停后恢复代理</value></data>
   <data name="SlashHintPlan" xml:space="preserve"><value>计划模式与已保存的计划 — /plan [list|save|next|done n|&lt;名称&gt;]</value></data>
-  <data name="SlashHintPrompts" xml:space="preserve"><value>列出可重用的提示文件（.inferpal/prompts） — /prompts [init]</value></data>
+  <data name="SlashHintPrompts" xml:space="preserve"><value>列出自定义命令：.inferpal/prompts 及仓库中的命令（Copilot、Claude Code、Continue） — /prompts [init]</value></data>
   <data name="SlashHintHardware" xml:space="preserve"><value>显示 GPU/VRAM 配置 — /hardware [gb] 设置 VRAM 预算</value></data>
   <data name="SlashHintSetup" xml:space="preserve"><value>重新运行初始设置 — 重新检测后端并重新选择模型</value></data>
   <data name="HardwareNoVramBackend" xml:space="preserve"><value>ℹ️ 此后端不支持实时 VRAM 和按模型监控。手动 VRAM 预算（`/hardware &lt;gb&gt;`）仍用于适配检查。</value></data>
@@ -1297,4 +1297,56 @@
   <data name="WelcomeCardChanges" xml:space="preserve"><value>审查我的更改</value></data>
   <data name="WelcomeChangesPrompt" xml:space="preserve"><value>审查我未提交的更改：指出错误、风险以及缺失的内容（例如测试）。</value></data>
   <data name="WelcomeOpenFileHint" xml:space="preserve"><value>打开一个文件即可解释它、为其编写测试或查找其用法。</value></data>
+  <data name="RepoInstructionsTitle" xml:space="preserve"><value>仓库指令</value></data>
+  <data name="RepoInstructionsNone" xml:space="preserve"><value>此仓库没有为编码代理提供任何指令文件（AGENTS.md、CLAUDE.md，或 Copilot、Cursor、Cline、Roo、Continue 的文件）。</value></data>
+  <data name="RepoInstructionsNoChat" xml:space="preserve"><value>聊天窗口未打开：下一个问题将发送的内容会在其打开后列出。</value></data>
+  <data name="RepoInstructionsColFamily" xml:space="preserve"><value>工具</value></data>
+  <data name="RepoInstructionsColFile" xml:space="preserve"><value>文件</value></data>
+  <data name="RepoInstructionsColScope" xml:space="preserve"><value>适用</value></data>
+  <data name="RepoInstructionsColSent" xml:space="preserve"><value>已发送</value></data>
+  <data name="RepoInstructionsColState" xml:space="preserve"><value>状态</value></data>
+  <data name="RepoInstructionScopeAlways" xml:space="preserve"><value>始终</value></data>
+  <data name="RepoInstructionScopeFiles" xml:space="preserve"><value>文件：{0}</value></data>
+  <data name="RepoInstructionScopeOnDemand" xml:space="preserve"><value>按需</value></data>
+  <data name="RepoInstructionScopeManual" xml:space="preserve"><value>手动</value></data>
+  <data name="RepoInstructionScopeNever" xml:space="preserve"><value>从不</value></data>
+  <data name="RepoInstructionStateSent" xml:space="preserve"><value>已发送</value></data>
+  <data name="RepoInstructionStateSwitchedOff" xml:space="preserve"><value>已在 X-Ray 中关闭</value></data>
+  <data name="RepoInstructionStateNotThisFile" xml:space="preserve"><value>不适用于当前文件</value></data>
+  <data name="RepoInstructionStateOnDemand" xml:space="preserve"><value>未发送：Inferpal 尚不加载按需文件</value></data>
+  <data name="RepoInstructionStateManual" xml:space="preserve"><value>未发送：如需使用，请将其附加到问题中</value></data>
+  <data name="RepoInstructionStateNever" xml:space="preserve"><value>被其自身的前置元数据关闭</value></data>
+  <data name="RepoInstructionStateDuplicate" xml:space="preserve"><value>与 {0} 重复</value></data>
+  <data name="RepoInstructionStateNotRead" xml:space="preserve"><value>无法读取</value></data>
+  <data name="RepoInstructionStateFamilyOff" xml:space="preserve"><value>未读取：此工具已在设置中关闭</value></data>
+  <data name="SlashHintInstructions" xml:space="preserve"><value>列出仓库为编码代理提供的指令，以及本次提问发送的内容</value></data>
+  <data name="SettingsSectionRepoInstructions" xml:space="preserve"><value>仓库指令</value></data>
+  <data name="SettingsSectionRepoInstructionsDesc" xml:space="preserve"><value>此仓库为编码代理提供的指令文件，会随您的问题一起读取并发送：始终发送，或在当前文件匹配时发送。Inferpal 自己的项目文件排在其后，发生冲突时以其为准。</value></data>
+  <data name="LabelRepoInstructionFamilies" xml:space="preserve"><value>读取其文件的工具</value></data>
+  <data name="HintRepoInstructionFamilies" xml:space="preserve"><value>以逗号分隔：agents, copilot, claude, cursor, cline, roo, continue。留空则不读取任何文件。</value></data>
+  <data name="SlashCategoryCustom" xml:space="preserve"><value>自定义命令</value></data>
+  <data name="PromptsRepoHeader" xml:space="preserve"><value>**仓库的命令** — 为 Copilot、Claude Code 或 Continue 编写；命令后输入的文字会放在命令要求的位置，否则放在末尾：</value></data>
+  <data name="PromptsShadowedByFile" xml:space="preserve"><value> — ⚠ 永远不会运行：`{1}` 也定义了 `{0}`，以它为准</value></data>
+  <data name="PromptsUnfilled" xml:space="preserve"><value> — Inferpal 不会填充，保持原样：{0}</value></data>
+  <data name="PromptsCommandsNotRun" xml:space="preserve"><value> — 其原工具会在发送前运行 {0}：Inferpal 不会，而是请模型运行（需经您批准）</value></data>
+  <data name="PromptsLinkLeaves" xml:space="preserve"><value>`{0}` 未读取：其链接指向仓库之外。</value></data>
+  <data name="SlashHintSkill" xml:space="preserve"><value>列出仓库和您自己的技能，或借助某个技能提问 — /skill [名称 请求]</value></data>
+  <data name="SkillsTitle" xml:space="preserve"><value>技能</value></data>
+  <data name="SkillsNone" xml:space="preserve"><value>没有技能：此仓库和您的技能文件夹中都没有 SKILL.md（.github/skills、.claude/skills、.agents/skills、~/.claude/skills…）。</value></data>
+  <data name="SkillsUsage" xml:space="preserve"><value>输入 `/skill &lt;名称&gt; &lt;请求&gt;` 即可借助某个技能提问：该技能会附加到您的问题中。</value></data>
+  <data name="SkillsNotLoaded" xml:space="preserve"><value>未加载：</value></data>
+  <data name="SkillNoDescription" xml:space="preserve"><value>其 SKILL.md 没有描述</value></data>
+  <data name="SkillUnreadable" xml:space="preserve"><value>无法读取其 SKILL.md</value></data>
+  <data name="SkillLinkLeaves" xml:space="preserve"><value>其 SKILL.md 是指向技能文件夹之外的链接</value></data>
+  <data name="SkillShadowed" xml:space="preserve"><value>`{0}` 同名，以它为准</value></data>
+  <data name="SkillUnknown" xml:space="preserve"><value>没有名为 `{0}` 的技能。</value></data>
+  <data name="SkillUnreadableNow" xml:space="preserve"><value>无法读取技能 `{0}`。</value></data>
+  <data name="SkillApplyDefault" xml:space="preserve"><value>应用技能 {0}。</value></data>
+  <data name="SkillAttachmentLabel" xml:space="preserve"><value>技能：{0}</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>此仓库声明了一个 MCP 服务器：{0}（{1}）。启动它将运行 `{2}`。是否启动？如果同意，它此后会自动启动，直到其定义发生变化。</value></data>
+  <data name="McpRepoInputQuestion" xml:space="preserve"><value>此仓库的 MCP 服务器 {0} 需要一个值：{1}</value></data>
+  <data name="McpRepoInputNotMasked" xml:space="preserve"><value>（Visual Studio 会显示您输入的内容，不会隐藏。）</value></data>
+  <data name="LabelSkillsAutoMode" xml:space="preserve"><value>允许模型在适用时加载技能</value></data>
+  <data name="HintSkillsAutoMode" xml:space="preserve"><value>每个问题都附带技能的名称和描述；模型会加载请求所需的技能。关闭时：只有 /skill 使用它们。</value></data>
+  <data name="XrayLabelSkills" xml:space="preserve"><value>技能（{0}）</value></data>
 </root>

@@ -15,7 +15,7 @@
               Language="en-US"
               Publisher="EstaxNet" />
     <DisplayName>Inferpal — Local AI Agent for Visual Studio</DisplayName>
-    <Description xml:space="preserve">Private AI coding agent for Visual Studio 2026, on your own local models — Ollama, LM Studio, llama.cpp, vLLM. Plans, edits, builds, runs your tests and debugs failing .NET tests. 28 built-in tools, every write approved. No cloud, no telemetry, no API key.</Description>
+    <Description xml:space="preserve">Private AI coding agent for Visual Studio 2026, on your own local models — Ollama, LM Studio, llama.cpp, vLLM. Plans, edits, builds, runs your tests and debugs failing .NET tests. 29 built-in tools, every write approved. No cloud, no telemetry, no API key.</Description>
     <MoreInfo>https://github.com/EstaxNet/Inferpal</MoreInfo>
     <!-- The license MUST be a .txt/.rtf file embedded in the VSIX (VSIX 2.0 schema), not a URL
          - a URL fails Marketplace validation. -->

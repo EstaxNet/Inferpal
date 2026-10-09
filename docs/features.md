@@ -26,7 +26,7 @@ exists.
   commands, search the web, diagnose builds, run tests, search the codebase) for up to
   **20 turns**, showing each step as a collapsible bubble. Independent read-only tools
   (`read_file`, `list_files`, `search_in_files`) in a single turn run **in parallel**.
-- **28 built-in tools** plus user-defined shell tools and [MCP](mcp.md) server tools — see
+- **29 built-in tools** plus user-defined shell tools and [MCP](mcp.md) server tools — see
   **[Tools](tools.md)**.
 - **Agent Step Mode** — pause between tool calls to inspect or override each action. Toggle
   with the 🦶 button (or `/agent-step`); continue with **▶ Resume** (or `/resume`).
@@ -173,6 +173,33 @@ exists.
   layers dominate the budget.
 - **Project rules & AI checks** — repo-versioned governance. See
   **[Rules & Checks](rules-and-checks.md)**.
+- **Instructions your repository already gives coding agents** — `AGENTS.md` (from the git root
+  down to the active file's folder), `.github/copilot-instructions.md` and
+  `.github/instructions/*.instructions.md` (`applyTo`), `CLAUDE.md` with the files it imports,
+  `.claude/rules/`, `.cursor/rules/*.mdc`, `.cursorrules`, `.clinerules`, `.roo/rules/` and
+  `.continue/rules/` are read as each tool reads them and sent with every question — always, or
+  when the active file matches their globs. They come after pinned files and before `.inferpal/`,
+  which wins a conflict; a file identical to another is sent once; they share the prompt's file
+  budget and a cut says so. Rules meant to load on demand or by hand are not sent yet.
+  `/instructions` and the Context settings page list every file found — its tool, when it
+  applies, what the next question sends of it (cut or whole), and why not when it does not —
+  and `repoInstructionFamilies` chooses which tools' files are read (all by default).
+- **Commands your repository already wrote** — `.github/prompts/*.prompt.md` (Copilot),
+  `.claude/commands/**/*.md` (Claude Code, subfolders as `/folder:name`) and `.continue/prompts/` (Continue) are
+  slash commands too, named as their tool names them, with their origin in the autocomplete and `/help`.
+  `${input:…}`, `$ARGUMENTS` and `{{{ input }}}` receive the words typed after the command, and a command
+  that asks for none gets them at the end. A command named like a built-in, or like an earlier one, is
+  dropped and `/prompts` says by what; a Claude Code `` !`command` `` line is never run before sending — the
+  model is asked to run it, under approval.
+- **Skills** — the `SKILL.md` folders a repository wrote for Copilot (`.github/skills`), Claude Code
+  (`.claude/skills`), any agent of the Agent Skills standard (`.agents/skills`), Cline or Roo, and your own
+  (`~/.copilot/skills`, `~/.claude/skills`, `~/.agents/skills`). `/skill` lists them; `/skill <name> <request>`
+  joins the skill's instructions and the list of its files to your question, named under it like an attached file.
+  The model reads the skill's other files with `read_skill_file`, confined to that skill's folder, and runs a script
+  only through `run_command` — with your approval: `allowed-tools` grants nothing. A repository's skill wins over
+  yours of the same name, and `/skill` names the one left out. Writing into a skill folder always asks.
+  With `skillsAutoMode` on (off by default), every question lists the skills and the model loads the one a request
+  needs by itself.
 - **Project profile & `/onboard`** — `.inferpal/project.json` travels with the repository and
   says how it likes to be worked on. Index exclusions apply on their own (additively — a clone
   can exclude more, never index more); model roles and context size are recommended, shown next
@@ -265,6 +292,12 @@ exists.
   alike — is **force-prompted**: never auto-approved by any rule, session grant or setting,
   never blocked — the approval prompt, where the raw command is visible, is the actual boundary.
   See **[Tools → Permission rules](tools.md)**.
+- **Instruction files always ask first** — a write to a file agents read back as instructions is
+  force-prompted the same way: Inferpal's own `.inferpal/` memory, notes, context and rules, and the
+  files a repository writes for coding agents (`AGENTS.md`, `CLAUDE.md`,
+  `.github/copilot-instructions.md`, `.github/instructions/`, `.claude/rules/`, `.cursor/rules/`,
+  `.cursorrules`, `.clinerules`, `.roo/rules/`, `.continue/rules/`). A silent edit there would
+  change what every later session — and every other agent in the repository — is told to do.
 - **Hardened SSRF guard** on outbound fetches (DNS rebinding, IPv4-mapped IPv6, `0.0.0.0/8`,
   loopback/private ranges, ReDoS-safe timeout).
 - **Circuit breaker** on backend failures and **loop detection** to stop infinite agent loops.

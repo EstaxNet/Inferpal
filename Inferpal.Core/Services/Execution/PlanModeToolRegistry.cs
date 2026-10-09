@@ -24,7 +24,7 @@ internal sealed class PlanModeToolRegistry(IToolRegistry inner) : IToolRegistry
         "read_file", "list_files", "search_in_files", "search_codebase", "search_docs",
         "get_diagnostics", "get_active_document", "get_open_editors", "get_solution_info",
         "get_git_status", "get_debugger_state", "generate_project_map", "analyze_code",
-        "web_search", "fetch_url",
+        "web_search", "fetch_url", "read_skill_file",
     };
 
     /// <summary>Appended to the system prompt while plan mode is active (model-facing, English).</summary>

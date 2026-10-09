@@ -1,6 +1,8 @@
 using System.IO;
 using System.Text;
+using Inferpal.Config;
 using Inferpal.Localization;
+using Inferpal.Services.Persistence;
 
 namespace Inferpal.Services.Commands;
 
@@ -100,31 +102,69 @@ internal static class RulesChecksPromptsCommandHandler
         "\n" +
         "{args}\n";
 
-    /// <param name="configTemplates">The settings' <c>PromptTemplates</c>: a template of the same name wins over a file.</param>
-    public static CommandListResult Prompts(string projectRoot, string[] parts, string? configTemplates = null)
+    /// <param name="config">The settings: their <c>PromptTemplates</c> win over a file of the same name, and
+    /// <c>repoInstructionFamilies</c> says whose command folders are read.</param>
+    /// <remarks>
+    /// Read from the loader the router uses (<see cref="SlashTemplates.Report"/>), so the listing says which command
+    /// runs. ⚠ The settings' templates come first: a file of the same name is listed with its own description, and
+    /// typing it runs the settings' text.
+    /// </remarks>
+    public static CommandListResult Prompts(string projectRoot, string[] parts, InferpalConfig? config = null)
     {
         var dir = Path.Combine(projectRoot, ".inferpal", "prompts");
         if (IsInit(parts))
             return new(null, new ScaffoldRequest(dir, "review-security.md", PromptsExampleContent));
 
-        var prompts = PromptFilesService.LoadUncached(dir, out var unreadable);
-        if (prompts.Count == 0)
-            return new(Unreadable(unreadable) is { } only ? Strings.PromptsNone + "\n\n" + only : Strings.PromptsNone);
+        // A listing reads the folders as they are now, not as the autocomplete cached them a moment ago.
+        PromptFilesService.InvalidateCache();
+        PromptFilesService.LoadUncached(dir, out var unreadable);
+        var report  = SlashTemplates.Report(config ?? new InferpalConfig(), projectRoot);
+        var own     = report.Entries.Where(e => e.Template.Source?.StartsWith(".inferpal/prompts/", StringComparison.Ordinal) == true).ToList();
+        var foreign = report.Entries.Where(e => e.Template.Origin is not null).ToList();
 
-        // ⚠ The settings' templates come first (SlashTemplates.Load): a file of the same name is listed with its own
-        // description, and typing it runs the settings' text.
-        var fromSettings = SlashCommandRouter.ParseUserTemplates(configTemplates).Select(t => t.Name).ToHashSet();
-        var sb = new StringBuilder(Strings.PromptsListHeader);
-        foreach (var p in prompts)
+        var sb = new StringBuilder();
+        // "No prompt files" right above the repository's commands read as "no commands".
+        if (own.Count == 0 && foreign.Count > 0)
+            sb.Append(Unreadable(unreadable) ?? "");
+        else if (own.Count == 0)
+            sb.Append(Unreadable(unreadable) is { } only ? Strings.PromptsNone + "\n\n" + only : Strings.PromptsNone);
+        else
         {
-            sb.Append("\n- `").Append(p.Name).Append('`');
-            // The router answers a built-in first: a file with that name is listed, but it never runs.
-            if (SlashCommandRouter.IsBuiltIn(p.Name)) sb.Append(Strings.PromptsShadowedByBuiltIn(p.Name));
-            else if (fromSettings.Contains(p.Name)) sb.Append(Strings.PromptsShadowedByConfig(p.Name));
-            if (p.Hint is not null) sb.Append(" — ").Append(p.Hint);
+            sb.Append(Strings.PromptsListHeader);
+            foreach (var e in own)
+            {
+                sb.Append("\n- `").Append(e.Template.Name).Append('`').Append(Masked(e));
+                if (e.Template.Hint is not null) sb.Append(" — ").Append(e.Template.Hint);
+            }
+            if (Unreadable(unreadable) is { } line) sb.Append("\n\n").Append(line);
         }
-        return new(Append(sb, unreadable));
+
+        var repo = report.Repository;
+        if (foreign.Count == 0 && repo.LinksLeaving.Count == 0 && repo.Unreadable.Count == 0) return new(sb.ToString());
+        if (sb.Length > 0) sb.Append("\n\n");
+        sb.Append(Strings.PromptsRepoHeader);
+        foreach (var e in foreign)
+        {
+            var t = e.Template;
+            sb.Append("\n- `").Append(t.Name).Append("` — ").Append(t.Origin).Append(" (`").Append(t.Source).Append("`)")
+              .Append(Masked(e));
+            if (t.Hint is not null) sb.Append(" — ").Append(t.Hint);
+            if (t.Unfilled is { Count: > 0 } unfilled) sb.Append(Strings.PromptsUnfilled(Quoted(unfilled)));
+            if (t.NotRun is { Count: > 0 } notRun) sb.Append(Strings.PromptsCommandsNotRun(Quoted(notRun)));
+        }
+        foreach (var file in repo.LinksLeaving) sb.Append("\n\n").Append(Strings.PromptsLinkLeaves(file));
+        if (Unreadable(repo.Unreadable) is { } repoLine) sb.Append("\n\n").Append(repoLine);
+        return new(sb.ToString());
     }
+
+    /// <summary>Why a listed command never runs — the router answers a built-in first, then the first of a name — or nothing.</summary>
+    private static string Masked(SlashTemplateEntry e) =>
+        e.BuiltIn                 ? Strings.PromptsShadowedByBuiltIn(e.Template.Name)
+        : e.Winner is null        ? ""
+        : e.Winner.Source is null ? Strings.PromptsShadowedByConfig(e.Template.Name)
+        :                           Strings.PromptsShadowedByFile(e.Template.Name, e.Winner.Source);
+
+    private static string Quoted(IEnumerable<string> items) => string.Join(", ", items.Select(i => "`" + i + "`"));
 
     // The files that could not be read
     //

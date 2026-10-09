@@ -114,7 +114,7 @@ Inferpal.Core/
     ├── Agent/       Plan→Act→Observe orchestrator, policies, compaction
     ├── Inference/   Providers (Ollama, LM Studio, OpenAI-compatible) + ModelCatalog
     ├── Execution/   Tool registries, approval, pattern permissions, file history
-    ├── Tools/       The 28 built-in ITool implementations
+    ├── Tools/       The 29 built-in ITool implementations
     ├── Rag/         CodeChunker, RagDatabase, ProjectIndexService (hybrid search)
     ├── Docs/        @Docs crawler/index
     ├── Lsp/         LSP semantic-chunking tier

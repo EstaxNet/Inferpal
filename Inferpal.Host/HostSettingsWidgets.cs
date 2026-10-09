@@ -69,6 +69,11 @@ internal sealed partial class HostServer
             toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode)));
     }
 
+    /// <summary>`settings/repoInstructions` — the instruction files the repository gives coding agents, and what the next
+    /// question sends of each (the rows `/instructions` prints).</summary>
+    [JsonRpcMethod("settings/repoInstructions")]
+    public IReadOnlyList<RepoInstructionRow> SettingsRepoInstructions() => RepoInstructionRows(Session());
+
     /// <summary>`settings/projectFiles` — the project's files the prompt reads, and whether each exists.</summary>
     [JsonRpcMethod("settings/projectFiles")]
     public IReadOnlyList<ProjectFileRow> SettingsProjectFiles() => SettingsWidgets.ProjectFiles(Session().RootDir);

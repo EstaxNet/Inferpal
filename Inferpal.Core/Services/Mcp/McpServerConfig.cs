@@ -45,7 +45,8 @@ internal sealed record McpServerConfig(
     string? Url = null,
     IReadOnlyDictionary<string, string>? Headers = null,
     McpOAuthConfig? OAuth = null,
-    bool Enabled = true)
+    bool Enabled = true,
+    string? WorkingDirectory = null)
 {
     /// <summary>True when this entry targets a Streamable HTTP server (has a <c>url</c>) rather than stdio.</summary>
     public bool IsHttp => !string.IsNullOrWhiteSpace(Url);

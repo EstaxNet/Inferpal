@@ -1,4 +1,5 @@
 using System.IO;
+using Inferpal.Config;
 using Inferpal.Localization;
 using Inferpal.Services.Commands;
 using Xunit;
@@ -151,7 +152,7 @@ public class RulesChecksPromptsCommandHandlerTests : IDisposable
         WriteFile("prompts", "review-security.md", "---\ndescription: From the file\n---\nReview {args}\n");
         WriteFile("prompts", "standup.md", "Summarize {args}\n");
 
-        var result = RulesChecksPromptsCommandHandler.Prompts(_root, List(), "/review-security=Check {args}");
+        var result = RulesChecksPromptsCommandHandler.Prompts(_root, List(), new InferpalConfig { PromptTemplates = "/review-security=Check {args}" });
 
         Assert.Contains("`/review-security`" + Strings.PromptsShadowedByConfig("/review-security"), result.Message);
         Assert.DoesNotContain(Strings.PromptsShadowedByConfig("/standup"), result.Message);   // reference arm: a free name
@@ -168,6 +169,7 @@ public class RulesChecksPromptsCommandHandlerTests : IDisposable
         Assert.NotNull(dir);
         var code = ConventionCoverageTests.CodeOnly(Path.Combine(dir!.FullName, Path.Combine(parts)));
 
-        Assert.Matches(@"RulesChecksPromptsCommandHandler\.Prompts\([^;]*PromptTemplates\)", code);
+        // The settings themselves: their templates, and whose command folders the repository reads.
+        Assert.Matches(@"RulesChecksPromptsCommandHandler\.Prompts\([^;]*(_config|s\.Config)\)", code);
     }
 }

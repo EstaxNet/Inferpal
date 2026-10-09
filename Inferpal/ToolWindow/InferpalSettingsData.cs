@@ -111,6 +111,8 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     private string _hintVramBudget               = string.Empty;
     private string _hintCustomSystemPrompt       = string.Empty;
     private string _labelCustomSystemPrompt      = string.Empty;
+    private string _labelRepoInstructionFamilies = string.Empty;
+    private string _hintRepoInstructionFamilies  = string.Empty;
     private string _labelPinnedContextFiles      = string.Empty;
     private string _hintPinnedContextFiles       = string.Empty;
 
@@ -174,6 +176,9 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     private string _btnMcpCancelServer                  = string.Empty;
     private string _btnMcpImportJson                    = string.Empty;
     private bool   _personaAutoSwitch;
+    private bool   _skillsAutoMode;
+    private string _labelSkillsAutoMode = string.Empty;
+    private string _hintSkillsAutoMode  = string.Empty;
     private string _labelPersonaAutoSwitch       = string.Empty;
     private string _hintPersonaAutoSwitch        = string.Empty;
     private string _labelOodaTurnThreshold         = string.Empty;
@@ -250,6 +255,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     private string _contextWindowKeepTurnsText;
     private string _vramBudgetText;
     private string _customSystemPrompt;
+    private string _repoInstructionFamilies;
     private string _pinnedContextFiles;
     private string _promptTemplates;
     private string _hintPromptTemplates  = string.Empty;
@@ -366,11 +372,13 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             ? config.VramBudgetGb.ToString("0.#", System.Globalization.CultureInfo.CurrentCulture)
             : string.Empty;
         _customSystemPrompt          = config.CustomSystemPrompt;
+        _repoInstructionFamilies     = config.RepoInstructionFamilies;
         _pinnedContextFiles          = config.PinnedContextFiles;
         _promptTemplates             = config.PromptTemplates;
         _customTools                 = config.CustomTools;
         _permissionRules             = config.PermissionRules;
         _personaAutoSwitch           = config.PersonaAutoSwitch;
+        _skillsAutoMode              = config.SkillsAutoMode;
         _oodaTurnThresholdText       = config.OodaTurnThreshold.ToString();
         _compactionEnabled           = config.CompactionEnabled;
         (_compactionTimeoutHoursText, _compactionTimeoutMinutesText, _compactionTimeoutSecondsText) = SplitDuration(config.CompactionTimeoutSeconds);
@@ -563,6 +571,8 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         HintVramBudget               = Strings.HintVramBudget;
         LabelCustomSystemPrompt      = Strings.LabelCustomSystemPrompt;
         HintCustomSystemPrompt       = Strings.HintCustomSystemPrompt;
+        LabelRepoInstructionFamilies = Strings.LabelRepoInstructionFamilies;
+        HintRepoInstructionFamilies  = Strings.HintRepoInstructionFamilies;
         LabelPinnedContextFiles      = Strings.LabelPinnedContextFiles;
         HintPinnedContextFiles       = Strings.HintPinnedContextFiles;
         HintPromptTemplates          = Strings.HintPromptTemplates;
@@ -583,6 +593,8 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         LabelToolCommand             = Strings.LabelToolCommand;
         LabelPersonaAutoSwitch       = Strings.LabelPersonaAutoSwitch;
         HintPersonaAutoSwitch        = Strings.HintPersonaAutoSwitch;
+        LabelSkillsAutoMode          = Strings.LabelSkillsAutoMode;
+        HintSkillsAutoMode           = Strings.HintSkillsAutoMode;
         LabelOodaTurnThreshold       = Strings.LabelOodaTurnThreshold;
         HintOodaTurnThreshold        = Strings.HintOodaTurnThreshold;
         LabelCompactionEnabled       = Strings.LabelCompactionEnabled;
@@ -812,6 +824,8 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string HintVramBudget               { get => _hintVramBudget;              set => SetProperty(ref _hintVramBudget,              value); }
     [DataMember] public string LabelCustomSystemPrompt  { get => _labelCustomSystemPrompt;  set => SetProperty(ref _labelCustomSystemPrompt,  value); }
     [DataMember] public string HintCustomSystemPrompt   { get => _hintCustomSystemPrompt;   set => SetProperty(ref _hintCustomSystemPrompt,   value); }
+    [DataMember] public string LabelRepoInstructionFamilies { get => _labelRepoInstructionFamilies; set => SetProperty(ref _labelRepoInstructionFamilies, value); }
+    [DataMember] public string HintRepoInstructionFamilies  { get => _hintRepoInstructionFamilies;  set => SetProperty(ref _hintRepoInstructionFamilies,  value); }
     [DataMember] public string LabelPinnedContextFiles  { get => _labelPinnedContextFiles;  set => SetProperty(ref _labelPinnedContextFiles,  value); }
     [DataMember] public string HintPinnedContextFiles   { get => _hintPinnedContextFiles;   set => SetProperty(ref _hintPinnedContextFiles,   value); }
     [DataMember] public string HintPromptTemplates      { get => _hintPromptTemplates;      set => SetProperty(ref _hintPromptTemplates,      value); }
@@ -821,6 +835,9 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public bool   PersonaAutoSwitch        { get => _personaAutoSwitch;        set => SetProperty(ref _personaAutoSwitch,        value); }
     [DataMember] public string LabelPersonaAutoSwitch   { get => _labelPersonaAutoSwitch;   set => SetProperty(ref _labelPersonaAutoSwitch,   value); }
     [DataMember] public string HintPersonaAutoSwitch    { get => _hintPersonaAutoSwitch;    set => SetProperty(ref _hintPersonaAutoSwitch,    value); }
+    [DataMember] public bool   SkillsAutoMode           { get => _skillsAutoMode;           set => SetProperty(ref _skillsAutoMode,           value); }
+    [DataMember] public string LabelSkillsAutoMode      { get => _labelSkillsAutoMode;      set => SetProperty(ref _labelSkillsAutoMode,      value); }
+    [DataMember] public string HintSkillsAutoMode       { get => _hintSkillsAutoMode;       set => SetProperty(ref _hintSkillsAutoMode,       value); }
     [DataMember] public string LabelOodaTurnThreshold   { get => _labelOodaTurnThreshold;   set => SetProperty(ref _labelOodaTurnThreshold,   value); }
     [DataMember] public string HintOodaTurnThreshold    { get => _hintOodaTurnThreshold;    set => SetProperty(ref _hintOodaTurnThreshold,    value); }
     [DataMember] public string LabelCompactionEnabled   { get => _labelCompactionEnabled;   set => SetProperty(ref _labelCompactionEnabled,   value); }
@@ -959,6 +976,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string ContextWindowKeepTurnsText   { get => _contextWindowKeepTurnsText;   set => SetProperty(ref _contextWindowKeepTurnsText,   value); }
     [DataMember] public string VramBudgetText               { get => _vramBudgetText;               set => SetProperty(ref _vramBudgetText,               value); }
     [DataMember] public string CustomSystemPrompt           { get => _customSystemPrompt;            set => SetProperty(ref _customSystemPrompt,            value); }
+    [DataMember] public string RepoInstructionFamilies      { get => _repoInstructionFamilies;       set => SetProperty(ref _repoInstructionFamilies,       value); }
     [DataMember] public string PinnedContextFiles           { get => _pinnedContextFiles;            set => SetProperty(ref _pinnedContextFiles,            value); }
     [DataMember] public string PromptTemplates              { get => _promptTemplates;               set => SetProperty(ref _promptTemplates,               value); }
     [DataMember] public string CustomTools                  { get => _customTools;                   set => SetProperty(ref _customTools,                   value); }
@@ -1127,7 +1145,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
 
     private async Task SaveCoreAsync(CancellationToken ct)
     {
-        string url = string.Empty, customPrompt = string.Empty, pinnedContextFiles = string.Empty, promptTemplates = string.Empty, customTools = string.Empty, permissionRules = string.Empty;
+        string url = string.Empty, customPrompt = string.Empty, repoFamilies = string.Empty, pinnedContextFiles = string.Empty, promptTemplates = string.Empty, customTools = string.Empty, permissionRules = string.Empty;
         string apiKey = string.Empty;
         // Dropdowns whose SelectedItem is bound: null when the selection left its list, never a
         // choice (see SettingsFallback.KeepSelection).
@@ -1145,7 +1163,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         string modelIdleTimeoutText = string.Empty;
         string mcpServersJson = string.Empty;
         var density = "comfortable";
-        bool toolExpanded = false, askBefore = true, compactionEnabled = true, inlineEnabled = true, ragEnabled = true, ragAutoContextEnabled = true, smartFixEnabled = true, agentModeEnabled = false, lspEnabled = false, modelAutoUnload = true, personaAutoSwitch = true, mcpEnabled = false, modelRouterAuto = false, useSampling = true, inlineDiff = true;
+        bool toolExpanded = false, askBefore = true, compactionEnabled = true, inlineEnabled = true, ragEnabled = true, ragAutoContextEnabled = true, smartFixEnabled = true, agentModeEnabled = false, lspEnabled = false, modelAutoUnload = true, personaAutoSwitch = true, skillsAutoMode = false, mcpEnabled = false, modelRouterAuto = false, useSampling = true, inlineDiff = true;
         await RunOnVMContextAsync(() =>
         {
             url                  = BaseUrl.Trim();
@@ -1167,6 +1185,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             ctxKeepText          = ContextWindowKeepTurnsText.Trim();
             vramBudgetText       = VramBudgetText.Trim();
             customPrompt         = CustomSystemPrompt;
+            repoFamilies         = RepoInstructionFamilies ?? string.Empty;
             SyncPinnedTextFromRows();   // rows are the source of truth → refresh the text mirrors
             SyncSlashTextFromRows();
             SyncToolTextFromRows();
@@ -1175,6 +1194,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             customTools          = CustomTools;
             permissionRules      = PermissionRules;
             personaAutoSwitch    = PersonaAutoSwitch;
+            skillsAutoMode       = SkillsAutoMode;
             oodaThreshText       = OodaTurnThresholdText.Trim();
             compactionEnabled    = CompactionEnabled;
             compactTimeoutSec    = CombineDuration(CompactionTimeoutHoursText, CompactionTimeoutMinutesText, CompactionTimeoutSecondsText);
@@ -1296,12 +1316,14 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         edited.VramBudgetGb             = vbOk ? Math.Round(vb, 1)
                                                : SettingsFallback.For(vramBudgetText, edited.VramBudgetGb, 0);
         edited.CustomSystemPrompt        = customPrompt;
+        edited.RepoInstructionFamilies   = repoFamilies;
         edited.PinnedContextFiles        = PinnedFilesPolicy.MergeEdits(
             _config.PinnedContextFiles, edited.PinnedContextFiles, pinnedContextFiles);
         edited.PromptTemplates           = promptTemplates;
         edited.CustomTools               = customTools;
         edited.PermissionRules           = permissionRules;
         edited.PersonaAutoSwitch         = personaAutoSwitch;
+        edited.SkillsAutoMode            = skillsAutoMode;
         edited.OodaTurnThreshold         = ReadInt(oodaThreshText, "oodaTurnThreshold", () => Strings.LabelOodaTurnThreshold,
                                                     edited.OodaTurnThreshold, c => c.OodaTurnThreshold);
         edited.CompactionEnabled         = compactionEnabled;

@@ -155,6 +155,7 @@ internal sealed partial class HostServer
         "IndexCardShowThem", "IndexCardHideThem", "IndexExclusionsTitle", "IndexExclusionsFrom", "IndexExclusionsHowTo",
         "DocsReindex", "DocsAddSite", "DocsAddUrlLabel", "DocsAddButton", "DocsNoSitesYet",
         "ContextUsageOpenXray", "ContextUsageChangeWindow", "ProjectFilesTitle", "ProjectFileNotYet",
+        "RepoInstructionsNone",
         // The theme cards of the Appearance page
         "ThemeLight", "ThemeDark", "ThemeHighContrast", "ThemeInUse",
     ];

@@ -41,7 +41,52 @@ internal sealed record RepoInstructionFormat(
     IReadOnlyList<string>? FilePatterns = null,
     bool Recursive = false,
     IReadOnlyList<string>? SkipPatterns = null,
-    string? OnlyWithout = null);
+    string? OnlyWithout = null)
+{
+    private readonly string[] _location = Location.Split('/');
+
+    /// <summary>Whether <paramref name="fileName"/> is one of this folder format's files: one of its patterns, none of
+    /// its skipped names.</summary>
+    internal bool HoldsName(string fileName, bool ignoreCase) =>
+        MatchesAny(FilePatterns, fileName, ignoreCase) && !MatchesAny(SkipPatterns, fileName, ignoreCase);
+
+    /// <summary>
+    /// Whether a path, cut on its separators, ends at a file of this format — wherever the repository's root is, which
+    /// the approval funnel does not know. Case-insensitive: matching more than the file system would costs a prompt,
+    /// matching less a silent write.
+    /// </summary>
+    internal bool EndsAtOneOfItsFiles(IReadOnlyList<string> segments)
+    {
+        static bool Same(string a, string b) => a.Equals(b, StringComparison.OrdinalIgnoreCase);
+        bool RunAt(int start)
+        {
+            if (start < 0 || start + _location.Length > segments.Count) return false;
+            for (var i = 0; i < _location.Length; i++)
+                if (!Same(segments[start + i], _location[i])) return false;
+            return true;
+        }
+
+        switch (Placement)
+        {
+            case RepoInstructionPlacement.Chain:                                 // in any folder down the chain
+                return segments.Count > 0 && Same(segments[^1], _location[^1]);
+            case RepoInstructionPlacement.RootFile:
+                return RunAt(segments.Count - _location.Length);
+            default:
+                if (segments.Count == 0 || !HoldsName(segments[^1], ignoreCase: true)) return false;
+                // The folder, then the file — directly, or at any depth below a recursive folder.
+                for (var start = segments.Count - 1 - _location.Length; start >= 0; start--)
+                {
+                    if (RunAt(start)) return true;
+                    if (!Recursive) return false;
+                }
+                return false;
+        }
+    }
+
+    private static bool MatchesAny(IReadOnlyList<string>? patterns, string fileName, bool ignoreCase) =>
+        patterns is not null && patterns.Any(p => FileSystemName.MatchesSimpleExpression(p, fileName, ignoreCase));
+}
 
 /// <summary>
 /// THE table of the instruction files other coding agents read in a repository — one place, read by the discovery,
@@ -95,6 +140,48 @@ internal static class RepoInstructionFormats
         new(RepoInstructionFamily.Continue, RepoInstructionPlacement.Folder,   ".continue/rules",                 RepoInstructionRole.Rule,
             ScopeKey: "globs", FilePatterns: ["*.md"]),
     ];
+
+    /// <summary>Whether a path, cut on its separators, ends at a file one of the formats reads — what makes a write
+    /// to it a write to some agent's instructions (<c>AgentInstructionFiles</c>).</summary>
+    internal static bool AnyEndsAt(IReadOnlyList<string> segments) => All.Any(f => f.EndsAtOneOfItsFiles(segments));
+
+    /// <summary>The name each family goes by in the <c>repoInstructionFamilies</c> setting.</summary>
+    internal static readonly IReadOnlyDictionary<string, RepoInstructionFamily> FamilyNames =
+        new Dictionary<string, RepoInstructionFamily>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["agents"]   = RepoInstructionFamily.Agents,
+            ["copilot"]  = RepoInstructionFamily.Copilot,
+            ["claude"]   = RepoInstructionFamily.Claude,
+            ["cursor"]   = RepoInstructionFamily.Cursor,
+            ["cline"]    = RepoInstructionFamily.Cline,
+            ["roo"]      = RepoInstructionFamily.Roo,
+            ["continue"] = RepoInstructionFamily.Continue,
+        };
+
+    /// <summary>The families the setting turns on, and the names in it that are none — said, never guessed at.</summary>
+    internal static (IReadOnlySet<RepoInstructionFamily> On, IReadOnlyList<string> Unknown) Families(string? setting)
+    {
+        var on      = new HashSet<RepoInstructionFamily>();
+        var unknown = new List<string>();
+        foreach (var name in (setting ?? string.Empty).Split([',', ';', ' ', '\t', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (FamilyNames.TryGetValue(name, out var family)) on.Add(family);
+            else unknown.Add(name);
+        }
+        return (on, unknown);
+    }
+
+    /// <summary>The product a family is named after, as a person knows it — the same in every language.</summary>
+    internal static string ProductName(RepoInstructionFamily family) => family switch
+    {
+        RepoInstructionFamily.Agents   => "AGENTS.md",
+        RepoInstructionFamily.Copilot  => "GitHub Copilot",
+        RepoInstructionFamily.Claude   => "Claude Code",
+        RepoInstructionFamily.Cursor   => "Cursor",
+        RepoInstructionFamily.Cline    => "Cline",
+        RepoInstructionFamily.Roo      => "Roo Code",
+        _                              => "Continue",
+    };
 }
 
 /// <summary>A repository instruction file found, with its row of the table.</summary>
@@ -245,7 +332,7 @@ internal sealed record RepoInstructionDiscovery(
             all = format.Recursive
                 ? WorkspaceScan.EnumerateAll(folder, "*")
                 : Directory.EnumerateFiles(folder, "*", new EnumerationOptions { IgnoreInaccessible = true });
-            return all.Where(f => Matches(format.FilePatterns, f) && !Matches(format.SkipPatterns, f))
+            return all.Where(f => format.HoldsName(Path.GetFileName(f), IgnoreCase))
                       .OrderBy(f => f, StringComparer.Ordinal)
                       .ToList();
         }
@@ -254,13 +341,6 @@ internal sealed record RepoInstructionDiscovery(
             Diagnostics.Swallow("RepoInstructionDiscovery.FolderFiles", ex);
             return [];
         }
-    }
-
-    private static bool Matches(IReadOnlyList<string>? patterns, string file)
-    {
-        if (patterns is null) return false;
-        var name = Path.GetFileName(file);
-        return patterns.Any(p => FileSystemName.MatchesSimpleExpression(p, name, IgnoreCase));
     }
 
     /// <summary>

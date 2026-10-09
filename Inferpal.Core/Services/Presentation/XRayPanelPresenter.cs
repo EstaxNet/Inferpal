@@ -45,7 +45,8 @@ internal static class XRayPanelPresenter
 {
     /// <summary>Project layers counted as "overhead" for the trim warning.</summary>
     private static readonly PromptSectionKind[] OverheadKinds =
-        [PromptSectionKind.ProjectContext, PromptSectionKind.Memory, PromptSectionKind.Notes, PromptSectionKind.Rules];
+        [PromptSectionKind.ProjectContext, PromptSectionKind.Memory, PromptSectionKind.Notes, PromptSectionKind.Rules,
+         PromptSectionKind.RepoInstructions, PromptSectionKind.Skills];
 
     // Overhead warning thresholds: with a configured window the absolute share of the window is
     // what hurts; without one, only a clearly dominant overhead is worth flagging.
@@ -81,6 +82,7 @@ internal static class XRayPanelPresenter
         PromptSectionKind.Template => Strings.XrayLabelTemplate,
         PromptSectionKind.Pinned   => "📌 " + s.Detail,
         PromptSectionKind.Rules    => Strings.XrayLabelRules(s.Detail ?? "?"),
+        PromptSectionKind.Skills   => Strings.XrayLabelSkills(s.Detail ?? "?"),
         // File-backed layers: the path is the clearest, language-neutral label.
         _                          => s.Detail ?? s.Kind.ToString(),
     };

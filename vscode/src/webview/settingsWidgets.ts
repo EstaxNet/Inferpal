@@ -5,7 +5,8 @@
 import { fill } from './l10n';
 import { icon, iconButton, setIcon } from './icons';
 import type {
-  ApprovalRuleTable, ContextUsage, IndexCard, LoadedModels, ModelSuggestion, ProjectFileRow, SettingsDocs, SettingsExclusions,
+  ApprovalRuleTable, ContextUsage, IndexCard, LoadedModels, ModelSuggestion, ProjectFileRow, RepoInstructionRow, SettingsDocs,
+  SettingsExclusions,
 } from '../protocol';
 
 export interface WidgetHost {
@@ -40,6 +41,7 @@ export function createWidget(name: string, page: string, host: WidgetHost): Live
     case 'docsSites':       return docsSites(page, host);
     case 'contextUsage':    return contextUsage(host);
     case 'projectFiles':    return projectFiles(host);
+    case 'repoInstructions': return repoInstructions(host);
     case 'fimModel':        return modelLine(host, ['inlineCompletionModel', 'defaultModel']);
     case 'editModel':       return modelLine(host, ['inlineEditModel', 'codeActionsModel', 'defaultModel']);
     case 'themeCards':      return themeCards(host);
@@ -499,6 +501,37 @@ function projectFiles(host: WidgetHost): LiveWidget {
         li.append(f.exists
           ? link(host.res('SettingsOpenFile'), () => host.post({ type: 'openFile', path: f.fullPath }))
           : el('span', 'hint notyet', host.res('ProjectFileNotYet')));
+        list.append(li);
+      }
+      block.append(list);
+      return true;
+    },
+  };
+}
+
+/** The instruction files the repository gives coding agents: one row per file, its tool, scope, what goes and why not —
+ * the rows `/instructions` prints, built by the host from the prompt the next question sends. */
+function repoInstructions(host: WidgetHost): LiveWidget {
+  const block = el('div', 'repoinstructions');
+  host.post({ type: 'repoInstructions' });
+  return {
+    el: block,
+    onShown: () => host.post({ type: 'repoInstructions' }),
+    onMessage(msg) {
+      if (msg.type !== 'repoInstructions') {
+        return false;
+      }
+      const rows = msg.rows as RepoInstructionRow[];
+      block.textContent = '';
+      if (rows.length === 0) {
+        block.append(el('p', 'hint', host.res('RepoInstructionsNone')));
+        return true;
+      }
+      const list = el('ul', 'filerows');
+      for (const r of rows) {
+        const li = el('li');
+        li.append(el('code', 'mono', r.file), el('span', 'hint', r.detail),
+          link(host.res('SettingsOpenFile'), () => host.post({ type: 'openFile', path: r.fullPath })));
         list.append(li);
       }
       block.append(list);

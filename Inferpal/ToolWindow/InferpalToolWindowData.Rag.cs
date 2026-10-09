@@ -92,7 +92,12 @@ internal partial class InferpalToolWindowData
                 string.IsNullOrEmpty(current) ? FindReliableProjectRoot() : null,
                 _indexService.IndexedRoot);
 
-            if      (action == RootPinAction.Pin)   _indexService.SetRoot(root!);
+            if (action == RootPinAction.Pin)
+            {
+                _indexService.SetRoot(root!);
+                // The repository's MCP servers are read from the root: a new one has its own to ask about.
+                _ = _tools.Mcp.RefreshAsync();
+            }
             else if (action == RootPinAction.Index) _indexService.StartIndexing(root!);
         }
         catch (Exception ex) { Diagnostics.Swallow("Rag.PinWorkspaceRoot", ex); }
@@ -391,7 +396,8 @@ internal partial class InferpalToolWindowData
             _activeTemplateSuffix,
             dir,
             ActiveFileRelativeTo(dir),
-            _xrayDisabledSections);   // sections switched off from the Context X-Ray panel
+            _xrayDisabledSections,    // sections switched off from the Context X-Ray panel
+            _activeFilePath);         // scopes the repository's instructions, even outside the solution's folder
         return _planMode ? prompt + PlanModeToolRegistry.SystemPromptSuffix : prompt;
     }
 

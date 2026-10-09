@@ -15,7 +15,7 @@
   <a href="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml"><img src="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/tests-5382%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-5541%20passing-brightgreen" alt="Tests">
   <img src="https://img.shields.io/badge/.NET-8.0-512BD4" alt=".NET 8">
   <img src="https://img.shields.io/badge/Visual%20Studio-2026-5C2D91" alt="Visual Studio 2026">
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/VS%20Marketplace-install-5C2D91" alt="Visual Studio Marketplace"></a>
@@ -52,7 +52,7 @@ two editors.
 
 ### Highlights
 
-- **Agentic loop** — 28 built-in tools, plus user-defined shell tools and **MCP** servers; independent read-only tools run in parallel.
+- **Agentic loop** — 29 built-in tools, plus user-defined shell tools and **MCP** servers; independent read-only tools run in parallel.
 - **Local-first** — Ollama, LM Studio, or any OpenAI-compatible server (llama.cpp, vLLM); run the backend locally or on a [remote GPU host](docs/remote-inference.md).
 - **A chat you can read at a glance** — an agent run's steps fold into one line (`3 steps · read 1 file · edited 1 · build passed`), the answer ends on a result bar with the files changed, the last build or test check and **Undo run**, and approvals are cards inside the conversation (**Allow once** with Enter, **Deny** with Esc, *Open diff* for the whole change). Same chat, same seven-page settings window in both editors.
 - **Inline ghost-text completions** — Fill-in-the-Middle as you type (Tab / Esc), with three speeds: Fast, Balanced, Accurate.
@@ -60,6 +60,7 @@ two editors.
 - **Smart Fix Protocol** — after every edit, a polyglot build/typecheck (.NET / TypeScript / Rust / Go) feeds compile errors back so the agent fixes them in the same loop.
 - **Code actions & Inline Edit** — Explain / Fix / Refactor / Add Tests / Add Docstring, plus **Ctrl+Shift+I** to rewrite a selection in place.
 - **Safety by default** — approval-gated writes/commands, a catastrophic-command hard denylist, force-prompt on indirect execution (`iex`, `-EncodedCommand`, …) **and on anything a cloned repository authored** (committed validators, permission overlays), committable permission rules, and a hardened SSRF guard.
+- **Your repository's agent setup, read as it is** — `AGENTS.md`, `CLAUDE.md` and the instruction files written for Copilot, Cursor, Cline, Roo and Continue go with your questions (always, or when the active file matches), and `/instructions` shows what each one sends; the commands written for Copilot, Claude Code and Continue become slash commands; skills (`SKILL.md`) are joined with `/skill`; the repository's MCP servers start only after you approve them. On a fixed 10-question bench, two local models followed a repository rule **8/10 and 10/10** with its instruction file, **0/10** without.
 - **Governance & knowledge** — repo-versioned `.inferpal/rules` & AI checks, `@Docs` external-doc indexing, typed `@`-mentions, and 50+ slash commands.
 - **Built for the IDE** — live debugger awareness, VRAM monitoring, VS theme adaptation, and 10 UI languages.
 - **Debugger loop** — `/debug [goal]` lets the agent drive a **real debug session** from the chat: breakpoints, stepping, locals and call-stack inspection, in both editors (Visual Studio via an in-process driver, VS Code via a DAP bridge). Read-only, and starting a session always asks first.

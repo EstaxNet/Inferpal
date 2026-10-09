@@ -16,6 +16,7 @@ import {
   LoadedModels,
   ModelSuggestion,
   ProjectFileRow,
+  RepoInstructionRow,
   SettingsDocs,
   SettingsExclusions,
   DebugBreakpointParams,
@@ -57,6 +58,7 @@ import {
   ToolNotice,
   XRayPanel,
   ConfigUpdateResult,
+  InputRequest,
 } from './protocol';
 
 /** Reverse-RPC surface the editor side must provide before `start()`. */
@@ -72,6 +74,8 @@ export interface EditorDelegate {
   protectSecret(key: string, value: string): Promise<string>;
   /** Reverse of {@link protectSecret}. Throws when the payload is unknown or unreadable. */
   unprotectSecret(key: string, value: string): Promise<string>;
+  /** A value a repository's MCP server asks for (`${input:id}`); null when the user gives none. */
+  inputRequest(request: InputRequest): Promise<string | null>;
 }
 
 /** Streamed chat events (host notifications) fanned out to the UI. */
@@ -291,6 +295,7 @@ export class HostClient {
       this.delegate.protectSecret(p.key, p.value));
     conn.onRequest('secrets/unprotect', (p: { key: string; value: string }) =>
       this.delegate.unprotectSecret(p.key, p.value));
+    conn.onRequest('input/request', (p: InputRequest) => this.delegate.inputRequest(p));
 
     // ── Reverse debugger requests ───────────────────────────────────────────
     const debug = this.debugDelegate;
@@ -584,6 +589,11 @@ export class HostClient {
   /** The project's files the prompt reads. */
   settingsProjectFiles(): Promise<ProjectFileRow[]> {
     return this.connection().sendRequest<ProjectFileRow[]>('settings/projectFiles');
+  }
+
+  /** The instruction files the repository gives coding agents, and what the next question sends of each. */
+  settingsRepoInstructions(): Promise<RepoInstructionRow[]> {
+    return this.connection().sendRequest<RepoInstructionRow[]>('settings/repoInstructions');
   }
 
   /** What each pinned file the panel holds costs the prompt. */

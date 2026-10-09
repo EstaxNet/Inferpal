@@ -240,6 +240,21 @@ internal partial class InferpalToolWindowData
             case SlashCommandId.Task:        await HandleTaskCommandAsync(parts);         break;
             case SlashCommandId.Debug:       await HandleDebugCommandAsync(parts, ct);    break;
             case SlashCommandId.Replay:      await ShowInfoAsync(Services.Commands.ReplayCommandHandler.Handle(_tools.History.Runs, parts, FindProjectRoot())); break;
+            case SlashCommandId.Instructions:
+                await ShowInfoAsync(RepoInstructionsReport.Markdown(await CurrentRepoInstructionRowsAsync()));
+                break;
+            case SlashCommandId.Skill:
+            {
+                // The workspace the agent's tools read (read_skill_file), so /skill and the tool see one catalog.
+                var skill = Services.Commands.SkillCommandHandler.Run(_config, _indexService.RootDir ?? FindProjectRoot(), parts);
+                if (skill.Message is { } listing) { await ShowInfoAsync(listing); break; }
+                // Joined like a file: named under the question, never the question itself (SkillCommandHandler).
+                var attachment = skill.Attachment!;
+                await SendCoreAsync(skill.Question!, oneTimeModel: null,
+                                    attachments: [new AttachmentItem(attachment.Label, attachment.Content, () => { })],
+                                    ct: ct, clearPrompt: true);
+                break;
+            }
             case SlashCommandId.Xray:
             {
                 // V2: opens the interactive panel (the markdown rendering remains the headless

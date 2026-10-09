@@ -715,7 +715,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="SlashHintAgentStep" xml:space="preserve"><value>alternar el modo paso a paso del agente — pausar tras cada llamada de herramienta</value></data>
   <data name="SlashHintResume" xml:space="preserve"><value>reanudar el agente tras una pausa en modo paso a paso</value></data>
   <data name="SlashHintPlan" xml:space="preserve"><value>modo plan y planes guardados — /plan [list|save|next|done n|&lt;nombre&gt;]</value></data>
-  <data name="SlashHintPrompts" xml:space="preserve"><value>listar los archivos de prompts reutilizables (.inferpal/prompts) — /prompts [init]</value></data>
+  <data name="SlashHintPrompts" xml:space="preserve"><value>listar los comandos personalizados: .inferpal/prompts y los del repositorio (Copilot, Claude Code, Continue) — /prompts [init]</value></data>
   <data name="SlashHintHardware" xml:space="preserve"><value>mostrar el perfil GPU/VRAM — /hardware [gb] para definir el presupuesto de VRAM</value></data>
   <data name="SlashHintSetup" xml:space="preserve"><value>volver a ejecutar la configuración inicial — redetectar backend, reelegir modelos</value></data>
   <data name="HardwareNoVramBackend" xml:space="preserve"><value>ℹ️ La supervisión de VRAM en vivo y por modelo no está disponible con este backend. El presupuesto de VRAM manual (`/hardware &lt;gb&gt;`) sigue controlando las comprobaciones de ajuste.</value></data>
@@ -1297,4 +1297,56 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="WelcomeCardChanges" xml:space="preserve"><value>Revisar mis cambios</value></data>
   <data name="WelcomeChangesPrompt" xml:space="preserve"><value>Revisa mis cambios sin confirmar: señala errores, riesgos y lo que falte, como pruebas.</value></data>
   <data name="WelcomeOpenFileHint" xml:space="preserve"><value>Abra un archivo para explicarlo, escribir sus pruebas o encontrar sus usos.</value></data>
+  <data name="RepoInstructionsTitle" xml:space="preserve"><value>Instrucciones del repositorio</value></data>
+  <data name="RepoInstructionsNone" xml:space="preserve"><value>Este repositorio no da a los agentes de código ningún archivo de instrucciones (AGENTS.md, CLAUDE.md ni los de Copilot, Cursor, Cline, Roo o Continue).</value></data>
+  <data name="RepoInstructionsNoChat" xml:space="preserve"><value>La ventana de chat no está abierta: lo que enviará su próxima pregunta se muestra en cuanto lo esté.</value></data>
+  <data name="RepoInstructionsColFamily" xml:space="preserve"><value>Herramienta</value></data>
+  <data name="RepoInstructionsColFile" xml:space="preserve"><value>Archivo</value></data>
+  <data name="RepoInstructionsColScope" xml:space="preserve"><value>Se aplica</value></data>
+  <data name="RepoInstructionsColSent" xml:space="preserve"><value>Enviado</value></data>
+  <data name="RepoInstructionsColState" xml:space="preserve"><value>Estado</value></data>
+  <data name="RepoInstructionScopeAlways" xml:space="preserve"><value>siempre</value></data>
+  <data name="RepoInstructionScopeFiles" xml:space="preserve"><value>archivos: {0}</value></data>
+  <data name="RepoInstructionScopeOnDemand" xml:space="preserve"><value>a petición</value></data>
+  <data name="RepoInstructionScopeManual" xml:space="preserve"><value>a mano</value></data>
+  <data name="RepoInstructionScopeNever" xml:space="preserve"><value>nunca</value></data>
+  <data name="RepoInstructionStateSent" xml:space="preserve"><value>enviada</value></data>
+  <data name="RepoInstructionStateSwitchedOff" xml:space="preserve"><value>desactivada en el X-Ray</value></data>
+  <data name="RepoInstructionStateNotThisFile" xml:space="preserve"><value>no para el archivo activo</value></data>
+  <data name="RepoInstructionStateOnDemand" xml:space="preserve"><value>no se envía: Inferpal aún no carga archivos a petición</value></data>
+  <data name="RepoInstructionStateManual" xml:space="preserve"><value>no se envía: adjúntela a una pregunta para usarla</value></data>
+  <data name="RepoInstructionStateNever" xml:space="preserve"><value>desactivada por su propio encabezado</value></data>
+  <data name="RepoInstructionStateDuplicate" xml:space="preserve"><value>duplicado de {0}</value></data>
+  <data name="RepoInstructionStateNotRead" xml:space="preserve"><value>ilegible</value></data>
+  <data name="RepoInstructionStateFamilyOff" xml:space="preserve"><value>no leída: esta herramienta está desactivada en la configuración</value></data>
+  <data name="SlashHintInstructions" xml:space="preserve"><value>Lista las instrucciones del repositorio para agentes de código y lo que envía esta pregunta</value></data>
+  <data name="SettingsSectionRepoInstructions" xml:space="preserve"><value>Instrucciones del repositorio</value></data>
+  <data name="SettingsSectionRepoInstructionsDesc" xml:space="preserve"><value>Archivos de instrucciones que este repositorio da a los agentes de código, leídos y enviados con sus preguntas: siempre, o cuando coincide el archivo activo. Los archivos de proyecto propios de Inferpal van después y prevalecen en caso de conflicto.</value></data>
+  <data name="LabelRepoInstructionFamilies" xml:space="preserve"><value>Herramientas cuyos archivos se leen</value></data>
+  <data name="HintRepoInstructionFamilies" xml:space="preserve"><value>Separadas por comas: agents, copilot, claude, cursor, cline, roo, continue. Vacío: no se lee ninguna.</value></data>
+  <data name="SlashCategoryCustom" xml:space="preserve"><value>Comandos personalizados</value></data>
+  <data name="PromptsRepoHeader" xml:space="preserve"><value>**Comandos del repositorio** — escritos para Copilot, Claude Code o Continue; las palabras escritas después van donde el comando las pide, si no, al final:</value></data>
+  <data name="PromptsShadowedByFile" xml:space="preserve"><value> — ⚠ nunca se ejecuta: `{1}` también define `{0}`, y ese gana</value></data>
+  <data name="PromptsUnfilled" xml:space="preserve"><value> — Inferpal no las rellena, quedan tal cual: {0}</value></data>
+  <data name="PromptsCommandsNotRun" xml:space="preserve"><value> — su herramienta ejecuta {0} antes de enviar: Inferpal no, pide al modelo que lo haga (con su aprobación)</value></data>
+  <data name="PromptsLinkLeaves" xml:space="preserve"><value>`{0}` no se lee: su enlace lleva fuera del repositorio.</value></data>
+  <data name="SlashHintSkill" xml:space="preserve"><value>listar las habilidades del repositorio y las suyas, o preguntar con una — /skill [nombre petición]</value></data>
+  <data name="SkillsTitle" xml:space="preserve"><value>Habilidades</value></data>
+  <data name="SkillsNone" xml:space="preserve"><value>Ninguna habilidad: ni este repositorio ni sus carpetas de habilidades contienen un SKILL.md (.github/skills, .claude/skills, .agents/skills, ~/.claude/skills…).</value></data>
+  <data name="SkillsUsage" xml:space="preserve"><value>Escriba `/skill &lt;nombre&gt; &lt;petición&gt;` para preguntar con una: la habilidad se adjunta a su pregunta.</value></data>
+  <data name="SkillsNotLoaded" xml:space="preserve"><value>No cargadas:</value></data>
+  <data name="SkillNoDescription" xml:space="preserve"><value>su SKILL.md no tiene descripción</value></data>
+  <data name="SkillUnreadable" xml:space="preserve"><value>su SKILL.md no se puede leer</value></data>
+  <data name="SkillLinkLeaves" xml:space="preserve"><value>su SKILL.md es un enlace que lleva fuera de la carpeta de habilidades</value></data>
+  <data name="SkillShadowed" xml:space="preserve"><value>`{0}` tiene el mismo nombre y prevalece</value></data>
+  <data name="SkillUnknown" xml:space="preserve"><value>Ninguna habilidad se llama `{0}`.</value></data>
+  <data name="SkillUnreadableNow" xml:space="preserve"><value>No se pudo leer la habilidad `{0}`.</value></data>
+  <data name="SkillApplyDefault" xml:space="preserve"><value>Aplica la habilidad {0}.</value></data>
+  <data name="SkillAttachmentLabel" xml:space="preserve"><value>Habilidad: {0}</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>Este repositorio declara un servidor MCP: {0} ({1}). Iniciarlo ejecuta `{2}`. ¿Iniciarlo? Si acepta, se iniciará solo a partir de ahora, hasta que cambie su definición.</value></data>
+  <data name="McpRepoInputQuestion" xml:space="preserve"><value>El servidor MCP {0} de este repositorio pide un valor: {1}</value></data>
+  <data name="McpRepoInputNotMasked" xml:space="preserve"><value>(Visual Studio muestra lo que escribe: no se oculta.)</value></data>
+  <data name="LabelSkillsAutoMode" xml:space="preserve"><value>Dejar que el modelo cargue una habilidad cuando corresponda</value></data>
+  <data name="HintSkillsAutoMode" xml:space="preserve"><value>Cada pregunta lleva los nombres y descripciones de las habilidades; el modelo carga la que la petición necesita. Desactivado: solo /skill las usa.</value></data>
+  <data name="XrayLabelSkills" xml:space="preserve"><value>Habilidades ({0})</value></data>
 </root>

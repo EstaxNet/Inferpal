@@ -53,6 +53,54 @@ public class RulesServiceTests : IDisposable
         Assert.Equal("Body here.\n", body);
     }
 
+    [Theory]
+    // A plain scalar folded onto indented lines — the shape of two of Continue's own rules.
+    [InlineData("---\ndescription: Ensures consistent URL opening behavior in GUI components using the\n  IDE messenger pattern\nalwaysApply: false\n---\nB\n")]
+    // A folded block scalar, and a literal one (its line breaks kept).
+    [InlineData("---\ndescription: >\n  Ensures consistent URL opening behavior in GUI components using the\n  IDE messenger pattern\n---\nB\n")]
+    // Quoted over two lines.
+    [InlineData("---\ndescription: \"Ensures consistent URL opening behavior in GUI components using the\n  IDE messenger pattern\"\n---\nB\n")]
+    public void ParseFrontMatter_ReadsAValueWrittenOverSeveralLines_Whole(string text)
+    {
+        // Cut at its first line, the description of an on-demand rule — the only thing the agent reads to decide
+        // whether to load it — lost its end, and a key on the next line could be taken for a new one.
+        var (fm, body) = RulesService.ParseFrontMatter(text);
+        Assert.Equal("Ensures consistent URL opening behavior in GUI components using the IDE messenger pattern",
+                     fm["description"]);
+        Assert.Equal("B\n", body);
+    }
+
+    [Fact]
+    public void ParseFrontMatter_KeepsTheLineBreaksOfALiteralBlock()
+    {
+        var (fm, _) = RulesService.ParseFrontMatter("---\nnote: |\n  first\n  second\nglobs: '**'\n---\nB\n");
+        Assert.Equal("first\nsecond", fm["note"]);
+        Assert.Equal("**", fm["globs"]);
+    }
+
+    /// <summary>
+    /// Inside a block scalar, a "- " line is text and a "#" line is text: neither a list nor a comment. Read as a list,
+    /// a skill's description (cline's tuistory) came out as "…need to:, Manually test…, Run a dev server…".
+    /// </summary>
+    [Theory]
+    [InlineData("|", "Use this when you need to:\n- test the TUI\n- run a server\n# not a comment")]
+    [InlineData(">", "Use this when you need to: - test the TUI - run a server # not a comment")]
+    public void ParseFrontMatter_ReadsDashAndHashLinesOfABlockScalar_AsText(string indicator, string expected)
+    {
+        var (fm, _) = RulesService.ParseFrontMatter(
+            "---\ndescription: " + indicator + "\n  Use this when you need to:\n  - test the TUI\n  - run a server\n  # not a comment\nname: x\n---\nB\n");
+        Assert.Equal(expected, fm["description"]);
+        Assert.Equal("x", fm["name"]);
+    }
+
+    [Fact]
+    public void ParseFrontMatter_StillReadsABlockList()
+    {
+        // Reference arm: a key with no value followed by "- " lines IS a list.
+        var (fm, _) = RulesService.ParseFrontMatter("---\nglobs:\n  - \"**/*.cs\"\n  - \"**/*.ts\"\n---\nB\n");
+        Assert.Equal("**/*.cs, **/*.ts", fm["globs"]);
+    }
+
     // ── GlobMatch ────────────────────────────────────────────────────────────────
 
     [Theory]

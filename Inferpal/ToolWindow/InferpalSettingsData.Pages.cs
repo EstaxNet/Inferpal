@@ -94,6 +94,7 @@ internal partial class InferpalSettingsData
                    _labelSectionGpu = "", _labelSectionHowItWorks = "", _labelSectionApprovals = "",
                    _labelSectionInstructions = "", _labelSectionTimeLimits = "", _noteTimeLimits = "",
                    _labelSectionLongConversations = "", _labelSectionAlwaysInPrompt = "", _descSectionAlwaysInPrompt = "",
+                   _labelSectionRepoInstructions = "", _descSectionRepoInstructions = "",
                    _labelSectionYourCode = "", _labelSectionEditWithAi = "", _descSectionEditWithAi = "",
                    _labelSectionRules = "", _descSectionRules = "", _labelSectionSlash = "", _descSectionSlash = "",
                    _labelSectionAgentTools = "", _descSectionAgentTools = "", _labelSectionAgentRuns = "";
@@ -124,6 +125,8 @@ internal partial class InferpalSettingsData
     [DataMember] public string LabelSectionLongConversations { get => _labelSectionLongConversations; set => SetProperty(ref _labelSectionLongConversations, value); }
     [DataMember] public string LabelSectionAlwaysInPrompt    { get => _labelSectionAlwaysInPrompt;    set => SetProperty(ref _labelSectionAlwaysInPrompt,    value); }
     [DataMember] public string DescSectionAlwaysInPrompt     { get => _descSectionAlwaysInPrompt;     set => SetProperty(ref _descSectionAlwaysInPrompt,     value); }
+    [DataMember] public string LabelSectionRepoInstructions  { get => _labelSectionRepoInstructions;  set => SetProperty(ref _labelSectionRepoInstructions,  value); }
+    [DataMember] public string DescSectionRepoInstructions   { get => _descSectionRepoInstructions;   set => SetProperty(ref _descSectionRepoInstructions,   value); }
     [DataMember] public string LabelSectionYourCode          { get => _labelSectionYourCode;          set => SetProperty(ref _labelSectionYourCode,          value); }
     [DataMember] public string LabelSectionEditWithAi        { get => _labelSectionEditWithAi;        set => SetProperty(ref _labelSectionEditWithAi,        value); }
     [DataMember] public string DescSectionEditWithAi         { get => _descSectionEditWithAi;         set => SetProperty(ref _descSectionEditWithAi,         value); }
@@ -171,6 +174,8 @@ internal partial class InferpalSettingsData
         LabelSectionLongConversations = Strings.SettingsSectionLongConversations;
         LabelSectionAlwaysInPrompt    = Strings.SettingsSectionAlwaysInPrompt;
         DescSectionAlwaysInPrompt     = Strings.SettingsSectionAlwaysInPromptDesc;
+        LabelSectionRepoInstructions  = Strings.SettingsSectionRepoInstructions;
+        DescSectionRepoInstructions   = Strings.SettingsSectionRepoInstructionsDesc;
         LabelSectionYourCode          = Strings.SettingsSectionYourCode;
         LabelSectionEditWithAi        = Strings.SettingsSectionEditWithAi;
         DescSectionEditWithAi         = Strings.SettingsSectionEditWithAiDesc;
@@ -286,8 +291,8 @@ internal partial class InferpalSettingsData
         nameof(RagEmbeddingModel), nameof(ContextWindowSizeText), nameof(AgentModel), nameof(CodeActionsModel),
         nameof(InlineEditModel), nameof(UtilityModel), nameof(ModelRouterAuto), nameof(UseRecommendedSampling),
         nameof(VramBudgetText), nameof(ModelAutoUnloadEnabled), nameof(ModelIdleTimeoutText), nameof(AgentModeEnabled),
-        nameof(SmartFixEnabled), nameof(AgentMaxIterationsText), nameof(AskBeforeActions), nameof(CustomSystemPrompt),
-        nameof(PersonaAutoSwitch), nameof(TimeoutHoursText), nameof(TimeoutMinutesText), nameof(TimeoutSecondsText),
+        nameof(SmartFixEnabled), nameof(AgentMaxIterationsText), nameof(AskBeforeActions), nameof(CustomSystemPrompt), nameof(RepoInstructionFamilies),
+        nameof(PersonaAutoSwitch), nameof(SkillsAutoMode), nameof(TimeoutHoursText), nameof(TimeoutMinutesText), nameof(TimeoutSecondsText),
         nameof(QuickTimeoutHoursText), nameof(QuickTimeoutMinutesText), nameof(QuickTimeoutSecondsText),
         nameof(NormalTimeoutHoursText), nameof(NormalTimeoutMinutesText), nameof(NormalTimeoutSecondsText),
         nameof(CompactionEnabled), nameof(ContextWindowKeepTurnsText), nameof(OodaTurnThresholdText),
@@ -347,7 +352,9 @@ internal partial class InferpalSettingsData
             (AgentMaxIterationsText.Trim(), N(saved.AgentMaxIterations)),
             ((!AskBeforeActions).ToString(), saved.SecurityAlertsDisabled.ToString()),
             (CustomSystemPrompt ?? string.Empty, saved.CustomSystemPrompt),
+            (RepoInstructionFamilies ?? string.Empty, saved.RepoInstructionFamilies),
             (PersonaAutoSwitch.ToString(), saved.PersonaAutoSwitch.ToString()),
+            (SkillsAutoMode.ToString(), saved.SkillsAutoMode.ToString()),
             (N(CombineDuration(TimeoutHoursText, TimeoutMinutesText, TimeoutSecondsText)), N(saved.CommandTimeoutSeconds)),
             (N(CombineDuration(QuickTimeoutHoursText, QuickTimeoutMinutesText, QuickTimeoutSecondsText)), N(saved.QuickTimeoutSeconds)),
             (N(CombineDuration(NormalTimeoutHoursText, NormalTimeoutMinutesText, NormalTimeoutSecondsText)), N(saved.NormalTimeoutSeconds)),
@@ -403,7 +410,9 @@ internal partial class InferpalSettingsData
         AgentMaxIterationsText = N(c.AgentMaxIterations);
         AskBeforeActions = !c.SecurityAlertsDisabled;
         CustomSystemPrompt = c.CustomSystemPrompt;
+        RepoInstructionFamilies = c.RepoInstructionFamilies;
         PersonaAutoSwitch = c.PersonaAutoSwitch;
+        SkillsAutoMode = c.SkillsAutoMode;
         (TimeoutHoursText, TimeoutMinutesText, TimeoutSecondsText) = SplitDuration(c.CommandTimeoutSeconds);
         (QuickTimeoutHoursText, QuickTimeoutMinutesText, QuickTimeoutSecondsText) = SplitDuration(c.QuickTimeoutSeconds);
         (NormalTimeoutHoursText, NormalTimeoutMinutesText, NormalTimeoutSecondsText) = SplitDuration(c.NormalTimeoutSeconds);

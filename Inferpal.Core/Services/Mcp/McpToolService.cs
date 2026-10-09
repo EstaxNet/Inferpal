@@ -40,6 +40,23 @@ internal sealed class McpToolService : IAsyncDisposable
     private readonly Func<string?> _sharedServersJson;
     private readonly SemaphoreSlim _gate = new(1, 1);
 
+    /// <summary>
+    /// The workspace whose repository's servers (<see cref="RepoMcpServers"/>) start beside the configured ones — after
+    /// the user agrees. Set by the front-end once it knows it (Visual Studio pins it after the service exists).
+    /// </summary>
+    public Func<string?>? WorkspaceRoot { get; set; }
+
+    /// <summary>Asks the user for a value a repository's server declares (<c>${input:id}</c>); <c>null</c> = not
+    /// given. Set by the front-end; without it, such a server does not start, and says why.</summary>
+    public Func<RepoMcpServer, RepoMcpInput, CancellationToken, Task<string?>>? AskInput { get; set; }
+
+    /// <summary>The agreements given to start a repository's servers. Test seam.</summary>
+    internal RepoMcpConsents Consents { get; set; } = new();
+
+    /// <summary>The <c>${input:…}</c> values given in this process, per repository, server and input: asked once per
+    /// session, never written anywhere.</summary>
+    private readonly Dictionary<string, string> _inputValues = new(StringComparer.Ordinal);
+
     /// <summary>The authorization metadata address each server announced when it refused us (see
     /// <see cref="IMcpClient.ResourceMetadataUrl"/>), for the sign-in that follows: by then its client is gone.</summary>
     /// ⚠ Keyed by name AND address: a name pointed at another server kept the old one's announcement, and the sign-in
@@ -104,8 +121,13 @@ internal sealed class McpToolService : IAsyncDisposable
                             Func<McpServerConfig, IMcpClient>? clientFactory,
                             IReadOnlyList<TimeSpan>? reconnectBackoff = null,
                             McpTokenStore? tokenStore = null,
-                            Func<string?>? sharedServersJson = null)
+                            Func<string?>? sharedServersJson = null,
+                            Func<string?>? workspaceRoot = null,
+                            Func<RepoMcpServer, RepoMcpInput, CancellationToken, Task<string?>>? askInput = null)
     {
+        // Before the first refresh below, which reads both.
+        WorkspaceRoot      = workspaceRoot;
+        AskInput           = askInput;
         _config            = config;
         _approval          = approval;
         _clientFactory     = clientFactory ?? DefaultClientFactory;
@@ -211,15 +233,19 @@ internal sealed class McpToolService : IAsyncDisposable
             // someone wondering why their tools are missing eventually looks.
             foreach (var r in _rejected)
                 Diagnostics.Record("Mcp", $"Server '{r.Name}' rejected by the configuration: {r.Error}");
-            ForgetSignInsOfRemovedServers(servers, rejected);
+            // The repository's servers: after the user's own (a name the user configured is theirs), each one asked
+            // about before it runs anything.
+            var repository = await RepositoryServersAsync(
+                [.. servers.Select(s => s.Name), .. rejected.Select(r => r.Name)]).ConfigureAwait(false);
+            ForgetSignInsOfRemovedServers(servers, rejected, repository.Names);
             // ⚠ In PARALLEL, keeping the configured order. Each start has its own handshake budget:
             // serially, an unreachable server made every later one pay it, lock held — and so did
             // the Save button, which waits for this refresh.
-            var started = await Task.WhenAll(servers.Where(s => s.Enabled).Select(StartServerAsync))
+            var started = await Task.WhenAll(servers.Where(s => s.Enabled).Concat(repository.Start).Select(StartServerAsync))
                                     .ConfigureAwait(false);
 
             _servers = [.. started.Where(r => r.Entry is not null).Select(r => r.Entry!)];
-            _failed  = [.. started.Where(r => r.Failure is not null).Select(r => r.Failure!)];
+            _failed  = [.. started.Where(r => r.Failure is not null).Select(r => r.Failure!), .. repository.NotStarted];
             RebuildSnapshot();
         }
         finally
@@ -239,14 +265,16 @@ internal sealed class McpToolService : IAsyncDisposable
     /// editor has just added — and signed in to — is absent from it, and judged by it alone its sign-in would be erased
     /// at the next settings save here. "Gone" is gone from BOTH: the list in memory and the list the file holds now.
     /// </remarks>
-    private void ForgetSignInsOfRemovedServers(IReadOnlyList<McpServerConfig> servers, IReadOnlyList<McpRejectedServer> rejected)
+    private void ForgetSignInsOfRemovedServers(IReadOnlyList<McpServerConfig> servers, IReadOnlyList<McpRejectedServer> rejected,
+                                               IReadOnlyCollection<string> repositoryNames)
     {
         if (rejected.Any(r => r.Name == McpServerConfig.WholeList)) return;   // the whole list is unreadable
         try
         {
             var shared = McpServerConfig.Parse(_sharedServersJson(), out var sharedRejected);
             if (sharedRejected.Any(r => r.Name == McpServerConfig.WholeList)) return;   // the file's list is unreadable
-            var known = servers.Select(s => s.Name).Concat(rejected.Select(r => r.Name))
+            // A repository's server signed in to keeps its sign-in while the repository declares it.
+            var known = servers.Select(s => s.Name).Concat(rejected.Select(r => r.Name)).Concat(repositoryNames)
                                .Concat(shared.Select(s => s.Name)).Concat(sharedRejected.Select(r => r.Name))
                                .ToHashSet(StringComparer.Ordinal);
             var gone  = _tokenStore.RemoveAllExcept(known);
@@ -314,6 +342,113 @@ internal sealed class McpToolService : IAsyncDisposable
     }
 
     /// <summary>
+    /// The repository's servers to start, the ones that will not — each with why — and every name it declares.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The agreement is FORCED (<c>forcePrompt</c>): no <c>allow</c> rule, no "don't ask", no "Always" given to
+    /// another tool starts a program the repository chose. Given once per <see cref="RepoMcpServer.Fingerprint"/> and
+    /// kept (<see cref="RepoMcpConsents"/>); a declined server is asked about again at the next start.
+    /// </remarks>
+    private async Task<(List<McpServerConfig> Start, List<McpServerStatus> NotStarted, List<string> Names)> RepositoryServersAsync(
+        IReadOnlyCollection<string> configured)
+    {
+        var start = new List<McpServerConfig>();
+        var notStarted = new List<McpServerStatus>();
+        var names = new List<string>();
+        RepoMcpScan scan;
+        try { scan = RepoMcpServers.Read(WorkspaceRoot?.Invoke()); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Diagnostics.Swallow("McpToolService.RepositoryServers", ex);
+            return (start, notStarted, names);
+        }
+        if (scan.Root is not { } root) return (start, notStarted, names);
+
+        foreach (var p in scan.Problems)
+        {
+            notStarted.Add(new McpServerStatus(p.Name ?? p.Source, false, 0, $"{p.Source}: {p.Reason}"));
+            Diagnostics.Record("Mcp", $"Repository MCP file {p.Source}{(p.Name is null ? "" : $", server '{p.Name}'")} ignored: {p.Reason}.");
+        }
+
+        var taken = new HashSet<string>(configured, StringComparer.Ordinal);
+        foreach (var server in scan.Servers)
+        {
+            names.Add(server.Name);
+            if (!taken.Add(server.Name))
+            {
+                notStarted.Add(new McpServerStatus(server.Name, false, 0,
+                    $"{server.Source}: not started — a server named '{server.Name}' is declared earlier, and that one runs"));
+                continue;
+            }
+            if (!Consents.IsAgreed(root, server))
+            {
+                bool agreed;
+                try
+                {
+                    agreed = await _approval.RequestApprovalAsync("mcp_server",
+                        Strings.McpRepoServerQuestion(server.Name, server.Source, server.Runs), CancellationToken.None,
+                        subject: server.Runs, forcePrompt: true).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    Diagnostics.Swallow("McpToolService.RepositoryServerAgreement", ex);
+                    agreed = false;
+                }
+                if (!agreed)
+                {
+                    notStarted.Add(new McpServerStatus(server.Name, false, 0,
+                        $"{server.Source}: not started — it was not agreed to; asked again at the next start"));
+                    Diagnostics.Record("Mcp", $"Repository MCP server '{server.Name}' ({server.Source}) not started: not agreed to.");
+                    continue;
+                }
+                Consents.Agree(root, server);
+            }
+
+            var inputs = new Dictionary<string, string>(StringComparer.Ordinal);
+            string? unanswered = null;
+            foreach (var input in server.Inputs)
+            {
+                var key = $"{root}|{server.Name}|{input.Id}";
+                if (!_inputValues.TryGetValue(key, out var value))
+                {
+                    value = AskInput is { } ask ? await AskSafelyAsync(ask, server, input).ConfigureAwait(false) : null;
+                    if (value is null) { unanswered = input.Id; break; }
+                    _inputValues[key] = value;
+                }
+                inputs[input.Id] = value;
+            }
+            if (unanswered is not null)
+            {
+                notStarted.Add(new McpServerStatus(server.Name, false, 0,
+                    $"{server.Source}: not started — the value it asks for (input '{unanswered}') was not given"));
+                continue;
+            }
+
+            var (config, missing, rejected) = RepoMcpServers.Prepare(server, root, inputs);
+            if (config is null)
+            {
+                var why = missing.Count > 0 ? $"nothing fills {string.Join(", ", missing)}" : rejected;
+                notStarted.Add(new McpServerStatus(server.Name, false, 0, $"{server.Source}: not started — {why}"));
+                Diagnostics.Record("Mcp", $"Repository MCP server '{server.Name}' ({server.Source}) not started: {why}.");
+                continue;
+            }
+            start.Add(config);
+        }
+        return (start, notStarted, names);
+    }
+
+    private static async Task<string?> AskSafelyAsync(
+        Func<RepoMcpServer, RepoMcpInput, CancellationToken, Task<string?>> ask, RepoMcpServer server, RepoMcpInput input)
+    {
+        try { return await ask(server, input, CancellationToken.None).ConfigureAwait(false); }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Diagnostics.Swallow("McpToolService.AskInput", ex);
+            return null;
+        }
+    }
+
+    /// <summary>
     /// Runs the interactive OAuth authorization (browser) for one HTTP server, persists the resulting
     /// tokens to the encrypted store, then reconnects so its tools load. Throws if the server isn't a
     /// configured HTTP server or the user cancels/denies. Called from the settings "Authorize" action.
@@ -325,7 +460,9 @@ internal sealed class McpToolService : IAsyncDisposable
         if (!_tokenStore.CanProtect)
             throw new InvalidOperationException(Strings.McpOAuthUnsupportedPlatform);
 
+        // A repository's server the user agreed to is signed in to like a configured one.
         var cfg = McpServerConfig.Parse(_config.McpServersJson)
+            .Concat(_servers.Select(e => e.Config))
             .FirstOrDefault(s => s.IsHttp && string.Equals(s.Name, serverName, StringComparison.Ordinal))
             ?? throw new InvalidOperationException($"'{serverName}' is not a configured HTTP MCP server.");
 

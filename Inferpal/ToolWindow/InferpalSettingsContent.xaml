@@ -829,6 +829,50 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+
+                <!-- Repository instructions: the files the repository gives coding agents, and what each sends -->
+                <Border BorderBrush="{Binding NavLineBrush}" BorderThickness="0,1,0,0" Padding="0,14,0,0" Margin="0,4,0,0">
+                    <TextBlock Text="{Binding LabelSectionRepoInstructions}" Style="{StaticResource SectionTitle}" Margin="0,0,0,2"/>
+                </Border>
+                <TextBlock Text="{Binding DescSectionRepoInstructions}" Style="{StaticResource Hint}" Margin="0,0,0,12"/>
+                <TextBlock Text="{Binding RepoInstructionsNote}" Style="{StaticResource Hint}" Margin="0,0,0,8"
+                           Visibility="{Binding HasRepoInstructionsNote, Converter={StaticResource b2v}}"/>
+                <ItemsControl ItemsSource="{Binding RepoInstructionRows}" Margin="0,0,0,12">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding File}" FontFamily="Cascadia Mono, Consolas" FontSize="12"
+                                           Foreground="{Binding DataContext.TextForeground, ElementName=root}" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Grid.Column="1" VerticalAlignment="Center">
+                                    <Hyperlink Command="{Binding OpenCommand}" Foreground="{Binding DataContext.LinkForeground, ElementName=root}"
+                                               TextDecorations="None"><Run Text="{Binding DataContext.LabelOpenFile, ElementName=root, Mode=OneWay}"/></Hyperlink>
+                                </TextBlock>
+                                <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Detail}" TextWrapping="Wrap" FontSize="11"
+                                           Foreground="{Binding DataContext.SubtleForeground, ElementName=root}"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <StackPanel Margin="0,0,0,12">
+                    <TextBlock Text="{Binding LabelRepoInstructionFamilies}" Style="{StaticResource FieldLabel}"/>
+                    <TextBox Text="{Binding RepoInstructionFamilies, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.Name="{Binding LabelRepoInstructionFamilies}"/>
+                    <TextBlock Text="{Binding HintRepoInstructionFamilies}" Style="{StaticResource Hint}"/>
+                </StackPanel>
+                <CheckBox IsChecked="{Binding SkillsAutoMode, Mode=TwoWay}" Margin="0,0,0,12" VerticalContentAlignment="Top">
+                    <StackPanel Margin="4,0,0,0">
+                        <TextBlock Text="{Binding LabelSkillsAutoMode}" Style="{StaticResource FieldLabel}" Margin="0"/>
+                        <TextBlock Text="{Binding HintSkillsAutoMode}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </CheckBox>
             </StackPanel>
 
             <!-- ── Code search ────────────────────────────────────────────── -->

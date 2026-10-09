@@ -44,6 +44,7 @@ internal static class PromptFilesService
     internal static void InvalidateCache()
     {
         lock (_gate) _cachedDir = null;
+        RepoCommandFiles.InvalidateCache();
     }
 
     internal static IReadOnlyList<UserSlashTemplate> LoadUncached(string promptsDir) =>
@@ -65,7 +66,8 @@ internal static class PromptFilesService
                 ? d.Trim()
                 : null;
             result.Add(new UserSlashTemplate(
-                "/" + CommandName(Path.GetFileNameWithoutExtension(file)), body, hint));
+                "/" + CommandName(Path.GetFileNameWithoutExtension(file)), body, hint,
+                Source: ".inferpal/prompts/" + Path.GetFileName(file)));
         }
         return result;
     }

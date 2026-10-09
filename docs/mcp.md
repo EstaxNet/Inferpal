@@ -74,6 +74,32 @@ The "always" grant is **scoped to the session and never persisted** — MCP serv
 arbitrary external code, so the choice is deliberately not remembered across sessions. See
 [Tools → Approval model](tools.md#approval-model).
 
+## Servers your repository declares
+
+The MCP servers a repository declares for other tools start beside yours — once you agree:
+
+| File | Written for | Root key |
+|---|---|---|
+| `.vscode/mcp.json` | VS Code (with its `inputs`) | `servers` |
+| `.mcp.json` | Claude Code, VS Code's portable format | `mcpServers` |
+| `.vs/mcp.json` | Visual Studio | `servers` |
+| `.cursor/mcp.json` | Cursor | `mcpServers` |
+| `.roo/mcp.json` | Roo Code | `mcpServers` |
+| `.continue/mcpServers/*.yaml` | Continue (a list of named servers) | `mcpServers` |
+
+- **Nothing runs before you agree.** A repository's server runs a program the repository chose, so it is asked about
+  first — the server, its file and the command it runs — **even with approvals switched off and under an `allow`
+  rule**. Your agreement is kept for that repository and that exact definition: change one argument and you are asked
+  again. A declined server is asked about again at the next start.
+- **Variables** are replaced the way each tool does: `${workspaceFolder}`, `${workspaceFolderBasename}`,
+  `${userHome}`, `${env:NAME}`, `${NAME}` and `${NAME:-default}`, `${input:id}` — asked once per session, in VS
+  Code's input box (hidden when the input is a `password`) or Visual Studio's input prompt (which cannot hide what is
+  typed, and says so). A variable nothing fills (`${{ secrets.X }}`, an unset variable) is named and the server does
+  not start on an empty value.
+- A repository's server **runs in the repository's root**, or in the `cwd` it declares, resolved against that root.
+- A server you configured yourself keeps its name: the repository's server of the same name does not start, and the
+  status says why. So does a file that cannot be read, with its reason.
+
 ## Scope & limits
 
 > [!NOTE]

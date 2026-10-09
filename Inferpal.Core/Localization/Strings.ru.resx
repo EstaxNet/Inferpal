@@ -713,7 +713,7 @@
   <data name="SlashHintAgentStep" xml:space="preserve"><value>переключить пошаговый режим агента — пауза после каждого вызова инструмента</value></data>
   <data name="SlashHintResume" xml:space="preserve"><value>возобновить агента после паузы пошагового режима</value></data>
   <data name="SlashHintPlan" xml:space="preserve"><value>режим плана и сохранённые планы — /plan [list|save|next|done n|&lt;имя&gt;]</value></data>
-  <data name="SlashHintPrompts" xml:space="preserve"><value>список переиспользуемых файлов промптов (.inferpal/prompts) — /prompts [init]</value></data>
+  <data name="SlashHintPrompts" xml:space="preserve"><value>список пользовательских команд: .inferpal/prompts и команды репозитория (Copilot, Claude Code, Continue) — /prompts [init]</value></data>
   <data name="SlashHintHardware" xml:space="preserve"><value>показать профиль GPU/VRAM — /hardware [gb] для задания бюджета VRAM</value></data>
   <data name="SlashHintSetup" xml:space="preserve"><value>повторить первичную настройку — заново определить бэкенд и выбрать модели</value></data>
   <data name="HardwareNoVramBackend" xml:space="preserve"><value>ℹ️ Мониторинг VRAM в реальном времени и по моделям недоступен с этим бэкендом. Ручной бюджет VRAM (`/hardware &lt;gb&gt;`) по-прежнему управляет проверками соответствия.</value></data>
@@ -1297,4 +1297,56 @@
   <data name="WelcomeCardChanges" xml:space="preserve"><value>Проверить мои изменения</value></data>
   <data name="WelcomeChangesPrompt" xml:space="preserve"><value>Проверь мои незакоммиченные изменения: укажи ошибки, риски и чего не хватает, например тестов.</value></data>
   <data name="WelcomeOpenFileHint" xml:space="preserve"><value>Откройте файл, чтобы объяснить его, написать для него тесты или найти, где он используется.</value></data>
+  <data name="RepoInstructionsTitle" xml:space="preserve"><value>Инструкции репозитория</value></data>
+  <data name="RepoInstructionsNone" xml:space="preserve"><value>Этот репозиторий не даёт агентам кода ни одного файла инструкций (AGENTS.md, CLAUDE.md или файлов Copilot, Cursor, Cline, Roo, Continue).</value></data>
+  <data name="RepoInstructionsNoChat" xml:space="preserve"><value>Окно чата не открыто: то, что отправит следующий вопрос, будет показано, когда оно откроется.</value></data>
+  <data name="RepoInstructionsColFamily" xml:space="preserve"><value>Инструмент</value></data>
+  <data name="RepoInstructionsColFile" xml:space="preserve"><value>Файл</value></data>
+  <data name="RepoInstructionsColScope" xml:space="preserve"><value>Применяется</value></data>
+  <data name="RepoInstructionsColSent" xml:space="preserve"><value>Отправлено</value></data>
+  <data name="RepoInstructionsColState" xml:space="preserve"><value>Состояние</value></data>
+  <data name="RepoInstructionScopeAlways" xml:space="preserve"><value>всегда</value></data>
+  <data name="RepoInstructionScopeFiles" xml:space="preserve"><value>файлы: {0}</value></data>
+  <data name="RepoInstructionScopeOnDemand" xml:space="preserve"><value>по запросу</value></data>
+  <data name="RepoInstructionScopeManual" xml:space="preserve"><value>вручную</value></data>
+  <data name="RepoInstructionScopeNever" xml:space="preserve"><value>никогда</value></data>
+  <data name="RepoInstructionStateSent" xml:space="preserve"><value>отправлено</value></data>
+  <data name="RepoInstructionStateSwitchedOff" xml:space="preserve"><value>отключено в X-Ray</value></data>
+  <data name="RepoInstructionStateNotThisFile" xml:space="preserve"><value>не для активного файла</value></data>
+  <data name="RepoInstructionStateOnDemand" xml:space="preserve"><value>не отправляется: Inferpal пока не загружает файлы по запросу</value></data>
+  <data name="RepoInstructionStateManual" xml:space="preserve"><value>не отправляется: прикрепите её к вопросу, чтобы использовать</value></data>
+  <data name="RepoInstructionStateNever" xml:space="preserve"><value>отключено собственным заголовком</value></data>
+  <data name="RepoInstructionStateDuplicate" xml:space="preserve"><value>дубликат {0}</value></data>
+  <data name="RepoInstructionStateNotRead" xml:space="preserve"><value>не читается</value></data>
+  <data name="RepoInstructionStateFamilyOff" xml:space="preserve"><value>не прочитано: этот инструмент отключён в настройках</value></data>
+  <data name="SlashHintInstructions" xml:space="preserve"><value>Перечисляет инструкции репозитория для агентов кода и то, что отправляет этот вопрос</value></data>
+  <data name="SettingsSectionRepoInstructions" xml:space="preserve"><value>Инструкции репозитория</value></data>
+  <data name="SettingsSectionRepoInstructionsDesc" xml:space="preserve"><value>Файлы инструкций, которые этот репозиторий даёт агентам кода, читаются и отправляются с вашими вопросами: всегда или когда подходит активный файл. Собственные файлы проекта Inferpal идут после них и имеют приоритет при конфликте.</value></data>
+  <data name="LabelRepoInstructionFamilies" xml:space="preserve"><value>Инструменты, чьи файлы читаются</value></data>
+  <data name="HintRepoInstructionFamilies" xml:space="preserve"><value>Через запятую: agents, copilot, claude, cursor, cline, roo, continue. Пусто — ничего не читается.</value></data>
+  <data name="SlashCategoryCustom" xml:space="preserve"><value>Пользовательские команды</value></data>
+  <data name="PromptsRepoHeader" xml:space="preserve"><value>**Команды репозитория** — написаны для Copilot, Claude Code или Continue; слова, набранные после команды, подставляются туда, где она их ждёт, иначе — в конец:</value></data>
+  <data name="PromptsShadowedByFile" xml:space="preserve"><value> — ⚠ никогда не выполняется: `{1}` тоже определяет `{0}`, и побеждает он</value></data>
+  <data name="PromptsUnfilled" xml:space="preserve"><value> — Inferpal их не заполняет, остаются как написаны: {0}</value></data>
+  <data name="PromptsCommandsNotRun" xml:space="preserve"><value> — его инструмент выполняет {0} перед отправкой: Inferpal — нет, он просит модель сделать это (с вашего одобрения)</value></data>
+  <data name="PromptsLinkLeaves" xml:space="preserve"><value>`{0}` не читается: его ссылка ведёт за пределы репозитория.</value></data>
+  <data name="SlashHintSkill" xml:space="preserve"><value>список навыков репозитория и ваших или вопрос с одним из них — /skill [имя запрос]</value></data>
+  <data name="SkillsTitle" xml:space="preserve"><value>Навыки</value></data>
+  <data name="SkillsNone" xml:space="preserve"><value>Навыков нет: ни в этом репозитории, ни в ваших папках навыков нет SKILL.md (.github/skills, .claude/skills, .agents/skills, ~/.claude/skills…).</value></data>
+  <data name="SkillsUsage" xml:space="preserve"><value>Введите `/skill &lt;имя&gt; &lt;запрос&gt;`, чтобы задать вопрос с навыком: навык прикрепляется к вопросу.</value></data>
+  <data name="SkillsNotLoaded" xml:space="preserve"><value>Не загружены:</value></data>
+  <data name="SkillNoDescription" xml:space="preserve"><value>в его SKILL.md нет описания</value></data>
+  <data name="SkillUnreadable" xml:space="preserve"><value>его SKILL.md не читается</value></data>
+  <data name="SkillLinkLeaves" xml:space="preserve"><value>его SKILL.md — ссылка, ведущая за пределы папки навыков</value></data>
+  <data name="SkillShadowed" xml:space="preserve"><value>`{0}` носит то же имя и имеет приоритет</value></data>
+  <data name="SkillUnknown" xml:space="preserve"><value>Навыка `{0}` нет.</value></data>
+  <data name="SkillUnreadableNow" xml:space="preserve"><value>Не удалось прочитать навык `{0}`.</value></data>
+  <data name="SkillApplyDefault" xml:space="preserve"><value>Примени навык {0}.</value></data>
+  <data name="SkillAttachmentLabel" xml:space="preserve"><value>Навык: {0}</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>Этот репозиторий объявляет MCP-сервер: {0} ({1}). Его запуск выполняет `{2}`. Запустить? Если вы согласитесь, он будет запускаться сам, пока не изменится его определение.</value></data>
+  <data name="McpRepoInputQuestion" xml:space="preserve"><value>MCP-сервер {0} этого репозитория запрашивает значение: {1}</value></data>
+  <data name="McpRepoInputNotMasked" xml:space="preserve"><value>(Visual Studio показывает вводимый текст: он не скрывается.)</value></data>
+  <data name="LabelSkillsAutoMode" xml:space="preserve"><value>Позволить модели загружать навык, когда он подходит</value></data>
+  <data name="HintSkillsAutoMode" xml:space="preserve"><value>Каждый вопрос содержит имена и описания навыков; модель загружает тот, что нужен запросу. Выключено: их использует только /skill.</value></data>
+  <data name="XrayLabelSkills" xml:space="preserve"><value>Навыки ({0})</value></data>
 </root>

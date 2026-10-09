@@ -719,7 +719,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="SlashHintAgentStep" xml:space="preserve"><value>activer/désactiver le mode pas-à-pas de l'agent — pause après chaque appel d'outil</value></data>
   <data name="SlashHintResume" xml:space="preserve"><value>reprendre l'agent après une pause en mode pas-à-pas</value></data>
   <data name="SlashHintPlan" xml:space="preserve"><value>mode plan et plans enregistrés — /plan [list|save|next|done n|&lt;nom&gt;]</value></data>
-  <data name="SlashHintPrompts" xml:space="preserve"><value>lister les fichiers de prompts réutilisables (.inferpal/prompts) — /prompts [init]</value></data>
+  <data name="SlashHintPrompts" xml:space="preserve"><value>lister les commandes personnalisées : .inferpal/prompts et celles du dépôt (Copilot, Claude Code, Continue) — /prompts [init]</value></data>
   <data name="SlashHintHardware" xml:space="preserve"><value>afficher le profil GPU/VRAM — /hardware [gb] pour définir le budget VRAM</value></data>
   <data name="SlashHintSetup" xml:space="preserve"><value>relancer la configuration initiale — re-détecter le backend, re-choisir les modèles</value></data>
   <data name="HardwareNoVramBackend" xml:space="preserve"><value>ℹ️ La surveillance VRAM en direct et par modèle n'est pas disponible avec ce backend. Le budget VRAM manuel (`/hardware &lt;gb&gt;`) continue de piloter les vérifications d'adéquation.</value></data>
@@ -1297,4 +1297,56 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="WelcomeCardChanges" xml:space="preserve"><value>Relire mes modifications</value></data>
   <data name="WelcomeChangesPrompt" xml:space="preserve"><value>Relis mes modifications non commitées : signale les bogues, les risques et ce qui manque, comme des tests.</value></data>
   <data name="WelcomeOpenFileHint" xml:space="preserve"><value>Ouvrez un fichier pour l'expliquer, écrire ses tests ou trouver ses utilisations.</value></data>
+  <data name="RepoInstructionsTitle" xml:space="preserve"><value>Consignes du dépôt</value></data>
+  <data name="RepoInstructionsNone" xml:space="preserve"><value>Ce dépôt ne donne aux agents de code aucun fichier de consignes (AGENTS.md, CLAUDE.md, ni ceux de Copilot, Cursor, Cline, Roo ou Continue).</value></data>
+  <data name="RepoInstructionsNoChat" xml:space="preserve"><value>La fenêtre de chat n'est pas ouverte : ce qu'enverra sa prochaine question s'affiche dès qu'elle l'est.</value></data>
+  <data name="RepoInstructionsColFamily" xml:space="preserve"><value>Outil</value></data>
+  <data name="RepoInstructionsColFile" xml:space="preserve"><value>Fichier</value></data>
+  <data name="RepoInstructionsColScope" xml:space="preserve"><value>S'applique</value></data>
+  <data name="RepoInstructionsColSent" xml:space="preserve"><value>Envoyé</value></data>
+  <data name="RepoInstructionsColState" xml:space="preserve"><value>État</value></data>
+  <data name="RepoInstructionScopeAlways" xml:space="preserve"><value>toujours</value></data>
+  <data name="RepoInstructionScopeFiles" xml:space="preserve"><value>fichiers : {0}</value></data>
+  <data name="RepoInstructionScopeOnDemand" xml:space="preserve"><value>à la demande</value></data>
+  <data name="RepoInstructionScopeManual" xml:space="preserve"><value>à la main</value></data>
+  <data name="RepoInstructionScopeNever" xml:space="preserve"><value>jamais</value></data>
+  <data name="RepoInstructionStateSent" xml:space="preserve"><value>envoyée</value></data>
+  <data name="RepoInstructionStateSwitchedOff" xml:space="preserve"><value>coupée dans l'X-Ray</value></data>
+  <data name="RepoInstructionStateNotThisFile" xml:space="preserve"><value>pas pour le fichier actif</value></data>
+  <data name="RepoInstructionStateOnDemand" xml:space="preserve"><value>non envoyée : Inferpal ne charge pas encore les fichiers à la demande</value></data>
+  <data name="RepoInstructionStateManual" xml:space="preserve"><value>non envoyée : joignez-la à une question pour l'utiliser</value></data>
+  <data name="RepoInstructionStateNever" xml:space="preserve"><value>désactivée par son propre en-tête</value></data>
+  <data name="RepoInstructionStateDuplicate" xml:space="preserve"><value>doublon de {0}</value></data>
+  <data name="RepoInstructionStateNotRead" xml:space="preserve"><value>illisible</value></data>
+  <data name="RepoInstructionStateFamilyOff" xml:space="preserve"><value>non lue : cet outil est désactivé dans les réglages</value></data>
+  <data name="SlashHintInstructions" xml:space="preserve"><value>Liste les consignes du dépôt pour les agents de code, et ce que cette question envoie</value></data>
+  <data name="SettingsSectionRepoInstructions" xml:space="preserve"><value>Consignes du dépôt</value></data>
+  <data name="SettingsSectionRepoInstructionsDesc" xml:space="preserve"><value>Fichiers de consignes que ce dépôt donne aux agents de code, lus et envoyés avec vos questions : toujours, ou quand le fichier actif correspond. Les fichiers de projet d'Inferpal viennent après eux et l'emportent en cas de conflit.</value></data>
+  <data name="LabelRepoInstructionFamilies" xml:space="preserve"><value>Outils dont les fichiers sont lus</value></data>
+  <data name="HintRepoInstructionFamilies" xml:space="preserve"><value>Séparés par des virgules : agents, copilot, claude, cursor, cline, roo, continue. Vide : aucun n'est lu.</value></data>
+  <data name="SlashCategoryCustom" xml:space="preserve"><value>Commandes personnalisées</value></data>
+  <data name="PromptsRepoHeader" xml:space="preserve"><value>**Commandes du dépôt** — écrites pour Copilot, Claude Code ou Continue ; les mots tapés après l'une d'elles vont là où elle les demande, sinon à la fin :</value></data>
+  <data name="PromptsShadowedByFile" xml:space="preserve"><value> — ⚠ ne s'exécute jamais : `{1}` définit aussi `{0}`, et c'est lui qui l'emporte</value></data>
+  <data name="PromptsUnfilled" xml:space="preserve"><value> — non remplies par Inferpal, laissées telles quelles : {0}</value></data>
+  <data name="PromptsCommandsNotRun" xml:space="preserve"><value> — son outil exécute {0} avant l'envoi : Inferpal non, il demande au modèle de le faire (avec votre accord)</value></data>
+  <data name="PromptsLinkLeaves" xml:space="preserve"><value>`{0}` n'est pas lu : son lien mène hors du dépôt.</value></data>
+  <data name="SlashHintSkill" xml:space="preserve"><value>lister les compétences du dépôt et les vôtres, ou poser une question avec l'une d'elles — /skill [nom demande]</value></data>
+  <data name="SkillsTitle" xml:space="preserve"><value>Compétences</value></data>
+  <data name="SkillsNone" xml:space="preserve"><value>Aucune compétence : ni ce dépôt ni vos dossiers de compétences ne contiennent de SKILL.md (.github/skills, .claude/skills, .agents/skills, ~/.claude/skills…).</value></data>
+  <data name="SkillsUsage" xml:space="preserve"><value>Tapez `/skill &lt;nom&gt; &lt;demande&gt;` pour poser une question avec l'une d'elles : la compétence est jointe à votre question.</value></data>
+  <data name="SkillsNotLoaded" xml:space="preserve"><value>Non chargées :</value></data>
+  <data name="SkillNoDescription" xml:space="preserve"><value>son SKILL.md n'a pas de description</value></data>
+  <data name="SkillUnreadable" xml:space="preserve"><value>son SKILL.md est illisible</value></data>
+  <data name="SkillLinkLeaves" xml:space="preserve"><value>son SKILL.md est un lien qui mène hors du dossier des compétences</value></data>
+  <data name="SkillShadowed" xml:space="preserve"><value>`{0}` porte le même nom et l'emporte</value></data>
+  <data name="SkillUnknown" xml:space="preserve"><value>Aucune compétence ne s'appelle `{0}`.</value></data>
+  <data name="SkillUnreadableNow" xml:space="preserve"><value>La compétence `{0}` est illisible.</value></data>
+  <data name="SkillApplyDefault" xml:space="preserve"><value>Applique la compétence {0}.</value></data>
+  <data name="SkillAttachmentLabel" xml:space="preserve"><value>Compétence : {0}</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>Ce dépôt déclare un serveur MCP : {0} ({1}). Le démarrer exécute `{2}`. Le démarrer ? Si vous acceptez, il démarrera désormais seul, jusqu'à ce que sa définition change.</value></data>
+  <data name="McpRepoInputQuestion" xml:space="preserve"><value>Le serveur MCP {0} de ce dépôt demande une valeur : {1}</value></data>
+  <data name="McpRepoInputNotMasked" xml:space="preserve"><value>(Visual Studio affiche ce que vous tapez : rien n'est masqué.)</value></data>
+  <data name="LabelSkillsAutoMode" xml:space="preserve"><value>Laisser le modèle charger une compétence quand elle s'applique</value></data>
+  <data name="HintSkillsAutoMode" xml:space="preserve"><value>Chaque question emporte le nom et la description des compétences ; le modèle charge celle dont la demande a besoin. Désactivé : seule /skill les utilise.</value></data>
+  <data name="XrayLabelSkills" xml:space="preserve"><value>Compétences ({0})</value></data>
 </root>

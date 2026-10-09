@@ -715,7 +715,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="SlashHintAgentStep" xml:space="preserve"><value>przełącz tryb krokowy agenta — pauza po każdym wywołaniu narzędzia</value></data>
   <data name="SlashHintResume" xml:space="preserve"><value>wznów agenta po pauzie trybu krokowego</value></data>
   <data name="SlashHintPlan" xml:space="preserve"><value>tryb planu i zapisane plany — /plan [list|save|next|done n|&lt;nazwa&gt;]</value></data>
-  <data name="SlashHintPrompts" xml:space="preserve"><value>wyświetl pliki promptów wielokrotnego użytku (.inferpal/prompts) — /prompts [init]</value></data>
+  <data name="SlashHintPrompts" xml:space="preserve"><value>wyświetl polecenia własne: .inferpal/prompts i polecenia repozytorium (Copilot, Claude Code, Continue) — /prompts [init]</value></data>
   <data name="SlashHintHardware" xml:space="preserve"><value>pokaż profil GPU/VRAM — /hardware [gb] aby ustawić budżet VRAM</value></data>
   <data name="SlashHintSetup" xml:space="preserve"><value>ponów konfigurację początkową — ponownie wykryj backend, wybierz modele</value></data>
   <data name="HardwareNoVramBackend" xml:space="preserve"><value>ℹ️ Monitorowanie VRAM na żywo i według modeli nie jest dostępne w tym backendzie. Ręczny budżet VRAM (`/hardware &lt;gb&gt;`) nadal steruje sprawdzaniem dopasowania.</value></data>
@@ -1297,4 +1297,56 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="WelcomeCardChanges" xml:space="preserve"><value>Przejrzyj moje zmiany</value></data>
   <data name="WelcomeChangesPrompt" xml:space="preserve"><value>Przejrzyj moje niezatwierdzone zmiany: wskaż błędy, ryzyka i braki, na przykład testy.</value></data>
   <data name="WelcomeOpenFileHint" xml:space="preserve"><value>Otwórz plik, aby go wyjaśnić, napisać testy lub znaleźć jego użycia.</value></data>
+  <data name="RepoInstructionsTitle" xml:space="preserve"><value>Instrukcje repozytorium</value></data>
+  <data name="RepoInstructionsNone" xml:space="preserve"><value>To repozytorium nie daje agentom kodu żadnego pliku instrukcji (AGENTS.md, CLAUDE.md ani plików Copilota, Cursora, Cline, Roo czy Continue).</value></data>
+  <data name="RepoInstructionsNoChat" xml:space="preserve"><value>Okno czatu nie jest otwarte: to, co wyśle następne pytanie, pojawi się po jego otwarciu.</value></data>
+  <data name="RepoInstructionsColFamily" xml:space="preserve"><value>Narzędzie</value></data>
+  <data name="RepoInstructionsColFile" xml:space="preserve"><value>Plik</value></data>
+  <data name="RepoInstructionsColScope" xml:space="preserve"><value>Stosowana</value></data>
+  <data name="RepoInstructionsColSent" xml:space="preserve"><value>Wysłano</value></data>
+  <data name="RepoInstructionsColState" xml:space="preserve"><value>Stan</value></data>
+  <data name="RepoInstructionScopeAlways" xml:space="preserve"><value>zawsze</value></data>
+  <data name="RepoInstructionScopeFiles" xml:space="preserve"><value>pliki: {0}</value></data>
+  <data name="RepoInstructionScopeOnDemand" xml:space="preserve"><value>na żądanie</value></data>
+  <data name="RepoInstructionScopeManual" xml:space="preserve"><value>ręcznie</value></data>
+  <data name="RepoInstructionScopeNever" xml:space="preserve"><value>nigdy</value></data>
+  <data name="RepoInstructionStateSent" xml:space="preserve"><value>wysłana</value></data>
+  <data name="RepoInstructionStateSwitchedOff" xml:space="preserve"><value>wyłączona w X-Ray</value></data>
+  <data name="RepoInstructionStateNotThisFile" xml:space="preserve"><value>nie dla aktywnego pliku</value></data>
+  <data name="RepoInstructionStateOnDemand" xml:space="preserve"><value>niewysyłana: Inferpal nie wczytuje jeszcze plików na żądanie</value></data>
+  <data name="RepoInstructionStateManual" xml:space="preserve"><value>niewysyłana: dołącz ją do pytania, aby jej użyć</value></data>
+  <data name="RepoInstructionStateNever" xml:space="preserve"><value>wyłączona przez własny nagłówek</value></data>
+  <data name="RepoInstructionStateDuplicate" xml:space="preserve"><value>duplikat {0}</value></data>
+  <data name="RepoInstructionStateNotRead" xml:space="preserve"><value>nie można odczytać</value></data>
+  <data name="RepoInstructionStateFamilyOff" xml:space="preserve"><value>nieodczytana: to narzędzie jest wyłączone w ustawieniach</value></data>
+  <data name="SlashHintInstructions" xml:space="preserve"><value>Wyświetla instrukcje repozytorium dla agentów kodu i to, co wysyła to pytanie</value></data>
+  <data name="SettingsSectionRepoInstructions" xml:space="preserve"><value>Instrukcje repozytorium</value></data>
+  <data name="SettingsSectionRepoInstructionsDesc" xml:space="preserve"><value>Pliki instrukcji, które to repozytorium daje agentom kodu, odczytywane i wysyłane z Twoimi pytaniami: zawsze lub gdy pasuje aktywny plik. Własne pliki projektu Inferpal idą po nich i mają pierwszeństwo w razie konfliktu.</value></data>
+  <data name="LabelRepoInstructionFamilies" xml:space="preserve"><value>Narzędzia, których pliki są odczytywane</value></data>
+  <data name="HintRepoInstructionFamilies" xml:space="preserve"><value>Rozdzielone przecinkami: agents, copilot, claude, cursor, cline, roo, continue. Puste: nic nie jest odczytywane.</value></data>
+  <data name="SlashCategoryCustom" xml:space="preserve"><value>Polecenia własne</value></data>
+  <data name="PromptsRepoHeader" xml:space="preserve"><value>**Polecenia repozytorium** — napisane dla Copilota, Claude Code lub Continue; słowa wpisane po poleceniu trafiają tam, gdzie ono ich oczekuje, w przeciwnym razie na koniec:</value></data>
+  <data name="PromptsShadowedByFile" xml:space="preserve"><value> — ⚠ nigdy się nie wykona: `{1}` też definiuje `{0}` i to on wygrywa</value></data>
+  <data name="PromptsUnfilled" xml:space="preserve"><value> — Inferpal ich nie wypełnia, zostają jak zapisano: {0}</value></data>
+  <data name="PromptsCommandsNotRun" xml:space="preserve"><value> — jego narzędzie uruchamia {0} przed wysłaniem: Inferpal nie, prosi o to model (za Twoją zgodą)</value></data>
+  <data name="PromptsLinkLeaves" xml:space="preserve"><value>`{0}` nie jest odczytywany: jego dowiązanie prowadzi poza repozytorium.</value></data>
+  <data name="SlashHintSkill" xml:space="preserve"><value>wyświetl umiejętności repozytorium i własne lub zapytaj z jedną z nich — /skill [nazwa prośba]</value></data>
+  <data name="SkillsTitle" xml:space="preserve"><value>Umiejętności</value></data>
+  <data name="SkillsNone" xml:space="preserve"><value>Brak umiejętności: ani to repozytorium, ani Twoje foldery umiejętności nie zawierają pliku SKILL.md (.github/skills, .claude/skills, .agents/skills, ~/.claude/skills…).</value></data>
+  <data name="SkillsUsage" xml:space="preserve"><value>Wpisz `/skill &lt;nazwa&gt; &lt;prośba&gt;`, aby zapytać z jedną z nich: umiejętność zostanie dołączona do pytania.</value></data>
+  <data name="SkillsNotLoaded" xml:space="preserve"><value>Niewczytane:</value></data>
+  <data name="SkillNoDescription" xml:space="preserve"><value>jego SKILL.md nie ma opisu</value></data>
+  <data name="SkillUnreadable" xml:space="preserve"><value>nie można odczytać jego SKILL.md</value></data>
+  <data name="SkillLinkLeaves" xml:space="preserve"><value>jego SKILL.md to dowiązanie prowadzące poza folder umiejętności</value></data>
+  <data name="SkillShadowed" xml:space="preserve"><value>`{0}` ma tę samą nazwę i ma pierwszeństwo</value></data>
+  <data name="SkillUnknown" xml:space="preserve"><value>Brak umiejętności o nazwie `{0}`.</value></data>
+  <data name="SkillUnreadableNow" xml:space="preserve"><value>Nie można odczytać umiejętności `{0}`.</value></data>
+  <data name="SkillApplyDefault" xml:space="preserve"><value>Zastosuj umiejętność {0}.</value></data>
+  <data name="SkillAttachmentLabel" xml:space="preserve"><value>Umiejętność: {0}</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>To repozytorium deklaruje serwer MCP: {0} ({1}). Uruchomienie go wykona `{2}`. Uruchomić? Jeśli się zgodzisz, będzie odtąd uruchamiany sam, dopóki jego definicja się nie zmieni.</value></data>
+  <data name="McpRepoInputQuestion" xml:space="preserve"><value>Serwer MCP {0} tego repozytorium prosi o wartość: {1}</value></data>
+  <data name="McpRepoInputNotMasked" xml:space="preserve"><value>(Visual Studio pokazuje to, co wpisujesz: nie jest to ukrywane.)</value></data>
+  <data name="LabelSkillsAutoMode" xml:space="preserve"><value>Pozwól modelowi wczytać umiejętność, gdy pasuje</value></data>
+  <data name="HintSkillsAutoMode" xml:space="preserve"><value>Każde pytanie zawiera nazwy i opisy umiejętności; model wczytuje tę, której wymaga prośba. Wyłączone: używa ich tylko /skill.</value></data>
+  <data name="XrayLabelSkills" xml:space="preserve"><value>Umiejętności ({0})</value></data>
 </root>

@@ -398,6 +398,15 @@ export interface SessionTitleResult {
   fileName: string;
 }
 
+/** input/request (host → editor): a value a repository's MCP server asks for. */
+export interface InputRequest {
+  prompt: string;
+  /** Hide what is typed (VS Code's `password` input). */
+  password: boolean;
+  /** Pre-filled value, if the server declares one. */
+  value?: string | null;
+}
+
 /** approval/request answer: 0 = deny, 1 = allow once, 2 = always allow (session). */
 export const enum ApprovalAnswer {
   Deny = 0,
@@ -519,6 +528,20 @@ export interface ProjectFileRow {
   description: string;
   fullPath: string;
   exists: boolean;
+}
+
+/** One instruction file the repository gives coding agents, and what the next question sends of it
+ * (`settings/repoInstructions` — the rows `/instructions` prints). */
+export interface RepoInstructionRow {
+  family: string;
+  file: string;
+  fullPath: string;
+  scope: string;
+  sent: string;
+  state: string;
+  isSent: boolean;
+  /** Tool, scope, what goes and state on one line, as the page shows them under the file. */
+  detail: string;
 }
 
 /** What one pinned file costs the prompt (`settings/pinSizes`). */

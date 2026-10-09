@@ -25,6 +25,10 @@ internal class VsContextHolder
     /// window; <c>null</c> while none exists (the page then says the conversation is counted once it opens).</summary>
     public Func<Task<Services.Presentation.XRayPanelModel?>>? ConversationUsage { get; set; }
 
+    /// <summary>The repository's instruction files and what the chat's next question sends of each — the settings'
+    /// Context page shows them. Set by the chat window; <c>null</c> while none exists.</summary>
+    public Func<Task<IReadOnlyList<Services.Presentation.RepoInstructionRow>>>? RepoInstructions { get; set; }
+
     /// <summary>Opens the chat window's X-Ray panel — the settings' "Open Context X-Ray". Set by the chat window.</summary>
     public Func<Task>? OpenXray { get; set; }
 

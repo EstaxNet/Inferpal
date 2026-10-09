@@ -72,13 +72,32 @@ internal enum SlashCommandId
     Commit, CommitExec, FixBuild, History, PHistory, Models, AgentStep, Resume,
     Note, Notes, Snippets, Template, Docs, Check, Rules, Checks, Plan, Prompts,
     Hardware, Setup, Diagnostics, UndoRun, Replay, Xray, Bench, Arena, Tdd, Branch, Task,
-    Onboard, Debug, Permissions,
+    Onboard, Debug, Permissions, Instructions, Skill,
 }
 
 /// <summary>User-defined prompt template (config <c>PromptTemplates</c>, one <c>/name=text</c> per line,
 /// or a <c>.inferpal/prompts/*.md</c> file — see <see cref="PromptFilesService"/>).
 /// <paramref name="Hint"/> overrides the truncated text in autocomplete when set.</summary>
-internal sealed record UserSlashTemplate(string Name, string Text, string? Hint = null);
+/// <summary>A command the user or the repository wrote: <c>/name</c> → a prompt.</summary>
+/// <param name="Origin">The tool the file was written for (<c>GitHub Copilot</c>, <c>Claude Code</c>, <c>Continue</c>) —
+/// shown wherever the command is; <c>null</c> for the user's own (settings, <c>.inferpal/prompts</c>).</param>
+/// <param name="Source">The file it comes from, relative to the repository, with <c>/</c>; <c>null</c> for the settings.</param>
+/// <param name="Unfilled">The variables of its tool that Inferpal leaves as written, for <c>/prompts</c> to name.</param>
+/// <param name="NotRun">The commands its tool runs before sending, which Inferpal does not (the model is asked to).</param>
+internal sealed record UserSlashTemplate(string Name, string Text, string? Hint = null, string? Origin = null,
+                                         string? Source = null, IReadOnlyList<string>? Unfilled = null,
+                                         IReadOnlyList<string>? NotRun = null)
+{
+    /// <summary>
+    /// The prompt for the words typed after the command: in place of <c>{args}</c>, else after the text — the way Copilot
+    /// and Claude Code add them to a command that does not ask for them.
+    /// </summary>
+    /// <remarks>⚠ Dropped when the text had no <c>{args}</c>, the words typed vanished without a word.</remarks>
+    public string Expand(string args) =>
+        Text.Contains("{args}", StringComparison.Ordinal) ? Text.Replace("{args}", args)
+        : args.Length == 0 ? Text
+        : Text + "\n\n" + args;
+}
 
 /// <summary>
 /// Pure parsing/routing for chat slash commands: tokenisation, usage validation, tool-argument
@@ -176,6 +195,8 @@ internal static class SlashCommandRouter
         ("/prompts",  Strings.SlashHintPrompts,  SlashCategory.Governance),
 
         ("/xray",        Strings.SlashHintXray,        SlashCategory.Transparency),
+        ("/instructions", Strings.SlashHintInstructions, SlashCategory.Transparency),
+        ("/skill",        Strings.SlashHintSkill,        SlashCategory.Knowledge),
         ("/replay",      Strings.SlashHintReplay,      SlashCategory.Transparency),
         ("/undo-run",    Strings.SlashHintUndoRun,     SlashCategory.Transparency),
         ("/diagnostics", Strings.SlashHintDiagnostics, SlashCategory.Transparency),
@@ -263,6 +284,18 @@ internal static class SlashCommandRouter
         return sb.ToString().TrimEnd();
     }
 
+    /// <summary>The catalog, then the commands the user and the repository wrote, each with where it comes from.</summary>
+    internal static string BuildHelp(IEnumerable<UserSlashTemplate> userTemplates)
+    {
+        var custom = userTemplates.ToList();
+        if (custom.Count == 0) return BuildHelp();
+        var sb = new System.Text.StringBuilder(BuildHelp()).AppendLine().AppendLine()
+            .Append("**").Append(Strings.SlashCategoryCustom).AppendLine("**");
+        foreach (var t in custom)
+            sb.Append("- `").Append(t.Name).Append("` — ").AppendLine(SlashTemplates.HintOf(t));
+        return sb.ToString().TrimEnd();
+    }
+
     /// <summary>Maps a raw <c>/command …</c> input to the action the VM must execute.</summary>
     /// <param name="prompt">Full prompt text, starting with <c>/</c>.</param>
     /// <param name="userTemplates">User templates checked as the fallback for unknown commands.</param>
@@ -307,6 +340,8 @@ internal static class SlashCommandRouter
             case "/undo-run":          return new SlashDelegatedAction(SlashCommandId.UndoRun,         parts);
             case "/replay":            return new SlashDelegatedAction(SlashCommandId.Replay,          parts);
             case "/xray":              return new SlashDelegatedAction(SlashCommandId.Xray,            parts);
+            case "/instructions":      return new SlashDelegatedAction(SlashCommandId.Instructions,    parts);
+            case "/skill":             return new SlashDelegatedAction(SlashCommandId.Skill,           parts);
             case "/bench":
             case "/benchmark":         return new SlashDelegatedAction(SlashCommandId.Bench,           parts);
             case "/arena":             return new SlashDelegatedAction(SlashCommandId.Arena,           parts);
@@ -404,7 +439,7 @@ internal static class SlashCommandRouter
 
             // ── Meta ──────────────────────────────────────────────────────────
             case "/help":
-                return new SlashInfoAction(BuildHelp());
+                return new SlashInfoAction(BuildHelp(userTemplates));
 
             default:
                 // User-defined prompt templates, then the unknown-command help.
@@ -412,7 +447,7 @@ internal static class SlashCommandRouter
                 if (userTemplate is not null)
                 {
                     var args = parts.Length > 1 ? string.Join(" ", parts[1..]) : "";
-                    return new SlashPromptAction(userTemplate.Text.Replace("{args}", args));
+                    return new SlashPromptAction(userTemplate.Expand(args));
                 }
                 return new SlashInfoAction(UnknownCommandMessage(cmd));
         }

@@ -115,7 +115,12 @@ public class InferpalExtension : Extension
         services.AddSingleton<ProjectIndexService>();
         services.AddSingleton<ProjectMapService>();
         services.AddSingleton<LspSemanticProvider>();
-        services.AddSingleton<McpToolService>();
+        // The repository's MCP servers start in the workspace the index pins, once the user agrees; a value one asks
+        // for is asked by Visual Studio's own input prompt.
+        services.AddSingleton(sp => new McpToolService(
+            sp.GetRequiredService<InferpalConfig>(), sp.GetRequiredService<IApprovalService>(), clientFactory: null,
+            workspaceRoot: () => sp.GetRequiredService<ProjectIndexService>().RootDir,
+            askInput: (server, input, ct) => VsMcpInput.AskAsync(sp.GetRequiredService<VisualStudioExtensibility>(), server, input, ct)));
         services.AddSingleton<DocsIndexService>();
         // Registering it makes the two debug tools appear in the registry; the session itself
         // answers "unavailable" until an in-process driver advertises itself, so a devenv whose

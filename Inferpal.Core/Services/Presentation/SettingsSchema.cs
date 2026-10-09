@@ -94,7 +94,8 @@ internal sealed record SettingField(
 /// configuration: <c>approvalRules</c> (the rules in effect and where they come from, with a link to the page that edits
 /// them), <c>indexCard</c> (the code index: state, counts, what it left out, its model), <c>indexExclusions</c> (the
 /// project's own exclusions), <c>docsSites</c> (the @Docs sites), <c>contextUsage</c> (how full the conversation's
-/// window is, and with what), <c>projectFiles</c> (the project's files the prompt reads), <c>fimModel</c> and
+/// window is, and with what), <c>projectFiles</c> (the project's files the prompt reads), <c>repoInstructions</c> (the
+/// instruction files the repository gives coding agents, and what each sends), <c>fimModel</c> and
 /// <c>editModel</c> (the model a page's feature uses, set on another page), <c>suggestModels</c> (the best installed
 /// models, proposed into the form, never saved) and <c>loadedModels</c> (what the server holds in memory, and the
 /// unload buttons).</param>
@@ -314,6 +315,12 @@ internal static class SettingsSchema
                 new("pinnedContextFiles", SettingKind.TextArea, "LabelPinnedContextFiles", "HintPinnedContextFiles", Editor: "pinnedFiles"),
             ],
             Description: "SettingsSectionAlwaysInPromptDesc", Widget: "projectFiles"),
+            new("SettingsSectionRepoInstructions",
+            [
+                new("repoInstructionFamilies", SettingKind.Text, "LabelRepoInstructionFamilies", "HintRepoInstructionFamilies"),
+                new("skillsAutoMode", SettingKind.Bool, "LabelSkillsAutoMode", "HintSkillsAutoMode"),
+            ],
+            Description: "SettingsSectionRepoInstructionsDesc", Widget: "repoInstructions"),
         ]),
 
         new("search", "SettingsPageSearch", "SettingsPageSearchDesc",

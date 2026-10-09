@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Globalization;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using Inferpal.Config;
@@ -7,7 +8,7 @@ using Inferpal.Localization;
 namespace Inferpal.Services.Prompting;
 
 /// <summary>Origin of one layer of the composed system prompt (for <c>/xray</c>).</summary>
-internal enum PromptSectionKind { Base, Persona, Custom, Template, Pinned, ProjectContext, Memory, Notes, Rules }
+internal enum PromptSectionKind { Base, Persona, Custom, Template, Pinned, ProjectContext, Memory, Notes, Rules, RepoInstructions, Skills }
 
 /// <summary>One layer of the composed system prompt. <see cref="Content"/> includes the layer's own
 /// leading separator so concatenating all sections reproduces the exact prompt text.
@@ -168,14 +169,20 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     /// Section ids (<see cref="Presentation.XRayPanelPresenter.SectionId"/>) switched off from the
     /// Context X-Ray panel — those layers are skipped; null/empty keeps everything.
     /// </param>
+    /// <param name="activeFilePath">The active file, absolute — what scopes the repository's instructions (the
+    /// AGENTS.md down to its folder, the rules its globs name). ⚠ Not <paramref name="activeFileRelPath"/>: a file
+    /// outside the root (a test project beside Visual Studio's solution folder) has none, and its closest AGENTS.md
+    /// would be skipped.</param>
     public string Build(
         string  basePrompt,
         string? language          = null,
         string? templateSuffix    = null,
         string? projectRoot       = null,
         string? activeFileRelPath = null,
-        IReadOnlySet<string>? disabledSectionIds = null)
-        => string.Concat(BuildSections(basePrompt, language, templateSuffix, projectRoot, activeFileRelPath, disabledSectionIds)
+        IReadOnlySet<string>? disabledSectionIds = null,
+        string? activeFilePath    = null)
+        => string.Concat(BuildSections(basePrompt, language, templateSuffix, projectRoot, activeFileRelPath, disabledSectionIds,
+                                       activeFilePath)
                          .Where(s => disabledSectionIds is null
                                      || !disabledSectionIds.Contains(Presentation.XRayPanelPresenter.SectionId(s)))
                          .Select(s => s.Content));
@@ -194,7 +201,8 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
         string? templateSuffix    = null,
         string? projectRoot       = null,
         string? activeFileRelPath = null,
-        IReadOnlySet<string>? disabledSectionIds = null)
+        IReadOnlySet<string>? disabledSectionIds = null,
+        string? activeFilePath    = null)
     {
         var sections = new List<PromptSection> { new(PromptSectionKind.Base, null, basePrompt + EnvironmentFacts()) };
 
@@ -261,6 +269,9 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
             catch (Exception ex) { ReportUnreadablePinOnce(pinnedPath, ex); }
         }
 
+        // The repository's own instructions to coding agents — after the pins, before .inferpal/, which wins a conflict.
+        AddRepoInstructions(files, RepoInstructions(projectRoot, activeFileRelPath, activeFilePath), disabledSectionIds);
+        AddSkillsCatalog(files, string.IsNullOrEmpty(workspaceRoot) ? projectRoot : workspaceRoot);
 
         if (projectRoot is not null)
         {
@@ -289,6 +300,13 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
                                       disabledSectionIds));
         return sections;
     }
+
+    /// <summary>The repository's instructions for the question these inputs describe — the inputs <see cref="BuildSections"/>
+    /// takes, so a screen built from it shows what the prompt sends.</summary>
+    public RepoInstructionPlan? RepoInstructions(string? projectRoot, string? activeFileRelPath = null, string? activeFilePath = null) =>
+        PlanRepoInstructions(config, string.IsNullOrEmpty(workspaceRoot) ? projectRoot : workspaceRoot,
+                             activeFilePath ?? (projectRoot is not null && activeFileRelPath is not null
+                                                    ? Path.Combine(projectRoot, activeFileRelPath) : null));
 
     /// <summary>A file-backed layer before the budget is applied: <see cref="Header"/> + the (capped) body.</summary>
     private sealed record FileLayer(
@@ -470,4 +488,134 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     }
 
     private const string PromptFileContext = "PromptFiles";
+
+    /// <summary>
+    /// The repository's own instructions to coding agents that this question sends — AGENTS.md, Copilot's, Claude
+    /// Code's, Cursor's, Cline's, Roo's, Continue's: one file layer per source, under one heading that says which wins.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// No budget of their own: they share the one the prompt's files share (<see cref="ShareBudget"/>), keep their head
+    /// when cut, and say the cut with its numbers like every other file. A source switched off in the X-Ray hands the
+    /// heading to the next one sent.
+    /// </para>
+    /// <para>
+    /// What cannot be read, or is not taken, is said once in /diagnostics, not per build: the prompt is rebuilt on every
+    /// question.
+    /// </para>
+    /// </remarks>
+    /// <summary>
+    /// The skills' catalog of the automatic mode (<c>skillsAutoMode</c>, off by default): each skill's name and
+    /// description, and how to load one — the model picks the skill a request needs.
+    /// </summary>
+    /// <remarks>
+    /// The text is the one the triggering probe measured (<c>docs/probes/skills/auto-mode.md</c>: the right skill 8/10
+    /// and 10/10, none loaded wrongly in 20). It shares the budget of the prompt's files and says a cut like them: the
+    /// catalog of a large repository (microsoft/vscode: 49 skills) must not overflow a small window in silence.
+    /// </remarks>
+    private void AddSkillsCatalog(List<FileLayer> files, string? root)
+    {
+        if (!config.SkillsAutoMode) return;
+        var catalog = RepoSkills.Load(root, RepoInstructionFormats.Families(config.RepoInstructionFamilies).On);
+        if (catalog.Skills.Count == 0) return;
+        files.Add(new FileLayer(PromptSectionKind.Skills, catalog.Skills.Count.ToString(CultureInfo.InvariantCulture),
+                                "\n\n", ModelPrompts.SkillsCatalog(catalog.Skills.Select(s => (s.Name, s.Description)).ToList()),
+                                "the skills' catalog", Key: "skills"));
+    }
+
+    private static void AddRepoInstructions(List<FileLayer> files, RepoInstructionPlan? plan, IReadOnlySet<string>? disabledSectionIds)
+    {
+        if (plan is null) return;
+        var headed = false;
+        foreach (var sent in plan.Composed.Sent)
+        {
+            var relative = plan.Relative(sent.Instruction.Source.Path);
+            var layer    = new FileLayer(PromptSectionKind.RepoInstructions, relative, string.Empty, sent.Text, relative,
+                                         Key: sent.Instruction.Source.Path);
+            var isSent   = disabledSectionIds is null
+                           || !disabledSectionIds.Contains(Presentation.XRayPanelPresenter.SectionId(layer.Section("")));
+            var heading  = isSent && !headed
+                ? "\n\n" + ModelPrompts.RepoInstructionsHeading + "\n\n" + ModelPrompts.RepoInstructionsIntro
+                : string.Empty;
+            headed |= isSent;
+            files.Add(layer with { Header = heading + "\n\n### " + relative + "\n\n" });
+        }
+    }
+
+    /// <summary>
+    /// What the repository's instructions are for a question asked from <paramref name="root"/> with
+    /// <paramref name="activeFile"/> open: found, read, composed — the families the setting turns off kept apart.
+    /// <c>null</c> without a root. ⚠ The ONE path from the files to the prompt: the Context page and
+    /// <c>/instructions</c> read this, so they show what the prompt sends.
+    /// </summary>
+    /// <remarks>What cannot be read, or is not taken, is said once in /diagnostics, not per build: the prompt is rebuilt
+    /// on every question.</remarks>
+    internal static RepoInstructionPlan? PlanRepoInstructions(InferpalConfig config, string? root, string? activeFile)
+    {
+        if (string.IsNullOrEmpty(root)) return null;
+        try
+        {
+            var discovery = RepoInstructionDiscovery.Discover(root, activeFile);
+            if (discovery.SearchRoot is not { } searchRoot) return null;
+            foreach (var unseen in discovery.Unseen)
+                Diagnostics.RecordOnce(RepoInstructionsContext, Describe(unseen), $"{unseen.Reason}|{PinKey(unseen.Path)}");
+
+            var (families, unknown) = RepoInstructionFormats.Families(config.RepoInstructionFamilies);
+            foreach (var name in unknown)
+                Diagnostics.DroppedLineOnce(RepoInstructionsContext,
+                    "Unknown family in repoInstructionFamilies, ignored (agents, copilot, claude, cursor, cline, roo, continue)",
+                    "family:" + name.ToLowerInvariant(), name);
+
+            var off  = discovery.Sources.Where(s => !families.Contains(s.Format.Family)).ToList();
+            var read = discovery.Sources.Where(s => families.Contains(s.Format.Family))
+                                        .Select(s => RepoInstructionReader.Read(s, searchRoot)).ToList();
+            foreach (var instruction in read)
+            {
+                foreach (var note in instruction.Notes)
+                    Diagnostics.RecordOnce(RepoInstructionsContext, Describe(instruction, note),
+                                           $"{note.Kind}|{PinKey(note.Subject)}");
+                // Read whole now: the next time it cannot be, it is said again — the condition is the file's content.
+                if (instruction.Body.Length > 0)
+                    foreach (var kind in new[] { RepoInstructionNoteKind.Unreadable, RepoInstructionNoteKind.Binary,
+                                                 RepoInstructionNoteKind.TooLarge })
+                        Diagnostics.Forget(RepoInstructionsContext, $"{kind}|{PinKey(instruction.Source.Path)}");
+            }
+            return new RepoInstructionPlan(discovery, read, off,
+                                           RepoInstructionComposition.Compose(read, RelativeActivePath(searchRoot, activeFile)));
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Diagnostics.Swallow("SystemPromptBuilder.RepoInstructions", ex);
+            return null;
+        }
+    }
+
+    private const string RepoInstructionsContext = "RepoInstructions";
+
+    private static string Describe(RepoInstructionUnseen unseen) => unseen.Reason switch
+    {
+        RepoInstructionUnseenReason.LinkLeavesTheRepository =>
+            $"Repository instruction file not read: it is a link whose target lies outside the repository ({unseen.Path}).",
+        RepoInstructionUnseenReason.Capped =>
+            $"{unseen.Count} more repository instruction files in {unseen.Path} were not read "
+            + $"(only the first {RepoInstructionDiscovery.MaxFilesPerFormat} are).",
+        RepoInstructionUnseenReason.LinkNotFollowed =>
+            $"Repository instruction folder not read: it is a link, not followed ({unseen.Path}).",
+        _ => $"Repository instruction folder could not be listed, so its files are not read ({unseen.Path}).",
+    };
+
+    private static string Describe(RepoInstruction instruction, RepoInstructionNote note) => note.Kind switch
+    {
+        RepoInstructionNoteKind.Unreadable => $"Repository instruction file could not be read, so it is NOT sent: {note.Subject}",
+        RepoInstructionNoteKind.Binary     => $"Repository instruction file is not text, so it is not sent: {note.Subject}",
+        RepoInstructionNoteKind.TooLarge   =>
+            $"Repository instruction file is larger than {RepoInstructionReader.MaxFileBytes / 1024} KB, so it is not sent: {note.Subject}",
+        RepoInstructionNoteKind.ImportOutsideTheRepository =>
+            $"{instruction.Source.Path} imports a file outside the repository, which is not read: {note.Subject}",
+        RepoInstructionNoteKind.ImportTooDeep =>
+            $"{instruction.Source.Path} imports past {RepoInstructionReader.MaxImportHops} levels; not read: {note.Subject}",
+        RepoInstructionNoteKind.KeyNotApplied =>
+            $"'{note.Subject}' in {instruction.Source.Path} is not applied by Inferpal; the rule is scoped by its other keys.",
+        _ => $"{instruction.Source.Path} scopes itself to no file ({note.Subject}: []), so it is never sent.",
+    };
 }

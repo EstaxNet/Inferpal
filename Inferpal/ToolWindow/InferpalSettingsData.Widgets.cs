@@ -11,10 +11,13 @@ namespace Inferpal.ToolWindow;
 /// <summary>What the settings window's live blocks read: the code index, the @Docs index, the chat's conversation, and
 /// the editor to open a file in.</summary>
 /// <param name="ConversationUsage">The chat window's X-Ray counts; <c>null</c> while no chat window exists.</param>
+/// <param name="RepoInstructions">The repository's instruction files and what the chat's next question sends of each;
+/// <c>null</c> while no chat window exists.</param>
 /// <param name="OpenXray">Shows the chat window with its X-Ray panel open.</param>
 /// <param name="OpenFile">Opens a file in the editor, a folder in the file explorer.</param>
 internal sealed record SettingsLiveSources(
     ProjectIndexService Index, DocsIndexService Docs, Func<Task<XRayPanelModel?>> ConversationUsage,
+    Func<Task<IReadOnlyList<RepoInstructionRow>?>> RepoInstructions,
     Func<Task> OpenXray, Func<string, Task> OpenFile);
 
 /// <summary>
@@ -92,6 +95,14 @@ internal partial class InferpalSettingsData
 
     // ── The project's files ──────────────────────────────────────────────────
     [DataMember] public ObservableCollection<ProjectFileItem> ProjectFileRows { get; } = [];
+
+    // ── The repository's instructions to coding agents ───────────────────────
+    private string _repoInstructionsNote = "";
+    private bool   _hasRepoInstructionsNote;
+    [DataMember] public ObservableCollection<RepoInstructionItem> RepoInstructionRows { get; } = [];
+    /// <summary>Said instead of the list when there is nothing to list, or nothing to list it from (no chat window).</summary>
+    [DataMember] public string RepoInstructionsNote    { get => _repoInstructionsNote;    set => SetProperty(ref _repoInstructionsNote,    value); }
+    [DataMember] public bool   HasRepoInstructionsNote { get => _hasRepoInstructionsNote; set => SetProperty(ref _hasRepoInstructionsNote, value); }
 
     // ── Autocomplete: speed cards, and the model each feature uses ───────────
     private bool _inlineModeFast, _inlineModeDefault, _inlineModeAccurate;
@@ -304,10 +315,12 @@ internal partial class InferpalSettingsData
         {
             var xray  = await live.ConversationUsage();
             var files = SettingsWidgets.ProjectFiles(live.Index.RootDir);
+            var repo  = await live.RepoInstructions();
             await RunOnVMContextAsync(() =>
             {
                 ApplyUsage(xray);
                 ApplyProjectFiles(files);
+                ApplyRepoInstructions(repo);
                 RefreshPinnedSizes();
             });
         }
@@ -425,6 +438,19 @@ internal partial class InferpalSettingsData
         }
     }
 
+    /// <summary>The rows <c>/instructions</c> prints, one per file; <c>null</c> = no chat window to read them from.</summary>
+    private void ApplyRepoInstructions(IReadOnlyList<RepoInstructionRow>? rows)
+    {
+        RepoInstructionRows.Clear();
+        foreach (var r in rows ?? [])
+        {
+            var path = r.FullPath;
+            RepoInstructionRows.Add(new RepoInstructionItem(r, new AsyncCommand((_, _) => _live?.OpenFile(path) ?? Task.CompletedTask)));
+        }
+        RepoInstructionsNote    = rows is null ? Strings.RepoInstructionsNoChat : rows.Count == 0 ? Strings.RepoInstructionsNone : "";
+        HasRepoInstructionsNote = RepoInstructionsNote.Length > 0;
+    }
+
     /// <summary>What each pinned file costs the prompt, read again with the page (an edit to the file counts at once).</summary>
     private void RefreshPinnedSizes()
     {
@@ -468,6 +494,23 @@ internal sealed class DocsSiteItem : NotifyPropertyChangedObject
     [DataMember] public string RemoveLabel { get; }
     [DataMember] public AsyncCommand ReindexCommand { get; }
     [DataMember] public AsyncCommand RemoveCommand  { get; }
+}
+
+/// <summary>One repository instruction file on the Context page, as Remote UI carries it.</summary>
+[DataContract]
+internal sealed class RepoInstructionItem : NotifyPropertyChangedObject
+{
+    public RepoInstructionItem(RepoInstructionRow row, AsyncCommand open)
+    {
+        File        = row.File;
+        Detail      = row.Detail;
+        OpenCommand = open;
+    }
+
+    [DataMember] public string File   { get; }
+    /// <summary>The tool, when it applies, what goes and its state — the other columns of <c>/instructions</c>.</summary>
+    [DataMember] public string Detail { get; }
+    [DataMember] public AsyncCommand OpenCommand { get; }
 }
 
 /// <summary>One of the project's files on the Context page, as Remote UI carries it.</summary>

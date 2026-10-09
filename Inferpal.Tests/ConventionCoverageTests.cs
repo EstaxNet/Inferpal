@@ -117,8 +117,9 @@ public class ConventionCoverageTests
         }
 
         Assert.True(offenders.Count == 0,
-            "These tools resolve a path against the process's working directory, which in Visual "
-            + "Studio is not the project. Pass the base to PathSanitizer.Sanitize(path, root). Sites:"
+            "These regexes have no match timeout, and the input they match is not ours (the workspace, the web, the "
+            + "model's output): a pathological one freezes the call. Pass RegexBudget, or a TimeSpan whose name says "
+            + "Timeout. Sites:"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 

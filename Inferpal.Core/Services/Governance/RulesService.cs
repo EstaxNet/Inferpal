@@ -113,23 +113,50 @@ internal static class RulesService
         var afterFence = normalized.IndexOf('\n', end + 1);
         var body = afterFence >= 0 ? normalized[(afterFence + 1)..] : string.Empty;
 
-        string? listKey = null;   // the key a block list's "- item" lines belong to
+        string? listKey   = null;   // the key a block list's "- item" lines belong to
+        string? scalarKey = null;   // the key whose value an indented line continues (YAML folds it)
+        var joiner = " ";           // how those lines join: a space, or a line break for a literal block (|)
+        var inBlockScalar = false;  // under `key: |` or `key: >`, where "- " and "#" lines are text
         foreach (var line in block.Split('\n'))
         {
             var trimmed = line.Trim();
-            if (trimmed.Length == 0 || trimmed.StartsWith('#')) continue;
+            if (trimmed.Length == 0) continue;
+            // ⚠ Inside a block scalar a "- " line is not a list item and a "#" line is not a comment: read as such, a
+            // skill's description came out as "…need to:, Manually test…, Run a dev server…".
+            if (inBlockScalar && scalarKey is not null && char.IsWhiteSpace(line[0]))
+            {
+                fm[scalarKey] = fm[scalarKey].Length == 0 ? trimmed : fm[scalarKey] + joiner + trimmed;
+                continue;
+            }
+            if (trimmed.StartsWith('#')) continue;
             if (listKey is not null && trimmed.StartsWith("- ", StringComparison.Ordinal))
             {
                 var item = trimmed[2..].Trim().Trim('"', '\'');
                 fm[listKey] = fm[listKey].Length == 0 ? item : fm[listKey] + ", " + item;
                 continue;
             }
+            // ⚠ A value written over several lines continues on INDENTED lines. Cut at its first line, the description
+            // of an on-demand rule — the one thing the agent reads to decide whether to load it — lost its end.
+            if (scalarKey is not null && char.IsWhiteSpace(line[0]))
+            {
+                fm[scalarKey] = (fm[scalarKey].Length == 0 ? trimmed : fm[scalarKey] + joiner + trimmed).Trim('"', '\'');
+                continue;
+            }
             var colon = trimmed.IndexOf(':');
-            if (colon <= 0) { listKey = null; continue; }
+            if (colon <= 0) { listKey = null; scalarKey = null; continue; }
             var key = trimmed[..colon].Trim();
             var val = trimmed[(colon + 1)..].Trim().Trim('"', '\'');
-            if (key.Length > 0) fm[key] = val;
-            listKey = key.Length > 0 && val.Length == 0 ? key : null;
+            if (key.Length == 0) { listKey = null; scalarKey = null; continue; }
+
+            // A block scalar: `>` folds its lines with spaces, `|` keeps their breaks (chomping signs ignored).
+            var indicator = val.TrimEnd('-', '+');
+            joiner = indicator == "|" ? "\n" : " ";
+            inBlockScalar = indicator is ">" or "|";
+            if (inBlockScalar) val = string.Empty;
+
+            fm[key]   = val;
+            listKey   = val.Length == 0 && !inBlockScalar ? key : null;
+            scalarKey = key;
         }
         return (fm, body);
     }

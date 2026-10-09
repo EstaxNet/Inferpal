@@ -40,7 +40,7 @@ internal sealed class BackgroundTaskToolRegistry(
     {
         "read_file", "list_files", "search_in_files", "search_codebase", "search_docs",
         "get_diagnostics", "get_git_status", "get_solution_info",
-        "generate_project_map", "analyze_code",
+        "generate_project_map", "analyze_code", "read_skill_file",
     };
 
     /// <summary>

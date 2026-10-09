@@ -90,6 +90,9 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
                 psi.ArgumentList.Add(arg);
             foreach (var kv in _config.Env)
                 psi.Environment[kv.Key] = kv.Value;
+            // A repository's server runs in the repository (RepoMcpServers); the user's own keep the editor's folder.
+            if (!string.IsNullOrEmpty(_config.WorkingDirectory))
+                psi.WorkingDirectory = _config.WorkingDirectory;
 
             _process = new Process { StartInfo = psi, EnableRaisingEvents = true };
             if (!_process.Start())

@@ -397,6 +397,56 @@ public partial class HostServerTests
         }
     }
 
+    /// <summary>
+    /// The repository's instructions to coding agents reach the model under VS Code, scoped to the active file — the
+    /// same builder as Visual Studio's, given the file's absolute path.
+    /// </summary>
+    [Fact]
+    public async Task TheRepositorysAgentInstructions_ReachTheModel_ScopedToTheActiveFile()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"host-repo-instr-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(Path.Combine(root, ".git"));
+        Directory.CreateDirectory(Path.Combine(root, ".github", "instructions"));
+        File.WriteAllText(Path.Combine(root, "AGENTS.md"), "AGENTS-FOR-EVERY-QUESTION");
+        File.WriteAllText(Path.Combine(root, ".github", "instructions", "cs.instructions.md"),
+            "---\napplyTo: \"**/*.cs\"\n---\nINSTRUCTION-FOR-CSHARP-FILES");
+        try
+        {
+            using var h = CreateHarness();
+            string? system = null;
+            h.Fake.OnChatRequest = (_, history, _, _) =>
+            {
+                system = history.FirstOrDefault(m => m.Role == "system")?.Content;
+                return Task.FromResult(new ChatTurnResult("ok", null, 1, 1));
+            };
+            await h.InitializeAsync(rootDir: root).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            await h.Client.NotifyWithParameterObjectAsync("editor/didChangeActiveDocument",
+                new { path = Path.Combine(root, "src", "Program.cs") });
+            await WaitForXraySectionAsync(h, id => id.EndsWith("cs.instructions.md", StringComparison.Ordinal));
+            await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send", new { prompt = "hi", agentMode = false })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            Assert.NotNull(system);
+            Assert.Contains("AGENTS-FOR-EVERY-QUESTION", system);
+            Assert.Contains("INSTRUCTION-FOR-CSHARP-FILES", system);
+
+            // Reference arm: a file the instruction does not target removes it; AGENTS.md stays.
+            await h.Client.NotifyWithParameterObjectAsync("editor/didChangeActiveDocument",
+                new { path = Path.Combine(root, "README.md") });
+            await WaitForXraySectionAsync(h, id => id.EndsWith("cs.instructions.md", StringComparison.Ordinal), present: false);
+            await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send", new { prompt = "again", agentMode = false })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            Assert.Contains("AGENTS-FOR-EVERY-QUESTION", system);
+            Assert.DoesNotContain("INSTRUCTION-FOR-CSHARP-FILES", system);
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { }
+        }
+    }
+
     /// <summary>Persona auto-switch unchecked: the active file adds no persona (the rule still applies).</summary>
     [Fact]
     public async Task WithPersonaAutoSwitchOff_TheActiveFileAddsNoPersona()

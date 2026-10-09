@@ -18,6 +18,75 @@ internal static class ModelPrompts
     public const string SystemPrompt =
         "You are Inferpal, a local AI developer assistant integrated in the user's code editor. You have access to tools to read/write files, list directories, search code, and run shell commands. Use these tools as much as needed before replying. Respond in the same language as the user.";
 
+    /// <summary>Heading of the repository's own instructions to coding agents in the system prompt.</summary>
+    public const string RepoInstructionsHeading = "## Repository instructions";
+
+    /// <summary>
+    /// Under <see cref="RepoInstructionsHeading"/>, once: where these instructions come from and which wins a conflict.
+    /// </summary>
+    /// <remarks>The order states the precedence: the closest folder last, then Inferpal's own project files after
+    /// them all — written for this tool, by this team, so they win.</remarks>
+    public const string RepoInstructionsIntro =
+        "The repository's own instructions for coding agents follow, from its root down to the active file's folder — "
+        + "the closest last, and it wins over those before it. Where they conflict with the project context, agent "
+        + "memory, project notes or rules after them, those win.";
+
+    /// <summary>
+    /// In place of a Claude Code <c>!`command`</c> line of a repository command: Claude Code runs it before sending and
+    /// puts its output there; Inferpal never runs a repository's command unasked, so the model is told to run it.
+    /// </summary>
+    public static string RepoCommandNotRun(string command) =>
+        $"`{command}` (not run before this message: run it yourself to see its output)";
+
+    /// <summary>
+    /// A skill joined to a question by <c>/skill</c>: its instructions, where it lives, and the files it holds — read
+    /// with <c>read_skill_file</c>, a script run with <c>run_command</c> (under the user's approval, like any command).
+    /// </summary>
+    public static string SkillContent(string name, string folder, string body, IReadOnlyList<string> files, int omitted)
+    {
+        var sb = new System.Text.StringBuilder()
+            .Append("The user asks you to apply the skill \"").Append(name).AppendLine("\". Its instructions:")
+            .Append("<skill_content name=\"").Append(name).AppendLine("\">")
+            .AppendLine(body)
+            .AppendLine("</skill_content>")
+            .Append("The skill's folder: ").AppendLine(folder);
+        if (files.Count > 0)
+        {
+            sb.AppendLine("Its files (read one with read_skill_file when the instructions point to it; run a script "
+                          + "with run_command, by its full path):");
+            foreach (var f in files) sb.Append("- ").AppendLine(f);
+            if (omitted > 0) sb.AppendLine(SkillFilesOmitted(omitted));
+        }
+        return sb.ToString().TrimEnd();
+    }
+
+    /// <summary>Under a skill's file index cut at <c>RepoSkills.MaxIndexedFiles</c>: how many are not listed.</summary>
+    public static string SkillFilesOmitted(int omitted) =>
+        $"… and {omitted} more file(s) not listed here: ask read_skill_file for a path the instructions name.";
+
+    /// <summary>A skill's description in the catalog, at most: the catalog is in every question's prompt.</summary>
+    internal const int SkillDescriptionChars = 300;
+
+    /// <summary>
+    /// The skills' catalog of the automatic mode, in the system prompt: what each skill is for, and how to load one.
+    /// </summary>
+    /// <remarks>⚠ The wording the triggering probe measured (<c>docs/probes/skills/auto-mode.md</c>): a change is a new
+    /// measurement, not an edit.</remarks>
+    public static string SkillsCatalog(IReadOnlyList<(string Name, string Description)> skills)
+    {
+        var sb = new System.Text.StringBuilder("## Skills\n\n")
+            .Append("This repository provides skills: instructions for specific tasks. When the user's request matches a skill's ")
+            .Append("description, first load it with read_skill_file(skill=\"<name>\", path=\"SKILL.md\"), then follow it. ")
+            .Append("Do not load a skill that does not match the request.\n\n");
+        foreach (var (name, description) in skills)
+        {
+            var oneLine = string.Join(" ", description.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+            sb.Append("- ").Append(name).Append(": ")
+              .Append(oneLine.Length > SkillDescriptionChars ? oneLine[..SkillDescriptionChars] + "…" : oneLine).Append('\n');
+        }
+        return sb.ToString().TrimEnd();
+    }
+
     /// <summary>User message asking the model for a JSON plan (AgentOrchestrator.PlanPrompt appends the tool names).</summary>
     public const string AgentPlanPrompt =
         "Before using any tools, output ONLY a JSON object with the following structure (no prose, no markdown fences):\n"
