@@ -9,10 +9,6 @@ It runs against **your** model server — Ollama, LM Studio or any OpenAI-compat
 
 ## Install
 
-> The archives ship from the first release after 1.7.5. Until then, build yours from a clone of this repository
-> (.NET 8 SDK and PowerShell 7): `pwsh ./acp/package.ps1 -Target win32-x64` (or `linux-x64`, `darwin-arm64`), which
-> writes the archive below into `acp/out/`.
-
 1. Download the archive for your system from the [latest release](https://github.com/EstaxNet/Inferpal/releases/latest):
 
    | System | Archive | Executable inside |

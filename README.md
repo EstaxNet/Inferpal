@@ -30,7 +30,8 @@
   <br>
   or <a href="https://github.com/EstaxNet/Inferpal/releases/latest">download the latest release</a> —
   <code>Inferpal-vs2026-*.vsix</code> for Visual Studio,
-  <code>inferpal-vscode-&lt;platform&gt;-*.vsix</code> for VS Code (Windows x64, Linux x64 or Apple Silicon).
+  <code>inferpal-vscode-&lt;platform&gt;-*.vsix</code> for VS Code (Windows x64, Linux x64 or Apple Silicon),
+  <code>inferpal-acp-&lt;platform&gt;-*</code> for Zed, JetBrains IDEs, Neovim and Emacs (<a href="docs/acp.md">setup</a>).
 </p>
 
 <p align="center">
@@ -76,7 +77,7 @@ It ships as a **Visual Studio 2026 extension** (the primary target) and a
 - **Conversation branching** — `/branch <n>` forks a conversation at any turn: the branch keeps turns 1..*n* and the conversation continues there, while the original is written back to disk first. `/branch` lists the branch points and the family tree, `/branch <name>` switches. Branches are plain session files, so nothing else had to learn about them.
 - **Transparency** — the **Context X-Ray** panel breaks down the exact prompt sent to the model, layer by layer — the tool definitions each turn carries included — with per-layer toggles; `/replay` reconstructs an agent run post-mortem; `/fix` `/refactor` `/doc` show a per-hunk **inline diff preview** before touching your buffer.
 - **VS Code at parity** — the same chat (markdown, tool bubbles, plan display, typed `@`-mentions, slash commands with autocomplete), the same settings, the same approvals and inline FIM completions, backed by a bundled self-contained host (no .NET install needed).
-- **Zed, JetBrains IDEs, Neovim and Emacs** — the same engine as an [Agent Client Protocol](https://agentclientprotocol.com) agent: from the first release after 1.7.5, each release carries an archive per system (Windows x64, Linux x64, Apple Silicon; until then, built from source with `acp/package.ps1`) whose executable, run with `--acp`, is started by the editor. The real diff is shown before every change and asked for, a file with unsaved changes in the editor is never written over, the three modes and the model are session options, sessions are saved and reloaded, and the editor's MCP servers are started for the session. Tested in Zed and against the protocol's conformance kit; setup for each editor in [docs/acp.md](docs/acp.md).
+- **Zed, JetBrains IDEs, Neovim and Emacs** — the same engine as an [Agent Client Protocol](https://agentclientprotocol.com) agent: each release carries an archive per system (Windows x64, Linux x64, Apple Silicon) whose executable, run with `--acp`, is started by the editor. The real diff is shown before every change and asked for, a file with unsaved changes in the editor is never written over, the three modes and the model are session options, sessions are saved and reloaded, and the editor's MCP servers are started for the session. Tested in Zed and against the protocol's conformance kit; setup for each editor in [docs/acp.md](docs/acp.md).
 
 > See **[docs/features.md](docs/features.md)** for the full functional tour.
 

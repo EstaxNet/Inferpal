@@ -3,6 +3,16 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.7.6
+
+Inferpal now runs in Zed, the JetBrains IDEs, Neovim and Emacs too, through the Agent Client Protocol — a separate
+download on the release page. In VS Code, two fixes:
+
+- **An answer you stop is no longer answered again at your next question**: the part you saw stays with its
+  question, marked as stopped.
+- **The agent's plan no longer shows an edit you refused as done**: a step that was to write a file and did not
+  shows as skipped.
+
 ## 1.7.5
 
 Your repository's agent setup, read as it is — and MCP servers of the latest protocol revision. Plus eighteen fixes.
