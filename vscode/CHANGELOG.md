@@ -3,6 +3,25 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.7.5
+
+Your repository's agent setup, read as it is — and MCP servers of the latest protocol revision. Plus eighteen fixes.
+
+- **Your repository's instructions, commands, skills and MCP servers**: `AGENTS.md` and the instruction files written
+  for Copilot, Claude Code, Cursor, Cline, Roo and Continue go with your questions (`/instructions` shows what each
+  sends); their commands become slash commands; `/skill` asks with a `SKILL.md` skill; the repository's MCP servers
+  start once you agree, after a question that shows everything they run.
+- **MCP**: servers of the 2026-07-28 revision connect, a tool's structured argument reaches the model with its shape,
+  and signing in checks which authorization server answered.
+- **Nothing left behind**: nothing Inferpal started keeps running after a crash, and the first index of a large folder
+  picks up where it stopped.
+- **Figures that tell the truth**: counts agree with their noun in every language, and the run line, `/task`,
+  `/history` and the build check after an edit count what they say they count.
+- **Two editors, one conversation**: a conversation reopened from Visual Studio comes back whole, and each workspace
+  gets its own last conversation back.
+- **Safety**: the agent always asks before editing a repository's agent instructions, and a permission rule removed in
+  one window stops approving in the others.
+
 ## 1.7.4
 
 Eighty-two fixes, most of them for something that failed, or was lost, without a word.
