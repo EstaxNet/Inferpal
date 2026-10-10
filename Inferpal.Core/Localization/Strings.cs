@@ -1777,4 +1777,42 @@ internal static class Strings
     public static string BtnUnloadModel => Get(nameof(BtnUnloadModel));
     public static string BtnUnloadAll => Get(nameof(BtnUnloadAll));
     public static string BtnRefreshLoaded => Get(nameof(BtnRefreshLoaded));
+
+    // ── Agent Client Protocol (Inferpal.Host --acp) ──────────────────────────────
+    public static string AcpModeDefault => Get(nameof(AcpModeDefault));
+    public static string AcpModeDefaultHint => Get(nameof(AcpModeDefaultHint));
+    public static string AcpModeAgent => Get(nameof(AcpModeAgent));
+    public static string AcpModeAgentHint => Get(nameof(AcpModeAgentHint));
+    public static string AcpModePlan => Get(nameof(AcpModePlan));
+    public static string AcpModePlanHint => Get(nameof(AcpModePlanHint));
+    public static string AcpOptionMode => Get(nameof(AcpOptionMode));
+    public static string AcpOptionModel => Get(nameof(AcpOptionModel));
+    public static string AcpSetupMethodName => Get(nameof(AcpSetupMethodName));
+    public static string AcpSetupMethodHint => Get(nameof(AcpSetupMethodHint));
+    public static string AcpNotSetUp(string url) => Format(Get(nameof(AcpNotSetUp)), url);
+    public static string AcpSessionNotFound(string name) => Format(Get(nameof(AcpSessionNotFound)), name);
+    public static string AcpLimitsNotice(string url) => Format(Get(nameof(AcpLimitsNotice)), url);
+    public static string AcpCommandNeedsEditor(string command) => Format(Get(nameof(AcpCommandNeedsEditor)), command);
+    public static string AcpClearStartNewThread => Get(nameof(AcpClearStartNewThread));
+    public static string AcpPasteThis => Get(nameof(AcpPasteThis));
+    public static string AcpCopyThis => Get(nameof(AcpCopyThis));
+    public static string AcpOpenThis(string path) => Format(Get(nameof(AcpOpenThis)), path);
+    public static string AcpAttachedNext(string name) => Format(Get(nameof(AcpAttachedNext)), name);
+    public static string AcpAttachmentUnreadable(string name, string reason) => Format(Get(nameof(AcpAttachmentUnreadable)), name, reason);
+    public static string AcpAttachmentsLeftOut(int count, int max, string names) => Format(Get(nameof(AcpAttachmentsLeftOut)), count, max, names);
+    public static string AcpSessionNotSaved(string reason) => Format(Get(nameof(AcpSessionNotSaved)), reason);
+    public static string AcpPlanStepFailed => Get(nameof(AcpPlanStepFailed));
+    public static string AcpPlanStepSkipped => Get(nameof(AcpPlanStepSkipped));
+    public static string AcpSetupTitle => Get(nameof(AcpSetupTitle));
+    public static string AcpSetupServerQuestion(int choice) => Format(Get(nameof(AcpSetupServerQuestion)), choice);
+    public static string AcpSetupAddressQuestion(string url) => Format(Get(nameof(AcpSetupAddressQuestion)), url);
+    public static string AcpSetupKeyQuestion => Get(nameof(AcpSetupKeyQuestion));
+    public static string AcpSetupChecking(string url) => Format(Get(nameof(AcpSetupChecking)), url);
+    public static string AcpSetupReached(string server, string url) => Format(Get(nameof(AcpSetupReached)), server, url);
+    public static string AcpSetupNotReached(string url) => Format(Get(nameof(AcpSetupNotReached)), url);
+    public static string AcpSetupNoModel(string server) => Format(Get(nameof(AcpSetupNoModel)), server);
+    public static string AcpSetupModelQuestion(int choice) => Format(Get(nameof(AcpSetupModelQuestion)), choice);
+    public static string AcpSetupSaved(string path) => Format(Get(nameof(AcpSetupSaved)), path);
+    public static string AcpSetupStopped => Get(nameof(AcpSetupStopped));
+    public static string AcpSetupPickANumber(int count) => Format(Get(nameof(AcpSetupPickANumber)), count);
 }

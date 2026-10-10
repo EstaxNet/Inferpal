@@ -20,6 +20,9 @@ internal class ReplaceSelectionTool : ITool
 
     public string Name => "replace_selection";
 
+    /// <summary>Not offered where there is no editor at all (<see cref="IEditorSurface.HasEditor"/>).</summary>
+    public bool IsOffered => _editor.HasEditor;
+
     public string Description =>
         "Replaces the current selection in the active editor with the given text. " +
         "If no text is selected, inserts at the caret position instead.";

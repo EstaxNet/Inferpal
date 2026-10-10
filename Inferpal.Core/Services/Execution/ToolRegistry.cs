@@ -319,8 +319,9 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         }
 
         // An editor that answers on demand (Visual Studio) is asked now which buffers hold unsaved changes: what the
-        // tool reads, and what it refuses to write over, is the state of the editor at this call.
-        if (_overlay is not null) await _overlay.RefreshAsync(ct);
+        // tool reads, and what it refuses to write over, is the state of the editor at this call. One that can only be
+        // asked about a given file (an Agent Client Protocol client) is asked about the files this call names.
+        if (_overlay is not null) await _overlay.RefreshAsync(ct, NamedFiles(args, _indexService.RootDir));
 
         var sw = System.Diagnostics.Stopwatch.StartNew();
         // Every write this call backs up is checked when it ends: one that did not land leaves the run.
@@ -370,7 +371,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
 
     /// <summary>Best-effort human-readable target of a tool call for the run journal:
     /// the first well-known string argument (path, command, query…), <c>null</c> when none.</summary>
-    private static string? ExtractSubject(JsonElement args)
+    internal static string? ExtractSubject(JsonElement args)
     {
         if (args.ValueKind != JsonValueKind.Object) return null;
 
@@ -383,6 +384,46 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             }
         }
         return null;
+    }
+
+    /// <summary>
+    /// The existing files a call's arguments name, wherever they sit in the object (<c>path</c>, <c>edits[].path</c>,
+    /// a tool's own key): every string value that is a file on disk, resolved against <paramref name="root"/>.
+    /// </summary>
+    /// <remarks>
+    /// A property, not a list of argument names: a tool added tomorrow, an MCP tool with its own schema, names its files
+    /// in keys nobody here knows. Bounded — a text with a line break or of path-defying length is content, not a path.
+    /// </remarks>
+    internal static IReadOnlyList<string> NamedFiles(JsonElement args, string? root)
+    {
+        var found = new List<string>();
+        var visited = 0;
+        void Walk(JsonElement e, int depth)
+        {
+            if (depth > 6 || ++visited > 200) return;
+            switch (e.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    foreach (var p in e.EnumerateObject()) Walk(p.Value, depth + 1);
+                    break;
+                case JsonValueKind.Array:
+                    foreach (var item in e.EnumerateArray()) Walk(item, depth + 1);
+                    break;
+                case JsonValueKind.String:
+                    var s = e.GetString();
+                    if (string.IsNullOrWhiteSpace(s) || s.Length > 400 || s.IndexOfAny(['\n', '\r', '\0']) >= 0) return;
+                    try
+                    {
+                        var full = Path.IsPathRooted(s) || string.IsNullOrEmpty(root) ? Path.GetFullPath(s) : Path.GetFullPath(Path.Combine(root, s));
+                        if (File.Exists(full)) found.Add(full);
+                    }
+                    // A string that is no path at all (a query, a regex): not a file the call names.
+                    catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException) { }
+                    break;
+            }
+        }
+        Walk(args, 0);
+        return found;
     }
 
     private void Register(ITool tool) => _tools[tool.Name] = tool;

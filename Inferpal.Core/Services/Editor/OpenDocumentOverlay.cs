@@ -35,6 +35,7 @@ internal sealed class OpenDocumentOverlay
     private readonly record struct Entry(string? Text, bool Unsaved);
 
     private readonly Func<CancellationToken, Task<IReadOnlyList<UnsavedDocument>>>? _source;
+    private readonly Func<string, CancellationToken, Task<string?>>? _probe;
     private readonly object _refreshGate = new();
     private Task? _refreshing;
 
@@ -42,8 +43,20 @@ internal sealed class OpenDocumentOverlay
     public OpenDocumentOverlay() { }
 
     /// <summary>An overlay that asks <paramref name="source"/> which documents hold unsaved changes, at each
-    /// <see cref="RefreshAsync"/>, and holds exactly those.</summary>
+    /// <see cref="RefreshAsync(CancellationToken, IEnumerable{string}?)"/>, and holds exactly those.</summary>
     public OpenDocumentOverlay(Func<CancellationToken, Task<IReadOnlyList<UnsavedDocument>>> source) => _source = source;
+
+    /// <summary>
+    /// An overlay for an editor that can only be asked about ONE file: <paramref name="probe"/> returns the text the
+    /// editor holds for a path (its buffer when the file is open, the disk otherwise), <c>null</c> when it cannot say.
+    /// A file whose answer differs from the disk holds unsaved changes.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The editor of an Agent Client Protocol client (Zed, a JetBrains IDE) says neither which files are open nor which
+    /// are dirty: <c>fs/read_text_file</c> is the only question it answers. The overlay therefore asks about the paths a
+    /// call names, before the call and again after its approval — the same two moments as a pulled overlay.
+    /// </remarks>
+    public OpenDocumentOverlay(Func<string, CancellationToken, Task<string?>> probe) => _probe = probe;
 
     /// <summary>How long a pulled refresh may take before the overlay keeps what it knew.</summary>
     internal static readonly TimeSpan RefreshBudget = TimeSpan.FromSeconds(3);
@@ -66,8 +79,19 @@ internal sealed class OpenDocumentOverlay
     /// overlay keeps what it last knew, and says once in /diagnostics that it could not ask.
     /// Concurrent callers (a parallel batch of reads) share one question.
     /// </remarks>
-    public async Task RefreshAsync(CancellationToken ct)
+    public Task RefreshAsync(CancellationToken ct) => RefreshAsync(ct, paths: null);
+
+    /// <inheritdoc cref="RefreshAsync(CancellationToken)"/>
+    /// <param name="paths">The files the call at hand names: what an overlay that can only be asked about one file at a
+    /// time (<see cref="OpenDocumentOverlay(Func{string, CancellationToken, Task{string?}})"/>) asks about. Ignored by
+    /// the other two kinds.</param>
+    public async Task RefreshAsync(CancellationToken ct, IEnumerable<string>? paths)
     {
+        if (_probe is not null)
+        {
+            if (paths is not null) await ProbeAsync(paths, ct).ConfigureAwait(false);
+            return;
+        }
         if (_source is null) return;
 
         Task refresh;
@@ -115,6 +139,57 @@ internal sealed class OpenDocumentOverlay
 
     /// <summary>The kind of the last failed pull — one at a time, the refreshes being shared.</summary>
     private string? _lastFailure;
+
+    /// <summary>
+    /// Asks the editor about each of <paramref name="paths"/> that is a file on disk: the editor's text against the
+    /// disk's, line endings aside. A file it cannot answer about keeps what the overlay knew.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Compared without line endings and without a byte-order mark: an editor may hand its buffer back with LF where the
+    /// file has CRLF, and a file read that way would be "unsaved" for ever — every legitimate write to it refused.
+    /// </remarks>
+    private async Task ProbeAsync(IEnumerable<string> paths, CancellationToken ct)
+    {
+        const string context = "OpenDocumentOverlay.Probe";
+        foreach (var path in paths.Select(Normalize).Distinct(Services.PathComparer.Default))
+        {
+            if (!File.Exists(path)) continue;
+            string? held;
+            try
+            {
+                using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                budget.CancelAfter(RefreshBudget);
+                held = await _probe!(path, budget.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+            catch (Exception ex)
+            {
+                Diagnostics.RecordOnce(context,
+                    $"The editor did not say whether {Path.GetFileName(path)} has unsaved changes ({ex.GetType().Name}: " +
+                    $"{ex.Message}). It is treated as it was last known.", ex.GetType().Name);
+                continue;
+            }
+            if (held is null) continue;
+
+            string onDisk;
+            try { onDisk = await Tools.TextFileEncoding.ReadTextAsync(path, ct).ConfigureAwait(false); }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+            catch (Exception ex)
+            {
+                Diagnostics.Swallow(context, ex);
+                continue;
+            }
+
+            if (SameText(held, onDisk)) _docs.TryRemove(path, out _);
+            else _docs[path] = new Entry(held, Unsaved: true);
+        }
+    }
+
+    /// <summary>The same text, whatever line endings and byte-order mark each side carries.</summary>
+    internal static bool SameText(string a, string b) =>
+        string.Equals(Comparable(a), Comparable(b), StringComparison.Ordinal);
+
+    private static string Comparable(string s) => s.TrimStart('\uFEFF').Replace("\r\n", "\n").Replace('\r', '\n');
 
     /// <summary>Buffered content of <paramref name="path"/>, when the document is open.</summary>
     public bool TryGet(string path, out string text)

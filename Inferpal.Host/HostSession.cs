@@ -28,6 +28,15 @@ internal sealed class HostSession : IDisposable
     public required LspSemanticProvider  Lsp          { get; init; }
     public required string               RootDir      { get; init; }
 
+    /// <summary>The editor as the model is told it (<see cref="InitializeParams.Editor"/>).</summary>
+    public required string               EditorName   { get; init; }
+
+    /// <summary>Every tool call is announced to the adapter when it starts and ends (<see cref="InitializeParams.ToolEvents"/>).</summary>
+    public bool ToolEvents { get; init; }
+
+    /// <summary>The model's reasoning goes to the adapter as it streams (<see cref="InitializeParams.ReasoningChunks"/>).</summary>
+    public bool ReasoningChunks { get; init; }
+
     /// <summary>
     /// Folders open in the editor that <see cref="RootDir"/> does not hold — stated to the model with the root. Replaced
     /// whole by <c>workspace/folders</c> and read once per prompt build, so the next question already has it.

@@ -125,6 +125,16 @@ jobs:
         shell: pwsh
         run: ./vscode/package.ps1 -Target darwin-arm64
 
+      # The same host for Agent Client Protocol clients (Zed, the JetBrains IDEs, Neovim, Emacs): one archive per
+      # platform, run with --acp. Built beside the VSIXs so its bytes fall under the same SHA256SUMS.txt; the tarballs
+      # carry their execute bit explicitly (acp/package.ps1), which nothing re-asserts after an ACP client extracts them.
+      - name: Build ACP agent archives
+        shell: pwsh
+        run: |
+          foreach ($target in 'win32-x64', 'linux-x64', 'darwin-arm64') {
+              ./acp/package.ps1 -Target $target -OutDir acp/out
+          }
+
       - name: Assemble deliverables + checksums
         shell: pwsh
         run: |
@@ -134,7 +144,12 @@ jobs:
           foreach ($target in 'win32-x64', 'linux-x64', 'darwin-arm64') {
               Copy-Item "vscode/inferpal-$target-$env:VERSION.vsix" "$dist/inferpal-vscode-$target-$env:VERSION.vsix"
           }
-          $sums = Get-ChildItem $dist -Filter '*.vsix' | ForEach-Object {
+          Copy-Item "acp/out/inferpal-acp-win32-x64-$env:VERSION.zip" $dist
+          Copy-Item "acp/out/inferpal-acp-linux-x64-$env:VERSION.tar.gz" $dist
+          Copy-Item "acp/out/inferpal-acp-darwin-arm64-$env:VERSION.tar.gz" $dist
+          # Every deliverable, whatever its extension: a checksum list that names only the VSIXs would leave the ACP
+          # archives unverifiable.
+          $sums = Get-ChildItem $dist -File | Where-Object Name -ne 'SHA256SUMS.txt' | Sort-Object Name | ForEach-Object {
               "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)"
           }
           [System.IO.File]::WriteAllText("$dist/SHA256SUMS.txt", ($sums -join "`n") + "`n")

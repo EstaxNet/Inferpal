@@ -19,28 +19,36 @@ internal sealed class RpcEditorSurface : IEditorSurface
 {
     private readonly JsonRpc             _rpc;
     private readonly OpenDocumentOverlay _overlay;
+    private readonly bool                _hasEditor;
     private volatile string?             _activePath;
 
-    public RpcEditorSurface(JsonRpc rpc, OpenDocumentOverlay overlay)
+    /// <param name="hasEditor">The adapter has an editor to answer about (<see cref="InitializeParams.EditorSurface"/>).
+    /// Without one nothing is asked of it: the editor tools are not offered, and every read answers "none".</param>
+    public RpcEditorSurface(JsonRpc rpc, OpenDocumentOverlay overlay, bool hasEditor = true)
     {
-        _rpc     = rpc;
-        _overlay = overlay;
+        _rpc       = rpc;
+        _overlay   = overlay;
+        _hasEditor = hasEditor;
     }
 
     /// <summary>Updated from the adapter's `editor/didChangeActiveDocument` notification.</summary>
     public void SetActiveDocument(string? path) => _activePath = path;
 
-    // A connected adapter is a precondition of the host process existing at all.
-    public bool IsAvailable => true;
+    // A connected adapter is a precondition of the host process existing at all — when it has an editor.
+    public bool IsAvailable => _hasEditor;
 
-    public string? ActiveDocumentPath => _activePath;
+    public bool HasEditor => _hasEditor;
+
+    public string? ActiveDocumentPath => _hasEditor ? _activePath : null;
 
     // The adapter mirrors every open document into the overlay (didOpen/didClose),
     // so the overlay's key set IS the open-editors list — no RPC round-trip needed.
-    public IReadOnlyList<string> GetOpenDocumentPaths() => _overlay.Paths;
+    // Without an editor the overlay holds only the files found unsaved, which are no list of open editors.
+    public IReadOnlyList<string> GetOpenDocumentPaths() => _hasEditor ? _overlay.Paths : [];
 
     public async Task<ActiveDocument?> GetActiveDocumentAsync(CancellationToken ct)
     {
+        if (!_hasEditor) return null;
         // Overlay first: the buffer is already mirrored and is fresher than a round-trip.
         var cached = _activePath;
         if (cached is not null && _overlay.TryGet(cached, out var text))
@@ -62,6 +70,7 @@ internal sealed class RpcEditorSurface : IEditorSurface
 
     public async Task<string?> InsertAtCursorAsync(string text, CancellationToken ct)
     {
+        if (!_hasEditor) return null;
         try
         {
             return await _rpc.InvokeWithParameterObjectAsync<string?>(
@@ -77,6 +86,7 @@ internal sealed class RpcEditorSurface : IEditorSurface
 
     public async Task<string?> GetEditorDiagnosticsAsync(CancellationToken ct)
     {
+        if (!_hasEditor) return null;   // no editor to ask: the tool builds instead
         try
         {
             return await _rpc.InvokeWithCancellationAsync<string?>(
@@ -92,6 +102,7 @@ internal sealed class RpcEditorSurface : IEditorSurface
 
     public async Task<EditorEditResult?> ReplaceSelectionAsync(string text, CancellationToken ct)
     {
+        if (!_hasEditor) return null;
         try
         {
             var result = await _rpc.InvokeWithParameterObjectAsync<EditResultDto?>(

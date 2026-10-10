@@ -658,6 +658,37 @@ internal sealed class AgentOrchestrator
     }
 
     /// <summary>
+    /// Closes the steps a run leaves open when it ends — on a repeat or on the final answer. A step whose tool WRITES is
+    /// done only with a write of its own: one the run made that no earlier write step claimed; otherwise it is skipped.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Closed done whatever happened, a plan whose edits were all refused read "all done" right above the notice that
+    /// no file was changed — the rule "a write step is done only when a file was written" held where a step advances,
+    /// not where the run sweeps the rest. <paramref name="unclaimedWrites"/> null = a registry that counts no writes:
+    /// nothing can tell, so every step closes done.
+    /// </remarks>
+    internal static void CloseRemainingSteps(AgentPlan plan, int? unclaimedWrites, Action<int, AgentStepStatus>? onStepUpdate)
+    {
+        var spare = unclaimedWrites ?? 0;
+        for (var i = 0; i < plan.Steps.Count; i++)
+        {
+            var step = plan.Steps[i];
+            if (step.Status is not (AgentStepStatus.Pending or AgentStepStatus.Active)) continue;
+            var status = AgentStepStatus.Done;
+            if (unclaimedWrites is not null && WritesFiles(step))
+            {
+                if (spare > 0) spare--;
+                else status = AgentStepStatus.Skipped;
+            }
+            step.Status = status;
+            onStepUpdate?.Invoke(i, status);
+        }
+    }
+
+    /// <summary>Whether the tool a step announces writes files (the same reading as the step's advance).</summary>
+    private static bool WritesFiles(AgentPlanStep step) => step.ToolHint is { } hint && ChatTurnPolicy.IsFileEdit(hint.Trim());
+
+    /// <summary>
     /// Whether <paramref name="answer"/> is, in its WHOLE, a new JSON plan (<c>{"goal":…,"steps":[…]}</c>, optionally
     /// fenced) rather than a step carried out or an answer.
     /// </summary>
@@ -831,6 +862,9 @@ internal sealed class AgentOrchestrator
 
         // ── Phase 2: Act-Observe loop ────────────────────────────────────────
         int stepIdx = 0;
+        // The writes no finished write step has claimed yet: what lets a step the run closes at its end count as done
+        // only when a file was written for it (CloseRemainingSteps).
+        int unclaimedWrites = 0;
 
         // 0/unset falls back to the default cap — never unlimited (see DefaultMaxIterations).
         var maxIter = _config.AgentMaxIterations > 0 ? _config.AgentMaxIterations : DefaultMaxIterations;
@@ -892,16 +926,11 @@ internal sealed class AgentOrchestrator
                     messages.RemoveAt(messages.Count - 1);
 
                     // If real work was already done, treat the repeat as a graceful finish rather
-                    // than an alarming error: mark remaining steps done and synthesise the final
+                    // than an alarming error: close the remaining steps and synthesise the final
                     // answer from the gathered tool results (the model looped instead of writing it).
                     // Only surface the loop message when nothing was accomplished — the genuinely
                     // stuck case.
-                    foreach (var step in plan.Steps)
-                        if (step.Status is AgentStepStatus.Pending or AgentStepStatus.Active)
-                        {
-                            step.Status = AgentStepStatus.Done;
-                            onStepUpdate?.Invoke(plan.Steps.IndexOf(step), AgentStepStatus.Done);
-                        }
+                    CloseRemainingSteps(plan, tools.WritesInRun is null ? null : unclaimedWrites, onStepUpdate);
 
                     var (loopMsg, loopCut, loopRepeating) = executions.Count > 0
                         ? await SynthesizeFinalAnswerAsync(
@@ -990,6 +1019,7 @@ internal sealed class AgentOrchestrator
                 // ⚠ An edit that wrote nothing is not a step done: an apply_edits refused whole, an old_content not
                 // found, a write declined. Telling the model its plan is complete then — "answer now, without
                 // calling any more tools" — is what made it end the run, claiming a change no file received.
+                if (writesBefore is { } counted && tools.WritesInRun is { } writesNow) unclaimedWrites += writesNow - counted;
                 var editChangedNothing = writesBefore is { } before && tools.WritesInRun == before
                                          && iterExecs.Any(e => ChatTurnPolicy.IsFileEdit(e.Name));
 
@@ -1004,11 +1034,11 @@ internal sealed class AgentOrchestrator
                 // ⚠ A step whose expected tool WRITES is done only when a file was written. Advanced per tool call, five
                 // reads ticked off "fix the bug" as well, the plan read complete, and the answer-now prompt ("WITHOUT
                 // calling any more tools") made the model describe the fix instead of applying it.
-                var stepAwaitsWrite = stepIdx < plan.Steps.Count
-                                      && plan.Steps[stepIdx].ToolHint is { } hint && ChatTurnPolicy.IsFileEdit(hint.Trim())
+                var stepAwaitsWrite = stepIdx < plan.Steps.Count && WritesFiles(plan.Steps[stepIdx])
                                       && writesBefore is { } wrote && tools.WritesInRun == wrote;
                 if (stepIdx < plan.Steps.Count && !editChangedNothing && !stepAwaitsWrite)
                 {
+                    if (WritesFiles(plan.Steps[stepIdx]) && unclaimedWrites > 0) unclaimedWrites--;
                     plan.Steps[stepIdx].Status = AgentStepStatus.Done;
                     onStepUpdate?.Invoke(stepIdx, AgentStepStatus.Done);
                     stepIdx++;
@@ -1103,13 +1133,7 @@ internal sealed class AgentOrchestrator
                 }
 
                 // ── Genuine final response ────────────────────────────────────
-                // Mark all remaining steps as done.
-                foreach (var step in plan.Steps)
-                    if (step.Status is AgentStepStatus.Pending or AgentStepStatus.Active)
-                    {
-                        step.Status = AgentStepStatus.Done;
-                        onStepUpdate?.Invoke(plan.Steps.IndexOf(step), AgentStepStatus.Done);
-                    }
+                CloseRemainingSteps(plan, tools.WritesInRun is null ? null : unclaimedWrites, onStepUpdate);
 
                 // The model stopped calling tools but gave no usable answer even though tools ran this
                 // turn — either no printable text (think-only / empty) OR a degenerate "I don't have

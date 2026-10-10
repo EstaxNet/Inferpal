@@ -58,7 +58,8 @@ internal class ConversationStore
     /// Saves a named session (UI messages + API history).
     /// <param name="parent">Session this one was forked from (<c>/branch</c>); null for a root session.</param>
     /// <param name="forkTurn">Turn the fork happened at, meaningful only with <paramref name="parent"/>.</param>
-    /// <param name="workspaceRoot">Workspace the conversation belongs to; recorded for the auto-save slot.</param>
+    /// <param name="workspaceRoot">Workspace the conversation belongs to: what decides the auto-save slot's file, and,
+    /// for a named session, the folder an Agent Client Protocol client lists it under.</param>
     /// <param name="currentName">The named session the conversation lives in; recorded for the auto-save slot.</param>
     /// <param name="templateSuffix">The <c>/template</c> mode the conversation is held in, restored with it.</param>
     public async Task SaveAsync(string sessionName, IEnumerable<SavedMessage> messages, CancellationToken ct,
@@ -267,7 +268,7 @@ internal class ConversationStore
                 var preview = data.Messages.FirstOrDefault(SessionManager.IsQuestion)?.Content ?? string.Empty;
                 if (preview.Length > 80) preview = preview[..80] + "…";
                 result.Add(new SessionSummary(name, data.SavedAt, SessionManager.ConversationMessageCount(data.Messages),
-                    preview.Replace('\n', ' '), data.Parent, data.ForkTurn));
+                    preview.Replace('\n', ' '), data.Parent, data.ForkTurn, data.WorkspaceRoot));
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)
@@ -380,7 +381,7 @@ internal record SavedMessage(
 /// <paramref name="MessageCount"/> counts its questions and answers (<see cref="SessionManager.ConversationMessageCount"/>).
 /// <paramref name="Parent"/>/<paramref name="ForkTurn"/> are non-null for branches.</summary>
 internal record SessionSummary(string Name, DateTime SavedAt, int MessageCount, string FirstUserPreview,
-                               string? Parent = null, int? ForkTurn = null);
+                               string? Parent = null, int? ForkTurn = null, string? WorkspaceRoot = null);
 
 /// <summary>Search hit returned by <see cref="ConversationStore.SearchAsync"/>.</summary>
 /// <param name="MoreMatches">Matching messages of the session beyond the snippets shown.</param>

@@ -292,6 +292,28 @@ internal static class ChatTurnPolicy
     }
 
     /// <summary>
+    /// The line that closes a STOPPED answer in the history the model reads. English and never translated: it
+    /// structures the model's transcript, like the compaction markers.
+    /// </summary>
+    public const string StoppedMarker = "[The user stopped this answer here.]";
+
+    /// <summary>
+    /// What a turn the user STOPPED leaves in the durable history after its question: the part of the answer the user
+    /// saw, closed by <see cref="StoppedMarker"/> — the marker alone when nothing was shown. One decision for the host
+    /// and the Visual Studio window.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Without it the stopped question stays unanswered in the history, and at the NEXT question the model answers
+    /// it first — the long answer the user just stopped, written again before the one asked. A question removed by
+    /// "Regenerate" takes this answer with it: the rollback removes the last question and everything after it.
+    /// </remarks>
+    public static ChatMessageDto StoppedAnswer(string? shown)
+    {
+        var said = IsVisiblyEmpty(shown) ? string.Empty : ChoosePersistedAnswer(shown, null).TrimEnd();
+        return new ChatMessageDto("assistant", said.Length == 0 ? StoppedMarker : said + "\n\n" + StoppedMarker);
+    }
+
+    /// <summary>
     /// The assistant text persisted in the durable history: the bubble actually shown to
     /// the user when there is one, the stored final response otherwise — think tags
     /// stripped in both cases. Returns an empty string when nothing is worth persisting.

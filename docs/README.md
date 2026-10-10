@@ -46,6 +46,7 @@ flowchart LR
 | [MCP](mcp.md) | Connecting Model Context Protocol servers |
 | [Rules & AI Checks](rules-and-checks.md) | Repo-versioned governance (`.inferpal/rules`, `.inferpal/checks`) |
 | [Remote Inference](remote-inference.md) | Run the model server on another machine |
+| [Zed, JetBrains, Neovim (ACP)](acp.md) | Inferpal as an Agent Client Protocol agent in other editors |
 
 ## Technical references
 

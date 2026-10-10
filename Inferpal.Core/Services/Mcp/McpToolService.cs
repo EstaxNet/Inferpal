@@ -53,6 +53,16 @@ internal sealed class McpToolService : IAsyncDisposable
     /// <summary>The agreements given to start a repository's servers. Test seam.</summary>
     internal RepoMcpConsents Consents { get; set; } = new();
 
+    /// <summary>
+    /// Servers the editor hands this session — an Agent Client Protocol client passes the ones its user configured for
+    /// every agent (<c>session/new</c>'s <c>mcpServers</c>). Started with Inferpal's own at the next
+    /// <see cref="RefreshAsync"/>, after them, even when Inferpal's MCP switch is off: the user chose them in that editor.
+    /// </summary>
+    /// <remarks>Trusted like the user's own configuration, not like a repository's: no agreement is asked — the editor's
+    /// user wrote them. A name Inferpal's own list already uses stays Inferpal's, and the editor's is named as not
+    /// started.</remarks>
+    public IReadOnlyList<McpServerConfig> SessionServers { get; set; } = [];
+
     /// <summary>The <c>${input:…}</c> values given in this process, per repository, server and input: asked once per
     /// session, never written anywhere.</summary>
     private readonly Dictionary<string, string> _inputValues = new(StringComparer.Ordinal);
@@ -241,9 +251,21 @@ internal sealed class McpToolService : IAsyncDisposable
         {
             await TeardownAsync().ConfigureAwait(false);
 
-            if (_disposed || !_config.McpEnabled)
+            var given = SessionServers;
+            if (_disposed || (!_config.McpEnabled && given.Count == 0))
             {
                 _snapshot = new Snapshot([], []);
+                return;
+            }
+            if (!_config.McpEnabled)
+            {
+                // Only the editor's own servers: Inferpal's MCP switch governs Inferpal's list, not the one the user wrote
+                // in the editor for every agent it runs.
+                _rejected = [];
+                var startedGiven = await Task.WhenAll(given.Select(StartServerAsync)).ConfigureAwait(false);
+                _servers = [.. startedGiven.Where(r => r.Entry is not null).Select(r => r.Entry!)];
+                _failed  = [.. startedGiven.Where(r => r.Failure is not null).Select(r => r.Failure!)];
+                RebuildSnapshot();
                 return;
             }
 
@@ -261,15 +283,25 @@ internal sealed class McpToolService : IAsyncDisposable
             // about before it runs anything.
             var repository = await RepositoryServersAsync(
                 [.. servers.Select(s => s.Name), .. rejected.Select(r => r.Name)]).ConfigureAwait(false);
-            ForgetSignInsOfRemovedServers(servers, rejected, repository.Names);
+            // An editor's server signed in to keeps its sign-in while the editor passes it.
+            ForgetSignInsOfRemovedServers(servers, rejected, [.. repository.Names, .. given.Select(g => g.Name)]);
+            // The editor's servers come last, and a name already taken is the user's own server: said, not started twice.
+            var taken = servers.Select(s => s.Name).Concat(rejected.Select(r => r.Name)).Concat(repository.Names)
+                               .ToHashSet(StringComparer.Ordinal);
+            var fromEditor = given.Where(g => !taken.Contains(g.Name)).ToList();
+            var shadowed = given.Where(g => taken.Contains(g.Name))
+                                .Select(g => new McpServerStatus(g.Name, false, 0,
+                                    "the editor passes a server of this name, and Inferpal's own server of the same name runs instead"))
+                                .ToList();
             // ⚠ In PARALLEL, keeping the configured order. Each start has its own handshake budget:
             // serially, an unreachable server made every later one pay it, lock held — and so did
             // the Save button, which waits for this refresh.
-            var started = await Task.WhenAll(servers.Where(s => s.Enabled).Concat(repository.Start).Select(StartServerAsync))
+            var started = await Task.WhenAll(servers.Where(s => s.Enabled).Concat(repository.Start).Concat(fromEditor)
+                                                    .Select(StartServerAsync))
                                     .ConfigureAwait(false);
 
             _servers = [.. started.Where(r => r.Entry is not null).Select(r => r.Entry!)];
-            _failed  = [.. started.Where(r => r.Failure is not null).Select(r => r.Failure!), .. repository.NotStarted];
+            _failed  = [.. started.Where(r => r.Failure is not null).Select(r => r.Failure!), .. repository.NotStarted, .. shadowed];
             RebuildSnapshot();
         }
         finally

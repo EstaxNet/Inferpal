@@ -28,6 +28,13 @@ internal class InferpalConfig
 
     private static string EffectiveConfigPath => OverridePathForTests ?? ConfigPath;
 
+    /// <summary>Whether a settings file exists — an editor, or the setup, wrote one. Absent, <see cref="Load"/> returns
+    /// the factory settings.</summary>
+    internal static bool SettingsFileExists => File.Exists(EffectiveConfigPath);
+
+    /// <summary>Where the settings live, as the setup names it.</summary>
+    internal static string SettingsFilePath => EffectiveConfigPath;
+
     /// <summary>Test seam of ONE instance: where its <see cref="Save"/> writes. A test that needs a file of its own
     /// sets this — never <see cref="OverridePathForTests"/>, which belongs to the whole suite.</summary>
     internal string? SavePathForTests { get; init; }

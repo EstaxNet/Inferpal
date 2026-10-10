@@ -1349,4 +1349,40 @@
   <data name="LabelSkillsAutoMode" xml:space="preserve"><value>Позволить модели загружать навык, когда он подходит</value></data>
   <data name="HintSkillsAutoMode" xml:space="preserve"><value>Каждый вопрос содержит имена и описания навыков; модель загружает тот, что нужен запросу. Выключено: их использует только /skill.</value></data>
   <data name="XrayLabelSkills" xml:space="preserve"><value>Навыки ({0})</value></data>
+  <data name="AcpModeDefault" xml:space="preserve"><value>По умолчанию</value></data>
+  <data name="AcpModeDefaultHint" xml:space="preserve"><value>Отвечает и при необходимости использует инструменты; спрашивает перед каждым изменением.</value></data>
+  <data name="AcpModeAgent" xml:space="preserve"><value>Агент</value></data>
+  <data name="AcpModeAgentHint" xml:space="preserve"><value>Сначала планирует задачу, затем выполняет её шаг за шагом.</value></data>
+  <data name="AcpModePlan" xml:space="preserve"><value>План</value></data>
+  <data name="AcpModePlanHint" xml:space="preserve"><value>Только читает и исследует: ничего не изменяется.</value></data>
+  <data name="AcpOptionMode" xml:space="preserve"><value>Режим</value></data>
+  <data name="AcpOptionModel" xml:space="preserve"><value>Модель</value></data>
+  <data name="AcpSetupMethodName" xml:space="preserve"><value>Настроить Inferpal</value></data>
+  <data name="AcpSetupMethodHint" xml:space="preserve"><value>Выберите сервер моделей и модель в терминале.</value></data>
+  <data name="AcpNotSetUp" xml:space="preserve"><value>Inferpal ещё не настроен: настроек нет, и по адресу {0} не отвечает ни один сервер моделей. Запустите настройку, чтобы выбрать сервер и модель.</value></data>
+  <data name="AcpSessionNotFound" xml:space="preserve"><value>Сохранённой сессии с именем {0} нет.</value></data>
+  <data name="AcpLimitsNotice" xml:space="preserve"><value>В этом редакторе у Inferpal нет встроенных подсказок, инструментов отладчика, X-Ray и страниц настроек — они остаются в Visual Studio и VS Code. Что работает здесь: {0}</value></data>
+  <data name="AcpCommandNeedsEditor" xml:space="preserve"><value>{0} работает только в Visual Studio и VS Code: команде нужны их редактор или панели.</value></data>
+  <data name="AcpClearStartNewThread" xml:space="preserve"><value>Чтобы начать заново, откройте новую ветку: этот разговор остаётся сохранённым, а новый начнётся с чистого листа.</value></data>
+  <data name="AcpPasteThis" xml:space="preserve"><value>Этот редактор не даёт Inferpal заполнить поле ввода: вот текст, который можно вставить в ваше сообщение.</value></data>
+  <data name="AcpCopyThis" xml:space="preserve"><value>Этот редактор не даёт Inferpal доступа к буферу обмена: вот текст для копирования.</value></data>
+  <data name="AcpOpenThis" xml:space="preserve"><value>Откройте {0} в редакторе.</value></data>
+  <data name="AcpAttachedNext" xml:space="preserve"><value>📎 {0} будет приложен к вашему следующему сообщению.</value></data>
+  <data name="AcpAttachmentUnreadable" xml:space="preserve"><value>{0} не удалось прочитать, и он не был приложен: {1}</value></data>
+  <data name="AcpAttachmentsLeftOut" xml:space="preserve"><value>{0} {0:файл не приложен|файла не приложены|файлов не приложено} — сообщение несёт не больше {1}: {2}</value></data>
+  <data name="AcpSessionNotSaved" xml:space="preserve"><value>Не удалось сохранить этот разговор ({0}): после остановки Inferpal его нельзя будет открыть снова.</value></data>
+  <data name="AcpPlanStepFailed" xml:space="preserve"><value>не удался</value></data>
+  <data name="AcpPlanStepSkipped" xml:space="preserve"><value>пропущен</value></data>
+  <data name="AcpSetupTitle" xml:space="preserve"><value>Настройка Inferpal: сервер моделей и модель, которые Inferpal использует во всех редакторах.</value></data>
+  <data name="AcpSetupServerQuestion" xml:space="preserve"><value>Сервер моделей [{0}]: </value></data>
+  <data name="AcpSetupAddressQuestion" xml:space="preserve"><value>Адрес сервера [{0}]: </value></data>
+  <data name="AcpSetupKeyQuestion" xml:space="preserve"><value>Ключ API (оставьте пустым, если серверу он не нужен): </value></data>
+  <data name="AcpSetupChecking" xml:space="preserve"><value>Проверка {0}…</value></data>
+  <data name="AcpSetupReached" xml:space="preserve"><value>{0} отвечает по адресу {1}.</value></data>
+  <data name="AcpSetupNotReached" xml:space="preserve"><value>По адресу {0} ничего не отвечает. Запустите сервер или введите другой адрес.</value></data>
+  <data name="AcpSetupNoModel" xml:space="preserve"><value>В {0} пока не установлено ни одной модели. Установите модель и снова запустите настройку.</value></data>
+  <data name="AcpSetupModelQuestion" xml:space="preserve"><value>Модель [{0}]: </value></data>
+  <data name="AcpSetupSaved" xml:space="preserve"><value>Сохранено в {0}. Вернитесь в редактор: Inferpal готов.</value></data>
+  <data name="AcpSetupStopped" xml:space="preserve"><value>Настройка прервана: ничего не сохранено.</value></data>
+  <data name="AcpSetupPickANumber" xml:space="preserve"><value>Введите число от 1 до {0}.</value></data>
 </root>

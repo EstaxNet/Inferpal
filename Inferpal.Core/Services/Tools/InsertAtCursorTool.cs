@@ -20,6 +20,9 @@ internal class InsertAtCursorTool : ITool
 
     public string Name => "insert_at_cursor";
 
+    /// <summary>Not offered where there is no editor at all (<see cref="IEditorSurface.HasEditor"/>).</summary>
+    public bool IsOffered => _editor.HasEditor;
+
     public string Description =>
         "Inserts text at the caret position in the active editor. " +
         "The existing selection (if any) is not replaced — use replace_selection for that.";

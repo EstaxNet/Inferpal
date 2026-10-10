@@ -19,12 +19,28 @@
 /// The editor's other workspace folders (a multi-root VS Code workspace). The tools serve <paramref name="RootDir"/>
 /// only; the ones it does not hold are stated to the model, so that their code is not concluded absent.
 /// </param>
+/// <param name="Editor">The editor as the model is told it ("Zed"); absent = Visual Studio Code, the first adapter.</param>
+/// <param name="EditorSurface">The adapter has an editor to answer about (active document, selection, cursor). False for
+/// an Agent Client Protocol client: the editor tools are then not offered at all.</param>
+/// <param name="BufferProbe">The adapter answers the reverse <c>editor/buffer</c> request (the text it holds for one
+/// path): unsaved changes are found by asking about the files a call names, not from pushed <c>textDocument/*</c>.</param>
+/// <param name="ToolEvents">The adapter wants every tool call announced when it starts and when it ends
+/// (<c>chat/toolStart</c>, <c>chat/toolEnd</c>), and the approval request tied to its call with the files' changes.</param>
+/// <param name="ReasoningChunks">The adapter shows the model's reasoning as it streams: <c>chat/reasoning</c> carries it
+/// in batched pieces, besides the bounded preview of <c>chat/thinking</c>.</param>
+/// <param name="Secrets">The adapter serves the reverse <c>secrets/*</c> requests (an OS keychain) off Windows.</param>
 internal sealed record InitializeParams(
     string    RootDir,
-    string?   Locale       = null,
-    string?   ClientName   = null,
-    bool      Debug        = false,
-    string[]? OtherFolders = null);
+    string?   Locale          = null,
+    string?   ClientName      = null,
+    bool      Debug           = false,
+    string[]? OtherFolders    = null,
+    string?   Editor          = null,
+    bool      EditorSurface   = true,
+    bool      BufferProbe     = false,
+    bool      ToolEvents      = false,
+    bool      ReasoningChunks = false,
+    bool      Secrets         = true);
 
 /// <summary>`workspace/folders` — the editor's other workspace folders changed (a folder added or removed while the
 /// root stayed): restarting the host for it would kill the turn in flight, its shells and MCP servers.</summary>
@@ -80,7 +96,11 @@ internal sealed record ChatSendResult(
     string? Model = null,
     /// <summary>False when the turn stopped before its question entered the history (a Stop during the context build):
     /// Regenerate then has nothing to take back — taking back "the last question" would remove the one before.</summary>
-    bool    QuestionKept = true);
+    bool    QuestionKept = true,
+    /// <summary>Why the turn ended short of the model finishing, as a fact rather than a sentence: <c>iterationLimit</c>
+    /// (the run reached its tool-call budget) or <c>cut</c> (the answer stopped at the length limit); <c>null</c>
+    /// otherwise. <see cref="EndNotice"/> says it to the user; this is for an adapter that maps it to its own vocabulary.</summary>
+    string? Ended = null);
 
 /// <summary>One agent run as the chat shows it (<see cref="Services.Presentation.RunSummaryModel"/>).</summary>
 /// <param name="Check"><c>none</c>, <c>buildPassed</c>, <c>buildFailed</c>, <c>testsPassed</c> or <c>testsFailed</c>.</param>
@@ -414,7 +434,18 @@ internal sealed record SessionRefParams(string Name);
 /// <summary>`session/list` entry. <paramref name="Parent"/>/<paramref name="ForkTurn"/> are set on
 /// branches (<c>/branch</c>) so the adapter can show the family in its session picker.</summary>
 internal sealed record SessionSummaryDto(string Name, DateTime SavedAt, int MessageCount, string Preview,
-                                         string? Parent = null, int? ForkTurn = null);
+                                         string? Parent = null, int? ForkTurn = null,
+                                         /// <summary>The workspace the session was saved from; null for a session
+                                         /// saved before it was recorded, or by an editor that does not record it.</summary>
+                                         string? WorkspaceRoot = null);
+
+/// <summary>`mcp/sessionServers` — the MCP servers the editor hands this session (an ACP client's <c>mcpServers</c>).</summary>
+internal sealed record McpSessionServersParams(List<McpSessionServerDto>? Servers);
+
+/// <summary>One server the editor passes: stdio (<paramref name="Command"/>) or HTTP (<paramref name="Url"/>).</summary>
+internal sealed record McpSessionServerDto(
+    string Name, string? Command = null, List<string>? Args = null, Dictionary<string, string>? Env = null,
+    string? Url = null, Dictionary<string, string>? Headers = null);
 
 /// <summary>`session/list` answer: the readable sessions, the files that could not be read (their
 /// names still taken), and the sentence naming them — <c>null</c> when every file was read.</summary>

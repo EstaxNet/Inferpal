@@ -27,9 +27,9 @@ namespace Inferpal.Host;
 internal sealed partial class HostServer : IDisposable
 {
     /// <summary>
-    /// The editor on the other end of this RPC, as the model is told it. The host serves exactly
-    /// one adapter today; the day it serves a second, this becomes a handshake field rather than a
-    /// constant — it is never inferred from the process tree.
+    /// The editor on the other end of this RPC, as the model is told it, when the adapter does not say
+    /// (<see cref="InitializeParams.Editor"/>): VS Code, the first adapter. Said by the handshake, never inferred from
+    /// the process tree — an Agent Client Protocol client names itself.
     /// </summary>
     internal const string EditorName = "Visual Studio Code";
 
@@ -95,16 +95,19 @@ internal sealed partial class HostServer : IDisposable
         // is the more deliberate signal — and the editor's locale beats the machine's culture.
         ApplyLanguage(config);
         var client   = _providerFactory(config);
-        var overlay  = new OpenDocumentOverlay();
-        var editor   = new RpcEditorSurface(rpc, overlay);
-        var approval = new RpcApprovalService(config, () => p.RootDir, rpc);
+        // Pushed by VS Code (textDocument/*); asked file by file of an adapter that can only answer about one path.
+        var overlay  = p.BufferProbe
+            ? new OpenDocumentOverlay((path, ct) => rpc.InvokeWithParameterObjectAsync<string?>("editor/buffer", new { path }, ct))
+            : new OpenDocumentOverlay();
+        var editor   = new RpcEditorSurface(rpc, overlay, hasEditor: p.EditorSurface);
+        var approval = new RpcApprovalService(config, () => p.RootDir, rpc, structured: p.ToolEvents);
         var lsp      = new LspSemanticProvider();
         var index    = new ProjectIndexService(client, config, lsp);
         // Off Windows the default DPAPI protection is unavailable, so the token store fails loud
         // by design and MCP OAuth is unusable; route it through the editor's own secret store
         // (VS Code SecretStorage → OS keychain) instead. Windows keeps DPAPI: no round-trip, and
-        // the file stays shared with the Visual Studio extension.
-        var secrets  = OperatingSystem.IsWindows() ? null : new RpcSecretStore(rpc);
+        // the file stays shared with the Visual Studio extension. An adapter with no secret store says so.
+        var secrets  = OperatingSystem.IsWindows() || !p.Secrets ? null : new RpcSecretStore(rpc);
         var tokens   = secrets is null
             ? new McpTokenStore(McpTokenStore.DefaultPath)
             : new McpTokenStore(McpTokenStore.DefaultPath, secrets.Protect, secrets.Unprotect);
@@ -150,6 +153,9 @@ internal sealed partial class HostServer : IDisposable
             Mcp          = mcp,
             Lsp          = lsp,
             RootDir      = p.RootDir,
+            EditorName   = string.IsNullOrWhiteSpace(p.Editor) ? EditorName : p.Editor.Trim(),
+            ToolEvents   = p.ToolEvents,
+            ReasoningChunks = p.ReasoningChunks,
             Approval     = approval,
             TestCapture  = p.Debug ? new RpcTestDebugCapture(rpc) : null,
             Debug        = debug,
@@ -173,6 +179,27 @@ internal sealed partial class HostServer : IDisposable
             Fim:             caps.Fim,
             KeepAlive:       caps.KeepAlive);
     }
+
+    /// <summary>
+    /// <c>mcp/sessionServers</c> — the MCP servers the editor hands this session (an ACP client's <c>mcpServers</c>),
+    /// started beside Inferpal's own (<see cref="McpToolService.SessionServers"/>). Under the turn slot: the refresh
+    /// tears every server down.
+    /// </summary>
+    [JsonRpcMethod("mcp/sessionServers", UseSingleObjectParameterDeserialization = true)]
+    public Task McpSessionServersAsync(McpSessionServersParams p, CancellationToken ct) =>
+        WithTurnSlotAsync("mcp/sessionServers", ct, async _ =>
+        {
+            var s = Session();
+            s.Mcp.SessionServers = (p.Servers ?? [])
+                .Where(x => !string.IsNullOrWhiteSpace(x.Name) && (!string.IsNullOrWhiteSpace(x.Command) || !string.IsNullOrWhiteSpace(x.Url)))
+                .Select(x => new McpServerConfig(
+                    x.Name.Trim(), string.IsNullOrWhiteSpace(x.Url) ? x.Command : null, x.Args ?? [],
+                    x.Env ?? new Dictionary<string, string>(),
+                    Url: string.IsNullOrWhiteSpace(x.Url) ? null : x.Url, Headers: x.Headers))
+                .ToList();
+            await s.Mcp.RefreshAsync();
+            return true;
+        });
 
     [JsonRpcMethod("shutdown")]
     public void Shutdown()
@@ -237,9 +264,13 @@ internal sealed partial class HostServer : IDisposable
         var s   = Session();
         var cts = AcquireTurn(ct);
 
+        // The reasoning as it streams, for an adapter that shows it (an ACP client): batched, and flushed before the
+        // first token of the answer so the two never interleave on screen.
+        var reasoning = s.ReasoningChunks ? new ReasoningBatch(text => Notify("chat/reasoning", new { text })) : null;
+
         // Mirror of the streamed text: returned as the partial answer on cancellation.
         var streamed = new StringBuilder();
-        void OnToken(string t) { streamed.Append(t); Notify("chat/token", new { text = t }); }
+        void OnToken(string t) { reasoning?.Flush(); streamed.Append(t); Notify("chat/token", new { text = t }); }
         // ⚠ The reasoning channel was relayed RAW, one notification per delta - thousands of
         // JSON-RPC messages over stdio for one thinking phase of a reasoning model - and the
         // adapter threw the text away. Both halves were wrong: nothing bounded the rate, and what
@@ -254,6 +285,7 @@ internal sealed partial class HostServer : IDisposable
         var showReasoningTail = false;
         void OnThinking(string t)
         {
+            reasoning?.Append(t);
             if (thinking.Append(t) is not { } tail) return;
             Notify("chat/thinking", new { text = showReasoningTail ? tail : null });
         }
@@ -342,6 +374,7 @@ internal sealed partial class HostServer : IDisposable
                 // Plan mode restricts to read-only tools; step mode pauses after each call.
                 IToolRegistry effectiveTools = s.Tools;
                 if (s.PlanMode) effectiveTools = new PlanModeToolRegistry(effectiveTools);
+                if (s.ToolEvents) effectiveTools = Announced(effectiveTools);
                 if (s.StepMode) effectiveTools = new StepModeToolRegistry(effectiveTools, tok => PauseForStepAsync(s, tok));
 
                 // Only the question and one answer outlive the run, as in Visual Studio: its internal
@@ -396,7 +429,7 @@ internal sealed partial class HostServer : IDisposable
                     FinalAnswer(result.FinalResponse, streamed.ToString(), result.Executions, endNotice, model, s),
                     false, result.TokensUsed, result.PromptTokens, EndNotice: endNotice, ContextWindow: ctxDecision.Window,
                     Run: RunSummaryDto.Of(Services.Presentation.RunSummary.Build(result.Executions, RunOf(s, runId))),
-                    Model: model);
+                    Model: model, Ended: Ended(result.ReachedIterationLimit, result.AnswerCut, result.AnswerRepeating));
             }
 
             if (useTools)
@@ -405,6 +438,7 @@ internal sealed partial class HostServer : IDisposable
                 // plan. Only `/tools off` and a code action are chat without tools.
                 IToolRegistry chatTools = s.Tools;
                 if (s.PlanMode) chatTools = new PlanModeToolRegistry(chatTools);
+                if (s.ToolEvents) chatTools = Announced(chatTools);
                 if (s.StepMode) chatTools = new StepModeToolRegistry(chatTools, tok => PauseForStepAsync(s, tok));
 
                 // Same durable history as the agent path: the question and the answer the user saw.
@@ -442,7 +476,7 @@ internal sealed partial class HostServer : IDisposable
                     EndNotice: runEndNotice,
                     ContextWindow: ctxDecision.Window,
                     Run: RunSummaryDto.Of(Services.Presentation.RunSummary.Build(run.Executions, RunOf(s, runId))),
-                    Model: model);
+                    Model: model, Ended: Ended(run.ReachedIterationLimit, run.AnswerCut, run.AnswerRepeating));
             }
 
             var turn = await s.Client.SendChatAsync(
@@ -470,12 +504,20 @@ internal sealed partial class HostServer : IDisposable
                 EndNotice: NoticeOrNull(ChatTurnPolicy.EndNotice(false, false, turn.CutAtLimit,
                                                                  answerRepeating: turn.StoppedRepeating)),
                 ContextWindow: ctxDecision.Window,
-                Model: model);
+                Model: model, Ended: Ended(false, turn.CutAtLimit, turn.StoppedRepeating));
         }
         catch (OperationCanceledException)
         {
             // Stopped before anything visible (reasoning only): no partial answer, as Visual Studio drops that bubble.
             var partial = streamed.ToString();
+            // The question in the history keeps the answer the user saw, marked stopped — unanswered, the model answers
+            // it first at the next question. Only when the question is still the last message: a stop after the answer
+            // was kept (the session recap) adds nothing.
+            if (questionKept && s.History.Count > 0 && s.History[^1].Role == "user")
+            {
+                s.History.Add(ChatTurnPolicy.StoppedAnswer(partial));
+                s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
+            }
             return new ChatSendResult(ChatTurnPolicy.IsVisiblyEmpty(partial) ? string.Empty : partial, true, 0, 0,
                                       QuestionKept: questionKept);
         }
@@ -496,9 +538,23 @@ internal sealed partial class HostServer : IDisposable
             // otherwise a later write (a /restore, a tool launched by a slash command) still
             // attaches to it and /undo-run reverts that write along with the turn we just watched.
             s.Tools.History.EndRun();   // `s`, not Session(): nothing may throw inside this finally
+            reasoning?.Flush();
             ReleaseTurn(cts);
         }
     }
+
+    /// <summary>
+    /// <see cref="ChatSendResult.Ended"/>: the iteration limit, else an answer cut at the length limit — a repetition
+    /// stopped by the client is a cut too, and is not one the length limit made (its notice says the repetition).
+    /// </summary>
+    private static string? Ended(bool iterationLimit, bool cut, bool repeating) =>
+        iterationLimit ? "iterationLimit" : cut && !repeating ? "cut" : null;
+
+    /// <summary>The registry a turn uses, announcing each call (<see cref="ToolEventRegistry"/>).</summary>
+    private IToolRegistry Announced(IToolRegistry tools) => new ToolEventRegistry(
+        tools,
+        (id, name, input) => Notify("chat/toolStart", new { callId = id, name, input }),
+        (id, output) => Notify("chat/toolEnd", new { callId = id, output }));
 
     [JsonRpcMethod("chat/cancel")]
     public void ChatCancel() { lock (_gate) _chatCts?.Cancel(); }
@@ -1137,8 +1193,10 @@ internal sealed partial class HostServer : IDisposable
             }
             currentName = SessionManager.AutoSaveName(s.SessionNameKnown, s.CurrentSessionName, slot, s.RootDir);
         }
+        // The workspace for every save, not only the auto-save slot's: an Agent Client Protocol client lists the sessions
+        // of the folder it has open (session/list's cwd), and a session with no folder is listed in none.
         await s.Store.SaveAsync(p.Name, p.Messages.Select(ToSaved), ct,
-                                workspaceRoot: p.Name == "last_session" ? s.RootDir : null, currentName: currentName,
+                                workspaceRoot: s.RootDir, currentName: currentName,
                                 templateSuffix: p.Archive ? s.DiscardedTemplateSuffix : s.TemplateSuffix);
     }
 
@@ -1163,7 +1221,8 @@ internal sealed partial class HostServer : IDisposable
     /// </remarks>
     internal static SessionListResult ToSessionList(SessionScan<SessionSummary> scan) => new(
         scan.Items
-            .Select(x => new SessionSummaryDto(x.Name, x.SavedAt, x.MessageCount, x.FirstUserPreview, x.Parent, x.ForkTurn))
+            .Select(x => new SessionSummaryDto(x.Name, x.SavedAt, x.MessageCount, x.FirstUserPreview, x.Parent, x.ForkTurn,
+                                               x.WorkspaceRoot))
             .ToList(),
         [.. scan.Unreadable],
         scan.Unreadable.Count == 0
@@ -1459,7 +1518,7 @@ internal sealed partial class HostServer : IDisposable
         var root   = string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir;
         // The /template suffix is a builder layer, as in the Visual Studio view model: appended after the build it
         // had no X-Ray section, so the panel could neither show it nor switch it off.
-        var prompt = new SystemPromptBuilder(s.Config, EditorName, s.ContextWindowInUse, s.Index.RootDir, s.FoldersOutOfReach).Build(
+        var prompt = new SystemPromptBuilder(s.Config, s.EditorName, s.ContextWindowInUse, s.Index.RootDir, s.FoldersOutOfReach).Build(
             ModelPrompts.SystemPrompt,
             language:           s.PersonaLanguage,
             templateSuffix:     s.TemplateSuffix,
@@ -1476,7 +1535,7 @@ internal sealed partial class HostServer : IDisposable
     private static IReadOnlyList<PromptSection> BuildPromptSections(HostSession s)
     {
         var root = string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir;
-        return new SystemPromptBuilder(s.Config, EditorName, s.ContextWindowInUse, s.Index.RootDir, s.FoldersOutOfReach).BuildSections(
+        return new SystemPromptBuilder(s.Config, s.EditorName, s.ContextWindowInUse, s.Index.RootDir, s.FoldersOutOfReach).BuildSections(
             ModelPrompts.SystemPrompt,
             language:          s.PersonaLanguage,
             templateSuffix:    s.TemplateSuffix,
@@ -1500,7 +1559,7 @@ internal sealed partial class HostServer : IDisposable
     private static IReadOnlyList<RepoInstructionRow> RepoInstructionRows(HostSession s)
     {
         var root = string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir;
-        var plan = new SystemPromptBuilder(s.Config, EditorName, s.ContextWindowInUse, s.Index.RootDir, s.FoldersOutOfReach)
+        var plan = new SystemPromptBuilder(s.Config, s.EditorName, s.ContextWindowInUse, s.Index.RootDir, s.FoldersOutOfReach)
             .RepoInstructions(root, SystemPromptBuilder.RelativeActivePath(root, s.ActiveFilePath), s.ActiveFilePath);
         return RepoInstructionsReport.Rows(plan, XRayModel(s));
     }

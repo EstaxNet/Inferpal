@@ -720,6 +720,13 @@ internal partial class InferpalToolWindowData
                 // Finalize and discard any empty/invisible streaming bubble that was started
                 // before the cancellation arrived (a visible partial response stays).
                 streamingMsg = FinalizeStreamingBubble(streamingMsg);
+                // The question in the history keeps the answer the user saw, marked stopped — unanswered, the model
+                // answers it first at the next question. Only when the question is still the last message.
+                if (_history.Count > 0 && _history[^1].Role == "user")
+                {
+                    _history.Add(ChatTurnPolicy.StoppedAnswer(streamingMsg?.Content));
+                    _lastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(_history);
+                }
                 var cancelItem = ChatMessageItem.NoticeMsg(Strings.MsgCancelled);
                 ApplyItemTheme(cancelItem);
                 Messages.Insert(Messages.Count - 2, cancelItem);

@@ -1349,4 +1349,40 @@
   <data name="LabelSkillsAutoMode" xml:space="preserve"><value>允许模型在适用时加载技能</value></data>
   <data name="HintSkillsAutoMode" xml:space="preserve"><value>每个问题都附带技能的名称和描述；模型会加载请求所需的技能。关闭时：只有 /skill 使用它们。</value></data>
   <data name="XrayLabelSkills" xml:space="preserve"><value>技能（{0}）</value></data>
+  <data name="AcpModeDefault" xml:space="preserve"><value>默认</value></data>
+  <data name="AcpModeDefaultHint" xml:space="preserve"><value>按需使用工具作答；每次修改前都会询问。</value></data>
+  <data name="AcpModeAgent" xml:space="preserve"><value>智能体</value></data>
+  <data name="AcpModeAgentHint" xml:space="preserve"><value>先规划任务，再逐步完成。</value></data>
+  <data name="AcpModePlan" xml:space="preserve"><value>规划</value></data>
+  <data name="AcpModePlanHint" xml:space="preserve"><value>只读取和探索：不做任何修改。</value></data>
+  <data name="AcpOptionMode" xml:space="preserve"><value>模式</value></data>
+  <data name="AcpOptionModel" xml:space="preserve"><value>模型</value></data>
+  <data name="AcpSetupMethodName" xml:space="preserve"><value>设置 Inferpal</value></data>
+  <data name="AcpSetupMethodHint" xml:space="preserve"><value>在终端中选择模型服务器和模型。</value></data>
+  <data name="AcpNotSetUp" xml:space="preserve"><value>Inferpal 尚未设置：没有任何设置，{0} 上也没有模型服务器响应。请运行设置以选择服务器和模型。</value></data>
+  <data name="AcpSessionNotFound" xml:space="preserve"><value>没有名为 {0} 的已保存会话。</value></data>
+  <data name="AcpLimitsNotice" xml:space="preserve"><value>在此编辑器中，Inferpal 没有行内建议、调试器工具、X-Ray 和设置页面——它们仍在 Visual Studio 和 VS Code 中。此处可用的功能：{0}</value></data>
+  <data name="AcpCommandNeedsEditor" xml:space="preserve"><value>{0} 仅在 Visual Studio 和 VS Code 中可用：它需要它们的编辑器或面板。</value></data>
+  <data name="AcpClearStartNewThread" xml:space="preserve"><value>要重新开始，请打开一个新线程：此对话会保留，新对话从空白开始。</value></data>
+  <data name="AcpPasteThis" xml:space="preserve"><value>此编辑器不允许 Inferpal 填写输入框：以下是要粘贴到消息中的文本。</value></data>
+  <data name="AcpCopyThis" xml:space="preserve"><value>此编辑器不允许 Inferpal 使用剪贴板：以下是要复制的文本。</value></data>
+  <data name="AcpOpenThis" xml:space="preserve"><value>请在编辑器中打开 {0}。</value></data>
+  <data name="AcpAttachedNext" xml:space="preserve"><value>📎 {0} 将附加到你的下一条消息。</value></data>
+  <data name="AcpAttachmentUnreadable" xml:space="preserve"><value>无法读取 {0}，因此未附加：{1}</value></data>
+  <data name="AcpAttachmentsLeftOut" xml:space="preserve"><value>{0} 个文件未附加——一条消息最多附加 {1} 个：{2}</value></data>
+  <data name="AcpSessionNotSaved" xml:space="preserve"><value>无法保存此对话（{0}）：Inferpal 停止后将无法再次打开。</value></data>
+  <data name="AcpPlanStepFailed" xml:space="preserve"><value>失败</value></data>
+  <data name="AcpPlanStepSkipped" xml:space="preserve"><value>已跳过</value></data>
+  <data name="AcpSetupTitle" xml:space="preserve"><value>Inferpal 设置：Inferpal 在所有编辑器中使用的模型服务器和模型。</value></data>
+  <data name="AcpSetupServerQuestion" xml:space="preserve"><value>模型服务器 [{0}]：</value></data>
+  <data name="AcpSetupAddressQuestion" xml:space="preserve"><value>服务器地址 [{0}]：</value></data>
+  <data name="AcpSetupKeyQuestion" xml:space="preserve"><value>API 密钥（服务器不需要则留空）：</value></data>
+  <data name="AcpSetupChecking" xml:space="preserve"><value>正在检查 {0}…</value></data>
+  <data name="AcpSetupReached" xml:space="preserve"><value>{0} 在 {1} 上响应。</value></data>
+  <data name="AcpSetupNotReached" xml:space="preserve"><value>{0} 上没有任何响应。请启动服务器，或输入其他地址。</value></data>
+  <data name="AcpSetupNoModel" xml:space="preserve"><value>{0} 尚未安装任何模型。请安装一个，然后再次运行设置。</value></data>
+  <data name="AcpSetupModelQuestion" xml:space="preserve"><value>模型 [{0}]：</value></data>
+  <data name="AcpSetupSaved" xml:space="preserve"><value>已保存到 {0}。请返回编辑器：Inferpal 已就绪。</value></data>
+  <data name="AcpSetupStopped" xml:space="preserve"><value>设置已中止：未保存任何内容。</value></data>
+  <data name="AcpSetupPickANumber" xml:space="preserve"><value>请输入 1 到 {0} 之间的数字。</value></data>
 </root>

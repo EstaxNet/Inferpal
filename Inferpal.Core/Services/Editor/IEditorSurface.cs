@@ -48,6 +48,17 @@ internal interface IEditorSurface
     /// </remarks>
     bool IsAvailable { get; }
 
+    /// <summary>
+    /// Whether this front-end has an editor at all — false for good, unlike <see cref="IsAvailable"/>, which can come
+    /// and go. An Agent Client Protocol client (Zed, a JetBrains IDE) tells the agent nothing about its editor: no active
+    /// document, no selection, no cursor.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The editor tools are then not OFFERED: a tool whose every answer is "not available here" costs the model its
+    /// tokens on every request and invites a call that can only fail.
+    /// </remarks>
+    bool HasEditor => true;
+
     /// <summary>Path of the active document, or <c>null</c> when none has focus.</summary>
     string? ActiveDocumentPath { get; }
 

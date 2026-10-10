@@ -1349,4 +1349,40 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="LabelSkillsAutoMode" xml:space="preserve"><value>Dejar que el modelo cargue una habilidad cuando corresponda</value></data>
   <data name="HintSkillsAutoMode" xml:space="preserve"><value>Cada pregunta lleva los nombres y descripciones de las habilidades; el modelo carga la que la petición necesita. Desactivado: solo /skill las usa.</value></data>
   <data name="XrayLabelSkills" xml:space="preserve"><value>Habilidades ({0})</value></data>
+  <data name="AcpModeDefault" xml:space="preserve"><value>Predeterminado</value></data>
+  <data name="AcpModeDefaultHint" xml:space="preserve"><value>Responde y usa las herramientas cuando hace falta; pregunta antes de cada cambio.</value></data>
+  <data name="AcpModeAgent" xml:space="preserve"><value>Agente</value></data>
+  <data name="AcpModeAgentHint" xml:space="preserve"><value>Primero planifica la tarea y luego la lleva a cabo paso a paso.</value></data>
+  <data name="AcpModePlan" xml:space="preserve"><value>Plan</value></data>
+  <data name="AcpModePlanHint" xml:space="preserve"><value>Solo lee y explora: no se cambia nada.</value></data>
+  <data name="AcpOptionMode" xml:space="preserve"><value>Modo</value></data>
+  <data name="AcpOptionModel" xml:space="preserve"><value>Modelo</value></data>
+  <data name="AcpSetupMethodName" xml:space="preserve"><value>Configurar Inferpal</value></data>
+  <data name="AcpSetupMethodHint" xml:space="preserve"><value>Elija el servidor de modelos y el modelo, en una terminal.</value></data>
+  <data name="AcpNotSetUp" xml:space="preserve"><value>Inferpal aún no está configurado: no hay ajustes y ningún servidor de modelos responde en {0}. Ejecute la configuración para elegir un servidor y un modelo.</value></data>
+  <data name="AcpSessionNotFound" xml:space="preserve"><value>No hay ninguna sesión guardada llamada {0}.</value></data>
+  <data name="AcpLimitsNotice" xml:space="preserve"><value>En este editor, Inferpal no tiene sugerencias en línea, herramientas de depuración, X-Ray ni páginas de ajustes: siguen en Visual Studio y VS Code. Lo que funciona aquí: {0}</value></data>
+  <data name="AcpCommandNeedsEditor" xml:space="preserve"><value>{0} solo funciona en Visual Studio y VS Code: necesita su editor o sus paneles.</value></data>
+  <data name="AcpClearStartNewThread" xml:space="preserve"><value>Para empezar de nuevo, abra un hilo nuevo: esta conversación queda guardada y la nueva empieza vacía.</value></data>
+  <data name="AcpPasteThis" xml:space="preserve"><value>Este editor no permite a Inferpal rellenar el cuadro de entrada: aquí está el texto para pegar en su mensaje.</value></data>
+  <data name="AcpCopyThis" xml:space="preserve"><value>Este editor no da a Inferpal acceso al portapapeles: aquí está el texto para copiar.</value></data>
+  <data name="AcpOpenThis" xml:space="preserve"><value>Abra {0} en su editor.</value></data>
+  <data name="AcpAttachedNext" xml:space="preserve"><value>📎 {0} se adjuntará a su próximo mensaje.</value></data>
+  <data name="AcpAttachmentUnreadable" xml:space="preserve"><value>{0} no se pudo leer y no se adjuntó: {1}</value></data>
+  <data name="AcpAttachmentsLeftOut" xml:space="preserve"><value>{0} {0:archivo no adjuntado|archivos no adjuntados}: un mensaje lleva {1} como máximo: {2}</value></data>
+  <data name="AcpSessionNotSaved" xml:space="preserve"><value>No se pudo guardar esta conversación ({0}): cuando Inferpal se detenga, no se podrá volver a abrir.</value></data>
+  <data name="AcpPlanStepFailed" xml:space="preserve"><value>fallido</value></data>
+  <data name="AcpPlanStepSkipped" xml:space="preserve"><value>omitido</value></data>
+  <data name="AcpSetupTitle" xml:space="preserve"><value>Configuración de Inferpal: el servidor de modelos y el modelo que Inferpal usa en todos los editores.</value></data>
+  <data name="AcpSetupServerQuestion" xml:space="preserve"><value>Servidor de modelos [{0}]: </value></data>
+  <data name="AcpSetupAddressQuestion" xml:space="preserve"><value>Dirección del servidor [{0}]: </value></data>
+  <data name="AcpSetupKeyQuestion" xml:space="preserve"><value>Clave de API (déjela vacía si el servidor no la necesita): </value></data>
+  <data name="AcpSetupChecking" xml:space="preserve"><value>Comprobando {0}…</value></data>
+  <data name="AcpSetupReached" xml:space="preserve"><value>{0} responde en {1}.</value></data>
+  <data name="AcpSetupNotReached" xml:space="preserve"><value>Nada responde en {0}. Inicie el servidor o escriba otra dirección.</value></data>
+  <data name="AcpSetupNoModel" xml:space="preserve"><value>{0} aún no tiene ningún modelo instalado. Instale uno y vuelva a ejecutar la configuración.</value></data>
+  <data name="AcpSetupModelQuestion" xml:space="preserve"><value>Modelo [{0}]: </value></data>
+  <data name="AcpSetupSaved" xml:space="preserve"><value>Guardado en {0}. Vuelva a su editor: Inferpal está listo.</value></data>
+  <data name="AcpSetupStopped" xml:space="preserve"><value>Configuración interrumpida: no se guardó nada.</value></data>
+  <data name="AcpSetupPickANumber" xml:space="preserve"><value>Escriba un número del 1 al {0}.</value></data>
 </root>

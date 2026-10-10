@@ -13,6 +13,9 @@ internal class GetActiveDocumentTool : ITool
 
     public string Name => "get_active_document";
 
+    /// <summary>Not offered where there is no editor at all (<see cref="IEditorSurface.HasEditor"/>).</summary>
+    public bool IsOffered => _editor.HasEditor;
+
     public string Description =>
         "Returns the path and content of the file currently open in the editor — a long file comes back as its " +
         "first page, naming the start_line from which read_file reads on. Takes no parameters.";

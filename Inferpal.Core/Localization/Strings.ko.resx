@@ -1349,4 +1349,40 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="LabelSkillsAutoMode" xml:space="preserve"><value>적합할 때 모델이 스킬을 불러오도록 허용</value></data>
   <data name="HintSkillsAutoMode" xml:space="preserve"><value>모든 질문에 스킬 이름과 설명이 포함되며, 모델이 요청에 필요한 스킬을 불러옵니다. 끄면 /skill만 사용합니다.</value></data>
   <data name="XrayLabelSkills" xml:space="preserve"><value>스킬 ({0})</value></data>
+  <data name="AcpModeDefault" xml:space="preserve"><value>기본</value></data>
+  <data name="AcpModeDefaultHint" xml:space="preserve"><value>필요할 때 도구를 사용해 답하고, 변경할 때마다 먼저 묻습니다.</value></data>
+  <data name="AcpModeAgent" xml:space="preserve"><value>에이전트</value></data>
+  <data name="AcpModeAgentHint" xml:space="preserve"><value>먼저 작업을 계획한 뒤 단계별로 수행합니다.</value></data>
+  <data name="AcpModePlan" xml:space="preserve"><value>계획</value></data>
+  <data name="AcpModePlanHint" xml:space="preserve"><value>읽고 탐색만 하며, 아무것도 바꾸지 않습니다.</value></data>
+  <data name="AcpOptionMode" xml:space="preserve"><value>모드</value></data>
+  <data name="AcpOptionModel" xml:space="preserve"><value>모델</value></data>
+  <data name="AcpSetupMethodName" xml:space="preserve"><value>Inferpal 설정</value></data>
+  <data name="AcpSetupMethodHint" xml:space="preserve"><value>터미널에서 모델 서버와 모델을 고릅니다.</value></data>
+  <data name="AcpNotSetUp" xml:space="preserve"><value>Inferpal이 아직 설정되지 않았습니다. 설정이 없고 {0}에서 응답하는 모델 서버도 없습니다. 설정을 실행해 서버와 모델을 고르세요.</value></data>
+  <data name="AcpSessionNotFound" xml:space="preserve"><value>{0}(이)라는 저장된 세션이 없습니다.</value></data>
+  <data name="AcpLimitsNotice" xml:space="preserve"><value>이 편집기에서는 Inferpal에 인라인 제안, 디버거 도구, X-Ray, 설정 페이지가 없습니다. 이 기능들은 Visual Studio와 VS Code에 남습니다. 여기서 되는 것: {0}</value></data>
+  <data name="AcpCommandNeedsEditor" xml:space="preserve"><value>{0}은(는) Visual Studio와 VS Code에서만 동작합니다. 해당 편집기나 패널이 필요합니다.</value></data>
+  <data name="AcpClearStartNewThread" xml:space="preserve"><value>처음부터 다시 하려면 새 스레드를 여세요. 이 대화는 저장된 채로 남고, 새 대화는 비어 있는 상태로 시작합니다.</value></data>
+  <data name="AcpPasteThis" xml:space="preserve"><value>이 편집기에서는 Inferpal이 입력란을 채울 수 없습니다. 메시지에 붙여 넣을 텍스트는 다음과 같습니다.</value></data>
+  <data name="AcpCopyThis" xml:space="preserve"><value>이 편집기에서는 Inferpal이 클립보드를 쓸 수 없습니다. 복사할 텍스트는 다음과 같습니다.</value></data>
+  <data name="AcpOpenThis" xml:space="preserve"><value>편집기에서 {0}을(를) 여세요.</value></data>
+  <data name="AcpAttachedNext" xml:space="preserve"><value>📎 {0}이(가) 다음 메시지에 첨부됩니다.</value></data>
+  <data name="AcpAttachmentUnreadable" xml:space="preserve"><value>{0}을(를) 읽을 수 없어 첨부하지 않았습니다: {1}</value></data>
+  <data name="AcpAttachmentsLeftOut" xml:space="preserve"><value>파일 {0}개를 첨부하지 않았습니다(메시지 하나에 최대 {1}개): {2}</value></data>
+  <data name="AcpSessionNotSaved" xml:space="preserve"><value>이 대화를 저장하지 못했습니다({0}). Inferpal이 멈추면 다시 열 수 없습니다.</value></data>
+  <data name="AcpPlanStepFailed" xml:space="preserve"><value>실패</value></data>
+  <data name="AcpPlanStepSkipped" xml:space="preserve"><value>건너뜀</value></data>
+  <data name="AcpSetupTitle" xml:space="preserve"><value>Inferpal 설정: 모든 편집기에서 Inferpal이 쓰는 모델 서버와 모델.</value></data>
+  <data name="AcpSetupServerQuestion" xml:space="preserve"><value>모델 서버 [{0}]: </value></data>
+  <data name="AcpSetupAddressQuestion" xml:space="preserve"><value>서버 주소 [{0}]: </value></data>
+  <data name="AcpSetupKeyQuestion" xml:space="preserve"><value>API 키(서버에 필요 없으면 비워 두세요): </value></data>
+  <data name="AcpSetupChecking" xml:space="preserve"><value>{0} 확인 중…</value></data>
+  <data name="AcpSetupReached" xml:space="preserve"><value>{0}이(가) {1}에서 응답합니다.</value></data>
+  <data name="AcpSetupNotReached" xml:space="preserve"><value>{0}에서 아무것도 응답하지 않습니다. 서버를 시작하거나 다른 주소를 입력하세요.</value></data>
+  <data name="AcpSetupNoModel" xml:space="preserve"><value>{0}에 아직 설치된 모델이 없습니다. 모델을 설치한 뒤 설정을 다시 실행하세요.</value></data>
+  <data name="AcpSetupModelQuestion" xml:space="preserve"><value>모델 [{0}]: </value></data>
+  <data name="AcpSetupSaved" xml:space="preserve"><value>{0}에 저장했습니다. 편집기로 돌아가세요. Inferpal이 준비되었습니다.</value></data>
+  <data name="AcpSetupStopped" xml:space="preserve"><value>설정을 중단했습니다. 아무것도 저장되지 않았습니다.</value></data>
+  <data name="AcpSetupPickANumber" xml:space="preserve"><value>1부터 {0}까지의 숫자를 입력하세요.</value></data>
 </root>

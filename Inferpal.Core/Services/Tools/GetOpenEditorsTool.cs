@@ -14,6 +14,9 @@ internal class GetOpenEditorsTool : ITool
 
     public string Name => "get_open_editors";
 
+    /// <summary>Not offered where there is no editor at all (<see cref="IEditorSurface.HasEditor"/>).</summary>
+    public bool IsOffered => _editor.HasEditor;
+
     public string Description =>
         "Returns the list of files currently open in the editor, with the active file clearly " +
         "identified. Use this to understand which files the user is currently working with, and to " +

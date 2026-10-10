@@ -77,8 +77,10 @@ internal static class FileTarget
         Editor.OpenDocumentOverlay? overlay, IEnumerable<string> paths, CancellationToken ct)
     {
         if (overlay is null) return null;
-        await overlay.RefreshAsync(ct);
-        foreach (var path in paths)
+        var named = paths.ToList();
+        // The paths too: an editor that can only be asked about one file is asked about these.
+        await overlay.RefreshAsync(ct, named);
+        foreach (var path in named)
             if (overlay.HasUnsavedChanges(path))
                 return $"'{path}' got unsaved changes in the editor while the approval was pending: nothing was " +
                        "written, so what the user typed is kept. Ask the user to save the file, then try again.";
