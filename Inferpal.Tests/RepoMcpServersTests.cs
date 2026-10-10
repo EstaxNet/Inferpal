@@ -181,12 +181,14 @@ public sealed class RepoMcpServersTests : IDisposable
     {
         public int Prompts;
         public string? LastMessage;
+        public readonly List<string> Messages = [];
         public ApprovalDecision Answer = answer;
 
         protected override Task<ApprovalDecision> PromptUserAsync(string message, DiffInfo? diff, CancellationToken ct)
         {
             Prompts++;
             LastMessage = message;
+            lock (Messages) Messages.Add(message);
             return Task.FromResult(Answer);
         }
     }
@@ -333,6 +335,97 @@ public sealed class RepoMcpServersTests : IDisposable
         await service.DisposeAsync();
     }
 
+    // ── A refresh never runs under a turn ───────────────────────────────────
+
+    [Fact]
+    public async Task ARefreshAskedAtTheStartOfATurn_WaitsForTheTurnToEnd()
+    {
+        // ⚠ A refresh tears every server down: under a running turn, an agent mid-call gets its client disposed, and a
+        // repository server's agreement question lands in the middle of the turn. Visual Studio pins the root — and asks
+        // for the repository's servers — at the START of a turn.
+        var config = new InferpalConfig { McpServersJson = """{ "mine": { "command": "my-server" } }""" };
+        var (service, _, started) = Service(config);
+        var busy = true;
+
+        var refresh = service.RefreshWhenIdleAsync(() => Volatile.Read(ref busy), TimeSpan.FromMilliseconds(20));
+        await Task.Delay(300);
+        Assert.Empty(started);                       // the turn is running: nothing torn down, nothing respawned
+
+        Volatile.Write(ref busy, false);
+        await refresh.WaitAsync(TimeSpan.FromSeconds(30));
+        Assert.Equal(["mine"], started.Select(s => s.Name));
+        await service.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task ARefreshAskedWithNoTurn_RunsAtOnce()
+    {
+        // Reference arm: idle, the refresh does not wait for anything.
+        var config = new InferpalConfig { McpServersJson = """{ "mine": { "command": "my-server" } }""" };
+        var (service, _, started) = Service(config);
+
+        await service.RefreshWhenIdleAsync(() => false, TimeSpan.FromMilliseconds(20)).WaitAsync(TimeSpan.FromSeconds(30));
+
+        Assert.Equal(["mine"], started.Select(s => s.Name));
+        await service.DisposeAsync();
+    }
+
+    // ── What the repository got wrong costs its own file, never the user's servers ──
+
+    [Theory]
+    // An escape YAML does not know (\q): a Windows path written between double quotes.
+    [InlineData(".continue/mcpServers/bad.yaml", "mcpServers:\n  - name: bad\n    command: \"C:\\qux\\node.exe\"\n")]
+    // The same server declared twice: the parser keeps both keys, reading them throws.
+    [InlineData(".vscode/mcp.json", """{ "servers": { "fs": { "command": "a" }, "fs": { "command": "b" } } }""")]
+    public async Task ARepositoryFileThatCannotBeRead_IsNamed_AndTheUsersOwnServersStillStart(string file, string text)
+    {
+        Write(file, text);
+        var config = new InferpalConfig { McpServersJson = """{ "mine": { "command": "my-server" } }""" };
+        var (service, _, started) = Service(config);
+
+        await service.RefreshAsync();
+
+        Assert.Equal(["mine"], started.Select(s => s.Name));
+        Assert.Contains(service.Status, s => !s.Connected && s.Error?.Contains(file) == true && s.Error.Contains("cannot be read"));
+        await service.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task TheAgreementShows_EverythingTheDefinitionChangesAboutWhatRuns()
+    {
+        // ⚠ The agreement is given to the whole definition (its fingerprint): an environment variable, a working folder
+        // or a header changes what runs, and a question showing the command alone hides them from the one boundary.
+        Write(".mcp.json", """
+            { "mcpServers": {
+                "gh":  { "command": "npx", "args": ["-y", "server-github"],
+                         "env": { "NODE_OPTIONS": "--require ./.vscode/x.js" }, "cwd": "tools" },
+                "api": { "url": "https://mcp.example.com/mcp", "headers": { "X-Route": "elsewhere" } } } }
+            """);
+        var (service, approval, _) = Service(answer: ApprovalDecision.Deny);
+
+        await service.RefreshAsync();
+
+        var gh = Assert.Single(approval.Messages, m => m.Contains("npx -y server-github"));
+        Assert.Contains("NODE_OPTIONS=--require ./.vscode/x.js", gh);
+        Assert.Contains("cwd: tools", gh);
+        var api = Assert.Single(approval.Messages, m => m.Contains("https://mcp.example.com/mcp"));
+        Assert.Contains("X-Route: elsewhere", api);
+        await service.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task ACommandAlone_IsShownAsItAlwaysWas()
+    {
+        // Reference arm: nothing else declared, nothing else said.
+        Write(".mcp.json", """{ "mcpServers": { "fs": { "command": "npx", "args": ["server"] } } }""");
+        var (service, approval, _) = Service(answer: ApprovalDecision.Deny);
+
+        await service.RefreshAsync();
+
+        Assert.Contains("`npx server`", approval.LastMessage);
+        await service.DisposeAsync();
+    }
+
     // ── A real process: nothing runs before the agreement ───────────────────
 
     [Fact]
@@ -392,6 +485,25 @@ public sealed class MiniYamlTests
     {
         var ex = Assert.Throws<FormatException>(() => MiniYaml.Parse(text));
         Assert.Contains(why, ex.Message);
+    }
+
+    [Theory]
+    [InlineData("\"a\\tb\\nc\"", "a\tb\nc")]
+    [InlineData("\"q\\\"uote \\\\ slash \\/\"", "q\"uote \\ slash /")]
+    [InlineData("\"\\x41\\u00e9\\U0001F600\"", "Aé😀")]
+    [InlineData("\"no\\_break\\Pnext\"", "no\u00a0break\u2029next")]
+    public void ADoubleQuotedValue_ReadsYamlsEscapes(string value, string expected) =>
+        Assert.Equal(expected, MiniYaml.Parse("v: " + value + "\n")!["v"]!.GetValue<string>());
+
+    [Theory]
+    [InlineData("\"C:\\qux\"", "\\q is not a YAML escape")]       // a Windows path: Regex.Unescape threw ArgumentException here
+    [InlineData("\"\\u00\"", "\\u needs 4 hexadecimal digits")]
+    [InlineData("\"end\\\"", "lone backslash")]                    // the closing quote escaped: the value never closes
+    public void AnEscapeYamlDoesNotKnow_IsAFormatError_NamingItsLine(string value, string why)
+    {
+        var ex = Assert.Throws<FormatException>(() => MiniYaml.Parse("a: 1\nv: " + value + "\n"));
+        Assert.Contains(why, ex.Message);
+        Assert.Contains("line 2", ex.Message);
     }
 }
 

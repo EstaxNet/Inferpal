@@ -25,11 +25,39 @@ internal sealed record RepoMcpInput(string Id, string Description, bool Password
 internal sealed record RepoMcpServer(string Name, string Source, string Origin, JsonObject Definition, string Fingerprint,
                                      IReadOnlyList<RepoMcpInput> Inputs)
 {
-    /// <summary>What starting it runs, as the agreement question shows it: the command line, or the address.</summary>
-    public string Runs =>
-        Definition["command"]?.GetValue<string>() is { } command
-            ? string.Join(" ", new[] { command }.Concat(Definition["args"] is JsonArray a ? a.Select(x => x?.ToString() ?? "") : []))
-            : Definition["url"]?.ToString() ?? "";
+    /// <summary>
+    /// What starting it runs, as the agreement question shows it: the command line or the address, then everything else
+    /// the definition sets that changes what runs — its environment, its folder, its headers — as written.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The agreement is given to the whole definition (<see cref="Fingerprint"/>): shown the command alone, a user
+    /// agreed to a <c>NODE_OPTIONS</c>, a working folder or a header they never saw — and the question is the boundary.
+    /// The labels are the file's own keys, not prose: the question around them is the translated part.
+    /// </remarks>
+    public string Runs
+    {
+        get
+        {
+            var parts = new List<string>();
+            if (Text(Definition["command"]) is { } command)
+            {
+                parts.Add(string.Join(" ", new[] { command }.Concat(Definition["args"] is JsonArray a ? a.Select(x => x?.ToString() ?? "") : [])));
+                if (Text(Definition["cwd"]) is { Length: > 0 } cwd) parts.Add($"cwd: {cwd}");
+                if (Pairs(Definition["env"], "=") is { Length: > 0 } env) parts.Add($"env: {env}");
+            }
+            else
+            {
+                parts.Add(Definition["url"]?.ToString() ?? "");
+                if (Pairs(Definition["headers"], ": ") is { Length: > 0 } headers) parts.Add($"headers: {headers}");
+            }
+            return string.Join(" · ", parts);
+        }
+    }
+
+    private static string? Text(JsonNode? node) => node is JsonValue v && v.TryGetValue<string>(out var s) ? s : null;
+
+    private static string Pairs(JsonNode? node, string separator) =>
+        node is JsonObject map ? string.Join(", ", map.Select(kv => kv.Key + separator + kv.Value?.ToString())) : string.Empty;
 }
 
 /// <summary>A server declaration that could not be read, and why.</summary>
@@ -99,7 +127,13 @@ internal static class RepoMcpServers
                 var source = Path.GetRelativePath(root, file).Replace('\\', '/');
                 try { PathSanitizer.AssertUnderRoot(file, root); }
                 catch (ArgumentException) { problems.Add(new(source, null, "its link leads out of the repository")); continue; }
-                ReadFile(file, source, format, servers, problems);
+                // ⚠ What a repository got wrong costs THAT file: an exception out of here stopped every MCP server the
+                // refresh had just torn down, the user's own included, and nothing said why.
+                try { ReadFile(file, source, format, servers, problems); }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    problems.Add(new(source, null, $"it cannot be read ({ex.Message})"));
+                }
             }
         }
         return new RepoMcpScan(root, servers, problems);

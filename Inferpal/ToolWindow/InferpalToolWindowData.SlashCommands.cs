@@ -245,8 +245,8 @@ internal partial class InferpalToolWindowData
                 break;
             case SlashCommandId.Skill:
             {
-                // The workspace the agent's tools read (read_skill_file), so /skill and the tool see one catalog.
-                var skill = Services.Commands.SkillCommandHandler.Run(_config, _indexService.RootDir ?? FindProjectRoot(), parts);
+                // The root read_skill_file reads (ToolRegistry.SkillsRoot): /skill, the tool and the prompt see one catalog.
+                var skill = Services.Commands.SkillCommandHandler.Run(_config, _tools.SkillsRoot(), parts);
                 if (skill.Message is { } listing) { await ShowInfoAsync(listing); break; }
                 // Joined like a file: named under the question, never the question itself (SkillCommandHandler).
                 var attachment = skill.Attachment!;

@@ -114,12 +114,64 @@ internal static class MiniYaml
         return i;
     }
 
+    /// <summary>
+    /// The escapes of a double-quoted YAML scalar (YAML 1.2, §5.7) — and only those.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Not <c>Regex.Unescape</c>: its set is the regex syntax's, not YAML's, and on an escape it does not know it throws
+    /// an <see cref="ArgumentException"/> no reader of a file expects — a Windows path between double quotes
+    /// (<c>"C:\qux"</c>) stopped every MCP server, the user's own included. An escape YAML does not know is a
+    /// <see cref="FormatException"/> naming its line, which the file's reader reports.
+    /// </remarks>
+    private static string Unescape(string text, int number)
+    {
+        var sb = new System.Text.StringBuilder(text.Length);
+        for (var i = 0; i < text.Length; i++)
+        {
+            if (text[i] != '\\') { sb.Append(text[i]); continue; }
+            if (++i == text.Length) throw new FormatException($"line {number}: a lone backslash ends the value");
+            var c = text[i];
+            switch (c)
+            {
+                case '0': sb.Append('\0'); break;
+                case 'a': sb.Append('\a'); break;
+                case 'b': sb.Append('\b'); break;
+                case 't': case '\t': sb.Append('\t'); break;
+                case 'n': sb.Append('\n'); break;
+                case 'v': sb.Append('\v'); break;
+                case 'f': sb.Append('\f'); break;
+                case 'r': sb.Append('\r'); break;
+                case 'e': sb.Append('\u001b'); break;
+                case ' ': case '"': case '/': case '\\': sb.Append(c); break;
+                case 'N': sb.Append('\u0085'); break;
+                case '_': sb.Append('\u00a0'); break;
+                case 'L': sb.Append('\u2028'); break;
+                case 'P': sb.Append('\u2029'); break;
+                case 'x': case 'u': case 'U':
+                {
+                    var digits = c == 'x' ? 2 : c == 'u' ? 4 : 8;
+                    if (text.Length - (i + 1) < digits
+                        || !int.TryParse(text.AsSpan(i + 1, digits), System.Globalization.NumberStyles.AllowHexSpecifier,
+                                         System.Globalization.CultureInfo.InvariantCulture, out var code)
+                        || code is < 0 or > 0x10FFFF or (>= 0xD800 and <= 0xDFFF))
+                        throw new FormatException($"line {number}: \\{c} needs {digits} hexadecimal digits of a character");
+                    sb.Append(char.ConvertFromUtf32(code));
+                    i += digits;
+                    break;
+                }
+                default:
+                    throw new FormatException($"line {number}: \\{c} is not a YAML escape (single quotes keep a backslash as it is)");
+            }
+        }
+        return sb.ToString();
+    }
+
     private static JsonNode? Scalar(string value, int number)
     {
         if (value.StartsWith('"'))
         {
             if (!value.EndsWith('"') || value.Length < 2) throw new FormatException($"line {number}: an unclosed quote");
-            return JsonValue.Create(System.Text.RegularExpressions.Regex.Unescape(value[1..^1]));
+            return JsonValue.Create(Unescape(value[1..^1], number));
         }
         if (value.StartsWith('\''))
         {

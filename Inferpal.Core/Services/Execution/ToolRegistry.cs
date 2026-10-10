@@ -117,7 +117,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new SemanticSearchTool(indexService, client, config));
         Register(new SearchDocsTool(docsIndex, client, config));
         Register(new GenerateProjectMapTool(mapService));
-        Register(new ReadSkillFileTool(() => indexService.RootDir, config));
+        Register(new ReadSkillFileTool(SkillsRoot, config));
 
         // Registered only when the front-end can actually drive a debugger: a tool whose every
         // answer is "unavailable here" costs prompt tokens on every turn and teaches a small model
@@ -165,7 +165,25 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// rather than tools whose approval would be recorded as a proposal.
     /// </remarks>
     public ToolRegistry WithApprovalService(IApprovalService approval) =>
-        new(_editor, approval, _config, _indexService, _client, _mapService, _mcp, _docsIndex, _overlay, debug: null, fileHistory: _fileHistory);
+        new(_editor, approval, _config, _indexService, _client, _mapService, _mcp, _docsIndex, _overlay, debug: null, fileHistory: _fileHistory)
+        {
+            ProjectRootFallback = ProjectRootFallback,
+        };
+
+    /// <summary>
+    /// The root the skills are read from while nothing is pinned: the editor's project root (Visual Studio: the open
+    /// solution's folder, or the open files'). <c>null</c>: the pinned root only (VS Code always pins its folder).
+    /// </summary>
+    public Func<string?>? ProjectRootFallback { get; set; }
+
+    /// <summary>
+    /// Where the skills are read — by <c>read_skill_file</c>, by <c>/skill</c> — the root the system prompt's catalog
+    /// reads: the pinned root, else <see cref="ProjectRootFallback"/>.
+    /// </summary>
+    /// <remarks>⚠ One root for the catalog and the tool: the prompt advertised the repository's skills while the tool,
+    /// reading the empty pinned root, found none of them — the model was told to load what could not be loaded.</remarks>
+    public string? SkillsRoot() =>
+        string.IsNullOrEmpty(_indexService.RootDir) ? ProjectRootFallback?.Invoke() : _indexService.RootDir;
 
     /// <summary>
     /// The shell tools the user declared in <c>CustomTools</c>, one <c>name=command</c> per line.

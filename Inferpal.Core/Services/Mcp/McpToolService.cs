@@ -207,6 +207,30 @@ internal sealed class McpToolService : IAsyncDisposable
     }
 
     /// <summary>
+    /// <see cref="RefreshAsync"/> once no turn is running: <paramref name="busy"/> is asked every <paramref name="poll"/>
+    /// until it answers <c>false</c>. Never throws: what it is waiting for is nobody's call.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A refresh tears every server down and respawns it. Under a running turn, an agent mid-<c>mcp__server__tool</c>
+    /// gets its client disposed, and a repository server's agreement question lands in the middle of the turn — and the
+    /// caller that pins a new root does it at the START of a turn. The first look waits one <paramref name="poll"/>: the
+    /// turn that pinned the root has not marked itself busy yet.
+    /// </remarks>
+    public async Task RefreshWhenIdleAsync(Func<bool> busy, TimeSpan poll)
+    {
+        try
+        {
+            do await Task.Delay(poll).ConfigureAwait(false);
+            while (busy() && !_disposed);
+            if (!_disposed) await RefreshAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Diagnostics.Swallow("McpToolService.RefreshWhenIdle", ex);
+        }
+    }
+
+    /// <summary>
     /// Tears down any running servers and re-connects from the current config. Safe to call
     /// repeatedly (e.g. after the user edits MCP settings); calls are serialized.
     /// </summary>
@@ -356,8 +380,10 @@ internal sealed class McpToolService : IAsyncDisposable
         var notStarted = new List<McpServerStatus>();
         var names = new List<string>();
         RepoMcpScan scan;
+        // ⚠ Any failure, not a list of them: this runs after the teardown, and an exception out of here left the user's
+        // own servers stopped. The repository's servers are the ones that do not start.
         try { scan = RepoMcpServers.Read(WorkspaceRoot?.Invoke()); }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             Diagnostics.Swallow("McpToolService.RepositoryServers", ex);
             return (start, notStarted, names);
