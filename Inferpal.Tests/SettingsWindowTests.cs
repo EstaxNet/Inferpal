@@ -81,9 +81,14 @@ public sealed class SettingsWindowTests : IAsyncLifetime
     public async Task AnotherSitesName_OrOrigin_IsRefused()
     {
         // DNS rebinding: a site whose name resolves to 127.0.0.1 sends ITS name; a cross-site request, its origin.
+        // ⚠ Who refuses the name depends on the platform: http.sys (Windows) hands the request over and the server
+        // answers 403; the managed listener (Linux, macOS) matches its prefix by Host and answers 404 itself. Either
+        // way the page is not served — that is the property.
         using var rebound = new HttpRequestMessage(HttpMethod.Get, _server.Url);
         rebound.Headers.Host = "evil.example:" + new Uri(_server.Url).Port;
-        Assert.Equal(HttpStatusCode.Forbidden, (await _http.SendAsync(rebound)).StatusCode);
+        using var refused = await _http.SendAsync(rebound);
+        Assert.Contains(refused.StatusCode, new[] { HttpStatusCode.Forbidden, HttpStatusCode.NotFound });
+        Assert.DoesNotContain("settings-standalone.js", await refused.Content.ReadAsStringAsync(), StringComparison.Ordinal);
 
         Assert.Equal(HttpStatusCode.Forbidden, (await CallAsync("config/get", origin: "http://evil.example")).Status);
         // Reference arm: the page's own origin.
