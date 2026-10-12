@@ -568,6 +568,10 @@ internal sealed partial class HostServer
                         (run.Ok ? "✅ `git commit`" : "❌ `git commit`") + "\n\n```\n" + run.Output + "\n```");
                 }
 
+                // The settings are the front-end's to open: VS Code shows its panel, an ACP thread the browser window.
+                case SlashCommandId.Settings:
+                    return new SlashCommandResult(true, null, [new SlashEffectDto("openSettings")]);
+
                 // Not portable yet (VS-only UX or planned for a later phase): a deterministic
                 // localized answer beats falling through to the model with a raw "/command".
                 case SlashCommandId.FixBuild:

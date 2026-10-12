@@ -17,6 +17,11 @@ exists.
   `/setup`, coupled to Visual Studio by construction (MSBuild banner, live model-pull bubble).
 - **Settings panel in VS Code** — an "Inferpal Settings" webview with the same seven pages as the
   Visual Studio window, read from the same description in the Core, backed by the shared config.
+  `/settings` opens it from the chat (and the settings window in Visual Studio).
+- **Zed, JetBrains IDEs, Neovim, Emacs** — the same host, run with `--acp`, is an
+  [Agent Client Protocol](acp.md) agent: modes and model as thread options, the real diff before every change,
+  sessions saved and reloaded. Its settings are the same seven pages, in the browser: `/settings` in a thread, a button
+  at first setup, or `Inferpal.Host --settings`; saved, they apply to the open threads from their next question.
 - **Typed @-mentions, `/plan` and `/agent-step` modes, and per-turn RAG auto-context** all
   work in VS Code too.
 
@@ -229,7 +234,7 @@ exists.
   `/branch` lists the branch points and the family tree, `/branch <name>` switches branch.
   A branch is a plain session file with a `parent` + `fork_turn` link — nothing else in the
   store, the history rebuild or the picker had to learn about branching.
-- **Sound notification** — an audible ping when a run finishes after more than 30 seconds.
+- **Sound notification** — an audible ping when a run finishes after more than 30 seconds (Visual Studio; turned off in Settings › Language and appearance › Agent runs).
 - **Code snippet library** — ⭐ saves any code block; `/snippets` manages it across sessions.
 - **Session & prompt templates** — `/template` loads a preconfigured context; user prompt
   templates support `{args}`.

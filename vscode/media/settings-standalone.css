@@ -1,0 +1,48 @@
+/* The browser settings window (`Inferpal.Host --settings`): the colours VS Code gives a webview, which a browser does
+   not — VS Code's default themes, Light Modern and Dark Modern, chosen by the system's theme. settings.css then draws
+   the form exactly as in VS Code. */
+:root {
+  --vscode-font-family: "Segoe WPC", "Segoe UI", system-ui, -apple-system, sans-serif; --vscode-font-size: 13px;
+  --vscode-editor-font-family: Consolas, "Courier New", monospace;
+  --vscode-foreground: #3b3b3b; --vscode-descriptionForeground: #717171; --vscode-editor-background: #ffffff;
+  --vscode-sideBar-background: #f8f8f8; --vscode-editorWidget-background: #f8f8f8; --vscode-editorWidget-border: #e5e5e5;
+  --vscode-panel-border: #e5e5e5; --vscode-input-background: #ffffff; --vscode-input-foreground: #3b3b3b;
+  --vscode-input-border: #cecece; --vscode-focusBorder: #005fb8; --vscode-button-background: #005fb8;
+  --vscode-button-foreground: #ffffff; --vscode-button-hoverBackground: #0258a8;
+  --vscode-button-secondaryBackground: #e5e5e5; --vscode-button-secondaryForeground: #3b3b3b;
+  --vscode-button-secondaryHoverBackground: #cccccc; --vscode-textLink-foreground: #005fb8;
+  --vscode-textLink-activeForeground: #005fb8; --vscode-errorForeground: #f85149; --vscode-editorWarning-foreground: #bf8803;
+  --vscode-testing-iconPassed: #388a34; --vscode-textCodeBlock-background: #f8f8f8;
+  --vscode-toolbar-hoverBackground: rgba(184, 184, 184, 0.31); --vscode-icon-foreground: #3b3b3b;
+  --vscode-inputValidation-errorBorder: #be1100; --vscode-list-hoverBackground: #f2f2f2;
+  --vscode-list-activeSelectionBackground: #e8e8e8; --vscode-charts-purple: #652d90; --vscode-charts-blue: #1a85ff;
+  --vscode-charts-green: #388a34; --vscode-editorGhostText-foreground: rgba(0, 0, 0, 0.47);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --vscode-foreground: #cccccc; --vscode-descriptionForeground: #9d9d9d; --vscode-editor-background: #1f1f1f;
+    --vscode-sideBar-background: #181818; --vscode-editorWidget-background: #202020; --vscode-editorWidget-border: #313131;
+    --vscode-panel-border: #2b2b2b; --vscode-input-background: #313131; --vscode-input-foreground: #cccccc;
+    --vscode-input-border: #3c3c3c; --vscode-focusBorder: #0078d4; --vscode-button-background: #0078d4;
+    --vscode-button-foreground: #ffffff; --vscode-button-hoverBackground: #026ec1;
+    --vscode-button-secondaryBackground: #313131; --vscode-button-secondaryForeground: #cccccc;
+    --vscode-button-secondaryHoverBackground: #3c3c3c; --vscode-textLink-foreground: #4daafc;
+    --vscode-textLink-activeForeground: #4daafc; --vscode-errorForeground: #f85149; --vscode-editorWarning-foreground: #cca700;
+    --vscode-testing-iconPassed: #73c991; --vscode-textCodeBlock-background: #2b2b2b;
+    --vscode-toolbar-hoverBackground: rgba(90, 93, 94, 0.31); --vscode-icon-foreground: #cccccc;
+    --vscode-inputValidation-errorBorder: #be1100; --vscode-list-hoverBackground: #2a2d2e;
+    --vscode-list-activeSelectionBackground: #04395e; --vscode-charts-purple: #b180d7; --vscode-charts-blue: #3794ff;
+    --vscode-charts-green: #89d185; --vscode-editorGhostText-foreground: rgba(255, 255, 255, 0.34);
+  }
+}
+
+/* What a webview gets from VS Code before any stylesheet: the theme's ground and text, no page margin. */
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--vscode-editor-background);
+  color: var(--vscode-foreground);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+}

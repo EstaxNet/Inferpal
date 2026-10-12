@@ -174,7 +174,12 @@ public sealed class SilentGestureTests
     [Fact]
     public void TheSettingsPanel_NamesWhatFailed_RatherThanBlamingTheBackend()
     {
-        var src = File.ReadAllText(Path.Combine(RepoRoot(), "vscode", "src", "settingsPanel.ts"));
+        // The panel's messages are answered by the bridge VS Code shares with the browser settings window; the shell
+        // gives it VS Code's words for an absent host (hostUnavailableMessage) and a failure (hostErrorText).
+        var src = File.ReadAllText(Path.Combine(RepoRoot(), "vscode", "src", "settingsBridge.ts"));
+        var shell = File.ReadAllText(Path.Combine(RepoRoot(), "vscode", "src", "settingsPanel.ts"));
+        Assert.Contains("unavailableMessage: () => hostUnavailableMessage(),", shell);
+        Assert.Contains("errorText: (err) => hostErrorText(err),", shell);
 
         var refresh = Regex.Match(src, @"case 'refreshModels': \{[\s\S]*?\n      \}",
                                   RegexOptions.None, TimeSpan.FromSeconds(5));
@@ -187,7 +192,7 @@ public sealed class SilentGestureTests
                                  RegexOptions.None, TimeSpan.FromSeconds(5));
         Assert.True(caught.Success, "the refreshModels catch was not found — the assertion reads nothing");
         Assert.Contains("models/list failed", caught.Value);   // the cause still reaches the channel
-        Assert.Contains("this.post(", caught.Value);           // and the clicker hears about it
+        Assert.Contains("this.shell.post(", caught.Value);     // and the clicker hears about it
 
         // ⚠ `ok: false` alone renders as "Backend unreachable": the wrong cause when the host is
         // what is gone, and the user goes to check a server that is answering. Both of the probe's
@@ -196,12 +201,12 @@ public sealed class SilentGestureTests
         var probe = Regex.Match(src, @"case 'testConnection': \{[\s\S]*?\n      \}",
                                 RegexOptions.None, TimeSpan.FromSeconds(5));
         Assert.True(probe.Success, "the testConnection case was not found");
-        Assert.Contains("hostUnavailableMessage()", probe.Value);
+        Assert.Contains("this.shell.unavailableMessage()", probe.Value);
 
         var probeCaught = Regex.Match(probe.Value, @"catch \(err\) \{[\s\S]*?\n        \}",
                                       RegexOptions.None, TimeSpan.FromSeconds(5));
         Assert.True(probeCaught.Success, "the testConnection catch was not found — the assertion reads nothing");
-        Assert.Contains("hostErrorText(err)", probeCaught.Value);
+        Assert.Contains("this.shell.errorText(err)", probeCaught.Value);
     }
 
     /// <summary>The per-keystroke path says it once, and re-arms when a search works again.</summary>

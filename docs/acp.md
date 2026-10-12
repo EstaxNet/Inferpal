@@ -108,15 +108,31 @@ Any ACP client runs Inferpal the same way: the executable, with `--acp`, as a lo
 Inferpal uses the settings Visual Studio and VS Code already share (`%AppData%\Inferpal\config.json` on Windows,
 `~/.config/Inferpal/config.json` elsewhere): if you use Inferpal in one of them, there is nothing to do.
 
-Otherwise, the first session asks you to set Inferpal up — a client that can run a setup in a terminal (Zed does)
-offers a **Set up Inferpal** button. You can also run it yourself, in any terminal:
+Otherwise, the first session asks you to set Inferpal up. A client that can run a command in a terminal (Zed does)
+offers two buttons:
+
+- **Open Inferpal's settings** — every setting, in your browser: the very settings window VS Code shows (the model
+  server and its models, the agent and its approvals, context and memory, code search, MCP servers, language), with
+  its **Test** button, the models loaded right now and the model suggestions. Save, close the page, and the session
+  starts.
+- **Set up Inferpal** — the short version, in the terminal: the model server, its address and a model.
+
+Both run in any terminal too, for the folder you name (the current one by default):
 
 ```
+Inferpal.Host --settings [folder]
 Inferpal.Host --acp --setup
 ```
 
-It asks for the model server and its address, checks that it answers, lists its models and saves your choice. With a
-local Ollama already running, there is nothing to set up: Inferpal finds it.
+Once Inferpal is set up, type **`/settings`** in any thread to open the same page again. What you save there applies
+from your next question, in that thread and the others — except a new model server, which a thread only uses once it
+is started anew (the thread says so). A model picked in a thread stays that thread's.
+
+The settings page is served by Inferpal itself, on `127.0.0.1` only, under an address nobody else can guess; it
+reaches the settings and nothing else (no chat, no command, no tool), and it stops a few seconds after the page is
+closed. A browser cannot hand a file's location to a page: type or paste a path where the form asks for one.
+
+With a local Ollama already running, there is nothing to set up: Inferpal finds it.
 
 ## What you get
 
@@ -142,7 +158,7 @@ says so once:
 
 - inline suggestions (ghost text);
 - the debugger tools (`/debug`, the debugger capture of `/tdd`);
-- the Context X-Ray and the settings pages;
+- the Context X-Ray (the settings open in your browser instead: `/settings`);
 - the commands that work on the editor or its panels: `/xray`, `/explain`, `/review`, `/fix`, `/refactor`, `/doc`,
   `/export`, `/branch`, `/agent-step`. To start over, open a new thread instead of `/clear`.
 

@@ -1993,6 +1993,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             }
           }
           break;
+        case 'openSettings':
+          // `/settings`: the settings panel, as the command palette opens it.
+          try {
+            await vscode.commands.executeCommand('inferpal.openSettings');
+          } catch (err) {
+            this.log(`[chat] openSettings effect failed: ${String(err)}`);
+          }
+          break;
         case 'configSaved':
           // The command saved Inferpal's settings (`/onboard apply`): the explicit VS Code copies follow, or the next host
           // start pushes the old utility model back; the chat re-reads its window, model and density.

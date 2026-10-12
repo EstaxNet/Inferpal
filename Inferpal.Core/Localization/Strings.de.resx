@@ -105,6 +105,8 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <data name="HintCommandTimeout" xml:space="preserve"><value>Die längste Dauer eines Werkzeugaufrufs. Erhöhen, wenn Ihre Builds länger brauchen.</value></data>
   <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>Jeden Schritt geöffnet anzeigen</value></data>
   <data name="HintToolBubblesExpanded" xml:space="preserve"><value>Aus: eine Zeile pro Schritt; ein Klick zeigt, was hinein- und herauskam. Ein fehlgeschlagener Schritt öffnet sich immer.</value></data>
+  <data name="LabelRunEndSound" xml:space="preserve"><value>Ton abspielen, wenn ein langer Lauf endet</value></data>
+  <data name="HintRunEndSound" xml:space="preserve"><value>Der Windows-Benachrichtigungston, wenn eine Antwort länger als 30 Sekunden gedauert hat — so können Sie inzwischen woanders arbeiten.</value></data>
   <data name="LabelDensity" xml:space="preserve"><value>Dichte</value></data>
   <data name="HintDensity" xml:space="preserve"><value>Kompakt zeigt in einem schmalen Bereich mehr vom Gespräch.</value></data>
   <data name="DensityComfortable" xml:space="preserve"><value>Komfortabel</value></data>
@@ -674,6 +676,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="SlashHintExport" xml:space="preserve"><value>Unterhaltung in eine Datei exportieren</value></data>
   <data name="SlashHintRestore" xml:space="preserve"><value>Datei aus Sicherung wiederherstellen</value></data>
   <data name="SlashHintHelp" xml:space="preserve"><value>alle verfügbaren Befehle anzeigen</value></data>
+  <data name="SlashHintSettings" xml:space="preserve"><value>Inferpal-Einstellungen öffnen</value></data>
   <data name="SlashHintRead" xml:space="preserve"><value>Datei als Kontext anhängen</value></data>
   <data name="SlashHintLs" xml:space="preserve"><value>Dateien in einem Verzeichnis auflisten</value></data>
   <data name="SlashHintGrep" xml:space="preserve"><value>Text in Dateien suchen</value></data>
@@ -1220,6 +1223,30 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="ChatMenuSettings" xml:space="preserve"><value>Einstellungen</value></data>
   <data name="ChatMenuStepMode" xml:space="preserve"><value>Nach jedem Werkzeugaufruf anhalten</value></data>
   <data name="ChatNoModelListed" xml:space="preserve"><value>Kein Modell aufgelistet — ist das Backend erreichbar?</value></data>
+  <data name="SettingsWindowSaved" xml:space="preserve"><value>Einstellungen gespeichert.</value></data>
+  <data name="SettingsWindowLoading" xml:space="preserve"><value>Einstellungen werden geladen…</value></data>
+  <data name="SettingsWindowConnected" xml:space="preserve"><value>Verbunden</value></data>
+  <data name="SettingsWindowUnreachable" xml:space="preserve"><value>Backend nicht erreichbar</value></data>
+  <data name="SettingsWindowRefreshModels" xml:space="preserve"><value>Modelle aktualisieren</value></data>
+  <data name="SettingsWindowShowAllModels" xml:space="preserve"><value>Alle Modelle anzeigen</value></data>
+  <data name="SettingsWindowTitle" xml:space="preserve"><value>Inferpal-Einstellungen</value></data>
+  <data name="SettingsWindowGone" xml:space="preserve"><value>Der Server des Einstellungsfensters wurde beendet: Auf dieser Seite kann nichts mehr gespeichert werden. Führen Sie `Inferpal.Host --settings` erneut aus, um es wieder zu öffnen.</value></data>
+  <data name="SettingsWindowNoPicker" xml:space="preserve"><value>Ein Browser kann Inferpal den Speicherort einer Datei nicht mitteilen: Geben Sie den vollständigen Pfad der Datei ein oder fügen Sie ihn ein.</value></data>
+  <data name="SettingsWindowNoXray" xml:space="preserve"><value>Das Röntgenbild des Prompts wird im Chat von Visual Studio und VS Code angezeigt.</value></data>
+  <data name="SettingsWindowNotFound" xml:space="preserve"><value>Unter {0} ist nichts vorhanden.</value></data>
+  <data name="SettingsWindowFilesMissing" xml:space="preserve"><value>Die Dateien des Einstellungsfensters fehlen ({0}): Dieser Build von Inferpal.Host kann es nicht anzeigen.</value></data>
+  <data name="SettingsWindowOpen" xml:space="preserve"><value>Die Einstellungen von Inferpal sind in Ihrem Browser geöffnet, für den Ordner {1}:
+  {0}
+Wenn sich kein Fenster geöffnet hat, öffnen Sie diese Adresse. Schließen Sie die Seite, wenn Sie fertig sind.</value></data>
+  <data name="SettingsWindowNoBrowser" xml:space="preserve"><value>Es konnte kein Browser gestartet werden: Öffnen Sie die obige Adresse selbst.</value></data>
+  <data name="SettingsWindowClosed" xml:space="preserve"><value>Einstellungsfenster geschlossen.</value></data>
+  <data name="AcpSettingsMethodName" xml:space="preserve"><value>Inferpal-Einstellungen öffnen</value></data>
+  <data name="AcpSettingsMethodHint" xml:space="preserve"><value>Alle Einstellungen in Ihrem Browser — das Fenster, das Visual Studio und VS Code zeigen: Modellserver und Modelle, der Agent, Genehmigungen, MCP-Server. Schließen Sie die Seite, wenn Sie fertig sind.</value></data>
+  <data name="AcpSettingsOpened" xml:space="preserve"><value>Die Einstellungen von Inferpal sind in Ihrem Browser geöffnet: {0}
+
+Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in den anderen. Nur ein neuer Modellserver wartet auf einen neuen Thread.</value></data>
+  <data name="AcpSettingsOpenThis" xml:space="preserve"><value>Es konnte kein Browser gestartet werden: Öffnen Sie {0}, um Inferpal einzurichten.</value></data>
+  <data name="AcpServerChangedNewThread" xml:space="preserve"><value>Der Modellserver wurde in den Einstellungen geändert: Dieser Thread spricht noch mit dem, mit dem er begonnen hat. Starten Sie einen neuen Thread, um den neuen zu verwenden.</value></data>
   <data name="ChatModelButton" xml:space="preserve"><value>Modell und Server: {0}</value></data>
   <data name="ModeChat" xml:space="preserve"><value>Chat</value></data>
   <data name="ModeAgent" xml:space="preserve"><value>Agent</value></data>
@@ -1368,7 +1395,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="AcpSetupMethodHint" xml:space="preserve"><value>Wählen Sie den Modellserver und das Modell in einem Terminal.</value></data>
   <data name="AcpNotSetUp" xml:space="preserve"><value>Inferpal ist noch nicht eingerichtet: Es gibt keine Einstellungen, und unter {0} antwortet kein Modellserver. Starten Sie die Einrichtung, um einen Server und ein Modell zu wählen.</value></data>
   <data name="AcpSessionNotFound" xml:space="preserve"><value>Es gibt keine gespeicherte Sitzung namens {0}.</value></data>
-  <data name="AcpLimitsNotice" xml:space="preserve"><value>In diesem Editor hat Inferpal keine Inline-Vorschläge, keine Debugger-Werkzeuge, kein X-Ray und keine Einstellungsseiten – diese bleiben in Visual Studio und VS Code. Was hier funktioniert: {0}</value></data>
+  <data name="AcpLimitsNotice" xml:space="preserve"><value>In diesem Editor hat Inferpal keine Inline-Vorschläge, keine Debugger-Werkzeuge und kein X-Ray – diese bleiben in Visual Studio und VS Code. Die Einstellungen öffnen sich in Ihrem Browser: `/settings`. Was hier funktioniert: {0}</value></data>
   <data name="AcpCommandNeedsEditor" xml:space="preserve"><value>{0} funktioniert nur in Visual Studio und VS Code: Der Befehl braucht deren Editor oder deren Bereiche.</value></data>
   <data name="AcpClearStartNewThread" xml:space="preserve"><value>Um neu anzufangen, öffnen Sie einen neuen Thread: Diese Unterhaltung bleibt gespeichert, und die neue beginnt leer.</value></data>
   <data name="AcpPasteThis" xml:space="preserve"><value>Dieser Editor lässt Inferpal das Eingabefeld nicht füllen: Hier ist der Text, den Sie in Ihre Nachricht einfügen können.</value></data>

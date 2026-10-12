@@ -1,7 +1,9 @@
 using System.Collections.Concurrent;
 using System.Globalization;
+using System.IO;
 using System.Text.Json;
 using System.Threading.Channels;
+using Inferpal.Host.SettingsWindow;
 using Inferpal.Localization;
 using Inferpal.Services;
 using StreamJsonRpc;
@@ -45,11 +47,67 @@ internal sealed class AcpAgent : IAsyncDisposable
 
     /// <param name="hostFactory">The host each session drives (test seam).</param>
     /// <param name="ready">Whether Inferpal can answer without being set up first (<see cref="AcpReadiness"/>).</param>
-    public AcpAgent(Func<HostServer>? hostFactory = null, Func<CancellationToken, Task<bool>>? ready = null)
+    /// <param name="webDir">The settings window's files (test seam; <see cref="SettingsWindowServer.DefaultWebDir"/>).</param>
+    /// <param name="openBrowser">Opens an address in the browser (test seam; <see cref="SettingsWindowServer.OpenInBrowser"/>).</param>
+    public AcpAgent(Func<HostServer>? hostFactory = null, Func<CancellationToken, Task<bool>>? ready = null,
+                    string? webDir = null, Func<string, bool>? openBrowser = null)
     {
         _hostFactory = hostFactory ?? (() => new HostServer());
         _ready       = ready ?? AcpReadiness.IsReadyAsync;
+        _webDir      = webDir ?? SettingsWindowServer.DefaultWebDir;
+        _openBrowser = openBrowser ?? SettingsWindowServer.OpenInBrowser;
         _sender      = Task.Run(SendLoopAsync);
+    }
+
+    // ── The settings window (/settings) ─────────────────────────────────────────
+
+    private readonly string _webDir;
+    private readonly Func<string, bool> _openBrowser;
+    private readonly Dictionary<string, SettingsWindowServer> _windows = new(PathComparer.Default);
+    private readonly List<Task> _windowsClosing = [];
+    private readonly SemaphoreSlim _windowsGate = new(1, 1);
+    private readonly CancellationTokenSource _stopping = new();
+
+    /// <summary>
+    /// <c>/settings</c> in a thread: the browser settings window for its folder — served by this process, one per folder,
+    /// opened again while it is still there. What is saved in it reaches every thread at its next question
+    /// (<c>config/reload</c>).
+    /// </summary>
+    /// <returns>What the thread says.</returns>
+    /// <remarks>⚠ In this process, never a child: a child that inherits the agent's stdout writes into the protocol.</remarks>
+    internal async Task<string> OpenSettingsWindowAsync(string folder, CancellationToken ct)
+    {
+        if (!SettingsWindowServer.HasItsFiles(_webDir)) return Strings.SettingsWindowFilesMissing(_webDir);
+        folder = Path.GetFullPath(folder);
+        SettingsWindowServer window;
+        await _windowsGate.WaitAsync(ct);
+        try
+        {
+            if (!_windows.TryGetValue(folder, out window!))
+            {
+                window = await SettingsWindowServer.StartAsync(folder, _webDir, _hostFactory, ct);
+                _windows[folder] = window;
+                _windowsClosing.Add(CloseWhenDoneAsync(folder, window));
+            }
+        }
+        finally { _windowsGate.Release(); }
+        return _openBrowser(window.Url) ? Strings.AcpSettingsOpened(window.Url) : Strings.AcpSettingsOpenThis(window.Url);
+    }
+
+    /// <summary>The window's page closed (or the agent stops): it is forgotten, then its host disposed.</summary>
+    private async Task CloseWhenDoneAsync(string folder, SettingsWindowServer window)
+    {
+        try { await window.WaitForCloseAsync(_stopping.Token); }
+        finally
+        {
+            await _windowsGate.WaitAsync();
+            try
+            {
+                if (_windows.TryGetValue(folder, out var held) && ReferenceEquals(held, window)) _windows.Remove(folder);
+            }
+            finally { _windowsGate.Release(); }
+            await window.DisposeAsync();
+        }
     }
 
     public void Attach(JsonRpc rpc) => _rpc = rpc;
@@ -93,10 +151,16 @@ internal sealed class AcpAgent : IAsyncDisposable
                 sessionCapabilities = new { list = new { }, close = new { }, delete = new { }, resume = new { } },
             },
             agentInfo   = new { name = "inferpal", title = "Inferpal", version = Version },
-            // The setup runs in a terminal — offered only to a client that says it can run one.
+            // The setup runs in a terminal — offered only to a client that says it can run one. The settings window too: its
+            // process lives while the page is open, and says on exit whether Inferpal is set up.
             authMethods = ClientRunsTerminalAuth
                 ? new object[]
                 {
+                    new
+                    {
+                        id = AcpReadiness.SettingsMethod, name = Strings.AcpSettingsMethodName,
+                        description = Strings.AcpSettingsMethodHint, type = "terminal", args = new[] { "--settings" },
+                    },
                     new
                     {
                         id = AcpReadiness.SetupMethod, name = Strings.AcpSetupMethodName,
@@ -117,7 +181,8 @@ internal sealed class AcpAgent : IAsyncDisposable
     [JsonRpcMethod("authenticate", UseSingleObjectParameterDeserialization = true)]
     public async Task<object> AuthenticateAsync(JsonElement p, CancellationToken ct)
     {
-        if (Str(p, "methodId") != AcpReadiness.SetupMethod) throw new ArgumentException("Unknown authentication method.");
+        if (Str(p, "methodId") is not (AcpReadiness.SetupMethod or AcpReadiness.SettingsMethod))
+            throw new ArgumentException("Unknown authentication method.");
         if (!await _ready(ct)) throw AcpRpc.Error(AcpRpc.AuthRequired, Strings.AcpNotSetUp(AcpReadiness.DefaultServer));
         return new { };
     }
@@ -431,6 +496,13 @@ internal sealed class AcpAgent : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         foreach (var id in _sessions.Keys.ToList()) await CloseAsync(id);
+        _stopping.Cancel();
+        Task[] closing;
+        await _windowsGate.WaitAsync();
+        try { closing = [.. _windowsClosing]; }
+        finally { _windowsGate.Release(); }
+        try { await Task.WhenAll(closing).WaitAsync(TimeSpan.FromSeconds(5)); }
+        catch (Exception ex) when (ex is TimeoutException or OperationCanceledException) { }
         _outbox.Writer.TryComplete();
         try { await _sender.WaitAsync(TimeSpan.FromSeconds(5)); }
         catch (Exception ex) when (ex is TimeoutException or OperationCanceledException) { }

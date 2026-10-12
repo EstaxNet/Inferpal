@@ -25,6 +25,23 @@ Two adapters consume it:
   fills the same overlay on demand (`VsUnsavedDocuments`, asked before every tool call), so the
   writing tools refuse an unsaved file in both editors.
 
+The same `Inferpal.Host` executable serves two more doors:
+
+- **Agent Client Protocol** (`--acp`, for Zed, the JetBrains IDEs, Neovim, Emacs) — `Inferpal.Host/Acp/`: each
+  thread drives a `HostServer` of its own, in memory, through the very JSON-RPC methods VS Code calls; the agent adds
+  no logic of its own (setup guide: [acp.md](acp.md)). Several threads live in one process, so each host reads the
+  settings into **its own copy** (`InferpalConfig.LoadOwnCopy`, never the shared `Load` cache): a model picked in one
+  thread is not another's. Before each question a thread follows what the settings file changed since it read it
+  (`config/reload`), without writing it back.
+- **The browser settings window** (`--settings [folder]`, and `/settings` in an ACP thread) —
+  `Inferpal.Host/SettingsWindow/`: the settings webview VS Code shows (`vscode/src/webview/settings.ts`), bundled with
+  a shell that relays its calls over HTTP (`settingsStandaloneShell.ts`) to a host started for the folder. The form's
+  logic is shared by both editors' shells (`vscode/src/settingsBridge.ts`). The page is served on `127.0.0.1` only,
+  under a random token, refuses another site's `Host` or `Origin`, and relays **only** the settings form's calls
+  (`SettingsWindowServer.FormMethods`) — never a turn, a command or a tool. From an ACP thread it runs inside the agent
+  process, never as a child, whose output would land in the protocol's stdout. It stops a few seconds after the page
+  says it closes, or after 90 s without a sign of life from it.
+
 ## Process model
 
 Inferpal uses the Visual Studio Extensibility model

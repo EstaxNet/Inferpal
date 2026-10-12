@@ -34,7 +34,13 @@ const chatWebviewOptions = { ...webviewBase, entryPoints: ['src/webview/main.ts'
 /** @type {import('esbuild').BuildOptions} */
 const settingsWebviewOptions = { ...webviewBase, entryPoints: ['src/webview/settings.ts'], outfile: 'media/settings.js' };
 
-const allOptions = [extensionOptions, chatWebviewOptions, settingsWebviewOptions];
+/** The settings form in a browser page (`Inferpal.Host --settings`), with the shell that plays the extension's part. */
+/** @type {import('esbuild').BuildOptions} */
+const standaloneSettingsOptions = {
+  ...webviewBase, entryPoints: ['src/webview/settingsStandalone.ts'], outfile: 'media/settings-standalone.js',
+};
+
+const allOptions = [extensionOptions, chatWebviewOptions, settingsWebviewOptions, standaloneSettingsOptions];
 
 (async () => {
   if (watch) {

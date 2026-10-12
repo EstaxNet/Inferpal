@@ -774,8 +774,9 @@ internal partial class InferpalToolWindowData
             // that changed files — was missing from it after a restart. The VS Code side saves in its finally too.
             _ = AutoSaveAsync();
 
-            // Beep when a long agent run completes, so the user can work elsewhere
-            if ((DateTime.UtcNow - sendStart).TotalSeconds > 30)
+            // Beep when a long agent run completes, so the user can work elsewhere — unless turned off in the settings
+            // (read now: the settings window changes this live configuration).
+            if (_config.RunEndSoundEnabled && (DateTime.UtcNow - sendStart).TotalSeconds > 30)
                 NotifyAgentComplete();
         }
     }

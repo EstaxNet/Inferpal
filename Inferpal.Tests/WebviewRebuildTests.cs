@@ -50,11 +50,13 @@ public class WebviewRebuildTests
     [Fact]
     public void TheSettingsPanel_SavesAgainstTheJsonItOpenedWith()
     {
-        var panel = TsCode("settingsPanel.ts");
+        // Answered by the bridge VS Code shares with the browser settings window — and both send the same call.
+        var panel = TsCode("settingsBridge.ts");
         Assert.Contains("host.configUpdate(", panel, StringComparison.Ordinal);
         Assert.Matches(@"host\.configUpdate\(\s*msg\.json\s*,\s*this\.lastConfigJson\s*\)", panel);
 
         Assert.Matches(@"'config/update',\s*\{\s*json,\s*base\s*\}", TsCode("hostClient.ts"));
+        Assert.Matches(@"call\('config/update',\s*\{\s*json,\s*base:\s*baseJson\s*\}\)", TsCode("webview/settingsStandaloneShell.ts"));
     }
 
     /// <summary>Body of a TypeScript function, by brace matching from its signature.</summary>

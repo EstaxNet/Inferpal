@@ -1869,6 +1869,12 @@
                         <TextBlock Text="{Binding HintToolBubblesExpanded}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
                     </StackPanel>
                 </CheckBox>
+                <CheckBox IsChecked="{Binding RunEndSoundEnabled, Mode=TwoWay}" Margin="0,0,0,14" VerticalContentAlignment="Top">
+                    <StackPanel Margin="4,0,0,0">
+                        <TextBlock Text="{Binding LabelRunEndSound}" Style="{StaticResource FieldLabel}" Margin="0"/>
+                        <TextBlock Text="{Binding HintRunEndSound}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </CheckBox>
             </StackPanel>
 
         </StackPanel>

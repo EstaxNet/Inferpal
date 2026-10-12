@@ -37,6 +37,16 @@ npm run build                      # esbuild bundle
 ./package.ps1 -Target win32-x64    # VSIX embedding a self-contained Inferpal.Host
 ```
 
+### ACP agent and browser settings window
+
+`Inferpal.Host` also runs as an Agent Client Protocol agent (`--acp`) and serves the settings form in a browser
+(`--settings [folder]`, `/settings` in an ACP thread). That page is the VS Code settings webview: `npm run build` in
+`vscode/` produces `media/settings-standalone.js`, and `Inferpal.Host.csproj` copies it, with the two stylesheets,
+to `web/` beside the executable **only when it exists** — build the extension bundle before the host, or
+`--settings` says which files are missing. The archives an ACP client downloads come from
+`pwsh ./acp/package.ps1 -Target win32-x64|linux-x64|darwin-arm64` (PowerShell 7), which builds the bundle first and
+refuses an archive without `web/`.
+
 ### Deploy (dev) and status
 
 ```powershell
@@ -135,7 +145,7 @@ Inferpal.InProc/     Everything devenv.exe hosts, in net472 (see architecture.md
 ├── Fim/             Client of the inference sidecar + the three settings it reads itself
 └── Compat.cs        Language support types the net472 BCL does not provide
 Inferpal.Fim/        net8 inference sidecar the in-process half starts on demand (JSON-RPC/stdio)
-Inferpal.Host/       Console host exposing Inferpal.Core over JSON-RPC/stdio (VS Code backend)
+Inferpal.Host/       Console host exposing Inferpal.Core over JSON-RPC/stdio (VS Code backend, ACP agent, browser settings window)
 vscode/              VS Code extension (TypeScript): webview chat, FIM, editor bridge
 Inferpal.Tests/      xUnit test project
 ```

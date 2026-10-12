@@ -808,12 +808,13 @@ public class SettingsSchemaDriftTests
     [Fact]
     public void SettingsPanel_ActsOnTheFormValues_NotOnTheSavedConfiguration()
     {
-        var panel = TsCode("settingsPanel.ts");
+        // The buttons are answered by the bridge VS Code shares with the browser settings window.
+        var panel = TsCode("settingsBridge.ts");
 
         // Witness: both buttons still exist in this file.
         foreach (var anchor in new[] { "case 'testConnection':", "case 'refreshModels':" })
             Assert.True(panel.Contains(anchor, StringComparison.Ordinal),
-                $"settingsPanel.ts no longer carries '{anchor}': the rule guards nothing any more.");
+                $"settingsBridge.ts no longer carries '{anchor}': the rule guards nothing any more.");
 
         // "Test" probes the form's URL WITH the form's key, not the session's. ⚠ The rule required
         // `connectionCheck(msg.baseUrl)` alone — it therefore froze the other half of the defect: a
@@ -823,7 +824,7 @@ public class SettingsSchemaDriftTests
         // ↻ lists the models of the form's backend — all three values, because a correct URL with
         // the old provider or the old key still queries something else.
         var refresh = Regex.Match(panel, @"modelsList\(\s*\{[\s\S]{0,200}?\}\s*\)");
-        Assert.True(refresh.Success, "settingsPanel.ts calls modelsList without passing it the "
+        Assert.True(refresh.Success, "settingsBridge.ts calls modelsList without passing it the "
             + "form values: the ↻ button then lists the models of the SAVED URL.");
         foreach (var field in new[] { "baseUrl", "provider", "apiKey" })
             Assert.True(refresh.Value.Contains($"msg.{field}", StringComparison.Ordinal),

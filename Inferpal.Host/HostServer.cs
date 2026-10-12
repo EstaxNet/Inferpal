@@ -35,6 +35,7 @@ internal sealed partial class HostServer : IDisposable
 
     private readonly Func<InferpalConfig, IInferenceProvider> _providerFactory;
     private readonly Func<InferpalConfig> _configFactory;
+    private readonly Func<InferpalConfig> _fileSettings;
     private readonly TaskCompletionSource _shutdown = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly object _gate = new();
 
@@ -54,13 +55,19 @@ internal sealed partial class HostServer : IDisposable
     private CancellationTokenSource? _chatCts;
 
     /// <param name="providerFactory">Test seam; defaults to <see cref="InferenceProviderFactory.Create"/>.</param>
-    /// <param name="configFactory">Test seam; defaults to <see cref="InferpalConfig.Load"/> so tests
+    /// <param name="configFactory">Test seam; defaults to <see cref="InferpalConfig.LoadOwnCopy"/> so tests
     /// never read (or risk writing) the developer's real per-machine config.</param>
+    /// <param name="fileSettings">The settings file as it is now, for <c>config/reload</c> (test seam; defaults to
+    /// <see cref="InferpalConfig.LoadOwnCopy"/>).</param>
     public HostServer(Func<InferpalConfig, IInferenceProvider>? providerFactory = null,
-                      Func<InferpalConfig>? configFactory = null)
+                      Func<InferpalConfig>? configFactory = null,
+                      Func<InferpalConfig>? fileSettings = null)
     {
         _providerFactory = providerFactory ?? InferenceProviderFactory.Create;
-        _configFactory   = configFactory   ?? InferpalConfig.Load;
+        // A copy of its own: several hosts can live in one process (an ACP agent's threads), and what one session
+        // changes in memory — a model for its thread — is not the others'.
+        _configFactory   = configFactory   ?? InferpalConfig.LoadOwnCopy;
+        _fileSettings    = fileSettings    ?? InferpalConfig.LoadOwnCopy;
 
         // §22. This host talks to its editor over RPC, never to a Visual Studio in-process package —
         // yet the signal folder under %TEMP% is machine-wide, so without this declaration
@@ -153,6 +160,7 @@ internal sealed partial class HostServer : IDisposable
             Mcp          = mcp,
             Lsp          = lsp,
             RootDir      = p.RootDir,
+            FileSettings = config.SnapshotNow(),
             EditorName   = string.IsNullOrWhiteSpace(p.Editor) ? EditorName : p.Editor.Trim(),
             ToolEvents   = p.ToolEvents,
             ReasoningChunks = p.ReasoningChunks,
@@ -1124,28 +1132,9 @@ internal sealed partial class HostServer : IDisposable
                         prop.SetValue(s.Config, prop.GetValue(incoming));
 
             s.Config.Save();
-            // A language override takes effect immediately (settings/strings, slash hints, …), like the
-            // VS settings window; going back to "Auto" returns to the editor's locale rather than
-            // leaving whatever was last applied.
-            ApplyLanguage(s.Config);
-            // ⚠ The window in use was the one the LAST TURN measured: after a new window or a new model, X-Ray and the
-            // gauge kept the old number until the next question, and the prompt rebuilt below sized its files for it.
-            s.LastContextWindow = await Services.Agent.ContextManager.EffectiveWindowAsync(
-                s.Config, s.Client, ModelRouter.Resolve(s.Config, ModelRole.Chat), ct);
-            RefreshSystemPrompt(s);
-
-            // MCP servers follow the saved settings, as the VS window does on save — only when those
-            // settings changed: the chat's model picker saves through here too, and a refresh respawns
-            // every server. Inside the slot, so no tool call is torn down mid-turn.
-            if ((s.Config.McpEnabled, s.Config.McpServersJson) != mcpBefore)
-                await s.Mcp.RefreshAsync();
-
-            // RAG turned on indexes the workspace now, as the VS window's heartbeat does — the same decision
-            // on both sides, which leaves a root already indexed alone.
-            var (pin, pinRoot) = Services.Signals.WorkspaceRootPin.Decide(
-                s.Config.RagEnabled, s.Index.RootDir, activeSolutionDir: null, reliableRoot: null,
-                indexedRoot: s.Index.IndexedRoot);
-            if (pin == Services.Signals.RootPinAction.Index) s.Index.StartIndexing(pinRoot!);
+            // The file now holds what this session saved: a later reload follows only what changes after.
+            s.FileSettings = _fileSettings().SnapshotNow();
+            await AfterSettingsChangedAsync(s, mcpBefore, ct);
             return true;
         });
 
@@ -1154,6 +1143,62 @@ internal sealed partial class HostServer : IDisposable
         // place and that does not apply.
         Services.Execution.PermissionPolicy.ParseRules(s.Config.PermissionRules, out var dropped);
         return new ConfigUpdateResult(dropped.Count);
+    }
+
+    /// <summary>The settings that pick the model server: changed, this session still talks to the old one.</summary>
+    private static readonly IReadOnlySet<string> ServerSettings = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "provider", "baseUrl", "apiKey",
+    };
+
+    /// <summary>
+    /// <c>config/reload</c> — the settings file as it is NOW, followed by this session without being written back: for a
+    /// front-end whose settings another process saves (an ACP thread, and the browser settings window). Only what the
+    /// file changed since the session last took it is followed; what the session changed itself stays.
+    /// </summary>
+    /// <remarks>⚠ Each session reads the file once: without this, a setting saved in the settings window while a thread
+    /// was open did nothing in that thread — the model, the approvals, the MCP servers it had just changed.</remarks>
+    [JsonRpcMethod("config/reload")]
+    public Task<ConfigReloadResult> ConfigReloadAsync(CancellationToken ct)
+    {
+        var s = Session();
+        return WithTurnSlotAsync("config/reload", ct, async token =>
+        {
+            var mcpBefore = (s.Config.McpEnabled, s.Config.McpServersJson);
+            var fileNow   = _fileSettings();
+            var taken     = s.Config.TakeFileChanges(s.FileSettings, fileNow);
+            s.FileSettings = fileNow.SnapshotNow();
+            if (taken.Count > 0) await AfterSettingsChangedAsync(s, mcpBefore, token);
+            return new ConfigReloadResult(taken, s.Config.DefaultModel, taken.Any(ServerSettings.Contains));
+        });
+    }
+
+    /// <summary>What follows a change of the session's settings, saved here or followed from the file.</summary>
+    private async Task AfterSettingsChangedAsync(HostSession s, (bool McpEnabled, string McpServersJson) mcpBefore,
+                                                 CancellationToken ct)
+    {
+        // A language override takes effect immediately (settings/strings, slash hints, …), like the
+        // VS settings window; going back to "Auto" returns to the editor's locale rather than
+        // leaving whatever was last applied.
+        ApplyLanguage(s.Config);
+        // ⚠ The window in use was the one the LAST TURN measured: after a new window or a new model, X-Ray and the
+        // gauge kept the old number until the next question, and the prompt rebuilt below sized its files for it.
+        s.LastContextWindow = await Services.Agent.ContextManager.EffectiveWindowAsync(
+            s.Config, s.Client, ModelRouter.Resolve(s.Config, ModelRole.Chat), ct);
+        RefreshSystemPrompt(s);
+
+        // MCP servers follow the saved settings, as the VS window does on save — only when those
+        // settings changed: the chat's model picker saves through here too, and a refresh respawns
+        // every server. Inside the slot, so no tool call is torn down mid-turn.
+        if ((s.Config.McpEnabled, s.Config.McpServersJson) != mcpBefore)
+            await s.Mcp.RefreshAsync();
+
+        // RAG turned on indexes the workspace now, as the VS window's heartbeat does — the same decision
+        // on both sides, which leaves a root already indexed alone.
+        var (pin, pinRoot) = Services.Signals.WorkspaceRootPin.Decide(
+            s.Config.RagEnabled, s.Index.RootDir, activeSolutionDir: null, reliableRoot: null,
+            indexedRoot: s.Index.IndexedRoot);
+        if (pin == Services.Signals.RootPinAction.Index) s.Index.StartIndexing(pinRoot!);
     }
 
     // ── RAG index ──────────────────────────────────────────────────────────────

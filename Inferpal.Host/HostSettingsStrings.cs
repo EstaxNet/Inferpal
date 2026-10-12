@@ -26,7 +26,8 @@ internal sealed partial class HostServer
             t.Description,
             t.Sections.Select(sec => new SettingsSectionDto(
                 sec.Title,
-                sec.Fields.Select(ToFieldDto).ToList(),
+                // A setting only Visual Studio acts on is left out: here its box would change nothing.
+                sec.Fields.Where(f => f.Only is null).Select(ToFieldDto).ToList(),
                 sec.Description, sec.Gate, sec.Collapsible, sec.Note, sec.Grid, sec.Widget)).ToList(),
             t.AdvancedToggle)).ToList());
 

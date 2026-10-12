@@ -52,6 +52,8 @@ internal sealed record SettingOption(string Value, string Text, Func<string>? Lo
 /// <param name="Columns">Resource names of the column headers of a <c>nameValue</c> table (name, then value).</param>
 /// <param name="Min">Smallest value a numeric box accepts.</param>
 /// <param name="Max">Largest value a numeric box accepts.</param>
+/// <param name="Only">The one editor the setting acts in (<see cref="SettingsSchema.VisualStudioOnly"/>); <c>null</c> = both.
+/// The other editor's panel does not show it: a box that changes nothing there would be a promise.</param>
 /// <remarks>
 /// ⚠ The bounds are declared HERE, once, and both panels read them: each panel used to hold its own — the Visual
 /// Studio window clamped in silence (50 results saved as 20, the box still showing 50, "1 unsaved change" for ever),
@@ -74,7 +76,8 @@ internal sealed record SettingField(
     string? EmptyChoice = null,
     IReadOnlyList<string>? Columns = null,
     int?    Min = null,
-    int?    Max = null)
+    int?    Max = null,
+    string? Only = null)
 {
     /// <summary>Is <paramref name="value"/> within the box's bounds?</summary>
     public bool Accepts(int value) => (Min is null || value >= Min) && (Max is null || value <= Max);
@@ -184,6 +187,9 @@ internal static class SettingsSchema
 
     /// <summary>The gate of the sections a page's "Show advanced settings" box reveals.</summary>
     public const string AdvancedGate = "advanced";
+
+    /// <summary><see cref="SettingField.Only"/> of a setting only Visual Studio acts on.</summary>
+    public const string VisualStudioOnly = "vs";
 
     /// <summary>How much space the chat leaves around its turns: two options, drawn as a segmented switch.
     /// ⚠ Above <see cref="Tabs"/>: a static initialiser reads the fields declared before it, and one declared after is still
@@ -401,6 +407,10 @@ internal static class SettingsSchema
             new("SettingsSectionAgentRuns",
             [
                 new("toolBubblesExpanded", SettingKind.Bool, "LabelToolBubblesExpanded", "HintToolBubblesExpanded"),
+                // Here, beside how a run is shown: the sound is how its end is announced. Visual Studio only — VS Code
+                // plays none, so its panel has nothing to turn off.
+                new("runEndSoundEnabled",  SettingKind.Bool, "LabelRunEndSound",         "HintRunEndSound",
+                    Only: VisualStudioOnly),
             ]),
         ]),
     ];

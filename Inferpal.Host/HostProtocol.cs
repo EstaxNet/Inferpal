@@ -328,7 +328,8 @@ internal sealed record SlashCommandParams(string Text, List<string>? PromptHisto
 /// <c>attachChip</c> (Name = chip label, Value = content to attach to the next turn) |
 /// <c>copyToClipboard</c> (Value) | <c>clearTranscript</c> | <c>stateChange</c>
 /// (Name = key e.g. <c>model</c>, Value) | <c>openFile</c> (Value = absolute path) |
-/// <c>exportRequest</c>. Unknown kinds must be ignored (forward compatibility).</summary>
+/// <c>exportRequest</c> | <c>configSaved</c> | <c>openSettings</c> (the front-end's settings: VS Code's panel, an ACP
+/// thread's browser window). Unknown kinds must be ignored (forward compatibility).</summary>
 internal sealed record SlashEffectDto(string Kind, string? Value = null, string? Name = null);
 
 /// <summary>`command/slash` answer: <paramref name="Markdown"/> is the bubble to render
@@ -355,6 +356,10 @@ internal sealed record ConfigUpdateParams(string Json, string? Base = null);
 /// the same rule, hence a programmed divergence.
 /// </remarks>
 internal sealed record ConfigUpdateResult(int PermissionRulesIgnored);
+
+/// <summary>`config/reload` — the settings the session took from the file (JSON keys), its default model after them, and
+/// whether the model server changed (the session keeps talking to the one it started with).</summary>
+internal sealed record ConfigReloadResult(IReadOnlyList<string> Taken, string DefaultModel, bool ServerChanged);
 
 /// <summary>`pins/add` / `pins/remove` — a file to pin into, or take out of, every request.</summary>
 internal sealed record PinParams(string Path);

@@ -105,6 +105,8 @@ Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una 
   <data name="HintCommandTimeout" xml:space="preserve"><value>La durata massima di una chiamata a strumento. Aumentatela se le build durano di più.</value></data>
   <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>Mostrare ogni passaggio aperto</value></data>
   <data name="HintToolBubblesExpanded" xml:space="preserve"><value>Disattivato: una riga per passaggio; cliccate per vedere cosa è entrato e uscito. Un passaggio non riuscito si apre sempre.</value></data>
+  <data name="LabelRunEndSound" xml:space="preserve"><value>Riproduci un suono al termine di un'esecuzione lunga</value></data>
+  <data name="HintRunEndSound" xml:space="preserve"><value>Il suono di notifica di Windows, quando una risposta ha richiesto più di 30 secondi, così puoi lavorare altrove nel frattempo.</value></data>
   <data name="LabelDensity" xml:space="preserve"><value>Densità</value></data>
   <data name="HintDensity" xml:space="preserve"><value>Compatto mostra più conversazione in un pannello stretto.</value></data>
   <data name="DensityComfortable" xml:space="preserve"><value>Comodo</value></data>
@@ -674,6 +676,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="SlashHintExport" xml:space="preserve"><value>esportare la conversazione in un file</value></data>
   <data name="SlashHintRestore" xml:space="preserve"><value>ripristinare un file da un backup</value></data>
   <data name="SlashHintHelp" xml:space="preserve"><value>mostrare tutti i comandi disponibili</value></data>
+  <data name="SlashHintSettings" xml:space="preserve"><value>aprire le impostazioni di Inferpal</value></data>
   <data name="SlashHintRead" xml:space="preserve"><value>allegare un file come contesto</value></data>
   <data name="SlashHintLs" xml:space="preserve"><value>elencare i file di una directory</value></data>
   <data name="SlashHintGrep" xml:space="preserve"><value>cercare testo nei file</value></data>
@@ -1220,6 +1223,30 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="ChatMenuSettings" xml:space="preserve"><value>Impostazioni</value></data>
   <data name="ChatMenuStepMode" xml:space="preserve"><value>Pausa dopo ogni chiamata a strumento</value></data>
   <data name="ChatNoModelListed" xml:space="preserve"><value>Nessun modello elencato: il backend è raggiungibile?</value></data>
+  <data name="SettingsWindowSaved" xml:space="preserve"><value>Impostazioni salvate.</value></data>
+  <data name="SettingsWindowLoading" xml:space="preserve"><value>Caricamento impostazioni…</value></data>
+  <data name="SettingsWindowConnected" xml:space="preserve"><value>Connesso</value></data>
+  <data name="SettingsWindowUnreachable" xml:space="preserve"><value>Backend irraggiungibile</value></data>
+  <data name="SettingsWindowRefreshModels" xml:space="preserve"><value>Aggiorna modelli</value></data>
+  <data name="SettingsWindowShowAllModels" xml:space="preserve"><value>Mostra tutti i modelli</value></data>
+  <data name="SettingsWindowTitle" xml:space="preserve"><value>Impostazioni di Inferpal</value></data>
+  <data name="SettingsWindowGone" xml:space="preserve"><value>Il server della finestra delle impostazioni si è fermato: da questa pagina non si può più salvare nulla. Esegui di nuovo `Inferpal.Host --settings` per riaprirla.</value></data>
+  <data name="SettingsWindowNoPicker" xml:space="preserve"><value>Un browser non può indicare a Inferpal la posizione di un file: digita o incolla il percorso completo del file.</value></data>
+  <data name="SettingsWindowNoXray" xml:space="preserve"><value>La radiografia del prompt è mostrata nella chat di Visual Studio e VS Code.</value></data>
+  <data name="SettingsWindowNotFound" xml:space="preserve"><value>Non c'è nulla in {0}.</value></data>
+  <data name="SettingsWindowFilesMissing" xml:space="preserve"><value>Mancano i file della finestra delle impostazioni ({0}): questa build di Inferpal.Host non può mostrarla.</value></data>
+  <data name="SettingsWindowOpen" xml:space="preserve"><value>Le impostazioni di Inferpal sono aperte nel browser, per la cartella {1}:
+  {0}
+Se non si è aperta nessuna finestra, apri questo indirizzo. Chiudi la pagina quando hai finito.</value></data>
+  <data name="SettingsWindowNoBrowser" xml:space="preserve"><value>Non è stato possibile avviare un browser: apri tu l'indirizzo qui sopra.</value></data>
+  <data name="SettingsWindowClosed" xml:space="preserve"><value>Finestra delle impostazioni chiusa.</value></data>
+  <data name="AcpSettingsMethodName" xml:space="preserve"><value>Apri le impostazioni di Inferpal</value></data>
+  <data name="AcpSettingsMethodHint" xml:space="preserve"><value>Tutte le impostazioni, nel browser: la finestra che mostrano Visual Studio e VS Code — server e modelli, agente, approvazioni, server MCP. Chiudi la pagina quando hai finito.</value></data>
+  <data name="AcpSettingsOpened" xml:space="preserve"><value>Le impostazioni di Inferpal sono aperte nel browser: {0}
+
+Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli altri. Solo un nuovo server dei modelli attende un nuovo thread.</value></data>
+  <data name="AcpSettingsOpenThis" xml:space="preserve"><value>Non è stato possibile avviare un browser: apri {0} per configurare Inferpal.</value></data>
+  <data name="AcpServerChangedNewThread" xml:space="preserve"><value>Il server dei modelli è cambiato nelle impostazioni: questo thread parla ancora con quello con cui è iniziato. Apri un nuovo thread per usare il nuovo.</value></data>
   <data name="ChatModelButton" xml:space="preserve"><value>Modello e server: {0}</value></data>
   <data name="ModeChat" xml:space="preserve"><value>Chat</value></data>
   <data name="ModeAgent" xml:space="preserve"><value>Agente</value></data>
@@ -1368,7 +1395,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="AcpSetupMethodHint" xml:space="preserve"><value>Scegli il server dei modelli e il modello, in un terminale.</value></data>
   <data name="AcpNotSetUp" xml:space="preserve"><value>Inferpal non è ancora configurato: non ci sono impostazioni e nessun server dei modelli risponde su {0}. Avvia la configurazione per scegliere un server e un modello.</value></data>
   <data name="AcpSessionNotFound" xml:space="preserve"><value>Non esiste nessuna sessione salvata chiamata {0}.</value></data>
-  <data name="AcpLimitsNotice" xml:space="preserve"><value>In questo editor Inferpal non ha suggerimenti in linea, strumenti di debug, X-Ray né pagine delle impostazioni: restano in Visual Studio e VS Code. Cosa funziona qui: {0}</value></data>
+  <data name="AcpLimitsNotice" xml:space="preserve"><value>In questo editor Inferpal non ha suggerimenti in linea, strumenti di debug né X-Ray: restano in Visual Studio e VS Code. Le impostazioni si aprono nel browser: `/settings`. Cosa funziona qui: {0}</value></data>
   <data name="AcpCommandNeedsEditor" xml:space="preserve"><value>{0} funziona solo in Visual Studio e VS Code: ha bisogno del loro editor o dei loro pannelli.</value></data>
   <data name="AcpClearStartNewThread" xml:space="preserve"><value>Per ricominciare, apri una nuova discussione: questa conversazione resta salvata e la nuova parte vuota.</value></data>
   <data name="AcpPasteThis" xml:space="preserve"><value>Questo editor non permette a Inferpal di compilare la casella di input: ecco il testo da incollare nel tuo messaggio.</value></data>

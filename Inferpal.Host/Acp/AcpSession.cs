@@ -307,6 +307,7 @@ internal sealed class AcpSession : IAsyncDisposable
         {
             await AnnounceCommandsOnceAsync(CancellationToken.None);
             if (Interlocked.Exchange(ref _startNotice, null) is { Length: > 0 } notice) Say(notice + "\n\n");
+            await FollowSettingsAsync();
             var stop = await RunTurnAsync(content);
             return CancelRequested ? "cancelled" : stop;
         }
@@ -326,6 +327,34 @@ internal sealed class AcpSession : IAsyncDisposable
             LastUsed = DateTime.UtcNow;
             idle.TrySetResult();
         }
+    }
+
+    /// <summary>
+    /// Before each turn, the settings saved since — in the browser settings window, by another editor — are this
+    /// thread's (<c>config/reload</c>). A model picked in this thread stays its own; a new model server is said, since
+    /// the thread keeps talking to the one it started with.
+    /// </summary>
+    private async Task FollowSettingsAsync()
+    {
+        ConfigReloadResult reloaded;
+        try
+        {
+            reloaded = await _link.InvokeWithCancellationAsync<ConfigReloadResult>("config/reload", cancellationToken: CancellationToken.None);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Diagnostics.Swallow("AcpSession.FollowSettings", ex);
+            return;
+        }
+        if (reloaded.Taken.Contains("defaultModel"))
+        {
+            _defaultModel = reloaded.DefaultModel;
+            // The host took the file's model: the thread's own pick is put back, as its selector shows it.
+            if (_model is not null)
+                await _link.InvokeWithParameterObjectAsync("models/useForSession", new { model = _model }, CancellationToken.None);
+            Update(new { sessionUpdate = "config_option_update", configOptions = ConfigOptions() });
+        }
+        if (reloaded.ServerChanged) Say(Strings.AcpServerChangedNewThread + "\n\n");
     }
 
     private bool CancelRequested { get { lock (_gate) return _cancelRequested; } }
@@ -401,6 +430,9 @@ internal sealed class AcpSession : IAsyncDisposable
                 case "configSaved":
                     await RefreshModelsAsync(CancellationToken.None);
                     Update(new { sessionUpdate = "config_option_update", configOptions = ConfigOptions() });
+                    break;
+                case "openSettings":
+                    notes.Add(await _agent.OpenSettingsWindowAsync(Cwd, CancellationToken.None));
                     break;
                 case "clearTranscript":
                     await ArchiveAndStartOverAsync();

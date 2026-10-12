@@ -211,6 +211,7 @@ internal partial class InferpalToolWindowData
             case SlashCommandId.Hardware:   await HandleHardwareCommandAsync(parts, ct);                  break;
             case SlashCommandId.Setup:      await RunOwnedCommandAsync(tok => HandleSetupCommandAsync(parts, tok), ct); break;
             case SlashCommandId.AgentStep:  await ToggleStepModeAsync();                                  break;
+            case SlashCommandId.Settings:   await _vs.Shell().ShowToolWindowAsync<InferpalSettingsToolWindow>(activate: true, ct); break;
             case SlashCommandId.Prompts:    await HandlePromptsCommandAsync(parts, ct);                   break;
 
             case SlashCommandId.Resume:

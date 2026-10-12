@@ -19,6 +19,20 @@ if (args.Contains("--setup", StringComparer.Ordinal))
     return await AcpSetup.RunAsync(Console.In, Console.Out, CancellationToken.None);
 }
 
+// ── The settings window ──────────────────────────────────────────────────────
+// `--settings [folder]` (and `--acp --settings`, the ACP client's settings method): the settings form VS Code
+// shows, in the browser, for the folder given (the current one by default). It owns the console, like the setup.
+if (args.Contains("--settings", StringComparer.Ordinal))
+{
+    Console.OutputEncoding = new System.Text.UTF8Encoding(false);
+    var folder = args.SkipWhile(a => a != "--settings").Skip(1).FirstOrDefault(a => !a.StartsWith("--", StringComparison.Ordinal))
+                 ?? Environment.CurrentDirectory;
+    using var stop = new CancellationTokenSource();
+    Console.CancelKeyPress += (_, e) => { e.Cancel = true; stop.Cancel(); };
+    return await Inferpal.Host.SettingsWindow.SettingsWindowServer.RunAsync(
+        folder, openBrowser: !args.Contains("--no-browser", StringComparer.Ordinal), Console.Out, stop.Token);
+}
+
 // ── stdout discipline ─────────────────────────────────────────────────────────
 // The real stdout belongs to JSON-RPC framing: a single stray Console.WriteLine
 // would corrupt the stream, so grab the raw pipes first and reroute Console.Out

@@ -28,6 +28,12 @@ internal sealed class HostSession : IDisposable
     public required LspSemanticProvider  Lsp          { get; init; }
     public required string               RootDir      { get; init; }
 
+    /// <summary>
+    /// The settings file as this session last took it — what <c>config/reload</c> compares the file with, so that only
+    /// what the file changed since is followed, never what this session changed in memory.
+    /// </summary>
+    public required System.Text.Json.Nodes.JsonObject FileSettings { get; set; }
+
     /// <summary>The editor as the model is told it (<see cref="InitializeParams.Editor"/>).</summary>
     public required string               EditorName   { get; init; }
 

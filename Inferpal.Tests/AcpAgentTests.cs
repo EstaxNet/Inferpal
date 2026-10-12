@@ -133,14 +133,17 @@ public sealed class AcpAgentTests : IDisposable
     }
 
     private async Task<Harness> StartAsync(Func<CancellationToken, Task<bool>>? ready = null,
-                                          Action<FakeInferenceProvider>? fake = null)
+                                          Action<FakeInferenceProvider>? fake = null,
+                                          Func<FakeInferenceProvider, HostServer>? host = null,
+                                          string? webDir = null, Func<string, bool>? openBrowser = null)
     {
         var provider = new FakeInferenceProvider { RunAgentThroughChat = true, ModelNames = ["test-model"] };
         provider.ChatResult = new ChatTurnResult("ok", null, 0, 0);
         fake?.Invoke(provider);
         var agent = new AcpAgent(
-            () => new HostServer(_ => provider, () => new InferpalConfig { RagEnabled = false, DefaultModel = "test-model" }),
-            ready ?? (_ => Task.FromResult(true)));
+            () => host?.Invoke(provider)
+                  ?? new HostServer(_ => provider, () => new InferpalConfig { RagEnabled = false, DefaultModel = "test-model" }),
+            ready ?? (_ => Task.FromResult(true)), webDir, openBrowser ?? (_ => true));
         var (agentSide, clientSide) = FullDuplexStream.CreatePair();
         var rpc = AcpRpc.Create(agentSide, agentSide, agent);
         agent.Attach(rpc);
@@ -178,10 +181,23 @@ public sealed class AcpAgentTests : IDisposable
         Assert.True(plain.GetProperty("agentCapabilities").GetProperty("loadSession").GetBoolean());
         Assert.Equal(0, plain.GetProperty("authMethods").GetArrayLength());
 
+        // Two terminal methods: the settings window first (every setting, in a browser), the console setup second.
         var withTerminal = (await h.Client.RequestAsync("initialize", Init(terminalAuth: true))).GetProperty("result");
-        var method = Assert.Single(withTerminal.GetProperty("authMethods").EnumerateArray());
-        Assert.Equal("terminal", method.GetProperty("type").GetString());
-        Assert.Equal("--setup", Assert.Single(method.GetProperty("args").EnumerateArray()).GetString());
+        var methods = withTerminal.GetProperty("authMethods").EnumerateArray().ToList();
+        Assert.Equal(2, methods.Count);
+        Assert.All(methods, m => Assert.Equal("terminal", m.GetProperty("type").GetString()));
+        Assert.Equal(["settings-window", "setup"], methods.Select(m => m.GetProperty("id").GetString()!));
+        Assert.Equal(["--settings", "--setup"], methods.Select(m => Assert.Single(m.GetProperty("args").EnumerateArray()).GetString()!));
+    }
+
+    [Fact]
+    public async Task TheSettingsWindow_IsAnAuthenticationMethod_LikeTheSetup()
+    {
+        await using var h = await StartAsync(ready: _ => Task.FromResult(true));
+        await h.Client.RequestAsync("initialize", Init(terminalAuth: true));
+        foreach (var id in new[] { "settings-window", "setup" })
+            Assert.True((await h.Client.RequestAsync("authenticate", new { methodId = id })).TryGetProperty("result", out _), id);
+        Assert.True((await h.Client.RequestAsync("authenticate", new { methodId = "nope" })).TryGetProperty("error", out _));
     }
 
     [Fact]
@@ -736,6 +752,92 @@ public sealed class AcpAgentTests : IDisposable
 
         Assert.Throws<ArgumentException>(() => AcpPromptBlocks.Read(JsonSerializer.SerializeToElement(new[] { new { type = "video" } })));
         Assert.Throws<ArgumentException>(() => AcpPromptBlocks.Read(JsonSerializer.SerializeToElement(Array.Empty<object>())));
+    }
+
+    // ── Settings, as the real agent reads them ─────────────────────────────────
+
+    /// <summary>
+    /// The settings window saves while a thread is open: the thread follows at its next question — its default model,
+    /// told to the client's selector — keeps a model picked in it, and says once that a new server needs a new thread.
+    /// </summary>
+    [Fact]
+    public async Task AnOpenThread_FollowsTheSettingsSavedSince_AtItsNextQuestion()
+    {
+        var file = new InferpalConfig { RagEnabled = false, DefaultModel = "model-a" };
+        await using var h = await StartAsync(
+            fake: p => p.ModelNames = ["model-a", "model-b", "model-c"],
+            host: p => new HostServer(_ => p, () => new InferpalConfig { RagEnabled = false, DefaultModel = "model-a" },
+                                      fileSettings: () => file));
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+        await PromptAsync(h, sid, "first");
+        Assert.Equal("model-a", h.Fake.ChatModels.Last());
+
+        file = new InferpalConfig { RagEnabled = false, DefaultModel = "model-b" };
+        await PromptAsync(h, sid, "second");
+        Assert.Equal("model-b", h.Fake.ChatModels.Last());
+        Assert.Contains(h.Client.Updates(sid, "config_option_update"),
+                        u => u.GetRawText().Contains("\"currentValue\":\"model-b\"", StringComparison.Ordinal));
+
+        // A model picked in the thread stays its own when the default changes again.
+        await h.Client.RequestAsync("session/set_config_option", new { sessionId = sid, configId = "model", value = "model-a" });
+        file = new InferpalConfig { RagEnabled = false, DefaultModel = "model-c" };
+        await PromptAsync(h, sid, "third");
+        Assert.Equal("model-a", h.Fake.ChatModels.Last());
+
+        // A new server: said once — the thread keeps the client it started with.
+        file = new InferpalConfig { RagEnabled = false, DefaultModel = "model-c", BaseUrl = "http://elsewhere:1234" };
+        await PromptAsync(h, sid, "fourth");
+        await PromptAsync(h, sid, "fifth");
+        var said = h.Client.Said(sid);
+        Assert.Equal(1, said.Split(Strings.AcpServerChangedNewThread).Length - 1);
+    }
+
+    [Fact]
+    public async Task SlashSettings_OpensTheBrowserWindow_ForTheThreadsFolder_AndOnlyOneOfIt()
+    {
+        var web = Directory.CreateTempSubdirectory("inferpal-acp-web").FullName;
+        foreach (var name in new[] { "settings.css", "settings-standalone.css", "settings-standalone.js" })
+            File.WriteAllText(Path.Combine(web, name), "/* */");
+        var opened = new ConcurrentQueue<string>();
+        string url;
+        using var http = new System.Net.Http.HttpClient();
+        try
+        {
+            await using (var h = await StartAsync(webDir: web, openBrowser: u => { opened.Enqueue(u); return true; }))
+            {
+                await h.Client.RequestAsync("initialize", Init());
+                var sid = await NewSessionAsync(h);
+                await PromptAsync(h, sid, "/settings");
+                url = Assert.Single(opened);
+                Assert.Contains(Strings.AcpSettingsOpened(url), h.Client.Said(sid), StringComparison.Ordinal);
+                Assert.Contains("settings-standalone.js", await http.GetStringAsync(url), StringComparison.Ordinal);
+                Assert.Empty(h.Fake.ChatModels);   // a command of the thread, never a question to the model
+
+                await PromptAsync(h, sid, "/settings");
+                Assert.Equal([url, url], opened);
+            }
+            // The agent gone, its window is too.
+            await Assert.ThrowsAnyAsync<System.Net.Http.HttpRequestException>(() => http.GetStringAsync(url));
+        }
+        finally { Directory.Delete(web, recursive: true); }
+    }
+
+    [Fact]
+    public async Task SlashSettings_WithoutTheWindowsFiles_SaysWhatIsMissing()
+    {
+        var empty = Directory.CreateTempSubdirectory("inferpal-acp-noweb").FullName;
+        var opened = new ConcurrentQueue<string>();
+        try
+        {
+            await using var h = await StartAsync(webDir: empty, openBrowser: u => { opened.Enqueue(u); return true; });
+            await h.Client.RequestAsync("initialize", Init());
+            var sid = await NewSessionAsync(h);
+            await PromptAsync(h, sid, "/settings");
+            Assert.Contains(Strings.SettingsWindowFilesMissing(empty), h.Client.Said(sid), StringComparison.Ordinal);
+            Assert.Empty(opened);
+        }
+        finally { Directory.Delete(empty, recursive: true); }
     }
 
     [Fact]

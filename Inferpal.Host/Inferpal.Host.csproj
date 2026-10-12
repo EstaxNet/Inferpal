@@ -36,6 +36,15 @@
     </AssemblyAttribute>
   </ItemGroup>
 
+  <!-- ── The browser settings window (Inferpal.Host settings switch) ─────────
+       The very form VS Code shows: its bundle and stylesheets, served from web\ beside the executable. The bundle is
+       built by `npm run build` in vscode\ (acp/package.ps1 runs it first); without it the window says what is missing
+       and does not open. -->
+  <ItemGroup Condition="Exists('..\vscode\media\settings-standalone.js')">
+    <None Include="..\vscode\media\settings.css;..\vscode\media\settings-standalone.css;..\vscode\media\settings-standalone.js"
+          Link="web\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="StreamJsonRpc" Version="2.22.11" />
     <!-- ── Security remediation ─────────────────────────────────────────────

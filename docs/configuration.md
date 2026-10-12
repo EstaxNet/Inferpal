@@ -1,8 +1,13 @@
 # Configuration
 
 Inferpal is configured through the **Settings** window (gear icon / **Inferpal Settings**
-command). A few values are also settable from the chat via slash commands (`/model`,
+command, or `/settings` from the chat). A few values are also settable from the chat via slash commands (`/model`,
 `/hardware`, `/tools`). This page documents every setting and the underlying config key.
+
+In Zed, the JetBrains IDEs, Neovim and Emacs (the [Agent Client Protocol](acp.md) agent), `/settings` opens the same
+pages in your browser, served by Inferpal on `127.0.0.1` only; `Inferpal.Host --settings [folder]` opens them from a
+terminal. What you save there applies from the next question, in the threads already open too — except a new model
+server, which a thread only uses once started anew.
 
 ## Settings window
 
@@ -63,6 +68,7 @@ Every persisted setting, its type, and default value.
 |---|---|---|---|
 | `commandTimeoutSeconds` | int | `120` | `run_command` timeout (seconds) |
 | `toolBubblesExpanded` | bool | `false` | Show each step of an agent run open (its arguments and output). Off: one line per step, opened on a click; a step that failed always opens. Either way, a run's steps show while it works and fold into one line when it ends |
+| `runEndSoundEnabled` | bool | `true` | Visual Studio: play the Windows notification sound when a turn ends after more than 30 seconds, so a long run can work while you are elsewhere. VS Code plays none |
 | `chatDensity` | string | `"comfortable"` | `comfortable` or `compact`: how much space the chat leaves around its turns. Compact fits more of the conversation in a narrow panel |
 | `securityAlertsDisabled` | bool | `false` | Auto-approve the calls that would otherwise prompt (the built-in catastrophic-command denylist still applies). Shown inverted in the Settings window: *Ask me before changing files, running commands or going online* |
 | `permissionRules` | string | `""` | Allow/deny rules, one per line: `allow\|deny <tool\|*> <regex>` (see [Tools → Permission rules](tools.md)) |

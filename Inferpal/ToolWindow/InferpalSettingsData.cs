@@ -70,6 +70,8 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     private string _hintCommandTimeout           = string.Empty;
     private string _labelToolBubblesExpanded     = string.Empty;
     private string _hintToolBubblesExpanded      = string.Empty;
+    private string _labelRunEndSound             = string.Empty;
+    private string _hintRunEndSound              = string.Empty;
     private bool   _smartFixEnabled;
     private string _labelSmartFixEnabled         = string.Empty;
     private string _hintSmartFixEnabled          = string.Empty;
@@ -250,6 +252,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     private string _timeoutMinutesText;
     private string _timeoutSecondsText;
     private bool   _toolBubblesExpanded;
+    private bool   _runEndSoundEnabled;
     private bool   _askBeforeActions;
     private string _contextWindowSizeText;
     private string _contextWindowKeepTurnsText;
@@ -357,6 +360,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         _timeoutMinutesText = ts.Minutes.ToString("D2");
         _timeoutSecondsText = ts.Seconds.ToString("D2");
         _toolBubblesExpanded         = config.ToolBubblesExpanded;
+        _runEndSoundEnabled          = config.RunEndSoundEnabled;
         _askBeforeActions            = !config.SecurityAlertsDisabled;
         _smartFixEnabled             = config.SmartFixEnabled;
         _agentModeEnabled            = config.AgentModeEnabled;
@@ -540,6 +544,8 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         HintCommandTimeout           = Strings.HintCommandTimeout;
         LabelToolBubblesExpanded     = Strings.LabelToolBubblesExpanded;
         HintToolBubblesExpanded      = Strings.HintToolBubblesExpanded;
+        LabelRunEndSound             = Strings.LabelRunEndSound;
+        HintRunEndSound              = Strings.HintRunEndSound;
         ApplyAppearanceLabels();
         LabelSmartFixEnabled         = Strings.LabelSmartFixEnabled;
         HintSmartFixEnabled          = Strings.HintSmartFixEnabled;
@@ -783,6 +789,8 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string HintCommandTimeout        { get => _hintCommandTimeout;        set => SetProperty(ref _hintCommandTimeout,        value); }
     [DataMember] public string LabelToolBubblesExpanded  { get => _labelToolBubblesExpanded;  set => SetProperty(ref _labelToolBubblesExpanded,  value); }
     [DataMember] public string HintToolBubblesExpanded   { get => _hintToolBubblesExpanded;   set => SetProperty(ref _hintToolBubblesExpanded,   value); }
+    [DataMember] public string LabelRunEndSound          { get => _labelRunEndSound;          set => SetProperty(ref _labelRunEndSound,          value); }
+    [DataMember] public string HintRunEndSound           { get => _hintRunEndSound;           set => SetProperty(ref _hintRunEndSound,           value); }
     [DataMember] public bool   SmartFixEnabled             { get => _smartFixEnabled;             set => SetProperty(ref _smartFixEnabled,             value); }
     [DataMember] public string LabelSmartFixEnabled        { get => _labelSmartFixEnabled;        set => SetProperty(ref _labelSmartFixEnabled,        value); }
     [DataMember] public string HintSmartFixEnabled         { get => _hintSmartFixEnabled;         set => SetProperty(ref _hintSmartFixEnabled,         value); }
@@ -970,6 +978,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string TimeoutMinutesText   { get => _timeoutMinutesText;   set => SetProperty(ref _timeoutMinutesText,   ClampDurationField(value, 59)); }
     [DataMember] public string TimeoutSecondsText   { get => _timeoutSecondsText;   set => SetProperty(ref _timeoutSecondsText,   ClampDurationField(value, 59)); }
     [DataMember] public bool   ToolBubblesExpanded      { get => _toolBubblesExpanded;      set => SetProperty(ref _toolBubblesExpanded,      value); }
+    [DataMember] public bool   RunEndSoundEnabled       { get => _runEndSoundEnabled;       set => SetProperty(ref _runEndSoundEnabled,       value); }
     /// <summary>The inverse of <see cref="InferpalConfig.SecurityAlertsDisabled"/>: the box says what happens.</summary>
     [DataMember] public bool   AskBeforeActions             { get => _askBeforeActions;             set => SetProperty(ref _askBeforeActions,             value); }
     [DataMember] public string ContextWindowSizeText        { get => _contextWindowSizeText;        set => SetProperty(ref _contextWindowSizeText,        value); }
@@ -1163,7 +1172,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         string modelIdleTimeoutText = string.Empty;
         string mcpServersJson = string.Empty;
         var density = "comfortable";
-        bool toolExpanded = false, askBefore = true, compactionEnabled = true, inlineEnabled = true, ragEnabled = true, ragAutoContextEnabled = true, smartFixEnabled = true, agentModeEnabled = false, lspEnabled = false, modelAutoUnload = true, personaAutoSwitch = true, skillsAutoMode = false, mcpEnabled = false, modelRouterAuto = false, useSampling = true, inlineDiff = true;
+        bool toolExpanded = false, runEndSound = true, askBefore = true, compactionEnabled = true, inlineEnabled = true, ragEnabled = true, ragAutoContextEnabled = true, smartFixEnabled = true, agentModeEnabled = false, lspEnabled = false, modelAutoUnload = true, personaAutoSwitch = true, skillsAutoMode = false, mcpEnabled = false, modelRouterAuto = false, useSampling = true, inlineDiff = true;
         await RunOnVMContextAsync(() =>
         {
             url                  = BaseUrl.Trim();
@@ -1174,6 +1183,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             tm                   = TimeoutMinutesText.Trim();
             ts                   = TimeoutSecondsText.Trim();
             toolExpanded         = ToolBubblesExpanded;
+            runEndSound          = RunEndSoundEnabled;
             density              = ChatDensity;
             askBefore            = AskBeforeActions;
             smartFixEnabled      = SmartFixEnabled;
@@ -1293,6 +1303,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         edited.DefaultModel          = Kept(model, edited.DefaultModel, () => Strings.LabelChatModel);
         edited.CommandTimeoutSeconds = totalSec < 1 ? 1 : totalSec;
         edited.ToolBubblesExpanded      = toolExpanded;
+        edited.RunEndSoundEnabled       = runEndSound;
         edited.ChatDensity              = density;
         edited.SecurityAlertsDisabled   = !askBefore;
         edited.SmartFixEnabled          = smartFixEnabled;

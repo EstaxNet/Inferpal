@@ -9,3 +9,6 @@ package.ps1
 .gitignore
 **/*.ts
 *.vsix
+# The browser settings window of Inferpal.Host --settings: served by the host, never by the extension.
+media/settings-standalone.*
+host/web/**

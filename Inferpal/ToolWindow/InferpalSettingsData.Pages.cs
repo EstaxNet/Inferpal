@@ -300,7 +300,7 @@ internal partial class InferpalSettingsData
         nameof(KvCacheAnchorMessagesText), nameof(RagEnabled), nameof(RagAutoContextEnabled), nameof(LspEnabled),
         nameof(RagTopKText), nameof(RagSimilarityThresholdText), nameof(InlineCompletionEnabled), nameof(SelectedInlineMode),
         nameof(InlineDiffPreviewEnabled), nameof(McpEnabled), nameof(PermissionRules), nameof(SelectedLanguage),
-        nameof(ToolBubblesExpanded), nameof(ChatDensity),
+        nameof(ToolBubblesExpanded), nameof(RunEndSoundEnabled), nameof(ChatDensity),
     };
 
     /// <summary>Recounts the fields that differ from the configuration the form was opened (or last saved)
@@ -375,6 +375,7 @@ internal partial class InferpalSettingsData
             ((PermissionRules ?? string.Empty).Trim(), saved.PermissionRules.Trim()),
             (languageCode, saved.Language),
             (ToolBubblesExpanded.ToString(), saved.ToolBubblesExpanded.ToString()),
+            (RunEndSoundEnabled.ToString(), saved.RunEndSoundEnabled.ToString()),
             (ChatDensity, saved.IsCompactChat ? "compact" : "comfortable"),
         ];
         return fields.Count(f => !SettingsFallback.SameAsSaved(f.Form, f.Saved));
@@ -431,6 +432,7 @@ internal partial class InferpalSettingsData
         McpEnabled = c.McpEnabled;
         PermissionRules = c.PermissionRules;
         ToolBubblesExpanded = c.ToolBubblesExpanded;
+        RunEndSoundEnabled = c.RunEndSoundEnabled;
         ChatDensity = c.IsCompactChat ? "compact" : "comfortable";
         ShowAdvanced = ModelRoleSettings.OpensAdvanced(c);
 

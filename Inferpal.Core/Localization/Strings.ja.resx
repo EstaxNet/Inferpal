@@ -105,6 +105,8 @@
   <data name="HintCommandTimeout" xml:space="preserve"><value>1 回のツール呼び出しにかけられる最長時間。ビルドが長いなら増やしてください。</value></data>
   <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>各ステップを展開して表示する</value></data>
   <data name="HintToolBubblesExpanded" xml:space="preserve"><value>オフなら 1 ステップ 1 行。クリックすると入力と出力が見られます。失敗したステップは常に開きます。</value></data>
+  <data name="LabelRunEndSound" xml:space="preserve"><value>長い実行が終わったら音を鳴らす</value></data>
+  <data name="HintRunEndSound" xml:space="preserve"><value>応答に 30 秒以上かかったときに Windows の通知音を鳴らします。その間は別の作業ができます。</value></data>
   <data name="LabelDensity" xml:space="preserve"><value>表示密度</value></data>
   <data name="HintDensity" xml:space="preserve"><value>コンパクトにすると、狭いパネルでも会話をより多く表示できます。</value></data>
   <data name="DensityComfortable" xml:space="preserve"><value>ゆったり</value></data>
@@ -674,6 +676,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SlashHintExport" xml:space="preserve"><value>会話をファイルにエクスポート</value></data>
   <data name="SlashHintRestore" xml:space="preserve"><value>バックアップからファイルを復元</value></data>
   <data name="SlashHintHelp" xml:space="preserve"><value>利用可能なすべてのコマンドを表示</value></data>
+  <data name="SlashHintSettings" xml:space="preserve"><value>Inferpal の設定を開く</value></data>
   <data name="SlashHintRead" xml:space="preserve"><value>ファイルをコンテキストとして添付</value></data>
   <data name="SlashHintLs" xml:space="preserve"><value>ディレクトリ内のファイルを一覧表示</value></data>
   <data name="SlashHintGrep" xml:space="preserve"><value>ファイル内のテキストを検索</value></data>
@@ -1220,6 +1223,30 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ChatMenuSettings" xml:space="preserve"><value>設定</value></data>
   <data name="ChatMenuStepMode" xml:space="preserve"><value>ツール呼び出しごとに一時停止</value></data>
   <data name="ChatNoModelListed" xml:space="preserve"><value>モデルが一覧にありません — バックエンドに接続できますか?</value></data>
+  <data name="SettingsWindowSaved" xml:space="preserve"><value>設定を保存しました。</value></data>
+  <data name="SettingsWindowLoading" xml:space="preserve"><value>設定を読み込み中…</value></data>
+  <data name="SettingsWindowConnected" xml:space="preserve"><value>接続済み</value></data>
+  <data name="SettingsWindowUnreachable" xml:space="preserve"><value>バックエンドに到達できません</value></data>
+  <data name="SettingsWindowRefreshModels" xml:space="preserve"><value>モデルを更新</value></data>
+  <data name="SettingsWindowShowAllModels" xml:space="preserve"><value>すべてのモデルを表示</value></data>
+  <data name="SettingsWindowTitle" xml:space="preserve"><value>Inferpal の設定</value></data>
+  <data name="SettingsWindowGone" xml:space="preserve"><value>設定ウィンドウのサーバーが停止しました。このページからはもう保存できません。もう一度開くには `Inferpal.Host --settings` を実行してください。</value></data>
+  <data name="SettingsWindowNoPicker" xml:space="preserve"><value>ブラウザーはファイルの場所を Inferpal に渡せません。ファイルのフル パスを入力するか貼り付けてください。</value></data>
+  <data name="SettingsWindowNoXray" xml:space="preserve"><value>プロンプトの X 線表示は Visual Studio と VS Code のチャットに表示されます。</value></data>
+  <data name="SettingsWindowNotFound" xml:space="preserve"><value>{0} には何もありません。</value></data>
+  <data name="SettingsWindowFilesMissing" xml:space="preserve"><value>設定ウィンドウのファイルがありません ({0})。この Inferpal.Host のビルドでは表示できません。</value></data>
+  <data name="SettingsWindowOpen" xml:space="preserve"><value>Inferpal の設定をブラウザーで開きました (フォルダー {1}):
+  {0}
+ウィンドウが開かない場合は、このアドレスを開いてください。終わったらページを閉じてください。</value></data>
+  <data name="SettingsWindowNoBrowser" xml:space="preserve"><value>ブラウザーを起動できませんでした。上のアドレスをご自分で開いてください。</value></data>
+  <data name="SettingsWindowClosed" xml:space="preserve"><value>設定ウィンドウを閉じました。</value></data>
+  <data name="AcpSettingsMethodName" xml:space="preserve"><value>Inferpal の設定を開く</value></data>
+  <data name="AcpSettingsMethodHint" xml:space="preserve"><value>すべての設定をブラウザーで — Visual Studio と VS Code に表示されるウィンドウです: モデル サーバーとモデル、エージェント、承認、MCP サーバー。終わったらページを閉じてください。</value></data>
+  <data name="AcpSettingsOpened" xml:space="preserve"><value>Inferpal の設定をブラウザーで開きました: {0}
+
+そこで保存した内容は、このスレッドでも他のスレッドでも、次の質問から適用されます。新しいモデル サーバーだけは新しいスレッドで使われます。</value></data>
+  <data name="AcpSettingsOpenThis" xml:space="preserve"><value>ブラウザーを起動できませんでした。Inferpal を設定するには {0} を開いてください。</value></data>
+  <data name="AcpServerChangedNewThread" xml:space="preserve"><value>設定でモデル サーバーが変更されました。このスレッドは開始時のサーバーとまだ通信しています。新しいサーバーを使うには新しいスレッドを開始してください。</value></data>
   <data name="ChatModelButton" xml:space="preserve"><value>モデルとサーバー: {0}</value></data>
   <data name="ModeChat" xml:space="preserve"><value>チャット</value></data>
   <data name="ModeAgent" xml:space="preserve"><value>エージェント</value></data>
@@ -1368,7 +1395,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="AcpSetupMethodHint" xml:space="preserve"><value>ターミナルでモデルサーバーとモデルを選びます。</value></data>
   <data name="AcpNotSetUp" xml:space="preserve"><value>Inferpal はまだセットアップされていません。設定がなく、{0} で応答するモデルサーバーもありません。セットアップを実行してサーバーとモデルを選んでください。</value></data>
   <data name="AcpSessionNotFound" xml:space="preserve"><value>{0} という名前の保存済みセッションはありません。</value></data>
-  <data name="AcpLimitsNotice" xml:space="preserve"><value>このエディターでは、Inferpal にインライン候補、デバッガーツール、X-Ray、設定ページはありません。これらは Visual Studio と VS Code に残ります。ここで使える機能: {0}</value></data>
+  <data name="AcpLimitsNotice" xml:space="preserve"><value>このエディターでは、Inferpal にインライン候補、デバッガーツール、X-Ray はありません。これらは Visual Studio と VS Code に残ります。設定はブラウザーで開きます: `/settings`。ここで使える機能: {0}</value></data>
   <data name="AcpCommandNeedsEditor" xml:space="preserve"><value>{0} は Visual Studio と VS Code でのみ動作します。それらのエディターまたはパネルが必要です。</value></data>
   <data name="AcpClearStartNewThread" xml:space="preserve"><value>最初からやり直すには、新しいスレッドを開いてください。この会話は保存されたままで、新しい会話は空の状態で始まります。</value></data>
   <data name="AcpPasteThis" xml:space="preserve"><value>このエディターでは Inferpal が入力欄に書き込めません。メッセージに貼り付けるテキストはこちらです。</value></data>

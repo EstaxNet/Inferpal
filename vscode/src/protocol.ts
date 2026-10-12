@@ -216,7 +216,7 @@ export interface MentionResolveResult {
 
 /** One editor-side effect a handled slash command asks the adapter to apply.
  * Kinds: setPrompt | sendAsPrompt | attachChip (name = chip label) | copyToClipboard |
- * clearTranscript | stateChange (name = key) | openFile | exportRequest.
+ * clearTranscript | stateChange (name = key) | openFile | exportRequest | configSaved | openSettings.
  * Unknown kinds must be ignored (forward compatibility). */
 export interface SlashEffect {
   kind: string;

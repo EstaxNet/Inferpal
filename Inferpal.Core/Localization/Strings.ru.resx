@@ -105,6 +105,8 @@
   <data name="HintCommandTimeout" xml:space="preserve"><value>Максимальная длительность одного вызова инструмента. Увеличьте, если сборки идут дольше.</value></data>
   <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>Показывать каждый шаг раскрытым</value></data>
   <data name="HintToolBubblesExpanded" xml:space="preserve"><value>Выключено: одна строка на шаг; нажмите, чтобы увидеть входные и выходные данные. Неудачный шаг всегда раскрывается.</value></data>
+  <data name="LabelRunEndSound" xml:space="preserve"><value>Воспроизводить звук по окончании долгого запуска</value></data>
+  <data name="HintRunEndSound" xml:space="preserve"><value>Звук уведомления Windows, когда ответ занял больше 30 секунд, — чтобы тем временем работать в другом месте.</value></data>
   <data name="LabelDensity" xml:space="preserve"><value>Плотность</value></data>
   <data name="HintDensity" xml:space="preserve"><value>Компактный режим показывает больше разговора в узкой панели.</value></data>
   <data name="DensityComfortable" xml:space="preserve"><value>Свободный</value></data>
@@ -672,6 +674,7 @@
   <data name="SlashHintExport" xml:space="preserve"><value>экспортировать беседу в файл</value></data>
   <data name="SlashHintRestore" xml:space="preserve"><value>восстановить файл из резервной копии</value></data>
   <data name="SlashHintHelp" xml:space="preserve"><value>показать все доступные команды</value></data>
+  <data name="SlashHintSettings" xml:space="preserve"><value>открыть настройки Inferpal</value></data>
   <data name="SlashHintRead" xml:space="preserve"><value>прикрепить файл как контекст</value></data>
   <data name="SlashHintLs" xml:space="preserve"><value>показать файлы в каталоге</value></data>
   <data name="SlashHintGrep" xml:space="preserve"><value>искать текст в файлах</value></data>
@@ -1220,6 +1223,30 @@
   <data name="ChatMenuSettings" xml:space="preserve"><value>Настройки</value></data>
   <data name="ChatMenuStepMode" xml:space="preserve"><value>Пауза после каждого вызова инструмента</value></data>
   <data name="ChatNoModelListed" xml:space="preserve"><value>Модели не перечислены — доступен ли бэкенд?</value></data>
+  <data name="SettingsWindowSaved" xml:space="preserve"><value>Настройки сохранены.</value></data>
+  <data name="SettingsWindowLoading" xml:space="preserve"><value>Загрузка настроек…</value></data>
+  <data name="SettingsWindowConnected" xml:space="preserve"><value>Подключено</value></data>
+  <data name="SettingsWindowUnreachable" xml:space="preserve"><value>Бэкенд недоступен</value></data>
+  <data name="SettingsWindowRefreshModels" xml:space="preserve"><value>Обновить модели</value></data>
+  <data name="SettingsWindowShowAllModels" xml:space="preserve"><value>Показать все модели</value></data>
+  <data name="SettingsWindowTitle" xml:space="preserve"><value>Настройки Inferpal</value></data>
+  <data name="SettingsWindowGone" xml:space="preserve"><value>Сервер окна настроек остановлен: с этой страницы больше ничего нельзя сохранить. Снова запустите `Inferpal.Host --settings`, чтобы открыть его.</value></data>
+  <data name="SettingsWindowNoPicker" xml:space="preserve"><value>Браузер не может передать Inferpal расположение файла: введите или вставьте полный путь к файлу.</value></data>
+  <data name="SettingsWindowNoXray" xml:space="preserve"><value>Рентген промпта показывается в чате Visual Studio и VS Code.</value></data>
+  <data name="SettingsWindowNotFound" xml:space="preserve"><value>По пути {0} ничего нет.</value></data>
+  <data name="SettingsWindowFilesMissing" xml:space="preserve"><value>Нет файлов окна настроек ({0}): эта сборка Inferpal.Host не может его показать.</value></data>
+  <data name="SettingsWindowOpen" xml:space="preserve"><value>Настройки Inferpal открыты в браузере, для папки {1}:
+  {0}
+Если окно не открылось, откройте этот адрес. Закройте страницу, когда закончите.</value></data>
+  <data name="SettingsWindowNoBrowser" xml:space="preserve"><value>Не удалось запустить браузер: откройте адрес выше вручную.</value></data>
+  <data name="SettingsWindowClosed" xml:space="preserve"><value>Окно настроек закрыто.</value></data>
+  <data name="AcpSettingsMethodName" xml:space="preserve"><value>Открыть настройки Inferpal</value></data>
+  <data name="AcpSettingsMethodHint" xml:space="preserve"><value>Все настройки в браузере — окно, которое показывают Visual Studio и VS Code: сервер и модели, агент, подтверждения, серверы MCP. Закройте страницу, когда закончите.</value></data>
+  <data name="AcpSettingsOpened" xml:space="preserve"><value>Настройки Inferpal открыты в браузере: {0}
+
+То, что вы там сохраните, действует со следующего вопроса — в этой ветке и в остальных. Только новый сервер моделей ждёт новой ветки.</value></data>
+  <data name="AcpSettingsOpenThis" xml:space="preserve"><value>Не удалось запустить браузер: откройте {0}, чтобы настроить Inferpal.</value></data>
+  <data name="AcpServerChangedNewThread" xml:space="preserve"><value>Сервер моделей изменён в настройках: эта ветка всё ещё обращается к тому, с которым началась. Начните новую ветку, чтобы использовать новый.</value></data>
   <data name="ChatModelButton" xml:space="preserve"><value>Модель и сервер: {0}</value></data>
   <data name="ModeChat" xml:space="preserve"><value>Чат</value></data>
   <data name="ModeAgent" xml:space="preserve"><value>Агент</value></data>
@@ -1368,7 +1395,7 @@
   <data name="AcpSetupMethodHint" xml:space="preserve"><value>Выберите сервер моделей и модель в терминале.</value></data>
   <data name="AcpNotSetUp" xml:space="preserve"><value>Inferpal ещё не настроен: настроек нет, и по адресу {0} не отвечает ни один сервер моделей. Запустите настройку, чтобы выбрать сервер и модель.</value></data>
   <data name="AcpSessionNotFound" xml:space="preserve"><value>Сохранённой сессии с именем {0} нет.</value></data>
-  <data name="AcpLimitsNotice" xml:space="preserve"><value>В этом редакторе у Inferpal нет встроенных подсказок, инструментов отладчика, X-Ray и страниц настроек — они остаются в Visual Studio и VS Code. Что работает здесь: {0}</value></data>
+  <data name="AcpLimitsNotice" xml:space="preserve"><value>В этом редакторе у Inferpal нет встроенных подсказок, инструментов отладчика и X-Ray — они остаются в Visual Studio и VS Code. Настройки открываются в браузере: `/settings`. Что работает здесь: {0}</value></data>
   <data name="AcpCommandNeedsEditor" xml:space="preserve"><value>{0} работает только в Visual Studio и VS Code: команде нужны их редактор или панели.</value></data>
   <data name="AcpClearStartNewThread" xml:space="preserve"><value>Чтобы начать заново, откройте новую ветку: этот разговор остаётся сохранённым, а новый начнётся с чистого листа.</value></data>
   <data name="AcpPasteThis" xml:space="preserve"><value>Этот редактор не даёт Inferpal заполнить поле ввода: вот текст, который можно вставить в ваше сообщение.</value></data>

@@ -27,9 +27,22 @@ $rid = @{ 'win32-x64' = 'win-x64'; 'linux-x64' = 'linux-x64'; 'darwin-arm64' = '
 $stage = Join-Path ([IO.Path]::GetTempPath()) "inferpal-acp-$Target-$([guid]::NewGuid().ToString('N').Substring(0, 8))"
 
 try {
+    # The settings window (`Inferpal.Host --settings`, the ACP client's first terminal method) serves the very form VS Code
+    # shows: its bundle is built from vscode\ BEFORE the publish, whose project copies it only when it exists.
+    Push-Location (Join-Path $root 'vscode')
+    try {
+        if (-not (Test-Path 'node_modules')) { npm ci; if ($LASTEXITCODE -ne 0) { throw 'npm ci failed in vscode/' } }
+        npm run build
+        if ($LASTEXITCODE -ne 0) { throw 'npm run build failed: the settings window would ship without its form.' }
+    }
+    finally { Pop-Location }
+
     dotnet publish (Join-Path $root 'Inferpal.Host/Inferpal.Host.csproj') -c Release -r $rid --self-contained true -o $stage -v minimal -nologo
     if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed for $rid" }
     Remove-Item (Join-Path $stage '*.pdb') -ErrorAction SilentlyContinue
+    foreach ($web in 'settings.css', 'settings-standalone.css', 'settings-standalone.js') {
+        if (-not (Test-Path (Join-Path $stage "web/$web"))) { throw "The archive would lack web/$($web), and the settings window could not open." }
+    }
 
     $name = "inferpal-acp-$Target-$version"
     if ($Target -eq 'win32-x64') {

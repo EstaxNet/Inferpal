@@ -39,9 +39,10 @@ public class SettingsSaveRollbackTests
     [Fact]
     public void ThePanel_TagsEveryFailureOfASave()
     {
-        var panel = WebviewRebuildTests.TsCode("settingsPanel.ts");
+        // The save is answered by the bridge VS Code shares with the browser settings window.
+        var panel = WebviewRebuildTests.TsCode("settingsBridge.ts");
         var save  = panel[panel.IndexOf("case 'save': {", StringComparison.Ordinal)..];
-        save      = save[..save.IndexOf("private parseKeys(", StringComparison.Ordinal)];
+        save      = save[..save.IndexOf("private static parseKeys(", StringComparison.Ordinal)];
 
         var errors = System.Text.RegularExpressions.Regex.Matches(save, @"type: 'error'").Count;
         var tagged = System.Text.RegularExpressions.Regex.Matches(save, @"type: 'error', op: 'save'").Count;

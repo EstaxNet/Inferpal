@@ -156,6 +156,22 @@ internal static class Strings
     public static string ChatMenuSettings => Get(nameof(ChatMenuSettings));
     public static string ChatMenuStepMode => Get(nameof(ChatMenuStepMode));
     public static string ChatNoModelListed => Get(nameof(ChatNoModelListed));
+    // The browser settings window (`Inferpal.Host --settings`): the six texts VS Code's extension gives the form, and its own.
+    public static string SettingsWindowSaved         => Get(nameof(SettingsWindowSaved));
+    public static string SettingsWindowLoading       => Get(nameof(SettingsWindowLoading));
+    public static string SettingsWindowConnected     => Get(nameof(SettingsWindowConnected));
+    public static string SettingsWindowUnreachable   => Get(nameof(SettingsWindowUnreachable));
+    public static string SettingsWindowRefreshModels => Get(nameof(SettingsWindowRefreshModels));
+    public static string SettingsWindowShowAllModels => Get(nameof(SettingsWindowShowAllModels));
+    public static string SettingsWindowTitle         => Get(nameof(SettingsWindowTitle));
+    public static string SettingsWindowGone          => Get(nameof(SettingsWindowGone));
+    public static string SettingsWindowNoPicker      => Get(nameof(SettingsWindowNoPicker));
+    public static string SettingsWindowNoXray        => Get(nameof(SettingsWindowNoXray));
+    public static string SettingsWindowNotFound(string path)      => Format(Get(nameof(SettingsWindowNotFound)), path);
+    public static string SettingsWindowFilesMissing(string folder) => Format(Get(nameof(SettingsWindowFilesMissing)), folder);
+    public static string SettingsWindowOpen(string url, string folder) => Format(Get(nameof(SettingsWindowOpen)), url, folder);
+    public static string SettingsWindowNoBrowser     => Get(nameof(SettingsWindowNoBrowser));
+    public static string SettingsWindowClosed        => Get(nameof(SettingsWindowClosed));
     public static string ChatModelButton(string model) => Format(Get(nameof(ChatModelButton)), model);
     public static string ModeChat => Get(nameof(ModeChat));
     public static string ModeAgent => Get(nameof(ModeAgent));
@@ -405,6 +421,8 @@ internal static class Strings
     public static string HintCommandTimeout       => Get(nameof(HintCommandTimeout));
     public static string LabelToolBubblesExpanded      => Get(nameof(LabelToolBubblesExpanded));
     public static string HintToolBubblesExpanded       => Get(nameof(HintToolBubblesExpanded));
+    public static string LabelRunEndSound              => Get(nameof(LabelRunEndSound));
+    public static string HintRunEndSound               => Get(nameof(HintRunEndSound));
     public static string LabelDensity                  => Get(nameof(LabelDensity));
     public static string HintDensity                   => Get(nameof(HintDensity));
     public static string DensityComfortable            => Get(nameof(DensityComfortable));
@@ -1233,6 +1251,7 @@ internal static class Strings
     public static string SlashHintExport    => Get(nameof(SlashHintExport));
     public static string SlashHintRestore   => Get(nameof(SlashHintRestore));
     public static string SlashHintHelp      => Get(nameof(SlashHintHelp));
+    public static string SlashHintSettings  => Get(nameof(SlashHintSettings));
     public static string SlashHintRead      => Get(nameof(SlashHintRead));
     public static string SlashHintLs        => Get(nameof(SlashHintLs));
     public static string SlashHintGrep      => Get(nameof(SlashHintGrep));
@@ -1797,6 +1816,11 @@ internal static class Strings
     public static string AcpOptionModel => Get(nameof(AcpOptionModel));
     public static string AcpSetupMethodName => Get(nameof(AcpSetupMethodName));
     public static string AcpSetupMethodHint => Get(nameof(AcpSetupMethodHint));
+    public static string AcpSettingsMethodName => Get(nameof(AcpSettingsMethodName));
+    public static string AcpSettingsMethodHint => Get(nameof(AcpSettingsMethodHint));
+    public static string AcpSettingsOpened(string url)   => Format(Get(nameof(AcpSettingsOpened)), url);
+    public static string AcpSettingsOpenThis(string url) => Format(Get(nameof(AcpSettingsOpenThis)), url);
+    public static string AcpServerChangedNewThread => Get(nameof(AcpServerChangedNewThread));
     public static string AcpNotSetUp(string url) => Format(Get(nameof(AcpNotSetUp)), url);
     public static string AcpSessionNotFound(string name) => Format(Get(nameof(AcpSessionNotFound)), name);
     public static string AcpLimitsNotice(string url) => Format(Get(nameof(AcpLimitsNotice)), url);

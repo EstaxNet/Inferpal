@@ -108,6 +108,8 @@
   <data name="HintCommandTimeout" xml:space="preserve"><value>单次工具调用最多可用的时间。若构建耗时更长，请调大。</value></data>
   <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>展开显示每个步骤</value></data>
   <data name="HintToolBubblesExpanded" xml:space="preserve"><value>关闭时每个步骤一行；点击即可查看输入和输出。失败的步骤始终会展开。</value></data>
+  <data name="LabelRunEndSound" xml:space="preserve"><value>长时间运行结束时播放声音</value></data>
+  <data name="HintRunEndSound" xml:space="preserve"><value>当回答耗时超过 30 秒时播放 Windows 通知音，让你在等待时可以去做别的事。</value></data>
   <data name="LabelDensity" xml:space="preserve"><value>密度</value></data>
   <data name="HintDensity" xml:space="preserve"><value>紧凑模式可在窄面板中显示更多对话内容。</value></data>
   <data name="DensityComfortable" xml:space="preserve"><value>宽松</value></data>
@@ -674,6 +676,7 @@
   <data name="SlashHintExport" xml:space="preserve"><value>将对话导出到文件</value></data>
   <data name="SlashHintRestore" xml:space="preserve"><value>从备份还原文件</value></data>
   <data name="SlashHintHelp" xml:space="preserve"><value>显示所有可用命令</value></data>
+  <data name="SlashHintSettings" xml:space="preserve"><value>打开 Inferpal 设置</value></data>
   <data name="SlashHintRead" xml:space="preserve"><value>将文件作为上下文附加</value></data>
   <data name="SlashHintLs" xml:space="preserve"><value>列出目录中的文件</value></data>
   <data name="SlashHintGrep" xml:space="preserve"><value>在文件中搜索文本</value></data>
@@ -1220,6 +1223,30 @@
   <data name="ChatMenuSettings" xml:space="preserve"><value>设置</value></data>
   <data name="ChatMenuStepMode" xml:space="preserve"><value>每次调用工具后暂停</value></data>
   <data name="ChatNoModelListed" xml:space="preserve"><value>未列出任何模型 — 后端可访问吗?</value></data>
+  <data name="SettingsWindowSaved" xml:space="preserve"><value>设置已保存。</value></data>
+  <data name="SettingsWindowLoading" xml:space="preserve"><value>正在加载设置…</value></data>
+  <data name="SettingsWindowConnected" xml:space="preserve"><value>已连接</value></data>
+  <data name="SettingsWindowUnreachable" xml:space="preserve"><value>后端不可达</value></data>
+  <data name="SettingsWindowRefreshModels" xml:space="preserve"><value>刷新模型</value></data>
+  <data name="SettingsWindowShowAllModels" xml:space="preserve"><value>显示所有模型</value></data>
+  <data name="SettingsWindowTitle" xml:space="preserve"><value>Inferpal 设置</value></data>
+  <data name="SettingsWindowGone" xml:space="preserve"><value>设置窗口的服务器已停止：无法再从此页面保存任何内容。请再次运行 `Inferpal.Host --settings` 重新打开。</value></data>
+  <data name="SettingsWindowNoPicker" xml:space="preserve"><value>浏览器无法把文件位置提供给 Inferpal：请输入或粘贴文件的完整路径。</value></data>
+  <data name="SettingsWindowNoXray" xml:space="preserve"><value>提示词的 X 光视图显示在 Visual Studio 和 VS Code 的聊天中。</value></data>
+  <data name="SettingsWindowNotFound" xml:space="preserve"><value>{0} 处没有任何内容。</value></data>
+  <data name="SettingsWindowFilesMissing" xml:space="preserve"><value>缺少设置窗口的文件（{0}）：此版本的 Inferpal.Host 无法显示它。</value></data>
+  <data name="SettingsWindowOpen" xml:space="preserve"><value>Inferpal 设置已在浏览器中打开，文件夹为 {1}：
+  {0}
+如果没有打开窗口，请打开此地址。完成后关闭页面。</value></data>
+  <data name="SettingsWindowNoBrowser" xml:space="preserve"><value>无法启动浏览器：请自行打开上面的地址。</value></data>
+  <data name="SettingsWindowClosed" xml:space="preserve"><value>设置窗口已关闭。</value></data>
+  <data name="AcpSettingsMethodName" xml:space="preserve"><value>打开 Inferpal 设置</value></data>
+  <data name="AcpSettingsMethodHint" xml:space="preserve"><value>所有设置，在浏览器中——即 Visual Studio 和 VS Code 显示的窗口：模型服务器和模型、代理、审批、MCP 服务器。完成后关闭页面。</value></data>
+  <data name="AcpSettingsOpened" xml:space="preserve"><value>Inferpal 设置已在浏览器中打开：{0}
+
+在那里保存的内容从你的下一个问题起生效，本会话和其他会话都适用。只有新的模型服务器需要新会话。</value></data>
+  <data name="AcpSettingsOpenThis" xml:space="preserve"><value>无法启动浏览器：请打开 {0} 来设置 Inferpal。</value></data>
+  <data name="AcpServerChangedNewThread" xml:space="preserve"><value>设置中的模型服务器已更改：此会话仍连接着开始时的服务器。请开始新会话以使用新服务器。</value></data>
   <data name="ChatModelButton" xml:space="preserve"><value>模型与服务器：{0}</value></data>
   <data name="ModeChat" xml:space="preserve"><value>聊天</value></data>
   <data name="ModeAgent" xml:space="preserve"><value>代理</value></data>
@@ -1368,7 +1395,7 @@
   <data name="AcpSetupMethodHint" xml:space="preserve"><value>在终端中选择模型服务器和模型。</value></data>
   <data name="AcpNotSetUp" xml:space="preserve"><value>Inferpal 尚未设置：没有任何设置，{0} 上也没有模型服务器响应。请运行设置以选择服务器和模型。</value></data>
   <data name="AcpSessionNotFound" xml:space="preserve"><value>没有名为 {0} 的已保存会话。</value></data>
-  <data name="AcpLimitsNotice" xml:space="preserve"><value>在此编辑器中，Inferpal 没有行内建议、调试器工具、X-Ray 和设置页面——它们仍在 Visual Studio 和 VS Code 中。此处可用的功能：{0}</value></data>
+  <data name="AcpLimitsNotice" xml:space="preserve"><value>在此编辑器中，Inferpal 没有行内建议、调试器工具和 X-Ray——它们仍在 Visual Studio 和 VS Code 中。设置在浏览器中打开：`/settings`。此处可用的功能：{0}</value></data>
   <data name="AcpCommandNeedsEditor" xml:space="preserve"><value>{0} 仅在 Visual Studio 和 VS Code 中可用：它需要它们的编辑器或面板。</value></data>
   <data name="AcpClearStartNewThread" xml:space="preserve"><value>要重新开始，请打开一个新线程：此对话会保留，新对话从空白开始。</value></data>
   <data name="AcpPasteThis" xml:space="preserve"><value>此编辑器不允许 Inferpal 填写输入框：以下是要粘贴到消息中的文本。</value></data>

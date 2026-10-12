@@ -72,7 +72,7 @@ internal enum SlashCommandId
     Commit, CommitExec, FixBuild, History, PHistory, Models, AgentStep, Resume,
     Note, Notes, Snippets, Template, Docs, Check, Rules, Checks, Plan, Prompts,
     Hardware, Setup, Diagnostics, UndoRun, Replay, Xray, Bench, Arena, Tdd, Branch, Task,
-    Onboard, Debug, Permissions, Instructions, Skill, Import,
+    Onboard, Debug, Permissions, Instructions, Skill, Import, Settings,
 }
 
 /// <summary>User-defined prompt template (config <c>PromptTemplates</c>, one <c>/name=text</c> per line,
@@ -130,6 +130,7 @@ internal static class SlashCommandRouter
     [
         ("/clear",    Strings.SlashHintClear,    SlashCategory.Meta),
         ("/help",     Strings.SlashHintHelp,     SlashCategory.Meta),
+        ("/settings", Strings.SlashHintSettings, SlashCategory.Meta),
         ("/model",    Strings.SlashHintModel,    SlashCategory.Meta),
         ("/tools",    Strings.SlashHintTools,    SlashCategory.Meta),
         ("/export",   Strings.SlashHintExport,   SlashCategory.Meta),
@@ -311,6 +312,7 @@ internal static class SlashCommandRouter
             case "/clear":             return new SlashDelegatedAction(SlashCommandId.Clear,           parts);
             case "/test-build-banner": return new SlashDelegatedAction(SlashCommandId.TestBuildBanner, parts);
             case "/model":             return new SlashDelegatedAction(SlashCommandId.Model,           parts);
+            case "/settings":          return new SlashDelegatedAction(SlashCommandId.Settings,        parts);
             case "/tools":             return new SlashDelegatedAction(SlashCommandId.Tools,           parts);
             case "/export":            return new SlashDelegatedAction(SlashCommandId.Export,          parts);
             case "/context":           return new SlashDelegatedAction(SlashCommandId.Context,         parts);

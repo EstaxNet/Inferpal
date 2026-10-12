@@ -15,6 +15,9 @@ internal static class AcpReadiness
     /// <summary>The id of the setup method (terminal authentication).</summary>
     internal const string SetupMethod = "setup";
 
+    /// <summary>The id of the settings window (terminal authentication too: the process lives while the page is open).</summary>
+    internal const string SettingsMethod = "settings-window";
+
     /// <summary>The page that says how to use Inferpal from an ACP client.</summary>
     internal const string DocsUrl = "https://github.com/EstaxNet/Inferpal/blob/master/docs/acp.md";
 

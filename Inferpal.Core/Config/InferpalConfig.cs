@@ -88,6 +88,11 @@ internal class InferpalConfig
     [JsonPropertyName("toolBubblesExpanded")]
     public bool ToolBubblesExpanded { get; set; } = false;
 
+    /// <summary>When <c>true</c>, Visual Studio plays the Windows notification sound when a turn ends after more than
+    /// 30 seconds, so a long run can be left to work while you are elsewhere. VS Code plays none.</summary>
+    [JsonPropertyName("runEndSoundEnabled")]
+    public bool RunEndSoundEnabled { get; set; } = true;
+
     /// <summary>How much space the chat leaves around its turns: <c>comfortable</c> (the default) or <c>compact</c>,
     /// which fits more of the conversation in a narrow panel. Anything else reads as comfortable.</summary>
     [JsonPropertyName("chatDensity")]
@@ -501,6 +506,15 @@ internal class InferpalConfig
         return fresh;
     }
 
+    /// <summary>
+    /// The configuration read now, as an instance nobody else holds: what a host session changes in memory (a model for
+    /// its thread, a mode) stays its own.
+    /// </summary>
+    /// <remarks>⚠ <see cref="Load"/> hands every caller the same instance while the file is unchanged. An ACP agent runs
+    /// several threads in one process: through the shared copy, a model picked in one thread became the model every
+    /// other thread asked, while their model selectors still showed their own.</remarks>
+    public static InferpalConfig LoadOwnCopy() => LoadUncached();
+
     private static DateTime StampOf(string path)
     {
         try { return File.Exists(path) ? File.GetLastWriteTimeUtc(path) : default; }
@@ -864,6 +878,40 @@ internal class InferpalConfig
             .GetCustomAttributes(typeof(JsonPropertyNameAttribute), false)
             .Cast<JsonPropertyNameAttribute>().First().Name;
         _baseline[key] = Snapshot(this)[key]?.DeepClone();
+    }
+
+    /// <summary>
+    /// The settings the FILE changed since <paramref name="fileBefore"/>, taken by this copy — as the file's, not as
+    /// changes of its own: a later <see cref="Save"/> leaves them to the file.
+    /// </summary>
+    /// <param name="fileBefore">The file as this copy last took it (<see cref="SnapshotNow"/> of that reading).</param>
+    /// <param name="fileNow">The file as it is now.</param>
+    /// <returns>The JSON keys of the settings this copy took.</returns>
+    /// <remarks>
+    /// For a copy whose settings another process saves (an ACP thread, and the browser settings window). A setting the
+    /// file did not change keeps this copy's value — one this copy changed itself included (a model for its thread).
+    /// ⚠ Taken as changes of this copy, they would be written back by its next save, over whatever the file holds by then.
+    /// </remarks>
+    internal IReadOnlyList<string> TakeFileChanges(System.Text.Json.Nodes.JsonObject fileBefore, InferpalConfig fileNow)
+    {
+        var now   = Snapshot(fileNow);
+        var mine  = Snapshot(this);
+        var taken = new List<string>();
+        foreach (var prop in typeof(InferpalConfig).GetProperties(
+                     System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+        {
+            if (!prop.CanRead || !prop.CanWrite) continue;
+            var key = prop.GetCustomAttributes(typeof(JsonPropertyNameAttribute), false)
+                          .OfType<JsonPropertyNameAttribute>().FirstOrDefault()?.Name ?? prop.Name;
+            if (!now.ContainsKey(key)
+                || System.Text.Json.Nodes.JsonNode.DeepEquals(now[key], fileBefore[key])
+                || System.Text.Json.Nodes.JsonNode.DeepEquals(now[key], mine[key]))
+                continue;
+            prop.SetValue(this, prop.GetValue(fileNow));
+            if (_baseline is not null) _baseline[key] = now[key]?.DeepClone();
+            taken.Add(key);
+        }
+        return taken;
     }
 
     /// <summary>
