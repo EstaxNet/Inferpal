@@ -5,7 +5,7 @@
 <h1 align="center">Inferpal</h1>
 
 <p align="center">
-  An agentic developer assistant for Visual Studio 2026 and <b>VS Code</b>,
+  An agentic developer assistant for Visual Studio 2026 and 2022 and <b>VS Code</b>,
   and through the <b>Agent Client Protocol</b> for Zed, the JetBrains IDEs, Neovim and Emacs —
   powered entirely by <b>local LLMs</b>: Ollama, LM Studio, or any OpenAI-compatible server.
   Full tool calling, inline ghost-text completions, semantic codebase search, and zero required
@@ -16,9 +16,9 @@
   <a href="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml"><img src="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/tests-5700%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-5716%20passing-brightgreen" alt="Tests">
   <img src="https://img.shields.io/badge/.NET-8.0-512BD4" alt=".NET 8">
-  <img src="https://img.shields.io/badge/Visual%20Studio-2026-5C2D91" alt="Visual Studio 2026">
+  <img src="https://img.shields.io/badge/Visual%20Studio-2026%20%7C%202022-5C2D91" alt="Visual Studio 2026 | 2022">
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/VS%20Marketplace-install-5C2D91" alt="Visual Studio Marketplace"></a>
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><img src="https://img.shields.io/badge/VS%20Code%20Marketplace-install-007ACC" alt="VS Code Marketplace"></a>
   <img src="https://img.shields.io/badge/VS%20Code-supported-007ACC" alt="VS Code">
@@ -48,7 +48,7 @@ building, testing, and searching your codebase — to complete real tasks, while
 and every command stays behind an approval gate and a workspace sandbox. No API key, no
 telemetry, no cloud required.
 
-It ships as a **Visual Studio 2026 extension** (the primary target) and a
+It ships as a **Visual Studio 2026 and 2022 extension** (the primary target) and a
 **VS Code extension** at feature parity since 1.2.0, and runs as an
 **Agent Client Protocol agent** in Zed, the JetBrains IDEs (Rider included), Neovim and Emacs
 ([setup](docs/acp.md)) — one shared engine (`Inferpal.Core`), every editor.
@@ -88,7 +88,7 @@ It ships as a **Visual Studio 2026 extension** (the primary target) and a
 
 | Requirement | Details |
 |---|---|
-| Editor | **Visual Studio 2026** — Community / Professional / Enterprise — or **VS Code** (Windows x64, Linux x64, or Apple Silicon). ⚠ The Visual Studio listing shows 17.14 as its floor: since Visual Studio 2026 only the lower bound of an installation target is evaluated, and `18.0` is refused as experimental. The in-editor half (ghost text, inline-diff preview, `/tdd` debugger driver) still requires 2026. |
+| Editor | **Visual Studio 2026**, or **Visual Studio 2022 from 17.14** — Community / Professional / Enterprise, one package for both — or **VS Code** (Windows x64, Linux x64, or Apple Silicon). |
 | .NET SDK | .NET 8 (building from source only — the VS Code VSIX bundles its own runtime) |
 | Model server | [Ollama](https://ollama.com) (default — full hardware-aware features), [LM Studio](https://lmstudio.ai), or any **OpenAI-compatible** server, local or [remote](docs/remote-inference.md) |
 

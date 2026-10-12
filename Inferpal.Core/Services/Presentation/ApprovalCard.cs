@@ -80,13 +80,46 @@ internal static class ApprovalCard
             var lines = prompt.Details.Replace("\r\n", "\n").TrimEnd('\n').Split('\n');
             if (prompt.ToolName == "run_command" || lines.Length > 1 || lines[0].Length > SubjectChars)
             {
-                preview.AddRange(lines.Select(l => new ApprovalPreviewLine("ctx", l)));
+                // ⚠ A file tool without a structured diff (apply_edits, rename_symbol, delete_file, restore_file) has
+                // its change RENDERED in its details by DiffComputer.ComputeText. Read as plain lines, every one was
+                // context: the card showed "-" and "+" as text, the change uncoloured. A command's lines stay as
+                // written — a "-" there is a character of what runs, not a removal.
+                preview.AddRange(pathSubject || prompt.ToolName == "rename_symbol"
+                    ? RenderedDiff(lines)
+                    : lines.Select(l => new ApprovalPreviewLine("ctx", l)));
                 if (!pathSubject) subject = string.Empty;
             }
         }
 
         return new ApprovalCardModel(title, subject, meta, preview, more > 0 ? Strings.ApprovalMoreLines(more) : string.Empty,
                                      Strings.ApprovalAlwaysTooltip(prompt.ToolName), prompt.Message);
+    }
+
+    /// <summary>
+    /// The lines of a file tool's details, the blocks DiffComputer.ComputeText rendered read back by their mark. A block
+    /// opens under an empty line or a "### path" header and holds while every line carries a mark (space, +, -, …);
+    /// anything else is context, whole.
+    /// </summary>
+    internal static IEnumerable<ApprovalPreviewLine> RenderedDiff(IEnumerable<string> lines)
+    {
+        var inBlock = false;
+        foreach (var line in lines)
+        {
+            if (line.Length == 0 || line.StartsWith("### ", StringComparison.Ordinal))
+            {
+                inBlock = true;
+                yield return new ApprovalPreviewLine("ctx", line);
+                continue;
+            }
+            var kind = inBlock ? line[0] switch { '+' => "add", '-' => "del", '…' => "gap", ' ' => "ctx", _ => null } : null;
+            if (kind is null)
+            {
+                inBlock = false;
+                yield return new ApprovalPreviewLine("ctx", line);
+                continue;
+            }
+            yield return new ApprovalPreviewLine(kind, kind == "gap" ? line[1..].Trim() : line[1..]);
+        }
     }
 
     private static string Relative(string path, string? root)

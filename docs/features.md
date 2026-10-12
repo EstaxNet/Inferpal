@@ -262,6 +262,8 @@ exists.
   reveals the models, `/arena stats` shows the cumulative local standings.
 - **Model Router** — a dedicated **utility model** role (`utilityModel`) handles session
   titles, `/commit` message proposals and compaction summaries instead of the chat model.
+  With none set, they go to the chat model — or, when it is not loaded and the agent or
+  code-actions model is, to that one: a session title never loads a model of its own.
   Opt-in **auto mode** (`modelRouterAuto`): with no utility model set, background tasks use
   the model `/bench` recommended for the utility role — but only when it is already warm in
   VRAM; a cold model is never loaded for a title or commit message.

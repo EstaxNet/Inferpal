@@ -46,6 +46,9 @@ internal sealed class GhostTextController
         view.Caret.PositionChanged        += OnCaretMoved;
         view.Closed                       += OnViewClosed;
         view.VisualElement.PreviewKeyDown += OnPreviewKeyDown;
+
+        // How GhostTextCommandHandler, a MEF part with no reference to us, finds this view's controller.
+        view.Properties[typeof(GhostTextController)] = this;
     }
 
     // ── Text change → debounce ────────────────────────────────────────────────
@@ -194,24 +197,39 @@ internal sealed class GhostTextController
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (_adornment.PendingCompletion is not { } completion) return;
+        if (HandleKey(e.Key, Keyboard.Modifiers)) e.Handled = true;
+    }
 
-        switch (GhostTextKeys.Decide(e.Key, Keyboard.Modifiers, CompletionActive()))
+    /// <summary>
+    /// Tab or Escape while a suggestion is up; <c>true</c> when the key was consumed. UI thread.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Two callers, because Visual Studio turns Tab and Escape into EDITOR COMMANDS (insert a tab, cancel the
+    /// selection) before WPF sees the key: <see cref="OnPreviewKeyDown"/> alone never fired in a live Visual Studio,
+    /// and Tab inserted a tab under a visible suggestion. <see cref="GhostTextCommandHandler"/> is the path the keys
+    /// really take; the preview handler stays for a host that delivers them to WPF first. Both calls are harmless:
+    /// once a suggestion is accepted or hidden, nothing is pending.
+    /// </remarks>
+    internal bool HandleKey(Key key, ModifierKeys modifiers)
+    {
+        if (_adornment.PendingCompletion is not { } completion) return false;
+
+        switch (GhostTextKeys.Decide(key, modifiers, CompletionActive()))
         {
             case GhostKeyAction.Accept:
                 AcceptCompletion(completion);
-                e.Handled = true;
-                break;
+                return true;
             case GhostKeyAction.Dismiss:
                 _adornment.Hide();
                 lock (_gate) { _cts?.Cancel(); }
-                e.Handled = true;
-                break;
+                return true;
             case GhostKeyAction.LeaveToCompletion:
                 // The list commits (Tab) or closes (Escape): the suggestion no longer matches either way.
                 _adornment.Hide();
                 lock (_gate) { _cts?.Cancel(); }
-                break;
+                return false;
+            default:
+                return false;
         }
     }
 
@@ -264,6 +282,7 @@ internal sealed class GhostTextController
         _view.Caret.PositionChanged       -= OnCaretMoved;
         _view.Closed                      -= OnViewClosed;
         _view.VisualElement.PreviewKeyDown -= OnPreviewKeyDown;
+        _view.Properties.RemoveProperty(typeof(GhostTextController));
 
         lock (_gate)
         {

@@ -100,4 +100,26 @@ public class BuildBannerTests : IDisposable
         Assert.Contains("BuildSignalFile.Write(solutionPath!, errorLines: null, errorCount: 0, succeeded: true)", handler,
                         StringComparison.Ordinal);
     }
+
+    /// <summary>
+    /// End to end, through the real watcher: the in-process side writes by renaming a staged file onto the signal's
+    /// name, which a watcher reports as Renamed. Listening only to Created and Changed, the monitor never saw a build.
+    /// </summary>
+    [Fact]
+    public async Task TheMonitor_SeesASignalWrittenByRename_TheFirstTimeAndTheNext()
+    {
+        using var monitor = new VsBuildMonitor();
+        var failures = new System.Collections.Concurrent.BlockingCollection<int>();
+        monitor.BuildFailed += (count, _) => failures.Add(count);
+        await monitor.InitializeAsync();
+
+        // The first write moves the staged file onto an absent name; the monitor consumes (deletes) what it reads,
+        // so the next build writes onto an absent name again.
+        for (var build = 1; build <= 2; build++)
+        {
+            BuildSignalFile.Write(@"C:\work\Sln.sln", ["A.cs(1,1): error CS0103: nope"], errorCount: build);
+            Assert.True(failures.TryTake(out var count, TimeSpan.FromSeconds(30)), $"build {build} was never seen");
+            Assert.Equal(build, count);
+        }
+    }
 }

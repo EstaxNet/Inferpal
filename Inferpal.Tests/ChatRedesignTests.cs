@@ -202,6 +202,40 @@ public sealed class ChatRedesignTests : IDisposable
         Assert.Equal("", card.More);
     }
 
+    /// <summary>
+    /// ⚠ apply_edits, rename_symbol, delete_file and restore_file render their change INTO their details: read as plain
+    /// lines, the card drew "-" and "+" as text and coloured nothing, in both editors.
+    /// </summary>
+    [Theory]
+    [InlineData("apply_edits")]
+    [InlineData("rename_symbol")]
+    [InlineData("delete_file")]
+    [InlineData("restore_file")]
+    public void AChangeRenderedInTheDetails_IsDrawnAsAChange(string tool)
+    {
+        var path    = Path.Combine(_dir, "A.cs");
+        var diff    = DiffComputer.ComputeText("a\nb\nc\n", "a\nB\nc\n")!;
+        var details = $"Apply the changes?\n\n### A.cs\n{diff}";
+
+        var card = ApprovalCard.Build(new ApprovalPrompt(tool, details, path, null, "m"), _dir);
+
+        Assert.Contains(card.Preview, l => l is { Kind: "del", Text: "b" });
+        Assert.Contains(card.Preview, l => l is { Kind: "add", Text: "B" });
+        Assert.Contains(card.Preview, l => l is { Kind: "ctx", Text: "### A.cs" });
+        Assert.Contains(card.Preview, l => l is { Kind: "ctx", Text: "Apply the changes?" });
+        Assert.Equal(details.Split('\n').Length, card.Preview.Count);   // nothing dropped
+    }
+
+    [Fact]
+    public void ACommandsLeadingDash_IsWhatRuns_NeverARemoval()
+    {
+        // REFERENCE ARM: the same shape from a command is text — a "-" there is a character of what runs.
+        var card = ApprovalCard.Build(new ApprovalPrompt("run_command", "echo start\n\n-x --flag\n+y", null, null, "m"), _dir);
+
+        Assert.All(card.Preview, l => Assert.Equal("ctx", l.Kind));
+        Assert.Contains(card.Preview, l => l.Text == "-x --flag");
+    }
+
     [Fact]
     public void ACommand_ShowsTheCommandItself()
     {

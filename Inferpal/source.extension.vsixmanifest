@@ -15,7 +15,7 @@
               Language="en-US"
               Publisher="EstaxNet" />
     <DisplayName>Inferpal — Local AI Agent for Visual Studio</DisplayName>
-    <Description xml:space="preserve">Private AI coding agent for Visual Studio 2026, on your own local models — Ollama, LM Studio, llama.cpp, vLLM. Plans, edits, builds, runs your tests and debugs failing .NET tests. 29 built-in tools, every write approved. No cloud, no telemetry, no API key.</Description>
+    <Description xml:space="preserve">Private AI coding agent for Visual Studio 2026 and 2022, on your own local models — Ollama, LM Studio, llama.cpp, vLLM. Plans, edits, builds, runs your tests and debugs failing .NET tests. 29 built-in tools, every write approved. No cloud, no telemetry, no API key.</Description>
     <MoreInfo>https://github.com/EstaxNet/Inferpal</MoreInfo>
     <!-- The license MUST be a .txt/.rtf file embedded in the VSIX (VSIX 2.0 schema), not a URL
          - a URL fails Marketplace validation. -->
@@ -28,19 +28,15 @@
     <Tags>AI;local AI;agent;local LLM;Ollama;LM Studio;llama.cpp;vLLM;offline;private;Copilot alternative;MCP</Tags>
   </Metadata>
 
-  <!-- The Marketplace REFUSES 18.0 as a lower bound, measured on the first submission:
-       "This API version is experimental, and not allowed in the Marketplace at this time.
-       Please change your installation target to use the latest stable API version 17.14."
-       And since Visual Studio 2026 the UPPER bound is no longer evaluated at all: only the
-       lower bound decides compatibility (aka.ms/vs2026extensioncompat). The consequence is
-       worth stating plainly: "Visual Studio 2026 only" can no longer be expressed in this
-       field, by anyone. The restriction to 18.x, made when hybrid hosting arrived, was right
-       on the substance - the in-process half is a .NET 8 component and that is a 2026
-       capability - it simply has no declarative support left.
-       What still carries the requirement is the <Prerequisite> on the core editor below,
-       kept at [18.0,). NOT VERIFIED: no Visual Studio 2022 was available to confirm that it
-       actually refuses the install. Until that is measured it is an intention, not a
-       guarantee, and the listing shows the extension as available from 17.14. -->
+  <!-- Visual Studio 2022 17.14 and Visual Studio 2026: ONE package for both. The Marketplace refuses 18.0 as a lower
+       bound ("This API version is experimental, and not allowed in the Marketplace at this time"), and since Visual
+       Studio 2026 only the lower bound decides compatibility (aka.ms/vs2026extensioncompat).
+       ⚠ The <Prerequisite> on the core editor below is what an installer actually checks: at [18.0,) Visual Studio
+       2022's VSIXInstaller REFUSES the package ("the dependent package ... CoreEditor,version=18.0 cannot be found").
+       Every scenario of the extension runs in 17.14 (chat, agent and approval, ghost text, inline diff preview, the
+       debugger, the build banner), and what differs there is handled in the code, not by a second package: the
+       extensibility host is the devenv's GRANDchild (ParentProcess), and it cannot create an entry point that has
+       a static constructor (ExtensionEntryPointTests). -->
   <!-- ExtensionType: "VSSDK+VisualStudio.Extensibility" (hybrid), NOT
        "VisualStudio.Extensibility" alone. That value is what tells the extension manager the VSIX
        ALSO carries VSSDK components (the assets below); with the out-of-process value alone, the
@@ -63,7 +59,7 @@
 
   <Prerequisites>
     <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor"
-                  Version="[18.0,)"
+                  Version="[17.14,)"
                   DisplayName="Visual Studio core editor" />
   </Prerequisites>
 

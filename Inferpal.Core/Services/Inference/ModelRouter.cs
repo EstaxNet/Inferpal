@@ -77,40 +77,60 @@ internal static class ModelRouter
     /// </summary>
     /// <param name="benchRecommended">Utility pick of the last persisted <c>/bench</c> run.</param>
     /// <param name="warmModels">Names currently loaded on the backend (tag-tolerant match).</param>
+    /// <remarks>
+    /// ⚠ Without an explicit utility model, a COLD chat model gives way to a role model that is already WARM (agent,
+    /// then code actions): in Agent mode the warm model is the agent's, and a session title, a recap or a compaction
+    /// summary sent to the chat model loads it cold — on a one-GPU server, to name a session. LM Studio cannot evict a
+    /// model that is serving, so a background request crossing a turn leaves both loaded; and the cold load outlasts
+    /// the title's own budget anyway. Nothing warm, or nothing known: the plain resolution, as before.
+    /// </remarks>
     public static string ResolveUtility(
         InferpalConfig config, string? benchRecommended, IEnumerable<string> warmModels)
     {
         var configured = Resolve(config, ModelRole.Utility);
-        if (!config.ModelRouterAuto)                          return configured;
         if (!string.IsNullOrWhiteSpace(config.UtilityModel))  return configured;
-        if (string.IsNullOrWhiteSpace(benchRecommended))      return configured;
-        return warmModels.Any(m => ModelCatalog.SameModelName(m, benchRecommended!)) ? benchRecommended! : configured;
+
+        var warm = warmModels.ToList();
+        bool IsWarm(string name) => warm.Any(m => ModelCatalog.SameModelName(m, name));
+
+        if (config.ModelRouterAuto && !string.IsNullOrWhiteSpace(benchRecommended) && IsWarm(benchRecommended!))
+            return benchRecommended!;
+        if (warm.Count == 0 || IsWarm(configured)) return configured;
+
+        foreach (var role in new[] { ModelRole.Agent, ModelRole.CodeActions })
+        {
+            var candidate = Resolve(config, role);
+            if (IsWarm(candidate)) return candidate;
+        }
+        return configured;
     }
 
     /// <summary>
-    /// Gathers the auto-mode inputs (persisted <c>/bench</c> recommendation, currently running
-    /// models) and delegates to <see cref="ResolveUtility"/>. Cheap when auto mode is off or an
-    /// explicit utility model is set (no I/O); best-effort otherwise — any backend hiccup degrades
-    /// to the plain resolution. <c>/api/ps</c> is a plain HTTP call, not gated by the
-    /// <see cref="GpuScheduler"/>, so this is safe to call while holding the chat lease.
+    /// Gathers the inputs (persisted <c>/bench</c> recommendation in auto mode, currently running
+    /// models) and delegates to <see cref="ResolveUtility"/>. No I/O when an explicit utility model
+    /// is set; best-effort otherwise — any backend hiccup degrades to the plain resolution. The
+    /// running-models read is a plain HTTP call, not gated by the <see cref="GpuScheduler"/>, so this
+    /// is safe to call while holding the chat lease.
     /// </summary>
     public static async Task<string> ResolveUtilityAsync(
         InferpalConfig config, IOllamaChatClient client, CancellationToken ct)
     {
-        if (!config.ModelRouterAuto || !string.IsNullOrWhiteSpace(config.UtilityModel))
+        if (!string.IsNullOrWhiteSpace(config.UtilityModel))
             return Resolve(config, ModelRole.Utility);
 
         string? recommended = null;
-        if (await Bench.BenchStore.LoadAsync() is { } saved)
+        if (config.ModelRouterAuto && await Bench.BenchStore.LoadAsync() is { } saved)
             recommended = Commands.BenchCommandHandler.Recommend(saved.Results).Utility;
 
         // The orchestrator only holds the chat-client view; without the full provider there is
-        // no warm-model info and the pure core falls back to the plain resolution.
+        // no warm-model info and the pure core falls back to the plain resolution. A list the backend
+        // did not give (null) is "unknown", never "nothing loaded".
         IEnumerable<string> warm = [];
         try
         {
-            if (client is IInferenceProvider provider && provider.Capabilities.VramMonitoring)
-                warm = (await provider.GetRunningModelsAsync(ct)).Select(m => m.Name);
+            if (client is IInferenceProvider provider && provider.Capabilities.VramMonitoring
+                && await provider.ReadRunningModelsAsync(ct) is { } running)
+                warm = running.Select(m => m.Name);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex) { Diagnostics.Swallow("ModelRouter.ResolveUtilityAsync", ex); }

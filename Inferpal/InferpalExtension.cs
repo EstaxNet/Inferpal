@@ -27,9 +27,18 @@ namespace Inferpal;
 [VisualStudioContribution]
 public class InferpalExtension : Extension
 {
-    // Hooked as early as possible: WPF windows (code-action spinner, inline-edit dialog)
-    // lazily bind System.Windows.Extensions, unresolvable in the host's extension ALC.
-    static InferpalExtension() => WpfAssemblyResolver.Install();
+    /// <summary>
+    /// Hooked as early as possible: WPF windows (code-action spinner, inline-edit dialog)
+    /// lazily bind System.Windows.Extensions, unresolvable in the host's extension ALC.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ An INSTANCE constructor, never a static one, and no static member with an initializer:
+    /// the Visual Studio 2022 extensibility host lists the type's constructors with the type
+    /// initializer among them and invokes it ("Type initializer was not callable") — the extension
+    /// is then never created, so no command and no tool window works. Locked by
+    /// <c>ExtensionEntryPointTests</c>.
+    /// </remarks>
+    public InferpalExtension() => WpfAssemblyResolver.Install();
 
     /// <summary>
     /// ⚠ <b>This <c>true</c> is a packaging switch we have to live with, not a hosting
@@ -86,22 +95,20 @@ public class InferpalExtension : Extension
     {
         base.InitializeServices(services);
 
-        // Family-A signal channels are scoped by devenv PID. Out-of-process, that key is our
-        // parent — but the direct-child topology is empirical, not contractual, so the key is only
-        // declared after checking the parent actually IS devenv. On failure (lookup error,
-        // unexpected parent) no key is declared: this host keeps the legacy unscoped names while the
-        // in-process side scopes with its own PID, so the pair is LOST until VS restarts — solution
-        // rooting, build banner and diff previews go silent. Hence both branches trace to
-        // /diagnostics instead of failing mutely.
+        // Family-A signal channels are scoped by devenv PID. Out-of-process, that key is the devenv
+        // among our ANCESTORS (direct parent in Visual Studio 2026, grandparent through the ServiceHub
+        // controller in Visual Studio 2022 — ParentProcess says why). When none is found no key is
+        // declared: this host keeps the legacy unscoped names while the in-process side scopes with
+        // its own PID, so the pair is LOST until VS restarts — solution rooting, build banner and
+        // diff previews go silent. Hence the trace to /diagnostics instead of failing mutely.
         try
         {
-            var ppid = ParentProcess.GetParentProcessId();
-            using var parent = System.Diagnostics.Process.GetProcessById(ppid);
-            if (parent.ProcessName.Equals("devenv", StringComparison.OrdinalIgnoreCase))
-                SignalScope.DeclareVsInstance(ppid);
+            var (devenv, seen) = ParentProcess.FindOwningDevenv();
+            if (devenv is int pid)
+                SignalScope.DeclareVsInstance(pid);
             else
                 Diagnostics.Swallow("InferpalExtension.DeclareVsInstance", new InvalidOperationException(
-                    $"Parent '{parent.ProcessName}' (pid {ppid}) is not devenv; family-A signals stay unscoped and unpaired."));
+                    $"No devenv among the ancestors ({seen}); family-A signals stay unscoped and unpaired."));
         }
         catch (Exception ex) { Diagnostics.Swallow("InferpalExtension.DeclareVsInstance", ex); }
 

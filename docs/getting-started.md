@@ -7,7 +7,7 @@ sections cover the **VS Code extension** (at feature parity since 1.2.0).
 
 | Requirement | Details |
 |---|---|
-| Editor | **Visual Studio 2026** — Community, Professional or Enterprise — or **VS Code** (Windows x64, Linux x64, or Apple Silicon). ⚠ The Visual Studio listing shows 17.14 as its floor because the Marketplace no longer accepts a 2026-only installation target; the in-editor half still needs 2026. |
+| Editor | **Visual Studio 2026**, or **Visual Studio 2022 from 17.14** — Community, Professional or Enterprise — or **VS Code** (Windows x64, Linux x64, or Apple Silicon). |
 | .NET SDK | .NET 8 (building from source only) |
 | Model server | [Ollama](https://ollama.com) (default — full hardware-aware features), [LM Studio](https://lmstudio.ai), or any **OpenAI-compatible** server (llama.cpp, vLLM, …) |
 

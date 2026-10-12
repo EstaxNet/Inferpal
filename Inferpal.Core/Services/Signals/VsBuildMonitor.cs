@@ -77,8 +77,12 @@ internal sealed class VsBuildMonitor : IDisposable
                 NotifyFilter        = NotifyFilters.FileName | NotifyFilters.LastWrite,
                 EnableRaisingEvents = true,
             };
+            // ⚠ Renamed is THE event: SignalFile.Write stages the payload under another name and renames it onto
+            // this one, which a watcher filtered on the target name reports as Renamed — never Created nor Changed.
+            // Without it the banner never comes up, whatever the build.
             _watcher.Created += OnSignalFileEvent;
             _watcher.Changed += OnSignalFileEvent;
+            _watcher.Renamed += OnSignalFileEvent;
         }
         catch { /* non-critical */ }
 

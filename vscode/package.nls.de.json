@@ -5,7 +5,7 @@
   "inferpal.command.resetChat": "Inferpal: Neue Unterhaltung",
   "inferpal.config.hostPath": "Pfad zu `Inferpal.Host`. Leer lassen für automatische Erkennung (mitgelieferter Host, dann ein `Inferpal.Host/bin/**`-Build im Workspace).",
   "inferpal.config.model": "Modell für den Chat. Leer lassen, um das im Host konfigurierte Standardmodell zu verwenden.",
-  "inferpal.config.utilityModel": "Kleines, schnelles Modell für Hintergrundaufgaben (Sitzungstitel, Commit-Nachrichten, Kompaktierungs-Zusammenfassungen). Leer lassen, um das Chat-Modell zu verwenden.",
+  "inferpal.config.utilityModel": "Kleines, schnelles Modell für Hintergrundaufgaben (Sitzungstitel, Commit-Nachrichten, Kompaktierungs-Zusammenfassungen). Leer lassen, um das Chat-Modell zu verwenden – oder das Agent-Modell, wenn nur dieses geladen ist.",
   "inferpal.config.modelRouterAuto": "Model-Router-Automatikmodus: Ohne festgelegtes Hilfsmodell verwenden Hintergrundaufgaben das von /bench für die Hilfsrolle empfohlene Modell — nur wenn es bereits im VRAM geladen ist (für einen Titel oder eine Commit-Nachricht wird nie ein kaltes Modell geladen).",
   "inferpal.config.agentMode": "Runden über den Plan→Act→Observe-Orchestrator ausführen. Deaktiviert nutzt der Chat trotzdem Tools; /tools off schaltet sie ab.",
   "inferpal.config.fimEnabled": "Inline-Ghost-Text-Vervollständigungen (Fill-in-the-Middle). Nur aktiv, wenn das Backend FIM unterstützt.",

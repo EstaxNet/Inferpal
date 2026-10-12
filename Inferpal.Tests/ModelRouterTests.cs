@@ -117,18 +117,72 @@ public class ModelRouterTests
     }
 
     [Fact]
-    public async System.Threading.Tasks.Task AutoAsync_ShortCircuits_WithoutBackendCalls()
+    public async System.Threading.Tasks.Task AnExplicitUtilityModel_ShortCircuits_WithoutBackendCalls()
     {
-        // Auto off / explicit model → plain resolution, no /api/ps call and no store read.
-        var fake = new Inferpal.Tests.FakeInferenceProvider { Running = [new Inferpal.Models.RunningModelInfo("x", 1, "")] };
-
+        var calls = 0;
+        var fake = new Inferpal.Tests.FakeInferenceProvider
+        {
+            Running = [new Inferpal.Models.RunningModelInfo("agent-model", 1, "")],
+            OnRunningModels = () => calls++,
+        };
         var cfg = Config();
-        Assert.Equal("chat-model",
-            await ModelRouter.ResolveUtilityAsync(cfg, fake, System.Threading.CancellationToken.None));
-
+        cfg.AgentModel      = "agent-model";
         cfg.ModelRouterAuto = true;
         cfg.UtilityModel    = "my-pick";
+
         Assert.Equal("my-pick",
+            await ModelRouter.ResolveUtilityAsync(cfg, fake, System.Threading.CancellationToken.None));
+        Assert.Equal(0, calls);
+    }
+
+    /// <summary>
+    /// ⚠ In Agent mode the warm model is the agent's: a session title sent to the cold chat model loaded it on a
+    /// one-GPU LM Studio — and a background request crossing a turn left both models loaded.
+    /// </summary>
+    [Fact]
+    public async System.Threading.Tasks.Task WithoutAUtilityModel_AWarmRoleModel_IsPreferredToAColdChatModel()
+    {
+        var cfg = Config();
+        cfg.AgentModel = "agent-model";
+        var fake = new Inferpal.Tests.FakeInferenceProvider
+        {
+            Capabilities = ProviderCapabilities.LmStudio,
+            Running      = [new Inferpal.Models.RunningModelInfo("agent-model", 1, ""), new("embedder", 1, "")],
+        };
+
+        Assert.Equal("agent-model",
+            await ModelRouter.ResolveUtilityAsync(cfg, fake, System.Threading.CancellationToken.None));
+
+        // The code-actions model, when it is the one warm.
+        cfg.AgentModel       = "";
+        cfg.CodeActionsModel = "actions-model";
+        Assert.Equal("actions-model", ModelRouter.ResolveUtility(cfg, null, ["actions-model"]));
+    }
+
+    [Fact]
+    public void AWarmChatModel_NothingWarm_OrNothingKnown_KeepThePlainResolution()
+    {
+        // REFERENCE ARMS: the chat model warm stays the pick even with the agent warm too; nothing warm, and a list that
+        // could not be read, change nothing; a warm model that is no role's (an embedder) is never borrowed.
+        var cfg = Config();
+        cfg.AgentModel = "agent-model";
+        Assert.Equal("chat-model", ModelRouter.ResolveUtility(cfg, null, ["chat-model", "agent-model"]));
+        Assert.Equal("chat-model", ModelRouter.ResolveUtility(cfg, null, []));
+        Assert.Equal("chat-model", ModelRouter.ResolveUtility(cfg, null, ["embedder"]));
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task AnUnreadableLoadedList_IsUnknown_NotEmpty()
+    {
+        var cfg = Config();
+        cfg.AgentModel = "agent-model";
+        var fake = new Inferpal.Tests.FakeInferenceProvider
+        {
+            Capabilities   = ProviderCapabilities.LmStudio,
+            Running        = [new Inferpal.Models.RunningModelInfo("agent-model", 1, "")],
+            RunningNotSaid = true,
+        };
+        Assert.Equal("chat-model",
             await ModelRouter.ResolveUtilityAsync(cfg, fake, System.Threading.CancellationToken.None));
     }
 }

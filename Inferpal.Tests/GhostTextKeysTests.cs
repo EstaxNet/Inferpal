@@ -6,11 +6,16 @@ using Xunit;
 namespace Inferpal.Tests;
 
 /// <summary>
-/// ⚠ Visual Studio's ghost text handles its keys on PreviewKeyDown, before the editor's own commanding. Tab is also the
-/// key that commits the C# completion list, which opens as an identifier is typed: consumed here, it inserted the
-/// suggestion and the list item was never committed; Escape hid the suggestion and left the list open; Shift+Tab
-/// (outdent) inserted the suggestion. Plain Tab and Escape only, and an open completion list keeps its keys.
+/// ⚠ Tab is also the key that commits the C# completion list, which opens as an identifier is typed: consumed by the
+/// ghost text, it inserted the suggestion and the list item was never committed; Escape hid the suggestion and left the
+/// list open; Shift+Tab (outdent) inserted the suggestion. Plain Tab and Escape only, and an open completion list keeps
+/// its keys.
 /// </summary>
+/// <remarks>
+/// ⚠ And the keys must REACH the ghost text: Visual Studio turns Tab and Escape into editor commands before WPF sees
+/// them, so a PreviewKeyDown listener alone never runs in a live Visual Studio: Tab inserts a tab under a visible
+/// suggestion, Escape leaves it up. The editor command chain is the path.
+/// </remarks>
 public class GhostTextKeysTests
 {
     [Theory]
@@ -32,14 +37,35 @@ public class GhostTextKeysTests
         var keyDown    = controller[controller.IndexOf("private void OnPreviewKeyDown(", StringComparison.Ordinal)..];
         keyDown        = keyDown[..keyDown.IndexOf("private bool CompletionActive(", StringComparison.Ordinal)];
 
-        Assert.Contains("GhostTextKeys.Decide(e.Key, Keyboard.Modifiers, CompletionActive())", keyDown, StringComparison.Ordinal);
-        Assert.DoesNotContain("e.Key == Key.Tab", keyDown, StringComparison.Ordinal);
+        Assert.Contains("HandleKey(e.Key, Keyboard.Modifiers)", keyDown, StringComparison.Ordinal);
+        Assert.Contains("GhostTextKeys.Decide(key, modifiers, CompletionActive())", keyDown, StringComparison.Ordinal);
+        Assert.DoesNotContain("== Key.Tab", keyDown, StringComparison.Ordinal);
 
         // ⚠ Optional import: a required one that does not resolve fails the whole part's composition, and ghost text,
         // the inline diff preview and the build bootstrap die with it, in silence.
         var listener = ConventionCoverageTests.CodeOnly(Path.Combine(dir, "GhostTextViewListener.cs"));
         Assert.Matches(@"\[Import\(AllowDefault = true\)\]\s*internal IAsyncCompletionBroker\? CompletionBroker", listener);
         Assert.Contains("new GhostTextController(textView, CompletionBroker)", listener, StringComparison.Ordinal);
+    }
+
+    /// <summary>The path Tab and Escape really take: an editor command handler, ahead of the completion list's.</summary>
+    [Fact]
+    public void TabAndEscape_ReachTheGhostText_ThroughTheEditorCommandChain()
+    {
+        // Read as source: the editor's assemblies are not loadable in the test process.
+        var dir    = Path.Combine(ConversationPersistenceSilenceTests.RepoRoot(), "Inferpal.InProc", "GhostText");
+        var source = ConventionCoverageTests.CodeOnly(Path.Combine(dir, "GhostTextCommandHandler.cs"));
+        Assert.Contains("[Export(typeof(ICommandHandler))]", source, StringComparison.Ordinal);
+        Assert.Contains("[Order(Before = PredefinedCompletionNames.CompletionCommandHandler)]", source, StringComparison.Ordinal);
+        Assert.Contains("ICommandHandler<TabKeyCommandArgs>", source, StringComparison.Ordinal);
+        Assert.Contains("ICommandHandler<EscapeKeyCommandArgs>", source, StringComparison.Ordinal);
+
+        // One decision for both paths: the handler hands the key to the controller, never decides itself.
+        Assert.Contains("controller.HandleKey(key, Keyboard.Modifiers)", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("GhostTextKeys.Decide", source, StringComparison.Ordinal);
+
+        var controller = ConventionCoverageTests.CodeOnly(Path.Combine(dir, "GhostTextController.cs"));
+        Assert.Contains("view.Properties[typeof(GhostTextController)] = this;", controller, StringComparison.Ordinal);
     }
 
     [Theory]
