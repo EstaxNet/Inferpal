@@ -183,6 +183,31 @@ public class DiagnosticsCommandHandlerTests : IDisposable
         Assert.Contains("4096 loaded by the server", bundle);
     }
 
+    /// <summary>
+    /// A window set to 0 is "the model's own", not a window of zero tokens: the bundle said "0 tokens configured" and,
+    /// comparing the loaded window to 0, never named the one figure that existed.
+    /// </summary>
+    [Fact]
+    public void Export_WithNoWindowConfigured_NamesTheLoadedOne()
+    {
+        var ctx = Ctx(new Inferpal.Config.InferpalConfig { ContextWindowSize = 0 }) with { WindowInUse = 32_768 };
+
+        var bundle = DiagnosticsCommandHandler.Handle(Cmd("export"), ctx).CopyToClipboard!;
+
+        Assert.Contains("not configured (the server's default), **32768 loaded by the server**", bundle);
+        Assert.DoesNotContain("0 tokens configured", bundle);
+    }
+
+    [Fact]
+    public void Export_WithNoWindowConfiguredOrReported_SaysNeitherIsKnown()
+    {
+        var ctx = Ctx(new Inferpal.Config.InferpalConfig { ContextWindowSize = 0 }) with { WindowInUse = 0 };
+
+        var bundle = DiagnosticsCommandHandler.Handle(Cmd("export"), ctx).CopyToClipboard!;
+
+        Assert.Contains("not configured (the server's default), size not reported by the server", bundle);
+    }
+
     [Theory]
     [InlineData(0)]         // no turn has measured it yet
     [InlineData(8_192)]     // the configured one: nothing more to say

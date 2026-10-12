@@ -32,6 +32,16 @@ internal static class ApprovalCard
 
     public static ApprovalCardModel Build(ApprovalPrompt prompt, string? root)
     {
+        // A file tool's subject is its path; any other tool's is the string its rules match (an MCP call's raw JSON plus
+        // its values), which is not for display: what it runs is in its details.
+        // ⚠ A change to SEVERAL files (apply_edits) has every path as its subject, one per line, so that the rules match
+        // each. Read as one path, the card is titled "Change a file" and names the first: the human approving a two-file
+        // batch is told about one of them.
+        var pathSubject = FileChanges.Contains(prompt.ToolName) || prompt.ToolName == "delete_file";
+        var paths = pathSubject && prompt.Subject is { Length: > 0 } written
+            ? written.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            : [];
+
         var created = prompt.Diff is { OldText.Length: 0 } && prompt.ToolName == "write_file";
         var title = prompt.ToolName switch
         {
@@ -40,14 +50,12 @@ internal static class ApprovalCard
             "run_command"             => Strings.ApprovalRunCommand,
             "fetch_url"               => Strings.ApprovalReadPage,
             "web_search"              => Strings.ApprovalSearchWeb,
+            var t when FileChanges.Contains(t) && paths.Length > 1 => Strings.ApprovalChangeFiles(paths.Length),
             var t when FileChanges.Contains(t) => Strings.ApprovalChangeFile,
             var t                     => Strings.ApprovalUseTool(t),
         };
 
-        // A file tool's subject is its path; any other tool's is the string its rules match (an MCP call's raw JSON plus
-        // its values), which is not for display: what it runs is in its details.
-        var pathSubject = FileChanges.Contains(prompt.ToolName) || prompt.ToolName == "delete_file";
-        var subject = pathSubject && prompt.Subject is { Length: > 0 } path ? Relative(path, root) : FirstLine(prompt.Details);
+        var subject = paths.Length > 0 ? Names(paths, root) : FirstLine(prompt.Details);
         var meta = string.Empty;
         var preview = new List<ApprovalPreviewLine>();
         var more = 0;
@@ -131,6 +139,17 @@ internal static class ApprovalCard
             return relative.StartsWith("..", StringComparison.Ordinal) || System.IO.Path.IsPathRooted(relative) ? path : relative;
         }
         catch (ArgumentException) { return path; }
+    }
+
+    /// <summary>
+    /// The files a change touches, as the header names them: each relative to the workspace, the list cut at
+    /// <see cref="SubjectChars"/> — the title counts them all, and the preview heads each file's change with its path.
+    /// </summary>
+    private static string Names(IReadOnlyList<string> paths, string? root)
+    {
+        if (paths.Count == 1) return Relative(paths[0], root);
+        var names = string.Join(", ", paths.Select(p => Relative(p, root)));
+        return names.Length > SubjectChars ? names[..SubjectChars] + "…" : names;
     }
 
     /// <summary>The longest single line the card's header shows as its subject; a longer one goes to the preview.</summary>

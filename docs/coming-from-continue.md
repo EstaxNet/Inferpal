@@ -24,14 +24,14 @@ ticked), `apply all`, or `apply 1,3,5`.
 
 | In Continue / Roo Code | In Inferpal |
 |---|---|
-| The server of your first local chat model (Ollama, LM Studio, llama.cpp, vLLM, any OpenAI-compatible endpoint) | The model server (provider, address, API key) — it takes effect when Inferpal restarts |
+| The server of your first local chat model (Ollama, LM Studio, llama.cpp, vLLM, any OpenAI-compatible endpoint) | The model server (provider, address, API key) — it takes effect when Inferpal restarts; a key you had set for another server is removed, never sent to the new one |
 | Chat, autocomplete, edit, summarize and embed roles | The chat, completion (FIM), inline edit, utility and embedding models |
 | The chat model's context length | The context window |
 | Rules, a model's system message, Roo's custom instructions | Sections added to the custom system prompt; a rule scoped to files keeps its scope, written in the text the model reads |
 | Prompts and custom commands; Roo's custom modes and its additions to the built-in modes | Commands in this machine's prompts folder, usable in every workspace; `{{{ input }}}` becomes what you type after the command |
 | MCP servers | MCP servers (and MCP is turned on) |
 | Documentation sites | @Docs sources — index them with `/docs reindex` |
-| Roo's allowed and denied commands | Permission rules for `run_command` — allowed ones are **unticked**: they let a command run without asking, so the choice is yours |
+| Roo's allowed and denied commands | Permission rules for `run_command` — allowed ones are **unticked**: they let a command run without asking, so the choice is yours. Denied ones go first, so no allow rule can override them |
 | Roo's interface language, when Inferpal is translated into it | The interface language |
 
 ## What stays, and why

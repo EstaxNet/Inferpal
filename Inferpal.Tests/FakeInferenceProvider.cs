@@ -185,10 +185,14 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     /// <summary>Models asked about, in order — the witness that the right model was looked up.</summary>
     public List<string> LoadedContextQueries { get; } = [];
 
-    public Task<int?> GetLoadedContextWindowAsync(string model, CancellationToken ct)
+    /// <summary>Runs when the loaded window is asked for — a test holds the request there (an ACP prompt being built).</summary>
+    public Func<CancellationToken, Task>? OnLoadedContextWindow { get; set; }
+
+    public async Task<int?> GetLoadedContextWindowAsync(string model, CancellationToken ct)
     {
         LoadedContextQueries.Add(model);
-        return Task.FromResult(LoadedContextWindow);
+        if (OnLoadedContextWindow is { } hold) await hold(ct);
+        return LoadedContextWindow;
     }
 
     /// <summary>Whether an unload takes the model out of <see cref="Running"/>; by default the list does not move.</summary>

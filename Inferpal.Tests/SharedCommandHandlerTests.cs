@@ -56,7 +56,7 @@ public class SharedCommandHandlerTests
                 history, ["/undo-run", "list"], dir.FullName, CancellationToken.None);
 
             Assert.Contains(Strings.UndoRunListHeader(1), message);
-            Assert.Contains("file(s)", message);
+            Assert.Contains(Strings.UndoRunListEntry("x", 1)[1..], message);   // " — 1 file", in the interface language
         }
         finally { dir.Delete(recursive: true); }
     }

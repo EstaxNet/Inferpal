@@ -31,7 +31,7 @@ internal static class UndoRunCommandHandler
             var list = new StringBuilder();
             list.AppendLine(Strings.UndoRunListHeader(withChanges.Count));
             foreach (var r in withChanges)
-                list.AppendLine($"- {r.StartedAt:HH:mm:ss} — {r.FileCount} file(s)");
+                list.Append("- ").AppendLine(Strings.UndoRunListEntry(r.StartedAt.ToString("HH:mm:ss"), r.FileCount));
             return list.ToString().TrimEnd();
         }
 

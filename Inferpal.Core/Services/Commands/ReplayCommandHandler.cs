@@ -17,13 +17,17 @@ internal static class ReplayCommandHandler
     /// <param name="runs">Tracked runs, most recent first (<see cref="FileHistoryService.Runs"/>).</param>
     /// <param name="parts">Tokenised command (<c>parts[1]</c> = optional 1-based run index).</param>
     /// <param name="root">Project root used to relativise paths; may be empty.</param>
-    public static string Handle(IReadOnlyList<HistoryRun> runs, string[] parts, string? root)
+    /// <param name="forgotten">Runs with tool calls no longer kept (<see cref="FileHistoryService.ForgottenRuns"/>).</param>
+    public static string Handle(IReadOnlyList<HistoryRun> runs, string[] parts, string? root, int forgotten = 0)
     {
         var index = 1;
         if (parts.Length >= 2 && (!int.TryParse(parts[1], out index) || index < 1))
             return Strings.SlashUsage("/replay [n]");
 
         var replayable = runs.Where(r => r.ToolCallCount > 0).ToList();
+        // Past the last run kept is a run no longer kept, when older ones were let go: "this session has N runs" read as
+        // the whole session.
+        if (index > replayable.Count && forgotten > 0) return Strings.ReplayRunForgotten(index, replayable.Count);
         if (replayable.Count == 0) return Strings.ReplayNone;
         // Past the last run is a wrong number, not an empty session: "no run recorded" read as lost history.
         if (index > replayable.Count) return Strings.ReplayRunOutOfRange(index, replayable.Count);

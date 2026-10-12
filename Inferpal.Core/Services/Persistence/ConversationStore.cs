@@ -44,7 +44,19 @@ internal class ConversationStore
     /// long as that class lives — and a <c>Dispose</c> that sets it back to <c>null</c> sends the
     /// rest of the suite at the developer's real <c>%AppData%</c>.
     /// </remarks>
-    public ConversationStore(string? directory = null) => _instanceDir = directory;
+    /// <param name="slotOwner">The editor whose auto-save slot this instance writes (<see cref="VisualStudioSlot"/>,
+    /// <see cref="VsCodeSlot"/>); <c>null</c> = the slot of the workspace alone.</param>
+    public ConversationStore(string? directory = null, string? slotOwner = null)
+    {
+        _instanceDir = directory;
+        _slotOwner   = slotOwner;
+    }
+
+    /// <summary>The auto-save slot owners: one per editor, so neither writes over the other's last conversation.</summary>
+    internal const string VisualStudioSlot = "vs";
+    internal const string VsCodeSlot = "vscode";
+
+    private readonly string? _slotOwner;
 
     /// <summary>Where this instance works.</summary>
     private string Dir => _instanceDir ?? _dir;
@@ -147,6 +159,10 @@ internal class ConversationStore
         }
         var own = AutoSaveFile(workspaceRoot);
         if (File.Exists(own)) return await LoadFileAsync(own, AutoSaveSlot, ct).ConfigureAwait(false);
+        // The workspace's slot of the versions that kept one for both editors: this editor's last conversation, until it
+        // writes its own.
+        if (_slotOwner is not null && AutoSaveFile(workspaceRoot, owner: null) is var both && File.Exists(both))
+            return await LoadFileAsync(both, AutoSaveSlot, ct).ConfigureAwait(false);
 
         var shared = await LoadAsync(AutoSaveSlot, ct).ConfigureAwait(false);
         return shared is not null && SharedSlotBelongsTo(shared, workspaceRoot) ? shared : null;
@@ -169,7 +185,15 @@ internal class ConversationStore
 
     /// <summary>The auto-save slot of a workspace, in a folder of its own that the session list never reads; without a
     /// workspace, the shared slot older versions wrote.</summary>
-    internal string AutoSaveFile(string? workspaceRoot)
+    internal string AutoSaveFile(string? workspaceRoot) => AutoSaveFile(workspaceRoot, _slotOwner);
+
+    /// <remarks>
+    /// ⚠ Per EDITOR as well: Visual Studio and VS Code on one folder have the same workspace root. Sharing its slot, the
+    /// last conversation of the editor that wrote last is what both restore — the one closed first gets the other's at
+    /// its next start and its own is lost, never archived; and VS Code's "new conversation" empties a slot that holds
+    /// Visual Studio's.
+    /// </remarks>
+    private string AutoSaveFile(string? workspaceRoot, string? owner)
     {
         if (string.IsNullOrWhiteSpace(workspaceRoot)) return SessionPath(AutoSaveSlot);
         var root = SessionManager.NormalizeRoot(workspaceRoot);
@@ -177,7 +201,8 @@ internal class ConversationStore
         var key  = PathComparer.Comparison == StringComparison.Ordinal ? root : root.ToUpperInvariant();
         var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(key)))[..16];
         var name = Sanitize(Path.GetFileName(root));
-        return Path.Combine(Dir, "autosave", $"{(name.Length > 0 ? name + "-" : "")}{hash.ToLowerInvariant()}.json");
+        return Path.Combine(Dir, "autosave",
+                            $"{(name.Length > 0 ? name + "-" : "")}{hash.ToLowerInvariant()}{(owner is null ? "" : "-" + owner)}.json");
     }
 
     /// Loads a session by file name (without extension).

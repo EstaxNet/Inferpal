@@ -334,15 +334,7 @@ internal static class ContinueImport
             }
         }
 
-        if (backend is not null && backendPaths.Count > 0)
-        {
-            var apiKey = backend.Provider == InferenceProviderFactory.OpenAiCompatible ? backendKey : null;
-            if (backend.SameAs(current.Provider, current.BaseUrl) && (apiKey is null || apiKey == current.ApiKey))
-                foreach (var p in backendPaths) plan.Skip(p, ImportSkipCause.AlreadyConfigured, backend.BaseUrl);
-            else
-                plan.Add(ImportItemKind.Backend, new SetBackend(backend.Provider, backend.BaseUrl, apiKey), backendPaths, true,
-                         new ImportItemNote(ImportNote.TakesEffectAfterRestart));
-        }
+        if (backend is not null && backendPaths.Count > 0) plan.AddBackend(backend, backendKey, backendPaths);
         if (window is { } tokens)
         {
             if (tokens == current.ContextWindowSize)

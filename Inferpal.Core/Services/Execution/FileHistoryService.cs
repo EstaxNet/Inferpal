@@ -173,8 +173,9 @@ internal class FileHistoryService
                 break;
             }
 
-            PruneOldSnapshots(historyDir, suffix);
             RecordInRun(filePath, snapPath);   // for /undo-run (no-op when no run is active)
+            // After the run records it: the list published for the other processes then holds this backup too.
+            PruneOldSnapshots(historyDir, suffix);
             return snapPath;
         }
         catch (OperationCanceledException) { throw; }
@@ -308,6 +309,12 @@ internal class FileHistoryService
                     _runs.Append(_currentRun).OfType<HistoryRun>()
                          .SelectMany(r => r.Changes).Select(c => c.SnapshotPath).OfType<string>(),
                     PathComparer.Default);
+            // ⚠ The history folder is the workspace's, shared by Visual Studio and VS Code, and the runs live in each
+            // process's memory. Pruned on this process's runs alone, a pre-run backup another editor's run still holds
+            // was deleted by this one's twentieth snapshot of the file, and that editor's /undo-run could no longer put
+            // the file back. Each process publishes what it holds; the others honour it.
+            PublishHeld(historyDir, held);
+            held.UnionWith(HeldByOthers(historyDir));
             // Same ordering as the lookup, and for the same reason: pruning by name would delete
             // the NEWEST snapshots for an hour every autumn.
             var snaps = Directory.EnumerateFiles(historyDir)
@@ -322,6 +329,70 @@ internal class FileHistoryService
                 try { File.Delete(old); } catch { }
         }
         catch { /* best-effort retention — never break the write path */ }
+    }
+
+    /// <summary>The snapshots a process's runs hold, one file per service instance: <c>.held-&lt;pid&gt;-&lt;id&gt;</c>.</summary>
+    private const string HeldPrefix = ".held-";
+
+    private readonly string _instanceId = Guid.NewGuid().ToString("N")[..8];
+
+    private string HeldFile(string historyDir) =>
+        Path.Combine(historyDir, $"{HeldPrefix}{Environment.ProcessId}-{_instanceId}");
+
+    /// <summary>Writes the snapshots of <paramref name="historyDir"/> this instance's runs hold, for the other processes.</summary>
+    private void PublishHeld(string historyDir, IEnumerable<string> held)
+    {
+        try
+        {
+            var here = held.Where(p => PathComparer.SameDirectory(Path.GetDirectoryName(p) ?? "", historyDir))
+                           .Select(Path.GetFileName);
+            AtomicFile.WriteAllText(HeldFile(historyDir), string.Join("\n", here));
+        }
+        catch (Exception ex) { Diagnostics.Swallow("FileHistoryService.PublishHeld", ex); }
+    }
+
+    /// <summary>
+    /// The snapshots other live instances hold in <paramref name="historyDir"/>. A list left by a process that has ended
+    /// holds nothing and is removed; one whose process cannot be asked about is honoured.
+    /// </summary>
+    private IEnumerable<string> HeldByOthers(string historyDir)
+    {
+        var own = HeldFile(historyDir);
+        var held = new List<string>();
+        foreach (var list in Directory.EnumerateFiles(historyDir, HeldPrefix + "*"))
+        {
+            if (PathComparer.Default.Equals(list, own)) continue;
+            var name = Path.GetFileName(list)[HeldPrefix.Length..];
+            var dash = name.IndexOf('-');
+            if (dash <= 0 || !int.TryParse(name[..dash], System.Globalization.NumberStyles.None,
+                                           System.Globalization.CultureInfo.InvariantCulture, out var pid))
+                continue;
+            if (!IsAlive(pid))
+            {
+                try { File.Delete(list); } catch { }
+                continue;
+            }
+            try
+            {
+                held.AddRange(File.ReadAllLines(list).Where(l => l.Length > 0).Select(l => Path.Combine(historyDir, l)));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Diagnostics.Swallow("FileHistoryService.HeldByOthers", ex);
+            }
+        }
+        return held;
+    }
+
+    private static bool IsAlive(int pid)
+    {
+        try
+        {
+            using var process = System.Diagnostics.Process.GetProcessById(pid);
+            return !process.HasExited;
+        }
+        catch (ArgumentException) { return false; }          // no such process
+        catch (Exception) { return true; }                    // cannot be asked: its list is honoured
     }
 
     internal string? FindMostRecentSnapshot(string originalPath)
@@ -450,10 +521,30 @@ internal class FileHistoryService
         {
             if (alreadyRead is not null) run.NoteRead(alreadyRead);
             _runs.Add(run);
-            if (_runs.Count > MaxRetainedRuns) _runs.RemoveRange(0, _runs.Count - MaxRetainedRuns);
+            // ⚠ A run begins with every question asked with tools on, so the cap counts questions: dropped oldest first,
+            // fifteen questions that changed nothing pushed out the run that did, and /undo-run answered "no run with
+            // file changes" about an edit made an hour before. What changed nothing goes first, then what only read
+            // (/replay's), and a run that changed files only when the cap holds nothing else.
+            while (_runs.Count > MaxRetainedRuns)
+            {
+                var drop = _runs.FindIndex(r => r != run && r.FileCount == 0 && r.ToolCallCount == 0);
+                if (drop < 0) drop = _runs.FindIndex(r => r != run && r.FileCount == 0);
+                if (drop < 0) drop = 0;
+                if (_runs[drop].ToolCallCount > 0) _forgottenRuns++;
+                _runs.RemoveAt(drop);
+            }
             _currentRun = run;
         }
         return run.Id;
+    }
+
+    private int _forgottenRuns;
+
+    /// <summary>Runs that called tools and are no longer kept (past <see cref="MaxRetainedRuns"/>): what /replay can
+    /// no longer show, and says.</summary>
+    internal int ForgottenRuns
+    {
+        get { lock (_runLock) return _forgottenRuns; }
     }
 
     /// <summary>

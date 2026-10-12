@@ -74,13 +74,7 @@ internal static class RooImport
         public void Finish(ImportPlanBuilder plan)
         {
             if (Server is null || Paths.Count == 0) return;
-            var current = plan.Context.Current;
-            var key = Server.Provider == InferenceProviderFactory.OpenAiCompatible ? ApiKey : null;
-            if (Server.SameAs(current.Provider, current.BaseUrl) && (key is null || key == current.ApiKey))
-                foreach (var p in Paths) plan.Skip(p, ImportSkipCause.AlreadyConfigured, Server.BaseUrl);
-            else
-                plan.Add(ImportItemKind.Backend, new SetBackend(Server.Provider, Server.BaseUrl, key), Paths, true,
-                         new ImportItemNote(ImportNote.TakesEffectAfterRestart));
+            plan.AddBackend(Server, ApiKey, Paths);
         }
     }
 

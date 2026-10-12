@@ -252,6 +252,8 @@ export interface ImportCard {
   skipped: ImportCardGroup[];
   applyLabel: string;
   applyHint: string;
+  /** What the card shows, hashed: Apply sends it with the numbers, and an import whose plan moved since writes nothing. */
+  fingerprint: string;
 }
 
 /** `command/slash` answer: `handled: false` ⇒ send the text as a normal chat prompt. */

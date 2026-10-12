@@ -22,7 +22,7 @@ public sealed class NewConversationWithoutHostTests
     {
         var body = ConversationPersistenceSilenceTests.TsMethodBody(Provider(), "async resetConversation(");
 
-        var clear = body.IndexOf("this.transcript.length = 0", StringComparison.Ordinal);
+        var clear = body.IndexOf("this.clearTranscript()", StringComparison.Ordinal);
         Assert.True(clear >= 0, "the reset no longer clears the transcript: this test would have measured nothing.");
 
         var guard = body.IndexOf("!host?.isRunning && this.hasConversation()", StringComparison.Ordinal);

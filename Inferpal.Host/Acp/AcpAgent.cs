@@ -22,7 +22,7 @@ namespace Inferpal.Host.Acp;
 /// <para>
 /// ⚠ Sessions are bounded: each holds a host with its MCP servers and index, and a client keeps every thread it ever
 /// opened. Past <see cref="MaxLiveSessions"/>, the idle session used longest ago is closed — saved after every turn, it
-/// comes back whole with <c>session/load</c>.
+/// comes back whole with <c>session/load</c>, or on the client's next request about it.
 /// </para>
 /// </remarks>
 internal sealed class AcpAgent : IAsyncDisposable
@@ -33,6 +33,11 @@ internal sealed class AcpAgent : IAsyncDisposable
     private readonly Func<HostServer> _hostFactory;
     private readonly Func<CancellationToken, Task<bool>> _ready;
     private readonly ConcurrentDictionary<string, AcpSession> _sessions = new(StringComparer.Ordinal);
+
+    /// <summary>What opening a session needs (its folder, its MCP servers), kept for the sessions closed to make room.</summary>
+    private readonly ConcurrentDictionary<string, (string Cwd, IReadOnlyList<McpSessionServerDto> Servers)> _opened =
+        new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, byte> _evicted = new(StringComparer.Ordinal);
     private readonly Channel<Func<Task>> _outbox = Channel.CreateUnbounded<Func<Task>>(new UnboundedChannelOptions { SingleReader = true });
     private readonly Task _sender;
     private JsonRpc? _rpc;
@@ -198,7 +203,9 @@ internal sealed class AcpAgent : IAsyncDisposable
     [JsonRpcMethod("session/close", UseSingleObjectParameterDeserialization = true)]
     public async Task<object> CloseSessionAsync(JsonElement p)
     {
-        await CloseAsync(Str(p, "sessionId") ?? throw new ArgumentException("'sessionId' is required."));
+        var id = Str(p, "sessionId") ?? throw new ArgumentException("'sessionId' is required.");
+        _evicted.TryRemove(id, out _);   // closed by the client: never reopened behind its back
+        await CloseAsync(id);
         return new { };
     }
 
@@ -207,6 +214,7 @@ internal sealed class AcpAgent : IAsyncDisposable
     public async Task<object> DeleteSessionAsync(JsonElement p)
     {
         var id = Str(p, "sessionId") ?? throw new ArgumentException("'sessionId' is required.");
+        _evicted.TryRemove(id, out _);
         await CloseAsync(id);
         try { new Services.Persistence.ConversationStore().Delete(id); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Diagnostics.Swallow("AcpAgent.Delete", ex); }
@@ -216,7 +224,7 @@ internal sealed class AcpAgent : IAsyncDisposable
     [JsonRpcMethod("session/prompt", UseSingleObjectParameterDeserialization = true)]
     public async Task<object> PromptAsync(JsonElement p)
     {
-        var session = Live(p);
+        var session = await LiveAsync(p, CancellationToken.None);
         if (!p.TryGetProperty("prompt", out var prompt)) throw new ArgumentException("'prompt' is required.");
         return new { stopReason = await session.PromptAsync(prompt) };
     }
@@ -230,7 +238,7 @@ internal sealed class AcpAgent : IAsyncDisposable
     [JsonRpcMethod("session/set_mode", UseSingleObjectParameterDeserialization = true)]
     public async Task<object> SetModeAsync(JsonElement p, CancellationToken ct)
     {
-        await Live(p).SetModeAsync(Str(p, "modeId") ?? throw new ArgumentException("'modeId' is required."), ct);
+        await (await LiveAsync(p, ct)).SetModeAsync(Str(p, "modeId") ?? throw new ArgumentException("'modeId' is required."), ct);
         return new { };
     }
 
@@ -239,7 +247,7 @@ internal sealed class AcpAgent : IAsyncDisposable
     {
         var configId = Str(p, "configId") ?? throw new ArgumentException("'configId' is required.");
         if (!p.TryGetProperty("value", out var value)) throw new ArgumentException("'value' is required.");
-        return new { configOptions = await Live(p).SetConfigOptionAsync(configId, value, ct) };
+        return new { configOptions = await (await LiveAsync(p, ct)).SetConfigOptionAsync(configId, value, ct) };
     }
 
     /// <summary>
@@ -250,14 +258,28 @@ internal sealed class AcpAgent : IAsyncDisposable
     public async Task<object> SetModelAsync(JsonElement p, CancellationToken ct)
     {
         var model = Str(p, "modelId") ?? throw new ArgumentException("'modelId' is required.");
-        await Live(p).SetConfigOptionAsync(AcpModes.ModelOption, JsonSerializer.SerializeToElement(model), ct);
+        await (await LiveAsync(p, ct)).SetConfigOptionAsync(AcpModes.ModelOption, JsonSerializer.SerializeToElement(model), ct);
         return new { };
     }
 
-    private AcpSession Live(JsonElement p)
+    /// <summary>
+    /// The session a request names — reopened from what it saved when this agent closed it to make room.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A client keeps every thread it opened and never reloads one it believes open: closed here to bound the live
+    /// sessions, the fifth thread's neighbour answered its next prompt with "Unknown session". Reopened, it carries on
+    /// where it was saved; a session closed before its first turn had nothing to save, and starts empty.
+    /// </remarks>
+    private async Task<AcpSession> LiveAsync(JsonElement p, CancellationToken ct)
     {
         var id = Str(p, "sessionId") ?? throw new ArgumentException("'sessionId' is required.");
-        return _sessions.TryGetValue(id, out var s) ? s : throw new ArgumentException($"Unknown session '{id}'.");
+        if (_sessions.TryGetValue(id, out var s)) return s;
+        if (!_evicted.TryRemove(id, out _) || !_opened.TryGetValue(id, out var was))
+            return _sessions.TryGetValue(id, out s) ? s : throw new ArgumentException($"Unknown session '{id}'.");
+
+        var reopened = await OpenAsync(id, was.Cwd, was.Servers, ct);
+        await reopened.LoadAsync(replay: false, ct);
+        return reopened;
     }
 
     private async Task<AcpSession> OpenAsync(string id, string cwd, IReadOnlyList<McpSessionServerDto> servers, CancellationToken ct)
@@ -269,10 +291,12 @@ internal sealed class AcpAgent : IAsyncDisposable
             await session.DisposeAsync();
             return _sessions[id];
         }
+        _opened[id] = (cwd, servers);
         return session;
     }
 
-    /// <summary>Room for one more session: the idle one used longest ago is closed (it is saved; load brings it back).</summary>
+    /// <summary>Room for one more session: the idle one used longest ago is closed — saved, and reopened by the client's
+    /// next request about it (<see cref="LiveAsync"/>).</summary>
     private async Task EvictIdleAsync()
     {
         while (_sessions.Count >= MaxLiveSessions)
@@ -280,6 +304,7 @@ internal sealed class AcpAgent : IAsyncDisposable
             var idle = _sessions.Values.Where(s => !s.Busy).OrderBy(s => s.LastUsed).FirstOrDefault();
             if (idle is null) return;   // all busy: one more, rather than stopping a turn
             await CloseAsync(idle.Id);
+            _evicted[idle.Id] = 0;
         }
     }
 

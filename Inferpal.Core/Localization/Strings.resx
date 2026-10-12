@@ -292,9 +292,12 @@ Continue?</value></data>
   <data name="DiffUnchangedLines" xml:space="preserve"><value>  {0} unchanged line(s)</value></data>
   <data name="DiffMoreLines" xml:space="preserve"><value>… (+{0} more diff line(s))</value></data>
   <data name="ApplyEditsEmpty" xml:space="preserve"><value>apply_edits requires at least one edit.</value></data>
-  <data name="ApplyEditsConfirm" xml:space="preserve"><value>Apply edits to {0} file(s)?</value></data>
+  <data name="ApplyEditsConfirm" xml:space="preserve"><value>Apply edits to {0} {0:file|files}?</value></data>
   <data name="ApplyEditsAborted" xml:space="preserve"><value>No changes applied — {0}.</value></data>
-  <data name="ApplyEditsOk" xml:space="preserve"><value>Applied {0} edit(s) across {1} file(s).</value></data>
+  <data name="ApplyEditsOk" xml:space="preserve"><value>Applied {0} {0:edit|edits} across {1} {1:file|files}.</value></data>
+  <data name="RenameConfirm" xml:space="preserve"><value>Rename `{0}` → `{1}` in {2} {2:file|files} ({3} {3:occurrence|occurrences})</value></data>
+  <data name="RenameTextBased" xml:space="preserve"><value>⚠ Text-based rename: the compiler could not resolve `{0}`, so EVERY identifier spelled that way is renamed — unrelated symbols included. Check the changes.</value></data>
+  <data name="RenameMoreFiles" xml:space="preserve"><value>… and {0} more {0:file|files}, renamed the same way.</value></data>
   <data name="HistoryNote" xml:space="preserve"><value>
 Backup: {0}</value></data>
   <data name="RestoreOk" xml:space="preserve"><value>Restored {0} from {1}.</value></data>
@@ -780,11 +783,13 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>The last agent run has already been undone — nothing was changed.</value></data>
   <data name="UndoRunWhileBusy" xml:space="preserve"><value>A turn is still running: wait for it to finish, then undo.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Change-tracking runs this session ({0}):</value></data>
+  <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} {1:file|files}</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Their previous state was saved first — `/restore &lt;full path&gt;` brings a file back.</value></data>
-  <data name="UndoRunResult" xml:space="preserve"><value>↩ Last run undone — {0} file(s) restored, {1} deleted.</value></data>
+  <data name="UndoRunResult" xml:space="preserve"><value>↩ Last run undone — {0} {0:file|files} restored, {1} deleted.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Timeline of the last agent run (tools, durations, files)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>No agent run with tool calls recorded in this session.</value></data>
   <data name="ReplayRunOutOfRange" xml:space="preserve"><value>No run #{0} — this session has {1} run(s) with tool calls.</value></data>
+  <data name="ReplayRunForgotten" xml:space="preserve"><value>No run #{0}: Inferpal still holds {1} {1:run|runs} with tool calls — older ones are no longer kept.</value></data>
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 Agent run {0} — {1} tool call(s), {2} file(s) changed</value></data>
   <data name="ReplayFileUnprotected" xml:space="preserve"><value>no snapshot — `/undo-run` cannot revert this one</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**Files touched:**</value></data>
@@ -882,6 +887,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="HardwareInstalledNote" xml:space="preserve"><value>_Installed-model VRAM figures are estimates (disk size × 1.2, covering KV-cache + runtime)._</value></data>
   <data name="HardwareContextHeading" xml:space="preserve"><value>### Context window</value></data>
   <data name="HardwareConfiguredCtx" xml:space="preserve"><value>**Configured num_ctx:** {0}</value></data>
+  <data name="HardwareConfiguredCtxUnset" xml:space="preserve"><value>**Configured num_ctx:** not set — each request gets the window the server chooses</value></data>
   <data name="HardwareRecommendedCtx" xml:space="preserve"><value>**Recommended max for `{0}`:** {1}{2}</value></data>
   <data name="HardwareModelMax" xml:space="preserve"><value> (model max {0})</value></data>
   <data name="HardwareCtxWarn" xml:space="preserve"><value>⚠ Your num_ctx ({0}) exceeds what fits the VRAM budget — the KV-cache may spill to system RAM and slow generation. Consider lowering it to {1}.</value></data>
@@ -1199,6 +1205,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="TurnMinutes" xml:space="preserve"><value>{0} min {1} s</value></data>
   <data name="ApprovalCreateFile" xml:space="preserve"><value>Create a file</value></data>
   <data name="ApprovalChangeFile" xml:space="preserve"><value>Change a file</value></data>
+  <data name="ApprovalChangeFiles" xml:space="preserve"><value>Change {0} {0:file|files}</value></data>
   <data name="ApprovalDeleteFile" xml:space="preserve"><value>Delete a file</value></data>
   <data name="ApprovalRunCommand" xml:space="preserve"><value>Run a command</value></data>
   <data name="ApprovalReadPage" xml:space="preserve"><value>Read a web page</value></data>
@@ -1420,6 +1427,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="ImportNoteModeToolsNotKept" xml:space="preserve"><value>The mode's tool restrictions are not carried: the command keeps its instructions.</value></data>
   <data name="ImportNoteTakesEffectAfterRestart" xml:space="preserve"><value>Takes effect when Inferpal restarts.</value></data>
   <data name="ImportNoteSecretToFill" xml:space="preserve"><value>Secret {0} not found: written as is, fill it in afterwards.</value></data>
+  <data name="ImportNoteKeyNotCarried" xml:space="preserve"><value>The API key set for {0} is removed, never sent to this server: if it needs one, type its key in the settings.</value></data>
   <data name="ImportNoteRunsWithoutAsking" xml:space="preserve"><value>Lets `{0}` run without asking — unticked, the choice is yours.</value></data>
   <data name="ImportNoteContinueDefault" xml:space="preserve"><value>The command Continue wrote into every new configuration — unticked.</value></data>
   <data name="ImportNoFile" xml:space="preserve"><value>No {0} configuration found. Looked in: {1}. Give its path: `/import {2} &lt;file&gt;`.</value></data>
@@ -1434,6 +1442,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="ImportRefused" xml:space="preserve"><value>Nothing was written: config.json could not be copied aside ({0}).</value></data>
   <data name="ImportCommandsWhere" xml:space="preserve"><value>Commands are in {0}: type / to use them, in every workspace.</value></data>
   <data name="ImportSelectionUnknown" xml:space="preserve"><value>No item has the number {0}: nothing was written.</value></data>
+  <data name="ImportCardStale" xml:space="preserve"><value>This card no longer matches what the import would write: the file or your settings changed since it was shown, and an item applied in the meantime moves the ones after it. Nothing was written — run `/import {0}` again for an up-to-date card.</value></data>
   <data name="ImportSkipFileIdentity" xml:space="preserve"><value>identity of the file (name, version, schema), not a setting</value></data>
   <data name="ImportSkipHostedProvider" xml:space="preserve"><value>hosted provider: Inferpal only talks to a model server you run</value></data>
   <data name="ImportSkipOtherServer" xml:space="preserve"><value>served by another server: Inferpal uses one model server</value></data>

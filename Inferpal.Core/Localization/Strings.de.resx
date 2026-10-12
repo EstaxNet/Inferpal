@@ -291,9 +291,12 @@ Fortfahren?</value></data>
   <data name="DiffUnchangedLines" xml:space="preserve"><value>  {0} unveränderte Zeile(n)</value></data>
   <data name="DiffMoreLines" xml:space="preserve"><value>… (+{0} weitere Diff-Zeile(n))</value></data>
   <data name="ApplyEditsEmpty" xml:space="preserve"><value>apply_edits erfordert mindestens eine Änderung.</value></data>
-  <data name="ApplyEditsConfirm" xml:space="preserve"><value>Änderungen auf {0} Datei(en) anwenden?</value></data>
+  <data name="ApplyEditsConfirm" xml:space="preserve"><value>Änderungen auf {0} {0:Datei|Dateien} anwenden?</value></data>
   <data name="ApplyEditsAborted" xml:space="preserve"><value>Keine Änderungen angewendet — {0}.</value></data>
-  <data name="ApplyEditsOk" xml:space="preserve"><value>{0} Änderung(en) auf {1} Datei(en) angewendet.</value></data>
+  <data name="ApplyEditsOk" xml:space="preserve"><value>{0} {0:Änderung|Änderungen} auf {1} {1:Datei|Dateien} angewendet.</value></data>
+  <data name="RenameConfirm" xml:space="preserve"><value>`{0}` → `{1}` umbenennen, in {2} {2:Datei|Dateien} ({3} {3:Vorkommen|Vorkommen})</value></data>
+  <data name="RenameTextBased" xml:space="preserve"><value>⚠ Textbasierte Umbenennung: Der Compiler konnte `{0}` nicht auflösen, daher wird JEDER so geschriebene Bezeichner umbenannt – auch nicht verwandte Symbole. Prüfen Sie die Änderungen.</value></data>
+  <data name="RenameMoreFiles" xml:space="preserve"><value>… und {0} {0:weitere Datei|weitere Dateien}, auf dieselbe Weise umbenannt.</value></data>
   <data name="HistoryNote" xml:space="preserve"><value>
 Sicherung: {0}</value></data>
   <data name="RestoreOk" xml:space="preserve"><value>{0} aus {1} wiederhergestellt.</value></data>
@@ -772,11 +775,13 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>Der letzte Agent-Lauf wurde bereits rückgängig gemacht — nichts wurde geändert.</value></data>
   <data name="UndoRunWhileBusy" xml:space="preserve"><value>Ein Durchgang läuft noch: Warten Sie, bis er beendet ist, und machen Sie dann rückgängig.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Verfolgte Läufe in dieser Sitzung ({0}):</value></data>
+  <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} {1:Datei|Dateien}</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Ihr vorheriger Zustand wurde vorher gesichert — `/restore &lt;vollständiger Pfad&gt;` stellt eine Datei wieder her.</value></data>
-  <data name="UndoRunResult" xml:space="preserve"><value>↩ Letzter Lauf rückgängig gemacht — {0} Datei(en) wiederhergestellt, {1} gelöscht.</value></data>
+  <data name="UndoRunResult" xml:space="preserve"><value>↩ Letzter Lauf rückgängig gemacht — {0} {0:Datei|Dateien} wiederhergestellt, {1} gelöscht.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Zeitachse des letzten Agent-Laufs (Tools, Dauern, Dateien)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>In dieser Sitzung wurde kein Agent-Lauf mit Tool-Aufrufen aufgezeichnet.</value></data>
   <data name="ReplayRunOutOfRange" xml:space="preserve"><value>Kein Lauf Nr. {0} — diese Sitzung hat {1} Lauf/Läufe mit Werkzeugaufrufen.</value></data>
+  <data name="ReplayRunForgotten" xml:space="preserve"><value>Kein Lauf Nr. {0}: Inferpal hält noch {1} {1:Lauf|Läufe} mit Werkzeugaufrufen — ältere werden nicht mehr aufbewahrt.</value></data>
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 Agent-Lauf {0} — {1} Tool-Aufruf(e), {2} geänderte Datei(en)</value></data>
   <data name="ReplayFileUnprotected" xml:space="preserve"><value>keine Sicherung — `/undo-run` kann diese Datei nicht zurücksetzen</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**Betroffene Dateien:**</value></data>
@@ -874,6 +879,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="HardwareInstalledNote" xml:space="preserve"><value>_Die VRAM-Werte installierter Modelle sind Schätzungen (Speichergröße × 1,2, inkl. KV-Cache + Laufzeit)._</value></data>
   <data name="HardwareContextHeading" xml:space="preserve"><value>### Kontextfenster</value></data>
   <data name="HardwareConfiguredCtx" xml:space="preserve"><value>**Konfiguriertes num_ctx:** {0}</value></data>
+  <data name="HardwareConfiguredCtxUnset" xml:space="preserve"><value>**Konfiguriertes num_ctx:** nicht gesetzt — jede Anfrage erhält das Fenster, das der Server wählt</value></data>
   <data name="HardwareRecommendedCtx" xml:space="preserve"><value>**Empfohlenes Maximum für `{0}`:** {1}{2}</value></data>
   <data name="HardwareModelMax" xml:space="preserve"><value> (Modell-Max. {0})</value></data>
   <data name="HardwareCtxWarn" xml:space="preserve"><value>⚠ Ihr num_ctx ({0}) überschreitet, was in das VRAM-Budget passt — der KV-Cache könnte in den System-RAM auslagern und die Generierung verlangsamen. Erwägen Sie, ihn auf {1} zu senken.</value></data>
@@ -1195,6 +1201,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="TurnMinutes" xml:space="preserve"><value>{0} min {1} s</value></data>
   <data name="ApprovalCreateFile" xml:space="preserve"><value>Datei erstellen</value></data>
   <data name="ApprovalChangeFile" xml:space="preserve"><value>Datei ändern</value></data>
+  <data name="ApprovalChangeFiles" xml:space="preserve"><value>{0} {0:Datei|Dateien} ändern</value></data>
   <data name="ApprovalDeleteFile" xml:space="preserve"><value>Datei löschen</value></data>
   <data name="ApprovalRunCommand" xml:space="preserve"><value>Befehl ausführen</value></data>
   <data name="ApprovalReadPage" xml:space="preserve"><value>Webseite lesen</value></data>
@@ -1416,6 +1423,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="ImportNoteModeToolsNotKept" xml:space="preserve"><value>Die Werkzeugbeschränkungen des Modus werden nicht übernommen: Der Befehl behält seine Anweisungen.</value></data>
   <data name="ImportNoteTakesEffectAfterRestart" xml:space="preserve"><value>Wird beim Neustart von Inferpal wirksam.</value></data>
   <data name="ImportNoteSecretToFill" xml:space="preserve"><value>Geheimnis {0} nicht gefunden: unverändert geschrieben, später ergänzen.</value></data>
+  <data name="ImportNoteKeyNotCarried" xml:space="preserve"><value>Der für {0} gesetzte API-Schlüssel wird entfernt und nie an diesen Server gesendet: Braucht er einen, geben Sie seinen Schlüssel in den Einstellungen ein.</value></data>
   <data name="ImportNoteRunsWithoutAsking" xml:space="preserve"><value>Lässt `{0}` ohne Nachfrage laufen — nicht angehakt, die Wahl liegt bei Ihnen.</value></data>
   <data name="ImportNoteContinueDefault" xml:space="preserve"><value>Der Befehl, den Continue in jede neue Konfiguration schrieb — nicht angehakt.</value></data>
   <data name="ImportNoFile" xml:space="preserve"><value>Keine {0}-Konfiguration gefunden. Gesucht in: {1}. Geben Sie den Pfad an: `/import {2} &lt;Datei&gt;`.</value></data>
@@ -1430,6 +1438,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="ImportRefused" xml:space="preserve"><value>Es wurde nichts geschrieben: config.json konnte nicht gesichert werden ({0}).</value></data>
   <data name="ImportCommandsWhere" xml:space="preserve"><value>Die Befehle liegen in {0}: Tippen Sie /, um sie in jedem Arbeitsbereich zu verwenden.</value></data>
   <data name="ImportSelectionUnknown" xml:space="preserve"><value>Kein Element hat die Nummer {0}: Es wurde nichts geschrieben.</value></data>
+  <data name="ImportCardStale" xml:space="preserve"><value>Diese Karte entspricht nicht mehr dem, was der Import schreiben würde: Die Datei oder Ihre Einstellungen haben sich seit ihrer Anzeige geändert, und ein inzwischen übernommenes Element verschiebt die folgenden. Es wurde nichts geschrieben — führen Sie `/import {0}` erneut aus, um eine aktuelle Karte zu erhalten.</value></data>
   <data name="ImportSkipFileIdentity" xml:space="preserve"><value>Identität der Datei (Name, Version, Schema), keine Einstellung</value></data>
   <data name="ImportSkipHostedProvider" xml:space="preserve"><value>gehosteter Anbieter: Inferpal spricht nur mit einem Modellserver, den Sie selbst betreiben</value></data>
   <data name="ImportSkipOtherServer" xml:space="preserve"><value>von einem anderen Server bereitgestellt: Inferpal verwendet einen einzigen Modellserver</value></data>

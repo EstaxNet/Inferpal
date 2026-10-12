@@ -18,9 +18,11 @@ internal sealed record ImportCardGroup(string Reason, IReadOnlyList<string> Path
 /// <param name="Source">The command's keyword (<c>continue</c>, <c>roo</c>): the card's apply runs <c>/import</c> with it.</param>
 /// <param name="File">The file read: applying reads it again.</param>
 /// <param name="SkippedTitle">The fold's title with its count, the summary's number: editors show it as is.</param>
+/// <param name="Fingerprint">What the card shows, item by item (<see cref="ImportPreview.Fingerprint"/>): its Apply sends it
+/// with the numbers, and an application whose plan no longer matches writes nothing.</param>
 internal sealed record ImportCard(string Source, string File, string Title, string Summary, IReadOnlyList<ImportCardItem> Items,
                                   string SkippedTitle, IReadOnlyList<ImportCardGroup> Skipped, string ApplyLabel,
-                                  string ApplyHint);
+                                  string ApplyHint, string Fingerprint);
 
 /// <summary>Draws an <see cref="ImportPlan"/> for people: the card, its Markdown, and what an application did.</summary>
 internal static class ImportPreview
@@ -55,7 +57,24 @@ internal static class ImportPreview
         var skippedTitle = Strings.ImportSkippedTitle + " (" + skippedParts.ToString(CultureInfo.InvariantCulture) + ")";
         return new ImportCard(Keyword(plan.Source), plan.File, Strings.ImportPreviewTitle(ToolName(plan.Source), plan.File),
                               summary, items, skippedTitle, groups, Strings.ImportApplyButton,
-                              Strings.ImportApplyHint(Keyword(plan.Source)));
+                              Strings.ImportApplyHint(Keyword(plan.Source)), Fingerprint(plan));
+    }
+
+    /// <summary>The plan's items in order — each one's id and exactly what it would write — as a short hash.</summary>
+    /// <remarks>
+    /// ⚠ A card's boxes are NUMBERS into a plan that <c>apply</c> reads again, and that plan moves: an item applied since
+    /// the preview is "already in place" and leaves the list, every later item moves up one. Read by number, the box ticked
+    /// on line 3 writes line 4 — an <c>allow</c> rule the card showed unticked. The hash is of what the card is drawn from,
+    /// so a card applied against another plan is refused instead of being read against it.
+    /// </remarks>
+    public static string Fingerprint(ImportPlan plan)
+    {
+        var text = new StringBuilder();
+        foreach (var item in plan.Items)
+            text.Append(item.Id).Append('\u001f')
+                .Append(System.Text.Json.JsonSerializer.Serialize(item.Effect, item.Effect.GetType())).Append('\n');
+        var hash = System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(text.ToString()));
+        return Convert.ToHexString(hash, 0, 6).ToLowerInvariant();
     }
 
     /// <summary>The card as Markdown: a numbered list with the boxes as <c>[x]</c>, the reasons, how to apply.</summary>
@@ -152,6 +171,7 @@ internal static class ImportPreview
         ImportNote.ModeToolsNotKept        => Strings.ImportNoteModeToolsNotKept,
         ImportNote.TakesEffectAfterRestart => Strings.ImportNoteTakesEffectAfterRestart,
         ImportNote.SecretToFill            => Strings.ImportNoteSecretToFill(note.Detail ?? ""),
+        ImportNote.KeyNotCarried           => Strings.ImportNoteKeyNotCarried(note.Detail ?? ""),
         ImportNote.RunsWithoutAsking       => Strings.ImportNoteRunsWithoutAsking(note.Detail ?? ""),
         ImportNote.ContinueDefault         => Strings.ImportNoteContinueDefault,
         _                                  => note.Kind.ToString(),

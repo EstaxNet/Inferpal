@@ -50,6 +50,25 @@ public sealed class ContextCeilingTests
     }
 
     [Fact]
+    public void AWindowLeftUnset_IsNotAWindowOfZero()
+    {
+        // 0 sends no num_ctx: the server decides. "Configured num_ctx: 0" read as a broken setting.
+        var report = Report(24, configured: 0, recommended: 8192, modelMax: 32768);
+
+        Assert.Contains(Strings.HardwareConfiguredCtxUnset, report);
+        Assert.DoesNotContain(Strings.HardwareConfiguredCtx(0), report);
+        // Nothing to warn about: no number was chosen to exceed anything.
+        Assert.DoesNotContain(Strings.HardwareCtxWarn(0, 8192), report);
+    }
+
+    [Fact]
+    public void AWindowThatIsSet_IsStillNamed()
+    {
+        // Reference arm.
+        Assert.Contains(Strings.HardwareConfiguredCtx(8192), Report(24, configured: 8192, recommended: 8192, modelMax: 32768));
+    }
+
+    [Fact]
     public void OverTheModelsCeiling_NamesThatCause_NotTheVramOne()
     {
         var report = Report(24, configured: 32768, recommended: 8192, modelMax: 8192);

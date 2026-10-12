@@ -464,6 +464,131 @@ public sealed class ImportTests : IDisposable
         Assert.Equal("qwen3-coder-30b", config.DefaultModel);
     }
 
+    /// <summary>
+    /// A key belongs to the host it was typed for. Imported without one (here a Continue secret that is not found), the
+    /// server kept the key in place, and the next request sent the company gateway's key to the imported machine.
+    /// </summary>
+    [Fact]
+    public void AServerOnAnotherHost_DoesNotInheritTheKeyInPlace()
+    {
+        var config = NewConfig();
+        config.Provider = "openai-compatible";
+        config.BaseUrl  = "https://gateway.corp.example/v1";
+        config.ApiKey   = "K-gw";   // short on purpose: a fixture, not a secret (the publication guard reads quoted values of six characters or more)
+        var plan = ContinueImport.Read(Write("config.yaml", ContinueYaml), Context(config));   // no .env: the secret is missing
+
+        var backend = plan.Items.Single(i => i.Kind == ImportItemKind.Backend);
+        Assert.Equal("", ((SetBackend)backend.Effect).ApiKey);
+        Assert.Contains(backend.Notes, n => n.Kind == ImportNote.KeyNotCarried && n.Detail == "gateway.corp.example");
+        Assert.Contains(Strings.ImportNoteKeyNotCarried("gateway.corp.example"),
+                        ImportPreview.Card(plan).Items.Single(i => i.Target == Strings.ImportTargetServer).Notes);
+
+        ImportApplier.Apply(plan, new HashSet<string> { backend.Id }, config, _configFile, _commands, DateTime.Now);
+
+        Assert.Equal("http://127.0.0.1:8080/v1", config.BaseUrl);
+        Assert.Equal("", config.ApiKey);
+    }
+
+    [Fact]
+    public void TheSameHost_KeepsItsKey()
+    {
+        // Reference arm: another provider on the same host and port is the same machine, and its key stays.
+        var config = NewConfig();
+        config.Provider = "lmstudio";
+        config.BaseUrl  = "http://127.0.0.1:8080";
+        config.ApiKey   = "K-lan";
+        var plan = ContinueImport.Read(Write("config.yaml", ContinueYaml), Context(config));
+
+        var backend = plan.Items.Single(i => i.Kind == ImportItemKind.Backend);
+        Assert.Null(((SetBackend)backend.Effect).ApiKey);
+        Assert.DoesNotContain(backend.Notes, n => n.Kind == ImportNote.KeyNotCarried);
+        ImportApplier.Apply(plan, new HashSet<string> { backend.Id }, config, _configFile, _commands, DateTime.Now);
+        Assert.Equal("K-lan", config.ApiKey);
+    }
+
+    /// <summary>
+    /// The first rule that matches decides. Roo's allowed list comes before its denied one, so a deny appended after
+    /// the allow it narrows never matched: <c>git push</c> ran unasked under a card that showed the deny ticked.
+    /// </summary>
+    [Fact]
+    public void AnImportedDeny_IsReadBeforeAnyAllow()
+    {
+        const string export = """
+            { "globalSettings": { "autoApprovalEnabled": true, "alwaysAllowExecute": true,
+                                  "allowedCommands": ["git"], "deniedCommands": ["git push"] } }
+            """;
+        var config = NewConfig();
+        config.PermissionRules = @"allow run_command ^dotnet(\s|$)";
+        var plan = RooImport.Read(Write("roo.json", export), Context(config));
+
+        ImportApplier.Apply(plan, plan.Items.Select(i => i.Id).ToHashSet(), config, _configFile, _commands, DateTime.Now);
+
+        var policy = new PermissionPolicy(PermissionPolicy.ParseRules(config.PermissionRules));
+        Assert.Equal(PermissionDecision.Deny, policy.Evaluate("run_command", "git push --force"));
+        Assert.Equal(PermissionDecision.Allow, policy.Evaluate("run_command", "git status"));      // the allow still works
+        Assert.Equal(PermissionDecision.Allow, policy.Evaluate("run_command", "dotnet build"));    // and the user's own
+    }
+
+    /// <summary>
+    /// A card's boxes are numbers into a plan <c>apply</c> reads again. An item applied since the preview leaves that
+    /// plan, the ones after it move up, and the card's numbers name other items: its Apply wrote an <c>allow</c> rule it
+    /// showed unticked. It now carries the fingerprint of what it showed, and a plan that moved writes nothing.
+    /// </summary>
+    [Fact]
+    public void ACardAppliedAfterThePlanMoved_WritesNothing()
+    {
+        var config = NewConfig();
+        var file = Write("roo.json", RooExport(executeAllowed: true));
+        var card = ImportCommandHandler.Handle(["/import", "roo", file], Context(config), _configFile, DateTime.Now).Card!;
+        var ticked = card.Items.Where(i => i.Checked).Select(i => i.Number).ToList();
+        var chat = card.Items.Single(i => i.Target == Strings.ImportTargetChatModel);
+        var rulesBefore = config.PermissionRules;
+
+        // The chat model applied by hand in the meantime: it is now in place, and the list moves.
+        Assert.True(ImportCommandHandler.Handle(["/import", "roo", file, "apply", chat.Number.ToString()],
+                                                Context(config), _configFile, DateTime.Now).SaveConfig);
+        // WITNESS: read by number against the plan as it is now, a box the card ticked names an allow rule it did not.
+        var now = ImportPreview.Card(RooImport.Read(file, Context(config)));
+        Assert.Contains(ticked, n => n <= now.Items.Count && now.Items[n - 1].Label.StartsWith("allow", StringComparison.Ordinal)
+                                     && !card.Items[n - 1].Label.StartsWith("allow", StringComparison.Ordinal));
+
+        var stale = ImportCommandHandler.Handle(
+            ["/import", "roo", file, "apply", string.Join(",", ticked), "#" + card.Fingerprint], Context(config), _configFile, DateTime.Now);
+
+        Assert.Equal(Strings.ImportCardStale("roo"), stale.Message);
+        Assert.False(stale.SaveConfig);
+        Assert.Equal(rulesBefore, config.PermissionRules);
+    }
+
+    [Fact]
+    public void ACardAppliedAsShown_WritesWhatItShowedTicked()
+    {
+        // Reference arm: the same card, applied before anything moved.
+        var config = NewConfig();
+        var file = Write("roo.json", RooExport(executeAllowed: true));
+        var card = ImportCommandHandler.Handle(["/import", "roo", file], Context(config), _configFile, DateTime.Now).Card!;
+        var ticked = card.Items.Where(i => i.Checked).Select(i => i.Number).ToList();
+
+        var applied = ImportCommandHandler.Handle(
+            ["/import", "roo", file, "apply", string.Join(",", ticked), "#" + card.Fingerprint], Context(config), _configFile, DateTime.Now);
+
+        Assert.StartsWith(Strings.ImportApplied(ticked.Count), applied.Message);
+        Assert.Contains("deny run_command", config.PermissionRules);
+        Assert.DoesNotContain("allow run_command", config.PermissionRules);
+    }
+
+    [Fact]
+    public void BothEditors_ApplyACard_WithItsFingerprint()
+    {
+        var root = ConversationPersistenceSilenceTests.RepoRoot();
+        var vs = ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal", "ToolWindow", "InferpalToolWindowData.SlashCommands.cs"));
+        var provider = SettingsSchemaDriftTests.NeutralizeTypeScriptComments(
+            File.ReadAllText(Path.Combine(root, "vscode", "src", "chatViewProvider.ts")));
+
+        Assert.Contains("\"#\" + card.Fingerprint", vs);
+        Assert.Contains("#${card.fingerprint}`", provider);
+    }
+
     [Fact]
     public void TheOutcome_NamesWhatWasWritten_AndNothingTheUserCleared()
     {

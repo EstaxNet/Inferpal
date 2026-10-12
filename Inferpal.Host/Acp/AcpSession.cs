@@ -358,6 +358,7 @@ internal sealed class AcpSession : IAsyncDisposable
         var head = typed.Split([' ', '\t', '\n'], 2)[0];
         if (EditorOnlyCommands.Contains(head)) return SayNotice(typed, Strings.AcpCommandNeedsEditor(head.ToLowerInvariant()));
         if (IsClear(head)) return SayNotice(typed, Strings.AcpClearStartNewThread);
+        if (StoppedBeforeTheHost(typed)) return "cancelled";
 
         SlashCommandResult result;
         try
@@ -439,6 +440,10 @@ internal sealed class AcpSession : IAsyncDisposable
     private async Task<string> ChatAsync(string typed, AcpPromptContent content)
     {
         var (promptText, labels, attachedPaths) = await BuildPromptAsync(typed, content);
+        // ⚠ A Stop that comes while the prompt is being built (attachments read, the host asked for each excerpt, a slash
+        // command answered) finds no turn on the host to stop: chat/cancel does nothing there, and sent now, the whole
+        // turn would run after it — tools and writes included — under a response that says "cancelled".
+        if (StoppedBeforeTheHost(ChatTurnPolicy.BuildBubbleText(typed, labels))) return "cancelled";
         lock (_gate)
         {
             _prompts.Add(typed);
@@ -474,6 +479,14 @@ internal sealed class AcpSession : IAsyncDisposable
             answer = answer.Length > 0 ? answer + "\n\n" + final : final;
         }
         if (answer.Length > 0) RecordAnswer(answer, notice: false);
+        if (result.Cancelled)
+        {
+            // As in both editors: the partial answer stays, and the stop is a line of its own — saved bare, a reloaded
+            // session read the cut answer as complete. Stopped before the question entered the host's history, the
+            // question is a notice: reloaded, it would reach the model as asked when the host never saw it.
+            if (!result.QuestionKept) MarkLastQuestionNotice();
+            RecordAnswer(Strings.MsgCancelled, notice: true);
+        }
         if (!string.IsNullOrEmpty(result.EndNotice))
         {
             Say("\n\n" + result.EndNotice);
@@ -564,6 +577,28 @@ internal sealed class AcpSession : IAsyncDisposable
     {
         lock (_gate)
             _transcript.Add(new SavedMessageDto("assistant", text, notice ? SessionManager.NoticeMarker : null, Now()));
+    }
+
+    /// <summary>The last question, kept on screen but out of what a reload gives the model (it never reached the host).</summary>
+    private void MarkLastQuestionNotice()
+    {
+        lock (_gate)
+        {
+            var i = _transcript.FindLastIndex(m => m.Role == "user");
+            if (i >= 0) _transcript[i] = _transcript[i] with { ToolName = SessionManager.NoticeMarker };
+        }
+    }
+
+    /// <summary>
+    /// A Stop that came before the host had a turn to stop: nothing is sent, the question is kept as a notice (the host
+    /// never saw it), and the turn answers <c>cancelled</c>.
+    /// </summary>
+    private bool StoppedBeforeTheHost(string shown)
+    {
+        if (!CancelRequested) return false;
+        lock (_gate) _transcript.Add(new SavedMessageDto("user", shown, SessionManager.NoticeMarker, Now()));
+        _ = SaveAsync();
+        return true;
     }
 
     /// <summary>The session, saved under its id — what <c>session/list</c> and <c>session/load</c> find again.</summary>

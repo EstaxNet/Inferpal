@@ -294,6 +294,9 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="ApplyEditsConfirm" xml:space="preserve"><value>{0} 個のファイルに編集を適用しますか？</value></data>
   <data name="ApplyEditsAborted" xml:space="preserve"><value>変更は適用されませんでした — {0}。</value></data>
   <data name="ApplyEditsOk" xml:space="preserve"><value>{1} 個のファイルに {0} 件の編集を適用しました。</value></data>
+  <data name="RenameConfirm" xml:space="preserve"><value>`{0}` → `{1}` に名前を変更（{2} 個のファイル、{3} 箇所）</value></data>
+  <data name="RenameTextBased" xml:space="preserve"><value>⚠ テキストベースの名前変更: コンパイラーが `{0}` を解決できなかったため、同じ綴りの識別子はすべて名前が変更されます（無関係なシンボルも含む）。変更を確認してください。</value></data>
+  <data name="RenameMoreFiles" xml:space="preserve"><value>… ほか {0} 個のファイルも同様に名前を変更します。</value></data>
   <data name="HistoryNote" xml:space="preserve"><value>
 バックアップ：{0}</value></data>
   <data name="RestoreOk" xml:space="preserve"><value>{1} から {0} を復元しました。</value></data>
@@ -772,11 +775,13 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>直前のエージェント実行はすでに元に戻されています。何も変更していません。</value></data>
   <data name="UndoRunWhileBusy" xml:space="preserve"><value>まだターンの実行中です。終わってから元に戻してください。</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>このセッションで追跡された実行（{0}）：</value></data>
+  <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} 個のファイル</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>直前の状態は先に保存されています — `/restore &lt;フルパス&gt;` でファイルを復元できます。</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ 直近の実行を取り消しました — 復元 {0} 件、削除 {1} 件。</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>直近のエージェント実行のタイムライン（ツール・所要時間・ファイル）</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>このセッションにはツール呼び出しのあるエージェント実行が記録されていません。</value></data>
   <data name="ReplayRunOutOfRange" xml:space="preserve"><value>実行 #{0} はありません。このセッションでツール呼び出しのある実行は {1} 件です。</value></data>
+  <data name="ReplayRunForgotten" xml:space="preserve"><value>実行 #{0} はありません。Inferpal が保持しているツール呼び出しのある実行は {1} 件で、それより古い実行は保持されていません。</value></data>
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 エージェント実行 {0} — ツール呼び出し {1} 件、変更ファイル {2} 件</value></data>
   <data name="ReplayFileUnprotected" xml:space="preserve"><value>スナップショットなし — `/undo-run` では元に戻せません</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**変更されたファイル:**</value></data>
@@ -874,6 +879,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="HardwareInstalledNote" xml:space="preserve"><value>_インストール済みモデルの VRAM 値は推定値です（ディスクサイズ × 1.2、KV-cache + ランタイムを含む）。_</value></data>
   <data name="HardwareContextHeading" xml:space="preserve"><value>### コンテキストウィンドウ</value></data>
   <data name="HardwareConfiguredCtx" xml:space="preserve"><value>**設定された num_ctx:** {0}</value></data>
+  <data name="HardwareConfiguredCtxUnset" xml:space="preserve"><value>**設定された num_ctx:** 未設定 — 各リクエストはサーバーが選ぶウィンドウを使います</value></data>
   <data name="HardwareRecommendedCtx" xml:space="preserve"><value>**`{0}` の推奨最大値:** {1}{2}</value></data>
   <data name="HardwareModelMax" xml:space="preserve"><value> （モデル最大 {0}）</value></data>
   <data name="HardwareCtxWarn" xml:space="preserve"><value>⚠ num_ctx ({0}) が VRAM バジェットに収まる範囲を超えています — KV-cache がシステム RAM にあふれ、生成が遅くなる可能性があります。{1} に下げることを検討してください。</value></data>
@@ -1195,6 +1201,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="TurnMinutes" xml:space="preserve"><value>{0} 分 {1} 秒</value></data>
   <data name="ApprovalCreateFile" xml:space="preserve"><value>ファイルを作成</value></data>
   <data name="ApprovalChangeFile" xml:space="preserve"><value>ファイルを変更</value></data>
+  <data name="ApprovalChangeFiles" xml:space="preserve"><value>{0} 個のファイルを変更</value></data>
   <data name="ApprovalDeleteFile" xml:space="preserve"><value>ファイルを削除</value></data>
   <data name="ApprovalRunCommand" xml:space="preserve"><value>コマンドを実行</value></data>
   <data name="ApprovalReadPage" xml:space="preserve"><value>Web ページを読む</value></data>
@@ -1416,6 +1423,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ImportNoteModeToolsNotKept" xml:space="preserve"><value>モードのツール制限は引き継がず、指示のみコマンドに残します。</value></data>
   <data name="ImportNoteTakesEffectAfterRestart" xml:space="preserve"><value>Inferpal の再起動後に反映されます。</value></data>
   <data name="ImportNoteSecretToFill" xml:space="preserve"><value>シークレット {0} が見つからないため、そのまま書き込みます。後で入力してください。</value></data>
+  <data name="ImportNoteKeyNotCarried" xml:space="preserve"><value>{0} 用に設定された API キーは削除され、このサーバーには送信されません。キーが必要な場合は設定で入力してください。</value></data>
   <data name="ImportNoteRunsWithoutAsking" xml:space="preserve"><value>`{0}` を確認なしで実行できるようにします。チェックは外してあります。判断はお任せします。</value></data>
   <data name="ImportNoteContinueDefault" xml:space="preserve"><value>Continue が新しい設定に毎回書き込んでいたコマンドです。チェックは外してあります。</value></data>
   <data name="ImportNoFile" xml:space="preserve"><value>{0} の設定が見つかりません。探した場所：{1}。パスを指定してください：`/import {2} &lt;ファイル&gt;`。</value></data>
@@ -1430,6 +1438,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ImportRefused" xml:space="preserve"><value>何も書き込んでいません：config.json をコピーできませんでした（{0}）。</value></data>
   <data name="ImportCommandsWhere" xml:space="preserve"><value>コマンドは {0} にあります。/ を入力すると、どのワークスペースでも使えます。</value></data>
   <data name="ImportSelectionUnknown" xml:space="preserve"><value>番号 {0} の項目はありません。何も書き込んでいません。</value></data>
+  <data name="ImportCardStale" xml:space="preserve"><value>このカードは、インポートが書き込む内容と一致しなくなりました。表示後にファイルまたは設定が変更され、その間に適用された項目によって以降の項目がずれています。何も書き込んでいません。最新のカードを得るには `/import {0}` を再実行してください。</value></data>
   <data name="ImportSkipFileIdentity" xml:space="preserve"><value>ファイル自体の識別情報（名前、バージョン、スキーマ）で、設定ではありません</value></data>
   <data name="ImportSkipHostedProvider" xml:space="preserve"><value>ホスト型プロバイダー：Inferpal はご自身が動かすモデルサーバーとのみ通信します</value></data>
   <data name="ImportSkipOtherServer" xml:space="preserve"><value>別のサーバーで提供：Inferpal が使うモデルサーバーは 1 つです</value></data>

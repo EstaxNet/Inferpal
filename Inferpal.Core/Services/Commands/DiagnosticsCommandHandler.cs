@@ -164,9 +164,13 @@ internal static class DiagnosticsCommandHandler
         sb.Append("- **Models**: ").Append(SanitizePaths(models, ctx.WorkspaceRoot)).Append('\n');
         // ⚠ The loaded window is the one requests must fit: configured at 100 000 under LM Studio loading 4 096, a line
         // naming only the setting pointed whoever read the report away from the number that explained it.
-        sb.Append("- **Context window**: ").Append(c.ContextWindowSize).Append(" tokens configured");
-        if (ctx.WindowInUse > 0 && ctx.WindowInUse < c.ContextWindowSize)
+        // ⚠ And 0 is "the model's own", not a window of zero tokens: there the loaded window is the ONLY figure.
+        sb.Append("- **Context window**: ")
+          .Append(c.ContextWindowSize > 0 ? $"{c.ContextWindowSize} tokens configured" : "not configured (the server's default)");
+        if (ctx.WindowInUse > 0 && (c.ContextWindowSize <= 0 || ctx.WindowInUse < c.ContextWindowSize))
             sb.Append(", **").Append(ctx.WindowInUse).Append(" loaded by the server** (the window requests must fit)");
+        else if (c.ContextWindowSize <= 0)
+            sb.Append(", size not reported by the server");
         sb.Append(" (keep ").Append(c.ContextWindowKeepTurns).Append(" turns)\n");
 
         sb.Append("- **Toggles**: ")

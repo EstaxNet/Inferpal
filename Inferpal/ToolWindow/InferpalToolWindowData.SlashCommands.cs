@@ -240,7 +240,7 @@ internal partial class InferpalToolWindowData
             case SlashCommandId.Tdd:         await HandleTddCommandAsync(parts, ct);      break;
             case SlashCommandId.Task:        await HandleTaskCommandAsync(parts);         break;
             case SlashCommandId.Debug:       await HandleDebugCommandAsync(parts, ct);    break;
-            case SlashCommandId.Replay:      await ShowInfoAsync(Services.Commands.ReplayCommandHandler.Handle(_tools.History.Runs, parts, FindProjectRoot())); break;
+            case SlashCommandId.Replay:      await ShowInfoAsync(Services.Commands.ReplayCommandHandler.Handle(_tools.History.Runs, parts, FindProjectRoot(), _tools.History.ForgottenRuns)); break;
             case SlashCommandId.Instructions:
                 await ShowInfoAsync(RepoInstructionsReport.Markdown(await CurrentRepoInstructionRowsAsync()));
                 break;
@@ -675,7 +675,9 @@ internal partial class InferpalToolWindowData
             await ShowInfoAsync(Strings.ImportApplyWhileBusy);
             return false;
         }
-        string[] parts = ["/import", card.Source, card.File, "apply", numbers.Count > 0 ? string.Join(",", numbers) : "none"];
+        // With what the card showed: against a plan that moved since, its numbers would name other items.
+        string[] parts = ["/import", card.Source, card.File, "apply", numbers.Count > 0 ? string.Join(",", numbers) : "none",
+                          "#" + card.Fingerprint];
         await HandleImportCommandAsync(parts);
         return true;
     }

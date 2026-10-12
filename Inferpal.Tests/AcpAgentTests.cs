@@ -283,6 +283,107 @@ public sealed class AcpAgentTests : IDisposable
         Assert.Equal(count, h.Client.Notifications.Count);
     }
 
+    /// <summary>
+    /// ⚠ A Stop that comes while the prompt is being built — here, while the host sizes an attached file's excerpt —
+    /// finds no turn on the host to stop. The turn was then sent anyway and ran whole, tools included, under a response
+    /// that said "cancelled".
+    /// </summary>
+    [Fact]
+    public async Task AStopWhileThePromptIsBuilt_SendsNothingToTheModel()
+    {
+        var excerpting = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release    = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var asked = 0;
+        await using var h = await StartAsync(fake: f =>
+            f.OnChat = (_, _) => { Interlocked.Increment(ref asked); return Task.FromResult(new ChatTurnResult("ran", null, 0, 0)); });
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+        // Held from now on: the excerpt of the attached file asks the server for the window its model loaded.
+        h.Fake.OnLoadedContextWindow = async _ => { excerpting.TrySetResult(); await release.Task; };
+
+        var prompt = h.Client.RequestAsync("session/prompt", new
+        {
+            sessionId = sid,
+            prompt = new object[]
+            {
+                new { type = "text", text = "rewrite this file" },
+                new { type = "resource", resource = new { uri = "file:///" + _root.Replace('\\', '/') + "/a.txt", text = "content" } },
+            },
+        });
+        await excerpting.Task.WaitAsync(Wait);
+        await h.Client.NotifyAsync("session/cancel", new { sessionId = sid });
+        await Task.Delay(200);   // the cancel is handled before the excerpt answers
+        release.TrySetResult();
+        var r = await prompt;
+
+        Assert.Equal("cancelled", StopReason(r));
+        Assert.Equal(0, asked);
+    }
+
+    [Fact]
+    public async Task AStoppedTurn_IsSavedStopped_NotAsAFinishedAnswer()
+    {
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using var h = await StartAsync(fake: f => f.OnChat = async (onToken, ct) =>
+        {
+            onToken?.Invoke("partial answer");
+            entered.TrySetResult();
+            await Task.Delay(Timeout.Infinite, ct);
+            return new ChatTurnResult(string.Empty, null, 0, 0);
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+
+        var prompt = PromptAsync(h, sid, "write forever");
+        await entered.Task.WaitAsync(Wait);
+        await h.Client.NotifyAsync("session/cancel", new { sessionId = sid });
+        Assert.Equal("cancelled", StopReason(await prompt));
+
+        var saved = await new Services.Persistence.ConversationStore().LoadAsync(sid, CancellationToken.None);
+        Assert.NotNull(saved);
+        Assert.Equal("partial answer", saved!.Messages[^2].Content);
+        Assert.Equal(Strings.MsgCancelled, saved.Messages[^1].Content);
+        Assert.Equal(Services.Persistence.SessionManager.NoticeMarker, saved.Messages[^1].ToolName);
+    }
+
+    /// <summary>
+    /// ⚠ Live sessions are bounded, and a client never reloads a thread it believes open: closed to make room for a
+    /// fifth, a session answered its next prompt with "Unknown session". It is reopened from what it saved.
+    /// </summary>
+    [Fact]
+    public async Task ASessionClosedToMakeRoom_AnswersItsNextPrompt_WithItsConversation()
+    {
+        var seen = new List<string>();
+        await using var h = await StartAsync(fake: f => f.OnChatRequest = (_, history, _, _) =>
+        {
+            lock (seen) seen.AddRange(history.Where(m => m.Role == "user").Select(m => m.Content ?? ""));
+            return Task.FromResult(new ChatTurnResult("ok", null, 0, 0));
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var first = await NewSessionAsync(h);
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, first, "remember the word teal")));
+        for (var i = 0; i < AcpAgent.MaxLiveSessions; i++) await NewSessionAsync(h);   // the first is closed for room
+        lock (seen) seen.Clear();
+
+        var again = await PromptAsync(h, first, "which word?");
+
+        Assert.Equal("end_turn", StopReason(again));
+        lock (seen) Assert.Contains(seen, q => q.Contains("remember the word teal", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task ASessionNeverOpened_IsStillUnknown()
+    {
+        // Reference arm: an id this agent never opened, or one the client closed, is an error as before.
+        await using var h = await StartAsync();
+        await h.Client.RequestAsync("initialize", Init());
+        var closed = await NewSessionAsync(h);
+        await h.Client.RequestAsync("session/close", new { sessionId = closed });
+
+        foreach (var id in new[] { "acp-never-opened", closed })
+            Assert.Equal(AcpRpc.InvalidParams, (await PromptAsync(h, id, "hello")).GetProperty("error").GetProperty("code").GetInt32());
+    }
+
     // ── Tools and approvals ────────────────────────────────────────────────────
 
     [Fact]

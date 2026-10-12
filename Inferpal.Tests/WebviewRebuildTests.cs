@@ -320,13 +320,13 @@ public class WebviewRebuildTests
 
         var reset        = Body(provider, "async resetConversation(");
         var resetArchive = reset.IndexOf("this.archiveConversation()", StringComparison.Ordinal);
-        Assert.True(resetArchive >= 0 && resetArchive < reset.IndexOf("this.transcript.length = 0", StringComparison.Ordinal),
+        Assert.True(resetArchive >= 0 && resetArchive < reset.IndexOf("this.clearTranscript()", StringComparison.Ordinal),
             "resetConversation no longer archives before clearing: the rule has no reference");
 
         var effect = Regex.Match(provider, @"case 'clearTranscript':([\s\S]*?)break;");
         Assert.True(effect.Success, "the clearTranscript effect is gone: the rule measures nothing");
         var archive = effect.Groups[1].Value.IndexOf("this.archiveConversation()", StringComparison.Ordinal);
-        var clear   = effect.Groups[1].Value.IndexOf("this.transcript.length = 0", StringComparison.Ordinal);
+        var clear   = effect.Groups[1].Value.IndexOf("this.clearTranscript()", StringComparison.Ordinal);
         Assert.True(archive >= 0 && archive < clear,
             "/clear and /template empty the transcript without archiving it, unlike the reset button");
     }
@@ -353,32 +353,37 @@ public class WebviewRebuildTests
     }
 
     /// <summary>
-    /// The bounded transcript says how much it dropped, and nothing more. Past the cap every append
-    /// spliced the previous marker out with the oldest entries, so the count restarted at 1; and the
-    /// marker promised the full conversation was in the saved session, which saves this same trimmed
-    /// transcript.
+    /// The VIEW is bounded, the conversation is not. Past the cap every append spliced the previous marker out with the
+    /// oldest entries, so the count restarted at 1. And the saved session WAS this trimmed view: both editors write the
+    /// same session files, and a Visual Studio conversation past the cap, opened in VS Code, lost its oldest turns at
+    /// the first auto-save, the next archive or <c>/branch</c> — written back over the file Visual Studio had kept whole.
     /// </summary>
     [Fact]
-    public void TheTranscriptCap_CountsEverythingItDropped_AndPromisesNoFullCopy()
+    public void TheTranscriptCap_CountsWhatItHides_AndTheConversationKeepsIt()
     {
         var provider = TsCode("chatViewProvider.ts");
         var trim     = Body(provider, "private trimTranscript(): void");
 
-        // Witness: the saved session really is the live (trimmed) transcript.
-        Assert.Contains("toSavedMessages(this.transcript)", Body(provider, "private snapshot("),
-                        StringComparison.Ordinal);
-
         Assert.Matches(@"this\.droppedEntries\s*\+=", trim);
         Assert.Contains("this.transcript[0] =", trim, StringComparison.Ordinal);
-        Assert.DoesNotContain("the full conversation is in the saved session", provider, StringComparison.Ordinal);
+        // What leaves the view goes to the hidden part, never nowhere.
+        Assert.Contains("this.hiddenEntries.push(...this.transcript.splice(", trim, StringComparison.Ordinal);
 
-        // A new conversation starts a new count.
-        var resets = Regex.Matches(provider, @"this\.transcript\.length = 0;");
-        Assert.True(resets.Count >= 3, "transcript reset sites not found: the rule measures nothing");
-        foreach (Match reset in resets)
-            Assert.True(Regex.IsMatch(provider[reset.Index..Math.Min(provider.Length, reset.Index + 300)],
-                                      @"this\.droppedEntries = 0;"),
-                "a transcript reset keeps the previous conversation's dropped count");
+        // The saved session and the export read the whole conversation, the marker left out — and nothing saves the
+        // view alone.
+        Assert.Contains("toSavedMessages(this.wholeTranscript())", Body(provider, "private snapshot("), StringComparison.Ordinal);
+        Assert.Contains("[...this.hiddenEntries, ...(this.droppedEntries > 0 ? this.transcript.slice(1) : this.transcript)]",
+                        Body(provider, "private wholeTranscript("), StringComparison.Ordinal);
+        Assert.Contains("messages: this.wholeTranscript().map(", provider, StringComparison.Ordinal);
+        Assert.DoesNotContain("toSavedMessages(this.transcript)", provider, StringComparison.Ordinal);
+
+        // One funnel empties a conversation: the view, its hidden part and the count, together.
+        var clear = Body(provider, "private clearTranscript(");
+        Assert.Contains("this.hiddenEntries = [];", clear, StringComparison.Ordinal);
+        Assert.Contains("this.droppedEntries = 0;", clear, StringComparison.Ordinal);
+        Assert.Single(Regex.Matches(provider, @"this\.transcript\.length = 0;"));   // the funnel's own
+        Assert.True(Regex.Matches(provider, @"this\.clearTranscript\(\);").Count >= 3,
+                    "transcript reset sites not found: the rule measures nothing");
     }
 
     /// <summary>

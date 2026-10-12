@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Inferpal.Localization;
 using Inferpal.Services.Rag;
 
 namespace Inferpal.Services.Tools;
@@ -252,10 +253,12 @@ internal sealed class RenameSymbolTool : ITool
         }
 
         // ── Apply with approval ────────────────────────────────────────────────
-        // The prompt is where the human decides: the changed lines, not only a count.
-        var details = new StringBuilder(
-            $"Rename `{oldName}` → `{newName}` in {hits.Count} file(s) ({totalOccurrences} occurrence(s))");
-        if (textBased) details.Append("\n\n").Append(textBasedWarning);
+        // The prompt is where the human decides: the changed lines, not only a count — in their language, and with what
+        // the scan could not see. ⚠ A folder it could not list makes a PARTIAL rename that no longer compiles: said here,
+        // before the write, not only in the report the model reads after it.
+        var details = new StringBuilder(Strings.RenameConfirm(oldName, newName, hits.Count, totalOccurrences));
+        if (coverage.IsIncomplete) details.Append("\n\n").Append(coverage.Warning());
+        if (textBased) details.Append("\n\n").Append(Strings.RenameTextBased(oldName));
         foreach (var (f, _, oldContent, newContent) in hits.OrderBy(h => h.FilePath).Take(MaxFilesInPrompt))
         {
             details.Append("\n\n### ").Append(Path.GetRelativePath(root, f));
@@ -263,7 +266,7 @@ internal sealed class RenameSymbolTool : ITool
                 details.Append('\n').Append(diff);
         }
         if (hits.Count > MaxFilesInPrompt)
-            details.Append($"\n\n… and {hits.Count - MaxFilesInPrompt} more file(s).");
+            details.Append("\n\n").Append(Strings.RenameMoreFiles(hits.Count - MaxFilesInPrompt));
 
         // Subject for permission rules = every affected file path (newline-separated) so allow/deny
         // path patterns are matched against the actual files, not the localized summary. A deny rule

@@ -157,7 +157,8 @@ internal sealed class HardwareProfile
         if (CtxAdvice is { } adv && (adv.RecommendedMaxCtx > 0 || adv.ModelMaxCtx > 0))
         {
             sb.AppendLine("\n" + Strings.HardwareContextHeading + "\n");
-            sb.AppendLine(Strings.HardwareConfiguredCtx(adv.ConfiguredCtx));
+            // 0 is "no num_ctx sent", not a window of zero tokens: the server decides.
+            sb.AppendLine(adv.ConfiguredCtx > 0 ? Strings.HardwareConfiguredCtx(adv.ConfiguredCtx) : Strings.HardwareConfiguredCtxUnset);
 
             if (adv.RecommendedMaxCtx > 0)
             {

@@ -34,6 +34,10 @@ internal static class DocsCommandHandler
         if (sub is not ("list" or "add" or "remove" or "reindex"))
             return Strings.SlashUsage("/docs [list | add <url> [title] | remove <id> | reindex [id]]");
 
+        // The sources as the settings file holds them now: an id is chosen, and a source found, among what every
+        // window wrote — not among what this one read at its start.
+        config.FollowFile(nameof(InferpalConfig.DocSitesJson));
+
         // Every sub-command stops here: `add` and `remove` would write a new list over the one that
         // could not be read, erasing the sources it still holds.
         if (!DocSite.TryParse(config.DocSitesJson, out var sites, out var problem))
@@ -121,6 +125,7 @@ internal static class DocsCommandHandler
     }
 
     /// <summary>Whether the settings still list <paramref name="site"/>, read when its indexing turn comes.</summary>
+    /// <remarks>As the file holds them: a source removed in another window is not crawled back into the index.</remarks>
     private static bool StillConfigured(InferpalConfig config, DocSite site) =>
-        DocSite.TryParse(config.DocSitesJson, out var now, out _) && now.Any(x => x.Id == site.Id);
+        DocSite.TryParse(config.SharedDocSitesJson, out var now, out _) && now.Any(x => x.Id == site.Id);
 }

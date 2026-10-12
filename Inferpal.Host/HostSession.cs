@@ -64,7 +64,7 @@ internal sealed class HostSession : IDisposable
     /// </summary>
     public ConnectionStatusPresenter Connection { get; } = new();
 
-    public ConversationStore Store { get; } = new();
+    public ConversationStore Store { get; } = new(slotOwner: ConversationStore.VsCodeSlot);
 
     /// <summary>
     /// Conversation history, seeded with the layered system prompt (index 0). Replacing it resets

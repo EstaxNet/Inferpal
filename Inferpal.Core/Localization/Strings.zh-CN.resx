@@ -294,6 +294,9 @@
   <data name="ApplyEditsConfirm" xml:space="preserve"><value>将编辑应用到 {0} 个文件？</value></data>
   <data name="ApplyEditsAborted" xml:space="preserve"><value>未应用任何更改 — {0}。</value></data>
   <data name="ApplyEditsOk" xml:space="preserve"><value>已在 {1} 个文件中应用 {0} 个编辑。</value></data>
+  <data name="RenameConfirm" xml:space="preserve"><value>将 `{0}` 重命名为 `{1}`（{2} 个文件，{3} 处）</value></data>
+  <data name="RenameTextBased" xml:space="preserve"><value>⚠ 基于文本的重命名：编译器无法解析 `{0}`，因此所有这样拼写的标识符都会被重命名——包括无关的符号。请检查更改。</value></data>
+  <data name="RenameMoreFiles" xml:space="preserve"><value>… 以及另外 {0} 个文件，以同样方式重命名。</value></data>
   <data name="HistoryNote" xml:space="preserve"><value>
 已备份：{0}</value></data>
   <data name="RestoreOk" xml:space="preserve"><value>已从 {1} 还原 {0}。</value></data>
@@ -772,11 +775,13 @@
   <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>上一次代理运行已经撤销过了——没有做任何更改。</value></data>
   <data name="UndoRunWhileBusy" xml:space="preserve"><value>当前轮次仍在进行：请等它结束后再撤销。</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>本会话跟踪的运行（{0}）：</value></data>
+  <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} 个文件</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>它们之前的状态已先行保存 — 使用 `/restore &lt;完整路径&gt;` 可恢复文件。</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ 已撤销上一次运行 — 恢复 {0} 个文件，删除 {1} 个。</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>最近一次代理运行的时间线（工具、耗时、文件）</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>本会话中没有记录包含工具调用的代理运行。</value></data>
   <data name="ReplayRunOutOfRange" xml:space="preserve"><value>没有第 {0} 次运行——本会话中有 {1} 次包含工具调用的运行。</value></data>
+  <data name="ReplayRunForgotten" xml:space="preserve"><value>没有第 {0} 次运行：Inferpal 仍保留 {1} 次包含工具调用的运行，更早的运行已不再保留。</value></data>
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 代理运行 {0} — {1} 次工具调用，{2} 个文件被修改</value></data>
   <data name="ReplayFileUnprotected" xml:space="preserve"><value>没有快照 — `/undo-run` 无法还原此文件</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**涉及的文件：**</value></data>
@@ -874,6 +879,7 @@
   <data name="HardwareInstalledNote" xml:space="preserve"><value>_已安装模型的 VRAM 数值为估算值（磁盘大小 × 1.2，含 KV-cache + 运行时）。_</value></data>
   <data name="HardwareContextHeading" xml:space="preserve"><value>### 上下文窗口</value></data>
   <data name="HardwareConfiguredCtx" xml:space="preserve"><value>**已配置的 num_ctx：** {0}</value></data>
+  <data name="HardwareConfiguredCtxUnset" xml:space="preserve"><value>**已配置的 num_ctx：** 未设置 — 每个请求使用服务器选择的窗口</value></data>
   <data name="HardwareRecommendedCtx" xml:space="preserve"><value>**`{0}` 的推荐上限：** {1}{2}</value></data>
   <data name="HardwareModelMax" xml:space="preserve"><value> （模型上限 {0}）</value></data>
   <data name="HardwareCtxWarn" xml:space="preserve"><value>⚠ 你的 num_ctx ({0}) 超出了 VRAM 预算的容纳范围 — KV-cache 可能溢出到系统 RAM 并降低生成速度。建议将其降低到 {1}。</value></data>
@@ -1195,6 +1201,7 @@
   <data name="TurnMinutes" xml:space="preserve"><value>{0} 分 {1} 秒</value></data>
   <data name="ApprovalCreateFile" xml:space="preserve"><value>创建文件</value></data>
   <data name="ApprovalChangeFile" xml:space="preserve"><value>修改文件</value></data>
+  <data name="ApprovalChangeFiles" xml:space="preserve"><value>修改 {0} 个文件</value></data>
   <data name="ApprovalDeleteFile" xml:space="preserve"><value>删除文件</value></data>
   <data name="ApprovalRunCommand" xml:space="preserve"><value>运行命令</value></data>
   <data name="ApprovalReadPage" xml:space="preserve"><value>读取网页</value></data>
@@ -1416,6 +1423,7 @@
   <data name="ImportNoteModeToolsNotKept" xml:space="preserve"><value>模式的工具限制不会导入：命令保留其说明。</value></data>
   <data name="ImportNoteTakesEffectAfterRestart" xml:space="preserve"><value>Inferpal 重启后生效。</value></data>
   <data name="ImportNoteSecretToFill" xml:space="preserve"><value>找不到密钥 {0}：按原样写入，之后请补充。</value></data>
+  <data name="ImportNoteKeyNotCarried" xml:space="preserve"><value>为 {0} 设置的 API 密钥将被移除，绝不会发送到此服务器：如果它需要密钥，请在设置中输入。</value></data>
   <data name="ImportNoteRunsWithoutAsking" xml:space="preserve"><value>允许不经询问运行 `{0}`——默认不勾选，由你决定。</value></data>
   <data name="ImportNoteContinueDefault" xml:space="preserve"><value>Continue 在每个新配置中默认写入的命令——默认不勾选。</value></data>
   <data name="ImportNoFile" xml:space="preserve"><value>未找到 {0} 配置。已查找：{1}。请指定路径：`/import {2} &lt;文件&gt;`。</value></data>
@@ -1430,6 +1438,7 @@
   <data name="ImportRefused" xml:space="preserve"><value>未写入任何内容：无法复制 config.json（{0}）。</value></data>
   <data name="ImportCommandsWhere" xml:space="preserve"><value>命令位于 {0}：输入 / 即可在任意工作区中使用。</value></data>
   <data name="ImportSelectionUnknown" xml:space="preserve"><value>没有编号为 {0} 的项：未写入任何内容。</value></data>
+  <data name="ImportCardStale" xml:space="preserve"><value>此卡片已与导入将写入的内容不一致：自显示以来文件或设置已更改，期间应用的项目会使其后的项目移位。未写入任何内容——请再次运行 `/import {0}` 获取最新卡片。</value></data>
   <data name="ImportSkipFileIdentity" xml:space="preserve"><value>文件自身的标识（名称、版本、架构），不是设置</value></data>
   <data name="ImportSkipHostedProvider" xml:space="preserve"><value>托管服务商：Inferpal 只与你自己运行的模型服务器通信</value></data>
   <data name="ImportSkipOtherServer" xml:space="preserve"><value>由另一台服务器提供：Inferpal 只使用一台模型服务器</value></data>

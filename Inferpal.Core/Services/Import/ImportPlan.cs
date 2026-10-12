@@ -19,7 +19,7 @@ internal enum ImportItemKind
 internal abstract record ImportEffect;
 
 /// <param name="Provider">An Inferpal provider code (<c>ollama</c>, <c>lmstudio</c>, <c>openai-compatible</c>).</param>
-/// <param name="ApiKey"><c>null</c> = the key in place is kept.</param>
+/// <param name="ApiKey"><c>null</c> = the key in place is kept; empty = it is removed (it was another host's).</param>
 internal sealed record SetBackend(string Provider, string BaseUrl, string? ApiKey) : ImportEffect;
 
 /// <param name="Role">Which model setting: <see cref="ImportItemKind.ChatModel"/>, <c>CompletionModel</c>,
@@ -60,6 +60,8 @@ internal enum ImportNote
     TakesEffectAfterRestart,
     /// <summary>A secret the import could not find (<c>${{ secrets.X }}</c>): written as is, to fill in.</summary>
     SecretToFill,
+    /// <summary>The API key in place was typed for another host (the detail): removed, never sent to this server.</summary>
+    KeyNotCarried,
     /// <summary>An allow rule lets commands run without asking: left unticked, the choice is the user's.</summary>
     RunsWithoutAsking,
     /// <summary>The command Continue wrote into every new configuration: left unticked, the user never wrote it.</summary>

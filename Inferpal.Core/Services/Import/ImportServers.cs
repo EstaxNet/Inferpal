@@ -93,6 +93,10 @@ internal static class ImportServers
     }
 
     /// <summary>An address as two spellings of one server compare: no trailing <c>/</c> or <c>/v1</c>, host lower-cased.</summary>
+    /// <summary>The host and port a key is sent to (<c>gateway.corp:443</c>), or <c>null</c> for what is not a URL.</summary>
+    internal static string? Authority(string? url) =>
+        Uri.TryCreate(url?.Trim(), UriKind.Absolute, out var uri) ? uri.Authority.ToLowerInvariant() : null;
+
     internal static string Comparable(string url)
     {
         var u = url.Trim().TrimEnd('/');

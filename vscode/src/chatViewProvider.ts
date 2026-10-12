@@ -207,8 +207,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // Archive after the host accepted the reset — fire-and-forget so the UI clears
     // immediately while the utility model names the session in the background.
     this.archiveConversation();
-    this.transcript.length = 0;
-    this.droppedEntries = 0;
+    this.clearTranscript();
     this.streamText = '';
     this.plan = null;
     this.promptTokens = 0;
@@ -701,16 +700,31 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   // ── Sessions ────────────────────────────────────────────────────────────────
 
-  /** Persistable view of the transcript (same shape the VS extension saves). */
+  /** Persistable view of the transcript (same shape the VS extension saves): the whole conversation, hidden part included. */
   private snapshot(): SavedMessage[] {
-    return toSavedMessages(this.transcript);
+    return toSavedMessages(this.wholeTranscript());
+  }
+
+  /**
+   * The conversation, entries hidden from the view first — never the marker that says they are hidden.
+   * ⚠ Both editors write the same session files, and only this view is bounded: saved from the view alone, a Visual
+   * Studio conversation past the cap loses its oldest turns at the first auto-save, the next archive or `/branch`.
+   */
+  private wholeTranscript(): WvTranscriptItem[] {
+    return [...this.hiddenEntries, ...(this.droppedEntries > 0 ? this.transcript.slice(1) : this.transcript)];
+  }
+
+  /** Empties the conversation: the view, its hidden part and the marker's count, together. */
+  private clearTranscript(): void {
+    this.transcript.length = 0;
+    this.hiddenEntries = [];
+    this.droppedEntries = 0;
   }
 
   /** Replaces the transcript with a restored session (host history already rebuilt). */
   /** `nextTurnTokens`: the loaded conversation as the host measured it — what the next question will send. */
   private applySession(messages: SavedMessage[], nextTurnTokens = 0): void {
-    this.transcript.length = 0;
-    this.droppedEntries = 0;
+    this.clearTranscript();
     this.transcript.push(...toTranscript(messages));
     this.trimTranscript();
     this.streamText = '';
@@ -1041,7 +1055,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     try {
       const document = await host.chatExport({
         asPlainText: target.fsPath.toLowerCase().endsWith('.txt'),
-        messages: this.transcript.map((item) => ({
+        messages: this.wholeTranscript().map((item) => ({
           role: item.role,
           // For a tool turn, `text` IS the tool name and `toolOutput` the body.
           name: item.role === 'tool' ? item.text : undefined,
@@ -1115,7 +1129,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         const ready = !this.busy && (this.hostStarting || this.getHost()?.isRunning === true);
         card.applied = ready;
         const file = /\s/.test(card.file) ? `"${card.file}"` : card.file;
-        await this.send(`/import ${card.source} ${file} apply ${msg.numbers.length > 0 ? msg.numbers.join(',') : 'none'}`);
+        // With what the card showed: against a plan that moved since, its numbers would name other items.
+        await this.send(`/import ${card.source} ${file} apply ${msg.numbers.length > 0 ? msg.numbers.join(',') : 'none'} #${card.fingerprint}`);
         if (!ready) {
           this.hydrate();
         }
@@ -1948,8 +1963,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             this.transcript.pop();
           }
           this.archiveConversation();
-          this.transcript.length = 0;
-          this.droppedEntries = 0;
+          this.clearTranscript();
           this.streamText = '';
           this.plan = null;
           this.promptTokens = 0;
@@ -2209,10 +2223,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private static readonly MAX_TRANSCRIPT = 2000;
 
   /**
-   * Appends to the transcript, keeping it bounded. A long-lived session (tool bubbles carry the
-   * full command output) would otherwise grow without limit in memory, in every `hydrate` payload
-   * and in the auto-saved session file. Trimming drops the oldest entries and leaves a marker —
-   * never a silent disappearance.
+   * Appends to the transcript, keeping the VIEW bounded. A long-lived session (tool bubbles carry the
+   * full command output) would otherwise grow without limit in the webview and in every `hydrate`
+   * payload. Trimming hides the oldest entries behind a marker; the saved session and the export keep
+   * them ({@link wholeTranscript}).
    */
   /**
    * Answers the last question again, like the VS window: the previous exchange leaves the view and the
@@ -2317,13 +2331,16 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.trimTranscript();
   }
 
-  /** Entries dropped from this conversation so far; while non-zero, `transcript[0]` is the marker. */
+  /** Entries hidden from this view so far; while non-zero, `transcript[0]` is the marker. */
   private droppedEntries = 0;
 
+  /** The entries hidden from the view, oldest first: still the conversation's, saved and exported with it. */
+  private hiddenEntries: WvTranscriptItem[] = [];
+
   /**
-   * Drops the oldest entries past the cap, behind a single marker that carries the running count.
+   * Hides the oldest entries past the cap, behind a single marker that carries the running count.
    * The marker is replaced in place, never trimmed with the entries: dropping it restarted the count
-   * at 1 on every append. It promises no copy elsewhere — the saved session is this same transcript.
+   * at 1 on every append. The entries leave the view (and every `hydrate` payload), not the conversation.
    */
   private trimTranscript(): void {
     if (this.transcript.length <= ChatViewProvider.MAX_TRANSCRIPT + 1) {
@@ -2331,11 +2348,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
     const markerSlot = this.droppedEntries > 0 ? 1 : 0;
     const excess = this.transcript.length - ChatViewProvider.MAX_TRANSCRIPT - markerSlot;
-    this.transcript.splice(markerSlot, excess);
+    this.hiddenEntries.push(...this.transcript.splice(markerSlot, excess));
     this.droppedEntries += excess;
     const marker: WvTranscriptItem = {
       role: 'error',
-      text: t('{0} older messages were dropped from this view to bound memory — they are not kept in the saved session either.', this.droppedEntries),
+      text: t('{0} older messages are hidden from this view to bound memory — they stay in the saved session and the export.', this.droppedEntries),
       timestamp: ChatViewProvider.now(),
     };
     if (markerSlot) {

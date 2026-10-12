@@ -17,7 +17,7 @@ internal sealed record ImportCommandResult(string Message, ImportCard? Card = nu
 /// <c>/import continue|roo [file] [apply [all|none|1,3,5]]</c> — logic shared by Visual Studio, VS Code and the agent
 /// protocol. Without <c>apply</c> it previews and writes NOTHING; with it, it reads the source again and writes the items
 /// chosen: those ticked by default, all of them, none, or the numbers given (the card sends the boxes the user left
-/// ticked).
+/// ticked, with <c>#</c> and the fingerprint of what it showed).
 /// </summary>
 /// <remarks>⚠ Reading again rather than keeping the preview: no state lives between the two commands, so an apply typed
 /// in another session, or after the file changed, applies what the file says now.</remarks>
@@ -69,7 +69,13 @@ internal static class ImportCommandHandler
             return new(ImportPreview.Markdown(card), card);
         }
 
-        var selection = string.Join(' ', parts[(applyAt + 1)..]).Trim();
+        // A card's Apply carries the fingerprint of what it showed ("#…"): against another plan its numbers name other
+        // items, so nothing is written. A selection typed without one reads the plan as it is now.
+        var tokens = parts[(applyAt + 1)..];
+        var shown = tokens.FirstOrDefault(t => t.StartsWith('#'));
+        if (shown is not null && !string.Equals(shown[1..], ImportPreview.Fingerprint(plan), StringComparison.OrdinalIgnoreCase))
+            return new(Strings.ImportCardStale(ImportPreview.Keyword(from)));
+        var selection = string.Join(' ', tokens.Where(t => !t.StartsWith('#'))).Trim();
         if (Chosen(plan, selection, out var unknown) is not { } ids) return new(Strings.ImportSelectionUnknown(unknown!));
         var outcome = ImportApplier.Apply(plan, ids, context.Current, configFile, context.CommandsFolder, now);
         return new(ImportPreview.Outcome(outcome, context.CommandsFolder), null, outcome.ConfigChanged, outcome.ServerChanged);

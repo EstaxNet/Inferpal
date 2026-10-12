@@ -137,6 +137,7 @@ internal static class Strings
     public static string TurnMinutes(int minutes, string seconds) => Format(Get(nameof(TurnMinutes)), minutes, seconds);
     public static string ApprovalCreateFile => Get(nameof(ApprovalCreateFile));
     public static string ApprovalChangeFile => Get(nameof(ApprovalChangeFile));
+    public static string ApprovalChangeFiles(int files) => Format(Get(nameof(ApprovalChangeFiles)), files);
     public static string ApprovalDeleteFile => Get(nameof(ApprovalDeleteFile));
     public static string ApprovalRunCommand => Get(nameof(ApprovalRunCommand));
     public static string ApprovalReadPage => Get(nameof(ApprovalReadPage));
@@ -887,6 +888,10 @@ internal static class Strings
         Format(Get(nameof(ApplyEditsAborted)), detail);
     public static string ApplyEditsOk(int edits, int files) =>
         Format(Get(nameof(ApplyEditsOk)), edits, files);
+    public static string RenameConfirm(string oldName, string newName, int files, int occurrences) =>
+        Format(Get(nameof(RenameConfirm)), oldName, newName, files, occurrences);
+    public static string RenameTextBased(string oldName) => Format(Get(nameof(RenameTextBased)), oldName);
+    public static string RenameMoreFiles(int files) => Format(Get(nameof(RenameMoreFiles)), files);
 
     public static string HistoryNote(string snapPath) =>
         Format(Get(nameof(HistoryNote)), snapPath);
@@ -995,6 +1000,7 @@ internal static class Strings
     public static string PromptsCommandsNotRun(string commands) => Format(Get(nameof(PromptsCommandsNotRun)), commands);
     public static string PromptsLinkLeaves(string file) => Format(Get(nameof(PromptsLinkLeaves)), file);
     public static string ReplayRunOutOfRange(int index, int count) => Format(Get(nameof(ReplayRunOutOfRange)), index, count);
+    public static string ReplayRunForgotten(int index, int count) => Format(Get(nameof(ReplayRunForgotten)), index, count);
     public static string SlashToolsCurrent(string state) => Format(Get(nameof(SlashToolsCurrent)), state);
     public static string SlashToolsChanged(string state) => Format(Get(nameof(SlashToolsChanged)), state);
     public static string SlashNoActiveDocument            => Get(nameof(SlashNoActiveDocument));
@@ -1337,6 +1343,7 @@ internal static class Strings
     public static string UndoRunAlreadyUndone                => Get(nameof(UndoRunAlreadyUndone));
     public static string UndoRunWhileBusy                    => Get(nameof(UndoRunWhileBusy));
     public static string UndoRunListHeader(int count)        => Format(Get(nameof(UndoRunListHeader)), count);
+    public static string UndoRunListEntry(string time, int files) => Format(Get(nameof(UndoRunListEntry)), time, files);
     public static string UndoRunResult(int restored, int deleted) => Format(Get(nameof(UndoRunResult)), restored, deleted);
     public static string UndoRunSavedFirst                    => Get(nameof(UndoRunSavedFirst));
 
@@ -1531,6 +1538,7 @@ internal static class Strings
     public static string HardwareInstalledNote               => Get(nameof(HardwareInstalledNote));
     public static string HardwareContextHeading              => Get(nameof(HardwareContextHeading));
     public static string HardwareConfiguredCtx(int ctx)      => Format(Get(nameof(HardwareConfiguredCtx)), ctx);
+    public static string HardwareConfiguredCtxUnset          => Get(nameof(HardwareConfiguredCtxUnset));
     public static string HardwareRecommendedCtx(string model, int recommended, string modelMax) =>
         Format(Get(nameof(HardwareRecommendedCtx)), model, recommended, modelMax);
     public static string HardwareModelMax(int max)           => Format(Get(nameof(HardwareModelMax)), max);
@@ -1848,6 +1856,7 @@ internal static class Strings
     public static string ImportNoteModeToolsNotKept => Get(nameof(ImportNoteModeToolsNotKept));
     public static string ImportNoteTakesEffectAfterRestart => Get(nameof(ImportNoteTakesEffectAfterRestart));
     public static string ImportNoteSecretToFill(string name) => Format(Get(nameof(ImportNoteSecretToFill)), name);
+    public static string ImportNoteKeyNotCarried(string host) => Format(Get(nameof(ImportNoteKeyNotCarried)), host);
     public static string ImportNoteRunsWithoutAsking(string command) => Format(Get(nameof(ImportNoteRunsWithoutAsking)), command);
     public static string ImportNoteContinueDefault => Get(nameof(ImportNoteContinueDefault));
     public static string ImportNoFile(string tool, string searched, string source) => Format(Get(nameof(ImportNoFile)), tool, searched, source);
@@ -1862,6 +1871,7 @@ internal static class Strings
     public static string ImportRefused(string reason) => Format(Get(nameof(ImportRefused)), reason);
     public static string ImportCommandsWhere(string folder) => Format(Get(nameof(ImportCommandsWhere)), folder);
     public static string ImportSelectionUnknown(string token) => Format(Get(nameof(ImportSelectionUnknown)), token);
+    public static string ImportCardStale(string keyword) => Format(Get(nameof(ImportCardStale)), keyword);
     public static string ImportSkipFileIdentity => Get(nameof(ImportSkipFileIdentity));
     public static string ImportSkipHostedProvider => Get(nameof(ImportSkipHostedProvider));
     public static string ImportSkipOtherServer => Get(nameof(ImportSkipOtherServer));

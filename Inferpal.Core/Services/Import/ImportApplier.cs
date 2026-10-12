@@ -117,12 +117,19 @@ internal static class ImportApplier
             case AddMcpServer server:
                 return AddServer(config, server.Server);
             case AddDocSite site:
+                // The id is chosen among the sources as the file holds them (see InferpalConfig.FollowFile).
+                config.FollowFile(nameof(InferpalConfig.DocSitesJson));
                 if (!DocSite.TryParse(config.DocSitesJson, out var sites, out var problem) && !string.IsNullOrWhiteSpace(config.DocSitesJson))
                     return "the documentation sources in the settings are not readable: " + problem;
                 config.DocSitesJson = DocSite.Serialize(DocSite.Upsert(sites, DocSite.CreateAmong(site.StartUrl, site.Title, sites)));
                 return null;
             case AddPermissionRule rule:
-                config.PermissionRules = Append(config.PermissionRules, rule.Rule, "\n");
+                // ⚠ The first rule that matches decides. Appended after an allow — imported (Roo's allowed list comes
+                // before its denied one) or the user's own — a deny never matches: `allow git` lets `git push --force`
+                // run unasked while the card showed "deny git push" ticked. A deny goes first; an allow, last.
+                config.PermissionRules = rule.Rule.StartsWith("deny", StringComparison.OrdinalIgnoreCase)
+                    ? Prepend(config.PermissionRules, rule.Rule)
+                    : Append(config.PermissionRules, rule.Rule, "\n");
                 return null;
             case SetLanguage language:
                 config.Language = language.Code;
@@ -137,6 +144,9 @@ internal static class ImportApplier
 
     private static string Append(string? existing, string text, string separator) =>
         string.IsNullOrWhiteSpace(existing) ? text : existing.TrimEnd() + separator + text;
+
+    private static string Prepend(string? existing, string line) =>
+        string.IsNullOrWhiteSpace(existing) ? line : line + "\n" + existing.TrimStart('\r', '\n');
 
     private static string? WriteCommandFile(WriteCommand command, string folder)
     {

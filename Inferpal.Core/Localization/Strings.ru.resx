@@ -291,9 +291,12 @@
   <data name="DiffUnchangedLines" xml:space="preserve"><value>  без изменений: {0} строк(и)</value></data>
   <data name="DiffMoreLines" xml:space="preserve"><value>… (ещё строк различий: {0})</value></data>
   <data name="ApplyEditsEmpty" xml:space="preserve"><value>apply_edits требует хотя бы одну правку.</value></data>
-  <data name="ApplyEditsConfirm" xml:space="preserve"><value>Применить изменения к {0} файлу(ам)?</value></data>
+  <data name="ApplyEditsConfirm" xml:space="preserve"><value>Применить изменения к {0} {0:файлу|файлам|файлам}?</value></data>
   <data name="ApplyEditsAborted" xml:space="preserve"><value>Изменения не применены — {0}.</value></data>
-  <data name="ApplyEditsOk" xml:space="preserve"><value>Применено правок: {0} в {1} файле(ах).</value></data>
+  <data name="ApplyEditsOk" xml:space="preserve"><value>Применено правок: {0} (файлов: {1}).</value></data>
+  <data name="RenameConfirm" xml:space="preserve"><value>Переименовать `{0}` → `{1}` в {2} {2:файле|файлах|файлах} ({3} {3:вхождение|вхождения|вхождений})</value></data>
+  <data name="RenameTextBased" xml:space="preserve"><value>⚠ Текстовое переименование: компилятор не смог разрешить `{0}`, поэтому переименовывается КАЖДЫЙ идентификатор с таким написанием — включая несвязанные символы. Проверьте изменения.</value></data>
+  <data name="RenameMoreFiles" xml:space="preserve"><value>… и ещё {0} {0:файл|файла|файлов}, переименование такое же.</value></data>
   <data name="HistoryNote" xml:space="preserve"><value>
 Резервная копия: {0}</value></data>
   <data name="RestoreOk" xml:space="preserve"><value>{0} восстановлен из {1}.</value></data>
@@ -770,11 +773,13 @@
   <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>Последний запуск агента уже отменён — ничего не изменено.</value></data>
   <data name="UndoRunWhileBusy" xml:space="preserve"><value>Ход ещё выполняется: дождитесь его окончания, затем отмените.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Отслеживаемые запуски в этой сессии ({0}):</value></data>
+  <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} {1:файл|файла|файлов}</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Их предыдущее состояние сохранено заранее — `/restore &lt;полный путь&gt;` восстановит файл.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Последний запуск отменён — восстановлено файлов: {0}, удалено: {1}.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Хронология последнего запуска агента (инструменты, длительность, файлы)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>В этой сессии не записано ни одного запуска агента с вызовами инструментов.</value></data>
   <data name="ReplayRunOutOfRange" xml:space="preserve"><value>Запуска № {0} нет — в этой сессии запусков с вызовами инструментов: {1}.</value></data>
+  <data name="ReplayRunForgotten" xml:space="preserve"><value>Запуска № {0} нет: Inferpal хранит ещё {1} {1:запуск|запуска|запусков} с вызовами инструментов — более старые больше не сохраняются.</value></data>
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 Запуск агента {0} — вызовов инструментов: {1}, изменённых файлов: {2}</value></data>
   <data name="ReplayFileUnprotected" xml:space="preserve"><value>нет снимка — `/undo-run` не сможет откатить этот файл</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**Затронутые файлы:**</value></data>
@@ -874,6 +879,7 @@
   <data name="HardwareInstalledNote" xml:space="preserve"><value>_Значения VRAM для установленных моделей являются оценкой (размер на диске × 1,2, с учётом KV-cache + среды выполнения)._</value></data>
   <data name="HardwareContextHeading" xml:space="preserve"><value>### Окно контекста</value></data>
   <data name="HardwareConfiguredCtx" xml:space="preserve"><value>**Настроенный num_ctx:** {0}</value></data>
+  <data name="HardwareConfiguredCtxUnset" xml:space="preserve"><value>**Настроенный num_ctx:** не задан — каждый запрос получает окно, которое выбирает сервер</value></data>
   <data name="HardwareRecommendedCtx" xml:space="preserve"><value>**Рекомендуемый максимум для `{0}`:** {1}{2}</value></data>
   <data name="HardwareModelMax" xml:space="preserve"><value> (макс. модели {0})</value></data>
   <data name="HardwareCtxWarn" xml:space="preserve"><value>⚠ Ваш num_ctx ({0}) превышает то, что помещается в бюджет VRAM — KV-cache может вытесняться в системную ОЗУ и замедлять генерацию. Рассмотрите снижение до {1}.</value></data>
@@ -1195,6 +1201,7 @@
   <data name="TurnMinutes" xml:space="preserve"><value>{0} мин {1} с</value></data>
   <data name="ApprovalCreateFile" xml:space="preserve"><value>Создать файл</value></data>
   <data name="ApprovalChangeFile" xml:space="preserve"><value>Изменить файл</value></data>
+  <data name="ApprovalChangeFiles" xml:space="preserve"><value>Изменить {0} {0:файл|файла|файлов}</value></data>
   <data name="ApprovalDeleteFile" xml:space="preserve"><value>Удалить файл</value></data>
   <data name="ApprovalRunCommand" xml:space="preserve"><value>Выполнить команду</value></data>
   <data name="ApprovalReadPage" xml:space="preserve"><value>Прочитать веб-страницу</value></data>
@@ -1416,6 +1423,7 @@
   <data name="ImportNoteModeToolsNotKept" xml:space="preserve"><value>Ограничения инструментов режима не переносятся: команда сохраняет его инструкции.</value></data>
   <data name="ImportNoteTakesEffectAfterRestart" xml:space="preserve"><value>Вступит в силу после перезапуска Inferpal.</value></data>
   <data name="ImportNoteSecretToFill" xml:space="preserve"><value>Секрет {0} не найден: записано как есть, заполните позже.</value></data>
+  <data name="ImportNoteKeyNotCarried" xml:space="preserve"><value>Ключ API, заданный для {0}, удаляется и никогда не отправляется этому серверу: если серверу нужен ключ, введите его в настройках.</value></data>
   <data name="ImportNoteRunsWithoutAsking" xml:space="preserve"><value>Разрешает запуск `{0}` без вопроса — не отмечено, решать вам.</value></data>
   <data name="ImportNoteContinueDefault" xml:space="preserve"><value>Команда, которую Continue записывал в каждую новую конфигурацию, — не отмечено.</value></data>
   <data name="ImportNoFile" xml:space="preserve"><value>Настройки {0} не найдены. Искали в: {1}. Укажите путь: `/import {2} &lt;файл&gt;`.</value></data>
@@ -1430,6 +1438,7 @@
   <data name="ImportRefused" xml:space="preserve"><value>Ничего не записано: не удалось скопировать config.json ({0}).</value></data>
   <data name="ImportCommandsWhere" xml:space="preserve"><value>Команды лежат в {0}: наберите /, чтобы пользоваться ими в любом рабочем пространстве.</value></data>
   <data name="ImportSelectionUnknown" xml:space="preserve"><value>Нет элемента с номером {0}: ничего не записано.</value></data>
+  <data name="ImportCardStale" xml:space="preserve"><value>Эта карточка больше не соответствует тому, что записал бы импорт: файл или настройки изменились после её показа, а элемент, применённый за это время, сдвигает следующие. Ничего не записано — снова запустите `/import {0}`, чтобы получить актуальную карточку.</value></data>
   <data name="ImportSkipFileIdentity" xml:space="preserve"><value>описание самого файла (имя, версия, схема), а не настройка</value></data>
   <data name="ImportSkipHostedProvider" xml:space="preserve"><value>облачный провайдер: Inferpal работает только с сервером моделей, который запускаете вы</value></data>
   <data name="ImportSkipOtherServer" xml:space="preserve"><value>на другом сервере: Inferpal использует один сервер моделей</value></data>

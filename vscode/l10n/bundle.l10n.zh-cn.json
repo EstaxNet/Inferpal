@@ -23,7 +23,7 @@
   "Delete": "删除",
   "Session deleted: {0}": "已删除会话：{0}",
   "Session {0} was not found — it may already have been deleted.": "找不到会话 {0}——它可能已被删除。",
-  "{0} older messages were dropped from this view to bound memory — they are not kept in the saved session either.": "已从此视图删除 {0} 条较早的消息以限制内存占用——保存的会话中也不保留这些消息。",
+  "{0} older messages are hidden from this view to bound memory — they stay in the saved session and the export.": "为限制内存，此视图中隐藏了 {0} 条较早的消息——它们仍保留在已保存的会话和导出中。",
   "Session name": "会话名称",
   "Session saved: {0}": "会话已保存：{0}",
   "Pick a session to load": "选择要加载的会话",

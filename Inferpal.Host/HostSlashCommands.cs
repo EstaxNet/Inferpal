@@ -302,7 +302,7 @@ internal sealed partial class HostServer
 
                 case SlashCommandId.Replay:
                     return new SlashCommandResult(true,
-                        ReplayCommandHandler.Handle(s.Tools.History.Runs, parts, s.RootDir));
+                        ReplayCommandHandler.Handle(s.Tools.History.Runs, parts, s.RootDir, s.Tools.History.ForgottenRuns));
 
                 case SlashCommandId.Branch:
                     return await HandleBranchSlashAsync(s, parts, cts.Token);

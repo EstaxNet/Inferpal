@@ -23,7 +23,7 @@
   "Delete": "Elimina",
   "Session deleted: {0}": "Sessione eliminata: {0}",
   "Session {0} was not found — it may already have been deleted.": "Sessione {0} non trovata: potrebbe essere già stata eliminata.",
-  "{0} older messages were dropped from this view to bound memory — they are not kept in the saved session either.": "{0} messaggi meno recenti sono stati rimossi da questa vista per limitare la memoria: nemmeno la sessione salvata li conserva.",
+  "{0} older messages are hidden from this view to bound memory — they stay in the saved session and the export.": "{0} messaggi meno recenti sono nascosti in questa vista per limitare la memoria: restano nella sessione salvata e nell'esportazione.",
   "Session name": "Nome della sessione",
   "Session saved: {0}": "Sessione salvata: {0}",
   "Pick a session to load": "Scegli una sessione da caricare",

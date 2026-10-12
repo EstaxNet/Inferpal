@@ -291,9 +291,12 @@ Continuare?</value></data>
   <data name="DiffUnchangedLines" xml:space="preserve"><value>  {0} riga/he invariata/e</value></data>
   <data name="DiffMoreLines" xml:space="preserve"><value>… (+{0} riga/he di diff in più)</value></data>
   <data name="ApplyEditsEmpty" xml:space="preserve"><value>apply_edits richiede almeno una modifica.</value></data>
-  <data name="ApplyEditsConfirm" xml:space="preserve"><value>Applicare le modifiche a {0} file?</value></data>
+  <data name="ApplyEditsConfirm" xml:space="preserve"><value>Applicare le modifiche a {0} {0:file|file}?</value></data>
   <data name="ApplyEditsAborted" xml:space="preserve"><value>Nessuna modifica applicata — {0}.</value></data>
-  <data name="ApplyEditsOk" xml:space="preserve"><value>{0} modifica/e applicata/e su {1} file.</value></data>
+  <data name="ApplyEditsOk" xml:space="preserve"><value>{0} {0:modifica applicata|modifiche applicate} su {1} {1:file|file}.</value></data>
+  <data name="RenameConfirm" xml:space="preserve"><value>Rinominare `{0}` → `{1}` in {2} {2:file|file} ({3} {3:occorrenza|occorrenze})</value></data>
+  <data name="RenameTextBased" xml:space="preserve"><value>⚠ Ridenominazione testuale: il compilatore non ha potuto risolvere `{0}`, quindi OGNI identificatore scritto così viene rinominato, simboli non correlati compresi. Controlla le modifiche.</value></data>
+  <data name="RenameMoreFiles" xml:space="preserve"><value>… e {0} {0:altro file|altri file}, rinominati allo stesso modo.</value></data>
   <data name="HistoryNote" xml:space="preserve"><value>
 Backup: {0}</value></data>
   <data name="RestoreOk" xml:space="preserve"><value>{0} ripristinato da {1}.</value></data>
@@ -772,11 +775,13 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>L'ultimo run dell'agente è già stato annullato: non è stato modificato nulla.</value></data>
   <data name="UndoRunWhileBusy" xml:space="preserve"><value>Un turno è ancora in corso: attendi che finisca, poi annulla.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Run tracciati in questa sessione ({0}):</value></data>
+  <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} {1:file|file}</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Il loro stato precedente è stato salvato prima — `/restore &lt;percorso completo&gt;` ripristina un file.</value></data>
-  <data name="UndoRunResult" xml:space="preserve"><value>↩ Ultimo run annullato — {0} file ripristinato/i, {1} eliminato/i.</value></data>
+  <data name="UndoRunResult" xml:space="preserve"><value>↩ Ultimo run annullato — {0} {0:file ripristinato|file ripristinati}, {1} {1:eliminato|eliminati}.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Cronologia dell'ultimo run dell'agente (strumenti, durate, file)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>Nessun run dell'agente con chiamate a strumenti registrato in questa sessione.</value></data>
   <data name="ReplayRunOutOfRange" xml:space="preserve"><value>Nessuna esecuzione n. {0}: questa sessione ne ha {1} con chiamate a strumenti.</value></data>
+  <data name="ReplayRunForgotten" xml:space="preserve"><value>Nessuna esecuzione n. {0}: Inferpal conserva ancora {1} {1:esecuzione|esecuzioni} con chiamate a strumenti; quelle più vecchie non vengono più tenute.</value></data>
   <data name="ReplayHeader" xml:space="preserve"><value>🎬 Run dell'agente {0} — {1} chiamata/e a strumenti, {2} file modificato/i</value></data>
   <data name="ReplayFileUnprotected" xml:space="preserve"><value>nessuno snapshot — `/undo-run` non può annullare questo file</value></data>
   <data name="ReplayFilesHeader" xml:space="preserve"><value>**File coinvolti:**</value></data>
@@ -874,6 +879,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="HardwareInstalledNote" xml:space="preserve"><value>_Le cifre di VRAM dei modelli installati sono stime (dimensione su disco × 1,2, comprendendo KV-cache + runtime)._</value></data>
   <data name="HardwareContextHeading" xml:space="preserve"><value>### Finestra di contesto</value></data>
   <data name="HardwareConfiguredCtx" xml:space="preserve"><value>**num_ctx configurato:** {0}</value></data>
+  <data name="HardwareConfiguredCtxUnset" xml:space="preserve"><value>**num_ctx configurato:** non impostato — ogni richiesta riceve la finestra scelta dal server</value></data>
   <data name="HardwareRecommendedCtx" xml:space="preserve"><value>**Massimo consigliato per `{0}`:** {1}{2}</value></data>
   <data name="HardwareModelMax" xml:space="preserve"><value> (max del modello {0})</value></data>
   <data name="HardwareCtxWarn" xml:space="preserve"><value>⚠ Il tuo num_ctx ({0}) supera quanto entra nel budget VRAM — la KV-cache potrebbe riversarsi nella RAM di sistema e rallentare la generazione. Valuta di ridurlo a {1}.</value></data>
@@ -1195,6 +1201,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="TurnMinutes" xml:space="preserve"><value>{0} min {1} s</value></data>
   <data name="ApprovalCreateFile" xml:space="preserve"><value>Creare un file</value></data>
   <data name="ApprovalChangeFile" xml:space="preserve"><value>Modificare un file</value></data>
+  <data name="ApprovalChangeFiles" xml:space="preserve"><value>Modificare {0} {0:file|file}</value></data>
   <data name="ApprovalDeleteFile" xml:space="preserve"><value>Eliminare un file</value></data>
   <data name="ApprovalRunCommand" xml:space="preserve"><value>Eseguire un comando</value></data>
   <data name="ApprovalReadPage" xml:space="preserve"><value>Leggere una pagina web</value></data>
@@ -1416,6 +1423,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="ImportNoteModeToolsNotKept" xml:space="preserve"><value>Le restrizioni sugli strumenti della modalità non vengono riprese: il comando mantiene le sue istruzioni.</value></data>
   <data name="ImportNoteTakesEffectAfterRestart" xml:space="preserve"><value>Diventa effettivo al riavvio di Inferpal.</value></data>
   <data name="ImportNoteSecretToFill" xml:space="preserve"><value>Segreto {0} non trovato: scritto così com'è, da completare dopo.</value></data>
+  <data name="ImportNoteKeyNotCarried" xml:space="preserve"><value>La chiave API impostata per {0} viene rimossa e mai inviata a questo server: se ne richiede una, inserisci la sua chiave nelle impostazioni.</value></data>
   <data name="ImportNoteRunsWithoutAsking" xml:space="preserve"><value>Lascia eseguire `{0}` senza chiedere — non spuntata, la scelta è tua.</value></data>
   <data name="ImportNoteContinueDefault" xml:space="preserve"><value>Il comando che Continue scriveva in ogni nuova configurazione — non spuntato.</value></data>
   <data name="ImportNoFile" xml:space="preserve"><value>Nessuna configurazione di {0} trovata. Cercato in: {1}. Indica il percorso: `/import {2} &lt;file&gt;`.</value></data>
@@ -1430,6 +1438,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="ImportRefused" xml:space="preserve"><value>Non è stato scritto nulla: impossibile copiare config.json ({0}).</value></data>
   <data name="ImportCommandsWhere" xml:space="preserve"><value>I comandi sono in {0}: digita / per usarli, in ogni area di lavoro.</value></data>
   <data name="ImportSelectionUnknown" xml:space="preserve"><value>Nessun elemento ha il numero {0}: non è stato scritto nulla.</value></data>
+  <data name="ImportCardStale" xml:space="preserve"><value>Questa scheda non corrisponde più a ciò che l'importazione scriverebbe: il file o le impostazioni sono cambiati da quando è stata mostrata, e un elemento applicato nel frattempo sposta i successivi. Non è stato scritto nulla: esegui di nuovo `/import {0}` per una scheda aggiornata.</value></data>
   <data name="ImportSkipFileIdentity" xml:space="preserve"><value>identità del file (nome, versione, schema), non un'impostazione</value></data>
   <data name="ImportSkipHostedProvider" xml:space="preserve"><value>provider ospitato: Inferpal parla solo con un server di modelli che esegui tu</value></data>
   <data name="ImportSkipOtherServer" xml:space="preserve"><value>servito da un altro server: Inferpal usa un solo server di modelli</value></data>

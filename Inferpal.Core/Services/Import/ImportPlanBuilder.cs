@@ -71,6 +71,33 @@ internal sealed class ImportPlanBuilder
         foreach (var (key, _) in node) Skip(path + "." + key, cause, detail);
     }
 
+    /// <summary>
+    /// The server an import keeps: already in place, or an item to write — its key decided here, once for both tools.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A key belongs to the host it was typed for. "No key in the file" (a Continue secret not found, a model without
+    /// one, LM Studio) would keep the key in place, and the next request sends it to the imported server — the key of
+    /// a company's gateway handed to another machine. Another host: the key in place is removed, and the card says so.
+    /// </remarks>
+    public void AddBackend(ImportServer server, string? importedKey, IReadOnlyCollection<string> paths)
+    {
+        var current = Context.Current;
+        var key = server.Provider == InferenceProviderFactory.OpenAiCompatible ? importedKey : null;
+        if (server.SameAs(current.Provider, current.BaseUrl) && (key is null || key == current.ApiKey))
+        {
+            foreach (var p in paths) Skip(p, ImportSkipCause.AlreadyConfigured, server.BaseUrl);
+            return;
+        }
+        var notes = new List<ImportItemNote> { new(ImportNote.TakesEffectAfterRestart) };
+        if (key is null && !string.IsNullOrEmpty(current.ApiKey)
+            && ImportServers.Authority(current.BaseUrl) is var before && before != ImportServers.Authority(server.BaseUrl))
+        {
+            key = string.Empty;
+            notes.Add(new(ImportNote.KeyNotCarried, before ?? current.BaseUrl));
+        }
+        Add(ImportItemKind.Backend, new SetBackend(server.Provider, server.BaseUrl, key), paths, true, [.. notes]);
+    }
+
     public ImportItem Add(ImportItemKind kind, ImportEffect effect, IEnumerable<string> paths, bool isChecked = true,
                           params ImportItemNote[] notes)
     {

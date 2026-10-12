@@ -31,7 +31,7 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     private readonly AgentOrchestrator        _orchestrator;
     private readonly ToolRegistry             _tools;
     private readonly InferpalConfig        _config;
-    private readonly ConversationStore        _store = new();
+    private readonly ConversationStore        _store = new(slotOwner: ConversationStore.VisualStudioSlot);
     private readonly VisualStudioExtensibility _vs;
     private readonly VsContextHolder           _contextHolder;
     private readonly ProjectIndexService       _indexService;

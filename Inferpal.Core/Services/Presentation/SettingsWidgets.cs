@@ -222,7 +222,9 @@ internal sealed class SettingsDocsActions(Config.InferpalConfig config, DocsInde
     /// <summary>Runs <c>/docs verb arg</c>; answers what the command answered (added, unknown id, usage, …).</summary>
     public Task<string> RunAsync(string verb, string arg, CancellationToken ct)
     {
-        // The id is the one the command will give the site: a crawl reports without naming its site.
+        // The id is the one the command will give the site: a crawl reports without naming its site. Chosen among the
+        // sources as the file holds them, as the command chooses it.
+        if (verb == "add") config.FollowFile(nameof(Config.InferpalConfig.DocSitesJson));
         var id = verb == "add" && DocSite.TryParse(config.DocSitesJson, out var sites, out _) && DocSite.IsValidHttpUrl(arg)
             ? DocSite.CreateAmong(arg, null, sites).Id
             : arg;

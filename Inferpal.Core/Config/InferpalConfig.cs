@@ -814,6 +814,41 @@ internal class InferpalConfig
     }
 
     /// <summary>
+    /// Before a decision on the ELEMENTS of a collection setting (an id chosen, "is this one configured?"): this copy's
+    /// list becomes the file's, with what this copy changed since it was read laid over it, element by element — the
+    /// three-way merge <see cref="Save"/> would make.
+    /// </summary>
+    /// <param name="property">The C# property name (<c>nameof</c>) of a <see cref="CollectionSettingAttribute"/> setting.</param>
+    /// <remarks>
+    /// ⚠ Each window of both editors reads the file once. An id chosen as "free" in this copy can be the one another
+    /// window already gave its own source: the element-wise merge then keeps one of the two, and the documentation index,
+    /// keyed by id, replaces the other's pages — a source lost without a word. The file is read now; a later save still
+    /// writes only what this copy changed.
+    /// </remarks>
+    internal void FollowFile(string property)
+    {
+        var p = typeof(InferpalConfig).GetProperty(property)
+                ?? throw new ArgumentException($"No setting named {property}.", nameof(property));
+        var key = JsonNameOf(property);
+        if (!CollectionSettings.TryGetValue(key, out var shape))
+            throw new ArgumentException($"{property} is not a collection setting.", nameof(property));
+        // A copy built in code is its own truth, and an unreadable file has nothing to follow.
+        if (_baseline is null || !TryReadSnapshot(SavePathForTests ?? EffectiveConfigPath, out var onDisk)) return;
+
+        var mine = Snapshot(this)[key];
+        var followed = System.Text.Json.Nodes.JsonNode.DeepEquals(mine, _baseline[key])
+            ? onDisk[key]?.DeepClone()
+            : CollectionMerge.Merge(shape, Text(_baseline[key]), Text(onDisk[key]), Text(mine)) is { } both
+                ? System.Text.Json.Nodes.JsonValue.Create(both)
+                : mine;   // changed here and not mergeable: this copy's own stands, as a save would write it
+        p.SetValue(this, followed?.Deserialize(p.PropertyType) ?? p.GetValue(new InferpalConfig()));
+        _baseline[key] = onDisk[key]?.DeepClone();
+    }
+
+    /// <summary>The documentation sources as they stand NOW (another window may have changed them): see <see cref="Shared{T}"/>.</summary>
+    internal string SharedDocSitesJson => Shared(nameof(DocSitesJson), DocSitesJson) ?? string.Empty;
+
+    /// <summary>
     /// Sets <see cref="DefaultModel"/> for this instance's life without it ever being saved: a later
     /// <see cref="Save"/> — of any other setting — leaves the file's model alone.
     /// </summary>
