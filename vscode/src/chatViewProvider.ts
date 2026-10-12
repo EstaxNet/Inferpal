@@ -37,6 +37,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private models: string[] = [];
   private model = '';
   private busy = false;
+  /** Ids for the `/import` cards of this session: an Apply names the card it came from. */
+  private importCards = 0;
   /** A code action's changes wait in the Refactor Preview: the model step is over, so Stop has nothing left to cancel
    *  in the host — what it stops is the preview, closed by the preview's own Discard. */
   private codeActionPreviewOpen = false;
@@ -1102,6 +1104,23 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       case 'send':
         await this.send(msg.text);
         return;
+      case 'importApply': {
+        // The card's Apply runs the command the user could have typed: the numbers left ticked, or none. The card is
+        // marked used only when the command can run — send() says why it cannot (a turn running, no host), and the
+        // card comes back live.
+        const card = this.transcript.find((i) => i.importCard?.id === msg.id)?.importCard;
+        if (!card || card.applied) {
+          return;
+        }
+        const ready = !this.busy && (this.hostStarting || this.getHost()?.isRunning === true);
+        card.applied = ready;
+        const file = /\s/.test(card.file) ? `"${card.file}"` : card.file;
+        await this.send(`/import ${card.source} ${file} apply ${msg.numbers.length > 0 ? msg.numbers.join(',') : 'none'}`);
+        if (!ready) {
+          this.hydrate();
+        }
+        return;
+      }
       case 'fixProblems': {
         // ⚠ The errors travel as the chip the @problems picker makes: typed in the prompt, "@problems" names no file,
         // nothing expands it, and the request reached the model as text without a single error. No problems left (fixed
@@ -1832,6 +1851,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             .filter((s) => s.length > 0)
             .join('\n\n');
           this.finishTurn(answer, null, false, 0);
+          // /import's preview is a card with a box per item; its Markdown stays the notice's text — what a saved
+          // conversation keeps, and what the agent protocol, which draws no card, shows.
+          const last = this.transcript[this.transcript.length - 1];
+          if (slash.importCard && last?.role === 'assistant') {
+            last.importCard = { ...slash.importCard, id: `import-${++this.importCards}` };
+            outcome.rehydrate = true;
+          }
           if (outcome.rehydrate) {
             this.hydrate();
           }
@@ -2376,6 +2402,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       promptTokens: this.promptTokens,
       timestamp,
       canRegenerate: this.canRegenerate(),
+      // Drawn as kept: a notice, under no model's name. Drawn as an answer, it read live as the reply of the model
+      // the header named — the one /import had just written, served or not — and as a notice once reloaded.
+      notice: true,
     });
     this.autoSaveLast();
     void this.refreshRunningWork();   // a /task submitted, a docs source added: seen before a crash can take them

@@ -44,6 +44,7 @@ flowchart LR
 | [Mentions](mentions.md) | The `@` typed-context picker |
 | [Search & Indexing](search-and-indexing.md) | Semantic codebase search (RAG) and `@Docs` external documentation |
 | [MCP](mcp.md) | Connecting Model Context Protocol servers |
+| [Coming from Continue or Roo Code](coming-from-continue.md) | `/import`: what a Continue or Roo Code configuration brings over, and why the rest stays |
 | [Rules & AI Checks](rules-and-checks.md) | Repo-versioned governance (`.inferpal/rules`, `.inferpal/checks`) |
 | [Remote Inference](remote-inference.md) | Run the model server on another machine |
 | [Zed, JetBrains, Neovim (ACP)](acp.md) | Inferpal as an Agent Client Protocol agent in other editors |

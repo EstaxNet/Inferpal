@@ -30,6 +30,10 @@
 param(
     [switch]$Launch,
     [switch]$Force,
+    # Deploy for a NEW Visual Studio only (a test instance on its own /RootSuffix): the running VS and its
+    # Extensibility host are left alone — they keep the build they loaded. The hot apply kills that host, and it
+    # serves other extensions of the user's VS too.
+    [switch]$NoHotApply,
     # Internal: set by the self-elevation relaunch so the elevated window stays
     # open long enough to read the result.
     [switch]$PauseAtEnd
@@ -699,6 +703,7 @@ function Deploy-Vs {
                      '-File', "$Root\deploy-dev.ps1", '-PauseAtEnd')
         if ($Launch) { $argList += '-Launch' }
         if ($Force)  { $argList += '-Force' }
+        if ($NoHotApply) { $argList += '-NoHotApply' }
         try {
             Start-Process powershell.exe -Verb RunAs -ArgumentList $argList
             Write-Host "  Elevated window launched - the deployment continues there." -ForegroundColor Green
@@ -718,7 +723,11 @@ function Deploy-Vs {
     # the kind that makes you hunt a bug in code that is not running yet. The presence of an
     # Extensibility host is therefore the detector: present = old mode, absent (with a devenv
     # open) = in-process, restart required.
-    if ($ok -and -not $Launch -and (Get-Process -Name 'devenv' -ErrorAction SilentlyContinue)) {
+    if ($ok -and $NoHotApply) {
+        Write-Host ""
+        Write-Host "  -NoHotApply: the running VS and its Extensibility host are untouched (they keep the old build)." -ForegroundColor Yellow
+        Write-Host "  A NEW devenv loads the fresh build (e.g. devenv /RootSuffix <test>)." -ForegroundColor Yellow
+    } elseif ($ok -and -not $Launch -and (Get-Process -Name 'devenv' -ErrorAction SilentlyContinue)) {
         $hubs = Get-Process -Name 'ServiceHub.Host.Extensibility*' -ErrorAction SilentlyContinue
         Write-Host ""
         if ($hubs) {

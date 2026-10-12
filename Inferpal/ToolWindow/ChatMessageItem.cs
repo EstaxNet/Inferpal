@@ -149,6 +149,32 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     /// <summary>"Open diff" is offered: the approval carries a change the dialog can show whole.</summary>
     [DataMember] public bool   CanOpenDiff    { get; private set; }
 
+    // ── An import card ("import"): a box per item, the reasons for the rest folded, Apply ──
+    // Its title and summary are CardTitle and CardSubject, and IsAnswered freezes it, as for an approval card.
+    private Func<IReadOnlyList<int>, Task<bool>>? _onImportApply;
+    [DataMember] public ObservableCollection<ImportRowItem>  ImportRows  { get; } = [];
+    [DataMember] public ObservableCollection<ImportSkipItem> ImportSkips { get; } = [];
+    [DataMember] public string ImportSkippedTitle { get; private set; } = string.Empty;
+    [DataMember] public bool   HasImportRows      { get; private set; }
+    [DataMember] public bool   HasImportSkips     { get; private set; }
+    [DataMember] public string BtnImportApply     { get; private set; } = string.Empty;
+    [DataMember] public AsyncCommand ImportApplyCommand { get; }
+    private bool _importSkipsOpen;
+    /// <summary>The reasons are folded by default: a Roo export names some sixty settings it leaves out.</summary>
+    [DataMember] public bool ImportSkipsOpen { get => _importSkipsOpen; set => SetProperty(ref _importSkipsOpen, value); }
+    [DataMember] public AsyncCommand ToggleImportSkipsCommand { get; }
+
+    /// <summary>
+    /// The import card's Apply: once, with the boxes left ticked. Refused (a turn running), the card comes back live.
+    /// </summary>
+    private async Task ApplyImportAsync(object? _, CancellationToken ct)
+    {
+        if (IsAnswered || _onImportApply is null) return;
+        IsAnswered = true;
+        if (!await _onImportApply([.. ImportRows.Where(r => r.IsChecked).Select(r => r.Number)]))
+            IsAnswered = false;
+    }
+
     /// <summary>Answers the card: the first answer wins, the card freezes and shows it.</summary>
     internal bool Answer(ApprovalDecision decision)
     {
@@ -184,6 +210,8 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
         AlwaysAllowCommand  = new AsyncCommand((_, _) => { Answer(ApprovalDecision.Always); return Task.CompletedTask; });
         DenyCommand         = new AsyncCommand((_, _) => { Answer(ApprovalDecision.Deny);   return Task.CompletedTask; });
         OpenDiffCommand     = new AsyncCommand((_, _) => { _onOpenDiff?.Invoke(); return Task.CompletedTask; });
+        ImportApplyCommand  = new AsyncCommand(ApplyImportAsync);
+        ToggleImportSkipsCommand = new AsyncCommand((_, _) => { ImportSkipsOpen = !ImportSkipsOpen; return Task.CompletedTask; });
     }
 
     private Task ToggleExpandAsync(object? _, CancellationToken ct)
@@ -401,6 +429,33 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
         return item;
     }
 
+    /// <summary>
+    /// An <c>/import</c> preview, drawn as a card. A saved conversation keeps its Markdown as a notice — what VS Code
+    /// keeps, and what the agent protocol shows.
+    /// </summary>
+    /// <param name="onApply">Runs the import with the numbers left ticked; <c>false</c> when it could not run.</param>
+    internal static ChatMessageItem ImportMsg(Services.Import.ImportCard card, string markdown,
+                                              Func<IReadOnlyList<int>, Task<bool>> onApply)
+    {
+        var item = new ChatMessageItem
+        {
+            Role               = "import",
+            Content            = markdown,
+            CardTitle          = card.Title,
+            CardSubject        = card.Summary,
+            ImportSkippedTitle = card.SkippedTitle,
+            BtnImportApply     = card.ApplyLabel,
+            Timestamp          = Now(),
+            _onImportApply     = onApply,
+        };
+        item._foreign = new SavedMessage("assistant", markdown, Services.Persistence.SessionManager.NoticeMarker, item.Timestamp);
+        foreach (var row in card.Items) item.ImportRows.Add(new ImportRowItem(row));
+        foreach (var group in card.Skipped) item.ImportSkips.Add(new ImportSkipItem(group.Reason, string.Join(", ", group.Paths)));
+        item.HasImportRows  = item.ImportRows.Count > 0;
+        item.HasImportSkips = item.ImportSkips.Count > 0;
+        return item;
+    }
+
     internal static ChatMessageItem AssistantMsg(string content = "")
     {
         var item = new ChatMessageItem { Role = "assistant", Content = content, Label = ConversationExporter.RoleLabel("assistant"), Timestamp = Now() };
@@ -557,6 +612,42 @@ internal sealed class PlanStepItem : NotifyPropertyChangedObject
             _                                      => Glyphs.Pending,
         };
     }
+}
+
+/// <summary>One box of an import card: what ticking it writes, and what is said under it.</summary>
+[DataContract]
+internal sealed class ImportRowItem : NotifyPropertyChangedObject
+{
+    private bool _isChecked;
+
+    public ImportRowItem(Services.Import.ImportCardItem row)
+    {
+        Number     = row.Number;
+        Target     = row.Target;
+        Label      = row.Label;
+        // The box's name is the whole line, as in VS Code: a value alone ("16 384", a model's name) does not say what
+        // ticking it writes.
+        AccessibleName = row.Target + " — " + row.Label;
+        Notes      = string.Join("\n", row.Notes);
+        HasNotes   = row.Notes.Count > 0;
+        _isChecked = row.Checked;
+    }
+
+    [DataMember] public int    Number   { get; }
+    [DataMember] public string Target   { get; }
+    [DataMember] public string Label    { get; }
+    [DataMember] public string AccessibleName { get; }
+    [DataMember] public string Notes    { get; }
+    [DataMember] public bool   HasNotes { get; }
+    [DataMember] public bool   IsChecked { get => _isChecked; set => SetProperty(ref _isChecked, value); }
+}
+
+/// <summary>Parts of an import's source left out for one reason, and their paths.</summary>
+[DataContract]
+internal sealed class ImportSkipItem(string reason, string paths)
+{
+    [DataMember] public string Reason { get; } = reason;
+    [DataMember] public string Paths  { get; } = paths;
 }
 
 /// <summary>One file a run changed, as its result bar shows it: name, lines added and removed; a click opens it.</summary>

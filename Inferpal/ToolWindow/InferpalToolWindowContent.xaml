@@ -1243,6 +1243,115 @@
                                 </Grid>
                             </StackPanel>
                         </Border>
+
+                        <!-- ── An import card: a box per item, the reasons for the rest folded, Apply ── -->
+                        <Border CornerRadius="10" BorderThickness="1"
+                                Background="{Binding DataContext.ThemeSurface, ElementName=root}"
+                                BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Role}" Value="import">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel>
+                                <StackPanel Margin="12,10,12,6">
+                                    <TextBlock Text="{Binding CardTitle}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap"
+                                               Foreground="{Binding ThemeText}"/>
+                                    <TextBlock Text="{Binding CardSubject}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"
+                                               Foreground="{Binding ThemeSubtleText}"/>
+                                </StackPanel>
+                                <!-- The boxes: what ticking each one writes, and what is said under it. Frozen once applied. -->
+                                <ItemsControl ItemsSource="{Binding ImportRows}" Margin="12,0,12,4"
+                                              Visibility="{Binding HasImportRows, Converter={StaticResource b2v}}">
+                                    <ItemsControl.Style>
+                                        <Style TargetType="ItemsControl">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsAnswered}" Value="True">
+                                                    <Setter Property="IsEnabled" Value="False"/>
+                                                    <Setter Property="Opacity" Value="0.55"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ItemsControl.Style>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" Margin="0,3" VerticalContentAlignment="Top"
+                                                      AutomationProperties.Name="{Binding AccessibleName}">
+                                                <StackPanel Margin="4,0,0,0">
+                                                    <TextBlock Text="{Binding Target}" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap"
+                                                               Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
+                                                    <TextBlock Text="{Binding Label}" FontSize="13" TextWrapping="Wrap"
+                                                               Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
+                                                    <TextBlock Text="{Binding Notes}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
+                                                               Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"
+                                                               Visibility="{Binding HasNotes, Converter={StaticResource b2v}}"/>
+                                                </StackPanel>
+                                            </CheckBox>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <!-- The reasons, folded: a fold button, then a line per reason with the paths it covers. -->
+                                <StackPanel Margin="12,0,12,4" Visibility="{Binding HasImportSkips, Converter={StaticResource b2v}}">
+                                    <Button Template="{StaticResource Flat6}" Background="Transparent" BorderThickness="0" Padding="2,2"
+                                            HorizontalAlignment="Left" Cursor="Hand"
+                                            Command="{Binding ToggleImportSkipsCommand}" AutomationProperties.Name="{Binding ImportSkippedTitle}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center"
+                                                       Foreground="{Binding ThemeSubtleText}">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Text" Value="&#xE76C;"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding ImportSkipsOpen}" Value="True">
+                                                                <Setter Property="Text" Value="&#xE70D;"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding ImportSkippedTitle}" FontSize="12" Margin="6,0,0,0" VerticalAlignment="Center"
+                                                       Foreground="{Binding ThemeSubtleText}"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <ItemsControl ItemsSource="{Binding ImportSkips}" Margin="18,2,0,0"
+                                                  Visibility="{Binding ImportSkipsOpen, Converter={StaticResource b2v}}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Margin="0,3">
+                                                    <TextBlock Text="{Binding Reason}" FontSize="12" TextWrapping="Wrap"
+                                                               Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
+                                                    <TextBlock Text="{Binding Paths}" FontSize="11" TextWrapping="Wrap" FontFamily="Cascadia Mono, Consolas"
+                                                               Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                                <Button Template="{StaticResource Flat6}" Height="32" Padding="12,0" Margin="12,4,12,12"
+                                        HorizontalAlignment="Left" BorderThickness="0" Cursor="Hand"
+                                        Background="{Binding DataContext.ThemeAccent, ElementName=root}"
+                                        Command="{Binding ImportApplyCommand}" AutomationProperties.Name="{Binding BtnImportApply}"
+                                        Visibility="{Binding HasImportRows, Converter={StaticResource b2v}}">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsAnswered}" Value="True">
+                                                    <Setter Property="IsEnabled" Value="False"/>
+                                                    <Setter Property="Opacity" Value="0.55"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                    <TextBlock Text="{Binding BtnImportApply}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
+                                               Foreground="{Binding DataContext.ThemeOnAccent, ElementName=root}"/>
+                                </Button>
+                            </StackPanel>
+                        </Border>
                     </Grid>
                 </DataTemplate>
             </ListBox.ItemTemplate>

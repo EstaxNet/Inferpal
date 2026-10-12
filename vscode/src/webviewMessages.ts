@@ -1,7 +1,7 @@
 // Typed postMessage protocol between the extension host (chatViewProvider.ts) and the
 // chat webview (src/webview/main.ts). Both sides are bundled from this repo, so the
 // types are shared instead of mirrored. No 'vscode' import — the webview bundle uses it.
-import type { ApprovalCard, RunSummary, SavedMessage, XRayPanel } from './protocol';
+import type { ApprovalCard, ImportCard, RunSummary, SavedMessage, XRayPanel } from './protocol';
 
 /** One rendered transcript entry (the extension host owns the list). */
 export interface WvTranscriptItem {
@@ -24,6 +24,15 @@ export interface WvTranscriptItem {
   /** A saved message of a role this window does not draw (Visual Studio's plan card): shown as a notice, written
    *  back exactly as it was read. */
   savedAs?: SavedMessage;
+  /** The `/import` preview this notice is: drawn as a card with a box per item instead of its text (the text, its
+   *  Markdown, is what a saved conversation keeps). */
+  importCard?: WvImportCard;
+}
+
+/** An `/import` card in the transcript: the host's card, the id its Apply answers with, and whether it was used. */
+export interface WvImportCard extends ImportCard {
+  id: string;
+  applied?: boolean;
 }
 
 /** Header connection badge (mirror of `backend/status`). */
@@ -132,7 +141,9 @@ export type ExtToWebview =
   | { type: 'mentionSuggestions'; items: string[]; query: string }
   | { type: 'xrayPanel'; panel: XRayPanel }
   | { type: 'streamReset' }
-  | { type: 'turnEnded'; text: string; error: string | null; cancelled: boolean; tokens: number; promptTokens: number; timestamp: string; endNotice?: string | null; contextWindow?: number; run?: RunSummary | null; duration?: string | null; model?: string | null; canRegenerate?: boolean }
+  // notice: the turn's text is a notice no answer of the model (a slash command, a code action's outcome) — drawn as the
+  // transcript keeps it, under no model's name.
+  | { type: 'turnEnded'; text: string; error: string | null; cancelled: boolean; tokens: number; promptTokens: number; timestamp: string; endNotice?: string | null; contextWindow?: number; run?: RunSummary | null; duration?: string | null; model?: string | null; canRegenerate?: boolean; notice?: boolean }
   | { type: 'editorContext'; file: string | null; problems: number }
   | { type: 'planMode'; enabled: boolean }
   | { type: 'backendStatus'; status: WvBackendStatus }
@@ -186,4 +197,6 @@ export type WebviewToExt =
   /** The composer's mode switch: chat (no tools), agent, or read-only plan. */
   | { type: 'setMode'; mode: 'chat' | 'agent' | 'plan' }
   /** A file of a run's result bar. */
-  | { type: 'openFile'; path: string };
+  | { type: 'openFile'; path: string }
+  /** An `/import` card's Apply: the numbers of the boxes left ticked (none is a choice too). */
+  | { type: 'importApply'; id: string; numbers: number[] };

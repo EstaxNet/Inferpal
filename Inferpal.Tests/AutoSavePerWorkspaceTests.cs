@@ -75,6 +75,33 @@ public sealed class AutoSavePerWorkspaceTests : IDisposable
     }
 
     [Fact]
+    public async Task TheSlotOfAWindowWithoutAWorkspace_NeverComesBackInAProject()
+    {
+        var store = new ConversationStore(_dir);
+        // A Visual Studio window on a lone .csproj or a folder has no workspace: it writes the shared slot, rootless.
+        await store.AutoSaveAsync(Turn("asked in a window without a solution"), CancellationToken.None, workspaceRoot: null);
+
+        Assert.Null(await store.LoadAutoSaveAsync(_rootA, CancellationToken.None));
+        Assert.Null(await store.LoadAutoSaveAsync(_rootB, CancellationToken.None));
+        // Reference arm: the window without a workspace still finds it.
+        Assert.Equal("asked in a window without a solution",
+                     (await store.LoadAutoSaveAsync(null, CancellationToken.None))!.Messages[0].Content);
+    }
+
+    [Fact]
+    public async Task AProjectsSlotOfOlderVersions_NeverComesBackInAWindowWithoutAWorkspace()
+    {
+        var store = new ConversationStore(_dir);
+        await store.SaveAsync("older", Turn("question from Shop before the update"), CancellationToken.None, workspaceRoot: _rootA);
+        File.Move(Path.Combine(_dir, "older.json"), Path.Combine(_dir, "last_session.json"));
+
+        Assert.Null(await store.LoadAutoSaveAsync(null, CancellationToken.None));
+        // Reference arm: Shop still gets it back.
+        Assert.Equal("question from Shop before the update",
+                     (await store.LoadAutoSaveAsync(_rootA, CancellationToken.None))!.Messages[0].Content);
+    }
+
+    [Fact]
     public async Task OneWorkspace_IsOneSlot_HoweverItsPathIsSpelled()
     {
         var store = new ConversationStore(_dir);

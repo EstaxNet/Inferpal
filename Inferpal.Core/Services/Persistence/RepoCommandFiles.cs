@@ -142,6 +142,12 @@ internal static class RepoCommandFiles
         return new RepoCommandScan(commands, leaving, unreadable);
     }
 
+    /// <summary>
+    /// A Continue prompt as Inferpal runs it: <c>{{{ input }}}</c> becomes <c>{args}</c>. The one reader of Continue's
+    /// variables — for a repository's files and for an imported configuration alike.
+    /// </summary>
+    internal static string ContinueText(string text) => ContinueInput.Replace(text, "{args}");
+
     /// <summary>The command a file makes in its tool; <c>null</c> when it makes none (empty, or a Continue note that is
     /// not <c>invokable</c>).</summary>
     internal static UserSlashTemplate? Parse(RepoCommandFormat format, string folder, string file, string relative, string text)
@@ -180,7 +186,7 @@ internal static class RepoCommandFiles
                 break;
             default:
                 name = OneWord(Field("name")) ?? StripEnding(Path.GetFileName(file), format);
-                body = ContinueInput.Replace(body, "{args}");
+                body = ContinueText(body);
                 unfilled.AddRange(ContinueOther.Matches(body).Select(m => m.Value));
                 break;
         }

@@ -140,13 +140,32 @@ internal class ConversationStore
     /// <exception cref="UnreadableSessionException">The file is damaged: a copy is kept, and the message says where.</exception>
     public async Task<SessionData?> LoadAutoSaveAsync(string? workspaceRoot, CancellationToken ct)
     {
+        if (string.IsNullOrWhiteSpace(workspaceRoot))
+        {
+            var unrooted = await LoadAsync(AutoSaveSlot, ct).ConfigureAwait(false);
+            return unrooted is not null && SharedSlotBelongsTo(unrooted, null) ? unrooted : null;
+        }
         var own = AutoSaveFile(workspaceRoot);
         if (File.Exists(own)) return await LoadFileAsync(own, AutoSaveSlot, ct).ConfigureAwait(false);
-        if (string.IsNullOrWhiteSpace(workspaceRoot)) return null;
 
         var shared = await LoadAsync(AutoSaveSlot, ct).ConfigureAwait(false);
-        return shared is not null && SessionManager.AutoSaveBelongsHere(shared, workspaceRoot) ? shared : null;
+        return shared is not null && SharedSlotBelongsTo(shared, workspaceRoot) ? shared : null;
     }
+
+    /// <summary>
+    /// Whether the shared slot holds the conversation of <paramref name="workspaceRoot"/>: the same root recorded, or —
+    /// for a window without a workspace — none recorded.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Every version since the root is recorded writes it, so a rootless shared slot is a window WITHOUT a workspace
+    /// (Visual Studio on a lone project file or a folder), which still writes that slot. Read as "older, keep the
+    /// continuity", it came back in every project opened for the first time — another window's conversation and the
+    /// tool results rebuilt from it; and a project's slot came back in a window without a workspace.
+    /// </remarks>
+    private static bool SharedSlotBelongsTo(SessionData slot, string? workspaceRoot) =>
+        string.IsNullOrWhiteSpace(slot.WorkspaceRoot) || string.IsNullOrWhiteSpace(workspaceRoot)
+            ? string.IsNullOrWhiteSpace(slot.WorkspaceRoot) && string.IsNullOrWhiteSpace(workspaceRoot)
+            : SessionManager.AutoSaveBelongsHere(slot, workspaceRoot);
 
     /// <summary>The auto-save slot of a workspace, in a folder of its own that the session list never reads; without a
     /// workspace, the shared slot older versions wrote.</summary>

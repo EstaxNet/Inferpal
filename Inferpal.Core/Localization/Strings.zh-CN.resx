@@ -1385,4 +1385,85 @@
   <data name="AcpSetupSaved" xml:space="preserve"><value>已保存到 {0}。请返回编辑器：Inferpal 已就绪。</value></data>
   <data name="AcpSetupStopped" xml:space="preserve"><value>设置已中止：未保存任何内容。</value></data>
   <data name="AcpSetupPickANumber" xml:space="preserve"><value>请输入 1 到 {0} 之间的数字。</value></data>
+  <data name="SlashHintImport" xml:space="preserve"><value>导入 Continue 或 Roo Code 配置：查看其内容，然后应用勾选的项 (`/import continue|roo [文件]`)</value></data>
+  <data name="ImportUsage" xml:space="preserve"><value>**用法：** `/import continue [文件]` 或 `/import roo [文件]` 显示配置的内容；加上 `apply` 写入已勾选的项，`apply all` 写入全部，`apply 1,3,5` 写入这些编号。</value></data>
+  <data name="ImportRooExportHint" xml:space="preserve"><value>在 Roo Code 中打开设置并使用 **Export**，然后指定该文件：`/import roo &lt;文件&gt;`。</value></data>
+  <data name="ImportNothingToWrite" xml:space="preserve"><value>没有要写入的内容：所有项都已就绪或被排除（原因见下方）。</value></data>
+  <data name="ImportSkippedTitle" xml:space="preserve"><value>已排除的项及原因</value></data>
+  <data name="ImportApplyButton" xml:space="preserve"><value>应用所选项</value></data>
+  <data name="ImportRestart" xml:space="preserve"><value>模型服务器已更改：Inferpal 重启后生效，请重启编辑器。</value></data>
+  <data name="ImportNothingChosen" xml:space="preserve"><value>没有勾选任何项：未写入任何内容。</value></data>
+  <data name="ImportDocsNext" xml:space="preserve"><value>已添加文档源：使用 `/docs reindex` 建立索引后即可搜索。</value></data>
+  <data name="ImportIndexingOn" xml:space="preserve"><value>开启</value></data>
+  <data name="ImportIndexingOff" xml:space="preserve"><value>关闭</value></data>
+  <data name="ImportTargetServer" xml:space="preserve"><value>模型服务器</value></data>
+  <data name="ImportTargetChatModel" xml:space="preserve"><value>聊天模型</value></data>
+  <data name="ImportTargetCompletionModel" xml:space="preserve"><value>补全模型（FIM）</value></data>
+  <data name="ImportTargetEditModel" xml:space="preserve"><value>内联编辑模型</value></data>
+  <data name="ImportTargetUtilityModel" xml:space="preserve"><value>实用模型</value></data>
+  <data name="ImportTargetEmbeddingModel" xml:space="preserve"><value>嵌入模型</value></data>
+  <data name="ImportTargetContextWindow" xml:space="preserve"><value>上下文窗口</value></data>
+  <data name="ImportTargetInstructions" xml:space="preserve"><value>自定义系统提示词</value></data>
+  <data name="ImportTargetCommand" xml:space="preserve"><value>命令</value></data>
+  <data name="ImportTargetMcpServer" xml:space="preserve"><value>MCP 服务器</value></data>
+  <data name="ImportTargetDocSite" xml:space="preserve"><value>@Docs 源</value></data>
+  <data name="ImportTargetPermissionRule" xml:space="preserve"><value>权限规则</value></data>
+  <data name="ImportTargetLanguage" xml:space="preserve"><value>语言</value></data>
+  <data name="ImportTargetIndexing" xml:space="preserve"><value>语义索引</value></data>
+  <data name="ImportNoteRenamed" xml:space="preserve"><value>名称 {0} 已被占用（Inferpal 或你自己的命令）：以此名称导入。</value></data>
+  <data name="ImportNoteIgnoredByContinue" xml:space="preserve"><value>Continue 会忽略 config.yaml 中的 `{0}`：按你写的原样导入。</value></data>
+  <data name="ImportNoteScopeInText" xml:space="preserve"><value>仅适用于部分文件：适用范围写在文本中，模型会读取。</value></data>
+  <data name="ImportNoteModeToolsNotKept" xml:space="preserve"><value>模式的工具限制不会导入：命令保留其说明。</value></data>
+  <data name="ImportNoteTakesEffectAfterRestart" xml:space="preserve"><value>Inferpal 重启后生效。</value></data>
+  <data name="ImportNoteSecretToFill" xml:space="preserve"><value>找不到密钥 {0}：按原样写入，之后请补充。</value></data>
+  <data name="ImportNoteRunsWithoutAsking" xml:space="preserve"><value>允许不经询问运行 `{0}`——默认不勾选，由你决定。</value></data>
+  <data name="ImportNoteContinueDefault" xml:space="preserve"><value>Continue 在每个新配置中默认写入的命令——默认不勾选。</value></data>
+  <data name="ImportNoFile" xml:space="preserve"><value>未找到 {0} 配置。已查找：{1}。请指定路径：`/import {2} &lt;文件&gt;`。</value></data>
+  <data name="ImportFileMissing" xml:space="preserve"><value>{0} 不存在。</value></data>
+  <data name="ImportReadFailed" xml:space="preserve"><value>无法读取 {0}：{1}</value></data>
+  <data name="ImportPreviewTitle" xml:space="preserve"><value>从 {0} 导入 — {1}</value></data>
+  <data name="ImportPreviewSummary" xml:space="preserve"><value>待写入 {0} 项，已排除 {1} 部分（附原因）。写入前会先复制 config.json。</value></data>
+  <data name="ImportApplyHint" xml:space="preserve"><value>应用方式：`/import {0} apply` 写入已勾选的项，`apply all` 写入全部，`apply 1,3,5` 写入这些编号。</value></data>
+  <data name="ImportApplied" xml:space="preserve"><value>已写入 {0} 项。</value></data>
+  <data name="ImportBackup" xml:space="preserve"><value>导入前的设置：{0}</value></data>
+  <data name="ImportItemFailed" xml:space="preserve"><value>未写入 — {0}：{1}</value></data>
+  <data name="ImportRefused" xml:space="preserve"><value>未写入任何内容：无法复制 config.json（{0}）。</value></data>
+  <data name="ImportCommandsWhere" xml:space="preserve"><value>命令位于 {0}：输入 / 即可在任意工作区中使用。</value></data>
+  <data name="ImportSelectionUnknown" xml:space="preserve"><value>没有编号为 {0} 的项：未写入任何内容。</value></data>
+  <data name="ImportSkipFileIdentity" xml:space="preserve"><value>文件自身的标识（名称、版本、架构），不是设置</value></data>
+  <data name="ImportSkipHostedProvider" xml:space="preserve"><value>托管服务商：Inferpal 只与你自己运行的模型服务器通信</value></data>
+  <data name="ImportSkipOtherServer" xml:space="preserve"><value>由另一台服务器提供：Inferpal 只使用一台模型服务器</value></data>
+  <data name="ImportSkipOtherChatModel" xml:space="preserve"><value>另一个聊天模型：Inferpal 会列出服务器上的所有模型，第一个成为默认模型</value></data>
+  <data name="ImportSkipAutodetect" xml:space="preserve"><value>AUTODETECT：Inferpal 会在已安装的模型中选择</value></data>
+  <data name="ImportSkipSameModelAsChat" xml:space="preserve"><value>该角色已由聊天模型承担：无需写入</value></data>
+  <data name="ImportSkipOneModelPerRole" xml:space="preserve"><value>该角色的第二个模型：保留第一个</value></data>
+  <data name="ImportSkipRoleNotInInferpal" xml:space="preserve"><value>Inferpal 没有的角色</value></data>
+  <data name="ImportSkipDisplayName" xml:space="preserve"><value>显示名称：Inferpal 显示服务器上的模型名称</value></data>
+  <data name="ImportSkipSampling" xml:space="preserve"><value>采样参数（temperature、top-p 等）：Inferpal 使用模型发布方推荐的值</value></data>
+  <data name="ImportSkipResponseLength" xml:space="preserve"><value>maxTokens：Inferpal 不会在固定长度处截断回答</value></data>
+  <data name="ImportSkipDeclaredCapabilities" xml:space="preserve"><value>声明的能力：Inferpal 会从模型本身读取</value></data>
+  <data name="ImportSkipRequestOptions" xml:space="preserve"><value>请求选项（超时、代理、请求头）：没有对应设置</value></data>
+  <data name="ImportSkipAutocompleteOptions" xml:space="preserve"><value>自动补全的调优：Inferpal 的补全有自己的设置</value></data>
+  <data name="ImportSkipPromptTemplates" xml:space="preserve"><value>模型自带的提示模板：没有对应设置</value></data>
+  <data name="ImportSkipContextProviders" xml:space="preserve"><value>上下文提供程序：Inferpal 的 @ 提及是内置的</value></data>
+  <data name="ImportSkipHubBlock" xml:space="preserve"><value>Hub 区块（uses:）：Hub 已关闭，无法读取该区块</value></data>
+  <data name="ImportSkipTelemetry" xml:space="preserve"><value>遥测：Inferpal 不发送任何遥测</value></data>
+  <data name="ImportSkipSecretNotFound" xml:space="preserve"><value>在 ~/.continue/.env 和环境变量中都找不到该密钥：请在设置中输入</value></data>
+  <data name="ImportSkipContinueBuiltinCommand" xml:space="preserve"><value>Continue 的内置命令</value></data>
+  <data name="ImportSkipAlreadyConfigured" xml:space="preserve"><value>已就绪</value></data>
+  <data name="ImportSkipEmpty" xml:space="preserve"><value>空</value></data>
+  <data name="ImportSkipUnknownKey" xml:space="preserve"><value>该工具无法识别的键</value></data>
+  <data name="ImportSkipNoEquivalent" xml:space="preserve"><value>Inferpal 中没有对应项</value></data>
+  <data name="ImportSkipModelPerMode" xml:space="preserve"><value>每个模式一个模型：所指的配置档不会导入</value></data>
+  <data name="ImportSkipActiveMode" xml:space="preserve"><value>Roo 当时所处的模式：Inferpal 以代理模式启动</value></data>
+  <data name="ImportSkipAutoApproval" xml:space="preserve"><value>自动批准：导入永远不会关闭 Inferpal 的批准</value></data>
+  <data name="ImportSkipAutoApprovalWasOff" xml:space="preserve"><value>允许的命令：Roo 中已关闭命令自动批准，此列表并未生效</value></data>
+  <data name="ImportSkipCompaction" xml:space="preserve"><value>压缩对话：Inferpal 会自行压缩</value></data>
+  <data name="ImportSkipCheckpoints" xml:space="preserve"><value>检查点：Inferpal 在每次写入前都会备份（/undo-run）</value></data>
+  <data name="ImportSkipIndexingNotKept" xml:space="preserve"><value>代码索引：在 Roo 中已关闭，或其嵌入模型为托管服务</value></data>
+  <data name="ImportSkipToolCatalogue" xml:space="preserve"><value>工具自带的目录，不是设置</value></data>
+  <data name="ImportSkipWhenToUse" xml:space="preserve"><value>whenToUse：用于 Roo 自动选择模式</value></data>
+  <data name="ImportSkipUnsupportedLanguage" xml:space="preserve"><value>Inferpal 未提供该语言的翻译</value></data>
+  <data name="ImportSkipNoServersInExport" xml:space="preserve"><value>导出文件中不含 MCP 服务器（Roo 将其保存在单独的文件中）</value></data>
+  <data name="ImportApplyWhileBusy" xml:space="preserve"><value>仍有回合在运行：请等其结束后再应用。</value></data>
 </root>

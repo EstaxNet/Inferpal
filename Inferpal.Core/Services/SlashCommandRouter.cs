@@ -72,7 +72,7 @@ internal enum SlashCommandId
     Commit, CommitExec, FixBuild, History, PHistory, Models, AgentStep, Resume,
     Note, Notes, Snippets, Template, Docs, Check, Rules, Checks, Plan, Prompts,
     Hardware, Setup, Diagnostics, UndoRun, Replay, Xray, Bench, Arena, Tdd, Branch, Task,
-    Onboard, Debug, Permissions, Instructions, Skill,
+    Onboard, Debug, Permissions, Instructions, Skill, Import,
 }
 
 /// <summary>User-defined prompt template (config <c>PromptTemplates</c>, one <c>/name=text</c> per line,
@@ -181,6 +181,7 @@ internal static class SlashCommandRouter
         ("/bench",    Strings.SlashHintBench,    SlashCategory.Models),
         ("/arena",    Strings.SlashHintArena,    SlashCategory.Models),
         ("/setup",    Strings.SlashHintSetup,    SlashCategory.Models),
+        ("/import",   Strings.SlashHintImport,   SlashCategory.Models),
 
         ("/agent-step", Strings.SlashHintAgentStep, SlashCategory.Agent),
         ("/resume",     Strings.SlashHintResume,    SlashCategory.Agent),
@@ -349,6 +350,7 @@ internal static class SlashCommandRouter
             case "/branch":            return new SlashDelegatedAction(SlashCommandId.Branch,          parts);
             case "/task":              return new SlashDelegatedAction(SlashCommandId.Task,            parts);
             case "/onboard":           return new SlashDelegatedAction(SlashCommandId.Onboard,         parts);
+            case "/import":            return new SlashDelegatedAction(SlashCommandId.Import,          parts);
             case "/debug":             return new SlashDelegatedAction(SlashCommandId.Debug,           parts);
 
             // ── Code actions on the active document/selection ─────────────────

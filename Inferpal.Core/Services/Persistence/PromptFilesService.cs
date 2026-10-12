@@ -21,29 +21,31 @@ internal static class PromptFilesService
     private const long CacheTtlMs = 3000;
 
     private static readonly object _gate = new();
-    private static string? _cachedDir;
-    private static long    _cachedAt;
-    private static IReadOnlyList<UserSlashTemplate> _cachedResult = [];
+    // Per folder: the project's and the machine's are both read on every keystroke of the autocomplete — one slot would
+    // evict the other at each call.
+    private static readonly Dictionary<string, (long At, IReadOnlyList<UserSlashTemplate> Templates)> _cache =
+        new(StringComparer.Ordinal);
 
-    public static IReadOnlyList<UserSlashTemplate> Load(string promptsDir)
+    /// <param name="source">How a command's <c>Source</c> names its folder (<c>/prompts</c> shows it).</param>
+    public static IReadOnlyList<UserSlashTemplate> Load(string promptsDir, string? source = null)
     {
         lock (_gate)
         {
             var now = Environment.TickCount64;
-            if (promptsDir == _cachedDir && now - _cachedAt < CacheTtlMs)
-                return _cachedResult;
+            var key = promptsDir + "|" + source;
+            if (_cache.TryGetValue(key, out var cached) && now - cached.At < CacheTtlMs)
+                return cached.Templates;
 
-            _cachedDir    = promptsDir;
-            _cachedAt     = now;
-            _cachedResult = LoadUncached(promptsDir);
-            return _cachedResult;
+            var templates = LoadUncached(promptsDir, out _, source);
+            _cache[key] = (now, templates);
+            return templates;
         }
     }
 
-    /// <summary>Drops the cache (after <c>/prompts init</c>, and between tests).</summary>
+    /// <summary>Drops the cache (after <c>/prompts init</c>, an import, and between tests).</summary>
     internal static void InvalidateCache()
     {
-        lock (_gate) _cachedDir = null;
+        lock (_gate) _cache.Clear();
         RepoCommandFiles.InvalidateCache();
     }
 
@@ -51,8 +53,9 @@ internal static class PromptFilesService
         LoadUncached(promptsDir, out _);
 
     /// <summary>Same, reporting the unreadable files. See <see cref="MarkdownFolder"/>.</summary>
+    /// <param name="source">The folder as a command's <c>Source</c> names it; <c>.inferpal/prompts/</c> by default.</param>
     internal static IReadOnlyList<UserSlashTemplate> LoadUncached(
-        string promptsDir, out IReadOnlyList<string> unreadable)
+        string promptsDir, out IReadOnlyList<string> unreadable, string? source = null)
     {
         var result = new List<UserSlashTemplate>();
         foreach (var (file, text) in Governance.MarkdownFolder.ReadAll(
@@ -67,7 +70,7 @@ internal static class PromptFilesService
                 : null;
             result.Add(new UserSlashTemplate(
                 "/" + CommandName(Path.GetFileNameWithoutExtension(file)), body, hint,
-                Source: ".inferpal/prompts/" + Path.GetFileName(file)));
+                Source: (source ?? ".inferpal/prompts/") + Path.GetFileName(file)));
         }
         return result;
     }

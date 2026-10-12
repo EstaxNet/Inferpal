@@ -38,6 +38,7 @@ editor with tools disabled).
 | `/onboard init` | Write a commented example profile |
 | `/onboard apply` | Write the profile's recommendations into **this machine's** settings — the only path from "recommended" to "in effect" |
 | `/onboard context [force]` | Draft `.inferpal/context.md` from the repository (layout, README, recent commits). Refuses to overwrite an existing file without `force` |
+| `/import continue [file]` · `/import roo [file]` | Bring over a Continue configuration (`~/.continue/config.yaml`, or the older `config.json`) or a Roo Code one (the file its settings **Export**). A card lists what Inferpal can take — the model server and the models by role, rules and system messages (added to the custom system prompt), prompts and custom modes (as commands in this machine's prompts folder), MCP servers, documentation sites, allowed and denied commands (as permission rules) — and every other part of the file with the reason it stays; a hosted provider is never imported. Nothing is written until you apply, and `config.json` is copied aside first: `apply` writes what is ticked, `apply all` everything, `apply 1,3,5` those numbers. See [Coming from Continue or Roo Code](coming-from-continue.md) |
 | `/note <text>` | Append a timestamped note to `.inferpal/notes.md` |
 | `/notes [clear]` | List or clear all project notes |
 | `/read <path>` | Attach a file as context (a path that is not a readable file — missing, a folder, binary, outside the workspace — is reported, not attached) |
@@ -84,7 +85,7 @@ editor with tools disabled).
 | `/docs list \| remove <id> \| reindex [id]` | Manage indexed documentation sources |
 | `/snippets` | `list` / `copy <n>` / `delete <n>` / `clear` saved code snippets |
 | `/template [id]` | Load a session template (code-review / bug-hunt / architecture / refactoring / tests); a conversation started in a template is reloaded in it |
-| `/prompts [init]` | List the custom commands — `.inferpal/prompts/*.md` and the commands the repository wrote for Copilot (`.github/prompts/*.prompt.md`), Claude Code (`.claude/commands/**/*.md`) and Continue (`.continue/prompts/`) — with where each comes from, which one a clash hides, and the variables Inferpal leaves as written; or scaffold an example |
+| `/prompts [init]` | List the custom commands — `.inferpal/prompts/*.md`, this machine's own prompts folder (beside Inferpal's settings: `%AppData%\Inferpal\prompts` on Windows, `~/.config/Inferpal/prompts` elsewhere — where `/import` writes) and the commands the repository wrote for Copilot (`.github/prompts/*.prompt.md`), Claude Code (`.claude/commands/**/*.md`) and Continue (`.continue/prompts/`) — with where each comes from, which one a clash hides, and the variables Inferpal leaves as written; or scaffold an example |
 
 ## Models & hardware
 

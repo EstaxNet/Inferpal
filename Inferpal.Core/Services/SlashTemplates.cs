@@ -20,8 +20,9 @@ internal sealed record SlashTemplateReport(IReadOnlyList<SlashTemplateEntry> Ent
 }
 
 /// <summary>
-/// Single loader for user-defined slash commands: the settings' <c>PromptTemplates</c> lines, then
-/// <c>.inferpal/prompts/*.md</c>, then the commands the repository wrote for Copilot, Claude Code and Continue
+/// Single loader for user-defined slash commands: the settings' <c>PromptTemplates</c> lines, then the project's
+/// <c>.inferpal/prompts/*.md</c>, then the machine's (<see cref="InferpalConfig.MachinePromptsFolder"/>, where an import
+/// writes), then the commands the repository wrote for Copilot, Claude Code and Continue
 /// (<see cref="RepoCommandFiles"/>). Of two commands with one name the first wins, and a command named like a built-in
 /// is dropped (see <see cref="Report"/>). Shared by the VS view-model and the Host (`command/list`, template expansion).
 /// </summary>
@@ -37,6 +38,11 @@ internal static class SlashTemplates
         IReadOnlyList<UserSlashTemplate> fromFiles = string.IsNullOrEmpty(rootDir)
             ? []
             : PromptFilesService.Load(Path.Combine(rootDir, ".inferpal", "prompts"));
+        // The machine's own folder (an import writes there): after the project's, which a team commits and which wins.
+        var machine = config.MachinePromptsFolder;
+        var fromMachine = Directory.Exists(machine)
+            ? PromptFilesService.Load(machine, machine + Path.DirectorySeparatorChar)
+            : [];
         var repository = string.IsNullOrEmpty(rootDir)
             ? RepoCommandScan.None
             : RepoCommandFiles.Load(rootDir, RepoInstructionFormats.Families(config.RepoInstructionFamilies).On);
@@ -50,7 +56,7 @@ internal static class SlashTemplates
         // gone within seconds of typing.
         var entries = new List<SlashTemplateEntry>();
         var winners = new Dictionary<string, UserSlashTemplate>(StringComparer.Ordinal);
-        foreach (var t in fromConfig.Concat(fromFiles).Concat(repository.Commands))
+        foreach (var t in fromConfig.Concat(fromFiles).Concat(fromMachine).Concat(repository.Commands))
         {
             if (SlashCommandRouter.IsBuiltIn(t.Name))
             {

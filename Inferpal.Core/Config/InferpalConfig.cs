@@ -39,6 +39,15 @@ internal class InferpalConfig
     /// sets this — never <see cref="OverridePathForTests"/>, which belongs to the whole suite.</summary>
     internal string? SavePathForTests { get; init; }
 
+    /// <summary>The file this instance saves to — the one an import copies aside before writing.</summary>
+    internal string SaveFilePath => SavePathForTests ?? EffectiveConfigPath;
+
+    /// <summary>
+    /// The machine's prompts folder, beside the settings: a command written there exists in every workspace (where an
+    /// import from Continue or Roo writes them, both being configured per machine).
+    /// </summary>
+    internal string MachinePromptsFolder => Path.Combine(Path.GetDirectoryName(SaveFilePath)!, "prompts");
+
     /// <summary>BCP-47 culture code for the UI language (e.g. <c>"fr"</c>, <c>"zh-CN"</c>). Empty string = follow VS.</summary>
     [JsonPropertyName("language")]
     public string Language { get; set; } = string.Empty;

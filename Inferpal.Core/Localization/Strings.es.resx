@@ -1385,4 +1385,85 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="AcpSetupSaved" xml:space="preserve"><value>Guardado en {0}. Vuelva a su editor: Inferpal está listo.</value></data>
   <data name="AcpSetupStopped" xml:space="preserve"><value>Configuración interrumpida: no se guardó nada.</value></data>
   <data name="AcpSetupPickANumber" xml:space="preserve"><value>Escriba un número del 1 al {0}.</value></data>
+  <data name="SlashHintImport" xml:space="preserve"><value>traer una configuración de Continue o Roo Code: ver lo que contiene y aplicar lo que marques (`/import continue|roo [archivo]`)</value></data>
+  <data name="ImportUsage" xml:space="preserve"><value>**Uso:** `/import continue [archivo]` o `/import roo [archivo]` muestra lo que contiene la configuración; añade `apply` para escribir lo marcado, `apply all` para todo, `apply 1,3,5` para esos números.</value></data>
+  <data name="ImportRooExportHint" xml:space="preserve"><value>En Roo Code, abre su configuración y usa **Export**; luego indica el archivo: `/import roo &lt;archivo&gt;`.</value></data>
+  <data name="ImportNothingToWrite" xml:space="preserve"><value>Nada que escribir: todo ya está en su sitio o se deja fuera, con los motivos abajo.</value></data>
+  <data name="ImportSkippedTitle" xml:space="preserve"><value>Excluido, y por qué</value></data>
+  <data name="ImportApplyButton" xml:space="preserve"><value>Aplicar la selección</value></data>
+  <data name="ImportRestart" xml:space="preserve"><value>El servidor de modelos cambia: se aplica al reiniciar Inferpal; reinicia el editor.</value></data>
+  <data name="ImportNothingChosen" xml:space="preserve"><value>No hay nada marcado: no se ha escrito nada.</value></data>
+  <data name="ImportDocsNext" xml:space="preserve"><value>Fuentes de documentación añadidas: indéxalas con `/docs reindex` para poder buscar en ellas.</value></data>
+  <data name="ImportIndexingOn" xml:space="preserve"><value>activado</value></data>
+  <data name="ImportIndexingOff" xml:space="preserve"><value>desactivado</value></data>
+  <data name="ImportTargetServer" xml:space="preserve"><value>Servidor de modelos</value></data>
+  <data name="ImportTargetChatModel" xml:space="preserve"><value>Modelo de chat</value></data>
+  <data name="ImportTargetCompletionModel" xml:space="preserve"><value>Modelo de autocompletado (FIM)</value></data>
+  <data name="ImportTargetEditModel" xml:space="preserve"><value>Modelo de edición en línea</value></data>
+  <data name="ImportTargetUtilityModel" xml:space="preserve"><value>Modelo utilitario</value></data>
+  <data name="ImportTargetEmbeddingModel" xml:space="preserve"><value>Modelo de embeddings</value></data>
+  <data name="ImportTargetContextWindow" xml:space="preserve"><value>Ventana de contexto</value></data>
+  <data name="ImportTargetInstructions" xml:space="preserve"><value>Prompt del sistema personalizado</value></data>
+  <data name="ImportTargetCommand" xml:space="preserve"><value>Comando</value></data>
+  <data name="ImportTargetMcpServer" xml:space="preserve"><value>Servidor MCP</value></data>
+  <data name="ImportTargetDocSite" xml:space="preserve"><value>Fuente de @Docs</value></data>
+  <data name="ImportTargetPermissionRule" xml:space="preserve"><value>Regla de permisos</value></data>
+  <data name="ImportTargetLanguage" xml:space="preserve"><value>Idioma</value></data>
+  <data name="ImportTargetIndexing" xml:space="preserve"><value>Índice semántico</value></data>
+  <data name="ImportNoteRenamed" xml:space="preserve"><value>El nombre {0} ya está en uso (un comando de Inferpal o uno tuyo): se importa con este.</value></data>
+  <data name="ImportNoteIgnoredByContinue" xml:space="preserve"><value>Continue ignoraba `{0}` en config.yaml: se importa tal como lo escribiste.</value></data>
+  <data name="ImportNoteScopeInText" xml:space="preserve"><value>Limitada a ciertos archivos: el alcance va escrito en el texto, que el modelo lee.</value></data>
+  <data name="ImportNoteModeToolsNotKept" xml:space="preserve"><value>Las restricciones de herramientas del modo no se trasladan: el comando conserva sus instrucciones.</value></data>
+  <data name="ImportNoteTakesEffectAfterRestart" xml:space="preserve"><value>Se aplica al reiniciar Inferpal.</value></data>
+  <data name="ImportNoteSecretToFill" xml:space="preserve"><value>Secreto {0} no encontrado: se escribe tal cual, complétalo después.</value></data>
+  <data name="ImportNoteRunsWithoutAsking" xml:space="preserve"><value>Permite ejecutar `{0}` sin preguntar; sin marcar, tú decides.</value></data>
+  <data name="ImportNoteContinueDefault" xml:space="preserve"><value>El comando que Continue escribía en toda configuración nueva; sin marcar.</value></data>
+  <data name="ImportNoFile" xml:space="preserve"><value>No se encontró ninguna configuración de {0}. Se buscó en: {1}. Indica su ruta: `/import {2} &lt;archivo&gt;`.</value></data>
+  <data name="ImportFileMissing" xml:space="preserve"><value>{0} no existe.</value></data>
+  <data name="ImportReadFailed" xml:space="preserve"><value>No se pudo leer {0}: {1}</value></data>
+  <data name="ImportPreviewTitle" xml:space="preserve"><value>Importar desde {0} — {1}</value></data>
+  <data name="ImportPreviewSummary" xml:space="preserve"><value>{0} {0:elemento|elementos} para escribir, {1} {1:parte excluida|partes excluidas} con el motivo. config.json se copia antes de escribir nada.</value></data>
+  <data name="ImportApplyHint" xml:space="preserve"><value>Para aplicar: `/import {0} apply` escribe lo marcado, `apply all` todo, `apply 1,3,5` esos números.</value></data>
+  <data name="ImportApplied" xml:space="preserve"><value>Escrito: {0} {0:elemento|elementos}.</value></data>
+  <data name="ImportBackup" xml:space="preserve"><value>Tu configuración antes de la importación: {0}</value></data>
+  <data name="ImportItemFailed" xml:space="preserve"><value>No escrito — {0}: {1}</value></data>
+  <data name="ImportRefused" xml:space="preserve"><value>No se ha escrito nada: no se pudo copiar config.json ({0}).</value></data>
+  <data name="ImportCommandsWhere" xml:space="preserve"><value>Los comandos están en {0}: escribe / para usarlos en cualquier espacio de trabajo.</value></data>
+  <data name="ImportSelectionUnknown" xml:space="preserve"><value>Ningún elemento tiene el número {0}: no se ha escrito nada.</value></data>
+  <data name="ImportSkipFileIdentity" xml:space="preserve"><value>identidad del archivo (nombre, versión, esquema), no es un ajuste</value></data>
+  <data name="ImportSkipHostedProvider" xml:space="preserve"><value>proveedor alojado: Inferpal solo habla con un servidor de modelos que tú ejecutas</value></data>
+  <data name="ImportSkipOtherServer" xml:space="preserve"><value>servido por otro servidor: Inferpal usa un único servidor de modelos</value></data>
+  <data name="ImportSkipOtherChatModel" xml:space="preserve"><value>otro modelo de chat: Inferpal lista todos los modelos del servidor; el primero pasa a ser el predeterminado</value></data>
+  <data name="ImportSkipAutodetect" xml:space="preserve"><value>AUTODETECT: Inferpal elige entre los modelos instalados</value></data>
+  <data name="ImportSkipSameModelAsChat" xml:space="preserve"><value>función que ya cumple el modelo de chat: nada que escribir</value></data>
+  <data name="ImportSkipOneModelPerRole" xml:space="preserve"><value>segundo modelo para esta función: se conserva el primero</value></data>
+  <data name="ImportSkipRoleNotInInferpal" xml:space="preserve"><value>una función que Inferpal no tiene</value></data>
+  <data name="ImportSkipDisplayName" xml:space="preserve"><value>nombre visible: Inferpal muestra el nombre del modelo en el servidor</value></data>
+  <data name="ImportSkipSampling" xml:space="preserve"><value>muestreo (temperatura, top-p…): Inferpal aplica los valores que recomienda el editor del modelo</value></data>
+  <data name="ImportSkipResponseLength" xml:space="preserve"><value>maxTokens: Inferpal no corta una respuesta a una longitud fija</value></data>
+  <data name="ImportSkipDeclaredCapabilities" xml:space="preserve"><value>capacidades declaradas: Inferpal las obtiene del propio modelo</value></data>
+  <data name="ImportSkipRequestOptions" xml:space="preserve"><value>opciones de solicitud (tiempo de espera, proxy, cabeceras): sin equivalente</value></data>
+  <data name="ImportSkipAutocompleteOptions" xml:space="preserve"><value>ajustes del autocompletado: el de Inferpal tiene los suyos</value></data>
+  <data name="ImportSkipPromptTemplates" xml:space="preserve"><value>plantillas de prompt propias de un modelo: sin equivalente</value></data>
+  <data name="ImportSkipContextProviders" xml:space="preserve"><value>proveedor de contexto: las @-menciones de Inferpal están integradas</value></data>
+  <data name="ImportSkipHubBlock" xml:space="preserve"><value>bloque del Hub (uses:): el Hub está cerrado, el bloque no se puede leer</value></data>
+  <data name="ImportSkipTelemetry" xml:space="preserve"><value>telemetría: Inferpal no envía ninguna</value></data>
+  <data name="ImportSkipSecretNotFound" xml:space="preserve"><value>secreto no encontrado en ~/.continue/.env ni en el entorno: escribe la clave en la configuración</value></data>
+  <data name="ImportSkipContinueBuiltinCommand" xml:space="preserve"><value>comando integrado de Continue</value></data>
+  <data name="ImportSkipAlreadyConfigured" xml:space="preserve"><value>ya está configurado</value></data>
+  <data name="ImportSkipEmpty" xml:space="preserve"><value>vacío</value></data>
+  <data name="ImportSkipUnknownKey" xml:space="preserve"><value>una clave que la herramienta no conoce</value></data>
+  <data name="ImportSkipNoEquivalent" xml:space="preserve"><value>sin equivalente en Inferpal</value></data>
+  <data name="ImportSkipModelPerMode" xml:space="preserve"><value>un modelo por modo: los perfiles indicados no se conservan</value></data>
+  <data name="ImportSkipActiveMode" xml:space="preserve"><value>el modo en que estaba Roo: Inferpal arranca en modo agente</value></data>
+  <data name="ImportSkipAutoApproval" xml:space="preserve"><value>aprobación automática: una importación nunca desactiva la aprobación de Inferpal</value></data>
+  <data name="ImportSkipAutoApprovalWasOff" xml:space="preserve"><value>comandos permitidos: la aprobación automática de comandos estaba desactivada en Roo, la lista no hacía nada</value></data>
+  <data name="ImportSkipCompaction" xml:space="preserve"><value>condensar la conversación: Inferpal la compacta por sí mismo</value></data>
+  <data name="ImportSkipCheckpoints" xml:space="preserve"><value>puntos de control: Inferpal hace copia antes de cada escritura (/undo-run)</value></data>
+  <data name="ImportSkipIndexingNotKept" xml:space="preserve"><value>índice del código: desactivado en Roo, o su modelo de embeddings está alojado</value></data>
+  <data name="ImportSkipToolCatalogue" xml:space="preserve"><value>el catálogo propio de la herramienta, no un ajuste</value></data>
+  <data name="ImportSkipWhenToUse" xml:space="preserve"><value>whenToUse: sirve para que Roo elija el modo automáticamente</value></data>
+  <data name="ImportSkipUnsupportedLanguage" xml:space="preserve"><value>un idioma al que Inferpal no está traducido</value></data>
+  <data name="ImportSkipNoServersInExport" xml:space="preserve"><value>la exportación no contiene ningún servidor MCP (Roo los guarda en su propio archivo)</value></data>
+  <data name="ImportApplyWhileBusy" xml:space="preserve"><value>Todavía hay un turno en curso: espera a que termine y luego aplica.</value></data>
 </root>

@@ -134,11 +134,11 @@ public sealed class RepoMcpServersTests : IDisposable
     public void AnUnreadableFile_IsNamedWithItsCause()
     {
         Write(".cursor/mcp.json", "{ not json");
-        Write(".continue/mcpServers/bad.yaml", "mcpServers:\n  - name: x\n    command: |\n      npx\n");
+        Write(".continue/mcpServers/bad.yaml", "mcpServers:\n  - name: x\n    command: *missing\n");
 
         var problems = RepoMcpServers.Read(_repo).Problems;
         Assert.Contains(problems, p => p.Source == ".cursor/mcp.json");
-        Assert.Contains(problems, p => p.Source == ".continue/mcpServers/bad.yaml" && p.Reason.Contains("block scalar"));
+        Assert.Contains(problems, p => p.Source == ".continue/mcpServers/bad.yaml" && p.Reason.Contains("names no anchor"));
     }
 
     // ── Variables and folder ────────────────────────────────────────────────
@@ -478,13 +478,76 @@ public sealed class MiniYamlTests
     }
 
     [Theory]
-    [InlineData("a: |\n  text\n", "block scalar")]
-    [InlineData("a: &x 1\n", "anchor")]
+    [InlineData("a: *nope\n", "names no anchor")]
+    [InlineData("a:\n\tb: 1\n", "a tab in the indentation")]
     [InlineData("a: 1\n---\nb: 2\n", "several YAML documents")]
+    [InlineData("a:\n  <<: 1\n", "merges a map")]
     public void RefusesWhatItDoesNotRead_ByName(string text, string why)
     {
         var ex = Assert.Throws<FormatException>(() => MiniYaml.Parse(text));
         Assert.Contains(why, ex.Message);
+    }
+
+    /// <summary>
+    /// A literal block keeps its lines as written — a <c>#</c> is a Markdown heading there, a blank line separates two
+    /// paragraphs, a deeper line keeps its indentation — and the next key ends it. What a Continue prompt or rule is.
+    /// </summary>
+    [Fact]
+    public void ALiteralBlock_KeepsItsLinesHeadingsAndBlankLines()
+    {
+        var node = MiniYaml.Parse("prompts:\n  - name: review\n    prompt: |\n      # Review\n\n      Check:\n        - errors\n      \tcode\n\n  - name: next\n");
+        var prompts = node!["prompts"]!.AsArray();
+        Assert.Equal("# Review\n\nCheck:\n  - errors\n\tcode\n", prompts[0]!["prompt"]!.GetValue<string>());
+        Assert.Equal("next", prompts[1]!["name"]!.GetValue<string>());
+    }
+
+    [Theory]
+    [InlineData("a: |\n  one\n  two\n\n\nb: x\n", "one\ntwo\n")]        // clip: one final line break
+    [InlineData("a: |-\n  one\n  two\n\nb: x\n", "one\ntwo")]            // strip: none
+    [InlineData("a: |+\n  one\n\n\nb: x\n", "one\n\n\n")]                // keep: every one
+    [InlineData("a: >\n  one\n  two\n\n  three\nb: x\n", "one two\nthree\n")]
+    [InlineData("a: >-\n  one\n    deeper\n  two\nb: x\n", "one\n  deeper\ntwo")]
+    public void ABlockScalar_FoldsAndChompsAsYamlSays(string text, string expected) =>
+        Assert.Equal(expected, MiniYaml.Parse(text)!["a"]!.GetValue<string>());
+
+    /// <summary>
+    /// What a real Continue configuration does: a directive, an anchor holding the shared keys, and each model merging
+    /// them — the keys the model writes itself win.
+    /// </summary>
+    [Fact]
+    public void AnchorsAndMergeKeys_GiveTheirKeys_TheWrittenOnesWin()
+    {
+        var node = MiniYaml.Parse("""
+            %YAML 1.1
+            ---
+            defaults: &d
+              provider: openai
+              apiBase: "http://h/v1/"
+            models:
+              - name: one
+                <<: *d
+                model: m1
+              - name: two
+                provider: ollama
+                <<: *d
+            again: *d
+            """);
+        var models = node!["models"]!.AsArray();
+        Assert.Equal("openai", models[0]!["provider"]!.GetValue<string>());
+        Assert.Equal("http://h/v1/", models[0]!["apiBase"]!.GetValue<string>());
+        Assert.Equal("ollama", models[1]!["provider"]!.GetValue<string>());   // written after the merge, still wins
+        Assert.Equal("openai", node["again"]!["provider"]!.GetValue<string>());
+        Assert.False(models[0]!.AsObject().ContainsKey("<<"));
+    }
+
+    [Fact]
+    public void AnInlineMap_AndKeysPaddedBeforeTheirColon_AreRead()
+    {
+        var node = MiniYaml.Parse("context:\n  - provider: open\n    params: { onlyPinned: true, n: 3 }\nname    : local\nroles   :\n  - chat\n");
+        Assert.True(node!["context"]![0]!["params"]!["onlyPinned"]!.GetValue<bool>());
+        Assert.Equal("3", node["context"]![0]!["params"]!["n"]!.GetValue<string>());
+        Assert.Equal("local", node["name"]!.GetValue<string>());
+        Assert.Equal(["chat"], node["roles"]!.AsArray().Select(n => n!.GetValue<string>()));
     }
 
     [Theory]

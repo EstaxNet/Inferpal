@@ -157,16 +157,6 @@ internal static class SessionManager
     }
 
     /// <summary>
-    /// Whether the auto-save slot may be restored into the workspace open now.
-    /// </summary>
-    /// <remarks>
-    /// The slot is per workspace (<see cref="ConversationStore.LoadAutoSaveAsync"/>), but the single slot older versions
-    /// shared by every project is still read for a workspace that has none yet: restored blindly, it would bring another
-    /// project's conversation — its transcript, and the tool results rebuilt into the model's history — into this one.
-    /// It is refused only when both roots are known and differ: a file saved before the root was recorded, or a
-    /// front-end that does not know its root yet, keeps the continuity it had.
-    /// </remarks>
-    /// <summary>
     /// The named session an auto-save records: the one this process knows — or, for a process that knows nothing yet (the
     /// VS Code host started again after a crash or a settings change), the one the slot already carries for this workspace.
     /// </summary>
@@ -178,6 +168,16 @@ internal static class SessionManager
     public static string? AutoSaveName(bool known, string? current, SessionData? slot, string? root) =>
         known ? current : slot is not null && AutoSaveBelongsHere(slot, root) ? slot.CurrentName : null;
 
+    /// <summary>
+    /// Whether the auto-save slot may be restored into the workspace open now.
+    /// </summary>
+    /// <remarks>
+    /// The slot is per workspace (<see cref="ConversationStore.LoadAutoSaveAsync"/>): refused only when both roots are
+    /// known and differ. The single slot older versions shared by every project is held to a stricter rule — the same
+    /// root, or none on either side — because a rootless shared slot is a window without a workspace, never an older file:
+    /// restored blindly, it would bring another window's conversation — its transcript, and the tool results rebuilt into
+    /// the model's history — into this one.
+    /// </remarks>
     public static bool AutoSaveBelongsHere(SessionData saved, string? currentRoot)
     {
         if (string.IsNullOrWhiteSpace(saved.WorkspaceRoot) || string.IsNullOrWhiteSpace(currentRoot))

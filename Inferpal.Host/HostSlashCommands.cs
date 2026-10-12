@@ -468,6 +468,17 @@ internal sealed partial class HostServer
                     return new SlashCommandResult(true, result.Message);
                 }
 
+                case SlashCommandId.Import:
+                {
+                    // The Core previews or applies; the host saves what it changed and hands the card to the editor
+                    // (its Markdown is what the agent protocol, which draws no card, shows).
+                    var result = ImportCommandHandler.Handle(parts, Inferpal.Services.Import.ImportContext.For(s.Config),
+                                                             s.Config.SaveFilePath, DateTime.Now);
+                    if (result.SaveConfig) s.Config.Save();
+                    List<SlashEffectDto> saved = result.SaveConfig ? [new SlashEffectDto("configSaved")] : [];
+                    return new SlashCommandResult(true, result.Message, saved, result.Card);
+                }
+
                 case SlashCommandId.Onboard:
                 {
                     // The profile itself is applied (index exclusions) or merely reported by the

@@ -1048,6 +1048,100 @@ kbd {
   opacity: 0.6;
 }
 
+/* ── /import preview, in the conversation ───────────────────────────────────── */
+.import-card {
+  border-radius: 10px;
+  border: 1px solid var(--ip-line);
+  background: var(--ip-surface);
+  overflow: hidden;
+}
+
+.import-head {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--ip-line);
+}
+
+.import-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.import-summary {
+  margin-top: 4px;
+  color: var(--ip-muted);
+}
+
+.import-items {
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+}
+
+.import-item {
+  padding: 4px 12px;
+}
+
+/* What it writes above, the value below, both in the text column: side by side, the value wraps in what the target
+   leaves of a side bar — a URL on three lines at its default width. The note keeps the same column. */
+.import-item label {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  column-gap: 8px;
+  cursor: pointer;
+}
+
+.import-item input {
+  grid-row: 1 / span 2;
+  width: 14px;
+  height: 14px;
+  margin: 2px 0 0;
+}
+
+.import-target {
+  grid-column: 2;
+  font-weight: 600;
+}
+
+.import-label {
+  grid-column: 2;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.import-note {
+  margin: 2px 0 0 22px;
+  color: var(--ip-muted);
+  font-size: 12px;
+}
+
+.import-skipped {
+  padding: 6px 12px;
+  border-top: 1px solid var(--ip-line);
+}
+
+.import-skipped summary {
+  cursor: pointer;
+  color: var(--ip-muted);
+}
+
+.import-skipped ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.import-skipped li {
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+}
+
+.import-skipped code {
+  font-size: 11px;
+}
+
+.import-card.answered {
+  opacity: 0.6;
+}
+
 /* ── Composer ───────────────────────────────────────────────────────────────── */
 #composer {
   margin: 0 10px 10px;
@@ -1076,14 +1170,21 @@ kbd {
   border: 0;
 }
 
+/* Wraps rather than overflows: past the panel's edge the send button was cut, under a scroll bar for the whole view.
+   On one line the spacer takes the free space; wrapped alone, the send button keeps to the right. */
 #toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
 
 #toolbar .spacer {
   flex: 1 1 auto;
+}
+
+#toolbar #send {
+  margin-left: auto;
 }
 
 #plus {
@@ -1152,6 +1253,28 @@ kbd {
 #send.stop {
   background: var(--vscode-foreground);
   color: var(--vscode-editor-background);
+}
+
+/* A side bar at its default width (about 300 px) leaves the toolbar some 255 px: the mode buttons, the gauge's figure
+   and the send button did not fit side by side. The figure stays in the gauge's tooltip and accessible name. After the
+   rules it overrides: same specificity, the later rule wins. */
+@media (max-width: 340px) {
+  #composer {
+    margin: 0 8px 10px;
+    padding: 8px;
+  }
+
+  #toolbar {
+    gap: 6px;
+  }
+
+  #modes button {
+    padding: 0 7px;
+  }
+
+  #ring > span {
+    display: none;
+  }
 }
 
 /* ── Welcome ────────────────────────────────────────────────────────────────── */

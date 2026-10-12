@@ -105,6 +105,27 @@ public class VsCodeConversationTests
     }
 
     /// <summary>
+    /// ⚠ What a turn without an answer shows — a slash command's output, a code action's outcome, the line saying why a
+    /// run stopped — is kept a notice, and was drawn live as an answer, under the name of the model current when the turn
+    /// opened: /import's outcome read as written by the model it had just imported, then changed look on reload.
+    /// </summary>
+    [Fact]
+    public void ANotice_IsDrawnLive_AsTheTranscriptKeepsIt()
+    {
+        var provider = WebviewRebuildTests.TsCode("chatViewProvider.ts");
+        var finish = WebviewRebuildTests.Body(provider, "private finishTurn(");
+        Assert.Contains("this.append({ role: 'assistant', text, timestamp, notice: true })", finish, StringComparison.Ordinal);   // WITNESS: kept a notice
+        Assert.Matches(@"type: 'turnEnded',[^}]*notice: true", finish);
+        Assert.Contains("this.append({ role: 'assistant', text: result.endNotice, timestamp: ChatViewProvider.now(), notice: true })",
+                        provider, StringComparison.Ordinal);   // WITNESS: the end notice is kept a notice too
+
+        var ended = Case(WebviewRebuildTests.TsCode("webview/main.ts"), "case 'turnEnded':");
+        Assert.Contains("text: msg.text, timestamp: msg.timestamp, notice: msg.notice === true", ended, StringComparison.Ordinal);
+        Assert.Contains("text: msg.endNotice, timestamp: msg.timestamp, notice: true", ended, StringComparison.Ordinal);
+        Assert.Matches(@"if \(msg\.notice\) \{\s*view\.who\.textContent = '';", ended);
+    }
+
+    /// <summary>
     /// ⚠ The context ring took its window from the SETTING at start and after every save: with a server that loaded
     /// the model with a smaller window, the ring showed the conversation against a window it does not have, until the
     /// next question measured it again. The host's window (<c>context/window</c>) is the one it measures against.

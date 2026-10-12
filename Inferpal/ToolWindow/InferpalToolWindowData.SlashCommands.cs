@@ -230,6 +230,7 @@ internal partial class InferpalToolWindowData
             case SlashCommandId.Check:      await RunOwnedCommandAsync(tok => HandleCheckCommandAsync(parts, tok), ct);   break;
             case SlashCommandId.Plan:       await HandlePlanCommandAsync(parts, ct);     break;
             case SlashCommandId.Onboard:    await RunOwnedCommandAsync(tok => HandleOnboardCommandAsync(parts, tok), ct); break;
+            case SlashCommandId.Import:     await HandleImportCommandAsync(parts);       break;
             case SlashCommandId.Rules:      await HandleRulesCommandAsync(parts, ct);    break;
             case SlashCommandId.Checks:     await HandleChecksCommandAsync(parts, ct);   break;
             case SlashCommandId.Permissions: await HandlePermissionsCommandAsync();      break;
@@ -641,6 +642,43 @@ internal partial class InferpalToolWindowData
     // always win over both) — the same list the Host serves through `command/list`.
     private IReadOnlyList<UserSlashTemplate> GetUserTemplates()
         => SlashTemplates.Load(_config, FindProjectRoot());
+
+    /// <summary>
+    /// <c>/import</c>: the Core reads and applies; the window draws the preview as a card and saves what an application
+    /// changed (the handler never saves, so its tests stay away from the real settings).
+    /// </summary>
+    private async Task HandleImportCommandAsync(string[] parts)
+    {
+        var result = Services.Commands.ImportCommandHandler.Handle(
+            parts, Services.Import.ImportContext.For(_config), _config.SaveFilePath, DateTime.Now);
+        if (result.SaveConfig) _config.Save();
+        if (result.Card is not { } card)
+        {
+            await ShowInfoAsync(result.Message);
+            return;
+        }
+        await RunOnVMContextAsync(() =>
+            InsertThemed(ChatMessageItem.ImportMsg(card, result.Message, numbers => ApplyImportFromCardAsync(card, numbers))));
+    }
+
+    /// <summary>
+    /// An import card's Apply: the command the user could have typed, with the numbers left ticked — run straight,
+    /// never through the prompt box (where the click would be Send: it would stop a running turn). Refused while a turn
+    /// runs, said, and the card comes back live.
+    /// </summary>
+    private async Task<bool> ApplyImportFromCardAsync(Services.Import.ImportCard card, IReadOnlyList<int> numbers)
+    {
+        var busy = false;
+        await RunOnVMContextAsync(() => busy = IsLoading || _sendStarting);
+        if (busy)
+        {
+            await ShowInfoAsync(Strings.ImportApplyWhileBusy);
+            return false;
+        }
+        string[] parts = ["/import", card.Source, card.File, "apply", numbers.Count > 0 ? string.Join(",", numbers) : "none"];
+        await HandleImportCommandAsync(parts);
+        return true;
+    }
 
     #endregion
 }

@@ -335,7 +335,8 @@ internal sealed record SlashEffectDto(string Kind, string? Value = null, string?
 /// when <paramref name="Handled"/> is true; <paramref name="Effects"/> are the editor-side
 /// side effects to apply (null/empty = none).</summary>
 internal sealed record SlashCommandResult(
-    bool Handled, string? Markdown = null, List<SlashEffectDto>? Effects = null);
+    bool Handled, string? Markdown = null, List<SlashEffectDto>? Effects = null,
+    Inferpal.Services.Import.ImportCard? ImportCard = null);
 
 /// <summary>`config/update` — full config JSON, as previously returned by `config/get`.</summary>
 /// <param name="Base">

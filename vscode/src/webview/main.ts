@@ -8,6 +8,7 @@ import type {
   WebviewToExt,
   WvBackendStatus,
   WvChip,
+  WvImportCard,
   WvMentionCategory,
   WvMentionItem,
   WvPlan,
@@ -551,12 +552,111 @@ function addAnswer(role: string, item: WvTranscriptItem): HTMLElement {
   el.className = 'bubble ' + role + (item.notice ? ' notice' : '');
   const body = document.createElement('div');
   body.className = 'bubble-body';
-  renderMarkdownInto(body, item.text);
+  if (item.importCard) {
+    body.appendChild(importCardElement(item.importCard));
+  } else {
+    renderMarkdownInto(body, item.text);
+  }
   el.appendChild(body);
   // Copy what the answer shows: it keeps the model's inline reasoning in its text. A question is copied whole.
   el.appendChild(metaRow(item, role === 'assistant' ? stripThinkTags(item.text) : undefined));
   target.body.appendChild(el);
   scrollToBottom();
+  return el;
+}
+
+/**
+ * An `/import` preview: a box per item, the reasons for the rest folded under them, and Apply — which runs the command
+ * with the boxes left ticked. Used once: the card stays, answered, its boxes as they were sent.
+ */
+function importCardElement(card: WvImportCard): HTMLElement {
+  const el = document.createElement('div');
+  el.className = 'import-card' + (card.applied ? ' answered' : '');
+  const head = document.createElement('div');
+  head.className = 'import-head';
+  const title = document.createElement('div');
+  title.className = 'import-title';
+  title.textContent = card.title;
+  const summary = document.createElement('div');
+  summary.className = 'import-summary';
+  summary.textContent = card.summary;
+  head.append(title, summary);
+  el.appendChild(head);
+
+  const boxes: Array<{ number: number; input: HTMLInputElement }> = [];
+  if (card.items.length > 0) {
+    const list = document.createElement('ul');
+    list.className = 'import-items';
+    for (const item of card.items) {
+      const row = document.createElement('li');
+      row.className = 'import-item';
+      // The box's name is the whole line: a screen reader says what ticking it writes.
+      const label = document.createElement('label');
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.checked = item.checked;
+      input.disabled = card.applied === true;
+      const target = document.createElement('span');
+      target.className = 'import-target';
+      target.textContent = item.target;
+      const text = document.createElement('span');
+      text.className = 'import-label';
+      text.textContent = item.label;
+      label.append(input, target, text);
+      row.appendChild(label);
+      for (const note of item.notes) {
+        const line = document.createElement('div');
+        line.className = 'import-note';
+        line.textContent = note;
+        row.appendChild(line);
+      }
+      list.appendChild(row);
+      boxes.push({ number: item.number, input });
+    }
+    el.appendChild(list);
+  }
+
+  if (card.skipped.length > 0) {
+    const details = document.createElement('details');
+    details.className = 'import-skipped';
+    const fold = document.createElement('summary');
+    fold.textContent = card.skippedTitle;
+    const reasons = document.createElement('ul');
+    for (const group of card.skipped) {
+      const line = document.createElement('li');
+      line.append(group.reason + ' — ');
+      group.paths.forEach((path, i) => {
+        if (i > 0) {
+          line.append(', ');
+        }
+        const code = document.createElement('code');
+        code.textContent = path;
+        line.appendChild(code);
+      });
+      reasons.appendChild(line);
+    }
+    details.append(fold, reasons);
+    el.appendChild(details);
+  }
+
+  if (card.items.length > 0) {
+    const actions = document.createElement('div');
+    actions.className = 'approval-actions';
+    const apply = document.createElement('button');
+    apply.className = 'primary';
+    apply.textContent = card.applyLabel;
+    apply.disabled = card.applied === true;
+    apply.addEventListener('click', () => {
+      apply.disabled = true;
+      for (const box of boxes) {
+        box.input.disabled = true;
+      }
+      el.classList.add('answered');
+      post({ type: 'importApply', id: card.id, numbers: boxes.filter((b) => b.input.checked).map((b) => b.number) });
+    });
+    actions.appendChild(apply);
+    el.appendChild(actions);
+  }
   return el;
 }
 
@@ -1826,11 +1926,12 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
         streamEl.appendChild(metaRow({ text: streamRaw, timestamp: msg.timestamp }, stripThinkTags(streamRaw)));
         finishStream();
       } else if (msg.text) {
-        addBubble('assistant', { role: 'assistant', text: msg.text, timestamp: msg.timestamp });
+        addBubble('assistant', { role: 'assistant', text: msg.text, timestamp: msg.timestamp, notice: msg.notice === true });
       }
-      // The line saying why the run stopped, AFTER the answer and without replacing it.
+      // The line saying why the run stopped, AFTER the answer and without replacing it — a notice, as the
+      // transcript keeps it: drawn as an answer, it changed look on reload.
       if (msg.endNotice) {
-        addBubble('assistant', { role: 'assistant', text: msg.endNotice, timestamp: msg.timestamp });
+        addBubble('assistant', { role: 'assistant', text: msg.endNotice, timestamp: msg.timestamp, notice: true });
       }
       if (msg.error) {
         addBubble('error', { role: 'error', text: msg.error, timestamp: msg.timestamp });
@@ -1840,10 +1941,13 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       }
       renderPlan(null);
       setBusy(false);
-      // The answer's header: the model that answered and how long it took; under it, the run.
+      // The answer's header: the model that answered and how long it took; under it, the run. A notice names none:
+      // the turn opened under the current model's name before anyone knew no model would write it.
       if (turn) {
         const view: TurnView = turn;
-        if (msg.model) {
+        if (msg.notice) {
+          view.who.textContent = '';
+        } else if (msg.model) {
           view.who.textContent = msg.model;
         }
         view.when.textContent = msg.duration ?? '';

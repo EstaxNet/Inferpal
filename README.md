@@ -16,7 +16,7 @@
   <a href="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml"><img src="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/tests-5657%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-5700%20passing-brightgreen" alt="Tests">
   <img src="https://img.shields.io/badge/.NET-8.0-512BD4" alt=".NET 8">
   <img src="https://img.shields.io/badge/Visual%20Studio-2026-5C2D91" alt="Visual Studio 2026">
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/VS%20Marketplace-install-5C2D91" alt="Visual Studio Marketplace"></a>
@@ -64,6 +64,7 @@ It ships as a **Visual Studio 2026 extension** (the primary target) and a
 - **Code actions & Inline Edit** — Explain / Fix / Refactor / Add Tests / Add Docstring, plus **Ctrl+Shift+I** to rewrite a selection in place.
 - **Safety by default** — approval-gated writes/commands, a catastrophic-command hard denylist, force-prompt on indirect execution (`iex`, `-EncodedCommand`, …) **and on anything a cloned repository authored** (committed validators, permission overlays), committable permission rules, and a hardened SSRF guard.
 - **Your repository's agent setup, read as it is** — `AGENTS.md`, `CLAUDE.md` and the instruction files written for Copilot, Cursor, Cline, Roo and Continue go with your questions (always, or when the active file matches), and `/instructions` shows what each one sends; the commands written for Copilot, Claude Code and Continue become slash commands; skills (`SKILL.md`) are joined with `/skill`; the repository's MCP servers start only after you approve them. On a fixed 10-question bench, two local models followed a repository rule **8/10 and 10/10** with its instruction file, **0/10** without.
+- **Coming from Continue or Roo Code** — `/import continue` reads your `~/.continue/config.yaml` (or the older `config.json`), `/import roo` a Roo Code settings export: a card lists what Inferpal can take — the model server and the models by role, rules, prompts and custom modes as commands, MCP servers, documentation sites, command rules — and why every other part stays (a hosted provider is never imported). Nothing is written until you apply, and your settings are copied aside first. See [Coming from Continue or Roo Code](docs/coming-from-continue.md).
 - **Governance & knowledge** — repo-versioned `.inferpal/rules` & AI checks, `@Docs` external-doc indexing, typed `@`-mentions, and 50+ slash commands.
 - **Built for the IDE** — live debugger awareness, VRAM monitoring, VS theme adaptation, and 10 UI languages.
 - **Debugger loop** — `/debug [goal]` lets the agent drive a **real debug session** from the chat: breakpoints, stepping, locals and call-stack inspection, in both editors (Visual Studio via an in-process driver, VS Code via a DAP bridge). Read-only, and starting a session always asks first.
@@ -132,7 +133,7 @@ Complete functional and technical documentation lives in **[`docs/`](docs/README
 |---|---|
 | [Getting Started](docs/getting-started.md) · [Providers](docs/providers.md) · [Models](docs/models.md) · [Configuration](docs/configuration.md) | [Architecture](docs/architecture.md) |
 | [Features](docs/features.md) · [Slash Commands](docs/slash-commands.md) · [Tools](docs/tools.md) · [Mentions](docs/mentions.md) | [Development](docs/development.md) |
-| [Search & Indexing](docs/search-and-indexing.md) · [MCP](docs/mcp.md) · [Rules & Checks](docs/rules-and-checks.md) · [Remote Inference](docs/remote-inference.md) · [Zed, JetBrains, Neovim (ACP)](docs/acp.md) | |
+| [Search & Indexing](docs/search-and-indexing.md) · [MCP](docs/mcp.md) · [Rules & Checks](docs/rules-and-checks.md) · [Remote Inference](docs/remote-inference.md) · [Zed, JetBrains, Neovim (ACP)](docs/acp.md) · [Coming from Continue or Roo](docs/coming-from-continue.md) | |
 
 ---
 

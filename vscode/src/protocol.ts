@@ -224,11 +224,43 @@ export interface SlashEffect {
   name?: string | null;
 }
 
+/** One line of the `/import` preview: an item the user can tick (`number` is what `apply 1,3` names). */
+export interface ImportCardItem {
+  number: number;
+  target: string;
+  label: string;
+  checked: boolean;
+  notes: string[];
+}
+
+/** Parts of the source left out for one reason. */
+export interface ImportCardGroup {
+  reason: string;
+  paths: string[];
+}
+
+/** The `/import` preview, every text already localized by the host (mirror of the Core's `ImportCard`). */
+export interface ImportCard {
+  /** The command's keyword (`continue`, `roo`): applying runs `/import <source> <file> apply …`. */
+  source: string;
+  file: string;
+  title: string;
+  summary: string;
+  items: ImportCardItem[];
+  /** The fold's title with its count — the summary's number, shown as is (a part can sit in two groups). */
+  skippedTitle: string;
+  skipped: ImportCardGroup[];
+  applyLabel: string;
+  applyHint: string;
+}
+
 /** `command/slash` answer: `handled: false` ⇒ send the text as a normal chat prompt. */
 export interface SlashCommandResult {
   handled: boolean;
   markdown?: string | null;
   effects?: SlashEffect[] | null;
+  /** `/import` without `apply`: drawn as a card with a box per item, in place of `markdown`. */
+  importCard?: ImportCard | null;
 }
 
 /** `codeAction/run` — headless in-place code action over the active document. */
