@@ -3,6 +3,25 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.7.7
+
+Moving from Continue or Roo Code takes one command, and `/settings` opens the settings from the chat. Zed, the JetBrains
+IDEs, Neovim and Emacs get Inferpal's settings window, in the browser. Plus eleven fixes for VS Code.
+
+- **Coming from Continue or Roo Code: `/import`.** `/import continue` reads your Continue configuration, `/import roo`
+  the file Roo Code's settings export. A card lists, item by item, what Inferpal can take — model server and models by
+  role, rules, prompts and custom modes as commands, MCP servers, documentation sites, allowed and denied commands — and
+  nothing is written until you apply.
+- **Commands for every workspace**: a prompts folder beside Inferpal's settings holds commands available everywhere;
+  a project's own command of the same name still wins.
+- **`/settings`** opens the settings panel from the chat.
+- **Fixed**: approving a change to several files names every file, and the card colours the change again; `/undo-run`
+  can undo an edit after many more questions; Visual Studio and VS Code on the same folder each get their own last
+  conversation back, and a long Visual Studio conversation is no longer cut when VS Code saves it; a documentation
+  source added in another window is no longer replaced; background tasks no longer load a second model; a context
+  window left at 0 is no longer reported as "0"; Continue's MCP server files with multi-line values are read; a
+  command's reply shows as a notice at once; the send button is no longer cut off in a narrow side bar.
+
 ## 1.7.6
 
 Inferpal now runs in Zed, the JetBrains IDEs, Neovim and Emacs too, through the Agent Client Protocol — a separate
