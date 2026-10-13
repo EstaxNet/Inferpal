@@ -110,7 +110,8 @@ internal static class ImportApplier
                 config.ContextWindowSize = window.Tokens;
                 return null;
             case AddInstructions instructions:
-                config.CustomSystemPrompt = Append(config.CustomSystemPrompt, $"## {instructions.Title}\n\n{instructions.Text.Trim()}", "\n\n");
+                if (Holds(config.CustomSystemPrompt, instructions)) return null;   // put there since the preview
+                config.CustomSystemPrompt = Append(config.CustomSystemPrompt, Block(instructions), "\n\n");
                 return null;
             case WriteCommand command:
                 return WriteCommandFile(command, commandsFolder);
@@ -141,6 +142,16 @@ internal static class ImportApplier
                 return "unknown item";
         }
     }
+
+    /// <summary>The section an imported instruction becomes in the custom system prompt.</summary>
+    internal static string Block(AddInstructions instructions) => $"## {instructions.Title}\n\n{instructions.Text.Trim()}";
+
+    /// <summary>Whether <paramref name="prompt"/> already holds that section — an earlier import of the same file — whatever
+    /// its line endings (the settings form may have saved them as CRLF).</summary>
+    internal static bool Holds(string? prompt, AddInstructions instructions) =>
+        !string.IsNullOrEmpty(prompt)
+        && prompt.Replace("\r\n", "\n", StringComparison.Ordinal)
+                 .Contains(Block(instructions).Replace("\r\n", "\n", StringComparison.Ordinal), StringComparison.Ordinal);
 
     private static string Append(string? existing, string text, string separator) =>
         string.IsNullOrWhiteSpace(existing) ? text : existing.TrimEnd() + separator + text;

@@ -606,7 +606,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
                         var toolName  = calls[idx].Function.Name;
                         var result    = results[idx];
                         var hasErrors = toolName == GetDiagnosticsTool.ToolName && GetDiagnosticsTool.OutputHasErrors(result);
-                        var exec      = new ToolExecution(toolName, calls[idx].Function.Arguments.ToString(), result, hasErrors, null);
+                        var exec      = new ToolExecution(toolName, calls[idx].Function.WrittenArguments, result, hasErrors, null);
                         executions.Add(exec);
                         onToolExecuted?.Invoke(exec);
                         messages.Add(new ChatMessageDto("tool", AgentOrchestrator.CapForContext(result)));
@@ -621,7 +621,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
                     var result    = await AgentOrchestrator.ExecuteToolSafeAsync(tools, call.Function, turn.CutAtLimit, ct);
                     var diff      = tools.ConsumeDiff();
                     var hasErrors = toolName == GetDiagnosticsTool.ToolName && GetDiagnosticsTool.OutputHasErrors(result);
-                    var exec      = new ToolExecution(toolName, call.Function.Arguments.ToString(), result, hasErrors, diff);
+                    var exec      = new ToolExecution(toolName, call.Function.WrittenArguments, result, hasErrors, diff);
                     executions.Add(exec);
                     onToolExecuted?.Invoke(exec);   // render the tool bubble live (full output)
                     // Size-capped copy for the model context; the UI bubble keeps the full output.

@@ -235,6 +235,100 @@ public sealed class ImportTests : IDisposable
 
     // ── Continue, config.json ───────────────────────────────────────────────
 
+    /// <summary>
+    /// ⚠ A server the source left unnamed is named after the package its launcher runs. Named after the program, two
+    /// servers <c>npx</c> starts were both "npx": the second was refused at apply, "added in the meantime" — false. One
+    /// listed twice is named once; a configured server of another kind keeps its name, the new one takes a free one.
+    /// </summary>
+    [Fact]
+    public void UnnamedServers_AreNamedAfterThePackageTheyRun_AndEachOneApplies()
+    {
+        const string json = """
+            { "experimental": { "modelContextProtocolServers": [
+              { "transport": { "type": "stdio", "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "/data"] } },
+              { "transport": { "type": "stdio", "command": "npx", "args": ["-y", "@modelcontextprotocol/server-github@1.2.0"] } },
+              { "transport": { "type": "stdio", "command": "npx", "args": ["-y", "@modelcontextprotocol/server-github@1.2.0"] } },
+              { "transport": { "type": "stdio", "command": "uvx", "args": ["mcp-server-git==0.6"] } } ] } }
+            """;
+        var config = NewConfig();
+        config.McpServersJson = """{ "mcpServers": { "mcp-server-git": { "command": "docker", "args": ["run", "git-mcp"] } } }""";
+        var plan = ContinueImport.Read(Write("config.json", json), Context(config));
+
+        Assert.Equal(["server-filesystem", "server-github", "mcp-server-git-2"],
+                     plan.Items.Select(i => i.Effect).OfType<AddMcpServer>().Select(s => s.Server.Name));
+        Assert.Contains(plan.Skipped, s => s.Path == "experimental.modelContextProtocolServers[2]"
+                                           && s.Cause == ImportSkipCause.SameNameEarlier && s.Detail == "server-github");
+
+        var outcome = ImportApplier.Apply(plan, plan.Items.Where(i => i.Kind == ImportItemKind.McpServer).Select(i => i.Id).ToHashSet(),
+                                          config, _configFile, _commands, DateTime.Now);
+        Assert.Empty(outcome.Failed);
+        Assert.Equal(4, McpServerConfig.Parse(config.McpServersJson).Count);   // the user's own, and the three
+
+        // Reference arm: imported again, each of the four listings is a server already in place.
+        var again = ContinueImport.Read(Write("config.json", json), Context(config));
+        Assert.DoesNotContain(again.Items, i => i.Kind == ImportItemKind.McpServer);
+        Assert.Equal(4, again.Skipped.Count(s => s.Cause == ImportSkipCause.AlreadyConfigured));
+    }
+
+    /// <summary>
+    /// ⚠ A relative path typed after <c>/import</c> is read from the workspace. Resolved against the process's folder, it
+    /// was "not found" in Visual Studio — whose extension host keeps the folder it started in — right beside the file.
+    /// </summary>
+    [Fact]
+    public void ARelativePath_IsReadFromTheWorkspace_NotFromTheProcesssFolder()
+    {
+        var workspace = Path.Combine(_dir, "repo");
+        var file = Path.Combine(workspace, "settings", "continue.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+        File.WriteAllText(file, ContinueJson);
+        var context = Context(NewConfig()) with { WorkspaceRoot = workspace };
+
+        var relative = ImportCommandHandler.Handle(["/import", "continue", "settings/continue.json"], context, _configFile, DateTime.Now);
+        Assert.NotNull(relative.Card);
+        Assert.Equal(file, relative.Card!.File);
+
+        // Reference arm: an absolute path is itself, workspace or not.
+        Assert.NotNull(ImportCommandHandler.Handle(["/import", "continue", file], context with { WorkspaceRoot = null },
+                                                   _configFile, DateTime.Now).Card);
+    }
+
+    /// <summary>Both editors give the import their workspace (Visual Studio's index root, the host's session root).</summary>
+    [Fact]
+    public void BothEditors_GiveTheImportTheirWorkspace()
+    {
+        string Code(params string[] path) => ConventionCoverageTests.CodeOnly(Path.Combine([ConventionCoverageTests.RepoRoot(), .. path]));
+        Assert.Contains("ImportContext.For(_config, _indexService.RootDir)",
+                        Code("Inferpal", "ToolWindow", "InferpalToolWindowData.SlashCommands.cs"), StringComparison.Ordinal);
+        Assert.Contains("ImportContext.For(s.Config, s.RootDir)", Code("Inferpal.Host", "HostSlashCommands.cs"), StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// ⚠ Imported instructions are APPENDED to the custom system prompt. Imported again, the same file offered them again
+    /// — every rule then went into every prompt twice, three times —, where a server or a command is "already in place".
+    /// </summary>
+    [Fact]
+    public void ImportedInstructions_AreAlreadyInPlace_TheSecondTime()
+    {
+        var config = NewConfig();
+        var plan = ContinueImport.Read(Write("config.json", ContinueJson), Context(config));
+        var rules = plan.Items.Where(i => i.Kind == ImportItemKind.Instructions).ToList();
+        Assert.NotEmpty(rules);   // WITNESS
+        var ids = rules.Select(i => i.Id).ToHashSet();
+        ImportApplier.Apply(plan, ids, config, _configFile, _commands, DateTime.Now);
+
+        // Saved by the settings form since, with Windows line endings: the same text.
+        config.CustomSystemPrompt = config.CustomSystemPrompt.Replace("\n", "\r\n", StringComparison.Ordinal);
+        var once = config.CustomSystemPrompt;
+        var again = ContinueImport.Read(Write("config.json", ContinueJson), Context(config));
+        Assert.DoesNotContain(again.Items, i => i.Kind == ImportItemKind.Instructions);
+        foreach (var rule in rules)
+            Assert.Contains(again.Skipped, s => s.Cause == ImportSkipCause.AlreadyConfigured && s.Detail == ((AddInstructions)rule.Effect).Title);
+
+        // The first card applied once more: nothing written twice.
+        ImportApplier.Apply(plan, ids, config, _configFile, _commands, DateTime.Now);
+        Assert.Equal(once, config.CustomSystemPrompt);
+    }
+
     [Fact]
     public void AContinueJson_WithComments_IsRead_AndContinuesOwnDefaultCommandIsOfferedUnticked()
     {
@@ -246,7 +340,7 @@ public sealed class ImportTests : IDisposable
         Assert.Equal("llama3.1:8b", plan.Items.Select(i => i.Effect).OfType<SetModel>().Single(m => m.Role == ImportItemKind.ChatModel).Model);
         Assert.Equal(16384, Effect<SetContextWindow>(plan).Tokens);
         Assert.Contains(plan.Items, i => i.Effect is AddInstructions { Text: "Be terse." });
-        Assert.Equal("uvx", Effect<AddMcpServer>(plan).Server.Name);
+        Assert.Equal("mcp-server-git", Effect<AddMcpServer>(plan).Server.Name);   // the package uvx runs, not "uvx"
         Assert.False(Effect<SetIndexing>(plan).Enabled);
         Assert.Contains(plan.Skipped, s => s.Path == "models[1].model" && s.Cause == ImportSkipCause.HostedProvider && s.Detail == "openai");
         Assert.Contains(plan.Skipped, s => s.Path == "embeddingsProvider.provider" && s.Cause == ImportSkipCause.NoEquivalent);

@@ -36,6 +36,9 @@ internal sealed class AcpAgent : IAsyncDisposable
     private readonly Func<CancellationToken, Task<bool>> _ready;
     private readonly ConcurrentDictionary<string, AcpSession> _sessions = new(StringComparer.Ordinal);
 
+    /// <summary>Whether the session <paramref name="id"/> is open in this process now (not closed to make room).</summary>
+    internal bool IsLive(string id) => _sessions.ContainsKey(id);
+
     /// <summary>What opening a session needs (its folder, its MCP servers), kept for the sessions closed to make room.</summary>
     private readonly ConcurrentDictionary<string, (string Cwd, IReadOnlyList<McpSessionServerDto> Servers)> _opened =
         new(StringComparer.Ordinal);
@@ -221,7 +224,7 @@ internal sealed class AcpAgent : IAsyncDisposable
         else
         {
             // Not gated: reading a conversation back needs no model server — the next turn says what is missing.
-            live = await OpenAsync(id, cwd, McpServers(p), ct);
+            live = await OpenAsync(id, cwd, McpServers(p), ct, known: true);
             if (!await live.LoadAsync(replay, ct))
             {
                 await CloseAsync(id);
@@ -342,16 +345,18 @@ internal sealed class AcpAgent : IAsyncDisposable
         if (!_evicted.TryRemove(id, out var kept) || !_opened.TryGetValue(id, out var was))
             return _sessions.TryGetValue(id, out s) ? s : throw new ArgumentException($"Unknown session '{id}'.");
 
-        var reopened = await OpenAsync(id, was.Cwd, was.Servers, ct);
+        var reopened = await OpenAsync(id, was.Cwd, was.Servers, ct, known: true);
         await reopened.LoadAsync(replay: false, ct);
         await reopened.RestoreAsync(kept, ct);
         return reopened;
     }
 
-    private async Task<AcpSession> OpenAsync(string id, string cwd, IReadOnlyList<McpSessionServerDto> servers, CancellationToken ct)
+    /// <param name="known">The client already has the id: anything but <c>session/new</c>.</param>
+    private async Task<AcpSession> OpenAsync(string id, string cwd, IReadOnlyList<McpSessionServerDto> servers, CancellationToken ct,
+                                             bool known = false)
     {
         await EvictIdleAsync();
-        var session = await AcpSession.StartAsync(this, id, cwd, servers, ct);
+        var session = await AcpSession.StartAsync(this, id, cwd, servers, ct, known);
         if (!_sessions.TryAdd(id, session))
         {
             await session.DisposeAsync();
@@ -367,8 +372,10 @@ internal sealed class AcpAgent : IAsyncDisposable
     {
         while (_sessions.Count >= MaxLiveSessions)
         {
-            var idle = _sessions.Values.Where(s => !s.Busy).OrderBy(s => s.LastUsed).FirstOrDefault();
-            if (idle is null) return;   // all busy: one more, rather than stopping a turn
+            // ⚠ Idle is no turn AND nothing running beyond one: closed, a thread's /task, background command or @Docs
+            // crawl died with its host, without a word — its client still showed it, and its result never came.
+            var idle = _sessions.Values.Where(s => !s.Working).OrderBy(s => s.LastUsed).FirstOrDefault();
+            if (idle is null) return;   // all at work: one more, rather than stopping what runs
             var kept = idle.KeptForReopen();
             await CloseAsync(idle.Id);
             _evicted[idle.Id] = kept;

@@ -43,7 +43,8 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
         "settings/loadedModels", "settings/unloadModels", "settings/suggestModels",
     };
 
-    /// <summary>The page's one call answered here rather than by the host: open a file in the system's application.</summary>
+    /// <summary>The page's one call answered here rather than by the host: open a file the form lists in the system's
+    /// application (<see cref="HostServer.IsOfferedToOpen"/>).</summary>
     internal const string OpenMethod = "gui/open";
 
     /// <summary>The files the page loads, from the web folder beside the executable.</summary>
@@ -65,6 +66,7 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
     internal static readonly TimeSpan FirstVisitLimit = TimeSpan.FromMinutes(10);
 
     private readonly HostServer _host;
+    private readonly string _folder;
     private readonly JsonRpc _hostSide;
     private readonly JsonRpc _link;
     private readonly HttpListener _listener;
@@ -90,9 +92,13 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
     /// <summary>Whether the page has been opened at least once.</summary>
     public bool Visited => Interlocked.Read(ref _lastHeard) != 0;
 
+    /// <summary>The host the page talks to.</summary>
+    internal HostServer Host => _host;
+
     private SettingsWindowServer(HostServer host, JsonRpc hostSide, JsonRpc link, HttpListener listener, int port, string webDir,
-                                 string gone)
+                                 string gone, string folder)
     {
+        _folder   = folder;
         _gone     = gone;
         _host     = host;
         _hostSide = hostSide;
@@ -120,16 +126,9 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
         link.StartListening();
         try
         {
-            await link.InvokeWithParameterObjectAsync<JsonElement>("initialize", new
-            {
-                rootDir       = folder,
-                clientName    = "settings-window",
-                editor        = "Inferpal",
-                editorSurface = false,
-                secrets       = false,
-            }, ct);
+            await InitializeAsync(link, folder, ct);
             var (listener, port) = Listen();
-            return new SettingsWindowServer(host, hostSide, link, listener, port, webDir, gone ?? Strings.SettingsWindowGone);
+            return new SettingsWindowServer(host, hostSide, link, listener, port, webDir, gone ?? Strings.SettingsWindowGone, folder);
         }
         catch
         {
@@ -139,6 +138,19 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
             throw;
         }
     }
+
+    /// <summary>The host's session for <paramref name="folder"/>, as the window has it.</summary>
+    private static Task InitializeAsync(JsonRpc link, string folder, CancellationToken ct) =>
+        link.InvokeWithParameterObjectAsync<JsonElement>("initialize", new
+        {
+            rootDir       = folder,
+            clientName    = "settings-window",
+            editor        = "Inferpal",
+            editorSurface = false,
+            secrets       = false,
+            // The window shows the index; a chat builds it.
+            indexesTheFolder = false,
+        }, ct);
 
     /// <summary>A free loopback port, taken: asked of the system, then bound — retried if another process took it between.</summary>
     private static (HttpListener Listener, int Port) Listen()
@@ -297,6 +309,8 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
         {
             var target = args is { } a && a.TryGetProperty("path", out var path) && path.ValueKind == JsonValueKind.String
                 ? path.GetString()! : string.Empty;
+            // The system's application for a path runs it if it is a program: only what the form lists opens.
+            if (!_host.IsOfferedToOpen(target)) return Error(403, $"'{target}' is not a file the settings form lists.");
             if (!File.Exists(target) && !Directory.Exists(target)) return Error(404, Strings.SettingsWindowNotFound(target));
             // The application the system gives the file outlives this server: never bound to it.
             using var _ = Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
@@ -309,6 +323,10 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
             var result = args is { } named
                 ? await _link.InvokeWithParameterObjectAsync<JsonElement>(method, named)
                 : await _link.InvokeAsync<JsonElement>(method);
+            // ⚠ A client speaks one kind of server's protocol and reads only the address and key live: after a new kind
+            // was saved here, the page's model lists, its loaded-models card and Unload spoke the old protocol to the new
+            // address. The host's session starts anew on it, as VS Code restarts its host after such a save.
+            if (method == "config/update" && _host.SpeaksAnotherKindThanItsSettings()) await InitializeAsync(_link, _folder, default);
             return (200, JsonSerializer.Serialize(new { result }));
         }
         catch (RemoteInvocationException ex) { return Error(500, ex.Message); }

@@ -164,6 +164,7 @@ internal sealed partial class HostServer : IDisposable
             EditorName   = string.IsNullOrWhiteSpace(p.Editor) ? EditorName : p.Editor.Trim(),
             ToolEvents   = p.ToolEvents,
             ReasoningChunks = p.ReasoningChunks,
+            IndexesTheFolder = p.IndexesTheFolder,
             Approval     = approval,
             TestCapture  = p.Debug ? new RpcTestDebugCapture(rpc) : null,
             Debug        = debug,
@@ -183,8 +184,13 @@ internal sealed partial class HostServer : IDisposable
         // As in Visual Studio: with RAG on, the workspace is indexed without being asked. No adapter
         // calls `index/start`, so without this `search_codebase` and the per-turn auto-context stayed
         // empty for the whole session.
+        // ⚠ Not the settings window's host: it SHOWS the index. Its pass walked and embedded the folder it was opened in
+        // (the home folder from there), and opened from a thread it ran a second indexer on the thread's database.
         if (config.RagEnabled && !string.IsNullOrEmpty(p.RootDir))
-            index.StartIndexing(p.RootDir);
+        {
+            if (p.IndexesTheFolder) index.StartIndexing(p.RootDir);
+            else _ = ShowSavedIndexAsync(index, p.RootDir);
+        }
 
         var caps = client.Capabilities;
         return new InitializeResult(
@@ -1244,7 +1250,11 @@ internal sealed partial class HostServer : IDisposable
         var (pin, pinRoot) = Services.Signals.WorkspaceRootPin.Decide(
             s.Config.RagEnabled, s.Index.RootDir, activeSolutionDir: null, reliableRoot: null,
             indexedRoot: s.Index.IndexedRoot);
-        if (pin == Services.Signals.RootPinAction.Index) s.Index.StartIndexing(pinRoot!);
+        if (pin == Services.Signals.RootPinAction.Index)
+        {
+            if (s.IndexesTheFolder) s.Index.StartIndexing(pinRoot!);
+            else _ = ShowSavedIndexAsync(s.Index, pinRoot!);
+        }
     }
 
     // ── RAG index ──────────────────────────────────────────────────────────────
@@ -1730,6 +1740,13 @@ internal sealed partial class HostServer : IDisposable
                 Notify("host/notice", new { text = notice });
         }
         catch (Exception ex) { Diagnostics.Swallow("HostServer.LoadDocs", ex); }
+    }
+
+    /// <summary>The index saved for <paramref name="root"/>, shown without a pass; never awaited: index.db can be large.</summary>
+    private static async Task ShowSavedIndexAsync(ProjectIndexService index, string root)
+    {
+        try { await index.ShowSavedAsync(root, CancellationToken.None); }
+        catch (Exception ex) { Diagnostics.Swallow("HostServer.ShowSavedIndex", ex); }
     }
 
     /// <summary>The conversation just discarded leaves the auto-save slot (<see cref="ConversationStore.ForgetAutoSaveAsync"/>);

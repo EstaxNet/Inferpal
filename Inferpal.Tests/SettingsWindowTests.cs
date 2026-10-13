@@ -120,10 +120,34 @@ public sealed class SettingsWindowTests : IAsyncLifetime
     [Fact]
     public async Task OpeningAFileThatIsNotThere_SaysSo()
     {
-        var missing = Path.Combine(_root, "nope.md");
+        // A file the form lists, not written yet (or deleted since the page drew it).
+        var missing = Path.Combine(_root, ".inferpal", "memory.md");
         var (status, body) = await CallAsync(SettingsWindowServer.OpenMethod, new { path = missing });
         Assert.Equal(HttpStatusCode.NotFound, status);
         Assert.Equal(Strings.SettingsWindowNotFound(missing), body.GetProperty("error").GetProperty("message").GetString());
+    }
+
+    /// <summary>
+    /// ⚠ The window opens a path with the system's application for it — a program runs. Any existing path did: a script,
+    /// a program, a folder, anywhere on the machine. Only what the form lists opens: its project files and rules folder,
+    /// the repository's instruction files, the index's profile.
+    /// </summary>
+    [Fact]
+    public async Task OnlyWhatTheFormLists_Opens()
+    {
+        var script = Path.Combine(_root, "run.cmd");
+        File.WriteAllText(script, "@exit /b 0");
+        var folder = Directory.CreateDirectory(Path.Combine(_root, "src")).FullName;
+        foreach (var path in new[] { script, folder, string.Empty, "\0" })
+        {
+            var (status, body) = await CallAsync(SettingsWindowServer.OpenMethod, new { path });
+            Assert.Equal(HttpStatusCode.Forbidden, status);
+            Assert.Equal($"'{path}' is not a file the settings form lists.", body.GetProperty("error").GetProperty("message").GetString());
+        }
+
+        // Reference arm: what the form lists passes — here not written yet, so "not found", never "not listed".
+        foreach (var listed in new[] { Path.Combine(_root, ".inferpal", "context.md"), Path.Combine(_root, ".inferpal", "project.json") })
+            Assert.Equal(HttpStatusCode.NotFound, (await CallAsync(SettingsWindowServer.OpenMethod, new { path = listed })).Status);
     }
 
     [Fact]

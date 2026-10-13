@@ -51,10 +51,14 @@ internal sealed class RagDatabase
     {
         _rootHash = ComputePathHash(solutionRoot);
         var baseDir = BaseDir();
-        _dbPath   = Path.Combine(baseDir, $"{_rootHash}.db");
+        _dbPath   = PathFor(solutionRoot);
         Directory.CreateDirectory(baseDir);
         EnsureSchema();
     }
+
+    /// <summary>The database file of <paramref name="solutionRoot"/>'s index, whether it exists or not. Opening a
+    /// <see cref="RagDatabase"/> creates it: a reader that must write nothing asks here first.</summary>
+    internal static string PathFor(string solutionRoot) => Path.Combine(BaseDir(), $"{ComputePathHash(solutionRoot)}.db");
 
     // ── Public API ────────────────────────────────────────────────────────────
 

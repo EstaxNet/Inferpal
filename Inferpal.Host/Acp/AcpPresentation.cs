@@ -107,6 +107,26 @@ internal static class AcpToolCalls
         catch (JsonException) { return null; }
     }
 
+    /// <summary>
+    /// Who a call is, from its arguments: the same key for the call the tool received (<c>chat/toolStart</c>) and for
+    /// the loop's report of it (<c>chat/tool</c>) — compact JSON, a double-encoded object unwrapped as the loop unwraps
+    /// it, no arguments as <c>{}</c>; text that is not JSON (a call refused before any tool) as written.
+    /// </summary>
+    public static string CallKey(string? input)
+    {
+        var text = input?.Trim() ?? string.Empty;
+        if (text.Length == 0 || text == "null") return "{}";
+        try
+        {
+            using var doc = JsonDocument.Parse(text);
+            var root = doc.RootElement;
+            if (root.ValueKind == JsonValueKind.String && root.GetString() is { } inner && inner.TrimStart().StartsWith('{'))
+                return CallKey(inner);
+            return JsonSerializer.Serialize(root);
+        }
+        catch (JsonException) { return text; }
+    }
+
     /// <summary>A tool's output as a client draws it: whole, or cut on a line with the size of what was left out.</summary>
     /// <remarks>Display only — the model has the output it had. Cut, the cut is said.</remarks>
     public static string Shown(string output, int max = 20_000)

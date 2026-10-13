@@ -961,7 +961,7 @@ internal sealed class AgentOrchestrator
                         var result    = results[i];
                         var hasErrors = toolName == GetDiagnosticsTool.ToolName
                                         && GetDiagnosticsTool.OutputHasErrors(result);
-                        var exec = new ToolExecution(toolName, calls[i].Function.Arguments.ToString(), result, hasErrors, null);
+                        var exec = new ToolExecution(toolName, calls[i].Function.WrittenArguments, result, hasErrors, null);
                         iterExecs.Add(exec);
                         executions.Add(exec);
                         onToolExecuted?.Invoke(exec);
@@ -1003,7 +1003,7 @@ internal sealed class AgentOrchestrator
                     var hasErrors = toolName == GetDiagnosticsTool.ToolName
                                     && GetDiagnosticsTool.OutputHasErrors(result);
 
-                    var exec = new ToolExecution(toolName, call.Function.Arguments.ToString(), result, hasErrors, diff);
+                    var exec = new ToolExecution(toolName, call.Function.WrittenArguments, result, hasErrors, diff);
                     iterExecs.Add(exec);
                     executions.Add(exec);
                     onToolExecuted?.Invoke(exec);   // render the tool bubble live (full, un-capped output)

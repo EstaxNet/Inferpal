@@ -388,6 +388,40 @@ public sealed class AcpAgentTests : IDisposable
     }
 
     /// <summary>
+    /// ⚠ A thread whose <c>/task</c> still runs is not idle. Closed to make room — no turn open, used longest ago —, its
+    /// task died with its host, without a word, and its result never came. The idle thread without work goes instead;
+    /// once the task is over, the thread is idle like any other.
+    /// </summary>
+    [Fact]
+    public async Task AThreadWhoseTaskStillRuns_IsNotClosedToMakeRoom()
+    {
+        const string goal = "count the files slowly";
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using var h = await StartAsync(fake: f => f.OnAgentRun = async (history, _, _, ct) =>
+        {
+            if (history.Any(m => m.Role == "user" && m.Content == goal)) await release.Task.WaitAsync(ct);
+            return new AgentResult("ok", [], history);
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var working = await NewSessionAsync(h);
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, working, "/task " + goal)));
+        var idle = await NewSessionAsync(h);
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, idle, "hello")));
+
+        for (var i = 0; i < AcpAgent.MaxLiveSessions - 1; i++) await NewSessionAsync(h);   // one past the cap
+        Assert.True(h.Agent.IsLive(working), "the thread whose task runs was closed to make room");
+        Assert.False(h.Agent.IsLive(idle));   // WITNESS: a thread was closed — the idle one
+
+        // Reference arm: the task over (its end said in the thread), the thread is the idle one used longest ago.
+        var said = h.Client.Said(working).Length;
+        release.SetResult();
+        for (var i = 0; i < 300 && h.Client.Said(working).Length == said; i++) await Task.Delay(100);
+        Assert.NotEqual(said, h.Client.Said(working).Length);
+        await NewSessionAsync(h);
+        Assert.False(h.Agent.IsLive(working));
+    }
+
+    /// <summary>
     /// A thread closed to make room comes back as its client still shows it: in Plan mode (read-only tools), on the model
     /// picked in its selector, with the file attached for its next prompt. Reopened from its conversation alone, the next
     /// request ran in the mode a new thread opens in — with the write tools — on the default model.
@@ -480,6 +514,74 @@ public sealed class AcpAgentTests : IDisposable
         var lines = h.Client.Lines.ToList();
         Assert.True(lines.FindIndex(l => l.Contains("\"tool_call\"", StringComparison.Ordinal))
                     < lines.FindIndex(l => l.Contains("session/request_permission", StringComparison.Ordinal)));
+    }
+
+    /// <summary>
+    /// ⚠ A repository's MCP server is agreed to once the client knows the thread. Asked at <c>session/new</c>, the
+    /// question named a session the client had never been told of: refused, and the server stayed off for the thread's
+    /// whole life. It is asked at the first prompt instead, inside the turn.
+    /// </summary>
+    [Fact]
+    public async Task ARepositorysMcpServer_IsAskedAboutAtTheFirstPrompt_NotBeforeTheClientKnowsTheThread()
+    {
+        var name = "repo" + Guid.NewGuid().ToString("N")[..8];
+        File.WriteAllText(Path.Combine(_root, ".mcp.json"),
+                          "{\"mcpServers\":{\"" + name + "\":{\"command\":\"inferpal-no-such-program\"}}}");
+        // The settings file says the same (each turn follows it: config/reload), MCP on.
+        static InferpalConfig Settings() => new() { RagEnabled = false, McpEnabled = true, DefaultModel = "test-model" };
+        await using var h = await StartAsync(host: p => new HostServer(_ => p, Settings, fileSettings: Settings));
+        h.Client.Answer = (method, _) => method == "session/request_permission"
+            ? new { outcome = new { outcome = "selected", optionId = "reject_once" } }
+            : null;
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+
+        // The start's refresh has decided about the server (asked, or held back) — and no question reached the client.
+        for (var i = 0; i < 300 && !Services.Diagnostics.Snapshot().Any(e => e.Detail.Contains($"'{name}'", StringComparison.Ordinal)); i++)
+            await Task.Delay(100);
+        Assert.Contains(Services.Diagnostics.Snapshot(), e => e.Detail.Contains($"'{name}'", StringComparison.Ordinal));   // WITNESS
+        Assert.DoesNotContain(h.Client.Requests, r => r.GetProperty("method").GetString() == "session/request_permission");
+
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, sid, "hello")));
+        var asked = Assert.Single(h.Client.Requests, r => r.GetProperty("method").GetString() == "session/request_permission");
+        Assert.Equal(sid, asked.GetProperty("params").GetProperty("sessionId").GetString());
+        Assert.Contains(name, asked.GetProperty("params").GetProperty("toolCall").GetRawText(), StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// ⚠ In a batch of reads run in parallel, a call refused before any tool (its arguments cut mid-call) is drawn, and
+    /// each call that ran is drawn once. The loop's report of a call was paired with the calls drawn by counting: the
+    /// refusal, reported between two calls that ran, was taken for an echo and vanished, and the last call was drawn
+    /// twice.
+    /// </summary>
+    [Fact]
+    public async Task InAParallelBatch_ARefusedCallIsDrawn_AndEachCallThatRanOnce()
+    {
+        File.WriteAllText(Path.Combine(_root, "a.txt"), "alpha\n");
+        File.WriteAllText(Path.Combine(_root, "c.txt"), "gamma\n");
+        await using var h = await StartAsync(fake: f => f.OnAgentRun = async (history, tools, reported, ct) =>
+        {
+            // The basic loop's parallel batch: every call through the funnel at once, then each reported, in order.
+            ToolCallFunction Read(string path) =>
+                new("read_file", JsonDocument.Parse(JsonSerializer.Serialize(new { path })).RootElement.Clone());
+            ToolCallFunction[] calls = [Read("a.txt"), Services.Agent.ToolCallArguments.Parse("read_file", "{\"path\": \"b.t"), Read("c.txt")];
+            var results = await Task.WhenAll(calls.Select(c => Services.Agent.AgentOrchestrator.ExecuteToolSafeAsync(tools, c, false, ct)));
+            for (var i = 0; i < calls.Length; i++)
+                reported?.Invoke(new ToolExecution(calls[i].Name, calls[i].WrittenArguments, results[i]));
+            return new AgentResult("Read.", [], history);
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, sid, "read them")));
+
+        var drawn = h.Client.Updates(sid, "tool_call").ToList();
+        Assert.Equal(3, drawn.Count);
+        var refused = Assert.Single(drawn, d => d.GetRawText().Contains("NOT executed", StringComparison.Ordinal));
+        Assert.Equal("completed", refused.GetProperty("status").GetString());
+        // The two that ran: drawn when they started, ended once each.
+        Assert.Equal(2, drawn.Count(d => d.GetProperty("status").GetString() == "in_progress"));
+        Assert.Equal(2, h.Client.Updates(sid, "tool_call_update").Count());
     }
 
     [Fact]

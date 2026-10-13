@@ -124,7 +124,8 @@ internal static class ImportPreview
     private static bool QualifiesTheReason(ImportSkipCause cause) => cause is
         ImportSkipCause.HostedProvider or ImportSkipCause.OtherServer or ImportSkipCause.SecretNotFound
         or ImportSkipCause.OneModelPerRole or ImportSkipCause.RoleNotInInferpal or ImportSkipCause.SameModelAsChat
-        or ImportSkipCause.AlreadyConfigured or ImportSkipCause.IndexingNotKept or ImportSkipCause.ActiveMode
+        or ImportSkipCause.AlreadyConfigured or ImportSkipCause.SameNameEarlier or ImportSkipCause.IndexingNotKept
+        or ImportSkipCause.ActiveMode
         or ImportSkipCause.UnsupportedLanguage;
 
     // ── Texts ───────────────────────────────────────────────────────────────
@@ -200,6 +201,7 @@ internal static class ImportPreview
         ImportSkipCause.SecretNotFound         => Strings.ImportSkipSecretNotFound,
         ImportSkipCause.ContinueBuiltinCommand => Strings.ImportSkipContinueBuiltinCommand,
         ImportSkipCause.AlreadyConfigured      => Strings.ImportSkipAlreadyConfigured,
+        ImportSkipCause.SameNameEarlier        => Strings.ImportSkipSameNameEarlier,
         ImportSkipCause.Empty                  => Strings.ImportSkipEmpty,
         ImportSkipCause.UnknownKey             => Strings.ImportSkipUnknownKey,
         ImportSkipCause.NoEquivalent           => Strings.ImportSkipNoEquivalent,

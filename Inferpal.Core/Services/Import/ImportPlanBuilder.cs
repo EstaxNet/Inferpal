@@ -14,12 +14,15 @@ namespace Inferpal.Services.Import;
 /// <param name="Home">The user's home folder (Continue's <c>.env</c>, the default files).</param>
 /// <param name="CommandsFolder">The machine's prompts folder, where imported commands are written.</param>
 /// <param name="EnvironmentVariable">The process environment, injectable for tests.</param>
+/// <param name="WorkspaceRoot">The folder a relative path typed after <c>/import</c> is read from; <c>null</c> when the
+/// editor has none open.</param>
 internal sealed record ImportContext(InferpalConfig Current, string Home, string CommandsFolder,
-                                     Func<string, string?>? EnvironmentVariable = null)
+                                     Func<string, string?>? EnvironmentVariable = null, string? WorkspaceRoot = null)
 {
-    /// <summary>The context of an editor: this user's home, the commands beside these settings.</summary>
-    public static ImportContext For(InferpalConfig config) =>
-        new(config, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), config.MachinePromptsFolder);
+    /// <summary>The context of an editor: this user's home, the commands beside these settings, its workspace.</summary>
+    public static ImportContext For(InferpalConfig config, string? workspaceRoot) =>
+        new(config, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), config.MachinePromptsFolder,
+            WorkspaceRoot: string.IsNullOrEmpty(workspaceRoot) ? null : workspaceRoot);
 }
 
 /// <summary>A source the import could not read, and why — the message names the file.</summary>
@@ -53,6 +56,9 @@ internal sealed class ImportPlanBuilder
 
     public ImportSource Source { get; }
     public ImportContext Context { get; }
+
+    /// <summary>The MCP servers this plan adds so far: a later one with a name of theirs is told apart from them.</summary>
+    public List<McpServerConfig> Servers { get; } = [];
 
     public void Skip(string path, ImportSkipCause cause, string? detail = null) => _skips.Add(new(path, cause, detail));
 
@@ -98,10 +104,18 @@ internal sealed class ImportPlanBuilder
         Add(ImportItemKind.Backend, new SetBackend(server.Provider, server.BaseUrl, key), paths, true, [.. notes]);
     }
 
-    public ImportItem Add(ImportItemKind kind, ImportEffect effect, IEnumerable<string> paths, bool isChecked = true,
-                          params ImportItemNote[] notes)
+    /// <returns>The item; <c>null</c> when what it would write is already in place (skipped and said).</returns>
+    public ImportItem? Add(ImportItemKind kind, ImportEffect effect, IEnumerable<string> paths, bool isChecked = true,
+                           params ImportItemNote[] notes)
     {
         var sources = paths.Distinct(StringComparer.Ordinal).ToList();
+        // ⚠ Instructions are APPENDED to the custom system prompt: offered again by every import of the same file, each
+        // rule went into every prompt twice, then three times — never "already in place", unlike a server or a command.
+        if (effect is AddInstructions instructions && ImportApplier.Holds(Context.Current.CustomSystemPrompt, instructions))
+        {
+            Skip(sources.FirstOrDefault() ?? kind.ToString(), ImportSkipCause.AlreadyConfigured, instructions.Title);
+            return null;
+        }
         // ⚠ Unique: an application ticks ids, and two items under one id (a mode's several commands, from one key) were
         // both written when one was ticked. Stable across two readings — the order of reading is the file's.
         var id = kind + ":" + (sources.FirstOrDefault() ?? "");

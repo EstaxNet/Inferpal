@@ -131,8 +131,9 @@ started anew (the thread says so). A model picked in a thread stays that thread'
 read — a hand edit that broke it — changes nothing in an open thread, which says so once.
 
 The settings page is served by Inferpal itself, on `127.0.0.1` only, under an address nobody else can guess; it
-reaches the settings and nothing else (no chat, no command, no tool), and it stops a few seconds after its last tab is
-closed. A browser cannot hand a file's location to a page: type or paste a path where the form asks for one.
+reaches the settings and nothing else (no chat, no command, no tool; of your files, it opens only those the form
+lists; it shows the code index saved for the folder and builds none — a chat in that folder keeps it up to date, or
+the page's **Rebuild** button), and it stops a few seconds after its last tab is closed. A browser cannot hand a file's location to a page: type or paste a path where the form asks for one.
 
 With a local Ollama already running, there is nothing to set up: Inferpal finds it.
 
@@ -148,8 +149,8 @@ With a local Ollama already running, there is nothing to set up: Inferpal finds 
   never written over: Inferpal asks your editor for its buffer, and refuses.
 - **The tool calls on screen**: what runs, on which file, and its result; the agent's plan when it makes one.
 - **Slash commands** — the client lists them (`/help` describes them all). Your repository's instructions, commands,
-  skills and MCP servers work as in the other editors — except a repository MCP server that asks for a value when it
-  starts: an ACP client gives Inferpal no box to ask it in, so that server is not started — the support bundle
+  skills and MCP servers work as in the other editors — a repository MCP server asks for your agreement at the first
+  prompt of a new thread — except a repository MCP server that asks for a value when it starts: an ACP client gives Inferpal no box to ask it in, so that server is not started — the support bundle
   (`/diagnostics export`) names it, with the reason.
 - **The MCP servers configured in your client** are started for the session, beside Inferpal's own.
 - **Sessions are saved** after every turn and listed again for the folder they belong to; reopened, they come back

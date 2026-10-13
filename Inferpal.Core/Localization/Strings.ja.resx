@@ -1137,6 +1137,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SettingsDocsNote" xml:space="preserve"><value>このマシンやローカル ネットワーク上のアドレスは拒否されます。エージェントがそれらを Web サイトとして読むことはありません。</value></data>
   <data name="SettingsSectionThisConversation" xml:space="preserve"><value>この会話</value></data>
   <data name="IndexCardReady" xml:space="preserve"><value>インデックスは最新です</value></data>
+  <data name="IndexCardSaved" xml:space="preserve"><value>保存済みのインデックス</value></data>
   <data name="IndexCardIndexing" xml:space="preserve"><value>インデックス作成中…</value></data>
   <data name="IndexCardNotBuilt" xml:space="preserve"><value>まだインデックスがありません</value></data>
   <data name="IndexCardStopped" xml:space="preserve"><value>インデックス作成が中断されました</value></data>
@@ -1144,6 +1145,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="IndexCardNoWorkspace" xml:space="preserve"><value>ワークスペースが開かれていません</value></data>
   <data name="IndexCardNoWorkspaceDetail" xml:space="preserve"><value>ソリューションかフォルダーを開いてください。そのためのインデックスが作成されます。</value></data>
   <data name="IndexCardFilesUpdated" xml:space="preserve"><value>{0:N0} ファイル · {1} に更新</value></data>
+  <data name="IndexCardSavedDetail" xml:space="preserve"><value>{0:N0} ファイル · {1} に保存 · このフォルダーのチャットが最新の状態にします</value></data>
   <data name="IndexCardProgress" xml:space="preserve"><value>{1:N0} ファイル中 {0:N0} を読み込み済み</value></data>
   <data name="IndexCardNotBuiltDetail" xml:space="preserve"><value>バックグラウンドのインデックス作成はオフです。エージェントはキーワードで検索します。</value></data>
   <data name="IndexCardStoppedDetail" xml:space="preserve"><value>前回の処理が完了していないため、インデックスは不完全です。</value></data>
@@ -1489,6 +1491,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ImportSkipSecretNotFound" xml:space="preserve"><value>~/.continue/.env にも環境変数にもシークレットがありません：設定でキーを入力してください</value></data>
   <data name="ImportSkipContinueBuiltinCommand" xml:space="preserve"><value>Continue の組み込みコマンド</value></data>
   <data name="ImportSkipAlreadyConfigured" xml:space="preserve"><value>設定済み</value></data>
+  <data name="ImportSkipSameNameEarlier" xml:space="preserve"><value>同じ名前のサーバーがこのファイルの前の方にあり、そちらが残されます</value></data>
   <data name="ImportSkipEmpty" xml:space="preserve"><value>空</value></data>
   <data name="ImportSkipUnknownKey" xml:space="preserve"><value>そのツールが認識しないキー</value></data>
   <data name="ImportSkipNoEquivalent" xml:space="preserve"><value>Inferpal に対応する設定はありません</value></data>

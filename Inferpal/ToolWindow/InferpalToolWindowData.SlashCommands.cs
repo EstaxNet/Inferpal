@@ -651,7 +651,7 @@ internal partial class InferpalToolWindowData
     private async Task HandleImportCommandAsync(string[] parts)
     {
         var result = Services.Commands.ImportCommandHandler.Handle(
-            parts, Services.Import.ImportContext.For(_config), _config.SaveFilePath, DateTime.Now);
+            parts, Services.Import.ImportContext.For(_config, _indexService.RootDir), _config.SaveFilePath, DateTime.Now);
         if (result.SaveConfig) _config.Save();
         if (result.Card is not { } card)
         {

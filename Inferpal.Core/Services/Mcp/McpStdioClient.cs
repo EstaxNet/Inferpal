@@ -25,7 +25,11 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
     /// within a reasonable timeout". This is not a verdict: a slow server reads its input in order, so its late answer to
     /// the probe still decides, and the handshake budget stays the one it was.
     /// </remarks>
-    private static readonly TimeSpan ProbeWait = TimeSpan.FromSeconds(3);
+    internal static readonly TimeSpan DefaultProbeWait = TimeSpan.FromSeconds(3);
+
+    /// <summary>This client's probe window: <see cref="DefaultProbeWait"/>. A test asserting what a server that answers
+    /// the probe in time receives widens it — on a loaded runner a script interpreter alone can take longer than that.</summary>
+    internal TimeSpan ProbeWait { get; init; } = DefaultProbeWait;
 
     private readonly McpServerConfig _config;
     private readonly ConcurrentDictionary<long, TaskCompletionSource<JsonElement>> _pending = new();

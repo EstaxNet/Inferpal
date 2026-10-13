@@ -1137,6 +1137,7 @@
   <data name="SettingsDocsNote" xml:space="preserve"><value>本机或局域网中的地址会被拒绝：代理绝不会把它们当作网站读取。</value></data>
   <data name="SettingsSectionThisConversation" xml:space="preserve"><value>当前对话</value></data>
   <data name="IndexCardReady" xml:space="preserve"><value>索引已是最新</value></data>
+  <data name="IndexCardSaved" xml:space="preserve"><value>已保存的索引</value></data>
   <data name="IndexCardIndexing" xml:space="preserve"><value>正在建立索引…</value></data>
   <data name="IndexCardNotBuilt" xml:space="preserve"><value>尚未建立索引</value></data>
   <data name="IndexCardStopped" xml:space="preserve"><value>索引已中断</value></data>
@@ -1144,6 +1145,7 @@
   <data name="IndexCardNoWorkspace" xml:space="preserve"><value>未打开工作区</value></data>
   <data name="IndexCardNoWorkspaceDetail" xml:space="preserve"><value>打开一个解决方案或文件夹，即会为其建立索引。</value></data>
   <data name="IndexCardFilesUpdated" xml:space="preserve"><value>{0:N0} 个文件 · 更新于 {1}</value></data>
+  <data name="IndexCardSavedDetail" xml:space="preserve"><value>{0:N0} 个文件 · 保存于 {1} · 此文件夹中的聊天会将其更新</value></data>
   <data name="IndexCardProgress" xml:space="preserve"><value>已读取 {0:N0}/{1:N0} 个文件</value></data>
   <data name="IndexCardNotBuiltDetail" xml:space="preserve"><value>后台索引已关闭：代理按关键词搜索。</value></data>
   <data name="IndexCardStoppedDetail" xml:space="preserve"><value>上一次处理未完成：索引不完整。</value></data>
@@ -1489,6 +1491,7 @@
   <data name="ImportSkipSecretNotFound" xml:space="preserve"><value>在 ~/.continue/.env 和环境变量中都找不到该密钥：请在设置中输入</value></data>
   <data name="ImportSkipContinueBuiltinCommand" xml:space="preserve"><value>Continue 的内置命令</value></data>
   <data name="ImportSkipAlreadyConfigured" xml:space="preserve"><value>已就绪</value></data>
+  <data name="ImportSkipSameNameEarlier" xml:space="preserve"><value>此文件前面有同名的服务器，保留的是那一个</value></data>
   <data name="ImportSkipEmpty" xml:space="preserve"><value>空</value></data>
   <data name="ImportSkipUnknownKey" xml:space="preserve"><value>该工具无法识别的键</value></data>
   <data name="ImportSkipNoEquivalent" xml:space="preserve"><value>Inferpal 中没有对应项</value></data>

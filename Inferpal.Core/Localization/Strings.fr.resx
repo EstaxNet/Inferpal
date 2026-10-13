@@ -1137,6 +1137,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="SettingsDocsNote" xml:space="preserve"><value>Les adresses de cette machine ou de votre réseau local sont refusées : l'agent ne les lit jamais comme un site web.</value></data>
   <data name="SettingsSectionThisConversation" xml:space="preserve"><value>Cette conversation</value></data>
   <data name="IndexCardReady" xml:space="preserve"><value>Index à jour</value></data>
+  <data name="IndexCardSaved" xml:space="preserve"><value>Index enregistré</value></data>
   <data name="IndexCardIndexing" xml:space="preserve"><value>Indexation…</value></data>
   <data name="IndexCardNotBuilt" xml:space="preserve"><value>Pas encore indexé</value></data>
   <data name="IndexCardStopped" xml:space="preserve"><value>Indexation interrompue</value></data>
@@ -1144,6 +1145,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="IndexCardNoWorkspace" xml:space="preserve"><value>Aucun espace de travail ouvert</value></data>
   <data name="IndexCardNoWorkspaceDetail" xml:space="preserve"><value>Ouvrez une solution ou un dossier : l'index est construit pour lui.</value></data>
   <data name="IndexCardFilesUpdated" xml:space="preserve"><value>{0:N0} {0:fichier|fichiers} · à jour à {1}</value></data>
+  <data name="IndexCardSavedDetail" xml:space="preserve"><value>{0:N0} {0:fichier|fichiers} · enregistré à {1} · une conversation dans ce dossier le met à jour</value></data>
   <data name="IndexCardProgress" xml:space="preserve"><value>{0:N0} sur {1:N0} {1:fichier lu|fichiers lus}</value></data>
   <data name="IndexCardNotBuiltDetail" xml:space="preserve"><value>L'indexation en arrière-plan est coupée : l'agent cherche par mots-clés.</value></data>
   <data name="IndexCardStoppedDetail" xml:space="preserve"><value>La dernière passe ne s'est pas terminée : l'index est incomplet.</value></data>
@@ -1489,6 +1491,7 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="ImportSkipSecretNotFound" xml:space="preserve"><value>secret introuvable dans ~/.continue/.env ni dans l'environnement : saisissez la clé dans les réglages</value></data>
   <data name="ImportSkipContinueBuiltinCommand" xml:space="preserve"><value>commande intégrée de Continue</value></data>
   <data name="ImportSkipAlreadyConfigured" xml:space="preserve"><value>déjà en place</value></data>
+  <data name="ImportSkipSameNameEarlier" xml:space="preserve"><value>un serveur du même nom vient plus haut dans ce fichier, et c'est lui qui est gardé</value></data>
   <data name="ImportSkipEmpty" xml:space="preserve"><value>vide</value></data>
   <data name="ImportSkipUnknownKey" xml:space="preserve"><value>clé que l'outil ne connaît pas</value></data>
   <data name="ImportSkipNoEquivalent" xml:space="preserve"><value>pas d'équivalent dans Inferpal</value></data>

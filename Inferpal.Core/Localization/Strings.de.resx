@@ -1137,6 +1137,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="SettingsDocsNote" xml:space="preserve"><value>Adressen auf diesem Rechner oder in Ihrem lokalen Netz werden abgelehnt: Der Agent liest sie nie als Website.</value></data>
   <data name="SettingsSectionThisConversation" xml:space="preserve"><value>Diese Unterhaltung</value></data>
   <data name="IndexCardReady" xml:space="preserve"><value>Index aktuell</value></data>
+  <data name="IndexCardSaved" xml:space="preserve"><value>Index gespeichert</value></data>
   <data name="IndexCardIndexing" xml:space="preserve"><value>Indizierung…</value></data>
   <data name="IndexCardNotBuilt" xml:space="preserve"><value>Noch nicht indiziert</value></data>
   <data name="IndexCardStopped" xml:space="preserve"><value>Indizierung abgebrochen</value></data>
@@ -1144,6 +1145,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="IndexCardNoWorkspace" xml:space="preserve"><value>Kein Arbeitsbereich geöffnet</value></data>
   <data name="IndexCardNoWorkspaceDetail" xml:space="preserve"><value>Öffnen Sie eine Projektmappe oder einen Ordner: Der Index wird dafür erstellt.</value></data>
   <data name="IndexCardFilesUpdated" xml:space="preserve"><value>{0:N0} {0:Datei|Dateien} · aktualisiert um {1}</value></data>
+  <data name="IndexCardSavedDetail" xml:space="preserve"><value>{0:N0} {0:Datei|Dateien} · gespeichert um {1} · ein Chat in diesem Ordner bringt ihn auf den neuesten Stand</value></data>
   <data name="IndexCardProgress" xml:space="preserve"><value>{0:N0} von {1:N0} {1:Datei|Dateien} gelesen</value></data>
   <data name="IndexCardNotBuiltDetail" xml:space="preserve"><value>Die Hintergrundindizierung ist aus: Der Agent sucht nach Stichwörtern.</value></data>
   <data name="IndexCardStoppedDetail" xml:space="preserve"><value>Der letzte Durchlauf wurde nicht beendet: Der Index ist unvollständig.</value></data>
@@ -1489,6 +1491,7 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="ImportSkipSecretNotFound" xml:space="preserve"><value>Geheimnis weder in ~/.continue/.env noch in der Umgebung gefunden: Schlüssel in den Einstellungen eingeben</value></data>
   <data name="ImportSkipContinueBuiltinCommand" xml:space="preserve"><value>eingebauter Befehl von Continue</value></data>
   <data name="ImportSkipAlreadyConfigured" xml:space="preserve"><value>bereits vorhanden</value></data>
+  <data name="ImportSkipSameNameEarlier" xml:space="preserve"><value>ein Server gleichen Namens steht weiter oben in dieser Datei, und dieser wird behalten</value></data>
   <data name="ImportSkipEmpty" xml:space="preserve"><value>leer</value></data>
   <data name="ImportSkipUnknownKey" xml:space="preserve"><value>ein Schlüssel, den das Werkzeug nicht kennt</value></data>
   <data name="ImportSkipNoEquivalent" xml:space="preserve"><value>keine Entsprechung in Inferpal</value></data>

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO;
 using System.Text.Json.Nodes;
 using Inferpal.Services.Docs;
@@ -438,7 +439,8 @@ internal static class ContinueImport
         var command = Text(node["command"]);
         var url = Text(node["url"]);
         if (command is null && url is null) { plan.Skip(path, ImportSkipCause.Empty); return; }
-        var name = Text(node["name"]) ?? ServerName(command, url);
+        var named = Text(node["name"]);
+        var name = named ?? ServerName(command, Strings(node["args"]), url);
 
         var notes = new List<ImportItemNote>();
         string Resolve(string value)
@@ -457,17 +459,44 @@ internal static class ContinueImport
 
         var server = new McpServerConfig(name, command, Strings(node["args"]), env, url, headers.Count > 0 ? headers : null,
                                          WorkingDirectory: Text(node["cwd"]));
-        AddServer(plan, path, node, server, notes);
+        AddServer(plan, path, node, server, notes, invented: named is null);
     }
 
+    /// <param name="invented">The source left the server unnamed and <see cref="ServerName"/> made the name up: another
+    /// server may have it — a server the user configured, one earlier in this file. It is then told apart by what it runs:
+    /// the same server is already there; another gets a free name.</param>
     private static void AddServer(ImportPlanBuilder plan, string path, JsonObject node, McpServerConfig server,
-                                  List<ImportItemNote> notes)
+                                  List<ImportItemNote> notes, bool invented = false)
     {
-        if (McpServerConfig.Parse(plan.Context.Current.McpServersJson).Any(s => s.Name == server.Name))
+        var configured = McpServerConfig.Parse(plan.Context.Current.McpServersJson);
+        if (invented)
+        {
+            if (configured.FirstOrDefault(s => Runs(s, server)) is { } same)
+            {
+                plan.Skip(path, ImportSkipCause.AlreadyConfigured, same.Name);
+                return;
+            }
+            if (plan.Servers.FirstOrDefault(s => Runs(s, server)) is { } earlier)
+            {
+                plan.Skip(path, ImportSkipCause.SameNameEarlier, earlier.Name);
+                return;
+            }
+            var name = server.Name;
+            for (var n = 2; configured.Any(s => s.Name == name) || plan.Servers.Any(s => s.Name == name); n++)
+                name = server.Name + "-" + n.ToString(CultureInfo.InvariantCulture);
+            server = server with { Name = name };
+        }
+        else if (configured.Any(s => s.Name == server.Name))
         {
             plan.Skip(path, ImportSkipCause.AlreadyConfigured, server.Name);
             return;
         }
+        else if (plan.Servers.Any(s => s.Name == server.Name))
+        {
+            plan.Skip(path, ImportSkipCause.SameNameEarlier, server.Name);
+            return;
+        }
+        plan.Servers.Add(server);
         var carried = new List<string>();
         foreach (var (key, _) in node)
         {
@@ -496,20 +525,45 @@ internal static class ContinueImport
             var command = Text(transport["command"]);
             var url = Text(transport["url"]);
             if (command is null && url is null) { plan.Skip(path, ImportSkipCause.Empty); continue; }
-            var name = ServerName(command, url);
+            var args = Strings(transport["args"]);
+            var name = ServerName(command, args, url);
             var env = transport["env"] is JsonObject e
                 ? e.Where(p => Text(p.Value) is not null).ToDictionary(p => p.Key, p => Text(p.Value)!)
                 : new Dictionary<string, string>();
             AddServer(plan, path, new JsonObject { ["transport"] = null },
-                      new McpServerConfig(name, command, Strings(transport["args"]), env, url), []);
+                      new McpServerConfig(name, command, args, env, url), [], invented: true);
         }
     }
 
-    /// <summary>A name for a server the source left unnamed: its program, or its host.</summary>
-    private static string ServerName(string? command, string? url) =>
-        command is not null ? Path.GetFileNameWithoutExtension(command)
-        : Uri.TryCreate(url, UriKind.Absolute, out var uri) ? uri.Host
-        : "server";
+    /// <summary>The programs that run a package named in their arguments, and the words between them and it.</summary>
+    private static readonly HashSet<string> Launchers = new(StringComparer.OrdinalIgnoreCase) { "npx", "bunx", "pnpx", "uvx", "pipx", "pnpm", "yarn", "bun" };
+    private static readonly HashSet<string> LauncherVerbs = new(StringComparer.OrdinalIgnoreCase) { "run", "dlx", "x", "exec" };
+
+    /// <summary>
+    /// A name for a server the source left unnamed: the package a launcher runs (<c>npx -y @scope/server-x@1</c> →
+    /// <c>server-x</c>), else its program, else its host.
+    /// </summary>
+    /// <remarks>⚠ Named after the program alone, every server <c>npx</c> or <c>uvx</c> starts was called <c>npx</c> or
+    /// <c>uvx</c>: two in one file, one name — the second refused at apply, "added in the meantime", which was false.</remarks>
+    private static string ServerName(string? command, IReadOnlyList<string> args, string? url)
+    {
+        if (command is null)
+            return Uri.TryCreate(url, UriKind.Absolute, out var uri) ? uri.Host : "server";
+        var program = Path.GetFileNameWithoutExtension(command);
+        if (!Launchers.Contains(program)) return program;
+        var spec = args.SkipWhile(a => a.StartsWith('-') || LauncherVerbs.Contains(a)).FirstOrDefault();
+        if (spec is null) return program;
+        var version = spec.LastIndexOf('@');
+        if (version > 0) spec = spec[..version];                  // @scope/name@1.2 → @scope/name
+        spec = spec.Split(['=', '<', '>', '[', '~', '!'])[0];      // name==1.2, name[extra] (Python)
+        var package = spec[(spec.LastIndexOf('/') + 1)..];
+        return package.Length > 0 ? package : program;
+    }
+
+    /// <summary>Whether two servers run the same thing: the same program with the same arguments, or the same address.</summary>
+    private static bool Runs(McpServerConfig a, McpServerConfig b) =>
+        string.Equals(a.Command, b.Command, StringComparison.Ordinal) && a.Args.SequenceEqual(b.Args, StringComparer.Ordinal)
+        && string.Equals(a.Url, b.Url, StringComparison.Ordinal);
 
     private static void Indexing(ImportPlanBuilder plan, string key, JsonNode? value)
     {

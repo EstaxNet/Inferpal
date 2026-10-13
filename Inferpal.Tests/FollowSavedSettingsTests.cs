@@ -179,6 +179,60 @@ public sealed class FollowSavedSettingsTests : IDisposable
     }
 
     /// <summary>
+    /// ⚠ The settings window's host follows a new kind of server saved IN the window: its session starts anew, as VS Code
+    /// restarts its host after such a save. Kept, its client spoke the old protocol to the new address — the page's model
+    /// lists, loaded-models card and Unload all answered for nobody. A new address of the same kind keeps the session.
+    /// </summary>
+    [Fact]
+    public async Task TheSettingsWindow_FollowsANewKindOfServerSavedInIt()
+    {
+        new InferpalConfig { Provider = "ollama", BaseUrl = "http://127.0.0.1:9", RagEnabled = false, McpEnabled = false }.Save();
+        var root = Directory.CreateTempSubdirectory("inferpal-window-kind").FullName;
+        var web  = Directory.CreateTempSubdirectory("inferpal-window-kind-web").FullName;
+        foreach (var name in new[] { "settings.css", "settings-standalone.css", "settings-standalone.js" })
+            File.WriteAllText(Path.Combine(web, name), "/* */");
+        using var http = new System.Net.Http.HttpClient();
+        try
+        {
+            // The shipped factories: real clients, on the file above.
+            await using var window = await Host.SettingsWindow.SettingsWindowServer.StartAsync(
+                root, web, () => new Host.HostServer(), CancellationToken.None);
+            Assert.Equal("ollama", Services.Inference.InferenceProviderFactory.CodeOf(window.Host.CurrentSession!.Client));   // WITNESS
+
+            async Task SaveAsync(string provider, string url)
+            {
+                using var get = new System.Net.Http.StringContent("{\"method\":\"config/get\"}");
+                using var got = await http.PostAsync(window.Url + "rpc", get);
+                var json = JsonDocument.Parse(await got.Content.ReadAsStringAsync()).RootElement.GetProperty("result").GetString()!;
+                var edited = System.Text.Json.Nodes.JsonNode.Parse(json)!.AsObject();
+                edited["provider"] = provider;
+                edited["baseUrl"]  = url;
+                using var body = new System.Net.Http.StringContent(JsonSerializer.Serialize(new
+                {
+                    method = "config/update", @params = new { json = edited.ToJsonString(), @base = json },
+                }));
+                using var saved = await http.PostAsync(window.Url + "rpc", body);
+                Assert.True(saved.IsSuccessStatusCode, await saved.Content.ReadAsStringAsync());
+            }
+
+            await SaveAsync("lmstudio", "http://127.0.0.1:10");
+            var session = window.Host.CurrentSession!;
+            Assert.Equal("lmstudio", Services.Inference.InferenceProviderFactory.CodeOf(session.Client));
+            Assert.Equal("http://127.0.0.1:10", session.Client.ServerAddress);
+
+            // Reference arm: a new address of the same kind applies live, in the same session.
+            await SaveAsync("lmstudio", "http://127.0.0.1:11");
+            Assert.Same(session, window.Host.CurrentSession);
+            Assert.Equal("http://127.0.0.1:11", session.Client.ServerAddress);
+        }
+        finally
+        {
+            foreach (var dir in new[] { root, web })
+                try { Directory.Delete(dir, recursive: true); } catch { /* cleanup */ }
+        }
+    }
+
+    /// <summary>
     /// ⚠ What the thread saves itself (here a pin) moves the file as the thread last took it: the settings window then
     /// taking the pin out is followed at the next question. Left behind, the file's value equalled the old one and the
     /// thread kept its pin for the rest of its life. A setting the window changed meanwhile is still followed.

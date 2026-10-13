@@ -472,7 +472,7 @@ internal sealed partial class HostServer
                 {
                     // The Core previews or applies; the host saves what it changed and hands the card to the editor
                     // (its Markdown is what the agent protocol, which draws no card, shows).
-                    var result = ImportCommandHandler.Handle(parts, Inferpal.Services.Import.ImportContext.For(s.Config),
+                    var result = ImportCommandHandler.Handle(parts, Inferpal.Services.Import.ImportContext.For(s.Config, s.RootDir),
                                                              s.Config.SaveFilePath, DateTime.Now);
                     if (result.SaveConfig) s.Config.Save();
                     List<SlashEffectDto> saved = result.SaveConfig ? [new SlashEffectDto("configSaved")] : [];

@@ -1141,6 +1141,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="SettingsDocsNote" xml:space="preserve"><value>Addresses on this machine or your local network are refused: the agent never reads them for a website.</value></data>
   <data name="SettingsSectionThisConversation" xml:space="preserve"><value>This conversation</value></data>
   <data name="IndexCardReady" xml:space="preserve"><value>Index up to date</value></data>
+  <data name="IndexCardSaved" xml:space="preserve"><value>Index saved</value></data>
   <data name="IndexCardIndexing" xml:space="preserve"><value>Indexing…</value></data>
   <data name="IndexCardNotBuilt" xml:space="preserve"><value>Not indexed yet</value></data>
   <data name="IndexCardStopped" xml:space="preserve"><value>Indexing stopped</value></data>
@@ -1148,6 +1149,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="IndexCardNoWorkspace" xml:space="preserve"><value>No workspace open</value></data>
   <data name="IndexCardNoWorkspaceDetail" xml:space="preserve"><value>Open a solution or a folder: the index is built for it.</value></data>
   <data name="IndexCardFilesUpdated" xml:space="preserve"><value>{0:N0} {0:file|files} · updated at {1}</value></data>
+  <data name="IndexCardSavedDetail" xml:space="preserve"><value>{0:N0} {0:file|files} · saved at {1} · a chat in this folder brings it up to date</value></data>
   <data name="IndexCardProgress" xml:space="preserve"><value>{0:N0} of {1:N0} {1:file|files} read</value></data>
   <data name="IndexCardNotBuiltDetail" xml:space="preserve"><value>Background indexing is off: the agent searches by keywords.</value></data>
   <data name="IndexCardStoppedDetail" xml:space="preserve"><value>The last pass did not finish: the index is incomplete.</value></data>
@@ -1493,6 +1495,7 @@ What you save there applies from your next question, in this thread and the othe
   <data name="ImportSkipSecretNotFound" xml:space="preserve"><value>secret not found in ~/.continue/.env or the environment: type the key in the settings</value></data>
   <data name="ImportSkipContinueBuiltinCommand" xml:space="preserve"><value>one of Continue's built-in commands</value></data>
   <data name="ImportSkipAlreadyConfigured" xml:space="preserve"><value>already in place</value></data>
+  <data name="ImportSkipSameNameEarlier" xml:space="preserve"><value>a server of the same name comes earlier in this file, and that one is kept</value></data>
   <data name="ImportSkipEmpty" xml:space="preserve"><value>empty</value></data>
   <data name="ImportSkipUnknownKey" xml:space="preserve"><value>a key the tool does not know</value></data>
   <data name="ImportSkipNoEquivalent" xml:space="preserve"><value>no equivalent in Inferpal</value></data>

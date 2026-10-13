@@ -94,12 +94,17 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     /// (a loop stopped after work was done), which one scripted chat turn cannot produce.</summary>
     public AgentResult? AgentRunResult { get; set; }
 
+    /// <summary>When set, <see cref="RunAgentAsync"/> is this run: the tools and the loop's report of each call, for a
+    /// test that plays a batch of calls the way the loop does (the real funnel, the real registry).</summary>
+    public Func<List<ChatMessageDto>, IToolRegistry, Action<ToolExecution>?, CancellationToken, Task<AgentResult>>? OnAgentRun { get; set; }
+
     public Task<AgentResult> RunAgentAsync(
         string model, List<ChatMessageDto> history, IToolRegistry tools, Action<string> onStep,
         Action<string>? onToken, CancellationToken ct, TaskComplexity complexity = TaskComplexity.Normal,
         Action<ToolExecution>? onToolExecuted = null, Action<string>? onThinking = null)
     {
         AgentRuns.Add((model, history));
+        if (OnAgentRun is { } run) return run(history, tools, onToolExecuted, ct);
         if (AgentRunResult is not null)
             return Task.FromResult(AgentRunResult with { UpdatedHistory = history });
         if (RunAgentThroughChat)

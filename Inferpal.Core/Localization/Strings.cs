@@ -224,6 +224,7 @@ internal static class Strings
 
     // ── Settings: the index card (Code search) ───────────────────────────────
     public static string IndexCardReady => Get(nameof(IndexCardReady));
+    public static string IndexCardSaved => Get(nameof(IndexCardSaved));
     public static string IndexCardIndexing => Get(nameof(IndexCardIndexing));
     public static string IndexCardNotBuilt => Get(nameof(IndexCardNotBuilt));
     public static string IndexCardStopped => Get(nameof(IndexCardStopped));
@@ -231,6 +232,7 @@ internal static class Strings
     public static string IndexCardNoWorkspace => Get(nameof(IndexCardNoWorkspace));
     public static string IndexCardNoWorkspaceDetail => Get(nameof(IndexCardNoWorkspaceDetail));
     public static string IndexCardFilesUpdated(int files, string at) => Format(Get(nameof(IndexCardFilesUpdated)), files, at);
+    public static string IndexCardSavedDetail(int files, string at) => Format(Get(nameof(IndexCardSavedDetail)), files, at);
     public static string IndexCardProgress(int done, int total) => Format(Get(nameof(IndexCardProgress)), done, total);
     public static string IndexCardNotBuiltDetail => Get(nameof(IndexCardNotBuiltDetail));
     public static string IndexCardStoppedDetail => Get(nameof(IndexCardStoppedDetail));
@@ -1919,6 +1921,7 @@ internal static class Strings
     public static string ImportSkipSecretNotFound => Get(nameof(ImportSkipSecretNotFound));
     public static string ImportSkipContinueBuiltinCommand => Get(nameof(ImportSkipContinueBuiltinCommand));
     public static string ImportSkipAlreadyConfigured => Get(nameof(ImportSkipAlreadyConfigured));
+    public static string ImportSkipSameNameEarlier => Get(nameof(ImportSkipSameNameEarlier));
     public static string ImportSkipEmpty => Get(nameof(ImportSkipEmpty));
     public static string ImportSkipUnknownKey => Get(nameof(ImportSkipUnknownKey));
     public static string ImportSkipNoEquivalent => Get(nameof(ImportSkipNoEquivalent));

@@ -58,6 +58,8 @@ internal sealed class AcpSession : IAsyncDisposable
         public required string Name;
         /// <summary>The title the client draws ("read_file · alpha.txt"): what the saved line keeps, so a replay draws it too.</summary>
         public required string Title;
+        /// <summary>Who the call is (<see cref="AcpToolCalls.CallKey"/>): its report from the loop is matched on it.</summary>
+        public required string Key;
         public List<object> Diffs = [];
         public bool Rejected;
     }
@@ -81,12 +83,22 @@ internal sealed class AcpSession : IAsyncDisposable
     private bool _actBreak;
     private bool _turnOpen;
     private bool _cancelRequested;
-    private int _echoes;
+    /// <summary>The calls drawn by <c>chat/toolStart</c> that ended in this turn, whose report from the loop has not come
+    /// yet: tool name and <see cref="AcpToolCalls.CallKey"/>. Under <see cref="_gate"/>.</summary>
+    private readonly List<(string Name, string Key)> _ended = [];
     private int _approvals;
     private int _replayed;
 
-    private AcpSession(AcpAgent agent, string id, string cwd, HostServer host, JsonRpc hostSide, JsonRpc link, bool fsRead)
+    /// <summary>The client has this session's id: it loaded or resumed it, or sent a prompt naming it.</summary>
+    private volatile bool _known;
+
+    /// <summary>An agreement was asked before the client knew this session (1): asked again at the next prompt.</summary>
+    private int _askAgain;
+
+    private AcpSession(AcpAgent agent, string id, string cwd, HostServer host, JsonRpc hostSide, JsonRpc link, bool fsRead,
+                       bool known)
     {
+        _known    = known;
         _agent    = agent;
         Id        = id;
         Cwd       = cwd;
@@ -104,6 +116,10 @@ internal sealed class AcpSession : IAsyncDisposable
 
     /// <summary>A turn is running.</summary>
     public bool Busy { get { lock (_gate) return _turnOpen; } }
+
+    /// <summary>A turn is running, or work that runs beyond one — a <c>/task</c>, a command in the background, an
+    /// <c>@Docs</c> crawl —, which dies with this session's host (<c>host/runningWork</c>, the one reader).</summary>
+    public bool Working => Busy || _host.RunningWork().Notice is not null;
 
     /// <summary>Completed when no turn runs; replaced at each turn's start.</summary>
     private TaskCompletionSource _idle = Completed();
@@ -127,8 +143,11 @@ internal sealed class AcpSession : IAsyncDisposable
     // ── Start ──────────────────────────────────────────────────────────────────
 
     /// <summary>Starts the session's host on <paramref name="cwd"/> and hands it the editor's MCP servers.</summary>
+    /// <param name="known">The client already has the id (a load, a resume, a session reopened after eviction) — not
+    /// for <c>session/new</c>, whose response is what tells it.</param>
     public static async Task<AcpSession> StartAsync(AcpAgent agent, string id, string cwd,
-                                                    IReadOnlyList<McpSessionServerDto> mcpServers, CancellationToken ct)
+                                                    IReadOnlyList<McpSessionServerDto> mcpServers, CancellationToken ct,
+                                                    bool known = false)
     {
         var (hostStream, linkStream) = FullDuplexStream.CreatePair();
         var host     = agent.CreateHost();
@@ -137,7 +156,7 @@ internal sealed class AcpSession : IAsyncDisposable
         hostSide.StartListening();
 
         var link    = HostRpc.Create(linkStream, linkStream);
-        var session = new AcpSession(agent, id, cwd, host, hostSide, link, agent.ClientReadsFiles);
+        var session = new AcpSession(agent, id, cwd, host, hostSide, link, agent.ClientReadsFiles, known);
         link.SynchronizationContext = session._linkContext;
         link.AddLocalRpcTarget(session, new JsonRpcTargetOptions { DisposeOnDisconnect = false });
         link.StartListening();
@@ -378,14 +397,16 @@ internal sealed class AcpSession : IAsyncDisposable
             _stream = new AcpShownStream();
             _plan.Clear();
             _calls.Clear();
-            _echoes = 0;
+            _ended.Clear();
         }
         LastUsed = DateTime.UtcNow;
+        _known = true;
         try
         {
             await AnnounceCommandsOnceAsync(CancellationToken.None);
             if (Interlocked.Exchange(ref _startNotice, null) is { Length: > 0 } notice) Say(notice + "\n\n");
             await FollowSettingsAsync();
+            await AskAgainWhatWasAskedTooEarlyAsync();
             AnnounceModelIfChanged();
             var stop = await RunTurnAsync(content);
             return CancelRequested ? "cancelled" : stop;
@@ -442,6 +463,17 @@ internal sealed class AcpSession : IAsyncDisposable
     }
 
     private bool _settingsUnreadableSaid;
+
+    /// <summary>
+    /// The agreements asked before the client knew this thread (<see cref="ApprovalRequest"/>), asked again now, inside
+    /// the turn: the MCP servers start again (<c>mcp/retry</c>), and a repository's server asks for its agreement.
+    /// </summary>
+    private async Task AskAgainWhatWasAskedTooEarlyAsync()
+    {
+        if (Interlocked.Exchange(ref _askAgain, 0) == 0) return;
+        try { await _link.InvokeWithCancellationAsync<JsonElement>("mcp/retry", cancellationToken: CancellationToken.None); }
+        catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("AcpSession.AskAgain", ex); }
+    }
 
     /// <summary>
     /// At a turn's start, inside it: the selector is told when the model it shows is no longer the one that answers — the
@@ -934,7 +966,7 @@ internal sealed class AcpSession : IAsyncDisposable
         var raw = AcpToolCalls.RawInput(note.Input ?? "{}");
         var args = raw ?? EmptyObject;
         var title = AcpToolCalls.Title(note.Name, args, Cwd);
-        _calls[note.CallId] = new ToolCallState { Name = note.Name, Title = title };
+        _calls[note.CallId] = new ToolCallState { Name = note.Name, Title = title, Key = AcpToolCalls.CallKey(note.Input) };
         Update(new
         {
             sessionUpdate = "tool_call",
@@ -954,8 +986,8 @@ internal sealed class AcpSession : IAsyncDisposable
     public void ChatToolEnd(ToolEndNote note)
     {
         if (!InTurn) return;
-        Interlocked.Increment(ref _echoes);
         var state = _calls.TryGetValue(note.CallId, out var known) ? known : null;
+        if (state is not null) lock (_gate) _ended.Add((state.Name, state.Key));
         var output = note.Output ?? string.Empty;
         var content = new List<object>();
         if (state is not null) content.AddRange(state.Diffs);
@@ -976,12 +1008,23 @@ internal sealed class AcpSession : IAsyncDisposable
     /// report is the echo. The others are reports the loop makes on its own — a call refused before it reached a tool, a
     /// compaction of the conversation, a session recap — and each becomes a finished call of its own.
     /// </summary>
+    /// <remarks>⚠ The echo is matched on WHO the call is (tool and arguments), never counted: in a batch run in parallel,
+    /// a call refused before any tool reported between two that ran — counted, the refusal was taken for an echo and
+    /// vanished, and a call that ran was drawn a second time.</remarks>
     [JsonRpcMethod("chat/tool", UseSingleObjectParameterDeserialization = true)]
     public void ChatTool(ToolNotice note)
     {
         if (!InTurn) return;
-        if (Interlocked.Decrement(ref _echoes) >= 0) return;
-        Interlocked.Increment(ref _echoes);
+        var key = AcpToolCalls.CallKey(note.Input);
+        lock (_gate)
+        {
+            var echo = _ended.FindIndex(e => e.Name == note.Name && e.Key == key);
+            if (echo >= 0)
+            {
+                _ended.RemoveAt(echo);
+                return;
+            }
+        }
         var id = "note_" + Interlocked.Increment(ref _replayed).ToString(CultureInfo.InvariantCulture);
         Update(new
         {
@@ -1011,6 +1054,15 @@ internal sealed class AcpSession : IAsyncDisposable
     [JsonRpcMethod("approval/request", UseSingleObjectParameterDeserialization = true)]
     public async Task<int> ApprovalRequest(ApprovalNote note)
     {
+        // ⚠ Asked while the client does not know this session — a repository's MCP server, at session/new — the request
+        // names a session the client never heard of: refused, and the server stayed off for the thread's whole life (its
+        // next start is the next thread). Refused here, and asked again at the first prompt.
+        if (!_known)
+        {
+            Interlocked.Exchange(ref _askAgain, 1);
+            Diagnostics.Record("Acp", $"Session {Id}: an agreement ({note.Tool}) was asked before the client knew the session; asked again at its first prompt.");
+            return 0;
+        }
         var id = note.CallId ?? "approval_" + Interlocked.Increment(ref _approvals).ToString(CultureInfo.InvariantCulture);
         var diffs = (note.Diffs ?? [])
             .Where(d => !string.IsNullOrWhiteSpace(d.Path))

@@ -1137,6 +1137,7 @@
   <data name="SettingsDocsNote" xml:space="preserve"><value>Адреса этого компьютера и локальной сети отклоняются: агент никогда не читает их как сайт.</value></data>
   <data name="SettingsSectionThisConversation" xml:space="preserve"><value>Этот разговор</value></data>
   <data name="IndexCardReady" xml:space="preserve"><value>Индекс актуален</value></data>
+  <data name="IndexCardSaved" xml:space="preserve"><value>Индекс сохранён</value></data>
   <data name="IndexCardIndexing" xml:space="preserve"><value>Индексация…</value></data>
   <data name="IndexCardNotBuilt" xml:space="preserve"><value>Ещё не проиндексировано</value></data>
   <data name="IndexCardStopped" xml:space="preserve"><value>Индексация прервана</value></data>
@@ -1144,6 +1145,7 @@
   <data name="IndexCardNoWorkspace" xml:space="preserve"><value>Рабочая область не открыта</value></data>
   <data name="IndexCardNoWorkspaceDetail" xml:space="preserve"><value>Откройте решение или папку: индекс строится для них.</value></data>
   <data name="IndexCardFilesUpdated" xml:space="preserve"><value>Файлов: {0:N0} · обновлено в {1}</value></data>
+  <data name="IndexCardSavedDetail" xml:space="preserve"><value>Файлов: {0:N0} · сохранено в {1} · чат в этой папке обновит его</value></data>
   <data name="IndexCardProgress" xml:space="preserve"><value>Прочитано {0:N0} из {1:N0} {1:файла|файлов|файлов}</value></data>
   <data name="IndexCardNotBuiltDetail" xml:space="preserve"><value>Фоновая индексация выключена: агент ищет по ключевым словам.</value></data>
   <data name="IndexCardStoppedDetail" xml:space="preserve"><value>Последний проход не завершился: индекс неполный.</value></data>
@@ -1489,6 +1491,7 @@
   <data name="ImportSkipSecretNotFound" xml:space="preserve"><value>секрет не найден ни в ~/.continue/.env, ни в окружении: введите ключ в настройках</value></data>
   <data name="ImportSkipContinueBuiltinCommand" xml:space="preserve"><value>встроенная команда Continue</value></data>
   <data name="ImportSkipAlreadyConfigured" xml:space="preserve"><value>уже настроено</value></data>
+  <data name="ImportSkipSameNameEarlier" xml:space="preserve"><value>сервер с тем же именем указан выше в этом файле, и сохраняется именно он</value></data>
   <data name="ImportSkipEmpty" xml:space="preserve"><value>пусто</value></data>
   <data name="ImportSkipUnknownKey" xml:space="preserve"><value>ключ, неизвестный этому инструменту</value></data>
   <data name="ImportSkipNoEquivalent" xml:space="preserve"><value>в Inferpal аналога нет</value></data>

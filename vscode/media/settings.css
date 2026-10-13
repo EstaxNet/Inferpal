@@ -806,6 +806,7 @@ table.rules tr.status-unreadable td {
 }
 
 .statuscard[data-state="ready"] .dot,
+.statuscard[data-state="saved"] .dot,
 .dot.ok    { background: var(--vscode-testing-iconPassed, #4ec94e); }
 .statuscard[data-state="indexing"] .dot,
 .dot.busy  { background: var(--vscode-textLink-foreground, #3794ff); }

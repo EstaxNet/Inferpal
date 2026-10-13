@@ -228,6 +228,37 @@ internal sealed class ProjectIndexService : IDisposable
     private Task? _indexingPass;
 
     /// <summary>
+    /// Shows the index saved for <paramref name="rootDir"/> without indexing it: no pass, no re-indexing on a change,
+    /// nothing written — not even an empty database. For a host that only SHOWS the index (the settings window), never
+    /// one a chat searches.
+    /// </summary>
+    /// <remarks>⚠ A pass here walked and embedded the folder the window was opened in — the whole home folder for a
+    /// window started from there —, and a window opened from a thread ran a second indexer, in the same process, on the
+    /// thread's database. Not a pass either way: shown as saved, brought up to date by the chat that uses it.</remarks>
+    public async Task ShowSavedAsync(string rootDir, CancellationToken ct)
+    {
+        var file = RagDatabase.PathFor(rootDir);
+        if (!File.Exists(file)) return;
+        var db     = new RagDatabase(rootDir);
+        var loaded = await db.LoadAsync(ct).ConfigureAwait(false);
+        if (loaded.Count == 0) return;
+        var model  = await db.GetMetaAsync(EmbeddingModelMetaKey, ct).ConfigureAwait(false);
+        // A pass started meanwhile (the page's Rebuild) owns the index from here.
+        if (IsIndexing || !string.IsNullOrEmpty(IndexedRoot)) return;
+        await ApplyChunksAsync(loaded, replaceAll: true, ct).ConfigureAwait(false);
+        _indexedEmbeddingModel = model ?? string.Empty;
+        // In WAL mode the latest writes may still sit in the -wal file.
+        var wal = file + "-wal";
+        var at  = File.GetLastWriteTime(file);
+        _savedAt = File.Exists(wal) && File.GetLastWriteTime(wal) > at ? File.GetLastWriteTime(wal) : at;
+        _showsSaved = true;
+    }
+
+    /// <summary>The index shown is the one saved (<see cref="ShowSavedAsync"/>), not one a pass of this service built.</summary>
+    private volatile bool _showsSaved;
+    private DateTime? _savedAt;
+
+    /// <summary>
     /// Ensures <c>.gitignore</c> in <paramref name="rootDir"/> contains entries for
     /// Inferpal's data directories. Silently no-ops if git is not present or writing fails.
     /// </summary>
@@ -416,6 +447,7 @@ internal sealed class ProjectIndexService : IDisposable
     private async Task RunIndexingAsync(string rootDir, CancellationToken ct)
     {
         IsIndexing     = true;
+        _showsSaved    = false;
         _passCompleted = false;   // a re-index must not write "✅" over a pass that is running, or failed
         _failure       = null;
         _stopped       = false;
@@ -951,10 +983,11 @@ internal sealed class ProjectIndexService : IDisposable
             files      = FilesWithChunks();
         }
         finally { _chunkLock.Release(); }
+        var saved = _showsSaved && !IsIndexing;
         return new IndexSnapshot(
             RootDir, IsIndexing, _progressDone, _progressTotal, _passCompleted, files, ChunkCount, unembedded,
             SkippedBySize, OversizeFiles, SkippedFolder, QueryEmbeddingModel, _client.IsEmbeddingCircuitOpen,
-            _updatedAt, _failure, _stopped);
+            saved ? _savedAt : _updatedAt, _failure, _stopped, saved);
     }
 
     /// <summary>
@@ -1298,7 +1331,9 @@ internal sealed class ProjectIndexService : IDisposable
 /// <param name="Completed">The last full pass reached its end: only then are the counts the index's.</param>
 /// <param name="Model">The model the index's vectors came from; <c>null</c> = keyword search only.</param>
 /// <param name="Failure">Why the last pass stopped, when it failed (in the system's language: an exception message).</param>
+/// <param name="Saved">The index shown is the one saved for the folder, read without a pass
+/// (<see cref="ProjectIndexService.ShowSavedAsync"/>); <paramref name="UpdatedAt"/> is then when it was saved.</param>
 internal sealed record IndexSnapshot(
     string RootDir, bool IsIndexing, int Done, int Total, bool Completed, int Files, int Chunks, int Unembedded,
     int Oversize, IReadOnlyList<string> OversizeFiles, WorkspaceScan.WalkGap? SkippedFolder, string? Model,
-    bool EmbeddingDown, DateTime? UpdatedAt, string? Failure, bool Stopped);
+    bool EmbeddingDown, DateTime? UpdatedAt, string? Failure, bool Stopped, bool Saved = false);

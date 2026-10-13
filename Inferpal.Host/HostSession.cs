@@ -43,6 +43,10 @@ internal sealed class HostSession : IDisposable
     /// <summary>The model's reasoning goes to the adapter as it streams (<see cref="InitializeParams.ReasoningChunks"/>).</summary>
     public bool ReasoningChunks { get; init; }
 
+    /// <summary>The host indexes the folder itself (<see cref="InitializeParams.IndexesTheFolder"/>); false: it only
+    /// shows the index saved for it, whatever setting is saved — a pass starts on the page's Rebuild only.</summary>
+    public bool IndexesTheFolder { get; init; } = true;
+
     /// <summary>
     /// Folders open in the editor that <see cref="RootDir"/> does not hold — stated to the model with the root. Replaced
     /// whole by <c>workspace/folders</c> and read once per prompt build, so the next question already has it.

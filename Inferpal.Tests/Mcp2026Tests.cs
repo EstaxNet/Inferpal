@@ -510,14 +510,21 @@ public class Mcp2026Tests
                 pass
         """;
 
-    private static async Task<(McpStdioClient Client, string Journal, string Script)?> StartModernStdioAsync(bool listChanged)
+    /// <param name="probeWait">The client's probe window. ⚠ Left at the product's 3 s, a test asserting that a server
+    /// answering the probe is never sent <c>initialize</c> measured the runner: under a full suite the interpreter alone
+    /// can take longer to answer, and the client then rightly sends the handshake too.</param>
+    private static async Task<(McpStdioClient Client, string Journal, string Script)?> StartModernStdioAsync(
+        bool listChanged, TimeSpan? probeWait = null)
     {
         if (!await PythonForTests.IsInstalledAsync()) return null;   // UNDECIDED without Python — never read as a pass
         var script  = Path.Combine(Path.GetTempPath(), $"inferpal-mcp2026-{Guid.NewGuid():N}.py");
         var journal = script + ".journal";
         File.WriteAllText(script, ModernStdioServer);
         var client = new McpStdioClient(new("modern", OperatingSystem.IsWindows() ? "python" : "python3",
-                                            [script, journal, listChanged ? "1" : "0"], new Dictionary<string, string>()));
+                                            [script, journal, listChanged ? "1" : "0"], new Dictionary<string, string>()))
+        {
+            ProbeWait = probeWait ?? McpStdioClient.DefaultProbeWait,
+        };
         return (client, journal, script);
     }
 
@@ -539,7 +546,8 @@ public class Mcp2026Tests
     [Fact]
     public async Task AModernStdioServer_IsSpokenToWithoutAHandshake_AndItsSubscriptionDeliversTheChange()
     {
-        if (await StartModernStdioAsync(listChanged: true) is not var (client, journal, script)) return;
+        // The window is the runner's, not the product's: "answers the probe in time" is what is asserted.
+        if (await StartModernStdioAsync(listChanged: true, TimeSpan.FromSeconds(60)) is not var (client, journal, script)) return;
         try
         {
             var changed = new TaskCompletionSource();

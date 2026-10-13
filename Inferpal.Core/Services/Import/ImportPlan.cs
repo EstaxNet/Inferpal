@@ -122,6 +122,8 @@ internal enum ImportSkipCause
     ContinueBuiltinCommand,
     /// <summary>Already in Inferpal (same server name, same site): not overwritten.</summary>
     AlreadyConfigured,
+    /// <summary>An MCP server whose name an earlier one of this file has: the first is kept. The name in the detail.</summary>
+    SameNameEarlier,
     /// <summary>Empty.</summary>
     Empty,
     /// <summary>A key the tool does not know (an anchor holder, a typo, another tool's key).</summary>

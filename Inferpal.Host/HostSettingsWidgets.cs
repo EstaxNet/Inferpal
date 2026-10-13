@@ -78,6 +78,32 @@ internal sealed partial class HostServer
     [JsonRpcMethod("settings/projectFiles")]
     public IReadOnlyList<ProjectFileRow> SettingsProjectFiles() => SettingsWidgets.ProjectFiles(Session().RootDir);
 
+    /// <summary>Whether the session's client speaks another kind of server than its settings now name — a client is
+    /// built for one protocol, and reads only the address and key live.</summary>
+    internal bool SpeaksAnotherKindThanItsSettings() =>
+        _session is { } s && Services.Inference.InferenceProviderFactory.PendingSwitch(s.Client, s.Config.Provider) is not null;
+
+    /// <summary>
+    /// Whether <paramref name="path"/> is one the settings form offers to open: a project file or the rules folder, a
+    /// repository instruction file, the profile whose exclusions the index applies — read from the very lists the form
+    /// shows, existing or not (a file deleted since is "not found", not "not offered").
+    /// </summary>
+    /// <remarks>⚠ The settings window opens a path with the system's application for it: a program runs. Offered paths
+    /// only — the page's token is all that stands between any other path and that.</remarks>
+    internal bool IsOfferedToOpen(string path)
+    {
+        string full;
+        try { full = Path.GetFullPath(path); }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException) { return false; }
+        IEnumerable<string> offered =
+        [
+            .. SettingsProjectFiles().Select(f => f.FullPath),
+            .. SettingsRepoInstructions().Select(r => r.FullPath),
+            SettingsExclusions().File,
+        ];
+        return offered.Any(p => p.Length > 0 && string.Equals(Path.GetFullPath(p), full, Services.PathComparer.Comparison));
+    }
+
     /// <summary>`settings/pinSizes` — what each pinned file the panel holds costs the prompt (unsaved edits included),
     /// switched off or past the cap too: the list shows every line, as Visual Studio's does.</summary>
     [JsonRpcMethod("settings/pinSizes", UseSingleObjectParameterDeserialization = true)]

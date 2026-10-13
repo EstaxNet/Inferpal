@@ -1137,6 +1137,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="SettingsDocsNote" xml:space="preserve"><value>Adresy tego komputera lub sieci lokalnej są odrzucane: agent nigdy nie czyta ich jako witryny.</value></data>
   <data name="SettingsSectionThisConversation" xml:space="preserve"><value>Ta rozmowa</value></data>
   <data name="IndexCardReady" xml:space="preserve"><value>Indeks aktualny</value></data>
+  <data name="IndexCardSaved" xml:space="preserve"><value>Indeks zapisany</value></data>
   <data name="IndexCardIndexing" xml:space="preserve"><value>Indeksowanie…</value></data>
   <data name="IndexCardNotBuilt" xml:space="preserve"><value>Jeszcze nie zindeksowano</value></data>
   <data name="IndexCardStopped" xml:space="preserve"><value>Indeksowanie przerwane</value></data>
@@ -1144,6 +1145,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="IndexCardNoWorkspace" xml:space="preserve"><value>Brak otwartego obszaru roboczego</value></data>
   <data name="IndexCardNoWorkspaceDetail" xml:space="preserve"><value>Otwórz rozwiązanie lub folder: indeks zostanie dla niego zbudowany.</value></data>
   <data name="IndexCardFilesUpdated" xml:space="preserve"><value>Pliki: {0:N0} · zaktualizowano o {1}</value></data>
+  <data name="IndexCardSavedDetail" xml:space="preserve"><value>Pliki: {0:N0} · zapisano o {1} · czat w tym folderze go zaktualizuje</value></data>
   <data name="IndexCardProgress" xml:space="preserve"><value>Przeczytano {0:N0} z {1:N0} {1:pliku|plików|plików}</value></data>
   <data name="IndexCardNotBuiltDetail" xml:space="preserve"><value>Indeksowanie w tle jest wyłączone: agent szuka po słowach kluczowych.</value></data>
   <data name="IndexCardStoppedDetail" xml:space="preserve"><value>Ostatni przebieg się nie zakończył: indeks jest niekompletny.</value></data>
@@ -1489,6 +1491,7 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="ImportSkipSecretNotFound" xml:space="preserve"><value>nie znaleziono sekretu w ~/.continue/.env ani w środowisku: wpisz klucz w ustawieniach</value></data>
   <data name="ImportSkipContinueBuiltinCommand" xml:space="preserve"><value>wbudowane polecenie Continue</value></data>
   <data name="ImportSkipAlreadyConfigured" xml:space="preserve"><value>już ustawione</value></data>
+  <data name="ImportSkipSameNameEarlier" xml:space="preserve"><value>serwer o tej samej nazwie występuje wcześniej w tym pliku i to on zostaje zachowany</value></data>
   <data name="ImportSkipEmpty" xml:space="preserve"><value>puste</value></data>
   <data name="ImportSkipUnknownKey" xml:space="preserve"><value>klucz nieznany temu narzędziu</value></data>
   <data name="ImportSkipNoEquivalent" xml:space="preserve"><value>brak odpowiednika w Inferpal</value></data>

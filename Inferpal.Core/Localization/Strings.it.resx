@@ -1137,6 +1137,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="SettingsDocsNote" xml:space="preserve"><value>Gli indirizzi di questa macchina o della rete locale vengono rifiutati: l'agente non li legge mai come un sito web.</value></data>
   <data name="SettingsSectionThisConversation" xml:space="preserve"><value>Questa conversazione</value></data>
   <data name="IndexCardReady" xml:space="preserve"><value>Indice aggiornato</value></data>
+  <data name="IndexCardSaved" xml:space="preserve"><value>Indice salvato</value></data>
   <data name="IndexCardIndexing" xml:space="preserve"><value>Indicizzazione…</value></data>
   <data name="IndexCardNotBuilt" xml:space="preserve"><value>Non ancora indicizzato</value></data>
   <data name="IndexCardStopped" xml:space="preserve"><value>Indicizzazione interrotta</value></data>
@@ -1144,6 +1145,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="IndexCardNoWorkspace" xml:space="preserve"><value>Nessuno spazio di lavoro aperto</value></data>
   <data name="IndexCardNoWorkspaceDetail" xml:space="preserve"><value>Aprite una soluzione o una cartella: l'indice viene creato per essa.</value></data>
   <data name="IndexCardFilesUpdated" xml:space="preserve"><value>{0:N0} {0:file|file} · aggiornato alle {1}</value></data>
+  <data name="IndexCardSavedDetail" xml:space="preserve"><value>{0:N0} {0:file|file} · salvato alle {1} · una chat in questa cartella lo aggiorna</value></data>
   <data name="IndexCardProgress" xml:space="preserve"><value>{0:N0} di {1:N0} {1:file letto|file letti}</value></data>
   <data name="IndexCardNotBuiltDetail" xml:space="preserve"><value>L'indicizzazione in background è disattivata: l'agente cerca per parole chiave.</value></data>
   <data name="IndexCardStoppedDetail" xml:space="preserve"><value>L'ultimo passaggio non è terminato: l'indice è incompleto.</value></data>
@@ -1489,6 +1491,7 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="ImportSkipSecretNotFound" xml:space="preserve"><value>segreto non trovato in ~/.continue/.env né nell'ambiente: inserisci la chiave nelle impostazioni</value></data>
   <data name="ImportSkipContinueBuiltinCommand" xml:space="preserve"><value>comando integrato di Continue</value></data>
   <data name="ImportSkipAlreadyConfigured" xml:space="preserve"><value>già impostato</value></data>
+  <data name="ImportSkipSameNameEarlier" xml:space="preserve"><value>un server con lo stesso nome compare prima in questo file, ed è quello che viene mantenuto</value></data>
   <data name="ImportSkipEmpty" xml:space="preserve"><value>vuoto</value></data>
   <data name="ImportSkipUnknownKey" xml:space="preserve"><value>una chiave che lo strumento non conosce</value></data>
   <data name="ImportSkipNoEquivalent" xml:space="preserve"><value>nessun equivalente in Inferpal</value></data>

@@ -7,7 +7,7 @@ over in one command, in Visual Studio and in VS Code alike.
 ```text
 /import continue          reads ~/.continue/config.yaml (or the older config.json)
 /import roo               reads the file Roo Code's settings Export wrote (roo-code-settings.json)
-/import roo <file>        any other path
+/import roo <file>        any other path (a relative one is read from the folder you have open)
 ```
 
 Nothing is written at first. A card lists, line by line, what Inferpal can take — each with a box — and, folded
@@ -29,7 +29,7 @@ ticked), `apply all`, or `apply 1,3,5`.
 | The chat model's context length | The context window |
 | Rules, a model's system message, Roo's custom instructions | Sections added to the custom system prompt; a rule scoped to files keeps its scope, written in the text the model reads |
 | Prompts and custom commands; Roo's custom modes and its additions to the built-in modes | Commands in this machine's prompts folder, usable in every workspace; `{{{ input }}}` becomes what you type after the command |
-| MCP servers | MCP servers (and MCP is turned on) |
+| MCP servers | MCP servers (and MCP is turned on); one left unnamed is named after the package it runs (`npx -y @scope/server-x` → `server-x`) |
 | Documentation sites | @Docs sources — index them with `/docs reindex` |
 | Roo's allowed and denied commands | Permission rules for `run_command` — allowed ones are **unticked**: they let a command run without asking, so the choice is yours. Denied ones go first, so no allow rule can override them |
 | Roo's interface language, when Inferpal is translated into it | The interface language |

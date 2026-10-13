@@ -49,7 +49,11 @@ internal static class ImportCommandHandler
         else
         {
             file = typed.StartsWith('~') ? context.Home + typed[1..] : typed;
-            file = Path.GetFullPath(file);
+            // ⚠ Against the workspace, never the process's folder: Visual Studio's extension host keeps the folder it
+            // started in, and a path typed from the solution's root was "not found" right beside the file.
+            file = Path.IsPathFullyQualified(file) || context.WorkspaceRoot is not { } root
+                ? Path.GetFullPath(file)
+                : Path.GetFullPath(file, root);
             if (!File.Exists(file)) return new(Strings.ImportFileMissing(file));
         }
 

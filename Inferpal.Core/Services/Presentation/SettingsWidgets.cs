@@ -62,6 +62,8 @@ internal static class SettingsWidgets
                                       s.Total > 0 ? Strings.IndexCardProgress(s.Done, s.Total) : string.Empty)
             : s.Failure is { } why ? ("failed",   Strings.IndexCardFailed, Strings.IndexCardFailedDetail(why.TrimEnd('.', ' ')))
             : s.Completed          ? ("ready",    Strings.IndexCardReady,  Strings.IndexCardFilesUpdated(s.Files, At(s.UpdatedAt, now)))
+            // Read from disk, not kept up to date here: never "up to date".
+            : s.Saved              ? ("saved",    Strings.IndexCardSaved,  Strings.IndexCardSavedDetail(s.Files, At(s.UpdatedAt, now)))
             : s.Stopped            ? ("stopped",  Strings.IndexCardStopped, Strings.IndexCardStoppedDetail)
             :                        ("notBuilt", Strings.IndexCardNotBuilt, ragEnabled ? string.Empty : Strings.IndexCardNotBuiltDetail);
 
@@ -69,7 +71,7 @@ internal static class SettingsWidgets
         var notes = new List<string>();
         var oversizeNote = string.Empty;
         IReadOnlyList<string> oversizeFiles = [];
-        if (state is "ready" or "stopped" or "failed")
+        if (state is "ready" or "saved" or "stopped" or "failed")
         {
             if (s.SkippedFolder is { } gap) notes.Add(gap.Sentence());
             if (s.Model is not null && s.Unembedded > 0) notes.Add(Strings.IndexCardHoles(s.Unembedded, s.Chunks));
