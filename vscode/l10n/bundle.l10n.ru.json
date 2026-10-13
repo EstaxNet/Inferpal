@@ -158,5 +158,6 @@
   "Full documentation (in English): {0}": "Полная документация (на английском): {0}",
   "Your message was not sent and is back in the input box.": "Сообщение не отправлено и возвращено в поле ввода.",
   "The backend is unreachable — nothing was sent.": "Бэкенд недоступен — ничего не отправлено.",
-  "The backend refused the connection check — nothing was sent. Check the API key and the URL in the settings.": "Бэкенд отклонил проверку подключения — ничего не отправлено. Проверьте ключ API и URL в настройках."
+  "The backend refused the connection check — nothing was sent. Check the API key and the URL in the settings.": "Бэкенд отклонил проверку подключения — ничего не отправлено. Проверьте ключ API и URL в настройках.",
+  "The assistant stopped before answering — it restarted or closed. Ask again.": "Ассистент остановился, не ответив — он перезапустился или закрылся. Спросите ещё раз."
 }

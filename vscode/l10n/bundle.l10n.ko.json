@@ -158,5 +158,6 @@
   "Full documentation (in English): {0}": "전체 문서(영어): {0}",
   "Your message was not sent and is back in the input box.": "메시지가 전송되지 않았으며 입력란으로 되돌아갔습니다.",
   "The backend is unreachable — nothing was sent.": "백엔드에 연결할 수 없습니다. 아무것도 전송되지 않았습니다.",
-  "The backend refused the connection check — nothing was sent. Check the API key and the URL in the settings.": "백엔드가 연결 확인을 거부했습니다. 아무것도 전송되지 않았습니다. 설정에서 API 키와 URL을 확인하세요."
+  "The backend refused the connection check — nothing was sent. Check the API key and the URL in the settings.": "백엔드가 연결 확인을 거부했습니다. 아무것도 전송되지 않았습니다. 설정에서 API 키와 URL을 확인하세요.",
+  "The assistant stopped before answering — it restarted or closed. Ask again.": "어시스턴트가 응답하기 전에 중지되었습니다(다시 시작되었거나 종료됨). 다시 질문하세요."
 }

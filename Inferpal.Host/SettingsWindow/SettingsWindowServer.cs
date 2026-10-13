@@ -150,6 +150,7 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
             secrets       = false,
             // The window shows the index; a chat builds it.
             indexesTheFolder = false,
+            autoSaveSlot     = false,
         }, ct);
 
     /// <summary>A free loopback port, taken: asked of the system, then bound — retried if another process took it between.</summary>

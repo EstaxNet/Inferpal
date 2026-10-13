@@ -530,7 +530,41 @@ internal sealed class McpToolService : IAsyncDisposable
         var state = await flow.AuthorizeAsync(server, _tokenStore.Get(serverName), ct).ConfigureAwait(false);
         _tokenStore.Save(serverName, state);
 
-        await RefreshAsync().ConfigureAwait(false);
+        // ⚠ Only the server just signed in to: a full refresh tears every server down, and an agent run in the middle of
+        // a call to another one had its client disposed under it — because someone pressed "Sign in" in the settings.
+        await RestartServerAsync(cfg).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Stops ONE server (when it runs) and starts it again from <paramref name="cfg"/>, at its place in the list: the
+    /// others keep running, their calls in flight included.
+    /// </summary>
+    internal async Task RestartServerAsync(McpServerConfig cfg)
+    {
+        await _gate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            if (_disposed) return;
+            var at  = _servers.FindIndex(e => string.Equals(e.Config.Name, cfg.Name, StringComparison.Ordinal));
+            if (at >= 0)
+            {
+                // Out of the list before it is closed: its Closed handler reconnects only an entry still listed.
+                var old = _servers[at];
+                _servers = [.. _servers.Where(e => e != old)];
+                await old.Client.DisposeAsync().ConfigureAwait(false);
+            }
+
+            var (entry, failure) = cfg.Enabled ? await StartServerAsync(cfg).ConfigureAwait(false) : (null, null);
+            if (entry is not null) _servers.Insert(at >= 0 ? Math.Min(at, _servers.Count) : _servers.Count, entry);
+            var failed = _failed.Where(f => !string.Equals(f.Name, cfg.Name, StringComparison.Ordinal)).ToList();
+            if (failure is not null) failed.Add(failure);
+            _failed = failed;
+            RebuildSnapshot();
+        }
+        finally
+        {
+            _gate.Release();
+        }
     }
 
     /// <summary>What the sign-in to <paramref name="cfg"/> starts from — with the metadata address the server announced

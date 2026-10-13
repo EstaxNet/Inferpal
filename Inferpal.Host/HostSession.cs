@@ -47,6 +47,10 @@ internal sealed class HostSession : IDisposable
     /// shows the index saved for it, whatever setting is saved — a pass starts on the page's Rebuild only.</summary>
     public bool IndexesTheFolder { get; init; } = true;
 
+    /// <summary>The adapter keeps the workspace's last conversation in VS Code's auto-save slot
+    /// (<see cref="InitializeParams.AutoSaveSlot"/>); false: this session never empties it.</summary>
+    public bool KeepsAutoSave { get; init; } = true;
+
     /// <summary>
     /// Folders open in the editor that <see cref="RootDir"/> does not hold — stated to the model with the root. Replaced
     /// whole by <c>workspace/folders</c> and read once per prompt build, so the next question already has it.

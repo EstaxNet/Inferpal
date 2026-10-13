@@ -160,6 +160,8 @@ internal sealed partial class HostServer
                 case SlashCommandId.Model:
                     if (parts.Length < 2)
                         return new SlashCommandResult(true, Strings.SlashModelCurrent(s.Config.DefaultModel));
+                    if (ModelsCommandHandler.RefusedForChat(parts[1]) is { } notForChat)
+                        return new SlashCommandResult(true, notForChat);
                     s.Config.DefaultModel = parts[1];
                     s.Config.Save();
                     return new SlashCommandResult(true, await ModelsCommandHandler.SwitchMessageAsync(s.Client, parts[1], cts.Token),

@@ -36,8 +36,22 @@ export function hostUnavailableMessage(): string {
  * (translated) text. Never `String(err)` — an Error's toString() prefixes an English "Error: ".
  */
 export function hostErrorText(err: unknown): string {
+  // ⚠ The connection to the host lost while a request waited — a restart (settings, a new root) or a crash: the library's
+  // own English sentence ("Pending response rejected since connection got disposed") names no cause and no remedy.
+  if (isConnectionLost(err)) {
+    return t('The assistant stopped before answering — it restarted or closed. Ask again.');
+  }
   const raw = (err instanceof Error ? err.message : String(err)).trim();
   return raw.length > 0 ? raw : t('The command failed.');
+}
+
+/** vscode-jsonrpc's codes for a request that the connection's end cut short: pending when it closed (-32097), or sent
+ *  on a connection already closed (-32096). */
+const CONNECTION_LOST_CODES = new Set([-32097, -32096]);
+
+function isConnectionLost(err: unknown): boolean {
+  const code = (err as { code?: unknown } | null)?.code;
+  return typeof code === 'number' && CONNECTION_LOST_CODES.has(code);
 }
 
 /**

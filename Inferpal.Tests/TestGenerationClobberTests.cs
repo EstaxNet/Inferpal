@@ -102,6 +102,36 @@ public sealed class TestGenerationClobberTests : IDisposable
         return (source, test);
     }
 
+    // ── Why it failed ────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// ⚠ A failed request says its cause, an empty reply names its model: both became "Test generation failed. Check the
+    /// model and try again" — the request that did not fit the window (its composition in the server's refusal), a
+    /// backend that does not answer, all sent the user to check the model.
+    /// </summary>
+    [Fact]
+    public async Task AFailedRequest_SaysItsCause_AndAnEmptyReply_NamesItsModel()
+    {
+        var (source, _) = Fixture("");
+
+        var refused = new FakeInferenceProvider
+        {
+            OnChat = (_, _) => throw new InvalidOperationException("The request does not fit the model's window: 9,000 tokens for 8,192."),
+        };
+        var plan = await TestGenerationPlanner.PlanAsync(refused, "m", source, "public class Widget { }", CancellationToken.None);
+        Assert.False(plan.Ok);
+        Assert.Equal(Strings.TestsGenerateFailedBecause("The request does not fit the model's window: 9,000 tokens for 8,192."), plan.Refusal);
+
+        var empty = Model("   ");
+        plan = await TestGenerationPlanner.PlanAsync(empty, "m", source, "public class Widget { }", CancellationToken.None);
+        Assert.Equal(Strings.MsgEmptyResponseFrom("m", empty.ServerAddress), plan.Refusal);
+
+        // Reference arm: a reply that is a test file is written, with no refusal.
+        plan = await TestGenerationPlanner.PlanAsync(Model("public class WidgetTests { }"), "m", source, "public class Widget { }", CancellationToken.None);
+        Assert.True(plan.Ok);
+        Assert.Null(plan.Refusal);
+    }
+
     // ── The defect ───────────────────────────────────────────────────────────
 
     [Fact]

@@ -1025,6 +1025,57 @@ public sealed class AcpAgentTests : IDisposable
         Assert.Equal(AcpRpc.NotFound, r.GetProperty("error").GetProperty("code").GetInt32());
     }
 
+    /// <summary>
+    /// ⚠ A thread's <c>/model</c> is the thread's, as its selector is, and refused as the selector refuses: through the
+    /// host it saved the default model of every editor, and an embedding model typed by hand was taken.
+    /// </summary>
+    [Fact]
+    public async Task AThreadsModelCommand_ChangesThatThreadOnly_AndRefusesWhatTheSelectorRefuses()
+    {
+        // The settings file every editor reads: the thread's pick is held in memory (models/useForSession), never saved.
+        var settings = Path.Combine(_root, $"settings-{Guid.NewGuid():N}.json");
+        await using var h = await StartAsync(
+            fake: f => f.ModelNames = ["test-model", "other-model", "nomic-embed-text"],
+            host: provider => new HostServer(_ => provider,
+                () => new InferpalConfig { RagEnabled = false, DefaultModel = "test-model", SavePathForTests = settings }));
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+
+        await PromptAsync(h, sid, "/model other-model");
+        Assert.Contains(Strings.SlashModelChanged("other-model"), h.Client.Said(sid), StringComparison.Ordinal);
+        Assert.False(File.Exists(settings) && File.ReadAllText(settings).Contains("other-model", StringComparison.Ordinal),
+                     "the thread's /model was saved as every editor's default model");
+
+        await PromptAsync(h, sid, "/model nomic-embed-text");
+        Assert.Contains(Strings.SlashModelIsEmbedding("nomic-embed-text"), h.Client.Said(sid), StringComparison.Ordinal);
+        await PromptAsync(h, sid, "/model no-such-model");
+        Assert.Contains(Strings.SlashModelNotServed("no-such-model"), h.Client.Said(sid), StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// ⚠ A load that throws — a damaged session file — leaves no half-open session: kept registered and empty, the next
+    /// <c>session/load</c> of the id answered with success on an empty thread, and its next prompt saved over the id.
+    /// </summary>
+    [Fact]
+    public async Task ADamagedSession_IsNotLeftHalfOpen_WhenItsLoadFails()
+    {
+        var sid = "acp-damaged-" + Guid.NewGuid().ToString("N");
+        var dir = Services.Persistence.ConversationStore.OverrideDirForTests!;
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, sid + ".json"), "{ this is not a session");
+
+        await using var h = await StartAsync();
+        await h.Client.RequestAsync("initialize", Init());
+        var first = await h.Client.RequestAsync("session/load", new { sessionId = sid, cwd = _root, mcpServers = Array.Empty<object>() });
+        Assert.True(first.TryGetProperty("error", out _), first.GetRawText());   // WITNESS: the damaged file fails its load
+
+        // Asked again, it fails again: nothing of the first attempt answers in its place.
+        var second = await h.Client.RequestAsync("session/load", new { sessionId = sid, cwd = _root, mcpServers = Array.Empty<object>() });
+        Assert.True(second.TryGetProperty("error", out _), second.GetRawText());
+        var mode = await h.Client.RequestAsync("session/set_mode", new { sessionId = sid, modeId = "plan" });
+        Assert.True(mode.TryGetProperty("error", out _), "a session whose load failed is still served: " + mode.GetRawText());
+    }
+
     [Fact]
     public async Task TheModeAndTheModel_AreOptionsKeptInStep()
     {

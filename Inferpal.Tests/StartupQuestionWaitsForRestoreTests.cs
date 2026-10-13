@@ -31,7 +31,7 @@ public sealed class StartupQuestionWaitsForRestoreTests
         Assert.True(noHost > 0, "the host check of send() was not found: this test would have measured nothing.");
         Assert.True(starting > 0 && starting < noHost, "a question sent while the host starts reaches the host checks.");
         var branch = send[starting..noHost];
-        Assert.Contains("this.queuedPrompts.push(prompt)", branch, StringComparison.Ordinal);
+        Assert.Contains("this.queuedPrompts.push({ text: prompt, typed })", branch, StringComparison.Ordinal);
         Assert.Contains("return;", branch, StringComparison.Ordinal);
     }
 

@@ -99,6 +99,16 @@ internal partial class InferpalToolWindowData
         return item;
     }
 
+    /// <summary>
+    /// The visible part of a FAILED turn's answer stays on screen as a notice: what the model wrote before the failure,
+    /// never its answer. Kept as an answer, it was saved as one, and a reload handed the model half a reply as what it
+    /// had said; VS Code keeps it the same way.
+    /// </summary>
+    private static void KeepAsNotice(ChatMessageItem? partial)
+    {
+        if (partial is not null) partial.ToolName = Services.Persistence.SessionManager.NoticeMarker;
+    }
+
     private void MarkRegeneratable(ChatMessageItem msg)
     {
         if (_lastRegenerableMsg is not null)

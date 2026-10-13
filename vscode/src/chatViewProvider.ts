@@ -28,6 +28,8 @@ const STATUS_POLL_MS = 30_000;
 
 /** A context chip waiting for the next question: its label, its content, and the file it came from. */
 type PendingAttachment = { name: string; content: string; sourcePath?: string };
+/** A regenerated question's turn, as it was sent: the prompt, whether it was a code action, the relevant-code query. */
+type TurnReplay = { prompt: string; codeAction: boolean; query?: string };
 
 export class ChatViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewId = 'inferpal.chat';
@@ -80,7 +82,16 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private pendingAttachments: PendingAttachment[] = [];
   /** What the last question was sent WITH — its words before the "📎 Attached" line, and its chips —, tied to its
    *  bubble: Regenerate resends that, as the Visual Studio window resends `_lastSent`. A reloaded bubble has its words. */
-  private lastSent: { question: WvTranscriptItem; text: string; attachments: PendingAttachment[] } | undefined;
+  private lastSent: {
+    question: WvTranscriptItem;
+    /** The prompt the turn sent (an /explain's instruction and code excerpt), and how: replayed as such. */
+    text: string;
+    codeAction: boolean;
+    query?: string;
+    /** The question as its bubble showed it when the turn started (an /explain's line naming the excerpt included). */
+    shown: string;
+    attachments: PendingAttachment[];
+  } | undefined;
   /** The chips a regenerated question carries again — never the ones waiting in the composer for the next question. */
   private resendAttachments: PendingAttachment[] | undefined;
   /** Files pinned into every request, as the host reports them. */
@@ -223,7 +234,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * "the conversation on screen", was saved over `last_session`, and the conversation it should have restored was gone.
    */
   private hostStarting = false;
-  private readonly queuedPrompts: string[] = [];
+  /** `typed`: the composer's text, given back if a refusal meets it once the start is over. */
+  private readonly queuedPrompts: { text: string; typed: boolean }[] = [];
 
   /** Called by the activator just before it spawns the host. */
   onHostStarting(): void {
@@ -285,8 +297,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     const queued = this.queuedPrompts.splice(0);
     if (queued.length > 0) {
       void (async () => {
-        for (const prompt of queued) {
-          await this.send(prompt);
+        for (const q of queued) {
+          await this.send(q.text, q.typed);
         }
       })();
     }
@@ -1766,7 +1778,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * @param typed The composer's text: the webview cleared the box as it sent, so a refusal before the turn starts gives
    * it back. Any other gesture (a card, Undo, the editor's menu, Regenerate) leaves the box alone: it may hold a draft.
    */
-  private async send(text: string, typed = false): Promise<void> {
+  private async send(text: string, typed = false, replay?: TurnReplay): Promise<void> {
     const prompt = text.trim();
     const host = this.getHost();
     if (!prompt) {
@@ -1779,8 +1791,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       return;
     }
     if (this.hostStarting) {
-      this.queuedPrompts.push(prompt);
-      this.post({ type: 'status', text: t('Inferpal is starting — your message is sent as soon as it is ready.') });
+      // ⚠ Said in the thread, and kept with its mark: as a status line — drawn during a turn only — the question left
+      // the box with no sign it waited; replayed without `typed`, a refusal after the start (no host, backend down)
+      // did not give it back, and the text was lost. Said once per start: the notice is not part of the conversation.
+      if (this.queuedPrompts.length === 0) {
+        this.sayOutOfTurn(t('Inferpal is starting — your message is sent as soon as it is ready.'));
+      }
+      this.queuedPrompts.push({ text: prompt, typed });
       return;
     }
     if (!host?.isRunning) {
@@ -1821,8 +1838,17 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // handed "/models" to the model as something it had been asked (Visual Studio shows no question for one).
     const question: WvTranscriptItem = { role: 'user', text: prompt, timestamp };
     this.append(question);
-    const history = this.appendHistory(prompt);
+    // A regenerated question is not typed again: the prompt history keeps what the user wrote.
+    const history = replay ? this.historyEntries() : this.appendHistory(prompt);
     this.post({ type: 'turnStarted', prompt, timestamp, history });
+
+    // ⚠ A regenerated question is replayed with what it carried — the same prompt, as a code action if it was one —
+    // never dispatched again from its words: resent as words, an /explain answer came back as an agent turn (tools,
+    // the chat model) with the whole excerpt pasted into the question and the prompt history.
+    if (replay) {
+      await this.chatTurn(replay.prompt, host, replay.codeAction, replay.query);
+      return;
+    }
 
     // In-place code actions (/fix /refactor /doc): rewrite the active editor's file (or
     // selection) with a native per-hunk preview — never sent to the chat history.
@@ -2148,7 +2174,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
       const asked = [...this.transcript].reverse().find((m) => m.role === 'user');
       if (asked) {
-        this.lastSent = { question: asked, text: prompt, attachments: [...chips] };
+        this.lastSent = { question: asked, text: prompt, codeAction, query, shown: asked.text, attachments: [...chips] };
       }
       if (named.length > 0) {
         this.nameAttachmentsInQuestion(named);
@@ -2172,6 +2198,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         // ⚠ The question stays a question: an error the host ANSWERS comes after the question entered its history,
         // which keeps it (like the Visual Studio window), so Regenerate must take it back. Marked a notice, it was
         // resent on top of itself, and a reload dropped what the live history still held.
+        this.keepFailedPartial(finalText);
         this.append({ role: 'error', text: result.error, timestamp: ChatViewProvider.now() });
       } else if (result.cancelled) {
         // Stopped before the question entered the host's history (during the context build): a notice, like a refused
@@ -2227,13 +2254,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     } catch (err) {
       // The request itself failed (host crashed or restarted): no one waits for these cards any more.
       this.dismissAllPending();
-      const message = err instanceof Error ? err.message : String(err);
+      const message = ChatViewProvider.errorText(err);
       // A REFUSED request (a turn already in flight, a host that died) never reached the host's history: its
       // question is a notice, so Regenerate does not take back the exchange before it and a restart does not replay it.
       const asked = [...this.transcript].reverse().find((m) => m.role === 'user');
       if (asked) {
         asked.notice = true;
       }
+      this.keepFailedPartial(this.streamText);
       this.append({ role: 'error', text: message, timestamp: ChatViewProvider.now() });
       this.busy = false;
       this.post({
@@ -2344,7 +2372,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.regenerating = true;
     this.resendAttachments = sent?.attachments;
     try {
-      await this.send(sent?.text ?? question.text);
+      await this.send(sent?.shown ?? question.text, false,
+                      sent && { prompt: sent.text, codeAction: sent.codeAction, query: sent.query });
     } finally {
       this.regenerating = false;
       this.resendAttachments = undefined;
@@ -2366,6 +2395,17 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     question.text = question.text.length > 0 ? `${question.text}\n\n${recap}` : recap;
     // The bubble was drawn by turnStarted; nothing streams yet, so a rebuild costs no partial answer.
     this.hydrate();
+  }
+
+  /**
+   * The visible part of a FAILED turn's answer stays, as a notice: drawn live, it was missing from the transcript — gone
+   * at the next redraw, never saved — and Visual Studio kept it as an answer, which a reload handed to the model. A
+   * notice is what both keep: on screen, never the model's answer.
+   */
+  private keepFailedPartial(partial: string): void {
+    if (partial.trim().length > 0) {
+      this.append({ role: 'assistant', text: partial, timestamp: ChatViewProvider.now(), notice: true });
+    }
   }
 
   private append(item: WvTranscriptItem): void {
@@ -2530,7 +2570,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         path: document.uri.fsPath,
       });
     } catch (err) {
-      finish('error', err instanceof Error ? err.message : String(err));
+      finish('error', ChatViewProvider.errorText(err));
       return;
     }
 

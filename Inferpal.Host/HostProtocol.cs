@@ -31,6 +31,9 @@
 /// <param name="Secrets">The adapter serves the reverse <c>secrets/*</c> requests (an OS keychain) off Windows.</param>
 /// <param name="IndexesTheFolder">With semantic search on, the host indexes the folder on its own, as a chat needs.
 /// False for the settings window, which shows the index saved for the folder and builds none.</param>
+/// <param name="AutoSaveSlot">The adapter keeps the workspace's last conversation in VS Code's auto-save slot, restored at
+/// its next start. False for an Agent Client Protocol client and the settings window: neither writes that slot, so a
+/// conversation they discard (<c>/clear</c>, <c>/template</c>) is not the one it holds.</param>
 internal sealed record InitializeParams(
     string    RootDir,
     string?   Locale          = null,
@@ -43,7 +46,8 @@ internal sealed record InitializeParams(
     bool      ToolEvents      = false,
     bool      ReasoningChunks = false,
     bool      Secrets         = true,
-    bool      IndexesTheFolder = true);
+    bool      IndexesTheFolder = true,
+    bool      AutoSaveSlot     = true);
 
 /// <summary>`workspace/folders` — the editor's other workspace folders changed (a folder added or removed while the
 /// root stayed): restarting the host for it would kill the turn in flight, its shells and MCP servers.</summary>

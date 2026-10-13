@@ -158,5 +158,6 @@
   "Full documentation (in English): {0}": "Vollständige Dokumentation (auf Englisch): {0}",
   "Your message was not sent and is back in the input box.": "Deine Nachricht wurde nicht gesendet und steht wieder im Eingabefeld.",
   "The backend is unreachable — nothing was sent.": "Das Backend ist nicht erreichbar — es wurde nichts gesendet.",
-  "The backend refused the connection check — nothing was sent. Check the API key and the URL in the settings.": "Das Backend hat die Verbindungsprüfung abgelehnt — es wurde nichts gesendet. Prüfe den API-Schlüssel und die URL in den Einstellungen."
+  "The backend refused the connection check — nothing was sent. Check the API key and the URL in the settings.": "Das Backend hat die Verbindungsprüfung abgelehnt — es wurde nichts gesendet. Prüfe den API-Schlüssel und die URL in den Einstellungen.",
+  "The assistant stopped before answering — it restarted or closed. Ask again.": "Der Assistent hat vor der Antwort aufgehört — er wurde neu gestartet oder geschlossen. Frag erneut."
 }

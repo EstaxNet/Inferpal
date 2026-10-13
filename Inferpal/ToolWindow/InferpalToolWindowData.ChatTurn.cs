@@ -613,6 +613,7 @@ internal partial class InferpalToolWindowData
                 // what it had said, and a reload handed it back.
                 if (agentFailed)
                 {
+                    KeepAsNotice(streamingMsg);
                     var failedMsg = ChatMessageItem.NoticeMsg(agentFinalResponse);
                     ApplyItemTheme(failedMsg);
                     Messages.Insert(Messages.Count - 2, failedMsg);
@@ -736,6 +737,7 @@ internal partial class InferpalToolWindowData
                 // Remove the live-status bubble (if any) before showing the error message.
                 RemoveStatusBubble();
                 streamingMsg = FinalizeStreamingBubble(streamingMsg);
+                KeepAsNotice(streamingMsg);
                 var errItem = ChatMessageItem.NoticeMsg(Strings.MsgError(msg));
                 ApplyItemTheme(errItem);
                 Messages.Insert(Messages.Count - 2, errItem);

@@ -408,6 +408,8 @@ internal static class Strings
     public static string TestsExtended(string fileName) =>
         Format(Get(nameof(TestsExtended)), fileName);
     public static string TestsGenerateFailed => Get(nameof(TestsGenerateFailed));
+    public static string TestsGenerateFailedBecause(string cause) =>
+        Format(Get(nameof(TestsGenerateFailedBecause)), cause);
     public static string TestsFileUnreadable(string fileName) =>
         Format(Get(nameof(TestsFileUnreadable)), fileName);
     public static string TestsFileUnsaved(string fileName) =>
@@ -1017,6 +1019,10 @@ internal static class Strings
     public static string SlashModelCurrent(string model) => Format(Get(nameof(SlashModelCurrent)), model);
     public static string SlashModelChanged(string model) => Format(Get(nameof(SlashModelChanged)), model);
     public static string SlashModelNotListed(string model) => Format(Get(nameof(SlashModelNotListed)), model);
+    public static string SlashModelIsEmbedding(string model) =>
+        Format(Get(nameof(SlashModelIsEmbedding)), model);
+    public static string SlashModelNotServed(string model) =>
+        Format(Get(nameof(SlashModelNotServed)), model);
     public static string PromptsShadowedByBuiltIn(string command) => Format(Get(nameof(PromptsShadowedByBuiltIn)), command);
     public static string PromptsShadowedByConfig(string command) => Format(Get(nameof(PromptsShadowedByConfig)), command);
     public static string SlashCategoryCustom => Get(nameof(SlashCategoryCustom));

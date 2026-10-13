@@ -90,6 +90,14 @@ internal static class ModelsCommandHandler
     /// nothing. The listing is bounded so an unreachable backend does not hold the command for the
     /// client's own timeout.
     /// </remarks>
+    /// <summary>
+    /// Why <paramref name="model"/> cannot become the chat model, or <c>null</c>. ⚠ Every list offered for the chat leaves
+    /// the embedding models out; <c>/model</c>, which takes a name typed by hand, saved one: "Model changed", then every
+    /// question refused by the server.
+    /// </summary>
+    public static string? RefusedForChat(string model) =>
+        ModelCatalog.IsEmbeddingModel(model) ? Strings.SlashModelIsEmbedding(model) : null;
+
     public static async Task<string> SwitchMessageAsync(IInferenceProvider client, string model, CancellationToken ct)
     {
         var changed = Strings.SlashModelChanged(model);

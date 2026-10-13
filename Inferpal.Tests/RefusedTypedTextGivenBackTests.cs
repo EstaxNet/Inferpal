@@ -63,6 +63,26 @@ public sealed class RefusedTypedTextGivenBackTests
         }
     }
 
+    /// <summary>
+    /// ⚠ A question typed while the host starts waits with its mark, and the wait is said in the thread: replayed without
+    /// `typed`, a refusal after the start dropped the text; said as a status line — drawn during a turn only — the
+    /// question left the box with no sign at all.
+    /// </summary>
+    [Fact]
+    public void AQuestionTypedDuringTheStart_WaitsWithItsMark_AndTheWaitIsSaid()
+    {
+        var send = WebviewRebuildTests.Body(Provider(), "private async send(");
+        var starting = send.IndexOf("if (this.hostStarting) {", StringComparison.Ordinal);
+        Assert.True(starting > 0, "send() no longer queues during the start: the rule measures nothing.");   // WITNESS
+        var branch = send[starting..send.IndexOf("return;", starting, StringComparison.Ordinal)];
+        Assert.Contains("this.queuedPrompts.push({ text: prompt, typed });", branch, StringComparison.Ordinal);
+        Assert.Contains("if (this.queuedPrompts.length === 0) {", branch, StringComparison.Ordinal);
+        Assert.Contains("this.sayOutOfTurn(t('Inferpal is starting — your message is sent as soon as it is ready.'));", branch, StringComparison.Ordinal);
+        Assert.DoesNotContain("type: 'status'", branch, StringComparison.Ordinal);
+
+        Assert.Contains("await this.send(q.text, q.typed);", WebviewRebuildTests.Body(Provider(), "private releaseQueuedPrompts("), StringComparison.Ordinal);
+    }
+
     private static int Count(string text, string what)
     {
         var n = 0;

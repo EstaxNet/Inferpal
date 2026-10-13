@@ -36,11 +36,13 @@ public class RegenerateKeepsQueuedChipsTests
         var regenerate = WebviewRebuildTests.Body(Provider(), "private async regenerate(");
         Assert.Contains("this.lastSent?.question === question", regenerate, StringComparison.Ordinal);   // tied to its bubble
         Assert.Contains("this.resendAttachments = sent?.attachments;", regenerate, StringComparison.Ordinal);
-        Assert.Contains("await this.send(sent?.text ?? question.text);", regenerate, StringComparison.Ordinal);
+        Assert.Contains("await this.send(sent?.shown ?? question.text, false,", regenerate, StringComparison.Ordinal);
+        Assert.Contains("sent && { prompt: sent.text, codeAction: sent.codeAction, query: sent.query });", regenerate, StringComparison.Ordinal);
 
         // What is resent is recorded where the turn consumes it: the words before the "📎 Attached" line, the chips sent.
         var turn = WebviewRebuildTests.Body(Provider(), "private async chatTurn(");
-        var record = turn.IndexOf("this.lastSent = { question: asked, text: prompt, attachments: [...chips] };", StringComparison.Ordinal);
+        var record = turn.IndexOf("this.lastSent = { question: asked, text: prompt, codeAction, query, shown: asked.text, attachments: [...chips] };",
+                                  StringComparison.Ordinal);
         var naming = turn.IndexOf("this.nameAttachmentsInQuestion(named);", StringComparison.Ordinal);
         Assert.True(record > 0 && naming > record, "the question's words are recorded after the chips' names were added to it");
     }

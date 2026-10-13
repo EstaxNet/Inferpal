@@ -12,7 +12,8 @@ namespace Inferpal.Tests;
 /// <remarks>
 /// Regenerate resent the bubble's words with no model and no attachment: a <c>/explain</c>, a <c>/review</c> or a
 /// context-menu action lost the code it was about and came back as an ordinary agent turn — agent model, tools,
-/// approvals —, and a question lost the file attached to it. VS Code replays the action itself. Read on the syntax tree:
+/// approvals —, and a question lost the file attached to it. VS Code replays what was sent the same way
+/// (<c>RegenerateReplaysACodeActionTests</c>). Read on the syntax tree:
 /// the view-model needs a live Visual Studio.
 /// </remarks>
 public sealed class RegenerateResendsWhatWasSentTests

@@ -55,6 +55,19 @@ internal sealed record TestGenerationPlan(
     public static TestGenerationPlan OnlyReasoning(string testPath, bool extended, string model) =>
         new(false, testPath, Path.GetFileName(testPath), extended, NoChange: false, string.Empty,
             Refusal: Strings.MsgOnlyReasoningFrom(model));
+
+    /// <summary>
+    /// The request to the model failed, and the cause is said: the server's refusal, the request that does not fit the
+    /// window (its composition), a backend that does not answer. "Check the model" sent the user to the wrong place.
+    /// </summary>
+    public static TestGenerationPlan RequestFailed(string testPath, bool extended, string cause) =>
+        new(false, testPath, Path.GetFileName(testPath), extended, NoChange: false, string.Empty,
+            Refusal: Strings.TestsGenerateFailedBecause(cause));
+
+    /// <summary>The model answered nothing: said with the model and the server, as every other empty reply is.</summary>
+    public static TestGenerationPlan EmptyReply(string testPath, bool extended, string model, string server) =>
+        new(false, testPath, Path.GetFileName(testPath), extended, NoChange: false, string.Empty,
+            Refusal: Strings.MsgEmptyResponseFrom(model, server));
 }
 
 /// <summary>
@@ -161,7 +174,7 @@ internal static class TestGenerationPlanner
         catch (Exception ex)
         {
             Diagnostics.Swallow("TestGenerationPlanner.SendChat", ex);
-            return TestGenerationPlan.Failed(testPath, extend);
+            return TestGenerationPlan.RequestFailed(testPath, extend, Diagnostics.RootMessage(ex));
         }
 
         if (result.CutAtLimit)
@@ -175,7 +188,7 @@ internal static class TestGenerationPlanner
             return new TestGenerationPlan(false, testPath, testName, extend, NoChange: true, string.Empty);
 
         if (string.IsNullOrWhiteSpace(content))
-            return TestGenerationPlan.Failed(testPath, extend);
+            return TestGenerationPlan.EmptyReply(testPath, extend, model, client.ServerAddress);
 
         // ⚠ An extended file keeps its OWN line endings and final line break, like every other rewrite of a file: the
         // model writes LF without a final break, and both editors replace the whole file with this text — in a CRLF file

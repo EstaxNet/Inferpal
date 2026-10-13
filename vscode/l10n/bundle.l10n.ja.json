@@ -158,5 +158,6 @@
   "Full documentation (in English): {0}": "完全なドキュメント（英語）: {0}",
   "Your message was not sent and is back in the input box.": "メッセージは送信されず、入力欄に戻されました。",
   "The backend is unreachable — nothing was sent.": "バックエンドに接続できません。何も送信されていません。",
-  "The backend refused the connection check — nothing was sent. Check the API key and the URL in the settings.": "バックエンドが接続チェックを拒否しました。何も送信されていません。設定の API キーと URL を確認してください。"
+  "The backend refused the connection check — nothing was sent. Check the API key and the URL in the settings.": "バックエンドが接続チェックを拒否しました。何も送信されていません。設定の API キーと URL を確認してください。",
+  "The assistant stopped before answering — it restarted or closed. Ask again.": "アシスタントが応答前に停止しました (再起動または終了)。もう一度質問してください。"
 }

@@ -224,8 +224,8 @@ internal sealed class AcpAgent : IAsyncDisposable
         else
         {
             // Not gated: reading a conversation back needs no model server — the next turn says what is missing.
-            live = await OpenAsync(id, cwd, McpServers(p), ct, known: true);
-            if (!await live.LoadAsync(replay, ct))
+            (live, var loaded) = await OpenAndLoadAsync(id, cwd, McpServers(p), replay, ct);
+            if (!loaded)
             {
                 await CloseAsync(id);
                 throw AcpRpc.Error(AcpRpc.NotFound, Strings.AcpSessionNotFound(id));
@@ -366,10 +366,37 @@ internal sealed class AcpAgent : IAsyncDisposable
         if (!_evicted.TryRemove(id, out var kept) || !_opened.TryGetValue(id, out var was))
             return _sessions.TryGetValue(id, out s) ? s : throw new ArgumentException($"Unknown session '{id}'.");
 
-        var reopened = await OpenAsync(id, was.Cwd, was.Servers, ct, known: true);
-        await reopened.LoadAsync(replay: false, ct);
+        AcpSession reopened;
+        try { (reopened, _) = await OpenAndLoadAsync(id, was.Cwd, was.Servers, replay: false, ct); }
+        catch
+        {
+            // What it kept goes back: the next request about it reopens it again, in its mode, on its model.
+            _evicted.TryAdd(id, kept);
+            throw;
+        }
         await reopened.RestoreAsync(kept, ct);
         return reopened;
+    }
+
+    /// <summary>
+    /// Opens <paramref name="id"/> and reads back what it saved; <c>Loaded</c> is false when nothing was saved.
+    /// </summary>
+    /// <remarks>⚠ A load that THROWS (a damaged file) leaves no session behind: kept registered and empty, the next
+    /// <c>session/load</c> of this id answered with success on an empty thread, and its next prompt saved over the id.
+    /// </remarks>
+    private async Task<(AcpSession Session, bool Loaded)> OpenAndLoadAsync(
+        string id, string cwd, IReadOnlyList<McpSessionServerDto> servers, bool replay, CancellationToken ct)
+    {
+        var session = await OpenAsync(id, cwd, servers, ct, known: true);
+        try
+        {
+            return (session, await session.LoadAsync(replay, ct));
+        }
+        catch
+        {
+            await CloseAsync(id);
+            throw;
+        }
     }
 
     /// <param name="known">The client already has the id: anything but <c>session/new</c>.</param>

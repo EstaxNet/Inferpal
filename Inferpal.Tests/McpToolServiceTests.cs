@@ -482,4 +482,47 @@ public class McpToolServiceTests
         Assert.Equal("listing exploded", failure.Error);
         Assert.True(broken.Disposed);
     }
+
+    /// <summary>
+    /// ⚠ Signing in to one server restarts THAT server, never the others. <c>AuthorizeAsync</c> ended with a full refresh,
+    /// which tears every server down: an agent run in the middle of a call to another server had its client disposed
+    /// under it, because someone pressed "Sign in" — the settings window of both editors, without waiting for the turn.
+    /// </summary>
+    [Fact]
+    public async Task RestartingOneServer_LeavesTheOthersRunning()
+    {
+        var config  = new InferpalConfig { McpServersJson = """{ "a": { "command": "x" }, "b": { "command": "y" } }""" };
+        var clients = new List<FakeMcpClient>();
+        await using var svc = NewService(config, cfg =>
+        {
+            var c = new FakeMcpClient(cfg.Name) { ToolList = [Tool(cfg.Name + "_tool")] };
+            lock (clients) clients.Add(c);
+            return c;
+        });
+        config.McpEnabled = true;
+        await svc.RefreshAsync();
+        var firstA = clients.Single(c => c.ServerName == "a");
+        var b      = clients.Single(c => c.ServerName == "b");
+
+        await svc.RestartServerAsync(McpServerConfig.Parse(config.McpServersJson).Single(s => s.Name == "a"));
+
+        Assert.False(b.Disposed);                       // the other server keeps running, its calls with it
+        Assert.Equal(1, b.StartCount);
+        Assert.True(firstA.Disposed);                   // the signed-in one is started again
+        var secondA = clients.Last(c => c.ServerName == "a");
+        Assert.NotSame(firstA, secondA);
+        Assert.Equal(1, secondA.StartCount);
+        Assert.Equal(["a", "b"], svc.Status.Select(s => s.Name).ToList());   // at its place in the list
+    }
+
+    [Fact]
+    public void ASignIn_RestartsOnlyItsServer()
+    {
+        var code = ConventionCoverageTests.CodeOnly(System.IO.Path.Combine(ConventionCoverageTests.RepoRoot(),
+                                                                 "Inferpal.Core", "Services", "Mcp", "McpToolService.cs"));
+        var authorize = code[code.IndexOf("public async Task AuthorizeAsync(", StringComparison.Ordinal)..];
+        authorize = authorize[..authorize.IndexOf("internal async Task RestartServerAsync(", StringComparison.Ordinal)];
+        Assert.Contains("await RestartServerAsync(cfg).ConfigureAwait(false);", authorize, StringComparison.Ordinal);
+        Assert.DoesNotContain("RefreshAsync()", authorize, StringComparison.Ordinal);
+    }
 }

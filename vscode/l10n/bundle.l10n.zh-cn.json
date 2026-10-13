@@ -158,5 +158,6 @@
   "Full documentation (in English): {0}": "完整文档（英文）：{0}",
   "Your message was not sent and is back in the input box.": "消息未发送，已放回输入框。",
   "The backend is unreachable — nothing was sent.": "无法连接后端——未发送任何内容。",
-  "The backend refused the connection check — nothing was sent. Check the API key and the URL in the settings.": "后端拒绝了连接检查——未发送任何内容。请检查设置中的 API 密钥和 URL。"
+  "The backend refused the connection check — nothing was sent. Check the API key and the URL in the settings.": "后端拒绝了连接检查——未发送任何内容。请检查设置中的 API 密钥和 URL。",
+  "The assistant stopped before answering — it restarted or closed. Ask again.": "助手在回答前停止了（已重启或关闭）。请重新提问。"
 }

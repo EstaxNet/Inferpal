@@ -48,6 +48,15 @@ internal sealed class DocsIndexService
     /// <summary>Human-readable status of the last/ongoing indexing pass.</summary>
     public string Status     { get; private set; } = string.Empty;
 
+    /// <summary>
+    /// Raised once a pass ends, with its verdict (<see cref="Status"/>): the pages and chunks, or why there are none — a
+    /// private address refused, the site's refusals, a name that does not resolve, the page cap, the timeouts.
+    /// </summary>
+    /// <remarks>⚠ The verdict is a RESULT, not progress: a front-end that shows progress only while a turn runs —
+    /// VS Code's status line, an ACP client — never saw it, since <c>/docs add</c> answers before the crawl ends. The
+    /// source then stayed at 0 pages with no reason anywhere.</remarks>
+    public event Action<string>? PassFinished;
+
     /// <summary><c>true</c> while a crawl/embed pass is running.</summary>
     public bool   IsIndexing { get; private set; }
 
@@ -438,6 +447,8 @@ internal sealed class DocsIndexService
             lock (_passGate) _pass = null;
             IsIndexing = false;
             _indexLock.Release();
+            try { PassFinished?.Invoke(Status); }
+            catch (Exception ex) { Diagnostics.Swallow("DocsIndexService.PassFinished", ex); }
         }
     }
 

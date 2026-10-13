@@ -173,6 +173,8 @@ internal sealed class AcpSession : IAsyncDisposable
                 toolEvents      = true,
                 reasoningChunks = true,
                 secrets         = false,
+                // A thread lives in its own session file: VS Code's last conversation in this folder is not its own.
+                autoSaveSlot    = false,
             }, ct);
             session._defaultModel = init.DefaultModel;
             await session.AdoptDefaultModelAsync(ct);
@@ -295,6 +297,24 @@ internal sealed class AcpSession : IAsyncDisposable
         if (!AcpModes.Ids.Contains(modeId)) throw AcpRpc.Error(AcpRpc.InvalidParams, $"Unknown mode '{modeId}'.");
         await _link.InvokeWithParameterObjectAsync<bool>("plan/mode", new { enabled = modeId == AcpModes.Plan }, ct);
         _mode = modeId;
+    }
+
+    /// <summary><c>/model &lt;name&gt;</c> in a thread: the selector's pick, for this thread only — refused as the selector
+    /// refuses, and said why.</summary>
+    private async Task<string> PickModelAsync(string typed, string picked)
+    {
+        if (Services.Commands.ModelsCommandHandler.RefusedForChat(picked) is { } notForChat) return SayNotice(typed, notForChat);
+        try
+        {
+            await SetConfigOptionAsync(AcpModes.ModelOption, JsonSerializer.SerializeToElement(picked), CancellationToken.None);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Diagnostics.Swallow("AcpSession.PickModel", ex);
+            return SayNotice(typed, Strings.SlashModelNotServed(picked));
+        }
+        Update(new { sessionUpdate = "config_option_update", configOptions = ConfigOptions() });
+        return SayNotice(typed, Strings.SlashModelChanged(picked));
     }
 
     public async Task<List<object>> SetConfigOptionAsync(string configId, JsonElement value, CancellationToken ct)
@@ -544,6 +564,10 @@ internal sealed class AcpSession : IAsyncDisposable
         var head = typed.Split([' ', '\t', '\n'], 2)[0];
         if (EditorOnlyCommands.Contains(head)) return SayNotice(typed, Strings.AcpCommandNeedsEditor(head.ToLowerInvariant()));
         if (IsClear(head)) return SayNotice(typed, Strings.AcpClearStartNewThread);
+        // ⚠ A thread's /model is the thread's, as its selector is: through the host it saved the default model of every
+        // editor — Visual Studio, VS Code and the other threads changed model because one thread asked.
+        if (head.Equals("/model", StringComparison.OrdinalIgnoreCase) && typed.Split([' ', '\t', '\n'], StringSplitOptions.RemoveEmptyEntries) is [_, var picked, ..])
+            return await PickModelAsync(typed, picked);
         if (StoppedBeforeTheHost(typed)) return "cancelled";
 
         SlashCommandResult result;

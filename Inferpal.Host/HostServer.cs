@@ -129,6 +129,9 @@ internal sealed partial class HostServer : IDisposable
                                               value    = input.Default,
                                           }, ct));
         var docs     = new DocsIndexService(client, config);
+        // A crawl's verdict reaches the conversation as a lasting notice: as progress (chat/step) it was shown only during
+        // a turn, and /docs add, the settings page, /import answer before the crawl ends.
+        docs.PassFinished += verdict => Notify("host/notice", new { text = verdict });
         // ⚠ The documentation index only ever HYDRATES: nothing re-crawls it at start, so a host that does not load it
         // serves none of the sites indexed in an earlier session — search_docs not even offered, /docs listing them with
         // no page. Visual Studio loads it when its window opens. Never awaited: docs.db can be large.
@@ -165,6 +168,7 @@ internal sealed partial class HostServer : IDisposable
             ToolEvents   = p.ToolEvents,
             ReasoningChunks = p.ReasoningChunks,
             IndexesTheFolder = p.IndexesTheFolder,
+            KeepsAutoSave = p.AutoSaveSlot,
             Approval     = approval,
             TestCapture  = p.Debug ? new RpcTestDebugCapture(rpc) : null,
             Debug        = debug,
@@ -1777,6 +1781,9 @@ internal sealed partial class HostServer : IDisposable
     /// when it cannot, the thread says so — it would come back at the next start.</summary>
     private async Task ForgetAutoSaveAsync(HostSession s)
     {
+        // ⚠ Only the slot's own adapter discards what it holds: every host's store writes VS Code's slot, and an ACP thread's
+        // /clear or /template emptied, unarchived, the last conversation VS Code had in the same folder.
+        if (!s.KeepsAutoSave) return;
         try
         {
             if (await s.Store.ForgetAutoSaveOrSayAsync(s.RootDir, CancellationToken.None) is { } notice)
