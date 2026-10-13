@@ -119,8 +119,7 @@ internal partial class InferpalToolWindowData
         // SendCoreAsync's pre-flight, and the question it was about to resend was already gone.
         if (!_isBackendReachable)
         {
-            InsertThemed(ChatMessageItem.NoticeMsg(Strings.MsgConnectionLost(
-                _config.BaseUrl, InferenceProviderFactory.DisplayName(_config.Provider), _client.ConnectionRefusal)));
+            InsertThemed(ChatMessageItem.NoticeMsg(UnreachableText()));
             ScrollToBottom();
             return;
         }

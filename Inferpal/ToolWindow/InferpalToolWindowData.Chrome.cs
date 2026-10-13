@@ -45,7 +45,7 @@ internal partial class InferpalToolWindowData
 
     private string _labelNewConversation = string.Empty, _labelConversations = string.Empty, _labelMore = string.Empty,
                    _labelMenuSearch = string.Empty, _labelMenuExport = string.Empty, _labelMenuXray = string.Empty,
-                   _labelMenuSettings = string.Empty, _labelMenuStepMode = string.Empty;
+                   _labelMenuSettings = string.Empty, _labelMenuStepMode = string.Empty, _labelDocumentation = string.Empty;
     [DataMember] public string LabelNewConversation { get => _labelNewConversation; set => SetProperty(ref _labelNewConversation, value); }
     [DataMember] public string LabelConversations   { get => _labelConversations;   set => SetProperty(ref _labelConversations,   value); }
     [DataMember] public string LabelMore            { get => _labelMore;            set => SetProperty(ref _labelMore,            value); }
@@ -54,6 +54,7 @@ internal partial class InferpalToolWindowData
     [DataMember] public string LabelMenuXray        { get => _labelMenuXray;        set => SetProperty(ref _labelMenuXray,        value); }
     [DataMember] public string LabelMenuSettings    { get => _labelMenuSettings;    set => SetProperty(ref _labelMenuSettings,    value); }
     [DataMember] public string LabelMenuStepMode    { get => _labelMenuStepMode;    set => SetProperty(ref _labelMenuStepMode,    value); }
+    [DataMember] public string LabelDocumentation   { get => _labelDocumentation;   set => SetProperty(ref _labelDocumentation,   value); }
 
     [DataMember] public AsyncCommand ToggleModelMenuCommand { get; private set; } = null!;
     [DataMember] public AsyncCommand ToggleMoreMenuCommand  { get; private set; } = null!;
@@ -63,6 +64,8 @@ internal partial class InferpalToolWindowData
     [DataMember] public AsyncCommand MenuXrayCommand        { get; private set; } = null!;
     [DataMember] public AsyncCommand MenuSettingsCommand    { get; private set; } = null!;
     [DataMember] public AsyncCommand MenuStepModeCommand    { get; private set; } = null!;
+    /// <summary>The header's "?": the documentation of this version, in the browser.</summary>
+    [DataMember] public AsyncCommand OpenDocumentationCommand { get; private set; } = null!;
 
     // ── Composer: Chat / Agent / Plan, the context ring ─────────────────────────────────────────────────────────
     private string _chatMode = "agent";
@@ -161,6 +164,13 @@ internal partial class InferpalToolWindowData
             catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("Chat.OpenSettings", ex); }
         });
         MenuStepModeCommand    = new AsyncCommand(async (_, _) => { await RunOnVMContextAsync(CloseMenus); await ToggleStepModeAsync(); });
+        OpenDocumentationCommand = new AsyncCommand(async (_, _) =>
+        {
+            await RunOnVMContextAsync(CloseMenus);
+            var docs = DocsLinks.Index;
+            // Not opened, the address is said instead.
+            if (!WebLink.Open(docs)) await ShowInfoAsync(Strings.HelpDocumentation(docs));
+        });
         SetModeCommand         = new AsyncCommand((p, _) => SetModeAsync(p as string));
         RunUsagesCommand       = new AsyncCommand((_, ct) =>
             _activeFilePath is { Length: > 0 } file
@@ -186,6 +196,7 @@ internal partial class InferpalToolWindowData
         LabelMenuXray        = Strings.ChatMenuXray;
         LabelMenuSettings    = Strings.ChatMenuSettings;
         LabelMenuStepMode    = Strings.ChatMenuStepMode;
+        LabelDocumentation   = Strings.ChatDocumentation;
         LabelModeChat        = Strings.ModeChat;
         LabelModeAgent       = Strings.ModeAgent;
         LabelModePlan        = Strings.ModePlan;
@@ -501,18 +512,20 @@ internal partial class InferpalToolWindowData
             // /undo-run reverts the most recent run that changed files: only that run's bar offers it.
             foreach (var older in Messages.Where(m => m.Role == "result"))
                 older.CanUndo = false;
-            undo = () => _ = UndoFromResultBarAsync();
+            var runId = summary.RunId;
+            undo = () => _ = UndoFromResultBarAsync(runId);
         }
         InsertThemed(ChatMessageItem.ResultMsg(summary, undo, path => _ = OpenInEditorAsync(path)));
     }
 
-    /// <summary>A result bar's Undo: <c>/undo-run</c>, run straight — never through the prompt box.</summary>
+    /// <summary>A result bar's Undo: <c>/undo-run #&lt;its run&gt;</c>, run straight — never through the prompt box. Named: the
+    /// most recent run that changed files may be another one by now (a <c>/fix-build</c>, a <c>/tdd</c>).</summary>
     /// <remarks>
     /// ⚠ Through the prompt and <c>SendAsync</c> the click IS the Send button: during a turn it stops that turn (or, with
     /// an approval card waiting, types "/undo-run" over the draft and answers nothing), and idle it replaces the draft.
     /// While a turn runs, its run is still writing: the undo waits for it, and says so.
     /// </remarks>
-    private async Task UndoFromResultBarAsync()
+    private async Task UndoFromResultBarAsync(string runId)
     {
         var busy = false;
         await RunOnVMContextAsync(() => busy = IsLoading || _sendStarting);
@@ -522,7 +535,7 @@ internal partial class InferpalToolWindowData
             return;
         }
         PinWorkspaceRoot();
-        await HandleSlashCommandAsync("/undo-run", CancellationToken.None);
+        await HandleSlashCommandAsync("/undo-run #" + runId, CancellationToken.None);
     }
 
     /// <summary>A file of a result bar opens in the editor; one that no longer opens is said, not a dead link.</summary>

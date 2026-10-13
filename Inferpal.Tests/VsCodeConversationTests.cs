@@ -26,6 +26,31 @@ public class VsCodeConversationTests
     }
 
     /// <summary>
+    /// ⚠ A notice that comes outside a turn is drawn, not only kept: the host's own notices (the conversation that could
+    /// not be forgotten and will come back) and the work a stopped host took with it were appended to the conversation
+    /// and shown nowhere until something redrew the thread. One path for all three, which appends AND posts.
+    /// </summary>
+    [Fact]
+    public void ANoticeOutsideATurn_IsDrawn_NotOnlyKept()
+    {
+        var provider = WebviewRebuildTests.TsCode("chatViewProvider.ts");
+        Assert.Contains("onTaskFinished: (text) => this.sayOutOfTurn(text),", provider, StringComparison.Ordinal);
+        Assert.Contains("onNotice: (text) => this.sayOutOfTurn(text),", provider, StringComparison.Ordinal);
+        var stopped = provider[provider.IndexOf("sayStoppedWork(notice: string | undefined): void {", StringComparison.Ordinal)..];
+        Assert.Contains("this.sayOutOfTurn(notice);", stopped[..stopped.IndexOf("\n  }", StringComparison.Ordinal)], StringComparison.Ordinal);
+
+        var say = provider[provider.IndexOf("private sayOutOfTurn(text: string): void {", StringComparison.Ordinal)..];
+        say = say[..say.IndexOf("\n  }", StringComparison.Ordinal)];
+        Assert.Contains("this.append(item);", say, StringComparison.Ordinal);
+        Assert.Contains("this.post({ type: 'assistant', text, timestamp: item.timestamp!, notice: true });", say, StringComparison.Ordinal);
+
+        // Drawn as the reloaded thread draws it: a notice.
+        var webview = WebviewRebuildTests.TsCode("webview/main.ts");
+        Assert.Contains("addBubble('assistant', { role: 'assistant', text: msg.text, timestamp: msg.timestamp, notice: msg.notice });",
+                        Case(webview, "case 'assistant':"), StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// ⚠ A tool step sealed the stream bubble: the act's narration ("Let me read the file first.") then outlived the
     /// stream reset that drops it — shown above the answer, gone on reload — and an answer followed by a tool notice
     /// (the session recap) was drawn a second time when the turn ended.

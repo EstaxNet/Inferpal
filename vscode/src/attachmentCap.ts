@@ -1,6 +1,7 @@
 // What an attachment sends of a file — and, when that is not the whole file, says so to both readers: the model reads
 // the counts in the marker, the person reads them under the question. A cut that nobody names is a file that ends
 // early: "is X defined in this file?" is then answered "no" about code that sits past the cut.
+// Visual Studio's chips apply the same rule through the Core's AttachmentCap: same figure, same marker.
 
 export interface CappedText {
   /** What is sent: the text, or its first lines followed by the marker. */

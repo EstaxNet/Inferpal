@@ -193,6 +193,10 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
           clearTimeout(this.changeTimers.get(key));
           this.changeTimers.delete(key);
           this.mirrored.delete(key);
+          // A closed document is no longer the last active one: a host started later would be told it is.
+          if (this.lastActive?.document.uri.fsPath === key) {
+            this.lastActive = undefined;
+          }
           this.host?.didClose(key);
         }
       }),

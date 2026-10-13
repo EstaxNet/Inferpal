@@ -18,6 +18,11 @@ internal sealed class InlineRun : NotifyPropertyChangedObject
     [DataMember] public bool StartsSpan { get; init; } = true;
     [DataMember] public bool EndsSpan   { get; init; } = true;
 
+    /// <summary>A word of a link to a web address: underlined, its address as its tooltip, opened by a click.</summary>
+    [DataMember] public bool   IsLink { get; init; }
+    [DataMember] public string Url    { get; init; } = "";
+    [DataMember] public AsyncCommand? OpenCommand { get; init; }
+
     private string _foreground = "#E8E8EC";
     [DataMember] public string Foreground { get => _foreground; set => SetProperty(ref _foreground, value); }
 }

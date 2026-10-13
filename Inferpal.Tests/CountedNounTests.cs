@@ -33,6 +33,26 @@ public class CountedNounTests
     private static string IndexDetail(string language, int files) =>
         In(language, () => SettingsWidgets.IndexCard(Snapshot(completed: true, files: files), true, null, Now).Detail);
 
+    /// <summary>
+    /// ⚠ The first-launch welcome counts its models in the language: an English "3 models" was passed into every
+    /// translated sentence — "3 models disponible(s)", and where the sentence counts already, "3 models 個のモデル".
+    /// </summary>
+    [Fact]
+    public void TheFirstLaunchWelcome_CountsItsModelsInTheLanguage()
+    {
+        string Welcome(string language, int n) => In(language, () => Strings.MsgFirstRunWelcome(n, "qwen3"));
+        Assert.Contains("1 model available", Welcome("en", 1), StringComparison.Ordinal);
+        Assert.Contains("3 models available", Welcome("en", 3), StringComparison.Ordinal);
+        Assert.Contains("1 modèle disponible.", Welcome("fr", 1), StringComparison.Ordinal);
+        Assert.Contains("3 modèles disponibles.", Welcome("fr", 3), StringComparison.Ordinal);
+        Assert.Contains("5 моделей доступно", Welcome("ru", 5), StringComparison.Ordinal);
+        Assert.Contains("2 dostępne modele", Welcome("pl", 2), StringComparison.Ordinal);
+        Assert.Contains("3 個のモデル", Welcome("ja", 3), StringComparison.Ordinal);
+        // The English count no longer lands in the other nine.
+        foreach (var language in new[] { "fr", "de", "es", "it", "ru", "ja", "ko", "pl", "zh-CN" })
+            Assert.DoesNotContain("3 models", Welcome(language, 3), StringComparison.Ordinal);
+    }
+
     [Fact]
     public void TheIndexCard_CountsOneFile_AsAFile()
     {

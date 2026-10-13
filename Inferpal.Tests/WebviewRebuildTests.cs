@@ -447,7 +447,7 @@ public class WebviewRebuildTests
     public void AMessageSentWhileTheBackendIsDown_IsRefused_AndGoesBackToTheInputBox()
     {
         var send  = Body(TsCode("chatViewProvider.ts"), "private async send(");
-        var guard = send.IndexOf("await this.refusedWhileBackendDown(text)", StringComparison.Ordinal);
+        var guard = send.IndexOf("await this.refusedWhileBackendDown(text, typed)", StringComparison.Ordinal);
         var busy  = send.IndexOf("this.busy = true", StringComparison.Ordinal);
 
         Assert.True(busy >= 0, "send() no longer marks the turn busy: the rule measures nothing.");
@@ -456,7 +456,7 @@ public class WebviewRebuildTests
         var check = Body(TsCode("chatViewProvider.ts"), "private async refusedWhileBackendDown(");
         Assert.Contains("this.status?.connected !== false", check, StringComparison.Ordinal);
         Assert.Contains("await this.pollBackendStatus()", check, StringComparison.Ordinal);
-        Assert.Contains("type: 'setPrompt'", check, StringComparison.Ordinal);
+        Assert.Contains("this.giveBackTyped(text, typed);", check, StringComparison.Ordinal);
         Assert.Contains("startsWith('/')", send[..busy], StringComparison.Ordinal);
     }
 

@@ -108,6 +108,15 @@ internal partial class InferpalToolWindowData
         InferenceProviderFactory.DisplayName(switchTo),
         InferenceProviderFactory.DisplayName(InferenceProviderFactory.CodeOf(_client)));
 
+    /// <summary>What a gesture refused for an unreachable backend says: a server switch waiting for a restart is not
+    /// "cannot reach" — that sends the user to check a server that is fine. One writer for every refusal (send,
+    /// Regenerate); the heartbeat says its edge itself, once per switch.</summary>
+    private string UnreachableText() =>
+        InferenceProviderFactory.PendingSwitch(_client, _config.Provider) is { } switchTo
+            ? BackendSwitchPendingText(switchTo)
+            : Strings.MsgConnectionLost(
+                _config.BaseUrl, InferenceProviderFactory.DisplayName(_config.Provider), _client.ConnectionRefusal);
+
     private async Task StartHeartbeatAsync(CancellationToken? token = null)
     {
         var ct = token ?? _heartbeatCts.Token;
@@ -389,7 +398,18 @@ internal partial class InferpalToolWindowData
     /// after a new window or a new model X-Ray and the gauge kept the old number until the next question — a setting
     /// that looks as if it did not take. Fire-and-forget: the save is not held by a probe of the server.
     /// </summary>
-    private void OnConfigSaved() => _ = RemeasureContextWindowAsync();
+    private void OnConfigSaved()
+    {
+        // ⚠ The model button names the configured chat model: chosen elsewhere — the settings window, /import apply — the
+        // button kept the previous name while every question went to the new one. Every writer of the label sets it to
+        // DefaultModel; a save is where a change made by someone else becomes visible.
+        Post(() =>
+        {
+            if (!string.Equals(ActiveModelLabel, _config.DefaultModel, StringComparison.Ordinal))
+                ActiveModelLabel = _config.DefaultModel;
+        });
+        _ = RemeasureContextWindowAsync();
+    }
 
     private async Task RemeasureContextWindowAsync()
     {

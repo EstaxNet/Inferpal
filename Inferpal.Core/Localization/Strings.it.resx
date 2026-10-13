@@ -327,6 +327,7 @@ Backup: {0}</value></data>
   <data name="AttachSelectionError" xml:space="preserve"><value>⚠ Errore allegato selezione: {0}</value></data>
   <data name="AttachSelectionReadError" xml:space="preserve"><value>⚠ Errore lettura selezione allegata: {0}</value></data>
   <data name="AttachFileTooLarge" xml:space="preserve"><value>⚠ File troppo grande da allegare (max 500 KB).</value></data>
+  <data name="AttachmentCutLabel" xml:space="preserve"><value>{0} (i primi {1:N0} di {2:N0} caratteri)</value></data>
   <data name="AttachNoActiveFile" xml:space="preserve"><value>⚠ Nessun file attivo. Apri prima un file nell'editor.</value></data>
   <data name="MentionFileDesc" xml:space="preserve"><value>cerca e allega un file</value></data>
   <data name="MentionCodeDesc" xml:space="preserve"><value>ricerca semantica del codice (RAG)</value></data>
@@ -561,7 +562,7 @@ Percorso atteso: `{0}`</value></data>
 
 Modifica il file o chiedi all'agente di usare `update_memory`. Viene riletto prima di ogni domanda.</value></data>
 
-  <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **Primo avvio** — {0} disponibile/i. **{1}** selezionato automaticamente come modello predefinito.
+  <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **Primo avvio** — {0:N0} {0:modello disponibile|modelli disponibili}. **{1}** selezionato automaticamente come modello predefinito.
 
 Apri **Impostazioni** per cambiare il modello o configurare un modello dedicato per le azioni sul codice e i completamenti inline.</value></data>
   <data name="MsgModelAdopted" xml:space="preserve"><value>Il modello **{0}** non è installato su questo server: Inferpal usa **{1}**, il migliore tra quelli installati. Scegline un altro nell'elenco dei modelli.</value></data>
@@ -776,6 +777,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Annulla tutte le modifiche ai file dell'ultimo run dell'agente</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>Nessun run dell'agente con modifiche ai file da annullare in questa sessione.</value></data>
   <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>L'ultimo run dell'agente è già stato annullato: non è stato modificato nulla.</value></data>
+  <data name="UndoRunNotTheLatest" xml:space="preserve"><value>Non annullato: un'esecuzione successiva ha modificato dei file dopo questa, e annullare questa li sovrascriverebbe. Annulla prima quella più recente (/undo-run).</value></data>
   <data name="UndoRunWhileBusy" xml:space="preserve"><value>Un turno è ancora in corso: attendi che finisca, poi annulla.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Run tracciati in questa sessione ({0}):</value></data>
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} {1:file|file}</value></data>
@@ -1224,6 +1226,8 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="ChatMenuExport" xml:space="preserve"><value>Esporta la conversazione</value></data>
   <data name="ChatMenuXray" xml:space="preserve"><value>Radiografia del contesto</value></data>
   <data name="ChatMenuSettings" xml:space="preserve"><value>Impostazioni</value></data>
+  <data name="ChatDocumentation" xml:space="preserve"><value>Documentazione (in inglese)</value></data>
+  <data name="HelpDocumentation" xml:space="preserve"><value>Documentazione completa (in inglese): {0}</value></data>
   <data name="ChatMenuStepMode" xml:space="preserve"><value>Pausa dopo ogni chiamata a strumento</value></data>
   <data name="ChatNoModelListed" xml:space="preserve"><value>Nessun modello elencato: il backend è raggiungibile?</value></data>
   <data name="SettingsWindowSaved" xml:space="preserve"><value>Impostazioni salvate.</value></data>

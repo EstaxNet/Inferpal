@@ -283,6 +283,7 @@ internal partial class InferpalToolWindowData
         item.ThemeCodeText    = p.CodeText;
         item.ThemeCodeBg      = p.CodeBg;
         item.ThemeCodeBorder  = p.CodeBorder;
+        item.ThemeLinkText    = p.AccentText;
 
         foreach (var b in item.Blocks)
         {
@@ -291,7 +292,7 @@ internal partial class InferpalToolWindowData
             b.ThemeCodeBg     = item.ThemeCodeBg;
             b.ThemeCodeBorder = item.ThemeCodeBorder;
             foreach (var run in b.Inlines)
-                run.Foreground = run.IsCode ? item.ThemeCodeText : item.ThemeText;
+                run.Foreground = run.IsLink ? item.ThemeLinkText : run.IsCode ? item.ThemeCodeText : item.ThemeText;
         }
 
         // Diff viewer: green-background additions / red-background deletions per the active theme.

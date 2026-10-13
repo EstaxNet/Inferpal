@@ -35,15 +35,31 @@ internal static class UndoRunCommandHandler
             return list.ToString().TrimEnd();
         }
 
-        // Only a bare `/undo-run` reverts. An argument it does not know — a typo of `list`, or a number
+        // ⚠ A result bar's Undo names its own run (`#<id>`): the most recent run that changed files may be another one by
+        // now — /fix-build, /tdd, /task apply open runs without a bar of their own — and undoing it in this bar's name
+        // reverted the wrong files. Named, only that run is undone, and only while no later run changed files after it:
+        // its snapshots predate the later run's writes, which the undo would overwrite.
+        var named = parts.Length == 2 && parts[1].StartsWith('#') ? parts[1][1..] : null;
+        // Only a bare `/undo-run` (or a bar's) reverts. An argument it does not know — a typo of `list`, or a number
         // read as picking a run from the listing — must not revert the most recent run instead.
-        if (parts.Length >= 2) return Strings.SlashUsage("/undo-run [list]");
+        if (parts.Length >= 2 && named is null) return Strings.SlashUsage("/undo-run [list]");
 
-        var run = runs.FirstOrDefault(r => r.FileCount > 0);
-        if (run is null) return Strings.UndoRunNone;
-        // Undone already: nothing is touched. Moving on to the run before would answer a click on THIS run's Undo button
-        // by undoing another one.
-        if (run.Undone) return Strings.UndoRunAlreadyUndone;
+        HistoryRun? run;
+        if (named is not null)
+        {
+            run = runs.FirstOrDefault(r => r.Id == named && r.FileCount > 0);
+            if (run is null) return Strings.UndoRunNone;
+            if (run.Undone) return Strings.UndoRunAlreadyUndone;
+            if (runs.FirstOrDefault(r => r.FileCount > 0 && !r.Undone) != run) return Strings.UndoRunNotTheLatest;
+        }
+        else
+        {
+            run = runs.FirstOrDefault(r => r.FileCount > 0);
+            if (run is null) return Strings.UndoRunNone;
+            // Undone already: nothing is touched. Moving on to the run before would answer a click on THIS run's Undo
+            // button by undoing another one.
+            if (run.Undone) return Strings.UndoRunAlreadyUndone;
+        }
 
         var result = await history.UndoRunAsync(run, ct);
 

@@ -243,6 +243,9 @@ exists.
   file open, explain it, write its tests, find its usages; without one, explain the project, review
   your uncommitted changes, see all commands. When the last build failed (Visual Studio) or the
   Problems panel has errors (VS Code), **Fix them** sends those errors to the agent.
+- **Documentation** — the chat's **?** button (Visual Studio's chat header; beside the gear in VS Code's chat title
+  bar, or *Inferpal: Documentation* in the command palette) and the last line of `/help` open these pages, as they
+  were for the version installed.
 - **Attach file / selection** — 📎 toolbar buttons attach a file or the current editor
   selection as a context chip (the same context you can add with `/read` or `@file`).
   The message bubble names what went with it, so the transcript — on screen, exported, or

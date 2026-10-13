@@ -65,7 +65,8 @@ public sealed class StartupQuestionWaitsForRestoreTests
         Assert.True(noHost > 0, "the host check of send() was not found.");
         var branch = send[noHost..send.IndexOf("return;", noHost, StringComparison.Ordinal)];
 
-        Assert.Contains("text: hostUnavailableMessage()", branch, StringComparison.Ordinal);   // witness
+        Assert.Contains("hostUnavailableMessage()", branch, StringComparison.Ordinal);   // witness
+        Assert.Contains("this.append({ role: 'error', text: said,", branch, StringComparison.Ordinal);
         Assert.Contains("notice: true", branch, StringComparison.Ordinal);
     }
 }

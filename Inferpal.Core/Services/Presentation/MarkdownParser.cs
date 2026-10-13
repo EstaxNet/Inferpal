@@ -373,14 +373,15 @@ internal static class MarkdownParser
             AddInline(block, inline, bold, italic);
     }
 
-    private static void AddInline(MarkdownBlockModel block, Inline inline, bool bold, bool italic)
+    /// <param name="url">The web address of the link this inline sits in (<see cref="WebUrl"/>), else <c>null</c>.</param>
+    private static void AddInline(MarkdownBlockModel block, Inline inline, bool bold, bool italic, string? url = null)
     {
         switch (inline)
         {
             case LiteralInline lit:
                 var text = lit.Content.ToString();
                 if (!string.IsNullOrEmpty(text))
-                    block.Inlines.Add(new InlineRunModel { Text = text, IsBold = bold, IsItalic = italic });
+                    block.Inlines.Add(new InlineRunModel { Text = text, IsBold = bold, IsItalic = italic, Url = url });
                 break;
 
             case EmphasisInline em:
@@ -388,29 +389,47 @@ internal static class MarkdownParser
                 var isBold   = em.DelimiterCount >= 2 || bold;
                 var isItalic = em.DelimiterCount == 1 || italic;
                 foreach (var child in em)
-                    AddInline(block, child, isBold, isItalic);
+                    AddInline(block, child, isBold, isItalic, url);
                 break;
 
             case CodeInline code:
                 if (!string.IsNullOrEmpty(code.Content))
-                    block.Inlines.Add(new InlineRunModel { Text = code.Content, IsCode = true });
+                    block.Inlines.Add(new InlineRunModel { Text = code.Content, IsCode = true, Url = url });
                 break;
 
             case LineBreakInline lb:
                 block.Inlines.Add(new InlineRunModel { Text = lb.IsHard ? "\n" : " ", IsBold = bold, IsItalic = italic });
                 break;
 
+            // ⚠ A link keeps its target: shown as its text alone, "docs/models.md" led nowhere in Visual Studio's chat.
+            // Only a web address: a model writes these links, and `file:` or another scheme would run a program.
             case LinkInline link:
+                var target = !link.IsImage && WebUrl(link.Url) is { } web ? web : url;
                 foreach (var child in link)
-                    AddInline(block, child, bold, italic);
+                    AddInline(block, child, bold, italic, target);
+                break;
+
+            // <https://…>: its text IS the address (it was dropped altogether).
+            case AutolinkInline auto:
+                if (!string.IsNullOrEmpty(auto.Url))
+                    block.Inlines.Add(new InlineRunModel
+                    {
+                        Text = auto.Url, IsBold = bold, IsItalic = italic, Url = auto.IsEmail ? null : WebUrl(auto.Url),
+                    });
                 break;
 
             case ContainerInline container:
                 foreach (var child in container)
-                    AddInline(block, child, bold, italic);
+                    AddInline(block, child, bold, italic, url);
                 break;
         }
     }
+
+    /// <summary><paramref name="url"/> when it is an absolute <c>http</c> or <c>https</c> address, else <c>null</c>.</summary>
+    internal static string? WebUrl(string? url) =>
+        Uri.TryCreate(url?.Trim(), UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
+            ? url!.Trim()
+            : null;
 
     /// <summary>
     /// Emits one block per list item, recursing into nested content. Each item's own line is built
@@ -513,6 +532,10 @@ internal static class MarkdownParser
             case LinkInline link:
                 foreach (var child in link)
                     AppendPlainText(sb, child);
+                break;
+
+            case AutolinkInline auto:
+                sb.Append(auto.Url);
                 break;
 
             case ContainerInline container:

@@ -327,6 +327,7 @@
   <data name="AttachSelectionError" xml:space="preserve"><value>⚠ 附加选区时出错：{0}</value></data>
   <data name="AttachSelectionReadError" xml:space="preserve"><value>⚠ 读取选区内容时出错：{0}</value></data>
   <data name="AttachFileTooLarge" xml:space="preserve"><value>⚠ 文件过大，无法附加（最大 500 KB）。</value></data>
+  <data name="AttachmentCutLabel" xml:space="preserve"><value>{0}（共 {2:N0} 个字符中的前 {1:N0} 个）</value></data>
   <data name="AttachNoActiveFile" xml:space="preserve"><value>⚠ 未找到活动文件，请先在编辑器中打开一个文件。</value></data>
   <data name="MentionFileDesc" xml:space="preserve"><value>搜索并附加文件</value></data>
   <data name="MentionCodeDesc" xml:space="preserve"><value>语义代码搜索 (RAG)</value></data>
@@ -561,7 +562,7 @@
 
 编辑文件或让代理使用 `update_memory`。每次提问前都会重新读取该文件。</value></data>
 
-  <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **首次启动** — 共 {0} 个可用模型。已自动选择 **{1}** 作为默认模型。
+  <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **首次启动** — 共 {0:N0} 个可用模型。已自动选择 **{1}** 作为默认模型。
 
 打开**设置**更改模型，或为代码操作和内联补全配置专用模型。</value></data>
   <data name="MsgModelAdopted" xml:space="preserve"><value>此服务器上未安装模型 **{0}**：Inferpal 使用已安装模型中最合适的 **{1}**。可在模型列表中选择其他模型。</value></data>
@@ -776,6 +777,7 @@
   <data name="SlashHintUndoRun" xml:space="preserve"><value>撤销上一次代理运行的所有文件更改</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>本会话中没有可撤销文件更改的代理运行。</value></data>
   <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>上一次代理运行已经撤销过了——没有做任何更改。</value></data>
+  <data name="UndoRunNotTheLatest" xml:space="preserve"><value>未撤销：之后的一次运行在此之后修改了文件，撤销这一次会覆盖那些更改。请先撤销较新的那次运行（/undo-run）。</value></data>
   <data name="UndoRunWhileBusy" xml:space="preserve"><value>当前轮次仍在进行：请等它结束后再撤销。</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>本会话跟踪的运行（{0}）：</value></data>
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} 个文件</value></data>
@@ -1224,6 +1226,8 @@
   <data name="ChatMenuExport" xml:space="preserve"><value>导出对话</value></data>
   <data name="ChatMenuXray" xml:space="preserve"><value>上下文透视</value></data>
   <data name="ChatMenuSettings" xml:space="preserve"><value>设置</value></data>
+  <data name="ChatDocumentation" xml:space="preserve"><value>文档（英文）</value></data>
+  <data name="HelpDocumentation" xml:space="preserve"><value>完整文档（英文）：{0}</value></data>
   <data name="ChatMenuStepMode" xml:space="preserve"><value>每次调用工具后暂停</value></data>
   <data name="ChatNoModelListed" xml:space="preserve"><value>未列出任何模型 — 后端可访问吗?</value></data>
   <data name="SettingsWindowSaved" xml:space="preserve"><value>设置已保存。</value></data>

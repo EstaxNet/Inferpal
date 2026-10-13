@@ -327,6 +327,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="AttachSelectionError" xml:space="preserve"><value>⚠ 選択範囲添付エラー：{0}</value></data>
   <data name="AttachSelectionReadError" xml:space="preserve"><value>⚠ 添付選択範囲の読み取りエラー：{0}</value></data>
   <data name="AttachFileTooLarge" xml:space="preserve"><value>⚠ ファイルが大きすぎて添付できません（最大 500 KB）。</value></data>
+  <data name="AttachmentCutLabel" xml:space="preserve"><value>{0}（{2:N0} 文字中の最初の {1:N0} 文字）</value></data>
   <data name="AttachNoActiveFile" xml:space="preserve"><value>⚠ アクティブなファイルが見つかりません。まずエディターでファイルを開いてください。</value></data>
   <data name="MentionFileDesc" xml:space="preserve"><value>ファイルを検索して添付</value></data>
   <data name="MentionCodeDesc" xml:space="preserve"><value>セマンティックコード検索 (RAG)</value></data>
@@ -561,7 +562,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
 
 ファイルを編集するか、エージェントに `update_memory` を使うよう依頼してください。質問のたびに読み直されます。</value></data>
 
-  <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **初回起動** — {0} 個のモデルが利用可能です。**{1}** をデフォルトモデルとして自動選択しました。
+  <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **初回起動** — {0:N0} 個のモデルが利用可能です。**{1}** をデフォルトモデルとして自動選択しました。
 
 **設定**を開いてモデルを変更するか、コードアクションやインライン補完用の専用モデルを設定してください。</value></data>
   <data name="MsgModelAdopted" xml:space="preserve"><value>モデル **{0}** はこのサーバーにインストールされていません。Inferpal はインストール済みで最適な **{1}** を使います。モデル一覧で別のモデルを選べます。</value></data>
@@ -776,6 +777,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SlashHintUndoRun" xml:space="preserve"><value>直近のエージェント実行によるファイル変更をすべて元に戻す</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>このセッションには元に戻せるファイル変更を伴うエージェント実行がありません。</value></data>
   <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>直前のエージェント実行はすでに元に戻されています。何も変更していません。</value></data>
+  <data name="UndoRunNotTheLatest" xml:space="preserve"><value>元に戻していません: この後の実行がファイルを変更しており、この実行を元に戻すとその変更を上書きします。先に新しい実行を元に戻してください (/undo-run)。</value></data>
   <data name="UndoRunWhileBusy" xml:space="preserve"><value>まだターンの実行中です。終わってから元に戻してください。</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>このセッションで追跡された実行（{0}）：</value></data>
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} 個のファイル</value></data>
@@ -1224,6 +1226,8 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ChatMenuExport" xml:space="preserve"><value>会話をエクスポート</value></data>
   <data name="ChatMenuXray" xml:space="preserve"><value>コンテキスト X 線</value></data>
   <data name="ChatMenuSettings" xml:space="preserve"><value>設定</value></data>
+  <data name="ChatDocumentation" xml:space="preserve"><value>ドキュメント（英語）</value></data>
+  <data name="HelpDocumentation" xml:space="preserve"><value>完全なドキュメント（英語）: {0}</value></data>
   <data name="ChatMenuStepMode" xml:space="preserve"><value>ツール呼び出しごとに一時停止</value></data>
   <data name="ChatNoModelListed" xml:space="preserve"><value>モデルが一覧にありません — バックエンドに接続できますか?</value></data>
   <data name="SettingsWindowSaved" xml:space="preserve"><value>設定を保存しました。</value></data>

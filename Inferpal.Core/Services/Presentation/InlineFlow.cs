@@ -23,7 +23,7 @@ internal static class InlineFlow
         if (joined.Count == 1 && !joined[0].Text.Contains('\n'))
         {
             var only = joined[0];
-            pieces.Add(new InlinePiece(only.Text, only.IsBold, only.IsItalic, only.IsCode));
+            pieces.Add(new InlinePiece(only.Text, only.IsBold, only.IsItalic, only.IsCode) { Url = only.Url });
             return pieces;
         }
 
@@ -40,6 +40,7 @@ internal static class InlineFlow
                         // A code span cut into words keeps ONE padded background: inner edges carry no padding.
                         StartsSpan = w == 0,
                         EndsSpan   = w == words.Count - 1,
+                        Url        = run.Url,   // every word of a link opens it
                     });
             }
         }
@@ -53,8 +54,11 @@ internal static class InlineFlow
         {
             if (run.Text.Length == 0) continue;
             if (joined.Count > 0 && joined[^1] is var last
-                && last.IsBold == run.IsBold && last.IsItalic == run.IsItalic && last.IsCode == run.IsCode)
-                joined[^1] = new InlineRunModel { Text = last.Text + run.Text, IsBold = run.IsBold, IsItalic = run.IsItalic, IsCode = run.IsCode };
+                && last.IsBold == run.IsBold && last.IsItalic == run.IsItalic && last.IsCode == run.IsCode && last.Url == run.Url)
+                joined[^1] = new InlineRunModel
+                {
+                    Text = last.Text + run.Text, IsBold = run.IsBold, IsItalic = run.IsItalic, IsCode = run.IsCode, Url = run.Url,
+                };
             else
                 joined.Add(run);
         }
@@ -94,4 +98,7 @@ internal sealed record InlinePiece(string Text, bool IsBold, bool IsItalic, bool
     /// <summary>For a code piece: whether it opens / closes its code span, where the background's padding goes.</summary>
     public bool StartsSpan { get; init; } = true;
     public bool EndsSpan   { get; init; } = true;
+
+    /// <summary>The web address the piece's link opens (<see cref="InlineRunModel.Url"/>), else <c>null</c>.</summary>
+    public string? Url { get; init; }
 }

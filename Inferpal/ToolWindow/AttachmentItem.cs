@@ -30,13 +30,18 @@ internal sealed class AttachmentItem : NotifyPropertyChangedObject
     public bool    IsAutoAttach { get; }
     public string? SourcePath   { get; }
 
+    /// <summary>Holds only the first part of its file (<see cref="Services.Agent.AttachmentCap"/>): still pinnable by its
+    /// path, but not "attached" for the relevant code added under the question, which skips an attached file's chunks.</summary>
+    public bool    IsCut        { get; }
+
     public AttachmentItem(string label, string content, Action onRemove,
-        bool isAutoAttach = false, string? sourcePath = null, Action? onPin = null)
+        bool isAutoAttach = false, string? sourcePath = null, Action? onPin = null, bool isCut = false)
     {
         Label         = label;
         Content       = content;
         IsAutoAttach  = isAutoAttach;
         SourcePath    = sourcePath;
+        IsCut         = isCut;
         CanPin        = onPin is not null && !string.IsNullOrEmpty(sourcePath);
         RemoveCommand = new AsyncCommand((_, _) => { onRemove(); return Task.CompletedTask; });
         PinCommand    = new AsyncCommand((_, _) => { onPin?.Invoke(); return Task.CompletedTask; });

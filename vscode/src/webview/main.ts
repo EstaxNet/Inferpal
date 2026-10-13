@@ -867,7 +867,9 @@ function renderRunSummary(target: TurnView, run: RunSummary | null | undefined):
     const undo = document.createElement('button');
     undo.className = 'undo';
     setIcon(undo, 'regenerate', t('runUndo'), 13);
-    undo.addEventListener('click', () => post({ type: 'send', text: '/undo-run' }));
+    // Its own run, named: the most recent run that changed files may be another one by now (a /tdd, a /task apply).
+    const runId = run.runId;
+    undo.addEventListener('click', () => post({ type: 'send', text: `/undo-run #${runId}` }));
     bar.appendChild(undo);
   }
   target.el.appendChild(bar);
@@ -1607,7 +1609,7 @@ function send(): void {
   historyIndex = -1;
   historyDraft = '';
   promptEl.value = '';
-  post({ type: 'send', text });
+  post({ type: 'send', text, typed: true });
 }
 
 promptEl.placeholder = t('composerPlaceholder');
@@ -1804,7 +1806,8 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       if (!busy) {
         turn = null;
       }
-      addBubble('assistant', { role: 'assistant', text: msg.text, timestamp: msg.timestamp });
+      // A notice: drawn as the thread draws it once reloaded (no model, never a reply to regenerate).
+      addBubble('assistant', { role: 'assistant', text: msg.text, timestamp: msg.timestamp, notice: msg.notice });
       if (!busy) {
         turn = null;
       }

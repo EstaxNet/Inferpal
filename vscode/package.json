@@ -120,6 +120,11 @@
         "icon": "$(gear)"
       },
       {
+        "command": "inferpal.openDocs",
+        "title": "%inferpal.command.openDocs%",
+        "icon": "$(question)"
+      },
+      {
         "command": "inferpal.fixSelection",
         "title": "%inferpal.command.fixSelection%"
       },
@@ -158,6 +163,11 @@
           "command": "inferpal.openSettings",
           "when": "view == inferpal.chat",
           "group": "navigation@5"
+        },
+        {
+          "command": "inferpal.openDocs",
+          "when": "view == inferpal.chat",
+          "group": "navigation@6"
         }
       ],
       "editor/context": [

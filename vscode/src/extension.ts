@@ -11,6 +11,7 @@ import { HostClient } from './hostClient';
 import { hostErrorText, otherWorkspaceFolders, promptOpenFolder, workspaceRoot } from './hostStatus';
 import { FimProvider } from './inlineCompletions';
 import { followModelRouterSettings, initModelRouterSync, syncModelRouterSettings } from './modelRouterSettings';
+import { docsUrl } from './docsLinks';
 import { setLanguage, t } from './i18n';
 
 let host: HostClient | undefined;
@@ -67,6 +68,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         () => void chatView.revealXray(),
         log,
       )),
+    // The "?" beside the gear: this version's documentation, in the browser; not opened, its address is said.
+    vscode.commands.registerCommand('inferpal.openDocs', async () => {
+      const docs = docsUrl(context.extension.packageJSON.version as string | undefined);
+      if (!(await vscode.env.openExternal(vscode.Uri.parse(docs)))) {
+        void vscode.window.showInformationMessage(t('Full documentation (in English): {0}', docs));
+      }
+    }),
     // Editor context menu → same pipeline as typing the slash command in the chat.
     vscode.commands.registerCommand('inferpal.fixSelection', () => chatView.runSlashCommand('/fix')),
     vscode.commands.registerCommand('inferpal.refactorSelection', () => chatView.runSlashCommand('/refactor')),

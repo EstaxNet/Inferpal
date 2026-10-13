@@ -154,6 +154,8 @@ internal static class Strings
     public static string ChatMenuExport => Get(nameof(ChatMenuExport));
     public static string ChatMenuXray => Get(nameof(ChatMenuXray));
     public static string ChatMenuSettings => Get(nameof(ChatMenuSettings));
+    public static string ChatDocumentation => Get(nameof(ChatDocumentation));
+    public static string HelpDocumentation(string link) => Format(Get(nameof(HelpDocumentation)), link);
     public static string ChatMenuStepMode => Get(nameof(ChatMenuStepMode));
     public static string ChatNoModelListed => Get(nameof(ChatNoModelListed));
     // The browser settings window (`Inferpal.Host --settings`): the six texts VS Code's extension gives the form, and its own.
@@ -947,6 +949,8 @@ internal static class Strings
     public static string AttachSelectionError(string msg)     => Format(Get(nameof(AttachSelectionError)),     msg);
     public static string AttachSelectionReadError(string msg) => Format(Get(nameof(AttachSelectionReadError)), msg);
     public static string AttachFileTooLarge                   => Get(nameof(AttachFileTooLarge));
+    public static string AttachmentCutLabel(string name, int shown, int total) =>
+        Format(Get(nameof(AttachmentCutLabel)), name, shown, total);
     public static string AttachNoActiveFile                   => Get(nameof(AttachNoActiveFile));
 
     // ── @mention context providers ──────────────────────────────────────────────
@@ -1220,7 +1224,7 @@ internal static class Strings
     public static string TraceDepsFooter(int methods, int callees, int resolved) => Format(Get(nameof(TraceDepsFooter)),         methods, callees, resolved);
 
     // ── First-Run Auto-Discovery ───────────────────────────────────────────────
-    public static string MsgFirstRunWelcome(string models, string selected) =>
+    public static string MsgFirstRunWelcome(int models, string selected) =>
         Format(Get(nameof(MsgFirstRunWelcome)), models, selected);
     /// <summary>The default model was never chosen and is not installed: the best installed one is used, and said.</summary>
     public static string MsgModelAdopted(string configured, string adopted) =>
@@ -1364,6 +1368,7 @@ internal static class Strings
     public static string SlashHintUndoRun                    => Get(nameof(SlashHintUndoRun));
     public static string UndoRunNone                         => Get(nameof(UndoRunNone));
     public static string UndoRunAlreadyUndone                => Get(nameof(UndoRunAlreadyUndone));
+    public static string UndoRunNotTheLatest => Get(nameof(UndoRunNotTheLatest));
     public static string UndoRunWhileBusy                    => Get(nameof(UndoRunWhileBusy));
     public static string UndoRunListHeader(int count)        => Format(Get(nameof(UndoRunListHeader)), count);
     public static string UndoRunListEntry(string time, int files) => Format(Get(nameof(UndoRunListEntry)), time, files);

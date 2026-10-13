@@ -36,7 +36,7 @@ public sealed class BusyGestureSaysWhyTests
         Assert.Contains("await this.send(text);", ConversationPersistenceSilenceTests.TsMethodBody(Src("chatViewProvider.ts"), "async runSlashCommand("),
                         StringComparison.Ordinal);
         var main = SettingsSchemaDriftTests.NeutralizeTypeScriptComments(File.ReadAllText(Src(Path.Combine("webview", "main.ts"))));
-        Assert.Contains("'/undo-run'", main, StringComparison.Ordinal);
+        Assert.Contains("post({ type: 'send', text: `/undo-run #${runId}` })", main, StringComparison.Ordinal);   // the result bar's Undo
         Assert.Contains("case 'send':", provider, StringComparison.Ordinal);
     }
 }

@@ -33,6 +33,7 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     private string _themeCodeText    = "#E8E8EC";
     private string _themeCodeBg      = "#18181C";
     private string _themeCodeBorder  = "#34343C";
+    private string _themeLinkText    = "#B39DFF";
 
     [DataMember] public string Role      { get; set; } = string.Empty;
     [DataMember] public string ToolName  { get; set; } = string.Empty;
@@ -59,6 +60,8 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     [DataMember] public string ThemeCodeText    { get => _themeCodeText;    set => SetProperty(ref _themeCodeText,    value); }
     [DataMember] public string ThemeCodeBg      { get => _themeCodeBg;      set => SetProperty(ref _themeCodeBg,      value); }
     [DataMember] public string ThemeCodeBorder  { get => _themeCodeBorder;  set => SetProperty(ref _themeCodeBorder,  value); }
+    /// <summary>The colour of a link's words: the palette's accent for text.</summary>
+    [DataMember] public string ThemeLinkText    { get => _themeLinkText;    set => SetProperty(ref _themeLinkText,    value); }
 
     [DataMember] public ObservableCollection<MarkdownBlock> Blocks    { get; } = [];
     [DataMember] public ObservableCollection<DiffLine>      DiffLines { get; } = [];
@@ -342,7 +345,7 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
             b.ThemeCodeBorder  = _themeCodeBorder;
             b.ThemeTableBorder = tableBorder;
             foreach (var run in b.Inlines)
-                run.Foreground = run.IsCode ? _themeCodeText : _themeText;
+                run.Foreground = run.IsLink ? _themeLinkText : run.IsCode ? _themeCodeText : _themeText;
             foreach (var cell in b.Cells)
             {
                 cell.ThemeText = _themeText;

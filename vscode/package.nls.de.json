@@ -17,5 +17,6 @@
   "inferpal.command.refactorSelection": "Inferpal: Diesen Code refaktorisieren",
   "inferpal.command.docSelection": "Inferpal: Diesen Code dokumentieren",
   "inferpal.command.exportChat": "Inferpal: Unterhaltung exportieren",
-  "inferpal.command.openSettings": "Inferpal: Einstellungen"
+  "inferpal.command.openSettings": "Inferpal: Einstellungen",
+  "inferpal.command.openDocs": "Inferpal: Dokumentation (auf Englisch)"
 }

@@ -154,5 +154,9 @@
   "Open a file to explain it, write its tests or find its usages.": "파일을 열면 설명, 테스트 작성, 사용처 찾기를 할 수 있습니다.",
   "{0} (first {1} of {2} characters)": "{0}({2}자 중 처음 {1}자)",
   "{0} (not attached: at most {1} files per question)": "{0}(첨부되지 않음: 질문당 최대 {1}개 파일)",
-  "The assistant restarted and could not return to plan mode: the agent can edit files again.": "어시스턴트가 다시 시작되었지만 계획 모드로 돌아가지 못했습니다. 에이전트가 다시 파일을 편집할 수 있습니다."
+  "The assistant restarted and could not return to plan mode: the agent can edit files again.": "어시스턴트가 다시 시작되었지만 계획 모드로 돌아가지 못했습니다. 에이전트가 다시 파일을 편집할 수 있습니다.",
+  "Full documentation (in English): {0}": "전체 문서(영어): {0}",
+  "Your message was not sent and is back in the input box.": "메시지가 전송되지 않았으며 입력란으로 되돌아갔습니다.",
+  "The backend is unreachable — nothing was sent.": "백엔드에 연결할 수 없습니다. 아무것도 전송되지 않았습니다.",
+  "The backend refused the connection check — nothing was sent. Check the API key and the URL in the settings.": "백엔드가 연결 확인을 거부했습니다. 아무것도 전송되지 않았습니다. 설정에서 API 키와 URL을 확인하세요."
 }

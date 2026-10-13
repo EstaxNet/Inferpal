@@ -86,8 +86,9 @@ internal partial class InferpalToolWindowData
             }
             if (results is null || results.Count == 0) return string.Empty;
 
+            // ⚠ A WHOLE file only: past the cut of a cut chip, the code is in the prompt nowhere.
             var attached = attachments
-                .Where(a => !string.IsNullOrEmpty(a.SourcePath))
+                .Where(a => !string.IsNullOrEmpty(a.SourcePath) && !a.IsCut)
                 .Select(a => a.SourcePath!)
                 .ToHashSet(PathComparer.Default);
 
@@ -257,6 +258,12 @@ internal partial class InferpalToolWindowData
 
     private void AddAttachment(string label, string content, string? sourcePath = null)
     {
+        // ⚠ Every chip the user adds comes here: a whole file was sent whatever its size (the active document without any
+        // limit), past the window the backend refuses or drops the head, and nothing said so. Cut as VS Code cuts, the
+        // cut said to the model (the marker) and to the person (the label, on the chip and under the question).
+        var capped = Services.Agent.AttachmentCap.Of(content);
+        if (capped.Cut) label = Strings.AttachmentCutLabel(label, capped.Shown, capped.Total);
+        content = capped.Text;
         AttachmentItem? item = null;
         Action? onPin = sourcePath is null ? null : () => Post(() =>
         {
@@ -269,7 +276,7 @@ internal partial class InferpalToolWindowData
         {
             Attachments.Remove(item!);
             HasAttachments = Attachments.Count > 0;
-        }), sourcePath: sourcePath, onPin: onPin);
+        }), sourcePath: sourcePath, onPin: onPin, isCut: capped.Cut);
         var chip         = ThemePalette.For(_isDark, _isHighContrast);
         item.Background  = chip.AttachChipBg;
         item.Foreground  = chip.AttachChipText;

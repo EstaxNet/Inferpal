@@ -23,7 +23,29 @@ public sealed class HostDownBadgeTests
         var body = ConversationPersistenceSilenceTests.TsMethodBody(VsCodeSrc("chatViewProvider.ts"), "private async pollBackendStatus(");
 
         Assert.Contains("host.backendStatus()", body, StringComparison.Ordinal);   // witness: the poll itself
-        Assert.Contains("hostDown: hostUnavailableMessage()", body, StringComparison.Ordinal);
+        Assert.Contains("status: ChatViewProvider.noHostStatus()", body, StringComparison.Ordinal);   // the host's sentence: TheRedraw_*
+    }
+
+    /// <summary>
+    /// ⚠ The redraw too: <c>hydrate()</c> drew the no-host state without the host's sentence, so every redraw — a refusal,
+    /// a notice, the view opening — flipped the badge to "Backend unreachable" until the next poll, half a minute later.
+    /// One writer of that state, read by both.
+    /// </summary>
+    [Fact]
+    public void TheRedraw_WithNoHost_SaysTheHostIsDownToo()
+    {
+        var src = SettingsSchemaDriftTests.NeutralizeTypeScriptComments(File.ReadAllText(VsCodeSrc("chatViewProvider.ts")));
+        Assert.Contains("this.getHost()?.isRunning ? null : ChatViewProvider.noHostStatus()",
+                        ConversationPersistenceSilenceTests.TsMethodBody(VsCodeSrc("chatViewProvider.ts"), "private hydrate("), StringComparison.Ordinal);
+        Assert.Contains("status: ChatViewProvider.noHostStatus()",
+                        ConversationPersistenceSilenceTests.TsMethodBody(VsCodeSrc("chatViewProvider.ts"), "private async pollBackendStatus("), StringComparison.Ordinal);
+        Assert.Contains("return { connected: false, vramBadge: '', hostDown: hostUnavailableMessage() };",
+                        ConversationPersistenceSilenceTests.TsMethodBody(VsCodeSrc("chatViewProvider.ts"), "private static noHostStatus("), StringComparison.Ordinal);
+        // The property: a "not connected" state with no host sentence is written once — the poll's own failure, where
+        // the host IS running and its check threw.
+        Assert.Equal(1, src.Split("{ connected: false, vramBadge: '' }").Length - 1);
+        var poll = ConversationPersistenceSilenceTests.TsMethodBody(VsCodeSrc("chatViewProvider.ts"), "private async pollBackendStatus(");
+        Assert.Contains("} catch {\n      this.status = { connected: false, vramBadge: '' };", poll.Replace("\r", "", StringComparison.Ordinal), StringComparison.Ordinal);
     }
 
     [Fact]

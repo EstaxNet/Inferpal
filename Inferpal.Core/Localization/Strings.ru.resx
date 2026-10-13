@@ -327,6 +327,7 @@
   <data name="AttachSelectionError" xml:space="preserve"><value>⚠ Ошибка прикрепления выделения: {0}</value></data>
   <data name="AttachSelectionReadError" xml:space="preserve"><value>⚠ Ошибка чтения прикреплённого выделения: {0}</value></data>
   <data name="AttachFileTooLarge" xml:space="preserve"><value>⚠ Файл слишком большой для прикрепления (макс. 500 КБ).</value></data>
+  <data name="AttachmentCutLabel" xml:space="preserve"><value>{0} (первые {1:N0} из {2:N0} символов)</value></data>
   <data name="AttachNoActiveFile" xml:space="preserve"><value>⚠ Активный файл не найден. Сначала откройте файл в редакторе.</value></data>
   <data name="MentionFileDesc" xml:space="preserve"><value>найти и прикрепить файл</value></data>
   <data name="MentionCodeDesc" xml:space="preserve"><value>семантический поиск по коду (RAG)</value></data>
@@ -561,7 +562,7 @@
 
 Отредактируйте файл или попросите агента использовать `update_memory`. Файл перечитывается перед каждым вопросом.</value></data>
 
-  <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **Первый запуск** — {0} доступно. Автоматически выбрана модель **{1}**.
+  <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **Первый запуск** — {0:N0} {0:модель доступна|модели доступны|моделей доступно}. Автоматически выбрана модель **{1}**.
 
 Откройте **Настройки** для смены модели или настройки отдельной модели для действий с кодом и встроенных подсказок.</value></data>
   <data name="MsgModelAdopted" xml:space="preserve"><value>Модель **{0}** не установлена на этом сервере: Inferpal использует **{1}**, лучшую из установленных. Выберите другую в списке моделей.</value></data>
@@ -774,6 +775,7 @@
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Отменить все изменения файлов из последнего запуска агента</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>В этой сессии нет запуска агента с изменениями файлов для отмены.</value></data>
   <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>Последний запуск агента уже отменён — ничего не изменено.</value></data>
+  <data name="UndoRunNotTheLatest" xml:space="preserve"><value>Не отменено: более поздний запуск изменил файлы после этого, и отмена этого запуска перезаписала бы его изменения. Сначала отмените более поздний (/undo-run).</value></data>
   <data name="UndoRunWhileBusy" xml:space="preserve"><value>Ход ещё выполняется: дождитесь его окончания, затем отмените.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Отслеживаемые запуски в этой сессии ({0}):</value></data>
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} {1:файл|файла|файлов}</value></data>
@@ -1224,6 +1226,8 @@
   <data name="ChatMenuExport" xml:space="preserve"><value>Экспортировать разговор</value></data>
   <data name="ChatMenuXray" xml:space="preserve"><value>Рентген контекста</value></data>
   <data name="ChatMenuSettings" xml:space="preserve"><value>Настройки</value></data>
+  <data name="ChatDocumentation" xml:space="preserve"><value>Документация (на английском)</value></data>
+  <data name="HelpDocumentation" xml:space="preserve"><value>Полная документация (на английском): {0}</value></data>
   <data name="ChatMenuStepMode" xml:space="preserve"><value>Пауза после каждого вызова инструмента</value></data>
   <data name="ChatNoModelListed" xml:space="preserve"><value>Модели не перечислены — доступен ли бэкенд?</value></data>
   <data name="SettingsWindowSaved" xml:space="preserve"><value>Настройки сохранены.</value></data>

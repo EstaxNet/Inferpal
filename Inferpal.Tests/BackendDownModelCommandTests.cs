@@ -20,7 +20,7 @@ public class BackendDownModelCommandTests
 
         Assert.Contains("const asksTheModel = !prompt.startsWith('/') || head === '/explain' || head === '/review';", send,
                         StringComparison.Ordinal);
-        var refusal = send.IndexOf("if (asksTheModel && (await this.refusedWhileBackendDown(text)))", StringComparison.Ordinal);
+        var refusal = send.IndexOf("if (asksTheModel && (await this.refusedWhileBackendDown(text, typed)))", StringComparison.Ordinal);
         var bubble  = send.IndexOf("this.append(question);", StringComparison.Ordinal);
         Assert.True(refusal > 0 && bubble > 0, "the refusal or the question bubble moved: the order is not measured");   // WITNESS
         Assert.True(refusal < bubble, "refused after its bubble was shown");
@@ -30,13 +30,13 @@ public class BackendDownModelCommandTests
     public void ATemplateSentAsAPrompt_IsRefusedToo_AndItsBubbleTakenBack()
     {
         var send = WebviewRebuildTests.Body(Provider(), "private async send(");
-        var refusal = send.IndexOf("this.refusedWhileBackendDown(text, question)", StringComparison.Ordinal);
+        var refusal = send.IndexOf("this.refusedWhileBackendDown(text, typed, question)", StringComparison.Ordinal);
         var turn    = send.IndexOf("await this.chatTurn(outcome.chatPrompt, host);", StringComparison.Ordinal);
         Assert.True(refusal > 0 && turn > 0 && refusal < turn, "a template reaches the model without the pre-flight");
 
         var refuse = WebviewRebuildTests.Body(Provider(), "private async refusedWhileBackendDown(");
         Assert.Contains("this.transcript.splice(at, 1);", refuse, StringComparison.Ordinal);
         Assert.Contains("this.busy = false;", refuse, StringComparison.Ordinal);
-        Assert.Contains("this.post({ type: 'setPrompt', text });", refuse, StringComparison.Ordinal);
+        Assert.Contains("this.giveBackTyped(text, typed);", refuse, StringComparison.Ordinal);
     }
 }

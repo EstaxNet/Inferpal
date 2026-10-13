@@ -62,6 +62,8 @@ internal sealed class MarkdownBlock : NotifyPropertyChangedObject
             {
                 Text = piece.Text, IsBold = piece.IsBold, IsItalic = piece.IsItalic, IsCode = piece.IsCode,
                 IsBreak = piece.IsBreak, StartsSpan = piece.StartsSpan, EndsSpan = piece.EndsSpan,
+                IsLink = piece.Url is not null, Url = piece.Url ?? string.Empty,
+                OpenCommand = piece.Url is { } url ? new AsyncCommand((_, _) => { WebLink.Open(url); return Task.CompletedTask; }) : null,
             });
         foreach (var cell in model.Cells)
             block.Cells.Add(new TableCell { Text = cell.Text, IsHeader = cell.IsHeader });

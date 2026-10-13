@@ -283,6 +283,9 @@ internal static class SlashCommandRouter
             foreach (var (cmd, hint, _) in group)
                 sb.Append("- `").Append(cmd).Append("` — ").AppendLine(hint);
         }
+        // The address as the link's text: readable as it is wherever the link cannot be followed (a copy, an export).
+        var docs = DocsLinks.Index;
+        sb.AppendLine().Append(Strings.HelpDocumentation($"[{docs}]({docs})"));
         return sb.ToString().TrimEnd();
     }
 

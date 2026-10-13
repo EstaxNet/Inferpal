@@ -1803,6 +1803,39 @@ public partial class HostServerTests
     }
 
     /// <summary>
+    /// ⚠ A closed active document is forgotten, as Visual Studio forgets it. VS Code names no active document when the
+    /// focus only moves to a panel, so it never says "none": kept, <c>get_open_editors</c> named a closed file as the
+    /// active one while <c>get_active_document</c> answered "no file", and its glob-scoped rules stayed in the prompt.
+    /// </summary>
+    [Fact]
+    public async Task AClosedActiveDocument_IsNoLongerTheActiveOne()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+        var active = Path.Combine(h.RootDir, "a.cs");
+        var other  = Path.Combine(h.RootDir, "b.cs");
+        Task Call(string method, object args) =>
+            h.Client.InvokeWithParameterObjectAsync<object?>(method, args).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        await Call("textDocument/didOpen", new { path = active, text = "class A { }" });
+        await Call("textDocument/didOpen", new { path = other, text = "class B { }" });
+        await Call("editor/didChangeActiveDocument", new { path = active });
+        var session = h.Server.CurrentSession!;
+        Assert.Equal(active, session.Editor.ActiveDocumentPath);   // WITNESS
+
+        // Reference arm: closing another document leaves the active one.
+        await Call("textDocument/didClose", new { path = other });
+        Assert.Equal(active, session.ActiveFilePath);
+
+        await Call("textDocument/didClose", new { path = active });
+        Assert.Null(session.Editor.ActiveDocumentPath);
+        Assert.Null(session.ActiveFilePath);
+
+        // And the editor's side forgets it too: a host started later would be told it is active.
+        var bridge = WebviewRebuildTests.TsCode("editorBridge.ts");
+        Assert.Contains("if (this.lastActive?.document.uri.fsPath === key) {", bridge, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// ⚠ What an applied import wrote takes effect at once, as a settings save makes it: its MCP servers start. Saved
     /// only, they ran at the next start — "written" on the card, MCP turned on, and no tool.
     /// </summary>

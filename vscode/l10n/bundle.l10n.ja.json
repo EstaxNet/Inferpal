@@ -154,5 +154,9 @@
   "Open a file to explain it, write its tests or find its usages.": "ファイルを開くと、その説明、テストの作成、使用箇所の検索ができます。",
   "{0} (first {1} of {2} characters)": "{0}（{2} 文字中の最初の {1} 文字）",
   "{0} (not attached: at most {1} files per question)": "{0}（添付されていません: 1 つの質問につき最大 {1} ファイル）",
-  "The assistant restarted and could not return to plan mode: the agent can edit files again.": "アシスタントが再起動し、プラン モードに戻れませんでした。エージェントは再びファイルを編集できます。"
+  "The assistant restarted and could not return to plan mode: the agent can edit files again.": "アシスタントが再起動し、プラン モードに戻れませんでした。エージェントは再びファイルを編集できます。",
+  "Full documentation (in English): {0}": "完全なドキュメント（英語）: {0}",
+  "Your message was not sent and is back in the input box.": "メッセージは送信されず、入力欄に戻されました。",
+  "The backend is unreachable — nothing was sent.": "バックエンドに接続できません。何も送信されていません。",
+  "The backend refused the connection check — nothing was sent. Check the API key and the URL in the settings.": "バックエンドが接続チェックを拒否しました。何も送信されていません。設定の API キーと URL を確認してください。"
 }

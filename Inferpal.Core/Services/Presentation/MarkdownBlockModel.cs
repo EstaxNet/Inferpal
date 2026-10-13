@@ -42,6 +42,9 @@ internal sealed class InlineRunModel
     public bool   IsBold   { get; init; }
     public bool   IsItalic { get; init; }
     public bool   IsCode   { get; init; }
+
+    /// <summary>The web address the run links to — a link whose target is <c>http</c> or <c>https</c> —, else <c>null</c>.</summary>
+    public string? Url     { get; init; }
 }
 
 /// <summary>A single cell of a Markdown table row.</summary>

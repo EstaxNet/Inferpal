@@ -133,7 +133,7 @@ export type ExtToWebview =
    *  in plain chat, where the webview falls back to its generic indicator. */
   | { type: 'thinking'; text?: string | null }
   | { type: 'status'; text: string }
-  | { type: 'assistant'; text: string; timestamp: string }
+  | { type: 'assistant'; text: string; timestamp: string; notice?: boolean }
   | { type: 'tool'; name: string; input: string; output: string; hasErrors: boolean; timestamp: string; expanded: boolean }
   | { type: 'plan'; plan: WvPlan }
   | { type: 'approval'; id: number; message: string; card?: ApprovalCard | null }
@@ -164,7 +164,8 @@ export type ExtToWebview =
 
 export type WebviewToExt =
   | { type: 'ready' }
-  | { type: 'send'; text: string }
+  /** `typed`: the composer's text, which the webview cleared as it sent — a refusal gives it back. */
+  | { type: 'send'; text: string; typed?: boolean }
   /** The welcome banner's "Fix them": the Problems panel attached, then `text` sent. */
   | { type: 'fixProblems'; text: string }
   | { type: 'cancel' }

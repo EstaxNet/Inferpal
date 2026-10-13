@@ -129,12 +129,15 @@
             <RowDefinition Height="Auto" />  <!-- 5: Composer -->
         </Grid.RowDefinitions>
 
-        <!-- ── Header: the model button, new conversation, conversations, more ── -->
+        <!-- ── Header: the model button, new conversation, conversations, documentation, more ── -->
         <Border Grid.Row="0" BorderThickness="0,0,0,1" BorderBrush="{Binding ThemeBorder}" Padding="10,8">
             <DockPanel LastChildFill="True">
                 <Button DockPanel.Dock="Right" Style="{StaticResource IconBtn}" Content="&#xE712;" Margin="2,0,0,0"
                         Command="{Binding ToggleMoreMenuCommand}"
                         ToolTip="{Binding LabelMore}" AutomationProperties.Name="{Binding LabelMore}"/>
+                <Button DockPanel.Dock="Right" Style="{StaticResource IconBtn}" Content="&#xE897;" Margin="2,0,0,0"
+                        Command="{Binding OpenDocumentationCommand}"
+                        ToolTip="{Binding LabelDocumentation}" AutomationProperties.Name="{Binding LabelDocumentation}"/>
                 <Button DockPanel.Dock="Right" Style="{StaticResource IconBtn}" Content="&#xE81C;" Margin="2,0,0,0"
                         Command="{Binding ToggleSessionPanelCommand}"
                         ToolTip="{Binding LabelConversations}" AutomationProperties.Name="{Binding LabelConversations}"/>
@@ -772,10 +775,19 @@
                                                             <TextBlock Text="{Binding Text}"
                                                                        Foreground="{Binding Foreground}"
                                                                        TextWrapping="Wrap">
+                                                                <!-- A word of a link opens it; a word of text has no command, the click does nothing -->
+                                                                <TextBlock.InputBindings>
+                                                                    <MouseBinding MouseAction="LeftClick" Command="{Binding OpenCommand}"/>
+                                                                </TextBlock.InputBindings>
                                                                 <TextBlock.Style>
                                                                     <Style TargetType="TextBlock">
                                                                         <Setter Property="Margin" Value="0"/>
                                                                         <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsLink}" Value="True">
+                                                                                <Setter Property="TextDecorations" Value="Underline"/>
+                                                                                <Setter Property="Cursor"          Value="Hand"/>
+                                                                                <Setter Property="ToolTip"         Value="{Binding Url}"/>
+                                                                            </DataTrigger>
                                                                             <DataTrigger Binding="{Binding IsBold}" Value="True">
                                                                                 <Setter Property="FontWeight" Value="Bold"/>
                                                                             </DataTrigger>

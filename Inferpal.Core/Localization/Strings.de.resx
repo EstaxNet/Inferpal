@@ -327,6 +327,7 @@ Sicherung: {0}</value></data>
   <data name="AttachSelectionError" xml:space="preserve"><value>⚠ Fehler beim Anhängen der Auswahl: {0}</value></data>
   <data name="AttachSelectionReadError" xml:space="preserve"><value>⚠ Fehler beim Lesen der angehängten Auswahl: {0}</value></data>
   <data name="AttachFileTooLarge" xml:space="preserve"><value>⚠ Datei zu groß zum Anhängen (max. 500 KB).</value></data>
+  <data name="AttachmentCutLabel" xml:space="preserve"><value>{0} (die ersten {1:N0} von {2:N0} Zeichen)</value></data>
   <data name="AttachNoActiveFile" xml:space="preserve"><value>⚠ Keine aktive Datei gefunden. Öffnen Sie zuerst eine Datei im Editor.</value></data>
   <data name="MentionFileDesc" xml:space="preserve"><value>Datei suchen und anhängen</value></data>
   <data name="MentionCodeDesc" xml:space="preserve"><value>semantische Codesuche (RAG)</value></data>
@@ -561,7 +562,7 @@ Erwarteter Pfad: `{0}`</value></data>
 
 Bearbeiten Sie die Datei oder bitten Sie den Agenten, `update_memory` zu verwenden. Sie wird vor jeder Frage neu gelesen.</value></data>
 
-  <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **Erster Start** — {0} verfügbar. **{1}** automatisch als Standardmodell ausgewählt.
+  <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **Erster Start** — {0:N0} {0:Modell|Modelle} verfügbar. **{1}** automatisch als Standardmodell ausgewählt.
 
 Öffnen Sie **Einstellungen**, um das Modell zu ändern oder ein dediziertes Modell für Code-Aktionen und Inline-Vervollständigungen zu konfigurieren.</value></data>
   <data name="MsgModelAdopted" xml:space="preserve"><value>Das Modell **{0}** ist auf diesem Server nicht installiert: Inferpal verwendet **{1}**, das beste der installierten. Wählen Sie in der Modellliste ein anderes.</value></data>
@@ -776,6 +777,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Alle Dateiänderungen des letzten Agent-Laufs rückgängig machen</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>Kein Agent-Lauf mit Dateiänderungen in dieser Sitzung zum Rückgängigmachen.</value></data>
   <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>Der letzte Agent-Lauf wurde bereits rückgängig gemacht — nichts wurde geändert.</value></data>
+  <data name="UndoRunNotTheLatest" xml:space="preserve"><value>Nicht rückgängig gemacht: Ein späterer Lauf hat danach Dateien geändert, und das Rückgängigmachen dieses Laufs würde sie überschreiben. Machen Sie zuerst den späteren Lauf rückgängig (/undo-run).</value></data>
   <data name="UndoRunWhileBusy" xml:space="preserve"><value>Ein Durchgang läuft noch: Warten Sie, bis er beendet ist, und machen Sie dann rückgängig.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Verfolgte Läufe in dieser Sitzung ({0}):</value></data>
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} {1:Datei|Dateien}</value></data>
@@ -1224,6 +1226,8 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="ChatMenuExport" xml:space="preserve"><value>Unterhaltung exportieren</value></data>
   <data name="ChatMenuXray" xml:space="preserve"><value>Kontext-Röntgen</value></data>
   <data name="ChatMenuSettings" xml:space="preserve"><value>Einstellungen</value></data>
+  <data name="ChatDocumentation" xml:space="preserve"><value>Dokumentation (auf Englisch)</value></data>
+  <data name="HelpDocumentation" xml:space="preserve"><value>Vollständige Dokumentation (auf Englisch): {0}</value></data>
   <data name="ChatMenuStepMode" xml:space="preserve"><value>Nach jedem Werkzeugaufruf anhalten</value></data>
   <data name="ChatNoModelListed" xml:space="preserve"><value>Kein Modell aufgelistet — ist das Backend erreichbar?</value></data>
   <data name="SettingsWindowSaved" xml:space="preserve"><value>Einstellungen gespeichert.</value></data>

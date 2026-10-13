@@ -258,8 +258,20 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** Called by the activator after it stopped a host: the work that host took with it, said in the thread. */
   sayStoppedWork(notice: string | undefined): void {
     if (notice) {
-      this.append({ role: 'assistant', text: notice, timestamp: ChatViewProvider.now(), notice: true });
+      this.sayOutOfTurn(notice);
     }
+  }
+
+  /**
+   * A notice that comes outside a turn — a /task's report, the host's own notices, the work a stopped host took with
+   * it: kept in the conversation AND drawn.
+   * ⚠ Appended only, it was saved and never shown until something redrew the whole thread: "the conversation was not
+   * forgotten, it will come back" stayed invisible while it came back.
+   */
+  private sayOutOfTurn(text: string): void {
+    const item: WvTranscriptItem = { role: 'assistant', text, timestamp: ChatViewProvider.now(), notice: true };
+    this.append(item);
+    this.post({ type: 'assistant', text, timestamp: item.timestamp!, notice: true });
   }
 
   /** Called by the activator when the host could not start: what waited goes to the "not running" answer. */
@@ -347,16 +359,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         this.stepPaused = false;
         this.post({ type: 'stepResumed' });
       },
-      onTaskFinished: (text) => {
-        // A persistent assistant bubble, like the VS front-end — not an ephemeral status line
-        // wiped by the next setBusy.
-        const item: WvTranscriptItem = { role: 'assistant', text, timestamp: ChatViewProvider.now(), notice: true };
-        this.append(item);
-        this.post({ type: 'assistant', text, timestamp: item.timestamp! });
-      },
-      onNotice: (text) => {
-        this.append({ role: 'assistant', text, timestamp: ChatViewProvider.now(), notice: true });
-      },
+      // A persistent bubble, like the VS front-end — not an ephemeral status line wiped by the next setBusy.
+      onTaskFinished: (text) => this.sayOutOfTurn(text),
+      onNotice: (text) => this.sayOutOfTurn(text),
     });
 
     this.model = vscode.workspace.getConfiguration('inferpal').get<string>('model', '') || host.info?.defaultModel || '';
@@ -589,11 +594,20 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.statusTimer = setInterval(() => void this.pollBackendStatus(), STATUS_POLL_MS);
   }
 
+  /**
+   * The badge with no host running: the HOST's sentence, never "backend unreachable" — the backend was not asked. One
+   * writer for the poll and the redraw: a redraw that drew it without the sentence flipped the badge to "unreachable"
+   * at every hydrate (a refusal, a notice) until the next poll, half a minute later.
+   */
+  private static noHostStatus(): WvBackendStatus {
+    return { connected: false, vramBadge: '', hostDown: hostUnavailableMessage() };
+  }
+
   private async pollBackendStatus(): Promise<void> {
     const host = this.getHost();
     if (!host?.isRunning) {
       this.status = null;
-      this.post({ type: 'backendStatus', status: { connected: false, vramBadge: '', hostDown: hostUnavailableMessage() } });
+      this.post({ type: 'backendStatus', status: ChatViewProvider.noHostStatus() });
       return;
     }
     // Known down, not unknown: at start the status is null and the bootstrap has just listed the models itself.
@@ -1117,7 +1131,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         this.hydrate();
         return;
       case 'send':
-        await this.send(msg.text);
+        await this.send(msg.text, msg.typed === true);
         return;
       case 'importApply': {
         // The card's Apply runs the command the user could have typed: the numbers left ticked, or none. The card is
@@ -1748,7 +1762,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private async send(text: string): Promise<void> {
+  /**
+   * @param typed The composer's text: the webview cleared the box as it sent, so a refusal before the turn starts gives
+   * it back. Any other gesture (a card, Undo, the editor's menu, Regenerate) leaves the box alone: it may hold a draft.
+   */
+  private async send(text: string, typed = false): Promise<void> {
     const prompt = text.trim();
     const host = this.getHost();
     if (!prompt) {
@@ -1769,8 +1787,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // Two states, two remedies: with no folder open the host was never spawned, and
       // "Restart Host" cannot change that (hostStatus.ts). A notice: read as a conversation, the host's next start
       // saved this line over the last one instead of bringing it back.
-      this.append({ role: 'error', text: hostUnavailableMessage(), timestamp: ChatViewProvider.now(), notice: true });
+      // ⚠ Typed, the text is given back: the box was cleared as it sent, and the message was lost with the refusal.
+      const said = typed ? `${hostUnavailableMessage()} ${t('Your message was not sent and is back in the input box.')}` : hostUnavailableMessage();
+      this.append({ role: 'error', text: said, timestamp: ChatViewProvider.now(), notice: true });
       this.hydrate();
+      this.giveBackTyped(text, typed);
       promptOpenFolder();
       return;
     }
@@ -1785,7 +1806,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // model: /explain and /review, known by their name (a template is known only once the host has expanded it).
     const head = prompt.split(/\s+/, 1)[0].toLowerCase();
     const asksTheModel = !prompt.startsWith('/') || head === '/explain' || head === '/review';
-    if (asksTheModel && (await this.refusedWhileBackendDown(text))) {
+    if (asksTheModel && (await this.refusedWhileBackendDown(text, typed))) {
       return;
     }
 
@@ -1851,7 +1872,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           if (outcome.chatPrompt !== null) {
             // sendAsPrompt (expanded user template): continue as a normal chat turn — refused like a typed question
             // when the backend is known to be down, its bubble taken back.
-            if (await this.refusedWhileBackendDown(text, question)) {
+            if (await this.refusedWhileBackendDown(text, typed, question)) {
               return;
             }
             // The question IS the expanded prompt, as in the Visual Studio window: saved as "/name args", a reload
@@ -1898,11 +1919,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   /**
    * Like the Visual Studio window: a message for the MODEL is refused before anything is consumed when the backend is
-   * known to be down — no user bubble, nothing in the host's history, the text back in the input box. Checked again
+   * known to be down — no user bubble, nothing in the host's history, a typed text back in the input box. Checked again
    * first, so a backend that just came back is not refused on a stale badge. `question`: the bubble already shown for
    * a slash command whose turn turned out to need the model, taken back with the turn.
    */
-  private async refusedWhileBackendDown(text: string, question?: WvTranscriptItem): Promise<boolean> {
+  private async refusedWhileBackendDown(text: string, typed: boolean, question?: WvTranscriptItem): Promise<boolean> {
     if (this.status?.connected !== false) {
       return false;
     }
@@ -1920,14 +1941,26 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.append({
       role: 'error',
       // A server that refused the check (a wrong API key) is running: "unreachable" would send the user to start it.
+      // Only a typed text is back in the box: a card's or a button's gesture would have overwritten the draft there.
       text: this.status?.refused
-        ? t('The backend refused the connection check — your message was not sent and is back in the input box. Check the API key and the URL in the settings.')
-        : t('The backend is unreachable — your message was not sent and is back in the input box.'),
+        ? typed
+          ? t('The backend refused the connection check — your message was not sent and is back in the input box. Check the API key and the URL in the settings.')
+          : t('The backend refused the connection check — nothing was sent. Check the API key and the URL in the settings.')
+        : typed
+          ? t('The backend is unreachable — your message was not sent and is back in the input box.')
+          : t('The backend is unreachable — nothing was sent.'),
       timestamp: ChatViewProvider.now(),
     });
     this.hydrate();
-    this.post({ type: 'setPrompt', text });
+    this.giveBackTyped(text, typed);
     return true;
+  }
+
+  /** A typed text refused before its turn goes back in the box the webview cleared; any other gesture's text does not. */
+  private giveBackTyped(text: string, typed: boolean): void {
+    if (typed) {
+      this.post({ type: 'setPrompt', text });
+    }
   }
 
   /** Applies the editor-side effects of a handled slash command. */
@@ -2570,7 +2603,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private hydrate(): void {
     // No running host (e.g. no workspace folder) → surface it in the connection badge
     // instead of an indistinct empty header.
-    const status = this.status ?? (this.getHost()?.isRunning ? null : { connected: false, vramBadge: '' });
+    const status = this.status ?? (this.getHost()?.isRunning ? null : ChatViewProvider.noHostStatus());
     this.post({
       type: 'hydrate',
       transcript: this.transcript,

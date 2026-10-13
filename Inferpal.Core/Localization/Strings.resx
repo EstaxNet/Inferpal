@@ -328,6 +328,7 @@ Backup: {0}</value></data>
   <data name="AttachSelectionError" xml:space="preserve"><value>⚠ Attach selection error: {0}</value></data>
   <data name="AttachSelectionReadError" xml:space="preserve"><value>⚠ Attach selection read error: {0}</value></data>
   <data name="AttachFileTooLarge" xml:space="preserve"><value>⚠ File too large to attach (max 500 KB).</value></data>
+  <data name="AttachmentCutLabel" xml:space="preserve"><value>{0} (first {1:N0} of {2:N0} characters)</value></data>
   <data name="AttachNoActiveFile" xml:space="preserve"><value>⚠ No active file found. Open a file in the editor first.</value></data>
   <data name="MentionFileDesc" xml:space="preserve"><value>search &amp; attach a file</value></data>
   <data name="MentionCodeDesc" xml:space="preserve"><value>semantic code search (RAG)</value></data>
@@ -585,7 +586,7 @@ Edit the file or ask the agent to use `update_memory`. It is read again before e
   <data name="StatusAgentSynthesizing" xml:space="preserve"><value>✍ Writing answer…</value></data>
 
   <!-- First-run auto-discovery -->
-  <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **First launch** — {0} available. Auto-selected **{1}** as default model.
+  <data name="MsgFirstRunWelcome" xml:space="preserve"><value>✨ **First launch** — {0:N0} {0:model|models} available. Auto-selected **{1}** as default model.
 
 Open **Settings** to change the model or configure a dedicated model for code actions and inline completions.</value></data>
   <data name="MsgModelAdopted" xml:space="preserve"><value>The model **{0}** is not installed on this server: Inferpal uses **{1}**, the best of the installed ones. Pick another in the model list.</value></data>
@@ -784,6 +785,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Undo all file changes from the last agent run</value></data>
   <data name="UndoRunNone" xml:space="preserve"><value>No agent run with file changes to undo in this session.</value></data>
   <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>The last agent run has already been undone — nothing was changed.</value></data>
+  <data name="UndoRunNotTheLatest" xml:space="preserve"><value>Not undone: a later run changed files after this one, and undoing this one would overwrite them. Undo the later run first (/undo-run).</value></data>
   <data name="UndoRunWhileBusy" xml:space="preserve"><value>A turn is still running: wait for it to finish, then undo.</value></data>
   <data name="UndoRunListHeader" xml:space="preserve"><value>Change-tracking runs this session ({0}):</value></data>
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} {1:file|files}</value></data>
@@ -1228,6 +1230,8 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="ChatMenuExport" xml:space="preserve"><value>Export the conversation</value></data>
   <data name="ChatMenuXray" xml:space="preserve"><value>Context X-Ray</value></data>
   <data name="ChatMenuSettings" xml:space="preserve"><value>Settings</value></data>
+  <data name="ChatDocumentation" xml:space="preserve"><value>Documentation (in English)</value></data>
+  <data name="HelpDocumentation" xml:space="preserve"><value>Full documentation (in English): {0}</value></data>
   <data name="ChatMenuStepMode" xml:space="preserve"><value>Pause after each tool call</value></data>
   <data name="ChatNoModelListed" xml:space="preserve"><value>No model listed — is the backend reachable?</value></data>
   <data name="SettingsWindowSaved" xml:space="preserve"><value>Settings saved.</value></data>

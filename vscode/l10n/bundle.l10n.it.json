@@ -154,5 +154,9 @@
   "Open a file to explain it, write its tests or find its usages.": "Apri un file per spiegarlo, scriverne i test o trovarne gli utilizzi.",
   "{0} (first {1} of {2} characters)": "{0} (i primi {1} di {2} caratteri)",
   "{0} (not attached: at most {1} files per question)": "{0} (non allegato: al massimo {1} file per domanda)",
-  "The assistant restarted and could not return to plan mode: the agent can edit files again.": "L'assistente è stato riavviato e non è riuscito a tornare in modalità piano: l'agente può di nuovo modificare i file."
+  "The assistant restarted and could not return to plan mode: the agent can edit files again.": "L'assistente è stato riavviato e non è riuscito a tornare in modalità piano: l'agente può di nuovo modificare i file.",
+  "Full documentation (in English): {0}": "Documentazione completa (in inglese): {0}",
+  "Your message was not sent and is back in the input box.": "Il messaggio non è stato inviato ed è di nuovo nella casella di input.",
+  "The backend is unreachable — nothing was sent.": "Il backend non è raggiungibile: non è stato inviato nulla.",
+  "The backend refused the connection check — nothing was sent. Check the API key and the URL in the settings.": "Il backend ha rifiutato il controllo della connessione: non è stato inviato nulla. Controlla la chiave API e l'URL nelle impostazioni."
 }

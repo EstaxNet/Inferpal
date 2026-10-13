@@ -245,8 +245,9 @@ internal partial class InferpalToolWindowData
 
         var vramWarning = await BuildFirstRunVramWarningAsync(best, ct).ConfigureAwait(false);
 
-        var countLabel = chatModels.Count == 1 ? "1 model" : $"{chatModels.Count} models";
-        var text = Strings.MsgFirstRunWelcome(countLabel, best);
+        // The count agrees with its noun in the language (Strings.Format): an English "3 models" landed in every
+        // translated sentence — "3 models disponible(s)", "3 models 個のモデル".
+        var text = Strings.MsgFirstRunWelcome(chatModels.Count, best);
         if (vramWarning is not null) text += "\n\n" + vramWarning;
         await present(text).ConfigureAwait(false);
     }

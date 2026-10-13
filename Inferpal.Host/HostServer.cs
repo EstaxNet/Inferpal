@@ -1512,8 +1512,20 @@ internal sealed partial class HostServer : IDisposable
     [JsonRpcMethod("textDocument/didChange", UseSingleObjectParameterDeserialization = true)]
     public void DidChange(DocumentParams p) => Session().Overlay.Set(p.Path, p.Text ?? string.Empty, p.Dirty ?? true);
 
+    /// <remarks>⚠ A closed active document is forgotten, as Visual Studio forgets it: the editor names no active document
+    /// when the focus only moved to a panel, so it never says "none" — kept, <c>get_open_editors</c> named a closed file as
+    /// the active one while <c>get_active_document</c> answered "no file", and its glob-scoped rules stayed in the prompt.</remarks>
     [JsonRpcMethod("textDocument/didClose", UseSingleObjectParameterDeserialization = true)]
-    public void DidClose(DocumentParams p) => Session().Overlay.Remove(p.Path);
+    public void DidClose(DocumentParams p)
+    {
+        var s = Session();
+        s.Overlay.Remove(p.Path);
+        if (string.Equals(s.Editor.ActiveDocumentPath ?? s.ActiveFilePath, p.Path, PathComparer.Comparison))
+        {
+            s.Editor.SetActiveDocument(null);
+            s.ActiveFilePath = null;
+        }
+    }
 
     [JsonRpcMethod("editor/didChangeActiveDocument", UseSingleObjectParameterDeserialization = true)]
     public void DidChangeActiveDocument(DocumentParams p)

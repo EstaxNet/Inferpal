@@ -141,12 +141,7 @@ internal partial class InferpalToolWindowData
         {
             await RunOnVMContextAsync(() =>
             {
-                var url = _config.BaseUrl;
-                var msg = ChatMessageItem.NoticeMsg(
-                    InferenceProviderFactory.PendingSwitch(_client, _config.Provider) is { } switchTo
-                        ? BackendSwitchPendingText(switchTo)
-                        : Strings.MsgConnectionLost(
-                            url, InferenceProviderFactory.DisplayName(_config.Provider), _client.ConnectionRefusal));
+                var msg = ChatMessageItem.NoticeMsg(UnreachableText());
                 ApplyItemTheme(msg);
                 Messages.Insert(Messages.Count - 2, msg);
                 ScrollToBottom();
