@@ -3,6 +3,22 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.7.8
+
+The documentation is one click away from the chat, and twenty fixes for VS Code.
+
+- **The documentation, from the chat**: `/help` ends with a link to it, and a **?** button beside the settings gear
+  opens it (also *Inferpal: Documentation* in the command palette) — the documentation of the version you have.
+- **Fixed**: Regenerate on an `/explain` or `/review` answer explains the same code again, instead of an agent turn; a
+  message sent while Inferpal starts or restarts is never lost, and a button that sends for you no longer overwrites
+  your draft; a restart during an answer is said in your language; Inferpal's notices show when they come; with no
+  folder open, the badge keeps saying a folder is needed; a closed file is no longer taken for the active one; a
+  documentation crawl says how it ended; a result's Undo undoes that result; the visible part of a failed answer stays,
+  as a note; signing in to an MCP server no longer restarts the others, and a server's `"cwd"` is used; the model lists
+  no longer offer embedding models for the chat, and `/model` refuses one; `/test` says why it failed; what `/import`
+  applies takes effect at once; and four `/import` fixes — unnamed MCP servers, rules added twice, renamed commands
+  offered again, a documentation site replaced.
+
 ## 1.7.7
 
 Moving from Continue or Roo Code takes one command, and `/settings` opens the settings from the chat. Zed, the JetBrains
