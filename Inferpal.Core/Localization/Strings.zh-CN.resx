@@ -1138,6 +1138,7 @@
   <data name="SettingsSectionThisConversation" xml:space="preserve"><value>当前对话</value></data>
   <data name="IndexCardReady" xml:space="preserve"><value>索引已是最新</value></data>
   <data name="IndexCardSaved" xml:space="preserve"><value>已保存的索引</value></data>
+  <data name="IndexCardLoadingSaved" xml:space="preserve"><value>正在读取已保存的索引…</value></data>
   <data name="IndexCardIndexing" xml:space="preserve"><value>正在建立索引…</value></data>
   <data name="IndexCardNotBuilt" xml:space="preserve"><value>尚未建立索引</value></data>
   <data name="IndexCardStopped" xml:space="preserve"><value>索引已中断</value></data>

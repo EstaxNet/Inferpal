@@ -225,6 +225,7 @@ internal static class Strings
     // ── Settings: the index card (Code search) ───────────────────────────────
     public static string IndexCardReady => Get(nameof(IndexCardReady));
     public static string IndexCardSaved => Get(nameof(IndexCardSaved));
+    public static string IndexCardLoadingSaved => Get(nameof(IndexCardLoadingSaved));
     public static string IndexCardIndexing => Get(nameof(IndexCardIndexing));
     public static string IndexCardNotBuilt => Get(nameof(IndexCardNotBuilt));
     public static string IndexCardStopped => Get(nameof(IndexCardStopped));

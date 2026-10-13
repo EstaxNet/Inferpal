@@ -809,6 +809,7 @@ table.rules tr.status-unreadable td {
 .statuscard[data-state="saved"] .dot,
 .dot.ok    { background: var(--vscode-testing-iconPassed, #4ec94e); }
 .statuscard[data-state="indexing"] .dot,
+.statuscard[data-state="loading"] .dot,
 .dot.busy  { background: var(--vscode-textLink-foreground, #3794ff); }
 .statuscard[data-state="stopped"] .dot,
 .dot.warn  { background: var(--vscode-editorWarning-foreground, #e3b341); }

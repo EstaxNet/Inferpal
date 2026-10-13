@@ -76,6 +76,52 @@ public class SettingsWidgetsTests
         Assert.Equal(Strings.IndexCardModelSemantic("nomic"), card.ModelLine);
     }
 
+    /// <summary>
+    /// ⚠ While the settings window reads the saved index, the card says so — never "not indexed yet" with a Build
+    /// button, which over an index that exists starts the second indexer the window is built not to run. And the page
+    /// keeps asking until the read is over.
+    /// </summary>
+    [Fact]
+    public void TheSavedIndexBeingRead_IsSaid_AndCannotBeRebuiltUnderTheRead()
+    {
+        Strings.ApplyLanguage("en");
+        var card = SettingsWidgets.IndexCard(Snapshot() with { Loading = true }, true, "nomic", Now);
+
+        Assert.Equal("loading", card.State);
+        Assert.Equal(Strings.IndexCardLoadingSaved, card.Title);
+        Assert.False(card.CanRebuild);
+        Assert.Equal(string.Empty, card.ModelLine);   // which vectors it holds is not read yet
+
+        // Reference arm: nothing to read — "not indexed yet", and its button.
+        var none = SettingsWidgets.IndexCard(Snapshot(), true, "nomic", Now);
+        Assert.Equal("notBuilt", none.State);
+        Assert.True(none.CanRebuild);
+
+        var widget = WebviewRebuildTests.TsCode("webview/settingsWidgets.ts");
+        Assert.Contains("(c.state === 'indexing' || c.state === 'loading') && host.isShown(page)", widget, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The states the Core serves for the index card are the ones the extension's type names, both ways: "saved" was
+    /// served for a whole lot without the type knowing it, and the page's polling compared against a closed list.
+    /// </summary>
+    [Fact]
+    public void TheIndexCardStates_AreTheExtensionsType_BothWays()
+    {
+        var core = ConventionCoverageTests.CodeOnly(Path.Combine(ConventionCoverageTests.RepoRoot(),
+                                                                 "Inferpal.Core", "Services", "Presentation", "SettingsWidgets.cs"));
+        var body = core[core.IndexOf("public static IndexCardModel IndexCard(", StringComparison.Ordinal)..];
+        body = body[..body.IndexOf("return new(state,", StringComparison.Ordinal)];
+        var served = System.Text.RegularExpressions.Regex.Matches(body, @"\(""([a-zA-Z]+)"",\s*Strings\.")
+            .Select(m => m.Groups[1].Value).ToHashSet();
+        Assert.True(served.Count >= 7, $"only {served.Count} states read: {string.Join(", ", served)}");   // WITNESS
+
+        var protocol = WebviewRebuildTests.TsCode("protocol.ts");
+        var union = System.Text.RegularExpressions.Regex.Match(protocol, @"interface IndexCard \{\s*state:\s*([^;]+);").Groups[1].Value;
+        var typed = System.Text.RegularExpressions.Regex.Matches(union, @"'([a-zA-Z]+)'").Select(m => m.Groups[1].Value).ToHashSet();
+        Assert.Equal(served.OrderBy(s => s), typed.OrderBy(s => s));
+    }
+
     [Fact]
     public void AFailedPass_NamesItsCause_AndAnIndexOffByChoice_IsNotCalledBroken()
     {

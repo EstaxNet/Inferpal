@@ -5,6 +5,31 @@ namespace Inferpal.Tests;
 
 public class McpServerConfigTests
 {
+    /// <summary>
+    /// ⚠ A stdio server's working directory (<c>cwd</c>) is read, written back, and kept by the list editor. Unread, the
+    /// server started in the editor host's own folder ("can't open file server.py"); and the Visual Studio list, which
+    /// rewrites the map from what it read, dropped the key at the first edit of any server.
+    /// </summary>
+    [Fact]
+    public void AStdioServersWorkingDirectory_IsRead_WrittenBack_AndKeptByTheListEditor()
+    {
+        const string json = """{ "local": { "command": "python", "args": ["server.py"], "cwd": "~/tools/mcp" } }""";
+        var server = Assert.Single(McpServerConfig.Parse(json));
+        Assert.Equal("~/tools/mcp", server.WorkingDirectory);
+
+        Assert.Equal("~/tools/mcp", Assert.Single(McpServerConfig.Parse(McpServerConfig.Serialize([server]))).WorkingDirectory);
+
+        // The list editor rebuilds the server from the fields it shows: the folder comes from the source.
+        var edited = McpServerConfig.FromEditor(server, "local", "python", ["server.py", "--verbose"],
+                                                new Dictionary<string, string>(), url: null, headers: null, enabled: true);
+        Assert.Equal("~/tools/mcp", edited.WorkingDirectory);
+
+        // Reference arm: no folder named, none written.
+        var plain = Assert.Single(McpServerConfig.Parse("""{ "p": { "command": "npx" } }"""));
+        Assert.Null(plain.WorkingDirectory);
+        Assert.DoesNotContain("\"cwd\"", McpServerConfig.Serialize([plain]), StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Parse_DirectMap_ReadsCommandArgsEnv()
     {

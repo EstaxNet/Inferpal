@@ -1138,6 +1138,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="SettingsSectionThisConversation" xml:space="preserve"><value>Questa conversazione</value></data>
   <data name="IndexCardReady" xml:space="preserve"><value>Indice aggiornato</value></data>
   <data name="IndexCardSaved" xml:space="preserve"><value>Indice salvato</value></data>
+  <data name="IndexCardLoadingSaved" xml:space="preserve"><value>Lettura dell'indice salvato…</value></data>
   <data name="IndexCardIndexing" xml:space="preserve"><value>Indicizzazione…</value></data>
   <data name="IndexCardNotBuilt" xml:space="preserve"><value>Non ancora indicizzato</value></data>
   <data name="IndexCardStopped" xml:space="preserve"><value>Indicizzazione interrotta</value></data>

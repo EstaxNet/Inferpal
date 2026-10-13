@@ -650,9 +650,15 @@ internal partial class InferpalToolWindowData
     /// </summary>
     private async Task HandleImportCommandAsync(string[] parts)
     {
+        var mcpBefore      = (_config.McpEnabled, _config.McpServersJson);
+        var languageBefore = _config.Language;
         var result = Services.Commands.ImportCommandHandler.Handle(
             parts, Services.Import.ImportContext.For(_config, _indexService.RootDir), _config.SaveFilePath, DateTime.Now);
-        if (result.SaveConfig) _config.Save();
+        if (result.SaveConfig)
+        {
+            _config.Save();
+            await ApplyImportedSettingsAsync(mcpBefore, languageBefore);
+        }
         if (result.Card is not { } card)
         {
             await ShowInfoAsync(result.Message);
@@ -660,6 +666,44 @@ internal partial class InferpalToolWindowData
         }
         await RunOnVMContextAsync(() =>
             InsertThemed(ChatMessageItem.ImportMsg(card, result.Message, numbers => ApplyImportFromCardAsync(card, numbers))));
+    }
+
+    /// <summary>
+    /// What an applied import changed takes effect now, as the settings window's Save makes it: the MCP servers start
+    /// (once no turn runs: a refresh tears every server down), the language applies. The index follows the settings on
+    /// its own.
+    /// </summary>
+    /// <remarks>⚠ Saved only, an imported MCP server ran at the next start of Visual Studio — "written" on the card, MCP
+    /// turned on, and no tool.</remarks>
+    private async Task ApplyImportedSettingsAsync((bool McpEnabled, string McpServersJson) mcpBefore, string languageBefore)
+    {
+        if ((_config.McpEnabled, _config.McpServersJson) != mcpBefore)
+        {
+            if (GpuScheduler.IsChatActive) _ = RefreshMcpWhenChatIdleAsync();
+            else await RefreshMcpAsync();
+        }
+        if (!string.Equals(_config.Language, languageBefore, StringComparison.Ordinal))
+        {
+            Strings.ApplyLanguage(_config.Language);
+            _config.NotifyLanguageChanged();
+        }
+    }
+
+    private async Task RefreshMcpWhenChatIdleAsync()
+    {
+        try
+        {
+            using var budget = new CancellationTokenSource(TimeSpan.FromMinutes(10));
+            await GpuScheduler.WaitForChatIdleAsync(budget.Token);
+        }
+        catch (Exception ex) { Diagnostics.Swallow("ToolWindow.ImportWaitChatIdle", ex); }
+        await RefreshMcpAsync();
+    }
+
+    private async Task RefreshMcpAsync()
+    {
+        try { await _tools.Mcp.RefreshAsync(); }
+        catch (Exception ex) { Diagnostics.Swallow("ToolWindow.ImportMcpRefresh", ex); }
     }
 
     /// <summary>

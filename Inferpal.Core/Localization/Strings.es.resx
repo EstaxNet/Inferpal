@@ -1138,6 +1138,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="SettingsSectionThisConversation" xml:space="preserve"><value>Esta conversación</value></data>
   <data name="IndexCardReady" xml:space="preserve"><value>Índice al día</value></data>
   <data name="IndexCardSaved" xml:space="preserve"><value>Índice guardado</value></data>
+  <data name="IndexCardLoadingSaved" xml:space="preserve"><value>Leyendo el índice guardado…</value></data>
   <data name="IndexCardIndexing" xml:space="preserve"><value>Indexando…</value></data>
   <data name="IndexCardNotBuilt" xml:space="preserve"><value>Aún sin indexar</value></data>
   <data name="IndexCardStopped" xml:space="preserve"><value>Indexación interrumpida</value></data>

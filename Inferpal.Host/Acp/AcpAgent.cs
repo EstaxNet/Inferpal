@@ -292,15 +292,36 @@ internal sealed class AcpAgent : IAsyncDisposable
     [JsonRpcMethod("session/prompt", UseSingleObjectParameterDeserialization = true)]
     public async Task<object> PromptAsync(JsonElement p)
     {
-        var session = await LiveAsync(p, CancellationToken.None);
+        var id = Str(p, "sessionId") ?? string.Empty;
+        _arriving.AddOrUpdate(id, 1, static (_, n) => n + 1);
+        AcpSession session;
+        bool stopped;
+        try { session = await LiveAsync(p, CancellationToken.None); }
+        finally
+        {
+            stopped = _stoppedArriving.TryRemove(id, out _);
+            if (_arriving.AddOrUpdate(id, 0, static (_, n) => n - 1) <= 0) _arriving.TryRemove(id, out _);
+        }
         if (!p.TryGetProperty("prompt", out var prompt)) throw new ArgumentException("'prompt' is required.");
-        return new { stopReason = await session.PromptAsync(prompt) };
+        return new { stopReason = await session.PromptAsync(prompt, stopped) };
     }
 
+    /// <summary>The prompts received for a session not ready to take them yet (an evicted one being reopened), by id.</summary>
+    private readonly ConcurrentDictionary<string, int> _arriving = new(StringComparer.Ordinal);
+
+    /// <summary>The sessions whose arriving prompt was stopped before its turn could open.</summary>
+    private readonly ConcurrentDictionary<string, bool> _stoppedArriving = new(StringComparer.Ordinal);
+
+    /// <remarks>⚠ A Stop that comes while the prompt's session is being reopened — after an eviction, its host started
+    /// again, its MCP servers, its conversation read back: seconds — finds no session, or no turn yet: lost, the whole turn
+    /// then ran, tools and writes included, under a Stop the user had pressed. Kept for the prompt, which then answers
+    /// <c>cancelled</c> without reaching the host.</remarks>
     [JsonRpcMethod("session/cancel", UseSingleObjectParameterDeserialization = true)]
     public async Task CancelAsync(JsonElement p)
     {
-        if (Str(p, "sessionId") is { } id && _sessions.TryGetValue(id, out var session)) await session.CancelAsync();
+        if (Str(p, "sessionId") is not { } id) return;
+        if (_arriving.ContainsKey(id)) _stoppedArriving[id] = true;
+        if (_sessions.TryGetValue(id, out var session)) await session.CancelAsync();
     }
 
     [JsonRpcMethod("session/set_mode", UseSingleObjectParameterDeserialization = true)]
@@ -377,10 +398,17 @@ internal sealed class AcpAgent : IAsyncDisposable
             var idle = _sessions.Values.Where(s => !s.Working).OrderBy(s => s.LastUsed).FirstOrDefault();
             if (idle is null) return;   // all at work: one more, rather than stopping what runs
             var kept = idle.KeptForReopen();
-            await CloseAsync(idle.Id);
+            // ⚠ Reopenable from the moment it is no longer live: recorded only once its host was disposed — MCP servers
+            // shutting down, seconds —, a prompt to it in between found it nowhere and answered "Unknown session".
+            if (!_sessions.TryRemove(idle.Id, out var closing)) continue;
             _evicted[idle.Id] = kept;
+            await CloseRemovedAsync(closing);
         }
     }
+
+    /// <summary>Test seam: awaited while a session is being closed, its host not disposed yet — the window a slow close
+    /// (its MCP servers shutting down) opens.</summary>
+    internal Func<string, Task>? WhileClosing { get; set; }
 
     /// <summary>
     /// A session closed: its running turn is cancelled and allowed to answer <c>cancelled</c> first — torn down under
@@ -388,9 +416,15 @@ internal sealed class AcpAgent : IAsyncDisposable
     /// </summary>
     private async Task CloseAsync(string id)
     {
-        if (!_sessions.TryRemove(id, out var session)) return;
+        if (_sessions.TryRemove(id, out var session)) await CloseRemovedAsync(session);
+    }
+
+    /// <summary>A session already out of the live ones: its turn stopped and given time to answer, then its host disposed.</summary>
+    private async Task CloseRemovedAsync(AcpSession session)
+    {
         await session.CancelAsync();
         await session.WhenIdleAsync(CloseGrace);
+        if (WhileClosing is { } hold) await hold(session.Id);
         await session.DisposeAsync();
     }
 

@@ -239,24 +239,34 @@ internal sealed class ProjectIndexService : IDisposable
     {
         var file = RagDatabase.PathFor(rootDir);
         if (!File.Exists(file)) return;
-        var db     = new RagDatabase(rootDir);
-        var loaded = await db.LoadAsync(ct).ConfigureAwait(false);
-        if (loaded.Count == 0) return;
-        var model  = await db.GetMetaAsync(EmbeddingModelMetaKey, ct).ConfigureAwait(false);
-        // A pass started meanwhile (the page's Rebuild) owns the index from here.
-        if (IsIndexing || !string.IsNullOrEmpty(IndexedRoot)) return;
-        await ApplyChunksAsync(loaded, replaceAll: true, ct).ConfigureAwait(false);
-        _indexedEmbeddingModel = model ?? string.Empty;
-        // In WAL mode the latest writes may still sit in the -wal file.
-        var wal = file + "-wal";
-        var at  = File.GetLastWriteTime(file);
-        _savedAt = File.Exists(wal) && File.GetLastWriteTime(wal) > at ? File.GetLastWriteTime(wal) : at;
-        _showsSaved = true;
+        // ⚠ Said while it reads: a large index takes seconds, and until then the card read "not indexed yet" over an
+        // index that exists — its Build button the very second indexer this method is here to avoid.
+        _loadingSaved = true;
+        try
+        {
+            var db     = new RagDatabase(rootDir);
+            var loaded = await db.LoadAsync(ct).ConfigureAwait(false);
+            if (loaded.Count == 0) return;
+            var model  = await db.GetMetaAsync(EmbeddingModelMetaKey, ct).ConfigureAwait(false);
+            // A pass started meanwhile (the page's Rebuild) owns the index from here.
+            if (IsIndexing || !string.IsNullOrEmpty(IndexedRoot)) return;
+            await ApplyChunksAsync(loaded, replaceAll: true, ct).ConfigureAwait(false);
+            _indexedEmbeddingModel = model ?? string.Empty;
+            // In WAL mode the latest writes may still sit in the -wal file.
+            var wal = file + "-wal";
+            var at  = File.GetLastWriteTime(file);
+            _savedAt = File.Exists(wal) && File.GetLastWriteTime(wal) > at ? File.GetLastWriteTime(wal) : at;
+            _showsSaved = true;
+        }
+        finally { _loadingSaved = false; }
     }
 
     /// <summary>The index shown is the one saved (<see cref="ShowSavedAsync"/>), not one a pass of this service built.</summary>
     private volatile bool _showsSaved;
     private DateTime? _savedAt;
+
+    /// <summary><see cref="ShowSavedAsync"/> is reading the saved index.</summary>
+    private volatile bool _loadingSaved;
 
     /// <summary>
     /// Ensures <c>.gitignore</c> in <paramref name="rootDir"/> contains entries for
@@ -987,7 +997,7 @@ internal sealed class ProjectIndexService : IDisposable
         return new IndexSnapshot(
             RootDir, IsIndexing, _progressDone, _progressTotal, _passCompleted, files, ChunkCount, unembedded,
             SkippedBySize, OversizeFiles, SkippedFolder, QueryEmbeddingModel, _client.IsEmbeddingCircuitOpen,
-            saved ? _savedAt : _updatedAt, _failure, _stopped, saved);
+            saved ? _savedAt : _updatedAt, _failure, _stopped, saved, Loading: _loadingSaved && !IsIndexing);
     }
 
     /// <summary>
@@ -1303,6 +1313,9 @@ internal sealed class ProjectIndexService : IDisposable
 
     // ── IDisposable ────────────────────────────────────────────────────────────
 
+    /// <summary>The service was disposed: no watcher, no pass.</summary>
+    internal bool Disposed => _disposed;
+
     public void Dispose()
     {
         // Flag first: a watcher callback already in flight must not resurrect the timer behind us.
@@ -1333,7 +1346,8 @@ internal sealed class ProjectIndexService : IDisposable
 /// <param name="Failure">Why the last pass stopped, when it failed (in the system's language: an exception message).</param>
 /// <param name="Saved">The index shown is the one saved for the folder, read without a pass
 /// (<see cref="ProjectIndexService.ShowSavedAsync"/>); <paramref name="UpdatedAt"/> is then when it was saved.</param>
+/// <param name="Loading">The saved index is being read: what it holds is not known yet.</param>
 internal sealed record IndexSnapshot(
     string RootDir, bool IsIndexing, int Done, int Total, bool Completed, int Files, int Chunks, int Unembedded,
     int Oversize, IReadOnlyList<string> OversizeFiles, WorkspaceScan.WalkGap? SkippedFolder, string? Model,
-    bool EmbeddingDown, DateTime? UpdatedAt, string? Failure, bool Stopped, bool Saved = false);
+    bool EmbeddingDown, DateTime? UpdatedAt, string? Failure, bool Stopped, bool Saved = false, bool Loading = false);

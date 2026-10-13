@@ -1142,6 +1142,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="SettingsSectionThisConversation" xml:space="preserve"><value>This conversation</value></data>
   <data name="IndexCardReady" xml:space="preserve"><value>Index up to date</value></data>
   <data name="IndexCardSaved" xml:space="preserve"><value>Index saved</value></data>
+  <data name="IndexCardLoadingSaved" xml:space="preserve"><value>Reading the saved index…</value></data>
   <data name="IndexCardIndexing" xml:space="preserve"><value>Indexing…</value></data>
   <data name="IndexCardNotBuilt" xml:space="preserve"><value>Not indexed yet</value></data>
   <data name="IndexCardStopped" xml:space="preserve"><value>Indexing stopped</value></data>

@@ -388,6 +388,150 @@ public sealed class AcpAgentTests : IDisposable
     }
 
     /// <summary>
+    /// ⚠ A thread's installed models are read again: at each turn's start, and before a pick is refused. Read once as the
+    /// thread opened, a server started after the editor — the ordinary order — or a model pulled since left the selector
+    /// offering the default alone for the thread's whole life, and a model picked in it was "unknown".
+    /// </summary>
+    [Fact]
+    public async Task ModelsInstalledAfterTheThreadOpened_AreOffered_AndCanBePicked()
+    {
+        await using var h = await StartAsync(fake: f => f.ModelNames = []);   // the server lists nothing as the thread opens
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+        h.Fake.ModelNames = ["test-model", "late-model", "picked-model"];
+
+        // The next turn's options list them.
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, sid, "hello")));
+        var listed = h.Client.Updates(sid, "config_option_update").LastOrDefault();
+        Assert.Contains("late-model", listed.ToString(), StringComparison.Ordinal);
+
+        // And a pick is read again before it is refused.
+        h.Fake.ModelNames = ["test-model", "late-model", "picked-model", "pulled-just-now"];
+        var picked = await h.Client.RequestAsync("session/set_config_option", new { sessionId = sid, configId = "model", value = "pulled-just-now" });
+        Assert.True(picked.TryGetProperty("result", out _), picked.ToString());
+
+        // Reference arm: a model nobody installed is still refused.
+        var unknown = await h.Client.RequestAsync("session/set_config_option", new { sessionId = sid, configId = "model", value = "no-such-model" });
+        Assert.True(unknown.TryGetProperty("error", out _), unknown.ToString());
+    }
+
+    /// <summary>
+    /// ⚠ A <c>/task</c>'s report — the host's notice, after the turn — is kept with the thread, as both editors keep it.
+    /// Shown only, it was gone from the thread once reloaded, or reopened after an eviction: its result with it.
+    /// </summary>
+    [Fact]
+    public async Task ATasksReport_IsKeptWithTheThread()
+    {
+        const string goal = "count the files";
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using var h = await StartAsync(fake: f => f.OnAgentRun = async (history, _, _, ct) =>
+        {
+            if (!history.Any(m => m.Content == goal)) return new AgentResult("ok", [], history);
+            await release.Task.WaitAsync(ct);   // the report comes after the turn, as it does
+            return new AgentResult("There are three files.", [], history);
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, sid, "/task " + goal)));
+
+        var before = h.Client.Said(sid).Length;
+        release.SetResult();
+        for (var i = 0; i < 300 && h.Client.Said(sid).Length == before; i++) await Task.Delay(100);
+        var report = h.Client.Said(sid)[before..].Trim();
+        Assert.NotEmpty(report);   // WITNESS: the report came, after the turn
+
+        SessionData? saved = null;
+        for (var i = 0; i < 300; i++)
+        {
+            saved = await new Services.Persistence.ConversationStore().LoadAsync(sid, CancellationToken.None);
+            if (saved?.Messages.Any(m => m.Content.Trim() == report) == true) break;
+            await Task.Delay(100);
+        }
+        var kept = Assert.Single(saved!.Messages, m => m.Content.Trim() == report);
+        Assert.Equal(Services.Persistence.SessionManager.NoticeMarker, kept.ToolName);   // a notice: never read back as an answer
+    }
+
+    /// <summary>
+    /// ⚠ A thread being closed to make room answers a prompt that comes meanwhile. It left the live sessions first and
+    /// was recorded as reopenable only once its host was disposed — its MCP servers shutting down, seconds —: in between
+    /// it was nowhere, and the prompt answered "Unknown session", the very error closing for room must never cause.
+    /// </summary>
+    [Fact]
+    public async Task AThreadBeingClosedToMakeRoom_AnswersAPromptMeanwhile()
+    {
+        await using var h = await StartAsync();
+        await h.Client.RequestAsync("initialize", Init());
+        var first = await NewSessionAsync(h);
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, first, "remember the word teal")));
+        for (var i = 0; i < AcpAgent.MaxLiveSessions - 1; i++) await NewSessionAsync(h);   // at the cap
+
+        var closing = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        h.Agent.WhileClosing = id =>
+        {
+            if (id != first) return Task.CompletedTask;
+            closing.TrySetResult();
+            return release.Task;
+        };
+        var opening = NewSessionAsync(h);   // one more: the first is closed for room, its close held open
+        await closing.Task.WaitAsync(Wait);
+        Assert.False(h.Agent.IsLive(first));   // WITNESS: no longer live, its host not disposed yet
+
+        var answer = await PromptAsync(h, first, "which word?");
+        release.SetResult();
+        await opening;
+        Assert.Equal("end_turn", StopReason(answer));
+    }
+
+    /// <summary>
+    /// ⚠ A Stop that comes while a thread closed to make room is being reopened — its host started again, the model
+    /// server asked, its conversation read back: seconds — stops that prompt. It found no session, or no turn yet, and
+    /// was lost: the whole turn then ran, tools and writes included, under the Stop the user had pressed.
+    /// </summary>
+    [Fact]
+    public async Task AStopWhileAThreadIsReopened_StopsItsPrompt_BeforeTheHost()
+    {
+        var reopening = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var hold = false;
+        var chats = 0;
+        await using var h = await StartAsync(fake: f =>
+        {
+            f.OnChatRequest = (_, _, _, _) =>
+            {
+                Interlocked.Increment(ref chats);
+                return Task.FromResult(new ChatTurnResult("ok", null, 0, 0));
+            };
+            f.BeforeListModels = async () =>
+            {
+                if (!Volatile.Read(ref hold)) return;
+                reopening.TrySetResult();
+                await release.Task;
+            };
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var first = await NewSessionAsync(h);
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, first, "remember the word teal")));
+        for (var i = 0; i < AcpAgent.MaxLiveSessions; i++) await NewSessionAsync(h);   // the first is closed for room
+        Assert.False(h.Agent.IsLive(first));   // WITNESS
+        Interlocked.Exchange(ref chats, 0);
+
+        Volatile.Write(ref hold, true);
+        var prompt = PromptAsync(h, first, "rewrite every file");
+        await reopening.Task.WaitAsync(Wait);   // its host is starting again, asking the model server
+        await h.Client.NotifyAsync("session/cancel", new { sessionId = first });
+        Volatile.Write(ref hold, false);
+        release.SetResult();
+
+        Assert.Equal("cancelled", StopReason(await prompt));
+        Assert.Equal(0, Volatile.Read(ref chats));
+
+        // Reference arm: the next prompt, not stopped, runs.
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, first, "hello")));
+        Assert.Equal(1, Volatile.Read(ref chats));
+    }
+
+    /// <summary>
     /// ⚠ A thread whose <c>/task</c> still runs is not idle. Closed to make room — no turn open, used longest ago —, its
     /// task died with its host, without a word, and its result never came. The idle thread without work goes instead;
     /// once the task is over, the thread is idle like any other.

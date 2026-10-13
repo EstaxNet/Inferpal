@@ -1138,6 +1138,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SettingsSectionThisConversation" xml:space="preserve"><value>この会話</value></data>
   <data name="IndexCardReady" xml:space="preserve"><value>インデックスは最新です</value></data>
   <data name="IndexCardSaved" xml:space="preserve"><value>保存済みのインデックス</value></data>
+  <data name="IndexCardLoadingSaved" xml:space="preserve"><value>保存済みのインデックスを読み込んでいます…</value></data>
   <data name="IndexCardIndexing" xml:space="preserve"><value>インデックス作成中…</value></data>
   <data name="IndexCardNotBuilt" xml:space="preserve"><value>まだインデックスがありません</value></data>
   <data name="IndexCardStopped" xml:space="preserve"><value>インデックス作成が中断されました</value></data>

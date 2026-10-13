@@ -62,14 +62,14 @@ internal sealed record McpServerConfig(
 
     /// <summary>
     /// A server rebuilt from the fields the settings editor shows. What the editor does not show — the
-    /// OAuth block — is carried over from <paramref name="source"/>.
+    /// OAuth block, the working directory — is carried over from <paramref name="source"/>.
     /// </summary>
     public static McpServerConfig FromEditor(
         McpServerConfig? source, string name, string? command, IReadOnlyList<string> args,
         IReadOnlyDictionary<string, string> env, string? url, IReadOnlyDictionary<string, string>? headers,
         bool enabled) =>
         string.IsNullOrWhiteSpace(url)
-            ? new(name, command, args, env, Enabled: enabled)
+            ? new(name, command, args, env, Enabled: enabled, WorkingDirectory: source?.WorkingDirectory)
             : new(name, null, [], new Dictionary<string, string>(), Url: url, Headers: headers,
                   OAuth: source?.OAuth, Enabled: enabled);
 
@@ -163,9 +163,16 @@ internal sealed record McpServerConfig(
                 var enabled = !(def.TryGetProperty("disabled", out var d)
                                 && d.ValueKind == JsonValueKind.True);
 
+                // ⚠ The folder a stdio server starts in: unread, `"cwd": "~/tools/mcp"` started it in the editor host's
+                // own folder — "can't open file server.py" — and the Visual Studio list, which rewrites the map from what
+                // it read, dropped the key at the first edit.
+                var cwd = def.TryGetProperty("cwd", out var w) && w.ValueKind == JsonValueKind.String
+                          && !string.IsNullOrWhiteSpace(w.GetString()) ? w.GetString()!.Trim() : null;
+
                 servers.Add(new McpServerConfig(
                     entry.Name.Trim(), command, args, env,
-                    Url: url, Headers: headers.Count > 0 ? headers : null, OAuth: oauth, Enabled: enabled));
+                    Url: url, Headers: headers.Count > 0 ? headers : null, OAuth: oauth, Enabled: enabled,
+                    WorkingDirectory: cwd));
             }
         }
         catch (JsonException ex)
@@ -222,7 +229,7 @@ internal sealed record McpServerConfig(
 
     /// <summary>
     /// Serialises a list of server definitions back to the Claude Desktop / Continue map format.
-    /// HTTP entries write <c>url</c>/<c>headers</c>; stdio entries write <c>command</c>/<c>args</c>/<c>env</c>.
+    /// HTTP entries write <c>url</c>/<c>headers</c>; stdio entries write <c>command</c>/<c>args</c>/<c>env</c>/<c>cwd</c>.
     /// Empty optional members are omitted; <c>disabled</c> is written only when the server is disabled.
     /// Names are de-duplicated (last write wins) since the format is a map.
     /// </summary>
@@ -246,6 +253,7 @@ internal sealed record McpServerConfig(
                 def["command"] = s.Command ?? string.Empty;
                 if (s.Args.Count > 0) def["args"] = s.Args;
                 if (s.Env.Count > 0)  def["env"]  = s.Env;
+                if (!string.IsNullOrWhiteSpace(s.WorkingDirectory)) def["cwd"] = s.WorkingDirectory;
             }
             if (!s.Enabled) def["disabled"] = true;
 

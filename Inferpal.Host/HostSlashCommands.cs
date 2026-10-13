@@ -472,9 +472,10 @@ internal sealed partial class HostServer
                 {
                     // The Core previews or applies; the host saves what it changed and hands the card to the editor
                     // (its Markdown is what the agent protocol, which draws no card, shows).
+                    var mcpBefore = (s.Config.McpEnabled, s.Config.McpServersJson);
                     var result = ImportCommandHandler.Handle(parts, Inferpal.Services.Import.ImportContext.For(s.Config, s.RootDir),
                                                              s.Config.SaveFilePath, DateTime.Now);
-                    if (result.SaveConfig) s.Config.Save();
+                    if (result.SaveConfig) await SaveAndApplyAsync(s, mcpBefore, cts.Token);
                     List<SlashEffectDto> saved = result.SaveConfig ? [new SlashEffectDto("configSaved")] : [];
                     return new SlashCommandResult(true, result.Message, saved, result.Card);
                 }
@@ -483,6 +484,7 @@ internal sealed partial class HostServer
                 {
                     // The profile itself is applied (index exclusions) or merely reported by the
                     // Core; the host only performs the IO it decided on.
+                    var mcpBefore = (s.Config.McpEnabled, s.Config.McpServersJson);
                     var result = await OnboardCommandHandler.HandleAsync(
                         s.Client, s.Config, s.RootDir ?? Directory.GetCurrentDirectory(), parts,
                         git: GitProcess.For(s.RootDir),
@@ -494,7 +496,7 @@ internal sealed partial class HostServer
                             new RulesChecksPromptsCommandHandler.CommandListResult(null, scaffold),
                             Strings.OnboardProfileScaffolded, cts.Token);
 
-                    if (result.SaveConfig) s.Config.Save();
+                    if (result.SaveConfig) await SaveAndApplyAsync(s, mcpBefore, cts.Token);
                     // ⚠ The extension keeps its own copy of some of these settings (the utility model) and pushes it back
                     // at every host start: told nothing, it undoes the applied profile at the next restart, in silence.
                     List<SlashEffectDto> saved = result.SaveConfig ? [new SlashEffectDto("configSaved")] : [];

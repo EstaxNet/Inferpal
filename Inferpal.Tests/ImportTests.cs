@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using Inferpal.Config;
 using Inferpal.Localization;
 using Inferpal.Services.Commands;
+using Inferpal.Services.Docs;
 using Inferpal.Services.Import;
 using Inferpal.Services.Mcp;
 using Xunit;
@@ -231,6 +232,74 @@ public sealed class ImportTests : IDisposable
         Assert.True(paths.Count > 20, "the enumeration read the file");              // a witness: the walk is alive
         Assert.Empty(paths.Where(p => !Covered(p)));
         Assert.DoesNotContain(plan.Skipped, s => !Enum.IsDefined(s.Cause));
+    }
+
+    /// <summary>
+    /// ⚠ A Continue MCP server's <c>cwd</c> reaches the settings. The card showed it carried, and the settings dropped it:
+    /// the server then started in the editor host's folder.
+    /// </summary>
+    [Fact]
+    public void AnImportedServersWorkingDirectory_ReachesTheSettings()
+    {
+        const string yaml = """
+            name: tools
+            version: 1.0.0
+            schema: v1
+            mcpServers:
+              - name: local
+                command: python
+                args: [server.py]
+                cwd: /srv/mcp
+            """;
+        var config = NewConfig();
+        var plan = ContinueImport.Read(Write("config.yaml", yaml), Context(config));
+        var server = plan.Items.Single(i => i.Effect is AddMcpServer);
+        Assert.Empty(ImportApplier.Apply(plan, new HashSet<string> { server.Id }, config, _configFile, _commands, DateTime.Now).Failed);
+
+        Assert.Equal("/srv/mcp", Assert.Single(McpServerConfig.Parse(config.McpServersJson)).WorkingDirectory);
+    }
+
+    /// <summary>
+    /// ⚠ A command an earlier import renamed (/review is Inferpal's: /review-continue) is already in place the next time.
+    /// Looked for under its own name only, it was offered again on every import, ticked, as /review-continue-2, -3…
+    /// </summary>
+    [Fact]
+    public void ARenamedCommand_IsAlreadyInPlace_TheSecondTime()
+    {
+        var config = NewConfig();
+        var plan = ReadYaml(config);
+        var review = plan.Items.Single(i => i.Effect is WriteCommand { Name: "review-continue" });   // WITNESS
+        Assert.Empty(ImportApplier.Apply(plan, new HashSet<string> { review.Id }, config, _configFile, _commands, DateTime.Now).Failed);
+
+        var again = ReadYaml(config);
+        Assert.DoesNotContain(again.Items, i => i.Effect is WriteCommand { Name: var n } && n.StartsWith("review", StringComparison.Ordinal));
+        Assert.Contains(again.Skipped, s => s.Cause == ImportSkipCause.AlreadyConfigured && s.Detail == "/review");
+        // Reference arm: the commands not written yet are still offered.
+        Assert.Contains(again.Items, i => i.Effect is WriteCommand { Name: "summarize" });
+    }
+
+    /// <summary>
+    /// ⚠ An imported documentation source never replaces one of the user's. Its title is the imported file's: under a
+    /// title the user's own source held — another address —, the apply replaced that source while the card said
+    /// "added". It takes a free id; the same address already there stays "already in place".
+    /// </summary>
+    [Fact]
+    public void AnImportedDocSource_UnderTheTitleOfTheUsersOwn_IsAddedBesideIt()
+    {
+        var config = NewConfig();
+        var mine = new DocSite("rust-book", "Rust book", "https://mirror.corp.example/rust/");
+        config.DocSitesJson = DocSite.Serialize([mine]);
+        var plan = ReadYaml(config);
+        var docs = plan.Items.Single(i => i.Effect is AddDocSite);   // WITNESS: offered, another address
+
+        Assert.Empty(ImportApplier.Apply(plan, new HashSet<string> { docs.Id }, config, _configFile, _commands, DateTime.Now).Failed);
+        var sites = DocSite.Parse(config.DocSitesJson);
+        Assert.Contains(mine, sites);
+        var added = Assert.Single(sites, s => s.StartUrl == "https://doc.rust-lang.org/book/");
+        Assert.NotEqual(mine.Id, added.Id);
+
+        // Reference arm: imported again, the address is there — already in place, nothing offered.
+        Assert.DoesNotContain(ReadYaml(config).Items, i => i.Effect is AddDocSite);
     }
 
     // ── Continue, config.json ───────────────────────────────────────────────

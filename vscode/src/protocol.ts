@@ -499,7 +499,8 @@ export interface SettingsField {
 
 /** `settings/indexCard`: the code index as the Code search page shows it. */
 export interface IndexCard {
-  state: 'noWorkspace' | 'indexing' | 'failed' | 'stopped' | 'notBuilt' | 'ready';
+  /** `saved`: the settings window shows the index saved for its folder; `loading`: it is reading it. */
+  state: 'noWorkspace' | 'indexing' | 'loading' | 'failed' | 'stopped' | 'notBuilt' | 'ready' | 'saved';
   title: string;
   detail: string;
   notes: string[];

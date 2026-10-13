@@ -60,6 +60,8 @@ internal static class SettingsWidgets
         var (state, title, detail) =
               s.IsIndexing         ? ("indexing", Strings.IndexCardIndexing,
                                       s.Total > 0 ? Strings.IndexCardProgress(s.Done, s.Total) : string.Empty)
+            // Not "not indexed yet" while the saved index is read: its Build would start a second indexer.
+            : s.Loading            ? ("loading",  Strings.IndexCardLoadingSaved, string.Empty)
             : s.Failure is { } why ? ("failed",   Strings.IndexCardFailed, Strings.IndexCardFailedDetail(why.TrimEnd('.', ' ')))
             : s.Completed          ? ("ready",    Strings.IndexCardReady,  Strings.IndexCardFilesUpdated(s.Files, At(s.UpdatedAt, now)))
             // Read from disk, not kept up to date here: never "up to date".
@@ -88,14 +90,15 @@ internal static class SettingsWidgets
         // The model the vectors came from; before a first pass, the one the settings name. Neither: nothing is
         // claimed about an index that does not exist yet.
         var model = s.Model ?? (state is "notBuilt" or "indexing" ? configuredModel : null);
-        var modelLine = !ragEnabled          ? Strings.IndexCardModelOff
-                      : model is not null    ? Strings.IndexCardModelSemantic(model)
-                      : state is "notBuilt"  ? string.Empty
-                      :                        Strings.IndexCardModelKeywords;
+        var modelLine = !ragEnabled                       ? Strings.IndexCardModelOff
+                      : state is "loading"                ? string.Empty   // which vectors it holds is not read yet
+                      : model is not null                 ? Strings.IndexCardModelSemantic(model)
+                      : state is "notBuilt"               ? string.Empty
+                      :                                     Strings.IndexCardModelKeywords;
 
         return new(state, title, detail, notes, oversizeNote, oversizeFiles, modelLine,
                    state == "notBuilt" ? Strings.IndexCardBuild : Strings.IndexCardRebuild,
-                   CanRebuild: !s.IsIndexing);
+                   CanRebuild: !s.IsIndexing && !s.Loading);
     }
 
     /// <summary>The @Docs sites: the configured ones, plus any the index still serves that the settings no longer list.</summary>

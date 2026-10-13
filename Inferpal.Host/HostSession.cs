@@ -221,6 +221,11 @@ internal sealed class HostSession : IDisposable
         try { Lsp.Dispose(); }
         catch (Exception ex) { Diagnostics.Swallow("HostSession.DisposeLsp", ex); }
 
+        // ⚠ The code index watches the folder and re-embeds what changes: kept, every thread an ACP agent closed — to
+        // make room, or for good — left one more indexer on the same folder, each save embedded once per dead thread.
+        try { Index.Dispose(); }
+        catch (Exception ex) { Diagnostics.Swallow("HostSession.DisposeIndex", ex); }
+
         // Detached agent runs must not survive the window that started them either.
         try { _tasks?.Dispose(); }
         catch (Exception ex) { Diagnostics.Swallow("HostSession.DisposeTasks", ex); }

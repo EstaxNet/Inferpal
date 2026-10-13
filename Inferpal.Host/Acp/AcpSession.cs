@@ -285,7 +285,8 @@ internal sealed class AcpSession : IAsyncDisposable
     /// <summary>The options as the client is about to show them: the model they name is the one it now shows.</summary>
     public List<object> ConfigOptions()
     {
-        _announcedModel = CurrentModel;
+        _announcedModel  = CurrentModel;
+        _announcedModels = [.. _models];
         return AcpModes.ConfigOptions(_mode, _announcedModel, _models);
     }
 
@@ -306,6 +307,13 @@ internal sealed class AcpSession : IAsyncDisposable
                 break;
             case AcpModes.ModelOption:
                 var offered = AcpModes.ModelChoices(CurrentModel, _models);
+                if (chosen is not null && !offered.Contains(chosen, StringComparer.Ordinal))
+                {
+                    // Installed since the list was read (the server was down when the thread opened, a model was pulled):
+                    // read again before refusing.
+                    await RefreshModelsAsync(ct);
+                    offered = AcpModes.ModelChoices(CurrentModel, _models);
+                }
                 if (chosen is null || !offered.Contains(chosen, StringComparer.Ordinal))
                     throw AcpRpc.Error(AcpRpc.InvalidParams, $"Unknown model '{chosen}'.");
                 // The window's model for this session, as VS Code's per-window pick: every reader that falls back to the
@@ -385,7 +393,9 @@ internal sealed class AcpSession : IAsyncDisposable
     // ── A turn ─────────────────────────────────────────────────────────────────
 
     /// <summary><c>session/prompt</c>: the turn, and the reason it stopped.</summary>
-    public async Task<string> PromptAsync(JsonElement prompt)
+    /// <param name="stopped">A Stop came for this prompt before its turn could open (its session was being reopened):
+    /// the turn answers <c>cancelled</c> without reaching the host.</param>
+    public async Task<string> PromptAsync(JsonElement prompt, bool stopped = false)
     {
         var content = AcpPromptBlocks.Read(prompt);
         lock (_gate)
@@ -393,7 +403,7 @@ internal sealed class AcpSession : IAsyncDisposable
             if (_turnOpen) throw AcpRpc.Error(AcpRpc.InvalidParams, "A prompt is already running in this session.");
             _turnOpen = true;
             _idle = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            _cancelRequested = false;
+            _cancelRequested = stopped;
             _stream = new AcpShownStream();
             _plan.Clear();
             _calls.Clear();
@@ -404,6 +414,7 @@ internal sealed class AcpSession : IAsyncDisposable
         try
         {
             await AnnounceCommandsOnceAsync(CancellationToken.None);
+            await ReadModelsAgainAsync();
             if (Interlocked.Exchange(ref _startNotice, null) is { Length: > 0 } notice) Say(notice + "\n\n");
             await FollowSettingsAsync();
             await AskAgainWhatWasAskedTooEarlyAsync();
@@ -481,8 +492,26 @@ internal sealed class AcpSession : IAsyncDisposable
     /// </summary>
     private void AnnounceModelIfChanged()
     {
-        if (string.Equals(_announcedModel, CurrentModel, StringComparison.Ordinal)) return;
+        if (string.Equals(_announcedModel, CurrentModel, StringComparison.Ordinal)
+            && _announcedModels.SequenceEqual(_models, StringComparer.Ordinal)) return;
         Update(new { sessionUpdate = "config_option_update", configOptions = ConfigOptions() });
+    }
+
+    /// <summary>The installed models the client's selector last listed.</summary>
+    private List<string> _announcedModels = [];
+
+    /// <summary>
+    /// At a turn's start, the installed models read again — and the default model adopted, when the server could not be
+    /// asked as the thread opened.
+    /// </summary>
+    /// <remarks>⚠ Read once, at the thread's start: a server started after the editor (the ordinary order), or a model
+    /// pulled since, left the selector offering the default alone for the thread's whole life, a model picked "unknown".
+    /// VS Code reads them again when the server comes back.</remarks>
+    private async Task ReadModelsAgainAsync()
+    {
+        var hadNone = _models.Count == 0;
+        await RefreshModelsAsync(CancellationToken.None);
+        if (hadNone && _models.Count > 0) await AdoptDefaultModelAsync(CancellationToken.None);
     }
 
     private bool CancelRequested { get { lock (_gate) return _cancelRequested; } }
@@ -1042,6 +1071,14 @@ internal sealed class AcpSession : IAsyncDisposable
     {
         if (string.IsNullOrEmpty(note.Text)) return;
         Update(new { sessionUpdate = "agent_message_chunk", content = Text("\n\n" + note.Text) });
+        // ⚠ Kept with the thread, as both editors keep it — a notice, out of what the model reads back. Shown only, a
+        // /task's report (the only place its result is) was gone once the thread was reloaded, or reopened after an
+        // eviction. Outside a turn nobody saves after it: saved here — once the user wrote in the thread, a command
+        // included (a start's notice alone would make a session file of nothing); a turn saves at its end.
+        RecordAnswer(note.Text, notice: true);
+        bool written;
+        lock (_gate) written = _transcript.Any(m => m.Role == "user");
+        if (!InTurn && written) _ = SaveAsync();
     }
 
     [JsonRpcMethod("task/finished", UseSingleObjectParameterDeserialization = true)]

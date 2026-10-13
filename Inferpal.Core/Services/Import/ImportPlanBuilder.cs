@@ -136,15 +136,25 @@ internal sealed class ImportPlanBuilder
         var name = PromptFilesService.CommandName(raw.Trim().TrimStart('/'));
         name = Regex.Replace(name, @"[^\p{L}\p{N}:.\-]", "-", RegexOptions.None, MatchTimeout).Trim('-');
         if (name.Length == 0) name = "command";
-        if (_existingCommandFiles.TryGetValue(name, out var existing) && existing.Trim() == text.Trim()) return null;
+
+        // ⚠ The very same command already written is already in place — under its own name, or under the name an earlier
+        // import gave it to step around a taken one (/review → /review-continue): looked for under its own name only,
+        // the renamed one was offered again on every import, ticked, as /review-continue-2, then -3.
+        var suffix = Source == ImportSource.Continue ? "continue" : "roo";
+        bool Taken(string candidate) => SlashCommandRouter.IsBuiltIn("/" + candidate) || _commandNames.Contains(candidate);
+        bool SameAs(string candidate) =>
+            _existingCommandFiles.TryGetValue(candidate, out var existing) && existing.Trim() == text.Trim();
+        if (SameAs(name)) return null;
 
         var chosen = name;
-        if (SlashCommandRouter.IsBuiltIn("/" + chosen) || _commandNames.Contains(chosen))
+        if (Taken(chosen))
         {
-            var suffix = Source == ImportSource.Continue ? "continue" : "roo";
             chosen = name + "-" + suffix;
-            for (var n = 2; SlashCommandRouter.IsBuiltIn("/" + chosen) || _commandNames.Contains(chosen); n++)
+            for (var n = 2; Taken(chosen); n++)
+            {
+                if (SameAs(chosen)) return null;
                 chosen = name + "-" + suffix + "-" + n.ToString(CultureInfo.InvariantCulture);
+            }
         }
         _commandNames.Add(chosen);
         return (chosen, chosen == name ? null : new ImportItemNote(ImportNote.Renamed, "/" + name));

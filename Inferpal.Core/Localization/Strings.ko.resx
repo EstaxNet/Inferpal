@@ -1138,6 +1138,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="SettingsSectionThisConversation" xml:space="preserve"><value>이 대화</value></data>
   <data name="IndexCardReady" xml:space="preserve"><value>인덱스 최신 상태</value></data>
   <data name="IndexCardSaved" xml:space="preserve"><value>저장된 인덱스</value></data>
+  <data name="IndexCardLoadingSaved" xml:space="preserve"><value>저장된 인덱스를 읽는 중…</value></data>
   <data name="IndexCardIndexing" xml:space="preserve"><value>인덱싱 중…</value></data>
   <data name="IndexCardNotBuilt" xml:space="preserve"><value>아직 인덱싱되지 않음</value></data>
   <data name="IndexCardStopped" xml:space="preserve"><value>인덱싱 중단됨</value></data>

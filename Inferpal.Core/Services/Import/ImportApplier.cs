@@ -122,7 +122,10 @@ internal static class ImportApplier
                 config.FollowFile(nameof(InferpalConfig.DocSitesJson));
                 if (!DocSite.TryParse(config.DocSitesJson, out var sites, out var problem) && !string.IsNullOrWhiteSpace(config.DocSitesJson))
                     return "the documentation sources in the settings are not readable: " + problem;
-                config.DocSitesJson = DocSite.Serialize(DocSite.Upsert(sites, DocSite.CreateAmong(site.StartUrl, site.Title, sites)));
+                // ⚠ The title is the imported file's, not the user's: under a title the user's own source holds — another
+                // address —, it replaced that source, configuration and index, while the card said "added".
+                config.DocSitesJson = DocSite.Serialize(DocSite.Upsert(sites,
+                    DocSite.CreateAmong(site.StartUrl, site.Title, sites, titleNamesTheSource: false)));
                 return null;
             case AddPermissionRule rule:
                 // ⚠ The first rule that matches decides. Appended after an allow — imported (Roo's allowed list comes

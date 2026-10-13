@@ -166,7 +166,7 @@ public partial class HostServerTests
         }
     }
 
-    private static Harness CreateHarness(Action<InferpalConfig>? configure = null)
+    private static Harness CreateHarness(Action<InferpalConfig>? configure = null, string? settingsFile = null)
     {
         var (clientStream, serverStream) = FullDuplexStream.CreatePair();
 
@@ -176,7 +176,7 @@ public partial class HostServerTests
         var server = new HostServer(cfg => { built.Add(cfg); return fake; }, () =>
         {
             // RAG off unless a test asks: initialize indexes the workspace when it is on.
-            var cfg = new InferpalConfig { RagEnabled = false };
+            var cfg = new InferpalConfig { RagEnabled = false, SavePathForTests = settingsFile };
             configure?.Invoke(cfg);
             return cfg;
         });
@@ -1800,6 +1800,71 @@ public partial class HostServerTests
             if (branch is not null)
                 await h.Client.InvokeWithParameterObjectAsync<bool>("session/delete", new { name = branch.Name });
         }
+    }
+
+    /// <summary>
+    /// ⚠ What an applied import wrote takes effect at once, as a settings save makes it: its MCP servers start. Saved
+    /// only, they ran at the next start — "written" on the card, MCP turned on, and no tool.
+    /// </summary>
+    [Fact]
+    public async Task AnAppliedImport_StartsItsMcpServers_AtOnce()
+    {
+        // A settings file of its own: the import saves, and the suite's file is followed by other tests' threads.
+        var settings = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"import-apply-{Guid.NewGuid():N}.json");
+        using var h = CreateHarness(settingsFile: settings);
+        await h.InitializeAsync();
+        var file = Path.Combine(h.RootDir, "continue.yaml");
+        File.WriteAllText(file, "name: x\nversion: 1.0.0\nschema: v1\nmcpServers:\n  - name: imported-tool\n    command: inferpal-no-such-program\n");
+        var session = h.Server.CurrentSession!;
+        Assert.DoesNotContain(session.Mcp.Status, st => st.Name == "imported-tool");   // WITNESS: nothing tried yet
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<SlashCommandResult>(
+            "command/slash", new { text = $"/import continue {file} apply all" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.Contains(result.Effects ?? [], e => e.Kind == "configSaved");
+        Assert.True(session.Config.McpEnabled);
+
+        // Started (here it cannot: no such program) — tried, and its card says why.
+        Assert.Contains(session.Mcp.Status, st => st.Name == "imported-tool");
+    }
+
+    /// <summary>Visual Studio applies an import's MCP servers and language too, after saving.</summary>
+    [Fact]
+    public void VisualStudio_AppliesWhatAnImportSaved()
+    {
+        var vm = ConventionCoverageTests.CodeOnly(Path.Combine(ConventionCoverageTests.RepoRoot(),
+                                                               "Inferpal", "ToolWindow", "InferpalToolWindowData.SlashCommands.cs"));
+        Assert.Matches(@"_config\.Save\(\);\s*await ApplyImportedSettingsAsync\(mcpBefore, languageBefore\);", vm);
+        Assert.Contains("await _tools.Mcp.RefreshAsync()", vm, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// ⚠ A session left behind disposes everything it holds that can be disposed — read off the session's own members,
+    /// never a list of names. The code index was missing from the list: every thread an ACP agent closed (to make room,
+    /// or for good) left one more indexer watching the folder and re-embedding each save, its whole index in memory.
+    /// </summary>
+    [Fact]
+    public async Task ASessionLeftBehind_DisposesEverythingItHolds_TheCodeIndexIncluded()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+        var first = h.Server.CurrentSession!;
+        await h.InitializeAsync();   // a new session: the first is disposed
+        Assert.NotSame(first, h.Server.CurrentSession);   // WITNESS
+        Assert.True(first.Index.Disposed, "the code index of the session left behind still runs");
+
+        // The property, on the source: each member whose type can be disposed is disposed by Dispose.
+        const System.Reflection.BindingFlags all = System.Reflection.BindingFlags.Instance
+            | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;
+        static bool Disposable(Type t) => typeof(IDisposable).IsAssignableFrom(t) || typeof(IAsyncDisposable).IsAssignableFrom(t);
+        var held = typeof(HostSession).GetProperties(all).Where(p => Disposable(p.PropertyType)).Select(p => p.Name)
+            .Concat(typeof(HostSession).GetFields(all).Where(f => !f.Name.Contains('<') && Disposable(f.FieldType)).Select(f => f.Name))
+            .ToList();
+        Assert.True(held.Count >= 5, $"only {held.Count} disposable members read: {string.Join(", ", held)}");   // WITNESS
+        var code = ConventionCoverageTests.CodeOnly(Path.Combine(ConventionCoverageTests.RepoRoot(), "Inferpal.Host", "HostSession.cs"));
+        var dispose = code[code.IndexOf("public void Dispose()", StringComparison.Ordinal)..];
+        foreach (var name in held)
+            Assert.True(dispose.Contains(name + ".Dispose", StringComparison.Ordinal) || dispose.Contains(name + "?.Dispose", StringComparison.Ordinal),
+                        $"HostSession.Dispose leaves '{name}' running");
     }
 
     /// <summary>

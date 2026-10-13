@@ -1225,6 +1225,18 @@ internal sealed partial class HostServer : IDisposable
         });
     }
 
+    /// <summary>
+    /// A command that wrote settings (<c>/import … apply</c>, <c>/onboard apply</c>): saved, then applied as a settings save
+    /// applies them — the language, the window in use, the MCP servers, the index.
+    /// </summary>
+    /// <remarks>⚠ Saved only, an imported MCP server ran at the next start — "written" on the card, MCP turned on, and no
+    /// tool; an imported language, an applied context window waited for it too.</remarks>
+    private async Task SaveAndApplyAsync(HostSession s, (bool McpEnabled, string McpServersJson) mcpBefore, CancellationToken ct)
+    {
+        s.Config.Save();
+        await AfterSettingsChangedAsync(s, mcpBefore, ct);
+    }
+
     /// <summary>What follows a change of the session's settings, saved here or followed from the file.</summary>
     private async Task AfterSettingsChangedAsync(HostSession s, (bool McpEnabled, string McpServersJson) mcpBefore,
                                                  CancellationToken ct)

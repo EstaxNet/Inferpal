@@ -295,12 +295,12 @@ function indexCard(page: string, host: WidgetHost): LiveWidget {
       line.append(el('span', '', c.modelLine + ' '), serverLink(host, host.res('SettingsChangeInServer'), 'ragEmbeddingModel'));
       card.append(line);
     }
-    // While a pass runs, the card follows it — only while its page is in view.
+    // While a pass runs, or the saved index is read, the card follows it — only while its page is in view.
     if (polling) {
       clearTimeout(polling);
       polling = null;
     }
-    if (c.state === 'indexing' && host.isShown(page)) {
+    if ((c.state === 'indexing' || c.state === 'loading') && host.isShown(page)) {
       polling = setTimeout(() => host.post({ type: 'indexCard' }), 1500);
     }
   };

@@ -145,10 +145,14 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     /// this witness the test could not tell the difference.</summary>
     public string? LastListModelsUrl;
 
-    public Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken ct, string? url = null)
+    /// <summary>When set, <see cref="ListModelsAsync"/> waits for it first — a model server slow to answer.</summary>
+    public Func<Task>? BeforeListModels { get; set; }
+
+    public async Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken ct, string? url = null)
     {
         LastListModelsUrl = url;
-        return Task.FromResult<IReadOnlyList<string>>(ModelNames);
+        if (BeforeListModels is { } wait) await wait();
+        return ModelNames;
     }
 
     public Task<IReadOnlyList<InstalledModelInfo>> ListInstalledModelsAsync(CancellationToken ct, string? url = null) =>

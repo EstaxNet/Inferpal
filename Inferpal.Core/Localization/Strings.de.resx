@@ -1138,6 +1138,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="SettingsSectionThisConversation" xml:space="preserve"><value>Diese Unterhaltung</value></data>
   <data name="IndexCardReady" xml:space="preserve"><value>Index aktuell</value></data>
   <data name="IndexCardSaved" xml:space="preserve"><value>Index gespeichert</value></data>
+  <data name="IndexCardLoadingSaved" xml:space="preserve"><value>Gespeicherter Index wird gelesen…</value></data>
   <data name="IndexCardIndexing" xml:space="preserve"><value>Indizierung…</value></data>
   <data name="IndexCardNotBuilt" xml:space="preserve"><value>Noch nicht indiziert</value></data>
   <data name="IndexCardStopped" xml:space="preserve"><value>Indizierung abgebrochen</value></data>

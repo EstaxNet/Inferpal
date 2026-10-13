@@ -1138,6 +1138,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="SettingsSectionThisConversation" xml:space="preserve"><value>Cette conversation</value></data>
   <data name="IndexCardReady" xml:space="preserve"><value>Index à jour</value></data>
   <data name="IndexCardSaved" xml:space="preserve"><value>Index enregistré</value></data>
+  <data name="IndexCardLoadingSaved" xml:space="preserve"><value>Lecture de l'index enregistré…</value></data>
   <data name="IndexCardIndexing" xml:space="preserve"><value>Indexation…</value></data>
   <data name="IndexCardNotBuilt" xml:space="preserve"><value>Pas encore indexé</value></data>
   <data name="IndexCardStopped" xml:space="preserve"><value>Indexation interrompue</value></data>

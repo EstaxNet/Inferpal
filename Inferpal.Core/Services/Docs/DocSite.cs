@@ -60,10 +60,14 @@ internal sealed record DocSite(
     /// unless the source already under it is this very URL, which re-adding refreshes. An explicit
     /// Latin title still names the source to update.
     /// </remarks>
-    public static DocSite CreateAmong(string startUrl, string? title, IReadOnlyList<DocSite> existing)
+    /// <param name="titleNamesTheSource">The title was typed to name a source (<c>/docs add</c>): its own id, even a
+    /// taken one, updates that source. <c>false</c> when the title comes from elsewhere — an imported file —, which
+    /// names no source of the user's: its id is then made free like a derived one.</param>
+    public static DocSite CreateAmong(string startUrl, string? title, IReadOnlyList<DocSite> existing,
+                                      bool titleNamesTheSource = true)
     {
         var site = Create(startUrl, title);
-        if (!string.IsNullOrWhiteSpace(title) && site.Id != FallbackId) return site;
+        if (titleNamesTheSource && !string.IsNullOrWhiteSpace(title) && site.Id != FallbackId) return site;
 
         for (var n = 1; ; n++)
         {

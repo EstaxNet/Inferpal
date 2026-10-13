@@ -1138,6 +1138,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="SettingsSectionThisConversation" xml:space="preserve"><value>Ta rozmowa</value></data>
   <data name="IndexCardReady" xml:space="preserve"><value>Indeks aktualny</value></data>
   <data name="IndexCardSaved" xml:space="preserve"><value>Indeks zapisany</value></data>
+  <data name="IndexCardLoadingSaved" xml:space="preserve"><value>Odczytywanie zapisanego indeksu…</value></data>
   <data name="IndexCardIndexing" xml:space="preserve"><value>Indeksowanie…</value></data>
   <data name="IndexCardNotBuilt" xml:space="preserve"><value>Jeszcze nie zindeksowano</value></data>
   <data name="IndexCardStopped" xml:space="preserve"><value>Indeksowanie przerwane</value></data>

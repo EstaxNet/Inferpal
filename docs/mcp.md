@@ -24,6 +24,7 @@ server** and expose its tools to the agent — the same servers used by Claude D
 ```
 
    A server with a `command` uses the **stdio** transport; one with a `url` uses **Streamable HTTP**.
+   A stdio server starts in the folder its `"cwd"` names (`~` is your home folder), else in the editor's own.
    `"command": "npx"` (or `"npm"`) works as written on every OS: on Windows, where both are batch
    scripts, Inferpal runs them through the `node.exe` installed beside them — never through `cmd.exe`,
    so no `"cmd", "/c"` wrapper is needed.
