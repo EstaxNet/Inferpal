@@ -165,6 +165,7 @@ internal static class Strings
     public static string SettingsWindowShowAllModels => Get(nameof(SettingsWindowShowAllModels));
     public static string SettingsWindowTitle         => Get(nameof(SettingsWindowTitle));
     public static string SettingsWindowGone          => Get(nameof(SettingsWindowGone));
+    public static string SettingsWindowGoneInThread => Get(nameof(SettingsWindowGoneInThread));
     public static string SettingsWindowNoPicker      => Get(nameof(SettingsWindowNoPicker));
     public static string SettingsWindowNoXray        => Get(nameof(SettingsWindowNoXray));
     public static string SettingsWindowNotFound(string path)      => Format(Get(nameof(SettingsWindowNotFound)), path);
@@ -1821,6 +1822,7 @@ internal static class Strings
     public static string AcpSettingsOpened(string url)   => Format(Get(nameof(AcpSettingsOpened)), url);
     public static string AcpSettingsOpenThis(string url) => Format(Get(nameof(AcpSettingsOpenThis)), url);
     public static string AcpServerChangedNewThread => Get(nameof(AcpServerChangedNewThread));
+    public static string AcpSettingsUnreadable => Get(nameof(AcpSettingsUnreadable));
     public static string AcpNotSetUp(string url) => Format(Get(nameof(AcpNotSetUp)), url);
     public static string AcpSessionNotFound(string name) => Format(Get(nameof(AcpSessionNotFound)), name);
     public static string AcpLimitsNotice(string url) => Format(Get(nameof(AcpLimitsNotice)), url);

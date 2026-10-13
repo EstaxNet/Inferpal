@@ -217,6 +217,17 @@ internal static class ModelCatalog
         EmbeddingKeywords.Any(kw => name.Contains(kw, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
+    /// The listed models a question can be asked of — every one but the embedding models. What any list offered for a
+    /// chat or task model is built from, in every front-end.
+    /// </summary>
+    /// <remarks>⚠ An embedding model picked as the chat model answers no question: every turn ends on the server's
+    /// refusal. Offered beside the chat models, nothing in the list told it apart.</remarks>
+    public static List<string> ChatModelsOf(IEnumerable<string> listed) => [.. listed.Where(m => !IsEmbeddingModel(m))];
+
+    /// <summary>The listed models recognised as embedding models: what the code-search model's list offers.</summary>
+    public static List<string> EmbeddingModelsOf(IEnumerable<string> listed) => [.. listed.Where(IsEmbeddingModel)];
+
+    /// <summary>
     /// First-run default-model choice — the model the chat AND the agent start with. The list must be non-empty —
     /// callers guard the "no chat models" case with their own message.
     /// </summary>

@@ -50,6 +50,8 @@ let config: Record<string, unknown> = {};
  *  unsaved count compares the form against `config`. A Save the host refuses puts this back. */
 let savedBeforeSave: Record<string, unknown> | null = null;
 let models: string[] = [];
+// The code-search box's list: the embedding models. Every other model box offers `models`, the chat models.
+let embeddingModels: string[] = [];
 const inputs = new Map<string, HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>();
 const fieldsByKey = new Map<string, Field>();
 let statusEl: HTMLElement | null = null;
@@ -531,13 +533,17 @@ function renderModelPopup(): void {
   modelPopup.textContent = '';
   // An optional model is cleared by picking the empty entry: on a read-only field, that is the only
   // gesture that can.
-  modelChoices = modelPopupTarget?.dataset.optional === 'true' ? ['', ...models] : models;
+  // ⚠ The list the box is for: an embedding model offered as the chat or agent model answers no question.
+  const listed = modelPopupTarget?.dataset.list === 'embedding' ? embeddingModels : models;
+  modelChoices = modelPopupTarget?.dataset.optional === 'true' ? ['', ...listed] : listed;
   if (modelHighlight < 0 || modelHighlight >= modelChoices.length) {
     // The starting row is the current value: Enter without an arrow key keeps it.
     modelHighlight = modelChoices.indexOf(modelPopupTarget?.value ?? '');
   }
 
-  if (models.length === 0) {
+  // A code-search box on a server that lists chat models but no embedding model keeps its empty entry alone, as in the
+  // Visual Studio window: the sentence below would blame a server that answered.
+  if (listed.length === 0 && (listed !== embeddingModels || models.length === 0)) {
     // No model at all (unreachable backend, or a refused token): an empty, silent popup would read
     // as a backend serving nothing. An optional model's empty entry is still offered.
     const empty = document.createElement('div');
@@ -690,6 +696,9 @@ function renderField(field: Field): HTMLElement {
           box.dataset.optional = 'true';
           box.dataset.empty = res(field.emptyChoice) || '—';
           box.placeholder = box.dataset.empty;
+        }
+        if (field.embeddingModels) {
+          box.dataset.list = 'embedding';
         }
         box.addEventListener('mousedown', (e) => {
           e.preventDefault();
@@ -1065,7 +1074,7 @@ function setStatus(text: string): void {
 
 window.addEventListener('message', (event: MessageEvent) => {
   const msg = event.data as {
-    type: string; configJson?: string; models?: string[]; strings?: Record<string, string>;
+    type: string; configJson?: string; models?: string[]; embeddingModels?: string[]; strings?: Record<string, string>;
     schema?: Schema; message?: string; ok?: boolean; rulesIgnored?: number; provider?: string | null;
     refused?: string | null; op?: string;
   };
@@ -1087,6 +1096,7 @@ window.addEventListener('message', (event: MessageEvent) => {
         config = {};
       }
       models = msg.models ?? [];
+      embeddingModels = msg.embeddingModels ?? [];
       R = msg.strings ?? {};
       // The form comes from the host (Core schema). An empty one means the RPC failed: say so
       // rather than rendering a blank page that looks like a working, empty settings window.
@@ -1100,6 +1110,7 @@ window.addEventListener('message', (event: MessageEvent) => {
       break;
     case 'models': {
       models = msg.models ?? [];
+      embeddingModels = msg.embeddingModels ?? [];
       // An open popup must reflect the list just re-read: otherwise the refresh button would have
       // no visible effect until the next time it is opened.
       if (modelPopupTarget) {

@@ -456,6 +456,14 @@ export interface SettingsOption {
   description?: string | null;
 }
 
+/** `models/listByKind`: the listed models, split by what each can be picked for. */
+export interface ModelsByKind {
+  /** The chat and every task model: the models a question can be asked of. */
+  chat: string[];
+  /** Code search: the models recognised as embedding models. */
+  embedding: string[];
+}
+
 /** An editable setting. `label`/`hint` are resource names resolved via `settings/strings`. */
 export interface SettingsField {
   key: string;
@@ -480,6 +488,8 @@ export interface SettingsField {
   zeroIsEmpty?: boolean;
   /** Resource name of what an optional model list shows for its empty value ("Same as chat"). */
   emptyChoice?: string | null;
+  /** A model box that offers the embedding models; every other one offers the chat models. */
+  embeddingModels?: boolean;
   /** Resource names of a nameValue table's column headers. */
   columns?: string[] | null;
   /** Bounds of a numeric box (declared once in the Core schema): a value outside them is named, never saved. */

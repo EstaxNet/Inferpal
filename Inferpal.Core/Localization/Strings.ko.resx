@@ -1231,6 +1231,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="SettingsWindowShowAllModels" xml:space="preserve"><value>모든 모델 표시</value></data>
   <data name="SettingsWindowTitle" xml:space="preserve"><value>Inferpal 설정</value></data>
   <data name="SettingsWindowGone" xml:space="preserve"><value>설정 창의 서버가 중지되었습니다. 이 페이지에서는 더 이상 저장할 수 없습니다. 다시 열려면 `Inferpal.Host --settings`를 다시 실행하세요.</value></data>
+  <data name="SettingsWindowGoneInThread" xml:space="preserve"><value>설정 창의 서버가 중지되었습니다. 이 페이지에서는 더 이상 저장할 수 없습니다. 다시 열려면 스레드에서 `/settings`를 입력하세요.</value></data>
   <data name="SettingsWindowNoPicker" xml:space="preserve"><value>브라우저는 파일 위치를 Inferpal에 전달할 수 없습니다. 파일의 전체 경로를 입력하거나 붙여 넣으세요.</value></data>
   <data name="SettingsWindowNoXray" xml:space="preserve"><value>프롬프트 X-Ray는 Visual Studio와 VS Code의 채팅에 표시됩니다.</value></data>
   <data name="SettingsWindowNotFound" xml:space="preserve"><value>{0}에 아무것도 없습니다.</value></data>
@@ -1247,6 +1248,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
 거기서 저장한 내용은 이 스레드와 다른 스레드 모두에서 다음 질문부터 적용됩니다. 새 모델 서버만 새 스레드에서 사용됩니다.</value></data>
   <data name="AcpSettingsOpenThis" xml:space="preserve"><value>브라우저를 시작할 수 없습니다. Inferpal을 설정하려면 {0}을(를) 여세요.</value></data>
   <data name="AcpServerChangedNewThread" xml:space="preserve"><value>설정에서 모델 서버가 변경되었습니다. 이 스레드는 아직 시작할 때의 서버와 통신합니다. 새 서버를 사용하려면 새 스레드를 시작하세요.</value></data>
+  <data name="AcpSettingsUnreadable" xml:space="preserve"><value>Inferpal 설정 파일을 읽을 수 없습니다(직접 편집하다가 손상되었을 수 있습니다). 이 스레드는 기존 설정을 유지합니다. config.json을 고치거나 /settings에서 설정을 다시 저장하세요.</value></data>
   <data name="ChatModelButton" xml:space="preserve"><value>모델과 서버: {0}</value></data>
   <data name="ModeChat" xml:space="preserve"><value>채팅</value></data>
   <data name="ModeAgent" xml:space="preserve"><value>에이전트</value></data>

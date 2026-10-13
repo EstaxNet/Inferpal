@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -35,7 +36,7 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
     /// <summary>What the page may ask the host: the calls of the settings form (<c>settingsStandaloneShell.ts</c>).</summary>
     internal static readonly IReadOnlySet<string> FormMethods = new HashSet<string>(StringComparer.Ordinal)
     {
-        "config/get", "config/update", "models/list", "connection/check", "settings/strings", "settings/schema",
+        "config/get", "config/update", "models/listByKind", "connection/check", "settings/strings", "settings/schema",
         "mcp/cards", "mcp/retry", "mcp/authorize", "permissions/table", "permissions/newRule",
         "settings/indexCard", "settings/indexRebuild", "settings/exclusions", "settings/docsSites", "settings/docsAction",
         "settings/contextUsage", "settings/projectFiles", "settings/repoInstructions", "settings/pinSizes",
@@ -74,14 +75,25 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
     private long _lastHeard;
     private int _closing;
 
+    /// <summary>The pages open now — each tab its own id — and when each last said so.</summary>
+    /// <remarks>⚠ One page was assumed: <c>/settings</c> opens a new tab each time, and the close of the old tab — the
+    /// last message heard — ended the server under the one still open, whose next sign of life came too late (every five
+    /// seconds, once a minute in the background). Its next save then failed.</remarks>
+    private readonly ConcurrentDictionary<string, long> _pages = new(StringComparer.Ordinal);
+
+    /// <summary>What the page says once its server has stopped: the way to open it again, from where it was opened.</summary>
+    private readonly string _gone;
+
     /// <summary>The page's address, its token included.</summary>
     public string Url => $"http://127.0.0.1:{_port}/{_token}/";
 
     /// <summary>Whether the page has been opened at least once.</summary>
     public bool Visited => Interlocked.Read(ref _lastHeard) != 0;
 
-    private SettingsWindowServer(HostServer host, JsonRpc hostSide, JsonRpc link, HttpListener listener, int port, string webDir)
+    private SettingsWindowServer(HostServer host, JsonRpc hostSide, JsonRpc link, HttpListener listener, int port, string webDir,
+                                 string gone)
     {
+        _gone     = gone;
         _host     = host;
         _hostSide = hostSide;
         _link     = link;
@@ -93,8 +105,10 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
     }
 
     /// <summary>The host for <paramref name="folder"/>, initialized as an ACP session's, and the page's server, listening.</summary>
+    /// <param name="gone">What the page says once the server has stopped; default: run <c>--settings</c> again. A window an
+    /// agent opened for <c>/settings</c> names <c>/settings</c>: its executable sits in the client's folders.</param>
     public static async Task<SettingsWindowServer> StartAsync(string folder, string webDir, Func<HostServer> hostFactory,
-                                                              CancellationToken ct)
+                                                              CancellationToken ct, string? gone = null)
     {
         var (hostStream, linkStream) = FullDuplexStream.CreatePair();
         var host     = hostFactory();
@@ -115,7 +129,7 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
                 secrets       = false,
             }, ct);
             var (listener, port) = Listen();
-            return new SettingsWindowServer(host, hostSide, link, listener, port, webDir);
+            return new SettingsWindowServer(host, hostSide, link, listener, port, webDir, gone ?? Strings.SettingsWindowGone);
         }
         catch
         {
@@ -163,12 +177,29 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
         {
             var heard = Interlocked.Read(ref _lastHeard);
             var now = clock();
+            // A page silent past the limit is gone (closed without a word); while one is open, the server stays.
+            foreach (var (page, at) in _pages)
+                if (now - new DateTime(at, DateTimeKind.Utc) > SilenceLimit) _pages.TryRemove(page, out _);
+            if (!_pages.IsEmpty)
+            {
+                try { await Task.Delay(TimeSpan.FromMilliseconds(500), ct); }
+                catch (OperationCanceledException) { return; }
+                continue;
+            }
             if (heard == 0 ? now - started > FirstVisitLimit
                            : now - new DateTime(heard, DateTimeKind.Utc) > (Volatile.Read(ref _closing) == 1 ? CloseGrace : SilenceLimit))
                 return;
             try { await Task.Delay(TimeSpan.FromMilliseconds(500), ct); }
             catch (OperationCanceledException) { return; }
         }
+    }
+
+    /// <summary>A page says it is open (<paramref name="page"/>: its id), or that it closes.</summary>
+    private void PageSaid(string page, bool closing)
+    {
+        if (closing) _pages.TryRemove(page, out _);
+        else _pages[page] = DateTime.UtcNow.Ticks;
+        Heard(closing: closing && _pages.IsEmpty);
     }
 
     private void Heard(bool closing)
@@ -229,7 +260,7 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
                     return;
                 case ("POST", "alive"):
                 case ("POST", "close"):
-                    Heard(closing: rest == "close");
+                    PageSaid(request.QueryString["page"] ?? string.Empty, closing: rest == "close");
                     await SendAsync(response, 204, null, []);
                     return;
                 default:
@@ -281,7 +312,7 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
             return (200, JsonSerializer.Serialize(new { result }));
         }
         catch (RemoteInvocationException ex) { return Error(500, ex.Message); }
-        catch (Exception ex) when (ex is ConnectionLostException or ObjectDisposedException) { return Error(503, Strings.SettingsWindowGone); }
+        catch (Exception ex) when (ex is ConnectionLostException or ObjectDisposedException) { return Error(503, _gone); }
     }
 
     private static (int, string) Error(int status, string message) =>
@@ -304,7 +335,7 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
         });
         var page = JsonSerializer.Serialize(new
         {
-            gone     = Strings.SettingsWindowGone,
+            gone     = _gone,
             noPicker = Strings.SettingsWindowNoPicker,
             noXray   = Strings.SettingsWindowNoXray,
         });

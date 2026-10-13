@@ -823,8 +823,8 @@ public class SettingsSchemaDriftTests
 
         // ↻ lists the models of the form's backend — all three values, because a correct URL with
         // the old provider or the old key still queries something else.
-        var refresh = Regex.Match(panel, @"modelsList\(\s*\{[\s\S]{0,200}?\}\s*\)");
-        Assert.True(refresh.Success, "settingsBridge.ts calls modelsList without passing it the "
+        var refresh = Regex.Match(panel, @"modelsListByKind\(\s*\{[\s\S]{0,200}?\}\s*\)");
+        Assert.True(refresh.Success, "settingsBridge.ts calls modelsListByKind without passing it the "
             + "form values: the ↻ button then lists the models of the SAVED URL.");
         foreach (var field in new[] { "baseUrl", "provider", "apiKey" })
             Assert.True(refresh.Value.Contains($"msg.{field}", StringComparison.Ordinal),

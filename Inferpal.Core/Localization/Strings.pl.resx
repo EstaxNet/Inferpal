@@ -1231,6 +1231,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="SettingsWindowShowAllModels" xml:space="preserve"><value>Pokaż wszystkie modele</value></data>
   <data name="SettingsWindowTitle" xml:space="preserve"><value>Ustawienia Inferpal</value></data>
   <data name="SettingsWindowGone" xml:space="preserve"><value>Serwer okna ustawień został zatrzymany: z tej strony nie można już nic zapisać. Uruchom ponownie `Inferpal.Host --settings`, aby je otworzyć.</value></data>
+  <data name="SettingsWindowGoneInThread" xml:space="preserve"><value>Serwer okna ustawień został zatrzymany: z tej strony nie można już nic zapisać. Wpisz `/settings` w wątku, aby je otworzyć.</value></data>
   <data name="SettingsWindowNoPicker" xml:space="preserve"><value>Przeglądarka nie może przekazać Inferpal lokalizacji pliku: wpisz lub wklej pełną ścieżkę pliku.</value></data>
   <data name="SettingsWindowNoXray" xml:space="preserve"><value>Prześwietlenie promptu jest widoczne na czacie Visual Studio i VS Code.</value></data>
   <data name="SettingsWindowNotFound" xml:space="preserve"><value>Pod adresem {0} nic nie ma.</value></data>
@@ -1247,6 +1248,7 @@ Jeśli nie otworzyło się żadne okno, otwórz ten adres. Zamknij stronę, gdy 
 To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozostałych. Tylko nowy serwer modeli czeka na nowy wątek.</value></data>
   <data name="AcpSettingsOpenThis" xml:space="preserve"><value>Nie udało się uruchomić przeglądarki: otwórz {0}, aby skonfigurować Inferpal.</value></data>
   <data name="AcpServerChangedNewThread" xml:space="preserve"><value>Serwer modeli zmienił się w ustawieniach: ten wątek nadal rozmawia z tym, z którym się zaczął. Rozpocznij nowy wątek, aby użyć nowego.</value></data>
+  <data name="AcpSettingsUnreadable" xml:space="preserve"><value>Nie można odczytać pliku ustawień Inferpal (być może uszkodziła go ręczna edycja): ten wątek zachowuje dotychczasowe ustawienia. Popraw config.json albo zapisz ustawienia ponownie przez /settings.</value></data>
   <data name="ChatModelButton" xml:space="preserve"><value>Model i serwer: {0}</value></data>
   <data name="ModeChat" xml:space="preserve"><value>Czat</value></data>
   <data name="ModeAgent" xml:space="preserve"><value>Agent</value></data>

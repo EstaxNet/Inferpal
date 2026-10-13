@@ -123,10 +123,10 @@ internal partial class InferpalToolWindowData
         // The parent goes to disk first — with the conversation as it stands now, which may have
         // moved on since it was loaded: forking must never be what loses the discarded half.
         var templateSuffix = _activeTemplateSuffix;   // the branch is the same conversation, cut: same mode
-        await _store.SaveAsync(plan.ParentName, plan.ParentMessages, ct,
+        await _store.SaveAsync(plan.ParentName, plan.ParentMessages, ct, _indexService.RootDir,
                                parent: plan.ParentParent, forkTurn: plan.ParentForkTurn, templateSuffix: templateSuffix);
 
-        await _store.SaveAsync(plan.BranchName, plan.BranchMessages, ct,
+        await _store.SaveAsync(plan.BranchName, plan.BranchMessages, ct, _indexService.RootDir,
                                parent: plan.ParentName, forkTurn: plan.ForkTurn, templateSuffix: templateSuffix);
 
         await RunOnVMContextAsync(() =>

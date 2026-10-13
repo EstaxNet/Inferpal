@@ -57,7 +57,7 @@ public sealed class SessionListingSilenceTests : IDisposable
         await store.SaveAsync(
             name,
             userMessages.Select(m => new SavedMessage("user", m, null, DateTime.UtcNow.ToString("s"))),
-            CancellationToken.None);
+            CancellationToken.None, workspaceRoot: null);
     }
 
     /// <summary>A session file that exists and will not parse.</summary>

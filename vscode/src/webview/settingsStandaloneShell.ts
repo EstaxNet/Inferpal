@@ -49,7 +49,7 @@ async function call<T>(method: string, params?: unknown): Promise<T> {
 const host: SettingsHost = {
   isRunning: true,
   configGet: () => call('config/get'),
-  modelsList: (overrides) => call('models/list', overrides ?? {}),
+  modelsListByKind: (overrides) => call('models/listByKind', overrides ?? {}),
   settingsStrings: () => call('settings/strings'),
   settingsSchema: () => call('settings/schema'),
   connectionCheck: (baseUrl, apiKey) => call('connection/check', { baseUrl, apiKey }),
@@ -116,10 +116,12 @@ applyTheme();
 dark.addEventListener('change', applyTheme);
 forced.addEventListener('change', applyTheme);
 
-// The server lives while the page does: it is told the page is still open, and when it closes.
+// The server lives while a page does: each tab tells it, under its own id, that it is still open, and when it closes —
+// the close of one tab never ends the server under another.
+const pageId = Math.random().toString(36).slice(2) + Date.now().toString(36);
 const alive = (): void => {
-  void fetch(base + 'alive', { method: 'POST' }).catch(() => undefined);
+  void fetch(base + 'alive?page=' + pageId, { method: 'POST' }).catch(() => undefined);
 };
 alive();
 setInterval(alive, 5000);
-window.addEventListener('pagehide', () => navigator.sendBeacon(base + 'close'));
+window.addEventListener('pagehide', () => navigator.sendBeacon(base + 'close?page=' + pageId));

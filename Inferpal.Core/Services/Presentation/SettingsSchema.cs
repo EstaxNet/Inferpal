@@ -54,6 +54,8 @@ internal sealed record SettingOption(string Value, string Text, Func<string>? Lo
 /// <param name="Max">Largest value a numeric box accepts.</param>
 /// <param name="Only">The one editor the setting acts in (<see cref="SettingsSchema.VisualStudioOnly"/>); <c>null</c> = both.
 /// The other editor's panel does not show it: a box that changes nothing there would be a promise.</param>
+/// <param name="EmbeddingModels">A model box that offers the embedding models (<see cref="Inference.ModelCatalog.EmbeddingModelsOf"/>);
+/// every other model box offers the models a question can be asked of (<see cref="Inference.ModelCatalog.ChatModelsOf"/>).</param>
 /// <remarks>
 /// ⚠ The bounds are declared HERE, once, and both panels read them: each panel used to hold its own — the Visual
 /// Studio window clamped in silence (50 results saved as 20, the box still showing 50, "1 unsaved change" for ever),
@@ -77,7 +79,8 @@ internal sealed record SettingField(
     IReadOnlyList<string>? Columns = null,
     int?    Min = null,
     int?    Max = null,
-    string? Only = null)
+    string? Only = null,
+    bool    EmbeddingModels = false)
 {
     /// <summary>Is <paramref name="value"/> within the box's bounds?</summary>
     public bool Accepts(int value) => (Min is null || value >= Min) && (Max is null || value <= Max);
@@ -222,7 +225,7 @@ internal static class SettingsSchema
                 new("inlineCompletionModel", SettingKind.Model, "LabelInlineCompletionModel", "HintInlineCompletionModel",
                     EmptyChoice: "SettingsSameAsChat"),
                 new("ragEmbeddingModel",     SettingKind.Model, "LabelRagEmbeddingModel",     "HintRagEmbeddingModel",
-                    EmptyChoice: "SettingsAutomaticBest"),
+                    EmptyChoice: "SettingsAutomaticBest", EmbeddingModels: true),
                 new("contextWindowSize",     SettingKind.Int,   "LabelContextWindowSize",     "HintContextWindowSize",     Unit: "UnitTokens",
                     HintNotOllama: "HintContextWindowSizeClientTrim", Min: 0),
             ],

@@ -38,7 +38,7 @@ public class ModelPickerRelistTests
         Assert.Matches(@"case 'listModels':\s*await this\.refreshModelList\(\);", provider);
 
         var refresh = WebviewRebuildTests.Body(provider, "private async refreshModelList(");
-        var read    = refresh.IndexOf("host.modelsList()", StringComparison.Ordinal);
+        var read    = refresh.IndexOf("host.modelsListByKind()", StringComparison.Ordinal);
         var sent    = refresh.IndexOf("type: 'models'", StringComparison.Ordinal);
         Assert.True(read >= 0 && sent > read, "the list is read from the server, then sent to the view");
     }

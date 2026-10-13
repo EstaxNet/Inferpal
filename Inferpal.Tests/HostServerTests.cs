@@ -757,6 +757,31 @@ public partial class HostServerTests
 
     // ── models/list: the panel acts on what it HAS IN FRONT OF IT ─────────────
 
+    /// <summary>
+    /// ⚠ What VS Code's chat picker and settings boxes offer: the chat models for the chat and every task, the embedding
+    /// models for code search — split here, by the catalog, from the very listing <c>models/list</c> returns (the
+    /// form's values included). See <c>ChatModelListsTests</c>.
+    /// </summary>
+    [Fact]
+    public async Task ModelsListByKind_OffersTheEmbeddingModels_OnlyToCodeSearch()
+    {
+        using var h = CreateHarness();
+        h.Fake.ModelNames = ["qwen3-coder:30b", "nomic-embed-text", "devstral-small-2", "bge-m3"];
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var split = await h.Client.InvokeWithParameterObjectAsync<ModelsByKindResult>("models/listByKind", new { })
+                                  .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.Equal(["qwen3-coder:30b", "devstral-small-2"], split.Chat);
+        Assert.Equal(["nomic-embed-text", "bge-m3"], split.Embedding);
+
+        // The form's values reach the listing, as with models/list.
+        await h.Client.InvokeWithParameterObjectAsync<ModelsByKindResult>(
+            "models/listByKind", new { baseUrl = "http://tapee:1234", provider = "lmstudio" })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.Equal("http://tapee:1234", h.Fake.LastListModelsUrl);
+    }
+
+
     [Fact]
     public async Task ModelsList_ListsFromTheFormValues_NotFromTheSavedConfiguration()
     {
@@ -1775,6 +1800,78 @@ public partial class HostServerTests
             if (branch is not null)
                 await h.Client.InvokeWithParameterObjectAsync<bool>("session/delete", new { name = branch.Name });
         }
+    }
+
+    /// <summary>
+    /// ⚠ A session file says which folder it belongs to — a branch and its parent too —, and the conversation saved
+    /// again under its own name keeps its branch link. Written without the folder, no ACP client ever listed a branch
+    /// (<c>session/list</c> lists a folder's sessions); written without the link, a branch saved again from VS Code, or
+    /// reopened in an ACP thread (saved after every turn), lost its family.
+    /// </summary>
+    [Fact]
+    public async Task ASessionFileKeepsItsFolder_AndABranchSavedAgainKeepsItsParent()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+        var name = $"test-lineage-{Guid.NewGuid():N}";
+        var copy = name + "-copy";
+        SessionBranchResult? branch = null;
+        try
+        {
+            object[] messages =
+            [
+                new { role = "user",      content = "first" },
+                new { role = "assistant", content = "answer one" },
+                new { role = "user",      content = "second" },
+                new { role = "assistant", content = "answer two" },
+            ];
+            await h.Client.InvokeWithParameterObjectAsync<object?>("session/save", new { name, messages })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            branch = await h.Client.InvokeWithParameterObjectAsync<SessionBranchResult>(
+                "session/branch", new { turn = 1, messages }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            var store = h.Server.CurrentSession!.Store;
+
+            Assert.Equal(h.RootDir, (await store.LoadAsync(name, CancellationToken.None))!.WorkspaceRoot);
+            Assert.Equal(h.RootDir, (await store.LoadAsync(branch!.Name, CancellationToken.None))!.WorkspaceRoot);
+
+            // The branch, one turn further, saved again under its own name: its link stays.
+            object[] further =
+            [
+                new { role = "user",      content = "first" },
+                new { role = "assistant", content = "answer one" },
+                new { role = "user",      content = "another way" },
+                new { role = "assistant", content = "answer three" },
+            ];
+            await h.Client.InvokeWithParameterObjectAsync<object?>("session/save", new { name = branch.Name, messages = further })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            var again = (await store.LoadAsync(branch.Name, CancellationToken.None))!;
+            Assert.Equal(4, again.Messages.Count);   // WITNESS: the save landed
+            Assert.Equal(name, again.Parent);
+            Assert.Equal(1, again.ForkTurn);
+
+            // Reference arm: saved under ANOTHER name, the copy is nobody's branch.
+            await h.Client.InvokeWithParameterObjectAsync<object?>("session/save", new { name = copy, messages = further })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            Assert.Null((await store.LoadAsync(copy, CancellationToken.None))!.Parent);
+        }
+        finally
+        {
+            foreach (var n in new[] { name, copy, branch?.Name })
+                if (n is not null) await h.Client.InvokeWithParameterObjectAsync<bool>("session/delete", new { name = n });
+        }
+    }
+
+    /// <summary>Visual Studio's branch and its archive of a cleared conversation record the folder too.</summary>
+    [Fact]
+    public void VisualStudiosSessionFiles_RecordTheirFolder()
+    {
+        string Code(string file) => ConventionCoverageTests.CodeOnly(
+            Path.Combine(WebviewRebuildTests.RepoRoot(), "Inferpal", "ToolWindow", file));
+        var branch = Code("InferpalToolWindowData.PromptHistory.cs");
+        Assert.Contains("await _store.SaveAsync(plan.ParentName, plan.ParentMessages, ct, _indexService.RootDir,", branch, StringComparison.Ordinal);
+        Assert.Contains("await _store.SaveAsync(plan.BranchName, plan.BranchMessages, ct, _indexService.RootDir,", branch, StringComparison.Ordinal);
+        Assert.Contains("await _store.SaveAsync(name, snapshot, CancellationToken.None, _indexService.RootDir,",
+                        Code("InferpalToolWindowData.PendingPrompt.cs"), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -2841,7 +2938,7 @@ public partial class HostServerTests
                 case "session/load":
                     // A conversation saved in no mode (written as the other editor or an older version would).
                     await h.Server.CurrentSession!.Store.SaveAsync(name,
-                        [new("user", "first"), new("assistant", "answer one")], CancellationToken.None);
+                        [new("user", "first"), new("assistant", "answer one")], CancellationToken.None, workspaceRoot: null);
                     await h.Client.InvokeWithParameterObjectAsync<SessionLoadResult?>(
                         "session/load", new { name }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
                     break;

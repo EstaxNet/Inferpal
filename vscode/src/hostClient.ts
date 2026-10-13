@@ -59,6 +59,7 @@ import {
   XRayPanel,
   ConfigUpdateResult,
   InputRequest,
+  ModelsByKind,
 } from './protocol';
 
 /** Reverse-RPC surface the editor side must provide before `start()`. */
@@ -457,6 +458,12 @@ export class HostClient {
    *  lists the previous URL's models is a control that answers about something else. */
   modelsList(overrides?: { baseUrl?: string; provider?: string; apiKey?: string }): Promise<string[]> {
     return this.connection().sendRequest<string[]>('models/list', overrides ?? {});
+  }
+
+  /** The same models, split by what each can be picked for — the chat and every task, or code search — by the
+   *  host's one classifier: what the chat picker and the settings' model boxes offer. */
+  modelsListByKind(overrides?: { baseUrl?: string; provider?: string; apiKey?: string }): Promise<ModelsByKind> {
+    return this.connection().sendRequest<ModelsByKind>('models/listByKind', overrides ?? {});
   }
 
   /** This window's chat model as the host session's default — in memory, never saved. */

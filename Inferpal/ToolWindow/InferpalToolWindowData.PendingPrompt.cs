@@ -130,7 +130,7 @@ internal partial class InferpalToolWindowData
             var title = await GenerateSessionTitleAsync(firstUserContent);
             var name  = SessionManager.UniqueSessionName(
                 SessionManager.SessionFileName(DateTime.Now, title), _store.ListSessions());
-            await _store.SaveAsync(name, snapshot, CancellationToken.None, templateSuffix: templateSuffix);
+            await _store.SaveAsync(name, snapshot, CancellationToken.None, _indexService.RootDir, templateSuffix: templateSuffix);
             await RunOnVMContextAsync(RefreshSessionsList);
         }
         catch (Exception ex)

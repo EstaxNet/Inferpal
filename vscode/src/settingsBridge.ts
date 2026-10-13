@@ -5,14 +5,14 @@
 // open a file, pick one, name an absent host in its own words — is the shell's.
 import type {
   ApprovalRuleTable, ConfigUpdateResult, ConnectionCheckResult, ContextUsage, IndexCard, LoadedModels, McpCardsResult,
-  ModelSuggestion, PinnedFileSize, ProjectFileRow, RepoInstructionRow, SettingsDocs, SettingsExclusions, SettingsSchema,
+  ModelsByKind, ModelSuggestion, PinnedFileSize, ProjectFileRow, RepoInstructionRow, SettingsDocs, SettingsExclusions, SettingsSchema,
 } from './protocol';
 
 /** The host calls the settings form makes (HostClient has them all, with the same names). */
 export interface SettingsHost {
   readonly isRunning: boolean;
   configGet(): Promise<string>;
-  modelsList(overrides?: { baseUrl?: string; provider?: string; apiKey?: string }): Promise<string[]>;
+  modelsListByKind(overrides?: { baseUrl?: string; provider?: string; apiKey?: string }): Promise<ModelsByKind>;
   settingsStrings(): Promise<Record<string, string>>;
   settingsSchema(): Promise<SettingsSchema>;
   connectionCheck(baseUrl?: string, apiKey?: string): Promise<ConnectionCheckResult>;
@@ -138,9 +138,9 @@ export class SettingsBridge {
     }
     try {
       this.lastConfigJson = await host.configGet();
-      let models: string[] = [];
+      let models: ModelsByKind = { chat: [], embedding: [] };
       try {
-        models = await host.modelsList();
+        models = await host.modelsListByKind();
       } catch {
         // ⚠ A host or RPC failure, NOT an unreachable backend: that one does not fail, it
         // returns an empty list through the success path. Both end up
@@ -161,7 +161,8 @@ export class SettingsBridge {
       } catch (err) {
         this.shell.log(`[settings] settings/schema failed: ${String(err)}`);
       }
-      this.shell.post({ type: 'init', configJson: this.lastConfigJson, models, strings, schema });
+      this.shell.post({ type: 'init', configJson: this.lastConfigJson, models: models.chat,
+                        embeddingModels: models.embedding, strings, schema });
       // A form the webview could not render (no schema) is not loaded: the host's next start tries again.
       this.loaded = (schema?.tabs.length ?? 0) > 0;
     } catch (err) {
@@ -208,12 +209,10 @@ export class SettingsBridge {
           return;
         }
         try {
-          this.shell.post({
-            type: 'models',
-            models: await host.modelsList({
-              baseUrl: msg.baseUrl, provider: msg.provider, apiKey: msg.apiKey,
-            }),
+          const listed = await host.modelsListByKind({
+            baseUrl: msg.baseUrl, provider: msg.provider, apiKey: msg.apiKey,
           });
+          this.shell.post({ type: 'models', models: listed.chat, embeddingModels: listed.embedding });
         } catch (err) {
           // ⚠ The other branch of the same ↻ button: a refresh that fails leaves the list exactly
           // as it was, which reads as "the backend serves these and no more". The log keeps the

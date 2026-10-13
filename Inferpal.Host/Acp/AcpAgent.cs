@@ -39,7 +39,7 @@ internal sealed class AcpAgent : IAsyncDisposable
     /// <summary>What opening a session needs (its folder, its MCP servers), kept for the sessions closed to make room.</summary>
     private readonly ConcurrentDictionary<string, (string Cwd, IReadOnlyList<McpSessionServerDto> Servers)> _opened =
         new(StringComparer.Ordinal);
-    private readonly ConcurrentDictionary<string, byte> _evicted = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, AcpSession.Kept> _evicted = new(StringComparer.Ordinal);
     private readonly Channel<Func<Task>> _outbox = Channel.CreateUnbounded<Func<Task>>(new UnboundedChannelOptions { SingleReader = true });
     private readonly Task _sender;
     private JsonRpc? _rpc;
@@ -85,7 +85,7 @@ internal sealed class AcpAgent : IAsyncDisposable
         {
             if (!_windows.TryGetValue(folder, out window!))
             {
-                window = await SettingsWindowServer.StartAsync(folder, _webDir, _hostFactory, ct);
+                window = await SettingsWindowServer.StartAsync(folder, _webDir, _hostFactory, ct, Strings.SettingsWindowGoneInThread);
                 _windows[folder] = window;
                 _windowsClosing.Add(CloseWhenDoneAsync(folder, window));
             }
@@ -339,11 +339,12 @@ internal sealed class AcpAgent : IAsyncDisposable
     {
         var id = Str(p, "sessionId") ?? throw new ArgumentException("'sessionId' is required.");
         if (_sessions.TryGetValue(id, out var s)) return s;
-        if (!_evicted.TryRemove(id, out _) || !_opened.TryGetValue(id, out var was))
+        if (!_evicted.TryRemove(id, out var kept) || !_opened.TryGetValue(id, out var was))
             return _sessions.TryGetValue(id, out s) ? s : throw new ArgumentException($"Unknown session '{id}'.");
 
         var reopened = await OpenAsync(id, was.Cwd, was.Servers, ct);
         await reopened.LoadAsync(replay: false, ct);
+        await reopened.RestoreAsync(kept, ct);
         return reopened;
     }
 
@@ -368,8 +369,9 @@ internal sealed class AcpAgent : IAsyncDisposable
         {
             var idle = _sessions.Values.Where(s => !s.Busy).OrderBy(s => s.LastUsed).FirstOrDefault();
             if (idle is null) return;   // all busy: one more, rather than stopping a turn
+            var kept = idle.KeptForReopen();
             await CloseAsync(idle.Id);
-            _evicted[idle.Id] = 0;
+            _evicted[idle.Id] = kept;
         }
     }
 

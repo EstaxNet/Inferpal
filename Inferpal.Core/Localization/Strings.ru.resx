@@ -1231,6 +1231,7 @@
   <data name="SettingsWindowShowAllModels" xml:space="preserve"><value>Показать все модели</value></data>
   <data name="SettingsWindowTitle" xml:space="preserve"><value>Настройки Inferpal</value></data>
   <data name="SettingsWindowGone" xml:space="preserve"><value>Сервер окна настроек остановлен: с этой страницы больше ничего нельзя сохранить. Снова запустите `Inferpal.Host --settings`, чтобы открыть его.</value></data>
+  <data name="SettingsWindowGoneInThread" xml:space="preserve"><value>Сервер окна настроек остановлен: с этой страницы больше ничего нельзя сохранить. Введите `/settings` в ветке, чтобы открыть его снова.</value></data>
   <data name="SettingsWindowNoPicker" xml:space="preserve"><value>Браузер не может передать Inferpal расположение файла: введите или вставьте полный путь к файлу.</value></data>
   <data name="SettingsWindowNoXray" xml:space="preserve"><value>Рентген промпта показывается в чате Visual Studio и VS Code.</value></data>
   <data name="SettingsWindowNotFound" xml:space="preserve"><value>По пути {0} ничего нет.</value></data>
@@ -1247,6 +1248,7 @@
 То, что вы там сохраните, действует со следующего вопроса — в этой ветке и в остальных. Только новый сервер моделей ждёт новой ветки.</value></data>
   <data name="AcpSettingsOpenThis" xml:space="preserve"><value>Не удалось запустить браузер: откройте {0}, чтобы настроить Inferpal.</value></data>
   <data name="AcpServerChangedNewThread" xml:space="preserve"><value>Сервер моделей изменён в настройках: эта ветка всё ещё обращается к тому, с которым началась. Начните новую ветку, чтобы использовать новый.</value></data>
+  <data name="AcpSettingsUnreadable" xml:space="preserve"><value>Не удаётся прочитать файл настроек Inferpal (возможно, его повредила ручная правка): эта ветка сохраняет прежние настройки. Исправьте config.json или сохраните настройки заново через /settings.</value></data>
   <data name="ChatModelButton" xml:space="preserve"><value>Модель и сервер: {0}</value></data>
   <data name="ModeChat" xml:space="preserve"><value>Чат</value></data>
   <data name="ModeAgent" xml:space="preserve"><value>Агент</value></data>

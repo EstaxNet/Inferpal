@@ -1231,6 +1231,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="SettingsWindowShowAllModels" xml:space="preserve"><value>Afficher tous les modèles</value></data>
   <data name="SettingsWindowTitle" xml:space="preserve"><value>Réglages d'Inferpal</value></data>
   <data name="SettingsWindowGone" xml:space="preserve"><value>Le serveur de la fenêtre de réglages s'est arrêté : plus rien ne peut être enregistré depuis cette page. Relancez `Inferpal.Host --settings` pour la rouvrir.</value></data>
+  <data name="SettingsWindowGoneInThread" xml:space="preserve"><value>Le serveur de la fenêtre de réglages s'est arrêté : plus rien ne peut être enregistré depuis cette page. Tapez `/settings` dans un fil pour la rouvrir.</value></data>
   <data name="SettingsWindowNoPicker" xml:space="preserve"><value>Un navigateur ne peut pas donner l'emplacement d'un fichier à Inferpal : tapez ou collez le chemin complet du fichier.</value></data>
   <data name="SettingsWindowNoXray" xml:space="preserve"><value>La radiographie du prompt s'affiche dans le chat de Visual Studio et de VS Code.</value></data>
   <data name="SettingsWindowNotFound" xml:space="preserve"><value>Rien à l'emplacement {0}.</value></data>
@@ -1247,6 +1248,7 @@ Si aucune fenêtre ne s'est ouverte, ouvrez cette adresse. Fermez la page une fo
 Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil comme dans les autres. Seul un nouveau serveur de modèles attend un nouveau fil.</value></data>
   <data name="AcpSettingsOpenThis" xml:space="preserve"><value>Aucun navigateur n'a pu être lancé : ouvrez {0} pour régler Inferpal.</value></data>
   <data name="AcpServerChangedNewThread" xml:space="preserve"><value>Le serveur de modèles a changé dans les réglages : ce fil parle encore à celui de son ouverture. Ouvrez un nouveau fil pour utiliser le nouveau.</value></data>
+  <data name="AcpSettingsUnreadable" xml:space="preserve"><value>Le fichier de réglages d'Inferpal est illisible (une modification à la main l'a peut-être cassé) : ce fil garde les réglages qu'il avait. Réparez config.json, ou enregistrez de nouveau les réglages avec /settings.</value></data>
   <data name="ChatModelButton" xml:space="preserve"><value>Modèle et serveur : {0}</value></data>
   <data name="ModeChat" xml:space="preserve"><value>Chat</value></data>
   <data name="ModeAgent" xml:space="preserve"><value>Agent</value></data>

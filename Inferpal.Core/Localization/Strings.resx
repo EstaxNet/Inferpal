@@ -1235,6 +1235,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="SettingsWindowShowAllModels" xml:space="preserve"><value>Show all models</value></data>
   <data name="SettingsWindowTitle" xml:space="preserve"><value>Inferpal settings</value></data>
   <data name="SettingsWindowGone" xml:space="preserve"><value>The settings window's server has stopped: nothing more can be saved from this page. Run `Inferpal.Host --settings` again to reopen it.</value></data>
+  <data name="SettingsWindowGoneInThread" xml:space="preserve"><value>The settings window's server has stopped: nothing more can be saved from this page. Type `/settings` in a thread to reopen it.</value></data>
   <data name="SettingsWindowNoPicker" xml:space="preserve"><value>A browser cannot give a file's location to Inferpal: type or paste the file's full path.</value></data>
   <data name="SettingsWindowNoXray" xml:space="preserve"><value>The X-Ray of the prompt is shown in the chat of Visual Studio and VS Code.</value></data>
   <data name="SettingsWindowNotFound" xml:space="preserve"><value>Nothing at {0}.</value></data>
@@ -1251,6 +1252,7 @@ If no window opened, open this address. Close the page when you are done.</value
 What you save there applies from your next question, in this thread and the others. Only a new model server waits for a new thread.</value></data>
   <data name="AcpSettingsOpenThis" xml:space="preserve"><value>No browser could be started: open {0} to set Inferpal up.</value></data>
   <data name="AcpServerChangedNewThread" xml:space="preserve"><value>The model server changed in the settings: this thread still talks to the one it started with. Start a new thread to use the new one.</value></data>
+  <data name="AcpSettingsUnreadable" xml:space="preserve"><value>Inferpal's settings file cannot be read (a hand edit may have broken it): this thread keeps the settings it had. Fix config.json, or save the settings again with /settings.</value></data>
   <data name="ChatModelButton" xml:space="preserve"><value>Model and server: {0}</value></data>
   <data name="ModeChat" xml:space="preserve"><value>Chat</value></data>
   <data name="ModeAgent" xml:space="preserve"><value>Agent</value></data>

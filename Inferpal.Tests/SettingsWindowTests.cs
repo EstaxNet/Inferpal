@@ -135,6 +135,49 @@ public sealed class SettingsWindowTests : IAsyncLifetime
         Assert.InRange(clock.Elapsed, SettingsWindowServer.CloseGrace - TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30));
     }
 
+    /// <summary>
+    /// ⚠ Each tab is a page of its own: <c>/settings</c> opens a new tab each time, and closing the old one must not end
+    /// the server under the one still open — whose next sign of life comes every five seconds, once a minute in the
+    /// background. The last message heard decided: a close, then the server ended under the open tab.
+    /// </summary>
+    [Fact]
+    public async Task ClosingOneOfTwoTabs_LeavesTheServerToTheOther()
+    {
+        await _http.PostAsync(_server.Url + "alive?page=old", null);
+        await _http.PostAsync(_server.Url + "alive?page=new", null);
+        await _http.PostAsync(_server.Url + "close?page=old", null);
+
+        // Ten seconds on, the other tab silent meanwhile (in the background): the server is still there.
+        static DateTime Later() => DateTime.UtcNow + TimeSpan.FromSeconds(10);
+        using (var watch = new CancellationTokenSource(TimeSpan.FromSeconds(2)))
+        {
+            await _server.WaitForCloseAsync(watch.Token, Later);
+            Assert.True(watch.IsCancellationRequested, "the server ended under the tab still open");
+        }
+
+        // Reference arm: the last tab closes, the server ends.
+        await _http.PostAsync(_server.Url + "close?page=new", null);
+        await _server.WaitForCloseAsync(CancellationToken.None, Later).WaitAsync(TimeSpan.FromSeconds(30));
+    }
+
+    /// <summary>A tab silent past the limit — closed without a word, the browser killed — no longer holds the server.</summary>
+    [Fact]
+    public async Task ATabSilentPastTheLimit_IsTakenForClosed()
+    {
+        await _http.PostAsync(_server.Url + "alive?page=left-open", null);
+        await _server.WaitForCloseAsync(CancellationToken.None, () => DateTime.UtcNow + SettingsWindowServer.SilenceLimit * 2)
+                     .WaitAsync(TimeSpan.FromSeconds(30));
+    }
+
+    /// <summary>The page's script gives each tab an id, at each sign of life and at its close.</summary>
+    [Fact]
+    public void ThePage_SpeaksUnderItsOwnId()
+    {
+        var shell = WebviewRebuildTests.TsCode("webview/settingsStandaloneShell.ts");
+        Assert.Contains("fetch(base + 'alive?page=' + pageId", shell, StringComparison.Ordinal);
+        Assert.Contains("navigator.sendBeacon(base + 'close?page=' + pageId)", shell, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task AWindowNeverOpened_IsNotWaitedForEver()
     {

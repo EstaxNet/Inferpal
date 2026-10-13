@@ -184,7 +184,7 @@ public class SharedCommandHandlerTests
             [
                 new SavedMessage("user",      "question"),
                 new SavedMessage("assistant", $"<Think>{hidden} private chain of thought</Think>{shown} is the answer"),
-            ], CancellationToken.None);
+            ], CancellationToken.None, workspaceRoot: null);
 
             var onReasoning = await HistoryCommandHandler.HandleAsync(
                 store, ["/history", hidden], DateTime.UtcNow, CancellationToken.None);

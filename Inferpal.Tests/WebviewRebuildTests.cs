@@ -28,7 +28,7 @@ namespace Inferpal.Tests;
 /// </remarks>
 public class WebviewRebuildTests
 {
-    private static string RepoRoot()
+    internal static string RepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "README.md")))

@@ -387,6 +387,50 @@ public sealed class AcpAgentTests : IDisposable
         lock (seen) Assert.Contains(seen, q => q.Contains("remember the word teal", StringComparison.Ordinal));
     }
 
+    /// <summary>
+    /// A thread closed to make room comes back as its client still shows it: in Plan mode (read-only tools), on the model
+    /// picked in its selector, with the file attached for its next prompt. Reopened from its conversation alone, the next
+    /// request ran in the mode a new thread opens in — with the write tools — on the default model.
+    /// </summary>
+    [Fact]
+    public async Task ASessionClosedToMakeRoom_ComesBackInItsModeOnItsModel_WithItsAttachment()
+    {
+        File.WriteAllText(Path.Combine(_root, "notes.txt"), "the word is teal\n");
+        var offered = new List<string>();
+        var seen = new List<string>();
+        await using var h = await StartAsync(fake: f =>
+        {
+            f.ModelNames = ["test-model", "other-model"];
+            f.OnChatRequest = (_, history, tools, _) =>
+            {
+                lock (seen)
+                {
+                    offered.Clear();
+                    offered.AddRange(tools.Definitions.Select(d => d.Function.Name));
+                    seen.AddRange(history.Where(m => m.Role == "user").Select(m => m.Content ?? ""));
+                }
+                return Task.FromResult(new ChatTurnResult("ok", null, 0, 0));
+            };
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var first = await NewSessionAsync(h);
+        await h.Client.RequestAsync("session/set_config_option", new { sessionId = first, configId = "mode", value = "plan" });
+        await h.Client.RequestAsync("session/set_config_option", new { sessionId = first, configId = "model", value = "other-model" });
+        await PromptAsync(h, first, "/read notes.txt");   // attached to the next prompt
+        for (var i = 0; i < AcpAgent.MaxLiveSessions; i++) await NewSessionAsync(h);   // the first is closed for room
+        h.Fake.ChatModels.Clear();
+
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, first, "which word?")));
+
+        Assert.Equal("other-model", h.Fake.ChatModels.Last());
+        lock (seen)
+        {
+            Assert.Contains("read_file", offered);   // WITNESS: the tools were read
+            Assert.DoesNotContain("write_file", offered);
+            Assert.Contains(seen, q => q.Contains("the word is teal", StringComparison.Ordinal));
+        }
+    }
+
     [Fact]
     public async Task ASessionNeverOpened_IsStillUnknown()
     {
@@ -621,6 +665,50 @@ public sealed class AcpAgentTests : IDisposable
         Assert.Equal(["Done.", "\n\nNo file was changed."], chunks);
     }
 
+    /// <summary>
+    /// In Agent mode, an answer given before the tool the plan asked for is not the answer (the host sends the model back
+    /// to its plan, and keeps only what follows): shown as the run's thinking, the answer itself is said once — on screen
+    /// and in the saved session.
+    /// </summary>
+    [Fact]
+    public async Task InAgentMode_AnAnswerGivenTooEarly_IsShownAsThinking_AndTheAnswerOnce()
+    {
+        var file = Path.Combine(_root, "orders.cs");
+        File.WriteAllText(file, "class OrderService { }\n");
+        const string Answer = "OrderService applies pricing rules to customer orders.";
+        var call = 0;
+        await using var h = await StartAsync(fake: f => f.OnChatRequest = (_, _, _, onToken) =>
+        {
+            var n = Interlocked.Increment(ref call);
+            ChatTurnResult Said(string text) { onToken?.Invoke(text); return new ChatTurnResult(text, null, 0, 0); }
+            return Task.FromResult(n switch
+            {
+                1 => new ChatTurnResult("""{"goal":"explain","steps":[{"i":1,"desc":"read the file","tool":"read_file"}]}""", null, 0, 0),
+                2 => Said(Answer),   // the answer, before the tool the plan asked for: sent back to the plan
+                3 => new ChatTurnResult(string.Empty, [new ToolCallDto(new ToolCallFunction("read_file",
+                         JsonSerializer.SerializeToElement(new { path = file })))], 0, 0),
+                _ => Said(Answer),
+            });
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+        await h.Client.RequestAsync("session/set_mode", new { sessionId = sid, modeId = "agent" });
+
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, sid, "what does OrderService do?")));
+
+        Assert.True(call >= 4, $"only {call} model calls: the early answer was not sent back to the plan");   // witness
+        var said = h.Client.Said(sid);
+        Assert.Equal(1, said.Split(Answer).Length - 1);
+        var thought = string.Concat(h.Client.Updates(sid, "agent_thought_chunk")
+                                         .Select(u => u.GetProperty("content").GetProperty("text").GetString()));
+        Assert.Contains(Answer, thought, StringComparison.Ordinal);
+
+        // Reloaded, the thread shows the answer once too.
+        var saved = await new Services.Persistence.ConversationStore().LoadAsync(sid, CancellationToken.None);
+        Assert.Equal(1, saved!.Messages.Count(m => m.Role == "assistant" && m.Content.Contains(Answer, StringComparison.Ordinal)));
+        Assert.DoesNotContain(saved.Messages, m => m.Content.Split(Answer).Length > 2);
+    }
+
     [Fact]
     public async Task APlannedEditTheUserRefused_StaysPending_AndSaysItWasSkipped()
     {
@@ -754,6 +842,148 @@ public sealed class AcpAgentTests : IDisposable
         Assert.Throws<ArgumentException>(() => AcpPromptBlocks.Read(JsonSerializer.SerializeToElement(Array.Empty<object>())));
     }
 
+    /// <summary>
+    /// The thread's model selector names the model that answers: in Agent mode, the one set for the agent's role — the
+    /// host routes the turn to it —, and a model picked in the selector answers in every mode, Agent included.
+    /// </summary>
+    [Fact]
+    public async Task TheModelSelector_NamesTheModelThatAnswers_InAgentModeToo()
+    {
+        static string ShownModel(JsonElement options) =>
+            options.EnumerateArray().Single(o => o.GetProperty("id").GetString() == "model").GetProperty("currentValue").GetString()!;
+        // The same settings in the file: each question re-reads it (config/reload), and the suite's file has neither model.
+        static InferpalConfig Settings() => new() { RagEnabled = false, DefaultModel = "chat-model", AgentModel = "agent-model" };
+        await using var h = await StartAsync(
+            fake: p => p.ModelNames = ["chat-model", "agent-model", "other-model"],
+            host: p => new HostServer(_ => p, Settings, fileSettings: Settings));
+        await h.Client.RequestAsync("initialize", Init());
+        var created = await h.Client.RequestAsync("session/new", new { cwd = _root, mcpServers = Array.Empty<object>() });
+        var sid = created.GetProperty("result").GetProperty("sessionId").GetString()!;
+        Assert.Equal("chat-model", ShownModel(created.GetProperty("result").GetProperty("configOptions")));
+
+        var agent = await h.Client.RequestAsync("session/set_config_option", new { sessionId = sid, configId = "mode", value = "agent" });
+        Assert.Equal("agent-model", ShownModel(agent.GetProperty("result").GetProperty("configOptions")));
+        await PromptAsync(h, sid, "first");
+        Assert.Equal("agent-model", h.Fake.ChatModels.Last());   // witness: the host routes Agent mode to the role's model
+
+        // Picked in the selector, a model answers in Agent mode too.
+        await h.Client.RequestAsync("session/set_config_option", new { sessionId = sid, configId = "model", value = "other-model" });
+        await PromptAsync(h, sid, "second");
+        Assert.Equal("other-model", h.Fake.ChatModels.Last());
+
+        // A mode set the older way carries no options back: the selector is told at the next turn.
+        var second = await NewSessionAsync(h);
+        await h.Client.RequestAsync("session/set_mode", new { sessionId = second, modeId = "agent" });
+        await PromptAsync(h, second, "third");
+        Assert.Equal("agent-model", ShownModel(h.Client.Updates(second, "config_option_update").Last().GetProperty("configOptions")));
+    }
+
+    /// <summary>
+    /// A settings file that cannot be read changes nothing in an open thread, and the thread says so once while it
+    /// lasts — the user who just edited it by hand would otherwise see their change do nothing, without a word.
+    /// </summary>
+    [Fact]
+    public async Task AnUnreadableSettingsFile_IsSaidOnce_WhileItLasts()
+    {
+        var file = new InferpalConfig { RagEnabled = false, DefaultModel = "model-a" };
+        var broken = true;
+        await using var h = await StartAsync(
+            fake: p => p.ModelNames = ["model-a"],
+            host: p => new HostServer(_ => p, () => new InferpalConfig { RagEnabled = false, DefaultModel = "model-a" },
+                                      fileSettings: () => broken ? null : file));
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+        int Said() => h.Client.Said(sid).Split(Strings.AcpSettingsUnreadable).Length - 1;
+
+        await PromptAsync(h, sid, "first");
+        await PromptAsync(h, sid, "second");
+        Assert.Equal(1, Said());
+        Assert.Equal("model-a", h.Fake.ChatModels.Last());
+
+        // Readable again, then broken again: said again.
+        broken = false;
+        await PromptAsync(h, sid, "third");
+        broken = true;
+        await PromptAsync(h, sid, "fourth");
+        Assert.Equal(2, Said());
+    }
+
+    /// <summary>
+    /// A command that saves the agent's model (<c>/onboard apply</c>) is followed by the thread's selector: config/reload
+    /// never reports what the thread wrote itself, and the selector kept naming the old model while the new one answered.
+    /// </summary>
+    [Fact]
+    public async Task AModelSavedByACommand_IsTheOneTheSelectorNames()
+    {
+        Directory.CreateDirectory(Path.Combine(_root, ".inferpal"));
+        File.WriteAllText(Path.Combine(_root, ".inferpal", "project.json"), """{ "recommend": { "agentModel": "big-agent" } }""");
+        var config = new InferpalConfig { RagEnabled = false, DefaultModel = "chat-model" };
+        // The file as the session's own copy: nothing to follow from elsewhere, only what the thread writes.
+        InferpalConfig File_() => JsonSerializer.Deserialize<InferpalConfig>(JsonSerializer.Serialize(config))!;
+        await using var h = await StartAsync(
+            fake: p => p.ModelNames = ["chat-model", "big-agent"],
+            host: p => new HostServer(_ => p, () => config, fileSettings: File_));
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+        await h.Client.RequestAsync("session/set_config_option", new { sessionId = sid, configId = "mode", value = "agent" });
+
+        await PromptAsync(h, sid, "/onboard apply");
+        Assert.Equal("big-agent", config.AgentModel);   // WITNESS: the command saved it
+        await PromptAsync(h, sid, "go");
+
+        Assert.Equal("big-agent", h.Fake.ChatModels.Last());
+        var shown = h.Client.Updates(sid, "config_option_update").Last().GetProperty("configOptions")
+                     .EnumerateArray().Single(o => o.GetProperty("id").GetString() == "model").GetProperty("currentValue").GetString();
+        Assert.Equal("big-agent", shown);
+    }
+
+    /// <summary>
+    /// A file attached to a prompt is cut for the window of the model that reads it — the agent's in Agent mode, the one
+    /// picked in the thread when there is one, else the chat's —, never for the code-actions model.
+    /// </summary>
+    [Fact]
+    public async Task AnAttachedFile_IsSizedForTheModelThatAnswers()
+    {
+        var file = Path.Combine(_root, "orders.cs");
+        File.WriteAllText(file, "class Orders { }\n");
+        static InferpalConfig Settings() => new()
+        {
+            RagEnabled = false, DefaultModel = "chat-model", AgentModel = "agent-model", CodeActionsModel = "code-model",
+        };
+        await using var h = await StartAsync(
+            fake: p => p.ModelNames = ["chat-model", "agent-model", "code-model", "other-model"],
+            host: p => new HostServer(_ => p, Settings, fileSettings: Settings));
+        await h.Client.RequestAsync("initialize", Init());
+        async Task<List<string>> WindowsAskedFor(string sid)
+        {
+            h.Fake.LoadedContextQueries.Clear();
+            await h.Client.RequestAsync("session/prompt", new
+            {
+                sessionId = sid,
+                prompt = new object[]
+                {
+                    new { type = "text", text = "look at this" },
+                    new { type = "resource_link", uri = new Uri(file).AbsoluteUri, name = "orders.cs" },
+                },
+            });
+            return [.. h.Fake.LoadedContextQueries];
+        }
+
+        var chat = await NewSessionAsync(h);
+        var asked = await WindowsAskedFor(chat);
+        Assert.Contains("chat-model", asked);   // WITNESS: the windows were looked up
+        Assert.DoesNotContain("code-model", asked);
+
+        var agent = await NewSessionAsync(h);
+        await h.Client.RequestAsync("session/set_config_option", new { sessionId = agent, configId = "mode", value = "agent" });
+        asked = await WindowsAskedFor(agent);
+        Assert.Contains("agent-model", asked);
+        Assert.DoesNotContain("code-model", asked);
+
+        await h.Client.RequestAsync("session/set_config_option", new { sessionId = agent, configId = "model", value = "other-model" });
+        Assert.Equal(["other-model"], (await WindowsAskedFor(agent)).Distinct());
+    }
+
     // ── Settings, as the real agent reads them ─────────────────────────────────
 
     /// <summary>
@@ -785,12 +1015,12 @@ public sealed class AcpAgentTests : IDisposable
         await PromptAsync(h, sid, "third");
         Assert.Equal("model-a", h.Fake.ChatModels.Last());
 
-        // A new server: said once — the thread keeps the client it started with.
+        // A new address of the same kind of server is taken at once — the client reads it live — with nothing to say.
+        // Only a new KIND waits for a new thread, said once (FollowSavedSettingsTests, on real clients: this fake has
+        // no kind).
         file = new InferpalConfig { RagEnabled = false, DefaultModel = "model-c", BaseUrl = "http://elsewhere:1234" };
         await PromptAsync(h, sid, "fourth");
-        await PromptAsync(h, sid, "fifth");
-        var said = h.Client.Said(sid);
-        Assert.Equal(1, said.Split(Strings.AcpServerChangedNewThread).Length - 1);
+        Assert.DoesNotContain(Strings.AcpServerChangedNewThread, h.Client.Said(sid), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -811,7 +1041,10 @@ public sealed class AcpAgentTests : IDisposable
                 await PromptAsync(h, sid, "/settings");
                 url = Assert.Single(opened);
                 Assert.Contains(Strings.AcpSettingsOpened(url), h.Client.Said(sid), StringComparison.Ordinal);
-                Assert.Contains("settings-standalone.js", await http.GetStringAsync(url), StringComparison.Ordinal);
+                var page = await http.GetStringAsync(url);
+                Assert.Contains("settings-standalone.js", page, StringComparison.Ordinal);
+                // Stopped, the page names the way back from where it was opened: /settings, not a terminal command.
+                Assert.Contains(System.Text.Json.JsonSerializer.Serialize(Strings.SettingsWindowGoneInThread), page, StringComparison.Ordinal);
                 Assert.Empty(h.Fake.ChatModels);   // a command of the thread, never a question to the model
 
                 await PromptAsync(h, sid, "/settings");

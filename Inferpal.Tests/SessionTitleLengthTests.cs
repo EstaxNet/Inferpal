@@ -51,7 +51,7 @@ public sealed class SessionTitleLengthTests : IDisposable
         var name = SessionManager.SessionFileName(new DateTime(2026, 10, 5, 14, 30, 0),
                                                   SessionManager.SanitizeTitle(AnAnswerInsteadOfATitle, "fallback"));
 
-        await new ConversationStore(_dir).SaveAsync(name, [new SavedMessage("user", "hello")], CancellationToken.None);
+        await new ConversationStore(_dir).SaveAsync(name, [new SavedMessage("user", "hello")], CancellationToken.None, workspaceRoot: null);
 
         Assert.Single(Directory.GetFiles(_dir, "*.json"));
     }

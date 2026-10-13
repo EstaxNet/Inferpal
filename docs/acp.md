@@ -125,11 +125,13 @@ Inferpal.Host --acp --setup
 ```
 
 Once Inferpal is set up, type **`/settings`** in any thread to open the same page again. What you save there applies
-from your next question, in that thread and the others — except a new model server, which a thread only uses once it
-is started anew (the thread says so). A model picked in a thread stays that thread's.
+from your next question, in that thread and the others — a new address or API key of the same kind of model server
+included — except a new kind of server (Ollama, LM Studio, OpenAI-compatible), which a thread only uses once it is
+started anew (the thread says so). A model picked in a thread stays that thread's. A settings file that cannot be
+read — a hand edit that broke it — changes nothing in an open thread, which says so once.
 
 The settings page is served by Inferpal itself, on `127.0.0.1` only, under an address nobody else can guess; it
-reaches the settings and nothing else (no chat, no command, no tool), and it stops a few seconds after the page is
+reaches the settings and nothing else (no chat, no command, no tool), and it stops a few seconds after its last tab is
 closed. A browser cannot hand a file's location to a page: type or paste a path where the form asks for one.
 
 With a local Ollama already running, there is nothing to set up: Inferpal finds it.
@@ -138,7 +140,9 @@ With a local Ollama already running, there is nothing to set up: Inferpal finds 
 
 - **Three modes** — *Default* (answers, and uses the tools as needed), *Agent* (plans the task, then carries it out
   step by step), *Plan* (reads and explores, changes nothing) — and the **model**, chosen among the models your server
-  has installed. Both appear as the session's options in your client.
+  has installed. Both appear as the session's options in your client. The model shown is the one that answers: in
+  *Agent* mode, the model set for the agent's role when you set one; a model you pick answers in every mode. While the
+  agent works through its plan, what the model writes is shown as its thinking, and the answer once, at the end.
 - **Every change asks first**, with the real diff of each file shown before anything is written — the same approval
   rules, deny lists and session grants as in Visual Studio and VS Code. A file you are editing with unsaved changes is
   never written over: Inferpal asks your editor for its buffer, and refuses.
@@ -149,7 +153,8 @@ With a local Ollama already running, there is nothing to set up: Inferpal finds 
   (`/diagnostics export`) names it, with the reason.
 - **The MCP servers configured in your client** are started for the session, beside Inferpal's own.
 - **Sessions are saved** after every turn and listed again for the folder they belong to; reopened, they come back
-  whole. A session VS Code saves for the same folder is listed too (from this version on: older ones do not record their folder).
+  whole. A session VS Code or Visual Studio saves for the same folder is listed too, branches included (from this
+  version on: older ones do not record their folder).
 
 ## What stays in Visual Studio and VS Code
 

@@ -35,7 +35,7 @@ internal sealed partial class HostServer : IDisposable
 
     private readonly Func<InferpalConfig, IInferenceProvider> _providerFactory;
     private readonly Func<InferpalConfig> _configFactory;
-    private readonly Func<InferpalConfig> _fileSettings;
+    private readonly Func<InferpalConfig?> _fileSettings;
     private readonly TaskCompletionSource _shutdown = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly object _gate = new();
 
@@ -57,17 +57,17 @@ internal sealed partial class HostServer : IDisposable
     /// <param name="providerFactory">Test seam; defaults to <see cref="InferenceProviderFactory.Create"/>.</param>
     /// <param name="configFactory">Test seam; defaults to <see cref="InferpalConfig.LoadOwnCopy"/> so tests
     /// never read (or risk writing) the developer's real per-machine config.</param>
-    /// <param name="fileSettings">The settings file as it is now, for <c>config/reload</c> (test seam; defaults to
-    /// <see cref="InferpalConfig.LoadOwnCopy"/>).</param>
+    /// <param name="fileSettings">The settings file as it is now, for <c>config/reload</c>; <c>null</c> when it cannot be
+    /// read (test seam; defaults to <see cref="InferpalConfig.LoadOwnCopyToFollow"/>).</param>
     public HostServer(Func<InferpalConfig, IInferenceProvider>? providerFactory = null,
                       Func<InferpalConfig>? configFactory = null,
-                      Func<InferpalConfig>? fileSettings = null)
+                      Func<InferpalConfig?>? fileSettings = null)
     {
         _providerFactory = providerFactory ?? InferenceProviderFactory.Create;
         // A copy of its own: several hosts can live in one process (an ACP agent's threads), and what one session
         // changes in memory — a model for its thread — is not the others'.
         _configFactory   = configFactory   ?? InferpalConfig.LoadOwnCopy;
-        _fileSettings    = fileSettings    ?? InferpalConfig.LoadOwnCopy;
+        _fileSettings    = fileSettings    ?? InferpalConfig.LoadOwnCopyToFollow;
 
         // §22. This host talks to its editor over RPC, never to a Visual Studio in-process package —
         // yet the signal folder under %TEMP% is machine-wide, so without this declaration
@@ -167,6 +167,15 @@ internal sealed partial class HostServer : IDisposable
             Approval     = approval,
             TestCapture  = p.Debug ? new RpcTestDebugCapture(rpc) : null,
             Debug        = debug,
+        };
+        // ⚠ The file as this session last took it moves with what the session writes itself: left behind, a setting
+        // the thread saved (a pin, /hardware budget, /onboard apply) and the settings window then put back was never
+        // followed — the file's value equalled the old one, and the thread kept its own for the rest of its life.
+        // The keys it did not write keep their old value, so a change the window made meanwhile is still followed.
+        var followed = _session;
+        config.Saved += () =>
+        {
+            foreach (var (key, value) in config.LastSaved) followed.FileSettings[key] = value?.DeepClone();
         };
         ApplyFoldersOutOfReach(_session, p.OtherFolders);
         ResetHistory(_session);
@@ -328,17 +337,14 @@ internal sealed partial class HostServer : IDisposable
             // The session-scoped `/tools off` switch forces plain chat, like the VS VM.
             // ⚠ A code action answers from the code it was given, without tools — as in Visual Studio. Sent with
             // them, `/explain` planned, called tools and raised approval prompts.
-            var agentMode = !p.CodeAction && (p.AgentMode ?? s.Config.AgentModeEnabled) && s.ToolsEnabled;
+            var agentMode = TurnIsAgent(s, p.CodeAction, p.AgentMode);
             var useTools  = !p.CodeAction && s.ToolsEnabled;
             // The reasoning tail is step progress only on the orchestrated path.
             showReasoningTail = agentMode;
             // The model picked in the chat is the CHAT model: the agent loop and the code actions still route to their
             // configured model first, as in Visual Studio. Resolved BEFORE the context check, which needs the window
             // the server really loaded this model with.
-            var model = ModelRouter.Resolve(
-                s.Config,
-                p.CodeAction ? ModelRole.CodeActions : agentMode ? ModelRole.Agent : ModelRole.Chat,
-                p.Model);
+            var model = TurnModel(s, p.CodeAction, agentMode, p.Model, p.ModelOverridesRoles);
 
             // Pre-send context check.
             // It did not exist here. The history was never bounded: it grew until it went past the
@@ -784,6 +790,22 @@ internal sealed partial class HostServer : IDisposable
     /// ⚠ The adapter fenced the whole file into the prompt: past the window LM Studio refuses the request and
     /// Ollama drops its head, system prompt and instruction first, without a word. See <see cref="CodeExcerpt.BudgetFor"/>.
     /// </remarks>
+    /// <summary>Whether a turn runs the agent's plan: never a code action, and never with the tools off.</summary>
+    private static bool TurnIsAgent(HostSession s, bool codeAction, bool? agentMode) =>
+        !codeAction && (agentMode ?? s.Config.AgentModeEnabled) && s.ToolsEnabled;
+
+    /// <summary>
+    /// The model a turn asks: the one picked for the thread when it overrides the roles, else the role's — code actions,
+    /// the agent, the chat. What <c>chat/send</c> asks, and what <c>code/excerpt</c> sizes the code for.
+    /// </summary>
+    /// <remarks>⚠ Two copies drift: the excerpt was sized for the code-actions model while an ACP thread's attachments
+    /// were read by its chat or agent model — cut for a big window and sent to a small one, which the server refused or
+    /// cut, or over-trimmed under a small code-actions model.</remarks>
+    private static string TurnModel(HostSession s, bool codeAction, bool agentMode, string? model, bool overridesRoles) =>
+        overridesRoles && !string.IsNullOrWhiteSpace(model)
+            ? model.Trim()
+            : ModelRouter.Resolve(s.Config, codeAction ? ModelRole.CodeActions : agentMode ? ModelRole.Agent : ModelRole.Chat, model);
+
     [JsonRpcMethod("code/excerpt", UseSingleObjectParameterDeserialization = true)]
     public async Task<CodeExcerptResult> CodeExcerptOfAsync(CodeExcerptParams p, CancellationToken ct)
     {
@@ -792,7 +814,7 @@ internal sealed partial class HostServer : IDisposable
         // from the setting (100 000 under LM Studio loading 4 096) the budget sent whole files that were then refused.
         // The model is the one chat/send resolves for that turn — the same call, or the excerpt is sized for one
         // model and read by another.
-        var model   = ModelRouter.Resolve(s.Config, ModelRole.CodeActions, p.Model);
+        var model   = TurnModel(s, p.CodeAction, TurnIsAgent(s, p.CodeAction, p.AgentMode), p.Model, p.ModelOverridesRoles);
         var window  = await Services.Agent.ContextManager.EffectiveWindowAsync(s.Config, s.Client, model, ct);
         var excerpt = CodeExcerpt.Of(p.Code ?? string.Empty, CodeExcerpt.BudgetFor(window));
         return new(excerpt.Text, excerpt.Label(CodeExcerpt.SourceLabel(p.FileName ?? string.Empty, p.Selection)),
@@ -915,6 +937,19 @@ internal sealed partial class HostServer : IDisposable
             ApiKey   = p.ApiKey ?? s.Config.ApiKey,
         };
         return await _providerFactory(draft).ListModelsAsync(ct, url);
+    }
+
+    /// <summary>
+    /// <c>models/listByKind</c> — <c>models/list</c> split by what each model can be picked for: what VS Code's chat
+    /// picker and its settings' model boxes offer, the split made here, by the one classifier.
+    /// </summary>
+    /// <remarks>⚠ The panel offered every listed model in every model box: an embedding model picked as the chat or
+    /// agent model ends every turn on the server's refusal, and the code-search box offered chat models.</remarks>
+    [JsonRpcMethod("models/listByKind", UseSingleObjectParameterDeserialization = true)]
+    public async Task<ModelsByKindResult> ListModelsByKindAsync(ModelsListParams p, CancellationToken ct)
+    {
+        var listed = await ListModelsAsync(p, ct);
+        return new ModelsByKindResult(ModelCatalog.ChatModelsOf(listed), ModelCatalog.EmbeddingModelsOf(listed));
     }
 
     /// <summary>
@@ -1133,7 +1168,7 @@ internal sealed partial class HostServer : IDisposable
 
             s.Config.Save();
             // The file now holds what this session saved: a later reload follows only what changes after.
-            s.FileSettings = _fileSettings().SnapshotNow();
+            s.FileSettings = (_fileSettings() ?? s.Config).SnapshotNow();
             await AfterSettingsChangedAsync(s, mcpBefore, ct);
             return true;
         });
@@ -1144,12 +1179,6 @@ internal sealed partial class HostServer : IDisposable
         Services.Execution.PermissionPolicy.ParseRules(s.Config.PermissionRules, out var dropped);
         return new ConfigUpdateResult(dropped.Count);
     }
-
-    /// <summary>The settings that pick the model server: changed, this session still talks to the old one.</summary>
-    private static readonly IReadOnlySet<string> ServerSettings = new HashSet<string>(StringComparer.Ordinal)
-    {
-        "provider", "baseUrl", "apiKey",
-    };
 
     /// <summary>
     /// <c>config/reload</c> — the settings file as it is NOW, followed by this session without being written back: for a
@@ -1165,11 +1194,28 @@ internal sealed partial class HostServer : IDisposable
         return WithTurnSlotAsync("config/reload", ct, async token =>
         {
             var mcpBefore = (s.Config.McpEnabled, s.Config.McpServersJson);
-            var fileNow   = _fileSettings();
-            var taken     = s.Config.TakeFileChanges(s.FileSettings, fileNow);
-            s.FileSettings = fileNow.SnapshotNow();
+            // ⚠ Unreadable is not "the factory values": the session keeps what it has, and the file as last taken.
+            if (_fileSettings() is not { } fileNow)
+                return new ConfigReloadResult([], s.Config.DefaultModel, false, s.Config.AgentModel, Unreadable: true);
+
+            // ⚠ The session's client speaks ONE kind of server's protocol and reads its address and key live: a new
+            // kind taken here sent the old protocol to the new address — every turn refused while the new server ran,
+            // under "this thread still talks to the one it started with". A new kind waits for a new thread, the
+            // session keeping its server whole (said once); a new address or key of the same kind applies now.
+            var asSaved  = fileNow.SnapshotNow();
+            var switchTo = InferenceProviderFactory.PendingSwitch(s.Client, fileNow.Provider);
+            if (switchTo is not null)
+            {
+                fileNow.Provider = s.Config.Provider;
+                fileNow.BaseUrl  = s.Config.BaseUrl;
+                fileNow.ApiKey   = s.Config.ApiKey;
+            }
+            var taken = s.Config.TakeFileChanges(s.FileSettings, fileNow);
+            var newKind = switchTo is not null
+                          && !System.Text.Json.Nodes.JsonNode.DeepEquals(asSaved["provider"], s.FileSettings["provider"]);
+            s.FileSettings = asSaved;
             if (taken.Count > 0) await AfterSettingsChangedAsync(s, mcpBefore, token);
-            return new ConfigReloadResult(taken, s.Config.DefaultModel, taken.Any(ServerSettings.Contains));
+            return new ConfigReloadResult(taken, s.Config.DefaultModel, newKind, s.Config.AgentModel);
         });
     }
 
@@ -1223,6 +1269,16 @@ internal sealed partial class HostServer : IDisposable
     public async Task SessionSaveAsync(SessionSaveParams p, CancellationToken ct)
     {
         var s = Session();
+        // ⚠ The conversation saved again under its own name keeps the branch link its file holds: written without it, a
+        // branch saved from VS Code, or an ACP thread reopened on one (saved after every turn), lost its family for good.
+        var again = p.Name != "last_session" && !p.Archive
+                    && string.Equals(ConversationStore.StoredName(p.Name), s.CurrentSessionName, StringComparison.Ordinal);
+        SessionData? lineage = null;
+        if (again)
+        {
+            try { lineage = await s.Store.LoadAsync(p.Name, ct); }
+            catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("HostServer.SessionSave.Lineage", ex); }
+        }
         // The auto-save slot is not "the file this conversation lives in" (see CurrentSessionName), and
         // neither is the archive of the conversation just left: /branch rewrites the current file.
         if (p.Name != "last_session" && !p.Archive) s.CurrentSessionName = ConversationStore.StoredName(p.Name);
@@ -1241,7 +1297,8 @@ internal sealed partial class HostServer : IDisposable
         // The workspace for every save, not only the auto-save slot's: an Agent Client Protocol client lists the sessions
         // of the folder it has open (session/list's cwd), and a session with no folder is listed in none.
         await s.Store.SaveAsync(p.Name, p.Messages.Select(ToSaved), ct,
-                                workspaceRoot: s.RootDir, currentName: currentName,
+                                workspaceRoot: s.RootDir, parent: lineage?.Parent, forkTurn: lineage?.ForkTurn,
+                                currentName: currentName,
                                 templateSuffix: p.Archive ? s.DiscardedTemplateSuffix : s.TemplateSuffix);
     }
 
@@ -1334,11 +1391,11 @@ internal sealed partial class HostServer : IDisposable
 
             // The parent is rewritten with the conversation as it stands now (it may have moved on
             // since it was loaded), keeping its own parent link when it is itself a branch.
-            await s.Store.SaveAsync(plan.ParentName, plan.ParentMessages, token,
+            await s.Store.SaveAsync(plan.ParentName, plan.ParentMessages, token, workspaceRoot: s.RootDir,
                                     parent: plan.ParentParent, forkTurn: plan.ParentForkTurn, templateSuffix: s.TemplateSuffix);
 
             // The branch is the same conversation, cut: it keeps the mode its turns were held in.
-            await s.Store.SaveAsync(plan.BranchName, plan.BranchMessages, token,
+            await s.Store.SaveAsync(plan.BranchName, plan.BranchMessages, token, workspaceRoot: s.RootDir,
                                     parent: plan.ParentName, forkTurn: plan.ForkTurn, templateSuffix: s.TemplateSuffix);
 
             ForgetConversationState(s);

@@ -295,7 +295,8 @@ internal partial class InferpalToolWindowData
         {
             if (!IsModelMenuOpen) return;
             ModelChoices.Clear();
-            foreach (var name in listed)
+            // A question goes to the model picked here: an embedding model would answer none.
+            foreach (var name in ModelCatalog.ChatModelsOf(listed))
                 ModelChoices.Add(new ModelChoiceItem(name, current: name == ActiveModelLabel, PickModelAsync));
             if (ModelChoices.Count == 0)
             {

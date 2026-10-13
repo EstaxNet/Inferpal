@@ -29,7 +29,7 @@ public sealed class SessionStoredNameTests : IDisposable
     {
         // '/' cannot be in a file name on any system.
         var store = new ConversationStore(_dir);
-        await store.SaveAsync("feat/login", [new SavedMessage("user", "q")], CancellationToken.None);
+        await store.SaveAsync("feat/login", [new SavedMessage("user", "q")], CancellationToken.None, workspaceRoot: null);
 
         var listed = await store.ListWithPreviewAsync(CancellationToken.None);
 

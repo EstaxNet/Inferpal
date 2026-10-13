@@ -513,7 +513,17 @@ internal class InferpalConfig
     /// <remarks>⚠ <see cref="Load"/> hands every caller the same instance while the file is unchanged. An ACP agent runs
     /// several threads in one process: through the shared copy, a model picked in one thread became the model every
     /// other thread asked, while their model selectors still showed their own.</remarks>
-    public static InferpalConfig LoadOwnCopy() => LoadUncached();
+    public static InferpalConfig LoadOwnCopy() => LoadUncached(follow: false)!;
+
+    /// <summary>
+    /// The settings file as it is now, for a copy that FOLLOWS it (<see cref="TakeFileChanges"/>): <c>null</c> when the
+    /// file exists but cannot be read — the copy then keeps what it has.
+    /// </summary>
+    /// <remarks>⚠ <see cref="LoadOwnCopy"/> answers an unreadable file with the factory values, which is right for a
+    /// start (the product has to start) and wrong for a copy that follows the file: one comma too many after a hand edit
+    /// made every open thread take the factory values at its next question — another model server, the permission rules
+    /// gone, the MCP servers stopped.</remarks>
+    public static InferpalConfig? LoadOwnCopyToFollow() => LoadUncached(follow: true);
 
     private static DateTime StampOf(string path)
     {
@@ -521,7 +531,11 @@ internal class InferpalConfig
         catch (Exception ex) { Services.Diagnostics.Swallow("InferpalConfig.Stamp", ex); return default; }
     }
 
-    private static InferpalConfig LoadUncached()
+    private static InferpalConfig LoadUncached() => LoadUncached(follow: false)!;
+
+    /// <param name="follow">For a copy that follows the file: an unreadable file is <c>null</c>, said once, instead of
+    /// the factory values.</param>
+    private static InferpalConfig? LoadUncached(bool follow)
     {
         var path = EffectiveConfigPath;
         InferpalConfig cfg;
@@ -540,6 +554,14 @@ internal class InferpalConfig
                     $"{path} holds null for {string.Join(", ", repaired)} — factory defaults are used for "
                     + "these settings, and the next save writes them back.");
         }
+        else if (follow)
+        {
+            // Said once while it lasts: a follower reads the file at every question.
+            Services.Diagnostics.RecordOnce("InferpalConfig.Follow",
+                $"{path} exists but could not be read ({error!.GetType().Name}: {error.Message}) — the open sessions "
+                + "keep the settings they had until it can be read again.", path);
+            return null;
+        }
         else
         {
             // The fallback to factory defaults stays — the product has to start — but it is never
@@ -553,6 +575,7 @@ internal class InferpalConfig
             cfg = new InferpalConfig();
         }
 
+        if (follow) Services.Diagnostics.Forget("InferpalConfig.Follow", path);
         Strings.ApplyLanguage(cfg.Language);
         cfg._baseline = Snapshot(cfg);
         return cfg;
@@ -677,6 +700,11 @@ internal class InferpalConfig
         Services.Persistence.AtomicFile.WriteAllText(path,
             toWrite.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
 
+        // What this save put in the file, read by a copy that follows the file (TakeFileChanges): the settings this
+        // copy changed since its baseline — all of them for a copy built in code —, with the value written.
+        LastSaved = toWrite.Where(kv => _baseline is null || !System.Text.Json.Nodes.JsonNode.DeepEquals(mine[kv.Key], _baseline[kv.Key]))
+                           .ToDictionary(kv => kv.Key, kv => kv.Value?.DeepClone(), StringComparer.Ordinal);
+
         // The in-memory values are left alone: the file's values are not reloaded here. ⚠ A backend
         // switched in Settings IS laid over the live instance (ApplyChangesFrom) while Visual Studio's
         // client stays the previous backend's until restart — InferenceProviderFactory.PendingSwitch
@@ -693,6 +721,10 @@ internal class InferpalConfig
 
     private static System.Text.Json.Nodes.JsonObject Snapshot(InferpalConfig cfg) =>
         JsonSerializer.SerializeToNode(cfg)!.AsObject();
+
+    /// <summary>The settings the last <see cref="Save"/> of this copy wrote (JSON keys), with the value now in the file.</summary>
+    internal IReadOnlyDictionary<string, System.Text.Json.Nodes.JsonNode?> LastSaved { get; private set; } =
+        new Dictionary<string, System.Text.Json.Nodes.JsonNode?>();
 
     // The file in the shape this class writes it (same keys, defaults filled), so it compares key by
     // key with a snapshot — PLUS every key this version does not know. ⚠ Read only through the typed

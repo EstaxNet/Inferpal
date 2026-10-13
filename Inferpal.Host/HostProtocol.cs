@@ -68,7 +68,10 @@ internal sealed record ChatSendParams(
     /// lets the RAG auto-context skip their chunks (parity with the VS VM, revue lot 4).</summary>
     List<string>? AttachedPaths = null,
     bool CodeAction = false,
-    string? Query = null);
+    string? Query = null,
+    /// <summary><see cref="Model"/> is a model the user picked for this thread: it answers whatever the turn's role —
+    /// an ACP client sends one only after a pick, so the per-role models stay reachable otherwise.</summary>
+    bool ModelOverridesRoles = false);
 
 /// <summary>Final outcome of a turn. <paramref name="Text"/> holds the partial stream on cancel.</summary>
 internal sealed record ChatSendResult(
@@ -256,6 +259,10 @@ internal sealed record ConnectionCheckParams(string? BaseUrl = null, string? Api
 /// </summary>
 internal sealed record ModelsListParams(string? BaseUrl = null, string? Provider = null, string? ApiKey = null);
 
+/// <summary>`models/listByKind` — the listed models, split by what each can be picked for: <paramref name="Chat"/> for
+/// the chat and every task model, <paramref name="Embedding"/> for code search (<see cref="ModelCatalog"/>).</summary>
+internal sealed record ModelsByKindResult(IReadOnlyList<string> Chat, IReadOnlyList<string> Embedding);
+
 // ── Conversation export (the rendering lives in the Core, not in the adapter) ─
 
 /// <summary>One adapter bubble, flattened for export.</summary>
@@ -357,9 +364,12 @@ internal sealed record ConfigUpdateParams(string Json, string? Base = null);
 /// </remarks>
 internal sealed record ConfigUpdateResult(int PermissionRulesIgnored);
 
-/// <summary>`config/reload` — the settings the session took from the file (JSON keys), its default model after them, and
-/// whether the model server changed (the session keeps talking to the one it started with).</summary>
-internal sealed record ConfigReloadResult(IReadOnlyList<string> Taken, string DefaultModel, bool ServerChanged);
+/// <summary>`config/reload` — the settings the session took from the file (JSON keys), its default and agent models after
+/// them, and whether a new KIND of model server was saved (the session keeps talking to the one it started with; a new
+/// address or key of the same kind is taken, and applies at once).
+/// <paramref name="Unreadable"/>: the file exists but cannot be read — nothing was taken.</summary>
+internal sealed record ConfigReloadResult(IReadOnlyList<string> Taken, string DefaultModel, bool ServerChanged,
+                                          string AgentModel = "", bool Unreadable = false);
 
 /// <summary>`pins/add` / `pins/remove` — a file to pin into, or take out of, every request.</summary>
 internal sealed record PinParams(string Path);
@@ -399,7 +409,10 @@ internal sealed record CodeActionResultDto(
 /// send, with the file it comes from and whether it is a selection (the label says so). <paramref name="Model"/>
 /// is the model picked in the chat; the excerpt is sized for the window of the model that answers a code action —
 /// the configured code-actions model, else that pick (null = the chat model of the settings).</summary>
-internal sealed record CodeExcerptParams(string Code, string FileName, bool Selection = false, string? Model = null);
+/// <remarks>The turn the code goes into, as <c>chat/send</c> receives it: a code action by default (VS Code's <c>/explain</c>,
+/// <c>/review</c>); an ACP thread's attachments go into a chat or agent turn.</remarks>
+internal sealed record CodeExcerptParams(string Code, string FileName, bool Selection = false, string? Model = null,
+                                         bool CodeAction = true, bool? AgentMode = null, bool ModelOverridesRoles = false);
 
 /// <summary>`code/excerpt` answer: <paramref name="Text"/> is what goes into the prompt (the code, or
 /// its first lines and a marker naming the count), <paramref name="Label"/> what the chat shows under

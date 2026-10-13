@@ -30,7 +30,7 @@ public sealed class HistorySearchMoreMatchesTests : IDisposable
     {
         var store = new ConversationStore(_dir);
         var messages = Enumerable.Range(1, 7).Select(i => new SavedMessage("user", $"question {i} about the pricing rule")).ToList();
-        await store.SaveAsync("pricing-work", messages, CancellationToken.None);
+        await store.SaveAsync("pricing-work", messages, CancellationToken.None, workspaceRoot: null);
 
         var answer = await HistoryCommandHandler.HandleAsync(store, ["/history", "pricing"], Now, CancellationToken.None);
 
@@ -44,7 +44,7 @@ public sealed class HistorySearchMoreMatchesTests : IDisposable
         // Reference arm: every match is shown, nothing to count.
         var store = new ConversationStore(_dir);
         await store.SaveAsync("short", [new SavedMessage("user", "the pricing rule"), new SavedMessage("assistant", "pricing is fine")],
-                              CancellationToken.None);
+                              CancellationToken.None, workspaceRoot: null);
 
         var answer = await HistoryCommandHandler.HandleAsync(store, ["/history", "pricing"], Now, CancellationToken.None);
 

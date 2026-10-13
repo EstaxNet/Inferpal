@@ -71,11 +71,12 @@ internal class ConversationStore
     /// <param name="parent">Session this one was forked from (<c>/branch</c>); null for a root session.</param>
     /// <param name="forkTurn">Turn the fork happened at, meaningful only with <paramref name="parent"/>.</param>
     /// <param name="workspaceRoot">Workspace the conversation belongs to: what decides the auto-save slot's file, and,
-    /// for a named session, the folder an Agent Client Protocol client lists it under.</param>
+    /// for a named session, the folder an Agent Client Protocol client lists it under. Required, <c>null</c> said
+    /// aloud: a branch and Visual Studio's archives were written without it, and no ACP client ever listed them.</param>
     /// <param name="currentName">The named session the conversation lives in; recorded for the auto-save slot.</param>
     /// <param name="templateSuffix">The <c>/template</c> mode the conversation is held in, restored with it.</param>
     public async Task SaveAsync(string sessionName, IEnumerable<SavedMessage> messages, CancellationToken ct,
-                                string? parent = null, int? forkTurn = null, string? workspaceRoot = null,
+                                string? workspaceRoot, string? parent = null, int? forkTurn = null,
                                 string? currentName = null, string? templateSuffix = null)
     {
         var file = sessionName == AutoSaveSlot ? AutoSaveFile(workspaceRoot) : SessionPath(sessionName);

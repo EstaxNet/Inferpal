@@ -1231,6 +1231,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="SettingsWindowShowAllModels" xml:space="preserve"><value>Mostrar todos los modelos</value></data>
   <data name="SettingsWindowTitle" xml:space="preserve"><value>Configuración de Inferpal</value></data>
   <data name="SettingsWindowGone" xml:space="preserve"><value>El servidor de la ventana de configuración se ha detenido: ya no se puede guardar nada desde esta página. Ejecute `Inferpal.Host --settings` de nuevo para volver a abrirla.</value></data>
+  <data name="SettingsWindowGoneInThread" xml:space="preserve"><value>El servidor de la ventana de configuración se ha detenido: ya no se puede guardar nada desde esta página. Escriba `/settings` en un hilo para volver a abrirla.</value></data>
   <data name="SettingsWindowNoPicker" xml:space="preserve"><value>Un navegador no puede indicar a Inferpal la ubicación de un archivo: escriba o pegue la ruta completa del archivo.</value></data>
   <data name="SettingsWindowNoXray" xml:space="preserve"><value>La radiografía del prompt se muestra en el chat de Visual Studio y VS Code.</value></data>
   <data name="SettingsWindowNotFound" xml:space="preserve"><value>No hay nada en {0}.</value></data>
@@ -1247,6 +1248,7 @@ Si no se abrió ninguna ventana, abra esta dirección. Cierre la página cuando 
 Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los demás. Solo un nuevo servidor de modelos espera a un hilo nuevo.</value></data>
   <data name="AcpSettingsOpenThis" xml:space="preserve"><value>No se pudo iniciar ningún navegador: abra {0} para configurar Inferpal.</value></data>
   <data name="AcpServerChangedNewThread" xml:space="preserve"><value>El servidor de modelos cambió en la configuración: este hilo sigue hablando con el que tenía al empezar. Abra un hilo nuevo para usar el nuevo.</value></data>
+  <data name="AcpSettingsUnreadable" xml:space="preserve"><value>No se puede leer el archivo de configuración de Inferpal (quizá lo rompió una edición a mano): este hilo conserva la configuración que tenía. Repare config.json o vuelva a guardar la configuración con /settings.</value></data>
   <data name="ChatModelButton" xml:space="preserve"><value>Modelo y servidor: {0}</value></data>
   <data name="ModeChat" xml:space="preserve"><value>Chat</value></data>
   <data name="ModeAgent" xml:space="preserve"><value>Agente</value></data>

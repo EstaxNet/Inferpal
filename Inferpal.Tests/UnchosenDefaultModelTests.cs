@@ -118,7 +118,7 @@ public class UnchosenDefaultModelTests
         Assert.Contains("this.refreshModelsAfterReconnect(host)", poll);
 
         var refresh = TsMethod(code, "refreshModelsAfterReconnect");
-        Assert.Contains("host.modelsList()", refresh);
+        Assert.Contains("host.modelsListByKind()", refresh);
         Assert.Contains("this.adoptDefaultModel(host)", refresh);
 
         Assert.Contains("host.modelsAdoptDefault()", TsMethod(code, "adoptDefaultModel"));

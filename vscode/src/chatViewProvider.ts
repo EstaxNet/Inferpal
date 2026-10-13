@@ -371,7 +371,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
     }
     try {
-      this.models = await host.modelsList();
+      // The chat models only: a question goes to the model picked here, and an embedding model answers none.
+      this.models = (await host.modelsListByKind()).chat;
     } catch (err) {
       // ⚠ This is NOT the unreachable-backend path: all three providers swallow the HTTP failure
       // and return an EMPTY list, so `models/list` SUCCEEDS. This catch only ever sees a host or
@@ -556,7 +557,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // keep the previous autocomplete list
     }
     try {
-      const listed = await host.modelsList();
+      const listed = (await host.modelsListByKind()).chat;
       // ⚠ An empty list must not REPLACE the previous one: it arrives through the success path,
       // not the catch (see bootstrap), so saving the settings with the backend down would silently
       // empty the picker. The previous list is kept only when the new one is empty — a backend that
@@ -634,7 +635,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       return;
     }
     try {
-      const listed = await host.modelsList();
+      const listed = (await host.modelsListByKind()).chat;
       if (listed.length > 0 && listed.join('\n') !== this.models.join('\n')) {
         this.models = listed;
         this.post({ type: 'models', models: listed });
@@ -666,7 +667,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   private async refreshModelsAfterReconnect(host: HostClient): Promise<void> {
     try {
-      const listed = await host.modelsList();
+      const listed = (await host.modelsListByKind()).chat;
       if (listed.length > 0) {
         this.models = listed;
       }

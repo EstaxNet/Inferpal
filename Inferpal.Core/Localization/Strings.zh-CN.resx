@@ -1231,6 +1231,7 @@
   <data name="SettingsWindowShowAllModels" xml:space="preserve"><value>显示所有模型</value></data>
   <data name="SettingsWindowTitle" xml:space="preserve"><value>Inferpal 设置</value></data>
   <data name="SettingsWindowGone" xml:space="preserve"><value>设置窗口的服务器已停止：无法再从此页面保存任何内容。请再次运行 `Inferpal.Host --settings` 重新打开。</value></data>
+  <data name="SettingsWindowGoneInThread" xml:space="preserve"><value>设置窗口的服务器已停止：无法再从此页面保存任何内容。请在会话中输入 `/settings` 重新打开。</value></data>
   <data name="SettingsWindowNoPicker" xml:space="preserve"><value>浏览器无法把文件位置提供给 Inferpal：请输入或粘贴文件的完整路径。</value></data>
   <data name="SettingsWindowNoXray" xml:space="preserve"><value>提示词的 X 光视图显示在 Visual Studio 和 VS Code 的聊天中。</value></data>
   <data name="SettingsWindowNotFound" xml:space="preserve"><value>{0} 处没有任何内容。</value></data>
@@ -1247,6 +1248,7 @@
 在那里保存的内容从你的下一个问题起生效，本会话和其他会话都适用。只有新的模型服务器需要新会话。</value></data>
   <data name="AcpSettingsOpenThis" xml:space="preserve"><value>无法启动浏览器：请打开 {0} 来设置 Inferpal。</value></data>
   <data name="AcpServerChangedNewThread" xml:space="preserve"><value>设置中的模型服务器已更改：此会话仍连接着开始时的服务器。请开始新会话以使用新服务器。</value></data>
+  <data name="AcpSettingsUnreadable" xml:space="preserve"><value>无法读取 Inferpal 的设置文件（可能被手动编辑损坏）：此会话保留原有设置。请修复 config.json，或通过 /settings 重新保存设置。</value></data>
   <data name="ChatModelButton" xml:space="preserve"><value>模型与服务器：{0}</value></data>
   <data name="ModeChat" xml:space="preserve"><value>聊天</value></data>
   <data name="ModeAgent" xml:space="preserve"><value>代理</value></data>

@@ -761,11 +761,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         return tcs.Task;
     }
 
-    // ── Embedding model keyword filter ────────────────────────────────────────
-    // Shared with the tool-window VM's first-run discovery (see ModelCatalog).
-    private static bool IsEmbeddingModel(string name) =>
-        Services.Inference.ModelCatalog.IsEmbeddingModel(name);
-
     // ── Collections ────────────────────────────────────────────────────────────
     [DataMember] public ObservableCollection<string> AvailableLanguages       { get; } = [];
     [DataMember] public ObservableCollection<string> AvailableModels          { get; } = [];
@@ -2089,13 +2084,16 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
                 // bound property as soon as it leaves the collection, and under Remote UI that null
                 // comes back AFTER the re-add -- it overwrites it. SelectionPreservingList never
                 // removes it.
+                // The chat and task boxes offer the models a question can be asked of; the code-search box, the
+                // embedding models. One classifier for the three editors (ModelCatalog), the held value kept.
+                var chatModels = Services.Inference.ModelCatalog.ChatModelsOf(models);
                 var current = SelectedModel;
-                SelectionPreservingList.Sync(AvailableModels, models, [current]);
+                SelectionPreservingList.Sync(AvailableModels, chatModels, [current]);
                 if (AvailableModels.Count > 0)
                     SelectedModel = current is not null && AvailableModels.Contains(current) ? current : AvailableModels[0];
 
                 // [""] + models: the empty entry means "same as the chat model".
-                SelectionPreservingList.Sync(AvailableOptionalModels, models,
+                SelectionPreservingList.Sync(AvailableOptionalModels, chatModels,
                     [CodeActionsModel, InlineCompletionModel, InlineEditModel, AgentModel, UtilityModel],
                     leadingEmpty: true);
 
@@ -2103,7 +2101,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
                 // entry: left empty, the best one installed is used at run time (its hint says so). Nothing
                 // is picked on the user's behalf — a value written by opening the window would read as an
                 // unsaved change nobody made.
-                SelectionPreservingList.Sync(AvailableEmbeddingModels, models.Where(IsEmbeddingModel).ToList(),
+                SelectionPreservingList.Sync(AvailableEmbeddingModels, Services.Inference.ModelCatalog.EmbeddingModelsOf(models),
                                              [RagEmbeddingModel], leadingEmpty: true);
             });
         }

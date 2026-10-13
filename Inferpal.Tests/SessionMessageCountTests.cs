@@ -35,7 +35,7 @@ public sealed class SessionMessageCountTests : IDisposable
             new("user", "and the tests?"),
             new("tool", "{...}", "run_tests"),
             new("assistant", "All 12 pass."),
-        ], CancellationToken.None);
+        ], CancellationToken.None, workspaceRoot: null);
 
         var summary = Assert.Single((await store.ListWithPreviewAsync(CancellationToken.None)).Items);
 
@@ -48,7 +48,7 @@ public sealed class SessionMessageCountTests : IDisposable
         // Reference arm.
         var store = new ConversationStore(_dir);
         await store.SaveAsync("chat", [new("user", "q1"), new("assistant", "a1"), new("user", "q2"), new("assistant", "a2")],
-                              CancellationToken.None);
+                              CancellationToken.None, workspaceRoot: null);
 
         Assert.Equal(4, Assert.Single((await store.ListWithPreviewAsync(CancellationToken.None)).Items).MessageCount);
     }

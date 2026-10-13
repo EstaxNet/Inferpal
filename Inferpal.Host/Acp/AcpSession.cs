@@ -69,6 +69,16 @@ internal sealed class AcpSession : IAsyncDisposable
     private string _defaultModel = string.Empty;
     private List<string> _models = [];
     private AcpShownStream _stream = new();
+
+    /// <summary>
+    /// This turn runs the agent's plan, whose host keeps as the answer only what the model writes after its last reset
+    /// (<c>chat/streamReset</c>): the stream is shown as the run's thinking, and the answer is said once, at the end.
+    /// </summary>
+    /// <remarks>⚠ A client cannot take back a message chunk. Sent as the answer, the text the host discards — an answer
+    /// given before the tool the plan asked for, a plan written again — stayed on screen, and the answer that followed
+    /// showed it twice; the session, which saved everything sent, reloaded it twice too.</remarks>
+    private bool _provisional;
+    private bool _actBreak;
     private bool _turnOpen;
     private bool _cancelRequested;
     private int _echoes;
@@ -179,19 +189,44 @@ internal sealed class AcpSession : IAsyncDisposable
         catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("AcpSession.AdoptDefaultModel", ex); }
     }
 
-    /// <summary>The mode a new session opens in: the agent when the user turned agent mode on, else the default.</summary>
+    /// <summary>
+    /// The mode a new session opens in — the agent when the user turned agent mode on, else the default — and the model
+    /// set for the agent's role, which answers in Agent mode.
+    /// </summary>
     private async Task<string> ConfiguredModeAsync(CancellationToken ct)
+    {
+        var mode = AcpModes.Default;
+        try
+        {
+            var json = await _link.InvokeWithCancellationAsync<string>("config/get", cancellationToken: ct);
+            using var doc = JsonDocument.Parse(json);
+            foreach (var p in doc.RootElement.EnumerateObject())
+            {
+                if (string.Equals(p.Name, "agentModeEnabled", StringComparison.OrdinalIgnoreCase) && p.Value.ValueKind == JsonValueKind.True)
+                    mode = AcpModes.Agent;
+                else if (string.Equals(p.Name, "agentModel", StringComparison.OrdinalIgnoreCase) && p.Value.ValueKind == JsonValueKind.String)
+                    _agentRoleModel = p.Value.GetString()!.Trim();
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("AcpSession.ConfiguredMode", ex); }
+        return mode;
+    }
+
+    /// <summary>The settings' default model (unless one was picked in this thread) and the agent's role model, read again.</summary>
+    private async Task ReadConfiguredModelsAsync(CancellationToken ct)
     {
         try
         {
             var json = await _link.InvokeWithCancellationAsync<string>("config/get", cancellationToken: ct);
             using var doc = JsonDocument.Parse(json);
             foreach (var p in doc.RootElement.EnumerateObject())
-                if (string.Equals(p.Name, "agentModeEnabled", StringComparison.OrdinalIgnoreCase) && p.Value.ValueKind == JsonValueKind.True)
-                    return AcpModes.Agent;
+                if (string.Equals(p.Name, "agentModel", StringComparison.OrdinalIgnoreCase) && p.Value.ValueKind == JsonValueKind.String)
+                    _agentRoleModel = p.Value.GetString()!.Trim();
+                else if (_model is null && string.Equals(p.Name, "defaultModel", StringComparison.OrdinalIgnoreCase)
+                         && p.Value.ValueKind == JsonValueKind.String && p.Value.GetString() is { Length: > 0 } model)
+                    _defaultModel = model;
         }
-        catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("AcpSession.ConfiguredMode", ex); }
-        return AcpModes.Default;
+        catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("AcpSession.ReadConfiguredModels", ex); }
     }
 
     /// <summary>The installed chat models (an embedding model answers no question), read again on demand.</summary>
@@ -212,12 +247,28 @@ internal sealed class AcpSession : IAsyncDisposable
 
     // ── Modes and options ───────────────────────────────────────────────────────
 
-    /// <summary>The model the next turn asks: the one picked here, else the settings' default.</summary>
-    private string CurrentModel => _model ?? _defaultModel;
+    /// <summary>The model set for the agent's role (<c>agentModel</c>); empty when the chat model does the agent's work.</summary>
+    private string _agentRoleModel = string.Empty;
+
+    /// <summary>The model the client's selector last showed.</summary>
+    private string? _announcedModel;
+
+    /// <summary>
+    /// The model the next turn asks, as the client's selector shows it: the one picked in this thread — it answers in
+    /// every mode —, else, in Agent mode, the model set for the agent's role, else the settings' default.
+    /// </summary>
+    /// <remarks>⚠ The host routes an Agent-mode turn to the agent's role model, over the chat model: the selector showed
+    /// the chat model while another answered, and a model picked in it changed nothing in Agent mode.</remarks>
+    private string CurrentModel => _model ?? (_mode == AcpModes.Agent && _agentRoleModel.Length > 0 ? _agentRoleModel : _defaultModel);
 
     public object ModeState() => AcpModes.State(_mode);
 
-    public List<object> ConfigOptions() => AcpModes.ConfigOptions(_mode, CurrentModel, _models);
+    /// <summary>The options as the client is about to show them: the model they name is the one it now shows.</summary>
+    public List<object> ConfigOptions()
+    {
+        _announcedModel = CurrentModel;
+        return AcpModes.ConfigOptions(_mode, _announcedModel, _models);
+    }
 
     public async Task SetModeAsync(string modeId, CancellationToken ct)
     {
@@ -247,6 +298,33 @@ internal sealed class AcpSession : IAsyncDisposable
                 throw AcpRpc.Error(AcpRpc.InvalidParams, $"Unknown configuration option '{configId}'.");
         }
         return ConfigOptions();
+    }
+
+    /// <summary>
+    /// What the client still shows of a session the agent closed to make room, and expects back at its next request: the
+    /// mode, the model picked in the selector, the files attached for the next prompt.
+    /// </summary>
+    internal sealed record Kept(string Mode, string? Model, IReadOnlyList<(string Name, string Content)> Pending);
+
+    internal Kept KeptForReopen()
+    {
+        lock (_gate) return new Kept(_mode, _model, [.. _pending]);
+    }
+
+    /// <summary>A session reopened after it was closed to make room takes back what its client still shows.</summary>
+    /// <remarks>⚠ Reopened from its saved conversation alone, it came back in the mode a new session opens in, on the
+    /// default model, its attachments gone — while the client still showed Plan and the picked model: the next request
+    /// ran with the write tools, in a thread the user believed read-only.</remarks>
+    internal async Task RestoreAsync(Kept kept, CancellationToken ct)
+    {
+        if (kept.Mode != _mode) await SetModeAsync(kept.Mode, ct);
+        if (kept.Model is not null && kept.Model != _model)
+        {
+            await _link.InvokeWithParameterObjectAsync("models/useForSession", new { model = kept.Model }, ct);
+            _model = kept.Model;
+        }
+        lock (_gate) _pending.AddRange(kept.Pending);
+        _announcedModel = CurrentModel;
     }
 
     /// <summary>A mode changed from inside the conversation (<c>/plan</c>): the client is told both ways.</summary>
@@ -308,6 +386,7 @@ internal sealed class AcpSession : IAsyncDisposable
             await AnnounceCommandsOnceAsync(CancellationToken.None);
             if (Interlocked.Exchange(ref _startNotice, null) is { Length: > 0 } notice) Say(notice + "\n\n");
             await FollowSettingsAsync();
+            AnnounceModelIfChanged();
             var stop = await RunTurnAsync(content);
             return CancelRequested ? "cancelled" : stop;
         }
@@ -352,9 +431,26 @@ internal sealed class AcpSession : IAsyncDisposable
             // The host took the file's model: the thread's own pick is put back, as its selector shows it.
             if (_model is not null)
                 await _link.InvokeWithParameterObjectAsync("models/useForSession", new { model = _model }, CancellationToken.None);
-            Update(new { sessionUpdate = "config_option_update", configOptions = ConfigOptions() });
         }
+        if (reloaded.Taken.Contains("agentModel")) _agentRoleModel = reloaded.AgentModel.Trim();
         if (reloaded.ServerChanged) Say(Strings.AcpServerChangedNewThread + "\n\n");
+
+        // Said once while it lasts: a settings file broken by a hand edit is followed by nothing, and the user who just
+        // edited it would otherwise see their change do nothing, without a word.
+        if (reloaded.Unreadable && !_settingsUnreadableSaid) Say(Strings.AcpSettingsUnreadable + "\n\n");
+        _settingsUnreadableSaid = reloaded.Unreadable;
+    }
+
+    private bool _settingsUnreadableSaid;
+
+    /// <summary>
+    /// At a turn's start, inside it: the selector is told when the model it shows is no longer the one that answers — the
+    /// settings changed it, or the mode did (<c>session/set_mode</c> carries no options back).
+    /// </summary>
+    private void AnnounceModelIfChanged()
+    {
+        if (string.Equals(_announcedModel, CurrentModel, StringComparison.Ordinal)) return;
+        Update(new { sessionUpdate = "config_option_update", configOptions = ConfigOptions() });
     }
 
     private bool CancelRequested { get { lock (_gate) return _cancelRequested; } }
@@ -428,7 +524,11 @@ internal sealed class AcpSession : IAsyncDisposable
                     Update(new { sessionUpdate = "config_option_update", configOptions = ConfigOptions() });
                     break;
                 case "configSaved":
+                    // A command that saved the settings may have set the default or the agent's model (/onboard apply,
+                    // /import): the selector names the model that answers, and config/reload never reports what the
+                    // thread wrote itself.
                     await RefreshModelsAsync(CancellationToken.None);
+                    await ReadConfiguredModelsAsync(CancellationToken.None);
                     Update(new { sessionUpdate = "config_option_update", configOptions = ConfigOptions() });
                     break;
                 case "openSettings":
@@ -482,12 +582,16 @@ internal sealed class AcpSession : IAsyncDisposable
             _transcript.Add(new SavedMessageDto("user", ChatTurnPolicy.BuildBubbleText(typed, labels), Timestamp: Now()));
         }
 
+        _provisional = _mode == AcpModes.Agent;
+        _actBreak = false;
         // ⚠ Never cancelled by the token: see CancelAsync.
         var result = await _link.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send", new
         {
             prompt        = promptText,
             query         = typed,
             model         = _model,
+            // A model picked in this thread answers whatever the mode: it is what the selector shows.
+            modelOverridesRoles = _model is not null,
             agentMode     = _mode == AcpModes.Agent,
             attachedPaths = attachedPaths.Count > 0 ? attachedPaths : null,
         }, CancellationToken.None);
@@ -502,8 +606,8 @@ internal sealed class AcpSession : IAsyncDisposable
         }
 
         // The answer the host settled on, when the stream did not already show it: a run that only called tools, an
-        // answer that came whole, the sentence for an empty reply.
-        var answer = _stream.Sent.Trim();
+        // answer that came whole, the sentence for an empty reply — and always, after the agent's plan (_provisional).
+        var answer = _provisional ? string.Empty : _stream.Sent.Trim();
         var final = MarkdownParser.ShownText("assistant", result.Text).Trim();
         if (final.Length > 0 && !answer.Contains(final, StringComparison.Ordinal))
         {
@@ -572,6 +676,8 @@ internal sealed class AcpSession : IAsyncDisposable
             var excerpt = await _link.InvokeWithParameterObjectAsync<CodeExcerptResult>("code/excerpt", new
             {
                 code = body, fileName = shownName, selection = false, model = _model,
+                // Sized for the model that will read it, as chat/send resolves it for this turn.
+                codeAction = false, agentMode = _mode == AcpModes.Agent, modelOverridesRoles = _model is not null,
             }, CancellationToken.None);
             prompt.Append("\n\n### ").Append(shownName).Append("\n```\n").Append(excerpt.Text).Append("\n```");
             labels.Add(excerpt.Label);
@@ -748,7 +854,18 @@ internal sealed class AcpSession : IAsyncDisposable
     {
         if (!InTurn) return;
         var piece = _stream.Append(note.Text ?? string.Empty);
-        if (piece.Length > 0) Update(new { sessionUpdate = "agent_message_chunk", content = Text(piece) });
+        if (piece.Length == 0) return;
+        if (!_provisional)
+        {
+            Update(new { sessionUpdate = "agent_message_chunk", content = Text(piece) });
+            return;
+        }
+        if (_actBreak)
+        {
+            piece = "\n\n" + piece.TrimStart();
+            _actBreak = false;
+        }
+        Update(new { sessionUpdate = "agent_thought_chunk", content = Text(piece) });
     }
 
     [JsonRpcMethod("chat/reasoning", UseSingleObjectParameterDeserialization = true)]
@@ -762,7 +879,8 @@ internal sealed class AcpSession : IAsyncDisposable
     // the step pause are covered by chat/reasoning and by /agent-step not being offered.
     [JsonRpcMethod("chat/thinking")]     public void ChatThinking() { }
     [JsonRpcMethod("chat/step")]         public void ChatStep() { }
-    [JsonRpcMethod("chat/streamReset")]  public void ChatStreamReset() { }
+    /// <summary>What the model wrote so far in this act is not the answer: the next act's thinking starts a paragraph.</summary>
+    [JsonRpcMethod("chat/streamReset")]  public void ChatStreamReset() => _actBreak = _provisional;
     [JsonRpcMethod("chat/stepPaused")]   public void ChatStepPaused() { }
     [JsonRpcMethod("chat/stepResumed")]  public void ChatStepResumed() { }
 
