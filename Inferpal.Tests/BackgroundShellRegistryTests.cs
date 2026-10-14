@@ -42,6 +42,24 @@ public class BackgroundShellRegistryTests
     }
 
     [Fact]
+    public async Task AJobWhoseNativeCommandFails_EndsOnThatCommandsExitCode()
+    {
+        // The background wrapper ended on Invoke-Expression, whose own success PowerShell reports: a failing test run
+        // started with background=true finished "exit code 0". The foreground wrapper reads $LASTEXITCODE; so does this.
+        if (!PowerShellAvailable) return;
+        using var registry = new BackgroundShellRegistry();
+        var native = OperatingSystem.IsWindows() ? "cmd /c exit 3" : "sh -c 'exit 3'";
+        var script = ShellStateProtocol.BuildBackgroundScript(ShellDialect.PowerShell, Path.GetTempPath(),
+                                                              new Dictionary<string, string>(), native);
+        var id = registry.Start(script, native, Path.GetTempPath());
+
+        var result = await PollUntilAsync(registry, id, _ => false);
+
+        Assert.False(result.Running);   // witness: the job finished within the budget
+        Assert.Equal(3, result.ExitCode);
+    }
+
+    [Fact]
     public async Task Job_RunsAndReportsItsOutputThenDisappears()
     {
         if (!PowerShellAvailable) return;

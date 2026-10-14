@@ -92,6 +92,10 @@ internal static class ShellStateProtocol
         sb.Append(WidenConsole);
         sb.Append("$__c=[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('").Append(B64Utf16(command)).Append("'))\n");
         sb.Append("Invoke-Expression $__c\n");
+        // ⚠ The job's exit code is the process's, and PowerShell exits on Invoke-Expression's own success: a failing
+        // test run started with background=true finished "exit code 0". The last native program's code, as the
+        // foreground wrapper reads it.
+        sb.Append("if ($global:LASTEXITCODE) { exit $global:LASTEXITCODE }\n");
         return sb.ToString();
     }
 
