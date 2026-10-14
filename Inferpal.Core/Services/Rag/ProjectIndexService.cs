@@ -827,11 +827,11 @@ internal sealed class ProjectIndexService : IDisposable
     /// </summary>
     internal void OnDirectoryChangedCore(string dirPath)
     {
-        if (IsExcluded(dirPath)) return;
-
+        // The C# index first, under its own exclusions only (see OnFileChangedCore).
+        if (WorkspaceScan.IsExcludedPath(dirPath, RootDir)) return;
         Lsp.CSharpSemanticIndex.NotifyDirectoryChanged(dirPath);
 
-        if (string.IsNullOrEmpty(IndexedRoot)) return;
+        if (IsExcluded(dirPath) || string.IsNullOrEmpty(IndexedRoot)) return;
         _ = QueueDirectoryAsync(dirPath);
     }
 
@@ -873,11 +873,14 @@ internal sealed class ProjectIndexService : IDisposable
         // saved file can add or remove a reference, and a cache nobody invalidates answers about
         // code that no longer exists. 4 ms per file, unlike the RAG re-embedding below.
         // ⚠ No watcher exists when RAG is disabled — see CSharpSemanticIndex.ForWorkspace.
-        // Same exclusions as the full pass, and BEFORE the semantic index hears of the change: every
-        // agent write creates a .inferpal/history snapshot, which became a second copy of the class.
-        if (IsExcluded(path)) return;
-
+        // The workspace exclusions — the ones the C# compilation applies — BEFORE the semantic index hears of the change:
+        // every agent write creates a .inferpal/history snapshot, which became a second copy of the class.
+        // ⚠ Not the project profile's `indexExclude`: it narrows the SEARCH index only, and the compilation reads those
+        // files. Told nothing, the C# index kept their old trees — rename_symbol refused "index out of date" on every
+        // retry, or renamed part of the references, and analyze_impact answered about code that no longer existed.
+        if (WorkspaceScan.IsExcludedPath(path, RootDir)) return;
         Lsp.CSharpSemanticIndex.NotifyFileChanged(path);
+        if (IsExcluded(path)) return;   // the profile's exclusions: the search index below
 
         // ⚠ The RAG half only when a pass owns this root. Since SetRoot arms the watcher, events now
         // arrive with `ragEnabled` off as well — and chunking a file into an index that does not

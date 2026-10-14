@@ -103,6 +103,34 @@ public sealed class SemanticIndexInvalidationTests : IDisposable
     }
 
     [Fact]
+    public async Task AFolderTheProfileKeepsOutOfSearch_StillKeepsTheCSharpIndexCurrent()
+    {
+        // `indexExclude` narrows the SEARCH index only; the C# compilation reads the folder. The watcher dropped its
+        // changes before the C# index heard of them: rename_symbol refused "index out of date" on every retry, or renamed
+        // partially, and analyze_impact answered about code that no longer existed.
+        Directory.CreateDirectory(Path.Combine(_root, ".inferpal"));
+        File.WriteAllText(Path.Combine(_root, ".inferpal", "project.json"), """{ "indexExclude": ["Legacy"] }""");
+        Directory.CreateDirectory(Path.Combine(_root, "Legacy"));
+        File.WriteAllText(Path.Combine(_root, "Target.cs"),
+            "namespace App; public class Target { public void Handle() { } }");
+        File.WriteAllText(Path.Combine(_root, "Legacy", "Billing.cs"), Caller("Billing"));
+
+        var svc = NewServiceWithoutRag();
+        svc.SetRoot(_root);
+
+        var index = CSharpSemanticIndex.ForWorkspace(_root);
+        // WITNESS: the compilation does read the folder the profile keeps out of search.
+        Assert.Single(index.FindReferences("Handle").References);
+
+        File.WriteAllText(Path.Combine(_root, "Legacy", "Billing2.cs"), Caller("Billing2"));
+
+        await WaitUntilAsync(
+            () => index.FindReferences("Handle").References.Count == 2,
+            "the C# index to see the caller added in the excluded folder",
+            () => $"references now = {index.FindReferences("Handle").References.Count}");
+    }
+
+    [Fact]
     public async Task WithRagOff_TheSemanticIndex_ForgetsAReferenceThatWasDeleted()
     {
         File.WriteAllText(Path.Combine(_root, "Target.cs"),
