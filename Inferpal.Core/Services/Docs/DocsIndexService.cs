@@ -174,13 +174,11 @@ internal sealed class DocsIndexService
     // ── Add / re-index ─────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Crawls <paramref name="site"/>, chunks and embeds every page, then persists the result and
-    /// refreshes the in-memory index. Existing chunks for the same source are replaced.
-    /// </summary>
-
-    /// <summary>
     /// What a <c>/docs index</c> actually got, said to the user.
     /// </summary>
+    /// <param name="unresolved">The start address names a host that does not resolve: a typo or a name this machine's
+    /// DNS does not know — refused by the same guard as a private address, and not one.</param>
+    /// <param name="timedOut">Pages that did not answer within the crawler's budget.</param>
     /// <remarks>
     /// ⚠ An address refused by the SSRF guard produced "no readable pages found" — the message of
     /// an empty site. A local documentation server (<c>localhost:8000</c>, an intranet host) is the
@@ -190,9 +188,6 @@ internal sealed class DocsIndexService
     /// otherwise <c>@Docs</c> answers "not in the documentation" about half a site the user
     /// believes is indexed in full.
     /// </remarks>
-    /// <param name="unresolved">The start address names a host that does not resolve: a typo or a name this machine's
-    /// DNS does not know — refused by the same guard as a private address, and not one.</param>
-    /// <param name="timedOut">Pages that did not answer within the crawler's budget.</param>
     internal static string DescribeCrawlOutcome(
         string startUrl, int pageCount, bool refused, IReadOnlyDictionary<int, int>? siteRefusals = null,
         bool unresolved = false, int timedOut = 0)
@@ -241,6 +236,11 @@ internal sealed class DocsIndexService
         return notes.Count == 0 ? string.Empty : $" (the site may have more: {string.Join("; ", notes)})";
     }
 
+    /// <summary>The pages of a crawl that DID index something and that did not answer in time — or nothing.</summary>
+    internal static string TimeoutNote(int timedOut, string siteId) =>
+        timedOut == 0 ? string.Empty
+            : $" (⚠ {timedOut} page(s) did not answer in time: the index is incomplete; /docs reindex {siteId} later)";
+
     /// <summary>
     /// The pages a crawl that DID index something was refused, said with the result — or nothing.
     /// </summary>
@@ -248,11 +248,6 @@ internal sealed class DocsIndexService
     /// A site that throttles halfway leaves an index that answers "not in the documentation" about
     /// the pages it withheld, under a ✅ that reads as the whole site.
     /// </remarks>
-    /// <summary>The pages of a crawl that DID index something and that did not answer in time — or nothing.</summary>
-    internal static string TimeoutNote(int timedOut, string siteId) =>
-        timedOut == 0 ? string.Empty
-            : $" (⚠ {timedOut} page(s) did not answer in time: the index is incomplete; /docs reindex {siteId} later)";
-
     internal static string RefusalNote(IReadOnlyDictionary<int, int> siteRefusals, string siteId)
     {
         if (siteRefusals.Count == 0) return string.Empty;
@@ -265,6 +260,10 @@ internal sealed class DocsIndexService
         string.Join(", ", refusals.OrderByDescending(r => r.Value).ThenBy(r => r.Key)
                                   .Select(r => r.Value == 1 ? $"HTTP {r.Key}" : $"HTTP {r.Key} ×{r.Value}"));
 
+    /// <summary>
+    /// Crawls <paramref name="site"/>, chunks and embeds every page, then persists the result and
+    /// refreshes the in-memory index. Existing chunks for the same source are replaced.
+    /// </summary>
     /// <param name="stillWanted">Asked again once it is this source's turn: a source removed while it waited is
     /// not written back, since a removal stops only the pass that is already running.</param>
     public async Task AddOrReindexAsync(

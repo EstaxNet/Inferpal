@@ -15,16 +15,6 @@ internal sealed record SlashInfoAction(string Message) : SlashAction;
 internal sealed record SlashToolAction(string Tool, object Args, string? AttachAs = null) : SlashAction
 {
     /// <summary>
-    /// Whether the tool's result goes under the chip <see cref="AttachAs"/> names: <c>/read</c> attaches a file it read,
-    /// never the sentence saying it could not — a missing path, a folder, a binary file or a path outside the workspace
-    /// is shown as a message instead.
-    /// </summary>
-    /// <remarks>
-    /// ⚠ Attached, that sentence sits under a 📄 chip named after the file: the user believes the file joined the
-    /// question, and the model receives "File not found" as its content — the twin of an @-mention that attaches
-    /// nothing, which says so.
-    /// </remarks>
-    /// <summary>
     /// A tool's result as the person who typed the command reads it: an empty one says so.
     /// </summary>
     /// <remarks>
@@ -35,6 +25,16 @@ internal sealed record SlashToolAction(string Tool, object Args, string? AttachA
     /// </remarks>
     internal static string Shown(string result) => string.IsNullOrWhiteSpace(result) ? Strings.SlashToolNoOutput : result;
 
+    /// <summary>
+    /// Whether the tool's result goes under the chip <see cref="AttachAs"/> names: <c>/read</c> attaches a file it read,
+    /// never the sentence saying it could not — a missing path, a folder, a binary file or a path outside the workspace
+    /// is shown as a message instead.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Attached, that sentence sits under a 📄 chip named after the file: the user believes the file joined the
+    /// question, and the model receives "File not found" as its content — the twin of an @-mention that attaches
+    /// nothing, which says so.
+    /// </remarks>
     internal bool AttachesResult(string? root, Editor.OpenDocumentOverlay? overlay)
     {
         if (AttachAs is null) return false;
@@ -75,10 +75,10 @@ internal enum SlashCommandId
     Onboard, Debug, Permissions, Instructions, Skill, Import, Settings,
 }
 
-/// <summary>User-defined prompt template (config <c>PromptTemplates</c>, one <c>/name=text</c> per line,
-/// or a <c>.inferpal/prompts/*.md</c> file — see <see cref="PromptFilesService"/>).
+/// <summary>A command the user or the repository wrote: <c>/name</c> → a prompt, from the config
+/// (<c>PromptTemplates</c>, one <c>/name=text</c> per line) or a prompt file (<c>.inferpal/prompts/*.md</c> —
+/// see <see cref="PromptFilesService"/>).
 /// <paramref name="Hint"/> overrides the truncated text in autocomplete when set.</summary>
-/// <summary>A command the user or the repository wrote: <c>/name</c> → a prompt.</summary>
 /// <param name="Origin">The tool the file was written for (<c>GitHub Copilot</c>, <c>Claude Code</c>, <c>Continue</c>) —
 /// shown wherever the command is; <c>null</c> for the user's own (settings, <c>.inferpal/prompts</c>).</param>
 /// <param name="Source">The file it comes from, relative to the repository, with <c>/</c>; <c>null</c> for the settings.</param>
@@ -227,10 +227,6 @@ internal static class SlashCommandRouter
     };
 
     /// <summary>
-    /// Renders `/help` from <see cref="Catalog"/>. Generated rather than written: a hand-maintained
-    /// help text drifts silently, and in ten languages at once, while claiming to list everything.
-    /// </summary>
-    /// <summary>
     /// The answer to a command the router does not know: the localized header, then the same
     /// generated list as <c>/help</c>.
     /// </summary>
@@ -273,6 +269,10 @@ internal static class SlashCommandRouter
         return cut < 0 ? string.Empty : text[(cut + 1)..].Trim();
     }
 
+    /// <summary>
+    /// Renders `/help` from <see cref="Catalog"/>. Generated rather than written: a hand-maintained
+    /// help text drifts silently, and in ten languages at once, while claiming to list everything.
+    /// </summary>
     internal static string BuildHelp()
     {
         var sb = new System.Text.StringBuilder();

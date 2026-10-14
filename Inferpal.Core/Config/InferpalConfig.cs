@@ -786,17 +786,6 @@ internal class InferpalConfig
     /// <summary>What this instance holds now, in the shape it is written.</summary>
     internal System.Text.Json.Nodes.JsonObject SnapshotNow() => Snapshot(this);
 
-    /// <summary>
-    /// Before an AUTOMATIC decision fills a setting nobody set (a first run, a model adopted, a VRAM budget detected):
-    /// when this copy still holds the setting's factory value and the FILE holds another, this copy takes the file's.
-    /// </summary>
-    /// <param name="property">The C# property name (<c>nameof</c>).</param>
-    /// <returns><c>true</c> when the file's value was taken — the decision is then the other window's, already made.</returns>
-    /// <remarks>
-    /// ⚠ Every window of both editors keeps its own copy, read once. "Still unset?" asked of this copy alone said yes
-    /// after the other window had set it — a budget the user typed, a model they picked — and the automatic value was
-    /// written over it.
-    /// </remarks>
     /// <summary>The permission rules that decide NOW: see <see cref="Shared{T}"/>.</summary>
     internal string SharedPermissionRules => Shared(nameof(PermissionRules), PermissionRules) ?? string.Empty;
 
@@ -841,6 +830,17 @@ internal class InferpalConfig
             ?? throw new ArgumentException($"No setting named {property}.", nameof(property)))
         .GetCustomAttributes(typeof(JsonPropertyNameAttribute), false).OfType<JsonPropertyNameAttribute>().Single().Name;
 
+    /// <summary>
+    /// Before an AUTOMATIC decision fills a setting nobody set (a first run, a model adopted, a VRAM budget detected):
+    /// when this copy still holds the setting's factory value and the FILE holds another, this copy takes the file's.
+    /// </summary>
+    /// <param name="property">The C# property name (<c>nameof</c>).</param>
+    /// <returns><c>true</c> when the file's value was taken — the decision is then the other window's, already made.</returns>
+    /// <remarks>
+    /// ⚠ Every window of both editors keeps its own copy, read once. "Still unset?" asked of this copy alone said yes
+    /// after the other window had set it — a budget the user typed, a model they picked — and the automatic value was
+    /// written over it.
+    /// </remarks>
     internal bool FillFromFile(string property)
     {
         var p = typeof(InferpalConfig).GetProperty(property)

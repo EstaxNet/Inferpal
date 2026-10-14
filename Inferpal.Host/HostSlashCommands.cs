@@ -604,11 +604,6 @@ internal sealed partial class HostServer
 
     // ── Individual handlers ──────────────────────────────────────────────────────
 
-    /// <summary>/context and /memory: shows the corresponding `.inferpal/*.md` project file.</summary>
-
-    /// <summary>/index [rebuild] — RAG status / manual re-index (same output as the VS VM).</summary>
-
-
     /// <summary>
     /// <c>/branch</c> — decided on the adapter's displayed transcript, never on the host's history,
     /// where a question carries the RAG auto-context and compaction renumbers turns: the listing
@@ -663,10 +658,8 @@ internal sealed partial class HostServer
         return new SlashCommandResult(true, tmpl.Greeting, [new SlashEffectDto("clearTranscript")]);
     }
 
-    /// <summary>/docs add|list|remove|reindex — external documentation sources; crawls run in
-    /// the background with progress surfaced through chat/step.</summary>
-    /// <summary>/docs add|list|remove|reindex — shared handler; crawl progress is surfaced
-    /// through the same chat/step notifications the agent loop uses.</summary>
+    /// <summary>/docs add|list|remove|reindex — external documentation sources, through the shared handler; crawls
+    /// run in the background, their progress surfaced through the same chat/step notifications the agent loop uses.</summary>
     private async Task<SlashCommandResult> HandleDocsSlashAsync(HostSession s, string[] parts, CancellationToken ct)
     {
         var progress = new Progress<string>(msg => Notify("chat/step", new { text = msg }));

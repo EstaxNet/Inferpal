@@ -362,20 +362,20 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
 
     private bool IsPaused => Volatile.Read(ref _mode) == (int)DBGMODE.DBGMODE_Break;
 
+    /// <summary>A resume from a break that moved nothing: the command did not take.</summary>
+    private const string NoChange = "no-change";
+
     /// <summary>
     /// Issues a resume and waits for the <b>next</b> stop. <c>null</c> when the program ended
     /// instead of stopping, or when nothing happened before the host's own timeout — the host
     /// renders both as "no stop", which is the truth in either case.
     /// </summary>
+    /// <returns>The stop, or why there is none: <see cref="DebugOps.Resumed.Ended"/>, <see cref="DebugOps.Resumed.StillRunning"/>
+    /// (the wait expired), <see cref="NoChange"/>, or <c>null</c> when the caller gave up.</returns>
     /// <remarks>
     /// Each hop back to <see cref="TaskScheduler.Default"/> is load-bearing, not tidiness: the wait
     /// below must not hold the UI thread, or the program it is waiting for would never get to run.
     /// </remarks>
-    /// <summary>A resume from a break that moved nothing: the command did not take.</summary>
-    private const string NoChange = "no-change";
-
-    /// <returns>The stop, or why there is none: <see cref="DebugOps.Resumed.Ended"/>, <see cref="DebugOps.Resumed.StillRunning"/>
-    /// (the wait expired), <see cref="NoChange"/>, or <c>null</c> when the caller gave up.</returns>
     private async Task<(DebugStopState? Stop, string? Outcome)> ResumeAndWaitAsync(string op, long deadlineMs, CancellationToken ct)
     {
         var generation       = Volatile.Read(ref _modeGen);

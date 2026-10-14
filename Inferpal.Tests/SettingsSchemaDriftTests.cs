@@ -658,25 +658,6 @@ public class SettingsSchemaDriftTests
     }
 
     /// <summary>
-    /// A numeric entry that was not kept is <b>named</b> to the user, on both sides — and the VS
-    /// Code panel reads strictly.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Dams's arbitration: we save, and we name the ignored fields. Refusing the whole
-    /// form would also cancel the other valid changes of the same save; staying silent was the
-    /// original defect — the Visual Studio window announced "saved" having restored a factory
-    /// default, the VS Code panel having kept everything.
-    /// </para>
-    /// <para>
-    /// ⚠ On the VS Code side there were two defects, not one: <c>parseInt('12abc')</c> is <b>12</b>,
-    /// so the permissive read did not ignore the faulty entry — it wrote a <i>truncation</i> the
-    /// user had not typed. The rule therefore forbids the permissive shape itself, not only the
-    /// missing message.
-    /// </para>
-    /// <para>A textual rule: neither the webview nor the Remote UI window runs here.</para>
-    /// </remarks>
-    /// <summary>
     /// The reasoning preview crosses the adapter — it is not dropped there.
     /// </summary>
     /// <remarks>
@@ -858,6 +839,25 @@ public class SettingsSchemaDriftTests
         Assert.Matches(new Regex(@"foldOpen\.set\([^;]*f\.opensFold\s*&&\s*departsFromDefault\(f\)"), source);
     }
 
+    /// <summary>
+    /// A numeric entry that was not kept is <b>named</b> to the user, on both sides — and the VS
+    /// Code panel reads strictly.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Dams's arbitration: we save, and we name the ignored fields. Refusing the whole
+    /// form would also cancel the other valid changes of the same save; staying silent was the
+    /// original defect — the Visual Studio window announced "saved" having restored a factory
+    /// default, the VS Code panel having kept everything.
+    /// </para>
+    /// <para>
+    /// ⚠ On the VS Code side there were two defects, not one: <c>parseInt('12abc')</c> is <b>12</b>,
+    /// so the permissive read did not ignore the faulty entry — it wrote a <i>truncation</i> the
+    /// user had not typed. The rule therefore forbids the permissive shape itself, not only the
+    /// missing message.
+    /// </para>
+    /// <para>A textual rule: neither the webview nor the Remote UI window runs here.</para>
+    /// </remarks>
     [Fact]
     public void BothPanels_NameTheNumericFieldsTheyCouldNotRead()
     {

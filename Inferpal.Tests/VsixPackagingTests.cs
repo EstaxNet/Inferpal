@@ -228,7 +228,6 @@ public class VsixPackagingTests
     private static string ManifestPath() =>
         Path.Combine(RepoRoot(), "Inferpal", "source.extension.vsixmanifest");
 
-    /// <summary>Repo root = first ancestor of the test bin containing README.md.</summary>
     /// <summary>
     /// The licence shipped in the VSIX must carry the GPL v3 text <b>in full</b>.
     ///
@@ -427,6 +426,7 @@ public class VsixPackagingTests
         Assert.Contains("Inferpal \u2014 ", strict.GetString(File.ReadAllBytes(files[0])));
     }
 
+    /// <summary>Repo root = first ancestor of the test bin containing README.md.</summary>
     private static string RepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);

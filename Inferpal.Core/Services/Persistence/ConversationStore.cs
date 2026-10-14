@@ -102,15 +102,6 @@ internal class ConversationStore
                   templateSuffix: templateSuffix);
 
     /// <summary>
-    /// Empties the auto-save slot when it holds THIS workspace's conversation — the one the user has just discarded
-    /// (<c>/clear</c>, a new conversation). Another workspace's conversation in the slot is not this one's to empty.
-    /// </summary>
-    /// <remarks>
-    /// ⚠ The slot is what comes back when the editor starts — and in VS Code whenever its host restarts (a setting, a
-    /// crash), the blank screen reading as "nothing to keep". Left full, the conversation just discarded comes back
-    /// there. It is archived under a name by the adapter before it is cleared.
-    /// </remarks>
-    /// <summary>
     /// <see cref="ForgetAutoSaveAsync"/>, or — when the slot could not be emptied — the notice that says so.
     /// </summary>
     /// <remarks>⚠ Swallowed, a slot left full brought the conversation just discarded back at the next start of either
@@ -130,6 +121,15 @@ internal class ConversationStore
         }
     }
 
+    /// <summary>
+    /// Empties the auto-save slot when it holds THIS workspace's conversation — the one the user has just discarded
+    /// (<c>/clear</c>, a new conversation). Another workspace's conversation in the slot is not this one's to empty.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The slot is what comes back when the editor starts — and in VS Code whenever its host restarts (a setting, a
+    /// crash), the blank screen reading as "nothing to keep". Left full, the conversation just discarded comes back
+    /// there. It is archived under a name by the adapter before it is cleared.
+    /// </remarks>
     public async Task ForgetAutoSaveAsync(string? workspaceRoot, CancellationToken ct)
     {
         // Emptied here, the workspace's own slot also stops the shared one of older versions from being read for it.

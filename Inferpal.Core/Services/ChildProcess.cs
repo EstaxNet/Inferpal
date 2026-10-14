@@ -135,18 +135,6 @@ internal static class ChildProcess
     internal static readonly TimeSpan PipeGraceAfterExit = TimeSpan.FromSeconds(2);
 
     /// <summary>
-    /// What a killed command reports: the fuse, and <b>what it had printed before it blew</b>.
-    /// </summary>
-    /// <remarks>
-    /// ⚠ One writer, because the two callers had drifted and the drift is documented in one of
-    /// them: the persistent shell salvages its partial output under a comment saying the previous
-    /// version <i>"returned the one-line timeout message alone, so a command that ran for its whole
-    /// budget and printed a thousand useful lines told the model nothing"</i> — and the
-    /// user-defined shell tools were still that previous version, while the output sat right there
-    /// in the result this class returns.
-    /// ⚠ Model-facing, so English: it corrects the model's next move, and the human cannot act on it.
-    /// </remarks>
-    /// <summary>
     /// The deadline of a command the model runs, in seconds — the factory value when the setting is not a positive number.
     /// </summary>
     /// <remarks>
@@ -158,6 +146,18 @@ internal static class ChildProcess
     internal static int CommandDeadlineSeconds(Config.InferpalConfig config) =>
         config.CommandTimeoutSeconds > 0 ? config.CommandTimeoutSeconds : new Config.InferpalConfig().CommandTimeoutSeconds;
 
+    /// <summary>
+    /// What a killed command reports: the fuse, and <b>what it had printed before it blew</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ One writer, because the two callers had drifted and the drift is documented in one of
+    /// them: the persistent shell salvages its partial output under a comment saying the previous
+    /// version <i>"returned the one-line timeout message alone, so a command that ran for its whole
+    /// budget and printed a thousand useful lines told the model nothing"</i> — and the
+    /// user-defined shell tools were still that previous version, while the output sat right there
+    /// in the result this class returns.
+    /// ⚠ Model-facing, so English: it corrects the model's next move, and the human cannot act on it.
+    /// </remarks>
     internal static string TimedOutMessage(int seconds, string? salvaged)
     {
         var head = $"Error: command timed out after {seconds}s.";

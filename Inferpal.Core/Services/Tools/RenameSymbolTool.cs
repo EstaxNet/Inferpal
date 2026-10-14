@@ -319,11 +319,6 @@ internal sealed class RenameSymbolTool : ITool
 
     // ── Semantic rename (C#, when a workspace is known) ────────────────────────
 
-    /// <summary>
-    /// Tokens to rewrite per file, resolved by the compiler — or null when that is not possible
-    /// (no workspace, symbol unresolved, index failure), in which case the caller falls back to
-    /// the syntactic path.
-    /// </summary>
     /// <summary>Whether <paramref name="root"/> is a folder strictly inside <paramref name="workspace"/>.</summary>
     private static bool NarrowerThanWorkspace(string root, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? workspace)
     {
@@ -360,6 +355,11 @@ internal sealed class RenameSymbolTool : ITool
              + "symbols).";
     }
 
+    /// <summary>
+    /// Tokens to rewrite per file, resolved by the compiler — or null when that is not possible
+    /// (no workspace, symbol unresolved, index failure), in which case the caller falls back to
+    /// the syntactic path.
+    /// </summary>
     private static Lsp.RenamePlan? TryPlanRename(
         string oldName, string root, string? declaringFile, int? declaringLine, CancellationToken ct)
     {
@@ -379,10 +379,6 @@ internal sealed class RenameSymbolTool : ITool
     /// <summary>Candidates listed in an ambiguity refusal before the rest is counted.</summary>
     private const int MaxListedCandidates = 20;
 
-    /// <summary>
-    /// The refusal when <paramref name="oldName"/> names several symbols: each one, and how to say which — nothing
-    /// renamed.
-    /// </summary>
     /// <summary>The model narrowed the rename to a declaration, and none matches: nothing is renamed.</summary>
     private static string NarrowingMatchedNothing(string oldName, string? declaringFile, int? declaringLine, bool indexAvailable)
     {
@@ -399,6 +395,10 @@ internal sealed class RenameSymbolTool : ITool
               + $"renamed. Without them, every identifier spelled `{oldName}` would be renamed — check that preview first.";
     }
 
+    /// <summary>
+    /// The refusal when <paramref name="oldName"/> names several symbols: each one, and how to say which — nothing
+    /// renamed.
+    /// </summary>
     internal static string Ambiguous(string oldName, IReadOnlyList<(string Symbol, Lsp.SymbolLocation Location)> candidates)
     {
         var sb = new StringBuilder(

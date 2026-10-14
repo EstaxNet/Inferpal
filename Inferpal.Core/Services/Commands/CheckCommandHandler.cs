@@ -152,15 +152,15 @@ internal static class CheckCommandHandler
         return new(Named(rendered));
     }
 
+    /// <summary>The listing of the repository's new files, one path per file, from its top.</summary>
+    internal const string NewFilesListing = "ls-files --others --exclude-standard --full-name -- :/";
+
     /// <summary>
     /// The files git does not track yet, as the diffs they will be once added, while the review has room — and the
     /// ones it does not read (past the size limit, binary, unreadable), NAMED: dropped, they read as reviewed.
     /// </summary>
     /// <param name="untracked">The status's own list, named whole when git cannot list the files one by one.</param>
     /// <param name="used">Characters of the review already taken by the status and the diff.</param>
-    /// <summary>The listing of the repository's new files, one path per file, from its top.</summary>
-    internal const string NewFilesListing = "ls-files --others --exclude-standard --full-name -- :/";
-
     private static async Task<(string Diff, List<string> NotRead)> NewFilesAsync(
         string projectRoot, GitRunner git, IReadOnlyList<string> untracked, int used, CancellationToken ct)
     {

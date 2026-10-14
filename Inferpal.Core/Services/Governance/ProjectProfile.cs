@@ -19,6 +19,12 @@ internal sealed record ProfileRecommendation(string Key, string Proposed, string
 /// </param>
 internal sealed record ProfileIgnoredKey(string Key, bool Sensitive);
 
+/// <summary>The <c>indexExclude</c> entries the profile does not apply, by cause.</summary>
+internal sealed record ExcludesNotApplied(int OverLimit, int TooLong, int NotText)
+{
+    public int Total => OverLimit + TooLong + NotText;
+}
+
 /// <summary>
 /// The committable project profile — <c>.inferpal/project.json</c>. It travels with
 /// the repository, so a clone can describe how it likes to be worked on without any of it reaching
@@ -50,12 +56,6 @@ internal sealed record ProfileIgnoredKey(string Key, bool Sensitive);
 /// no approval to ask for. That is the whole point of restricting it to preferences.
 /// </para>
 /// </remarks>
-/// <summary>The <c>indexExclude</c> entries the profile does not apply, by cause.</summary>
-internal sealed record ExcludesNotApplied(int OverLimit, int TooLong, int NotText)
-{
-    public int Total => OverLimit + TooLong + NotText;
-}
-
 internal sealed record ProjectProfile(
     IReadOnlyList<string>                 IndexExcludes,
     IReadOnlyList<ProfileRecommendation>  Recommendations,

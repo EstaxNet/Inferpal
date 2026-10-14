@@ -63,7 +63,6 @@ internal sealed class ShellSession
         _stateRoot = null;
     }
 
-    /// <summary>The cwd/env overrides a background job should inherit at launch time.</summary>
     /// <summary>
     /// Where a command starts: the folder asked for, else the session's — and when that folder no longer exists (deleted
     /// under the session), the workspace root, with the folder that is gone (<c>Vanished</c>) so the output can say so.
@@ -98,6 +97,7 @@ internal sealed class ShellSession
             : output;
     }
 
+    /// <summary>The cwd/env overrides a background job should inherit at launch time.</summary>
     public (string Cwd, IReadOnlyDictionary<string, string> Env) Snapshot()
     {
         lock (_lock)

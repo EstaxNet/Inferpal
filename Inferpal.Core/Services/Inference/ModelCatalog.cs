@@ -228,15 +228,6 @@ internal static class ModelCatalog
     public static List<string> EmbeddingModelsOf(IEnumerable<string> listed) => [.. listed.Where(IsEmbeddingModel)];
 
     /// <summary>
-    /// First-run default-model choice — the model the chat AND the agent start with. The list must be non-empty —
-    /// callers guard the "no chat models" case with their own message.
-    /// </summary>
-    /// <remarks>
-    /// A family Inferpal's battery measured first, best fit first (<see cref="ModelProfiles"/>); then the general
-    /// families it never measured, then any other model it does not know; a family measured to fail as the agent comes
-    /// last — a code model trained for completion and not for tool calls completes 3 tasks in 14.
-    /// </remarks>
-    /// <summary>
     /// The chat model to adopt in place of the configured one, or <c>null</c>: only when the configured model is still
     /// the CODE's default — never chosen by anyone — and the backend does not have it, while it lists chat models.
     /// </summary>
@@ -254,11 +245,22 @@ internal static class ModelCatalog
         return PickBestChatModel(chat);
     }
 
+    /// <summary>
+    /// First-run default-model choice — the model the chat AND the agent start with. The list must be non-empty —
+    /// callers guard the "no chat models" case with their own message.
+    /// </summary>
     /// <remarks>
+    /// <para>
+    /// A family Inferpal's battery measured first, best fit first (<see cref="ModelProfiles"/>); then the general
+    /// families it never measured, then any other model it does not know; a family measured to fail as the agent comes
+    /// last — a code model trained for completion and not for tool calls completes 3 tasks in 14.
+    /// </para>
+    /// <para>
     /// ⚠ A profile names a FAMILY, and its measured fit was measured on its newest release: within one family, the
     /// release the profile lists first comes first (Qwen3.8 before a Qwen3.5 4B), never the server's list order — the
     /// notice that announces the choice says "the best of the installed models". Size does not decide: within Gemma 4
     /// the 12B did better than the 26B. A base model is not trained to chat: it comes after every other.
+    /// </para>
     /// </remarks>
     public static string PickBestChatModel(IReadOnlyList<string> models)
     {

@@ -490,21 +490,6 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     private const string PromptFileContext = "PromptFiles";
 
     /// <summary>
-    /// The repository's own instructions to coding agents that this question sends — AGENTS.md, Copilot's, Claude
-    /// Code's, Cursor's, Cline's, Roo's, Continue's: one file layer per source, under one heading that says which wins.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// No budget of their own: they share the one the prompt's files share (<see cref="ShareBudget"/>), keep their head
-    /// when cut, and say the cut with its numbers like every other file. A source switched off in the X-Ray hands the
-    /// heading to the next one sent.
-    /// </para>
-    /// <para>
-    /// What cannot be read, or is not taken, is said once in /diagnostics, not per build: the prompt is rebuilt on every
-    /// question.
-    /// </para>
-    /// </remarks>
-    /// <summary>
     /// The skills' catalog of the automatic mode (<c>skillsAutoMode</c>, off by default): each skill's name and
     /// description, and how to load one — the model picks the skill a request needs.
     /// </summary>
@@ -523,6 +508,21 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
                                 "the skills' catalog", Key: "skills"));
     }
 
+    /// <summary>
+    /// The repository's own instructions to coding agents that this question sends — AGENTS.md, Copilot's, Claude
+    /// Code's, Cursor's, Cline's, Roo's, Continue's: one file layer per source, under one heading that says which wins.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// No budget of their own: they share the one the prompt's files share (<see cref="ShareBudget"/>), keep their head
+    /// when cut, and say the cut with its numbers like every other file. A source switched off in the X-Ray hands the
+    /// heading to the next one sent.
+    /// </para>
+    /// <para>
+    /// What cannot be read, or is not taken, is said once in /diagnostics, not per build: the prompt is rebuilt on every
+    /// question.
+    /// </para>
+    /// </remarks>
     private static void AddRepoInstructions(List<FileLayer> files, RepoInstructionPlan? plan, IReadOnlySet<string>? disabledSectionIds)
     {
         if (plan is null) return;

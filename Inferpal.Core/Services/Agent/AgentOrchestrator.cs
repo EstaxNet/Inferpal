@@ -52,19 +52,23 @@ internal sealed class AgentOrchestrator
         _config = config;
     }
 
-    // Upper bound on the size of a single tool result fed back into the agent context.
-    // ~8000 chars ≈ 2000 tokens. Large outputs (fetch_url of a whole page — its own max_chars
-    // goes up to 50 000 — web_search, search_codebase) can exceed the model's num_ctx on their
-    // own. Compaction runs only *between* user turns (SendCoreAsync), never inside this Plan→Act
-    // →Observe loop, so an oversized result makes Ollama silently truncate the request and drop
-    // the head (system prompt + task + plan), derailing the agent. The full output is still shown
-    // in the UI bubble (onToolExecuted is invoked with the un-capped result).
     // Stable identity of a tool call (name + raw arguments) used to deduplicate repeated calls
     // within a single agent run. Uses the arguments' raw JSON text: models re-issue byte-identical
     // calls when looping, so exact-text matching is sufficient and avoids false merges.
     internal static string ToolCallKey(string toolName, System.Text.Json.JsonElement args) =>
         toolName + "\u0001" + args.GetRawText();
 
+    /// <summary>
+    /// Upper bound, in characters (about 2 000 tokens), of one tool result fed back into the run's context. The UI
+    /// still shows the whole output: <c>onToolExecuted</c> receives it uncut.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ One large result — a web page, a search report, a chatty command — can exceed the model's window on its own,
+    /// and intra-run elision cannot shrink it: <see cref="CompactRunContext"/> keeps the most recent act/observe cycle
+    /// verbatim. Uncapped, the backend refuses the request or drops its head (system prompt, task, plan) and the agent
+    /// derails. <see cref="CapForContext"/> applies the bound; a tool that can return more offers a way to resume under
+    /// it (<c>read_file</c>'s <c>start_line</c>, <c>fetch_url</c>'s <c>start_char</c>).
+    /// </remarks>
     internal const int MaxToolResultCharsInContext = 8000;
 
     // Tools whose result cannot change within a single run, so a byte-identical repeat may be
@@ -113,9 +117,16 @@ internal sealed class AgentOrchestrator
         calls.Count > 1 && calls.All(c => ParallelSafeTools.Contains(c.Function.Name));
 
     /// <summary>
-    /// Executes one tool call, turning any failure into a message the model can act on. Shared by
-    /// this orchestrator and the basic loop in <c>InferenceProviderBase</c>.
+    /// Executes one model-requested call, turning any failure into a message the model can act on — or refuses it,
+    /// unexecuted, when its arguments never parsed (<see cref="ToolCallFunction.UnparsedArguments"/>): running it with
+    /// default arguments turns a truncated <c>run_tests {"filter":"Foo…</c> into the whole suite. Shared by this
+    /// orchestrator and the basic loop in <c>InferenceProviderBase</c>.
     /// </summary>
+    /// <param name="replyCut">The reply carrying the call stopped at the length limit
+    /// (<see cref="ChatTurnResult.CutAtLimit"/>). ⚠ Required, not defaulted: it decides what the refusal
+    /// tells the model. "Resend with complete JSON" is the one remedy that cannot work on a cut reply —
+    /// the same call is cut at the same point, and a long <c>write_file</c> near a full window is
+    /// refused round after round.</param>
     /// <remarks>
     /// <para>
     /// Tools validate their arguments by <b>throwing</b> — <c>PathSanitizer</c> raises
@@ -130,14 +141,6 @@ internal sealed class AgentOrchestrator
     /// strings tools already return for the cases they validate by hand.
     /// </para>
     /// </remarks>
-    /// <summary>Runs one model-requested call — or refuses it, unexecuted, when its arguments never
-    /// parsed (<see cref="ToolCallFunction.UnparsedArguments"/>): running it with default arguments
-    /// turns a truncated <c>run_tests {"filter":"Foo…</c> into the whole suite.</summary>
-    /// <param name="replyCut">The reply carrying the call stopped at the length limit
-    /// (<see cref="ChatTurnResult.CutAtLimit"/>). ⚠ Required, not defaulted: it decides what the refusal
-    /// tells the model. "Resend with complete JSON" is the one remedy that cannot work on a cut reply —
-    /// the same call is cut at the same point, and a long <c>write_file</c> near a full window is
-    /// refused round after round.</param>
     internal static Task<string> ExecuteToolSafeAsync(
         IToolRegistry tools, ToolCallFunction call, bool replyCut, CancellationToken ct)
     {

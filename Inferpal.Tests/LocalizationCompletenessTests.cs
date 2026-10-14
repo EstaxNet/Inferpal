@@ -169,7 +169,6 @@ public class LocalizationCompletenessTests
             "Untranslated VS Code keys (add them to the listed bundles):\n" + string.Join("\n", report));
     }
 
-    /// <summary>The repository root (where the .sln lives) — the same walk up as the two helpers above.</summary>
     /// <summary>
     /// Every string the extension displays: the literals of <c>l10n.t()</c> under
     /// <c>vscode/src</c>, key → file. <b>Carries the enumeration's witness</b>, so that the rules
@@ -212,6 +211,7 @@ public class LocalizationCompletenessTests
         return keys;
     }
 
+    /// <summary>The repository root (where the .sln lives) — the same walk up as the two helpers above.</summary>
     private static string RepoRootDir()
     {
         var dir = AppContext.BaseDirectory;

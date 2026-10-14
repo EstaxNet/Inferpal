@@ -792,14 +792,6 @@ internal sealed partial class HostServer : IDisposable
             .ToList();
     }
 
-    /// <summary>
-    /// The code a read-only action (<c>/explain</c>, <c>/review</c>) sends, sized from the configured window,
-    /// and the label that names it under the question — the Visual Studio window's excerpt, from the same Core.
-    /// </summary>
-    /// <remarks>
-    /// ⚠ The adapter fenced the whole file into the prompt: past the window LM Studio refuses the request and
-    /// Ollama drops its head, system prompt and instruction first, without a word. See <see cref="CodeExcerpt.BudgetFor"/>.
-    /// </remarks>
     /// <summary>Whether a turn runs the agent's plan: never a code action, and never with the tools off.</summary>
     private static bool TurnIsAgent(HostSession s, bool codeAction, bool? agentMode) =>
         !codeAction && (agentMode ?? s.Config.AgentModeEnabled) && s.ToolsEnabled;
@@ -816,6 +808,14 @@ internal sealed partial class HostServer : IDisposable
             ? model.Trim()
             : ModelRouter.Resolve(s.Config, codeAction ? ModelRole.CodeActions : agentMode ? ModelRole.Agent : ModelRole.Chat, model);
 
+    /// <summary>
+    /// The code a read-only action (<c>/explain</c>, <c>/review</c>) sends, sized from the configured window,
+    /// and the label that names it under the question — the Visual Studio window's excerpt, from the same Core.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The adapter fenced the whole file into the prompt: past the window LM Studio refuses the request and
+    /// Ollama drops its head, system prompt and instruction first, without a word. See <see cref="CodeExcerpt.BudgetFor"/>.
+    /// </remarks>
     [JsonRpcMethod("code/excerpt", UseSingleObjectParameterDeserialization = true)]
     public async Task<CodeExcerptResult> CodeExcerptOfAsync(CodeExcerptParams p, CancellationToken ct)
     {
@@ -1032,9 +1032,6 @@ internal sealed partial class HostServer : IDisposable
                                          refusal is null ? null : Strings.StatusRefused(refusal));
     }
 
-    /// <summary>Connection badge for the adapter's header: reachability + the compact VRAM line
-    /// (only when the provider supports <c>/api/ps</c>). Best-effort — failures degrade to
-    /// "unreachable", never an RPC fault (this is polled).</summary>
     /// <summary>The file-history run a turn opened, by the id <c>BeginRun</c> gave it.</summary>
     private static Services.Execution.HistoryRun? RunOf(HostSession s, string runId) =>
         s.Tools.History.Runs.LastOrDefault(r => r.Id == runId);
@@ -1056,6 +1053,9 @@ internal sealed partial class HostServer : IDisposable
         });
     }
 
+    /// <summary>Connection badge for the adapter's header: reachability + the compact VRAM line
+    /// (only when the provider supports <c>/api/ps</c>). Best-effort — failures degrade to
+    /// "unreachable", never an RPC fault (this is polled).</summary>
     [JsonRpcMethod("backend/status")]
     public async Task<BackendStatusResult> BackendStatusAsync(CancellationToken ct)
     {
@@ -1134,11 +1134,6 @@ internal sealed partial class HostServer : IDisposable
         => JsonSerializer.Serialize(Session().Config, new JsonSerializerOptions { WriteIndented = true });
 
     /// <summary>
-    /// Replaces the whole config (round-trip of `config/get`: absent fields reset to their
-    /// defaults). Values are copied onto the shared instance so every live service sees them;
-    /// switching <c>Provider</c>/<c>BaseUrl</c> still requires a new `initialize`.
-    /// </summary>
-    /// <summary>
     /// The window the conversation is measured against — the loaded one when the server reports a smaller one than
     /// configured, remeasured by every <c>config/update</c>. The adapter's context ring shows this, never the setting:
     /// read from the configuration after a save, the ring fell back to the configured window.
@@ -1146,6 +1141,11 @@ internal sealed partial class HostServer : IDisposable
     [JsonRpcMethod("context/window")]
     public int ContextWindow() => Session().ContextWindowInUse;
 
+    /// <summary>
+    /// Replaces the whole config (round-trip of `config/get`: absent fields reset to their
+    /// defaults). Values are copied onto the shared instance so every live service sees them;
+    /// switching <c>Provider</c>/<c>BaseUrl</c> still requires a new `initialize`.
+    /// </summary>
     [JsonRpcMethod("config/update", UseSingleObjectParameterDeserialization = true)]
     public async Task<ConfigUpdateResult> ConfigUpdate(ConfigUpdateParams p, CancellationToken ct)
     {
@@ -1728,7 +1728,6 @@ internal sealed partial class HostServer : IDisposable
         }
     }
 
-    /// <summary>Reseeds the history with the layered system prompt.</summary>
     /// <summary>A conversation being replaced leaves behind its session summary, turn count and workspace block, as
     /// in the VS view model. Called before the new system prompt is built, which would otherwise carry the summary.</summary>
     private static void ForgetConversationState(HostSession s)
@@ -1738,6 +1737,7 @@ internal sealed partial class HostServer : IDisposable
         s.WorkspaceContextSent  = false;
     }
 
+    /// <summary>Reseeds the history with the layered system prompt.</summary>
     private static void ResetHistory(HostSession s)
     {
         ForgetConversationState(s);
@@ -1801,8 +1801,6 @@ internal sealed partial class HostServer : IDisposable
         else s.History.Insert(0, prompt);
     }
 
-    /// <summary>VS Code locale ids are lowercase (`zh-cn`); .NET wants `zh-CN`. GetCultureInfo
-    /// is case-insensitive, so validating through it normalizes; invalid ⇒ null (OS culture).</summary>
     /// <summary>
     /// Applies the language with the only precedence that makes sense here: an explicit choice in
     /// the settings, else the locale the editor announced, else the machine's UI culture.
@@ -1810,6 +1808,8 @@ internal sealed partial class HostServer : IDisposable
     private void ApplyLanguage(InferpalConfig config) =>
         Strings.ApplyLanguage(string.IsNullOrEmpty(config.Language) ? _editorLocale : config.Language);
 
+    /// <summary>VS Code locale ids are lowercase (`zh-cn`); .NET wants `zh-CN`. GetCultureInfo
+    /// is case-insensitive, so validating through it normalizes; invalid ⇒ null (OS culture).</summary>
     private static string? NormalizeLocale(string? locale)
     {
         if (string.IsNullOrWhiteSpace(locale)) return null;
@@ -1846,6 +1846,17 @@ internal sealed partial class HostServer : IDisposable
     /// <summary>The wire carries no notice as <c>null</c>, not as an empty line under the answer.</summary>
     private static string? NoticeOrNull(string notice) => notice.Length > 0 ? notice : null;
 
+    /// <summary>What the durable history keeps of a tool turn's answer — <see cref="ChatTurnPolicy.PersistedAnswer"/>, the
+    /// decision Visual Studio makes too.</summary>
+    private static string PersistedAnswer(
+        string streamed, string? finalResponse, IReadOnlyList<ToolExecution> executions, string? endNotice)
+    {
+        var visible = !ChatTurnPolicy.IsVisiblyEmpty(streamed);
+        return ChatTurnPolicy.PersistedAnswer(
+            ChatTurnPolicy.DecideFinalAnswer(visible, finalResponse, executions.Count),
+            visible ? streamed : null, finalResponse, executions, endNotice);
+    }
+
     /// <summary>
     /// What the turn actually puts on screen: the text, else the summary of the tools that ran,
     /// else a message that NAMES what was observed.
@@ -1858,17 +1869,6 @@ internal sealed partial class HostServer : IDisposable
     /// The decision is <see cref="ChatTurnPolicy.DecideFinalAnswer"/>, the same one the VM uses -
     /// not a second implementation.
     /// </remarks>
-    /// <summary>What the durable history keeps of a tool turn's answer — <see cref="ChatTurnPolicy.PersistedAnswer"/>, the
-    /// decision Visual Studio makes too.</summary>
-    private static string PersistedAnswer(
-        string streamed, string? finalResponse, IReadOnlyList<ToolExecution> executions, string? endNotice)
-    {
-        var visible = !ChatTurnPolicy.IsVisiblyEmpty(streamed);
-        return ChatTurnPolicy.PersistedAnswer(
-            ChatTurnPolicy.DecideFinalAnswer(visible, finalResponse, executions.Count),
-            visible ? streamed : null, finalResponse, executions, endNotice);
-    }
-
     private static string FinalAnswer(
         string? finalResponse, string streamed, IReadOnlyList<ToolExecution> executions, string? endNotice,
         string model, HostSession s) =>

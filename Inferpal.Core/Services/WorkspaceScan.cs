@@ -163,19 +163,6 @@ internal static class WorkspaceScan
         + $"(received: {pattern}). Put the folder in 'path' instead.";
 
     /// <summary>
-    /// Files matching <paramref name="pattern"/> under <paramref name="start"/>, excluded directories
-    /// skipped — judged below <paramref name="root"/> when one is given, below <paramref name="start"/>
-    /// otherwise. A start that cannot be opened yields nothing; a folder below it that cannot be read
-    /// is skipped instead of ending the walk.
-    /// </summary>
-    /// <remarks>
-    /// The enumeration is lazy, so a <c>try</c> around the call never saw what happened deeper: one
-    /// unreadable folder (a database volume owned by a container's user, a locked junction in a
-    /// Windows profile) threw inside every caller's loop. <see cref="EnumerationOptions.IgnoreInaccessible"/>
-    /// skips it at the source; the other options keep what <c>SearchOption.AllDirectories</c> did
-    /// (no attribute skipped, Win32 wildcards).
-    /// </remarks>
-    /// <summary>
     /// The source files of <paramref name="ext"/>'s LANGUAGE under <paramref name="start"/>: a <c>.tsx</c> component is
     /// imported by <c>.ts</c>, <c>.tsx</c>, <c>.js</c> and <c>.jsx</c> files alike.
     /// </summary>
@@ -193,6 +180,19 @@ internal static class WorkspaceScan
         _                => ["*" + ext],
     };
 
+    /// <summary>
+    /// Files matching <paramref name="pattern"/> under <paramref name="start"/>, excluded directories
+    /// skipped — judged below <paramref name="start"/>, so a folder the caller names (<c>node_modules/left-pad</c>,
+    /// <c>bin/Debug</c>) is walked. A start that cannot be opened yields nothing; a folder below it that cannot be
+    /// read is skipped instead of ending the walk.
+    /// </summary>
+    /// <remarks>
+    /// The enumeration is lazy, so a <c>try</c> around the call never saw what happened deeper: one
+    /// unreadable folder (a database volume owned by a container's user, a locked junction in a
+    /// Windows profile) threw inside every caller's loop. <see cref="EnumerationOptions.IgnoreInaccessible"/>
+    /// skips it at the source; the other options keep what <c>SearchOption.AllDirectories</c> did
+    /// (no attribute skipped, Win32 wildcards).
+    /// </remarks>
     public static IEnumerable<string> EnumerateFiles(string start, string pattern = "*.cs") =>
         EnumerateFiles(start, pattern, out _);
 

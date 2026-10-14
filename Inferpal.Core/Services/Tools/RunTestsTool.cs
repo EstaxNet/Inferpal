@@ -580,12 +580,6 @@ internal class RunTestsTool : ITool
         "⚠ The runner found no test to run — nothing ran, so nothing was proven. " +
         "If a filter was given, it matched nothing; that is not a pass.";
 
-    /// <summary>Every test the run selected was skipped (or ignored): none executed.</summary>
-    /// <remarks>
-    /// ⚠ The report of such a run has a total and no failure — <c>Total tests: 1, Skipped: 1</c> — which
-    /// a summary parser reads as green. And skipping the failing test is exactly the dishonest way for
-    /// a fix loop to go green: <c>/tdd</c> declared victory on the round that added <c>Skip = "…"</c>.
-    /// </remarks>
     /// <summary>The runner could not parse the test filter: nothing ran. Followed by the runner's own reason.</summary>
     internal const string FilterRejected =
         "⚠ The runner rejected the test filter — nothing ran, so nothing was proven. Its reason:";
@@ -594,6 +588,12 @@ internal class RunTestsTool : ITool
     internal const string PytestUsageError =
         "⚠ pytest refused its command line (usage error) — nothing ran, so nothing was proven. Its reason:";
 
+    /// <summary>Every test the run selected was skipped (or ignored): none executed.</summary>
+    /// <remarks>
+    /// ⚠ The report of such a run has a total and no failure — <c>Total tests: 1, Skipped: 1</c> — which
+    /// a summary parser reads as green. And skipping the failing test is exactly the dishonest way for
+    /// a fix loop to go green: <c>/tdd</c> declared victory on the round that added <c>Skip = "…"</c>.
+    /// </remarks>
     internal const string OnlySkipped =
         "⚠ Every test this run selected was skipped — none executed, so nothing was proven; " +
         "that is not a pass.";
@@ -1279,6 +1279,15 @@ internal class RunTestsTool : ITool
 
     private const int CommandNotFoundExitCode = 9009;
 
+    /// <summary>The runner a forced value names: one of the five, or a JavaScript framework this tool runs through npm
+    /// (the filter's description names them) — <c>null</c> for anything else.</summary>
+    internal static string? ForcedRunner(string forced) => forced switch
+    {
+        "dotnet" or "pytest" or "npm" or "cargo" or "go" => forced,
+        "jest" or "vitest" or "mocha" or "node"          => "npm",
+        _                                                => null,
+    };
+
     /// <summary>
     /// "Nothing here to run" — plus, when it is true, "and there is a folder I could not look in".
     /// </summary>
@@ -1291,15 +1300,6 @@ internal class RunTestsTool : ITool
     /// ⚠ The detector is only asked on this branch, so a workspace that resolves its runner pays
     /// nothing for it.
     /// </remarks>
-    /// <summary>The runner a forced value names: one of the five, or a JavaScript framework this tool runs through npm
-    /// (the filter's description names them) — <c>null</c> for anything else.</summary>
-    internal static string? ForcedRunner(string forced) => forced switch
-    {
-        "dotnet" or "pytest" or "npm" or "cargo" or "go" => forced,
-        "jest" or "vitest" or "mocha" or "node"          => "npm",
-        _                                                => null,
-    };
-
     private static string NoRunnerDetected(string workDir, string? root)
     {
         const string message = "No test runner detected. Provide 'path' to a project, or set "

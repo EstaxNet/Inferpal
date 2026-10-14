@@ -50,18 +50,18 @@ internal static class EditorWriteGate
         internal bool MayProceed => Document is not null;
     }
 
-    /// <summary>
-    /// Resolves the active document, asks for approval on its path, and snapshots it. The caller
-    /// applies the edit only when <see cref="Decision.MayProceed"/> is true.
-    /// </summary>
-    /// <param name="toolName">Tool name, as the rules and the prompt will show it.</param>
-    /// <param name="text">The text about to be written, shown in the prompt.</param>
     /// <summary>What to say when the editor names no active document.</summary>
     /// <remarks>⚠ "No file open" is false while files ARE open and none has the focus (Visual Studio after the active file
     /// is closed, VS Code with the focus in a panel): the model then asks the user to open a file that is on screen.</remarks>
     internal static string NoActiveDocument(IEditorSurface editor) =>
         editor.GetOpenDocumentPaths().Count > 0 ? Strings.ActiveDocNoFocus : Strings.ActiveDocNoFile;
 
+    /// <summary>
+    /// Resolves the active document, asks for approval on its path, and snapshots it. The caller
+    /// applies the edit only when <see cref="Decision.MayProceed"/> is true.
+    /// </summary>
+    /// <param name="toolName">Tool name, as the rules and the prompt will show it.</param>
+    /// <param name="text">The text about to be written, shown in the prompt.</param>
     internal static async Task<Decision> AuthorizeAsync(
         IEditorSurface editor, IApprovalService approval, FileHistoryService history,
         string toolName, string text, CancellationToken ct)

@@ -446,19 +446,6 @@ internal sealed class PermissionPolicy
     // and forgetting it three times is exactly why those lines were mute.
 
     /// <summary>
-    /// Parses the workspace <c>.inferpal/permissions.json</c> overlay — a JSON object with a
-    /// <c>"rules"</c> array of DSL strings: <c>{ "rules": ["deny * \\.env$"] }</c>.
-    /// Returns an empty list on missing/invalid JSON (never throws).
-    /// </summary>
-    /// <remarks>
-    /// <b>The overlay can only restrict, never grant.</b> This file ships with the repository, so
-    /// it is attacker-controlled the moment you clone something: an <c>allow</c> rule here would
-    /// let a hostile project switch off the approval prompt for its own commands. Allow rules are
-    /// therefore dropped (and recorded, visible in <c>/diagnostics</c>) — auto-approval is a
-    /// decision only the machine's own configuration can make. Deny rules are kept: a project
-    /// tightening its own restrictions is always safe.
-    /// </remarks>
-    /// <summary>
     /// What reading an overlay ACTUALLY produced, so a listing can say what is NOT in force.
     /// </summary>
     /// <param name="Rules">The deny rules that were kept.</param>
@@ -471,6 +458,19 @@ internal sealed class PermissionPolicy
     internal readonly record struct OverlayReport(
         IReadOnlyList<PermissionRule> Rules, bool Unusable, int Malformed, int AllowIgnored);
 
+    /// <summary>
+    /// Parses the workspace <c>.inferpal/permissions.json</c> overlay — a JSON object with a
+    /// <c>"rules"</c> array of DSL strings: <c>{ "rules": ["deny * \\.env$"] }</c>.
+    /// Returns an empty list on missing/invalid JSON (never throws).
+    /// </summary>
+    /// <remarks>
+    /// <b>The overlay can only restrict, never grant.</b> This file ships with the repository, so
+    /// it is attacker-controlled the moment you clone something: an <c>allow</c> rule here would
+    /// let a hostile project switch off the approval prompt for its own commands. Allow rules are
+    /// therefore dropped (and recorded, visible in <c>/diagnostics</c>) — auto-approval is a
+    /// decision only the machine's own configuration can make. Deny rules are kept: a project
+    /// tightening its own restrictions is always safe.
+    /// </remarks>
     public static IReadOnlyList<PermissionRule> ParseJsonOverlay(string? json) => ReadOverlay(json).Rules;
 
     /// <summary>One entry of the overlay's <c>rules</c> array, as written and as parsed.</summary>

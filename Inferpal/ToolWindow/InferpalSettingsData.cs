@@ -1651,7 +1651,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         }
     }
 
-    /// <summary>Reconnects the MCP servers from the freshly-saved config and refreshes row statuses.</summary>
     /// <summary>Waits for the running turn to end, then reconnects. Never throws — it runs detached.</summary>
     private async Task ReconnectMcpWhenChatIdleAsync()
     {
@@ -1666,6 +1665,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         await ReconnectMcpAsync();
     }
 
+    /// <summary>Reconnects the MCP servers from the freshly-saved config and refreshes row statuses.</summary>
     private async Task ReconnectMcpAsync()
     {
         try

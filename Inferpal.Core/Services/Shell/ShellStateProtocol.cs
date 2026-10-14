@@ -96,17 +96,6 @@ internal static class ShellStateProtocol
     }
 
     /// <summary>
-    /// Widens the hidden console's buffer, so objects are formatted at a width no table reaches.
-    /// </summary>
-    /// <remarks>
-    /// ⚠ A redirected Windows PowerShell formats objects to its hidden console's width, 120: a table cell was cut to
-    /// "aaa…" and a column past the width was DROPPED, with nothing to say so — a long path from
-    /// <c>Get-ChildItem -Recurse | Select-Object FullName</c> came back cut, then used as a path. The buffer, not a
-    /// <c>| Out-String -Width</c>: in a pipeline PowerShell READS a native command's stdout, so a grandchild it
-    /// started in the background (<c>start /b</c>) held the call open until it exited. Best-effort: without a
-    /// console to widen, formatting keeps its default width.
-    /// </remarks>
-    /// <summary>
     /// The note that follows a command's output for a non-zero exit code.
     /// </summary>
     /// <remarks>
@@ -135,6 +124,17 @@ internal static class ShellStateProtocol
     internal static string TrimLineEnds(string text) =>
         System.Text.RegularExpressions.Regex.Replace(text, @"[ \t]+(?=\r?\n|$)", string.Empty);
 
+    /// <summary>
+    /// Widens the hidden console's buffer, so objects are formatted at a width no table reaches.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A redirected Windows PowerShell formats objects to its hidden console's width, 120: a table cell was cut to
+    /// "aaa…" and a column past the width was DROPPED, with nothing to say so — a long path from
+    /// <c>Get-ChildItem -Recurse | Select-Object FullName</c> came back cut, then used as a path. The buffer, not a
+    /// <c>| Out-String -Width</c>: in a pipeline PowerShell READS a native command's stdout, so a grandchild it
+    /// started in the background (<c>start /b</c>) held the call open until it exited. Best-effort: without a
+    /// console to widen, formatting keeps its default width.
+    /// </remarks>
     internal const string WidenConsole =
         "try { $__r=$Host.UI.RawUI; $__r.BufferSize = New-Object Management.Automation.Host.Size(4096, $__r.BufferSize.Height) } catch { }\n";
 
@@ -208,11 +208,6 @@ internal static class ShellStateProtocol
     }
 
     /// <summary>
-    /// Splits captured stdout at the marker into the user-visible output and the trailing state
-    /// (cwd + full env). If the marker is absent (e.g. the command called <c>exit</c> and skipped
-    /// the <c>finally</c>), the whole text is treated as output and no state is captured.
-    /// </summary>
-    /// <summary>
     /// Comparer for environment variable NAMES: case-insensitive on Windows, case-sensitive on
     /// POSIX (§27.6 - <c>PATH</c> and <c>path</c> are two distinct variables on Linux; a shared
     /// OrdinalIgnoreCase merged them silently on the published linux-x64/darwin VSIXes).
@@ -220,6 +215,11 @@ internal static class ShellStateProtocol
     public static StringComparer EnvNameComparer =>
         OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 
+    /// <summary>
+    /// Splits captured stdout at the marker into the user-visible output and the trailing state
+    /// (cwd + full env). If the marker is absent (e.g. the command called <c>exit</c> and skipped
+    /// the <c>finally</c>), the whole text is treated as output and no state is captured.
+    /// </summary>
     public static ShellRunState ParseForeground(string stdout, string marker)
     {
         var lines = (stdout ?? string.Empty).Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');

@@ -172,6 +172,9 @@ internal sealed class AppDataJsonFile<T>
         catch (Exception ex) { Diagnostics.Swallow($"{_diagnosticName}.Save", ex); return false; }
     }
 
+    /// <summary>What both halves mean by "this file can be used".</summary>
+    private bool Readable(T value) => _accept is null || _accept(value);
+
     /// <summary>
     /// Sets aside an existing file that cannot be read, before the write overwrites it.
     /// </summary>
@@ -181,9 +184,6 @@ internal sealed class AppDataJsonFile<T>
     /// and it would not cover a save coming from another path. The cost is one re-read per save, on
     /// documents that are written rarely.
     /// </remarks>
-    /// <summary>What both halves mean by "this file can be used".</summary>
-    private bool Readable(T value) => _accept is null || _accept(value);
-
     private void PreserveIfUnreadable()
     {
         if (!_preserveUnreadable || !File.Exists(Path)) return;

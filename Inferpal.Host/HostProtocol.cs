@@ -227,21 +227,6 @@ internal sealed record IndexStatusResult(bool IsIndexing, int ChunkCount, string
 internal sealed record BackendStatusResult(bool Connected, string VramBadge, string? EdgeNotice = null, string? Refused = null,
                                            string? Server = null);
 
-/// <summary>
-/// `connection/check` — what the settings panel's Test button found AT THE URL IT WAS GIVEN.
-/// </summary>
-/// <param name="Ok">A backend answered, carrying the root property that signs it.</param>
-/// <param name="Provider">
-/// The detected backend code (<c>ollama</c> | <c>lmstudio</c> | <c>openai-compatible</c>), so the
-/// panel can pre-select it the way the Visual Studio window does; <c>null</c> when nothing answered.
-/// </param>
-/// <remarks>
-/// ⚠ The probe uses the url the webview sent, never the SAVED <c>Config.BaseUrl</c>: otherwise the
-/// panel reports "Connected" about a different address, and the case that misleads most is the
-/// ordinary one — the old url works, the new one is wrong. Same behaviour as the Visual Studio
-/// window: read the typed value, pre-select the detected backend, then refresh the models from
-/// that url.
-/// </remarks>
 /// <summary>`models/adoptDefault` — the model now used in place of a default nobody chose and the backend lacks, with
 /// the sentence that says so; both null when nothing changed.</summary>
 internal sealed record ModelsAdoptResult(string? Model, string? Notice);
@@ -253,8 +238,23 @@ internal sealed record RunningWorkResult(string? Notice, string? IfItCrashes = n
 /// <summary>`models/useForSession` — the window's chat model, set for the host session without being saved.</summary>
 internal sealed record ModelUseParams(string Model);
 
+/// <summary>
+/// `connection/check` — what the settings panel's Test button found AT THE URL IT WAS GIVEN.
+/// </summary>
+/// <param name="Ok">A backend answered, carrying the root property that signs it.</param>
+/// <param name="Provider">
+/// The detected backend code (<c>ollama</c> | <c>lmstudio</c> | <c>openai-compatible</c>), so the
+/// panel can pre-select it the way the Visual Studio window does; <c>null</c> when nothing answered.
+/// </param>
 /// <param name="Refused">When nothing was detected but a server answered with a refusal (a wrong API key: 401), the
 /// status line to show in its place, in the user's language — "unreachable" sends them to check a server that is up.</param>
+/// <remarks>
+/// ⚠ The probe uses the url the webview sent, never the SAVED <c>Config.BaseUrl</c>: otherwise the
+/// panel reports "Connected" about a different address, and the case that misleads most is the
+/// ordinary one — the old url works, the new one is wrong. Same behaviour as the Visual Studio
+/// window: read the typed value, pre-select the detected backend, then refresh the models from
+/// that url.
+/// </remarks>
 internal sealed record ConnectionCheckResult(bool Ok, string? Provider, string? Refused = null);
 
 /// <summary>`connection/check` — the url and API key to probe. Empty = the configured ones.</summary>
@@ -504,8 +504,8 @@ internal sealed record SessionTitleResult(string Title, string FileName);
 
 // ── Settings schema (`settings/schema`) ──────────────────────────────────────
 
-/// <summary>One choice of a select field. Texts are product names — never localized.</summary>
-/// <summary>One choice of a select. <c>Description</c>: the sentence under its name when drawn as a card.</summary>
+/// <summary>One choice of a select field. Texts are product names — never localized. <c>Description</c>: the sentence
+/// under its name when drawn as a card.</summary>
 internal sealed record SettingsOptionDto(string Value, string Text, string? Description = null);
 
 /// <summary>An editable setting: <paramref name="Label"/>/<paramref name="Hint"/> are resource

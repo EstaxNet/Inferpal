@@ -35,11 +35,6 @@ public class LspFallbackSilenceTests
     }
 
     /// <summary>
-    /// A single door to <c>_failed</c>, and it is the one that speaks. Five sites wrote it by hand;
-    /// each cut the LSP off for the session without a word, and the next one added would have
-    /// inherited the silence.
-    /// </summary>
-    /// <summary>
     /// A server whose output channel closed is not a running server: both fast paths of
     /// <c>EnsureInitializedAsync</c> also ask the channel. Asking only the process kept a deaf server, and
     /// every request waited out its timeout.
@@ -57,6 +52,11 @@ public class LspFallbackSilenceTests
         Assert.All(fastPaths, p => Assert.Contains("IsClosed", p, StringComparison.Ordinal));
     }
 
+    /// <summary>
+    /// A single door to <c>_failed</c>, and it is the one that speaks. Five sites wrote it by hand;
+    /// each cut the LSP off for the session without a word, and the next one added would have
+    /// inherited the silence.
+    /// </summary>
     [Fact]
     public void TurningTheLspOffForTheSession_GoesThroughTheOneDoorThatSaysWhy()
     {

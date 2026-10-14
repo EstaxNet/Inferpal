@@ -5,6 +5,12 @@ using System.Text;
 namespace Inferpal.Services;
 
 /// <summary>
+/// Runs <c>git &lt;args&gt;</c> for a command handler. Injected rather than called directly so the
+/// handlers stay testable without a repository, and so each front-end keeps its own root.
+/// </summary>
+internal delegate Task<(string Output, int ExitCode)> GitRunner(string args, CancellationToken ct);
+
+/// <summary>
 /// One-shot <c>git</c> invocation, shared by every front-end.
 /// </summary>
 /// <remarks>
@@ -13,12 +19,6 @@ namespace Inferpal.Services;
 /// plumbing would have been the third in the repository. Failures are returned, never thrown: the
 /// callers treat "no git here" as an empty diff, which is the correct answer for them.
 /// </remarks>
-/// <summary>
-/// Runs <c>git &lt;args&gt;</c> for a command handler. Injected rather than called directly so the
-/// handlers stay testable without a repository, and so each front-end keeps its own root.
-/// </summary>
-internal delegate Task<(string Output, int ExitCode)> GitRunner(string args, CancellationToken ct);
-
 internal static class GitProcess
 {
     /// <summary>Binds a working directory, giving the <see cref="GitRunner"/> the handlers expect.</summary>

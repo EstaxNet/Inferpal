@@ -1426,8 +1426,9 @@ public class ConventionCoverageTests
             $"The scan found only {sites} async method(s): the rule checks nothing any more.");
 
         Assert.True(offenders.Count == 0,
-            "These tools resolve a path against the process's working directory, which in Visual "
-            + "Studio is not the project. Pass the base to PathSanitizer.Sanitize(path, root). Sites:"
+            "These sites either declare an `async void` method, whose exception reaches no await and kills the process "
+            + "or vanishes, or block on a task with `.Wait()`, which deadlocks under a synchronization context. Return a "
+            + "Task, and await it. Sites:"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 
@@ -2543,5 +2544,80 @@ public class ConventionCoverageTests
             + "running, owned by nobody. Call ProcessLifetime.Bind(process) right after the start, or start it through "
             + "ChildProcess.Start. Sites:"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
+    // ── 35. Documentation sits on the member it describes ─────────────────────
+
+    [Fact]
+    public void EveryDocumentedMember_CarriesOneSummary()
+    {
+        // A member inserted between another member's documentation and that member's signature takes the documentation
+        // with it: the new member shows two summaries, the first of them about a neighbour, and the member that summary
+        // describes is left with none. IntelliSense and every reader then see the wrong text on both members, and
+        // nothing fails — the compiler does not check that a member has one summary.
+        // ⚠ The subject is the OWNER of the documentation: a member, a parameter of a positional record (which carries
+        // its own summary), or nothing at all — a documentation comment inside a body documents no member.
+        var offenders  = new List<string>();
+        var documented = 0;
+
+        foreach (var file in new[] { "Inferpal.Core", "Inferpal", "Inferpal.Host", "Inferpal.Fim", "Inferpal.InProc", "Inferpal.Tests" }
+                                 .SelectMany(ProjectSources))
+        {
+            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+            var summariesByOwner = new Dictionary<SyntaxNode, int>();
+
+            foreach (var trivia in root.DescendantTrivia())
+            {
+                if (trivia.GetStructure() is not DocumentationCommentTriviaSyntax doc) continue;
+
+                var line  = trivia.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                // Before a closing brace or the end of the file, a documentation comment precedes no member: its
+                // token's parent is the enclosing type, which would otherwise be credited with it.
+                var owner = trivia.Token.IsKind(SyntaxKind.CloseBraceToken) || trivia.Token.IsKind(SyntaxKind.EndOfFileToken)
+                    ? null
+                    : trivia.Token.Parent?.AncestorsAndSelf()
+                        .FirstOrDefault(n => n is MemberDeclarationSyntax or ParameterSyntax or StatementSyntax or AccessorDeclarationSyntax);
+                if (owner is not (MemberDeclarationSyntax or ParameterSyntax))
+                {
+                    offenders.Add($"{Rel(file)}({line}) : documentation comment attached to no member");
+                    continue;
+                }
+
+                var summaries = doc.DescendantNodes().OfType<XmlElementSyntax>().Count(e => e.StartTag.Name.LocalName.ValueText == "summary")
+                              + doc.DescendantNodes().OfType<XmlEmptyElementSyntax>().Count(e => e.Name.LocalName.ValueText == "summary");
+                summariesByOwner[owner] = summariesByOwner.GetValueOrDefault(owner) + summaries;
+            }
+
+            documented += summariesByOwner.Count;
+            foreach (var (owner, count) in summariesByOwner)
+            {
+                if (count <= 1) continue;
+                var line = owner.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                offenders.Add($"{Rel(file)}({line}) : {count} summaries on {Describe(owner)}");
+            }
+        }
+
+        // Witness: documented members really are read (thousands today), otherwise "no offender" means nothing.
+        Assert.True(documented >= 2000, $"Only {documented} documented member(s) read: the scan measures nothing any more.");
+        Assert.True(offenders.Count == 0,
+            "These members carry more than one <summary>, or a documentation comment documents nothing: a member was "
+            + "inserted between another member's documentation and its signature, so this one shows a neighbour's text and "
+            + "the member that text describes has none. Move each block onto the member it describes, or merge two summaries "
+            + "of the same member into one. Sites:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+
+        static string Describe(SyntaxNode owner) => owner switch
+        {
+            BaseTypeDeclarationSyntax t   => t.Identifier.ValueText,
+            DelegateDeclarationSyntax d   => d.Identifier.ValueText,
+            MethodDeclarationSyntax m     => m.Identifier.ValueText,
+            PropertyDeclarationSyntax p   => p.Identifier.ValueText,
+            EventDeclarationSyntax e      => e.Identifier.ValueText,
+            EnumMemberDeclarationSyntax e => e.Identifier.ValueText,
+            ConstructorDeclarationSyntax c => c.Identifier.ValueText + " (constructor)",
+            BaseFieldDeclarationSyntax f  => string.Join(", ", f.Declaration.Variables.Select(v => v.Identifier.ValueText)),
+            ParameterSyntax p             => p.Identifier.ValueText + " (parameter)",
+            _                             => owner.Kind().ToString(),
+        };
     }
 }

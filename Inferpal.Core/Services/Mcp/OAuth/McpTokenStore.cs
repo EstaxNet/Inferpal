@@ -22,7 +22,6 @@ internal sealed class McpOAuthState
     [JsonPropertyName("resource")]      public string? Resource { get; set; }
     [JsonPropertyName("scopes")]        public List<string>? Scopes { get; set; }
 
-    /// <summary>True when an access token exists and isn't within <paramref name="skew"/> of expiry.</summary>
     /// <summary>
     /// Was this state obtained for <paramref name="resource"/> (the server's canonical URL)?
     /// </summary>
@@ -34,6 +33,7 @@ internal sealed class McpOAuthState
     /// </remarks>
     public bool BelongsTo(string resource) => string.Equals(Resource, resource, StringComparison.Ordinal);
 
+    /// <summary>True when an access token exists and isn't within <paramref name="skew"/> of expiry.</summary>
     public bool HasUsableAccessToken(TimeSpan skew) =>
         !string.IsNullOrEmpty(AccessToken)
         && (ExpiresAtUtc is null || ExpiresAtUtc.Value - skew > DateTimeOffset.UtcNow);

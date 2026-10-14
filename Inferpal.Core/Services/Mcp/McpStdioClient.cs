@@ -56,8 +56,6 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
     /// <summary>The server name this client is bound to (for tool namespacing and diagnostics).</summary>
     public override string ServerName => _config.Name;
 
-    /// <summary>Last connection error, if <see cref="StartAsync"/> returned <c>false</c>.</summary>
-
     /// <summary>stdio servers never use OAuth (credentials come from the environment).</summary>
     public bool NeedsAuthorization => false;
 
@@ -284,12 +282,6 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
             ? $"the server exited with code {p.ExitCode} {when} (nothing on stderr)"
             : $"the server exited with code {p.ExitCode} {when}; stderr: {said}";
     }
-
-    /// <summary>Lists the tools the server advertises; <c>null</c> when the listing failed.</summary>
-
-    /// <summary>
-    /// Calls a tool by its server-local name and returns the concatenated text content.
-    /// </summary>
 
     // ── JSON-RPC plumbing ────────────────────────────────────────────────────
 

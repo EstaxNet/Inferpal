@@ -52,10 +52,6 @@ internal static class GitCommitPolicy
         $"git diff --staged:\n{staged}";
 
     /// <summary>
-    /// Fallback context when nothing is staged: the short status, plus the unstaged
-    /// diff when there is one (a blank diff section would only waste prompt budget).
-    /// </summary>
-    /// <summary>
     /// <c>git status --short</c> split into what <c>/commit-exec</c> will commit (<c>git add -u</c>:
     /// tracked files) and the untracked paths (<c>??</c>) it leaves out on purpose.
     /// </summary>
@@ -99,6 +95,10 @@ internal static class GitCommitPolicy
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Fallback context when nothing is staged: the short status, plus the unstaged
+    /// diff when there is one (a blank diff section would only waste prompt budget).
+    /// </summary>
     public static string BuildUnstagedContext(string status, string unstagedDiff)
     {
         var ctx = $"git status:\n{status}";

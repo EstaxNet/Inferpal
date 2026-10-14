@@ -88,7 +88,6 @@ internal static class RunSummary
             _                                                      => RunCheck.BuildPassed,
         };
 
-    /// <summary>The files the run changed, each with its lines added and removed since the run's backup.</summary>
     /// <summary>
     /// The files the calls to <paramref name="tool"/> name, each once — for a turn without a history run. With one, the
     /// run counts what <c>read_file</c> actually read (<see cref="HistoryRun.FilesOpened"/>).
@@ -117,6 +116,7 @@ internal static class RunSummary
         catch (System.Text.Json.JsonException) { return string.Empty; }
     }
 
+    /// <summary>The files the run changed, each with its lines added and removed since the run's backup.</summary>
     internal static IReadOnlyList<RunFileLine> Files(HistoryRun run) =>
         [.. run.Changes.OrderBy(c => c.OriginalPath, StringComparer.OrdinalIgnoreCase).Select(change =>
         {

@@ -71,13 +71,13 @@ internal sealed class HostSession : IDisposable
     /// </summary>
     public Services.Debugging.IDebugSession? Debug { get; init; }
 
-    /// <summary>Named-session persistence, same store (and files) as the VS extension.</summary>
     /// <summary>
     /// The connection heartbeat's state machine. One instance per session: it starts OPTIMISTIC, so
     /// the first successful check is silent and the first failed one announces.
     /// </summary>
     public ConnectionStatusPresenter Connection { get; } = new();
 
+    /// <summary>Named-session persistence, same store (and files) as the VS extension.</summary>
     public ConversationStore Store { get; } = new(slotOwner: ConversationStore.VsCodeSlot);
 
     /// <summary>

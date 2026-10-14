@@ -19,12 +19,12 @@ internal static class ModelsCommandHandler
     /// <summary>Outcome of a <c>/models</c> invocation handled here.</summary>
     internal readonly record struct ModelsCommandResult(string Message);
 
-    /// <summary>Handles <c>/models</c> (list), <c>/models delete &lt;name&gt;</c> and
-    /// <c>/models running</c>. <paramref name="parts"/> is the whitespace-split command line.</summary>
-    /// <param name="config">Read for the backend URL only — named when the backend does not answer.</param>
     /// <summary>The sub-commands of <c>/models</c>, as the usage line names them.</summary>
     internal const string Usage = "/models [list | pull <name> | delete <name> | running]";
 
+    /// <summary>Handles <c>/models</c> (list), <c>/models delete &lt;name&gt;</c> and
+    /// <c>/models running</c>. <paramref name="parts"/> is the whitespace-split command line.</summary>
+    /// <param name="config">Read for the backend URL only — named when the backend does not answer.</param>
     public static async Task<ModelsCommandResult> HandleAsync(
         IInferenceProvider client, Config.InferpalConfig config, string[] parts, CancellationToken ct)
     {
@@ -81,6 +81,14 @@ internal static class ModelsCommandHandler
     private static readonly TimeSpan SwitchListBudget = TimeSpan.FromSeconds(3);
 
     /// <summary>
+    /// Why <paramref name="model"/> cannot become the chat model, or <c>null</c>. ⚠ Every list offered for the chat leaves
+    /// the embedding models out; <c>/model</c>, which takes a name typed by hand, saved one: "Model changed", then every
+    /// question refused by the server.
+    /// </summary>
+    public static string? RefusedForChat(string model) =>
+        ModelCatalog.IsEmbeddingModel(model) ? Strings.SlashModelIsEmbedding(model) : null;
+
+    /// <summary>
     /// What <c>/model &lt;name&gt;</c> answers once the name is set: the confirmation, plus a warning when
     /// the backend lists its models and this name is not among them.
     /// </summary>
@@ -90,14 +98,6 @@ internal static class ModelsCommandHandler
     /// nothing. The listing is bounded so an unreachable backend does not hold the command for the
     /// client's own timeout.
     /// </remarks>
-    /// <summary>
-    /// Why <paramref name="model"/> cannot become the chat model, or <c>null</c>. ⚠ Every list offered for the chat leaves
-    /// the embedding models out; <c>/model</c>, which takes a name typed by hand, saved one: "Model changed", then every
-    /// question refused by the server.
-    /// </summary>
-    public static string? RefusedForChat(string model) =>
-        ModelCatalog.IsEmbeddingModel(model) ? Strings.SlashModelIsEmbedding(model) : null;
-
     public static async Task<string> SwitchMessageAsync(IInferenceProvider client, string model, CancellationToken ct)
     {
         var changed = Strings.SlashModelChanged(model);

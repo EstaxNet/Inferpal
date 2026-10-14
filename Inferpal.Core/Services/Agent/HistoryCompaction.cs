@@ -16,18 +16,18 @@ internal enum CompactionAction
 }
 
 /// <summary>
+/// The summarizing request, and how many messages of the slice did not fit in it — the oldest ones, which the summary
+/// then cannot cover.
+/// </summary>
+internal sealed record SummarizeRequest(List<ChatMessageDto> Messages, int Omitted);
+
+/// <summary>
 /// The range of history messages to remove, computed once and shared by every outcome:
 /// <c>Start</c>/<c>Count</c> bound the removable slice (system[0] and the optional
 /// KV-cache anchor messages excluded), <c>KvAnchor</c> is the number of anchor messages
 /// kept verbatim after system[0], and <c>KeepTurns</c> is the number of trailing user
 /// turns preserved (both echoed in the chat notices).
 /// </summary>
-/// <summary>
-/// The summarizing request, and how many messages of the slice did not fit in it — the oldest ones, which the summary
-/// then cannot cover.
-/// </summary>
-internal sealed record SummarizeRequest(List<ChatMessageDto> Messages, int Omitted);
-
 internal sealed record CompactionPlan(
     CompactionAction Action,
     int Start,

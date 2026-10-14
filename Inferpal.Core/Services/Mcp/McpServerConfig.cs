@@ -2,6 +2,18 @@
 
 namespace Inferpal.Services.Mcp;
 
+/// <summary>Optional OAuth hints for an HTTP MCP server: a pre-registered <c>client_id</c>/<c>secret</c>
+/// (for authorization servers without dynamic registration) and requested scopes. Absent ⇒ dynamic
+/// client registration is attempted. The DCR-obtained client id and the tokens live in the encrypted
+/// token store, not here.</summary>
+internal sealed record McpOAuthConfig(
+    string? ClientId = null,
+    string? ClientSecret = null,
+    IReadOnlyList<string>? Scopes = null);
+
+/// <summary>An entry of the configured server list that never became a server, and why.</summary>
+internal sealed record McpRejectedServer(string Name, string Reason);
+
 /// <summary>
 /// One MCP server entry parsed from <see cref="Config.InferpalConfig.McpServersJson"/>.
 /// </summary>
@@ -25,18 +37,6 @@ namespace Inferpal.Services.Mcp;
 /// Header values support <c>${ENV_VAR}</c> expansion at connection time so secrets stay out of the
 /// stored config (see <see cref="McpHttpClient"/>).
 /// </remarks>
-/// <summary>Optional OAuth hints for an HTTP MCP server: a pre-registered <c>client_id</c>/<c>secret</c>
-/// (for authorization servers without dynamic registration) and requested scopes. Absent ⇒ dynamic
-/// client registration is attempted. The DCR-obtained client id and the tokens live in the encrypted
-/// token store, not here.</summary>
-internal sealed record McpOAuthConfig(
-    string? ClientId = null,
-    string? ClientSecret = null,
-    IReadOnlyList<string>? Scopes = null);
-
-/// <summary>An entry of the configured server list that never became a server, and why.</summary>
-internal sealed record McpRejectedServer(string Name, string Reason);
-
 internal sealed record McpServerConfig(
     string Name,
     string? Command,

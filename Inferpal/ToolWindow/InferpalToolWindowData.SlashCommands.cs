@@ -277,9 +277,8 @@ internal partial class InferpalToolWindowData
     /// Handles <c>/docs add &lt;url&gt; [title] | list | remove &lt;id&gt; | reindex [id]</c> —
     /// manages external documentation sources crawled and embedded for the <c>search_docs</c> tool.
     /// Crawl/embed runs in the background with progress reported as chat bubbles.
+    /// Shared handler (DocsCommandHandler); the VM renders crawl progress as info bubbles.
     /// </summary>
-    /// <summary>/docs add|list|remove|reindex — shared handler (DocsCommandHandler); the VM
-    /// renders crawl progress as info bubbles.</summary>
     private async Task HandleDocsCommandAsync(string[] parts, CancellationToken ct)
     {
         var progress = new Progress<string>(msg => _ = ShowInfoAsync(msg));
