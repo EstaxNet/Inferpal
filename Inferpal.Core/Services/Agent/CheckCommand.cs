@@ -43,16 +43,21 @@ internal static class CheckCommand
         catch (RegexMatchTimeoutException) { return false; }
     }
 
-    /// <summary>The <c>command</c> argument of a run_command call, from its JSON input.</summary>
+    /// <summary>The <c>command</c> argument of a run_command call that ran it, from its JSON input — <c>null</c> for a
+    /// call that managed a background job instead (an <c>action</c>: poll, stop, list), which runs no command.</summary>
+    /// <remarks>⚠ A model repeats <c>command</c> next to <c>action: "poll"</c>: read as a run, the poll of a job that
+    /// finished on exit code 1 — no note at its end — was a passing test run, hiding an earlier red one.</remarks>
     public static string? CommandOf(string? input)
     {
         if (string.IsNullOrWhiteSpace(input)) return null;
         try
         {
             using var doc = JsonDocument.Parse(input);
-            return doc.RootElement.ValueKind == JsonValueKind.Object
-                   && doc.RootElement.TryGetProperty("command", out var c) && c.ValueKind == JsonValueKind.String
-                ? c.GetString() : null;
+            var root = doc.RootElement;
+            if (root.ValueKind != JsonValueKind.Object) return null;
+            if (root.TryGetProperty("action", out var a) && a.ValueKind == JsonValueKind.String
+                && !string.IsNullOrWhiteSpace(a.GetString())) return null;
+            return root.TryGetProperty("command", out var c) && c.ValueKind == JsonValueKind.String ? c.GetString() : null;
         }
         catch (JsonException) { return null; }
     }

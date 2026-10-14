@@ -45,6 +45,6 @@ internal sealed class PlanModeToolRegistry(IToolRegistry inner) : IToolRegistry
         IsAllowed(name)
             ? inner.ExecuteAsync(name, args, ct)
             : Task.FromResult(
-                $"Tool '{name}' is not available in plan mode (read-only analysis). " +
+                $"Error: tool '{name}' is not available in plan mode (read-only analysis). " +
                 "Do not retry it; describe the change as a step of your plan instead.");
 }

@@ -104,14 +104,14 @@ internal sealed class BackgroundTaskToolRegistry(
     public async Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct)
     {
         if (!Permits(name))
-            return $"Tool '{name}' is not available to a background task "
+            return $"Error: tool '{name}' is not available to a background task "
                  + (ProposalMode
                         ? "(it can propose file changes, but cannot run commands or reach the network). "
                         : "(read-only, no approval prompts). ")
                  + "Do not retry it; describe what you would do instead, and the user will run it.";
 
         if (WorkspaceChanged())
-            return "The workspace changed since this background task started (another solution was opened): "
+            return "Error: the workspace changed since this background task started (another solution was opened): "
                  + "its tools would now answer about a different project. Do not call more tools; finish your "
                  + "report with what you found so far, and say that the workspace changed.";
 

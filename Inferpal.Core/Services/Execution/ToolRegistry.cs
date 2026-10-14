@@ -341,7 +341,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             // Not the caller's cancellation: the tool's own deadline (an HttpClient timeout, an MCP
             // call budget). An error for whoever asked — never a Stop of the run that called it.
             _fileHistory.RecordToolCall(name, ExtractSubject(args), sw.ElapsedMilliseconds, error: true);
-            return $"Tool '{name}' timed out before it finished ({ex.Message}).";
+            return $"Error: tool '{name}' timed out before it finished ({ex.Message}).";
         }
         catch (System.Text.RegularExpressions.RegexMatchTimeoutException)
         {
@@ -349,7 +349,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             // generated or minified, one line of megabytes — turns into this instead of a hung turn.
             // Say so explicitly; "The Regex engine has timed out" tells the model nothing actionable.
             _fileHistory.RecordToolCall(name, ExtractSubject(args), sw.ElapsedMilliseconds, error: true);
-            return $"Tool '{name}' gave up: a file in scope is too pathological to parse with the "
+            return $"Error: tool '{name}' gave up: a file in scope is too pathological to parse with the "
                  + "language heuristics (generated or minified?). Narrow the path and retry.";
         }
         catch (Exception ex)
