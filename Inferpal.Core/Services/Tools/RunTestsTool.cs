@@ -961,8 +961,10 @@ internal class RunTestsTool : ITool
     {
         var sb = new StringBuilder();
 
-        // Summary: "= 1 failed, 5 passed in 1.23s ="
-        var summaryMatch = Regex.Match(raw, @"=+\s*(.+?in\s+[\d.]+\s*s)\s*=+", RegexOptions.Multiline, RegexBudget.Default);
+        // Summary: "= 1 failed, 5 passed in 1.23s =" — and past a minute "= 3 passed in 75.32s (0:01:15) =": without its
+        // second duration a long green run read "nothing was proven", and a long red one "no test summary".
+        var summaryMatch = Regex.Match(raw, @"=+\s*(.+?in\s+[\d.]+\s*s(?:\s*\(\d+:\d{2}:\d{2}\))?)\s*=+",
+                                       RegexOptions.Multiline, RegexBudget.Default);
 
         // "…python3: No module named pytest" (unquoted: `python -m`'s own line, not a test's ModuleNotFoundError).
         // Read raw, it is a red suite, and /tdd spends its rounds patching code against a runner that never ran.
@@ -990,7 +992,18 @@ internal class RunTestsTool : ITool
         }
 
         if (summaryMatch.Success)
-            sb.AppendLine(summaryMatch.Groups[1].Value.Trim());
+        {
+            var summary = summaryMatch.Groups[1].Value.Trim();
+            // ⚠ A summary is the verdict of the tests that ran, not of the session: a plugin fails it under a green
+            // summary (pytest-cov's fail_under: "3 passed", exit 1). Read from the summary, /tdd declared victory. Its
+            // reason is printed after the summary, so the output goes with the verdict.
+            if (exitCode is not (0 or NoExitCode) && SummaryPassed(summary))
+                sb.AppendLine($"✗ FAILED — pytest exited with code {exitCode} although its test summary passed ({summary})")
+                  .AppendLine()
+                  .AppendLine(Truncate(raw.Trim(), MaxRawChars));
+            else
+                sb.AppendLine(summary);
+        }
         else if (exitCode == 0)
             sb.AppendLine(NothingProven);
         else if (exitCode != NoExitCode)
@@ -1015,6 +1028,11 @@ internal class RunTestsTool : ITool
         var result = sb.ToString().Trim();
         return string.IsNullOrEmpty(result) ? Truncate(raw.Trim(), MaxRawChars) : result;
     }
+
+    /// <summary>A pytest summary line that counts passed tests and no failure nor error.</summary>
+    private static bool SummaryPassed(string summary) =>
+        Regex.IsMatch(summary, @"\b\d+ passed\b", RegexOptions.None, RegexBudget.Default)
+        && !Regex.IsMatch(summary, @"\b\d+ (?:failed|errors?)\b", RegexOptions.None, RegexBudget.Default);
 
     // Cargo prints one summary line per test binary:
     //   "test result: ok. 5 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out"
@@ -1042,6 +1060,14 @@ internal class RunTestsTool : ITool
         if (any && passed + failed == 0)
             sb.AppendLine($"{(ignored > 0 ? OnlySkipped : filteredOut > 0 ? NoTestMatchedFilter : NoTestFound)}\n" +
                           $"Passed: 0, Failed: 0, Ignored: {ignored}, Filtered out: {filteredOut}");
+        // ⚠ The summaries are those of the test binaries that RAN: one that aborts after another printed "ok" (a stack
+        // overflow, a panic outside a test) leaves exit code 101 under green summaries — read as "✓ PASSED". Its
+        // reason is in the output, which goes with the verdict.
+        else if (any && failed == 0 && exitCode is not (0 or NoExitCode))
+            sb.AppendLine($"✗ FAILED — cargo test exited with code {exitCode} although its test summaries passed " +
+                          $"(Passed: {passed}, Ignored: {ignored})")
+              .AppendLine()
+              .AppendLine(Truncate(raw.Trim(), MaxRawChars));
         else if (any)
             sb.AppendLine($"{(failed == 0 ? "✓ PASSED" : "✗ FAILED")} — Failed: {failed}, Passed: {passed}, Ignored: {ignored}, Total: {passed + failed + ignored}");
         else if (exitCode == 0)
