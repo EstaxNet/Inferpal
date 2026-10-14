@@ -75,6 +75,14 @@ internal static class EditorWriteGate
         if (!await approval.RequestApprovalAsync(toolName, $"{document.Path}\n\n{text}", ct, subject: document.Path))
             return new(null, Strings.RunCancelled);
 
+        // ⚠ The edit goes to the document active WHEN IT IS APPLIED, and the card can wait for minutes while the user
+        // keeps working: applied to whatever is active after the approval, it lands in a file nobody approved — one the
+        // rules may deny (the subject judged was this path), at its own caret or over its own selection.
+        if (await editor.GetActiveDocumentAsync(ct) is not { } now || !PathComparer.Default.Equals(now.Path, document.Path))
+            return new(null, $"'{document.Path}' is no longer the active document: the user switched documents while the " +
+                             "approval was pending, so nothing was written. Ask the user to go back to that file, then try " +
+                             "again.");
+
         // Best-effort, and deliberately of the file on disk: an unsaved buffer's previous state
         // lives in the editor's own undo stack, which is where the user looks for it. What the
         // snapshot buys is /undo-run, which reads the disk copy.
