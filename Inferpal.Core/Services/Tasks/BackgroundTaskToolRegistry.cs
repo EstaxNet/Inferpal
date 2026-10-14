@@ -24,6 +24,9 @@ internal sealed class BackgroundTaskToolRegistry(
     // opened while the task runs made its next calls answer about another project: a report that
     // describes two projects as one, and proposals recorded on the other project's files.
     private readonly Func<string?>? _currentRoot = currentRoot;
+
+    // The history the inner registry's tools write their run into — the chat's (both editors pass the chat's registry).
+    private readonly Execution.FileHistoryService? _history = (inner as Execution.ToolRegistry)?.History;
     private readonly string?        _startRoot   = currentRoot?.Invoke();
 
     private bool WorkspaceChanged()
@@ -125,7 +128,11 @@ internal sealed class BackgroundTaskToolRegistry(
         // through to the raw cancellation. Matching the tool's message instead would break in ten
         // languages.
         var before = proposals?.RequestCount ?? 0;
-        var result = await inner.ExecuteAsync(name, args, ct);
+        string result;
+        // ⚠ A task's calls belong to no run: the chat's run is the open turn's, and the task runs beside it through the
+        // same tools (see FileHistoryService.OutsideRun).
+        using (_history?.OutsideRun())
+            result = await inner.ExecuteAsync(name, args, ct);
         if (proposals is null || proposals.RequestCount == before) return result;
 
         // What THIS request left in the list — never the list's last entry, which a file proposed again (updated in

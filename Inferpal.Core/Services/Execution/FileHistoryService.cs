@@ -187,7 +187,7 @@ internal class FileHistoryService
             // it, and record the file in the run as snapshot-failed so UndoRunAsync reports it
             // as Failed instead of not knowing it was ever touched.
             Diagnostics.Swallow($"FileHistoryService.Snapshot({filePath})", ex);
-            lock (_runLock) _currentRun?.RecordFirst(filePath, snapshot: null, snapshotFailed: true);
+            lock (_runLock) Run?.RecordFirst(filePath, snapshot: null, snapshotFailed: true);
             return string.Empty;
         }
     }
@@ -203,7 +203,7 @@ internal class FileHistoryService
     internal async Task<(bool Saved, string Snapshot)> BackUpBeforeChangeAsync(string filePath, CancellationToken ct)
     {
         bool firstInRun;
-        lock (_runLock) firstInRun = _currentRun is not null && !_currentRun.Has(filePath);
+        lock (_runLock) firstInRun = Run is { } run && !run.Has(filePath);
 
         if (!File.Exists(filePath))
         {
@@ -261,8 +261,8 @@ internal class FileHistoryService
                 lock (owner._runLock)
                 {
                     // A failed backup was entered in the run without being counted as a write.
-                    if (!write.Failed) owner._currentRun?.UncountWrite();
-                    if (write.FirstInRun) owner._currentRun?.Forget(write.Path);
+                    if (!write.Failed) owner.Run?.UncountWrite();
+                    if (write.FirstInRun) owner.Run?.Forget(write.Path);
                 }
             }
         }
@@ -504,6 +504,26 @@ internal class FileHistoryService
     private HistoryRun? _currentRun;
     private readonly object _runLock = new();
 
+    // ⚠ The run a call belongs to: none for a call made on behalf of a background task (OutsideRun). A /task runs while
+    // a chat turn is open, through the same tools: its reads entered the CHAT's run — lifting write_file's "not read in
+    // this run" guard for the chat's model, counted on its result bar, listed by /replay — and in proposal mode its own
+    // writes were refused only while a turn happened to be open.
+    private readonly AsyncLocal<bool> _outsideRun = new();
+    private HistoryRun? Run => _outsideRun.Value ? null : _currentRun;
+
+    /// <summary>Until the returned scope is disposed, the calls of this asynchronous flow belong to no run.</summary>
+    internal IDisposable OutsideRun()
+    {
+        var previous = _outsideRun.Value;
+        _outsideRun.Value = true;
+        return new Scope(() => _outsideRun.Value = previous);
+    }
+
+    private sealed class Scope(Action restore) : IDisposable
+    {
+        public void Dispose() => restore();
+    }
+
     /// <summary>Starts a new change-tracking run; subsequent snapshots/creations attach to it.</summary>
     /// <param name="alreadyRead">
     /// A file the run starts with as read — for a write whose content a person reviewed as a diff (a <c>/task</c>
@@ -553,20 +573,20 @@ internal class FileHistoryService
     /// </summary>
     internal int? CurrentRunFileCount
     {
-        get { lock (_runLock) return _currentRun?.FileCount; }
+        get { lock (_runLock) return Run?.FileCount; }
     }
 
     /// <summary>Records that the model has seen the content of <paramref name="filePath"/> in the current run.</summary>
     internal void NoteRead(string filePath)
     {
-        lock (_runLock) _currentRun?.NoteRead(filePath);
+        lock (_runLock) Run?.NoteRead(filePath);
     }
 
     /// <summary>Records that <c>read_file</c> read <paramref name="filePath"/> in the current run — a page of it counts,
     /// a write does not (see <see cref="HistoryRun.FilesOpened"/>).</summary>
     internal void NoteOpened(string filePath)
     {
-        lock (_runLock) _currentRun?.NoteOpened(filePath);
+        lock (_runLock) Run?.NoteOpened(filePath);
     }
 
     /// <summary>
@@ -575,7 +595,7 @@ internal class FileHistoryService
     /// </summary>
     internal void NoteReadLines(string filePath, int first, int last, int total)
     {
-        lock (_runLock) _currentRun?.NoteReadLines(filePath, first, last, total);
+        lock (_runLock) Run?.NoteReadLines(filePath, first, last, total);
     }
 
     /// <summary>
@@ -584,7 +604,7 @@ internal class FileHistoryService
     /// </summary>
     internal (int Seen, int Total, int FirstUnseen)? PartialRead(string filePath)
     {
-        lock (_runLock) return _currentRun?.PartialRead(filePath);
+        lock (_runLock) return Run?.PartialRead(filePath);
     }
 
     /// <summary>
@@ -597,7 +617,7 @@ internal class FileHistoryService
     /// </remarks>
     internal bool? WasRead(string filePath)
     {
-        lock (_runLock) return _currentRun?.WasRead(filePath);
+        lock (_runLock) return Run?.WasRead(filePath);
     }
 
     /// <summary>
@@ -637,8 +657,8 @@ internal class FileHistoryService
     {
         lock (_runLock)
         {
-            _currentRun?.RecordFirst(filePath, snapshot: null);
-            _currentRun?.CountWrite();
+            Run?.RecordFirst(filePath, snapshot: null);
+            Run?.CountWrite();
         }
     }
 
@@ -648,22 +668,22 @@ internal class FileHistoryService
     /// </summary>
     internal int? CurrentRunWriteCount
     {
-        get { lock (_runLock) return _currentRun?.WriteCount; }
+        get { lock (_runLock) return Run?.WriteCount; }
     }
 
     /// <summary>Appends a tool invocation to the current run's journal (for <c>/replay</c>).
     /// No-op when no run is active (e.g. code actions, tools disabled).</summary>
     internal void RecordToolCall(string tool, string? subject, long durationMs, bool error)
     {
-        lock (_runLock) _currentRun?.RecordToolCall(tool, subject, durationMs, error);
+        lock (_runLock) Run?.RecordToolCall(tool, subject, durationMs, error);
     }
 
     private void RecordInRun(string filePath, string snapPath)
     {
         lock (_runLock)
         {
-            _currentRun?.RecordFirst(filePath, snapPath);
-            _currentRun?.CountWrite();
+            Run?.RecordFirst(filePath, snapPath);
+            Run?.CountWrite();
         }
     }
 
