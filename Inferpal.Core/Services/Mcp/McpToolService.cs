@@ -286,12 +286,17 @@ internal sealed class McpToolService : IAsyncDisposable
             // An editor's server signed in to keeps its sign-in while the editor passes it.
             ForgetSignInsOfRemovedServers(servers, rejected, [.. repository.Names, .. given.Select(g => g.Name)]);
             // The editor's servers come last, and a name already taken is the user's own server: said, not started twice.
-            var taken = servers.Select(s => s.Name).Concat(rejected.Select(r => r.Name)).Concat(repository.Names)
-                               .ToHashSet(StringComparer.Ordinal);
-            var fromEditor = given.Where(g => !taken.Contains(g.Name)).ToList();
-            var shadowed = given.Where(g => taken.Contains(g.Name))
-                                .Select(g => new McpServerStatus(g.Name, false, 0,
-                                    "the editor passes a server of this name, and Inferpal's own server of the same name runs instead"))
+            // Taken by the names its tools would carry, like a repository's server (see RepositoryServersAsync).
+            var taken = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var name in servers.Select(s => s.Name).Concat(rejected.Select(r => r.Name)).Concat(repository.Names))
+                taken.TryAdd(McpTool.ToolNamesOf(name), name);
+            var fromEditor = given.Where(g => !taken.ContainsKey(McpTool.ToolNamesOf(g.Name))).ToList();
+            var shadowed = given.Where(g => taken.ContainsKey(McpTool.ToolNamesOf(g.Name)))
+                                .Select(g => taken[McpTool.ToolNamesOf(g.Name)] is var own && own == g.Name
+                                    ? new McpServerStatus(g.Name, false, 0,
+                                        "the editor passes a server of this name, and Inferpal's own server of the same name runs instead")
+                                    : new McpServerStatus(g.Name, false, 0,
+                                        $"the editor passes a server whose tools would carry the same names as those of '{own}', which runs instead"))
                                 .ToList();
             // ⚠ In PARALLEL, keeping the configured order. Each start has its own handshake budget:
             // serially, an unreachable server made every later one pay it, lock held — and so did
@@ -428,14 +433,22 @@ internal sealed class McpToolService : IAsyncDisposable
             Diagnostics.Record("Mcp", $"Repository MCP file {p.Source}{(p.Name is null ? "" : $", server '{p.Name}'")} ignored: {p.Reason}.");
         }
 
-        var taken = new HashSet<string>(configured, StringComparer.Ordinal);
+        // ⚠ Taken by the names its TOOLS would carry, not by its own name: "my.server" and the user's "my-server" serve
+        // the same tool names, and the snapshot gives the bare one to whichever server has tools at the moment — while
+        // the user's server reconnects or fails, the repository's tool answered to the name the user had said "Always"
+        // to, and ran unasked.
+        var taken = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var name in configured) taken.TryAdd(McpTool.ToolNamesOf(name), name);
         foreach (var server in scan.Servers)
         {
             names.Add(server.Name);
-            if (!taken.Add(server.Name))
+            if (!taken.TryAdd(McpTool.ToolNamesOf(server.Name), server.Name))
             {
-                notStarted.Add(new McpServerStatus(server.Name, false, 0,
-                    $"{server.Source}: not started — a server named '{server.Name}' is declared earlier, and that one runs"));
+                var earlier = taken[McpTool.ToolNamesOf(server.Name)];
+                notStarted.Add(new McpServerStatus(server.Name, false, 0, earlier == server.Name
+                    ? $"{server.Source}: not started — a server named '{server.Name}' is declared earlier, and that one runs"
+                    : $"{server.Source}: not started — its tools would carry the same names as those of '{earlier}', " +
+                      "declared earlier, which runs instead"));
                 continue;
             }
             if (!Consents.IsAgreed(root, server))

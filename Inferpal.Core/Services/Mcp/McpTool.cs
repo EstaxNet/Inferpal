@@ -85,6 +85,12 @@ internal sealed class McpTool : ITool
 
     private const string Prefix = "mcp__";
 
+    /// <summary>
+    /// What every tool of a server named <paramref name="serverName"/> is called by: two servers with the same value
+    /// serve tools under the same names (<c>my-server</c> and <c>my.server</c> both give <c>mcp__my_server__*</c>).
+    /// </summary>
+    internal static string ToolNamesOf(string serverName) => BuildName(serverName, string.Empty);
+
     /// <summary>True when <paramref name="toolName"/> is a tool served by an MCP server — whose schema a third party
     /// wrote, free-form objects included.</summary>
     internal static bool IsMcpName(string toolName) => toolName.StartsWith(Prefix, StringComparison.Ordinal);

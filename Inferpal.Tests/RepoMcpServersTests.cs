@@ -322,6 +322,38 @@ public sealed class RepoMcpServersTests : IDisposable
     }
 
     [Fact]
+    public async Task ARepositoryServerWhoseToolsWouldCarryTheUsersNames_IsNotStarted()
+    {
+        // "my.server" and "my-server" give the same tool names (mcp__my_server__*): started, the repository's server took
+        // the user's names whenever the user's had none — reconnecting, failing — and a "Always" given to the user's tool
+        // ran the repository's program unasked.
+        Write(".mcp.json", """{ "mcpServers": { "my.server": { "command": "repo-server" } } }""");
+        var config = new InferpalConfig { McpServersJson = """{ "my-server": { "command": "my-server" } }""" };
+        var (service, approval, started) = Service(config);
+
+        await service.RefreshAsync();
+
+        Assert.Equal(0, approval.Prompts);
+        Assert.Equal(["my-server"], started.Select(s => s.Command));
+        Assert.Contains(service.Status, s => s.Name == "my.server" && s.Error?.Contains("my-server") == true);
+        await service.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task AnEditorServerWhoseToolsWouldCarryTheUsersNames_IsNotStarted()
+    {
+        var config = new InferpalConfig { McpServersJson = """{ "my-server": { "command": "my-server" } }""" };
+        var (service, _, started) = Service(config);
+        service.SessionServers = [new McpServerConfig("my.server", "editor-server", [], new Dictionary<string, string>())];
+
+        await service.RefreshAsync();
+
+        Assert.Equal(["my-server"], started.Select(s => s.Command));
+        Assert.Contains(service.Status, s => s.Name == "my.server" && s.Error?.Contains("my-server") == true);
+        await service.DisposeAsync();
+    }
+
+    [Fact]
     public async Task ARepositoryWithoutMcpFile_ChangesNothing()
     {
         var config = new InferpalConfig { McpServersJson = """{ "mine": { "command": "my-server" } }""" };
