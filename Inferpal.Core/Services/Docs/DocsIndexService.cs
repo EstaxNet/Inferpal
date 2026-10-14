@@ -353,22 +353,23 @@ internal sealed class DocsIndexService
             // stored without a vector. `/docs reindex` being the ONLY remedy the product names for
             // that hole, a remedy whose cost scales with the whole corpus is the operation most
             // likely to re-create it.
-            // ⚠ Reuse reads the IN-MEMORY chunks, which `ReadFromDbAsync` has already stripped of
-            // vectors produced by another embedding model — so that guard stays the single place
-            // deciding it, and cannot be forgotten here.
+            // ⚠ Reuse reads the IN-MEMORY chunks, whose vectors are those of the model they were read or made with
+            // (`_queryModel`: `ReadFromDbAsync` strips the others). The model of THIS pass is the one configured now — a
+            // setting changed since, a /import, a model pulled: reused under its name, the old vectors were recorded as
+            // its own, noise for every query under a ✅. Reuse only when the two are the same model.
             // ⚠ Only a chunk that HAS a vector is reusable: re-embedding the hole is the point.
+            var embModel = await EmbeddingModels.ChooseAsync(_config, _client, _queryModel, ct);
             var reusable = new Dictionary<(string Url, string Hash), float[]>();
             await _chunkLock.WaitAsync(ct);
             try
             {
-                foreach (var c in _chunks)
-                    if (string.Equals(c.DocId, site.Id, StringComparison.OrdinalIgnoreCase)
-                        && c.Embedding is { Length: > 0 } vector)
-                        reusable[(c.Url, c.ContentHash)] = vector;
+                if (embModel is not null && string.Equals(embModel, _queryModel, StringComparison.Ordinal))
+                    foreach (var c in _chunks)
+                        if (string.Equals(c.DocId, site.Id, StringComparison.OrdinalIgnoreCase)
+                            && c.Embedding is { Length: > 0 } vector)
+                            reusable[(c.Url, c.ContentHash)] = vector;
             }
             finally { _chunkLock.Release(); }
-
-            var embModel = await EmbeddingModels.ChooseAsync(_config, _client, _queryModel, ct);
             for (int i = 0; i < chunks.Count; i++)
             {
                 ct.ThrowIfCancellationRequested();

@@ -97,6 +97,27 @@ public sealed class DocsReindexReusesUnchangedTests : IDisposable
     }
 
     [Fact]
+    public async Task AModelChangedWhileOpen_ReEmbedsEverything_InsteadOfReusingTheOldModelsVectors()
+    {
+        // The vectors in memory are the old model's; the pass embeds with the one configured NOW (a setting changed, a
+        // /import, an embedding model pulled). Reused under the new model's name, they were recorded as its own: noise
+        // for every query — same dimensions — under a ✅, the hole counter at 0, kept by every later re-index.
+        var client = Provider();
+        var config = new InferpalConfig { RagEmbeddingModel = "model-a" };
+        var docs   = new DocsIndexService(client.Client, config) { CrawlForTests = (_, _) => Task.FromResult(OnePage(Body("alpha"))) };
+
+        await docs.AddOrReindexAsync(Site, progress: null, CancellationToken.None);
+        var first = client.Calls;
+        Assert.True(first > 0, "the first pass embedded nothing: this test would measure nothing.");   // WITNESS
+
+        config.RagEmbeddingModel = "model-b";
+        await docs.AddOrReindexAsync(Site, progress: null, CancellationToken.None);
+
+        Assert.Equal(2 * first, client.Calls);   // every chunk embedded again, by model-b
+        Assert.Equal("model-b", docs.QueryEmbeddingModel);
+    }
+
+    [Fact]
     public async Task APageWhoseTextChanged_IsReEmbedded()
     {
         // REFERENCE ARM: without it, "reuse everything" passes the test above and serves vectors

@@ -279,6 +279,34 @@ public sealed class ProjectIndexServiceWatcherTests : IDisposable
     }
 
     [Fact]
+    public async Task AFileSavedAfterTheModelChanged_IsEmbeddedByTheIndexsModel_NotTheNewOne()
+    {
+        // The vectors in memory and every query are those of the model the last pass chose. A saved file re-embedded with
+        // a model configured since was noise for every query (another model, the same dimensions) until the next pass.
+        var file = Path.Combine(_root, "Gamma.cs");
+        await File.WriteAllTextAsync(file, SampleClass("Gamma"));
+        var provider = new FakeInferenceProvider { OnEmbedding = _ => [0.5f, 0.5f] };
+        var config   = new InferpalConfig { RagEnabled = true, RagEmbeddingModel = "embed-model" };
+        var svc      = new ProjectIndexService(provider, config, new LspSemanticProvider()) { DebounceMs = 100 };
+        _services.Add(svc);
+        svc.StartIndexing(_root);
+        await WaitUntilAsync(() => Task.FromResult(svc.Status.Contains('✅')), "the initial pass is finished", () => svc.Status);
+        Assert.Contains(provider.EmbeddingRequests, r => r.Model == "embed-model");   // WITNESS: the pass embedded
+        var before = (await svc.GetFileChunksAsync(file, _root, CancellationToken.None)).First();
+
+        config.RagEmbeddingModel = "other-model";
+        provider.EmbeddingRequests.Clear();
+        await File.WriteAllTextAsync(file, SampleClass("GammaChanged"));
+        await WaitUntilAsync(async () =>
+            (await svc.GetFileChunksAsync(file, _root, CancellationToken.None)).FirstOrDefault() is { } now
+            && now.ContentHash != before.ContentHash, "re-indexing the changed file");
+
+        Assert.NotEmpty(provider.EmbeddingRequests);
+        Assert.All(provider.EmbeddingRequests, r => Assert.Equal("embed-model", r.Model));
+        Assert.Equal("embed-model", svc.QueryEmbeddingModel);
+    }
+
+    [Fact]
     public async Task WatcherReindex_ReusesEmbeddings_ForUnchangedChunks()
     {
         var file   = Path.Combine(_root, "Beta.cs");

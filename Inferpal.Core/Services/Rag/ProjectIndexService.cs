@@ -1079,8 +1079,11 @@ internal sealed class ProjectIndexService : IDisposable
     private async Task ReIndexFilesCoreAsync(string[] changedFiles, string rootDir, CancellationToken ct)
     {
         var db       = new RagDatabase(rootDir);
-        // The field if set, else the model the last pass chose: a re-index never lists the backend's models.
-        var embModel = EmbeddingModels.Configured(_config) ?? EmbeddingModels.ModelOfIdentity(_indexedEmbeddingModel);
+        // ⚠ The model the last pass chose, while the index has one: the vectors in memory and every query are that
+        // model's. A file re-embedded with a model configured since was noise for every query — another model, the same
+        // dimensions — until the next pass, which re-embeds everything with the new one. The field only for an index
+        // that has no model yet; a re-index never lists the backend's models.
+        var embModel = EmbeddingModels.ModelOfIdentity(_indexedEmbeddingModel) ?? EmbeddingModels.Configured(_config);
         // The vectors in memory came from the last pass's model: a model changed since cannot reuse them.
         var canReuse = string.Equals(EmbeddingModels.CodeIndexIdentity(embModel), _indexedEmbeddingModel,
                                      StringComparison.Ordinal);
