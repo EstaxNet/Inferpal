@@ -141,15 +141,32 @@ internal static class ChatTurnPolicy
     /// "✓ build passed". ⚠ Four checks, not two: an edit's Smart Fix note is a build too (a turn that ENDED on its
     /// compilation errors said nothing), and the model running pytest by hand is a check like any other, judged on
     /// the exit code, never on words.
+    /// ⚠ The last check that PROVED something, not the last one: a test run renamed away and filtered on a name that no
+    /// longer exists ("no test matched"), a build that found no project, prove nothing — and taken as the last word, they
+    /// erased the red run before them: no notice, no "failed" on the bar. A check that proved nothing is said only when
+    /// no check proved anything.
     /// </remarks>
     internal static CheckVerdict? LastCheck(IEnumerable<ToolExecution> executions)
     {
-        var last = executions.LastOrDefault(e => e.Name is "run_tests" or "get_diagnostics"
-                                              || (IsFileEdit(e.Name) && CodeActions.SmartFixValidator.ReadVerdict(e.Output) is not null)
-                                              || (e.Name == "run_command" && CheckCommand.Failed(e.Input, e.Output) is not null));
+        CheckVerdict? lastUnproven = null;
+        foreach (var e in executions.Reverse())
+        {
+            if (CheckOf(e) is not { } verdict) continue;
+            if (verdict.Failed is not null) return verdict;
+            lastUnproven ??= verdict;
+        }
+        return lastUnproven;
+    }
+
+    /// <summary>What one execution says as a check — <c>null</c> when it is not one.</summary>
+    private static CheckVerdict? CheckOf(ToolExecution last)
+    {
+        if (!(last.Name is "run_tests" or "get_diagnostics"
+              || (IsFileEdit(last.Name) && CodeActions.SmartFixValidator.ReadVerdict(last.Output) is not null)
+              || (last.Name == "run_command" && CheckCommand.Failed(last.Input, last.Output) is not null)))
+            return null;
         return last switch
         {
-            null => null,
             { Name: "get_diagnostics" } => new CheckVerdict(CheckKind.Build, Tools.GetDiagnosticsTool.ReadVerdict(last.Output) switch
             {
                 Tools.GetDiagnosticsTool.BuildVerdict.Errors => true,
