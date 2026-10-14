@@ -326,6 +326,26 @@ public class VsixPackagingTests
     }
 
     [Fact]
+    public void TheCompilerChecksTheDocumentation_AndTheDocumentationFileShipsNowhere()
+    {
+        // Without the documentation file the compiler reads no doc comment at all: a <param> naming a parameter that
+        // is gone, a cref to a renamed member, a doc comment on no member all stay wrong in silence. With it, the
+        // build reports them (as errors in Release). And the file must not travel: copied next to each assembly, it
+        // would enter the VSIX and the VS Code host as dead weight.
+        var props = File.ReadAllText(Path.Combine(RepoRoot(), "Directory.Build.props"));
+        Assert.Contains("<GenerateDocumentationFile>true</GenerateDocumentationFile>", props);
+        Assert.Contains("<CopyDocumentationFileToOutputDirectory>false</CopyDocumentationFileToOutputDirectory>", props);
+        Assert.Contains("<PublishDocumentationFile>false</PublishDocumentationFile>", props);
+        Assert.Contains("<PublishReferencesDocumentationFiles>false</PublishReferencesDocumentationFiles>", props);
+
+        // Witness: the assemblies under test really sit in the folder read, and no documentation file sits with them.
+        Assert.True(File.Exists(Path.Combine(AppContext.BaseDirectory, "Inferpal.Core.dll")),
+            "Inferpal.Core.dll is not next to the tests: the check reads the wrong folder.");
+        var copied = Directory.EnumerateFiles(AppContext.BaseDirectory, "Inferpal*.xml").Select(Path.GetFileName).ToList();
+        Assert.True(copied.Count == 0, $"Documentation files copied to the build output: {string.Join(", ", copied)}");
+    }
+
+    [Fact]
     public void TheFlattenedSatellitePrune_RunsLateEnoughToSeeTheDuplicate()
     {
         // VSSDK packaging adds a DUPLICATE of the `de` satellite, flattened at the root of the

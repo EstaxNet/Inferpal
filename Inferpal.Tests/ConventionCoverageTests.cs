@@ -2553,8 +2553,9 @@ public class ConventionCoverageTests
         // with it: the new member shows two summaries, the first of them about a neighbour, and the member that summary
         // describes is left with none. IntelliSense and every reader then see the wrong text on both members, and
         // nothing fails — the compiler does not check that a member has one summary.
-        // ⚠ The subject is the OWNER of the documentation: a member, a parameter of a positional record (which carries
-        // its own summary), or nothing at all — a documentation comment inside a body documents no member.
+        // ⚠ The subject is the OWNER of the documentation: a member, or nothing at all — a documentation comment inside a
+        // body, or on a positional parameter of a record (where the compiler ignores it: that parameter is documented by
+        // a <param> tag on the record), documents no member.
         var offenders  = new List<string>();
         var documented = 0;
 
@@ -2575,7 +2576,7 @@ public class ConventionCoverageTests
                     ? null
                     : trivia.Token.Parent?.AncestorsAndSelf()
                         .FirstOrDefault(n => n is MemberDeclarationSyntax or ParameterSyntax or StatementSyntax or AccessorDeclarationSyntax);
-                if (owner is not (MemberDeclarationSyntax or ParameterSyntax))
+                if (owner is not MemberDeclarationSyntax)
                 {
                     offenders.Add($"{Rel(file)}({line}) : documentation comment attached to no member");
                     continue;
@@ -2614,7 +2615,6 @@ public class ConventionCoverageTests
             EnumMemberDeclarationSyntax e => e.Identifier.ValueText,
             ConstructorDeclarationSyntax c => c.Identifier.ValueText + " (constructor)",
             BaseFieldDeclarationSyntax f  => string.Join(", ", f.Declaration.Variables.Select(v => v.Identifier.ValueText)),
-            ParameterSyntax p             => p.Identifier.ValueText + " (parameter)",
             _                             => owner.Kind().ToString(),
         };
     }

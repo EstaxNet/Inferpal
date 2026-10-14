@@ -170,7 +170,7 @@ internal static class FixPromptBuilder
 
     /// <summary>
     /// Every distinct path named, in order of first appearance, with the lines its diagnostics point at — the cap
-    /// is <see cref="Build"/>'s, which names what it leaves out.
+    /// is <see cref="Build(string)"/>'s, which names what it leaves out.
     /// </summary>
     private static List<(string Path, List<int> Lines)> ExtractErrorSites(string diagnosticOutput)
     {

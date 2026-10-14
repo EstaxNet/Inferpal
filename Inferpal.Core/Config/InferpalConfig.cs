@@ -305,8 +305,8 @@ internal class InferpalConfig
     public bool RagEnabled { get; set; } = true;
 
     /// <summary>
-    /// Model used to generate embedding vectors for RAG indexing. Empty string falls back to
-    /// <see cref="Services.Inference.EmbeddingModels.Default"/>; read through <c>EmbeddingModels.Resolve</c>, never here.
+    /// Model used to generate embedding vectors for RAG indexing. Empty string falls back to the best
+    /// embedding model installed; read through <see cref="Services.Inference.EmbeddingModels.ChooseAsync"/>, never here.
     /// </summary>
     [JsonPropertyName("ragEmbeddingModel")]
     public string RagEmbeddingModel { get; set; } = string.Empty;
@@ -348,7 +348,7 @@ internal class InferpalConfig
     /// MCP server definitions as a JSON object keyed by server name, following the
     /// Claude Desktop / Continue convention:
     /// <code>{ "filesystem": { "command": "npx", "args": ["-y","@modelcontextprotocol/server-filesystem","C:\\dev"], "env": {} } }</code>
-    /// Empty = no servers. Parsed by <see cref="Services.Mcp.McpServerConfig.Parse"/>.
+    /// Empty = no servers. Parsed by <see cref="Services.Mcp.McpServerConfig.Parse(string)"/>.
     /// </summary>
     [CollectionSetting(CollectionShape.JsonObjectByName)]
     [JsonPropertyName("mcpServersJson")]

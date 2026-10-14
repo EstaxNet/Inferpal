@@ -722,7 +722,7 @@ internal static class Strings
     /// {1} = server.
     /// </summary>
     /// <remarks>
-    /// ⚠ Replaces <see cref="MsgEmptyResponse"/> on the paths that know the model and the server.
+    /// ⚠ Replaces the generic empty-response message on the paths that know the model and the server.
     /// The old text asserted "the configured model may not support text generation — try the
     /// default chat model": a cause the code cannot know, shown at the exact place a user looks to
     /// find out why nothing works. Reported from a machine on the network; measuring the server it

@@ -5,7 +5,7 @@ using System.Text;
 namespace Inferpal.Services.Shell;
 
 /// <summary>
-/// Tracks detached background commands launched by <see cref="RunCommandTool"/>. Each job runs in
+/// Tracks detached background commands launched by <see cref="Tools.RunCommandTool"/>. Each job runs in
 /// its own <c>powershell.exe</c> whose stdout/stderr are streamed into a growing buffer; the model
 /// reads new output incrementally via <c>poll</c> and terminates a job via <c>stop</c>. One
 /// instance per workspace (held by the tool registry).

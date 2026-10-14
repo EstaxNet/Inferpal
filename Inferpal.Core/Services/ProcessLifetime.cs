@@ -17,7 +17,7 @@ namespace Inferpal.Services;
 /// </para>
 /// <para>
 /// <b>Windows</b> — one job object per process, <c>KILL_ON_JOB_CLOSE</c>, every child assigned to it as soon as it
-/// has started (<see cref="Bind"/>). Only this process holds the handle, and it is not inheritable: when the process
+/// has started (<see cref="Bind(Process)"/>). Only this process holds the handle, and it is not inheritable: when the process
 /// ends, by any means, the handle closes and Windows kills everything in the job — a child's own children included,
 /// since they are born in its job. <c>BREAKAWAY_OK</c>: a program that explicitly asks to leave
 /// (<c>CREATE_BREAKAWAY_FROM_JOB</c>) is let go instead of failing to start.
@@ -182,7 +182,7 @@ internal static class ProcessLifetime
     /// <summary>
     /// Makes this process the leader of a process group of its own and arms the watchdog that kills the group when this
     /// process ends. For a process that owns its children outright — the VS Code host; nothing on Windows, where
-    /// <see cref="Bind"/> does it child by child. Call it before the first child starts.
+    /// <see cref="Bind(Process)"/> does it child by child. Call it before the first child starts.
     /// </summary>
     /// <remarks>
     /// ⚠ The watchdog is armed ONLY once the group is verified to be this process's own (<c>getpgrp() == pid</c>): the

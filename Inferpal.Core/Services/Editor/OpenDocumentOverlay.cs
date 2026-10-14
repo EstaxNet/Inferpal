@@ -16,7 +16,7 @@ internal readonly record struct UnsavedDocument(string Path, string? Text);
 /// <para>
 /// Two ways to feed it. <b>Pushed</b> (VS Code): LSP-style <c>didOpen</c>/<c>didChange</c>/<c>didClose</c>
 /// notifications from the editor adapter, so it is current at every moment. <b>Pulled</b> (Visual Studio): a source
-/// the overlay asks, at <see cref="RefreshAsync"/>, which documents hold unsaved changes NOW — the tool registry asks
+/// the overlay asks, at <see cref="RefreshAsync(CancellationToken)"/>, which documents hold unsaved changes NOW — the tool registry asks
 /// before every tool call, and a writing tool asks again after its approval.
 /// ⚠ Pulled, never mirrored from events there: a mirror that missed one save would keep calling a saved file
 /// "unsaved", and refuse every legitimate write to it until the next keystroke.
@@ -200,7 +200,7 @@ internal sealed class OpenDocumentOverlay
     }
 
     /// <summary>Whether the editor holds changes to <paramref name="path"/> that the disk does not — as of the last
-    /// notification, or the last <see cref="RefreshAsync"/>.</summary>
+    /// notification, or the last <see cref="RefreshAsync(CancellationToken)"/>.</summary>
     public bool HasUnsavedChanges(string path) =>
         _docs.TryGetValue(Normalize(path), out var entry) && entry.Unsaved;
 

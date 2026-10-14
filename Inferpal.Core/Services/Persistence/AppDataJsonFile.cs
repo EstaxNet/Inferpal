@@ -30,7 +30,7 @@ namespace Inferpal.Services.Persistence;
 /// empty list, first addition, a hundred snippets replaced by one.
 /// </para>
 /// <para>
-/// Hence <paramref name="preserveUnreadable"/>: the distinction lives in a <b>parameter</b>, not in
+/// Hence <c>preserveUnreadable</c>: the distinction lives in a <b>parameter</b>, not in
 /// this paragraph. Disposable documents keep the cheap path; the ones that carry what the user
 /// wrote are set aside before being overwritten.
 /// </para>

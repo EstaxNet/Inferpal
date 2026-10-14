@@ -289,7 +289,7 @@ internal static class Diagnostics
     }
 
     /// <summary>
-    /// <see cref="Record"/> for a note that would otherwise repeat <b>per item</b> — once per
+    /// <see cref="Record(string, string)"/> for a note that would otherwise repeat <b>per item</b> — once per
     /// distinct <paramref name="key"/>, forgotten by <see cref="Clear"/> like
     /// <see cref="DroppedLineOnce"/>, with which it shares its memory.
     /// </summary>

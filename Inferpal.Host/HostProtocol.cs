@@ -65,51 +65,54 @@ internal sealed record InitializeResult(
 
 /// <summary>`chat/send` — one user turn. Tokens/steps stream back as notifications.</summary>
 /// <param name="AgentMode">Overrides the configured agent-mode switch for this turn; null = config.</param>
+/// <param name="AttachedPaths">Workspace-relative (or full) paths of files the adapter inlined as attachments —
+/// lets the RAG auto-context skip their chunks (parity with the VS VM, revue lot 4).</param>
 /// <param name="CodeAction">A read-only code action (<c>/explain</c>, <c>/review</c>): answered by the code-actions
 /// model, without tools, as in Visual Studio — whatever the agent-mode switch says.</param>
 /// <param name="Query">The question as the user wrote it, before the adapter appended the attached files: what the
 /// per-turn auto-context searches for, as Visual Studio searches the typed text. Null = <paramref name="Prompt"/>.</param>
+/// <param name="ModelOverridesRoles"><see cref="Model"/> is a model the user picked for this thread: it answers
+/// whatever the turn's role — an ACP client sends one only after a pick, so the per-role models stay reachable
+/// otherwise.</param>
 internal sealed record ChatSendParams(
     string Prompt, string? Model = null, bool? AgentMode = null,
-    /// <summary>Workspace-relative (or full) paths of files the adapter inlined as attachments —
-    /// lets the RAG auto-context skip their chunks (parity with the VS VM, revue lot 4).</summary>
     List<string>? AttachedPaths = null,
     bool CodeAction = false,
     string? Query = null,
-    /// <summary><see cref="Model"/> is a model the user picked for this thread: it answers whatever the turn's role —
-    /// an ACP client sends one only after a pick, so the per-role models stay reachable otherwise.</summary>
     bool ModelOverridesRoles = false);
 
 /// <summary>Final outcome of a turn. <paramref name="Text"/> holds the partial stream on cancel.</summary>
+/// <param name="EndNotice">Why the run stopped, when it is not because the model was done. The answer stays in
+/// <see cref="Text"/>; this is added after it, never in its place.</param>
+/// <param name="ContextWindow">The window this turn was measured against — the loaded one when the server reports a
+/// smaller one than configured. The adapter's context gauge shows this, not the setting. 0 = unknown.</param>
+/// <param name="NextTurnTokens">What the next question will send, in tokens: the conversation plus the tool definitions
+/// (<c>ContextManager.NextTurnLoad</c>) — the fill the context gauge shows, the X-Ray's figure. Not
+/// <see cref="PromptTokens"/>, which measured this turn's last request, the run's own transcript included.</param>
+/// <param name="Run">The run of the turn — its steps, the files it changed, its last check — for the line under the
+/// answer and the result bar; <c>null</c> when no tool ran.</param>
+/// <param name="Duration">How long the turn took, as the answer's header shows it ("21 s").</param>
+/// <param name="Model">The model that answered.</param>
+/// <param name="QuestionKept">False when the turn stopped before its question entered the history (a Stop during the
+/// context build): Regenerate then has nothing to take back — taking back "the last question" would remove the one
+/// before.</param>
+/// <param name="Ended">Why the turn ended short of the model finishing, as a fact rather than a sentence:
+/// <c>iterationLimit</c> (the run reached its tool-call budget) or <c>cut</c> (the answer stopped at the length limit);
+/// <c>null</c> otherwise. <see cref="EndNotice"/> says it to the user; this is for an adapter that maps it to its own
+/// vocabulary.</param>
 internal sealed record ChatSendResult(
     string  Text,
     bool    Cancelled,
     int     TokensUsed,
     int     PromptTokens,
     string? Error = null,
-    /// <summary>Why the run stopped, when it is not because the model was done. The answer stays in
-    /// <see cref="Text"/>; this is added after it, never in its place.</summary>
     string? EndNotice = null,
-    /// <summary>The window this turn was measured against — the loaded one when the server reports a
-    /// smaller one than configured. The adapter's context gauge shows this, not the setting. 0 = unknown.</summary>
     int     ContextWindow = 0,
-    /// <summary>What the next question will send, in tokens: the conversation plus the tool definitions
-    /// (<c>ContextManager.NextTurnLoad</c>) — the fill the context gauge shows, the X-Ray's figure. Not
-    /// <see cref="PromptTokens"/>, which measured this turn's last request, the run's own transcript included.</summary>
     int     NextTurnTokens = 0,
-    /// <summary>The run of the turn — its steps, the files it changed, its last check — for the line under the answer
-    /// and the result bar; <c>null</c> when no tool ran.</summary>
     RunSummaryDto? Run = null,
-    /// <summary>How long the turn took, as the answer's header shows it ("21 s").</summary>
     string? Duration = null,
-    /// <summary>The model that answered.</summary>
     string? Model = null,
-    /// <summary>False when the turn stopped before its question entered the history (a Stop during the context build):
-    /// Regenerate then has nothing to take back — taking back "the last question" would remove the one before.</summary>
     bool    QuestionKept = true,
-    /// <summary>Why the turn ended short of the model finishing, as a fact rather than a sentence: <c>iterationLimit</c>
-    /// (the run reached its tool-call budget) or <c>cut</c> (the answer stopped at the length limit); <c>null</c>
-    /// otherwise. <see cref="EndNotice"/> says it to the user; this is for an adapter that maps it to its own vocabulary.</summary>
     string? Ended = null);
 
 /// <summary>One agent run as the chat shows it (<see cref="Services.Presentation.RunSummaryModel"/>).</summary>
@@ -459,10 +462,10 @@ internal sealed record SessionRefParams(string Name);
 
 /// <summary>`session/list` entry. <paramref name="Parent"/>/<paramref name="ForkTurn"/> are set on
 /// branches (<c>/branch</c>) so the adapter can show the family in its session picker.</summary>
+/// <param name="WorkspaceRoot">The workspace the session was saved from; null for a session
+/// saved before it was recorded, or by an editor that does not record it.</param>
 internal sealed record SessionSummaryDto(string Name, DateTime SavedAt, int MessageCount, string Preview,
                                          string? Parent = null, int? ForkTurn = null,
-                                         /// <summary>The workspace the session was saved from; null for a session
-                                         /// saved before it was recorded, or by an editor that does not record it.</summary>
                                          string? WorkspaceRoot = null);
 
 /// <summary>`mcp/sessionServers` — the MCP servers the editor hands this session (an ACP client's <c>mcpServers</c>).</summary>
@@ -510,27 +513,29 @@ internal sealed record SettingsOptionDto(string Value, string Text, string? Desc
 
 /// <summary>An editable setting: <paramref name="Label"/>/<paramref name="Hint"/> are resource
 /// names the adapter resolves against `settings/strings`.</summary>
+/// <param name="DefaultValue">Factory value of a numeric field, so the panel can honour "clearing the box restores
+/// the default" - the affordance the Visual Studio window applies and this one ignored.</param>
+/// <param name="Inverted">A check box showing the opposite of the stored boolean.</param>
+/// <param name="OpensFold">A value other than <paramref name="DefaultValue"/> opens the page's advanced sections.</param>
+/// <param name="HintNotOllama">Resource name of the hint shown instead when the selected server is not Ollama.</param>
+/// <param name="Editor">The structured editor of a list setting: pinnedFiles | mcpServers | approvalRules |
+/// nameValue.</param>
+/// <param name="ZeroIsEmpty">A numeric box whose 0 means "not set": shown empty.</param>
+/// <param name="EmptyChoice">Resource name of what an optional model list shows for its empty value ("Same as
+/// chat").</param>
+/// <param name="Columns">Resource names of a nameValue table's column headers.</param>
+/// <param name="Min">Bounds of a numeric box: a value outside them is named and not saved, as in the VS window.</param>
 internal sealed record SettingsFieldDto(
     string Key, string Kind, string Label, string? Hint, string? Unit, string? Button,
     List<SettingsOptionDto>? Options,
-    /// <summary>Factory value of a numeric field, so the panel can honour "clearing the box restores
-    /// the default" - the affordance the Visual Studio window applies and this one ignored.</summary>
     string? DefaultValue = null,
-    /// <summary>A check box showing the opposite of the stored boolean.</summary>
     bool Inverted = false,
-    /// <summary>A value other than <paramref name="DefaultValue"/> opens the page's advanced sections.</summary>
     bool OpensFold = false,
-    /// <summary>Resource name of the hint shown instead when the selected server is not Ollama.</summary>
     string? HintNotOllama = null,
-    /// <summary>The structured editor of a list setting: pinnedFiles | mcpServers | approvalRules | nameValue.</summary>
     string? Editor = null,
-    /// <summary>A numeric box whose 0 means "not set": shown empty.</summary>
     bool ZeroIsEmpty = false,
-    /// <summary>Resource name of what an optional model list shows for its empty value ("Same as chat").</summary>
     string? EmptyChoice = null,
-    /// <summary>Resource names of a nameValue table's column headers.</summary>
     List<string>? Columns = null,
-    /// <summary>Bounds of a numeric box: a value outside them is named and not saved, as in the VS window.</summary>
     int? Min = null,
     int? Max = null);
 

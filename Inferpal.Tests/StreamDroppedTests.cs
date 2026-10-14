@@ -17,7 +17,7 @@ namespace Inferpal.Tests;
 public class StreamDroppedTests
 {
     /// <summary>
-    /// A server that answers 200, announces a body longer than it sends, writes <paramref name="firstChunk"/> and
+    /// A server that answers 200, announces a body longer than it sends, writes <c>firstChunk</c> and
     /// closes the socket — the reader sees the stream end prematurely, as when the process behind it dies.
     /// </summary>
     private sealed class DroppingServer : IDisposable

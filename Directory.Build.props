@@ -20,6 +20,18 @@
 
     <!-- Neutral fallback culture for the ResourceManager (EN) -->
     <NeutralLanguage>en</NeutralLanguage>
+
+    <!-- The compiler checks the XML documentation: a <param> or <paramref> naming a parameter that
+         does not exist, a cref that resolves to nothing, malformed XML, a doc comment on no member.
+         Without the documentation file the compiler reads none of it, and a doc that drifted from
+         its member stays wrong in silence. Missing documentation is not a defect here: neither an
+         undocumented member (CS1591) nor a parameter its neighbours' <param> tags leave out (CS1573).
+         ⚠ The file itself ships nowhere: it stays in obj, out of bin, the VSIX and the host publish. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <CopyDocumentationFileToOutputDirectory>false</CopyDocumentationFileToOutputDirectory>
+    <PublishDocumentationFile>false</PublishDocumentationFile>
+    <PublishReferencesDocumentationFiles>false</PublishReferencesDocumentationFiles>
+    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
   </PropertyGroup>
 
   <!-- No NuGet audit suppression is in force, and that is a measured state rather than an

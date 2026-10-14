@@ -5,7 +5,7 @@ namespace Inferpal.Services.Signals;
 
 /// <summary>
 /// File-based IPC channel that publishes the <em>currently open</em> Visual Studio solution
-/// from the in-process <see cref="GhostText.GhostTextPackage"/> (which can query
+/// from the in-process <c>GhostTextPackage</c> (which can query
 /// <c>IVsSolution</c> and subscribe to <c>IVsSolutionEvents</c>) to the out-of-process
 /// extension host (Commands, ToolWindow, tools) which cannot access VS COM services.
 /// </summary>

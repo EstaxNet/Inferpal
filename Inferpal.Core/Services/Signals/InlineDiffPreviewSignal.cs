@@ -43,7 +43,7 @@ internal sealed record InlineDiffAck(
 /// File-based IPC channel carrying an inline-diff preview request from the out-of-process
 /// extension host (where code actions run) to the in-process adornment renderer in devenv
 /// (<c>Inferpal.GhostText.InlineDiffController</c>) — same transport family as
-/// <see cref="ChatBusySignal"/>, with an acknowledgment leg so the host can fall back to a
+/// <c>ChatBusySignal</c>, with an acknowledgment leg so the host can fall back to a
 /// direct apply when no renderer picks the request up (view closed, MEF component missing).
 /// The decision itself (accept/reject per hunk) never crosses back: the renderer applies
 /// accepted hunks straight to the buffer, where native undo covers them.

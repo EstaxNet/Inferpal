@@ -32,7 +32,7 @@ internal enum ModelRole
 /// chains drift.
 /// </summary>
 /// <remarks>
-/// <see cref="Resolve"/> is a plain lookup table: an empty per-role override means "use the chat
+/// <see cref="Resolve(InferpalConfig, ModelRole, string)"/> is a plain lookup table: an empty per-role override means "use the chat
 /// model". One role goes further — <see cref="ResolveUtility"/> is the VRAM-aware auto mode
 /// (<c>modelRouterAuto</c>), which routes background work to the <c>/bench</c> pick only while it
 /// is already warm. Everywhere else the swap-cost economics stay with the user's choice of a small

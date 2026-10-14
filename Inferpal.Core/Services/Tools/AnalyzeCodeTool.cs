@@ -11,7 +11,7 @@ namespace Inferpal.Services.Tools;
 /// </summary>
 /// <remarks>
 /// The sub-tools each parse their own arguments from the shared <see cref="JsonElement"/> and
-/// ignore extras, so the facade simply forwards <paramref name="args"/> unchanged. The only
+/// ignore extras, so the facade simply forwards <c>args</c> unchanged. The only
 /// reserved name is <c>mode</c> (the strategy selector) — nexus's bridge filter was renamed to
 /// <c>bridges</c> to avoid the clash.
 /// </remarks>

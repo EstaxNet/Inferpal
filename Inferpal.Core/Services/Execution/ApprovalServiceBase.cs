@@ -12,7 +12,7 @@ internal enum ApprovalDecision { Deny = 0, Once = 1, Always = 2 }
 /// Editor-agnostic approval pipeline: pattern permission rules (per-machine config +
 /// workspace <c>.inferpal/permissions.json</c> overlay, first match wins), the hard denylist,
 /// the session-scoped "always allow" grants and the compiled-policy cache.
-/// Concrete services only supply the user-facing prompt (<see cref="PromptUserAsync"/>).
+/// Concrete services only supply the user-facing prompt (<see cref="PromptUserAsync(string, Services.CodeActions.DiffInfo, CancellationToken)"/>).
 /// </summary>
 internal abstract class ApprovalServiceBase : IApprovalService
 {

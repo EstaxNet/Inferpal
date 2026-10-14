@@ -16,8 +16,8 @@ namespace Inferpal.Services.Signals;
 /// cannot subscribe to it directly.
 /// </para>
 /// <para>
-/// Instead, the in-process <see cref="GhostText.GhostTextPackage"/> subscribes to build
-/// events via <see cref="GhostText.VsBuildEventHandler"/> and, on failure, writes a JSON
+/// Instead, the in-process <c>GhostTextPackage</c> subscribes to build
+/// events via <c>VsBuildEventHandler</c> and, on failure, writes a JSON
 /// signal file (see <see cref="BuildSignalFile"/>) that contains the solution path AND the
 /// error messages already collected from the VS Error List.
 /// <see cref="InitializeAsync"/> sets up a <see cref="FileSystemWatcher"/> on that file;
@@ -49,7 +49,7 @@ internal sealed class VsBuildMonitor : IDisposable
 
     /// <summary>
     /// Sets up a <see cref="FileSystemWatcher"/> that reacts to the signal file written by
-    /// the in-process <see cref="GhostText.GhostTextPackage"/> when a VS build fails.
+    /// the in-process <c>GhostTextPackage</c> when a VS build fails.
     /// Also checks for a signal that may have been written before the watcher was ready.
     /// Safe to call multiple times — only the first call has effect.
     /// </summary>
@@ -114,7 +114,7 @@ internal sealed class VsBuildMonitor : IDisposable
     /// Fires <see cref="BuildFailed"/> with whatever error information is available.
     /// <para>
     /// If the signal file contains errors collected in-process by
-    /// <see cref="GhostText.VsBuildEventHandler"/>, they are forwarded directly.
+    /// <c>VsBuildEventHandler</c>, they are forwarded directly.
     /// </para>
     /// <para>
     /// If the error list is empty (VS Error List was not yet populated when the signal was

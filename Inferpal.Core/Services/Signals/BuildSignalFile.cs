@@ -4,9 +4,9 @@ using System.Text.Json;
 namespace Inferpal.Services.Signals;
 
 /// <summary>
-/// Lightweight file-based IPC channel between the in-process <see cref="GhostText.GhostTextPackage"/>
+/// Lightweight file-based IPC channel between the in-process <c>GhostTextPackage</c>
 /// (which runs inside the VS process and can subscribe to COM build events via
-/// <c>IVsUpdateSolutionEvents</c>) and the out-of-process <see cref="VsBuildMonitor"/>
+/// <c>IVsUpdateSolutionEvents</c>) and the out-of-process <c>VsBuildMonitor</c>
 /// (which runs in the VisX extension host and cannot access VS COM services directly).
 ///
 /// <para>Protocol:</para>
@@ -41,7 +41,7 @@ internal static class BuildSignalFile
     /// <remarks>
     /// ⚠ Through <see cref="SignalFile.Write{T}"/> — stage then rename — and not for uniformity:
     /// this is the channel where a torn read does not degrade the signal, it <b>destroys</b> it.
-    /// <see cref="VsBuildMonitor.OnSignalFileEvent"/> calls <see cref="Clear"/>
+    /// <c>VsBuildMonitor.OnSignalFileEvent</c> calls <see cref="Clear"/>
     /// <b>unconditionally</b>, right after <see cref="TryRead"/>: a read that landed on the
     /// truncated file returns <c>default</c> and then deletes the real payload. The failure is then
     /// mute and total — no "build failed" banner, hence no "Fix with AI" entry into

@@ -169,7 +169,7 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
 
     /// <summary>Performs the <c>initialize</c> → <c>notifications/initialized</c> handshake, starting a
     /// fresh session. Also used to re-establish a session that the server has expired (see 404 handling
-    /// in <see cref="SendRequestAsync"/>).</summary>
+    /// in <see cref="SendRequestAsync(string, JsonNode, CancellationToken, bool)"/>).</summary>
     private async Task HandshakeAsync(CancellationToken ct)
     {
         var initParams = new JsonObject

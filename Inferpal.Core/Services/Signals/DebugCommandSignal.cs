@@ -46,14 +46,14 @@ internal sealed record DebugCommandResponse(
 /// <para>
 /// ⚠ Deliberately <b>not</b> a queue: one request at a time. A debugger is a single stateful
 /// machine, and two interleaved <c>continue</c> calls would race for the same stop event. The
-/// caller (<see cref="SignalDebugSession"/>) serialises.
+/// caller (<c>SignalDebugSession</c>) serialises.
 /// </para>
 /// </remarks>
 internal static class DebugCommandSignal
 {
     /// <summary>
     /// One request in flight per channel — structural, not per caller: there is a second client
-    /// (<see cref="Debugging.SignalTestDebugCapture"/>) beside <see cref="Debugging.SignalDebugSession"/>,
+    /// (<c>SignalTestDebugCapture</c>) beside <c>SignalDebugSession</c>,
     /// and two writers racing the same request/response files would cross their answers.
     /// </summary>
     internal static readonly SemaphoreSlim ChannelLock = new(1, 1);

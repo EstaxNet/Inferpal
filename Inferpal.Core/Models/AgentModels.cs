@@ -141,6 +141,10 @@ public class AgentPlan
 // ── Orchestrator result ───────────────────────────────────────────────────────
 
 /// <summary>Full result returned by <see cref="Inferpal.Services.Agent.AgentOrchestrator"/>.</summary>
+/// <param name="Failed">The run FAILED and <see cref="FinalResponse"/> is the message that says so — see
+/// <c>AgentResult.Failed</c>: shown, never kept as the answer the model gave.</param>
+/// <param name="AnswerRepeating">The cut answer was stopped because the model was repeating itself
+/// (<see cref="ChatTurnResult.StoppedRepeating"/>).</param>
 internal record OrchestratorResult(
     string               FinalResponse,
     AgentPlan?           Plan,
@@ -151,10 +155,7 @@ internal record OrchestratorResult(
     bool                 WasLoopDetected,
     bool                 ReachedIterationLimit,
     bool                 AnswerCut = false,
-    /// <summary>The run FAILED and <see cref="FinalResponse"/> is the message that says so — see
-    /// <c>AgentResult.Failed</c>: shown, never kept as the answer the model gave.</summary>
     bool                 Failed    = false,
-    /// <summary>The cut answer was stopped because the model was repeating itself (<see cref="ChatTurnResult.StoppedRepeating"/>).</summary>
     bool                 AnswerRepeating = false)
 {
     /// <summary>Creates an error result (no plan, no executions).</summary>
@@ -167,22 +168,23 @@ internal record OrchestratorResult(
 /// <summary>
 /// Result of one <c>/api/chat</c> HTTP call (streaming only — tool execution is not included).
 /// </summary>
+/// <param name="TextContent">Accumulated text tokens from the model's response.</param>
+/// <param name="ToolCalls">Tool calls requested by the model, or <c>null</c> / empty if none.</param>
+/// <param name="StoppedRepeating">The client stopped the response because the model was repeating itself.
+/// <see cref="CutAtLimit"/> is then true too — the text is incomplete, and every reader that refuses a cut answer must
+/// refuse this one — and this says why, so the notice names the remedy that works instead of "increase the context
+/// length".</param>
+/// <param name="AnswerIsReasoning">The model wrote no answer, only reasoning, and <see cref="TextContent"/> IS that
+/// reasoning — promoted so a chat bubble keeps what the user saw streaming by. ⚠ A reader that turns the reply into an
+/// ARTIFACT (a summary that replaces turns, a review's verdict) must not take it: it is a draft ("We need to
+/// summarize…"), often stopped at the length limit because the reasoning used the whole context.</param>
 internal record ChatTurnResult(
-    /// <summary>Accumulated text tokens from the model's response.</summary>
     string             TextContent,
-    /// <summary>Tool calls requested by the model, or <c>null</c> / empty if none.</summary>
     List<ToolCallDto>? ToolCalls,
     int                TokensUsed,
     int                PromptTokens,
     bool               CutAtLimit = false,
-    /// <summary>The client stopped the response because the model was repeating itself. <see cref="CutAtLimit"/> is
-    /// then true too — the text is incomplete, and every reader that refuses a cut answer must refuse this one — and
-    /// this says why, so the notice names the remedy that works instead of "increase the context length".</summary>
     bool               StoppedRepeating = false,
-    /// <summary>The model wrote no answer, only reasoning, and <see cref="TextContent"/> IS that reasoning — promoted so
-    /// a chat bubble keeps what the user saw streaming by. ⚠ A reader that turns the reply into an ARTIFACT (a summary
-    /// that replaces turns, a review's verdict) must not take it: it is a draft ("We need to summarize…"), often stopped
-    /// at the length limit because the reasoning used the whole context.</summary>
     bool               AnswerIsReasoning = false);
 
 /// <summary>Thrown by <c>OllamaClient.SendChatAsync</c> on HTTP / network failure.</summary>

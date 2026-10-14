@@ -8,59 +8,59 @@ namespace Inferpal.Models;
 // See https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-chat-completion
 
 /// <summary>Body of POST <c>/api/chat</c>.</summary>
+/// <param name="Tools">Tool definitions sent so the model can choose to call them.</param>
+/// <param name="KeepAlive">
+/// Ollama keep-alive duration after the response (e.g. <c>"10m"</c>, <c>"0"</c> to unload immediately).
+/// <c>null</c> = use Ollama default (5 min).
+/// </param>
+/// <param name="Options">
+/// Per-request runtime options (e.g. <c>num_ctx</c>). <c>null</c> = let Ollama use the
+/// model's default context window (which can be very large, e.g. 256k, and spill to CPU).
+/// </param>
+/// <param name="ToolChoice">
+/// Constrains tool usage: <c>"required"</c> forces the model to emit at least one tool call,
+/// <c>"auto"</c> lets it decide, <c>"none"</c> disables tools. <c>null</c> = Ollama default
+/// (<c>"auto"</c>). Unknown to older Ollama builds, which ignore the field harmlessly.
+/// </param>
 record ChatRequest(
     [property: JsonPropertyName("model")]      string Model,
     [property: JsonPropertyName("messages")]   List<ChatMessageDto> Messages,
-    /// <summary>Tool definitions sent so the model can choose to call them.</summary>
     [property: JsonPropertyName("tools")]      List<ToolDefinition>? Tools = null,
     [property: JsonPropertyName("stream")]     bool    Stream     = false,
-    /// <summary>
-    /// Ollama keep-alive duration after the response (e.g. <c>"10m"</c>, <c>"0"</c> to unload immediately).
-    /// <c>null</c> = use Ollama default (5 min).
-    /// </summary>
     [property: JsonPropertyName("keep_alive")] string? KeepAlive = null,
-    /// <summary>
-    /// Per-request runtime options (e.g. <c>num_ctx</c>). <c>null</c> = let Ollama use the
-    /// model's default context window (which can be very large, e.g. 256k, and spill to CPU).
-    /// </summary>
     [property: JsonPropertyName("options")]    ChatOptions? Options = null,
-    /// <summary>
-    /// Constrains tool usage: <c>"required"</c> forces the model to emit at least one tool call,
-    /// <c>"auto"</c> lets it decide, <c>"none"</c> disables tools. <c>null</c> = Ollama default
-    /// (<c>"auto"</c>). Unknown to older Ollama builds, which ignore the field harmlessly.
-    /// </summary>
     [property: JsonPropertyName("tool_choice")] string? ToolChoice = null);
 
 /// <summary>
 /// Runtime options for <c>/api/chat</c>. Fields left <c>null</c> are omitted from the wire
 /// payload so Ollama falls back to the model's own defaults.
 /// </summary>
+/// <param name="NumCtx">Context window size in tokens. Caps the KV-cache footprint to keep the model in VRAM.</param>
+/// <param name="Stop">Where the server stops generating (PromptedTools: the opening of a tool response).</param>
 record ChatOptions(
-    /// <summary>Context window size in tokens. Caps the KV-cache footprint to keep the model in VRAM.</summary>
     [property: JsonPropertyName("num_ctx")] int? NumCtx = null,
     [property: JsonPropertyName("temperature")]    double? Temperature   = null,
     [property: JsonPropertyName("top_p")]          double? TopP          = null,
     [property: JsonPropertyName("top_k")]          int?    TopK          = null,
     [property: JsonPropertyName("min_p")]          double? MinP          = null,
     [property: JsonPropertyName("repeat_penalty")] double? RepeatPenalty = null,
-    /// <summary>Where the server stops generating (PromptedTools: the opening of a tool response).</summary>
     [property: JsonPropertyName("stop")]           IReadOnlyList<string>? Stop = null);
 
 /// <summary>
 /// A single message in the conversation history.
 /// <c>Role</c> is one of <c>"user"</c>, <c>"assistant"</c>, or <c>"tool"</c>.
 /// </summary>
+/// <param name="ToolCalls">Populated by the model when it wants to invoke one or more tools.</param>
+/// <param name="Thinking">
+/// Separate reasoning channel emitted by thinking models (magistral, deepseek-r1, qwen3-thinking,
+/// gpt-oss…). Ollama returns the chain-of-thought here and the user-facing answer in
+/// <see cref="Content"/>. Declared last so existing positional <c>new ChatMessageDto(role, content,
+/// toolCalls)</c> call sites keep compiling; <c>WhenWritingNull</c> keeps it out of request bodies.
+/// </param>
 record ChatMessageDto(
     [property: JsonPropertyName("role")]       string Role,
     [property: JsonPropertyName("content")]    string? Content = null,
-    /// <summary>Populated by the model when it wants to invoke one or more tools.</summary>
     [property: JsonPropertyName("tool_calls")] List<ToolCallDto>? ToolCalls = null,
-    /// <summary>
-    /// Separate reasoning channel emitted by thinking models (magistral, deepseek-r1, qwen3-thinking,
-    /// gpt-oss…). Ollama returns the chain-of-thought here and the user-facing answer in
-    /// <see cref="Content"/>. Declared last so existing positional <c>new ChatMessageDto(role, content,
-    /// toolCalls)</c> call sites keep compiling; <c>WhenWritingNull</c> keeps it out of request bodies.
-    /// </summary>
     [property: JsonPropertyName("thinking")]   string? Thinking = null)
 {
     /// <summary>A user message the agent loop injected itself (plan request, execute order, observe
@@ -74,15 +74,16 @@ record ChatMessageDto(
 /// One NDJSON chunk from the <c>/api/chat</c> stream.
 /// When <see cref="Done"/> is <c>true</c> the chunk carries token counts and the final message.
 /// </summary>
+/// <param name="Error">Set when the runner fails after the 200 headers (crash, out of memory…): the stream
+/// then carries a bare <c>{"error":"…"}</c> line instead of a chunk.</param>
+/// <param name="DoneReason">On the final chunk: <c>"stop"</c>, or <c>"length"</c> when the answer stopped at the
+/// limit.</param>
 record ChatResponse(
     [property: JsonPropertyName("done")]               bool Done,
     [property: JsonPropertyName("message")]            ChatMessageDto? Message          = null,
     [property: JsonPropertyName("eval_count")]         int?            EvalCount        = null,
     [property: JsonPropertyName("prompt_eval_count")]  int?            PromptEvalCount  = null,
-    /// <summary>Set when the runner fails after the 200 headers (crash, out of memory…): the stream
-    /// then carries a bare <c>{"error":"…"}</c> line instead of a chunk.</summary>
     [property: JsonPropertyName("error")]              JsonElement     Error            = default,
-    /// <summary>On the final chunk: <c>"stop"</c>, or <c>"length"</c> when the answer stopped at the limit.</summary>
     [property: JsonPropertyName("done_reason")]        string?         DoneReason       = null);
 
 /// <summary>A single tool invocation requested by the model.</summary>
@@ -120,8 +121,8 @@ record ToolCallFunction(
 // ── Tool schema DTOs ─────────────────────────────────────────────────────────
 
 /// <summary>Top-level wrapper that Ollama expects for each tool definition.</summary>
+/// <param name="Type">Always <c>"function"</c> per the Ollama API.</param>
 record ToolDefinition(
-    /// <summary>Always <c>"function"</c> per the Ollama API.</summary>
     [property: JsonPropertyName("type")]     string Type,
     [property: JsonPropertyName("function")] ToolFunction Function);
 
@@ -134,9 +135,9 @@ record ToolFunction(
 // ── Model list DTOs ──────────────────────────────────────────────────────────
 
 /// <summary>Single model entry from <c>GET /api/tags</c>.</summary>
+/// <param name="Size">On-disk size of the model in bytes (a proxy for its VRAM weight footprint).</param>
 record ModelInfo(
     [property: JsonPropertyName("name")] string Name,
-    /// <summary>On-disk size of the model in bytes (a proxy for its VRAM weight footprint).</summary>
     [property: JsonPropertyName("size")] long   Size = 0);
 
 /// <summary>Response from <c>GET /api/tags</c>.</summary>
@@ -160,6 +161,8 @@ record ModelArchInfo(int BlockCount, int HeadCount, int HeadCountKv, int Embeddi
 // ── Ollama /api/generate DTOs (FIM inline completions) ───────────────────────
 
 /// <summary>Body of POST <c>/api/generate</c> used for Fill-in-the-Middle completions.</summary>
+/// <param name="Raw">The prompt goes to the model as is, without its template — a fill-in-the-middle prompt Inferpal
+/// built.</param>
 record GenerateRequest(
     [property: JsonPropertyName("model")]      string          Model,
     [property: JsonPropertyName("prompt")]     string          Prompt,
@@ -167,7 +170,6 @@ record GenerateRequest(
     [property: JsonPropertyName("stream")]     bool            Stream,
     [property: JsonPropertyName("options")]    GenerateOptions Options,
     [property: JsonPropertyName("keep_alive")] string?         KeepAlive = null,
-    /// <summary>The prompt goes to the model as is, without its template — a fill-in-the-middle prompt Inferpal built.</summary>
     [property: JsonPropertyName("raw")]        bool?           Raw = null);
 
 /// <summary>Sampling options for <c>/api/generate</c>.</summary>
@@ -184,12 +186,12 @@ record GenerateResponse(
 // ── Ollama /api/ps DTOs (running models / VRAM monitoring) ──────────────────
 
 /// <summary>One entry from <c>GET /api/ps</c> — a currently loaded model.</summary>
+/// <param name="SizeVram">VRAM used by this model in bytes (0 if running on CPU), or
+/// <see cref="RunningModelInfo.VramNotReported"/> when the backend does not say.</param>
+/// <param name="ExpiresAt">ISO-8601 UTC timestamp when Ollama will unload this model.</param>
 record RunningModelInfo(
     [property: JsonPropertyName("name")]       string Name,
-    /// <summary>VRAM used by this model in bytes (0 if running on CPU), or
-    /// <see cref="RunningModelInfo.VramNotReported"/> when the backend does not say.</summary>
     [property: JsonPropertyName("size_vram")]  long   SizeVram,
-    /// <summary>ISO-8601 UTC timestamp when Ollama will unload this model.</summary>
     [property: JsonPropertyName("expires_at")] string ExpiresAt)
 {
     /// <summary>

@@ -30,7 +30,7 @@ internal interface IInferenceProvider : IChatTurnClient
     /// </remarks>
     string ServerAddress { get; }
 
-    /// <inheritdoc cref="OllamaClient.RunAgentAsync"/>
+    /// <inheritdoc cref="InferenceProviderBase.RunAgentAsync"/>
     Task<AgentResult> RunAgentAsync(
         string model,
         List<ChatMessageDto> history,

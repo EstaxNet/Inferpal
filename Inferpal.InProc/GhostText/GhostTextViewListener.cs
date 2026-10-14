@@ -76,7 +76,7 @@ internal sealed class GhostTextViewListener : IWpfTextViewCreationListener
     /// Switches to the VS UI thread, acquires the build-manager and solution services via
     /// <c>Package.GetGlobalService</c>, then creates a <see cref="VsBuildEventHandler"/>
     /// that writes <see cref="BuildSignalFile"/> on every failed build.
-    /// The OOP <see cref="VsBuildMonitor"/> watches that file and fires its
+    /// The OOP <c>VsBuildMonitor</c> watches that file and fires its
     /// <c>BuildFailed</c> event which the tool-window ViewModel subscribes to.
     /// On failure (services not ready), resets the flag so the next editor open retries.
     /// </summary>

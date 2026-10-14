@@ -9,7 +9,7 @@ namespace Inferpal.Services.CodeActions;
 /// Token references: Qwen2.5-Coder / CodeGemma (<c>&lt;|fim_prefix|&gt;…&lt;|fim_suffix|&gt;…&lt;|fim_middle|&gt;</c>),
 /// StarCoder/StarCoder2 (<c>&lt;fim_prefix&gt;…</c>), CodeLlama (<c>&lt;PRE&gt; … &lt;SUF&gt;… &lt;MID&gt;</c>),
 /// DeepSeek-Coder (<c>&lt;｜fim▁begin｜&gt;…&lt;｜fim▁hole｜&gt;…&lt;｜fim▁end｜&gt;</c>). Unknown families fall back to
-/// a prefix-only prompt (<see cref="IsFim"/> = <c>false</c>) so completion still works, just without the suffix.
+/// a prefix-only prompt (<see cref="FimSpec.IsFim"/> = <c>false</c>) so completion still works, just without the suffix.
 /// </remarks>
 internal static class FimTemplate
 {

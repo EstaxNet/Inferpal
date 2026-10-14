@@ -13,7 +13,7 @@ namespace Inferpal.GhostText;
 /// Instantiated by <see cref="GhostTextPackage.InitializeAsync"/> on the VS UI thread.
 /// When VS finishes a build with errors, collects the error messages directly from
 /// <c>IVsTaskList</c> (the VS Error List) and writes them to <see cref="BuildSignalFile"/>
-/// so that the out-of-process <see cref="VsBuildMonitor"/> can react via
+/// so that the out-of-process <c>VsBuildMonitor</c> can react via
 /// <c>FileSystemWatcher</c> — without having to run a second <c>dotnet build</c>.
 /// </summary>
 internal sealed class VsBuildEventHandler : IVsUpdateSolutionEvents, IDisposable
@@ -77,7 +77,7 @@ internal sealed class VsBuildEventHandler : IVsUpdateSolutionEvents, IDisposable
 
     /// <summary>
     /// Waits for VS to finish populating its Error List, collects errors on the UI thread,
-    /// then writes the IPC signal file.  Fire-and-forget from <see cref="UpdateSolution_Done"/>.
+    /// then writes the IPC signal file.  Fire-and-forget from <c>UpdateSolution_Done</c>.
     /// </summary>
     private async Task CollectAndSignalAsync(string solutionPath)
     {

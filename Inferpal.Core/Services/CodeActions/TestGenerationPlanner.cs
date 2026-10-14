@@ -103,11 +103,6 @@ internal static class TestGenerationPlanner
             + $"reach the code with `use {crate}::…` — only the library's public items are visible."
             : string.Empty;
 
-    /// <param name="sourcePath">Path of the file under test — decides where the tests go.</param>
-    /// <param name="sourceCode">Selection if the editor has one, otherwise the whole file.</param>
-    /// <param name="openText">The test file's text in the editor when it is open there, else null — given by an editor
-    /// that writes the result INTO that buffer (Visual Studio). ⚠ Planned from the disk, the result replaces a buffer
-    /// that holds unsaved tests the model never saw, and they disappear.</param>
     /// <summary>
     /// The refusal of <c>/test</c> when the test file it would rewrite ON DISK has unsaved changes in the editor; null
     /// otherwise.
@@ -124,6 +119,11 @@ internal static class TestGenerationPlanner
             : null;
     }
 
+    /// <param name="sourcePath">Path of the file under test — decides where the tests go.</param>
+    /// <param name="sourceCode">Selection if the editor has one, otherwise the whole file.</param>
+    /// <param name="openText">The test file's text in the editor when it is open there, else null — given by an editor
+    /// that writes the result INTO that buffer (Visual Studio). ⚠ Planned from the disk, the result replaces a buffer
+    /// that holds unsaved tests the model never saw, and they disappear.</param>
     public static async Task<TestGenerationPlan> PlanAsync(
         IInferenceProvider client, string model, string sourcePath, string sourceCode,
         CancellationToken ct, Func<string, CancellationToken, Task<string?>>? openText = null)

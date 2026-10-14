@@ -202,7 +202,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     /// <inheritdoc/>
     /// <remarks>
     /// ⚠ Two surfaces, and the connection badge does not query this one.
-    /// <see cref="CheckConnectionAsync"/> is inherited from <see cref="OpenAiCompatibleClient"/> and probes
+    /// <see cref="OpenAiCompatibleClient.CheckConnectionAsync"/> is inherited from <see cref="OpenAiCompatibleClient"/> and probes
     /// <c>{base}/v1/models</c> — the surface the chat actually talks; the listing below comes from the
     /// NATIVE API <c>{base}/api/v1|v0/models</c>, the only one carrying loaded state and size. A server
     /// that serves only the OpenAI-compatible surface — a reverse proxy routing just <c>/v1</c>, the

@@ -2,7 +2,7 @@
 namespace Inferpal.Services.CodeActions;
 
 /// <summary>
-/// Internal system prompts for the test-generation pipeline (<see cref="TestGenerationEdit"/>),
+/// Internal system prompts for the test-generation pipeline (<c>TestGenerationEdit</c>),
 /// shared by the editor context-menu command (<c>Add unit tests</c>) and the <c>/test</c> slash
 /// command.
 ///

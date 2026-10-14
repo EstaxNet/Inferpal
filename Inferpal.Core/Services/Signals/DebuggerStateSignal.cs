@@ -33,7 +33,7 @@ internal sealed record DebuggerSnapshot(
 
 /// <summary>
 /// File-based IPC channel publishing the debugger break state from the in-process
-/// <see cref="Inferpal.GhostText.GhostTextPackage"/> (which can use the EnvDTE debugger
+/// <c>GhostTextPackage</c> (which can use the EnvDTE debugger
 /// automation) to the out-of-process extension host (<c>@debugger</c> mention and the
 /// <c>get_debugger_state</c> tool), which has no debugger API at all.
 /// </summary>

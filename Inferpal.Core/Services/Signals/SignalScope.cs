@@ -23,7 +23,7 @@ namespace Inferpal.Services.Signals;
 /// saves: a VS host that forgot to opt <em>in</em> would silently lose <c>get_solution_info</c>,
 /// <c>/map</c> and RAG rooting — a real regression, in the adapter that is hardest to test. A Host
 /// that forgot to opt <em>out</em> merely keeps the old behaviour. The process that knows it has no
-/// VS peer is <see cref="Inferpal.Host"/>, it says so in one line, and a test pins that line so the
+/// VS peer is <c>Inferpal.Host</c>, it says so in one line, and a test pins that line so the
 /// knowledge cannot quietly disappear.
 /// </para>
 /// </remarks>

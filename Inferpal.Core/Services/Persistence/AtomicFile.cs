@@ -103,7 +103,7 @@ internal static class AtomicFile
         finally { Discard(temp); }
     }
 
-    /// <inheritdoc cref="WriteAllText(string,string)"/>
+    /// <inheritdoc cref="WriteAllText(string,string,bool)"/>
     public static async Task WriteAllTextAsync(string path, string content, CancellationToken ct = default,
                                                bool preserveExistingMark = false)
     {
@@ -118,7 +118,7 @@ internal static class AtomicFile
         finally { Discard(temp); }
     }
 
-    /// <inheritdoc cref="WriteAllText(string,string)"/>
+    /// <inheritdoc cref="WriteAllText(string,string,bool)"/>
     public static void WriteAllBytes(string path, byte[] content)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);

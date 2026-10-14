@@ -4,8 +4,8 @@ namespace Inferpal.Services.Inference;
 
 /// <summary>
 /// Resolves the active <see cref="IInferenceProvider"/> from <c>config.Provider</c>. Called once at
-/// startup by the DI container (and directly by <see cref="GhostText.GhostTextController"/>, which
-/// builds its own client). Switching provider takes effect on the next VS reload.
+/// startup by the DI container (and directly by the FIM sidecar <c>Inferpal.Fim</c>, which builds
+/// its own client for the in-process <c>GhostTextController</c>). Switching provider takes effect on the next VS reload.
 /// </summary>
 internal static class InferenceProviderFactory
 {

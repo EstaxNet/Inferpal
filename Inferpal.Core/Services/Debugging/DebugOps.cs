@@ -6,7 +6,7 @@ namespace Inferpal.Services.Debugging;
 /// <remarks>
 /// <para>
 /// The two ends of this wire are compiled into different assemblies <b>and</b> run under different
-/// runtimes: the caller (<see cref="SignalDebugSession"/>) lives in the net8 core hosted
+/// runtimes: the caller (<c>SignalDebugSession</c>) lives in the net8 core hosted
 /// out-of-process, the driver (<c>Inferpal.GhostText.VsDebugDriver</c>) in the net472 in-process
 /// assembly loaded by <c>devenv</c>. A typo on either side is a silent no-op, never a compile
 /// error — which is why the names live in this one file, shared by source link

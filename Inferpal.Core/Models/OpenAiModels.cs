@@ -67,11 +67,12 @@ record OpenAiChoice(
     [property: JsonPropertyName("finish_reason")] string? FinishReason = null);
 
 /// <summary>Incremental content for a choice. Tool-call argument fragments accumulate by index.</summary>
+/// <param name="ReasoningContent">Reasoning channel name used by vLLM / DeepSeek-style servers.</param>
+/// <param name="Reasoning">Reasoning channel name used by Ollama's OpenAI-compatible endpoint (field is
+/// <c>"reasoning"</c>).</param>
 record OpenAiDelta(
     [property: JsonPropertyName("content")]           string? Content = null,
-    /// <summary>Reasoning channel name used by vLLM / DeepSeek-style servers.</summary>
     [property: JsonPropertyName("reasoning_content")] string? ReasoningContent = null,
-    /// <summary>Reasoning channel name used by Ollama's OpenAI-compatible endpoint (field is <c>"reasoning"</c>).</summary>
     [property: JsonPropertyName("reasoning")]         string? Reasoning = null,
     [property: JsonPropertyName("tool_calls")]        List<OpenAiToolCallDelta>? ToolCalls = null);
 

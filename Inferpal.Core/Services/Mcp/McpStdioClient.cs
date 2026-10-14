@@ -62,7 +62,7 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
     /// <summary>
     /// Raised when the server sends a <c>notifications/tools/list_changed</c> notification, signalling
     /// that its advertised tool set has changed. Fires on the background read-loop thread; handlers
-    /// should not block. The owner re-runs <see cref="ListToolsAsync"/> in response.
+    /// should not block. The owner re-runs <see cref="McpClientBase.ListToolsAsync"/> in response.
     /// </summary>
     public event Action? ToolsChanged;
 

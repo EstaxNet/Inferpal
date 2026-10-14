@@ -5,7 +5,7 @@ namespace Inferpal.ToolWindow;
 
 /// <summary>
 /// One row in a generic editable settings list (pinned context files, custom slash commands,
-/// custom agent tools). Holds an enable toggle, a primary <see cref="Title"/> + secondary
+/// custom agent tools). Holds an enable toggle, a primary <see cref="Label"/> + secondary
 /// <see cref="Summary"/> shown in the row, the raw editable values (<see cref="Field1"/> /
 /// <see cref="Field2"/>) used to repopulate the inline editor, and per-row Edit/Delete commands.
 /// </summary>
@@ -21,6 +21,7 @@ namespace Inferpal.ToolWindow;
 /// these lists are <c>ItemsControl</c>s with no selection, whereas rebuilding a collection bound to
 /// a <c>SelectedItem</c> is the defect <c>SelectionPreservingList</c> exists to prevent. Deliberately no member named <c>Name</c> (reserved in RemoteUI
 /// serialization — it renders blank).
+/// </para>
 /// </remarks>
 [DataContract]
 internal sealed class EditableListRow : NotifyPropertyChangedObject

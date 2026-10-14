@@ -10,7 +10,7 @@ namespace Inferpal.Services.Agent;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Unlike the basic <see cref="OllamaClient.RunAgentAsync"/> loop (which is purely reactive),
+/// Unlike the basic <see cref="InferenceProviderBase.RunAgentAsync"/> loop (which is purely reactive),
 /// this orchestrator adds explicit structure before and between tool-execution rounds:
 /// </para>
 /// <list type="number">

@@ -338,7 +338,7 @@ internal class OllamaClient : InferenceProviderBase
     /// Traverses the breaker cooldown (see the OpenAI-compatible sibling): the probe is the one
     /// call that can notice the server coming back, and a success closes the circuit.
     /// The 2xx concludes nothing on its own: the body must carry <c>models</c>, the property that
-    /// signs the native API — see <see cref="ConfirmsBackendPayload"/>.</summary>
+    /// signs the native API — see <see cref="InferenceProviderBase.ConfirmsBackendPayload"/>.</summary>
     public override async Task<bool> CheckConnectionAsync(string url, CancellationToken ct)
     {
         var endpoint = $"{url.TrimEnd('/')}/api/tags";
@@ -727,43 +727,47 @@ internal class OllamaClient : InferenceProviderBase
 }
 
 /// <summary>Result of a completed agentic loop run.</summary>
+/// <param name="FinalResponse">Final text response from the model (may be empty if the loop was cancelled).</param>
+/// <param name="Executions">All tool calls executed during the loop, in order.</param>
+/// <param name="UpdatedHistory">Full conversation history including all tool turns, ready for the next call.</param>
+/// <param name="WasLoopDetected">The loop stopped because the model kept repeating the same tool batch. The answer
+/// stays (a summary of what had been gathered): this flag only says it is not a task carried to
+/// its end. Without it, the two came out the same.</param>
+/// <param name="AnswerCut">The final answer stopped at the model's length limit: it is incomplete, and says so.</param>
+/// <param name="Failed">
+/// The run FAILED — no URL, circuit open, the backend refused or went away — and <see cref="FinalResponse"/> is the
+/// message that says so. Right for a chat bubble; wrong for anything that uses the reply as content: read as an
+/// answer, the error became the session summary in every following system prompt, the commit message pre-filled
+/// into <c>/commit-exec</c>, and the session's name.
+/// </param>
+/// <param name="AnswerRepeating">The cut answer was stopped because the model was repeating itself
+/// (<see cref="ChatTurnResult.StoppedRepeating"/>).</param>
+/// <param name="AnswerIsReasoning">The final answer is the model's promoted reasoning, no answer written
+/// (<see cref="ChatTurnResult.AnswerIsReasoning"/>): fine for a bubble, never content — a recap folded into every
+/// following system prompt, a commit message, a name.</param>
+/// <param name="ReachedIterationLimit">The loop stopped at its iteration cap, the task not carried to its end: the answer
+/// is the limit message, and every reader adds the notice that says so
+/// (<see cref="Agent.ChatTurnPolicy.EndNotice"/>).</param>
 internal record AgentResult(
-    /// <summary>Final text response from the model (may be empty if the loop was cancelled).</summary>
     string               FinalResponse,
-    /// <summary>All tool calls executed during the loop, in order.</summary>
     List<ToolExecution>  Executions,
-    /// <summary>Full conversation history including all tool turns, ready for the next call.</summary>
     List<ChatMessageDto> UpdatedHistory,
     int                  TokensUsed   = 0,
     int                  PromptTokens = 0,
-    /// <summary>The loop stopped because the model kept repeating the same tool batch. The answer
-    /// stays (a summary of what had been gathered): this flag only says it is not a task carried to
-    /// its end. Without it, the two came out the same.</summary>
     bool                 WasLoopDetected = false,
-    /// <summary>The final answer stopped at the model's length limit: it is incomplete, and says so.</summary>
     bool                 AnswerCut       = false,
-    /// <summary>
-    /// The run FAILED — no URL, circuit open, the backend refused or went away — and <see cref="FinalResponse"/> is the
-    /// message that says so. Right for a chat bubble; wrong for anything that uses the reply as content: read as an
-    /// answer, the error became the session summary in every following system prompt, the commit message pre-filled
-    /// into <c>/commit-exec</c>, and the session's name.
-    /// </summary>
     bool                 Failed          = false,
-    /// <summary>The cut answer was stopped because the model was repeating itself (<see cref="ChatTurnResult.StoppedRepeating"/>).</summary>
     bool                 AnswerRepeating = false,
-    /// <summary>The final answer is the model's promoted reasoning, no answer written (<see cref="ChatTurnResult.AnswerIsReasoning"/>):
-    /// fine for a bubble, never content — a recap folded into every following system prompt, a commit message, a name.</summary>
     bool                 AnswerIsReasoning = false,
-    /// <summary>The loop stopped at its iteration cap, the task not carried to its end: the answer is the limit message,
-    /// and every reader adds the notice that says so (<see cref="Agent.ChatTurnPolicy.EndNotice"/>).</summary>
     bool                 ReachedIterationLimit = false);
 
 /// <summary>A single tool invocation within an agentic loop run.</summary>
+/// <param name="HasErrors"><c>true</c> when the tool is <c>get_diagnostics</c> and the output contains build errors
+/// — triggers the "Fix with AI" button.</param>
+/// <param name="Diff">Line-level diff produced by write_file / apply_diff, or <c>null</c> for all other tools.</param>
 internal record ToolExecution(
     string    Name,
     string    Input,
     string    Output,
-    /// <summary><c>true</c> when the tool is <c>get_diagnostics</c> and the output contains build errors — triggers the "Fix with AI" button.</summary>
     bool      HasErrors = false,
-    /// <summary>Line-level diff produced by write_file / apply_diff, or <c>null</c> for all other tools.</summary>
     DiffInfo? Diff      = null);

@@ -526,7 +526,7 @@ internal class RunTestsTool : ITool
     }
 
     /// <remarks>
-    /// ⚠ A filtered run asks for -v: without it go prints the same "ok <package>" line for a skipped test as for a
+    /// ⚠ A filtered run asks for -v: without it go prints the same "ok &lt;package&gt;" line for a skipped test as for a
     /// passing one, and a /tdd round that skips the failing test reads as green. Only a filtered run — a whole suite
     /// in -v is every passing test, which pushes failures out of a bounded capture.
     /// </remarks>
