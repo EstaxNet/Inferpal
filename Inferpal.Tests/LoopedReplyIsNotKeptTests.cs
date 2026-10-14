@@ -24,7 +24,7 @@ public class LoopedReplyIsNotKeptTests
         "Wait, I need to check the conventions of the folder first. Let me reconsider which file to read, then plan "
         + "the steps again from the beginning because the order matters here. ", 1_000));
 
-    private sealed class ScriptedChatClient(IEnumerable<ChatTurnResult> script) : IOllamaChatClient
+    private sealed class ScriptedChatClient(IEnumerable<ChatTurnResult> script) : IChatTurnClient
     {
         private readonly Queue<ChatTurnResult> _script = new(script);
         public List<List<ChatMessageDto>> SeenMessages { get; } = [];
@@ -139,7 +139,7 @@ public class LoopedReplyIsNotKeptTests
 
     // ── The run summary ─────────────────────────────────────────────────────────
 
-    private sealed class OneReplyClient(ChatTurnResult reply) : IOllamaChatClient
+    private sealed class OneReplyClient(ChatTurnResult reply) : IChatTurnClient
     {
         public Task<ChatTurnResult> SendChatAsync(
             string model, List<ChatMessageDto> messages, IToolRegistry tools, Action<string>? onToken,

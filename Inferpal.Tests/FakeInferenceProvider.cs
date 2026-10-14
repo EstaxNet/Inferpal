@@ -69,7 +69,7 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     /// <summary>Every <see cref="RunAgentAsync"/> call (model + the history it received), in order.</summary>
     public List<(string Model, List<ChatMessageDto> History)> AgentRuns { get; } = [];
 
-    // ── IOllamaChatClient ───────────────────────────────────────────────────────
+    // ── IChatTurnClient ───────────────────────────────────────────────────────
     public Task<ChatTurnResult> SendChatAsync(
         string model, List<ChatMessageDto> messages, IToolRegistry tools, Action<string>? onToken,
         CancellationToken ct, TaskComplexity complexity = TaskComplexity.Normal,

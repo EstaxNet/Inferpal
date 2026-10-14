@@ -3,11 +3,12 @@ using Inferpal.Models;
 namespace Inferpal.Services.Inference;
 
 /// <summary>
-/// The single Ollama chat operation the <see cref="AgentOrchestrator"/> depends on. Extracted as a
+/// The one chat operation the <see cref="AgentOrchestrator"/> depends on, whatever the backend: every
+/// <see cref="IInferenceProvider"/> implements it (Ollama, LM Studio, OpenAI-compatible servers). Extracted as a
 /// seam so the orchestrator can be unit-tested with a fake client (no network) — in particular its
-/// intra-run summarisation path. Implemented by <see cref="OllamaClient"/>.
+/// intra-run summarisation path.
 /// </summary>
-internal interface IOllamaChatClient
+internal interface IChatTurnClient
 {
     /// <inheritdoc cref="OllamaClient.SendChatAsync"/>
     Task<ChatTurnResult> SendChatAsync(

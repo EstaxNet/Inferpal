@@ -43,10 +43,10 @@ namespace Inferpal.Services.Agent;
 internal sealed class AgentOrchestrator
 {
 
-    private readonly IOllamaChatClient _client;
+    private readonly IChatTurnClient _client;
     private readonly InferpalConfig _config;
 
-    public AgentOrchestrator(IOllamaChatClient client, InferpalConfig config)
+    public AgentOrchestrator(IChatTurnClient client, InferpalConfig config)
     {
         _client = client;
         _config = config;

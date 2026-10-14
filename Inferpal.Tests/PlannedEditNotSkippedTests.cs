@@ -16,7 +16,7 @@ namespace Inferpal.Tests;
 // ──────────────────────────────────────────────────────────────────────────────────────────────
 public sealed class PlannedEditNotSkippedTests
 {
-    private sealed class Scripted(IEnumerable<ChatTurnResult> script) : IOllamaChatClient
+    private sealed class Scripted(IEnumerable<ChatTurnResult> script) : IChatTurnClient
     {
         private readonly Queue<ChatTurnResult> _script = new(script);
         public List<List<ChatMessageDto>> Seen { get; } = [];

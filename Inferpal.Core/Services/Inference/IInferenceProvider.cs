@@ -10,12 +10,12 @@ namespace Inferpal.Services.Inference;
 /// backend is needed — never the concrete <see cref="OllamaClient"/>.
 /// </summary>
 /// <remarks>
-/// Extends <see cref="IOllamaChatClient"/> so the <see cref="AgentOrchestrator"/> keeps depending on
+/// Extends <see cref="IChatTurnClient"/> so the <see cref="AgentOrchestrator"/> keeps depending on
 /// the narrow <c>SendChatAsync</c> seam (its unit tests are unaffected). Backend features that not
 /// every server exposes (VRAM monitoring, model pull/delete, FIM) are advertised through
 /// <see cref="Capabilities"/> and degrade to safe no-ops when unsupported.
 /// </remarks>
-internal interface IInferenceProvider : IOllamaChatClient
+internal interface IInferenceProvider : IChatTurnClient
 {
     /// <summary>What this backend can do beyond plain chat — used to gate Ollama-only UI/features.</summary>
     ProviderCapabilities Capabilities { get; }

@@ -21,7 +21,7 @@ namespace Inferpal.Tests;
 /// </remarks>
 public class SummaryThatCannotFitTests
 {
-    private sealed class CountingClient : IOllamaChatClient
+    private sealed class CountingClient : IChatTurnClient
     {
         public int Calls { get; private set; }
 

@@ -8,12 +8,12 @@ using Inferpal.Models;
 using Inferpal.Services;
 using Xunit;
 
-// Exercises the intra-run summarisation path of CompactRunContextAsync via a fake IOllamaChatClient
+// Exercises the intra-run summarisation path of CompactRunContextAsync via a fake IChatTurnClient
 // (no network). Verifies: one summary call on first overflow, replacement by a [summary] pair,
 // and fallback to elision when summary is empty / disabled / already spent / under budget.
 public class AgentOrchestratorSummaryTests
 {
-    private sealed class FakeChatClient : IOllamaChatClient
+    private sealed class FakeChatClient : IChatTurnClient
     {
         private readonly Func<ChatTurnResult> _respond;
         public int Calls { get; private set; }

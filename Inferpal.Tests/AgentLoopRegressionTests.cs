@@ -17,7 +17,7 @@ namespace Inferpal.Tests;
 /// </summary>
 public class AgentLoopRegressionTests
 {
-    private sealed class RecordingClient(IEnumerable<ChatTurnResult> script) : IOllamaChatClient
+    private sealed class RecordingClient(IEnumerable<ChatTurnResult> script) : IChatTurnClient
     {
         private readonly Queue<ChatTurnResult> _script = new(script);
         public List<string?> ToolChoices { get; } = [];
@@ -55,7 +55,7 @@ public class AgentLoopRegressionTests
     private static InferpalConfig Config() =>
         new() { ContextWindowSize = 8192, CompactionEnabled = false, AgentMaxIterations = 6, AgentModeEnabled = true };
 
-    private static Task<OrchestratorResult> RunAsync(IOllamaChatClient client, IToolRegistry tools, List<ChatMessageDto> history) =>
+    private static Task<OrchestratorResult> RunAsync(IChatTurnClient client, IToolRegistry tools, List<ChatMessageDto> history) =>
         new AgentOrchestrator(client, Config()).RunAsync(
             model: "m", history: history, tools: tools,
             onStep: _ => { }, onToken: null, onPlanReady: null, onStepUpdate: null,

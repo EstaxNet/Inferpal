@@ -13,7 +13,7 @@ namespace Inferpal.Tests;
 // ──────────────────────────────────────────────────────────────────────────────────────────────
 public sealed class RemainingStepsClosedTests
 {
-    private sealed class Scripted(IEnumerable<ChatTurnResult> script) : IOllamaChatClient
+    private sealed class Scripted(IEnumerable<ChatTurnResult> script) : IChatTurnClient
     {
         private readonly Queue<ChatTurnResult> _script = new(script);
         public Task<ChatTurnResult> SendChatAsync(string model, List<ChatMessageDto> messages, IToolRegistry tools,

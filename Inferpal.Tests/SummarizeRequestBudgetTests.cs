@@ -120,7 +120,7 @@ public class SummarizeRequestBudgetTests
         return int.Parse(m.Groups[1].Value);
     }
 
-    private sealed class RecordingChatClient : IOllamaChatClient
+    private sealed class RecordingChatClient : IChatTurnClient
     {
         public int RequestChars { get; private set; }
 

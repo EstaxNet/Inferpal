@@ -113,7 +113,7 @@ internal static class ModelRouter
     /// is safe to call while holding the chat lease.
     /// </summary>
     public static async Task<string> ResolveUtilityAsync(
-        InferpalConfig config, IOllamaChatClient client, CancellationToken ct)
+        InferpalConfig config, IChatTurnClient client, CancellationToken ct)
     {
         if (!string.IsNullOrWhiteSpace(config.UtilityModel))
             return Resolve(config, ModelRole.Utility);

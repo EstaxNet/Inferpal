@@ -26,7 +26,7 @@ public class CutToolCallTests
 
     // ── The agent orchestrator ────────────────────────────────────────────────
 
-    private sealed class ScriptedClient(params ChatTurnResult[] script) : IOllamaChatClient
+    private sealed class ScriptedClient(params ChatTurnResult[] script) : IChatTurnClient
     {
         private readonly Queue<ChatTurnResult> _script = new(script);
 

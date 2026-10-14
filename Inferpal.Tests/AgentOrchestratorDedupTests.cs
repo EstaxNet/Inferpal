@@ -18,7 +18,7 @@ namespace Inferpal.Tests;
 public class AgentOrchestratorDedupTests
 {
     // ── Scripted chat client: returns a queued response per call ──────────────
-    private sealed class ScriptedChatClient : IOllamaChatClient
+    private sealed class ScriptedChatClient : IChatTurnClient
     {
         private readonly Queue<ChatTurnResult> _script;
 

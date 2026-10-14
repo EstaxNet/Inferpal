@@ -19,7 +19,7 @@ namespace Inferpal.Tests;
 // switch to the answer-now variant (AgentObservePromptComplete) anchored on the user's request.
 public class AgentOrchestratorObserveTests
 {
-    private sealed class ScriptedChatClient : IOllamaChatClient
+    private sealed class ScriptedChatClient : IChatTurnClient
     {
         private readonly Queue<ChatTurnResult> _script;
         public List<List<ChatMessageDto>> SeenMessages { get; } = new();

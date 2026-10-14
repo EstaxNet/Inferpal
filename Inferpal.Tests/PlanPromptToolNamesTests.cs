@@ -16,7 +16,7 @@ namespace Inferpal.Tests;
 // ──────────────────────────────────────────────────────────────────────────────────────────────
 public sealed class PlanPromptToolNamesTests
 {
-    private sealed class RecordingClient : IOllamaChatClient
+    private sealed class RecordingClient : IChatTurnClient
     {
         public List<List<ChatMessageDto>> Requests { get; } = [];
         private int _n;

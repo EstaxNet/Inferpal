@@ -69,7 +69,7 @@ public class CutSummaryTests
         Assert.False(decision.IsDegraded);
     }
 
-    private sealed class FakeChatClient(ChatTurnResult reply) : IOllamaChatClient
+    private sealed class FakeChatClient(ChatTurnResult reply) : IChatTurnClient
     {
         public Task<ChatTurnResult> SendChatAsync(
             string model, List<ChatMessageDto> messages, IToolRegistry tools, Action<string>? onToken,
