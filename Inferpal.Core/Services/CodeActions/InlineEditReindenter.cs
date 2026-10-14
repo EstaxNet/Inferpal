@@ -39,11 +39,11 @@ internal static class InlineEditReindenter
         if (string.IsNullOrWhiteSpace(edited)) return edited;
 
         var baseIndent = GetLeadingWhitespace(original);
-        var (unit, unitWidth, useTabs) = DetectIndent(original, baseIndent);
+        var (unit, unitWidth) = DetectIndent(original, edited, baseIndent);
         var braceBased = edited.IndexOf('{') >= 0 || edited.IndexOf('}') >= 0;
 
         var editFirst      = GetLeadingWhitespace(edited);
-        var editFirstWidth = VisualWidth(editFirst, useTabs);
+        var editFirstWidth = VisualWidth(editFirst, unitWidth);
 
         var lines = edited.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
         var sb    = new StringBuilder(edited.Length + lines.Length * baseIndent.Length);
@@ -82,7 +82,7 @@ internal static class InlineEditReindenter
             var modelUnits = 0;
             if (i > 0)
             {
-                var relWidth = VisualWidth(ws, useTabs) - editFirstWidth;
+                var relWidth = VisualWidth(ws, unitWidth) - editFirstWidth;
                 modelUnits = relWidth <= 0
                     ? 0
                     : (int)Math.Round(relWidth / (double)unitWidth, MidpointRounding.AwayFromZero);
@@ -201,44 +201,62 @@ internal static class InlineEditReindenter
         return (minPrefix, balance);
     }
 
-    /// <summary>Detects the indentation unit (tab or N spaces) and its visual width from the original.</summary>
-    private static (string unit, int unitWidth, bool useTabs) DetectIndent(string original, string baseIndent)
+    /// <summary>
+    /// Detects the indentation unit (a tab or N spaces) and its width in columns — the width a tab counts for too.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The step comes from the original, and when the original shows none (one line, or lines at one width) from the
+    /// reply: assumed 4, a 2-space file had its levels 1 and 2 both rounded to one unit — a YAML key left its parent,
+    /// valid YAML with another meaning, and a Python body left its block, without an error. In a tab-indented file, a
+    /// tab is as wide as the step of the reply's spaces: a reply indented with spaces measured zero, and came out flat.
+    /// </remarks>
+    private static (string unit, int unitWidth) DetectIndent(string original, string edited, string baseIndent)
     {
-        var split   = original.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
-        var useTabs = baseIndent.IndexOf('\t') >= 0;
+        var useTabs = baseIndent.IndexOf('\t') >= 0
+                      || Lines(original).Any(l => LeadingWhitespace(l).IndexOf('\t') >= 0);
 
-        var widths = new SortedSet<int>();
-        foreach (var line in split)
-        {
-            if (string.IsNullOrWhiteSpace(line)) continue;
-            var ws = LeadingWhitespace(line);
-            if (ws.IndexOf('\t') >= 0) useTabs = true;
-            widths.Add(ws.Length);
-        }
+        // In columns of spaces: the reply's spaces next to its tabs (tab mode), its whole indentation (space mode).
+        var replyStep = SmallestStep(Lines(edited).Select(l => LeadingWhitespace(l).Count(c => c == ' ')));
+        if (useTabs) return ("\t", replyStep > 0 ? replyStep : 4);
 
-        if (useTabs) return ("\t", 1, true);
-
-        // Spaces: smallest positive step between distinct indent widths (default 4).
-        int step = 0, prev = -1;
-        foreach (var w in widths)
-        {
-            if (prev >= 0)
-            {
-                var d = w - prev;
-                if (d > 0 && (step == 0 || d < step)) step = d;
-            }
-            prev = w;
-        }
+        var step = SmallestStep(Lines(original).Select(l => LeadingWhitespace(l).Length));
+        if (step <= 0) step = replyStep;
         if (step <= 0) step = 4;
-        return (new string(' ', step), step, false);
+        return (new string(' ', step), step);
     }
 
-    /// <summary>Visual width of a leading-whitespace run: space = 1 column; tab = 1 unit in tab mode.</summary>
-    private static int VisualWidth(string ws, bool useTabs)
+    /// <summary>
+    /// The non-empty lines of <paramref name="code"/> whose indentation is code's — not the inside of a multi-line
+    /// verbatim string or block comment, whose leading whitespace belongs to the literal.
+    /// </summary>
+    private static IEnumerable<string> Lines(string code)
     {
-        if (!useTabs) return ws.Length;
+        var state = ScanState.Normal;
+        foreach (var line in code.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n'))
+        {
+            var structural = state == ScanState.Normal;
+            ScanLine(line, ref state);
+            if (structural && !string.IsNullOrWhiteSpace(line)) yield return line;
+        }
+    }
+
+    /// <summary>The smallest positive difference between two distinct widths; 0 when there are not two.</summary>
+    private static int SmallestStep(IEnumerable<int> widths)
+    {
+        int step = 0, prev = -1;
+        foreach (var w in new SortedSet<int>(widths))
+        {
+            if (prev >= 0 && (step == 0 || w - prev < step)) step = w - prev;
+            prev = w;
+        }
+        return step;
+    }
+
+    /// <summary>Width of a leading-whitespace run in columns: a space is one, a tab one indentation unit.</summary>
+    private static int VisualWidth(string ws, int unitWidth)
+    {
         var w = 0;
-        foreach (var c in ws) if (c == '\t') w++;
+        foreach (var c in ws) w += c == '\t' ? unitWidth : 1;
         return w;
     }
 
