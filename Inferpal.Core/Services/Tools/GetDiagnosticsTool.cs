@@ -49,8 +49,10 @@ internal class GetDiagnosticsTool : ITool
         required = Array.Empty<string>(),
     };
 
+    // ⚠ The code is optional: an MSBuild <Error Text="…"/> without a Code prints `X.csproj(5,5): error : …`. Required, a
+    // build that failed on one next to a warning read "0 error(s), 1 warning(s)" — Clean, while dotnet exited 1.
     private static readonly Regex _diagLine = new(
-        @":\s*(error|warning)\s+\w+\s*:", RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
+        @":\s*(error|warning)(?:\s+\w+)?\s*:", RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
 
     internal static bool OutputHasErrors(string output) =>
         !string.IsNullOrEmpty(output) && (_diagLine.IsMatch(output) || _panelLine.IsMatch(output));
@@ -63,7 +65,15 @@ internal class GetDiagnosticsTool : ITool
     // Errors only — warnings don't warrant auto-fix iterations.
     // Exposed as internal so SmartFixValidator can reuse without duplicating the pattern.
     internal static readonly Regex ErrorLineRegex = new(
-        @":\s*error\s+\w+\s*:", RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
+        @":\s*error(?:\s+\w+)?\s*:", RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
+
+    /// <summary>
+    /// The first line of an answer where dotnet refused its command line (MSB1001–MSB1999: no project in the folder, a
+    /// switch it does not know) — about the invocation, never the code: nothing was compiled.
+    /// </summary>
+    internal const string CommandLineRefused =
+        "⚠ dotnet refused its command line (an MSBuild switch error, not the code) — nothing was compiled. Give 'path' as "
+        + "one existing .csproj, .sln or .slnx file. Its reason:";
 
     internal static bool OutputHasBuildErrors(string output) =>
         !string.IsNullOrEmpty(output) && ErrorLineRegex.IsMatch(output);
@@ -164,6 +174,8 @@ internal class GetDiagnosticsTool : ITool
         // compiler had already printed, so it usually DOES contain error lines — and "Errors" sends
         // the /fix-build loop patching a fragment of a build that never finished.
         if (FirstLineIs(Strings.DiagBuildStopped(CountSentinel))) return BuildVerdict.NotBuilt;
+        // And before the error lines too: a refused command line carries the MSB1xxx line that says why.
+        if (firstLine == CommandLineRefused) return BuildVerdict.NotBuilt;
         // ⚠ The editor panel's errors are errors too: its answer is only ever served when it lists one, and with the
         // source between the severity and the code (`error ts 2304:`) it read as "not built" — no end-of-turn notice,
         // and a ✓ on the run of a turn that ended on a broken file.
@@ -331,14 +343,24 @@ internal class GetDiagnosticsTool : ITool
         }
         else
         {
-            var errors   = diagnostics.Count(d => _diagLine.Match(d).Groups[1].Value.Equals("error",   StringComparison.OrdinalIgnoreCase));
-            var warnings = diagnostics.Count(d => _diagLine.Match(d).Groups[1].Value.Equals("warning", StringComparison.OrdinalIgnoreCase));
+            var errorLines = diagnostics.Where(d => _diagLine.Match(d).Groups[1].Value.Equals("error", StringComparison.OrdinalIgnoreCase)).ToList();
+            var warnings   = diagnostics.Count(d => _diagLine.Match(d).Groups[1].Value.Equals("warning", StringComparison.OrdinalIgnoreCase));
 
-            var sb = new StringBuilder();
-            sb.AppendLine(Strings.DiagSummary(errors, warnings, projectFile));
-            sb.AppendLine();
-            sb.AppendLine(ErrorsFirst(diagnostics));
-            body = sb.ToString().Trim();
+            if (errorLines.Count > 0 && errorLines.All(RunTestsTool.IsCommandLineError))
+                // ⚠ Not an error in the code: counted as one, "1 error(s)" turned an end-of-turn notice and the result
+                // bar red over code that was never compiled.
+                body = CommandLineRefused + "\n" + string.Join("\n", errorLines);
+            else if (errorLines.Count == 0 && !run.Succeeded && !run.TimedOut)
+                // ⚠ dotnet failed and no error line is readable: "0 error(s)" read Clean. Its output is the report.
+                body = Strings.DiagBuildFailed(run.ExitCode, run.Stdout.Trim());
+            else
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine(Strings.DiagSummary(errorLines.Count, warnings, projectFile));
+                sb.AppendLine();
+                sb.AppendLine(ErrorsFirst(diagnostics));
+                body = sb.ToString().Trim();
+            }
         }
 
         return run.TimedOut

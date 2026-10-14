@@ -698,7 +698,7 @@ internal class RunTestsTool : ITool
         + "proven. Give 'path' as one existing .csproj or .sln file. Its reason:";
 
     /// <summary>An MSBuild command-line error (MSB1001–MSB1999): about the invocation, never about the code.</summary>
-    private static bool IsCommandLineError(string error) =>
+    internal static bool IsCommandLineError(string error) =>
         Regex.IsMatch(error, @"\berror MSB1\d{3}:", RegexOptions.None, RegexBudget.Default);
 
     private const int MaxCompileErrorsListed = 20;
