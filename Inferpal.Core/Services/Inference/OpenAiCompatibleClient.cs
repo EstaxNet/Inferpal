@@ -609,6 +609,9 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             var (inlineCalls, cleaned) = InlineToolCallParser.FromContent(contentText, known, schemaOf);
             if (inlineCalls is { Count: > 0 })
                 return new ChatTurnResult(cleaned, inlineCalls, tokensUsed, promptTokens, cut, StoppedRepeating: looping);
+            // A call written as text and cut before its closing marker: never the answer.
+            if (cut && InlineToolCallParser.CutCall(contentText, known) is { } cutCall)
+                return new ChatTurnResult(cutCall.Before, [cutCall.Call], tokensUsed, promptTokens, cut, StoppedRepeating: looping);
         }
 
         // Last-resort: a reasoning model under tool_choice:"required" (e.g. Qwen3 on LM Studio) can

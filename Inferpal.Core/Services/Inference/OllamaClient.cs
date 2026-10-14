@@ -311,6 +311,9 @@ internal class OllamaClient : InferenceProviderBase
             var (inlineCalls, cleaned) = InlineToolCallParser.FromContent(contentBuilder.ToString(), known, ToolSchemas.Of(defs));
             if (inlineCalls is { Count: > 0 })
                 return new ChatTurnResult(cleaned, inlineCalls, tokensUsed, promptTokens, cut, StoppedRepeating: looping);
+            // A call written as text and cut before its closing marker: never the answer.
+            if (cut && InlineToolCallParser.CutCall(contentBuilder.ToString(), known) is { } cutCall)
+                return new ChatTurnResult(cutCall.Before, [cutCall.Call], tokensUsed, promptTokens, cut, StoppedRepeating: looping);
         }
 
         var contentText      = contentBuilder.ToString();

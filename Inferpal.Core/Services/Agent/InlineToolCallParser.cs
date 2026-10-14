@@ -308,6 +308,52 @@ internal static class InlineToolCallParser
         return true;
     }
 
+    /// <summary>
+    /// The call a reply CUT at the length limit opened and never closed — read as an unreadable call (its name, its
+    /// arguments the text that was written) — with the text written before it; <c>null</c> when the reply opens no known
+    /// call form, or one naming a tool that was not offered.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Every reader above needs the call's closing marker, and a cut reply has none: a <c>write_file</c> of a few
+    /// kilobytes near a full window was cut before it, no call was read, and the raw call stayed text — the
+    /// orchestrator asked for a tool, the model wrote the same call, cut at the same place, until the raw call became
+    /// the answer kept in the history. Read as an unreadable call it reaches the funnel
+    /// (<c>AgentOrchestrator.ExecuteToolSafeAsync</c>), which says the one remedy that works on a cut reply: split
+    /// the work. Callers ask only for a cut reply: an unclosed form in a complete one is text.
+    /// </remarks>
+    internal static (ToolCallDto Call, string Before)? CutCall(string content, IReadOnlyCollection<string> offered)
+    {
+        (int Index, string Name)? first = null;
+        try
+        {
+            foreach (var opener in CutCallOpeners)
+                foreach (Match m in opener.Matches(content))
+                {
+                    var name = m.Groups["name"].Value;
+                    if (!offered.Contains(name)) continue;
+                    if (first is null || m.Index < first.Value.Index) first = (m.Index, name);
+                    break;
+                }
+        }
+        catch (RegexMatchTimeoutException) { return null; }
+
+        if (first is not { } call) return null;
+        return (new ToolCallDto(new ToolCallFunction(call.Name, EmptyObject()) { UnparsedArguments = content[call.Index..] }),
+                content[..call.Index].Trim());
+    }
+
+    /// <summary>The opening of each call form read above, up to the tool's name.</summary>
+    private static readonly Regex[] CutCallOpeners =
+    [
+        new(@"<tool_call>\s*\{\s*""name""\s*:\s*""(?<name>[A-Za-z0-9_.\-]+)""", RegexOptions.None, RegexBudget.Default),
+        new(@"<tool_call>\s*<function=(?<name>[A-Za-z0-9_.\-]+)>",             RegexOptions.None, RegexBudget.Default),
+        new(@"<tool_call>\s*(?<name>[A-Za-z0-9_.\-]+)\s*<arg_key>",              RegexOptions.None, RegexBudget.Default),
+        new(@"<\|tool_call>\s*call:(?<name>[A-Za-z0-9_.\-]+)",                    RegexOptions.None, RegexBudget.Default),
+        new(@"\[TOOL_CALLS\]\s*(?<name>[A-Za-z0-9_.\-]+)",                        RegexOptions.None, RegexBudget.Default),
+        new(@"<atem:invoke\s+name=""(?<name>[A-Za-z0-9_.\-]+)""",                RegexOptions.None, RegexBudget.Default),
+        new(@"<\|START_ACTION\|>\s*\[?\s*\{\s*""tool_name""\s*:\s*""(?<name>[A-Za-z0-9_.\-]+)""", RegexOptions.None, RegexBudget.Default),
+    ];
+
     // The name written as the first property — the shape every model writes; a "name" further in may be an argument's.
     private static readonly Regex LeadingNameRegex =
         new(@"^\{\s*""name""\s*:\s*""([A-Za-z0-9_.\-]+)""", RegexOptions.Compiled, RegexBudget.Default);
