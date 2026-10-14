@@ -539,6 +539,7 @@ internal class InferpalConfig
     {
         var path = EffectiveConfigPath;
         InferpalConfig cfg;
+        var fromFile = false;
 
         if (!File.Exists(path))
         {
@@ -549,6 +550,7 @@ internal class InferpalConfig
         else if (TryRead(path, out var parsed, out var error, out var repaired))
         {
             cfg = parsed!;
+            fromFile = true;
             if (repaired.Count > 0)
                 Services.Diagnostics.Record("InferpalConfig.Load",
                     $"{path} holds null for {string.Join(", ", repaired)} — factory defaults are used for "
@@ -578,6 +580,7 @@ internal class InferpalConfig
         if (follow) Services.Diagnostics.Forget("InferpalConfig.Follow", path);
         Strings.ApplyLanguage(cfg.Language);
         cfg._baseline = Snapshot(cfg);
+        if (fromFile) cfg._fileAsRead = Snapshot(cfg);
         return cfg;
     }
 
@@ -680,20 +683,31 @@ internal class InferpalConfig
     // built in code, which is then written whole.
     private System.Text.Json.Nodes.JsonObject? _baseline;
 
+    // The FILE as this copy last read or wrote it — unlike the baseline, without what this copy holds for its session
+    // only. Null for a copy that never saw a readable file.
+    private System.Text.Json.Nodes.JsonObject? _fileAsRead;
+
     public void Save()
     {
         var path = SavePathForTests ?? EffectiveConfigPath;
-        PreserveUnreadableFile(path);
+
+        // ⚠ ONE read decides both the copy set aside and the merge: judged twice, a file held for an instant read as
+        // readable by one and not by the other — kept aside for nothing, or merged over the factory values unkept.
+        var readable = TryReadSnapshot(path, out var onDisk);
+        if (!readable) PreserveUnreadableFile(path);
 
         // Visual Studio and VS Code each keep their own copy of this file in memory. Written whole, a
         // save reverted every setting the other editor had changed since this copy was read — a
         // model, a backend, a deny rule. Only what THIS copy changed is laid over the file.
         var mine    = Snapshot(this);
-        var toWrite = _baseline is null                       ? mine
-                    : TryReadSnapshot(path, out var onDisk)  ? MergeChanges(onDisk, mine, _baseline)
-                    // No readable file (a fresh install): the factory values stand for it, so a value set for
-                    // the session only (UseDefaultModelForSession) stays out of it too.
-                    : MergeChanges(Snapshot(new InferpalConfig()), mine, _baseline);
+        var toWrite = _baseline is null ? mine
+                    : readable          ? MergeChanges(onDisk, mine, _baseline)
+                    // ⚠ Unreadable is not "the factory values": a file broken by a hand edit while this copy was open
+                    // — one comma too many — was replaced by the factory values plus this one change, and the backend,
+                    // the MCP servers and the deny rules were gone, in this window too (they are read from the file).
+                    // Laid over the file as this copy last saw it; the factory values only for a copy that never saw
+                    // one (a fresh install), so a value set for the session only stays out of it either way.
+                    : MergeChanges(_fileAsRead ?? Snapshot(new InferpalConfig()), mine, _baseline);
 
         // Atomic: a torn write here leaves the user without a usable configuration, and this
         // runs on every /model, /hardware, /docs and settings save.
@@ -710,7 +724,8 @@ internal class InferpalConfig
         // client stays the previous backend's until restart — InferenceProviderFactory.PendingSwitch
         // is what the connection messages read to say so. The next save compares against what this
         // copy holds now, so what it did not change keeps coming from the file.
-        _baseline = mine;
+        _baseline   = mine;
+        _fileAsRead = toWrite.DeepClone().AsObject();
 
         // Drop the cached parse: a save within the same file-time tick would otherwise keep
         // serving the previous values to Load().
@@ -856,6 +871,7 @@ internal class InferpalConfig
         p.SetValue(this, onDisk[key].Deserialize(p.PropertyType));
         // Taken from the file, so not a change of this copy: a later save leaves it to the file.
         if (_baseline is not null) _baseline[key] = onDisk[key]?.DeepClone();
+        _fileAsRead = onDisk;
         return true;
     }
 
@@ -889,6 +905,7 @@ internal class InferpalConfig
                 : mine;   // changed here and not mergeable: this copy's own stands, as a save would write it
         p.SetValue(this, followed?.Deserialize(p.PropertyType) ?? p.GetValue(new InferpalConfig()));
         _baseline[key] = onDisk[key]?.DeepClone();
+        _fileAsRead    = onDisk;
     }
 
     /// <summary>The documentation sources as they stand NOW (another window may have changed them): see <see cref="Shared{T}"/>.</summary>
@@ -943,6 +960,7 @@ internal class InferpalConfig
             if (_baseline is not null) _baseline[key] = now[key]?.DeepClone();
             taken.Add(key);
         }
+        _fileAsRead = now;
         return taken;
     }
 
@@ -977,16 +995,16 @@ internal class InferpalConfig
     /// load returns factory defaults, and the first <c>Save()</c> along — a setting, <c>/model</c>,
     /// <c>/hardware</c>, <c>/docs</c> — writes them over the original bytes.
     ///
-    /// The state is judged <b>at the moment it matters</b>, by re-reading, rather than through a
-    /// flag set at load time: a flag would be stale as soon as the user repairs the file by hand,
-    /// and it would not cover a <c>Save()</c> from an instance built elsewhere. The cost is one
-    /// re-read per save - the hot path is <see cref="Load"/>, not this one.
+    /// The state is judged <b>at the moment it matters</b> — by the read of the save that is about to
+    /// write, rather than through a flag set at load time: a flag would be stale as soon as the user
+    /// repairs the file by hand, and it would not cover a <c>Save()</c> from an instance built
+    /// elsewhere. Called only when that read failed.
     /// </remarks>
     private static void PreserveUnreadableFile(string path)
     {
         try
         {
-            if (!File.Exists(path) || TryRead(path, out _, out _, out _)) return;
+            if (!File.Exists(path)) return;
 
             var aside = Services.Persistence.AtomicFile.PreserveAside(path);
             if (aside is not null)

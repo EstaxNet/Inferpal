@@ -146,6 +146,33 @@ public class ConfigUnreadableFileTests : IDisposable
         Assert.Contains(rescued, text => text == torn);
     }
 
+    /// <summary>
+    /// A file broken while a copy is open — one comma too many in a hand edit — is not "the factory values": the next
+    /// save of that copy (a /model, a pin, the Agent switch) wrote the factory values plus its one change, and the
+    /// backend, the MCP servers and the deny rules were gone — in that window too, which reads the rules from the file.
+    /// </summary>
+    [Fact]
+    public void AFileBrokenAfterTheLoad_KeepsTheSettingsAtTheNextSave()
+    {
+        new InferpalConfig { BaseUrl = "http://gpu:11434", PermissionRules = @"deny * \.env$", AgentMaxIterations = 42 }.Save();
+        var cfg   = InferpalConfig.LoadOwnCopy();
+        var whole = File.ReadAllText(_path);
+        File.WriteAllText(_path, whole[..(whole.Length / 2)]);   // broken while the copy is open
+
+        cfg.DefaultModel = "picked";
+        cfg.Save();
+
+        var after = InferpalConfig.LoadOwnCopy();
+        Assert.Equal("picked", after.DefaultModel);              // the change of this save
+        Assert.Equal("http://gpu:11434", after.BaseUrl);          // and what the file held
+        Assert.Equal(@"deny * \.env$", after.PermissionRules);
+        Assert.Equal(42, after.AgentMaxIterations);
+        Assert.Equal(@"deny * \.env$", cfg.SharedPermissionRules);   // the rule still decides in this window
+        // The broken bytes are still set aside.
+        Assert.Contains(Directory.GetFiles(_dir).Where(f => !string.Equals(f, _path, StringComparison.OrdinalIgnoreCase)),
+                        f => File.ReadAllText(f) == whole[..(whole.Length / 2)]);
+    }
+
     /// <summary>The ordinary path leaves no residue: a READABLE file is not archived on every save,
     /// or the configuration folder would fill up with copies.</summary>
     [Fact]
