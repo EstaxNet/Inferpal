@@ -274,7 +274,7 @@ internal sealed class RenameSymbolTool : ITool
         var subject = string.Join("\n", hits.Select(h => h.FilePath));
         if (!await _approval.RequestApprovalAsync("rename_symbol", details.ToString(), ct, subject: subject))
             return "Rename cancelled by user.";
-        if (await FileTarget.UnsavedSinceApprovalAsync(_overlay, hits.Select(h => h.FilePath), ct) is { } typedMeanwhile)
+        if (await FileTarget.ChangedSinceApprovalAsync(_overlay, hits.Select(h => new ApprovedFile(h.FilePath, h.OldContent)), ct) is { } typedMeanwhile)
             return typedMeanwhile;
 
         // Back up every file before writing any: a backup that cannot be saved stops the rename untouched.

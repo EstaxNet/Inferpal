@@ -46,9 +46,12 @@ internal class DeleteFileTool : ITool
 
         // Show what is being removed in the approval prompt (best-effort: skip for binary/locked files).
         var details = Strings.DeleteConfirm(path);
+        var shown   = ApprovedFile.Unread(path);
         try
         {
-            var diffText = DiffComputer.ComputeText(await TextFileEncoding.ReadTextAsync(path, ct), string.Empty);
+            var text = await TextFileEncoding.ReadTextAsync(path, ct);
+            shown = new ApprovedFile(path, text);
+            var diffText = DiffComputer.ComputeText(text, string.Empty);
             if (diffText is not null) details += "\n\n" + diffText;
         }
         catch (OperationCanceledException) { throw; }
@@ -56,7 +59,7 @@ internal class DeleteFileTool : ITool
 
         if (!await _approval.RequestApprovalAsync("delete_file", details, ct, subject: path))
             return Strings.DeleteCancelled;
-        if (await FileTarget.UnsavedSinceApprovalAsync(_overlay, path, ct) is { } typedMeanwhile) return typedMeanwhile;
+        if (await FileTarget.ChangedSinceApprovalAsync(_overlay, shown, ct) is { } changedMeanwhile) return changedMeanwhile;
 
         var (saved, snapPath) = await _history.BackUpBeforeChangeAsync(path, ct);
         if (!saved) return FileHistoryService.BackupFailedMessage(path);

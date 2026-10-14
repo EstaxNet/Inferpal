@@ -64,32 +64,59 @@ internal static class FileTarget
             : null;
 
     /// <summary>
-    /// The refusal for writing any of <paramref name="paths"/> when the editor holds unsaved changes to it NOW — asked
-    /// after the approval, right before writing; <c>null</c> when nothing is in the way.
+    /// The refusal for writing any of <paramref name="files"/> when it changed while the approval was pending — the
+    /// editor holds unsaved changes to it NOW, or the file on disk is no longer the text the change was computed from;
+    /// asked after the approval, right before writing; <c>null</c> when nothing is in the way.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// ⚠ <see cref="UnsavedRefusal"/> runs before the card, and the card can wait for minutes while the user keeps
     /// working in that very file. Written anyway, the edit reloads the buffer over the typing (Visual Studio asks
     /// "reload?", and yes erases it) or is undone by the user's next save (VS Code) — under a success already reported.
-    /// Every tool that checks before its card checks again here, before its first write.
+    /// </para>
+    /// <para>
+    /// ⚠ And what the user SAVED meanwhile — Ctrl+S, VS Code's auto-save, another program — is no unsaved change: the
+    /// change approved was computed from the file read before the card, so writing it put that older text back over
+    /// the save, under "applied". The text each change was computed from is required, so no writer can skip the check.
+    /// </para>
     /// </remarks>
-    public static async Task<string?> UnsavedSinceApprovalAsync(
-        Editor.OpenDocumentOverlay? overlay, IEnumerable<string> paths, CancellationToken ct)
+    public static async Task<string?> ChangedSinceApprovalAsync(
+        Editor.OpenDocumentOverlay? overlay, IEnumerable<ApprovedFile> files, CancellationToken ct)
     {
-        if (overlay is null) return null;
-        var named = paths.ToList();
-        // The paths too: an editor that can only be asked about one file is asked about these.
-        await overlay.RefreshAsync(ct, named);
-        foreach (var path in named)
-            if (overlay.HasUnsavedChanges(path))
-                return $"'{path}' got unsaved changes in the editor while the approval was pending: nothing was " +
-                       "written, so what the user typed is kept. Ask the user to save the file, then try again.";
+        var approved = files.ToList();
+        if (overlay is not null)
+        {
+            var named = approved.Select(f => f.Path).ToList();
+            // The paths too: an editor that can only be asked about one file is asked about these.
+            await overlay.RefreshAsync(ct, named);
+            foreach (var path in named)
+                if (overlay.HasUnsavedChanges(path))
+                    return $"'{path}' got unsaved changes in the editor while the approval was pending: nothing was " +
+                           "written, so what the user typed is kept. Ask the user to save the file, then try again.";
+        }
+
+        foreach (var file in approved)
+        {
+            if (!file.Compared) continue;
+            var exists = File.Exists(file.Path);
+            if (file.Text is null)
+            {
+                if (exists)
+                    return $"'{file.Path}' was created by something else while the approval was pending: nothing was " +
+                           "written, so that file is kept. Read it, then decide what to change.";
+                continue;
+            }
+            if (!exists || !string.Equals(await TextFileEncoding.ReadTextAsync(file.Path, ct), file.Text, StringComparison.Ordinal))
+                return $"'{file.Path}' changed on disk while the approval was pending (saved in the editor, or written " +
+                       "by another program): nothing was written, so that change is kept. Read the file again and redo " +
+                       "the edit on what it holds now.";
+        }
         return null;
     }
 
-    /// <inheritdoc cref="UnsavedSinceApprovalAsync(Editor.OpenDocumentOverlay?, IEnumerable{string}, CancellationToken)"/>
-    public static Task<string?> UnsavedSinceApprovalAsync(Editor.OpenDocumentOverlay? overlay, string path, CancellationToken ct) =>
-        UnsavedSinceApprovalAsync(overlay, [path], ct);
+    /// <inheritdoc cref="ChangedSinceApprovalAsync(Editor.OpenDocumentOverlay?, IEnumerable{ApprovedFile}, CancellationToken)"/>
+    public static Task<string?> ChangedSinceApprovalAsync(Editor.OpenDocumentOverlay? overlay, ApprovedFile file, CancellationToken ct) =>
+        ChangedSinceApprovalAsync(overlay, [file], ct);
 
     /// <summary>
     /// The refusal for writing <paramref name="content"/> to <paramref name="path"/> when the file's own encoding — a
@@ -114,4 +141,17 @@ internal static class FileTarget
         $"'{character}' (U+{char.ConvertToUtf32(character, 0):X4}, line {line}): written, it would become another " +
         $"character. Nothing was written. Keep to characters {encoding.WebName} holds, or ask the user to convert " +
         "the file to UTF-8.";
+}
+
+/// <summary>A file an approved change writes, with the text that change was computed from — the text the card showed.</summary>
+/// <param name="Path">The file.</param>
+/// <param name="Text">Its text when the change was computed; <c>null</c> when it did not exist then.</param>
+/// <param name="Compared">Whether that text is known: <c>false</c> when the card could not read it (a locked file).</param>
+internal readonly record struct ApprovedFile(string Path, string? Text, bool Compared = true)
+{
+    /// <summary>A file the change creates: it must still not exist when the change is written.</summary>
+    public static ApprovedFile Absent(string path) => new(path, null);
+
+    /// <summary>A file whose text the card could not read: nothing to compare it with.</summary>
+    public static ApprovedFile Unread(string path) => new(path, null, Compared: false);
 }

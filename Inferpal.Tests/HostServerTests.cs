@@ -2404,7 +2404,7 @@ public partial class HostServerTests
             .ToList();
 
         Assert.True(writers.Count >= 5, $"the scan found {writers.Count} writing tools: it reads nothing any more");   // WITNESS
-        Assert.Empty(writers.Where(s => !s.Code.Contains("FileTarget.UnsavedSinceApprovalAsync(", StringComparison.Ordinal))
+        Assert.Empty(writers.Where(s => !s.Code.Contains("FileTarget.ChangedSinceApprovalAsync(", StringComparison.Ordinal))
                             .Select(s => s.File));
     }
 

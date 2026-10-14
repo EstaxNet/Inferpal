@@ -65,6 +65,9 @@ prompt:
   Code: the edit is refused before the prompt, and checked again after you approve — so what you
   type while the prompt waits is kept. Save the file and ask again. `read_file` shows the unsaved
   text.
+- A file **saved** while the prompt waits (by you, by auto-save, by another program) is not
+  written over either: the approved change was computed from the file as it was, so it is
+  refused and the agent is told to read the file again.
 - Gated tools: `write_file`, `apply_diff`, `apply_edits`, `delete_file`, `run_command`,
   `rename_symbol`, `fetch_url`, `web_search`, custom shell tools, and every MCP tool call.
 
