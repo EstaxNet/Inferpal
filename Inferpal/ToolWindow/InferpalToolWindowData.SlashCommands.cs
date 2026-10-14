@@ -586,7 +586,7 @@ internal partial class InferpalToolWindowData
 
     private async Task HandleDiagnosticsCommandAsync(string[] parts)
     {
-        // §24: `export` needs the caller's world (config, front-end label, connection badge,
+        // `export` needs the caller's world (config, front-end label, connection badge,
         // workspace root for path sanitising); the other sub-commands ignore the context.
         // The in-process half is read HERE, not in the handler: the handler stays pure, and we are
         // the side that has an in-process peer - when it did not load, the failure is invisible

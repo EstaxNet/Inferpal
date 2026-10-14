@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Inferpal.Tests;
 
-// Background tasks that propose writes (roadmap §18, the V2 of §9): the recorder that grants
+// Background tasks that propose writes (`/task propose`): the recorder that grants
 // nothing, the registry that opens the editing tools without opening execution, and the report.
 //
 // Serialized since 2026-09-10: the report renders the diff's truncation marker, which went
@@ -57,8 +57,9 @@ public class TaskProposalTests
     [Fact]
     public async Task EveryApprovalRequest_IsRecordedAndRefused()
     {
-        // The whole safety argument of §18: a mutating tool treats a refusal as "touch nothing", so
-        // a task in proposal mode cannot modify the workspace however much the model insists.
+        // The whole safety argument of proposal mode: a mutating tool treats a refusal as "touch
+        // nothing", so a task in proposal mode cannot modify the workspace however much the model
+        // insists.
         var recorder = new ProposalRecorder();
 
         var granted = await recorder.RequestApprovalAsync(
@@ -116,8 +117,8 @@ public class TaskProposalTests
     [Fact]
     public void ProposalMode_ExposesEditing_ButNeverExecutionOrNetwork()
     {
-        // Deferring a *command* would be the §9 blank cheque wearing another hat, and a command has
-        // no diff to review — the user would be approving a sentence, not a change.
+        // Deferring a *command* would be the grouped-approval blank cheque wearing another hat, and
+        // a command has no diff to review — the user would be approving a sentence, not a change.
         var registry = new BackgroundTaskToolRegistry(new SpyRegistry(new ProposalRecorder()),
                                                       new ProposalRecorder());
 

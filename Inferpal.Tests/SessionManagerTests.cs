@@ -264,7 +264,7 @@ public class SessionManagerTests : IDisposable
     [Fact]
     public void FormatAge_NormalizesLocalKind_AndNeverGoesNegative()
     {
-        // §27.6 - instants arrive from JSON with a varying Kind: a Local Kind shifted the age by
+        // Instants arrive from JSON with a varying Kind: a Local Kind would shift the age by
         // the time zone. And a clock going backwards must never show a "-3m ago".
         var savedLocal = Now.AddMinutes(-5).ToLocalTime(); // same instant, Kind = Local
         Assert.Equal("5m ago", SessionManager.FormatAge(savedLocal, Now));

@@ -47,7 +47,7 @@ public class TddTests
             onProgress, onTestReport, onStep: null, onToken: null, onFixResult: null,
             CancellationToken.None, capture, approval);
 
-    // ── §25 fakes: capture port + approval, both recording ─────────────────────────
+    // ── Debug-capture fakes: capture port + approval, both recording ───────────────
     private sealed class FakeCapture : Services.Debugging.ITestDebugCapture
     {
         public bool IsAvailable { get; set; } = true;
@@ -213,7 +213,7 @@ public class TddTests
             TddCommandHandler.BuildFixPrompt(Green, null).Replace('\n', ' '));
     }
 
-    // ── §25: debugger state at the failure point ────────────────────────────────────
+    // ── Debugger state at the failure point ─────────────────────────────────────────
 
     private static Services.Debugging.DebugStopState SomeState() => new(
         "exception", 1,
@@ -315,19 +315,19 @@ public class TddTests
         await RunAsync(client, tools, ["/tdd"], onProgress: progress.Add);   // no port, no approval
 
         Assert.DoesNotContain("Debugger", client.AgentRuns[0].History[^1].Content);
-        // An ABSENT port is not a broken port: on the VS Code side without the §21 `debug`
-        // capability, §25 does not exist, and announcing a missing capability there would be
-        // noise on every /tdd.
+        // An ABSENT port is not a broken port: on the VS Code side without the `debug`
+        // capability, the debugger-state capture does not exist, and announcing a missing
+        // capability there would be noise on every /tdd.
         Assert.DoesNotContain(Strings.TddDebugCaptureUnavailable, progress);
     }
 
     [Fact]
     public async Task CaptureUnavailable_SaysSoOnce_AndTheLoopRunsPlain()
     {
-        // The measured defect, in one case. The in-process debugger driver had not started, so
-        // `IsAvailable` was false: /tdd ran its bare red loop WITHOUT a word, nobody saw that the
-        // §25 capture had never been offered, and the probe reading it scored that as a product
-        // failure - where there was only a missing capability.
+        // When the in-process debugger driver has not started, `IsAvailable` is false. A silent
+        // /tdd would run its bare red loop WITHOUT a word, nobody would see that the debugger-state
+        // capture was never offered, and a probe reading it would score that as a product
+        // failure - where there is only a missing capability.
         var client = new FakeInferenceProvider();
         var tools  = new FakeToolRegistry();
         tools.TestOutputs.Enqueue(RedFqn);
@@ -365,7 +365,7 @@ public class TddTests
         Assert.DoesNotContain(Strings.TddDebugCaptureUnavailable, progress);
     }
 
-    // ── §25: test-file write guard ──────────────────────────────────────────────────
+    // ── Test-file write guard ───────────────────────────────────────────────────────
 
     [Theory]
     [InlineData(@"C:\proj\tests\CalculatorTests.cs", true)]

@@ -7,7 +7,7 @@ using Xunit;
 namespace Inferpal.Tests;
 
 /// <summary>
-/// What the semantic index refuses to read (roadmap §19). The profile may lengthen the list; the
+/// What the semantic index refuses to read. The project profile may lengthen the list; the
 /// tests below exist to prove it can never shorten it.
 /// </summary>
 [Collection("Diagnostics")]   // clears and reads the static ring

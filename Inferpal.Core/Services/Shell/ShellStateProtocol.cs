@@ -209,8 +209,8 @@ internal static class ShellStateProtocol
 
     /// <summary>
     /// Comparer for environment variable NAMES: case-insensitive on Windows, case-sensitive on
-    /// POSIX (§27.6 - <c>PATH</c> and <c>path</c> are two distinct variables on Linux; a shared
-    /// OrdinalIgnoreCase merged them silently on the published linux-x64/darwin VSIXes).
+    /// POSIX (<c>PATH</c> and <c>path</c> are two distinct variables on Linux; a shared
+    /// OrdinalIgnoreCase would merge them silently on the published linux-x64/darwin VSIXes).
     /// </summary>
     public static StringComparer EnvNameComparer =>
         OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;

@@ -4,9 +4,9 @@ using Inferpal.Services;
 namespace Inferpal.ToolWindow;
 
 /// <summary>
-/// The one way UI code copies text to the Windows clipboard (§27.6 — five sites duplicated the
-/// try/Swallow guard with drifting details: the STA dance present or not, the empty-string guard
-/// present or not; the X-Ray site called WPF from the view-model context, not STA).
+/// The one way UI code copies text to the Windows clipboard, so the try/Swallow guard, the STA
+/// dance and the empty-string guard cannot drift between copy sites (a site that calls WPF from
+/// the view-model context is not on an STA thread).
 /// </summary>
 internal static class ClipboardHelper
 {

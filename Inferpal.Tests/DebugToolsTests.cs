@@ -12,7 +12,7 @@ using Xunit;
 
 namespace Inferpal.Tests;
 
-// Roadmap §21. The rules being locked here were written before the code, and two of them are
+// The debugger tools (debug_control, debug_inspect). Two of the rules locked here are
 // safety rules rather than behaviour: starting a debugging session executes the user's program, so
 // it goes through approval; and a background task must never be handed that capability.
 public class DebugToolsTests
@@ -239,7 +239,7 @@ public class DebugToolsTests
         Assert.DoesNotContain("ran to completion", result);
     }
 
-    // ── Budget: exhaustion is reported, never silently ignored (lesson of §20) ───────
+    // ── Budget: exhaustion is reported, never silently ignored ─────────────────────
 
     [Fact]
     public async Task Budget_WhenExhausted_StopsSteppingAndForbidsGuessing()
@@ -558,7 +558,7 @@ public class DebugToolsTests
     [Fact]
     public void BackgroundTaskRegistry_NeverGetsTheDebugSurface()
     {
-        // A background task launching the user's program would be the blank cheque §9 refused:
+        // A background task launching the user's program would be the blank cheque /task refuses:
         // an execution consented to before anyone knows what it is. The sibling registry drops the
         // surface entirely rather than routing its approval into the proposal recorder.
         var sibling = BuildRegistry(new FakeDebugSession()).WithApprovalService(new StubApproval(true));

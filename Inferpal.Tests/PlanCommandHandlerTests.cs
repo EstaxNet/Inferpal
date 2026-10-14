@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Inferpal.Tests;
 
-// /plan (roadmap §17): the sub-command table both front-ends share, and the two things that must
+// /plan (persistent plans): the sub-command table both front-ends share, and the two things that must
 // not drift — bare /plan still toggles plan mode, and nothing here executes a step.
 public class PlanCommandHandlerTests : IDisposable
 {
@@ -43,8 +43,8 @@ public class PlanCommandHandlerTests : IDisposable
     [Fact]
     public void BarePlan_StillTogglesPlanMode()
     {
-        // /plan has meant "toggle read-only plan mode" since 1.0; §17 adds sub-commands beside it
-        // and must not repurpose the bare form under the user's feet.
+        // Bare /plan means "toggle read-only plan mode"; the persistent-plan sub-commands live beside
+        // it and must not repurpose the bare form under the user's feet.
         var result = Run("/plan");
 
         Assert.True(result.ToggleMode);
@@ -326,8 +326,8 @@ public class PlanCommandHandlerTests : IDisposable
     public void NoSubCommand_EverAsksToRunAnything()
     {
         // The result type carries a message, a mode toggle, an active plan and a file to open —
-        // and deliberately no way to execute a step. Grouped approval is the §9 blank cheque, and
-        // a plan file arrives with every clone. If a field for running steps is ever added, this
+        // and deliberately no way to execute a step. Grouped approval is the blank cheque /task
+        // refuses, and a plan file arrives with every clone. If a field for running steps is ever added, this
         // test is the place where that decision has to be argued.
         var fields = typeof(PlanCommandHandler.PlanCommandResult)
             .GetProperties().Select(p => p.Name).ToArray();

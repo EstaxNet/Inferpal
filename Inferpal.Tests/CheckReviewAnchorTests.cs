@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Inferpal.Tests;
 
-// Roadmap §15 — an anchored review. The single question behind every test here: can a location the
+// /check — an anchored review. The single question behind every test here: can a location the
 // model produced be trusted? A model asked for `file:line` always answers one; only the diff can
 // say whether it points at anything. What cannot be confirmed must be labelled, never dropped and
 // never dressed up as a location.

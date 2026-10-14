@@ -57,10 +57,10 @@ internal sealed class HostSession : IDisposable
     /// </summary>
     public IReadOnlyList<string> FoldersOutOfReach { get; set; } = [];
 
-    /// <summary>Approval pipeline — §25 asks it once per `/tdd` run before any debug capture.</summary>
+    /// <summary>Approval pipeline — `/tdd` asks it once per run before any debug capture.</summary>
     public required IApprovalService     Approval     { get; init; }
 
-    /// <summary>§25 capture port; null when the adapter did not declare `debug/*` support.</summary>
+    /// <summary>`/tdd` debugger capture port; null when the adapter did not declare `debug/*` support.</summary>
     public Services.Debugging.ITestDebugCapture? TestCapture { get; init; }
 
     /// <summary>

@@ -21,7 +21,7 @@ namespace Inferpal.Tests;
 /// </para>
 /// <para>
 /// <b>Why it was invisible.</b> The EXECUTION path had already been repaired: <see
-/// cref="ShellLauncher"/> has resolved two dialects since §23, and <c>UserShellTool</c> carries the
+/// cref="ShellLauncher"/> resolves two dialects per machine, and <c>UserShellTool</c> carries the
 /// same fault in a comment ("powershell.exe hard-coded here, so every user-defined tool died on the
 /// published linux-x64/darwin-arm64 hosts"). What was left is the DESCRIPTION path — the one
 /// nobody compiles.
@@ -108,9 +108,9 @@ public class EnvironmentFactsTests
     [Fact]
     public void Facts_SayShWhenTheHostRunsSh_NotBash()
     {
-        // §23 repaired "we ask a bash host for PowerShell". The opposite leg stayed: the POSIX
-        // dialect was named "bash" outright, while ShellLauncher resolves /bin/sh on a busybox host
-        // (Alpine, a common dev-container base). A model told "bash" writes [[ ]], arrays, `source`
+        // Per-machine resolution keeps a bash host from being asked for PowerShell. The opposite leg:
+        // the POSIX dialect is never named "bash" outright, since ShellLauncher resolves /bin/sh on a
+        // busybox host (Alpine, a common dev-container base). A model told "bash" writes [[ ]], arrays, `source`
         // and <<< — which ash refuses, one by one.
         var previous = ShellLauncher._overrideForTests;
         try

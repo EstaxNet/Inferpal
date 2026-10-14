@@ -151,7 +151,7 @@ internal static class InProcAliveSignal
         /// <summary>MEF composed our parts: ghost text and diff preview are alive.</summary>
         public bool HasMef => Components.Contains(ComponentMef);
 
-        /// <summary>The debugger driver is serving: the §25 capture of <c>/tdd</c> is available.</summary>
+        /// <summary>The debugger driver is serving: the debugger capture of <c>/tdd</c> is available.</summary>
         public bool HasDebugger => Components.Contains(ComponentDebugger);
 
         /// <summary>The FIM sidecar has answered at least once in this process.</summary>

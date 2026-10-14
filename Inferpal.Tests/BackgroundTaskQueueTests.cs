@@ -52,7 +52,7 @@ public class BackgroundTaskQueueTests
             }
         }
 
-        /// <summary>Modes the queue handed each started task, in order (roadmap §18).</summary>
+        /// <summary>Modes the queue handed each started task (propose or not), in order.</summary>
         public List<bool> ProposeModes { get; } = [];
 
         public async Task<BackgroundTaskQueue.TaskRunOutcome> RunAsync(

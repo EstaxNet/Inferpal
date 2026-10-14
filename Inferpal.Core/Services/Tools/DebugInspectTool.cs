@@ -8,7 +8,7 @@ namespace Inferpal.Services.Tools;
 /// Everything that <i>observes</i>; <see cref="DebugControlTool"/> is everything that acts.
 /// </summary>
 /// <remarks>
-/// No approval, by the consent rule of §21: the execution being observed was already approved when
+/// No approval, by the debugger's consent rule: the execution being observed was already approved when
 /// the session started, and reading it changes nothing. No budget either — reading does not advance
 /// the program, so it cannot loop forever the way stepping can.
 /// </remarks>

@@ -96,7 +96,7 @@ public class DebuggerStateSignalTests : IDisposable
         var text = DebuggerStateSignal.Format(
             Snapshot(reason: "ExceptionThrown", exception: "`System.InvalidOperationException` — bad state"));
 
-        // One vocabulary: this channel and the §21 port describe the same thing to the same reader,
+        // One vocabulary: this channel and the debugger port describe the same thing to the same reader,
         // and used to render it with two different headers.
         Assert.StartsWith("## Debugger paused", text);
         Assert.Contains("Stop reason: ExceptionThrown", text);
@@ -123,7 +123,7 @@ public class DebuggerStateSignalTests : IDisposable
     [Fact]
     public void Format_LongStackAndLocals_AreCapped()
     {
-        // The point of sharing the §21 renderer, not a side effect of it: this path had no budget
+        // The point of sharing the debugger port's renderer, not a side effect of it: this path had no budget
         // at all, so @debugger on a deep stack pasted every frame and every value into a window
         // that has room for neither.
         var text = DebuggerStateSignal.Format(new DebuggerSnapshot(

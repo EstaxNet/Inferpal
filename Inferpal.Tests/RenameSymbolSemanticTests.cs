@@ -6,9 +6,9 @@ using Xunit;
 
 namespace Inferpal.Tests;
 
-// rename_symbol writes files, so its precision matters more than anywhere else: the syntactic path
-// rewrote EVERY identifier spelled like the target, which on real code means renaming a dozen
-// unrelated methods that happen to share a name (roadmap §14).
+// rename_symbol writes files, so its precision matters more than anywhere else: a syntactic path
+// rewrites EVERY identifier spelled like the target, which on real code means renaming a dozen
+// unrelated methods that happen to share a name (hence the Roslyn-backed semantic index).
 [Collection(CultureSerialCollection.Name)]
 public class RenameSymbolSemanticTests : IDisposable
 {

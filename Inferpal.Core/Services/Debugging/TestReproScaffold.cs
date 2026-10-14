@@ -185,8 +185,8 @@ internal static class TestReproScaffold
             if (LooksLikeAssembly(dll)) return dll;
             // Present but not an assembly: a build killed at the wrong moment (the machine went to
             // sleep, the user closed VS) leaves a zero-byte or half-written dll in a folder keyed
-            // by SOURCE hash, so nothing ever invalidates it — every §25 capture on that machine
-            // failed from then on, until someone deleted %AppData% by hand. Dropping the folder
+            // by SOURCE hash, so nothing ever invalidates it — every /tdd debugger capture on that
+            // machine fails from then on, until someone deletes %AppData% by hand. Dropping the folder
             // costs one rebuild; keeping it costs the feature.
             if (File.Exists(dll)) DiscardBuild(Path.GetDirectoryName(dll));
 

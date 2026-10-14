@@ -72,9 +72,9 @@ internal static class ShellLauncher
     /// one); the POSIX side takes the executable's, extension stripped so a Windows box driven at
     /// Git bash reads <c>bash</c> and not <c>bash.exe</c>. bash and sh are <i>not</i> the same
     /// language: a model told "bash" on a busybox host writes <c>[[ ]]</c>, arrays, <c>source</c>
-    /// and <c>&lt;&lt;&lt;</c>, and ash refuses them one by one — the very defect §23 repaired in
-    /// the other direction, left alive on the leg nobody looked at. A blank name falls back to the
-    /// dialect's floor rather than to bash, which is precisely what the host may not have.
+    /// and <c>&lt;&lt;&lt;</c>, and ash refuses them one by one: resolving the shell per machine is
+    /// worth nothing if the model is still told bash. A blank name falls back to the dialect's floor
+    /// rather than to bash, which is precisely what the host may not have.
     /// </remarks>
     public static string SpokenName(ShellDialect dialect, string fileName) =>
         dialect == ShellDialect.PowerShell           ? "PowerShell"

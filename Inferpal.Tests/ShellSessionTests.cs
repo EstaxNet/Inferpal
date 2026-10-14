@@ -26,8 +26,8 @@ public class ShellSessionTests
     [Fact]
     public void EnvNameComparer_MatchesThePlatformSemantics()
     {
-        // §27.6 - PATH and path are two distinct variables on POSIX, a single one on Windows;
-        // a shared OrdinalIgnoreCase merged them silently on the linux/darwin side.
+        // PATH and path are two distinct variables on POSIX, a single one on Windows;
+        // a shared OrdinalIgnoreCase would merge them silently on the linux/darwin side.
         var dict = new Dictionary<string, string>(ShellStateProtocol.EnvNameComparer) { ["PATH"] = "a" };
         if (OperatingSystem.IsWindows())
             Assert.True(dict.ContainsKey("path"), "on Windows env names are case-insensitive");
@@ -68,9 +68,9 @@ public class ShellSessionTests
     public void ParseForeground_MarkerGluedToUnterminatedOutput_StillSplits()
     {
         // A command whose output has no trailing newline (`printf 'hello-gate'`,
-        // `base64 -d`, a native exe) glues the marker to its last line. Seen live on the
-        // §23 Linux battery: the raw state block leaked into the visible output and the
-        // cwd/env state of the call was silently lost.
+        // `base64 -d`, a native exe) glues the marker to its last line. Left unsplit, the
+        // raw state block leaks into the visible output and the cwd/env state of the call
+        // is silently lost.
         const string marker = "INFERPAL_STATE_abc";
         var stdout =
             "hello-gate" + marker + "\n" +

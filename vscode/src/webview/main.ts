@@ -1073,7 +1073,7 @@ function answerWaitingCard(value: 0 | 1): boolean {
   return true;
 }
 
-// §27.5 — the run this card belonged to was cancelled host-side: freeze it (same inert look as
+// The run this card belonged to was cancelled host-side: freeze it (same inert look as
 // an answered card) so its buttons cannot answer into a run that no longer exists.
 function dismissApprovalCard(id: number): void {
   const card = approvalCards.get(id);

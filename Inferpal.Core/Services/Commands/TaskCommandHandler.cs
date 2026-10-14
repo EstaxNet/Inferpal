@@ -52,8 +52,8 @@ internal static class TaskCommandHandler
         }
 
         // `/task apply <id> <n>`: one proposal, through the usual prompt. There is deliberately no
-        // form that applies them all — that would be the grouped approval §9 refuses, moved from
-        // submission to return.
+        // form that applies them all — that would be the grouped approval `/task` refuses (a blank
+        // cheque), moved from submission to return.
         if (IsWord(args[0], "apply"))
             return Apply(queue, args);
 

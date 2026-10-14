@@ -127,7 +127,7 @@ public class DiagnosticsCommandHandlerTests : IDisposable
     public void List_IsAcceptedExplicitly() =>
         Assert.Equal(Strings.DiagnosticsEmpty, DiagnosticsCommandHandler.Handle(Cmd("list")).Message);
 
-    // ── §24: /diagnostics export — the support bundle ───────────────────────────
+    // ── /diagnostics export — the support bundle ────────────────────────────────
 
     private static DiagnosticsExportContext Ctx(
         Inferpal.Config.InferpalConfig? config = null, string? root = null) =>

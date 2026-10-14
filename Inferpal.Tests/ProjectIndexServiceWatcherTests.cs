@@ -7,9 +7,9 @@ using Xunit;
 
 namespace Inferpal.Tests;
 
-// §27.1 - the blind window of the RAG watcher. The watcher is armed BEFORE the initial pass and
+// The blind window of the RAG watcher. The watcher is armed BEFORE the initial pass and
 // the backlog accumulated during the pass is drained after the final SaveAsync: a file modified
-// while the pass runs no longer stays stale until the next boot. The drain (and the normal watcher
+// while the pass runs does not stay stale until the next boot. The drain (and the normal watcher
 // path) reuses the embeddings of chunks whose hash is unchanged instead of re-embedding the
 // whole file.
 // Serialized: two tests here read the Diagnostics ring buffer, which is static.

@@ -9,7 +9,7 @@ using Xunit;
 namespace Inferpal.Tests;
 
 /// <summary>
-/// <c>/onboard</c> — the visible half of the project profile (roadmap §19): it reports the three
+/// <c>/onboard</c> — the visible half of the committable project profile: it reports the three
 /// categories, applies only what the user asks for, and drafts <c>.inferpal/context.md</c>.
 /// </summary>
 [Collection(CultureSerialCollection.Name)]
@@ -263,8 +263,9 @@ public class OnboardCommandHandlerTests : IDisposable
     }
 
     /// <summary>
-    /// The whole point of §19: a clone may recommend and may not decide. Reporting the profile —
-    /// the path every session takes — must leave the configuration exactly as it found it.
+    /// The whole point of the project profile: a clone may recommend and may not decide.
+    /// Reporting it — the path every session takes — must leave the configuration exactly as it
+    /// found it.
     /// </summary>
     [Fact]
     public async Task Reporting_NeverTouchesTheConfiguration()

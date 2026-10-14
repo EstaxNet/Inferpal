@@ -61,6 +61,6 @@ internal static class DebugOps
     /// as one that "did not start".</remarks>
     internal static readonly TimeSpan AnswerMargin = TimeSpan.FromSeconds(10);
 
-    /// <summary>§25: attach to a waiting repro runner and capture the unhandled-exception stop.</summary>
+    /// <summary>Attach to a waiting repro runner and capture the unhandled-exception stop.</summary>
     internal const string CaptureTest      = "capture_test";
 }

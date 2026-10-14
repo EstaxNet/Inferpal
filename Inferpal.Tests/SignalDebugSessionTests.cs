@@ -9,7 +9,7 @@ namespace Inferpal.Tests;
 /// The Visual Studio side of the <c>/debug</c> port, exercised against a stand-in driver that
 /// speaks the same file protocol as the real in-process one. Everything below the EnvDTE calls is
 /// therefore covered without a devenv — what is not covered is the automation itself, which is what
-/// the §21 probe measured.
+/// only a probe against a real devenv measures.
 /// </summary>
 [Collection(SignalCollection.Name)]
 public class SignalDebugSessionTests : IDisposable

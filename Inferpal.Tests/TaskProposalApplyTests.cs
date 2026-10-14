@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Inferpal.Tests;
 
-// Applying a proposal (roadmap §18, tranche 2): the staleness rule, the routing of
+// Applying a background task's proposal: the staleness rule, the routing of
 // `/task propose` and `/task apply`, and the promise that applying goes through the real tools.
 public class TaskProposalApplyTests
 {
@@ -212,7 +212,7 @@ public class TaskProposalApplyTests
     [Fact]
     public void ThereIsNoFormThatAppliesEveryProposalAtOnce()
     {
-        // Grouped approval is what §9 refuses, and applying a whole batch would only move it from
+        // Grouped approval is what /task refuses, and applying a whole batch would only move it from
         // submission to return. `/task apply <id>` without a number is a usage error, on purpose.
         using var queue = Queue();
         var id = queue.Submit("something", proposeWrites: true)!;

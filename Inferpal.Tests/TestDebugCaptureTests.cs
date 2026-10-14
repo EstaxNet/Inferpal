@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Inferpal.Tests;
 
-// §25 tranche B — the shared (editor-free) half of the capture: test-assembly discovery, the
+// The shared (editor-free) half of /tdd's debugger-state capture: test-assembly discovery, the
 // on-demand repro runner scaffold, and the base orchestration both front-ends inherit.
 public class TestDebugCaptureTests : IDisposable
 {
@@ -89,8 +89,8 @@ public class TestDebugCaptureTests : IDisposable
     [Fact]
     public void Scaffold_PurgesStaleBuilds_KeepingTheCurrentHash()
     {
-        // §27.3 - the per-source-hash cache grows without bound: every shipped version left its
-        // build (~1 MB) behind forever. The purge sweeps foreign hashes and keeps the current one.
+        // Without a purge the per-source-hash cache grows without bound: every shipped version
+        // leaves its build (~1 MB) behind forever. The purge sweeps foreign hashes and keeps the current one.
         var baseDir = Path.Combine(_root, "purge");
         var stale   = Path.Combine(baseDir, "deadbeefdeadbeef");
         var keep    = Path.Combine(baseDir, TestReproScaffold.SourceHash());
@@ -122,7 +122,7 @@ public class TestDebugCaptureTests : IDisposable
     [Fact]
     public async Task Scaffold_BuildLock_IsExclusiveAcrossHolders()
     {
-        // §27.3 - VS and the VS Code host share the scaffold folder: two simultaneous dotnet
+        // VS and the VS Code host share the scaffold folder: two simultaneous dotnet
         // builds in the same directory corrupt each other. The file lock serializes them.
         var dir = Path.Combine(_root, "lock");
         Directory.CreateDirectory(dir);

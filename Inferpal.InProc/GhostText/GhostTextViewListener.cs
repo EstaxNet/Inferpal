@@ -46,7 +46,7 @@ internal sealed class GhostTextViewListener : IWpfTextViewCreationListener
     [Import(AllowDefault = true)]
     internal IAsyncCompletionBroker? CompletionBroker { get; set; }
 
-    // §22 tranche 2: in-process, this IS devenv — the family-A signal instance key is our own
+    // In-process, this IS devenv — the per-instance (family-A) signal key is our own
     // PID. Declared here (and in GhostTextPackage) because this MEF listener is the in-process
     // bootstrap that always loads, and InlineDiffController reads a scoped channel.
     static GhostTextViewListener() =>

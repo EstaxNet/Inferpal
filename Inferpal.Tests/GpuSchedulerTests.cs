@@ -9,9 +9,9 @@ namespace Inferpal.Tests;
 
 // GpuScheduler is a process-wide static gate that also writes the ChatBusySignal file — so it runs
 // in the serialised signal collection with everything else that touches that folder. Acquiring a
-// lease here used to clear the busy marker of a chat running in the developer's own editor, back
-// when ChatBusySignal was a single shared file with an unconditional Clear() (fixed by §22 G4:
-// per-writer markers, Clear() only deletes its own).
+// lease here never clears the busy marker of a chat running in the developer's own editor: a
+// single shared file with an unconditional Clear() would, so markers are per writer (signal files
+// scoped per instance) and Clear() only deletes its own.
 [Collection(SignalCollection.Name)]
 public class GpuSchedulerTests : IDisposable
 {
@@ -159,9 +159,9 @@ public class ChatBusySignalTests : IDisposable
         Assert.False(ChatBusySignal.IsBusy());
     }
 
-    // ── §22 family B (gate G4): one file per writer ─────────────────────────────
-    // The repaired defect: one shared file + an unconditional Clear() → the first host
-    // to finish erased the other's marker, and FIM resumed mid-chat.
+    // ── Chat-busy marker: one file per writer ───────────────────────────────────
+    // Why: with one shared file + an unconditional Clear(), the first host to finish
+    // erases the other's marker, and FIM resumes mid-chat.
 
     /// <summary>A marker from "another" host: same payload shape, different pid — written
     /// through the same <see cref="SignalFile"/> grammar the production reader parses.</summary>
@@ -194,10 +194,10 @@ public class ChatBusySignalTests : IDisposable
     [Fact]
     public void LegacyUnscopedFile_IsHonoured_ButNeverWrittenOrDeleted()
     {
-        // §22 migration, family-B nuance (review 2026-08-15): chat-busy is a machine-wide
+        // Migration to per-writer files, one nuance: chat-busy is a machine-wide
         // *hint*, not an identity channel — honouring an old-version writer's unscoped file
         // keeps FIM quiet during that chat, which is correct. Writing or deleting it stays
-        // forbidden: that was the repaired defect.
+        // forbidden: a shared file is exactly what erases another host's marker.
         var legacy = SignalFile.PathFor("chat_busy.json");
         SignalFile.Write(legacy,
             new ChatBusyState(Environment.ProcessId, SignalFile.Now.ToUnixTimeMilliseconds()),

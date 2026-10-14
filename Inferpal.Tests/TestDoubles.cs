@@ -37,9 +37,9 @@ internal sealed class NullEditorSurface : Services.Editor.IEditorSurface
 
 /// <summary>
 /// A front-end that serves a debugger. Passed on purpose: the two <c>/debug</c> tools are
-/// registered only where an <see cref="Services.Debugging.IDebugSession"/> exists, and since
-/// tranche 3 of §21 that is both front-ends — Visual Studio through the in-process driver, VS
-/// Code through the reverse RPC. The README's number describes what a user is offered, so it
+/// registered only where an <see cref="Services.Debugging.IDebugSession"/> exists, and that
+/// is both front-ends — Visual Studio through the in-process driver, VS Code through the
+/// reverse RPC. The README's number describes what a user is offered, so it
 /// counts them.
 /// </summary>
 internal sealed class NullDebugSession : Services.Debugging.IDebugSession

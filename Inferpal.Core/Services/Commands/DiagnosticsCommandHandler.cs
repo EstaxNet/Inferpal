@@ -133,7 +133,7 @@ internal static class DiagnosticsCommandHandler
           .Append(" — ").Append(ctx.FrontEnd).Append('\n');
         // OSDescription, not OSVersion.VersionString: the latter reports the bare kernel family
         // ("Unix 6.18.33.2") on Linux/macOS, where a support bundle needs the actual platform
-        // ("Linux 6.18.33.2-...-WSL2") — seen on the §23 Linux battery.
+        // ("Linux 6.18.33.2-...-WSL2"), WSL included.
         sb.Append("- **OS**: ").Append(RuntimeInformation.OSDescription)
           .Append(" (").Append(RuntimeInformation.OSArchitecture).Append(")\n");
         sb.Append("- **.NET**: ").Append(Environment.Version).Append('\n');

@@ -32,7 +32,7 @@ internal sealed class GhostTextPackage : AsyncPackage
 
     protected override async Task InitializeAsync(CancellationToken ct, IProgress<ServiceProgressData> progress)
     {
-        // §22 tranche 2: in-process, this IS devenv — the family-A signal instance key is our own
+        // In-process, this IS devenv — the per-instance (family-A) signal key is our own
         // PID. Also declared by GhostTextViewListener (the MEF bootstrap, which can run first).
         Services.Signals.SignalScope.DeclareVsInstance(SignalFile.CurrentPid);
 

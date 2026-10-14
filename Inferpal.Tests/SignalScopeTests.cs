@@ -9,11 +9,11 @@ using Xunit;
 namespace Inferpal.Tests;
 
 /// <summary>
-/// ROADMAP §22, reduced slice: a process with no in-process Visual Studio peer must not read the
-/// signals a VS package publishes into the machine-wide folder.
+/// Signal files scoped per Visual Studio instance: a process with no in-process Visual Studio
+/// peer must not read the signals a VS package publishes into the machine-wide folder.
 /// </summary>
 /// <remarks>
-/// The defect these pin is not the two-VS collision the §21 probes raised — it is one VS plus one
+/// The defect these pin is not a collision between two Visual Studios — it is one VS plus one
 /// VS Code, because the readers live in <c>Inferpal.Core</c> and are therefore served by both
 /// front-ends. Each case writes a real signal first, so the guard is measured against a file that
 /// <em>would</em> have answered; without that, both branches return null and the test would pin
@@ -130,7 +130,7 @@ public class SignalScopeTests : IDisposable
         Assert.False(SignalScope.HasVsInProcessPeer);
     }
 
-    // ── §22 tranche 2 (gate G1): family A scoped per instance ──────────────────────
+    // ── Family A scoped per instance ──────────────────────────────────────────────
     // Two Visual Studios, two solutions: each reads ITS OWN.
 
     [Fact]
@@ -160,7 +160,7 @@ public class SignalScopeTests : IDisposable
     [Fact]
     public void LegacyUnscopedActiveSolution_IgnoredOnceKeyDeclared()
     {
-        // §22 migration (family A): the unscoped file of an earlier version is never read as
+        // Migration (family A): the unscoped file of an earlier version is never read as
         // this instance's own — and never deleted (an old-version pair may still be using it).
         var legacy = SignalFile.PathFor("active_solution.json");
         SignalFile.Write(legacy, new { solutionPath = _slnPath, ts = 0L }, "test");
@@ -173,7 +173,7 @@ public class SignalScopeTests : IDisposable
     [Fact]
     public void NoInstanceDeclared_KeepsLegacyNameAndBehaviour()
     {
-        // G5: a front-end that declared no instance keeps the pre-§22 world.
+        // A front-end that declared no instance keeps the unscoped file names and behaviour.
         ActiveSolutionSignal.Write(_slnPath);
 
         Assert.EndsWith("active_solution.json", ActiveSolutionSignal.FilePath);
@@ -207,7 +207,7 @@ public class SignalScopeTests : IDisposable
         Assert.Equal(id, InlineDiffPreviewSignal.TryReadRequestFor(target)!.Id);
     }
 
-    // ── §22 end of slice (gate G2): the /debug transport joins the per-instance scope ──
+    // ── The /debug transport joins the per-instance scope ─────────────────────────────
     // Unlocked by the 1.6.0 human validation pass (done, 2026-08-15): a /debug emitted by
     // instance A must NEVER be executed by instance B.
 

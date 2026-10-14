@@ -242,7 +242,7 @@ public class DebugCommandSignalTests : IDisposable
     /// <remarks>
     /// Both call sites discarded on the timeout branch only, so a cancelled turn left a live
     /// request on disk. For <c>/debug</c> that means a driver waking up afterwards <b>starts the
-    /// user's program</b> after the agent gave up; for the §25 capture, a debug session opening by
+    /// user's program</b> after the agent gave up; for the <c>/tdd</c> capture, a debug session opening by
     /// itself seconds after the user pressed Stop. The withdrawal now lives in the channel, so
     /// neither caller can forget it again.
     /// </remarks>
@@ -315,7 +315,7 @@ public class DebugCommandSignalTests : IDisposable
 
     /// <summary>
     /// A peer that dies mid-wait ends the wait, instead of burning the whole budget on a devenv
-    /// that can no longer answer (two minutes, for a §25 capture).
+    /// that can no longer answer (two minutes, for a <c>/tdd</c> debugger capture).
     /// </summary>
     [Fact]
     public async Task WaitForAnswer_GivesUp_WhenTheDriverDiesMidWait()

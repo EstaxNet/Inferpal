@@ -231,7 +231,7 @@ public class VsixPackagingTests
     /// <summary>
     /// The licence shipped in the VSIX must carry the GPL v3 text <b>in full</b>.
     ///
-    /// GPL v3 §4 requires shipping a copy of the licence with the program: a link to gnu.org is not
+    /// GPL v3 section 4 requires shipping a copy of the licence with the program: a link to gnu.org is not
     /// one. Until 2026-08-31 the three files were a 33-line notice pointing at the text by URL —
     /// hence a distribution that did not satisfy the licence it claims, and a GitHub repository on
     /// which no licence was detected.
@@ -239,7 +239,7 @@ public class VsixPackagingTests
     /// The rule lives here rather than in a csproj comment because it carries <b>three</b> files
     /// that must move together, and a rule written in a comment is a rule that drifts:
     /// <c>LICENSE</c> stays verbatim (that is what GitHub can recognise), <c>NOTICE</c> carries the
-    /// copyright and the §7 additional terms, and the embedded <c>LICENSE.txt</c> carries both — a
+    /// copyright and the GPL section 7 additional terms, and the embedded <c>LICENSE.txt</c> carries both — a
     /// VSIX exposes a single licence file at install time.
     /// </summary>
     [Fact]
@@ -263,7 +263,7 @@ public class VsixPackagingTests
             Assert.Contains(marker, embeddedCode);
         }
 
-        // LICENSE must stay VERBATIM: adding the project's copyright or the §7 terms to it would
+        // LICENSE must stay VERBATIM: adding the project's copyright or the GPL section 7 terms to it would
         // lose the "GPL-3.0" detection on GitHub, which compares against the reference text.
         Assert.DoesNotContain("ADDITIONAL TERMS", licence);
         Assert.StartsWith("                    GNU GENERAL PUBLIC LICENSE", licence);

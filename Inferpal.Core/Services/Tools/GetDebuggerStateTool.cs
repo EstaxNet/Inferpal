@@ -11,8 +11,8 @@ namespace Inferpal.Services.Tools;
 /// <b>The two channels live in <see cref="DebuggerStateReader"/>, not here.</b> This tool read the
 /// pushed Visual Studio snapshot and nothing else, so under VS Code it replied <i>"No paused debug
 /// session"</i> to a user stopped at a breakpoint: not a missing capability but a wrong answer, and
-/// one the model cannot detect (§21's own rule about collapsing "could not start" into "ran without
-/// stopping", wearing a different hat). Sharing the reader with the two <c>@debugger</c> mentions is
+/// one the model cannot detect (the debugger loop's own rule about collapsing "could not start"
+/// into "ran without stopping", wearing a different hat). Sharing the reader with the two <c>@debugger</c> mentions is
 /// what keeps the three call sites from drifting apart again.
 /// </remarks>
 internal sealed class GetDebuggerStateTool(IDebugSession? session = null, Func<string>? root = null) : ITool

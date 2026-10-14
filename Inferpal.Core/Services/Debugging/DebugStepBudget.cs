@@ -5,8 +5,8 @@ namespace Inferpal.Services.Debugging;
 /// exhaustion <b>reportable</b> rather than silent.
 /// </summary>
 /// <remarks>
-/// Straight from the §20 post-mortem, which is the only reason this class exists. There, sub-agents
-/// that ran out of room concluded anyway, and the parent inherited a belief instead of a result.
+/// This class exists for one failure, the one sub-agents make: an agent that runs out of room
+/// concludes anyway, and its caller inherits a belief instead of a result.
 /// A debugging loop can fail the same way: forty steps into the wrong branch, a model that has run
 /// out of budget must say "I did not conclude", never invent the answer it was hunting for.
 /// Consumption is therefore counted here, and the exhaustion message is written once, in English,

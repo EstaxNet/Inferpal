@@ -357,9 +357,9 @@ internal partial class InferpalToolWindowData
     private async Task ToggleStepModeAsync()
     {
         await RunOnVMContextAsync(() => IsStepMode = !IsStepMode);
-        // Localized: §17 had localized the TWIN pair of plan mode, three lines below, and left
-        // this one as an English literal — in the VM as well as in the host. Nine users out of ten
-        // read English there, with nothing saying so.
+        // Localized, like its TWIN pair of plan mode three lines below — in the VM as well as in
+        // the host: an English literal here is read in English by nine users out of ten, with
+        // nothing saying so.
         await ShowInfoAsync(IsStepMode ? Strings.StepModeOn : Strings.StepModeOff);
     }
 
@@ -373,8 +373,8 @@ internal partial class InferpalToolWindowData
             ChatMode   = CurrentMode();
             RefreshSystemPrompt();
         });
-        // Localised since §17: these two lines were hard-coded English while every other command
-        // message went through Strings — the toolbar button shows them too, in all ten languages.
+        // Localised through Strings, like every other command message: the toolbar button shows
+        // these two lines too, in all ten languages.
         await ShowInfoAsync(IsPlanMode ? Strings.PlanModeOn : Strings.PlanModeOff);
     }
 

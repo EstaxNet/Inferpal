@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Inferpal.Tests;
 
-// analyze_impact gained an exact-references section backed by the C# compiler (roadmap §14).
+// analyze_impact has an exact-references section backed by the C# compiler (CSharpSemanticIndex).
 // Everything else in that report matches names; this section resolves them, and it must say so.
 public class AnalyzeImpactSemanticTests : IDisposable
 {

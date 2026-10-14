@@ -7,8 +7,9 @@ using Xunit;
 namespace Inferpal.Tests;
 
 /// <summary>
-/// The committable project profile (roadmap §19). These tests are about one property above all:
-/// a file that ships with a clone can restrict and suggest, and can grant nothing.
+/// The committable project profile (<c>.inferpal/project.json</c>). These tests are about one
+/// property above all: a file that ships with a clone can restrict and suggest, and can grant
+/// nothing.
 /// </summary>
 [Collection(CultureSerialCollection.Name)]
 public class ProjectProfileTests

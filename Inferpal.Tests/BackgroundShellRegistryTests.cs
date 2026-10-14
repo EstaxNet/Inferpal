@@ -15,7 +15,7 @@ public class BackgroundShellRegistryTests
 {
     /// <summary>
     /// These jobs are written in PS syntax; they skip silently on a pwsh-less POSIX machine
-    /// (every CI matrix runner ships pwsh — the bash contract is covered by PosixShellTests, §23).
+    /// (every CI matrix runner ships pwsh — the bash contract is covered by PosixShellTests).
     /// </summary>
     private static bool PowerShellAvailable => ShellLauncher.Resolve().Dialect == ShellDialect.PowerShell;
 

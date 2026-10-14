@@ -471,7 +471,7 @@ public class SettingsSchemaDriftTests
     /// <remarks>
     /// Case folding is a property of the <b>file system</b>, not of the process: Windows and macOS
     /// (APFS by default) fold, Linux does not — and the extension is published as linux-x64.
-    /// <c>OpenDocumentOverlay</c>, on the Core side, has chosen its comparator that way since §23;
+    /// <c>OpenDocumentOverlay</c>, on the Core side, chooses its comparator that way;
     /// both comparators in <c>debugBridge.ts</c> folded everywhere, which made <c>a.cs</c> and
     /// <c>A.cs</c> the <b>same</b> breakpoint under Linux — removing one removed the other, and the
     /// listing handed the model the wrong file. The doctrine existed, this file did not have it.

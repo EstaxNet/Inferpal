@@ -39,7 +39,7 @@ public class ShellResolutionTests
     [Fact]
     public void Pwsh_OnThePath_StillWins()
     {
-        // Full PowerShell semantics: nothing else changes. Unchanged since §23.
+        // Full PowerShell semantics: nothing else changes. pwsh stays the first choice.
         var (dialect, file) = ShellLauncher.ResolvePosixHost(
             Path("/usr/bin/pwsh", "/bin/bash"), Files("/usr/bin/pwsh", "/bin/bash"));
 

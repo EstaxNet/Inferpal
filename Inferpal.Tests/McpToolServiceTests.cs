@@ -184,8 +184,8 @@ public class McpToolServiceTests
     public async Task ASiblingRegistry_GatesMcpTools_ThroughItsOwnApproval()
     {
         // McpTool captures its approval at construction, so a sibling built by
-        // WithApprovalService used to keep prompting through the ORIGINAL service: the §25
-        // TestFileWriteGuard never applied to MCP tools. The whole
+        // WithApprovalService could keep prompting through the ORIGINAL service: /tdd's
+        // TestFileWriteGuard would never apply to MCP tools. The whole
         // surface of a registry must answer to that registry's approval — tested through the
         // sibling, not just on the nominal path.
         var config = new InferpalConfig { McpServersJson = OneServer("srv") };

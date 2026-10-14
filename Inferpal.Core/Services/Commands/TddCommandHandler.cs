@@ -285,8 +285,8 @@ internal static class TddCommandHandler
     }
 
     /// <summary>
-    /// First "  ✗ Full.Test.Name" entry of a <c>run_tests</c> dotnet report — the test the §25
-    /// capture re-runs. The summary line ("✗ FAILED — …") is excluded, and a name without a dot
+    /// First "  ✗ Full.Test.Name" entry of a <c>run_tests</c> dotnet report — the test the debugger
+    /// capture of <c>/tdd</c> re-runs. The summary line ("✗ FAILED — …") is excluded, and a name without a dot
     /// is not a test FQN. Null on non-dotnet reports (pytest/cargo/go names are not re-runnable
     /// by the .NET capture recipes) — the loop then simply runs without a block.
     /// </summary>

@@ -1678,8 +1678,8 @@ internal static class Strings
     public static string PlanModeOn          => Get(nameof(PlanModeOn));
     public static string PlanModeOff         => Get(nameof(PlanModeOff));
 
-    // ⚠ The twin pair of step mode, left as an English literal in the VM AND in the host when §17
-    // localized the plan-mode one three lines above.
+    // ⚠ The twin pair of step mode, localized like the plan-mode one three lines above: both the
+    // VM and the host read it from here, never from an English literal of their own.
     public static string StepModeOn          => Get(nameof(StepModeOn));
     public static string StepModeOff         => Get(nameof(StepModeOff));
     public static string AgentPausedForStep  => Get(nameof(AgentPausedForStep));

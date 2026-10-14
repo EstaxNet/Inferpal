@@ -11,7 +11,7 @@ namespace Inferpal.Services.Tasks;
 /// <para>Stricter than <see cref="Execution.PlanModeToolRegistry"/> on purpose. Plan mode runs in
 /// front of the user, so it can afford <c>web_search</c>/<c>fetch_url</c> and their prompts; a
 /// background task runs *while the user is coding*, and a modal approval popping up mid-keystroke
-/// is the exact interruption §9 exists to avoid. Anything gated by
+/// is the exact interruption background tasks exist to avoid. Anything gated by
 /// <c>IApprovalService</c> is therefore out, not just the mutating tools.</para>
 /// <para>Two layers, same reason as plan mode: filtering <see cref="Definitions"/> keeps the
 /// excluded tools out of the model's view, and the <see cref="ExecuteAsync"/> guard catches
@@ -49,8 +49,9 @@ internal sealed class BackgroundTaskToolRegistry(
     /// </summary>
     /// <remarks>
     /// <c>run_command</c> is deliberately absent, and stays absent. Deferring a *command* would mean
-    /// storing something to execute later — the blank cheque of §9 wearing a different hat — and a
-    /// command has no diff to review, so the user would be approving a sentence rather than a
+    /// storing something to execute later — the blank cheque of a grouped approval at submission,
+    /// wearing a different hat — and a command has no diff to review, so the user would be
+    /// approving a sentence rather than a
     /// change. Only what can be shown as old→new can be proposed. <c>rename_symbol</c> and
     /// <c>restore_file</c> are out for the same reason at this stage: their effect spans files the
     /// report would have to summarise rather than show.

@@ -8,12 +8,10 @@ namespace Inferpal.Services.Signals;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Seven channels had each carried their own copy of the same five members —
-/// <c>DefaultTempDir</c>, a directory override for tests, an <c>IsProcessAlive</c> with its
-/// override, a clock with its override, and try/catch JSON I/O. Four had the liveness check, three
-/// the clock, all seven the directory. The copies agreed, which is exactly why they were dangerous:
-/// nothing kept them agreeing, and the §22 review had already found channels drifting apart on
-/// smaller things.
+/// Seven channels need the same five members — <c>DefaultTempDir</c>, a directory override for
+/// tests, an <c>IsProcessAlive</c> with its override, a clock with its override, and try/catch JSON
+/// I/O. Copies that agree are still dangerous: nothing keeps them agreeing, and channels drift apart
+/// on smaller things first.
 /// </para>
 /// <para>
 /// <b>One directory, one clock, one liveness check — because that is the truth.</b> These are

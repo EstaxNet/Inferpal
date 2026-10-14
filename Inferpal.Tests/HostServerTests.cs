@@ -72,7 +72,7 @@ public partial class HostServerTests
         [JsonRpcMethod("chat/tool", UseSingleObjectParameterDeserialization = true)]
         public void ChatTool(ToolNote note) => ToolNotes.Enqueue(note);
 
-        // §27.5 — opt-in: stand in for a card the user never answers, so only the host's
+        // Opt-in: stand in for an approval card the user never answers, so only the host's
         // $/cancelRequest can end the wait. Off by default; the other approval tests answer
         // immediately as before.
         public bool ApprovalHangs;
@@ -102,7 +102,7 @@ public partial class HostServerTests
             return ApprovalAnswer;
         }
 
-        // ── Debugger adapter (roadmap §21) ────────────────────────────────────
+        // ── Debugger adapter ──────────────────────────────────────────────────
         // Stands in for the TypeScript DebugBridge: the point of these is that the host's
         // RpcDebugSession really crosses the wire, not that VS Code's debugger works.
 
@@ -1609,7 +1609,7 @@ public partial class HostServerTests
     [Fact]
     public async Task Approval_TurnCancelled_CancelsTheAdapterRequest()
     {
-        // §27.5, the falsifiable half of the live validation: the ghost-card fix assumes a
+        // The falsifiable half: withdrawing the approval card on cancel assumes a
         // cancelled turn reaches the card. This test proves the wire - the turn's ct (what
         // `chat/cancel` cancels) -> StreamJsonRpc emits $/cancelRequest -> the adapter handler's
         // token lights up. That token is the one chatViewProvider wires to `approvalDismiss`.
@@ -2598,8 +2598,8 @@ public partial class HostServerTests
         Assert.Equal(Strings.ReplayNone, result.Markdown);
     }
 
-    // Roadmap §19: the headless side must serve /onboard from the same Core handler as VS —
-    // a command that only exists in the tool window is the drift this repository already paid for.
+    // The headless side must serve /onboard from the same Core handler as VS —
+    // a command that only exists in the tool window is how the two front-ends drift apart.
     [Fact]
     public async Task CommandSlash_Onboard_IsServedHeadlessly()
     {
@@ -3507,7 +3507,7 @@ public partial class HostServerTests
         Assert.Contains(list, c => c.Command == "/standup" && c.Hint == "Summarize my day");
     }
 
-    // ── Debugger (roadmap §21, tranche 3) ──────────────────────────────────────
+    // ── Debugger (debug tools and /debug) ──────────────────────────────────────
 
     [Fact]
     public async Task WithoutADeclaredDebugger_TheDebugToolsAreNotOffered()

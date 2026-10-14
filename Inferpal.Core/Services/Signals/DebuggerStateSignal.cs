@@ -70,7 +70,7 @@ internal static class DebuggerStateSignal
     /// </summary>
     internal static DebuggerSnapshot? TryRead()
     {
-        // §22: same reason as ActiveSolutionSignal — a host with no in-process VS peer would report
+        // Same reason as ActiveSolutionSignal — a host with no in-process VS peer would report
         // Visual Studio's break state as its own, so this channel stays silent there.
         // ⚠ "Silent" is not "not paused", and this comment claimed it was: it read «`get_debugger_state`
         // then reads "No paused debug session", which is true of this editor». It is true of this
@@ -89,13 +89,13 @@ internal static class DebuggerStateSignal
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Delegates to <see cref="DebugStateFormatter"/>: this channel and the §21 port describe the
+    /// Delegates to <see cref="DebugStateFormatter"/>: this channel and the debugger port describe the
     /// same thing to the same reader, and they had two renderers producing two vocabularies —
     /// "Debugger state (paused)" / "Break reason" here against "Debugger paused" / "Stop reason"
     /// there, for one concept.
     /// </para>
     /// <para>
-    /// <b>The drift was not only cosmetic.</b> The §21 renderer caps the stack, the locals and each
+    /// <b>The drift was not only cosmetic.</b> The port's renderer caps the stack, the locals and each
     /// value, because a nine-frame stack of runtime internals spends a 16k window on noise. This
     /// path had no cap at all, so <c>@debugger</c> on a deep stack pasted the whole thing. Sharing
     /// the renderer gives it the budget the other path already had.

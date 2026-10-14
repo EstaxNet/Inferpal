@@ -79,8 +79,8 @@ public class DocCountersTests
 
         // ⚠ The claim is NOT written once. It was guarded in one file, then two, then three —
         // and each time the copy left outside the guard was the one that went wrong: the
-        // Marketplace description had drifted to 26 while the product grew to 28 (revue
-        // pre-1.6.0 §3.4), then the listing body, then the Quick facts table
+        // Marketplace description had drifted to 26 while the product grew to 28,
+        // then the listing body, then the Quick facts table
         // of docs/README.md, still at 26 two releases later. Naming the files one by one is what
         // produced that series, so this test no longer names them: it SCANS every living doc and
         // checks EVERY occurrence. A fourth copy added tomorrow is guarded the day it is written.
@@ -157,7 +157,7 @@ public class DocCountersTests
     [Fact]
     public void Readme_TestsBadge_MatchesThisAssembly()
     {
-        // §23: the net8.0 leg deliberately omits the VSIX-dependent test files, so its own count
+        // The cross-platform net8.0 leg deliberately omits the VSIX-dependent test files, so its own count
         // can never match the badge — the badge is owned by the full net8.0-windows suite.
 #if WINDOWS
         var total = 0;

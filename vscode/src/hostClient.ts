@@ -64,7 +64,7 @@ import {
 
 /** Reverse-RPC surface the editor side must provide before `start()`. */
 export interface EditorDelegate {
-  /** The token relays the host's `$/cancelRequest` (turn cancelled) — honour it: §27.5. */
+  /** The token relays the host's `$/cancelRequest` (turn cancelled) — honour it: deny and retire the card. */
   approvalRequest(note: ApprovalNote, token?: CancellationToken): Promise<number>;
   activeDocument(): Promise<ActiveDocumentDto>;
   insertAtCursor(text: string): Promise<string | null>;

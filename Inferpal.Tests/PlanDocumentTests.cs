@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Inferpal.Tests;
 
-// Persistent plans (roadmap §17): the file format, the one edit the product may make to it, and the
+// Persistent plans (/plan): the file format, the one edit the product may make to it, and the
 // containment of a name that can come from the model.
 public class PlanDocumentTests
 {

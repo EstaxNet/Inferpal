@@ -340,7 +340,7 @@ internal partial class InferpalToolWindowData
                 {
                     // Read the state directly (not via the tool) so "not paused" can be a
                     // notification instead of a useless attachment chip — the tool has to answer a
-                    // sentence, and reading a tool's own message back is the §18 mistake.
+                    // sentence, and a decision never re-reads the sentence a tool returned.
                     // Same reader as the tool and as the VS Code mention: three call sites, one
                     // answer to "is the debugger paused, and where?".
                     var state = await Services.Debugging.DebuggerStateReader.TryReadAsync(

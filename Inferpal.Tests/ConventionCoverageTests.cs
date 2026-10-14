@@ -7,12 +7,11 @@ using Xunit;
 
 namespace Inferpal.Tests;
 
-// §27.2 - the systemic answer to the pre-1.6.0 architecture review, modelled on
-// SlashCommandCoverageTests: every convention the review had to repair site by site is now
-// enforced by a scan of the sources. A new site that bypasses the guard rail fails the suite with
+// The systemic answer to architecture reviews, modelled on SlashCommandCoverageTests: every
+// convention a review had to repair site by site is enforced by a scan of the sources. A new site that bypasses the guard rail fails the suite with
 // a message naming the file and the rule - instead of waiting for the next architecture review.
 //
-// The four locked conventions:
+// The first conventions locked here (every rule's section below carries its own reason):
 //   1. SafeFileWriter    - the only text writer under Services\Tools (encoding/BOM preservation).
 //   2. RegexBudget       - every Regex built or called statically under Services\Tools carries a
 //                          timeout (workspace/web content is uncontrolled, backtracking = freeze).
@@ -44,8 +43,8 @@ namespace Inferpal.Tests;
 //                          of files.
 //   9. Variable facts    - what the MODEL reads (a tool description, the base system prompt)
 //                          asserts neither an editor nor a shell: one Core serves both Visual
-//                          Studio and VS Code, and the shell has been resolved per machine since
-//                          §23. The prompt said "Visual Studio 2026 ... PowerShell" in all TEN
+//                          Studio and VS Code, and the shell is resolved per machine. The
+//                          prompt said "Visual Studio 2026 ... PowerShell" in all TEN
 //                          languages, and run_command's description said PowerShell on the
 //                          published linux-x64 / darwin-arm64 packages.
 //  11. Shared UI text   - a label the host serves to BOTH front-ends names neither an editor
@@ -424,8 +423,8 @@ public class ConventionCoverageTests
     [Fact]
     public void UserFacingChatText_GoesThroughStrings()
     {
-        // Measured (review of the VS adapter). §17 had localized the PlanModeOn/
-        // PlanModeOff pair and left the step-mode one, three lines above, in literal English — in
+        // A localization pass over one pair leaves its twin behind: the PlanModeOn/PlanModeOff pair
+        // was localized and the step-mode one, three lines above, stayed in literal English — in
         // the VM AND in the host, where the neighbouring `/plan` returns Strings.PlanModeOn from the
         // same switch, under a comment claiming it was "deliberately English". Same pattern twice
         // more: the /fix-build loop had its two END messages localized and its two PROGRESS labels
@@ -714,9 +713,8 @@ public class ConventionCoverageTests
     public void ModelFacingToolText_NamesNeitherAnEditorNorAShell()
     {
         // A tool description is not prose: it is the SPECIFICATION the model reads to decide how
-        // to write its call. `run_command` announced "Runs a PowerShell command", and the shell has
-        // been resolved per machine since §23 — on the linux-x64 and darwin-arm64 packages
-        // published since 1.5.0, that shell is /bin/bash. The model wrote Get-ChildItem and
+        // to write its call. `run_command` announced "Runs a PowerShell command", while the shell is
+        // resolved per machine — on the linux-x64 and darwin-arm64 packages it is bash. The model wrote Get-ChildItem and
         // $env:FOO, bash refused them, and the agent spent its iteration budget rediscovering by
         // trial and error what the tool could have said in one sentence. Same family for the
         // editor: get_solution_info and get_open_editors named Visual Studio to the VS Code
@@ -2619,5 +2617,66 @@ public class ConventionCoverageTests
             ParameterSyntax p             => p.Identifier.ValueText + " (parameter)",
             _                             => owner.Kind().ToString(),
         };
+    }
+
+    // ── 36. A comment cites no section of a private document ──────────────────
+
+    [Fact]
+    public void Comments_CiteNoSectionOfAPrivateDocument()
+    {
+        // A section sign followed by a number names a section of the roadmap, which is not published: a reader of the code
+        // cannot open it, and a reference nobody can follow says only WHEN something was done — the journal a comment does not carry. The
+        // fact the reference stood for is written out instead. A section of a published standard is a reference the
+        // reader can follow (RFC 9110 §5.6.2, YAML 1.2 §5.7), so a line that names one is not judged.
+        var section  = new Regex(@"§\s?\d", RegexOptions.None, TimeSpan.FromSeconds(1));
+        var standard = new Regex(@"\b(RFC\s?\d+|YAML\s?1\.\d)\b", RegexOptions.None, TimeSpan.FromSeconds(1));
+        var offenders = new List<string>();
+        var standards = 0;
+
+        void Judge(string file, int firstLine, string comment)
+        {
+            var lines = comment.Split('\n');
+            for (var i = 0; i < lines.Length; i++)
+            {
+                if (!section.IsMatch(lines[i])) continue;
+                if (standard.IsMatch(lines[i])) { standards++; continue; }
+                offenders.Add($"{Rel(file)}({firstLine + i}) : {lines[i].Trim()}");
+            }
+        }
+
+        foreach (var file in new[] { "Inferpal.Core", "Inferpal", "Inferpal.Host", "Inferpal.Fim", "Inferpal.InProc", "Inferpal.Tests" }
+                                 .SelectMany(ProjectSources))
+        {
+            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+            foreach (var trivia in root.DescendantTrivia())
+            {
+                if (!trivia.IsKind(SyntaxKind.SingleLineCommentTrivia) && !trivia.IsKind(SyntaxKind.MultiLineCommentTrivia)
+                    && !trivia.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia)
+                    && !trivia.IsKind(SyntaxKind.MultiLineDocumentationCommentTrivia))
+                    continue;
+                Judge(file, trivia.GetLocation().GetLineSpan().StartLinePosition.Line + 1, trivia.ToFullString());
+            }
+        }
+
+        // TypeScript: the comments are what the one TypeScript reader blanks out.
+        var tsRoot = Path.Combine(RepoRoot(), "vscode", "src");
+        Assert.True(Directory.Exists(tsRoot), $"The convention scan targets {tsRoot}, which does not exist — the rule checks nothing any more.");
+        foreach (var file in Directory.EnumerateFiles(tsRoot, "*.ts", SearchOption.AllDirectories))
+        {
+            var text = File.ReadAllText(file);
+            var code = SettingsSchemaDriftTests.NeutralizeTypeScriptComments(text);
+            var only = new char[text.Length];
+            for (var k = 0; k < text.Length; k++)
+                only[k] = text[k] == '\n' || code[k] != text[k] ? text[k] : ' ';
+            Judge(file, 1, new string(only));
+        }
+
+        // Witness: the published standards the code cites really are read (five today), otherwise "no offender" means
+        // that no comment was read at all.
+        Assert.True(standards >= 3, $"Only {standards} comment line(s) citing a standard's section read: the scan measures nothing any more.");
+        Assert.True(offenders.Count == 0,
+            "These comments cite a section of the roadmap, which is not published: the reader cannot follow the reference, "
+            + "and what it stood for is missing. Write the fact itself, in the present tense. Sites:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 }

@@ -172,7 +172,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
     const id = ++this.approvalSeq;
     const answer = new Promise<number>((resolve) => this.pendingApprovals.set(id, { message, card, resolve }));
-    // §27.5 — turn cancelled while the card is up: deny, and retire the card in the webview so
+    // Turn cancelled while the card is up: deny, and retire the card in the webview so
     // it cannot be answered into a run that no longer exists (ghost card).
     const cancelSub = token?.onCancellationRequested(() => this.dismissApproval(id));
     this.post({ type: 'approval', id, message, card });
@@ -956,7 +956,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     if (!name) {
       return;
     }
-    // §27.6 — 'last_session' is the auto-save slot (overwritten every turn): a user save under
+    // 'last_session' is the auto-save slot (overwritten every turn): a user save under
     // that name would silently vanish. Same pattern as /plan's reserved set: suffix it.
     const safeName =
       name.trim().toLowerCase() === 'last_session' ? `${name.trim()}-session` : name.trim();

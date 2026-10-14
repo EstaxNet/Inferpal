@@ -51,7 +51,10 @@ internal static class ChatBusySignal
     /// <summary>Full path of <b>this process's</b> marker file.</summary>
     internal static string FilePath => SignalFile.KeyedPathFor(BaseName, Environment.ProcessId);
 
-    /// <summary>The unscoped file of a pre-§22 writer: read, never written, never deleted.</summary>
+    /// <summary>
+    /// The unscoped file of a writer older than per-instance signal files: read, never written,
+    /// never deleted.
+    /// </summary>
     internal static string LegacyFilePath => SignalFile.PathFor($"{BaseName}.json");
 
     /// <summary>Safety fuse: a busy marker older than this is treated as stale (crash without Clear).</summary>

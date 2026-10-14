@@ -10,7 +10,7 @@ namespace Inferpal.Services.Shell;
 /// A persistent shell "session" for the agent: working directory and environment overrides are
 /// preserved across <see cref="RunCommandTool"/> calls even though each command still runs in a
 /// fresh, isolated shell process — <c>powershell.exe</c>/<c>pwsh</c> or <c>bash</c> depending on
-/// the machine (<see cref="ShellLauncher"/>, §23; see <see cref="ShellStateProtocol"/> for why
+/// the machine (resolved by <see cref="ShellLauncher"/>; see <see cref="ShellStateProtocol"/> for why
 /// there is no live REPL pipe). One instance lives for the lifetime of the tool registry — in Visual Studio, a whole
 /// devenv session, during which the solution and so the workspace root can change: the state belongs to the root it was
 /// captured under, and is dropped when the root moves.

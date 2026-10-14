@@ -24,7 +24,7 @@ public class SignalCollection
 /// </summary>
 /// <remarks>
 /// <para>
-/// ROADMAP §22. <c>%TEMP%\Inferpal</c> is <b>machine-wide</b>: one folder, one fixed file name per
+/// <c>%TEMP%\Inferpal</c> is <b>machine-wide</b>: one folder, one fixed file name per
 /// channel, shared by every Inferpal process on the box — including a Visual Studio the developer
 /// is using while the suite runs. Before this seam the suite did not merely read that folder, it
 /// wrote to it, and the consequences were not theoretical:
@@ -35,7 +35,7 @@ public class SignalCollection
 ///         <c>VsDebugDriver</c> polls, claims it, and <b>launches a debug session</b> in that
 ///         Visual Studio.</item>
 ///   <item><c>GpuSchedulerTests</c> acquires a chat lease, and releasing it called
-///         <c>ChatBusySignal.Clear()</c> — which, before §22 G4 made the markers per-writer,
+///         <c>ChatBusySignal.Clear()</c> — which, before the busy markers became per-writer,
 ///         deleted the single shared file whoever wrote it: the busy marker of a chat in flight
 ///         elsewhere vanished and its ghost-text FIM resumed against a busy GPU.</item>
 ///   <item><c>DebuggerStateSignalTests</c> clears the break snapshot, and
@@ -48,7 +48,7 @@ public class SignalCollection
 /// <para>
 /// <c>BuildSignalFile</c> is covered too since the seam moved into <c>SignalFile.Dir</c> — every
 /// channel resolves its path through it, so redirecting the directory redirects all of them
-/// (the §22 G1 tests write build signals under the scratch directory).
+/// (the per-instance scope tests write build signals under the scratch directory).
 /// </para>
 /// </remarks>
 internal sealed class SignalScratchDir : IDisposable

@@ -7,7 +7,7 @@ using Xunit;
 namespace Inferpal.Tests;
 
 /// <summary>
-/// ROADMAP §23: <c>run_command</c> works under a POSIX shell — same protocol contract as
+/// <c>run_command</c> works under a POSIX shell (Linux, macOS) — same protocol contract as
 /// PowerShell (restore cwd/env, sentinel, state emit), and the same security tiers (the
 /// opaque-execution force-prompt gains its POSIX equivalents).
 /// </summary>

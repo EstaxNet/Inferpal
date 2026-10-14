@@ -47,8 +47,8 @@ public class HybridSearchTests
     [Fact]
     public void Bm25Tokens_AreComputedOnce_AndCachedPerChunk()
     {
-        // §27.1 - SearchAsync used to re-tokenize the whole corpus on every query (including the
-        // per-keystroke pre-warm); tokens are now cached on the chunk, invalidated per file since
+        // SearchAsync must not re-tokenize the whole corpus on every query (including the
+        // per-keystroke pre-warm): tokens are cached on the chunk, invalidated per file since
         // re-indexing always creates fresh instances.
         var chunk = new RagChunk
         {

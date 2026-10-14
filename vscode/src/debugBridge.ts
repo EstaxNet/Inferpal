@@ -65,8 +65,8 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
             if (m.event === 'stopped') {
               const body = m.body as { threadId?: number; reason?: string; text?: string; description?: string };
               this.stoppedThreadId = body?.threadId ?? 0;
-              // §25: an exception stop carries its identity in the event body — kept for the
-              // capture, since no later request re-surfaces it.
+              // An exception stop carries its identity in the event body — kept for the
+              // failing-test capture, since no later request re-surfaces it.
               this.lastStop = { reason: body?.reason ?? 'stopped', text: body?.text ?? body?.description ?? null };
               this.release('stopped');
             } else if (m.event === 'continued') {
@@ -290,7 +290,7 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
     }
   }
 
-  // ── §25: capture one failing test ─────────────────────────────────────────
+  // ── Capture one failing test ──────────────────────────────────────────────
 
   /**
    * Launches the repro runner under an ephemeral inline `coreclr` configuration (no launch.json),
@@ -519,8 +519,8 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
       };
 
       // ⚠ Chosen by presentationHint, never by name. Scope names are the adapter's own text and are
-      // localized in some of them — matching "Locals" is the §18 mistake (matching a tool's own
-      // message) in another costume. The fallback is "the first cheap scope", not "the first named
+      // localized in some of them — matching "Locals" would read a decision off a tool's own message
+      // instead of a structured value. The fallback is "the first cheap scope", not "the first named
       // like ours".
       const list = scopes?.scopes ?? [];
       const scope =
@@ -579,7 +579,7 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
  * the other and `findBreakpoints` reports the wrong file back to the model.
  *
  * Same rule and same reason as `OpenDocumentOverlay` in the Core, which picks its comparer this
- * way for §23 — the doctrine existed, this file just never got it.
+ * way because the same code ships on Windows, Linux and macOS.
  */
 const FOLDS_CASE = process.platform !== 'linux';
 

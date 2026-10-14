@@ -20,7 +20,7 @@ namespace Inferpal.Tests;
 /// </para>
 /// <para>
 /// Reverse half: a turn whose request fails (host crashed, host restarted) leaves a card that
-/// answers into the void — the §27.5 ghost card, through the crash path instead of cancellation.
+/// answers into the void — the ghost card a cancellation must withdraw, reached through the crash path.
 /// </para>
 /// <para>
 /// ⚠ These rules read the source: the extension has no TypeScript test runner.

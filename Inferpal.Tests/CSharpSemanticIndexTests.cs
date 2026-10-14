@@ -4,9 +4,9 @@ using Xunit;
 
 namespace Inferpal.Tests;
 
-// Semantic resolution for C# (roadmap §14). The point of every test here is the same: tell apart
+// Semantic resolution for C# (CSharpSemanticIndex). The point of every test here is the same: tell apart
 // what a name REFERS TO from what merely spells the same. A regex cannot, which is why
-// analyze_impact answers with ~5 % precision today and why the ex-§8 prototype died at 61 %.
+// analyze_impact answers with ~5 % precision today and why the Next Edit prototype died at 61 %.
 public class CSharpSemanticIndexTests : IDisposable
 {
     private readonly string _root;
@@ -166,7 +166,7 @@ public class CSharpSemanticIndexTests : IDisposable
                      idx.FindReferences("Shared").Declaration);
     }
 
-    // ── Incremental refresh (roadmap §14, decision (a)) ────────────────────────
+    // ── Incremental refresh (only the touched file is re-parsed) ───────────────
 
     [Fact]
     public void Update_SeesANewReference_WithoutRebuilding()

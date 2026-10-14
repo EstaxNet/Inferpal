@@ -6,7 +6,7 @@ using Xunit;
 namespace Inferpal.Tests;
 
 /// <summary>
-/// <c>/debug</c> (roadmap §21, tranche 3). The rule these pin is the one the consent model rests
+/// <c>/debug</c>, the debugger loop's slash command. The rule these pin is the one the consent model rests
 /// on: the command reports, or it hands the model an instruction — it never drives the debugger
 /// itself, because that would be a second way to run the user's program next to the approved one.
 /// </summary>
@@ -127,7 +127,7 @@ public class DebugCommandHandlerTests
     [Fact]
     public void TheLoopPrompt_TellsTheModelWhatToDoWhenItCannotConclude()
     {
-        // §20's lesson, written into the wording rather than hoped for: a loop that stops must
+        // Written into the prompt's wording rather than hoped for: a loop that stops must
         // report that it stopped instead of concluding anyway.
         var prompt = DebugCommandHandler.BuildLoopPrompt("is the cache ever hit?");
 

@@ -233,7 +233,7 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
   }
 
   async approvalRequest(note: ApprovalNote, token?: CancellationToken): Promise<number> {
-    // §27.5 — the token relays the host's $/cancelRequest (turn cancelled/timeout): a card that
+    // The token relays the host's $/cancelRequest (turn cancelled/timeout): a card that
     // outlives its run is a ghost the user can still click. Cancellation always answers deny.
     if (token?.isCancellationRequested) {
       return ApprovalAnswer.Deny;
