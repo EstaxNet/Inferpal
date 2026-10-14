@@ -42,7 +42,12 @@ internal static class ToolFailure
     }
 
     private static string Advice(Exception ex) =>
-        IsAboutTheArguments(ex)
+        // ⚠ A permission rule refused THIS path or command: "the arguments are not the cause … continue without this
+        // tool" was false twice, and a model told so gave up writing for the rest of its task.
+        Root(ex) is PermissionDeniedException
+            ? "The user's permission rules refuse this path or command: do not retry it, and do not work around it. "
+              + "Other calls of this tool are not affected; say what you could not do."
+        : IsAboutTheArguments(ex)
             ? "Check the arguments against the tool's schema and try again."
         // ⚠ A failure of ONE file is not a failure of the tool: read-only (a TFVC or Perforce workspace keeps files
         // read-only until checked out), locked by another program, protected. "Continue without this tool" made the
@@ -73,17 +78,20 @@ internal static class ToolFailure
     /// True when the failure really is about what the model wrote. Judged on the <b>root</b>
     /// exception, for the same reason the message is.
     /// </summary>
-    internal static bool IsAboutTheArguments(Exception ex)
+    internal static bool IsAboutTheArguments(Exception ex) =>
+        // ⚠ ArgumentException covers ArgumentNull/ArgumentOutOfRange, and it is what every path and
+        // parameter guard in this product throws (PathSanitizer, the tools' own checks). A nested
+        // ArgumentException keeps its own message on purpose — it is not a wrapper.
+        Root(ex) is ArgumentException or FormatException or System.Text.Json.JsonException;
+
+    /// <summary>The exception under the three framework wrappers.</summary>
+    private static Exception Root(Exception ex)
     {
         var cur = ex;
         while (cur is TypeInitializationException or System.Reflection.TargetInvocationException
                    or AggregateException
                && cur.InnerException is { } inner)
             cur = inner;
-
-        // ⚠ ArgumentException covers ArgumentNull/ArgumentOutOfRange, and it is what every path and
-        // parameter guard in this product throws (PathSanitizer, the tools' own checks). A nested
-        // ArgumentException keeps its own message on purpose — it is not a wrapper.
-        return cur is ArgumentException or FormatException or System.Text.Json.JsonException;
+        return cur;
     }
 }
