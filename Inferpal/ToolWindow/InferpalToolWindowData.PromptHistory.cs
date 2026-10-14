@@ -166,18 +166,11 @@ internal partial class InferpalToolWindowData
 
         try
         {
-            // Resolve project path once — bypasses CWD bug in GetDiagnosticsTool
-            string? slnPath = null;
-            if (parts.Length >= 2)
-            {
-                slnPath = string.Join(" ", parts[1..]);
-            }
-            else
-            {
-                var root = FindProjectRoot();
-                slnPath = Services.SolutionFiles.FirstIn(root)
-                       ?? Directory.GetFiles(root, "*.csproj", SearchOption.TopDirectoryOnly).Order(StringComparer.Ordinal).FirstOrDefault();
-            }
+            // Resolve the build target once — the typed path, else the solution open in Visual Studio.
+            var slnPath = Services.Commands.FixBuildTarget.Resolve(
+                parts.Length >= 2 ? string.Join(" ", parts[1..]) : null,
+                Services.Signals.ActiveSolutionSignal.TryReadSolutionPath(),
+                FindProjectRoot());
 
             var diagArgsJson = slnPath is not null
                 ? JsonSerializer.Serialize(new { path = slnPath })
