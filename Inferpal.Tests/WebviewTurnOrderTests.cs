@@ -36,6 +36,25 @@ public class WebviewTurnOrderTests
         Assert.Contains("this.view.show(true)", reveal, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// ⚠ Outside a turn, an approval asked of the chat (a repository's MCP server, asked about when the host starts)
+    /// stood as a card nobody watched, and the next Enter in an empty composer answered it — the OLDEST card, while the
+    /// user read another. Outside a turn the modal asks, as in Visual Studio; a key answers a card only when it is alone.
+    /// </summary>
+    [Fact]
+    public void OutsideATurnTheModalAsks_AndAKeyAnswersOnlyALoneCard()
+    {
+        var request = WebviewRebuildTests.Body(WebviewRebuildTests.TsCode("chatViewProvider.ts"), "async requestApproval(");
+        Assert.Contains("if (!this.view || !this.busy)", request, StringComparison.Ordinal);
+
+        var answer = WebviewRebuildTests.Body(WebviewRebuildTests.TsCode("webview/main.ts"), "function answerWaitingCard(");
+        Assert.Contains("approvalCards.size !== 1", answer, StringComparison.Ordinal);
+
+        // WITNESS: declining the card path really reaches the modal.
+        Assert.Contains("showWarningMessage(note.message, { modal: true }", WebviewRebuildTests.TsCode("editorBridge.ts"),
+                        StringComparison.Ordinal);
+    }
+
     [Fact]
     public void AnApprovalCard_JoinsTheAnswerFlow_SoTheAnswerThatFollowsItReadsBelowIt()
     {

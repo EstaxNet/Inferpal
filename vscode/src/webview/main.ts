@@ -1061,8 +1061,14 @@ function addApprovalCard(id: number, message: string, card?: ApprovalCard | null
   scrollToBottom();
 }
 
-/** Answers the oldest card still waiting (1 allow once, 0 deny) through its own button; false when none waits. */
+/**
+ * Answers the card waiting (1 allow once, 0 deny) through its own button; false when none waits — or more than one:
+ * a key then answered the oldest, often scrolled out of view, while the user read another.
+ */
 function answerWaitingCard(value: 0 | 1): boolean {
+  if (approvalCards.size !== 1) {
+    return false;
+  }
   const waiting = approvalCards.values().next().value as HTMLElement | undefined;
   const button = waiting?.querySelector<HTMLButtonElement>(
     value === 1 ? '.approval-actions button.primary' : '.approval-actions button.deny');

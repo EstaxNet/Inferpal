@@ -152,10 +152,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /**
    * Shows an approval card in the chat and resolves with the user's answer
    * (0 deny / 1 once / 2 always). Returns undefined when the card cannot be
-   * shown (no resolved view) — the caller then falls back to a modal dialog.
+   * shown (no resolved view, or no turn running) — the caller then falls back to a modal dialog.
    */
   async requestApproval(message: string, token?: CancellationToken, card: ApprovalCard | null = null): Promise<number | undefined> {
-    if (!this.view) {
+    // ⚠ Outside a turn, no card: a card in a conversation nobody is watching holds the tool (a repository's MCP server
+    // asked about when the host starts), and the next Enter in an empty composer answered it — "Allow once" given to a
+    // question nobody read, while the card the user was reading still waited. The modal asks instead, as in Visual
+    // Studio, whose inline card exists only during a turn.
+    if (!this.view || !this.busy) {
       return undefined;
     }
     // Surface the card: reveal the view if it is hidden (agent runs can outlive focus) — WITHOUT taking the keyboard:
