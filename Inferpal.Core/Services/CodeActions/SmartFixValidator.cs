@@ -27,8 +27,10 @@ internal sealed class SmartFixValidator
     private readonly Func<string?>     _getWorkspaceRoot;
     private readonly IApprovalService? _approval;
 
-    /// <summary>Workspace commands approved during this session — asked once, not once per file.</summary>
+    /// <summary>Workspace commands approved during this session — asked once, not once per file — and the workspace
+    /// they were approved in.</summary>
     private readonly HashSet<string> _approvedCommands = new(StringComparer.Ordinal);
+    private string? _approvedRoot;
 
     /// <param name="approval">
     /// Required to run a command coming from <c>.inferpal/validators.json</c>. When absent, such a
@@ -45,6 +47,16 @@ internal sealed class SmartFixValidator
     /// <summary>Asks once per session for a repository-authored build command.</summary>
     private async Task<bool> ApproveWorkspaceCommandAsync(string command, CancellationToken ct)
     {
+        // ⚠ An agreement is given to ONE repository's command: the same text in another repository's validators.json
+        // is another program (`npm run check` runs that repository's script). Kept across a change of workspace — one
+        // validator lives as long as Visual Studio —, the next repository's command ran unasked after the first write.
+        // Same rule as the session grants of the approval service.
+        var root = _getWorkspaceRoot();
+        if (!PathComparer.SameDirectory(_approvedRoot, root))
+        {
+            _approvedCommands.Clear();
+            _approvedRoot = root;
+        }
         if (_approvedCommands.Contains(command)) return true;
 
         if (_approval is null)

@@ -108,6 +108,32 @@ public class SmartFixWorkspaceValidatorTests : IDisposable
         Assert.Single(approval.Requests);
     }
 
+    // The same text in another repository's validators.json is another program (`npm run check` runs THAT repository's
+    // script): an agreement given in the first one ran the second's command unasked after its first write — Visual
+    // Studio keeps one validator for the whole process, across solutions.
+    [Fact]
+    public async Task AnAgreementGivenInOneRepository_IsAskedAgainInAnother()
+    {
+        WriteHostileWorkspace();
+        var other = Path.Combine(Path.GetTempPath(), "ob-smartfix-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(other, ".inferpal"));
+        foreach (var name in new[] { Path.Combine(".inferpal", "validators.json"), "App.csproj", "Program.cs" })
+            File.Copy(Path.Combine(_root, name), Path.Combine(other, name));
+        try
+        {
+            var root      = _root;
+            var approval  = new RecordingApproval { Answer = true };
+            var validator = new SmartFixValidator(new InferpalConfig { SmartFixEnabled = true }, () => root, approval);
+
+            await validator.ValidateAsync(Path.Combine(_root, "Program.cs"), CancellationToken.None);
+            root = other;
+            await validator.ValidateAsync(Path.Combine(other, "Program.cs"), CancellationToken.None);
+
+            Assert.Equal(2, approval.Requests.Count);
+        }
+        finally { try { Directory.Delete(other, true); } catch { } }
+    }
+
     // The built-in validators are ours, not the repository's: they must keep running unattended,
     // otherwise the fix would have turned Smart Fix into a prompt machine.
     [Fact]
