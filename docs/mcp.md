@@ -143,9 +143,14 @@ When a Streamable HTTP server returns **401** and no credential of yours went wi
 or API-key header configured), it requires OAuth. A 401 to a request that carried your own header is the server
 refusing that credential: the card shows **Failed** with the server's reason, and names a `${VAR}` the editor's
 environment does not set. Inferpal implements the MCP
-authorization spec (2026-07-28): discovery of the authorization server (RFC 9728 → RFC 8414),
-**PKCE**, the **`resource`** indicator (RFC 8707), and **dynamic client registration** (RFC 7591)
-when the server supports it.
+authorization spec (2026-07-28): discovery of the authorization server (RFC 9728 → RFC 8414 or OpenID Connect
+discovery, an issuer with a path included — Entra, Keycloak, Okta), **PKCE**, the **`resource`** indicator
+(RFC 8707), and **dynamic client registration** (RFC 7591) when the server supports it.
+
+- **The scopes asked for** are the ones in the server's `oauth` block; without them, the ones the MCP server's own
+  metadata names; without those, none — never every scope the authorization server lists, which a shared identity
+  provider would refuse or ask you to consent to in full. When no metadata document is found, Inferpal tries the
+  conventional `/authorize` and `/token` at the authorization server's origin and notes it in `/diagnostics`.
 
 - **The answer is checked before the code is used**: when the authorization server names itself in its answer
   (`iss`, RFC 9207), the name must be the one its metadata gives, exactly; one that advertises it and leaves it out is

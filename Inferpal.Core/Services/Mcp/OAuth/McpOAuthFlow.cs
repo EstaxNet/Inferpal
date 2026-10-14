@@ -51,8 +51,8 @@ internal sealed class McpOAuthFlow
         var resource = McpOAuthMetadata.CanonicalResource(server.Url);
         // A state obtained for another server (the name now points elsewhere) lends nothing, not even its client id.
         if (existing is not null && !existing.BelongsTo(resource)) existing = null;
-        var asm      = await DiscoverAsync(server, ct).ConfigureAwait(false);
-        var scopes   = ResolveScopes(server, asm);
+        var (asm, resourceScopes) = await DiscoverAsync(server, ct).ConfigureAwait(false);
+        var scopes   = ResolveScopes(server, resourceScopes);
 
         var (clientId, clientSecret) = await EnsureClientAsync(server, existing, asm, ct).ConfigureAwait(false);
 
@@ -120,30 +120,43 @@ internal sealed class McpOAuthFlow
 
     // ── Discovery ─────────────────────────────────────────────────────────────
 
-    private async Task<AuthServerMetadata> DiscoverAsync(McpOAuthServer server, CancellationToken ct)
+    private async Task<(AuthServerMetadata Asm, IReadOnlyList<string> ResourceScopes)> DiscoverAsync(
+        McpOAuthServer server, CancellationToken ct)
     {
-        // 1) Protected Resource Metadata → authorization server URL (fall back to the server origin).
-        Uri authServer = new(new Uri(McpOAuthMetadata.DefaultProtectedResourceMetadataUrl(server.Url)), "/");
+        // 1) Protected Resource Metadata → authorization server URL (fall back to the server origin) and the scopes the
+        // resource uses.
+        Uri authServer = new(server.Url.GetLeftPart(UriPartial.Authority) + "/");
+        IReadOnlyList<string> resourceScopes = [];
 
         // The resource-metadata URL is read out of a WWW-Authenticate header, i.e. it is whatever the
         // far end put there — it is fetched, so it must clear the same bar as the endpoints.
-        var prmUrl = server.ResourceMetadataUrl is { Length: > 0 } advertised
-            ? McpOAuthMetadata.RequireWebEndpoint(advertised, "resource_metadata URL").ToString()
-            : McpOAuthMetadata.DefaultProtectedResourceMetadataUrl(server.Url);
+        IReadOnlyList<string> prmUrls = server.ResourceMetadataUrl is { Length: > 0 } advertised
+            ? [McpOAuthMetadata.RequireWebEndpoint(advertised, "resource_metadata URL").ToString()]
+            : McpOAuthMetadata.ProtectedResourceMetadataUrls(server.Url);
 
-        if (await TryGetAsync(prmUrl, ct).ConfigureAwait(false) is { } prmJson)
+        foreach (var prmUrl in prmUrls)
         {
+            if (await TryGetAsync(prmUrl, ct).ConfigureAwait(false) is not { } prmJson) continue;
             var prm = McpOAuthMetadata.ParseProtectedResourceMetadata(prmJson);
             if (prm.AuthorizationServers.Count > 0)
                 authServer = McpOAuthMetadata.RequireWebEndpoint(prm.AuthorizationServers[0], "authorization server URL");
+            resourceScopes = prm.ScopesSupported ?? [];
+            break;
         }
 
-        // 2) Authorization Server Metadata → endpoints (fall back to conventional default paths).
-        var asmUrl = McpOAuthMetadata.DefaultAuthServerMetadataUrl(authServer);
-        if (await TryGetAsync(asmUrl, ct).ConfigureAwait(false) is { } asmJson)
-            return McpOAuthMetadata.ParseAuthServerMetadata(asmJson);
+        // 2) Authorization Server Metadata → endpoints, OAuth then OpenID Connect, path kept (fall back to
+        // conventional default paths).
+        foreach (var asmUrl in McpOAuthMetadata.AuthServerMetadataUrls(authServer))
+            if (await TryGetAsync(asmUrl, ct).ConfigureAwait(false) is { } asmJson)
+                return (McpOAuthMetadata.ParseAuthServerMetadata(asmJson), resourceScopes);
 
-        return McpOAuthMetadata.DefaultEndpoints(authServer);
+        // A guess: when it is wrong the browser opens on an error page, and the sign-in only fails once its wait runs
+        // out — this line is what names the cause.
+        var guessed = McpOAuthMetadata.DefaultEndpoints(authServer);
+        Diagnostics.Record("McpOAuthFlow.Discovery",
+            $"No authorization server metadata found for {authServer}: trying the conventional endpoints "
+            + $"{guessed.AuthorizationEndpoint} and {guessed.TokenEndpoint}.");
+        return (guessed, resourceScopes);
     }
 
     private async Task<(string ClientId, string? ClientSecret)> EnsureClientAsync(
@@ -260,8 +273,11 @@ internal sealed class McpOAuthFlow
 
     // ── Helpers ─────────────────────────────────────────────────────────────--
 
-    private static IReadOnlyList<string> ResolveScopes(McpOAuthServer server, AuthServerMetadata asm) =>
-        server.Scopes is { Count: > 0 } s ? s : asm.ScopesSupported;
+    /// <summary>The scopes asked for: the configured ones, else those the RESOURCE uses, else none (no parameter).</summary>
+    /// <remarks>⚠ Never every scope the authorization server lists: shared by many applications (Entra, Keycloak), it
+    /// lists all of theirs — a consent to everything it issues, or an <c>invalid_scope</c> refusal.</remarks>
+    private static IReadOnlyList<string> ResolveScopes(McpOAuthServer server, IReadOnlyList<string> resourceScopes) =>
+        server.Scopes is { Count: > 0 } s ? s : resourceScopes;
 
     private static string BuildAuthorizationUrl(string endpoint, string clientId, string challenge,
                                                 string state, IReadOnlyList<string> scopes, string resource)

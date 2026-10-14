@@ -100,13 +100,21 @@ public class McpOAuthMetadataTests
     // ── Well-known URLs & default endpoints ───────────────────────────────────
 
     [Fact]
-    public void DefaultMetadataUrls_AreOriginRelative_DiscardingPath()
+    public void MetadataUrls_KeepThePath_InTheOrderTheSpecificationGives()
     {
-        var server = new Uri("https://api.example.com/v1/mcp");
-        Assert.Equal("https://api.example.com/.well-known/oauth-protected-resource",
-                     McpOAuthMetadata.DefaultProtectedResourceMetadataUrl(server));
-        Assert.Equal("https://auth.example.com/.well-known/oauth-authorization-server",
-                     McpOAuthMetadata.DefaultAuthServerMetadataUrl(new Uri("https://auth.example.com/tenant")));
+        // The path is part of the resource and of the issuer (Entra /<tenant>/v2.0, Keycloak /realms/x): discarded, the
+        // documents were never found.
+        Assert.Equal(["https://api.example.com/.well-known/oauth-protected-resource/v1/mcp",
+                      "https://api.example.com/.well-known/oauth-protected-resource"],
+                     McpOAuthMetadata.ProtectedResourceMetadataUrls(new Uri("https://api.example.com/v1/mcp")));
+        Assert.Equal(["https://auth.example.com/.well-known/oauth-authorization-server/tenant",
+                      "https://auth.example.com/.well-known/openid-configuration/tenant",
+                      "https://auth.example.com/tenant/.well-known/openid-configuration"],
+                     McpOAuthMetadata.AuthServerMetadataUrls(new Uri("https://auth.example.com/tenant")));
+        // Reference arm: an issuer at the origin.
+        Assert.Equal(["https://auth.example.com/.well-known/oauth-authorization-server",
+                      "https://auth.example.com/.well-known/openid-configuration"],
+                     McpOAuthMetadata.AuthServerMetadataUrls(new Uri("https://auth.example.com/")));
     }
 
     [Fact]

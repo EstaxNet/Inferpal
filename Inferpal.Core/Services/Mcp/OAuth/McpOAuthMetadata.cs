@@ -4,7 +4,9 @@ using System.Text.RegularExpressions;
 namespace Inferpal.Services.Mcp.OAuth;
 
 /// <summary>OAuth 2.0 Protected Resource Metadata (RFC 9728), as advertised by an MCP server.</summary>
-internal sealed record ProtectedResourceMetadata(string? Resource, IReadOnlyList<string> AuthorizationServers);
+/// <param name="ScopesSupported">The scopes the resource itself uses — what a client asks for when none is configured.</param>
+internal sealed record ProtectedResourceMetadata(
+    string? Resource, IReadOnlyList<string> AuthorizationServers, IReadOnlyList<string>? ScopesSupported = null);
 
 /// <summary>OAuth 2.0 Authorization Server Metadata (RFC 8414) — the endpoints and capabilities an MCP
 /// client needs to run the authorization-code flow.</summary>
@@ -44,7 +46,8 @@ internal static partial class McpOAuthMetadata
         var root = doc.RootElement;
         return new ProtectedResourceMetadata(
             ReadString(root, "resource"),
-            ReadStringArray(root, "authorization_servers"));
+            ReadStringArray(root, "authorization_servers"),
+            ReadStringArray(root, "scopes_supported"));
     }
 
     /// <summary>Parses an RFC 8414 Authorization Server Metadata document. Throws if the mandatory
@@ -101,15 +104,40 @@ internal static partial class McpOAuthMetadata
                "sign-in is misconfigured or something is interfering with it.";
     }
 
-    /// <summary>Well-known Protected Resource Metadata URL for an MCP server (used when the
-    /// <c>WWW-Authenticate</c> header omits one): <c>&lt;origin&gt;/.well-known/oauth-protected-resource</c>.</summary>
-    public static string DefaultProtectedResourceMetadataUrl(Uri serverUrl) =>
-        $"{Origin(serverUrl)}/.well-known/oauth-protected-resource";
+    /// <summary>
+    /// Where an MCP server's Protected Resource Metadata is looked for when its <c>WWW-Authenticate</c> names none, in
+    /// order: the well-known suffix inserted before the server's path (RFC 9728 §3.1), then at the origin.
+    /// </summary>
+    public static IReadOnlyList<string> ProtectedResourceMetadataUrls(Uri serverUrl)
+    {
+        var origin = Origin(serverUrl);
+        var path   = serverUrl.AbsolutePath.TrimEnd('/');
+        return path.Length == 0
+            ? [$"{origin}/.well-known/oauth-protected-resource"]
+            : [$"{origin}/.well-known/oauth-protected-resource{path}", $"{origin}/.well-known/oauth-protected-resource"];
+    }
 
-    /// <summary>Well-known Authorization Server Metadata URL for an issuer/base URL:
-    /// <c>&lt;origin&gt;/.well-known/oauth-authorization-server</c>.</summary>
-    public static string DefaultAuthServerMetadataUrl(Uri authServer) =>
-        $"{Origin(authServer)}/.well-known/oauth-authorization-server";
+    /// <summary>
+    /// Where an authorization server's metadata is looked for, in the order the MCP specification gives: OAuth 2.0
+    /// metadata, then OpenID Connect discovery — for an issuer with a path, with the well-known suffix inserted before
+    /// it (RFC 8414 §3.1), then appended after it (OpenID Connect).
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The issuer's path is part of it: Entra (<c>/&lt;tenant&gt;/v2.0</c>), Keycloak (<c>/realms/x</c>), Okta
+    /// (<c>/oauth2/default</c>) publish under it, and most of them only the OpenID Connect document. Looked for at the
+    /// origin alone, nothing was found, the guessed <c>/authorize</c> opened a page of errors, and the sign-in waited its
+    /// five minutes to report a browser step "never completed".
+    /// </remarks>
+    public static IReadOnlyList<string> AuthServerMetadataUrls(Uri issuer)
+    {
+        var origin = Origin(issuer);
+        var path   = issuer.AbsolutePath.TrimEnd('/');
+        return path.Length == 0
+            ? [$"{origin}/.well-known/oauth-authorization-server", $"{origin}/.well-known/openid-configuration"]
+            : [$"{origin}/.well-known/oauth-authorization-server{path}",
+               $"{origin}/.well-known/openid-configuration{path}",
+               $"{origin}{path}/.well-known/openid-configuration"];
+    }
 
     /// <summary>Default endpoints (RFC-free fallback) when an AS exposes no metadata document, relative
     /// to the authorization base URL: <c>/authorize</c>, <c>/token</c>, <c>/register</c>.</summary>
