@@ -90,7 +90,7 @@ internal sealed class PermissionRule
 /// deny  run_command (Remove-Item|rm\s+-rf)                       # but always prompt-block these
 /// allow write_file  \.(cs|ts|js|py)$                             # auto-approve edits to source files
 /// deny  *           \.env$                                       # never touch secrets, any tool
-/// # lines starting with '#' are comments
+/// # lines starting with '#' are comments, and so is what follows a '#' after whitespace
 /// </code>
 /// <para>
 /// Evaluation: the built-in hard denylist wins first (cannot be overridden, not even by
@@ -282,6 +282,13 @@ internal sealed class PermissionPolicy
     /// the last line, so a two-file edit slips past <c>deny * \.env$</c>. Multi-line subjects are
     /// therefore evaluated line by line: one denied path denies the whole call, and the call is
     /// only auto-approved when <em>every</em> path is allowed.
+    /// <para>
+    /// ⚠ A <c>run_command</c> line is several commands: <c>git status; Remove-Item -Recurse src</c> starts with
+    /// <c>git</c>, so an <c>allow ^\s*git\b</c> matched the whole line first and ran the <c>Remove-Item</c> unasked,
+    /// past the <c>deny</c> written for it. Its commands are judged one by one, like the paths of a multi-path
+    /// subject — and the line as written too, so a rule that spans a separator (a download piped to a shell) still
+    /// decides.
+    /// </para>
     /// </remarks>
     public PermissionDecision Evaluate(string toolName, string? subject) =>
         Evaluate(toolName, subject, out _);
@@ -297,23 +304,58 @@ internal sealed class PermissionPolicy
         subject ??= string.Empty;
         unreadableDeny = false;
 
-        if (subject.Contains('\n'))
-        {
-            var sawPrompt = false;
-            foreach (var raw in subject.Split('\n'))
-            {
-                var line = raw.Trim('\r', ' ', '\t');
-                if (line.Length == 0) continue;
-                switch (EvaluateSingle(toolName, line, ref unreadableDeny))
-                {
-                    case PermissionDecision.Deny:   return PermissionDecision.Deny;
-                    case PermissionDecision.Prompt: sawPrompt = true; break;
-                }
-            }
-            return sawPrompt ? PermissionDecision.Prompt : PermissionDecision.Allow;
-        }
+        var parts = PartsOf(toolName, subject);
+        if (parts is null) return EvaluateSingle(toolName, subject, ref unreadableDeny);
 
-        return EvaluateSingle(toolName, subject, ref unreadableDeny);
+        var sawPrompt = false;
+        foreach (var part in parts)
+        {
+            switch (EvaluateSingle(toolName, part, ref unreadableDeny))
+            {
+                case PermissionDecision.Deny:   return PermissionDecision.Deny;
+                case PermissionDecision.Prompt: sawPrompt = true; break;
+            }
+        }
+        return sawPrompt ? PermissionDecision.Prompt : PermissionDecision.Allow;
+    }
+
+    /// <summary>The tool whose subject is a command line, judged command by command.</summary>
+    private const string CommandTool = "run_command";
+
+    /// <summary>What separates two commands on one line, in PowerShell and POSIX shells alike.</summary>
+    private static readonly Regex CommandSeparator = new(@"&&|\|\||[;|&]", RegexOptions.None, BuiltInMatchTimeout);
+
+    /// <summary>
+    /// The units a subject is judged by — each one must be allowed for the call to be — or <c>null</c> when the
+    /// subject is a single unit. A multi-line subject is one unit per line; a command line is also each of its
+    /// commands, plus the line as written.
+    /// </summary>
+    /// <remarks>
+    /// Splitting a quoted separator (<c>git commit -m "a; b"</c>) yields a fragment no <c>allow</c> matches: the
+    /// call is prompted, never approved past a rule, which is the direction a misreading may err in.
+    /// </remarks>
+    private static List<string>? PartsOf(string toolName, string subject)
+    {
+        var isCommand = toolName.Equals(CommandTool, StringComparison.OrdinalIgnoreCase);
+        if (!isCommand && !subject.Contains('\n')) return null;
+
+        var parts = new List<string>();
+        if (isCommand) parts.Add(subject);
+        foreach (var line in subject.Split('\n'))
+        {
+            IEnumerable<string> pieces = [line];
+            if (isCommand)
+            {
+                try { pieces = CommandSeparator.Split(line); }
+                catch (RegexMatchTimeoutException) { }   // the whole line is still judged
+            }
+            foreach (var piece in pieces)
+            {
+                var part = piece.Trim('\r', ' ', '\t');
+                if (part.Length > 0) parts.Add(part);
+            }
+        }
+        return parts;
     }
 
     private PermissionDecision EvaluateSingle(string toolName, string subject, ref bool unreadableDeny)
@@ -381,7 +423,7 @@ internal sealed class PermissionPolicy
         var second = rest.IndexOf(' ');
         if (second <= 0) return null;
         var tool    = rest[..second].Trim();
-        var pattern = rest[(second + 1)..].Trim();
+        var pattern = WithoutTrailingComment(rest[(second + 1)..]).Trim();
         if (string.IsNullOrEmpty(tool) || string.IsNullOrEmpty(pattern)) return null;
 
         try
@@ -395,6 +437,23 @@ internal sealed class PermissionPolicy
         {
             return null;   // invalid regex — skip this rule
         }
+    }
+
+    /// <summary>
+    /// The pattern without a trailing comment: a <c>#</c> after whitespace starts one, as in the documented
+    /// examples (<c>deny * \.env$   # never touch secrets</c>).
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Kept in the pattern, the comment made the rule match nothing — a valid regex, so nothing said it was inert,
+    /// and every example rule the documentation shows blocked nothing. A <c>#</c> with no whitespace before it stays
+    /// (<c>Notes#1\.md$</c>); a literal space-then-hash is written <c>\s#</c>.
+    /// </remarks>
+    private static string WithoutTrailingComment(string pattern)
+    {
+        for (var i = 1; i < pattern.Length; i++)
+            if (pattern[i] == '#' && char.IsWhiteSpace(pattern[i - 1]))
+                return pattern[..i];
+        return pattern;
     }
 
     /// <summary>

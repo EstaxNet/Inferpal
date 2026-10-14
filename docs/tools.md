@@ -85,7 +85,11 @@ deny  * \.env$                                       # never touch secrets, any 
 ```
 
 - Format: `allow|deny <tool|*> <regex>`, one per line. The regex is matched against the raw
-  command / file path. **First match wins.**
+  command / file path. **First match wins.** A `#` after whitespace starts a comment, as above
+  (to match a literal space then `#`, write `\s#`).
+- A `run_command` line is judged **command by command** (`;`, `&&`, `||`, `|`, `&`): it is
+  auto-approved only when every command on it is allowed, and denied when any one of them is —
+  `git status; Remove-Item -Recurse src` is not approved by a rule written for `git`.
 - `allow` auto-approves (no prompt); `deny` blocks the call outright (recorded in
   `/diagnostics`); no match falls back to the prompt.
 - Sources, evaluated in order: the per-machine **Permission rules** setting, then the
