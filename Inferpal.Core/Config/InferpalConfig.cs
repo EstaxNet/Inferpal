@@ -578,7 +578,9 @@ internal class InferpalConfig
         }
 
         if (follow) Services.Diagnostics.Forget("InferpalConfig.Follow", path);
-        Strings.ApplyLanguage(cfg.Language);
+        // ⚠ No Strings.ApplyLanguage here: the interface language belongs to the process, and is applied by the adapter
+        // that owns it. Applied by every read, "Auto" put the VS Code host back to the system's language — in place of
+        // the editor's — whenever anything read the file: the MCP servers at each refresh, a thread following the file.
         cfg._baseline = Snapshot(cfg);
         if (fromFile) cfg._fileAsRead = Snapshot(cfg);
         return cfg;

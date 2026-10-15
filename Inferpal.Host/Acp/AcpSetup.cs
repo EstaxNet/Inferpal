@@ -40,6 +40,8 @@ internal static class AcpSetup
         listModels ??= static (cfg, token) => InferenceProviderFactory.Create(cfg).ListModelsAsync(token);
         var config   = (load ?? InferpalConfig.Load)();
         save       ??= static cfg => cfg.Save();
+        // This process speaks only in a terminal: the language the settings choose ("Auto": the system's).
+        Strings.ApplyLanguage(config.Language);
 
         output.WriteLine(Strings.AcpSetupTitle);
         output.WriteLine();

@@ -45,10 +45,8 @@ internal sealed partial class HostServer : IDisposable
     /// Locale the editor announced at <c>initialize</c>, kept so it can be re-applied.
     /// </summary>
     /// <remarks>
-    /// It has to be kept, and re-applied after the configuration is loaded: <c>Config.Load</c>
-    /// calls <c>Strings.ApplyLanguage(cfg.Language)</c> unconditionally, so an empty language
-    /// ("Auto", the default) resets the override to null and the strings fall back to the machine's
-    /// UI culture — silently discarding what the editor just said.
+    /// It has to be kept: a settings change that goes back to "Auto" returns to it, never to the machine's UI culture.
+    /// Reading the settings file applies no language (<c>InferpalConfig.LoadUncached</c>): this host applies its own.
     /// </remarks>
     private string?                  _editorLocale;
     private HostSession?             _session;
@@ -97,9 +95,8 @@ internal sealed partial class HostServer : IDisposable
         _editorLocale = NormalizeLocale(p.Locale);
 
         var config   = _configFactory();
-        // AFTER the load, never before: Config.Load applies its own language and clears the
-        // override when the user picked "Auto". An explicit choice in the settings still wins — it
-        // is the more deliberate signal — and the editor's locale beats the machine's culture.
+        // An explicit choice in the settings wins — it is the more deliberate signal — and the editor's locale beats the
+        // machine's culture.
         ApplyLanguage(config);
         var client   = _providerFactory(config);
         // Pushed by VS Code (textDocument/*); asked file by file of an adapter that can only answer about one path.

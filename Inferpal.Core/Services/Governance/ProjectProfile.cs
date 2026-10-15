@@ -110,10 +110,8 @@ internal sealed record ProjectProfile(
     /// cannot be opened comes back empty with <see cref="Problem"/> set, never as <see cref="Empty"/>.
     /// </summary>
     /// <param name="config">
-    /// Current values shown next to each recommendation; <c>null</c> leaves them unknown.
-    /// ⚠ Never the machine configuration loaded here: <c>InferpalConfig.Load</c> re-applies the configured interface
-    /// language, so reading a profile — which the code index does whenever a workspace is set — would switch the VS
-    /// Code host from the editor's language to the system's, in every repository that has a profile.
+    /// Current values shown next to each recommendation; <c>null</c> leaves them unknown. The caller's — the session's
+    /// own copy, which may hold what the file does not yet.
     /// </param>
     public static ProjectProfile Read(string root, InferpalConfig? config)
     {

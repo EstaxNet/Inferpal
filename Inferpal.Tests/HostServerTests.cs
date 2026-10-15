@@ -833,11 +833,9 @@ public partial class HostServerTests
     [Fact]
     public async Task Initialize_KeepsTheEditorLocale_WhenLoadingTheConfigWouldClearIt()
     {
-        // The real config factory is InferpalConfig.Load, which calls Strings.ApplyLanguage(
-        // cfg.Language) unconditionally — so "Auto" (empty) resets the override and the strings fall
-        // back to the machine's UI culture, silently discarding the handshake. The harness's own
-        // factory never did that, which is exactly why the test below passed while the running host
-        // answered in French with `locale: "en"`. Found by driving the host, not by reading it.
+        // A factory that applies the language it reads — "Auto" (empty) resetting the override to the machine's UI
+        // culture — must not undo the handshake: the host applies the editor's locale after the load.
+        // (Reading the settings applies no language any more: SettingsReadKeepsTheLanguageTests.)
         using var h = CreateHarness(cfg =>
         {
             cfg.Language = string.Empty;

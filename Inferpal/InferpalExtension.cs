@@ -112,7 +112,13 @@ public class InferpalExtension : Extension
         }
         catch (Exception ex) { Diagnostics.Swallow("InferpalExtension.DeclareVsInstance", ex); }
 
-        services.AddSingleton(_ => InferpalConfig.Load());
+        services.AddSingleton(_ =>
+        {
+            var config = InferpalConfig.Load();
+            // Reading the settings never changes the language: Visual Studio's is the one they choose ("Auto": the system's).
+            Localization.Strings.ApplyLanguage(config.Language);
+            return config;
+        });
         // Resolve the active inference backend (Ollama or OpenAI-compatible) from config.Provider.
         services.AddSingleton<IInferenceProvider>(sp =>
             InferenceProviderFactory.Create(sp.GetRequiredService<InferpalConfig>()));
