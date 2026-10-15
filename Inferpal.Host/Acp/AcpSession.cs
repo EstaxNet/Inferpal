@@ -824,21 +824,35 @@ internal sealed class AcpSession : IAsyncDisposable
         return true;
     }
 
-    /// <summary>The session, saved under its id — what <c>session/list</c> and <c>session/load</c> find again.</summary>
+    /// <summary>One save at a time (see <see cref="SaveAsync"/>).</summary>
+    private readonly SemaphoreSlim _saving = new(1, 1);
+
+    /// <summary>The session, saved under its id — what <c>session/list</c> and <c>session/load</c> find again — as the
+    /// transcript holds it now; a failure is said in the thread.</summary>
+    /// <remarks>
+    /// ⚠ One save at a time, the transcript read INSIDE: two saves in flight — a turn's end, then a <c>/task</c> report a
+    /// moment later — reach the host in parallel, and the one that read the older transcript could finish last: the
+    /// report gone from the saved thread, nothing saved after it.
+    /// </remarks>
     private async Task SaveAsync()
     {
-        List<SavedMessageDto> messages;
-        lock (_gate) messages = [.. _transcript];
-        if (messages.Count == 0) return;
+        await _saving.WaitAsync();
         try
         {
-            await _link.InvokeWithParameterObjectAsync("session/save", new { name = Id, messages });
+            List<SavedMessageDto> messages;
+            lock (_gate) messages = [.. _transcript];
+            if (messages.Count == 0) return;
+            try
+            {
+                await _link.InvokeWithParameterObjectAsync("session/save", new { name = Id, messages });
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                Diagnostics.Swallow("AcpSession.Save", ex);
+                Say("\n\n" + Strings.AcpSessionNotSaved(ex.Message));
+            }
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            Diagnostics.Swallow("AcpSession.Save", ex);
-            Say("\n\n" + Strings.AcpSessionNotSaved(ex.Message));
-        }
+        finally { _saving.Release(); }
     }
 
     private static string Now() => DateTime.Now.ToString("HH:mm", CultureInfo.CurrentCulture);
