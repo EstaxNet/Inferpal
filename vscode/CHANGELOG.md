@@ -3,6 +3,29 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.7.9
+
+Forty-one fixes for VS Code, and the first of them are about what you approve.
+
+- **What you approve**: permission rules ending with a comment, as in the documentation, now apply; a command chained
+  after an allowed one is no longer approved with it; a change no longer writes over what you saved while it waited
+  for your answer, and inserted text goes to the file you approved; an "Always" can no longer pass to a repository's
+  MCP server named like yours; a file your rules protect no longer makes the agent give up the tool; Enter no longer
+  approves a question you did not read; and a link in an answer opens only if it is a web address.
+- **Fixed**: signing in to an MCP server works from a remote window, and says at once when no browser can open; MCP
+  sign-ins through Entra, Keycloak or Okta work, a repository's server can be signed in to, a sign-in survives a
+  provider briefly down and no longer signs you out of the others; a settings file broken by a hand edit no longer
+  costs you your settings; Inferpal stays in your editor's language; a question sent while settings are applied is
+  told so; edits keep the nesting of two-space and tab-indented files; failed builds and test runs are no longer
+  reported green, and "tests passed" only when tests ran; `/tdd` runs a solution that is not at the folder's root;
+  pytest keeps its accents on Windows; a long file write, an unclosed parameter, one broken call among several and a
+  reasoning model's summary no longer derail the agent, and its closing answer fits a long conversation; background
+  tasks and commands stay apart and report their failures; the index says what it leaves out, keeps a file busy during
+  a rebuild, no longer mixes two embedding models, and goes on when a language server stops answering; renames and
+  impact analysis follow excluded folders and homonymous files; `@code` and `@tree` say why nothing was attached; what
+  you type after `/explain`, `/fix` and the other actions reaches the model; `/debug stop …` and `/template name …` do
+  what you meant; a cleared conversation is saved before it leaves; and `/undo-run` can be tried again.
+
 ## 1.7.8
 
 The documentation is one click away from the chat, and twenty fixes for VS Code.
