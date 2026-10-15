@@ -160,7 +160,17 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
             var match = models.FirstOrDefault(m => m.Loaded && IdMatches(m.Id, model));
             ctx = match.Id is not null ? match.LoadedContextLength : null;
         }
-        catch { ctx = null; } // never let a probe failure block the actual request
+        // ⚠ The caller's Stop is a cancellation, never "the server did not say": caught, it was cached as unknown for the
+        // next questions, which then took the configured window for the loaded one.
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex)
+        {
+            // Never let a probe failure block the actual request: unknown, said once.
+            Diagnostics.RecordOnce("LmStudio.LoadedWindow",
+                $"The loaded context window could not be read ({ex.GetType().Name}: {ex.Message}); the configured one is used.",
+                ex.GetType().FullName ?? "error");
+            ctx = null;
+        }
 
         lock (_ctxLock) _ctxCache = (model, ctx, DateTime.UtcNow);
         return ctx;
