@@ -1101,6 +1101,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="McpCardOff" xml:space="preserve"><value>オフ</value></data>
   <data name="McpCardRetry" xml:space="preserve"><value>再試行</value></data>
   <data name="McpCardSignInButton" xml:space="preserve"><value>サインイン</value></data>
+  <data name="McpOtherServersTitle" xml:space="preserve"><value>リポジトリまたはエディターが宣言したサーバー</value></data>
   <data name="McpCardsSummary" xml:space="preserve"><value>{0} 個を設定済み</value></data>
   <data name="McpCardsSummaryAttention" xml:space="preserve"><value>{0} 個を設定済み · {1} 個に対応が必要</value></data>
   <data name="SettingsEditAsJson" xml:space="preserve"><value>JSON で編集</value></data>

@@ -1101,6 +1101,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="McpCardOff" xml:space="preserve"><value>Aus</value></data>
   <data name="McpCardRetry" xml:space="preserve"><value>Erneut versuchen</value></data>
   <data name="McpCardSignInButton" xml:space="preserve"><value>Anmelden</value></data>
+  <data name="McpOtherServersTitle" xml:space="preserve"><value>Vom Repository oder vom Editor deklarierte Server</value></data>
   <data name="McpCardsSummary" xml:space="preserve"><value>{0} eingerichtet</value></data>
   <data name="McpCardsSummaryAttention" xml:space="preserve"><value>{0} eingerichtet · {1} brauchen Ihre Aufmerksamkeit</value></data>
   <data name="SettingsEditAsJson" xml:space="preserve"><value>Als JSON bearbeiten</value></data>

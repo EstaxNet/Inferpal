@@ -1101,6 +1101,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="McpCardOff" xml:space="preserve"><value>Disattivato</value></data>
   <data name="McpCardRetry" xml:space="preserve"><value>Riprova</value></data>
   <data name="McpCardSignInButton" xml:space="preserve"><value>Accedi</value></data>
+  <data name="McpOtherServersTitle" xml:space="preserve"><value>Server dichiarati dal repository o dall'editor</value></data>
   <data name="McpCardsSummary" xml:space="preserve"><value>{0} configurati</value></data>
   <data name="McpCardsSummaryAttention" xml:space="preserve"><value>{0} configurati · {1} richiedono attenzione</value></data>
   <data name="SettingsEditAsJson" xml:space="preserve"><value>Modifica come JSON</value></data>

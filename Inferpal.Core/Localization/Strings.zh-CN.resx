@@ -1101,6 +1101,7 @@
   <data name="McpCardOff" xml:space="preserve"><value>已关闭</value></data>
   <data name="McpCardRetry" xml:space="preserve"><value>重试</value></data>
   <data name="McpCardSignInButton" xml:space="preserve"><value>登录</value></data>
+  <data name="McpOtherServersTitle" xml:space="preserve"><value>由仓库或编辑器声明的服务器</value></data>
   <data name="McpCardsSummary" xml:space="preserve"><value>已配置 {0} 个</value></data>
   <data name="McpCardsSummaryAttention" xml:space="preserve"><value>已配置 {0} 个 · {1} 个需要处理</value></data>
   <data name="SettingsEditAsJson" xml:space="preserve"><value>以 JSON 编辑</value></data>

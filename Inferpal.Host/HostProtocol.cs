@@ -553,10 +553,11 @@ internal sealed record SettingsSchemaDto(List<SettingsTabDto> Tabs);
 
 // ── Settings: structured editors of the Tools page ──────────────────────────────
 
-/// <summary>One MCP server card. <c>State</c>: connected | signIn | failed | off | notStarted.</summary>
+/// <summary>One MCP server card. <c>State</c>: connected | signIn | failed | off | notStarted. <c>OutsideTheList</c>:
+/// declared by the repository or passed by the editor — shown, signed in to, never edited.</summary>
 internal sealed record McpCardDto(
     string Name, string Transport, string Target, bool Enabled,
-    string State, string StatusText, string? Cause, int ToolCount);
+    string State, string StatusText, string? Cause, int ToolCount, bool OutsideTheList);
 
 /// <summary>`mcp/cards` (and `mcp/retry`, `mcp/authorize`) answer. <c>Error</c>: why a sign-in failed.</summary>
 internal sealed record McpCardsDto(string Summary, List<McpCardDto> Cards, string? Error);

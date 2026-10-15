@@ -110,6 +110,9 @@ The MCP servers a repository declares for other tools start beside yours — onc
 - A repository's server **runs in the repository's root**, or in the `cwd` it declares, resolved against that root.
 - A server you configured yourself keeps its name: the repository's server of the same name does not start, and the
   status says why. So does a file that cannot be read, with its reason.
+- A repository's server you agreed to — and a server your ACP client passes — has a card of its own in the settings,
+  under your list, with its state and its cause. It cannot be edited from there (its definition is not yours), but an
+  HTTP server that asks for a sign-in is signed in to there, with the same **Sign in** button as yours.
 
 ## Scope & limits
 

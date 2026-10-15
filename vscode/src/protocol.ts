@@ -606,6 +606,8 @@ export interface McpCard {
   statusText: string;
   cause?: string | null;
   toolCount: number;
+  /** Declared by the repository or passed by the editor: shown and signed in to, never edited from the list. */
+  outsideTheList: boolean;
 }
 
 export interface McpCardsResult {

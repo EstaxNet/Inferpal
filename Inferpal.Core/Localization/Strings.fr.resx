@@ -1101,6 +1101,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="McpCardOff" xml:space="preserve"><value>Désactivé</value></data>
   <data name="McpCardRetry" xml:space="preserve"><value>Réessayer</value></data>
   <data name="McpCardSignInButton" xml:space="preserve"><value>Se connecter</value></data>
+  <data name="McpOtherServersTitle" xml:space="preserve"><value>Serveurs déclarés par le dépôt ou l'éditeur</value></data>
   <data name="McpCardsSummary" xml:space="preserve"><value>{0} configuré(s)</value></data>
   <data name="McpCardsSummaryAttention" xml:space="preserve"><value>{0} configuré(s) · {1} à regarder</value></data>
   <data name="SettingsEditAsJson" xml:space="preserve"><value>Modifier en JSON</value></data>

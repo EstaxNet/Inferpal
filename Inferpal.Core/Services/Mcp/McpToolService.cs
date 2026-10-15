@@ -63,6 +63,12 @@ internal sealed class McpToolService : IAsyncDisposable
     /// started.</remarks>
     public IReadOnlyList<McpServerConfig> SessionServers { get; set; } = [];
 
+    /// <summary>
+    /// The servers outside the user's list — the repository's and the editor's — that the last refresh started or tried,
+    /// as they were started: their cards are drawn from these (<see cref="McpServerCards"/>).
+    /// </summary>
+    public IReadOnlyList<McpServerConfig> OtherServers => _others;
+
     /// <summary>The <c>${input:…}</c> values given in this process, per repository, server and input: asked once per
     /// session, never written anywhere.</summary>
     private readonly Dictionary<string, string> _inputValues = new(StringComparer.Ordinal);
@@ -107,6 +113,9 @@ internal sealed class McpToolService : IAsyncDisposable
     // not carry them - and they appeared nowhere. They join the same snapshot, so both front-ends
     // render them without a line of extra code.
     private IReadOnlyList<McpServerStatus> _rejected = [];
+    // The repository's and the editor's servers the last refresh started or tried, as started: what signs in to one, and
+    // what its card shows. Kept apart from _servers, which loses a server that did not start — the one that needs it.
+    private IReadOnlyList<McpServerConfig> _others = [];
     // Tools and status are published as ONE snapshot. Two separate writes let a reader see the tools of a
     // reconnected server with the status from before the reconnect ("disconnected", zero tools).
     private sealed record Snapshot(IReadOnlyList<ITool> Tools, IReadOnlyList<McpServerStatus> Status);
@@ -263,6 +272,7 @@ internal sealed class McpToolService : IAsyncDisposable
                 // in the editor for every agent it runs.
                 _rejected = [];
                 var startedGiven = await Task.WhenAll(given.Select(StartServerAsync)).ConfigureAwait(false);
+                _others  = given;
                 _servers = [.. startedGiven.Where(r => r.Entry is not null).Select(r => r.Entry!)];
                 _failed  = [.. startedGiven.Where(r => r.Failure is not null).Select(r => r.Failure!)];
                 RebuildSnapshot();
@@ -305,6 +315,7 @@ internal sealed class McpToolService : IAsyncDisposable
                                                     .Select(StartServerAsync))
                                     .ConfigureAwait(false);
 
+            _others  = [.. repository.Start, .. fromEditor];
             _servers = [.. started.Where(r => r.Entry is not null).Select(r => r.Entry!)];
             _failed  = [.. started.Where(r => r.Failure is not null).Select(r => r.Failure!), .. repository.NotStarted, .. shadowed];
             RebuildSnapshot();
@@ -531,10 +542,7 @@ internal sealed class McpToolService : IAsyncDisposable
         if (!_tokenStore.CanProtect)
             throw new InvalidOperationException(Strings.McpOAuthUnsupportedPlatform);
 
-        // A repository's server the user agreed to is signed in to like a configured one.
-        var cfg = McpServerConfig.Parse(_config.McpServersJson)
-            .Concat(_servers.Select(e => e.Config))
-            .FirstOrDefault(s => s.IsHttp && string.Equals(s.Name, serverName, StringComparison.Ordinal))
+        var cfg = SignInTarget(serverName)
             ?? throw new InvalidOperationException($"'{serverName}' is not a configured HTTP MCP server.");
 
         var server = OAuthServerFor(cfg);
@@ -547,6 +555,18 @@ internal sealed class McpToolService : IAsyncDisposable
         // a call to another one had its client disposed under it — because someone pressed "Sign in" in the settings.
         await RestartServerAsync(cfg).ConfigureAwait(false);
     }
+
+    /// <summary>The HTTP server named <paramref name="serverName"/> a sign-in goes to, or <c>null</c> when none is.</summary>
+    /// <remarks>
+    /// ⚠ A repository's server the user agreed to, and one the editor passes, are signed in to like a configured one —
+    /// above all when they did not start: a server that asks for a sign-in refuses the session until it has one, so it is
+    /// never among the running ones, and looked for there alone it could never be signed in to.
+    /// </remarks>
+    internal McpServerConfig? SignInTarget(string serverName) =>
+        McpServerConfig.Parse(_config.McpServersJson)
+            .Concat(_others)
+            .Concat(_servers.Select(e => e.Config))
+            .FirstOrDefault(s => s.IsHttp && string.Equals(s.Name, serverName, StringComparison.Ordinal));
 
     /// <summary>
     /// Stops ONE server (when it runs) and starts it again from <paramref name="cfg"/>, at its place in the list: the
@@ -815,6 +835,7 @@ internal sealed class McpToolService : IAsyncDisposable
         _servers  = [];
         _failed   = [];
         _rejected = [];
+        _others   = [];
         _snapshot = _snapshot with { Tools = [] };
         foreach (var entry in old)
             await entry.Client.DisposeAsync().ConfigureAwait(false);

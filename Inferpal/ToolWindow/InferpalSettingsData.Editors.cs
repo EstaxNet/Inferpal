@@ -26,7 +26,7 @@ internal partial class InferpalSettingsData
     private string _labelRulesColEffect = "", _labelRulesColTool = "", _labelRulesColPattern = "", _labelRulesColFrom = "",
                    _rulesTeamUnusableText = "", _rulesEmptyText = "",
                    _labelRulesAdd = "", _labelRuleAllow = "", _labelRuleDeny = "",
-                   _labelMcpRetry = "", _labelMcpSignIn = "";
+                   _labelMcpRetry = "", _labelMcpSignIn = "", _labelMcpOtherServers = "";
 
     [DataMember] public ObservableCollection<ApprovalRuleItem> ApprovalRules { get; } = [];
     [DataMember] public bool   RulesTeamUnusable   { get => _rulesTeamUnusable;   set => SetProperty(ref _rulesTeamUnusable,   value); }
@@ -51,6 +51,7 @@ internal partial class InferpalSettingsData
     [DataMember] public string LabelRuleDeny        { get => _labelRuleDeny;        set => SetProperty(ref _labelRuleDeny,        value); }
     [DataMember] public string LabelMcpRetry        { get => _labelMcpRetry;        set => SetProperty(ref _labelMcpRetry,        value); }
     [DataMember] public string LabelMcpSignIn       { get => _labelMcpSignIn;       set => SetProperty(ref _labelMcpSignIn,       value); }
+    [DataMember] public string LabelMcpOtherServers { get => _labelMcpOtherServers; set => SetProperty(ref _labelMcpOtherServers, value); }
 
     [DataMember] public AsyncCommand ToggleRulesTextCommand { get; private set; } = null!;
     [DataMember] public AsyncCommand SetRuleAllowCommand    { get; private set; } = null!;
@@ -87,6 +88,7 @@ internal partial class InferpalSettingsData
         LabelRuleDeny         = Strings.RuleDeny;
         LabelMcpRetry         = Strings.McpCardRetry;
         LabelMcpSignIn        = Strings.McpCardSignInButton;
+        LabelMcpOtherServers  = Strings.McpOtherServersTitle;
         RulesViewLabel        = RulesTextExpanded ? Strings.SettingsEditAsList : Strings.SettingsEditAsText;
         // The rows carry translated texts (Allow, This machine…): rebuilt in the new language.
         RebuildRulesTable();

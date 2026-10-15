@@ -100,6 +100,7 @@ internal static class Strings
     public static string McpCardOff => Get(nameof(McpCardOff));
     public static string McpCardRetry => Get(nameof(McpCardRetry));
     public static string McpCardSignInButton => Get(nameof(McpCardSignInButton));
+    public static string McpOtherServersTitle => Get(nameof(McpOtherServersTitle));
     public static string McpCardsSummary(int count) => Format(Get(nameof(McpCardsSummary)), count);
     public static string McpCardsSummaryAttention(int count, int attention) =>
         Format(Get(nameof(McpCardsSummaryAttention)), count, attention);

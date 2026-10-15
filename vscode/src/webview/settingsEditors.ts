@@ -511,6 +511,45 @@ function mcpServersEditor(area: HTMLTextAreaElement, host: EditorHost): Structur
       view.appendChild(card);
     }
 
+    // The repository's and the editor's servers: not the user's to edit, but the only place to sign in to one — a server
+    // that asks for a sign-in refuses the session until it has one, so without its card it never runs.
+    const others = (last?.cards ?? []).filter((c) => c.outsideTheList && !names.includes(c.name));
+    if (others.length > 0) {
+      view.appendChild(el('p', 'mcpothers', host.res('McpOtherServersTitle')));
+    }
+    for (const other of others) {
+      const card = el('div', 'mcpcard state-' + other.state);
+      const row = el('div', 'lrow');
+      const dot = el('span', 'dot');
+      dot.setAttribute('aria-hidden', 'true');
+      const main = el('div', 'lmain');
+      main.appendChild(el('span', 'lname', other.name));
+      if (other.transport) {
+        const sub = el('span', 'lsub');
+        sub.append(`${other.transport} · `, el('code', '', other.target));
+        main.appendChild(sub);
+      }
+      row.append(dot, main, el('span', 'mcpstatus', other.statusText));
+      if (other.state === 'signIn' || other.state === 'failed') {
+        const signIn = other.state === 'signIn';
+        const action = el('button', signIn ? '' : 'secondary',
+          busy.has(other.name) ? '…' : host.res(signIn ? 'McpCardSignInButton' : 'McpCardRetry'));
+        action.type = 'button';
+        action.disabled = busy.has(other.name);
+        action.addEventListener('click', () => {
+          busy.add(other.name);
+          host.post(signIn ? { type: 'mcpAuthorize', name: other.name } : { type: 'mcpRetry' });
+          refresh();
+        });
+        row.appendChild(action);
+      }
+      card.appendChild(row);
+      if (other.cause) {
+        card.appendChild(el('code', 'mcpcause', other.cause));
+      }
+      view.appendChild(card);
+    }
+
     if (editing === undefined) {
       const add = addButton(host.res('McpAddServer'));
       add.addEventListener('click', () => { editing = null; refresh(); });

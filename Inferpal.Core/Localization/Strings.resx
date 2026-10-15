@@ -1105,6 +1105,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="McpCardOff" xml:space="preserve"><value>Off</value></data>
   <data name="McpCardRetry" xml:space="preserve"><value>Retry</value></data>
   <data name="McpCardSignInButton" xml:space="preserve"><value>Sign in</value></data>
+  <data name="McpOtherServersTitle" xml:space="preserve"><value>Servers declared by the repository or the editor</value></data>
   <data name="McpCardsSummary" xml:space="preserve"><value>{0} configured</value></data>
   <data name="McpCardsSummaryAttention" xml:space="preserve"><value>{0} configured · {1} need your attention</value></data>
   <data name="SettingsEditAsJson" xml:space="preserve"><value>Edit as JSON</value></data>

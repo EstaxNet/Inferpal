@@ -1254,6 +1254,67 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+                <!-- The repository's servers: read only (their definition is the repository's), signed in to here. -->
+                <StackPanel Visibility="{Binding HasOtherMcpServers, Converter={StaticResource b2v}}" Margin="0,4,0,6">
+                    <TextBlock Text="{Binding LabelMcpOtherServers}" Foreground="{Binding McpSubtleForeground}" FontWeight="SemiBold"
+                               FontSize="11" Margin="0,0,0,6"/>
+                    <ItemsControl ItemsSource="{Binding OtherMcpServers}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{Binding DataContext.McpRowBackground, ElementName=root}"
+                                        BorderBrush="{Binding DataContext.McpRowBorder, ElementName=root}" BorderThickness="1"
+                                        CornerRadius="8" Padding="10,8" Margin="0,0,0,6">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Ellipse Grid.Column="0" Width="8" Height="8" Margin="0,0,10,0" VerticalAlignment="Center">
+                                            <Ellipse.Style>
+                                                <Style TargetType="Ellipse">
+                                                    <Setter Property="Fill" Value="#8A8A8A"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding StateKey}" Value="connected"><Setter Property="Fill" Value="#3FB56A"/></DataTrigger>
+                                                        <DataTrigger Binding="{Binding StateKey}" Value="signIn"><Setter Property="Fill" Value="#D9A21B"/></DataTrigger>
+                                                        <DataTrigger Binding="{Binding StateKey}" Value="failed"><Setter Property="Fill" Value="#E5534B"/></DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Ellipse.Style>
+                                        </Ellipse>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding ServerName}" FontWeight="SemiBold"
+                                                       Foreground="{Binding DataContext.TextForeground, ElementName=root}" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Summary}" FontSize="11"
+                                                       Foreground="{Binding DataContext.McpSubtleForeground, ElementName=root}"
+                                                       FontFamily="Cascadia Mono, Consolas" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
+                                            <TextBlock Text="{Binding StatusText}" FontSize="11"
+                                                       Foreground="{Binding DataContext.McpSubtleForeground, ElementName=root}" VerticalAlignment="Center"/>
+                                            <Button Command="{Binding AuthorizeCommand}" Content="{Binding DataContext.LabelMcpSignIn, ElementName=root}"
+                                                    Visibility="{Binding AuthRequired, Converter={StaticResource b2v}}"
+                                                    Padding="8,2" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                                            <Button Command="{Binding RetryCommand}" Content="{Binding DataContext.LabelMcpRetry, ElementName=root}"
+                                                    Visibility="{Binding ShowRetry, Converter={StaticResource b2v}}"
+                                                    Padding="8,2" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Margin="18,6,0,0" Padding="8,5" CornerRadius="6"
+                                                Background="{Binding DataContext.EditPanelBg, ElementName=root}"
+                                                Visibility="{Binding HasCause, Converter={StaticResource b2v}}">
+                                            <TextBlock Text="{Binding Cause}" FontFamily="Cascadia Mono, Consolas" FontSize="11" TextWrapping="Wrap"
+                                                       Foreground="{Binding DataContext.TextForeground, ElementName=root}"/>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
                 <Button Command="{Binding AddServerCommand}" HorizontalAlignment="Left" Padding="12,5" Margin="0,0,0,8"
                         AutomationProperties.Name="{Binding LabelMcpAddServer}">
                     <StackPanel Orientation="Horizontal">

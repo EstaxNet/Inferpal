@@ -1101,6 +1101,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="McpCardOff" xml:space="preserve"><value>Wyłączony</value></data>
   <data name="McpCardRetry" xml:space="preserve"><value>Ponów</value></data>
   <data name="McpCardSignInButton" xml:space="preserve"><value>Zaloguj</value></data>
+  <data name="McpOtherServersTitle" xml:space="preserve"><value>Serwery zadeklarowane przez repozytorium lub edytor</value></data>
   <data name="McpCardsSummary" xml:space="preserve"><value>Skonfigurowane: {0}</value></data>
   <data name="McpCardsSummaryAttention" xml:space="preserve"><value>Skonfigurowane: {0} · wymaga uwagi: {1}</value></data>
   <data name="SettingsEditAsJson" xml:space="preserve"><value>Edytuj jako JSON</value></data>

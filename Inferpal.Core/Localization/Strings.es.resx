@@ -1101,6 +1101,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="McpCardOff" xml:space="preserve"><value>Desactivado</value></data>
   <data name="McpCardRetry" xml:space="preserve"><value>Reintentar</value></data>
   <data name="McpCardSignInButton" xml:space="preserve"><value>Iniciar sesión</value></data>
+  <data name="McpOtherServersTitle" xml:space="preserve"><value>Servidores declarados por el repositorio o el editor</value></data>
   <data name="McpCardsSummary" xml:space="preserve"><value>{0} configurado(s)</value></data>
   <data name="McpCardsSummaryAttention" xml:space="preserve"><value>{0} configurado(s) · {1} requieren su atención</value></data>
   <data name="SettingsEditAsJson" xml:space="preserve"><value>Editar como JSON</value></data>

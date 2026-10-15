@@ -23,9 +23,11 @@ internal enum McpCardState
 /// <param name="Target">The command line (stdio) or the address (HTTP).</param>
 /// <param name="Cause">Why it is not working, or what went wrong while connected — the server's own words,
 /// shown as is; <c>null</c> when there is nothing to say.</param>
+/// <param name="OutsideTheList">Declared by the repository or passed by the editor, not in the user's list: shown with
+/// its state and its sign-in, never edited, switched off or deleted from there — its definition is not the user's.</param>
 internal sealed record McpServerCard(
     string Name, string Transport, string Target, bool Enabled,
-    McpCardState State, string StatusText, string? Cause, int ToolCount);
+    McpCardState State, string StatusText, string? Cause, int ToolCount, bool OutsideTheList = false);
 
 /// <summary>
 /// The MCP servers as the settings window shows them, in both editors: one card per configured server,
@@ -38,8 +40,15 @@ internal static class McpServerCards
     /// <param name="configs">The configured servers (the settings text, parsed).</param>
     /// <param name="status">What the running service reports — servers that tried to start, and entries
     /// rejected before they could (a misspelt key): those have no config, they get a card of their own.</param>
+    /// <param name="others">The repository's and the editor's servers the service started or tried
+    /// (<see cref="McpToolService.OtherServers"/>): a card each, marked <see cref="McpServerCard.OutsideTheList"/>.</param>
+    /// <remarks>
+    /// ⚠ The cards outside the list are the only way to sign in to such a server: one that asks for a sign-in refuses the
+    /// session until it has one, so it never runs — and without a card, nothing in either editor offered the sign-in.
+    /// </remarks>
     public static IReadOnlyList<McpServerCard> Build(
-        IReadOnlyList<McpServerConfig> configs, IReadOnlyList<McpServerStatus> status)
+        IReadOnlyList<McpServerConfig> configs, IReadOnlyList<McpServerStatus> status,
+        IReadOnlyList<McpServerConfig>? others = null)
     {
         var byName = new Dictionary<string, McpServerStatus>(StringComparer.Ordinal);
         foreach (var s in status) byName[s.Name] = s;
@@ -47,9 +56,7 @@ internal static class McpServerCards
         var cards = new List<McpServerCard>();
         foreach (var config in configs)
         {
-            var (transport, target) = config.IsHttp
-                ? ("HTTP", config.Url ?? string.Empty)
-                : ("stdio", CommandLine(config));
+            var (transport, target) = TransportOf(config);
 
             if (!config.Enabled)
                 cards.Add(new(config.Name, transport, target, false, McpCardState.Off, Strings.McpCardOff, null, 0));
@@ -60,6 +67,14 @@ internal static class McpServerCards
             byName.Remove(config.Name);
         }
 
+        foreach (var other in others ?? [])
+        {
+            // A name of the user's list is the user's server: the service ran that one instead (and says so).
+            if (!byName.Remove(other.Name, out var st)) continue;
+            var (transport, target) = TransportOf(other);
+            cards.Add(FromStatus(other.Name, transport, target, st) with { OutsideTheList = true });
+        }
+
         // Entries the parser rejected never became a config: without a card of their own they would
         // vanish from the very screen where the user looks for them.
         foreach (var orphan in status.Where(s => byName.ContainsKey(s.Name)))
@@ -67,6 +82,9 @@ internal static class McpServerCards
 
         return cards;
     }
+
+    private static (string Transport, string Target) TransportOf(McpServerConfig config) =>
+        config.IsHttp ? ("HTTP", config.Url ?? string.Empty) : ("stdio", CommandLine(config));
 
     /// <summary>"3 configured · 1 needs your attention" — the attention count only when there is one.</summary>
     public static string Summary(IReadOnlyList<McpServerCard> cards)

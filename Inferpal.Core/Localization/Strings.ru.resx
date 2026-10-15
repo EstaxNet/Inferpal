@@ -1101,6 +1101,7 @@
   <data name="McpCardOff" xml:space="preserve"><value>Выключен</value></data>
   <data name="McpCardRetry" xml:space="preserve"><value>Повторить</value></data>
   <data name="McpCardSignInButton" xml:space="preserve"><value>Войти</value></data>
+  <data name="McpOtherServersTitle" xml:space="preserve"><value>Серверы, объявленные репозиторием или редактором</value></data>
   <data name="McpCardsSummary" xml:space="preserve"><value>Настроено: {0}</value></data>
   <data name="McpCardsSummaryAttention" xml:space="preserve"><value>Настроено: {0} · требуют внимания: {1}</value></data>
   <data name="SettingsEditAsJson" xml:space="preserve"><value>Изменить как JSON</value></data>

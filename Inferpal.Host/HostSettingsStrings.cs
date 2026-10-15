@@ -134,7 +134,7 @@ internal sealed partial class HostServer
         "SettingsEditAsJson", "SettingsEditAsText", "SettingsEditAsList",
         "HintRowEdit", "HintRowDelete", "RowEditTitle", "ListLineNotRead",
         // MCP server cards and their form
-        "McpCardRetry", "McpCardSignInButton", "McpCardOff", "McpCardNotStarted", "McpEmptyTitle",
+        "McpCardRetry", "McpCardSignInButton", "McpOtherServersTitle", "McpCardOff", "McpCardNotStarted", "McpEmptyTitle",
         "McpAddServer", "McpAddTitle", "McpEditTitle", "LabelMcpName", "LabelMcpCommand", "LabelMcpArgs",
         "LabelMcpEnv", "LabelMcpHttpServer", "LabelMcpUrl", "LabelMcpHeaders", "BtnMcpSaveServer",
         "BtnMcpCancelServer", "McpValidationNameCommand", "McpValidationNameUrl", "McpValidationDuplicate",

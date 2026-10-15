@@ -12,7 +12,8 @@ namespace Inferpal.Host;
 /// </summary>
 internal sealed partial class HostServer
 {
-    /// <summary>`mcp/cards` — one card per configured server, from the SAVED settings and the running service.</summary>
+    /// <summary>`mcp/cards` — one card per configured server, from the SAVED settings and the running service, then one per
+    /// server of the repository or the editor.</summary>
     [JsonRpcMethod("mcp/cards")]
     public McpCardsDto McpCards() => ToMcpCards(Session());
 
@@ -74,7 +75,7 @@ internal sealed partial class HostServer
 
     private static McpCardsDto ToMcpCards(HostSession s)
     {
-        var cards = McpServerCards.Build(McpServerConfig.Parse(s.Config.McpServersJson), s.Mcp.Status);
+        var cards = McpServerCards.Build(McpServerConfig.Parse(s.Config.McpServersJson), s.Mcp.Status, s.Mcp.OtherServers);
         return new McpCardsDto(
             McpServerCards.Summary(cards),
             [.. cards.Select(c => new McpCardDto(
@@ -87,7 +88,7 @@ internal sealed partial class HostServer
                     McpCardState.Off         => "off",
                     _                        => "notStarted",
                 },
-                c.StatusText, c.Cause, c.ToolCount))],
+                c.StatusText, c.Cause, c.ToolCount, c.OutsideTheList))],
             Error: null);
     }
 }

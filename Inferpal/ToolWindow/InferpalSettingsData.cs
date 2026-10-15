@@ -872,6 +872,14 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
 
     // ── MCP server list + inline editor ──────────────────────────────────────
     [DataMember] public ObservableCollection<McpServerRow> McpServers { get; } = [];
+
+    /// <summary>
+    /// The repository's servers this window's service started or tried: read only — their definition is the repository's —
+    /// but the one place to sign in to such a server, which refuses the session until it has a sign-in.
+    /// </summary>
+    [DataMember] public ObservableCollection<McpServerRow> OtherMcpServers { get; } = [];
+    [DataMember] public bool HasOtherMcpServers { get => _hasOtherMcpServers; set => SetProperty(ref _hasOtherMcpServers, value); }
+    private bool _hasOtherMcpServers;
     [DataMember] public bool   SectionMcpJsonExpanded
     {
         get => _sectionMcpJsonExpanded;
@@ -1486,27 +1494,55 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     /// </summary>
     private void RefreshRowStatuses()
     {
-        var cards = McpServerCards.Build(McpServers.Select(ToConfig).ToList(), _mcp.Status)
-            .ToDictionary(c => c.Name, StringComparer.Ordinal);
+        var built = McpServerCards.Build(McpServers.Select(ToConfig).ToList(), _mcp.Status, _mcp.OtherServers);
+        var cards = built.Where(c => !c.OutsideTheList).ToDictionary(c => c.Name, StringComparer.Ordinal);
         foreach (var row in McpServers)
         {
-            if (!cards.TryGetValue(row.ServerName, out var card)) continue;
-            row.StatusText   = card.StatusText;
-            row.StateKey     = card.State switch
-            {
-                McpCardState.Connected   => "connected",
-                McpCardState.NeedsSignIn => "signIn",
-                McpCardState.Failed      => "failed",
-                McpCardState.Off         => "off",
-                _                        => "notStarted",
-            };
-            row.AuthRequired = card.State == McpCardState.NeedsSignIn;
-            row.ShowRetry    = card.State == McpCardState.Failed;
-            row.Cause        = card.Cause ?? string.Empty;
+            if (cards.TryGetValue(row.ServerName, out var card)) ApplyCard(row, card);
         }
+        RefreshOtherServerRows(built.Where(c => c.OutsideTheList).ToList());
         McpStatusText  = BuildMcpStatus();
         McpSummaryText = McpServers.Count == 0 ? string.Empty
             : McpServerCards.Summary(McpServerCards.Build(McpServers.Select(ToConfig).ToList(), _mcp.Status));
+    }
+
+    private static void ApplyCard(McpServerRow row, McpServerCard card)
+    {
+        row.StatusText   = card.StatusText;
+        row.StateKey     = card.State switch
+        {
+            McpCardState.Connected   => "connected",
+            McpCardState.NeedsSignIn => "signIn",
+            McpCardState.Failed      => "failed",
+            McpCardState.Off         => "off",
+            _                        => "notStarted",
+        };
+        row.AuthRequired = card.State == McpCardState.NeedsSignIn;
+        row.ShowRetry    = card.State == McpCardState.Failed;
+        row.Cause        = card.Cause ?? string.Empty;
+    }
+
+    /// <summary>
+    /// The rows of the repository's servers: updated in place while the same servers are listed, rebuilt when they change.
+    /// Never persisted — <see cref="PersistMcpServers"/> writes <see cref="McpServers"/> only.
+    /// </summary>
+    private void RefreshOtherServerRows(IReadOnlyList<McpServerCard> others)
+    {
+        if (!OtherMcpServers.Select(r => r.ServerName).SequenceEqual(others.Select(c => c.Name), StringComparer.Ordinal))
+        {
+            OtherMcpServers.Clear();
+            foreach (var card in others)
+            {
+                var row = new McpServerRow { ServerName = card.Name };
+                if (card.Transport == "HTTP") row.Url = card.Target;
+                else row.Command = card.Target;
+                row.OnAuthorize = AuthorizeServerAsync;
+                row.OnRetry     = ReconnectMcpAsync;
+                OtherMcpServers.Add(row);
+            }
+        }
+        for (var i = 0; i < others.Count; i++) ApplyCard(OtherMcpServers[i], others[i]);
+        HasOtherMcpServers = OtherMcpServers.Count > 0;
     }
 
     /// <summary>Runs the interactive OAuth flow (browser) for an HTTP server row, then refreshes statuses.</summary>
