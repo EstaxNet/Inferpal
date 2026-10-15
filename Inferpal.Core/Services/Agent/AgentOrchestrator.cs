@@ -571,16 +571,14 @@ internal sealed class AgentOrchestrator
         var synth   = ToolTranscript.Flatten(messages.Take(Math.Min(headEnd, messages.Count)));
 
         // The gathered tool results + the synthesis instruction, in a single user turn so "those
-        // results" in the prompt resolves to the digest directly above it. Bounded to ~60% of the
-        // context window so the synthesis request can't overflow num_ctx and lose its head.
+        // results" in the prompt resolves to the digest directly above it, bounded by what the window
+        // leaves after the head (SynthesisDigestBudget).
         var window      = await RunWindowAsync(model, ct);
-        var budgetChars = window > 0
-            ? Math.Max(8000, window * 4 * 6 / 10)
-            : 24000;
-        var digest = BuildToolDigest(executions, budgetChars);
+        var instruction = ModelPrompts.AgentSynthesizePrompt(TaskSnippet(userTask));
+        var digest = BuildToolDigest(executions, SynthesisDigestBudget(window, EstimateChars(synth), instruction.Length));
         var prompt = digest.Length > 0
-            ? digest + "\n\n" + ModelPrompts.AgentSynthesizePrompt(TaskSnippet(userTask))
-            : ModelPrompts.AgentSynthesizePrompt(TaskSnippet(userTask));
+            ? digest + "\n\n" + instruction
+            : instruction;
         synth.Add(new ChatMessageDto("user", prompt));
 
         try
@@ -600,6 +598,22 @@ internal sealed class AgentOrchestrator
             Diagnostics.Swallow("Agent.Synthesis", ex);
             return (fallback, false, false, false);
         }
+    }
+
+    /// <summary>
+    /// The characters the tool digest of a synthesis may take: what the window (in tokens) leaves after the head sent
+    /// with it, the instruction and a quarter kept for the answer — never more than 60 % of the window.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The head is the system prompt and the whole conversation: a budget taken from the window alone lets a long
+    /// one plus a full digest go past the window — refused by LM Studio, cut at its head by Ollama — and the synthesis
+    /// falls back without a word, on exactly the runs that gathered the most.
+    /// </remarks>
+    internal static int SynthesisDigestBudget(int window, int headChars, int instructionChars)
+    {
+        if (window <= 0) return 24000;
+        var windowChars = window * 4;
+        return Math.Clamp(windowChars - windowChars / 4 - headChars - instructionChars, 0, windowChars * 6 / 10);
     }
 
     /// <summary>
