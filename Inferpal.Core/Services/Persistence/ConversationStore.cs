@@ -283,16 +283,20 @@ internal class ConversationStore
         return true;
     }
 
-    /// Lists all saved sessions, most recent first.
+    /// <summary>Lists all saved sessions, most recently written first.</summary>
+    /// <remarks>⚠ By the file's last write, never by its NAME: names are written by several writers (a dated archive, a
+    /// model's title, an ACP thread's id, VS Code's save), and sorted in reverse alphabetical order the sessions
+    /// of one writer always came first, whatever their age — "most recent first" was the order of the names.</remarks>
     public IReadOnlyList<string> ListSessions()
     {
         if (!Directory.Exists(Dir)) return [];
-        return Directory.GetFiles(Dir, "*.json")
+        return new DirectoryInfo(Dir).GetFiles("*.json")
                         // Explicit suffix check: Windows wildcard matching is looser than it
                         // looks, and SaveAsync stages through "<name>.json.tmp".
-                        .Where(f => f.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
-                        .Select(f => Path.GetFileNameWithoutExtension(f)!)
-                        .OrderByDescending(n => n)
+                        .Where(f => f.Name.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+                        .OrderByDescending(f => f.LastWriteTimeUtc)
+                        .ThenByDescending(f => f.Name, StringComparer.Ordinal)
+                        .Select(f => Path.GetFileNameWithoutExtension(f.Name))
                         .ToList();
     }
 
