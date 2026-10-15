@@ -91,12 +91,17 @@ internal sealed class LspSemanticProvider : IDisposable
         private bool         _failed;           // permanently unavailable
         private int          _initFailures;     // consecutive init attempts that failed transiently
         private int          _channelBreaks;    // sessions whose output channel broke while the server lived
+        private int          _expiredInARow;    // consecutive documentSymbol requests the server left unanswered
         private readonly Func<(string name, string args)?>? _findServer;   // tests: the server to launch
         private Shell.StderrEdges _stderr = new();     // what the current server process wrote on stderr
         private Task?        _stderrDrain;
 
         private static readonly TimeSpan InitTimeout    = TimeSpan.FromSeconds(30);
-        private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(10);
+        /// <summary>How long one <c>documentSymbol</c> request waits for its answer.</summary>
+        internal TimeSpan RequestTimeout { get; init; } = TimeSpan.FromSeconds(10);
+
+        /// <summary>Unanswered <c>documentSymbol</c> requests in a row that turn the language server off for the session.</summary>
+        internal const int MaxExpiredInARow = 3;
 
         /// <summary>How long a failed start waits for the server to finish exiting, for its code and last words.</summary>
         private static readonly TimeSpan ExitGrace = TimeSpan.FromSeconds(2);
@@ -134,11 +139,27 @@ internal sealed class LspSemanticProvider : IDisposable
                 }, ct);
 
                 // Request symbols
-                var result = await _rpc.SendRequestAsync(
-                    "textDocument/documentSymbol",
-                    new { textDocument = new { uri } },
-                    ct,
-                    RequestTimeout);
+                JsonElement? result;
+                try
+                {
+                    result = await _rpc.SendRequestAsync(
+                        "textDocument/documentSymbol",
+                        new { textDocument = new { uri } },
+                        ct,
+                        RequestTimeout);
+                }
+                catch (OperationCanceledException) when (!ct.IsCancellationRequested && !_rpc.IsClosed)
+                {
+                    // ⚠ Expired, not cancelled: the server is alive and did not answer. Returned as null like an
+                    // empty answer, this file went to the heuristic chunker unsaid, and every file after it paid the
+                    // whole wait — a stuck server cost the index ten seconds a file, in silence.
+                    _ = _rpc.SendNotificationAsync("textDocument/didClose", new { textDocument = new { uri } }, CancellationToken.None);
+                    Expired(filePath);
+                    return null;
+                }
+                // Answered: the streak is over, and the next one is said again.
+                if (_expiredInARow > 0) Diagnostics.Forget("Lsp", $"expired:{_languageId}");
+                _expiredInARow = 0;
 
                 // Close document (fire-and-forget — never blocks)
                 _ = _rpc.SendNotificationAsync(
@@ -308,6 +329,24 @@ internal sealed class LspSemanticProvider : IDisposable
         };
 
         // ── Server discovery ───────────────────────────────────────────────────
+
+        /// <summary>
+        /// A <c>documentSymbol</c> request the server left unanswered: said once, and after
+        /// <see cref="MaxExpiredInARow"/> in a row the server is off for the session — the rest of the pass is chunked by
+        /// the heuristic at once, instead of waiting out the budget file after file.
+        /// </summary>
+        private void Expired(string filePath)
+        {
+            var seconds = RequestTimeout.TotalSeconds.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+            Diagnostics.RecordOnce("Lsp",
+                $"The {_languageId} language server did not answer 'documentSymbol' for {Path.GetFileName(filePath)} "
+              + $"within {seconds} s: that file is chunked by the heuristic.",
+                key: $"expired:{_languageId}");
+            if (++_expiredInARow < MaxExpiredInARow) return;
+            MarkFailed($"the {_languageId} language server did not answer 'documentSymbol' {MaxExpiredInARow} times in a row "
+                     + $"within {seconds} s");
+            CleanupProcess();
+        }
 
         /// <summary>
         /// The one door to <c>_failed</c>: it turns the LSP off for the whole session, and it says
