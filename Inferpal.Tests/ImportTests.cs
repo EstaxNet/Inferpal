@@ -340,6 +340,44 @@ public sealed class ImportTests : IDisposable
     }
 
     /// <summary>
+    /// ⚠ The transport a Continue server declares travels with it, in both formats: SSE is imported and says so when it
+    /// fails, WebSocket — which nothing in Inferpal speaks — is named and left out. The old format's <c>transport.type</c>
+    /// was read by nobody, and the current one's <c>type: websocket</c> imported a server that could only fail.
+    /// </summary>
+    [Fact]
+    public void AServersDeclaredTransport_IsKept_AndWebSocketIsLeftOutByName()
+    {
+        const string json = """
+            { "experimental": { "modelContextProtocolServers": [
+              { "transport": { "type": "sse", "url": "https://mcp.example.com/sse" } },
+              { "transport": { "type": "websocket", "url": "ws://localhost:9000" } },
+              { "transport": { "type": "stdio", "command": "uvx", "args": ["mcp-server-git"] } } ] } }
+            """;
+        var plan = ContinueImport.Read(Write("config.json", json), Context(NewConfig()));
+
+        var servers = plan.Items.Select(i => i.Effect).OfType<AddMcpServer>().Select(s => s.Server).ToList();
+        Assert.True(Assert.Single(servers, s => s.Url == "https://mcp.example.com/sse").DeclaresSse);
+        Assert.False(Assert.Single(servers, s => s.Command == "uvx").DeclaresSse);   // reference arm: stdio declares nothing
+        Assert.DoesNotContain(servers, s => s.Url == "ws://localhost:9000");
+        Assert.Contains(plan.Skipped, s => s.Path == "experimental.modelContextProtocolServers[1]"
+                                           && s.Cause == ImportSkipCause.NoEquivalent && s.Detail == "type: websocket");
+
+        // The current format, and a configuration read as it is written.
+        var yaml = ContinueImport.Read(Write("config.yaml", """
+            name: x
+            version: 1.0.0
+            schema: v1
+            mcpServers:
+              - name: live
+                type: websocket
+                url: ws://localhost:9000
+            """), Context(NewConfig()));
+        Assert.DoesNotContain(yaml.Items, i => i.Kind == ImportItemKind.McpServer);
+        Assert.Empty(McpServerConfig.Parse("""{ "live": { "type": "websocket", "url": "ws://localhost:9000" } }""", out var rejected));
+        Assert.Equal(McpServerConfig.WebSocketRefusal, Assert.Single(rejected).Reason);
+    }
+
+    /// <summary>
     /// ⚠ A relative path typed after <c>/import</c> is read from the workspace. Resolved against the process's folder, it
     /// was "not found" in Visual Studio — whose extension host keeps the folder it started in — right beside the file.
     /// </summary>

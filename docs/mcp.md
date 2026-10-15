@@ -110,7 +110,8 @@ The MCP servers a repository declares for other tools start beside yours — onc
 - A repository's server **runs in the repository's root**, or in the `cwd` it declares, resolved against that root.
 - Continue's remote server sends its `requestOptions.headers`, and its `apiKey` as `Authorization: Bearer …`. A
   server that declares the older SSE transport (`"type": "sse"`) is tried with Streamable HTTP, which many such servers
-  also serve; when it does not, its error says that SSE is not supported.
+  also serve; when it does not, its error says that SSE is not supported. A server that declares WebSocket is not
+  started — nothing in Inferpal speaks it — and its status says so; `/import` leaves it out by name.
 - A server you configured yourself keeps its name: the repository's server of the same name does not start, and the
   status says why. So does a file that cannot be read, with its reason.
 - A repository's server you agreed to — and a server your ACP client passes — has a card of its own in the settings,

@@ -439,6 +439,8 @@ internal static class ContinueImport
         var command = Text(node["command"]);
         var url = Text(node["url"]);
         if (command is null && url is null) { plan.Skip(path, ImportSkipCause.Empty); return; }
+        // Imported, it could only fail: nothing in Inferpal speaks WebSocket.
+        if (McpServerConfig.IsWebSocket(Text(node["type"]))) { plan.Skip(path, ImportSkipCause.NoEquivalent, "type: websocket"); return; }
         var named = Text(node["name"]);
         var name = named ?? ServerName(command, Strings(node["args"]), url);
 
@@ -528,13 +530,18 @@ internal static class ContinueImport
             var command = Text(transport["command"]);
             var url = Text(transport["url"]);
             if (command is null && url is null) { plan.Skip(path, ImportSkipCause.Empty); continue; }
+            // The transport's own "type", as the current format's: WebSocket cannot run here, SSE is tried and says so.
+            var type = Text(transport["type"]);
+            if (McpServerConfig.IsWebSocket(type)) { plan.Skip(path, ImportSkipCause.NoEquivalent, "type: websocket"); continue; }
             var args = Strings(transport["args"]);
             var name = ServerName(command, args, url);
             var env = transport["env"] is JsonObject e
                 ? e.Where(p => Text(p.Value) is not null).ToDictionary(p => p.Key, p => Text(p.Value)!)
                 : new Dictionary<string, string>();
             AddServer(plan, path, new JsonObject { ["transport"] = null },
-                      new McpServerConfig(name, command, args, env, url), [], invented: true);
+                      new McpServerConfig(name, command, args, env, url,
+                                          DeclaresSse: string.Equals(type, "sse", StringComparison.OrdinalIgnoreCase)),
+                      [], invented: true);
         }
     }
 

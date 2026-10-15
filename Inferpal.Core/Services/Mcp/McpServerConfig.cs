@@ -62,6 +62,23 @@ internal sealed record McpServerConfig(
     internal const string SseNote =
         " — it declares the SSE transport (\"type\": \"sse\"), which Inferpal does not speak: Streamable HTTP was tried";
 
+    /// <summary>Why an entry declaring the WebSocket transport never becomes a server: nothing in Inferpal speaks it.</summary>
+    internal const string WebSocketRefusal =
+        "it declares the WebSocket transport, which Inferpal does not speak (stdio and Streamable HTTP only)";
+
+    /// <summary>The transport an entry declares: <c>type</c> (Claude, VS Code, Continue) or <c>transport</c> (Roo).</summary>
+    private static string? DeclaredTransport(JsonElement def)
+    {
+        foreach (var key in new[] { "type", "transport" })
+            if (def.TryGetProperty(key, out var t) && t.ValueKind == JsonValueKind.String) return t.GetString();
+        return null;
+    }
+
+    /// <summary>Whether a declared transport is WebSocket (<c>websocket</c>, <c>ws</c>), which nothing here speaks.</summary>
+    internal static bool IsWebSocket(string? transport) =>
+        string.Equals(transport, "websocket", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(transport, "ws", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>
     /// Continue's fields for a remote server, as the headers they are: <c>requestOptions.headers</c>, and <c>apiKey</c>
     /// sent as <c>Authorization: Bearer</c> — on a copy of <paramref name="definition"/>, a header already written winning.
@@ -207,8 +224,14 @@ internal sealed record McpServerConfig(
                           && !string.IsNullOrWhiteSpace(w.GetString()) ? w.GetString()!.Trim() : null;
 
                 // Claude's and VS Code's "type", Roo's "transport": the transport the server says it speaks.
-                var sse = new[] { "type", "transport" }.Any(k => def.TryGetProperty(k, out var t) && t.ValueKind == JsonValueKind.String
-                                                                  && string.Equals(t.GetString(), "sse", StringComparison.OrdinalIgnoreCase));
+                var declared = DeclaredTransport(def);
+                if (IsWebSocket(declared))
+                {
+                    // Tried as Streamable HTTP, a ws:// address fails on its scheme — a fault that names the URL, not the cause.
+                    Reject(problems, entry.Name, WebSocketRefusal);
+                    continue;
+                }
+                var sse = string.Equals(declared, "sse", StringComparison.OrdinalIgnoreCase);
 
                 servers.Add(new McpServerConfig(
                     entry.Name.Trim(), command, args, env,
