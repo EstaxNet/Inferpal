@@ -490,11 +490,21 @@ internal static class InlineToolCallParser
 
     /// <summary>A call from a name and a block of key/value parameter elements matched by <paramref name="parameter"/>
     /// (group 1 the key, group 2 the value) — the shape the Qwen/GLM XML and the ATEM calls share.</summary>
+    /// <remarks>⚠ Text the pattern did not read is a parameter the model wrote and nobody read: a <c>&lt;parameter=…&gt;</c>
+    /// left unclosed made <c>run_tests {}</c> — the whole suite in place of one test. A block with text left over, or whose
+    /// values do not form an object, is an unreadable call (<see cref="ToolCallFunction.UnparsedArguments"/>), refused
+    /// unexecuted — never run with default arguments.</remarks>
     private static bool TryAddFromXmlParameters(
         string name, string paramsBlock, Regex parameter, List<ToolCallDto> calls, Func<string, JsonElement?>? schemaOf)
     {
         name = name.Trim();
         if (string.IsNullOrEmpty(name)) return false;
+
+        if (parameter.Replace(paramsBlock, string.Empty).Trim().Length > 0)
+        {
+            calls.Add(new ToolCallDto(new ToolCallFunction(name, EmptyObject()) { UnparsedArguments = paramsBlock.Trim() }));
+            return true;
+        }
 
         var schema = schemaOf?.Invoke(name);
         var sb     = new System.Text.StringBuilder("{");
@@ -510,11 +520,14 @@ internal static class InlineToolCallParser
         }
         sb.Append('}');
 
-        JsonElement args;
-        try   { args = JsonDocument.Parse(sb.ToString()).RootElement.Clone(); }
-        catch (JsonException) { args = EmptyObject(); }
-
-        calls.Add(new ToolCallDto(new ToolCallFunction(name, args)));
+        try
+        {
+            calls.Add(new ToolCallDto(new ToolCallFunction(name, JsonDocument.Parse(sb.ToString()).RootElement.Clone())));
+        }
+        catch (JsonException)
+        {
+            calls.Add(new ToolCallDto(new ToolCallFunction(name, EmptyObject()) { UnparsedArguments = paramsBlock.Trim() }));
+        }
         return true;
     }
 
