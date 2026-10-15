@@ -324,7 +324,7 @@ internal class OllamaClient : InferenceProviderBase
         // or a loop always ends this way. Returned empty, the user who watched it reason reads "not a single token".
         if (noCall && !contentPrintable && reasoningBuilder.Length > 0)
             return ReasoningOnlyTurn.Recover(reasoningBuilder.ToString(), tokensUsed, promptTokens, cut, looping,
-                                             stoppedEarly: bounded || looping, ToolSchemas.Of(defs));
+                                             stoppedEarly: bounded || looping, OfferedNames(tools), ToolSchemas.Of(defs));
 
         // ⚠ The empty-reply message sends the user to /diagnostics for what the stream contained: it has to be there.
         if (noCall && !contentPrintable)

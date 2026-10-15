@@ -623,7 +623,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // reasoning channel, and is promoted rather than dropped — the UI already streamed it as "💭".
         if (toolCalls is null && !contentPrintable && reasoningBuilder.Length > 0)
             return ReasoningOnlyTurn.Recover(reasoningBuilder.ToString(), tokensUsed, promptTokens, cut, looping,
-                                             stoppedEarly: bounded || repeated || looping, schemaOf);
+                                             stoppedEarly: bounded || repeated || looping, OfferedNames(tools), schemaOf);
 
         // Empty turn under tool_choice:"required": some models/runtimes (e.g. devstral/Mistral on
         // LM Studio) return *nothing at all* — no content, no structured tool_calls, no reasoning —

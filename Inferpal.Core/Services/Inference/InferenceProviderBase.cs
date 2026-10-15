@@ -59,6 +59,10 @@ internal abstract class InferenceProviderBase : IInferenceProvider
 
     protected InferenceProviderBase(InferpalConfig config) => _config = config;
 
+    /// <summary>The names of the tools a request offers: the only names a call written as text may carry.</summary>
+    private protected static IReadOnlyCollection<string> OfferedNames(IToolRegistry tools) =>
+        new HashSet<string>(tools.Definitions.Select(d => d.Function.Name), StringComparer.Ordinal);
+
     /// <inheritdoc/>
     public abstract ProviderCapabilities Capabilities { get; }
 
