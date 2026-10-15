@@ -141,16 +141,22 @@ internal static class LoadedModelsCard
 /// </remarks>
 internal static class ModelUnloader
 {
+    /// <summary>Whether a question is being answered by this process or by any other Inferpal on the machine.</summary>
+    /// <remarks>⚠ The model server is shared — Visual Studio, VS Code, each Zed thread's agent: a lease held in THIS
+    /// process alone lets the settings of one editor unload the model another is answering with
+    /// (<see cref="ChatBusySignal"/> is the machine-wide channel the ghost text already reads).</remarks>
+    internal static bool AnsweringAnywhere() => GpuScheduler.IsChatActive || ChatBusySignal.IsBusy();
+
     /// <param name="only">The models to unload; <c>null</c> = every loaded one.</param>
-    /// <param name="isAnswering">Whether a question is being answered; <c>null</c> = <see cref="GpuScheduler.IsChatActive"/>
-    /// (process-wide state, which a test replaces).</param>
+    /// <param name="isAnswering">Whether a question is being answered; <c>null</c> = <see cref="AnsweringAnywhere"/>
+    /// (machine-wide state, which a test replaces).</param>
     /// <returns>The sentence that says what happened.</returns>
     public static async Task<string> UnloadAsync(
         IInferenceProvider client, InferpalConfig config, IReadOnlyList<string>? only, CancellationToken ct,
         Func<bool>? isAnswering = null)
     {
         if (!client.Capabilities.ModelManagement) return Strings.UnloadNotSupported;
-        if ((isAnswering ?? (() => GpuScheduler.IsChatActive))()) return Strings.UnloadWhileAnswering;
+        if ((isAnswering ?? AnsweringAnywhere)()) return Strings.UnloadWhileAnswering;
 
         var before  = await client.GetRunningModelsAsync(ct);
         var targets = before.Select(m => m.Name)
