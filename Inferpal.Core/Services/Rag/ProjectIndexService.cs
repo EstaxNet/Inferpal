@@ -549,6 +549,8 @@ internal sealed class ProjectIndexService : IDisposable
             // pass interrupted by the editor closing or the host restarting loses every vector it computed, and on a
             // machine that embeds slowly a large repository never finishes its first index.
             var unsaved = new List<(string FilePath, IReadOnlyList<RagChunk> Chunks)>();
+            // Files the pass could not read: kept as they were, then read again with the backlog.
+            var unread = new List<string>();
 
             for (int fi = 0; fi < files.Count; fi++)
             {
@@ -605,6 +607,11 @@ internal sealed class ProjectIndexService : IDisposable
                     skipped++;
                     if (firstSkipped.Length == 0)
                         firstSkipped = $"{Path.GetFileName(files[fi])} — {ex.GetType().Name}: {ex.Message}";
+                    // ⚠ Unread is not gone: what the index held for it stays, said not caught up, and it is read again
+                    // once the pass ends. Dropped by the replacement below, a file locked for a moment (a build writing
+                    // it) lost every chunk it had — in memory and on disk — until its next change.
+                    if (existingByPath.TryGetValue(files[fi], out var kept)) newChunks.AddRange(kept);
+                    unread.Add(files[fi]);
                 }
 
                 // Refresh the in-memory index every 20 files (merge — keep the boot-loaded
@@ -655,8 +662,10 @@ internal sealed class ProjectIndexService : IDisposable
             // nothing can overwrite the result. Changes arriving during this drain re-arm the
             // debounce timer and are handled through the normal watcher path afterwards.
             string[] backlog;
+            lock (_notYetReindexed) foreach (var f in unread) _notYetReindexed.Add(f);
             lock (_pendingRebuild)
             {
+                foreach (var f in unread) _pendingRebuild.Add(f);
                 backlog = [.. _pendingRebuild.Where(p => BelongsTo(p, rootDir))];
                 _pendingRebuild.Clear();
             }

@@ -131,7 +131,7 @@ internal sealed class SemanticSearchTool : ITool
 
         // ⚠ Said on BOTH branches, and above the report: "nothing found" about a class the agent has
         // just written is the costliest answer this tool can give while the index is behind.
-        var behind = StillIndexingNote() + NotReindexedNote();
+        var behind = StillIndexingNote() + NotReindexedNote() + CoverageNote();
 
         if (results.Count == 0)
             // A "nothing found" does not say the same thing depending on whether the FULL search
@@ -209,6 +209,28 @@ internal sealed class SemanticSearchTool : ITool
         var reached = total > 0 ? $" ({done} of {total} files read so far)" : string.Empty;
         return $"Note: the index is still being built{reached} — code in the files not reached yet can be missing "
              + "below, or shown as it was. search_in_files finds exact text across every file now.\n\n";
+    }
+
+    /// <summary>What the last pass left out of the index — a folder it could not list, files over the size cap — or nothing.</summary>
+    /// <remarks>
+    /// ⚠ Said only by <c>/index</c>, the persisted gap reached the model as a complete index: "nothing found" about a
+    /// class that lives in the folder or the file left out, across restarts. Model-facing: English, as the other notes.
+    /// </remarks>
+    internal string CoverageNote()
+    {
+        var sb = new StringBuilder();
+        if (_index.SkippedFolder is { } gap)
+            sb.Append($"Note: the index is incomplete — {gap.Sentence()} search_in_files reads what the index does not.\n\n");
+        if (_index.SkippedBySize > 0)
+        {
+            var shown = _index.OversizeFiles.Take(5).ToList();
+            var named = shown.Count > 0
+                ? $": {string.Join(", ", shown)}{(_index.SkippedBySize > shown.Count ? $" (+{_index.SkippedBySize - shown.Count} more)" : string.Empty)}"
+                : string.Empty;
+            sb.Append($"Note: {_index.SkippedBySize} file(s) over the {CodeChunker.MaxFileSizeKilobytes} KB indexing cap "
+                    + $"are not in the index{named} — search_in_files and read_file read them.\n\n");
+        }
+        return sb.ToString();
     }
 
     private string NotReindexedNote()
