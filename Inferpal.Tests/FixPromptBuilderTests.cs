@@ -27,10 +27,12 @@ public class FixPromptBuilderTests
     }
 
     [Fact]
-    public void ExtractErrorPaths_DeduplicatesCaseInsensitively()
+    public void ExtractErrorPaths_DeduplicatesByTheFileSystemsCaseRule()
     {
+        // One file where the file system folds case (Windows, macOS), two on Linux: never one rule for all three.
         var output = "C:\\p\\A.cs(1,1): error CS1: x\nC:\\p\\a.cs(2,2): error CS2: y";
-        Assert.Single(FixPromptBuilder.ExtractErrorPaths(output));
+        var sameFile = PathComparer.Default.Equals("C:\\p\\A.cs", "C:\\p\\a.cs");
+        Assert.Equal(sameFile ? 1 : 2, FixPromptBuilder.ExtractErrorPaths(output).Count);
     }
 
     [Fact]

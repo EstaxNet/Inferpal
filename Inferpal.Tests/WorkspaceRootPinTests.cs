@@ -52,23 +52,30 @@ public class WorkspaceRootPinTests
         Assert.Equal((RootPinAction.Index, "/src/other"),
             WorkspaceRootPin.Decide(ragEnabled: true, currentRoot: "/src/app", activeSolutionDir: "/src/other", reliableRoot: null, indexedRoot: "/src/app"));
 
-    /// <summary>Reference arm: the same solution, whatever its casing, is not a switch — otherwise
-    /// every heartbeat tick would restart indexing.</summary>
+    /// <summary>Reference arm: the same solution is not a switch — otherwise every heartbeat tick would restart
+    /// indexing. Its casing changes nothing where the file system folds case (Windows, macOS); on Linux another casing
+    /// is another folder, and a switch.</summary>
     [Theory]
     [InlineData(null)]
     [InlineData(@"C:\SRC\App")]
-    public void NoSwitch_DoesNothing(string? active) =>
-        Assert.Equal((RootPinAction.None, (string?)null),
+    public void NoSwitch_DoesNothing(string? active)
+    {
+        var sameFolder = active is null || Services.PathComparer.Default.Equals(active, @"C:\src\app");
+        Assert.Equal(sameFolder ? (RootPinAction.None, (string?)null) : (RootPinAction.Index, active),
             WorkspaceRootPin.Decide(ragEnabled: true, currentRoot: @"C:\src\app", activeSolutionDir: active, reliableRoot: @"C:\src\app", indexedRoot: @"C:\src\app"));
+    }
 
     /// <summary>RAG turned on after the root was pinned: that root was never indexed, and indexing it only
     /// at the next restart (or solution switch) left the saved setting without effect.</summary>
     [Theory]
     [InlineData(null)]
     [InlineData(@"C:\SRC\App")]
-    public void RagOn_OnAPinnedRootNeverIndexed_IndexesIt(string? active) =>
-        Assert.Equal((RootPinAction.Index, @"C:\src\app"),
+    public void RagOn_OnAPinnedRootNeverIndexed_IndexesIt(string? active)
+    {
+        var sameFolder = active is null || Services.PathComparer.Default.Equals(active, @"C:\src\app");
+        Assert.Equal((RootPinAction.Index, sameFolder ? @"C:\src\app" : active),
             WorkspaceRootPin.Decide(ragEnabled: true, currentRoot: @"C:\src\app", activeSolutionDir: active, reliableRoot: null, indexedRoot: ""));
+    }
 
     [Fact]
     public void RagOff_OnAPinnedRootNeverIndexed_DoesNothing() =>
