@@ -926,6 +926,7 @@
   <data name="TaskSubmitted" xml:space="preserve"><value>任务 **{0}** 已在后台启动：{1}</value></data>
   <data name="TaskQueueFull" xml:space="preserve"><value>后台任务过多（最多 {0} 个）。请等待其中一个完成，或执行 `/task clear`。</value></data>
   <data name="TaskUnknown" xml:space="preserve"><value>未知任务 `{0}`。</value></data>
+  <data name="TaskWorkspaceChanged" xml:space="preserve"><value>未运行：提交此任务后打开了另一个解决方案或文件夹，其工具将针对那个解决方案或文件夹作答。请在相关的工作区中重新提交。</value></data>
   <data name="TaskStopRequested" xml:space="preserve"><value>任务 `{0}` 已取消。</value></data>
   <data name="TaskAlreadyFinished" xml:space="preserve"><value>任务 `{0}` 已经完成 — `/task {0}` 可查看其报告。</value></data>
   <data name="TaskForgot" xml:space="preserve"><value>已清除 {0} 个已完成的任务。</value></data>

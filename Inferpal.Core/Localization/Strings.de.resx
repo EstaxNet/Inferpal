@@ -926,6 +926,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="TaskSubmitted" xml:space="preserve"><value>Aufgabe **{0}** im Hintergrund gestartet: {1}</value></data>
   <data name="TaskQueueFull" xml:space="preserve"><value>Zu viele Hintergrundaufgaben (max. {0}). Warten Sie auf eine oder führen Sie `/task clear` aus.</value></data>
   <data name="TaskUnknown" xml:space="preserve"><value>Unbekannte Aufgabe `{0}`.</value></data>
+  <data name="TaskWorkspaceChanged" xml:space="preserve"><value>Nicht ausgeführt: Nach dem Einreichen dieser Aufgabe wurde eine andere Projektmappe oder ein anderer Ordner geöffnet, und ihre Werkzeuge hätten über diesen geantwortet. Reichen Sie sie im Arbeitsbereich, den sie betrifft, erneut ein.</value></data>
   <data name="TaskStopRequested" xml:space="preserve"><value>Aufgabe `{0}` abgebrochen.</value></data>
   <data name="TaskAlreadyFinished" xml:space="preserve"><value>Aufgabe `{0}` ist bereits abgeschlossen — `/task {0}` zeigt ihren Bericht.</value></data>
   <data name="TaskForgot" xml:space="preserve"><value>{0} abgeschlossene Aufgabe(n) verworfen.</value></data>

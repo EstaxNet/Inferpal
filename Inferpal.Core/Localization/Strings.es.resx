@@ -926,6 +926,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="TaskSubmitted" xml:space="preserve"><value>Tarea **{0}** iniciada en segundo plano: {1}</value></data>
   <data name="TaskQueueFull" xml:space="preserve"><value>Demasiadas tareas en segundo plano (máximo {0}). Espere a que termine una o ejecute `/task clear`.</value></data>
   <data name="TaskUnknown" xml:space="preserve"><value>Tarea `{0}` desconocida.</value></data>
+  <data name="TaskWorkspaceChanged" xml:space="preserve"><value>No ejecutada: después de enviar esta tarea se abrió otra solución u otra carpeta, y sus herramientas habrían respondido sobre ella. Vuelva a enviarla desde el espacio de trabajo al que se refiere.</value></data>
   <data name="TaskStopRequested" xml:space="preserve"><value>Tarea `{0}` cancelada.</value></data>
   <data name="TaskAlreadyFinished" xml:space="preserve"><value>La tarea `{0}` ya ha terminado — `/task {0}` muestra su informe.</value></data>
   <data name="TaskForgot" xml:space="preserve"><value>{0} tarea(s) terminada(s) olvidada(s).</value></data>

@@ -926,6 +926,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="TaskSubmitted" xml:space="preserve"><value>Tâche **{0}** lancée en arrière-plan : {1}</value></data>
   <data name="TaskQueueFull" xml:space="preserve"><value>Trop de tâches en arrière-plan ({0} au maximum). Attendez qu'une se termine ou lancez `/task clear`.</value></data>
   <data name="TaskUnknown" xml:space="preserve"><value>Tâche `{0}` inconnue.</value></data>
+  <data name="TaskWorkspaceChanged" xml:space="preserve"><value>Non lancée : une autre solution ou un autre dossier a été ouvert après la soumission de cette tâche, et ses outils auraient répondu sur celui-là. Soumettez-la de nouveau depuis l'espace de travail qu'elle concerne.</value></data>
   <data name="TaskStopRequested" xml:space="preserve"><value>Tâche `{0}` annulée.</value></data>
   <data name="TaskAlreadyFinished" xml:space="preserve"><value>La tâche `{0}` est déjà terminée — `/task {0}` affiche son rapport.</value></data>
   <data name="TaskForgot" xml:space="preserve"><value>{0} tâche(s) terminée(s) oubliée(s).</value></data>

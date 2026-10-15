@@ -481,7 +481,9 @@ internal partial class InferpalToolWindowData
                 ct:      taskCt);
 
             return BackgroundTaskQueue.TaskRunOutcome.Of(run, recorder?.Proposals ?? []);
-        });
+        },
+        // The workspace a task is submitted in is the one it runs in, or it does not run (another solution opened).
+        currentRoot: () => _indexService.RootDir);
 
         // A finished task must announce itself: its report is worthless if nobody knows it exists.
         _backgroundTasks.TaskFinished += snapshot =>

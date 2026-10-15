@@ -1517,6 +1517,7 @@ internal static class Strings
         Format(Get(nameof(TaskSubmitted)), id, objective);
     public static string TaskQueueFull(int max)              => Format(Get(nameof(TaskQueueFull)), max);
     public static string TaskUnknown(string id)              => Format(Get(nameof(TaskUnknown)), id);
+    public static string TaskWorkspaceChanged                => Get(nameof(TaskWorkspaceChanged));
     public static string TaskStopRequested(string id)        => Format(Get(nameof(TaskStopRequested)), id);
     public static string TaskAlreadyFinished(string id)      => Format(Get(nameof(TaskAlreadyFinished)), id);
     public static string TaskForgot(int count)               => Format(Get(nameof(TaskForgot)), count);

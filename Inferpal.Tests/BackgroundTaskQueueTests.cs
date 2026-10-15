@@ -1,4 +1,6 @@
-﻿using Xunit;
+﻿using System.IO;
+using Inferpal.Localization;
+using Xunit;
 
 namespace Inferpal.Tests;
 
@@ -389,5 +391,59 @@ public class BackgroundTaskQueueTests
         await WaitUntil(() => queue.Get(id)!.IsFinished, "task to unwind on shutdown");
         Assert.Equal(BackgroundTaskState.Cancelled, queue.Get(id)!.State);
         Assert.Null(queue.Submit("after disposal"));
+    }
+
+    /// <summary>
+    /// A task runs in the workspace it was submitted in, or not at all: queued behind another one while Visual Studio
+    /// opened another solution, it started there — its tools read the root live — and reported on a project it was
+    /// never asked about.
+    /// </summary>
+    [Fact]
+    public async Task ATaskWhoseWorkspaceWasLeftWhileQueued_DoesNotRun_AndSaysWhy()
+    {
+        var root   = Path.Combine(Path.GetTempPath(), "inferpal-tests", "SolutionA");
+        var runner = new GatedRunner();
+        using var queue = new BackgroundTaskQueue(runner.RunAsync, _ => Task.CompletedTask, currentRoot: () => root);
+
+        var first  = queue.Submit("in flight")!;
+        var second = queue.Submit("about solution A")!;
+        await WaitUntil(() => queue.Get(first)!.State == BackgroundTaskState.Running, "first task to start");
+
+        root = Path.Combine(Path.GetTempPath(), "inferpal-tests", "SolutionB");   // another solution is opened
+        runner.Gate(first).SetResult("done");
+
+        await WaitUntil(() => queue.Get(second)!.IsFinished, "second task to finish");
+        var snapshot = queue.Get(second)!;
+        Assert.Equal(BackgroundTaskState.Failed, snapshot.State);
+        Assert.Equal(Strings.TaskWorkspaceChanged, snapshot.Error);
+        Assert.DoesNotContain(second, runner.Started);                           // the model was never asked
+    }
+
+    [Fact]
+    public async Task ATaskStillInItsWorkspace_Runs()
+    {
+        // Reference arm: the same queue, the same root at the start.
+        var root   = Path.Combine(Path.GetTempPath(), "inferpal-tests", "SolutionA");
+        var runner = new GatedRunner();
+        using var queue = new BackgroundTaskQueue(runner.RunAsync, _ => Task.CompletedTask, currentRoot: () => root);
+
+        var id = queue.Submit("about solution A")!;
+        await WaitUntil(() => runner.Started.Contains(id), "task to start");
+        runner.Gate(id).SetResult("report");
+
+        await WaitUntil(() => queue.Get(id)!.IsFinished, "task to finish");
+        Assert.Equal(BackgroundTaskState.Succeeded, queue.Get(id)!.State);
+    }
+
+    [Fact]
+    public void BothEditors_GiveTheQueueTheirWorkspace()
+    {
+        var root = ConventionCoverageTests.RepoRoot();
+        Assert.Contains("currentRoot: () => _indexService.RootDir);",
+                        ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal", "ToolWindow", "InferpalToolWindowData.SlashCommands.cs")),
+                        StringComparison.Ordinal);
+        Assert.Contains("new BackgroundTaskQueue(runner, currentRoot: () => RootDir)",
+                        ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal.Host", "HostSession.cs")),
+                        StringComparison.Ordinal);
     }
 }

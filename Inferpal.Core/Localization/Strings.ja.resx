@@ -926,6 +926,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="TaskSubmitted" xml:space="preserve"><value>タスク **{0}** をバックグラウンドで開始しました: {1}</value></data>
   <data name="TaskQueueFull" xml:space="preserve"><value>バックグラウンドタスクが多すぎます (最大 {0} 件)。いずれかの完了を待つか、`/task clear` を実行してください。</value></data>
   <data name="TaskUnknown" xml:space="preserve"><value>タスク `{0}` は見つかりません。</value></data>
+  <data name="TaskWorkspaceChanged" xml:space="preserve"><value>実行されませんでした: このタスクの送信後に別のソリューションまたはフォルダーが開かれたため、そのツールは別の場所について回答していたはずです。対象のワークスペースから再度送信してください。</value></data>
   <data name="TaskStopRequested" xml:space="preserve"><value>タスク `{0}` をキャンセルしました。</value></data>
   <data name="TaskAlreadyFinished" xml:space="preserve"><value>タスク `{0}` は既に完了しています — `/task {0}` でレポートを表示できます。</value></data>
   <data name="TaskForgot" xml:space="preserve"><value>完了した {0} 件のタスクを破棄しました。</value></data>

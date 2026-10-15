@@ -926,6 +926,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="TaskSubmitted" xml:space="preserve"><value>Zadanie **{0}** uruchomione w tle: {1}</value></data>
   <data name="TaskQueueFull" xml:space="preserve"><value>Zbyt wiele zadań w tle (maksymalnie {0}). Poczekaj na zakończenie jednego lub uruchom `/task clear`.</value></data>
   <data name="TaskUnknown" xml:space="preserve"><value>Nieznane zadanie `{0}`.</value></data>
+  <data name="TaskWorkspaceChanged" xml:space="preserve"><value>Nie uruchomiono: po wysłaniu tego zadania otwarto inne rozwiązanie lub folder, a jego narzędzia odpowiadałyby o nich. Wyślij je ponownie z obszaru roboczego, którego dotyczy.</value></data>
   <data name="TaskStopRequested" xml:space="preserve"><value>Zadanie `{0}` anulowane.</value></data>
   <data name="TaskAlreadyFinished" xml:space="preserve"><value>Zadanie `{0}` już się zakończyło — `/task {0}` pokaże jego raport.</value></data>
   <data name="TaskForgot" xml:space="preserve"><value>Usunięto zakończone zadania: {0}.</value></data>

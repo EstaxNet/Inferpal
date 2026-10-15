@@ -930,6 +930,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="TaskSubmitted" xml:space="preserve"><value>Task **{0}** started in the background: {1}</value></data>
   <data name="TaskQueueFull" xml:space="preserve"><value>Too many background tasks ({0} max). Wait for one to finish, or run `/task clear`.</value></data>
   <data name="TaskUnknown" xml:space="preserve"><value>Unknown task `{0}`.</value></data>
+  <data name="TaskWorkspaceChanged" xml:space="preserve"><value>Not run: another solution or folder was opened after this task was submitted, and its tools would have answered about that one. Submit it again from the workspace it concerns.</value></data>
   <data name="TaskStopRequested" xml:space="preserve"><value>Task `{0}` cancelled.</value></data>
   <data name="TaskAlreadyFinished" xml:space="preserve"><value>Task `{0}` has already finished — `/task {0}` shows its report.</value></data>
   <data name="TaskForgot" xml:space="preserve"><value>{0} finished task(s) forgotten.</value></data>

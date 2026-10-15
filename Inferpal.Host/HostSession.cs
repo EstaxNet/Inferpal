@@ -206,7 +206,8 @@ internal sealed class HostSession : IDisposable
         BackgroundTaskQueue.TaskRunner runner, Action<BackgroundTaskSnapshot> onFinished)
     {
         if (_tasks is not null) return _tasks;
-        _tasks = new BackgroundTaskQueue(runner);
+        // The session's root never changes (another folder is another host): given for the same rule as Visual Studio's.
+        _tasks = new BackgroundTaskQueue(runner, currentRoot: () => RootDir);
         _tasks.TaskFinished += onFinished;
         return _tasks;
     }

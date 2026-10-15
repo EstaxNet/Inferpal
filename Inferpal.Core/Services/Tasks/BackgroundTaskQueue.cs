@@ -1,4 +1,6 @@
-﻿namespace Inferpal.Services.Tasks;
+﻿using Inferpal.Localization;
+
+namespace Inferpal.Services.Tasks;
 
 /// <summary>
 /// Serial queue of detached agent runs (<c>/task</c>). A task is submitted from the chat, leaves
@@ -75,6 +77,8 @@ internal sealed class BackgroundTaskQueue : IDisposable
         public required string Id;
         public required string Objective;
         public required DateTimeOffset CreatedAt;
+        /// <summary>The workspace the task was submitted in — the one its objective is about.</summary>
+        public string? WorkspaceRoot;
         public bool ProposeWrites;
         public IReadOnlyList<TaskProposal> Proposals = [];
 
@@ -94,6 +98,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
     private readonly TaskRunner                    _runner;
     private readonly Func<CancellationToken, Task> _waitForChatIdle;
     private readonly Func<DateTimeOffset>          _now;
+    private readonly Func<string?>?                _currentRoot;
 
     private readonly object                  _lock = new();
     private readonly Queue<Job>              _pending = new();
@@ -108,14 +113,18 @@ internal sealed class BackgroundTaskQueue : IDisposable
     /// <param name="runner">Executes a task (the real one drives <c>RunAgentAsync</c>).</param>
     /// <param name="waitForChatIdle">Yield point before taking the slot; defaults to the GPU scheduler.</param>
     /// <param name="now">Clock, overridable so tests can assert timings.</param>
+    /// <param name="currentRoot">The workspace open now: read at submission and again at the start (see
+    /// <see cref="RunJobAsync"/>); <c>null</c> when the front-end's workspace cannot change.</param>
     internal BackgroundTaskQueue(
         TaskRunner runner,
         Func<CancellationToken, Task>? waitForChatIdle = null,
-        Func<DateTimeOffset>? now = null)
+        Func<DateTimeOffset>? now = null,
+        Func<string?>? currentRoot = null)
     {
         _runner          = runner;
         _waitForChatIdle = waitForChatIdle ?? Hardware.GpuScheduler.WaitForChatIdleAsync;
         _now             = now ?? (() => DateTimeOffset.UtcNow);
+        _currentRoot     = currentRoot;
     }
 
     /// <summary>Raised once per task when it reaches a terminal state — the front-end's notification
@@ -139,7 +148,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
             job = new Job
             {
                 Id = "t" + (++_seq), Objective = objective, CreatedAt = _now(),
-                ProposeWrites = proposeWrites,
+                ProposeWrites = proposeWrites, WorkspaceRoot = _currentRoot?.Invoke(),
             };
             _pending.Enqueue(job);
 
@@ -276,6 +285,18 @@ internal sealed class BackgroundTaskQueue : IDisposable
             // Chat first: hold the task at the gate while an interactive turn is in flight.
             await _waitForChatIdle(cts.Token).ConfigureAwait(false);
 
+            // ⚠ Its objective is about the workspace it was submitted in. Queued behind another task while Visual Studio
+            // opened another solution, it started there — its tools read the root live — and reported on a project it
+            // was never asked about, or proposed changes to its files.
+            if (WorkspaceLeft(job))
+            {
+                lock (_lock)
+                {
+                    FinishLocked(job, BackgroundTaskState.Failed, null, Strings.TaskWorkspaceChanged);
+                    return SnapshotLocked(job);
+                }
+            }
+
             BackgroundTaskSnapshot started;
             lock (_lock)
             {
@@ -320,6 +341,11 @@ internal sealed class BackgroundTaskQueue : IDisposable
             lock (_lock) job.Cts = null;
         }
     }
+
+    /// <summary>Whether the workspace open now is no longer the one <paramref name="job"/> was submitted in.</summary>
+    private bool WorkspaceLeft(Job job) =>
+        _currentRoot is not null && !string.IsNullOrWhiteSpace(job.WorkspaceRoot)
+        && !PathComparer.SameDirectory(job.WorkspaceRoot, _currentRoot());
 
     private void AppendStep(Job job, string step)
     {

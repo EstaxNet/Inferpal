@@ -926,6 +926,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="TaskSubmitted" xml:space="preserve"><value>Attività **{0}** avviata in background: {1}</value></data>
   <data name="TaskQueueFull" xml:space="preserve"><value>Troppe attività in background (massimo {0}). Attendi che una finisca o esegui `/task clear`.</value></data>
   <data name="TaskUnknown" xml:space="preserve"><value>Attività `{0}` sconosciuta.</value></data>
+  <data name="TaskWorkspaceChanged" xml:space="preserve"><value>Non eseguita: dopo l'invio di questa attività è stata aperta un'altra soluzione o cartella, e i suoi strumenti avrebbero risposto su quella. Inviala di nuovo dall'area di lavoro a cui si riferisce.</value></data>
   <data name="TaskStopRequested" xml:space="preserve"><value>Attività `{0}` annullata.</value></data>
   <data name="TaskAlreadyFinished" xml:space="preserve"><value>L'attività `{0}` è già terminata — `/task {0}` ne mostra il rapporto.</value></data>
   <data name="TaskForgot" xml:space="preserve"><value>{0} attività terminate dimenticate.</value></data>

@@ -926,6 +926,7 @@
   <data name="TaskSubmitted" xml:space="preserve"><value>Задача **{0}** запущена в фоне: {1}</value></data>
   <data name="TaskQueueFull" xml:space="preserve"><value>Слишком много фоновых задач (максимум {0}). Дождитесь завершения одной или выполните `/task clear`.</value></data>
   <data name="TaskUnknown" xml:space="preserve"><value>Неизвестная задача `{0}`.</value></data>
+  <data name="TaskWorkspaceChanged" xml:space="preserve"><value>Не запущена: после отправки этой задачи было открыто другое решение или другая папка, и её инструменты отвечали бы о них. Отправьте её снова из рабочей области, к которой она относится.</value></data>
   <data name="TaskStopRequested" xml:space="preserve"><value>Задача `{0}` отменена.</value></data>
   <data name="TaskAlreadyFinished" xml:space="preserve"><value>Задача `{0}` уже завершена — `/task {0}` покажет её отчёт.</value></data>
   <data name="TaskForgot" xml:space="preserve"><value>Забыто завершённых задач: {0}.</value></data>
