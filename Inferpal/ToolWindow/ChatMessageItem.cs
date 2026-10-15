@@ -339,18 +339,7 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
         {
             // Map the neutral parse result to the Remote-UI observable block, then theme it.
             var b = MarkdownBlock.FromModel(model);
-            b.ThemeText        = _themeText;
-            b.ThemeCodeText    = _themeCodeText;
-            b.ThemeCodeBg      = _themeCodeBg;
-            b.ThemeCodeBorder  = _themeCodeBorder;
-            b.ThemeTableBorder = tableBorder;
-            foreach (var run in b.Inlines)
-                run.Foreground = run.IsLink ? _themeLinkText : run.IsCode ? _themeCodeText : _themeText;
-            foreach (var cell in b.Cells)
-            {
-                cell.ThemeText = _themeText;
-                cell.ThemeBg   = cell.IsHeader ? tableHeaderBg : "Transparent";
-            }
+            b.ApplyTheme(_themeText, _themeCodeText, _themeCodeBg, _themeCodeBorder, _themeLinkText, tableBorder, tableHeaderBg);
             Blocks.Add(b);
         }
         HasBlocks = Blocks.Count > 0;

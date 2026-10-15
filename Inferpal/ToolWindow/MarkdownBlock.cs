@@ -32,6 +32,29 @@ internal sealed class MarkdownBlock : NotifyPropertyChangedObject
     [DataMember] public string ThemeCodeBorder  { get => _themeCodeBorder;  set => SetProperty(ref _themeCodeBorder,  value); }
     [DataMember] public string ThemeTableBorder { get => _themeTableBorder; set => SetProperty(ref _themeTableBorder, value); }
 
+    /// <summary>
+    /// Every colour of the block — its text, its code, its links, its table's border and cells. The one writer, for the
+    /// block just parsed and for a theme switch.
+    /// </summary>
+    /// <remarks>⚠ Two writers drifted: the switch themed the text and the links and left the table cells in the colours
+    /// they were parsed with — light text on the light theme's ground, a table that could not be read.</remarks>
+    internal void ApplyTheme(string text, string codeText, string codeBg, string codeBorder, string linkText,
+                             string tableBorder, string tableHeaderBg)
+    {
+        ThemeText        = text;
+        ThemeCodeText    = codeText;
+        ThemeCodeBg      = codeBg;
+        ThemeCodeBorder  = codeBorder;
+        ThemeTableBorder = tableBorder;
+        foreach (var run in Inlines)
+            run.Foreground = run.IsLink ? linkText : run.IsCode ? codeText : text;
+        foreach (var cell in Cells)
+        {
+            cell.ThemeText = text;
+            cell.ThemeBg   = cell.IsHeader ? tableHeaderBg : "Transparent";
+        }
+    }
+
     [DataMember] public AsyncCommand CopyCodeCommand    { get; }
     [DataMember] public AsyncCommand SaveSnippetCommand { get; }
 
