@@ -18,7 +18,9 @@ internal sealed class ProjectMapService
     private readonly ProjectIndexService? _index;
 
     // key = root dir, value = cached map
-    private readonly ConcurrentDictionary<string, string> _cache = new(PathComparer.Default);
+    // The time is kept as a value: written as text in the machine's culture and parsed back, a time separator that is
+    // not ':' (Finnish) never parses, and the map is rebuilt on every call.
+    private readonly ConcurrentDictionary<string, (DateTime At, string Map)> _cache = new(PathComparer.Default);
 
     public ProjectMapService(IEditorSurface editor, ProjectIndexService? index = null)
     {
@@ -43,17 +45,11 @@ internal sealed class ProjectMapService
             return null;
 
         // Invalidation: re-generate after 120 s (simple TTL via timestamp prefix)
-        if (_cache.TryGetValue(root, out var cached))
-        {
-            var stamp = cached[..24]; // "2026-05-25T03:10:00.000 "
-            if (DateTime.TryParse(stamp.TrimEnd(), out var ts) &&
-                (DateTime.Now - ts).TotalSeconds < 120)
-                return cached[24..]; // strip timestamp, return map
-        }
+        if (_cache.TryGetValue(root, out var cached) && (DateTime.UtcNow - cached.At).TotalSeconds < 120)
+            return cached.Map;
 
         var map = await BuildMapAsync(root, ct);
-        var tagged = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " " + map;
-        _cache[root] = tagged;
+        _cache[root] = (DateTime.UtcNow, map);
         return map;
     }
 

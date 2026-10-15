@@ -202,7 +202,8 @@ internal static class AtomicFile
         {
             if (!File.Exists(path)) return null;
 
-            var aside = $"{path}.unreadable-{DateTime.Now:yyyyMMdd-HHmmss}.json";
+            var aside = string.Create(System.Globalization.CultureInfo.InvariantCulture,
+                                      $"{path}.unreadable-{DateTime.Now:yyyyMMdd-HHmmss}.json");
             if (File.Exists(aside)) return aside;   // already set aside within the same second
             File.Copy(path, aside);
             return aside;

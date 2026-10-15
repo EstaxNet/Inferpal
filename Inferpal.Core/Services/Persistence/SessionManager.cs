@@ -242,8 +242,10 @@ internal static class SessionManager
     }
 
     /// <summary>Sortable file name for a named save: <c>2026-06-12_0930_My_Title</c>.</summary>
+    /// <remarks>⚠ In the invariant culture: under a Thai calendar the name carries 2569, out of order with every other
+    /// name and with the other editor's.</remarks>
     public static string SessionFileName(DateTime localNow, string title) =>
-        $"{localNow:yyyy-MM-dd_HHmm}_{title}";
+        string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{localNow:yyyy-MM-dd_HHmm}_{title}");
 
     /// <summary>
     /// <paramref name="baseName"/> when no existing session carries it, otherwise the first free

@@ -399,5 +399,7 @@ internal static class Diagnostics
 /// <summary>One recorded diagnostic: when, where (context label), and what.</summary>
 internal readonly record struct DiagnosticEntry(DateTime Timestamp, string Context, string Detail)
 {
-    internal string ToLine() => $"{Timestamp:yyyy-MM-dd HH:mm:ss} [{Context}] {Detail}";
+    /// <summary>The entry as a log line, its time in the invariant culture (the log file and the support bundle).</summary>
+    internal string ToLine() =>
+        FormattableString.Invariant($"{Timestamp:yyyy-MM-dd HH:mm:ss} [{Context}] {Detail}");   // also compiled for net472
 }

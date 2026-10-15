@@ -13,8 +13,10 @@ internal static class NotesStore
         Path.Combine(projectRoot, ".inferpal", "notes.md");
 
     /// <summary>One note as a markdown bullet: <c>- [yyyy-MM-dd HH:mm] text</c>.</summary>
+    /// <remarks>⚠ In the invariant culture: written in the machine's, a Thai calendar dates a note 2569 and a Finnish
+    /// one writes <c>09.30</c> — in a file every later session reads as context.</remarks>
     public static string FormatLine(string text, DateTime now) =>
-        $"- [{now:yyyy-MM-dd HH:mm}] {text}\n";
+        string.Create(System.Globalization.CultureInfo.InvariantCulture, $"- [{now:yyyy-MM-dd HH:mm}] {text}\n");
 
     /// <summary>
     /// Appends one note, in the file's own encoding. Returns <c>null</c> when it was written, or the character the
