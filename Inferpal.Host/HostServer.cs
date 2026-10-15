@@ -129,6 +129,12 @@ internal sealed partial class HostServer : IDisposable
                                               password = input.Password,
                                               value    = input.Default,
                                           }, ct));
+        // ⚠ Opened from here, the sign-in page of a host running remotely (VS Code Remote: SSH, WSL, a container) opened
+        // on that machine — or nowhere — and the sign-in waited out its five minutes. The editor opens it where the
+        // person is, and forwards the redirect back to this host.
+        if (p.OpenExternal)
+            mcp.OpenSignInPage = (url, redirect, ct) =>
+                rpc.InvokeWithParameterObjectAsync<string?>("env/openExternal", new { url, redirect }, ct);
         var docs     = new DocsIndexService(client, config);
         // A crawl's verdict reaches the conversation as a lasting notice: as progress (chat/step) it was shown only during
         // a turn, and /docs add, the settings page, /import answer before the crawl ends.

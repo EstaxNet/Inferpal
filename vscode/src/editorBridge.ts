@@ -20,6 +20,12 @@ export function panelDiagnostics(): [vscode.Uri, readonly vscode.Diagnostic[]][]
   return vscode.languages.getDiagnostics().filter(([uri]) => uri.scheme === 'file');
 }
 
+/** The port an address names: written, else its scheme's default. */
+function portOf(uri: vscode.Uri): string {
+  const port = /:(\d+)$/.exec(uri.authority)?.[1];
+  return port ?? (uri.scheme === 'https' ? '443' : uri.scheme === 'http' ? '80' : '');
+}
+
 function isMirrorable(doc: vscode.TextDocument): boolean {
   return doc.uri.scheme === 'file' && Buffer.byteLength(doc.getText(), 'utf8') <= MAX_MIRRORED_BYTES;
 }
@@ -230,6 +236,24 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
       ignoreFocusOut: true,
     });
     return value ?? null;
+  }
+
+  async openSignInPage(url: string, redirect: string): Promise<string | null> {
+    // The host may run on another machine (VS Code Remote): asExternalUri forwards its loopback port to this one. A
+    // redirect forwarded to ANOTHER port (or to a web address, in a browser-hosted VS Code) can never come back to the
+    // host — said now, instead of a sign-in that waits five minutes for it.
+    const local = vscode.Uri.parse(redirect, true);
+    let external: vscode.Uri;
+    try {
+      external = await vscode.env.asExternalUri(local);
+    } catch (err) {
+      return `VS Code could not forward the sign-in redirect (${err instanceof Error ? err.message : String(err)})`;
+    }
+    if (portOf(external) !== portOf(local)) {
+      return `VS Code forwards the sign-in redirect to ${external.toString(true)}, and the server sends it back to ${redirect}`;
+    }
+    const opened = await vscode.env.openExternal(vscode.Uri.parse(url, true));
+    return opened ? null : 'VS Code did not open it (the prompt to open the page was declined)';
   }
 
   async approvalRequest(note: ApprovalNote, token?: CancellationToken): Promise<number> {

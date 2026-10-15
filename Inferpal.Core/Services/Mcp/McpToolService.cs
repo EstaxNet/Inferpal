@@ -50,6 +50,11 @@ internal sealed class McpToolService : IAsyncDisposable
     /// given. Set by the front-end; without it, such a server does not start, and says why.</summary>
     public Func<RepoMcpServer, RepoMcpInput, CancellationToken, Task<string?>>? AskInput { get; set; }
 
+    /// <summary>Opens a sign-in page (its address, the redirect it comes back to) and returns <c>null</c>, or why it could
+    /// not. Set by a front-end whose browser is not this process's machine's (VS Code Remote); <c>null</c> = this
+    /// machine's browser.</summary>
+    public Func<string, string, CancellationToken, Task<string?>>? OpenSignInPage { get; set; }
+
     /// <summary>The agreements given to start a repository's servers. Test seam.</summary>
     internal RepoMcpConsents Consents { get; set; } = new();
 
@@ -547,7 +552,7 @@ internal sealed class McpToolService : IAsyncDisposable
 
         var server = OAuthServerFor(cfg);
 
-        var flow  = new McpOAuthFlow(new LoopbackAuthCodeReceiver());
+        var flow  = new McpOAuthFlow(new LoopbackAuthCodeReceiver(open: OpenSignInPage));
         var state = await flow.AuthorizeAsync(server, _tokenStore.Get(serverName), ct).ConfigureAwait(false);
         _tokenStore.Save(serverName, state);
 

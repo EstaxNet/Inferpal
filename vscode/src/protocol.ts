@@ -16,6 +16,11 @@ export interface InitializeParams {
    * stated to the model, which otherwise looks for their code under the root and concludes it does not exist.
    */
   otherFolders?: string[];
+  /**
+   * This adapter serves the reverse `env/openExternal` request: a sign-in page opens in the browser of the machine the
+   * person sits at (VS Code Remote included), its redirect forwarded to the host.
+   */
+  openExternal?: boolean;
 }
 
 export interface InitializeResult {

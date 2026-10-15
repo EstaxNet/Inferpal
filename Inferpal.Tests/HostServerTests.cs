@@ -139,6 +139,16 @@ public partial class HostServerTests
 
         [JsonRpcMethod("debug/stop")]
         public void DebugStop() => DebugCalls.Add("stop");
+
+        /// <summary>Every sign-in page the host asked the editor to open (page, redirect).</summary>
+        public readonly List<(string Url, string Redirect)> OpenedPages = [];
+
+        [JsonRpcMethod("env/openExternal")]
+        public string? OpenExternal(string url, string redirect)
+        {
+            OpenedPages.Add((url, redirect));
+            return "the prompt to open the page was declined";
+        }
     }
 
     private sealed class Harness : IDisposable
@@ -3436,6 +3446,32 @@ public partial class HostServerTests
         var signIn = await h.Client.InvokeWithParameterObjectAsync<McpCardsDto>("mcp/authorize", new { name = "fs" });
         Assert.False(string.IsNullOrWhiteSpace(signIn.Error));
         Assert.Null(cards.Error);                                   // reference arm: a plain read reports no error
+    }
+
+    /// <summary>
+    /// An editor that declares <c>openExternal</c> opens the sign-in pages: the host asks it over the wire, with the
+    /// redirect to forward, and its refusal is the sign-in's answer. One that does not declare it keeps this machine's
+    /// browser.
+    /// </summary>
+    [Fact]
+    public async Task ASignInPage_OpensThroughTheEditorThatDeclaresIt()
+    {
+        using var h = CreateHarness();
+        await h.Client.InvokeWithParameterObjectAsync<InitializeResult>("initialize", new { rootDir = h.RootDir, openExternal = true })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var open = h.Server.CurrentSession!.Mcp.OpenSignInPage;
+        Assert.NotNull(open);
+        var answer = await open!("https://auth.example/authorize?x=1", "http://127.0.0.1:5123/callback", CancellationToken.None)
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Equal([("https://auth.example/authorize?x=1", "http://127.0.0.1:5123/callback")], h.Target.OpenedPages);
+        Assert.Equal("the prompt to open the page was declined", answer);
+
+        // Reference arm: without the declaration, the host opens nothing through the editor.
+        using var other = CreateHarness();
+        await other.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.Null(other.Server.CurrentSession!.Mcp.OpenSignInPage);
     }
 
     // ── config round trip (settings panel contract) ────────────────────────────

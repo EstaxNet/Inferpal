@@ -165,7 +165,9 @@ discovery, an issuer with a path included — Entra, Keycloak, Okta), **PKCE**, 
 - The server's card shows **Needs sign-in** with a **Sign in** button, in both editors. Clicking it
   opens your browser to the provider's consent page and captures the redirect on a temporary loopback
   listener (`http://127.0.0.1:<port>/callback`). On success the tokens are stored and the server
-  reconnects.
+  reconnects. In VS Code the page opens through VS Code — on your machine, with the redirect forwarded, also when the
+  window is connected to a remote machine (SSH, WSL, a container). If no browser can be opened, the sign-in says so at
+  once instead of waiting for a redirect that cannot come.
 - Tokens are stored **encrypted** (Windows DPAPI per user, or the editor's secret store elsewhere) in `%AppData%/Inferpal/mcp-oauth.dat`
   — never in the config JSON. Access tokens are refreshed automatically; you only re-authorize when
   the refresh token is rejected. A provider that cannot answer at that moment (down, busy, unreachable) does not reject

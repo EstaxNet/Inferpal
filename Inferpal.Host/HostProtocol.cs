@@ -34,6 +34,8 @@
 /// <param name="AutoSaveSlot">The adapter keeps the workspace's last conversation in VS Code's auto-save slot, restored at
 /// its next start. False for an Agent Client Protocol client and the settings window: neither writes that slot, so a
 /// conversation they discard (<c>/clear</c>, <c>/template</c>) is not the one it holds.</param>
+/// <param name="OpenExternal">The adapter serves the reverse <c>env/openExternal</c> request: a sign-in page opens in the
+/// editor's browser — on the machine the person sits at, VS Code Remote included — with its redirect forwarded here.</param>
 internal sealed record InitializeParams(
     string    RootDir,
     string?   Locale          = null,
@@ -47,7 +49,8 @@ internal sealed record InitializeParams(
     bool      ReasoningChunks = false,
     bool      Secrets         = true,
     bool      IndexesTheFolder = true,
-    bool      AutoSaveSlot     = true);
+    bool      AutoSaveSlot     = true,
+    bool      OpenExternal     = false);
 
 /// <summary>`workspace/folders` — the editor's other workspace folders changed (a folder added or removed while the
 /// root stayed): restarting the host for it would kill the turn in flight, its shells and MCP servers.</summary>

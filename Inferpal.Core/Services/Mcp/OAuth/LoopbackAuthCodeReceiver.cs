@@ -14,12 +14,17 @@ internal sealed class LoopbackAuthCodeReceiver : IAuthCodeReceiver
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(5);
 
     private readonly TimeSpan _timeout;
+    private readonly Func<string, string, CancellationToken, Task<string?>> _open;
 
     /// <param name="timeout">How long to wait for the browser redirect. Tests pass a short one;
     /// nothing else does.</param>
-    public LoopbackAuthCodeReceiver(TimeSpan? timeout = null)
+    /// <param name="open">Opens the sign-in page — given its address and the redirect address it must come back to — and
+    /// returns <c>null</c>, or why it could not. Default: this machine's browser. The VS Code host passes the editor's,
+    /// which opens on the machine the person sits at (VS Code Remote) and forwards the redirect to this one.</param>
+    public LoopbackAuthCodeReceiver(TimeSpan? timeout = null, Func<string, string, CancellationToken, Task<string?>>? open = null)
     {
         _timeout    = timeout ?? DefaultTimeout;
+        _open       = open ?? ((url, _, _) => Task.FromResult(OpenBrowser(url)));
         Port        = FreeLoopbackPort();
         RedirectUri = $"http://127.0.0.1:{Port}/callback";
     }
@@ -48,7 +53,10 @@ internal sealed class LoopbackAuthCodeReceiver : IAuthCodeReceiver
         }
         try
         {
-            OpenBrowser(authorizationUrl);
+            // ⚠ A page that did not open is said NOW: swallowed, the sign-in waited out its five minutes for a redirect
+            // that could not come (no browser on a remote host, no xdg-open), then blamed the person for not finishing.
+            if (await _open(authorizationUrl, RedirectUri, ct).ConfigureAwait(false) is { } notOpened)
+                throw new InvalidOperationException($"The sign-in page could not be opened: {notOpened}");
 
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(_timeout);
@@ -176,17 +184,26 @@ internal sealed class LoopbackAuthCodeReceiver : IAuthCodeReceiver
     /// because the dangerous call is <b>here</b>, and a future caller reaching this class by another
     /// path would not inherit the first one.
     /// </remarks>
-    private static void OpenBrowser(string url)
+    /// <returns><c>null</c> when the browser was started, else why not.</returns>
+    internal static string? OpenBrowser(string url)
     {
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)
             || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
         {
             Diagnostics.Record("McpOAuth", $"Refused to open a non-web authorization URL: {url}");
-            return;   // the listener then simply times out, which is the honest outcome
+            return "its address is not a web address";
         }
 
-        try { Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true }); }
-        catch { /* if the browser can't be launched the listener simply times out */ }
+        try
+        {
+            using var _ = Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
+            return null;
+        }
+        catch (Exception ex)
+        {
+            // Linux without xdg-open, a server with no desktop: the operating system's own reason.
+            return $"no browser could be started on this machine ({ex.Message})";
+        }
     }
 
     /// <remarks>The page never repeats the server's error: before the issuer is checked, it may not be shown — Inferpal

@@ -32,11 +32,15 @@ namespace Inferpal.Tests;
 public class OAuthCallbackCauseTests
 {
     /// <summary>
-    /// A non-web authorization URL: <c>OpenBrowser</c> refuses it before any launch, so nothing
-    /// opens and the listener waits on loopback — the only setup that makes this class executable
-    /// from the suite.
+    /// An authorization URL no browser ever sees: the receivers below open pages through
+    /// <see cref="NoBrowserReceiver"/>, which opens nothing, so the listener waits on loopback — the only setup that
+    /// makes this class executable from the suite.
     /// </summary>
-    private const string NoBrowser = "file:///c:/inferpal-tests/never-launched";
+    private const string NoBrowser = "https://auth.example/never-launched";
+
+    /// <summary>A receiver whose sign-in page "opens" without any browser: the redirect is the test's to send.</summary>
+    private static LoopbackAuthCodeReceiver NoBrowserReceiver() =>
+        new(open: (_, _, _) => Task.FromResult<string?>(null));
 
     private static async Task<string> GetAsync(string url)
     {
@@ -49,7 +53,7 @@ public class OAuthCallbackCauseTests
     {
         // REFERENCE ARM: without it, the three failures below could all come from a setup that does
         // not work at all.
-        var receiver = new LoopbackAuthCodeReceiver();
+        var receiver = NoBrowserReceiver();
         var waiting  = receiver.GetAuthorizationCodeAsync(NoBrowser, CancellationToken.None);
 
         var page = await GetAsync($"{receiver.RedirectUri}?code=abc123&state=xyz&iss=https%3A%2F%2Fauth.example.com");
@@ -66,7 +70,7 @@ public class OAuthCallbackCauseTests
     {
         // ⚠ Before the flow has checked the issuer, the server's error may be neither acted on nor shown: the page says
         // only that the sign-in did not complete, and the error travels to the flow untouched.
-        var receiver = new LoopbackAuthCodeReceiver();
+        var receiver = NoBrowserReceiver();
         var waiting  = receiver.GetAuthorizationCodeAsync(NoBrowser, CancellationToken.None);
 
         var page = await GetAsync($"{receiver.RedirectUri}?error=access_denied&error_description=evil%20text&state=xyz");
@@ -130,7 +134,7 @@ public class OAuthCallbackCauseTests
         using var expired = new CancellationTokenSource();
         expired.Cancel();
 
-        var receiver = new LoopbackAuthCodeReceiver();
+        var receiver = NoBrowserReceiver();
         var timeout  = Assert.IsType<TimeoutException>(
             receiver.Classify(CancellationToken.None, expired.Token));
 
@@ -160,7 +164,7 @@ public class OAuthCallbackCauseTests
     [Fact]
     public async Task AListenerThatCannotBeOpened_NamesTheAddress()
     {
-        var receiver = new LoopbackAuthCodeReceiver();
+        var receiver = NoBrowserReceiver();
 
         // WITNESS: the port really is taken, by us, for the whole call.
         using var squatter = new System.Net.Sockets.TcpListener(IPAddress.Loopback, receiver.Port);
@@ -179,7 +183,7 @@ public class OAuthCallbackCauseTests
     {
         // The receiver decides nothing about what the redirect carried: the flow names a missing code, after it has
         // checked the state and the issuer (McpOAuthFlowTests).
-        var receiver = new LoopbackAuthCodeReceiver();
+        var receiver = NoBrowserReceiver();
         var waiting  = receiver.GetAuthorizationCodeAsync(NoBrowser, CancellationToken.None);
 
         var page = await GetAsync($"{receiver.RedirectUri}?state=xyz");

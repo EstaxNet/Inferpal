@@ -78,6 +78,11 @@ export interface EditorDelegate {
   unprotectSecret(key: string, value: string): Promise<string>;
   /** A value a repository's MCP server asks for (`${input:id}`); null when the user gives none. */
   inputRequest(request: InputRequest): Promise<string | null>;
+  /**
+   * Opens an MCP sign-in page in the person's browser, its `redirect` (the host's loopback address) forwarded to the
+   * host; null when opened, else why not — said at once instead of a five-minute wait.
+   */
+  openSignInPage(url: string, redirect: string): Promise<string | null>;
 }
 
 /** Streamed chat events (host notifications) fanned out to the UI. */
@@ -298,6 +303,8 @@ export class HostClient {
     conn.onRequest('secrets/unprotect', (p: { key: string; value: string }) =>
       this.delegate.unprotectSecret(p.key, p.value));
     conn.onRequest('input/request', (p: InputRequest) => this.delegate.inputRequest(p));
+    conn.onRequest('env/openExternal', (p: { url: string; redirect: string }) =>
+      this.delegate.openSignInPage(p.url, p.redirect));
 
     // ── Reverse debugger requests ───────────────────────────────────────────
     const debug = this.debugDelegate;
@@ -338,6 +345,7 @@ export class HostClient {
       clientName: this.options.clientName ?? 'vscode',
       debug: this.debugDelegate !== undefined,
       otherFolders: this.options.otherFolders,
+      openExternal: true,
     };
     try {
       this.info = await conn.sendRequest<InitializeResult>('initialize', params);
