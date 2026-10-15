@@ -89,6 +89,45 @@ public sealed class RepoMcpServersTests : IDisposable
         Assert.Equal(origin, Server("db").Origin);
     }
 
+    /// <summary>
+    /// Continue's remote server carries its headers under <c>requestOptions.headers</c> and its key as <c>apiKey</c>: read as
+    /// written, both were dropped and the server connected without them ("401").
+    /// </summary>
+    [Fact]
+    public void ContinuesRemoteServer_KeepsItsHeadersAndItsKey()
+    {
+        Write(".continue/mcpServers/remote.yaml", """
+            name: Remote
+            version: 0.0.1
+            schema: v1
+            mcpServers:
+              - name: remote
+                url: https://mcp.example.com/mcp
+                apiKey: ${env:REMOTE_KEY}
+                requestOptions:
+                  headers:
+                    X-Team: alpha
+            """);
+
+        var remote = Prepared("remote", environment: n => n == "REMOTE_KEY" ? "s3cret" : null);
+
+        Assert.Equal("alpha", remote.Headers!["X-Team"]);
+        Assert.Equal("Bearer s3cret", remote.Headers["Authorization"]);
+        // The agreement card shows what will be sent.
+        Assert.Contains("X-Team", Server("remote").Definition["headers"]!.ToJsonString());
+    }
+
+    [Fact]
+    public void AServerThatDeclaresSse_IsRead_AndRewrittenSo()
+    {
+        var parsed = McpServerConfig.Parse("""{ "old": { "type": "sse", "url": "https://mcp.example.com/sse" } }""");
+        Assert.True(Assert.Single(parsed).DeclaresSse);
+        Assert.Contains("\"type\":\"sse\"", McpServerConfig.Serialize(parsed).Replace(" ", ""));
+
+        // Reference arm: a Streamable HTTP entry declares nothing of the kind.
+        Assert.False(Assert.Single(McpServerConfig.Parse("""{ "new": { "url": "https://mcp.example.com/mcp" } }""")).DeclaresSse);
+    }
+
     [Fact]
     public void ContinuesYamlBlock_IsRead()
     {

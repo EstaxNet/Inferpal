@@ -382,7 +382,9 @@ internal sealed class McpToolService : IAsyncDisposable
                     ? $"Server '{server.Name}' needs authorization: its tools are not available."
                     : $"Server '{server.Name}' did not start: {client.LastError}");
                 if (client.ResourceMetadataUrl is { Length: > 0 } announced) _announcedMetadata[(server.Name, server.Url)] = announced;
-                var failure = new McpServerStatus(server.Name, false, 0, client.LastError, client.NeedsAuthorization);
+                var failure = new McpServerStatus(server.Name, false, 0,
+                    client.LastError + (server.DeclaresSse && !client.NeedsAuthorization ? McpServerConfig.SseNote : ""),
+                    client.NeedsAuthorization);
                 await client.DisposeAsync().ConfigureAwait(false);
                 return (null, failure);
             }
@@ -414,7 +416,7 @@ internal sealed class McpToolService : IAsyncDisposable
                 try { await client.DisposeAsync().ConfigureAwait(false); }
                 catch (Exception disposeEx) { Diagnostics.Swallow($"McpToolService.StartServer({server.Name})", disposeEx); }
             }
-            return (null, new McpServerStatus(server.Name, false, 0, ex.Message));
+            return (null, new McpServerStatus(server.Name, false, 0, ex.Message + (server.DeclaresSse ? McpServerConfig.SseNote : "")));
         }
     }
 

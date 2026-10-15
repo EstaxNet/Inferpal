@@ -280,6 +280,20 @@ public class McpToolServiceTests
     }
 
     [Fact]
+    public async Task AFailedStart_OfAServerThatDeclaresSse_SaysWhatItDeclared()
+    {
+        // Its failure alone ("405") sends the user to check a URL that is right: the transport is the cause.
+        var config = new InferpalConfig { McpServersJson = """{ "old": { "type": "sse", "url": "https://mcp.example.com/sse" } }""" };
+        var client = new FakeMcpClient("old") { StartResult = false, LastError = "HTTP 405" };
+        await using var svc = NewService(config, _ => client);
+
+        config.McpEnabled = true;
+        await svc.RefreshAsync();
+
+        Assert.Equal("HTTP 405" + McpServerConfig.SseNote, Assert.Single(svc.Status).Error);
+    }
+
+    [Fact]
     public async Task FailedStart_NeedingAuth_SurfacesAuthRequiredStatus()
     {
         var config = new InferpalConfig { McpServersJson = OneServer("srv") };

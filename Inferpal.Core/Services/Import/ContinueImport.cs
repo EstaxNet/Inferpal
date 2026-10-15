@@ -452,13 +452,16 @@ internal static class ContinueImport
         var env = node["env"] is JsonObject e
             ? e.Where(p => Text(p.Value) is not null).ToDictionary(p => p.Key, p => Resolve(Text(p.Value)!))
             : new Dictionary<string, string>();
+        // Same fields as McpServerConfig.LiftContinueFields, read here because the key is resolved BEFORE "Bearer " is
+        // put in front of it (a secret reference resolves only as a whole value).
         var headers = node["requestOptions"]?["headers"] is JsonObject h
             ? h.Where(p => Text(p.Value) is not null).ToDictionary(p => p.Key, p => Resolve(Text(p.Value)!))
             : new Dictionary<string, string>();
         if (url is not null && Text(node["apiKey"]) is { } apiKey) headers["Authorization"] = "Bearer " + Resolve(apiKey);
 
         var server = new McpServerConfig(name, command, Strings(node["args"]), env, url, headers.Count > 0 ? headers : null,
-                                         WorkingDirectory: Text(node["cwd"]));
+                                         WorkingDirectory: Text(node["cwd"]),
+                                         DeclaresSse: string.Equals(Text(node["type"]), "sse", StringComparison.OrdinalIgnoreCase));
         AddServer(plan, path, node, server, notes, invented: named is null);
     }
 

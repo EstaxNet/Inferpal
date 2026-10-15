@@ -185,7 +185,9 @@ internal static class RepoMcpServers
         foreach (var (name, node) in entries)
         {
             if (node is not JsonObject definition) { problems.Add(new(source, name, "its entry is not an object")); continue; }
-            var copy = (JsonObject)definition.DeepClone();
+            // Continue's requestOptions.headers and apiKey become the headers they are: before the agreement card, which
+            // shows what runs, and before Prepare, which fills their variables.
+            var copy = McpServerConfig.LiftContinueFields(definition);
             copy.Remove("name");
             var text = copy.ToJsonString();
             var used = InputRef.Matches(text).Select(m => m.Groups[1].Value).Distinct(StringComparer.Ordinal)

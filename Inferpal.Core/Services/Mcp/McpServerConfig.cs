@@ -37,6 +37,8 @@ internal sealed record McpRejectedServer(string Name, string Reason);
 /// Header values support <c>${ENV_VAR}</c> expansion at connection time so secrets stay out of the
 /// stored config (see <see cref="McpHttpClient"/>).
 /// </remarks>
+/// <param name="DeclaresSse">The entry declares the older SSE transport (<c>"type": "sse"</c>): Streamable HTTP is tried,
+/// and a failure says what it declared (<see cref="SseNote"/>).</param>
 internal sealed record McpServerConfig(
     string Name,
     string? Command,
@@ -46,10 +48,45 @@ internal sealed record McpServerConfig(
     IReadOnlyDictionary<string, string>? Headers = null,
     McpOAuthConfig? OAuth = null,
     bool Enabled = true,
-    string? WorkingDirectory = null)
+    string? WorkingDirectory = null,
+    bool DeclaresSse = false)
 {
     /// <summary>True when this entry targets a Streamable HTTP server (has a <c>url</c>) rather than stdio.</summary>
     public bool IsHttp => !string.IsNullOrWhiteSpace(Url);
+
+    /// <summary>
+    /// What a server's start failure adds when the entry declares the older SSE transport (<c>"type": "sse"</c>).
+    /// </summary>
+    /// <remarks>⚠ Inferpal speaks Streamable HTTP, which many of these servers also serve; when one does not, its
+    /// failure alone ("405", "404") sends the user to check a URL that is right.</remarks>
+    internal const string SseNote =
+        " — it declares the SSE transport (\"type\": \"sse\"), which Inferpal does not speak: Streamable HTTP was tried";
+
+    /// <summary>
+    /// Continue's fields for a remote server, as the headers they are: <c>requestOptions.headers</c>, and <c>apiKey</c>
+    /// sent as <c>Authorization: Bearer</c> — on a copy of <paramref name="definition"/>, a header already written winning.
+    /// </summary>
+    /// <remarks>⚠ One reader for the repository's servers and for <c>/import</c>: read as they are written, a server
+    /// that needs its key connected without it — "401", for a server the user configured right.</remarks>
+    internal static System.Text.Json.Nodes.JsonObject LiftContinueFields(System.Text.Json.Nodes.JsonObject definition)
+    {
+        var lifted = (System.Text.Json.Nodes.JsonObject)definition.DeepClone();
+        var options = lifted["requestOptions"] as System.Text.Json.Nodes.JsonObject;
+        var fromOptions = options?["headers"] as System.Text.Json.Nodes.JsonObject;
+        var apiKey = lifted["apiKey"] is System.Text.Json.Nodes.JsonValue k && k.TryGetValue<string>(out var key) ? key : null;
+        if (fromOptions is null && apiKey is null) return lifted;
+
+        var headers = lifted["headers"] as System.Text.Json.Nodes.JsonObject ?? new System.Text.Json.Nodes.JsonObject();
+        foreach (var (name, value) in fromOptions?.ToList() ?? [])
+            if (!headers.ContainsKey(name)) headers[name] = value?.DeepClone();
+        if (apiKey is not null && lifted["url"] is not null && !headers.ContainsKey("Authorization"))
+            headers["Authorization"] = "Bearer " + apiKey;
+        lifted["headers"] = headers;
+        options?.Remove("headers");
+        if (options is { Count: 0 }) lifted.Remove("requestOptions");
+        lifted.Remove("apiKey");
+        return lifted;
+    }
 
     /// <summary>
     /// Parses the raw config JSON into a list of server definitions.
@@ -169,10 +206,14 @@ internal sealed record McpServerConfig(
                 var cwd = def.TryGetProperty("cwd", out var w) && w.ValueKind == JsonValueKind.String
                           && !string.IsNullOrWhiteSpace(w.GetString()) ? w.GetString()!.Trim() : null;
 
+                // Claude's and VS Code's "type", Roo's "transport": the transport the server says it speaks.
+                var sse = new[] { "type", "transport" }.Any(k => def.TryGetProperty(k, out var t) && t.ValueKind == JsonValueKind.String
+                                                                  && string.Equals(t.GetString(), "sse", StringComparison.OrdinalIgnoreCase));
+
                 servers.Add(new McpServerConfig(
                     entry.Name.Trim(), command, args, env,
                     Url: url, Headers: headers.Count > 0 ? headers : null, OAuth: oauth, Enabled: enabled,
-                    WorkingDirectory: cwd));
+                    WorkingDirectory: cwd, DeclaresSse: sse));
             }
         }
         catch (JsonException ex)
@@ -245,6 +286,7 @@ internal sealed record McpServerConfig(
             if (s.IsHttp)
             {
                 def["url"] = s.Url!;
+                if (s.DeclaresSse) def["type"] = "sse";   // kept, or a list rewritten from records forgets it
                 if (s.Headers is { Count: > 0 }) def["headers"] = s.Headers;
                 if (SerializeOAuth(s.OAuth) is { } oauth) def["oauth"] = oauth;
             }
