@@ -104,7 +104,7 @@ internal class AnalyzeImpactTool : ITool
         try
         {
             return Lsp.CSharpSemanticIndex.ForWorkspace(root)
-                .FindReferences(symbol!, Path.GetFileName(filePath), ct);
+                .FindReferences(symbol!, filePath, ct);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
