@@ -355,6 +355,8 @@
   <data name="StoppedWorkDocs" xml:space="preserve"><value>индексация источника документации {0} (`/docs reindex {0}`)</value></data>
   <data name="MentionDiffUnavailable" xml:space="preserve"><value>Для @diff ничего не прикреплено — {0}</value></data>
   <data name="MentionDiffEmpty" xml:space="preserve"><value>Для @diff ничего не прикреплено: в отслеживаемых файлах нет незакоммиченных изменений. Новый файл, который ни разу не добавляли в git, не входит в diff — прикрепите его через @file.</value></data>
+  <data name="MentionCodeNothingFound" xml:space="preserve"><value>Для @code ничего не прикреплено — {0}</value></data>
+  <data name="MentionTreeNoRoot" xml:space="preserve"><value>Для @tree ничего не прикреплено: не найдено ни решения, ни папки проекта для построения карты.</value></data>
   <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — первые {1} из {2} символов</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Для @{0} не удалось ничего прикрепить.</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>«{0}» — это файл, а не папка: прикрепите его через @file.</value></data>

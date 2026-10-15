@@ -779,8 +779,8 @@ internal sealed partial class HostServer
     }
 
     /// <summary>Materializes a mention host-side: @tree (project map), @diff (git diff),
-    /// @folder (folder context body) and @code (semantic search). Tool-backed categories run
-    /// through the registry, so permission rules apply as usual.</summary>
+    /// @folder (folder context body) and @code (semantic search). Tool-backed categories read their
+    /// tool's state, never its text: what found or mapped nothing is a notice, not a chip.</summary>
     [JsonRpcMethod("mention/resolve", UseSingleObjectParameterDeserialization = true)]
     public async Task<MentionResolveResult> MentionResolveAsync(MentionResolveParams p, CancellationToken ct)
     {
@@ -791,9 +791,9 @@ internal sealed partial class HostServer
             {
                 case "tree":
                 {
-                    var map = await s.Tools.ExecuteAsync(
-                        "generate_project_map", JsonSerializer.SerializeToElement(new { }), ct);
-                    return new MentionResolveResult("🌲 tree", map);
+                    // Decided on whether there was a root to map: none is a notice, not a chip.
+                    var tree = MentionController.TreeMention(await s.Tools.ProjectMap.TryGenerateMapAsync(ct), "🌲 tree");
+                    return new MentionResolveResult(tree.Label, tree.Content, tree.Notice);
                 }
                 case "diff":
                 {
@@ -826,9 +826,10 @@ internal sealed partial class HostServer
                 case "code" when !string.IsNullOrWhiteSpace(p.Value):
                 {
                     if (MentionController.CodeRefusal(s.Index) is { } noIndex) return new MentionResolveResult(null, null, noIndex);
-                    var hits = await s.Tools.ExecuteAsync(
-                        "search_codebase", JsonSerializer.SerializeToElement(new { query = p.Value }), ct);
-                    return new MentionResolveResult("🔮 " + p.Value, hits);
+                    // Decided on the hit count: a search that found nothing is a notice, not a chip.
+                    var code = MentionController.CodeMention(await s.Tools.CodeSearch.AnswerAsync(
+                        JsonSerializer.SerializeToElement(new { query = p.Value }), ct), "🔮 " + p.Value);
+                    return new MentionResolveResult(code.Label, code.Content, code.Notice);
                 }
                 // ⚠ Nulls all the way down are what the adapter shows as NOTHING AT ALL: the
                 // mention the user typed leaves no chip and no message, which reads as a broken

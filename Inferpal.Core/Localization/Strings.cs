@@ -969,6 +969,8 @@ internal static class Strings
     public static string MentionDebuggerNone  => Get(nameof(MentionDebuggerNone));
     public static string MentionDiffUnavailable(string reason) => Format(Get(nameof(MentionDiffUnavailable)), reason);
     public static string MentionDiffEmpty => Get(nameof(MentionDiffEmpty));
+    public static string MentionCodeNothingFound(string reason) => Format(Get(nameof(MentionCodeNothingFound)), reason);
+    public static string MentionTreeNoRoot => Get(nameof(MentionTreeNoRoot));
     public static string MentionDiffCutLabel(string label, int shown, int total) => Format(Get(nameof(MentionDiffCutLabel)), label, shown, total);
     public static string StoppedWorkCrashedNotice(string items) => Format(Get(nameof(StoppedWorkCrashedNotice)), items);
     public static string StoppedWorkNotice(string items) => Format(Get(nameof(StoppedWorkNotice)), items);

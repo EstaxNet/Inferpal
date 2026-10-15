@@ -307,8 +307,14 @@ internal partial class InferpalToolWindowData
                 }
                 case MentionKind.Tree:
                 {
-                    var map = await _tools.ExecuteAsync("generate_project_map", MentionArgs(), ct);
-                    await RunOnVMContextAsync(() => AddAttachment("🌲 @tree", map));
+                    // Decided on whether there was a root to map: none is a notice, not a chip.
+                    var tree = MentionController.TreeMention(await _tools.ProjectMap.TryGenerateMapAsync(ct), "🌲 @tree");
+                    if (tree.Notice is not null)
+                    {
+                        await NotifyMentionAsync(tree.Notice);
+                        return;
+                    }
+                    await RunOnVMContextAsync(() => AddAttachment(tree.Label!, tree.Content!));
                     break;
                 }
                 case MentionKind.Diff:
@@ -424,10 +430,16 @@ internal partial class InferpalToolWindowData
                 await NotifyMentionAsync(noIndex);
                 return;
             }
-            var result = await _tools.ExecuteAsync(
-                "search_codebase", MentionArgs(new { query }), ct);
-            var label = "🔮 " + (query.Length > 40 ? query[..40] + "…" : query);
-            await RunOnVMContextAsync(() => AddAttachment(label, result));
+            // Decided on the hit count: a search that found nothing is a notice, not a chip.
+            var code = MentionController.CodeMention(
+                await _tools.CodeSearch.AnswerAsync(MentionArgs(new { query }), ct),
+                "🔮 " + (query.Length > 40 ? query[..40] + "…" : query));
+            if (code.Notice is not null)
+            {
+                await NotifyMentionAsync(code.Notice);
+                return;
+            }
+            await RunOnVMContextAsync(() => AddAttachment(code.Label!, code.Content!));
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)

@@ -28,8 +28,9 @@ replaced with the corresponding attachment.
 
 > [!NOTE]
 > **A mention with nothing to attach says why instead of leaving a chip.** `@folder` on a path that does not exist, or
-> on a file (use `@file`), `@code` while there is no index to search, and `@diff` outside a git repository or with no
-> uncommitted change, answer with a short notice — a chip always means something joined your question. A long diff is
+> on a file (use `@file`), `@code` while there is no index to search or when its search finds nothing, `@tree` with no
+> solution or project folder to map, and `@diff` outside a git repository or with no uncommitted change, answer with a
+> short notice — a chip always means something joined your question. A long diff is
 > cut to the size of one attachment, and its chip says how many characters it kept.
 
 > [!NOTE]

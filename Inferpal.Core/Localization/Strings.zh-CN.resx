@@ -355,6 +355,8 @@
   <data name="StoppedWorkDocs" xml:space="preserve"><value>文档源 {0} 的索引（`/docs reindex {0}`）</value></data>
   <data name="MentionDiffUnavailable" xml:space="preserve"><value>@diff 未附加任何内容 — {0}</value></data>
   <data name="MentionDiffEmpty" xml:space="preserve"><value>@diff 未附加任何内容：已跟踪的文件没有未提交的更改。从未添加到 git 的新文件不属于 diff——请用 @file 附加。</value></data>
+  <data name="MentionCodeNothingFound" xml:space="preserve"><value>@code 未附加任何内容 — {0}</value></data>
+  <data name="MentionTreeNoRoot" xml:space="preserve"><value>@tree 未附加任何内容：未找到可生成映射的解决方案或项目文件夹。</value></data>
   <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — 前 {1} 个字符（共 {2} 个）</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>无法为 @{0} 附加任何内容。</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>“{0}”是文件，不是文件夹。请使用 @file 附加。</value></data>

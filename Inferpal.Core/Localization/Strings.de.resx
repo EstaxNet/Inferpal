@@ -355,6 +355,8 @@ Sicherung: {0}</value></data>
   <data name="StoppedWorkDocs" xml:space="preserve"><value>Indizierung der Dokumentationsquelle {0} (`/docs reindex {0}`)</value></data>
   <data name="MentionDiffUnavailable" xml:space="preserve"><value>Für @diff wurde nichts angehängt — {0}</value></data>
   <data name="MentionDiffEmpty" xml:space="preserve"><value>Für @diff wurde nichts angehängt: Es gibt keine nicht committete Änderung an einer verfolgten Datei. Eine neue Datei, die nie zu git hinzugefügt wurde, gehört nicht zu einem Diff — hängen Sie sie mit @file an.</value></data>
+  <data name="MentionCodeNothingFound" xml:space="preserve"><value>Für @code wurde nichts angehängt — {0}</value></data>
+  <data name="MentionTreeNoRoot" xml:space="preserve"><value>Für @tree wurde nichts angehängt: Es wurde keine Projektmappe und kein Projektordner zum Abbilden gefunden.</value></data>
   <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — die ersten {1} von {2} Zeichen</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Für @{0} konnte nichts angehängt werden.</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>„{0}“ ist eine Datei, kein Ordner — hänge sie mit @file an.</value></data>

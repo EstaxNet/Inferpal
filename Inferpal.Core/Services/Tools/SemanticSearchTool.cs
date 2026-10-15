@@ -64,14 +64,24 @@ internal sealed class SemanticSearchTool : ITool
         required = new[] { "query" }
     };
 
-    public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
+    public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct) =>
+        (await AnswerAsync(args, ct)).Text;
+
+    /// <summary>
+    /// A search's answer: the report the model reads, how many hits it holds, and — when it holds none — why, in the
+    /// person's language. A reader that decides (the <c>@code</c> mention) reads the count, never the text.
+    /// </summary>
+    internal readonly record struct Answer(string Text, int Hits, string? NothingFound);
+
+    /// <summary>Runs the search and returns its <see cref="Answer"/>; <see cref="ExecuteAsync"/> serves its text.</summary>
+    internal async Task<Answer> AnswerAsync(JsonElement args, CancellationToken ct)
     {
         // ⚠ Not GetProperty/GetInt32: the arguments come from the model. A missing `query` throws
         // KeyNotFoundException there, and a `"top_k": "5"` — which small local models send routinely
         // — an InvalidOperationException, turning a correctable call into a tool failure.
         var query = args.Trimmed("query") ?? string.Empty;
         if (string.IsNullOrEmpty(query))
-            return "query is required.";
+            return new Answer("query is required.", 0, "query is required.");
 
         // ⚠ A silent clamp here shapes a CONCLUSION: asked for 25 and served 10, the header
         // still reads "top 10" and the model cannot tell a capped list from an exhausted one — it
@@ -87,9 +97,9 @@ internal sealed class SemanticSearchTool : ITool
             var status = _index.IsIndexing ? _index.Status : "Index not built.";
             // ⚠ The remedies above are the user's to apply; the model needs the one IT can: without this line it
             // calls the tool again, or answers without having searched. Model-facing, so English.
-            return Strings.RagIndexNotReady(status)
+            return new Answer(Strings.RagIndexNotReady(status)
                  + "\n\nUntil the index is ready, search_in_files finds exact text or a regex across the project "
-                 + "without it, and read_file reads what it finds.";
+                 + "without it, and read_file reads what it finds.", 0, Strings.RagIndexNotReady(status));
         }
 
         // ── Embed the query (shadow cache fast path) ──────────────────────────
@@ -134,13 +144,16 @@ internal sealed class SemanticSearchTool : ITool
         var behind = StillIndexingNote() + NotReindexedNote() + CoverageNote();
 
         if (results.Count == 0)
+        {
             // A "nothing found" does not say the same thing depending on whether the FULL search
             // ran or only its lexical half did. A model reading a flat negative concludes the code
             // does not exist and stops looking.
-            return behind + SearchDegradation.Explain(
+            var nothing = SearchDegradation.Explain(
                 Strings.RagNoResults(query),
                 SearchDegradation.Classify(_config.RagEnabled, queryEmbedding, modelChosen: model is not null),
                 model ?? string.Empty);
+            return new Answer(behind + nothing, 0, nothing);
+        }
 
         // ── Format results ────────────────────────────────────────────────────
         var sb     = new StringBuilder();
@@ -188,7 +201,7 @@ internal sealed class SemanticSearchTool : ITool
         sb.Append(bodies);
         sb.Append(locations);
 
-        return ClampedArgument.Above(topKNotice, behind + sb.ToString().TrimEnd());
+        return new Answer(ClampedArgument.Above(topKNotice, behind + sb.ToString().TrimEnd()), results.Count, null);
     }
 
     /// <summary>

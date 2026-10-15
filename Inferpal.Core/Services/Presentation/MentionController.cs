@@ -144,6 +144,26 @@ internal static class MentionController
             ? new MentionOutcome(null, null, Strings.MentionProblemsNotBuilt(ChatTurnPolicy.OneLinePreview(diagnostics, 240)))
             : new MentionOutcome(label, diagnostics, null);
 
+    /// <summary>
+    /// What <c>@code</c> attaches, decided on the search's hit count, never on its text: the results, or — when the search
+    /// found nothing — a notice saying so.
+    /// </summary>
+    /// <remarks>⚠ Attached as it came, "no results" made a 🔮 chip, and the question went to the model as if it carried
+    /// the code it was about.</remarks>
+    internal static MentionOutcome CodeMention(Tools.SemanticSearchTool.Answer answer, string label) =>
+        answer.Hits == 0
+            ? new MentionOutcome(null, null, Strings.MentionCodeNothingFound(answer.NothingFound ?? answer.Text))
+            : new MentionOutcome(label, answer.Text, null);
+
+    /// <summary>
+    /// What <c>@tree</c> attaches: the project map, or — when there is no solution or project root to map — a notice,
+    /// never a 🌲 chip whose content is that sentence.
+    /// </summary>
+    internal static MentionOutcome TreeMention(string? map, string label) =>
+        map is null
+            ? new MentionOutcome(null, null, Strings.MentionTreeNoRoot)
+            : new MentionOutcome(label, map, null);
+
     /// <summary>Removes the trailing @mention token (committed <c>@file foo</c> or bare <c>@foo</c>).</summary>
     public static string StripMentionToken(string prompt)
     {

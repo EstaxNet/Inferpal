@@ -29,11 +29,18 @@ internal sealed class ProjectMapService
     // ── Public API ────────────────────────────────────────────────────────────
 
     /// <summary>Generates (or returns cached) project map for the current solution root.</summary>
-    public async Task<string> GenerateMapAsync(CancellationToken ct = default)
+    public async Task<string> GenerateMapAsync(CancellationToken ct = default) =>
+        await TryGenerateMapAsync(ct) ?? "❌ Could not locate solution or project root.";
+
+    /// <summary>
+    /// The project map, or <c>null</c> when there is no solution or project root to map — the state a reader that
+    /// decides (the <c>@tree</c> mention) reads, never the sentence the tool serves in its place.
+    /// </summary>
+    internal async Task<string?> TryGenerateMapAsync(CancellationToken ct = default)
     {
         var root = FindRoot();
         if (root is null)
-            return "❌ Could not locate solution or project root.";
+            return null;
 
         // Invalidation: re-generate after 120 s (simple TTL via timestamp prefix)
         if (_cache.TryGetValue(root, out var cached))

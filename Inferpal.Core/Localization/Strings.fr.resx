@@ -355,6 +355,8 @@ Sauvegarde : {0}</value></data>
   <data name="StoppedWorkDocs" xml:space="preserve"><value>indexation de la source de documentation {0} (`/docs reindex {0}`)</value></data>
   <data name="MentionDiffUnavailable" xml:space="preserve"><value>Rien de joint pour @diff — {0}</value></data>
   <data name="MentionDiffEmpty" xml:space="preserve"><value>Rien de joint pour @diff : aucun changement non commité dans un fichier suivi. Un nouveau fichier jamais ajouté à git ne fait pas partie d’un diff — joignez-le avec @file.</value></data>
+  <data name="MentionCodeNothingFound" xml:space="preserve"><value>Rien de joint pour @code — {0}</value></data>
+  <data name="MentionTreeNoRoot" xml:space="preserve"><value>Rien de joint pour @tree : aucune solution ni aucun dossier de projet à cartographier n'a été trouvé.</value></data>
   <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — {1} premiers caractères sur {2}</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Rien n'a pu être joint pour @{0}.</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>« {0} » est un fichier, pas un dossier — joins-le avec @file.</value></data>

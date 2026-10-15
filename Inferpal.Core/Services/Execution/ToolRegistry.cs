@@ -439,6 +439,12 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// <summary>The git status tool, for a reader that decides on its structured report (the @diff mention).</summary>
     internal GetGitStatusTool GitStatus => (GetGitStatusTool)_tools["get_git_status"];
 
+    /// <summary>The codebase search, for a reader that decides on its hit count (the @code mention).</summary>
+    internal SemanticSearchTool CodeSearch => (SemanticSearchTool)_tools["search_codebase"];
+
+    /// <summary>The project map, for a reader that decides on whether there was a root to map (the @tree mention).</summary>
+    internal ProjectMapService ProjectMap => _mapService;
+
     /// <summary>
     /// Disposes the tools that own OS resources (today: <c>run_command</c> and its detached
     /// background jobs). Called when the editor session ends — a child process spawned with

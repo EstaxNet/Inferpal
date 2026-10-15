@@ -355,6 +355,8 @@ Backup: {0}</value></data>
   <data name="StoppedWorkDocs" xml:space="preserve"><value>indicizzazione della fonte di documentazione {0} (`/docs reindex {0}`)</value></data>
   <data name="MentionDiffUnavailable" xml:space="preserve"><value>Nessun allegato per @diff — {0}</value></data>
   <data name="MentionDiffEmpty" xml:space="preserve"><value>Nessun allegato per @diff: non c’è alcuna modifica non committata in un file tracciato. Un nuovo file mai aggiunto a git non fa parte di un diff — allegalo con @file.</value></data>
+  <data name="MentionCodeNothingFound" xml:space="preserve"><value>Nessun allegato per @code — {0}</value></data>
+  <data name="MentionTreeNoRoot" xml:space="preserve"><value>Nessun allegato per @tree: non è stata trovata alcuna soluzione né cartella di progetto da mappare.</value></data>
   <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — primi {1} di {2} caratteri</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Non è stato possibile allegare nulla per @{0}.</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>«{0}» è un file, non una cartella: allegalo con @file.</value></data>

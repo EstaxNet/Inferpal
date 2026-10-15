@@ -355,6 +355,8 @@ Kopia zapasowa: {0}</value></data>
   <data name="StoppedWorkDocs" xml:space="preserve"><value>indeksowanie źródła dokumentacji {0} (`/docs reindex {0}`)</value></data>
   <data name="MentionDiffUnavailable" xml:space="preserve"><value>Nic nie dołączono dla @diff — {0}</value></data>
   <data name="MentionDiffEmpty" xml:space="preserve"><value>Nic nie dołączono dla @diff: brak niezatwierdzonych zmian w śledzonym pliku. Nowy plik, którego nigdy nie dodano do git, nie należy do diffu — dołącz go przez @file.</value></data>
+  <data name="MentionCodeNothingFound" xml:space="preserve"><value>Nic nie dołączono dla @code — {0}</value></data>
+  <data name="MentionTreeNoRoot" xml:space="preserve"><value>Nic nie dołączono dla @tree: nie znaleziono rozwiązania ani folderu projektu do zmapowania.</value></data>
   <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — pierwsze {1} z {2} znaków</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Nie udało się niczego dołączyć dla @{0}.</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>„{0}” to plik, nie folder — dołącz go przez @file.</value></data>

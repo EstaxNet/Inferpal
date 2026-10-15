@@ -356,6 +356,8 @@ Backup: {0}</value></data>
   <data name="StoppedWorkDocs" xml:space="preserve"><value>indexing of the documentation source {0} (`/docs reindex {0}`)</value></data>
   <data name="MentionDiffUnavailable" xml:space="preserve"><value>Nothing attached for @diff — {0}</value></data>
   <data name="MentionDiffEmpty" xml:space="preserve"><value>Nothing attached for @diff: there is no uncommitted change to a tracked file. A new file that was never added to git is not part of a diff — attach it with @file.</value></data>
+  <data name="MentionCodeNothingFound" xml:space="preserve"><value>Nothing attached for @code — {0}</value></data>
+  <data name="MentionTreeNoRoot" xml:space="preserve"><value>Nothing attached for @tree: no solution or project folder was found to map.</value></data>
   <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — first {1} of {2} characters</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Nothing could be attached for @{0}.</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>'{0}' is a file, not a folder — attach it with @file.</value></data>
