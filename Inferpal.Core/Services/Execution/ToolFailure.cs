@@ -38,15 +38,17 @@ internal static class ToolFailure
         if (cause.Length == 0) cause = ex.GetType().Name;
 
         var separator = cause.EndsWith('.') ? " " : ". ";
-        return $"Error: the '{toolName}' call failed — {cause}{separator}{Advice(ex)}";
+        return $"Error: the '{toolName}' call failed — {cause}{separator}{Advice(toolName, ex)}";
     }
 
-    private static string Advice(Exception ex) =>
+    private static string Advice(string toolName, Exception ex) =>
         // ⚠ A permission rule refused THIS path or command: "the arguments are not the cause … continue without this
         // tool" was false twice, and a model told so gave up writing for the rest of its task.
         Root(ex) is PermissionDeniedException
             ? "The user's permission rules refuse this path or command: do not retry it, and do not work around it. "
               + "Other calls of this tool are not affected; say what you could not do."
+        : Mcp.McpTool.IsMcpName(toolName)
+            ? McpAdvice(Root(ex))
         : IsAboutTheArguments(ex)
             ? "Check the arguments against the tool's schema and try again."
         // ⚠ A failure of ONE file is not a failure of the tool: read-only (a TFVC or Perforce workspace keeps files
@@ -58,6 +60,22 @@ internal static class ToolFailure
               + "other files are not affected."
             : "The arguments are not the cause, so the same call will fail the same way: say what "
               + "happened and continue without this tool.";
+
+    /// <summary>JSON-RPC's own code for arguments a server refuses ("Invalid params").</summary>
+    private const long InvalidParams = -32602;
+
+    /// <summary>The advice after a call of an MCP server's tool failed, from the root exception.</summary>
+    /// <remarks>
+    /// ⚠ An MCP call's arguments are JSON already parsed, and its tool runs in another program: a JsonException there is
+    /// the server's ANSWER that could not be read, an IOException its CONNECTION cut — never the model's arguments, never
+    /// a file of the workspace. And only the server can say the arguments were wrong, with the protocol's code for it:
+    /// told "the arguments are not the cause" after a -32602, the model gave up a call it could have corrected.
+    /// </remarks>
+    private static string McpAdvice(Exception root) =>
+        (root is Mcp.McpRpcException rpc ? rpc.Code : root is Mcp.McpHttpRefusedException http ? http.RpcCode : null) == InvalidParams
+            ? "The MCP server refused these arguments: check them against the tool's schema and try again."
+            : "The arguments are not the cause: the MCP server, or the connection to it, failed this call, so calling it "
+              + "again the same way is unlikely to help. Say what happened.";
 
     /// <summary>True when the root failure is about one file system entry rather than the tool itself.</summary>
     /// <remarks>⚠ Not when a type initializer failed on the way: a native library missing inside a static constructor
