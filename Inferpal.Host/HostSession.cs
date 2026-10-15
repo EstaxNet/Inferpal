@@ -173,9 +173,12 @@ internal sealed class HostSession : IDisposable
     public string? TemplateSuffix { get; set; }
 
     /// <summary>The <c>/template</c> mode of the conversation just discarded: the adapter archives that conversation
-    /// AFTER the reset (<c>session/save</c> with <c>archive</c>), when <see cref="TemplateSuffix"/> is already the new
-    /// one's.</summary>
+    /// AFTER the reset (<c>session/archive</c>), when <see cref="TemplateSuffix"/> is already the new one's.</summary>
     public string? DiscardedTemplateSuffix { get; set; }
+
+    /// <summary>The archive the last reset made from the auto-save slot, and when: the adapter's <c>session/archive</c>
+    /// writes over it — one archive per discarded conversation — and its title renames it.</summary>
+    public (string Name, DateTime At)? PendingArchive { get; set; }
 
     /// <summary>Plan mode (`/plan`): read-only tool registry + plan-mode prompt suffix.</summary>
     public bool PlanMode { get; set; }

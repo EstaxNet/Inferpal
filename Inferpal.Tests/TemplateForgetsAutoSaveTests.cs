@@ -63,8 +63,8 @@ public partial class HostServerTests
             }
         }
 
-        Assert.Contains("StartNewConversation", callers);   // witness: the calls are read
-        Assert.Equal(["Initialize", "StartNewConversation"], callers.Distinct().Order().ToList()
+        Assert.Contains("StartNewConversationAsync", callers);   // witness: the calls are read
+        Assert.Equal(["Initialize", "StartNewConversationAsync"], callers.Distinct().Order().ToList()
                                                                    .Select(c => c.StartsWith("Initialize", StringComparison.Ordinal) ? "Initialize" : c)
                                                                    .Distinct().ToList());
     }

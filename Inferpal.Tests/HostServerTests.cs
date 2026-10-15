@@ -66,6 +66,12 @@ public partial class HostServerTests
         [JsonRpcMethod("chat/thinking", UseSingleObjectParameterDeserialization = true)]
         public void ChatThinking(ThinkingNote note) => Thinking.Enqueue(note.Text);
 
+        /// <summary>Every <c>host/notice</c> received (filled by the RPC dispatch thread).</summary>
+        public readonly System.Collections.Concurrent.ConcurrentQueue<string> HostNotices = new();
+
+        [JsonRpcMethod("host/notice", UseSingleObjectParameterDeserialization = true)]
+        public void HostNotice(TokenNote note) => HostNotices.Enqueue(note.Text);
+
         /// <summary>Every <c>chat/tool</c> notice received, in order (filled by the RPC dispatch thread).</summary>
         public readonly System.Collections.Concurrent.ConcurrentQueue<ToolNote> ToolNotes = new();
 
@@ -1968,8 +1974,8 @@ public partial class HostServerTests
         Assert.Contains("root        = _conversationRoot.For(_indexService.RootDir);", branch, StringComparison.Ordinal);
         Assert.Contains("await _store.SaveAsync(plan.ParentName, plan.ParentMessages, ct, root,", branch, StringComparison.Ordinal);
         Assert.Contains("await _store.SaveAsync(plan.BranchName, plan.BranchMessages, ct, root,", branch, StringComparison.Ordinal);
-        Assert.Contains("await _store.SaveAsync(name, snapshot, CancellationToken.None, workspaceRoot,",
-                        Code("InferpalToolWindowData.PendingPrompt.cs"), StringComparison.Ordinal);
+        Assert.Contains("await _store.SaveAsync(name, snapshot, CancellationToken.None, root,",
+                        Code("InferpalToolWindowData.Connection.cs"), StringComparison.Ordinal);
     }
 
     [Fact]

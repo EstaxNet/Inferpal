@@ -154,7 +154,7 @@ internal sealed partial class HostServer
             switch (delegated.Id)
             {
                 case SlashCommandId.Clear:
-                    StartNewConversation(s);
+                    await StartNewConversationAsync(s);
                     return new SlashCommandResult(true, null, [new SlashEffectDto("clearTranscript")]);
 
                 case SlashCommandId.Model:
@@ -242,7 +242,7 @@ internal sealed partial class HostServer
                 }
 
                 case SlashCommandId.Template:
-                    return HandleTemplateSlash(s, parts);
+                    return await HandleTemplateSlashAsync(s, parts);
 
                 case SlashCommandId.Docs:
                     return await HandleDocsSlashAsync(s, parts, cts.Token);
@@ -648,13 +648,13 @@ internal sealed partial class HostServer
 
     /// <summary>/template [id] — shared decision (TemplateCommandHandler); the host applies it
     /// by resetting its history and asking the adapter to clear the transcript.</summary>
-    private SlashCommandResult HandleTemplateSlash(HostSession s, string[] parts)
+    private async Task<SlashCommandResult> HandleTemplateSlashAsync(HostSession s, string[] parts)
     {
         var result = TemplateCommandHandler.Handle(parts);
         if (result.Apply is not { } tmpl)
             return new SlashCommandResult(true, result.Message);
 
-        StartNewConversation(s, tmpl.SystemSuffix);
+        await StartNewConversationAsync(s, tmpl.SystemSuffix);
         return new SlashCommandResult(true, tmpl.Greeting, [new SlashEffectDto("clearTranscript")]);
     }
 

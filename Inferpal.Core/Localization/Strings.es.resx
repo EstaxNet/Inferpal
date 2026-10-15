@@ -447,6 +447,7 @@ Se vuelve a leer antes de cada pregunta: un cambio se aplica desde la siguiente,
   <data name="TddNothingRan" xml:space="preserve"><value>⚠ /tdd se detuvo: esta ejecución no lanzó ningún test, así que no hay nada que corregir.</value></data>
   <data name="TddStoppedAtBudget" xml:space="preserve"><value>⚠ /tdd se detuvo: la ejecución de pruebas agotó su tiempo y fue interrumpida, así que nada de lo que informa es un veredicto, ni siquiera la parte que pasó.</value></data>
   <data name="SessionArchiveFailed" xml:space="preserve"><value>⚠ La conversación que acaba de dejar NO pudo archivarse: {0}. Se ha perdido: no se guardó con ningún nombre y el chat ya está vacío.</value></data>
+  <data name="SessionArchiveFailedSlotKept" xml:space="preserve"><value>⚠ La conversación que acaba de dejar NO se pudo archivar: {0}. No se guardó con un nombre; sigue siendo la última conversación de esta carpeta hasta su próxima pregunta.</value></data>
   <data name="SessionAutoSaveFailed" xml:space="preserve"><value>⚠ Esta conversación NO se pudo guardar para la próxima vez: {0}. Sigue aquí, pero no volverá por sí sola: expórtala si quieres conservarla.</value></data>
   <data name="GitCommandFailed" xml:space="preserve"><value>⚠ git no pudo responder a «git {0}»: {1}. No se leyó nada de este repositorio: esto NO significa «sin cambios».</value></data>
   <data name="SolutionNoSln" xml:space="preserve"><value>No se encontró ningún archivo .sln. Proporciona la ruta explícitamente.</value></data>

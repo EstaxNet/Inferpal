@@ -121,39 +121,20 @@ internal partial class InferpalToolWindowData
 
     // ── Helpers ────────────────────────────────────────────────────────────────
 
-    /// <param name="templateSuffix">The mode the conversation was held in, read with the snapshot: by the time the title
-    /// comes back, the mode is already the new conversation's.</param>
-    /// <param name="workspaceRoot">The workspace the conversation belonged to (<see cref="ConversationRoot"/>), read
-    /// with the snapshot.</param>
-    private async Task SaveNamedSessionAsync(string firstUserContent, List<SavedMessage> snapshot, string templateSuffix,
-                                             string? workspaceRoot)
+    /// <summary>
+    /// Renames the archive of a cleared conversation after the title the model gives it, in the background: the archive
+    /// is already on disk under its first question's words (<see cref="ConversationArchive"/>).
+    /// </summary>
+    /// <remarks>A title that cannot be had leaves the archive under its first name: nothing to say, nothing lost.</remarks>
+    private async Task RetitleArchiveAsync(string name, DateTime at, string firstUserContent)
     {
         try
         {
-            var title = await GenerateSessionTitleAsync(firstUserContent);
-            var name  = SessionManager.UniqueSessionName(
-                SessionManager.SessionFileName(DateTime.Now, title), _store.ListSessions());
-            await _store.SaveAsync(name, snapshot, CancellationToken.None, workspaceRoot, templateSuffix: templateSuffix);
+            await ConversationArchive.RetitleAsync(_store, name, at, firstUserContent, _client, _config);
             await RunOnVMContextAsync(RefreshSessionsList);
         }
-        catch (Exception ex)
-        {
-            // ⚠ This runs fire-and-forget — /clear must not wait on the model call that names the
-            // session — so by the time it fails the transcript is ALREADY cleared: the failure lands
-            // after the only moment the user could still have copied anything. A trace in
-            // /diagnostics is therefore not a channel; the conversation they are now in is. The same
-            // rule is applied two methods down for a session that could not be deleted.
-            Diagnostics.Swallow("Session.SaveNamed", ex);
-            var reason = ex.Message;
-            await RunOnVMContextAsync(() =>
-                InsertThemed(ChatMessageItem.NoticeMsg(Strings.SessionArchiveFailed(reason))));
-        }
+        catch (Exception ex) { Diagnostics.Swallow("Session.Retitle", ex); }
     }
-
-    // Shared with the Host (`session/title`, VS Code) — prompt, timeout and fallback live in the
-    // Core so the two front-ends can never drift apart on how a session gets named.
-    private Task<string> GenerateSessionTitleAsync(string firstUserContent) =>
-        SessionTitleGenerator.GenerateAsync(_client, _config, firstUserContent, CancellationToken.None);
 
     /// <summary>Set when the auto-save last failed and the user was told; cleared by the next one
     /// that works.</summary>

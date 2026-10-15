@@ -68,15 +68,18 @@ public class SessionNameCollisionTests
     [Fact]
     public void BothFrontEnds_ArchiveUnderAFreeName()
     {
-        var vm   = ConventionCoverageTests.CodeOnly(
-            Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowData.PendingPrompt.cs"));
-        var host = ConventionCoverageTests.CodeOnly(Path.Combine(RepoRoot(), "Inferpal.Host", "HostServer.cs"));
+        var vm      = ConventionCoverageTests.CodeOnly(
+            Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowData.Connection.cs"));
+        var host    = ConventionCoverageTests.CodeOnly(Path.Combine(RepoRoot(), "Inferpal.Host", "HostServer.cs"));
+        var archive = ConventionCoverageTests.CodeOnly(
+            Path.Combine(RepoRoot(), "Inferpal.Core", "Services", "Persistence", "ConversationArchive.cs"));
 
-        // Witness: both sites still name an archive with SessionFileName.
-        Assert.Contains("SessionManager.SessionFileName(", vm,   StringComparison.Ordinal);
-        Assert.Contains("SessionManager.SessionFileName(", host, StringComparison.Ordinal);
-
-        Assert.Contains("SessionManager.UniqueSessionName(", vm,   StringComparison.Ordinal);
+        // Both editors name an archive through ConversationArchive, which takes a free name — first and retitled.
+        Assert.Contains("ConversationArchive.FirstName(", vm,   StringComparison.Ordinal);
+        Assert.Contains("ConversationArchive.FirstName(", host, StringComparison.Ordinal);
+        Assert.Contains("SessionManager.SessionFileName(", archive, StringComparison.Ordinal);
+        Assert.Equal(2, System.Text.RegularExpressions.Regex.Matches(archive, @"SessionManager\.UniqueSessionName\(").Count);
+        // session/title, which the explicit save asks, too.
         Assert.Contains("SessionManager.UniqueSessionName(", host, StringComparison.Ordinal);
     }
 }

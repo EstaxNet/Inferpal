@@ -269,6 +269,11 @@ internal class ConversationStore
     internal static FileStream OpenSessionForRead(string path) =>
         new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, bufferSize: 4096, useAsync: true);
 
+    /// <summary>Gives a saved session another name; never writes over a session of that name.</summary>
+    /// <exception cref="IOException">A session of that name exists, or the file could not be moved.</exception>
+    public void Rename(string sessionName, string newName) =>
+        File.Move(SessionPath(sessionName), SessionPath(newName), overwrite: false);
+
     /// Deletes a saved session. Returns true if the file existed.
     public bool Delete(string sessionName)
     {

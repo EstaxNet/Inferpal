@@ -50,21 +50,21 @@ public sealed class ArchiveFailureSilenceTests
     [Fact]
     public void VisualStudio_SaysSo_WhenTheArchiveOfTheClearedConversationFails()
     {
-        var path = Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowData.PendingPrompt.cs");
+        var path = Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowData.Connection.cs");
         var root = CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path).GetRoot();
 
         var method = root.DescendantNodes().OfType<MethodDeclarationSyntax>()
-                         .SingleOrDefault(m => m.Identifier.Text == "SaveNamedSessionAsync");
+                         .SingleOrDefault(m => m.Identifier.Text == "ClearAsync");
         // WITNESS: the method this test is about still exists under this name, in this file.
         Assert.True(method is not null,
-            "SaveNamedSessionAsync was not found: this test would have measured nothing.");
+            "ClearAsync was not found: this test would have measured nothing.");
 
         var catches = method!.DescendantNodes().OfType<CatchClauseSyntax>().ToList();
         Assert.True(catches.Count > 0, "the archive no longer catches anything: check what replaced it.");
 
         // The failure must reach the conversation, not only the diagnostics ring.
         var body = string.Join("\n", catches.Select(c => c.Block.ToString()));
-        Assert.Contains("SessionArchiveFailed", body, StringComparison.Ordinal);
+        Assert.Contains("SessionArchiveFailedSlotKept", body, StringComparison.Ordinal);
     }
 
     // ── VS Code ───────────────────────────────────────────────────────────────
@@ -74,9 +74,8 @@ public sealed class ArchiveFailureSilenceTests
     {
         var body = ArchiveConversationBody();
 
-        // WITNESS: this really is the archive — it asks for the generated name and saves under it.
-        Assert.Contains("sessionTitle(", body, StringComparison.Ordinal);
-        Assert.Contains("sessionSave(", body, StringComparison.Ordinal);
+        // WITNESS: this really is the archive.
+        Assert.Contains("sessionArchive(", body, StringComparison.Ordinal);
         Assert.Contains("catch", body, StringComparison.Ordinal);
 
         // A log line is not a message. The user must see it where they are: the window.

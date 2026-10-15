@@ -447,6 +447,7 @@ Plik jest wczytywany ponownie przed każdym pytaniem: zmiana obowiązuje od nast
   <data name="TddNothingRan" xml:space="preserve"><value>⚠ /tdd zatrzymane: to uruchomienie nie wykonało żadnego testu, więc nie ma czego naprawiać.</value></data>
   <data name="TddStoppedAtBudget" xml:space="preserve"><value>⚠ /tdd zatrzymane: uruchomienie testów przekroczyło limit czasu i zostało przerwane, więc nic z tego raportu nie jest werdyktem — nawet część, która przeszła.</value></data>
   <data name="SessionArchiveFailed" xml:space="preserve"><value>⚠ Rozmowy, którą właśnie opuszczono, NIE udało się zarchiwizować: {0}. Przepadła — nie została zapisana pod żadną nazwą, a czat jest już wyczyszczony.</value></data>
+  <data name="SessionArchiveFailedSlotKept" xml:space="preserve"><value>⚠ Nie udało się zarchiwizować rozmowy, którą właśnie opuszczono: {0}. Nie została zapisana pod nazwą; do następnego pytania pozostaje ostatnią rozmową tego folderu.</value></data>
   <data name="SessionAutoSaveFailed" xml:space="preserve"><value>⚠ Tej rozmowy NIE udało się zapisać na następny raz: {0}. Nadal tu jest, ale sama nie wróci — wyeksportuj ją, jeśli chcesz ją zachować.</value></data>
   <data name="GitCommandFailed" xml:space="preserve"><value>⚠ git nie mógł odpowiedzieć na „git {0}”: {1}. Nic nie zostało odczytane z tego repozytorium — to NIE znaczy „brak zmian”.</value></data>
   <data name="SolutionNoSln" xml:space="preserve"><value>Nie znaleziono pliku .sln. Podaj ścieżkę jawnie.</value></data>

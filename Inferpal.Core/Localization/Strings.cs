@@ -1104,6 +1104,8 @@ internal static class Strings
     /// </summary>
     public static string SessionArchiveFailed(string reason) =>
         Format(Get(nameof(SessionArchiveFailed)), reason);
+    public static string SessionArchiveFailedSlotKept(string reason) =>
+        Format(Get(nameof(SessionArchiveFailedSlotKept)), reason);
 
     public static string SessionAutoSaveFailed(string reason) =>
         Format(Get(nameof(SessionAutoSaveFailed)), reason);

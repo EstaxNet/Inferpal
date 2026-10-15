@@ -447,6 +447,7 @@
   <data name="TddNothingRan" xml:space="preserve"><value>⚠ /tdd остановлен: этот запуск не выполнил ни одного теста, так что исправлять нечего.</value></data>
   <data name="TddStoppedAtBudget" xml:space="preserve"><value>⚠ /tdd остановлен: прогон тестов превысил отведённое время и был прерван, поэтому ничто из его отчёта не является вердиктом — даже пройденная часть.</value></data>
   <data name="SessionArchiveFailed" xml:space="preserve"><value>⚠ Только что покинутый разговор НЕ удалось архивировать: {0}. Он потерян — не сохранён под именем, а чат уже очищен.</value></data>
+  <data name="SessionArchiveFailedSlotKept" xml:space="preserve"><value>⚠ Не удалось архивировать разговор, который вы только что покинули: {0}. Он не сохранён под именем; до вашего следующего вопроса он остаётся последним разговором этой папки.</value></data>
   <data name="SessionAutoSaveFailed" xml:space="preserve"><value>⚠ Этот разговор НЕ удалось сохранить на следующий раз: {0}. Он ещё здесь, но сам не вернётся — экспортируйте его, если хотите сохранить.</value></data>
   <data name="GitCommandFailed" xml:space="preserve"><value>⚠ git не смог выполнить «git {0}»: {1}. Из этого репозитория ничего не прочитано — это НЕ «нет изменений».</value></data>
   <data name="SolutionNoSln" xml:space="preserve"><value>Файл .sln не найден. Укажите путь явно.</value></data>

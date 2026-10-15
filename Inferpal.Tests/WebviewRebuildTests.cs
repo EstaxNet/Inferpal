@@ -306,8 +306,13 @@ public class WebviewRebuildTests
         Assert.Contains("host.sessionSave(safeName, this.snapshot())", saveCommand, StringComparison.Ordinal);
 
         var archive = Body(provider, "private archiveConversation(");
-        Assert.Contains("host.sessionSave(fileName, messages, true)", archive, StringComparison.Ordinal);
-        Assert.Matches(@"'session/save',\s*\{\s*name,\s*messages,\s*archive\s*\}", TsCode("hostClient.ts"));
+        Assert.Contains("host.sessionArchive(messages)", archive, StringComparison.Ordinal);
+        // session/archive writes the archive and binds nothing to it: the next conversation lives in no file yet.
+        var host = ConventionCoverageTests.CodeOnly(Path.Combine(RepoRoot(), "Inferpal.Host", "HostServer.cs"));
+        var at   = host.IndexOf("public async Task<SessionArchiveResult> SessionArchiveAsync(", StringComparison.Ordinal);
+        Assert.True(at > 0, "session/archive moved: this test reads nothing.");   // witness
+        var end  = host.IndexOf("RetitleArchiveAsync(s, name, at, first);", at, StringComparison.Ordinal);
+        Assert.DoesNotContain("CurrentSessionName", host[at..end], StringComparison.Ordinal);
     }
 
     /// <summary>

@@ -745,10 +745,10 @@ internal sealed partial class HostServer : IDisposable
             StoppedWork.Notice(s.UnfinishedTasks, s.Tools.RunningJobs, s.Docs.IndexingSiteId, crashed: true));
 
     [JsonRpcMethod("chat/reset")]
-    public void ChatReset()
+    public Task ChatResetAsync(CancellationToken ct)
     {
         var s = Session();
-        WithTurnSlot("chat/reset", () => StartNewConversation(s));
+        return WithTurnSlotAsync("chat/reset", ct, async _ => { await StartNewConversationAsync(s); return true; });
     }
 
     /// <summary>
@@ -1747,13 +1747,70 @@ internal sealed partial class HostServer : IDisposable
     /// starts its own with <paramref name="templateSuffix"/>.</summary>
     /// <remarks>⚠ The one door to a discarded conversation: it also leaves the auto-save slot. Reset on its own, the
     /// history of <c>/template</c> was new while <c>last_session</c> still held the old one, brought back at the next
-    /// start.</remarks>
-    private void StartNewConversation(HostSession s, string? templateSuffix = null)
+    /// start. ⚠ And the slot is emptied only once what it holds is archived (<see cref="ArchiveTheSlotAsync"/>).</remarks>
+    private async Task StartNewConversationAsync(HostSession s, string? templateSuffix = null)
     {
         s.DiscardedTemplateSuffix = s.TemplateSuffix;
         s.TemplateSuffix = templateSuffix;
         ResetHistory(s);
-        _ = ForgetAutoSaveAsync(s);
+        if (await ArchiveTheSlotAsync(s)) await ForgetAutoSaveAsync(s);
+    }
+
+    /// <summary>
+    /// Archives the conversation the auto-save slot holds, under its first question's words: <c>false</c> when it could
+    /// not be (said in the thread — the slot then keeps it).
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The adapter's archive comes AFTER the reset and waited for the model's title (up to 15 s): an editor closed in
+    /// those seconds lost a conversation the slot no longer held and no archive did. Archived here first, from the slot
+    /// (the conversation as of its last turn), the adapter's screen then updates this archive (<c>session/archive</c>)
+    /// rather than writing a second one, and the title only renames it.
+    /// </remarks>
+    private async Task<bool> ArchiveTheSlotAsync(HostSession s)
+    {
+        s.PendingArchive = null;
+        if (!s.KeepsAutoSave) return true;
+        try
+        {
+            var slot = await s.Store.LoadAutoSaveAsync(s.RootDir, CancellationToken.None);
+            if (slot is not { Messages.Count: > 0 }) return true;
+            var at   = DateTime.Now;
+            var name = ConversationArchive.FirstName(s.Store, at, ConversationArchive.FirstQuestion(slot.Messages));
+            await s.Store.SaveAsync(name, slot.Messages, CancellationToken.None, s.RootDir,
+                                    templateSuffix: s.DiscardedTemplateSuffix);
+            s.PendingArchive = (name, at);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("HostServer.ArchiveTheSlot", ex);
+            Notify("host/notice", new { text = Strings.SessionArchiveFailedSlotKept(Diagnostics.RootMessage(ex)) });
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// <c>session/archive</c> — the conversation the adapter just cleared, as its screen held it: written over the archive
+    /// the reset made from the slot (or as a new one), then renamed after its title in the background.
+    /// </summary>
+    [JsonRpcMethod("session/archive", UseSingleObjectParameterDeserialization = true)]
+    public async Task<SessionArchiveResult> SessionArchiveAsync(SessionArchiveParams p, CancellationToken ct)
+    {
+        var s     = Session();
+        var saved = p.Messages.Select(ToSaved).ToList();
+        var first = ConversationArchive.FirstQuestion(saved);
+        var (name, at) = s.PendingArchive ?? (ConversationArchive.FirstName(s.Store, DateTime.Now, first), DateTime.Now);
+        s.PendingArchive = null;
+        await s.Store.SaveAsync(name, saved, CancellationToken.None, s.RootDir, templateSuffix: s.DiscardedTemplateSuffix);
+        _ = RetitleArchiveAsync(s, name, at, first);
+        return new SessionArchiveResult(name);
+    }
+
+    /// <summary>Renames an archive after the title the model gives it; under its first name when there is none.</summary>
+    private static async Task RetitleArchiveAsync(HostSession s, string name, DateTime at, string firstQuestion)
+    {
+        try { await ConversationArchive.RetitleAsync(s.Store, name, at, firstQuestion, s.Client, s.Config); }
+        catch (Exception ex) { Diagnostics.Swallow("HostServer.RetitleArchive", ex); }
     }
 
     /// <summary>Loads the indexed documentation, and says in the thread when it could not be loaded.</summary>

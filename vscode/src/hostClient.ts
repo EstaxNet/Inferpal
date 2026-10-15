@@ -48,6 +48,7 @@ import {
   SessionBranchResult,
   SettingsSchema,
   SessionLoadResult,
+  SessionArchiveResult,
   SessionTitleResult,
   SessionListResult,
   SlashCommandInfo,
@@ -665,6 +666,14 @@ export class HostClient {
   /** `archive`: the conversation being left — saved, but not the file the next one lives in. */
   sessionSave(name: string, messages: SavedMessage[], archive = false): Promise<void> {
     return this.connection().sendRequest('session/save', { name, messages, archive });
+  }
+
+  /**
+   * The conversation just cleared, as the screen held it: written over the archive the host made from the auto-save
+   * slot at the reset (or as a new one), then renamed by the host after its title.
+   */
+  sessionArchive(messages: SavedMessage[]): Promise<SessionArchiveResult> {
+    return this.connection().sendRequest<SessionArchiveResult>('session/archive', { messages });
   }
 
   sessionList(): Promise<SessionListResult> {

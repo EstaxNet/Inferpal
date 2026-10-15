@@ -447,6 +447,7 @@
   <data name="TddNothingRan" xml:space="preserve"><value>⚠ /tdd 已停止：本次运行没有执行任何测试，因此没有需要修复的内容。</value></data>
   <data name="TddStoppedAtBudget" xml:space="preserve"><value>⚠ /tdd 已停止：测试运行超出时间预算被强制结束，因此其报告不构成结论——包括已通过的部分。</value></data>
   <data name="SessionArchiveFailed" xml:space="preserve"><value>⚠ 刚刚离开的对话未能归档：{0}。它已丢失 —— 没有以任何名称保存，而聊天已被清空。</value></data>
+  <data name="SessionArchiveFailedSlotKept" xml:space="preserve"><value>⚠ 无法归档刚刚离开的对话：{0}。它未以名称保存；在您提出下一个问题之前，它仍是此文件夹的最后一次对话。</value></data>
   <data name="SessionAutoSaveFailed" xml:space="preserve"><value>⚠ 此对话未能保存以供下次使用：{0}。它仍在此处，但不会自行恢复 — 如需保留请导出。</value></data>
   <data name="GitCommandFailed" xml:space="preserve"><value>⚠ git 无法响应“git {0}”：{1}。未能从该仓库读取任何内容 —— 这并不表示“没有更改”。</value></data>
   <data name="SolutionNoSln" xml:space="preserve"><value>未找到 .sln 文件，请明确提供路径。</value></data>

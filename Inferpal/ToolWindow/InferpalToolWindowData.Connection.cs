@@ -220,18 +220,33 @@ internal partial class InferpalToolWindowData
             hasMessages = snapshot.Count > 0;
             if (!hasMessages) return;
             templateSuffix = _activeTemplateSuffix;
-
-            var firstUser    = Messages.FirstOrDefault(m => m.Role == "user");
-            firstUserContent = firstUser?.Content ?? string.Empty;
+            firstUserContent = ConversationArchive.FirstQuestion(snapshot);
         });
 
-        // Fire save+title generation in background so the UI clears immediately.
+        // ⚠ Archived FIRST, under its first question's words: on disk before the slot is emptied, the model's title only
+        // renames it, in the background (ConversationArchive). Archived after the title, VS closed in those seconds lost
+        // a conversation that was in no slot and under no name.
+        string? archiveFailed = null;
         if (hasMessages)
-            _ = SaveNamedSessionAsync(firstUserContent, snapshot, templateSuffix, root);
+        {
+            var at = DateTime.Now;
+            try
+            {
+                var name = ConversationArchive.FirstName(_store, at, firstUserContent);
+                await _store.SaveAsync(name, snapshot, CancellationToken.None, root, templateSuffix: templateSuffix);
+                _ = RetitleArchiveAsync(name, at, firstUserContent);
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.Swallow("Session.Archive", ex);
+                archiveFailed = Strings.SessionArchiveFailedSlotKept(ex.Message);
+            }
+        }
 
-        // The conversation just discarded leaves the auto-save slot, or the next start brings it back — said when it cannot.
+        // The conversation just discarded leaves the auto-save slot once it is archived — never before: until then the
+        // slot is the one place it is kept. Said when it cannot.
         string? notForgotten = null;
-        try { if (inASlot) notForgotten = await _store.ForgetAutoSaveOrSayAsync(root, ct); }
+        try { if (inASlot && archiveFailed is null) notForgotten = await _store.ForgetAutoSaveOrSayAsync(root, ct); }
         catch (OperationCanceledException) { }
 
         await RunOnVMContextAsync(() =>
@@ -251,7 +266,9 @@ internal partial class InferpalToolWindowData
             _conversationRoot.Discarded();           // the next conversation belongs where it is first saved
             ResetTurnAccounting();
             HasBuildFailedBanner   = false;   // dismiss banner on /clear
+            RefreshSessionsList();            // the archive just written
             // After the clear, or it would be cleared with the rest.
+            if (archiveFailed is not null) InsertThemed(ChatMessageItem.NoticeMsg(archiveFailed));
             if (notForgotten is not null) InsertThemed(ChatMessageItem.NoticeMsg(notForgotten));
         });
     }

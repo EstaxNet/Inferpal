@@ -448,6 +448,7 @@ It is read again before every question: an edit applies from the next one, witho
   <data name="TddNothingRan" xml:space="preserve"><value>⚠ /tdd stopped: this run executed no test at all, so there is nothing to fix.</value></data>
   <data name="TddStoppedAtBudget" xml:space="preserve"><value>⚠ /tdd stopped: the test run ran out of its time budget and was killed, so nothing it reports is a verdict — not even the part that passed.</value></data>
   <data name="SessionArchiveFailed" xml:space="preserve"><value>⚠ The conversation you just left could NOT be archived: {0}. It is gone — it was not saved under a name, and the chat has already been cleared.</value></data>
+  <data name="SessionArchiveFailedSlotKept" xml:space="preserve"><value>⚠ The conversation you just left could NOT be archived: {0}. It was not saved under a name; it stays this folder's last conversation until your next question.</value></data>
   <data name="SessionAutoSaveFailed" xml:space="preserve"><value>⚠ This conversation could NOT be saved for next time: {0}. It is still here, but it will not come back on its own — export it if you want to keep it.</value></data>
   <data name="GitCommandFailed" xml:space="preserve"><value>⚠ git could not answer 'git {0}': {1}. Nothing was read from this repository — this is NOT "no changes".</value></data>
   <data name="SolutionNoSln" xml:space="preserve"><value>No .sln file found. Try providing the path explicitly.</value></data>

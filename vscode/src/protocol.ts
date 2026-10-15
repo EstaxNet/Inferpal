@@ -432,6 +432,11 @@ export interface SessionTitleResult {
   fileName: string;
 }
 
+/** session/archive answer: the name the archive is under until its title renames it. */
+export interface SessionArchiveResult {
+  name: string;
+}
+
 /** input/request (host → editor): a value a repository's MCP server asks for. */
 export interface InputRequest {
   prompt: string;

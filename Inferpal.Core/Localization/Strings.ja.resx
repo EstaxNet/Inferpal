@@ -447,6 +447,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="TddNothingRan" xml:space="preserve"><value>⚠ /tdd を中止しました: この実行ではテストが 1 つも実行されておらず、修正すべきものがありません。</value></data>
   <data name="TddStoppedAtBudget" xml:space="preserve"><value>⚠ /tdd を中止しました: テスト実行が制限時間を超えて強制終了されたため、その報告は判定になりません — 成功した部分も含めてです。</value></data>
   <data name="SessionArchiveFailed" xml:space="preserve"><value>⚠ 退出した会話をアーカイブできませんでした: {0}。名前を付けて保存されておらず、チャットはすでにクリアされています — 失われました。</value></data>
+  <data name="SessionArchiveFailedSlotKept" xml:space="preserve"><value>⚠ 終了した会話をアーカイブできませんでした: {0}。名前を付けて保存されていません。次の質問までは、このフォルダーの最後の会話として残ります。</value></data>
   <data name="SessionAutoSaveFailed" xml:space="preserve"><value>⚠ この会話を次回のために保存できませんでした: {0}。まだ画面には残っていますが、自動では戻りません — 残したい場合はエクスポートしてください。</value></data>
   <data name="GitCommandFailed" xml:space="preserve"><value>⚠ git が「git {0}」に応答できませんでした: {1}。このリポジトリからは何も読み取っていません — これは「変更なし」ではありません。</value></data>
   <data name="SolutionNoSln" xml:space="preserve"><value>.sln ファイルが見つかりません。パスを明示的に指定してください。</value></data>

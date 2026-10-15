@@ -896,9 +896,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
-   * Archives the conversation being discarded under an LLM-generated name (`session/title`),
-   * the way the VS front-end does on `/clear`. Snapshot and first message are captured
-   * synchronously — the caller clears the transcript right after.
+   * Archives the conversation being discarded, as the screen holds it (`session/archive`), the way the VS front-end
+   * does on `/clear`. The snapshot is captured synchronously — the caller clears the transcript right after. ⚠ No model
+   * call before the save: the host archived the slot at the reset, this writes over that archive at once, and the
+   * host renames it after its title in the background.
    */
   private archiveConversation(): void {
     const host = this.getHost();
@@ -906,11 +907,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       return;
     }
     const messages = this.snapshot();
-    const first = this.transcript.find((m) => m.role === 'user' && !m.notice)?.text ?? '';
     void (async () => {
       try {
-        const { fileName } = await host.sessionTitle(first);
-        await host.sessionSave(fileName, messages, true);
+        await host.sessionArchive(messages);
       } catch (err) {
         this.log(`[chat] archive failed: ${String(err)}`);
         void vscode.window.showWarningMessage(

@@ -457,6 +457,12 @@ internal sealed record SavedMessageDto(string Role, string Content, string? Tool
 /// <summary>`session/save` — persists the adapter's transcript under <paramref name="Name"/>.</summary>
 internal sealed record SessionSaveParams(string Name, List<SavedMessageDto> Messages, bool Archive = false);
 
+/// <summary>`session/archive` argument: the conversation just cleared, as the adapter's screen held it.</summary>
+internal sealed record SessionArchiveParams(List<SavedMessageDto> Messages);
+
+/// <summary>`session/archive` answer: the name the archive is under until its title renames it.</summary>
+internal sealed record SessionArchiveResult(string Name);
+
 /// <summary>`session/load` / `session/delete` argument.</summary>
 internal sealed record SessionRefParams(string Name);
 
