@@ -584,12 +584,12 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             onToken?.Invoke(lastAnswer);
         }
 
-        var toolCalls   = toolAcc.Build();
         // Stopped mid-call: whatever its arguments parse into, it is not the call the model meant (the funnel refuses it).
-        if (argsLooping && toolCalls is not null)
-            toolCalls = toolCalls.Select(c => c with { Function = c.Function with { StoppedRepeating = true } }).ToList();
-        if (brokenShape is not null && toolCalls is not null)
-            toolCalls = toolCalls.Select(c => c with { Function = c.Function with { BrokenShape = brokenShape } }).ToList();
+        // ⚠ That call is the one being written when the stream stopped, never the calls complete before it: marked too, a
+        // read_file finished before a broken write_file was refused as unreadable, and the model rewrote a sound call.
+        var toolCalls   = toolAcc.Build(argsLooping || brokenShape is not null
+            ? f => f with { StoppedRepeating = f.StoppedRepeating || argsLooping, BrokenShape = brokenShape ?? f.BrokenShape }
+            : null);
         var contentText = contentBuilder.ToString();
         // The answer stopped at the length limit, not where the model meant to end: a caller that turns it
         // into an edit must not apply it (CodeActionPipeline.Finish).
@@ -663,11 +663,12 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
 
     /// <summary>Turns the accumulated streamed fragments into structured tool calls (arguments parsed as JSON).</summary>
     internal static List<ToolCallDto>? BuildToolCalls(
-        SortedDictionary<int, (string Name, System.Text.StringBuilder Args)> acc)
+        SortedDictionary<int, (string Name, System.Text.StringBuilder Args)> acc,
+        int? markedRank = null, Func<ToolCallFunction, ToolCallFunction>? mark = null)
     {
         if (acc.Count == 0) return null;
         var calls = new List<ToolCallDto>(acc.Count);
-        foreach (var (_, slot) in acc)
+        foreach (var (rank, slot) in acc)
         {
             // ⚠ A slot that never received a name cannot be executed — but dropping it in SILENCE
             // is the model asking for a tool and nothing happening, with no trace anywhere. When it
@@ -685,7 +686,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                     "unnamed-slot");
                 continue;
             }
-            calls.Add(new ToolCallDto(ToolCallArguments.Parse(slot.Name, slot.Args.ToString())));
+            var function = ToolCallArguments.Parse(slot.Name, slot.Args.ToString());
+            calls.Add(new ToolCallDto(rank == markedRank && mark is not null ? mark(function) : function));
         }
         return calls.Count > 0 ? calls : null;
     }
@@ -702,6 +704,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         private readonly Dictionary<int, int>    _slotByIndex = new();
         private readonly Dictionary<int, string> _idBySlot    = new();
         private readonly Dictionary<int, int>    _indexBySlot = new();
+        private int? _lastWritten;    // the slot the last fragment went to: the call being written
 
         /// <summary>No structured call has started streaming yet.</summary>
         public bool IsEmpty => _slots.Count == 0;
@@ -723,6 +726,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             if (!string.IsNullOrEmpty(name)) slot.Name = name;
             if (!string.IsNullOrEmpty(arguments)) slot.Args.Append(arguments);
             _slots[key] = slot;
+            _lastWritten = key;
         }
 
         /// <summary>
@@ -736,15 +740,21 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         /// edits to one file would land the wrong way round. Ordered by <c>index</c> first, then by
         /// arrival — which keeps the several-complete-calls-on-one-index case in its own order.
         /// </remarks>
-        public List<ToolCallDto>? Build()
+        /// <param name="markLastWritten">Applied to the call the last fragment went to — the one being written when the
+        /// stream stopped — and to no other.</param>
+        public List<ToolCallDto>? Build(Func<ToolCallFunction, ToolCallFunction>? markLastWritten = null)
         {
             var ordered = new SortedDictionary<int, (string Name, System.Text.StringBuilder Args)>();
             var rank    = 0;
+            int? markedRank = null;
             foreach (var key in _slots.Keys
                          .OrderBy(k => _indexBySlot.TryGetValue(k, out var i) ? i : int.MaxValue)
                          .ThenBy(k => k))
+            {
+                if (key == _lastWritten) markedRank = rank;
                 ordered[rank++] = _slots[key];
-            return BuildToolCalls(ordered);
+            }
+            return BuildToolCalls(ordered, markedRank, markLastWritten);
         }
     }
 
