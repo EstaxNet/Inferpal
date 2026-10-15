@@ -375,16 +375,15 @@ internal class GetDiagnosticsTool : ITool
 
     /// <summary>The solution or project under <paramref name="root"/> that is built — the working directory only when no
     /// workspace root is known: the shallowest, then the first in ordinal order (<see cref="WorkspaceScan.ShallowestFirst"/>).</summary>
+    /// <remarks>⚠ Both solution formats are ONE kind, compared together: searched one extension after the other, a
+    /// <c>.sln</c> buried in <c>tools/</c> won over the <c>.slnx</c> at the root — the build of a side project, read as
+    /// the workspace's verdict.</remarks>
     internal static string? FindProjectFile(string? root)
     {
         var start = SearchStart(root);
-        foreach (var ext in new[] { "*.sln", "*.slnx", "*.csproj" })
-        {
-            // WorkspaceScan: lazy + excluded dirs skipped — a stray .csproj under node_modules
-            // or bin/ must not become "the" project file.
-            var found = WorkspaceScan.ShallowestFirst(WorkspaceScan.EnumerateFiles(start, ext)).FirstOrDefault();
-            if (found is not null) return found;
-        }
-        return null;
+        // WorkspaceScan: lazy + excluded dirs skipped — a stray .csproj under node_modules
+        // or bin/ must not become "the" project file.
+        return WorkspaceScan.ShallowestFirst(WorkspaceScan.EnumerateFiles(start, "*").Where(SolutionFiles.IsSolution)).FirstOrDefault()
+            ?? WorkspaceScan.ShallowestFirst(WorkspaceScan.EnumerateFiles(start, "*.csproj")).FirstOrDefault();
     }
 }
