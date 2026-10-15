@@ -51,6 +51,10 @@ internal sealed partial class HostServer : IDisposable
     private string?                  _editorLocale;
     private HostSession?             _session;
     private CancellationTokenSource? _chatCts;
+    // Whether the slot is held by a turn (a reply, a command run for the user) rather than an operation of a moment — a
+    // settings save, an MCP restart: refused with "a reply is being generated, stop it", the user looked for a reply that
+    // did not exist.
+    private bool _slotHeldByTurn;
 
     /// <param name="providerFactory">Test seam; defaults to <see cref="InferenceProviderFactory.Create"/>.</param>
     /// <param name="configFactory">Test seam; defaults to <see cref="InferpalConfig.LoadOwnCopy"/> so tests
@@ -1555,10 +1559,14 @@ internal sealed partial class HostServer : IDisposable
         lock (_gate)
         {
             if (_chatCts is not null)
-                throw new InvalidOperationException(Strings.HostTurnBusy);
+                throw new InvalidOperationException(BusyText());
+            _slotHeldByTurn = true;
             return _chatCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         }
     }
+
+    /// <summary>Why the slot is refused, by what holds it. Called under <see cref="_gate"/>.</summary>
+    private string BusyText() => _slotHeldByTurn ? Strings.HostTurnBusy : Strings.HostOperationBusy;
 
     private void ReleaseTurn(CancellationTokenSource cts)
     {
@@ -1595,9 +1603,10 @@ internal sealed partial class HostServer : IDisposable
             if (_chatCts is not null)
             {
                 // The message reaches the user verbatim; the method name only speaks to diagnostics.
-                Diagnostics.Record("HostServer", $"'{operation}' refused: a chat turn is in flight");
-                throw new InvalidOperationException(Strings.HostTurnBusy);
+                Diagnostics.Record("HostServer", $"'{operation}' refused: the turn slot is held");
+                throw new InvalidOperationException(BusyText());
             }
+            _slotHeldByTurn = false;
             return _chatCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         }
     }

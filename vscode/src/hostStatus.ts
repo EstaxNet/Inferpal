@@ -49,7 +49,9 @@ export function hostErrorText(err: unknown): string {
  *  on a connection already closed (-32096). */
 const CONNECTION_LOST_CODES = new Set([-32097, -32096]);
 
-function isConnectionLost(err: unknown): boolean {
+/** The connection to the host was lost — never a refusal from a host that is still there (a reply or a settings save
+ *  holding its slot), whose open approval cards still wait for an answer. */
+export function isConnectionLost(err: unknown): boolean {
   const code = (err as { code?: unknown } | null)?.code;
   return typeof code === 'number' && CONNECTION_LOST_CODES.has(code);
 }

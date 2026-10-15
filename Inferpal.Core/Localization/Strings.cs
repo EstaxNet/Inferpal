@@ -1015,6 +1015,7 @@ internal static class Strings
     public static string ExportDuration          => Get(nameof(ExportDuration));
     /// <summary>The host's refusal while a turn holds the slot: VS Code shows it verbatim.</summary>
     public static string HostTurnBusy            => Get(nameof(HostTurnBusy));
+    public static string HostOperationBusy       => Get(nameof(HostOperationBusy));
 
     // ── Slash commands ─────────────────────────────────────────────────────────
     public static string SlashModelCurrent(string model) => Format(Get(nameof(SlashModelCurrent)), model);

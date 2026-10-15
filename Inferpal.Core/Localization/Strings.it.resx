@@ -376,6 +376,7 @@ Backup: {0}</value></data>
   <data name="ExportSuccess" xml:space="preserve"><value>Esportato in `{0}`</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>⚠ Esportazione fallita: {0}</value></data>
   <data name="HostTurnBusy" xml:space="preserve"><value>Una risposta è ancora in corso: interrompila e riprova.</value></data>
+  <data name="HostOperationBusy" xml:space="preserve"><value>Inferpal sta completando un'altra operazione (applicazione delle impostazioni, riavvio dei server MCP): riprova tra un istante.</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>Uso: `/model &lt;nome&gt;`  —  attuale: **{0}**</value></data>

@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
 import { t } from './i18n';
 import type { CancellationToken } from 'vscode-jsonrpc';
 import { HostClient } from './hostClient';
-import { hostErrorText, hostUnavailableMessage, promptOpenFolder } from './hostStatus';
+import { hostErrorText, hostUnavailableMessage, isConnectionLost, promptOpenFolder } from './hostStatus';
 import { mentionTokens, resolveMention } from './mentionPaths';
 import { followModelRouterSettings } from './modelRouterSettings';
 import { panelDiagnostics } from './editorBridge';
@@ -1937,8 +1937,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         // to the model as a prompt, which is both useless and confusing.
         this.log(`[chat] command/slash failed: ${String(err)}`);
         question.notice = true;
-        // The host may be gone: no one waits for an approval card this command opened any more.
-        this.dismissAllPending();
+        // The host is gone: no one waits for an approval card any more. A host that refused (its slot is held) still
+        // waits for the cards of what holds it — denied here, a settings save's or a turn's question was answered "no".
+        if (isConnectionLost(err)) {
+          this.dismissAllPending();
+        }
         this.finishTurn('', ChatViewProvider.errorText(err), false, 0);
         return;
       }
@@ -2259,8 +2262,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       });
       void this.pollBackendStatus(); // the turn may have loaded a model — refresh the VRAM badge
     } catch (err) {
-      // The request itself failed (host crashed or restarted): no one waits for these cards any more.
-      this.dismissAllPending();
+      // The request itself failed. Host gone (crashed or restarted): no one waits for these cards any more. Refused by a
+      // host still there: the cards belong to what holds its slot, and wait.
+      if (isConnectionLost(err)) {
+        this.dismissAllPending();
+      }
       const message = ChatViewProvider.errorText(err);
       // A REFUSED request (a turn already in flight, a host that died) never reached the host's history: its
       // question is a notice, so Regenerate does not take back the exchange before it and a restart does not replay it.
@@ -2361,8 +2367,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       try {
         await host.chatRollbackLastTurn();
       } catch (err) {
-        // Refused (a turn is in flight): resending now would stack the question on the old exchange.
+        // Refused (the host's slot is held): resending now would stack the question on the old exchange. Said — a click
+        // that does nothing reads as a broken button.
         this.log(`[chat] regenerate refused: ${String(err)}`);
+        void vscode.window.showWarningMessage(ChatViewProvider.errorText(err));
         return;
       }
     }
