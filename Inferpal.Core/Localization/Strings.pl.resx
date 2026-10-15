@@ -952,6 +952,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="TaskDuration" xml:space="preserve"><value>_Czas trwania: {0}._</value></data>
   <data name="TaskFailedNotice" xml:space="preserve"><value>Zadanie w tle `{0}` nie powiodło się — {1}. `/task {0}`, aby poznać szczegóły.</value></data>
   <data name="TaskCancelledNotice" xml:space="preserve"><value>Zadanie w tle `{0}` zostało anulowane — nic nie powstało.</value></data>
+  <data name="TaskCancelledWithProposals" xml:space="preserve"><value>Zadanie w tle `{0}` zostało zatrzymane — zachowano {1} {1:proponowaną zmianę|proponowane zmiany|proponowanych zmian}: `/task {0}` je wyświetli.</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>Zadanie w tle `{0}` zakończone — `/task {0}`, aby przeczytać raport.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Ogólne</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Akcje na kodzie</value></data>
@@ -1033,6 +1034,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="TaskProposalsApplyHint" xml:space="preserve"><value>Przejrzyj każdy diff, a potem zastosuj wybrane przez `/task apply {0} &lt;n&gt;`. Każda przechodzi zwykłe zatwierdzenie — z góry nic nie zostało zatwierdzone.</value></data>
   <data name="TaskSubmittedProposing" xml:space="preserve"><value>Zadanie **{0}** wysłane w trybie propozycji: `{1}`. Może wyrazić zmiany plików, ale nic nie zostanie zastosowane — przejrzysz każdy diff, gdy wróci raport.</value></data>
   <data name="TaskNoProposals" xml:space="preserve"><value>Zadanie **{0}** nie zaproponowało żadnej zmiany.</value></data>
+  <data name="TaskApplyWhileRunning" xml:space="preserve"><value>Zadanie **{0}** jeszcze się nie zakończyło: jego propozycje można zastosować po jego zakończeniu.</value></data>
   <data name="TaskProposalUnknown" xml:space="preserve"><value>Nie ma propozycji {0} — to zadanie ma ich {1}.</value></data>
   <data name="TaskProposalStale" xml:space="preserve"><value>Propozycja nie została zastosowana: **{0}** zmienił się od czasu, gdy zadanie go przeczytało, więc zapisany diff już go nie opisuje. Uruchom zadanie ponownie, zamiast nadpisywać pracę wykonaną w międzyczasie.</value></data>
   <data name="TaskProposalAlreadyApplied" xml:space="preserve"><value>Nie ma nic do zrobienia: **{0}** jest już dokładnie taki, jak chciała propozycja.</value></data>

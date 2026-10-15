@@ -952,6 +952,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="TaskDuration" xml:space="preserve"><value>_Durée : {0}._</value></data>
   <data name="TaskFailedNotice" xml:space="preserve"><value>La tâche de fond `{0}` a échoué — {1}. `/task {0}` pour le détail.</value></data>
   <data name="TaskCancelledNotice" xml:space="preserve"><value>La tâche de fond `{0}` a été annulée — rien n'a été produit.</value></data>
+  <data name="TaskCancelledWithProposals" xml:space="preserve"><value>La tâche de fond `{0}` a été arrêtée — {1} {1:changement proposé est gardé|changements proposés sont gardés} : `/task {0}` les liste.</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>La tâche de fond `{0}` est terminée — `/task {0}` pour lire son rapport.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Méta</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Actions de code</value></data>
@@ -1033,6 +1034,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="TaskProposalsApplyHint" xml:space="preserve"><value>Relisez chaque diff, puis appliquez ceux que vous voulez avec `/task apply {0} &lt;n&gt;`. Chacun passe par le prompt d'approbation habituel — rien n'a été approuvé d'avance.</value></data>
   <data name="TaskSubmittedProposing" xml:space="preserve"><value>Tâche **{0}** soumise en mode proposition : `{1}`. Elle peut exprimer des changements de fichiers, mais rien ne sera appliqué — vous relisez chaque diff au retour du rapport.</value></data>
   <data name="TaskNoProposals" xml:space="preserve"><value>La tâche **{0}** n'a proposé aucun changement.</value></data>
+  <data name="TaskApplyWhileRunning" xml:space="preserve"><value>La tâche **{0}** n'est pas encore terminée : ses propositions s'appliquent une fois qu'elle l'est.</value></data>
   <data name="TaskProposalUnknown" xml:space="preserve"><value>Pas de proposition {0} — cette tâche en a {1}.</value></data>
   <data name="TaskProposalStale" xml:space="preserve"><value>Proposition non appliquée : **{0}** a changé depuis que la tâche l'a lu, donc le diff enregistré ne le décrit plus. Relancez la tâche plutôt que d'écraser le travail fait entre-temps.</value></data>
   <data name="TaskProposalAlreadyApplied" xml:space="preserve"><value>Rien à faire : **{0}** est déjà exactement ce que la proposition voulait.</value></data>

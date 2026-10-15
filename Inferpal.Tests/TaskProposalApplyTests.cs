@@ -206,7 +206,8 @@ public class TaskProposalApplyTests
         Assert.Contains("/task apply", Run(queue, "/task apply").Message);
         Assert.Contains("/task apply", Run(queue, $"/task apply {id}").Message);
         Assert.Equal(Strings.TaskUnknown("t99"), Run(queue, "/task apply t99 1").Message);
-        Assert.Equal(Strings.TaskNoProposals(id), Run(queue, $"/task apply {id} 1").Message);
+        // Not finished yet (queued or running): it is still proposing, so not "proposed no change".
+        Assert.Equal(Strings.TaskApplyWhileRunning(id), Run(queue, $"/task apply {id} 1").Message);
     }
 
     [Fact]

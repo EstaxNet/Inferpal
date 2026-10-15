@@ -103,6 +103,9 @@ internal static class TaskCommandHandler
 
         if (queue.Get(args[1]) is not { } task) return new(Strings.TaskUnknown(args[1]));
 
+        // ⚠ Not "proposed no change": a running task is still proposing, and may replace a proposal it made.
+        if (!task.IsFinished) return new(Strings.TaskApplyWhileRunning(task.Id));
+
         var proposals = task.PendingProposals;
         if (proposals.Count == 0) return new(Strings.TaskNoProposals(task.Id));
 
@@ -205,7 +208,9 @@ internal static class TaskCommandHandler
     internal static string FinishedNotice(BackgroundTaskSnapshot task) => task.State switch
     {
         BackgroundTaskState.Failed    => Strings.TaskFailedNotice(task.Id, FirstLine(task.Error)),
-        BackgroundTaskState.Cancelled => Strings.TaskCancelledNotice(task.Id),
+        BackgroundTaskState.Cancelled => task.PendingProposals.Count > 0
+                                             ? Strings.TaskCancelledWithProposals(task.Id, task.PendingProposals.Count)
+                                             : Strings.TaskCancelledNotice(task.Id),
         _                             => Strings.TaskFinishedNotice(task.Id),
     };
 

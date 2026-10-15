@@ -956,6 +956,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="TaskDuration" xml:space="preserve"><value>_Ran for {0}._</value></data>
   <data name="TaskFailedNotice" xml:space="preserve"><value>Background task `{0}` failed — {1}. `/task {0}` for the details.</value></data>
   <data name="TaskCancelledNotice" xml:space="preserve"><value>Background task `{0}` was cancelled — nothing was produced.</value></data>
+  <data name="TaskCancelledWithProposals" xml:space="preserve"><value>Background task `{0}` was stopped — {1} proposed {1:change is|changes are} kept: `/task {0}` lists them.</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>Background task `{0}` finished — `/task {0}` to read its report.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Meta</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Code actions</value></data>
@@ -1037,6 +1038,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="TaskProposalsApplyHint" xml:space="preserve"><value>Review each diff, then apply the ones you want with `/task apply {0} &lt;n&gt;`. Each one goes through the usual approval prompt — nothing was approved in advance.</value></data>
   <data name="TaskSubmittedProposing" xml:space="preserve"><value>Task **{0}** submitted in proposal mode: `{1}`. It may express file changes, but nothing will be applied — you review each diff when the report comes back.</value></data>
   <data name="TaskNoProposals" xml:space="preserve"><value>Task **{0}** proposed no change.</value></data>
+  <data name="TaskApplyWhileRunning" xml:space="preserve"><value>Task **{0}** has not finished yet: its proposals can be applied once it ends.</value></data>
   <data name="TaskProposalUnknown" xml:space="preserve"><value>No proposal {0} — this task has {1}.</value></data>
   <data name="TaskProposalStale" xml:space="preserve"><value>Proposal not applied: **{0}** changed since the task looked at it, so the recorded diff no longer describes it. Re-run the task rather than overwrite work done in between.</value></data>
   <data name="TaskProposalAlreadyApplied" xml:space="preserve"><value>Nothing to do: **{0}** is already exactly what the proposal wanted.</value></data>

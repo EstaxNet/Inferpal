@@ -211,7 +211,7 @@ internal sealed class HostSession : IDisposable
     /// submitted the task — it therefore never sees the turn's cancellation token.
     /// </summary>
     public BackgroundTaskQueue GetOrCreateTasks(
-        BackgroundTaskQueue.TaskRunner runner, Action<BackgroundTaskSnapshot> onFinished)
+        BackgroundTaskQueue.ProposingTaskRunner runner, Action<BackgroundTaskSnapshot> onFinished)
     {
         if (_tasks is not null) return _tasks;
         // The session's root never changes (another folder is another host): given for the same rule as Visual Studio's.

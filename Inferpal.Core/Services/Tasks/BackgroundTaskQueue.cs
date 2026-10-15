@@ -72,6 +72,13 @@ internal sealed class BackgroundTaskQueue : IDisposable
     /// <param name="onStep">Progress sink, mirrored into the task's journal.</param>
     internal delegate Task<TaskRunOutcome> TaskRunner(BackgroundTaskSnapshot task, Action<string> onStep, CancellationToken ct);
 
+    /// <summary>Runs one task, recording what it proposes in <paramref name="recorder"/> — created by the queue for a task
+    /// in proposal mode (<c>null</c> otherwise), so what a stopped or failed task had proposed is kept.</summary>
+    /// <remarks>⚠ A recorder of the runner's own dies with the cancellation that ends the run: Stop would throw away every
+    /// change the task had proposed, under a notice saying nothing was produced.</remarks>
+    internal delegate Task<TaskRunOutcome> ProposingTaskRunner(
+        BackgroundTaskSnapshot task, Action<string> onStep, ProposalRecorder? recorder, CancellationToken ct);
+
     private sealed class Job
     {
         public required string Id;
@@ -81,6 +88,8 @@ internal sealed class BackgroundTaskQueue : IDisposable
         public string? WorkspaceRoot;
         public bool ProposeWrites;
         public IReadOnlyList<TaskProposal> Proposals = [];
+        /// <summary>Where a proposal-mode task records its changes while it runs.</summary>
+        public ProposalRecorder? Recorder;
 
         public BackgroundTaskState State = BackgroundTaskState.Queued;
         /// <summary>Set when Cancel targets a job the worker already picked but whose CTS may not
@@ -95,7 +104,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
         public CancellationTokenSource? Cts;
     }
 
-    private readonly TaskRunner                    _runner;
+    private readonly ProposingTaskRunner           _runner;
     private readonly Func<CancellationToken, Task> _waitForChatIdle;
     private readonly Func<DateTimeOffset>          _now;
     private readonly Func<string?>?                _currentRoot;
@@ -117,6 +126,17 @@ internal sealed class BackgroundTaskQueue : IDisposable
     /// <see cref="RunJobAsync"/>); <c>null</c> when the front-end's workspace cannot change.</param>
     internal BackgroundTaskQueue(
         TaskRunner runner,
+        Func<CancellationToken, Task>? waitForChatIdle = null,
+        Func<DateTimeOffset>? now = null,
+        Func<string?>? currentRoot = null)
+        : this((task, onStep, _, ct) => runner(task, onStep, ct), waitForChatIdle, now, currentRoot) { }
+
+    /// <param name="runner">Executes a task, recording its proposals in the recorder the queue hands it.</param>
+    /// <param name="waitForChatIdle">Yield point before taking the slot; defaults to the GPU scheduler.</param>
+    /// <param name="now">Clock, overridable so tests can assert timings.</param>
+    /// <param name="currentRoot">The workspace open now (see the other constructor).</param>
+    internal BackgroundTaskQueue(
+        ProposingTaskRunner runner,
         Func<CancellationToken, Task>? waitForChatIdle = null,
         Func<DateTimeOffset>? now = null,
         Func<string?>? currentRoot = null)
@@ -302,10 +322,11 @@ internal sealed class BackgroundTaskQueue : IDisposable
             {
                 job.State     = BackgroundTaskState.Running;
                 job.StartedAt = _now();
+                job.Recorder  = job.ProposeWrites ? new ProposalRecorder() : null;
                 started       = SnapshotLocked(job);
             }
 
-            var outcome = await _runner(started, step => AppendStep(job, step), cts.Token).ConfigureAwait(false);
+            var outcome = await _runner(started, step => AppendStep(job, step), job.Recorder, cts.Token).ConfigureAwait(false);
 
             if (outcome.Failure is { } failure)
                 Diagnostics.Record($"BackgroundTaskQueue({job.Id})", "The task's run failed: " + failure);
@@ -321,6 +342,8 @@ internal sealed class BackgroundTaskQueue : IDisposable
         {
             lock (_lock)
             {
+                // What it had proposed stays to review: stopping a task is not throwing its work away.
+                if (job.Recorder is { } recorder) job.Proposals = recorder.Proposals;
                 FinishLocked(job, BackgroundTaskState.Cancelled, null, null);
                 return SnapshotLocked(job);
             }
@@ -332,6 +355,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
             Diagnostics.Swallow($"BackgroundTaskQueue({job.Id})", ex);
             lock (_lock)
             {
+                if (job.Recorder is { } recorder) job.Proposals = recorder.Proposals;
                 FinishLocked(job, BackgroundTaskState.Failed, null, ex.Message);
                 return SnapshotLocked(job);
             }

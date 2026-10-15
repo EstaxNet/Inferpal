@@ -51,7 +51,7 @@ public partial class HostServerTests
         Assert.Null((await h.Client.InvokeAsync<RunningWorkResult>("host/runningWork")).Notice);   // reference arm
 
         var queue = h.Server.CurrentSession!.GetOrCreateTasks(
-            async (_, _, ct) => { await Task.Delay(Timeout.Infinite, ct); return BackgroundTaskQueue.TaskRunOutcome.Of(""); },
+            async (_, _, _, ct) => { await Task.Delay(Timeout.Infinite, ct); return BackgroundTaskQueue.TaskRunOutcome.Of(""); },
             _ => { });
         var id = queue.Submit("index the whole solution");
 

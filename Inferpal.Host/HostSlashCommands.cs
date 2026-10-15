@@ -65,12 +65,11 @@ internal sealed partial class HostServer
     /// user is typing.
     /// </summary>
     private BackgroundTaskQueue TaskQueue(HostSession s) => s.GetOrCreateTasks(
-        runner: async (task, onStep, ct) =>
+        runner: async (task, onStep, recorder, ct) =>
         {
             // Proposal mode: the editing tools become available, against a registry whose
-            // approval service records instead of granting — so the run still cannot write. Same
-            // construction as the VS view-model, because the mode must not differ between editors.
-            var recorder = task.ProposeWrites ? new ProposalRecorder() : null;
+            // approval service records (in the queue's recorder, kept if the task is stopped) instead of granting — so the
+            // run still cannot write. Same construction as the VS view-model, because the mode must not differ between editors.
             var registry = recorder is null
                 ? new BackgroundTaskToolRegistry(s.Tools, currentRoot: () => s.RootDir)
                 : new BackgroundTaskToolRegistry(s.Tools.WithApprovalService(recorder), recorder,

@@ -1547,6 +1547,8 @@ internal static class Strings
     public static string TaskFailedNotice(string id, string reason) => Format(Get(nameof(TaskFailedNotice)), id, reason);
     /// <summary>A cancelled background task: nothing was produced, and "finished" suggested otherwise.</summary>
     public static string TaskCancelledNotice(string id)      => Format(Get(nameof(TaskCancelledNotice)), id);
+    public static string TaskCancelledWithProposals(string id, int count) => Format(Get(nameof(TaskCancelledWithProposals)), id, count);
+    public static string TaskApplyWhileRunning(string id)    => Format(Get(nameof(TaskApplyWhileRunning)), id);
 
     // ── Inline diff preview ─────────────────────────────────────────────────────
     public static string CodeActionPreviewShown              => Get(nameof(CodeActionPreviewShown));

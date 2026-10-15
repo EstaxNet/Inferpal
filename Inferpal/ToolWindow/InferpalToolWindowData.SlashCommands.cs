@@ -443,7 +443,7 @@ internal partial class InferpalToolWindowData
     {
         if (_backgroundTasks is not null) return _backgroundTasks;
 
-        _backgroundTasks = new BackgroundTaskQueue(async (task, onStep, taskCt) =>
+        _backgroundTasks = new BackgroundTaskQueue(async (task, onStep, recorder, taskCt) =>
         {
             // Snapshot the layered system prompt at start time, as a chat turn would — read on
             // the VM context: _history is replaced wholesale there (ClearAsync/restore), and this
@@ -454,8 +454,8 @@ internal partial class InferpalToolWindowData
                     ? _history[0].Content : null);
 
             // Proposal mode: the editing tools become available, but against a registry whose
-            // approval service records instead of granting — so the run still cannot write anything.
-            var recorder = task.ProposeWrites ? new Services.Tasks.ProposalRecorder() : null;
+            // approval service records (in the queue's recorder, kept if the task is stopped) instead of granting — so the
+            // run still cannot write anything.
             var registry = recorder is null
                 ? new BackgroundTaskToolRegistry(_tools, currentRoot: () => _indexService.RootDir)
                 : new BackgroundTaskToolRegistry(_tools.WithApprovalService(recorder), recorder,

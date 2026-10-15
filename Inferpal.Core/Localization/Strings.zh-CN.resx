@@ -952,6 +952,7 @@
   <data name="TaskDuration" xml:space="preserve"><value>_耗时：{0}。_</value></data>
   <data name="TaskFailedNotice" xml:space="preserve"><value>后台任务 `{0}` 失败 — {1}。使用 `/task {0}` 查看详情。</value></data>
   <data name="TaskCancelledNotice" xml:space="preserve"><value>后台任务 `{0}` 已取消 — 未产生任何结果。</value></data>
+  <data name="TaskCancelledWithProposals" xml:space="preserve"><value>后台任务 `{0}` 已停止 — 已提出的 {1} 项更改已保留：使用 `/task {0}` 查看。</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>后台任务 `{0}` 已完成 —— 使用 `/task {0}` 查看报告。</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>常规</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>代码操作</value></data>
@@ -1033,6 +1034,7 @@
   <data name="TaskProposalsApplyHint" xml:space="preserve"><value>逐一查看差异，然后用 `/task apply {0} &lt;n&gt;` 应用你想要的更改。每一项都会经过通常的审批提示 —— 没有任何内容被预先批准。</value></data>
   <data name="TaskSubmittedProposing" xml:space="preserve"><value>任务 **{0}** 已以提议模式提交：`{1}`。它可以表达文件更改，但不会应用任何内容 —— 报告返回时由你逐一查看差异。</value></data>
   <data name="TaskNoProposals" xml:space="preserve"><value>任务 **{0}** 没有提出任何更改。</value></data>
+  <data name="TaskApplyWhileRunning" xml:space="preserve"><value>任务 **{0}** 尚未结束：其提议可在任务结束后应用。</value></data>
   <data name="TaskProposalUnknown" xml:space="preserve"><value>没有第 {0} 项提议 —— 该任务共有 {1} 项。</value></data>
   <data name="TaskProposalStale" xml:space="preserve"><value>提议未应用：自任务读取以来 **{0}** 已发生变化，记录的差异不再适用。请重新运行任务，而不要覆盖期间完成的工作。</value></data>
   <data name="TaskProposalAlreadyApplied" xml:space="preserve"><value>无需操作：**{0}** 已经正是提议想要的样子。</value></data>

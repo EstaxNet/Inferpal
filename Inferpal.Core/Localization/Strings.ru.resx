@@ -952,6 +952,7 @@
   <data name="TaskDuration" xml:space="preserve"><value>_Длительность: {0}._</value></data>
   <data name="TaskFailedNotice" xml:space="preserve"><value>Фоновая задача `{0}` завершилась ошибкой — {1}. `/task {0}` — подробности.</value></data>
   <data name="TaskCancelledNotice" xml:space="preserve"><value>Фоновая задача `{0}` отменена — результата нет.</value></data>
+  <data name="TaskCancelledWithProposals" xml:space="preserve"><value>Фоновая задача `{0}` остановлена — {1} {1:предложенное изменение сохранено|предложенных изменения сохранены|предложенных изменений сохранено}: `/task {0}` покажет их.</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>Фоновая задача `{0}` завершена — `/task {0}`, чтобы прочитать отчёт.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Общее</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Действия с кодом</value></data>
@@ -1033,6 +1034,7 @@
   <data name="TaskProposalsApplyHint" xml:space="preserve"><value>Просмотрите каждый diff и примените нужные через `/task apply {0} &lt;n&gt;`. Каждое проходит обычное подтверждение — заранее ничего не одобрялось.</value></data>
   <data name="TaskSubmittedProposing" xml:space="preserve"><value>Задача **{0}** отправлена в режиме предложений: `{1}`. Она может выразить изменения файлов, но ничего не будет применено — вы просмотрите каждый diff, когда вернётся отчёт.</value></data>
   <data name="TaskNoProposals" xml:space="preserve"><value>Задача **{0}** не предложила изменений.</value></data>
+  <data name="TaskApplyWhileRunning" xml:space="preserve"><value>Задача **{0}** ещё не завершена: её предложения можно применить, когда она завершится.</value></data>
   <data name="TaskProposalUnknown" xml:space="preserve"><value>Предложения {0} нет — у этой задачи их {1}.</value></data>
   <data name="TaskProposalStale" xml:space="preserve"><value>Предложение не применено: **{0}** изменился с тех пор, как задача его прочитала, и записанный diff больше его не описывает. Запустите задачу заново, а не перезаписывайте сделанную за это время работу.</value></data>
   <data name="TaskProposalAlreadyApplied" xml:space="preserve"><value>Делать нечего: **{0}** уже точно такой, каким его хотело предложение.</value></data>

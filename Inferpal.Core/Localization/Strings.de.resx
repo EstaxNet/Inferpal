@@ -952,6 +952,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="TaskDuration" xml:space="preserve"><value>_Dauer: {0}._</value></data>
   <data name="TaskFailedNotice" xml:space="preserve"><value>Hintergrundaufgabe `{0}` fehlgeschlagen — {1}. `/task {0}` für die Details.</value></data>
   <data name="TaskCancelledNotice" xml:space="preserve"><value>Hintergrundaufgabe `{0}` wurde abgebrochen — es wurde nichts erzeugt.</value></data>
+  <data name="TaskCancelledWithProposals" xml:space="preserve"><value>Die Hintergrundaufgabe `{0}` wurde gestoppt — {1} {1:vorgeschlagene Änderung bleibt|vorgeschlagene Änderungen bleiben} erhalten: `/task {0}` listet sie auf.</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>Hintergrundaufgabe `{0}` ist fertig — `/task {0}` zeigt den Bericht.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Meta</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Code-Aktionen</value></data>
@@ -1033,6 +1034,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="TaskProposalsApplyHint" xml:space="preserve"><value>Prüfen Sie jeden Diff und wenden Sie die gewünschten mit `/task apply {0} &lt;n&gt;` an. Jede läuft durch die übliche Bestätigung — im Voraus wurde nichts genehmigt.</value></data>
   <data name="TaskSubmittedProposing" xml:space="preserve"><value>Aufgabe **{0}** im Vorschlagsmodus eingereicht: `{1}`. Sie darf Dateiänderungen formulieren, angewendet wird nichts — Sie prüfen jeden Diff, wenn der Bericht zurückkommt.</value></data>
   <data name="TaskNoProposals" xml:space="preserve"><value>Aufgabe **{0}** hat keine Änderung vorgeschlagen.</value></data>
+  <data name="TaskApplyWhileRunning" xml:space="preserve"><value>Die Aufgabe **{0}** ist noch nicht beendet: Ihre Vorschläge lassen sich anwenden, sobald sie es ist.</value></data>
   <data name="TaskProposalUnknown" xml:space="preserve"><value>Kein Vorschlag {0} — diese Aufgabe hat {1}.</value></data>
   <data name="TaskProposalStale" xml:space="preserve"><value>Vorschlag nicht angewendet: **{0}** hat sich geändert, seit die Aufgabe die Datei gelesen hat; der aufgezeichnete Diff beschreibt sie nicht mehr. Führen Sie die Aufgabe erneut aus, statt zwischenzeitliche Arbeit zu überschreiben.</value></data>
   <data name="TaskProposalAlreadyApplied" xml:space="preserve"><value>Nichts zu tun: **{0}** ist bereits genau das, was der Vorschlag wollte.</value></data>

@@ -952,6 +952,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="TaskDuration" xml:space="preserve"><value>_Durata: {0}._</value></data>
   <data name="TaskFailedNotice" xml:space="preserve"><value>L'attività in background `{0}` non è riuscita — {1}. `/task {0}` per i dettagli.</value></data>
   <data name="TaskCancelledNotice" xml:space="preserve"><value>L'attività in background `{0}` è stata annullata — non è stato prodotto nulla.</value></data>
+  <data name="TaskCancelledWithProposals" xml:space="preserve"><value>L'attività in background `{0}` è stata interrotta — {1} {1:modifica proposta è conservata|modifiche proposte sono conservate}: `/task {0}` le elenca.</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>L'attività in background `{0}` è terminata — `/task {0}` per leggerne il rapporto.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Meta</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Azioni sul codice</value></data>
@@ -1033,6 +1034,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="TaskProposalsApplyHint" xml:space="preserve"><value>Rileggi ogni diff, poi applica quelli che vuoi con `/task apply {0} &lt;n&gt;`. Ognuno passa dalla solita approvazione: nulla è stato approvato in anticipo.</value></data>
   <data name="TaskSubmittedProposing" xml:space="preserve"><value>Attività **{0}** inviata in modalità proposta: `{1}`. Può esprimere modifiche ai file, ma nulla verrà applicato: rileggi ogni diff quando torna il report.</value></data>
   <data name="TaskNoProposals" xml:space="preserve"><value>L'attività **{0}** non ha proposto alcuna modifica.</value></data>
+  <data name="TaskApplyWhileRunning" xml:space="preserve"><value>L'attività **{0}** non è ancora terminata: le sue proposte si possono applicare quando termina.</value></data>
   <data name="TaskProposalUnknown" xml:space="preserve"><value>Nessuna proposta {0}: questa attività ne ha {1}.</value></data>
   <data name="TaskProposalStale" xml:space="preserve"><value>Proposta non applicata: **{0}** è cambiato da quando l'attività l'ha letto, quindi il diff registrato non lo descrive più. Rilancia l'attività invece di sovrascrivere il lavoro fatto nel frattempo.</value></data>
   <data name="TaskProposalAlreadyApplied" xml:space="preserve"><value>Nulla da fare: **{0}** è già esattamente ciò che la proposta voleva.</value></data>

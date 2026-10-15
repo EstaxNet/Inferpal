@@ -31,7 +31,7 @@ public partial class HostServerTests
         using var h = CreateHarness();
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
         var queue = h.Server.CurrentSession!.GetOrCreateTasks(
-            async (_, _, ct) => { await Task.Delay(Timeout.Infinite, ct); return BackgroundTaskQueue.TaskRunOutcome.Of(""); },
+            async (_, _, _, ct) => { await Task.Delay(Timeout.Infinite, ct); return BackgroundTaskQueue.TaskRunOutcome.Of(""); },
             _ => { });
         var id = queue.Submit("map the solution");
 

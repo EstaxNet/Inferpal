@@ -952,6 +952,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="TaskDuration" xml:space="preserve"><value>_所要時間: {0}_</value></data>
   <data name="TaskFailedNotice" xml:space="preserve"><value>バックグラウンドタスク `{0}` が失敗しました — {1}。詳細は `/task {0}`。</value></data>
   <data name="TaskCancelledNotice" xml:space="preserve"><value>バックグラウンドタスク `{0}` はキャンセルされました — 何も生成されていません。</value></data>
+  <data name="TaskCancelledWithProposals" xml:space="preserve"><value>バックグラウンド タスク `{0}` は停止されました — 提案済みの変更 {1} 件は保持されています: `/task {0}` で一覧を表示できます。</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>バックグラウンドタスク `{0}` が完了しました — `/task {0}` でレポートを確認できます。</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>全般</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>コードアクション</value></data>
@@ -1033,6 +1034,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="TaskProposalsApplyHint" xml:space="preserve"><value>各差分を確認し、適用したいものを `/task apply {0} &lt;n&gt;` で適用してください。いずれも通常の承認プロンプトを通ります — 事前に承認されたものはありません。</value></data>
   <data name="TaskSubmittedProposing" xml:space="preserve"><value>タスク **{0}** を提案モードで送信しました: `{1}`。ファイル変更を表現できますが、何も適用されません — レポートが返ってきたら各差分を確認してください。</value></data>
   <data name="TaskNoProposals" xml:space="preserve"><value>タスク **{0}** は変更を提案しませんでした。</value></data>
+  <data name="TaskApplyWhileRunning" xml:space="preserve"><value>タスク **{0}** はまだ終了していません: 提案は終了後に適用できます。</value></data>
   <data name="TaskProposalUnknown" xml:space="preserve"><value>提案 {0} はありません — このタスクには {1} 件あります。</value></data>
   <data name="TaskProposalStale" xml:space="preserve"><value>提案は適用されませんでした: タスクが読んだ後に **{0}** が変更されたため、記録された差分はもう当てはまりません。その間の作業を上書きせず、タスクを再実行してください。</value></data>
   <data name="TaskProposalAlreadyApplied" xml:space="preserve"><value>何もする必要はありません: **{0}** はすでに提案どおりの内容です。</value></data>
