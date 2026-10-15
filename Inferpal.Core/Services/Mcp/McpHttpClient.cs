@@ -164,6 +164,8 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
         }
         catch (OperationCanceledException) { throw; }
         catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden) { throw; }
+        // Nor is a sign-in that could not be renewed: the request never left, and that cause is the start's.
+        catch (OAuth.McpTokenRenewalException) { throw; }
         catch (Exception ex) { return McpModern.FromError(ex); }
     }
 

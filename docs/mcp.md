@@ -168,7 +168,9 @@ discovery, an issuer with a path included — Entra, Keycloak, Okta), **PKCE**, 
   reconnects.
 - Tokens are stored **encrypted** (Windows DPAPI per user, or the editor's secret store elsewhere) in `%AppData%/Inferpal/mcp-oauth.dat`
   — never in the config JSON. Access tokens are refreshed automatically; you only re-authorize when
-  the refresh token is rejected.
+  the refresh token is rejected. A provider that cannot answer at that moment (down, busy, unreachable) does not reject
+  it: the server's status says the sign-in could not be renewed, and the next call tries again. Visual Studio and VS
+  Code share the sign-in, so a token one of them renewed is used by the other.
 - If the authorization server does **not** support dynamic registration, set a pre-registered client
   in the server's `oauth` block:
 

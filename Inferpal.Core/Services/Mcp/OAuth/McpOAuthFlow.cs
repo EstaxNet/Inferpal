@@ -89,7 +89,14 @@ internal sealed class McpOAuthFlow
     }
 
     /// <summary>Exchanges the stored refresh token for a fresh access token. Returns the updated state,
-    /// or null when there is no refresh token or the server rejects it.</summary>
+    /// or null when there is no refresh token or the server REFUSES it.</summary>
+    /// <remarks>
+    /// ⚠ A refusal and a failure are two outcomes. Only a refusal (RFC 6749 §5.2: a 400, or a 401 for the client) means
+    /// "sign in again"; a renewal that did not happen — the authorization server down (5xx), busy (429), unreachable, slow
+    /// — leaves the sign-in valid. Read as a refusal, a five-minute outage of the provider demanded a full sign-in in the
+    /// browser, for every server it signs in.
+    /// </remarks>
+    /// <exception cref="McpTokenRenewalException">The renewal did not happen; the stored sign-in still stands.</exception>
     public async Task<McpOAuthState?> RefreshAsync(McpOAuthState state, CancellationToken ct)
     {
         if (string.IsNullOrEmpty(state.RefreshToken) || string.IsNullOrEmpty(state.TokenEndpoint)
@@ -112,9 +119,11 @@ internal sealed class McpOAuthFlow
             return BuildState(token, state.ClientId!, state.ClientSecret, state.TokenEndpoint!, state.Resource,
                               state.Scopes, state.Issuer, fallbackRefreshToken: state.RefreshToken);
         }
-        catch
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (TokenEndpointException refused) when (refused.IsRefusal) { return null; }
+        catch (Exception ex)
         {
-            return null;
+            throw new McpTokenRenewalException(Diagnostics.RootMessage(ex), ex);
         }
     }
 
@@ -214,7 +223,7 @@ internal sealed class McpOAuthFlow
         using var resp = await _http.PostAsync(endpoint, content, ct).ConfigureAwait(false);
         var json = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
         if (!resp.IsSuccessStatusCode)
-            throw new InvalidOperationException($"Token endpoint returned {(int)resp.StatusCode}: {json}");
+            throw new TokenEndpointException((int)resp.StatusCode, json);
 
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
@@ -313,3 +322,21 @@ internal sealed class McpOAuthFlow
 
     private sealed record TokenResponse(string AccessToken, string? RefreshToken, int? ExpiresIn);
 }
+
+/// <summary>The token endpoint answered with an error status.</summary>
+internal sealed class TokenEndpointException(int status, string body)
+    : InvalidOperationException($"Token endpoint returned {status}: {body}")
+{
+    public int Status { get; } = status;
+
+    /// <summary>The grant or the client was refused (RFC 6749 §5.2: 400, or 401 for a client that failed to
+    /// authenticate) — the only answer that means "sign in again".</summary>
+    public bool IsRefusal => Status is 400 or 401;
+}
+
+/// <summary>
+/// A sign-in could not be renewed NOW — the authorization server down, busy or unreachable — and still stands: a later
+/// call renews it. Never "sign in again".
+/// </summary>
+internal sealed class McpTokenRenewalException(string cause, Exception inner)
+    : InvalidOperationException($"the sign-in could not be renewed ({cause}); it is kept, and the next call tries again", inner);
