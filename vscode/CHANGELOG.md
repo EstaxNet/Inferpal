@@ -3,6 +3,24 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.7.10
+
+Fifteen fixes for VS Code, starting with your rules: on Windows, a file they protect can no longer be written under
+another spelling of its name.
+
+- **Your files and rules**: `.env::$DATA` or `memory.md.` is that very file for your `deny` rules and for the prompt
+  forced on the agent's own instructions, and a hidden stream of a file is refused; on Linux, two files whose names
+  differ only by case are no longer taken for one, and a file renamed to change only its case stays in the semantic
+  index; the agent's build check builds your root solution, not an older one in a sub-folder.
+- **Stopping and waiting**: Stop works from the moment the button shows, even while `/explain` sizes the code or an
+  `@file` is read; stopping an answer no longer leaves LM Studio's real context unknown for the next questions;
+  stopping a `/task propose` keeps what it proposed; and unloading a model waits for an answer in your other editor.
+- **Fixed**: the files the model is told are open are your tabs; the `@` picker no longer offers Inferpal's backup
+  copies or your Python environment, and lists your open tabs first; saved conversations are listed newest first;
+  dates written to files are the same on every machine; `/snippets copy` and `/snippets delete` say when your library
+  cannot be read; a repository's Continue MCP server connects with its headers and key; and a WebSocket MCP server says
+  why it does not run instead of failing.
+
 ## 1.7.9
 
 Forty-one fixes for VS Code, and the first of them are about what you approve.
