@@ -80,7 +80,7 @@ internal static class DebuggerStateSignal
         if (!SignalScope.HasVsInProcessPeer) return null;
 
         var snap = SignalFile.TryRead<DebuggerSnapshot>(FilePath);
-        return snap is not null && SignalFile.IsProcessAlive(snap.Pid) ? snap : null;
+        return snap is not null && SignalFile.WriterAlive(snap.Pid, snap.Ts) ? snap : null;
     }
 
     /// <summary>

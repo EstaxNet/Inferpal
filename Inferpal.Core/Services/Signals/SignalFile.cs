@@ -128,6 +128,19 @@ internal static class SignalFile
     }
 
     /// <summary>
+    /// Whether the process that wrote a signal stamped <paramref name="unixMs"/> is still the one running under
+    /// <paramref name="pid"/>: alive, and started before the stamp. The one question every channel asks of a writer.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Liveness alone is not enough: a devenv that crashed leaves its files, and the next devenv may get the same PID
+    /// — the files are even keyed by it. Read on liveness only, a dead instance's debugger snapshot, heartbeat or
+    /// "answering" marker passed for the new one's. Under the test seam the whole question is the seam's: it decides
+    /// without a real process table, and the stamps it is given come from a clock of its own.
+    /// </remarks>
+    internal static bool WriterAlive(int pid, long unixMs) =>
+        _isProcessAliveOverride is { } alive ? alive(pid) : IsProcessAlive(pid) && !PredatesProcess(pid, unixMs);
+
+    /// <summary>
     /// Whether a signal stamped <paramref name="unixMs"/> was written before process
     /// <paramref name="pid"/> started, i.e. by an earlier process that held the same PID. A missing
     /// stamp or an unreadable start time is never "older": liveness alone then decides.

@@ -176,18 +176,10 @@ internal static class InProcAliveSignal
         var p = SignalFile.TryRead<Payload>(FilePath);
         if (p is null || p.pid <= 0 || p.components is null || p.components.Length == 0) return null;
 
-        // The process that wrote it must be alive, otherwise this is a leftover.
-        if (!SignalFile.IsProcessAlive(p.pid)) return null;
-
-        // …and the heartbeat must be later than that process's start: a PID recycled by a new devenv
-        // which did not load the in-process half would read green without this bound.
-        // Unreachable (rights, platform) => do not degrade to red, liveness is enough.
-        try
-        {
-            var started = System.Diagnostics.Process.GetProcessById(p.pid).StartTime.ToUniversalTime();
-            if (DateTimeOffset.FromUnixTimeMilliseconds(p.ts).UtcDateTime < started) return null;
-        }
-        catch (Exception ex) { Diagnostics.Swallow("InProcAliveSignal.StartTime", ex); }
+        // The process that wrote it must be alive, and the heartbeat later than its start: a PID recycled by a new devenv
+        // which did not load the in-process half would read green otherwise. An unreadable start time leaves liveness
+        // to decide, never red.
+        if (!SignalFile.WriterAlive(p.pid, p.ts)) return null;
 
         return new State(p.pid, p.components, p.version, p.debuggerReason, p.fimReason);
     }

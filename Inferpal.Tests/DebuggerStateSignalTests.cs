@@ -68,6 +68,27 @@ public class DebuggerStateSignalTests : IDisposable
         Assert.Null(DebuggerStateSignal.TryRead());
     }
 
+    /// <summary>
+    /// ⚠ A snapshot written before the running process started is an EARLIER instance's: a devenv that crashed at a
+    /// breakpoint, whose PID the next devenv got. Read on liveness alone, it said "paused at Program.cs:42" to a session
+    /// that was not debugging at all.
+    /// </summary>
+    [Fact]
+    public void TryRead_ASnapshotFromBeforeTheWriterStarted_IsAnEarlierInstances()
+    {
+        SignalFile._isProcessAliveOverride = null;   // the real process table: this process is the writer
+        var started = new DateTimeOffset(System.Diagnostics.Process.GetCurrentProcess().StartTime.ToUniversalTime());
+        DebuggerStateSignal.Write(Snapshot() with
+        {
+            Pid = SignalFile.CurrentPid, Ts = started.AddMinutes(-1).ToUnixTimeMilliseconds(),
+        });
+        Assert.Null(DebuggerStateSignal.TryRead());
+
+        // Reference arm: written since the process started, it is that process's.
+        DebuggerStateSignal.Write(Snapshot() with { Pid = SignalFile.CurrentPid, Ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() });
+        Assert.NotNull(DebuggerStateSignal.TryRead());
+    }
+
     [Fact]
     public void Clear_RemovesFile()
     {

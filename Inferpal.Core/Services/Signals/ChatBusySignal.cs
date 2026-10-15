@@ -92,7 +92,7 @@ internal static class ChatBusySignal
             var state = SignalFile.TryRead<ChatBusyState>(path);
             if (state is null) continue;   // unreadable = no signal; never delete what we can't judge
 
-            if (!SignalFile.IsProcessAlive(state.Pid))
+            if (!SignalFile.WriterAlive(state.Pid, state.Ts))
             {
                 SignalFile.Delete(path);   // provably dead writer: safe cleanup, markers don't pile up
                 continue;
@@ -104,7 +104,7 @@ internal static class ChatBusySignal
 
         // Honour an old-version writer's unscoped marker (read-only — see the migration remark).
         var legacy = SignalFile.TryRead<ChatBusyState>(LegacyFilePath);
-        if (legacy is not null && SignalFile.IsProcessAlive(legacy.Pid) && IsFresh(legacy)) busy = true;
+        if (legacy is not null && SignalFile.WriterAlive(legacy.Pid, legacy.Ts) && IsFresh(legacy)) busy = true;
 
         return busy;
     }

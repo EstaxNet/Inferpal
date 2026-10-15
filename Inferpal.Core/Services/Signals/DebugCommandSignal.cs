@@ -89,7 +89,7 @@ internal static class DebugCommandSignal
             // new one holding the same PID without a driver share the file. Only the stamp against
             // the process start time separates them.
             if (marker is not null)
-                return SignalFile.IsProcessAlive(marker.Pid) && !SignalFile.PredatesProcess(marker.Pid, marker.Ts);
+                return SignalFile.WriterAlive(marker.Pid, marker.Ts);
             // Unreadable is not absent: a marker that is there but could not be read this instant (a
             // scan, a share lock) keeps the driver ready. Read as "gone", it failed the call at once or
             // made the wait give up — withdrawing a request the driver may already be executing. The
@@ -234,7 +234,7 @@ internal static class DebugCommandSignal
             // withdrawn by its caller's timeout.
             if (request is null) return null;
             SignalFile.Delete(RequestPath);
-            if (!SignalFile.IsProcessAlive(request.Pid)) return null;
+            if (!SignalFile.WriterAlive(request.Pid, request.Ts)) return null;
 
             var age = SignalFile.Now - DateTimeOffset.FromUnixTimeMilliseconds(request.Ts);
             return age >= TimeSpan.Zero && age < MaxAge ? request : null;

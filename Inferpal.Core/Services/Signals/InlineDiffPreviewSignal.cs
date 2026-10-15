@@ -113,7 +113,7 @@ internal static class InlineDiffPreviewSignal
             if (request is null) return null;
             if (!string.Equals(Path.GetFullPath(request.FilePath), Path.GetFullPath(filePath),
                                StringComparison.OrdinalIgnoreCase)) return null;
-            if (!SignalFile.IsProcessAlive(request.Pid)) return null;
+            if (!SignalFile.WriterAlive(request.Pid, request.Ts)) return null;
 
             var age = SignalFile.Now - DateTimeOffset.FromUnixTimeMilliseconds(request.Ts);
             return age >= TimeSpan.Zero && age < MaxAge ? request : null;
