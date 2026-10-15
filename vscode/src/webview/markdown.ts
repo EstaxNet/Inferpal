@@ -11,6 +11,24 @@ const md = new MarkdownIt({
   breaks: true,
 });
 
+/**
+ * A link the model wrote stays clickable only for a web address — as in Visual Studio (`MarkdownParser.WebUrl`).
+ * ⚠ markdown-it's own check refuses javascript:, vbscript:, file: and data: only: a `vscode://…` link, `ms-settings:`
+ * or any scheme a program registered stayed clickable, and its click launched that program.
+ */
+export function isWebLink(url: string): boolean {
+  return /^https?:\/\/[^\s]/i.test(url.trim());
+}
+
+/** Any other link keeps its words and loses its target, as in Visual Studio. */
+function disarmLinks(target: HTMLElement): void {
+  for (const a of [...target.querySelectorAll('a')]) {
+    if (!isWebLink(a.getAttribute('href') ?? '')) {
+      a.replaceWith(...a.childNodes);
+    }
+  }
+}
+
 // Reasoning tags (Qwen3/DeepSeek) are stripped before rendering, like the VS MarkdownParser: html is
 // disabled, so a tag left in place shows the chain of thought as text.
 export { stripThinkTags };
@@ -19,6 +37,7 @@ export { stripThinkTags };
  *  ⚠ Only an ANSWER loses its reasoning: a question may quote the tag, and shown stripped it read cut. */
 export function renderMarkdownInto(target: HTMLElement, text: string, stripReasoning = true): void {
   target.innerHTML = stripReasoning ? md.render(stripThinkTags(text)) : md.render(text);
+  disarmLinks(target);
   for (const pre of target.querySelectorAll('pre')) {
     decorateCodeBlock(pre as HTMLElement);
   }
