@@ -786,6 +786,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="UndoRunListHeader" xml:space="preserve"><value>이 세션에서 추적된 실행({0}):</value></data>
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — 파일 {1}개</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>이전 상태는 미리 저장되었습니다 — `/restore &lt;전체 경로&gt;` 로 파일을 복원할 수 있습니다.</value></data>
+  <data name="UndoRunRetryFailed" xml:space="preserve"><value>⚠ 표시된 파일은 되돌리지 못했습니다. 원인(예: 파일을 잡고 있는 프로그램)이 해결되면 `/undo-run`을 다시 입력하세요. 해당 파일만 다시 시도합니다.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ 마지막 실행을 취소함 — {0}개 복원, {1}개 삭제.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>최근 에이전트 실행의 타임라인(도구, 소요 시간, 파일)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>이 세션에는 도구 호출이 있는 에이전트 실행이 기록되어 있지 않습니다.</value></data>

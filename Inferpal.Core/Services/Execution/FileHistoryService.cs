@@ -704,7 +704,11 @@ internal class FileHistoryService
         var failed   = new List<string>();
         var savedFirst = 0;
 
-        foreach (var change in run.Changes)
+        // A retry after a failure: the files given back by an earlier undo are not touched again.
+        List<RunChange> pending;
+        lock (_runLock) pending = run.Changes.Where(c => !run.IsGivenBack(c.OriginalPath)).ToList();
+
+        foreach (var change in pending)
         {
             ct.ThrowIfCancellationRequested();
             try
@@ -763,7 +767,13 @@ internal class FileHistoryService
             catch { failed.Add(change.OriginalPath); }
         }
 
-        lock (_runLock) run.MarkUndone();
+        lock (_runLock)
+        {
+            // Given back: restored, deleted, or a created file already gone — everything that did not fail.
+            foreach (var change in pending.Where(c => !failed.Contains(c.OriginalPath, PathComparer.Default)))
+                run.NoteGivenBack(change.OriginalPath);
+            if (failed.Count == 0) run.MarkUndone();
+        }
         return new RunUndoResult(restored, deleted, failed, savedFirst);
     }
 
@@ -901,6 +911,15 @@ internal sealed class HistoryRun
     public bool Undone { get; private set; }
 
     public void MarkUndone() => Undone = true;
+
+    // Files an undo has given back. ⚠ A run is undone only once all of them are: marked undone after a failure (a file
+    // held by another program, say), the run answered "already undone" to the retry — the failed files never came back.
+    // And a retry tries those only: never again a file given back, which may have been edited since.
+    private readonly HashSet<string> _givenBack = new(PathComparer.Default);
+
+    public bool IsGivenBack(string path) => _givenBack.Contains(path);
+
+    public void NoteGivenBack(string path) => _givenBack.Add(path);
 
     // Of a file read in part (a page, a range): the lines seen so far, promoted to _read once they cover the file.
     private readonly Dictionary<string, LinesSeen> _partial = new(PathComparer.Default);

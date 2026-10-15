@@ -786,6 +786,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="UndoRunListHeader" xml:space="preserve"><value>Verfolgte Läufe in dieser Sitzung ({0}):</value></data>
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} {1:Datei|Dateien}</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Ihr vorheriger Zustand wurde vorher gesichert — `/restore &lt;vollständiger Pfad&gt;` stellt eine Datei wieder her.</value></data>
+  <data name="UndoRunRetryFailed" xml:space="preserve"><value>Die mit ⚠ markierten Dateien wurden nicht zurückgegeben. Geben Sie `/undo-run` erneut ein, sobald die Ursache behoben ist (etwa ein Programm, das die Datei geöffnet hält): Nur diese Dateien werden erneut versucht.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Letzter Lauf rückgängig gemacht — {0} {0:Datei|Dateien} wiederhergestellt, {1} gelöscht.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Zeitachse des letzten Agent-Laufs (Tools, Dauern, Dateien)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>In dieser Sitzung wurde kein Agent-Lauf mit Tool-Aufrufen aufgezeichnet.</value></data>

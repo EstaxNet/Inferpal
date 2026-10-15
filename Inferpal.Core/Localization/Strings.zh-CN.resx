@@ -786,6 +786,7 @@
   <data name="UndoRunListHeader" xml:space="preserve"><value>本会话跟踪的运行（{0}）：</value></data>
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} 个文件</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>它们之前的状态已先行保存 — 使用 `/restore &lt;完整路径&gt;` 可恢复文件。</value></data>
+  <data name="UndoRunRetryFailed" xml:space="preserve"><value>标有 ⚠ 的文件未能还原。待原因消除后（例如占用该文件的程序），请再次输入 `/undo-run`：只会重试这些文件。</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ 已撤销上一次运行 — 恢复 {0} 个文件，删除 {1} 个。</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>最近一次代理运行的时间线（工具、耗时、文件）</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>本会话中没有记录包含工具调用的代理运行。</value></data>

@@ -790,6 +790,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="UndoRunListHeader" xml:space="preserve"><value>Runs suivis cette session ({0}) :</value></data>
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} {1:fichier|fichiers}</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Leur état précédent a été sauvegardé avant — `/restore &lt;chemin complet&gt;` rend un fichier.</value></data>
+  <data name="UndoRunRetryFailed" xml:space="preserve"><value>Les fichiers marqués ⚠ n'ont pas été rendus. Retapez `/undo-run` une fois leur cause levée (un programme qui tient le fichier, par exemple) : seuls ces fichiers seront retentés.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Dernier run annulé — {0} {0:fichier restauré|fichiers restaurés}, {1} {1:supprimé|supprimés}.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Chronologie du dernier run agent (outils, durées, fichiers)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>Aucun run agent avec appels d'outils enregistré dans cette session.</value></data>

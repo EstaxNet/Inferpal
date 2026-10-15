@@ -69,6 +69,8 @@ internal static class UndoRunCommandHandler
         foreach (var f in result.Restored) sb.AppendLine($"  ↩ {Relativise(f, root)}");
         foreach (var f in result.Deleted)  sb.AppendLine($"  🗑 {Relativise(f, root)}");
         foreach (var f in result.Failed)   sb.AppendLine($"  ⚠ {Relativise(f, root)}");
+        // The run stays to undo while a file failed: said, or the retry that brings it back is never tried.
+        if (result.Failed.Count > 0) sb.AppendLine(Strings.UndoRunRetryFailed);
         return sb.ToString().TrimEnd();
     }
 

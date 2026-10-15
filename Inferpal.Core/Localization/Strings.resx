@@ -794,6 +794,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="UndoRunListHeader" xml:space="preserve"><value>Change-tracking runs this session ({0}):</value></data>
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} {1:file|files}</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Their previous state was saved first — `/restore &lt;full path&gt;` brings a file back.</value></data>
+  <data name="UndoRunRetryFailed" xml:space="preserve"><value>The files marked ⚠ were not given back. Type `/undo-run` again once their cause is gone (a program holding the file, say): it tries those files only.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Last run undone — {0} {0:file|files} restored, {1} deleted.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Timeline of the last agent run (tools, durations, files)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>No agent run with tool calls recorded in this session.</value></data>

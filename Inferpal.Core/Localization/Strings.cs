@@ -1383,6 +1383,7 @@ internal static class Strings
     public static string UndoRunListEntry(string time, int files) => Format(Get(nameof(UndoRunListEntry)), time, files);
     public static string UndoRunResult(int restored, int deleted) => Format(Get(nameof(UndoRunResult)), restored, deleted);
     public static string UndoRunSavedFirst                    => Get(nameof(UndoRunSavedFirst));
+    public static string UndoRunRetryFailed                   => Get(nameof(UndoRunRetryFailed));
 
     // ── /replay command ─────────────────────────────────────────────────────────
     public static string SlashHintReplay                     => Get(nameof(SlashHintReplay));

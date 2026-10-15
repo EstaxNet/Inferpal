@@ -786,6 +786,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="UndoRunListHeader" xml:space="preserve"><value>Run tracciati in questa sessione ({0}):</value></data>
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} {1:file|file}</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Il loro stato precedente è stato salvato prima — `/restore &lt;percorso completo&gt;` ripristina un file.</value></data>
+  <data name="UndoRunRetryFailed" xml:space="preserve"><value>I file contrassegnati con ⚠ non sono stati ripristinati. Digita di nuovo `/undo-run` quando la causa è stata rimossa (ad esempio un programma che tiene aperto il file): verranno ritentati solo quei file.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Ultimo run annullato — {0} {0:file ripristinato|file ripristinati}, {1} {1:eliminato|eliminati}.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Cronologia dell'ultimo run dell'agente (strumenti, durate, file)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>Nessun run dell'agente con chiamate a strumenti registrato in questa sessione.</value></data>

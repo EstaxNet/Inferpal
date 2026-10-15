@@ -786,6 +786,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="UndoRunListHeader" xml:space="preserve"><value>このセッションで追跡された実行（{0}）：</value></data>
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} 個のファイル</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>直前の状態は先に保存されています — `/restore &lt;フルパス&gt;` でファイルを復元できます。</value></data>
+  <data name="UndoRunRetryFailed" xml:space="preserve"><value>⚠ の付いたファイルは元に戻せませんでした。原因 (ファイルを開いているプログラムなど) を取り除いてから、もう一度 `/undo-run` と入力してください。再試行されるのはこれらのファイルだけです。</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ 直近の実行を取り消しました — 復元 {0} 件、削除 {1} 件。</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>直近のエージェント実行のタイムライン（ツール・所要時間・ファイル）</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>このセッションにはツール呼び出しのあるエージェント実行が記録されていません。</value></data>
