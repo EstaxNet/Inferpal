@@ -1553,6 +1553,10 @@ internal sealed partial class HostServer : IDisposable
             s.PersonaLanguage = language;
     }
 
+    /// <summary>The files the editor's tabs show: what <c>get_open_editors</c> and the workspace block call open.</summary>
+    [JsonRpcMethod("editor/didChangeTabs", UseSingleObjectParameterDeserialization = true)]
+    public void DidChangeTabs(TabsParams p) => Session().Editor.SetOpenTabs(p.Paths ?? []);
+
     // ── Internals ──────────────────────────────────────────────────────────────
 
     private HostSession Session()

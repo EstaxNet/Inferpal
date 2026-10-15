@@ -41,10 +41,16 @@ internal sealed class RpcEditorSurface : IEditorSurface
 
     public string? ActiveDocumentPath => _hasEditor ? _activePath : null;
 
-    // The adapter mirrors every open document into the overlay (didOpen/didClose),
-    // so the overlay's key set IS the open-editors list — no RPC round-trip needed.
-    // Without an editor the overlay holds only the files found unsaved, which are no list of open editors.
-    public IReadOnlyList<string> GetOpenDocumentPaths() => _hasEditor ? _overlay.Paths : [];
+    private volatile IReadOnlyList<string>? _tabs;
+
+    /// <summary>Updated from the adapter's `editor/didChangeTabs` notification: the files its tabs show.</summary>
+    public void SetOpenTabs(IReadOnlyList<string> paths) => _tabs = paths;
+
+    // ⚠ The open editors are the TABS the adapter reports. The overlay is no such list: VS Code's text documents include
+    // the ones it loaded without a tab — a file an @-mention read, one a language server opened, a closed tab's buffer
+    // kept for a while — and the model was told they were open. The overlay stands in only for an adapter that does
+    // not report its tabs. Without an editor the overlay holds only the files found unsaved, which are no list at all.
+    public IReadOnlyList<string> GetOpenDocumentPaths() => !_hasEditor ? [] : _tabs ?? _overlay.Paths;
 
     public async Task<ActiveDocument?> GetActiveDocumentAsync(CancellationToken ct)
     {

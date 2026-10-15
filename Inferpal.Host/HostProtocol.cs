@@ -151,6 +151,9 @@ internal sealed record FimSettingsResult(bool Enabled, int DebounceMs);
 /// <param name="Dirty">Whether the buffer has unsaved changes; absent means it does.</param>
 internal sealed record DocumentParams(string Path, string? Text = null, bool? Dirty = null);
 
+/// <summary>`editor/didChangeTabs`: the files the editor's tabs show, every group, in order.</summary>
+internal sealed record TabsParams(IReadOnlyList<string>? Paths);
+
 /// <summary>Reverse `editor/activeDocument` answer from the adapter.</summary>
 internal sealed record ActiveDocumentDto(string? Path, string? Text);
 

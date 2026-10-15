@@ -741,6 +741,11 @@ export class HostClient {
     this.conn?.sendNotification('editor/didChangeActiveDocument', { path: path ?? '' });
   }
 
+  /** The files the tabs show: the host's list of open editors. */
+  didChangeTabs(paths: string[]): void {
+    this.conn?.sendNotification('editor/didChangeTabs', { paths });
+  }
+
   // ── Internals ──────────────────────────────────────────────────────────────
 
   private connection(): rpc.MessageConnection {

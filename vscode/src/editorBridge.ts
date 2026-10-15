@@ -26,6 +26,28 @@ function portOf(uri: vscode.Uri): string {
   return port ?? (uri.scheme === 'https' ? '443' : uri.scheme === 'http' ? '80' : '');
 }
 
+/**
+ * The files the tabs show, every group, in order, once each: what the model is told is open. ⚠ Never
+ * `workspace.textDocuments`, which also holds the documents loaded without a tab — a file an @-mention read, one a
+ * language server opened, a closed tab's buffer kept for a while.
+ */
+function openTabPaths(): string[] {
+  const paths: string[] = [];
+  for (const group of vscode.window.tabGroups.all) {
+    for (const tab of group.tabs) {
+      const input = tab.input;
+      const uri = input instanceof vscode.TabInputText ? input.uri
+        : input instanceof vscode.TabInputTextDiff ? input.modified
+          : input instanceof vscode.TabInputNotebook ? input.uri
+            : undefined;
+      if (uri?.scheme === 'file' && !paths.includes(uri.fsPath)) {
+        paths.push(uri.fsPath);
+      }
+    }
+  }
+  return paths;
+}
+
 function isMirrorable(doc: vscode.TextDocument): boolean {
   return doc.uri.scheme === 'file' && Buffer.byteLength(doc.getText(), 'utf8') <= MAX_MIRRORED_BYTES;
 }
@@ -140,8 +162,11 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
     if (this.lastActive?.document.uri.scheme === 'file') {
       host.didChangeActiveDocument(this.lastActive.document.uri.fsPath);
     }
+    host.didChangeTabs(openTabPaths());
 
     this.disposables.push(
+      vscode.window.tabGroups.onDidChangeTabs(() => this.host?.didChangeTabs(openTabPaths())),
+      vscode.window.tabGroups.onDidChangeTabGroups(() => this.host?.didChangeTabs(openTabPaths())),
       vscode.window.onDidChangeActiveTextEditor((editor) => {
         if (!editor) {
           return; // webview/panel focus — keep the last real editor
