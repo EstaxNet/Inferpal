@@ -230,6 +230,22 @@ public class SnippetsCommandHandlerTests : IDisposable
         Assert.Equal(Strings.SnippetsUnreadable(_tempFile), result.Message);
     }
 
+    /// <summary>Copy and delete read the library the same way: an unreadable one is named, never "no snippet #n" — and
+    /// nothing is written over it.</summary>
+    [Theory]
+    [InlineData("copy")]
+    [InlineData("delete")]
+    public async Task CopyOrDelete_WhenTheFileCannotBeRead_SaysSo_RatherThanNoSuchSnippet(string sub)
+    {
+        File.WriteAllText(_tempFile, "{ not json at all");
+
+        var result = await SnippetsCommandHandler.HandleAsync(Cmd(sub, "1"), CancellationToken.None);
+
+        Assert.Equal(Strings.SnippetsUnreadable(_tempFile), result.Message);
+        Assert.Null(result.CopyToClipboard);
+        Assert.Equal("{ not json at all", File.ReadAllText(_tempFile));
+    }
+
     /// <summary>The other half: a genuinely empty library still says the ordinary thing.</summary>
     [Fact]
     public async Task List_WhenTheFileIsAbsent_StillSaysNoneSavedYet()

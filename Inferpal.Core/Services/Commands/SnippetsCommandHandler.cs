@@ -36,7 +36,10 @@ internal static class SnippetsCommandHandler
 
         if ((sub == "copy" || sub == "delete") && parts.Length == 3)
         {
-            var snippets = await SnippetStore.LoadAllAsync(ct);
+            // ⚠ Read as the listing reads: an unreadable library is not an empty one, and "no snippet #3" about a file
+            // holding a hundred sends the user looking for a snippet that is there.
+            var (snippets, unreadableLibrary) = await SnippetStore.ReadAllAsync(ct);
+            if (unreadableLibrary) return new(Strings.SnippetsUnreadable(SnippetStore.FilePath));
             // The listing names each snippet by its id; a number typed by hand is its 1-based position.
             var byId = snippets.FindIndex(s => string.Equals(s.Id, parts[2], StringComparison.OrdinalIgnoreCase));
             int i;
