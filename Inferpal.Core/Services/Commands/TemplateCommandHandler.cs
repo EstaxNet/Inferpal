@@ -22,6 +22,10 @@ internal static class TemplateCommandHandler
     {
         if (parts.Length < 2)
             return new TemplateCommandResult(SessionManager.FormatTemplateList());
+        // ⚠ One id, nothing after it: "/template code-review focus on security" applied the template — the conversation
+        // discarded — and dropped what was asked. Said, and nothing is discarded.
+        if (parts.Length > 2)
+            return new TemplateCommandResult(Strings.SlashUsage("/template <id>"));
 
         var id   = parts[1].ToLowerInvariant();
         var tmpl = SessionManager.FindTemplate(id);

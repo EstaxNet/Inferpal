@@ -371,6 +371,16 @@ public class SharedCommandHandlerTests
     }
 
     [Fact]
+    public void Template_WithWordsAfterTheId_DiscardsNothing_AndSaysTheForm()
+    {
+        // Applied, the conversation was discarded and what was typed after the id dropped.
+        var result = TemplateCommandHandler.Handle(["/template", "code-review", "focus", "on", "security"]);
+
+        Assert.Null(result.Apply);
+        Assert.Equal(Strings.SlashUsage("/template <id>"), result.Message);
+    }
+
+    [Fact]
     public void Template_KnownId_ReturnsThePresetToApply()
     {
         var result = TemplateCommandHandler.Handle(["/template", "BUG-HUNT"]);   // case-insensitive

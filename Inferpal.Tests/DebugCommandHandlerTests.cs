@@ -113,6 +113,35 @@ public class DebugCommandHandlerTests
         Assert.Contains("(disabled)", result.Message);
     }
 
+    /// <summary>
+    /// A hypothesis that begins with a keyword is a hypothesis: "/debug stop …" ended the user's debugging session
+    /// instead of investigating, and "status …" or "help …" dropped what was asked.
+    /// </summary>
+    [Theory]
+    [InlineData("/debug stop the crash when the list is empty")]
+    [InlineData("/debug status codes are wrong after a retry")]
+    [InlineData("/debug help me find why x is null")]
+    public async Task AHypothesisThatBeginsWithAKeyword_IsInvestigated(string typed)
+    {
+        var session = new FakeSession();
+
+        var result = await DebugCommandHandler.HandleAsync(session, Parts(typed), CancellationToken.None);
+
+        Assert.Null(result.Message);
+        Assert.Contains(typed["/debug ".Length..], result.SendAsPrompt, StringComparison.Ordinal);
+        Assert.Empty(session.Calls);                                          // nothing stopped, nothing read
+    }
+
+    [Fact]
+    public async Task TheKeywordsAlone_StillAnswer()
+    {
+        // Reference arm.
+        var session = new FakeSession();
+        Assert.Equal(Strings.DebugUsage, (await DebugCommandHandler.HandleAsync(session, Parts("/debug help"), CancellationToken.None)).Message);
+        Assert.Contains(Strings.DebugStatusHeader,
+                        (await DebugCommandHandler.HandleAsync(session, Parts("/debug status"), CancellationToken.None)).Message);
+    }
+
     [Fact]
     public async Task Stop_EndsTheSession()
     {

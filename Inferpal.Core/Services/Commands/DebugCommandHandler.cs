@@ -39,7 +39,10 @@ internal static class DebugCommandHandler
         if (session is null || !session.IsAvailable)
             return new(Strings.DebugUnavailable);
 
-        var sub = parts.Length >= 2 ? parts[1].Trim() : string.Empty;
+        // ⚠ A keyword is one only ALONE: "/debug stop the crash when the list is empty" is a hypothesis. Read as `stop`,
+        // it ended the user's debugging session instead of investigating; `status …` and `help …` dropped the hypothesis.
+        if (parts.Length > 2) return new(null, SendAsPrompt: BuildLoopPrompt(string.Join(" ", parts[1..])));
+        var sub = parts.Length == 2 ? parts[1].Trim() : string.Empty;
 
         // ⚠ A debugger that did not answer is said as such: read as an answer, it says "not paused" about a debugger
         // held by a dialog, and "stopped" for a stop that never reached it.
