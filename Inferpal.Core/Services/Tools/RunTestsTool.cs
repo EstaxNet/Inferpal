@@ -121,9 +121,45 @@ internal class RunTestsTool : ITool
             note = project is null ? null : PathDoesNotNarrow("dotnet", path, project);
             path = project;   // none found: dotnet's own error names what is missing
         }
+        else if (DotnetFolderTarget(path ?? workDir) is { } chosen)
+        {
+            note = chosen.Note;
+            path = chosen.Target;
+        }
 
         var (output, exitCode) = await RunProcessAsync("dotnet", string.Empty, workDir, budget, ct, DotnetTestArguments(path, filter));
         return note + ParseDotnetOutput(output, exitCode);
+    }
+
+    /// <summary>
+    /// What <c>dotnet test</c> runs for <paramref name="folder"/> when dotnet cannot pick it itself — the folder holding
+    /// no solution or project, or several — with the note saying so; <c>null</c> when the folder holds exactly one (dotnet
+    /// takes it), is not a folder, or has no .NET project anywhere below it (dotnet's own error says so).
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Run on such a folder, <c>dotnet test</c> answers MSB1003 or MSB1011 — nothing runs. The workspace root is that
+    /// folder whenever the solution lives in <c>src/</c> or two solutions sit side by side, and it is what <c>/tdd</c>
+    /// passes and what a call without <c>path</c> runs in: without this choice the loop answers "nothing ran" round after
+    /// round, in a repository full of tests. The choice is <c>get_diagnostics</c>'s (<see cref="GetDiagnosticsTool.FindProjectFile"/>)
+    /// and what it leaves out is named.
+    /// </remarks>
+    internal static (string Target, string Note)? DotnetFolderTarget(string folder)
+    {
+        if (!Directory.Exists(folder) || FilesIn(folder).Count(IsDotnetProject) == 1) return null;
+        if (GetDiagnosticsTool.FindProjectFile(folder) is not { } chosen) return null;
+
+        var solution = SolutionFiles.IsSolution(chosen);
+        var others = WorkspaceScan.ShallowestFirst(
+                (solution ? WorkspaceScan.EnumerateFiles(folder, "*").Where(SolutionFiles.IsSolution)
+                          : WorkspaceScan.EnumerateFiles(folder, "*.csproj"))
+                .Where(f => !PathComparer.Default.Equals(f, chosen)))
+            .Select(f => Path.GetRelativePath(folder, f).Replace('\\', '/'))
+            .ToList();
+        var notRun = others.Count == 0 ? "" :
+            $" Not run: {string.Join(", ", others.Take(5))}{(others.Count > 5 ? $" and {others.Count - 5} more" : "")}"
+            + " — pass 'path' to run one.";
+        return (chosen, $"{ClampedArgument.NotePrefix}{folder} holds no single solution or project, so this run used "
+                      + $"{Path.GetRelativePath(folder, chosen).Replace('\\', '/')}.{notRun}\n\n");
     }
 
     /// <summary>The <c>dotnet test</c> command line, one element per argument.</summary>

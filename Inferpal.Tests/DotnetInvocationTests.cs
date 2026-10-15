@@ -39,8 +39,10 @@ public sealed class DotnetInvocationTests : IDisposable
     [Fact]
     public async Task TwoProjectsInTheFolder_IsACommandLineError_NotRed()
     {
-        File.WriteAllText(Path.Combine(_root, "A.csproj"), Project);
-        File.WriteAllText(Path.Combine(_root, "B.csproj"), Project);
+        // F# projects: of a folder of C# ones the tool runs one itself (DotnetTestFolderTargetTests), and dotnet never
+        // sees the folder. MSB1011 is raised before any project loads — no F# compiler is needed to see it.
+        File.WriteAllText(Path.Combine(_root, "A.fsproj"), Project);
+        File.WriteAllText(Path.Combine(_root, "B.fsproj"), Project);
 
         var report = await RunAsync(new { runner = "dotnet" });
 
