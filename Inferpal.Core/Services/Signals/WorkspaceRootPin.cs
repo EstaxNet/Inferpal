@@ -36,9 +36,9 @@ internal static class WorkspaceRootPin
                 : (RootPinAction.Pin, reliableRoot);
 
         if (string.IsNullOrEmpty(activeSolutionDir)
-            || string.Equals(activeSolutionDir, currentRoot, StringComparison.OrdinalIgnoreCase))
+            || string.Equals(activeSolutionDir, currentRoot, PathComparer.Comparison))
             // Same root. RAG turned on after it was pinned never indexed it: now, not at the next restart.
-            return ragEnabled && !string.Equals(indexedRoot, currentRoot, StringComparison.OrdinalIgnoreCase)
+            return ragEnabled && !string.Equals(indexedRoot, currentRoot, PathComparer.Comparison)
                 ? (RootPinAction.Index, currentRoot)
                 : (RootPinAction.None, null);
 

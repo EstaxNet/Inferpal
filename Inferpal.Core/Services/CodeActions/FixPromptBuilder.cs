@@ -179,7 +179,7 @@ internal static class FixPromptBuilder
         {
             var path = m.Groups[1].Value.Trim();
             var line = int.TryParse(m.Groups[2].ValueSpan, out var n) ? n : 0;
-            var at   = sites.FindIndex(s => string.Equals(s.Path, path, StringComparison.OrdinalIgnoreCase));
+            var at   = sites.FindIndex(s => string.Equals(s.Path, path, PathComparer.Comparison));
             if (at >= 0) { sites[at].Lines.Add(line); continue; }
             sites.Add((path, [line]));
         }

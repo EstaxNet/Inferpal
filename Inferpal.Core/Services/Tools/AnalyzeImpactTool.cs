@@ -240,7 +240,7 @@ internal class AnalyzeImpactTool : ITool
         var transitive = new List<DependantFile>();
         if (depth >= 2 && layer1.Count > 0)
         {
-            var layer1Paths = layer1.Select(d => d.FilePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var layer1Paths = layer1.Select(d => d.FilePath).ToHashSet(PathComparer.Default);
             var (transitiveList, unreadable2) =
                 await ScanTransitiveDependantsAsync(layer1, allFiles, layer1Paths, filePath, contentCache, ct);
             transitive = transitiveList;

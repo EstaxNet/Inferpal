@@ -143,7 +143,7 @@ internal static class CheckReviewParser
         sb.Append(Strings.CheckFindingsHeader(review.Findings.Count)).Append("\n\n");
 
         var byFile = review.Findings
-            .GroupBy(f => f.File, StringComparer.OrdinalIgnoreCase)
+            .GroupBy(f => f.File, PathComparer.Default)
             .OrderBy(g => g.Min(f => (int)f.Severity))
             .ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
 

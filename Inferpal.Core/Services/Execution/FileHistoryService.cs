@@ -438,7 +438,7 @@ internal class FileHistoryService
     }
 
     // Snapshots a restore took of the state it was about to replace (in memory, per session).
-    private readonly HashSet<string> _restoreSnapshots = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _restoreSnapshots = new(PathComparer.Default);
     private readonly object _restoreLock = new();
 
     /// <summary>Records that <paramref name="snapshotPath"/> was taken by a restore, right before it.</summary>

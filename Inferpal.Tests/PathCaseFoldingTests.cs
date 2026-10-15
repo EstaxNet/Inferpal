@@ -155,6 +155,9 @@ public class PathCaseFoldingTests
     [InlineData("Inferpal.Core", "Services", "Lsp", "CSharpSemanticIndex.cs", "path.StartsWith(root")]
     [InlineData("Inferpal.Core", "Services", "WorkspaceScan.cs", "path.StartsWith(r,")]
     [InlineData("Inferpal.Core", "Services", "Tools", "GetOpenEditorsTool.cs", "string.Equals(path, activePath")]
+    [InlineData("Inferpal.Core", "Services", "Signals", "WorkspaceRootPin.cs", "string.Equals(activeSolutionDir, currentRoot")]
+    [InlineData("Inferpal.Core", "Services", "Signals", "WorkspaceRootPin.cs", "string.Equals(indexedRoot, currentRoot")]
+    [InlineData("Inferpal.Core", "Services", "CodeActions", "FixPromptBuilder.cs", "sites.FindIndex(s => string.Equals(s.Path, path")]
     public void APathIDENTITY_IsDecidedByTheSharedRule(string a, string b, string c, string d, string? site = null)
     {
         // The third InlineData carries only three path segments: the fourth then holds the site.
@@ -169,6 +172,33 @@ public class PathCaseFoldingTests
 
         var line = code[at..(code.IndexOf('\n', at) is var e && e > at ? e : code.Length)];
         Assert.Contains("PathComparer.Comparison", line, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The collections that hold path IDENTITIES, named one by one: the file-level assertion below is satisfied by any
+    /// one site of the file that uses the shared comparer, and every other collection of that file stayed folded.
+    /// </summary>
+    /// <remarks>
+    /// On Linux each one merged two files that differ by case: the index's pending set dropped the new name of a
+    /// case-only rename (the file left the index), <c>analyze_impact</c> skipped a real dependant in its second layer,
+    /// <c>/check</c> filed one file's findings under the other.
+    /// </remarks>
+    [Theory]
+    [InlineData("Inferpal.Core", "Services", "Tools", "AnalyzeImpactTool.cs", "layer1.Select(d => d.FilePath).ToHashSet(")]
+    [InlineData("Inferpal.Core", "Services", "Execution", "FileHistoryService.cs", "HashSet<string> _restoreSnapshots")]
+    [InlineData("Inferpal.Core", "Services", "Governance", "CheckReviewParser.cs", ".GroupBy(f => f.File,")]
+    [InlineData("Inferpal.Core", "Services", "Rag", "ProjectIndexService.cs", "_pendingRebuild = new(")]
+    [InlineData("Inferpal.Core", "Services", "Rag", "ProjectIndexService.cs", "_chunksByFile = new(")]
+    public void ACollectionOfPaths_IsKeyedByTheSharedRule(string a, string b, string c, string d, string site)
+    {
+        var code = ConventionCoverageTests.CodeOnly(Path.Combine(RepoRoot(), a, b, c, d));
+
+        // WITNESS: the collection this case targets still exists, in this shape.
+        var at = code.IndexOf(site, StringComparison.Ordinal);
+        Assert.True(at >= 0, $"\"{site}\" is nowhere to be found: this case would have measured nothing.");
+
+        var line = code[at..(code.IndexOf('\n', at) is var e && e > at ? e : code.Length)];
+        Assert.Contains("PathComparer.Default", line, StringComparison.Ordinal);
     }
 
     [Theory]
