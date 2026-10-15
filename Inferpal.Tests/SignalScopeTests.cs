@@ -61,6 +61,30 @@ public class SignalScopeTests : IDisposable
         Assert.Equal(_slnPath, ActiveSolutionSignal.TryReadSolutionPath());
     }
 
+    /// <summary>
+    /// ⚠ A crashed devenv's solution is not the next one's: the file is keyed by the devenv's PID, the next devenv may get
+    /// it, and the solution the file names still exists — existence alone let it pass for this instance's, the root pinned
+    /// there until a solution was opened.
+    /// </summary>
+    [Fact]
+    public void AnEarlierInstancesSolution_UnderTheSamePid_IsNotRead()
+    {
+        SignalFile._isProcessAliveOverride = null;   // the real process table: this process plays the devenv
+        var started = new DateTimeOffset(System.Diagnostics.Process.GetCurrentProcess().StartTime.ToUniversalTime());
+        ActiveSolutionSignal.Write(_slnPath);        // WITNESS: written by this process, it is read
+        Assert.Equal(_slnPath, ActiveSolutionSignal.TryReadSolutionPath());
+
+        File.WriteAllText(ActiveSolutionSignal.FilePath, JsonSerializer.Serialize(new
+        {
+            solutionPath = _slnPath, pid = SignalFile.CurrentPid, ts = started.AddMinutes(-1).ToUnixTimeMilliseconds(),
+        }));
+        Assert.Null(ActiveSolutionSignal.TryReadSolutionPath());
+
+        // Reference arm: a writer of an earlier version names no one — the file's existence decides, as before.
+        File.WriteAllText(ActiveSolutionSignal.FilePath, JsonSerializer.Serialize(new { solutionPath = _slnPath, ts = 1L }));
+        Assert.Equal(_slnPath, ActiveSolutionSignal.TryReadSolutionPath());
+    }
+
     [Fact]
     public void WithVsPeer_DebuggerState_IsRead()
     {

@@ -23,20 +23,25 @@ public sealed class LmStudioWindowProbeCancelTests
     [Fact]
     public async Task AStopDuringTheProbe_IsACancellation_AndTheNextQuestionReadsTheWindow()
     {
-        var calls = 0;
+        // Slow until Stop has come, then quick: under load the Stop can land before the first probe reaches the server,
+        // and a test keyed on "the first request" then slowed the SECOND question instead.
+        var slow = 1;
+        var askedAfterStop = 0;
         using var server = new LoopbackHttpServer(path =>
         {
             if (!path.StartsWith("/api/v1/models", StringComparison.Ordinal)) return null;
-            if (Interlocked.Increment(ref calls) == 1) Thread.Sleep(2_000);   // the first probe is slow: Stop comes first
+            if (Volatile.Read(ref slow) == 1) Thread.Sleep(2_000);
+            else Interlocked.Increment(ref askedAfterStop);
             return Loaded;
         });
         var client = new LmStudioClient(new InferpalConfig { Provider = "lmstudio", BaseUrl = server.BaseUrl });
 
         using var stop = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.GetLoadedContextWindowAsync("qwen/qwen3-27b", stop.Token));
+        Volatile.Write(ref slow, 0);
 
         Assert.Equal(8192, await client.GetLoadedContextWindowAsync("qwen/qwen3-27b", CancellationToken.None));
-        Assert.True(calls >= 2, "witness: the second question probed again");
+        Assert.True(askedAfterStop >= 1, "witness: the second question probed again, never a cached answer");
     }
 
     [Fact]

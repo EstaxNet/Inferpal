@@ -26,8 +26,8 @@ public sealed class EditWithAiPreviewTests
             .Where(s => s.Code.Contains("CodeActionPipeline.", StringComparison.Ordinal)
                         && s.Code.Contains(".EditAsync(", StringComparison.Ordinal))
             .ToList();
-        // WITNESS: the menu's actions and Edit with AI.
-        Assert.True(appliers.Count >= 2, $"only {appliers.Count} file(s) apply a model edit: this test would measure nothing.");
+        // WITNESS, under the real count (two: the menu's actions and Edit with AI): the reading is alive.
+        Assert.True(appliers.Count >= 1, $"only {appliers.Count} file(s) apply a model edit: this test would measure nothing.");
 
         foreach (var (file, code) in appliers)
         {

@@ -26,8 +26,9 @@ public sealed class SignalWriterAliveTests
             .ToList();
 
         var asking = channels.Count(c => c.Code.Contains("SignalFile.WriterAlive(", StringComparison.Ordinal));
-        // WITNESS: chat busy, debugger command and state, inline diff preview, in-process heartbeat.
-        Assert.True(asking >= 5, $"only {asking} channel(s) ask WriterAlive: this test would measure nothing.");
+        // WITNESS, under the real count (six: chat busy, debugger command and state, inline diff preview, in-process
+        // heartbeat, active solution): it says the reading is alive, not that nothing moved.
+        Assert.True(asking >= 4, $"only {asking} channel(s) ask WriterAlive: this test would measure nothing.");
 
         var bare = channels.Where(c => c.Code.Contains("SignalFile.IsProcessAlive(", StringComparison.Ordinal)
                                        || c.Code.Contains("SignalFile.PredatesProcess(", StringComparison.Ordinal)

@@ -27,7 +27,9 @@ namespace Inferpal.Services.Signals;
 /// <para>
 /// Unlike <see cref="BuildSignalFile"/> this signal carries no expiry: it represents persistent
 /// state (the open solution), not a one-shot event. Readers validate that the recorded path
-/// still exists on disk so a stale entry from a crashed session never wins.
+/// still exists on disk, and that its writer is the devenv running now (<see cref="SignalFile.WriterAlive"/>):
+/// ⚠ a crashed devenv's solution still exists, and the next devenv that gets its PID — the file is keyed by it — read it
+/// as its own until it opened one: the root pinned there, <c>/fix-build</c> building it.
 /// </para>
 /// </remarks>
 internal static class ActiveSolutionSignal
@@ -43,7 +45,7 @@ internal static class ActiveSolutionSignal
     internal static void Write(string solutionPath)
     {
         SignalFile.Write(FilePath,
-            new { solutionPath, ts = SignalFile.Now.ToUnixTimeMilliseconds() },
+            new { solutionPath, pid = SignalFile.CurrentPid, ts = SignalFile.Now.ToUnixTimeMilliseconds() },
             "ActiveSolutionSignal.Write");
     }
 
@@ -73,6 +75,11 @@ internal static class ActiveSolutionSignal
             if (!File.Exists(FilePath)) return null;
             var obj  = JsonSerializer.Deserialize<JsonElement>(File.ReadAllText(FilePath));
             var path = obj.TryGetProperty("solutionPath", out var p) ? p.GetString() : null;
+            // Its writer, when it said who it is (an older version did not): an earlier devenv's under the same PID is no
+            // answer about this one.
+            if (obj.TryGetProperty("pid", out var pid) && pid.TryGetInt32(out var writer)
+                && obj.TryGetProperty("ts", out var ts) && ts.TryGetInt64(out var stamp)
+                && !SignalFile.WriterAlive(writer, stamp)) return null;
             // Validate the recorded path still exists — guards against a stale file left behind
             // by a crashed VS session pointing at a moved/deleted solution.
             return !string.IsNullOrEmpty(path) && File.Exists(path) ? path : null;
