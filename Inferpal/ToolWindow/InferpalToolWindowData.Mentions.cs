@@ -441,14 +441,13 @@ internal partial class InferpalToolWindowData
     {
         try
         {
-            if (new FileInfo(filePath).Length > 512_000)
+            // The unsaved buffer, as read_file shows it: the file as the user sees it in the editor.
+            if (_tools.Overlay is { } overlay) await overlay.RefreshAsync(ct, [filePath]);
+            if (await MentionController.FileMentionTextAsync(filePath, _tools.Overlay, ct) is not { } content)
             {
                 await NotifyMentionAsync(Strings.AttachFileTooLarge);
                 return;
             }
-
-            // Decoded like the file an edit rewrites: an attached line is what the model quotes back into one.
-            var content = await Services.Tools.TextFileEncoding.ReadTextAsync(filePath, ct);
             var label   = Path.GetFileName(filePath);
 
             await RunOnVMContextAsync(() =>

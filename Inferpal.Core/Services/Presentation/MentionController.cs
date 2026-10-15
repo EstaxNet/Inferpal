@@ -299,6 +299,25 @@ internal static class MentionController
     public static string? CodeRefusal(Rag.ProjectIndexService index) =>
         index.ChunkCount == 0 ? Strings.RagIndexNotReady(index.Status) : null;
 
+    /// <summary>The largest file an <c>@file</c> attaches, in bytes on disk or characters in the editor.</summary>
+    internal const int MaxAttachedFileSize = 512_000;
+
+    /// <summary>
+    /// The text an <c>@file</c> attaches — the editor's unsaved buffer when it holds the file, as <c>read_file</c> reads
+    /// it, else the disk — or <c>null</c> when it is over <see cref="MaxAttachedFileSize"/>.
+    /// </summary>
+    /// <remarks>⚠ Read from the disk, a file with unsaved changes was attached as it was before them: the question was
+    /// about the code on the screen, the answer about the code saved.</remarks>
+    /// <param name="overlay">The editor's unsaved buffers, refreshed by the caller; null when the editor mirrors none.</param>
+    public static async Task<string?> FileMentionTextAsync(string path, Editor.OpenDocumentOverlay? overlay, CancellationToken ct)
+    {
+        if (overlay is not null && overlay.TryGetUnsaved(path, out var buffered))
+            return buffered.Length > MaxAttachedFileSize ? null : buffered;
+        if (new FileInfo(path).Length > MaxAttachedFileSize) return null;
+        // Decoded like the file an edit rewrites: an attached line is what the model quotes back into one.
+        return await Tools.TextFileEncoding.ReadTextAsync(path, ct).ConfigureAwait(false);
+    }
+
     /// <summary>
     /// Concatenates the text files under a folder (tree header + bodies) within a size budget.
     /// </summary>

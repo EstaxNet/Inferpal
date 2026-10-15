@@ -147,7 +147,9 @@ public sealed class LegacyEncodingEditTests : IDisposable
         foreach (var file in ConventionCoverageTests.ProjectSources("Inferpal"))
         {
             var code = ConventionCoverageTests.CodeOnly(file);
-            shared += System.Text.RegularExpressions.Regex.Matches(code, @"TextFileEncoding\.ReadText(Async)?\(").Count;
+            // The shared reader, or the Core's reader of an @file that goes through it (MentionController).
+            shared += System.Text.RegularExpressions.Regex.Matches(
+                code, @"TextFileEncoding\.ReadText(Async)?\(|MentionController\.FileMentionTextAsync\(").Count;
             foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(
                          code, @"\bFile\.(ReadAllText|ReadAllLines|ReadLines)(Async)?\("))
                 offenders.Add($"{Path.GetFileName(file)}: {m.Value}");
