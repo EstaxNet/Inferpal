@@ -73,7 +73,7 @@ Every persisted setting, its type, and default value.
 | `securityAlertsDisabled` | bool | `false` | Auto-approve the calls that would otherwise prompt (the built-in catastrophic-command denylist still applies). Shown inverted in the Settings window: *Ask me before changing files, running commands or going online* |
 | `permissionRules` | string | `""` | Allow/deny rules, one per line: `allow\|deny <tool\|*> <regex>` (see [Tools → Permission rules](tools.md)) |
 | `smartFixEnabled` | bool | `true` | Auto build/typecheck after `write_file`/`apply_diff`/`apply_edits` — .NET / TypeScript / Rust / Go (see workspace overlays) |
-| `inlineDiffPreviewEnabled` | bool | `true` | Inline diff preview for in-place code actions (`/fix` `/refactor` `/doc`): per-hunk ✓/✗ accept/reject in the editor (VS adornment; native Refactor Preview in VS Code) instead of an immediate rewrite. Falls back to direct apply when no renderer is available; orthogonal to tool approval |
+| `inlineDiffPreviewEnabled` | bool | `true` | Inline diff preview for in-place code actions (`/fix` `/refactor` `/doc`, and Visual Studio's *Edit with AI*): per-hunk ✓/✗ accept/reject in the editor (VS adornment; native Refactor Preview in VS Code) instead of an immediate rewrite. Falls back to direct apply when no renderer is available; orthogonal to tool approval |
 
 ### Inline completions
 

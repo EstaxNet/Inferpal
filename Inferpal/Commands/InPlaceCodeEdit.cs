@@ -98,38 +98,8 @@ internal static class InPlaceCodeEdit
             new TextPosition(view.Document, run.Start),
             new TextPosition(view.Document, run.End));
 
-        // Inline diff preview detour (comfort only — never a control): hand the whole-document
-        // rewrite to the in-process renderer; if no renderer claims it
-        // within the pickup window (view closed, MEF component absent), fall back to the direct
-        // apply below — the feature degrades to today's behaviour.
-        if ((config?.InlineDiffPreviewEnabled ?? false) && run.NewDocText != docText)
-        {
-            var filePath = TryGetLocalPath(view);
-            if (filePath is not null)
-            {
-                // The sentences leave WITH the request: the in-proc renderer has no Strings
-                // (net472, no reference to the Core) and without them its three failure exits are
-                // mute - a tick that does nothing, a keystroke that throws the rewrite away.
-                var notices = new Services.Signals.InlineDiffNotices(
-                    Strings.InlineDiffPreviewAbandoned,
-                    Strings.InlineDiffPreviewDrifted,
-                    Strings.InlineDiffPreviewApplyFailed);
-                var requestId = Services.Signals.InlineDiffPreviewSignal.WriteRequest(
-                    filePath, docText, run.NewDocText!, notices);
-                try
-                {
-                    if (await Services.Signals.InlineDiffPreviewSignal.WaitForPickupAsync(
-                            requestId, TimeSpan.FromSeconds(2), ct))
-                        return new(InPlaceEditOutcome.PreviewShown);
-                }
-                finally
-                {
-                    // Claimed requests were consumed by the renderer; unclaimed ones must not
-                    // linger and pop up on a later unrelated view of the same file.
-                    Services.Signals.InlineDiffPreviewSignal.DiscardRequest();
-                }
-            }
-        }
+        if (await TryPreviewAsync(config, view, docText, run.NewDocText!, ct))
+            return new(InPlaceEditOutcome.PreviewShown);
 
         try
         {
@@ -148,6 +118,40 @@ internal static class InPlaceCodeEdit
         {
             // EditAsync may fail if the document changed between snapshot and apply — user can retry.
             return new(InPlaceEditOutcome.Failed, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// The inline diff preview detour (comfort only — never a control), for every edit the model writes into the active
+    /// document: when the setting is on, the whole-document rewrite goes to the in-process renderer, where the user keeps
+    /// or rejects each change. <c>false</c> when the setting is off, nothing changes, or no renderer claims the request
+    /// within the pickup window (view closed, MEF component absent): the caller applies directly, as without the preview.
+    /// </summary>
+    /// <param name="docText">The document the rewrite was computed from: the renderer refuses it once the file drifted.</param>
+    internal static async Task<bool> TryPreviewAsync(
+        Inferpal.Config.InferpalConfig? config, ITextViewSnapshot view, string docText, string newDocText, CancellationToken ct)
+    {
+        if (!(config?.InlineDiffPreviewEnabled ?? false) || newDocText == docText) return false;
+        var filePath = TryGetLocalPath(view);
+        if (filePath is null) return false;
+
+        // The sentences leave WITH the request: the in-proc renderer has no Strings
+        // (net472, no reference to the Core) and without them its three failure exits are
+        // mute - a tick that does nothing, a keystroke that throws the rewrite away.
+        var notices = new Services.Signals.InlineDiffNotices(
+            Strings.InlineDiffPreviewAbandoned,
+            Strings.InlineDiffPreviewDrifted,
+            Strings.InlineDiffPreviewApplyFailed);
+        var requestId = Services.Signals.InlineDiffPreviewSignal.WriteRequest(filePath, docText, newDocText, notices);
+        try
+        {
+            return await Services.Signals.InlineDiffPreviewSignal.WaitForPickupAsync(requestId, TimeSpan.FromSeconds(2), ct);
+        }
+        finally
+        {
+            // Claimed requests were consumed by the renderer; unclaimed ones must not
+            // linger and pop up on a later unrelated view of the same file.
+            Services.Signals.InlineDiffPreviewSignal.DiscardRequest();
         }
     }
 

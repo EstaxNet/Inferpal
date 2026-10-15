@@ -55,6 +55,8 @@ internal class InlineEditSelectionCommand : Command
         // ── 2. Determine the code block to edit ───────────────────────────────
         string   originalCode;
         TextRange editRange;
+        int      editStart, editEnd;
+        var      docText = view.Document.Text.CopyToString();
 
         var sel = view.Selection;
         if (!sel.IsEmpty)
@@ -65,7 +67,6 @@ internal class InlineEditSelectionCommand : Command
             // selecting a method/block) yields an empty base indent: the reindenter then rebuilds
             // every continuation line one level too shallow, while the first line still looks
             // correct because EditAsync inserts it at the caret column.
-            var docText  = view.Document.Text.CopyToString();
             var selStart = sel.Start.Offset;
             var selEnd   = sel.End.Offset;
 
@@ -76,10 +77,10 @@ internal class InlineEditSelectionCommand : Command
 
             originalCode = docText[selStart..selEnd];
             editRange    = new TextRange(new TextPosition(view.Document, selStart), sel.End);
+            (editStart, editEnd) = (selStart, selEnd);
         }
         else
         {
-            var docText  = view.Document.Text.CopyToString();
             var caretOff = sel.InsertionPosition.Offset;
 
             var ls        = caretOff > 0 ? docText.LastIndexOf('\n', caretOff - 1) : -1;
@@ -93,6 +94,7 @@ internal class InlineEditSelectionCommand : Command
             editRange    = new TextRange(
                 new TextPosition(view.Document, lineStart),
                 new TextPosition(view.Document, lineEnd));
+            (editStart, editEnd) = (lineStart, lineEnd);
         }
 
         if (string.IsNullOrWhiteSpace(originalCode)) return;
@@ -175,6 +177,17 @@ internal class InlineEditSelectionCommand : Command
         var editedCode = finished.EditedCode!;
 
         // ── 5. Apply the edit ─────────────────────────────────────────────────
+        // ⚠ Through the preview when "Show the change before applying it" is on — the box of THIS command's settings
+        // section, which it applied past. The rewrite is computed from the text the range was read from: a file changed
+        // since is refused by the renderer (drifted), never patched at offsets that moved.
+        try
+        {
+            if (await InPlaceCodeEdit.TryPreviewAsync(
+                    _config, view, docText, docText[..editStart] + editedCode + docText[editEnd..], ct))
+                return;
+        }
+        catch (OperationCanceledException) { return; }
+
         try
         {
             var response = await Extensibility.Editor().EditAsync(
