@@ -44,6 +44,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** A code action's changes wait in the Refactor Preview: the model step is over, so Stop has nothing left to cancel
    *  in the host — what it stops is the preview, closed by the preview's own Discard. */
   private codeActionPreviewOpen = false;
+  /** Stop was pressed during this turn. Before `chat/send` leaves — the excerpt being sized, a mention resolved, a
+   *  template expanded — the host has no turn for `chat/cancel` to stop: read before the turn is sent, or it went anyway. */
+  private stopPressed = false;
 
   /** Channels that have already said why they are degraded, so a per-keystroke path says it once. */
   private readonly saidOnce = new Set<string>();
@@ -1187,6 +1190,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           }
           return;
         }
+        if (this.busy) {
+          this.stopPressed = true;
+        }
         try {
           await this.getHost()?.chatCancel();
         } catch (err) {
@@ -1831,6 +1837,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
 
     this.busy = true;
+    this.stopPressed = false;
     this.streamText = '';
     this.plan = null;
     // Like the Visual Studio window (`_sessionStartTime ??= DateTime.Now`): the thread starts at
@@ -2189,6 +2196,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       if (named.length > 0) {
         this.nameAttachmentsInQuestion(named);
       }
+      // Nothing awaited between this check and the request: a Stop that came earlier ends the turn unsent.
+      if (this.stopPressed) {
+        this.endStoppedBeforeTheHost();
+        return;
+      }
       const result = await host.chatSend({
         prompt: expanded,
         model: this.model || undefined,
@@ -2401,6 +2413,29 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * names a reloaded session or an export shows "explain this" with nothing it refers to. The label,
    * never the content: a clipboard or problems snapshot describes a past state, and a file is re-read.
    */
+  /**
+   * A turn stopped before it reached the host: nothing was sent. Its question never entered the host's history, so it
+   * is a notice (Regenerate resends it, with what it carried), and the stop is a lasting line, as for a sent turn.
+   */
+  private endStoppedBeforeTheHost(): void {
+    const asked = [...this.transcript].reverse().find((m) => m.role === 'user');
+    if (asked) {
+      asked.notice = true;
+    }
+    this.append({ role: 'error', text: t('Cancelled.'), timestamp: ChatViewProvider.now() });
+    this.busy = false;
+    this.post({
+      type: 'turnEnded',
+      text: '',
+      error: null,
+      cancelled: true,
+      tokens: 0,
+      promptTokens: this.promptTokens,
+      timestamp: ChatViewProvider.now(),
+      canRegenerate: this.canRegenerate(),
+    });
+  }
+
   private nameAttachmentsInQuestion(names: readonly string[]): void {
     const question = [...this.transcript].reverse().find((m) => m.role === 'user');
     if (!question || names.length === 0) {
