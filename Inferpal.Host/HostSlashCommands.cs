@@ -351,7 +351,8 @@ internal sealed partial class HostServer
                     // Two sequential inference calls; progress goes through the same chat/step
                     // notifications as /bench.
                     var result = await ArenaCommandHandler.HandleAsync(
-                        s.Client, s.Config, parts, progress => Notify("chat/step", new { text = progress }), cts.Token);
+                        s.Client, s.Config, parts, progress => Notify("chat/step", new { text = progress }), cts.Token,
+                        shown: s.Arena);
                     return new SlashCommandResult(true, result.Message);
                 }
 

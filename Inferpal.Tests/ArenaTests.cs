@@ -30,13 +30,13 @@ public class ArenaTests : IDisposable
         Directory.CreateDirectory(_dir);
         _tempFile = Path.Combine(_dir, "arena.json");
         ArenaStore._fileOverride = _tempFile;
-        ArenaCommandHandler._shownBattle = null;   // process-wide, like the file override: each test starts unseen
+        ArenaCommandHandler.ProcessShown.Id = null;   // process-wide, like the file override: each test starts unseen
     }
 
     public void Dispose()
     {
         ArenaStore._fileOverride = null;
-        ArenaCommandHandler._shownBattle = null;
+        ArenaCommandHandler.ProcessShown.Id = null;
         try { Directory.Delete(_dir, recursive: true); } catch { }
     }
 
@@ -109,6 +109,46 @@ public class ArenaTests : IDisposable
         var (after, _) = await ArenaStore.ReadAsync();
         Assert.Empty(after.Battles);                    // nothing recorded against a battle not seen here
         Assert.NotNull(after.Pending);                  // the other window can still vote on it
+    }
+
+    /// <summary>
+    /// Two conversations of ONE process — two Zed threads of one ACP host — each vote on the battle they showed: the
+    /// battle shown was static to the process, so the second thread's battle became the one "shown" in the first, and a
+    /// vote cast there credited models for a prompt that thread never read.
+    /// </summary>
+    [Fact]
+    public async Task TwoThreadsOfOneProcess_EachVotesOnTheBattleItShowed()
+    {
+        var fake = new FakeInferenceProvider
+        {
+            Installed = [new InstalledModelInfo("big:latest", 1), new InstalledModelInfo("small:latest", 1)],
+            OnChatRequest = (_, _, _, _) => Task.FromResult(new ChatTurnResult("an answer", null, 0, 0)),
+        };
+        ArenaShownBattle first = new(), second = new();
+        await ArenaCommandHandler.HandleAsync(fake, Config(), ["/arena", "first", "question"], null, CancellationToken.None,
+                                              swapOrder: () => false, shown: first);
+        await ArenaCommandHandler.HandleAsync(fake, Config(), ["/arena", "second", "question"], null, CancellationToken.None,
+                                              swapOrder: () => false, shown: second);
+
+        var inFirst = (await ArenaCommandHandler.HandleAsync(fake, Config(), ["/arena", "a"], null, CancellationToken.None,
+                                                             shown: first)).Message;
+
+        Assert.Equal(Strings.ArenaPendingIsAnother("second question"), inFirst);
+        var (state, _) = await ArenaStore.ReadAsync();
+        Assert.Empty(state.Battles);
+
+        // Reference arm: the thread that showed the waiting battle votes on it.
+        await ArenaCommandHandler.HandleAsync(fake, Config(), ["/arena", "a"], null, CancellationToken.None, shown: second);
+        var (after, _) = await ArenaStore.ReadAsync();
+        Assert.Equal("second question", Assert.Single(after.Battles).Prompt);
+    }
+
+    [Fact]
+    public void TheAcpHost_GivesEachSessionItsOwnShownBattle()
+    {
+        var host = ConventionCoverageTests.CodeOnly(
+            Path.Combine(ConversationPersistenceSilenceTests.RepoRoot(), "Inferpal.Host", "HostSlashCommands.cs"));
+        Assert.Contains("shown: s.Arena", host);
     }
 
     [Fact]

@@ -85,6 +85,9 @@ internal sealed class HostSession : IDisposable
     /// </summary>
     public ConnectionStatusPresenter Connection { get; } = new();
 
+    /// <summary>The <c>/arena</c> battle this conversation showed: one per session, an ACP host serving several threads.</summary>
+    public Services.Commands.ArenaShownBattle Arena { get; } = new();
+
     /// <summary>Named-session persistence, same store (and files) as the VS extension.</summary>
     public ConversationStore Store { get; } = new(slotOwner: ConversationStore.VsCodeSlot);
 

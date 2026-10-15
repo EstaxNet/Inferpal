@@ -7,6 +7,13 @@ using Inferpal.Services.Arena;
 
 namespace Inferpal.Services.Commands;
 
+/// <summary>The arena battle a conversation showed and has not seen voted on.</summary>
+internal sealed class ArenaShownBattle
+{
+    /// <summary>Its id in the shared pending slot; <c>null</c> when this conversation showed none.</summary>
+    internal string? Id { get; set; }
+}
+
 /// <summary>
 /// Pure logic of the multi-model arena:
 /// <c>/arena &lt;prompt&gt;</c> sends the same prompt to two models (sequentially — one GPU, the
@@ -22,16 +29,25 @@ internal static class ArenaCommandHandler
     /// <summary>Outcome of an <c>/arena</c> invocation: the markdown to display.</summary>
     internal readonly record struct ArenaCommandResult(string Message);
 
+    /// <param name="client">The provider that answers both sides.</param>
+    /// <param name="config">Read for the automatic pair.</param>
+    /// <param name="parts">The tokenised command.</param>
+    /// <param name="onProgress">Status line while the two answers come.</param>
+    /// <param name="ct">Cancels the battle.</param>
+    /// <param name="swapOrder">The blind shuffle, overridable by tests.</param>
+    /// <param name="shown">The battle this conversation showed — one per conversation: an Agent Client Protocol host
+    /// serves several threads from one process. <c>null</c> = the process's, for a front-end that is one conversation.</param>
     public static async Task<ArenaCommandResult> HandleAsync(
         IInferenceProvider client, InferpalConfig config, string[] parts,
-        Action<string>? onProgress, CancellationToken ct, Func<bool>? swapOrder = null)
+        Action<string>? onProgress, CancellationToken ct, Func<bool>? swapOrder = null, ArenaShownBattle? shown = null)
     {
         if (parts.Length < 2) return new(Strings.ArenaUsage);
+        shown ??= ProcessShown;
 
         switch (parts[1].ToLowerInvariant())
         {
             case "a" or "b" or "tie" when parts.Length == 2:
-                return new(await VoteAsync(parts[1].ToLowerInvariant()));
+                return new(await VoteAsync(parts[1].ToLowerInvariant(), shown));
             case "stats" when parts.Length == 2:
             {
                 // ⚠ "No arena vote recorded yet" is a statement about the user; a file that did not
@@ -69,7 +85,7 @@ internal static class ArenaCommandHandler
             {
                 Pending = new ArenaPending(DateTime.UtcNow, prompt, modelA, modelB, id),
             });
-            if (pendingSaved) _shownBattle = id;
+            if (pendingSaved) shown.Id = id;
 
             var sb = new System.Text.StringBuilder();
             sb.Append("### ").AppendLine(Strings.ArenaTitle).AppendLine();
@@ -92,12 +108,14 @@ internal static class ArenaCommandHandler
         }
     }
 
-    /// <summary>The battle this process showed and has not seen voted on: a process is one editor.</summary>
-    internal static string? _shownBattle;
+    /// <summary>The battle shown by a front-end that is one conversation (Visual Studio, a VS Code window).</summary>
+    /// <remarks>⚠ Not for a host that serves several conversations: shared, a battle started in one Zed thread becomes the
+    /// one "shown" in every other, and a vote cast there credits models for a prompt that thread never read.</remarks>
+    internal static readonly ArenaShownBattle ProcessShown = new();
 
     /// <summary>Records the vote against the pending battle, reveals the mapping and shows the
     /// refreshed standings.</summary>
-    private static async Task<string> VoteAsync(string vote)
+    private static async Task<string> VoteAsync(string vote, ArenaShownBattle shownHere)
     {
         var (state, unreadable) = await ArenaStore.ReadAsync();
         // ⚠ An unreadable file has no pending battle either, and "no battle awaiting a vote" is the
@@ -109,7 +127,7 @@ internal static class ArenaCommandHandler
         // ⚠ The pending slot is ONE, in a file both editors write: a battle started in the other window replaces the one
         // shown here, and the vote cast here credited its shuffled models for a prompt this user never read. A process
         // that showed a battle votes on THAT one, or says which is waiting; one that showed none votes on the latest.
-        if (_shownBattle is { } shown && pending.Id != shown)
+        if (shownHere.Id is { } shown && pending.Id != shown)
             return Strings.ArenaPendingIsAnother(pending.Prompt.Length > 80 ? pending.Prompt[..80] + "…" : pending.Prompt);
 
         var battles = new List<ArenaBattle>(state.Battles)
@@ -120,7 +138,7 @@ internal static class ArenaCommandHandler
         // that would count it.
         if (!await ArenaStore.SaveAsync(new ArenaSavedState(battles, Pending: null)))
             return Strings.ArenaVoteNotSaved;
-        _shownBattle = null;
+        shownHere.Id = null;
 
         var verdict = vote switch
         {
