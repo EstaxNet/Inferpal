@@ -43,7 +43,7 @@ internal sealed class McpOAuthState
 /// Encrypted at-rest store for MCP OAuth state, keyed by server name. The backing file is protected
 /// with Windows DPAPI (per-user) by default; the protect/unprotect functions are injectable so the
 /// (de)serialization logic can be unit-tested without DPAPI. Never throws on read — a missing or
-/// unreadable file is treated as "no stored state".
+/// unreadable file gives no stored state — and never writes over an unreadable file (see <see cref="Writable"/>).
 /// </summary>
 internal sealed class McpTokenStore
 {
@@ -98,7 +98,7 @@ internal sealed class McpTokenStore
 
     public void Save(string serverName, McpOAuthState state)
     {
-        lock (_lock) { var map = Load(); map[serverName] = state; Persist(map); }
+        lock (_lock) { var map = Writable(); map[serverName] = state; Persist(map); }
     }
 
     public void Remove(string serverName)
@@ -130,10 +130,39 @@ internal sealed class McpTokenStore
         return info.Exists ? (info.LastWriteTimeUtc, info.Length) : default;
     }
 
-    private Dictionary<string, McpOAuthState> Load()
+    /// <summary>The file exists and could not be read: its sign-ins are UNKNOWN, never "none".</summary>
+    private bool _unreadable;
+
+    /// <summary>
+    /// The map a write starts from: the file's — read once more when it could not be read (the other editor may have been
+    /// replacing it) — or, when it still cannot be, an empty map once the file is kept aside.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ An unreadable file read as empty, then rewritten whole with the one sign-in being saved, erased every other
+    /// server's sign-in — for a file another user, a locked keychain or the other editor's write in progress made
+    /// unreadable for a moment. Kept aside, those sign-ins are still on disk; the copy's name is said in /diagnostics.
+    /// </remarks>
+    private Dictionary<string, McpOAuthState> Writable()
+    {
+        var map = Load();
+        if (!_unreadable) return map;
+        map = Load(again: true);
+        if (!_unreadable) return map;
+
+        var aside = $"{_path}.unreadable-{DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", System.Globalization.CultureInfo.InvariantCulture)}";
+        // A copy that cannot be made leaves the file as it is: the save fails with that cause rather than erase it.
+        File.Copy(_path, aside, overwrite: true);
+        Diagnostics.Record("Mcp",
+            $"The stored MCP sign-ins could not be read; the file was kept as {Path.GetFileName(aside)} before a sign-in was " +
+            "saved. The other servers ask for a sign-in again.");
+        return [];
+    }
+
+    private Dictionary<string, McpOAuthState> Load(bool again = false)
     {
         var stamp = CurrentStamp();
-        if (_cache is not null && stamp == _cacheStamp) return _cache;
+        if (!again && _cache is not null && stamp == _cacheStamp) return _cache;
+        _unreadable = false;
         try
         {
             if (File.Exists(_path))
@@ -145,10 +174,11 @@ internal sealed class McpTokenStore
         }
         catch (Exception ex)
         {
-            // Corrupt/undecryptable file (e.g. different user) → start fresh rather than crash,
-            // but leave a trace: silently losing every stored token is hard to diagnose otherwise.
+            // Corrupt/undecryptable file (e.g. different user): no sign-in can be read from it, but it is not empty —
+            // a write keeps it aside first (Writable).
             Diagnostics.Swallow("McpTokenStoreLoad", ex);
             _cache = [];
+            _unreadable = true;
         }
         _cacheStamp = stamp;
         return _cache;
