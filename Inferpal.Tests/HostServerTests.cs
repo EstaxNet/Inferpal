@@ -1966,9 +1966,11 @@ public partial class HostServerTests
         string Code(string file) => ConventionCoverageTests.CodeOnly(
             Path.Combine(WebviewRebuildTests.RepoRoot(), "Inferpal", "ToolWindow", file));
         var branch = Code("InferpalToolWindowData.PromptHistory.cs");
-        Assert.Contains("await _store.SaveAsync(plan.ParentName, plan.ParentMessages, ct, _indexService.RootDir,", branch, StringComparison.Ordinal);
-        Assert.Contains("await _store.SaveAsync(plan.BranchName, plan.BranchMessages, ct, _indexService.RootDir,", branch, StringComparison.Ordinal);
-        Assert.Contains("await _store.SaveAsync(name, snapshot, CancellationToken.None, _indexService.RootDir,",
+        // The conversation's folder (AutoSaveFollowsTheConversationTests), read with the snapshot.
+        Assert.Contains("root        = _conversationRoot.For(_indexService.RootDir);", branch, StringComparison.Ordinal);
+        Assert.Contains("await _store.SaveAsync(plan.ParentName, plan.ParentMessages, ct, root,", branch, StringComparison.Ordinal);
+        Assert.Contains("await _store.SaveAsync(plan.BranchName, plan.BranchMessages, ct, root,", branch, StringComparison.Ordinal);
+        Assert.Contains("await _store.SaveAsync(name, snapshot, CancellationToken.None, workspaceRoot,",
                         Code("InferpalToolWindowData.PendingPrompt.cs"), StringComparison.Ordinal);
     }
 

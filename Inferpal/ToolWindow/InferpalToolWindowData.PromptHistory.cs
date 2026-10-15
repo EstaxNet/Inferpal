@@ -84,11 +84,13 @@ internal partial class InferpalToolWindowData
 
         List<SavedMessage> snapshot = [];
         var currentName = string.Empty;
+        string? root = null;
         await RunOnVMContextAsync(() =>
         {
             snapshot    = SessionManager.BuildSnapshot(
                 Messages.Select(m => m.Saved));
             currentName = _currentSessionName;
+            root        = _conversationRoot.For(_indexService.RootDir);   // the folder the parent and its branch say
         });
 
         var sessions = await _store.ListWithPreviewAsync(ct);
@@ -123,10 +125,10 @@ internal partial class InferpalToolWindowData
         // The parent goes to disk first — with the conversation as it stands now, which may have
         // moved on since it was loaded: forking must never be what loses the discarded half.
         var templateSuffix = _activeTemplateSuffix;   // the branch is the same conversation, cut: same mode
-        await _store.SaveAsync(plan.ParentName, plan.ParentMessages, ct, _indexService.RootDir,
+        await _store.SaveAsync(plan.ParentName, plan.ParentMessages, ct, root,
                                parent: plan.ParentParent, forkTurn: plan.ParentForkTurn, templateSuffix: templateSuffix);
 
-        await _store.SaveAsync(plan.BranchName, plan.BranchMessages, ct, _indexService.RootDir,
+        await _store.SaveAsync(plan.BranchName, plan.BranchMessages, ct, root,
                                parent: plan.ParentName, forkTurn: plan.ForkTurn, templateSuffix: templateSuffix);
 
         await RunOnVMContextAsync(() =>

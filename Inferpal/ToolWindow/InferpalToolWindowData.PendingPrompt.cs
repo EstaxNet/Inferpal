@@ -123,14 +123,17 @@ internal partial class InferpalToolWindowData
 
     /// <param name="templateSuffix">The mode the conversation was held in, read with the snapshot: by the time the title
     /// comes back, the mode is already the new conversation's.</param>
-    private async Task SaveNamedSessionAsync(string firstUserContent, List<SavedMessage> snapshot, string templateSuffix)
+    /// <param name="workspaceRoot">The workspace the conversation belonged to (<see cref="ConversationRoot"/>), read
+    /// with the snapshot.</param>
+    private async Task SaveNamedSessionAsync(string firstUserContent, List<SavedMessage> snapshot, string templateSuffix,
+                                             string? workspaceRoot)
     {
         try
         {
             var title = await GenerateSessionTitleAsync(firstUserContent);
             var name  = SessionManager.UniqueSessionName(
                 SessionManager.SessionFileName(DateTime.Now, title), _store.ListSessions());
-            await _store.SaveAsync(name, snapshot, CancellationToken.None, _indexService.RootDir, templateSuffix: templateSuffix);
+            await _store.SaveAsync(name, snapshot, CancellationToken.None, workspaceRoot, templateSuffix: templateSuffix);
             await RunOnVMContextAsync(RefreshSessionsList);
         }
         catch (Exception ex)
@@ -162,13 +165,16 @@ internal partial class InferpalToolWindowData
         {
             List<SavedMessage> snapshot = [];
             var templateSuffix = string.Empty;
+            string? root = null;
             await RunOnVMContextAsync(() =>
             {
                 snapshot = SessionManager.BuildSnapshot(
                     Messages.Select(m => m.Saved));
                 templateSuffix = _activeTemplateSuffix;
+                // The conversation's workspace, not the one open now: another solution's slot holds its own conversation.
+                root = _conversationRoot.For(_indexService.RootDir);
             });
-            await _store.AutoSaveAsync(snapshot, CancellationToken.None, _indexService.RootDir,
+            await _store.AutoSaveAsync(snapshot, CancellationToken.None, root,
                                        currentName: string.IsNullOrEmpty(_currentSessionName) ? null : _currentSessionName,
                                        templateSuffix: templateSuffix);
             _autoSaveFailureTold = false;

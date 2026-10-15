@@ -124,6 +124,9 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     // Session file the conversation currently lives in ("" = never saved). Set when a session is
     // loaded or a branch is created; consumed by /branch to record the parent link.
     private string           _currentSessionName    = string.Empty;
+    // Workspace the conversation is written for — its slot, archive and branches — read and changed on the VM context.
+    // Visual Studio keeps the conversation across a solution switch: the root of the moment is another solution's.
+    private readonly ConversationRoot _conversationRoot = new();
     /// <summary>Plan the session is working on (<c>.inferpal/plans/&lt;name&gt;.md</c>), set by
     /// <c>/plan save</c> or <c>/plan &lt;name&gt;</c> so <c>/plan next</c> needs no argument.
     /// Session state, not persisted: the plan file is what survives, not which one was open.</summary>

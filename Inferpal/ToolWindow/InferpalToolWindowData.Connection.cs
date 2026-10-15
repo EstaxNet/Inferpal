@@ -204,9 +204,15 @@ internal partial class InferpalToolWindowData
         string firstUserContent = string.Empty;
         List<SavedMessage> snapshot = [];
         var templateSuffix = string.Empty;
+        string? root = null;
+        var inASlot = false;
 
         await RunOnVMContextAsync(() =>
         {
+            // The workspace of the conversation being discarded: its slot is the one to empty, its folder the archive's.
+            // Never saved, it is in no slot — and the one of the solution open now holds that solution's conversation.
+            inASlot     = _conversationRoot.IsBound;
+            root        = _conversationRoot.For(_indexService.RootDir);
             // Decided on the snapshot, never on Messages: the two scroll anchors are always there,
             // so counting them archived an empty, titled session on every /clear and /template.
             snapshot    = SessionManager.BuildSnapshot(
@@ -221,11 +227,11 @@ internal partial class InferpalToolWindowData
 
         // Fire save+title generation in background so the UI clears immediately.
         if (hasMessages)
-            _ = SaveNamedSessionAsync(firstUserContent, snapshot, templateSuffix);
+            _ = SaveNamedSessionAsync(firstUserContent, snapshot, templateSuffix, root);
 
         // The conversation just discarded leaves the auto-save slot, or the next start brings it back — said when it cannot.
         string? notForgotten = null;
-        try { notForgotten = await _store.ForgetAutoSaveOrSayAsync(_indexService.RootDir, ct); }
+        try { if (inASlot) notForgotten = await _store.ForgetAutoSaveOrSayAsync(root, ct); }
         catch (OperationCanceledException) { }
 
         await RunOnVMContextAsync(() =>
@@ -242,6 +248,7 @@ internal partial class InferpalToolWindowData
             _oodaSummary           = string.Empty;
             _conversationTurnCount = 0;
             _currentSessionName    = string.Empty;   // the archived conversation keeps its own file
+            _conversationRoot.Discarded();           // the next conversation belongs where it is first saved
             ResetTurnAccounting();
             HasBuildFailedBanner   = false;   // dismiss banner on /clear
             // After the clear, or it would be cleared with the rest.
@@ -304,6 +311,8 @@ internal partial class InferpalToolWindowData
                 RestoreConversation(session.Messages,
                                     name == "last_session" && !string.IsNullOrEmpty(session.CurrentName) ? session.CurrentName : name,
                                     session.TemplateSuffix);
+                // Loaded here, it is this workspace's conversation from now on — whatever solution is opened next.
+                _conversationRoot.Restored(here);
                 IsSessionPanelOpen = false;
                 RefreshSessionsList();
                 ScrollToBottom();

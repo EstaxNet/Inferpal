@@ -76,7 +76,8 @@ public class AutoSaveSlotTests
 
     /// <summary>
     /// On the Visual Studio side the VM cannot be instantiated outside VS: the rule reads the source.
-    /// The save must carry the applied root, and the load must consult the rule.
+    /// The save must carry the conversation's root (<c>ConversationRoot</c>, bound to the applied root), and the load
+    /// must consult the rule.
     /// </summary>
     [Fact]
     public void TheVsWindow_SavesItsRoot_AndRestoresOnlyItsOwnAutoSave()
@@ -90,6 +91,7 @@ public class AutoSaveSlotTests
         Assert.Contains("_store.AutoSaveAsync(", pending, StringComparison.Ordinal);
 
         Assert.Contains("SessionManager.AutoSaveBelongsHere(", connection, StringComparison.Ordinal);
-        Assert.Matches(@"_store\.AutoSaveAsync\([^;]*_indexService\.RootDir", pending);
+        Assert.Matches(@"root = _conversationRoot\.For\(_indexService\.RootDir\)", pending);
+        Assert.Matches(@"_store\.AutoSaveAsync\([^;]*\broot\b", pending);
     }
 }

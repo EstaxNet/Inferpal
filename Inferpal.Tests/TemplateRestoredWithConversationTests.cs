@@ -116,7 +116,7 @@ public partial class HostServerTests
         Assert.Contains("RestoreConversation(session.Messages, target, session.TemplateSuffix);", history);   // a branch switched to
         // Saved with its mode: the auto-save slot, the archive of /clear (read with the snapshot), a branch.
         Assert.Contains("templateSuffix: templateSuffix);", pending);
-        Assert.Contains("_ = SaveNamedSessionAsync(firstUserContent, snapshot, templateSuffix);", connection);
+        Assert.Contains("_ = SaveNamedSessionAsync(firstUserContent, snapshot, templateSuffix, root);", connection);
         Assert.Contains("forkTurn: plan.ForkTurn, templateSuffix: templateSuffix);", history);
     }
 }
