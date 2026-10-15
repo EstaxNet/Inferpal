@@ -854,7 +854,7 @@ internal sealed partial class HostServer : IDisposable
         CodeActionRun run;
         try
         {
-            var (system, instruction) = await InPlaceCodeActionPrompts.BuildAsync(kind, p.Path, p.Text, cts.Token);
+            var (system, instruction) = await InPlaceCodeActionPrompts.BuildAsync(kind, p.Path, p.Text, cts.Token, p.Request);
 
             // The pick is the CHAT model: a configured code-actions model wins over it, as in Visual Studio.
             var model = ModelRouter.Resolve(s.Config, ModelRole.CodeActions, p.Model);

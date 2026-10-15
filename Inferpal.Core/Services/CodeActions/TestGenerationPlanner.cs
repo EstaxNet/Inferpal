@@ -124,9 +124,10 @@ internal static class TestGenerationPlanner
     /// <param name="openText">The test file's text in the editor when it is open there, else null — given by an editor
     /// that writes the result INTO that buffer (Visual Studio). ⚠ Planned from the disk, the result replaces a buffer
     /// that holds unsaved tests the model never saw, and they disappear.</param>
+    /// <param name="request">What the user typed after <c>/test</c> (<see cref="CodeActionRequest"/>).</param>
     public static async Task<TestGenerationPlan> PlanAsync(
         IInferenceProvider client, string model, string sourcePath, string sourceCode,
-        CancellationToken ct, Func<string, CancellationToken, Task<string?>>? openText = null)
+        CancellationToken ct, Func<string, CancellationToken, Task<string?>>? openText = null, string? request = null)
     {
         if (string.IsNullOrWhiteSpace(sourceCode)) return TestGenerationPlan.Failed();
 
@@ -158,9 +159,11 @@ internal static class TestGenerationPlanner
         var extend = !string.IsNullOrWhiteSpace(existing);
 
         var system = extend ? TestGenerationPrompts.ExtendFileSystem : TestGenerationPrompts.NewFileSystem;
+        var asked  = CodeActionRequest.Line(request);
         var user   = extend
             ? $"Existing test file ({testName}):\n\n{existing}\n\nSource under test ({sourceName}):\n\n{sourceCode}"
-            : $"{TestGenerationPrompts.Instruction}{FrameworkLine(testPath)}\n\nSource file: {sourceName}\n\n{sourceCode}";
+              + (asked.Length > 0 ? $"\n{asked}" : string.Empty)
+            : $"{TestGenerationPrompts.Instruction}{asked}{FrameworkLine(testPath)}\n\nSource file: {sourceName}\n\n{sourceCode}";
 
         ChatTurnResult result;
         try

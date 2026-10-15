@@ -399,7 +399,9 @@ internal sealed record CodeActionParams(
     // The document's path, so /doc gets the same semantic block the Visual Studio window has:
     // the extractor dispatches on the extension and reads neighbouring files for the contracts.
     // Optional on the wire — an older adapter simply gets the unenriched prompt.
-    string? Path  = null);
+    string? Path  = null,
+    // What the user typed after the command (/fix the off-by-one in the loop): given to the model first.
+    string? Request = null);
 
 /// <summary>One accepted-or-rejected-independently hunk of a code action rewrite, as a
 /// character-offset edit against the submitted text (mirror of the Core's <c>DiffEdit</c>).</summary>

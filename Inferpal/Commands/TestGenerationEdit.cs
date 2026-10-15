@@ -29,12 +29,15 @@ internal static class TestGenerationEdit
     public sealed record Result(bool Ok, string TestFileName, bool Extended, bool NoChange = false,
                                 bool Cancelled = false, bool Unreadable = false, string? Refusal = null);
 
+    /// <summary>Generates the tests of <paramref name="sourceView"/>'s selection, or of its whole file, into its test file.</summary>
+    /// <param name="request">What the user typed after <c>/test</c>, given to the model first; <c>null</c> from the menu.</param>
     public static async Task<Result> RunAsync(
         VisualStudioExtensibility vs,
         ITextViewSnapshot         sourceView,
         IInferenceProvider        client,
         string                    model,
-        CancellationToken         ct)
+        CancellationToken         ct,
+        string?                   request = null)
     {
         var sourcePath = sourceView.Document.Uri.LocalPath;
 
@@ -65,7 +68,8 @@ internal static class TestGenerationEdit
                     {
                         var open = await vs.Documents().GetOpenDocumentAsync(new Uri(path), token);
                         return open is null ? null : (await open.AsTextDocumentAsync(vs, token))?.Text.CopyToString();
-                    });
+                    },
+                    request);
             }
             catch (OperationCanceledException) when (dlg.CancelledByUser.IsCancellationRequested)
             {

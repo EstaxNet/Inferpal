@@ -54,7 +54,9 @@ internal sealed record SlashToolAction(string Tool, object Args, string? AttachA
 }
 
 /// <summary>Run a code action (/explain, /fix, …) on the active document or selection.</summary>
-internal sealed record SlashCodeAction(SlashCodeActionKind Kind) : SlashAction;
+/// <param name="Request">What the user typed after the command (<c>/fix the off-by-one in the loop</c>), <c>null</c>
+/// when nothing: dropped, the action ran its generic instruction and answered another question than the one asked.</param>
+internal sealed record SlashCodeAction(SlashCodeActionKind Kind, string? Request = null) : SlashAction;
 
 /// <summary>Send the expanded text of a user-defined template as a normal chat prompt.</summary>
 internal sealed record SlashPromptAction(string Prompt) : SlashAction;
@@ -269,6 +271,9 @@ internal static class SlashCommandRouter
         return cut < 0 ? string.Empty : text[(cut + 1)..].Trim();
     }
 
+    /// <summary>What was typed after a code-action command, or <c>null</c> (<see cref="SlashCodeAction.Request"/>).</summary>
+    private static string? RequestOf(string prompt) => RestOf(prompt) is { Length: > 0 } rest ? rest : null;
+
     /// <summary>
     /// Renders `/help` from <see cref="Catalog"/>. Generated rather than written: a hand-maintained
     /// help text drifts silently, and in ten languages at once, while claiming to list everything.
@@ -359,12 +364,12 @@ internal static class SlashCommandRouter
             case "/debug":             return new SlashDelegatedAction(SlashCommandId.Debug,           parts);
 
             // ── Code actions on the active document/selection ─────────────────
-            case "/explain":           return new SlashCodeAction(SlashCodeActionKind.Explain);
-            case "/fix":               return new SlashCodeAction(SlashCodeActionKind.Fix);
-            case "/review":            return new SlashCodeAction(SlashCodeActionKind.Review);
-            case "/refactor":          return new SlashCodeAction(SlashCodeActionKind.Refactor);
-            case "/test":              return new SlashCodeAction(SlashCodeActionKind.Test);
-            case "/doc":               return new SlashCodeAction(SlashCodeActionKind.Doc);
+            case "/explain":           return new SlashCodeAction(SlashCodeActionKind.Explain, RequestOf(prompt));
+            case "/fix":               return new SlashCodeAction(SlashCodeActionKind.Fix, RequestOf(prompt));
+            case "/review":            return new SlashCodeAction(SlashCodeActionKind.Review, RequestOf(prompt));
+            case "/refactor":          return new SlashCodeAction(SlashCodeActionKind.Refactor, RequestOf(prompt));
+            case "/test":              return new SlashCodeAction(SlashCodeActionKind.Test, RequestOf(prompt));
+            case "/doc":               return new SlashCodeAction(SlashCodeActionKind.Doc, RequestOf(prompt));
 
             // ── Direct tool invocations — usage checks + argument building ────
             // ⚠ A single free-text argument is the rest of the line AS TYPED (RestOf): recollected from the

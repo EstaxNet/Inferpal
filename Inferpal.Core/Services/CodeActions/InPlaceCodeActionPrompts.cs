@@ -63,8 +63,9 @@ internal static class InPlaceCodeActionPrompts
     /// and reads neighbouring files to find the contracts.
     /// </para>
     /// </remarks>
+    /// <param name="request">What the user typed after the command (<see cref="CodeActionRequest"/>).</param>
     public static async Task<(string System, string Instruction)> BuildAsync(
-        SlashCodeActionKind kind, string? filePath, string text, CancellationToken ct)
+        SlashCodeActionKind kind, string? filePath, string text, CancellationToken ct, string? request = null)
     {
         var (system, instruction) = kind switch
         {
@@ -72,6 +73,7 @@ internal static class InPlaceCodeActionPrompts
             SlashCodeActionKind.Fix      => (FixSystem,       FixInstruction),
             _                            => (DocstringSystem, DocstringInstruction),
         };
+        instruction += CodeActionRequest.Line(request);
 
         if (kind != SlashCodeActionKind.Doc || string.IsNullOrEmpty(filePath))
             return (system, instruction);

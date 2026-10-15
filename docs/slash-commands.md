@@ -145,6 +145,9 @@ editor with tools disabled).
 These run against the active editor selection with tool calling disabled (see
 [Tools](tools.md) and the editor context menu).
 
+Each takes what you want after it — `/fix the off-by-one in the loop`, `/explain why does this stop?`, `/test the
+empty input` — and the model gets it with the action, before the rest.
+
 | Command | Description |
 |---|---|
 | `/explain` | Explain the active code — read-only, answers in the chat |

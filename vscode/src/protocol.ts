@@ -276,6 +276,8 @@ export interface CodeActionParams {
    *  overrides, interface contracts) the Visual Studio window has always had: the extractor
    *  dispatches on the extension and reads neighbouring files to find the contracts. */
   path?: string;
+  /** What the user typed after the command (`/fix the off-by-one in the loop`): given to the model first. */
+  request?: string;
 }
 
 /** One independently acceptable hunk: replace [start, end) of the submitted text. */

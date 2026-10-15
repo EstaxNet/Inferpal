@@ -44,10 +44,10 @@ internal sealed partial class HostServer
             // improvises. Served here, and inside the turn slot like every other slash that infers
             // — outside it, a second inference runs in parallel with a chat turn on the same GPU
             // and chat/cancel cannot stop it.
-            case SlashCodeAction { Kind: SlashCodeActionKind.Test }:
+            case SlashCodeAction { Kind: SlashCodeActionKind.Test } test:
             {
                 var cts = AcquireTurn(ct);
-                try     { return await RunGenerateTestsAsync(s, cts.Token); }
+                try     { return await RunGenerateTestsAsync(s, test.Request, cts.Token); }
                 finally { ReleaseTurn(cts); }
             }
 
@@ -679,7 +679,8 @@ internal sealed partial class HostServer
     /// does not cover a file written behind its back. The replaced version is backed up first, and
     /// the reply names the <c>/restore</c> command that brings it back.
     /// </remarks>
-    private async Task<SlashCommandResult> RunGenerateTestsAsync(HostSession s, CancellationToken ct)
+    /// <param name="request">What the user typed after <c>/test</c>, given to the model first.</param>
+    private async Task<SlashCommandResult> RunGenerateTestsAsync(HostSession s, string? request, CancellationToken ct)
     {
         var doc = await s.Editor.GetActiveDocumentAsync(ct);
         if (doc is null || string.IsNullOrWhiteSpace(doc.Text))
@@ -690,7 +691,7 @@ internal sealed partial class HostServer
             return new SlashCommandResult(true, unsaved);
 
         var plan = await TestGenerationPlanner.PlanAsync(
-            s.Client, ModelRouter.Resolve(s.Config, ModelRole.CodeActions), doc.Path, doc.Text, ct);
+            s.Client, ModelRouter.Resolve(s.Config, ModelRole.CodeActions), doc.Path, doc.Text, ct, request: request);
 
         if (plan.NoChange)   return new SlashCommandResult(true, Strings.TestsNoChange);
         // ⚠ Before the generic refusal: "the file exists and I could not read it" is the one

@@ -53,7 +53,7 @@ internal partial class InferpalToolWindowData
                     break;
 
                 case SlashCodeAction code:
-                    await RunCodeActionCommandAsync(code.Kind, ct);
+                    await RunCodeActionCommandAsync(code.Kind, code.Request, ct);
                     break;
 
                 case SlashDelegatedAction delegated:
@@ -80,28 +80,29 @@ internal partial class InferpalToolWindowData
     /// <see cref="AttachmentItem"/> (file chip).
     /// </para>
     /// </summary>
-    private async Task RunCodeActionCommandAsync(SlashCodeActionKind kind, CancellationToken ct)
+    /// <param name="request">What the user typed after the command, given with the action (<see cref="CodeActionRequest"/>).</param>
+    private async Task RunCodeActionCommandAsync(SlashCodeActionKind kind, string? request, CancellationToken ct)
     {
         if (kind is SlashCodeActionKind.Refactor or SlashCodeActionKind.Fix or SlashCodeActionKind.Doc)
         {
-            await RunInPlaceCodeActionAsync(kind, ct);
+            await RunInPlaceCodeActionAsync(kind, ct, request);
             return;
         }
 
         if (kind == SlashCodeActionKind.Test)
         {
-            await RunGenerateTestsAsync(ct);
+            await RunGenerateTestsAsync(ct, request);
             return;
         }
 
         var (code, fn, label) = await GetActiveCodeAsync(ct);
         if (string.IsNullOrEmpty(code)) { await ShowInfoAsync(Strings.SlashNoActiveDocument); return; }
 
-        var prompt = kind switch
+        var prompt = CodeActionRequest.InTheQuestion(kind switch
         {
             SlashCodeActionKind.Explain => Strings.PromptExplain(fn),
             _                           => Strings.PromptReview(fn),   // Review
-        };
+        }, request);
         await SendCodeActionAsync(prompt, [new AttachmentItem(label, code, () => {})], ct);
     }
 
@@ -111,13 +112,13 @@ internal partial class InferpalToolWindowData
     /// document is created and opened, or — if it already exists — extended in place. Reports the
     /// outcome in the chat.
     /// </summary>
-    private async Task RunGenerateTestsAsync(CancellationToken ct)
+    private async Task RunGenerateTestsAsync(CancellationToken ct, string? request = null)
     {
         var view = await ResolveActiveViewAsync(ct);
         if (view is null) { await ShowInfoAsync(Strings.SlashNoActiveDocument); return; }
 
         var model  = ModelRouter.Resolve(_config, ModelRole.CodeActions);
-        var result = await TestGenerationEdit.RunAsync(_vs, view, _client, model, ct);
+        var result = await TestGenerationEdit.RunAsync(_vs, view, _client, model, ct, request);
 
         await ShowInfoAsync(
             result.Cancelled ? Strings.MsgCancelled
@@ -134,7 +135,7 @@ internal partial class InferpalToolWindowData
     /// file. For <c>/doc</c>, the document's semantic context (namespace, type hierarchy, overrides,
     /// interface contracts) is appended to the system prompt as reference.
     /// </summary>
-    private async Task RunInPlaceCodeActionAsync(SlashCodeActionKind kind, CancellationToken ct)
+    private async Task RunInPlaceCodeActionAsync(SlashCodeActionKind kind, CancellationToken ct, string? request = null)
     {
         var view = await ResolveActiveViewAsync(ct);
         if (view is null) { await ShowInfoAsync(Strings.SlashNoActiveDocument); return; }
@@ -142,7 +143,7 @@ internal partial class InferpalToolWindowData
         // The pair, enrichment included, comes from the Core: the same call the host makes, so
         // neither editor can end up with the weaker prompt.
         var (system, instruction) = await InPlaceCodeActionPrompts.BuildAsync(
-            kind, view.Document.Uri.LocalPath, view.Document.Text.CopyToString(), ct);
+            kind, view.Document.Uri.LocalPath, view.Document.Text.CopyToString(), ct, request);
 
         var model  = ModelRouter.Resolve(_config, ModelRole.CodeActions);
         var result = await InPlaceCodeEdit.RunAsync(_vs, view, _client, model, system, instruction, ct, _config);

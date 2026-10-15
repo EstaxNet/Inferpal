@@ -1859,7 +1859,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     if (codeAction) {
       question.notice = true;
       try {
-        await this.runCodeAction(codeAction, host);
+        await this.runCodeAction(codeAction, host, ChatViewProvider.requestOf(prompt));
       } catch (err) {
         // runCodeAction ends the turn itself on every path it returns from; a throw (workspace edit
         // rejected, document closed under it) would otherwise leave the webview busy with no error.
@@ -1881,7 +1881,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // and answer the screen still showed. A notice until the turn starts (runExplainReview clears the mark).
       question.notice = true;
       try {
-        await this.runExplainReview(first === '/explain' ? 'explain' : 'review', host, question);
+        await this.runExplainReview(first === '/explain' ? 'explain' : 'review', host, question,
+          ChatViewProvider.requestOf(prompt));
       } catch (err) {
         // The editor is read after the turn started: a throw there would leave the provider busy for good,
         // every later message dropped by the busy guard. The chat turn itself never throws.
@@ -2125,7 +2126,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * whole, a file larger than the window is refused by LM Studio, and loses the HEAD of the request
    * with Ollama — the system prompt and this very instruction first — without a word; and the cut, when there is one, is named
    * under the question, where the Visual Studio window shows it on the attachment chip. */
-  private async runExplainReview(kind: 'explain' | 'review', host: HostClient, question: WvTranscriptItem): Promise<void> {
+  private async runExplainReview(kind: 'explain' | 'review', host: HostClient, question: WvTranscriptItem,
+    request?: string): Promise<void> {
     const editor = this.getActiveEditor();
     if (!editor || editor.document.uri.scheme !== 'file') {
       this.finishTurn('', t('Open a file in the editor to use /{0}.', kind), false, 0);
@@ -2137,9 +2139,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     const file = vscode.workspace.asRelativePath(doc.uri);
     // The model the turn below will ask: the excerpt is sized for the window it really loaded.
     const excerpt = await host.codeExcerpt(code, file, selection, this.model || undefined);
-    const instruction = kind === 'explain'
+    const sentence = kind === 'explain'
       ? t('Explain the following code from {0} — what it does, how, and any pitfalls.', file)
       : t('Review the following code from {0}: point out bugs, risks, and concrete improvements.', file);
+    // The user's own words after the command come with it (CodeActionRequest.InTheQuestion in the Core).
+    const instruction = request ? `${sentence}\n\n${request}` : sentence;
     this.nameAttachmentsInQuestion([excerpt.label]);
     // The turn starts: the question enters the host's history, and a request the host refuses marks it again.
     question.notice = false;
@@ -2527,6 +2531,16 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     await this.send(text);
   }
 
+  /**
+   * What the user typed after a code-action command (`/fix the off-by-one in the loop`), or undefined — given to the
+   * model with the action (`CodeActionRequest` in the Core). Dropped, the action answered another question than the
+   * one asked.
+   */
+  private static requestOf(prompt: string): string | undefined {
+    const rest = prompt.trim().replace(/^\S+\s*/, '').trim();
+    return rest.length > 0 ? rest : undefined;
+  }
+
   /** The in-place action a prompt requests, or undefined (first token match, VS parity). */
   private static codeActionKind(prompt: string): 'fix' | 'refactor' | 'doc' | undefined {
     switch (prompt.split(/\s+/, 1)[0].toLowerCase()) {
@@ -2548,7 +2562,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * Preview disabled (`inlineDiffPreviewEnabled: false`) ⇒ direct apply, one undo step.
    * Comfort only, never a control: these paths never went through approvals (VS parity).
    */
-  private async runCodeAction(kind: 'fix' | 'refactor' | 'doc', host: HostClient): Promise<void> {
+  private async runCodeAction(kind: 'fix' | 'refactor' | 'doc', host: HostClient, request?: string): Promise<void> {
     const finish = (role: 'assistant' | 'error', text: string) =>
       this.finishTurn(role === 'error' ? '' : text, role === 'error' ? text : null, false, 0);
 
@@ -2571,6 +2585,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         selEnd: document.offsetAt(editor.selection.end),
         model: this.model || undefined,
         path: document.uri.fsPath,
+        request,
       });
     } catch (err) {
       finish('error', ChatViewProvider.errorText(err));
