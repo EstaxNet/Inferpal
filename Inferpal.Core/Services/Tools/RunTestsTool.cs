@@ -198,9 +198,19 @@ internal class RunTestsTool : ITool
                                    Environment.GetEnvironmentVariable("VIRTUAL_ENV"));
         var (cwd, args) = PytestInvocation(workDir, root, path, filter, File.Exists);
 
-        var (output, exitCode) = await RunProcessAsync(python, string.Empty, cwd, budget, ct, args);
+        var (output, exitCode) = await RunProcessAsync(python, string.Empty, cwd, budget, ct, args, PytestEnvironment);
         return ParsePytestOutput(output, exitCode, python);
     }
+
+    /// <summary>What pytest's interpreter is told: its pipes are UTF-8, as this tool reads them.</summary>
+    /// <remarks>
+    /// ⚠ Under Windows, Python writes to a PIPE in the ANSI code page (cp1252), not UTF-8: without this, an accented
+    /// assertion message reaches the model as "caf�", and a character outside the code page (✓, a CJK name) raises
+    /// UnicodeEncodeError in the test run itself — a red the code never caused. <c>PYTHONIOENCODING</c> alone: <c>PYTHONUTF8</c> would also
+    /// change what <c>open()</c> reads in the tests.
+    /// </remarks>
+    internal static readonly IReadOnlyDictionary<string, string> PytestEnvironment =
+        new Dictionary<string, string> { ["PYTHONIOENCODING"] = "utf-8" };
 
     /// <summary>
     /// The interpreter pytest runs under: the project's virtual environment (<c>.venv</c> or <c>venv</c>, from the
