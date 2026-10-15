@@ -13,8 +13,6 @@ namespace Inferpal.Host;
 /// </summary>
 internal sealed partial class HostServer
 {
-    private SettingsDocsActions? _settingsDocs;
-
     /// <summary>`settings/indexCard` — the code index as the Code search page shows it.</summary>
     [JsonRpcMethod("settings/indexCard")]
     public async Task<IndexCardModel> SettingsIndexCard(CancellationToken ct)
@@ -158,11 +156,7 @@ internal sealed partial class HostServer
                                                p.Current ?? new Dictionary<string, string>(), ct);
     }
 
-    private SettingsDocsActions DocsActions()
-    {
-        var s = Session();
-        return _settingsDocs ??= new SettingsDocsActions(s.Config, s.Docs);
-    }
+    private SettingsDocsActions DocsActions() => Session().DocsActions;
 }
 
 /// <summary>`settings/exclusions` answer. <c>File</c>: the profile's path (empty without a workspace).</summary>

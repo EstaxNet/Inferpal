@@ -28,6 +28,14 @@ internal sealed class HostSession : IDisposable
     public required LspSemanticProvider  Lsp          { get; init; }
     public required string               RootDir      { get; init; }
 
+    private Services.Presentation.SettingsDocsActions? _docsActions;
+
+    /// <summary>The settings page's @Docs actions, on this session's settings and docs index (and the reports of their
+    /// crawls).</summary>
+    /// <remarks>⚠ Held by the session, never by the server: kept across a new <c>initialize</c>, the page's actions went
+    /// to the docs index of the session before — disposed — and read its settings.</remarks>
+    public Services.Presentation.SettingsDocsActions DocsActions => _docsActions ??= new(Config, Docs);
+
     /// <summary>
     /// The settings file as this session last took it — what <c>config/reload</c> compares the file with, so that only
     /// what the file changed since is followed, never what this session changed in memory.
