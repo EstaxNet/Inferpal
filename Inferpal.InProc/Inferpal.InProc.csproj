@@ -120,6 +120,7 @@
     <Compile Include="..\Inferpal.Core\Services\Signals\LastKnownSolutionFile.cs"    Link="Shared\Signals\LastKnownSolutionFile.cs" />
     <Compile Include="..\Inferpal.Core\Services\CodeActions\InlineDiffPlanner.cs"    Link="Shared\CodeActions\InlineDiffPlanner.cs" />
     <Compile Include="..\Inferpal.Core\Services\CodeActions\FimContextBuilder.cs"    Link="Shared\CodeActions\FimContextBuilder.cs" />
+    <Compile Include="..\Inferpal.Core\Services\CodeActions\CompletionLineBreaks.cs" Link="Shared\CodeActions\CompletionLineBreaks.cs" />
     <Compile Include="..\Inferpal.Core\Services\Debugging\DebugOps.cs"               Link="Shared\Debugging\DebugOps.cs" />
     <Compile Include="..\Inferpal.Core\Services\Debugging\IDebugSession.cs"          Link="Shared\Debugging\IDebugSession.cs" />
     <Compile Include="..\Inferpal.Core\Services\Debugging\DebugStateFormatter.cs"    Link="Shared\Debugging\DebugStateFormatter.cs" />

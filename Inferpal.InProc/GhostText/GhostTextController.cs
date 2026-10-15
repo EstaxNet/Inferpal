@@ -263,15 +263,27 @@ internal sealed class GhostTextController
 
             _triggerSnapshot = null; // consumed
             var pos = _view.Caret.Position.BufferPosition;
+            // The document's line breaks, never the model's LF.
+            var text = Services.CodeActions.CompletionLineBreaks.In(completion, DocumentLineBreak(pos.Snapshot, pos.Position));
             using var edit = _view.TextBuffer.CreateEdit();
-            edit.Insert(pos.Position, completion);
+            edit.Insert(pos.Position, text);
             var applied = edit.Apply();
 
             // Place caret at the end of the inserted text.
-            var newPos = new SnapshotPoint(applied, pos.Position + completion.Length);
+            var newPos = new SnapshotPoint(applied, pos.Position + text.Length);
             _view.Caret.MoveTo(newPos);
         }
         catch (Exception ex) { Services.Diagnostics.Swallow("GhostText.AcceptCompletion", ex); }
+    }
+
+    /// <summary>The document's line break: the caret line's, else the line before's, else the platform's.</summary>
+    private static string DocumentLineBreak(ITextSnapshot snapshot, int position)
+    {
+        var line = snapshot.GetLineFromPosition(position);
+        if (line.LineBreakLength > 0) return line.GetLineBreakText();
+        if (line.LineNumber > 0 && snapshot.GetLineFromLineNumber(line.LineNumber - 1) is { LineBreakLength: > 0 } previous)
+            return previous.GetLineBreakText();
+        return Environment.NewLine;
     }
 
     // ── Cleanup ───────────────────────────────────────────────────────────────
