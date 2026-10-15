@@ -44,11 +44,12 @@ internal static class PathSanitizer
         if (string.IsNullOrEmpty(cleaned))
             throw new ArgumentException(Strings.ToolPathRequired);
 
+        string full;
         try
         {
             // GetFullPath normalises separators, resolves ./ and ../ segments, and
             // throws ArgumentException / PathTooLongException on illegal characters.
-            return !string.IsNullOrEmpty(workspaceRoot) && !Path.IsPathFullyQualified(cleaned) && !IsForeignAbsolute(cleaned)
+            full = !string.IsNullOrEmpty(workspaceRoot) && !Path.IsPathFullyQualified(cleaned) && !IsForeignAbsolute(cleaned)
                 ? Path.GetFullPath(cleaned, Path.GetFullPath(workspaceRoot))
                 : Path.GetFullPath(cleaned);
         }
@@ -56,6 +57,26 @@ internal static class PathSanitizer
         {
             throw new ArgumentException(Strings.ToolPathInvalid(cleaned, ex.Message), ex);
         }
+        return OperatingSystem.IsWindows() ? WithoutStreamName(full) : full;
+    }
+
+    /// <summary>
+    /// A Windows path as the file it writes: the data stream suffix <c>::$DATA</c> taken off (it IS the file), any other
+    /// stream after the root refused.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <c>.env::$DATA</c> writes <c>.env</c>: kept as written, every reader of the path as TEXT — a <c>deny … \.env$</c>
+    /// rule, the forced prompt of the agent's instruction files, the snapshot's name — saw another file. And an alternate
+    /// stream (<c>Cart.cs:hidden</c>) holds content no diff, no editor and no build shows: no tool writes there.
+    /// </remarks>
+    internal static string WithoutStreamName(string fullPath)
+    {
+        var rootLength = Path.GetPathRoot(fullPath)?.Length ?? 0;
+        var path = fullPath;
+        while (path.EndsWith("::$DATA", StringComparison.OrdinalIgnoreCase)) path = path[..^"::$DATA".Length];
+        if (path.IndexOf(':', rootLength) >= 0)
+            throw new ArgumentException(Strings.ToolPathInvalid(fullPath, "a ':' after the drive names an NTFS stream, not a file"));
+        return path;
     }
 
     /// <summary>

@@ -69,7 +69,7 @@ internal static class AgentInstructionFiles
             var path = token.Trim().Replace('\\', '/');
             if (path.Length == 0) continue;
 
-            var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries).Select(AsWritten).ToArray();
 
             // A file the repository gives agents as instructions — AGENTS.md, CLAUDE.md, Copilot's, Cursor's… The
             // table's own reader, never a second list: a row added there is a write that asks here.
@@ -95,5 +95,18 @@ internal static class AgentInstructionFiles
             }
         }
         return false;
+    }
+
+    /// <summary>The name of the file a path segment writes, as Windows resolves it.</summary>
+    /// <remarks>
+    /// ⚠ Windows writes <c>memory.md::$DATA</c> (the file's own data stream), <c>memory.md.</c> and <c>memory.md </c>
+    /// (trailing dots and spaces dropped) to <c>memory.md</c> itself: compared as written, each wrote the system prompt
+    /// with no prompt forced. Read the same way everywhere — on a system where they are other files, the cost is one
+    /// prompt more, never one less.
+    /// </remarks>
+    internal static string AsWritten(string segment)
+    {
+        if (segment.EndsWith("::$DATA", StringComparison.OrdinalIgnoreCase)) segment = segment[..^"::$DATA".Length];
+        return segment.TrimEnd('.', ' ');
     }
 }
