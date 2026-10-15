@@ -273,6 +273,7 @@ internal sealed class AcpAgent : IAsyncDisposable
     {
         var id = Str(p, "sessionId") ?? throw new ArgumentException("'sessionId' is required.");
         _evicted.TryRemove(id, out _);   // closed by the client: never reopened behind its back
+        await ReopeningSettledAsync(id);
         await CloseAsync(id);
         return new { };
     }
@@ -283,6 +284,7 @@ internal sealed class AcpAgent : IAsyncDisposable
     {
         var id = Str(p, "sessionId") ?? throw new ArgumentException("'sessionId' is required.");
         _evicted.TryRemove(id, out _);
+        await ReopeningSettledAsync(id);
         await CloseAsync(id);
         try { new Services.Persistence.ConversationStore().Delete(id); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Diagnostics.Swallow("AcpAgent.Delete", ex); }
@@ -362,20 +364,54 @@ internal sealed class AcpAgent : IAsyncDisposable
     private async Task<AcpSession> LiveAsync(JsonElement p, CancellationToken ct)
     {
         var id = Str(p, "sessionId") ?? throw new ArgumentException("'sessionId' is required.");
+        // ⚠ ONE reopening per thread, awaited by every request that comes meanwhile: the first took the thread out of
+        // the evicted ones, and a second request during the seconds its host took to start found it nowhere — "Unknown
+        // session". Awaited before the live sessions are read: live there, it is not restored to its mode yet.
+        if (_reopening.TryGetValue(id, out var running)) return await running.Value.WaitAsync(ct);
         if (_sessions.TryGetValue(id, out var s)) return s;
+        if (!_evicted.ContainsKey(id))
+            return _reopening.TryGetValue(id, out running) ? await running.Value.WaitAsync(ct)
+                 : _sessions.TryGetValue(id, out s) ? s
+                 : throw new ArgumentException($"Unknown session '{id}'.");
+
+        var reopen = _reopening.GetOrAdd(id, key => new Lazy<Task<AcpSession>>(() => ReopenAsync(key)));
+        try { return await reopen.Value.WaitAsync(ct); }
+        finally { _reopening.TryRemove(KeyValuePair.Create(id, reopen)); }
+    }
+
+    /// <summary>The reopenings in flight, by id (see <see cref="LiveAsync"/>).</summary>
+    private readonly ConcurrentDictionary<string, Lazy<Task<AcpSession>>> _reopening = new(StringComparer.Ordinal);
+
+    /// <summary>Reopens an evicted thread from what it saved, in its mode, on its model; never cancelled by one of the
+    /// requests that wait for it.</summary>
+    private async Task<AcpSession> ReopenAsync(string id)
+    {
         if (!_evicted.TryRemove(id, out var kept) || !_opened.TryGetValue(id, out var was))
-            return _sessions.TryGetValue(id, out s) ? s : throw new ArgumentException($"Unknown session '{id}'.");
+            return _sessions.TryGetValue(id, out var live) ? live : throw new ArgumentException($"Unknown session '{id}'.");
 
         AcpSession reopened;
-        try { (reopened, _) = await OpenAndLoadAsync(id, was.Cwd, was.Servers, replay: false, ct); }
+        try { (reopened, _) = await OpenAndLoadAsync(id, was.Cwd, was.Servers, replay: false, CancellationToken.None); }
         catch
         {
             // What it kept goes back: the next request about it reopens it again, in its mode, on its model.
             _evicted.TryAdd(id, kept);
             throw;
         }
-        await reopened.RestoreAsync(kept, ct);
+        await reopened.RestoreAsync(kept, CancellationToken.None);
         return reopened;
+    }
+
+    /// <summary>
+    /// Waits for a reopening of <paramref name="id"/> in flight to end — what the client closes or deletes is then live,
+    /// and closed.
+    /// </summary>
+    /// <remarks>⚠ Closed while its reopening ran, the thread was not live yet: nothing was closed, and it came back live
+    /// after its client had closed it — its host, its MCP servers, running for nobody.</remarks>
+    private async Task ReopeningSettledAsync(string id)
+    {
+        if (!_reopening.TryGetValue(id, out var running)) return;
+        try { await running.Value; }
+        catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("AcpAgent.ReopenBeforeClose", ex); }
     }
 
     /// <summary>

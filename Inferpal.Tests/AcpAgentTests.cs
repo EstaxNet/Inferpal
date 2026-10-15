@@ -531,6 +531,95 @@ public sealed class AcpAgentTests : IDisposable
         Assert.Equal(1, Volatile.Read(ref chats));
     }
 
+    /// <summary>An agent whose next reopening of a thread is held until <c>release</c>, and the thread closed for room.</summary>
+    private async Task<(Harness H, string First, TaskCompletionSource Reopening, TaskCompletionSource Release, Action Hold)>
+        AThreadClosedForRoomAsync()
+    {
+        var reopening = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release   = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var hold = 0;
+        var h = await StartAsync(fake: f => f.BeforeListModels = async () =>
+        {
+            if (Interlocked.CompareExchange(ref hold, 0, 1) != 1) return;   // the reopening's own listing, once
+            reopening.TrySetResult();
+            await release.Task;
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var first = await NewSessionAsync(h);
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, first, "remember the word teal")));
+        for (var i = 0; i < AcpAgent.MaxLiveSessions; i++) await NewSessionAsync(h);   // the first is closed for room
+        Assert.False(h.Agent.IsLive(first));   // WITNESS
+        return (h, first, reopening, release, () => Volatile.Write(ref hold, 1));
+    }
+
+    /// <summary>
+    /// ⚠ Every request that comes while a thread closed for room is being reopened waits for that reopening. The first took
+    /// the thread out of the closed ones; a second, during the seconds its host took to start, found it nowhere and was
+    /// answered "Unknown session" — or found it live but not restored yet, and the restore then undid it: Agent mode
+    /// picked by the user, Plan mode put back.
+    /// </summary>
+    [Fact]
+    public async Task ARequestWhileAThreadIsReopened_IsAppliedAfterTheRestore()
+    {
+        var offered = new List<string>();
+        var reopening = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release   = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var hold = 0;
+        await using var h = await StartAsync(fake: f =>
+        {
+            f.ModelNames = ["test-model", "other-model"];
+            f.OnChatRequest = (_, _, tools, _) =>
+            {
+                lock (offered) { offered.Clear(); offered.AddRange(tools.Definitions.Select(d => d.Function.Name)); }
+                return Task.FromResult(new ChatTurnResult("ok", null, 0, 0));
+            };
+            f.BeforeListModels = async () =>
+            {
+                if (Interlocked.CompareExchange(ref hold, 0, 1) != 1) return;
+                reopening.TrySetResult();
+                await release.Task;
+            };
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var first = await NewSessionAsync(h);
+        await h.Client.RequestAsync("session/set_config_option", new { sessionId = first, configId = "mode", value = "plan" });
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, first, "remember the word teal")));
+        for (var i = 0; i < AcpAgent.MaxLiveSessions; i++) await NewSessionAsync(h);   // the first is closed for room
+        Assert.False(h.Agent.IsLive(first));   // WITNESS
+
+        Volatile.Write(ref hold, 1);
+        var model = h.Client.RequestAsync("session/set_config_option", new { sessionId = first, configId = "model", value = "other-model" });
+        await reopening.Task.WaitAsync(Wait);
+        var mode = h.Client.RequestAsync("session/set_config_option", new { sessionId = first, configId = "mode", value = "agent" });
+        release.SetResult();
+        await model.WaitAsync(Wait);
+        await mode.WaitAsync(Wait);                 // not "Unknown session"
+
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, first, "write the notes")));
+        lock (offered) Assert.Contains("write_file", offered);   // Agent mode, as the user picked it last
+    }
+
+    /// <summary>
+    /// ⚠ A thread its client closes while it is being reopened is closed: nothing was live yet to close, and the thread
+    /// came back live afterwards — its host and its MCP servers running for nobody.
+    /// </summary>
+    [Fact]
+    public async Task AThreadClosedWhileItIsReopened_StaysClosed()
+    {
+        var (h, first, reopening, release, hold) = await AThreadClosedForRoomAsync();
+        await using var _ = h;
+
+        hold();
+        var reopen = h.Client.RequestAsync("session/set_mode", new { sessionId = first, modeId = "plan" });
+        await reopening.Task.WaitAsync(Wait);
+        var close = h.Client.RequestAsync("session/close", new { sessionId = first });
+        release.SetResult();
+
+        await reopen.WaitAsync(Wait);
+        await close.WaitAsync(Wait);
+        Assert.False(h.Agent.IsLive(first));
+    }
+
     /// <summary>
     /// ⚠ A thread whose <c>/task</c> still runs is not idle. Closed to make room — no turn open, used longest ago —, its
     /// task died with its host, without a word, and its result never came. The idle thread without work goes instead;
