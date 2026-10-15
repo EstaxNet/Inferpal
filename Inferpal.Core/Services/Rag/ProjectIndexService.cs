@@ -25,11 +25,12 @@ internal sealed class ProjectIndexService : IDisposable
     private readonly InferpalConfig     _config;
     private readonly LspSemanticProvider   _lsp;
 
-    // Keyed by file path (case-insensitive) — O(1) file-targeted ops vs O(N) linear scan.
-    private readonly Dictionary<string, List<RagChunk>> _chunksByFile =
-        new(StringComparer.OrdinalIgnoreCase);
+    // Keyed by file path — O(1) file-targeted ops vs O(N) linear scan. ⚠ The file system's case rule (PathComparer), never
+    // a fold of its own: on Linux `Foo.cs` renamed `foo.cs` is two paths, and folded, the rename's second half collapses
+    // into its first — the old name is forgotten as deleted, the new one never indexed.
+    private readonly Dictionary<string, List<RagChunk>> _chunksByFile = new(PathComparer.Default);
     private readonly SemaphoreSlim _chunkLock = new(1, 1);
-    private readonly HashSet<string>     _pendingRebuild = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string>     _pendingRebuild = new(PathComparer.Default);
 
     /// <summary>
     /// Source files the watcher saw change and that the index still holds in their previous version.
@@ -780,7 +781,7 @@ internal sealed class ProjectIndexService : IDisposable
     private void SetupFileWatcher(string rootDir)
     {
         if (_disposed) return;
-        if (_watcher is not null && string.Equals(_watchedRoot, rootDir, StringComparison.OrdinalIgnoreCase))
+        if (_watcher is not null && string.Equals(_watchedRoot, rootDir, PathComparer.Comparison))
             return;
 
         _watcher?.Dispose();
@@ -1210,7 +1211,7 @@ internal sealed class ProjectIndexService : IDisposable
                 _indexGeneration++;
                 _shadow = null;
             }
-            foreach (var group in chunks.GroupBy(c => c.FilePath, StringComparer.OrdinalIgnoreCase))
+            foreach (var group in chunks.GroupBy(c => c.FilePath, PathComparer.Default))
                 _chunksByFile[group.Key] = [.. group];
             ChunkCount = _chunksByFile.Values.Sum(l => l.Count);
             _contentVersion++;   // the search snapshot is stale from here

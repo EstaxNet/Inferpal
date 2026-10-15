@@ -187,6 +187,41 @@ public sealed class ProjectIndexServiceWatcherTests : IDisposable
             e => e.Context == "ProjectIndexService" && e.Detail.Contains("without embedding", StringComparison.Ordinal));
     }
 
+    /// <summary>
+    /// ⚠ A rename that only changes the case keeps the file in the index. On Linux <c>Foo.cs</c> and <c>foo.cs</c> are two
+    /// paths: the index's sets folded case, so the rename's new name collapsed into the old one — the old name forgotten
+    /// as deleted, the new one never indexed. Measurable on a case-sensitive file system only (Linux); elsewhere both
+    /// names are the same file and the test reads it under the new one.
+    /// </summary>
+    [Fact]
+    public async Task ARenameThatOnlyChangesTheCase_KeepsTheFileIndexed()
+    {
+        var before = Path.Combine(_root, "Widget.cs");
+        await File.WriteAllTextAsync(before, SampleClass("Widget"));
+        var svc = NewService(new FakeInferenceProvider { Embedding = [0.1f, 0.2f] });
+        svc.StartIndexing(_root);
+        await WaitUntilAsync(() => Task.FromResult(svc.Status.Contains('✅')), "the pass is finished", () => svc.Status);
+        Assert.NotEmpty(await svc.GetFileChunksAsync(before, _root, CancellationToken.None));   // WITNESS: indexed
+
+        var after = Path.Combine(_root, "widget.cs");
+        File.Move(before, after);
+
+        await WaitUntilAsync(async () => (await svc.GetFileChunksAsync(after, _root, CancellationToken.None)).Count > 0,
+                             "the renamed file is indexed under its new name", () => svc.Status);
+    }
+
+    /// <summary>The index's path-keyed collections follow the file system's case rule, never a fold of their own.</summary>
+    [Fact]
+    public void TheIndexsPathCollections_FollowTheFileSystemsCaseRule()
+    {
+        var code = ConventionCoverageTests.CodeOnly(
+            Path.Combine(ConventionCoverageTests.RepoRoot(), "Inferpal.Core", "Services", "Rag", "ProjectIndexService.cs"));
+        Assert.Contains("_chunksByFile = new(PathComparer.Default)", code, StringComparison.Ordinal);
+        Assert.Contains("_pendingRebuild = new(PathComparer.Default)", code, StringComparison.Ordinal);
+        Assert.Contains("GroupBy(c => c.FilePath, PathComparer.Default)", code, StringComparison.Ordinal);
+        Assert.Contains("string.Equals(_watchedRoot, rootDir, PathComparer.Comparison)", code, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task AFileSavedPastTheSizeCap_LeavesTheIndex_LikeTheFullPassLeavesIt()
     {
