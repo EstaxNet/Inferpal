@@ -363,6 +363,32 @@ public sealed class AcpAgentTests : IDisposable
     }
 
     /// <summary>
+    /// ⚠ What the client already showed of a FAILED turn's answer is kept with the thread, as both editors keep it: a
+    /// notice, never the model's answer. Only the error was saved, and the reloaded thread lost what the user had read.
+    /// </summary>
+    [Fact]
+    public async Task AFailedTurnsShownPart_IsSavedAsANotice_BeforeTheError()
+    {
+        await using var h = await StartAsync(fake: f => f.OnChat = (onToken, _) =>
+        {
+            onToken?.Invoke("the shown half");
+            throw new System.Net.Http.HttpRequestException("the backend went away");
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+
+        var r = await PromptAsync(h, sid, "explain this");
+        Assert.True(r.TryGetProperty("error", out _), r.GetRawText());   // WITNESS: the turn failed
+
+        var saved = await new Services.Persistence.ConversationStore().LoadAsync(sid, CancellationToken.None);
+        Assert.NotNull(saved);
+        var shown = Assert.Single(saved!.Messages, m => m.Content == "the shown half");
+        Assert.Equal(Services.Persistence.SessionManager.NoticeMarker, shown.ToolName);
+        Assert.Equal(Services.Persistence.SessionManager.NoticeMarker, saved.Messages[^1].ToolName);
+        Assert.Equal(saved.Messages.Count - 2, saved.Messages.IndexOf(shown));
+    }
+
+    /// <summary>
     /// ⚠ Live sessions are bounded, and a client never reloads a thread it believes open: closed to make room for a
     /// fifth, a session answered its next prompt with "Unknown session". It is reopened from what it saved.
     /// </summary>

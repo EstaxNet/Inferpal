@@ -684,7 +684,11 @@ internal sealed class AcpSession : IAsyncDisposable
 
         if (result.Error is { } error)
         {
-            // A failed turn is an error, never an answer: the client shows the response's message.
+            // A failed turn is an error, never an answer: the client shows the response's message. What the client already
+            // showed of the answer stays, as in both editors — a notice, never what the model said (a reload hands it no
+            // half reply); left out, the reloaded thread lost what the user had read.
+            var shown = _provisional ? string.Empty : _stream.Sent.Trim();
+            if (shown.Length > 0) RecordAnswer(shown, notice: true);
             RecordAnswer(error, notice: true);
             await SaveAsync();
             throw AcpRpc.Error(AcpRpc.InternalError, error);
