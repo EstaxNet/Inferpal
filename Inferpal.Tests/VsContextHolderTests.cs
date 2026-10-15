@@ -52,6 +52,45 @@ public sealed class VsContextHolderTests
         Assert.Equal([A], holder.GetOpenPaths());
     }
 
+    /// <summary>
+    /// ⚠ The context an Inferpal command froze stands for the active view only if it was taken after the active document
+    /// last closed: taken before, it is another file at the version and selection of that moment — and once the active
+    /// document closed, the agent read and edited it as the document in front of the user.
+    /// </summary>
+    [Fact]
+    public void ACommandContextOlderThanTheClose_IsNotTheActiveView()
+    {
+        // The SDK's client context cannot be named here: what is ordered is the moment a command froze it.
+        var (holder, _) = Opened(A, B);
+        holder.NoteCommandRan();                // a command run earlier, from A
+        holder.Activate(null, B);                // the user then works in B…
+        holder.ViewClosed(B);                    // …and closes it
+
+        Assert.False(holder.ContextNewerThanTheActiveClose);
+
+        holder.NoteCommandRan();                // a command run now: its context is the view of now
+        Assert.True(holder.ContextNewerThanTheActiveClose);
+    }
+
+    [Fact]
+    public void TheActiveViewReader_UsesTheFrozenContext_OnlyWhenItIsNewerThanTheClose()
+    {
+        var code = ConventionCoverageTests.CodeOnly(Path.Combine(ConventionCoverageTests.RepoRoot(),
+                                                                 "Inferpal", "Services", "VsIntegration", "VsContextHolder.cs"));
+        Assert.Contains("set { _context = value; NoteCommandRan(); }", code, StringComparison.Ordinal);
+        Assert.Contains("if (!ContextNewerThanTheActiveClose || Context is not { } context) return null;", code, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ACommandContext_WithNoCloseSince_IsTheActiveView()
+    {
+        // Reference arm: before any edit or caret move, the latest command's view is the one the user works in.
+        var (holder, _) = Opened(A, B);
+        holder.NoteCommandRan();
+        holder.ViewClosed(A);                    // another document closed: not the active one
+        Assert.True(holder.ContextNewerThanTheActiveClose);
+    }
+
     [Fact]
     public void ClosingAnotherDocument_KeepsTheActiveOne()
     {

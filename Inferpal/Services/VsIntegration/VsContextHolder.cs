@@ -19,7 +19,30 @@ internal class VsContextHolder
 
     /// <summary>The VS client context of the latest Inferpal command (a copy frozen when it ran — see
     /// <see cref="ResolveActiveViewAsync"/>).</summary>
-    public IClientContext? Context { get; set; }
+    public IClientContext? Context
+    {
+        get => _context;
+        set { _context = value; NoteCommandRan(); }
+    }
+
+    /// <summary>A command just froze its context: from now, it is the newest event (see
+    /// <see cref="ContextNewerThanTheActiveClose"/>).</summary>
+    internal void NoteCommandRan() => Interlocked.Exchange(ref _contextAt, Interlocked.Increment(ref _sequence));
+
+    private IClientContext? _context;
+    // An order of events: when the context was frozen, and when the active document's last view closed.
+    private long _sequence, _contextAt, _activeClosedAt;
+
+    /// <summary>
+    /// The frozen <see cref="Context"/> was taken after the active document last closed: it may stand for the active view.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Taken before, it is the view of a moment the user has left — another file, at THAT version, with that selection:
+    /// once the active document closed, the agent read and edited it as the document in front of the user. No active
+    /// document is the truth until a view is used or a command runs.
+    /// </remarks>
+    internal bool ContextNewerThanTheActiveClose =>
+        Interlocked.Read(ref _contextAt) > Interlocked.Read(ref _activeClosedAt);
 
     /// <summary>The chat window's X-Ray counts as they are now — what the settings' Context page shows. Set by the chat
     /// window; <c>null</c> while none exists (the page then says the conversation is counted once it opens).</summary>
@@ -158,6 +181,7 @@ internal class VsContextHolder
                 _latestView     = null;
                 _activeFilePath = string.Empty;
                 cleared         = true;
+                Interlocked.Exchange(ref _activeClosedAt, Interlocked.Increment(ref _sequence));
             }
         }
         if (cleared) ActiveFileChanged?.Invoke(this, string.Empty);
@@ -181,7 +205,7 @@ internal class VsContextHolder
     public async Task<ITextViewSnapshot?> ResolveActiveViewAsync(VisualStudioExtensibility vs, CancellationToken ct)
     {
         if (LatestView is { } latest) return latest;
-        if (Context is not { } context) return null;
+        if (!ContextNewerThanTheActiveClose || Context is not { } context) return null;
         var view = await vs.Editor().GetActiveTextViewAsync(context, ct);
         // The frozen context outlives the document it was taken on: a closed one is no active document.
         return view is not null && IsKnownClosed(view.Document.Uri.LocalPath) ? null : view;
