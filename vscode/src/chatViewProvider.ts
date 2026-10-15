@@ -8,7 +8,7 @@ import { HostClient } from './hostClient';
 import { hostErrorText, hostUnavailableMessage, isConnectionLost, promptOpenFolder } from './hostStatus';
 import { mentionTokens, resolveMention } from './mentionPaths';
 import { followModelRouterSettings } from './modelRouterSettings';
-import { panelDiagnostics } from './editorBridge';
+import { openTabPaths, panelDiagnostics } from './editorBridge';
 import { capAttachment, CappedText } from './attachmentCap';
 import { renderChatHtml } from './webview/chatWebviewHtml';
 import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
@@ -21,6 +21,15 @@ import {
   WvSlashCommand,
   WvTranscriptItem,
 } from './webviewMessages';
+
+/**
+ * The folders the @ picker never searches: the Core's `WorkspaceScan.ExcludedDirNames`, which Visual Studio's picker
+ * reads — Inferpal's own `.inferpal/history` snapshots and Python environments included — but `packages`, excluded
+ * there only when it holds NuGet packages (a glob cannot tell it from a monorepo's `packages/`), and plus `out`, a
+ * TypeScript project's compiled copy of its sources.
+ */
+const PICKER_EXCLUDED_DIRS = ['obj', 'bin', 'build', 'dist', '.git', '.vs', '.generated', 'node_modules', '.venv', 'venv',
+  '.inferpal', 'out'];
 
 const HISTORY_KEY = 'inferpal.promptHistory';
 const HISTORY_MAX = 50;
@@ -1538,19 +1547,18 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   // ── @-mentions ──────────────────────────────────────────────────────────────
 
-  /** Suggestions for the webview popup: open editors first, then a workspace glob. */
+  /** Suggestions for the webview popup: the open tabs first, then a workspace glob. */
   private async mentionSuggestions(query: string): Promise<string[]> {
     const MAX = 12;
     const q = query.toLowerCase();
     const items = new Set<string>();
 
-    for (const doc of vscode.workspace.textDocuments) {
-      if (doc.uri.scheme !== 'file') {
-        continue;
-      }
+    // The tabs, never workspace.textDocuments: it also holds what was loaded without a tab — a file an @-mention read,
+    // a document an extension opened.
+    for (const path of openTabPaths()) {
       // asRelativePath's default: the folder's name first when the workspace has several — the form
       // resolveMention reads back. Without it another folder's file of the same name was attached.
-      const rel = vscode.workspace.asRelativePath(doc.uri).replace(/\\/g, '/');
+      const rel = vscode.workspace.asRelativePath(vscode.Uri.file(path)).replace(/\\/g, '/');
       if (!q || rel.toLowerCase().includes(q)) {
         items.add(rel);
       }
@@ -1559,7 +1567,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       try {
         const found = await vscode.workspace.findFiles(
           `**/*${query}*`,
-          '**/{node_modules,bin,obj,out,dist,.git}/**',
+          `**/{${PICKER_EXCLUDED_DIRS.join(',')}}/**`,
           MAX,
         );
         for (const uri of found) {

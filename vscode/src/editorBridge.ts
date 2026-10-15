@@ -31,7 +31,7 @@ function portOf(uri: vscode.Uri): string {
  * `workspace.textDocuments`, which also holds the documents loaded without a tab — a file an @-mention read, one a
  * language server opened, a closed tab's buffer kept for a while.
  */
-function openTabPaths(): string[] {
+export function openTabPaths(): string[] {
   const paths: string[] = [];
   for (const group of vscode.window.tabGroups.all) {
     for (const tab of group.tabs) {
