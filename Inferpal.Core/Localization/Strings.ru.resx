@@ -510,9 +510,9 @@
   <data name="ChecksListHeader" xml:space="preserve"><value>**Проверки ревью** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>Нечего проверять — рабочее дерево чистое.</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>Идёт проверка диффа…</value></data>
-  <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>Ты — дотошный, полностью локальный ревьюер кода. Проверь приведённый ниже git-дифф ТОЛЬКО по предоставленным проверкам. Сообщай о каждом нарушении отдельной строкой строго в таком формате: `- [severity] путь/к/файлу.ext:СТРОКА - что не так и как исправить`, где severity — blocker, warning или nit, а СТРОКА — номер строки, встречающийся в диффе. Одно замечание на строку, без вложенности и подпунктов. Никогда не указывай на файл, которого нет в диффе, не выдумывай проблем и не комментируй ничего вне проверок или диффа. Одним коротким предложением вне строк замечаний укажи, какие проверки пройдены. Если пройдены все, скажи об этом прямо и не сообщай ни одного замечания.</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>Нет проверки с именем «{0}». Выполните `/checks`, чтобы вывести список.</value></data>
-  <data name="CheckNoFindings" xml:space="preserve"><value>Ни одного привязанного замечания — проверки ничего не нашли в этом диффе.</value></data>
+  <data name="CheckNoFindings" xml:space="preserve"><value>Ни одного привязанного замечания — ревью ничего не нашло в этом диффе.</value></data>
+  <data name="CheckNoFindingsNarrowed" xml:space="preserve"><value>Ни одного привязанного замечания — эта проверка ничего не нашла в этом диффе.</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ Проверки нет: **{0}** потратила весь ответ на рассуждения и не написала ни одного замечания. Это ничего не говорит о диффе — это не чистый результат. Избежать этого помогает больший контекст или модель, которая не рассуждает перед ответом.</value></data>
   <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ Проверены только первые {0} символов диффа из {1}. Всё ниже относится к этой части, а не ко всему изменению — проверьте остальное отдельно или добавляйте в индекс частями.</value></data>
   <data name="CheckNewFilesNotReviewed" xml:space="preserve"><value>⚠ Новые файлы, ещё не добавленные в git, не проверены ({0}; сверх лимита размера, двоичные или нечитаемые): {1}.</value></data>
@@ -716,7 +716,7 @@
   <data name="SlashHintTemplate" xml:space="preserve"><value>начать сессию из готового шаблона — /template &lt;id&gt;</value></data>
   <data name="TemplateUnknown" xml:space="preserve"><value>Неизвестный шаблон `{0}`. Введите `/template`, чтобы увидеть список.</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>прикрепить полный git diff как чип контекста — /diff [путь]</value></data>
-  <data name="SlashHintCheck" xml:space="preserve"><value>проверка текущего git diff через ИИ по .inferpal/checks — /check [имя|init]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>проверка текущего git diff через ИИ, в том числе по .inferpal/checks — /check [имя|init]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>список правил проекта в .inferpal/rules — /rules [init]</value></data>
   <data name="SlashHintChecks" xml:space="preserve"><value>список проверок ревью в .inferpal/checks — /checks [init]</value></data>
   <data name="SlashHintSnippets" xml:space="preserve"><value>список сохранённых фрагментов кода — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>

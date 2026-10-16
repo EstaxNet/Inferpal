@@ -391,7 +391,7 @@ public class CheckReviewAnchorTests
     // ── A verdict about a fifth of the change ─────────────────────────────────
 
     /// <summary>
-    /// ⚠ The expensive branch is the EMPTY one: "the checks turned up nothing on this diff" is a
+    /// ⚠ The expensive branch is the EMPTY one: "the review turned up nothing on this diff" is a
     /// verdict the user acts on, and on a capped diff it is a verdict about the part that fit. The
     /// cap is 12 000 characters and five of this repository's last six commits exceed it — one by
     /// more than four times — so this is the ordinary case, not a corner.

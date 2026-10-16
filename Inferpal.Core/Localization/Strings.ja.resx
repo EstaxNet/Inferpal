@@ -510,9 +510,9 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="ChecksListHeader" xml:space="preserve"><value>**レビューチェック** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>レビュー対象がありません — 作業ツリーはクリーンです。</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>差分をレビュー中…</value></data>
-  <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>あなたは綿密で完全にローカルなコードレビュアーです。以下の git 差分を、提供されたレビューチェックの観点のみで確認してください。違反は 1 行につき 1 件、次の形式で厳密に報告します: `- [severity] path/to/file.ext:行番号 - 何が問題で、どう直すか`。severity は blocker、warning、nit のいずれかで、行番号は差分に現れる番号にしてください。入れ子や小見出しは使わないこと。差分に含まれないファイルを指してはならず、問題を捏造したり、チェックや差分の外について述べたりしないでください。どのチェックが通ったかは、指摘行とは別に短い一文で述べます。すべて通った場合はその旨を明確に述べ、指摘は 1 件も報告しないでください。</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>「{0}」という名前のチェックはありません。`/checks` で一覧を表示してください。</value></data>
-  <data name="CheckNoFindings" xml:space="preserve"><value>差分に紐づく指摘はありません — チェックは何も検出しませんでした。</value></data>
+  <data name="CheckNoFindings" xml:space="preserve"><value>差分に紐づく指摘はありません — レビューでは何も検出されませんでした。</value></data>
+  <data name="CheckNoFindingsNarrowed" xml:space="preserve"><value>差分に紐づく指摘はありません — このチェックでは何も検出されませんでした。</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ レビューなし: **{0}** は回答全体を推論に費やし、指摘を書きませんでした。これは差分について何も示しておらず、問題なしという結果ではありません。より大きなコンテキストか、先に推論しないモデルで回避できます。</value></data>
   <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ 差分全体 {1} 文字のうち、先頭 {0} 文字だけがレビューされました。以下はその部分についてであり、変更全体についてではありません。残りは別途レビューするか、小さく分けてステージしてください。</value></data>
   <data name="CheckNewFilesNotReviewed" xml:space="preserve"><value>⚠ まだ git に追加されていない新しいファイル {0} 件はレビューされていません (サイズ上限超過、バイナリ、または読み取り不可): {1}。</value></data>
@@ -718,7 +718,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SlashHintTemplate" xml:space="preserve"><value>プリセットテンプレートからセッションを開始 — /template &lt;id&gt;</value></data>
   <data name="TemplateUnknown" xml:space="preserve"><value>不明なテンプレート `{0}` です。`/template` と入力すると一覧を表示します。</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>git diff 全体をコンテキストチップとして添付 — /diff [パス]</value></data>
-  <data name="SlashHintCheck" xml:space="preserve"><value>現在の git diff を .inferpal/checks に照らして AI レビュー — /check [名前|init]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>現在の git diff を AI レビュー（.inferpal/checks も適用） — /check [名前|init]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>.inferpal/rules 内のプロジェクトルールを一覧表示 — /rules [init]</value></data>
   <data name="SlashHintChecks" xml:space="preserve"><value>.inferpal/checks 内のレビューチェックを一覧表示 — /checks [init]</value></data>
   <data name="SlashHintSnippets" xml:space="preserve"><value>保存されたコードスニペットを一覧表示 — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>

@@ -427,8 +427,8 @@ internal partial class InferpalToolWindowData
 
     // ── Rules & Checks (.inferpal/rules, .inferpal/checks) ─────────────────
 
-    // AI-reviews the current git diff against .inferpal/checks. /check init scaffolds an example;
-    // /check <name> runs a single check. 100% local — no diff leaves the machine.
+    // AI-reviews the current git diff for any bug or regression, with .inferpal/checks as added criteria.
+    // /check init scaffolds an example; /check <name> reviews against that single check only. 100% local.
     /// <summary>
     /// <c>/check</c> — the whole flow lives in <see cref="Services.Commands.CheckCommandHandler"/>
     /// so the Host serves the same command; the VM only supplies git and the UI.

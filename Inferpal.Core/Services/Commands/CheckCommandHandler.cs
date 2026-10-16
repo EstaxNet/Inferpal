@@ -55,7 +55,8 @@ internal static class CheckCommandHandler
 
         if (checks.Count == 0) return new(Named(Strings.ChecksNone));
 
-        if (!string.IsNullOrEmpty(arg))
+        var narrowed = !string.IsNullOrEmpty(arg);
+        if (narrowed)
         {
             var one = checks.FirstOrDefault(c => c.Name.Equals(arg, StringComparison.OrdinalIgnoreCase));
             if (one is null) return new(Named(Strings.CheckUnknownName(arg)));
@@ -89,7 +90,7 @@ internal static class CheckCommandHandler
             diff = GitCommitPolicy.BuildUnstagedContext(status, unstaged);
 
             // ⚠ A NEW file is part of the change under review, and `git diff` never shows one: reviewed from the
-            // status line alone, "?? src/NewService.cs" came back "the checks turned up nothing on this diff" — a clean
+            // status line alone, "?? src/NewService.cs" came back "the review turned up nothing on this diff" — a clean
             // verdict on code nobody read. (/commit leaves them out on purpose: /commit-exec commits tracked files only.)
             var (_, untracked) = GitCommitPolicy.SplitUntracked(status);
             if (untracked.Count > 0)
@@ -104,7 +105,7 @@ internal static class CheckCommandHandler
             diff = GitCommitPolicy.BuildStagedContext(staged);
         }
 
-        // ⚠ The cut rides ABOVE the findings, because it qualifies them: "the checks turned up
+        // ⚠ The cut rides ABOVE the findings, because it qualifies them: "the review turned up
         // nothing on this diff" is a verdict the user acts on, and on a capped diff it is a verdict
         // about the part that fit. Most real changes exceed the cap — the model is told, and the
         // person reading the answer was not.
@@ -112,9 +113,11 @@ internal static class CheckCommandHandler
 
         onProgress?.Invoke(Strings.CheckReviewingLabel);
 
+        // ⚠ One English text whatever the interface language (the model's instructions are never translated), the
+        // interface language riding on the reply-language line, the severity words pinned to English in both texts.
         var history = new List<ChatMessageDto>
         {
-            new("system", Strings.CheckReviewSystemPrompt),
+            new("system", ReviewSystemPrompt(narrowed)),
             new("user",   ChecksService.BuildReviewPrompt(checks, capped.Text)),
         };
 
@@ -133,13 +136,13 @@ internal static class CheckCommandHandler
         catch (Exception ex) { return new(Strings.MsgError(ex.Message)); }
 
         // ⚠ An empty reply, or one that is only the model's reasoning, is not a review. Rendered, it read "no anchored
-        // finding — the checks turned up nothing on this diff": a clean verdict nobody gave.
+        // finding — the review turned up nothing on this diff": a clean verdict nobody gave.
         if (reasoningOnly) return new(Named(Strings.CheckReviewOnlyReasoning(model)));
         if (string.IsNullOrWhiteSpace(answer)) return new(Named(Strings.MsgEmptyResponseFrom(model, client.ServerAddress)));
 
         // Anchors come from the very text the model was shown, so a location is checked against
         // what the model could actually see — not against the working tree, which may have moved.
-        var rendered = CheckReviewParser.Render(CheckReviewParser.Parse(answer, DiffAnchors.Parse(capped.Text)));
+        var rendered = CheckReviewParser.Render(CheckReviewParser.Parse(answer, DiffAnchors.Parse(capped.Text)), narrowed);
         // ⚠ Same reason, other end: a review that stopped at the length limit lists the findings it
         // reached, and the absence of the rest reads as "the rest is fine" — a verdict nobody gave.
         if (cut)
@@ -151,6 +154,14 @@ internal static class CheckCommandHandler
                        + "\n\n" + rendered;
         return new(Named(rendered));
     }
+
+    /// <summary>
+    /// The system prompt of a review: the whole change with the checks as added criteria, or — for <c>/check
+    /// &lt;name&gt;</c> — that one check only; then the line naming the reply language.
+    /// </summary>
+    internal static string ReviewSystemPrompt(bool narrowed) =>
+        (narrowed ? ModelPrompts.CheckReviewNamed : ModelPrompts.CheckReview)
+        + SystemPromptBuilder.ReplyLanguage(Strings.UiCulture);
 
     /// <summary>The listing of the repository's new files, one path per file, from its top.</summary>
     internal const string NewFilesListing = "ls-files --others --exclude-standard --full-name -- :/";
@@ -168,7 +179,7 @@ internal static class CheckCommandHandler
         // One path per file: the status collapses a new folder into "?? folder/".
         // ⚠ The WHOLE repository (":/"), paths from its top (--full-name): `git status` lists every new file of the
         // repository, `ls-files` only the folder it runs in — a solution in src/ or a monorepo opened on one package
-        // left a new file beside it ("?? ../deploy.yml") neither read nor named, under "the checks turned up nothing".
+        // left a new file beside it ("?? ../deploy.yml") neither read nor named, under "the review turned up nothing".
         var (listing, exit) = await git(NewFilesListing, ct);
         if (exit != 0)
         {

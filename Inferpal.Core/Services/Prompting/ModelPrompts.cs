@@ -137,6 +137,44 @@ internal static class ModelPrompts
     public const string AgentNudgeToolCall =
         "You described your intentions but did not call any tools. Do NOT produce any text — call the first tool from your plan RIGHT NOW.";
 
+    /// <summary>
+    /// System prompt of <c>/check</c>: the whole change, with the repository's checks as ADDED criteria
+    /// (<c>CheckCommandHandler</c> appends the reply-language line).
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Told to review "ONLY against the checks", a model answers "all checks pass" on a change that breaks something
+    /// no check names: the more checks a repository writes, the narrower its review — narrower than a generic check
+    /// alone. The finding format and the three severity words are what <c>CheckReviewParser</c> reads: a translated
+    /// severity is a lost finding, hence "in English". Editing this text changes what <c>/check</c> finds: a change to
+    /// it is measured on real defects before it ships.
+    /// </remarks>
+    public const string CheckReview =
+        "You are a meticulous, fully local code reviewer. Review the git diff below for any bug, regression or behaviour "
+        + "change it introduces, and also against the repository's review checks provided: they are additional criteria, "
+        + "never the limit of the review. Report every problem on its own line, in exactly this format: "
+        + "`- [severity] path/to/file.ext:LINE - what is wrong and how to fix it`, where severity is blocker, warning or "
+        + "nit (these three words in English), and LINE is a line number that appears in the diff. One finding per line, "
+        + "no nesting, no sub-bullets. Never point at a file the diff does not touch, and do not invent issues or comment "
+        + "on anything outside the diff. Say in a short sentence, outside the finding lines, which checks pass. If you "
+        + "find no problem, say so clearly and report no finding.";
+
+    /// <summary>
+    /// System prompt of <c>/check &lt;name&gt;</c>: the user narrowed the review to that one check, and it stays a
+    /// review against it.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The reply-language line follows it too, so the severity words are pinned to English here as well: a
+    /// <c>[bloquant]</c> is a line <c>CheckReviewParser</c> does not read, and the answer would say nothing was found.
+    /// </remarks>
+    public const string CheckReviewNamed =
+        "You are a meticulous, fully local code reviewer. Review the git diff below ONLY against the review checks "
+        + "provided. Report every violation on its own line, in exactly this format: "
+        + "`- [severity] path/to/file.ext:LINE - what is wrong and how to fix it`, where severity is blocker, warning or "
+        + "nit (these three words in English), and LINE is a line number that appears in the diff. One finding per line, no nesting, no sub-bullets. "
+        + "Never point at a file the diff does not touch, and do not invent issues or comment on anything outside the "
+        + "checks or the diff. Say in a short sentence, outside the finding lines, which checks pass. If every check "
+        + "passes, say so clearly and report no finding.";
+
     /// <summary>Final-synthesis prompt (no tools) when the loop ended without a printable answer but tools ran; quotes the user's current request (AgentOrchestrator.TaskSnippet).</summary>
     public static string AgentSynthesizePrompt(string task) =>
         string.Format("You have gathered enough information with the tools above. Do NOT call any more tools. Using those results, write the complete final answer to my most recent request, which was: \"{0}\" — directly, in full, and in my language. Answer THAT request specifically; do not repeat an earlier answer from this conversation.",

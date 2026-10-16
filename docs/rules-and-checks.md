@@ -37,15 +37,17 @@ Commands: `/rules` lists them; `/rules init` scaffolds an example (never overwri
 
 ## AI Checks — `.inferpal/checks/*.md`
 
-Each markdown file describes review criteria. `/check` reviews your current **git diff**
-against them, **100% locally**:
+Each markdown file describes review criteria. `/check` reviews your current **git diff** for
+any bug, regression or behaviour change it introduces, **and** against your checks, **100% locally**.
+With all your checks, they add to the review and never narrow it: a defect none of them names is still
+reported. With no check in the repository, `/check` asks you to create one (`/check init`).
 
 - The diff is gathered staged → unstaged (plus status), capped to keep the prompt bounded. With nothing staged,
   files git does not track yet are reviewed too, as the diffs they will be once added; a new file that is not
   read (past the size limit, binary or unreadable) is named above the findings.
-- The model reviews it against every check and reports `file:line`, a severity
+- The model reviews the whole change, applies every check on top, and reports `file:line`, a severity
   (**blocker** / **warning** / **nit**), and a concrete fix — instructed not to invent
-  issues.
+  issues. It also says, in one sentence, which checks pass. Its sentences come in your interface language.
 - **Every location is then checked against the diff itself**, and the answer says which of
   three it is: the line is inside a changed hunk; the line was off and got snapped to the
   nearest changed line (the reported one is shown); or the file is not in the diff at all,
@@ -54,8 +56,8 @@ against them, **100% locally**:
   anything, and a wrong anchor is worse than no anchor.
 - Findings are grouped by file, blockers first, so the reading order is the fixing order.
 
-Commands: `/check` runs all checks; `/check <name>` runs one; `/check init` scaffolds an
-example. `/checks` lists the available checks; `/checks init` scaffolds one. Available in
+Commands: `/check` reviews the change with all checks; `/check <name>` reviews it against that one
+check **only** (the narrow review you ask for); `/check init` scaffolds an example. `/checks` lists the available checks; `/checks init` scaffolds one. Available in
 **both front-ends** (VS and VS Code).
 
 > [!NOTE]

@@ -1202,9 +1202,10 @@ internal static class Strings
     public static string ChecksListHeader        => Get(nameof(ChecksListHeader));
     public static string CheckNoDiff             => Get(nameof(CheckNoDiff));
     public static string CheckReviewingLabel     => Get(nameof(CheckReviewingLabel));
-    public static string CheckReviewSystemPrompt => Get(nameof(CheckReviewSystemPrompt));
     public static string CheckUnknownName(string name) => Format(Get(nameof(CheckUnknownName)), name);
     public static string CheckNoFindings         => Get(nameof(CheckNoFindings));
+    /// <summary><c>/check &lt;name&gt;</c> found nothing: a verdict on that one check, not on the change.</summary>
+    public static string CheckNoFindingsNarrowed => Get(nameof(CheckNoFindingsNarrowed));
     public static string CheckReviewOnlyReasoning(string model) => Format(Get(nameof(CheckReviewOnlyReasoning)), model);
     /// <summary>The verdict below covers only what fit — said above the findings, which it qualifies.</summary>
     public static string CheckDiffTruncated(int kept, int total) =>

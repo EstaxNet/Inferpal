@@ -129,14 +129,17 @@ internal static class CheckReviewParser
     /// Markdown for the chat: findings grouped by file and ordered by severity then line, so the
     /// reading order is the order you would fix them in. Prose is kept above, verbatim.
     /// </summary>
-    public static string Render(CheckReview review)
+    /// <param name="review">The parsed answer.</param>
+    /// <param name="narrowed"><c>/check &lt;name&gt;</c>: an empty answer is a verdict on that one check, never
+    /// on the whole change, and says so.</param>
+    public static string Render(CheckReview review, bool narrowed = false)
     {
         var sb = new StringBuilder();
         if (review.Prose.Length > 0) sb.Append(review.Prose).Append("\n\n");
 
         if (review.Findings.Count == 0)
         {
-            sb.Append(Strings.CheckNoFindings);
+            sb.Append(narrowed ? Strings.CheckNoFindingsNarrowed : Strings.CheckNoFindings);
             return sb.ToString().Trim();
         }
 

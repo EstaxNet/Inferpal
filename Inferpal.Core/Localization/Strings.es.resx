@@ -510,9 +510,9 @@ Haga clic en **Corregir con IA** para corregirlo automáticamente en bucle, o es
   <data name="ChecksListHeader" xml:space="preserve"><value>**Checks de revisión** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>Nada que revisar — el árbol de trabajo está limpio.</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>Revisando el diff…</value></data>
-  <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>Eres un revisor de código meticuloso y totalmente local. Revisa el diff de git siguiente ÚNICAMENTE conforme a los checks de revisión proporcionados. Informa cada infracción en su propia línea, exactamente con este formato: `- [severity] ruta/al/archivo.ext:LÍNEA - qué falla y cómo corregirlo`, donde severity es blocker, warning o nit, y LÍNEA es un número de línea presente en el diff. Un hallazgo por línea, sin anidamiento ni subviñetas. Nunca señales un archivo que el diff no toca, no inventes problemas ni comentes nada fuera de los checks o del diff. Indica en una frase breve, fuera de las líneas de hallazgo, qué checks pasan. Si todos pasan, dilo con claridad y no informes ningún hallazgo.</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>No hay ningún check llamado «{0}». Ejecuta `/checks` para listarlos.</value></data>
-  <data name="CheckNoFindings" xml:space="preserve"><value>Ningún hallazgo anclado: los checks no detectaron nada en este diff.</value></data>
+  <data name="CheckNoFindings" xml:space="preserve"><value>Ningún hallazgo anclado: la revisión no detectó nada en este diff.</value></data>
+  <data name="CheckNoFindingsNarrowed" xml:space="preserve"><value>Ningún hallazgo anclado: el check no detectó nada en este diff.</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ Sin revisión: **{0}** pasó toda su respuesta razonando y no escribió ningún hallazgo. Esto no dice nada del diff: no es un resultado limpio. Un contexto mayor, o un modelo que no razone primero, lo evita.</value></data>
   <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ Solo se revisaron los primeros {0} caracteres del diff, de {1}. Lo que sigue trata de esa parte, no de todo su cambio: revise el resto aparte, o prepárelo en trozos más pequeños.</value></data>
   <data name="CheckNewFilesNotReviewed" xml:space="preserve"><value>⚠ {0} archivo(s) nuevo(s) aún no añadido(s) a git no se revisaron (por encima del límite de tamaño, binarios o ilegibles): {1}.</value></data>
@@ -718,7 +718,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="SlashHintTemplate" xml:space="preserve"><value>iniciar una sesión desde una plantilla predefinida — /template &lt;id&gt;</value></data>
   <data name="TemplateUnknown" xml:space="preserve"><value>Plantilla desconocida: `{0}`. Escriba `/template` para ver la lista.</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>adjuntar el diff git completo como chip de contexto — /diff [ruta]</value></data>
-  <data name="SlashHintCheck" xml:space="preserve"><value>que la IA revise el diff git actual según .inferpal/checks — /check [nombre|init]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>que la IA revise el diff git actual, además según .inferpal/checks — /check [nombre|init]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>listar las reglas del proyecto en .inferpal/rules — /rules [init]</value></data>
   <data name="SlashHintChecks" xml:space="preserve"><value>listar las comprobaciones de revisión en .inferpal/checks — /checks [init]</value></data>
   <data name="SlashHintSnippets" xml:space="preserve"><value>listar los fragmentos de código guardados — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>

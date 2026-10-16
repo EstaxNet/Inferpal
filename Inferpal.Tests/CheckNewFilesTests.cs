@@ -11,7 +11,7 @@ namespace Inferpal.Tests;
 /// <summary>
 /// ⚠ With nothing staged, <c>/check</c> reviews the working tree — and a NEW file is part of that change, but
 /// <c>git diff</c> never shows one. The model was handed the status line "?? src/NewService.cs" alone, and its
-/// silence came back "the checks turned up nothing on this diff": a clean verdict on code nobody read. New files now
+/// silence came back "the review turned up nothing on this diff": a clean verdict on code nobody read. New files now
 /// go to the review as the diffs they will be once added (so a finding anchors to them), and the ones it cannot read
 /// are named above the findings.
 /// </summary>

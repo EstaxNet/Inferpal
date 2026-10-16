@@ -510,9 +510,9 @@ Kliknij **Napraw z AI**, aby automatycznie naprawić w pętli, lub wpisz `/fix-b
   <data name="ChecksListHeader" xml:space="preserve"><value>**Sprawdzenia recenzji** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>Nie ma czego recenzować — drzewo robocze jest czyste.</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>Recenzowanie diffa…</value></data>
-  <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>Jesteś skrupulatnym, w pełni lokalnym recenzentem kodu. Przejrzyj poniższy diff gita WYŁĄCZNIE pod kątem dostarczonych checków. Każde naruszenie zgłaszaj w osobnym wierszu, dokładnie w tym formacie: `- [severity] ścieżka/do/pliku.ext:WIERSZ - co jest nie tak i jak to naprawić`, gdzie severity to blocker, warning lub nit, a WIERSZ to numer wiersza występujący w diffie. Jedno spostrzeżenie na wiersz, bez zagnieżdżeń i podpunktów. Nigdy nie wskazuj pliku, którego diff nie dotyka, nie wymyślaj problemów i nie komentuj niczego spoza checków ani diffa. W krótkim zdaniu, poza wierszami spostrzeżeń, napisz które checki przechodzą. Jeśli przechodzą wszystkie, powiedz to jasno i nie zgłaszaj żadnego spostrzeżenia.</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>Brak sprawdzenia o nazwie „{0}". Uruchom `/checks`, aby je wyświetlić.</value></data>
-  <data name="CheckNoFindings" xml:space="preserve"><value>Brak zakotwiczonych spostrzeżeń — checki nic nie wykryły w tym diffie.</value></data>
+  <data name="CheckNoFindings" xml:space="preserve"><value>Brak zakotwiczonych spostrzeżeń — przegląd nic nie wykrył w tym diffie.</value></data>
+  <data name="CheckNoFindingsNarrowed" xml:space="preserve"><value>Brak zakotwiczonych spostrzeżeń — ten check nic nie wykrył w tym diffie.</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ Brak przeglądu: **{0}** poświęcił całą odpowiedź na rozumowanie i nie napisał żadnego spostrzeżenia. To nic nie mówi o diffie — to nie jest czysty wynik. Zapobiega temu większy kontekst lub model, który nie rozumuje najpierw.</value></data>
   <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ Sprawdzono tylko pierwsze {0} znaków diffa, na {1}. To, co niżej, dotyczy tej części, a nie całej zmiany — przejrzyj resztę osobno albo dodawaj do indeksu mniejszymi porcjami.</value></data>
   <data name="CheckNewFilesNotReviewed" xml:space="preserve"><value>⚠ Nowe pliki jeszcze niedodane do git ({0}) nie zostały sprawdzone (powyżej limitu rozmiaru, binarne lub nieczytelne): {1}.</value></data>
@@ -718,7 +718,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="SlashHintTemplate" xml:space="preserve"><value>rozpocznij sesję z gotowego szablonu — /template &lt;id&gt;</value></data>
   <data name="TemplateUnknown" xml:space="preserve"><value>Nieznany szablon `{0}`. Wpisz `/template`, aby zobaczyć listę.</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>dołącz pełny git diff jako chip kontekstu — /diff [ścieżka]</value></data>
-  <data name="SlashHintCheck" xml:space="preserve"><value>przegląd AI bieżącego git diff względem .inferpal/checks — /check [nazwa|init]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>przegląd AI bieżącego git diff, także względem .inferpal/checks — /check [nazwa|init]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>wyświetl reguły projektu w .inferpal/rules — /rules [init]</value></data>
   <data name="SlashHintChecks" xml:space="preserve"><value>wyświetl kontrole przeglądu w .inferpal/checks — /checks [init]</value></data>
   <data name="SlashHintSnippets" xml:space="preserve"><value>wyświetl zapisane fragmenty kodu — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>

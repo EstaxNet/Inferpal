@@ -510,9 +510,9 @@
   <data name="ChecksListHeader" xml:space="preserve"><value>**评审检查项** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>无内容可评审 — 工作区是干净的。</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>正在评审差异…</value></data>
-  <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>你是一位细致且完全本地运行的代码审查者。仅依据所提供的审查检查项，审阅下面的 git diff。每条违规单独占一行，严格采用以下格式：`- [severity] path/to/file.ext:行号 - 问题是什么以及如何修复`，其中 severity 为 blocker、warning 或 nit，行号必须是 diff 中出现的行号。每行一条，不要嵌套或使用子项。绝不要指向 diff 未涉及的文件，不要编造问题，也不要评论检查项或 diff 之外的内容。用一句简短的话在问题行之外说明哪些检查通过。若全部通过，请明确说明，并且不报告任何问题。</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>没有名为「{0}」的检查项。运行 `/checks` 查看列表。</value></data>
-  <data name="CheckNoFindings" xml:space="preserve"><value>没有可定位的问题 — 检查项在此 diff 中未发现任何内容。</value></data>
+  <data name="CheckNoFindings" xml:space="preserve"><value>没有可定位的问题 — 评审在此 diff 中未发现任何内容。</value></data>
+  <data name="CheckNoFindingsNarrowed" xml:space="preserve"><value>没有可定位的问题 — 该检查项在此 diff 中未发现任何内容。</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ 没有审查结果：**{0}** 把整个回复都用于推理，没有写出任何问题。这并不说明 diff 没有问题 — 这不是干净的结果。更大的上下文，或不先推理的模型，可以避免。</value></data>
   <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ 仅审阅了差异的前 {0} 个字符（共 {1} 个）。以下内容针对该部分，而非您的整个变更 —— 请单独审阅其余部分，或分批暂存。</value></data>
   <data name="CheckNewFilesNotReviewed" xml:space="preserve"><value>⚠ 有 {0} 个尚未添加到 git 的新文件未被审查（超出大小限制、二进制或无法读取）：{1}。</value></data>
@@ -718,7 +718,7 @@
   <data name="SlashHintTemplate" xml:space="preserve"><value>从预设模板开始会话 — /template &lt;id&gt;</value></data>
   <data name="TemplateUnknown" xml:space="preserve"><value>未知模板 `{0}`。输入 `/template` 查看列表。</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>将完整 git diff 作为上下文标签附加 — /diff [路径]</value></data>
-  <data name="SlashHintCheck" xml:space="preserve"><value>依据 .inferpal/checks 对当前 git diff 进行 AI 审查 — /check [名称|init]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>对当前 git diff 进行 AI 评审（并依据 .inferpal/checks） — /check [名称|init]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>列出 .inferpal/rules 中的项目规则 — /rules [init]</value></data>
   <data name="SlashHintChecks" xml:space="preserve"><value>列出 .inferpal/checks 中的审查检查 — /checks [init]</value></data>
   <data name="SlashHintSnippets" xml:space="preserve"><value>列出已保存的代码片段 — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>

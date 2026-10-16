@@ -510,9 +510,9 @@ Klicken Sie auf **Mit KI reparieren**, um die automatische Korrektur in einer Sc
   <data name="ChecksListHeader" xml:space="preserve"><value>**Review-Checks** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>Nichts zu prüfen – der Arbeitsbaum ist sauber.</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>Diff wird geprüft…</value></data>
-  <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>Du bist ein sorgfältiger, vollständig lokaler Code-Reviewer. Prüfe den folgenden Git-Diff AUSSCHLIESSLICH anhand der bereitgestellten Review-Checks. Melde jeden Verstoß in einer eigenen Zeile, exakt in diesem Format: `- [severity] pfad/zur/datei.ext:ZEILE - was falsch ist und wie es zu beheben ist`, wobei severity blocker, warning oder nit ist und ZEILE eine im Diff vorkommende Zeilennummer. Ein Befund pro Zeile, ohne Verschachtelung oder Unterpunkte. Verweise nie auf eine Datei, die der Diff nicht berührt, erfinde keine Probleme und kommentiere nichts außerhalb der Checks oder des Diffs. Nenne in einem kurzen Satz außerhalb der Befundzeilen, welche Checks bestanden sind. Wenn alle bestehen, sage es klar und melde keinen Befund.</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>Kein Check namens „{0}". Führe `/checks` aus, um sie aufzulisten.</value></data>
-  <data name="CheckNoFindings" xml:space="preserve"><value>Kein verankerter Befund — die Checks haben in diesem Diff nichts gefunden.</value></data>
+  <data name="CheckNoFindings" xml:space="preserve"><value>Kein verankerter Befund — die Prüfung hat in diesem Diff nichts gefunden.</value></data>
+  <data name="CheckNoFindingsNarrowed" xml:space="preserve"><value>Kein verankerter Befund — der Check hat in diesem Diff nichts gefunden.</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ Kein Review: **{0}** hat die ganze Antwort mit Nachdenken verbracht und keinen Befund geschrieben. Das sagt nichts über den Diff aus – es ist kein sauberes Ergebnis. Ein größerer Kontext oder ein Modell, das nicht zuerst nachdenkt, vermeidet das.</value></data>
   <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ Nur die ersten {0} Zeichen des Diffs von insgesamt {1} wurden geprüft. Das Folgende betrifft diesen Teil, nicht Ihre gesamte Änderung — prüfen Sie den Rest separat oder stagen Sie ihn in kleineren Stücken.</value></data>
   <data name="CheckNewFilesNotReviewed" xml:space="preserve"><value>⚠ {0} neue, noch nicht zu git hinzugefügte Datei(en) wurden nicht geprüft (über der Größengrenze, binär oder unlesbar): {1}.</value></data>
@@ -718,7 +718,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="SlashHintTemplate" xml:space="preserve"><value>Sitzung aus einer Vorlage starten — /template &lt;id&gt;</value></data>
   <data name="TemplateUnknown" xml:space="preserve"><value>Unbekannte Vorlage `{0}`. Geben Sie `/template` ein, um die Liste zu sehen.</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>vollständigen git-Diff als Kontext-Chip anhängen — /diff [Pfad]</value></data>
-  <data name="SlashHintCheck" xml:space="preserve"><value>aktuellen git-Diff per KI gegen .inferpal/checks prüfen — /check [Name|init]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>aktuellen git-Diff per KI prüfen, zusätzlich gegen .inferpal/checks — /check [Name|init]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>Projektregeln in .inferpal/rules auflisten — /rules [init]</value></data>
   <data name="SlashHintChecks" xml:space="preserve"><value>Prüfungen in .inferpal/checks auflisten — /checks [init]</value></data>
   <data name="SlashHintSnippets" xml:space="preserve"><value>gespeicherte Code-Snippets auflisten — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>

@@ -511,9 +511,9 @@ Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</val
   <data name="ChecksListHeader" xml:space="preserve"><value>**Review checks** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>Nothing to review — the working tree is clean.</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>Reviewing the diff…</value></data>
-  <data name="CheckReviewSystemPrompt" xml:space="preserve"><value>You are a meticulous, fully local code reviewer. Review the git diff below ONLY against the review checks provided. Report every violation on its own line, in exactly this format: `- [severity] path/to/file.ext:LINE - what is wrong and how to fix it`, where severity is blocker, warning or nit, and LINE is a line number that appears in the diff. One finding per line, no nesting, no sub-bullets. Never point at a file the diff does not touch, and do not invent issues or comment on anything outside the checks or the diff. Say in a short sentence, outside the finding lines, which checks pass. If every check passes, say so clearly and report no finding.</value></data>
   <data name="CheckUnknownName" xml:space="preserve"><value>No check named '{0}'. Run `/checks` to list them.</value></data>
-  <data name="CheckNoFindings" xml:space="preserve"><value>No anchored finding — the checks turned up nothing on this diff.</value></data>
+  <data name="CheckNoFindings" xml:space="preserve"><value>No anchored finding — the review turned up nothing on this diff.</value></data>
+  <data name="CheckNoFindingsNarrowed" xml:space="preserve"><value>No anchored finding — the check turned up nothing on this diff.</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ No review: **{0}** spent its whole reply reasoning and wrote no finding. This says nothing about the diff — it is not a clean result. A larger context, or a model that does not reason first, avoids it.</value></data>
   <data name="CheckDiffTruncated" xml:space="preserve"><value>⚠ Only the first {0} characters of the diff were reviewed, out of {1}. What follows is about that part, not about your whole change — review the rest separately, or stage it in smaller pieces.</value></data>
   <data name="CheckNewFilesNotReviewed" xml:space="preserve"><value>⚠ {0} new file(s) not yet added to git were not reviewed (past the size limit, binary or unreadable): {1}.</value></data>
@@ -726,7 +726,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="SlashHintTemplate" xml:space="preserve"><value>start a session from a preset template — /template &lt;id&gt;</value></data>
   <data name="TemplateUnknown" xml:space="preserve"><value>Unknown template `{0}`. Type `/template` to see the list.</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>attach full git diff as context chip — /diff [path]</value></data>
-  <data name="SlashHintCheck" xml:space="preserve"><value>AI-review the current git diff against .inferpal/checks — /check [name|init]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>AI-review the current git diff, plus your .inferpal/checks — /check [name|init]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>list project rules in .inferpal/rules — /rules [init]</value></data>
   <data name="SlashHintChecks" xml:space="preserve"><value>list review checks in .inferpal/checks — /checks [init]</value></data>
   <data name="SlashHintSnippets" xml:space="preserve"><value>list saved code snippets — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>

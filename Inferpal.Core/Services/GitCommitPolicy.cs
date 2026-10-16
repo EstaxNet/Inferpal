@@ -37,7 +37,7 @@ internal static class GitCommitPolicy
     /// <remarks>
     /// ⚠ Both callers turn this text into something the user acts on — a review verdict, a commit
     /// message — so the cut shapes a CONCLUSION and cannot stay between the cap and the model.
-    /// <c>/check</c> answers "the checks turned up nothing on this diff" about a diff the model saw
+    /// <c>/check</c> answers "the review turned up nothing on this diff" about a diff the model saw
     /// a fifth of; <c>/commit</c> names a scope from the part that fit. The marker tells the model;
     /// the count is what lets each caller tell the human, and it names the amount for the same
     /// reason <c>get_git_status</c> does one file away: "truncated" alone cannot be weighed.
