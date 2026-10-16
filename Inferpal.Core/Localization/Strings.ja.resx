@@ -1398,7 +1398,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SkillUnreadableNow" xml:space="preserve"><value>スキル `{0}` を読み取れませんでした。</value></data>
   <data name="SkillApplyDefault" xml:space="preserve"><value>スキル {0} を適用してください。</value></data>
   <data name="SkillAttachmentLabel" xml:space="preserve"><value>スキル: {0}</value></data>
-  <data name="McpRepoServerQuestion" xml:space="preserve"><value>このリポジトリは MCP サーバーを宣言しています: {0}（{1}）。起動すると `{2}` を実行します。起動しますか？同意すると、定義が変わるまで以後は自動で起動します。</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>このリポジトリは MCP サーバーを宣言しています: {0}（{1}）。起動すると `{2}` を実行します。起動しますか？同意すると、定義または実行するリポジトリのファイルが変わるまで、以後は自動で起動します。</value></data>
   <data name="McpRepoInputQuestion" xml:space="preserve"><value>このリポジトリの MCP サーバー {0} が値を求めています: {1}</value></data>
   <data name="McpRepoInputNotMasked" xml:space="preserve"><value>（Visual Studio は入力内容を表示します。伏せ字にはなりません。）</value></data>
   <data name="LabelSkillsAutoMode" xml:space="preserve"><value>適したスキルをモデルに読み込ませる</value></data>

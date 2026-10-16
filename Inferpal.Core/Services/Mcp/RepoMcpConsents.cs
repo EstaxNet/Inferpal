@@ -10,6 +10,10 @@ namespace Inferpal.Services.Mcp;
 /// ⚠ The file is SHARED by the two editors (<c>%AppData%\Inferpal</c>): every decision reads it as it is now, never a
 /// copy this process loaded earlier. A refusal is not kept: the server is asked about again at the next start, as
 /// Visual Studio does.
+/// ⚠ And the two editors can run two versions: a fingerprint that covers files (<see cref="RepoMcpServer.Files"/>) is
+/// kept under a key of its own (<see cref="KeyOf"/>), because a version that hashes the definition alone writes the
+/// server's name — one key for both, and each editor would overwrite the other's agreement and ask at every start. A
+/// server that runs no file of the repository has the same fingerprint in both, under the name both read.
 /// </remarks>
 internal sealed class RepoMcpConsents
 {
@@ -26,9 +30,13 @@ internal sealed class RepoMcpConsents
         {
             var (all, _) = _file.Read([]);
             return Entry(all, root) is { } servers
-                && servers.TryGetValue(server.Name, out var agreed) && agreed == server.Fingerprint;
+                && servers.TryGetValue(KeyOf(server), out var agreed) && agreed == server.Fingerprint;
         }
     }
+
+    /// <summary>Where a server's agreement is kept: its name, or, for one that covers files, a key only this version writes.</summary>
+    internal static string KeyOf(RepoMcpServer server) =>
+        server.Files is { Count: > 0 } ? server.Name + "\u0001files" : server.Name;
 
     public void Agree(string root, RepoMcpServer server)
     {
@@ -38,7 +46,7 @@ internal sealed class RepoMcpConsents
             if (unreadable) all = [];
             var key = all.Keys.FirstOrDefault(k => PathComparer.SameDirectory(k, root)) ?? root;
             if (!all.TryGetValue(key, out var servers)) all[key] = servers = new(StringComparer.Ordinal);
-            servers[server.Name] = server.Fingerprint;
+            servers[KeyOf(server)] = server.Fingerprint;
             // Not written (traced by the file): the user is asked again at the next start — the safe side.
             _file.Save(all);
         }

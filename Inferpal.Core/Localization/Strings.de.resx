@@ -1398,7 +1398,7 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="SkillUnreadableNow" xml:space="preserve"><value>Der Skill `{0}` konnte nicht gelesen werden.</value></data>
   <data name="SkillApplyDefault" xml:space="preserve"><value>Wende den Skill {0} an.</value></data>
   <data name="SkillAttachmentLabel" xml:space="preserve"><value>Skill: {0}</value></data>
-  <data name="McpRepoServerQuestion" xml:space="preserve"><value>Dieses Repository deklariert einen MCP-Server: {0} ({1}). Ihn zu starten führt `{2}` aus. Starten? Wenn Sie zustimmen, startet er künftig von selbst, bis sich seine Definition ändert.</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>Dieses Repository deklariert einen MCP-Server: {0} ({1}). Ihn zu starten führt `{2}` aus. Starten? Wenn Sie zustimmen, startet er künftig von selbst, bis sich seine Definition oder die Repository-Dateien ändern, die er ausführt.</value></data>
   <data name="McpRepoInputQuestion" xml:space="preserve"><value>Der MCP-Server {0} dieses Repositorys fragt nach einem Wert: {1}</value></data>
   <data name="McpRepoInputNotMasked" xml:space="preserve"><value>(Visual Studio zeigt, was Sie eingeben: Es wird nicht verborgen.)</value></data>
   <data name="LabelSkillsAutoMode" xml:space="preserve"><value>Das Modell einen Skill laden lassen, wenn er passt</value></data>

@@ -1,6 +1,8 @@
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Inferpal.Config;
+using Inferpal.Services;
 using Inferpal.Services.CodeActions;
 using Inferpal.Services.Execution;
 using Inferpal.Services.Mcp;
@@ -222,28 +224,41 @@ public sealed class RepoMcpServersTests : IDisposable
         public string? LastMessage;
         public readonly List<string> Messages = [];
         public ApprovalDecision Answer = answer;
+        /// <summary>What happens while the question waits for its answer.</summary>
+        public Action? WhileAsked;
 
         protected override Task<ApprovalDecision> PromptUserAsync(string message, DiffInfo? diff, CancellationToken ct)
         {
             Prompts++;
             LastMessage = message;
             lock (Messages) Messages.Add(message);
+            WhileAsked?.Invoke();
             return Task.FromResult(Answer);
         }
     }
 
-    private sealed class FakeClient(McpServerConfig config, List<McpServerConfig> started) : IMcpClient
+    private sealed class FakeClient(McpServerConfig config, List<McpServerConfig> started, List<FakeClient> clients) : IMcpClient
     {
         public string ServerName => config.Name;
         public string? LastError => null;
         public bool NeedsAuthorization => false;
-        public Task<bool> StartAsync(CancellationToken ct) { lock (started) started.Add(config); return Task.FromResult(true); }
+        public Task<bool> StartAsync(CancellationToken ct)
+        {
+            lock (started) started.Add(config);
+            lock (clients) clients.Add(this);
+            return Task.FromResult(true);
+        }
         public Task<IReadOnlyList<McpToolInfo>?> ListToolsAsync(CancellationToken ct) => Task.FromResult<IReadOnlyList<McpToolInfo>?>([]);
         public Task<string> CallToolAsync(string toolName, JsonElement arguments, CancellationToken ct) => Task.FromResult("ok");
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
         public event Action? ToolsChanged { add { } remove { } }
-        public event Action? Closed { add { } remove { } }
+        public event Action? Closed;
+        /// <summary>The server's process exits on its own.</summary>
+        public void Die() => Closed?.Invoke();
     }
+
+    /// <summary>Every client the service started, in order: the last one is the running one.</summary>
+    private readonly List<FakeClient> _clients = [];
 
     private (McpToolService Service, RecordingApproval Approval, List<McpServerConfig> Started) Service(
         InferpalConfig? config = null, ApprovalDecision answer = ApprovalDecision.Once,
@@ -253,7 +268,8 @@ public sealed class RepoMcpServersTests : IDisposable
         config.McpEnabled = false;                      // no refresh at construction: each test refreshes itself
         var approval = new RecordingApproval(config, answer);
         var started = new List<McpServerConfig>();
-        var service = new McpToolService(config, approval, cfg => new FakeClient(cfg, started),
+        var service = new McpToolService(config, approval, cfg => new FakeClient(cfg, started, _clients),
+                                         reconnectBackoff: [TimeSpan.FromMilliseconds(10)],
                                          tokenStore: new McpTokenStore(Path.Combine(_state, "tokens.bin")),
                                          sharedServersJson: () => null, workspaceRoot: () => _repo, askInput: askInput)
         {
@@ -495,6 +511,418 @@ public sealed class RepoMcpServersTests : IDisposable
 
         Assert.Contains("`npx server`", approval.LastMessage);
         await service.DisposeAsync();
+    }
+
+    // ── What the agreement covers: the definition, and the repository's files it runs ──
+
+    private const string LocalScript = """{ "mcpServers": { "local": { "command": "node", "args": ["tools/mcp/server.js"] } } }""";
+
+    private static async Task<McpServerStatus> StatusOnceAsync(McpToolService service, string name, Func<McpServerStatus, bool> until)
+    {
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        while (clock.Elapsed < TimeSpan.FromSeconds(30))
+        {
+            if (service.Status.FirstOrDefault(s => s.Name == name) is { } status && until(status)) return status;
+            await Task.Delay(20);
+        }
+        throw new Xunit.Sdk.XunitException(
+            $"'{name}' never reached the awaited state: {service.Status.FirstOrDefault(s => s.Name == name)?.Error ?? "no status"}");
+    }
+
+    [Theory]
+    [InlineData("""{ "command": "node", "args": ["tools/mcp/server.js"] }""")]
+    [InlineData("""{ "command": "node", "args": ["${workspaceFolder}/tools/mcp/server.js"] }""")]
+    [InlineData("""{ "command": "sh", "args": ["-c", "node tools/mcp/server.js --stdio"] }""")]
+    [InlineData("""{ "command": "node", "args": ["--entry=tools/mcp/server.js"] }""")]
+    [InlineData("""{ "command": "node", "args": ["server.js"], "cwd": "tools/mcp" }""")]
+    [InlineData("""{ "command": "tools/mcp/server.js" }""")]
+    [InlineData("""{ "command": "node", "args": ["-e", "0"], "env": { "NODE_OPTIONS": "--require ./tools/mcp/server.js" } }""")]
+    public async Task AScriptAPullRewrote_IsAskedAboutAgain_HoweverTheDefinitionNamesIt(string definition)
+    {
+        Write("tools/mcp/server.js", "console.log('v1');");
+        Write(".mcp.json", $$"""{ "mcpServers": { "local": {{definition}} } }""");
+        var (service, approval, started) = Service();
+
+        await service.RefreshAsync();
+        await service.RefreshAsync();
+        Assert.Equal(1, approval.Prompts);                                // agreed once, kept
+        Assert.Equal(2, started.Count);
+
+        Write("tools/mcp/server.js", "console.log('v2, other code');");   // what a `git pull` does
+        await service.RefreshAsync();
+        Assert.Equal(2, approval.Prompts);
+        await service.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task AFileBesideTheScript_IsCoveredToo_ForTheScriptLoadsIt()
+    {
+        Write("tools/mcp/server.js", "require('./lib/tools.js');");
+        Write("tools/mcp/lib/tools.js", "module.exports = 1;");
+        Write(".mcp.json", LocalScript);
+        var (service, approval, _) = Service();
+        await service.RefreshAsync();
+
+        Write("tools/mcp/lib/tools.js", "module.exports = 2;");
+        await service.RefreshAsync();
+
+        Assert.Equal(2, approval.Prompts);
+        await service.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task AScriptRewrittenWhileTheQuestionWaited_DoesNotStart_AndSaysWhy()
+    {
+        Write("tools/mcp/server.js", "v1");
+        Write(".mcp.json", LocalScript);
+        var (service, approval, started) = Service();
+        approval.WhileAsked = () => Write("tools/mcp/server.js", "v2, written while the card waited");
+
+        await service.RefreshAsync();
+
+        Assert.Empty(started);
+        Assert.Contains("tools/mcp/server.js changed", Assert.Single(service.Status, s => s.Name == "local").Error);
+        await service.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task AServerThatExits_AfterAPullRewroteItsScript_IsNotRestarted_AndSaysWhy()
+    {
+        Write("tools/mcp/server.js", "v1");
+        Write(".mcp.json", LocalScript);
+        var (service, approval, started) = Service();
+        await service.RefreshAsync();
+        Assert.Single(started);
+
+        Write("tools/mcp/server.js", "v2");
+        _clients[^1].Die();                                                // the process exits, and Inferpal restarts it
+
+        var status = await StatusOnceAsync(service, "local", s => s.Error?.Contains("server.js") == true);
+        Assert.Contains("tools/mcp/server.js changed", status.Error);
+        Assert.Single(started);                                            // the new code never ran
+        Assert.Equal(1, approval.Prompts);
+        await service.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task AServerThatExits_WithItsFilesUnchanged_IsRestarted()
+    {
+        Write("tools/mcp/server.js", "v1");
+        Write(".mcp.json", LocalScript);
+        var (service, _, started) = Service();
+        await service.RefreshAsync();
+
+        _clients[^1].Die();
+
+        for (var waited = 0; started.Count < 2 && waited < 30_000; waited += 20) await Task.Delay(20);
+        Assert.Equal(2, started.Count);
+        await service.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task WhatTheServerDoesNotRun_AsksNothingAgain()
+    {
+        Write("server.py", "print(1)");                                      // at the root: that file alone
+        Write("README.md", "v1");
+        Write("tools/mcp/server.js", "v1");
+        Write("tools/mcp/bin/Debug/out.dll", "v1");                           // what a build writes beside the code
+        Write("tools/mcp/node_modules/dep/index.js", "v1");                   // what an install writes
+        Write(".mcp.json", """
+            { "mcpServers": {
+                "py": { "command": "python", "args": ["server.py"] },
+                "js": { "command": "node", "args": ["tools/mcp/server.js"] },
+                "pkg": { "command": "npx", "args": ["-y", "@scope/server"] } } }
+            """);
+        var (service, approval, _) = Service();
+        await service.RefreshAsync();
+        Assert.Equal(3, approval.Prompts);
+
+        Write("README.md", "v2");
+        Write("tools/mcp/bin/Debug/out.dll", "v2");
+        Write("tools/mcp/node_modules/dep/index.js", "v2");
+        await service.RefreshAsync();
+        Assert.Equal(3, approval.Prompts);
+
+        Write("server.py", "print(2)");                                       // the positive arm
+        await service.RefreshAsync();
+        Assert.Equal(4, approval.Prompts);
+        await service.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task AServerThatNamesNoRepositoryFile_KeepsTheFingerprintItsAgreementWasGivenTo()
+    {
+        Write(".mcp.json", """{ "mcpServers": { "pkg": { "command": "npx", "args": ["-y", "@scope/server"] } } }""");
+
+        var server = await RepoMcpServers.CoverAsync(Server("pkg"), _repo);
+
+        Assert.Empty(server.Files!);
+        // The formula a version that hashes the definition alone stores, written out: its agreement is still this one.
+        var stored = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(".mcp.json\npkg\n" + server.Definition.ToJsonString())));
+        Assert.Equal(stored, server.Fingerprint);
+        Assert.Equal("pkg", RepoMcpConsents.KeyOf(server));
+    }
+
+    [Fact]
+    public async Task AnAgreementAnotherVersionKeeps_IsLeftForIt_WhileThisVersionKeepsItsOwn()
+    {
+        Write("tools/mcp/server.js", "v1");
+        Write(".mcp.json", LocalScript);
+        var consents = Path.Combine(_state, "consents.json");
+        // What the other editor wrote, running a version that hashes the definition alone.
+        File.WriteAllText(consents, JsonSerializer.Serialize(new Dictionary<string, Dictionary<string, string>>
+        {
+            [_repo] = new() { ["local"] = Server("local").DefinitionFingerprint },
+        }));
+        var (service, approval, started) = Service();
+
+        await service.RefreshAsync();                                       // this version covers server.js: asked
+        await service.RefreshAsync();                                       // and kept, under a key of its own
+
+        Assert.Equal(1, approval.Prompts);
+        Assert.Equal(2, started.Count);
+        var kept = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(File.ReadAllText(consents))!.Single().Value;
+        Assert.Equal(Server("local").DefinitionFingerprint, kept["local"]);  // the other version's agreement, untouched
+        Assert.Contains("local\u0001files", kept.Keys);
+        await service.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task AFileOutsideTheRepository_IsNotCovered_HoweverItIsNamed()
+    {
+        var outside = Path.Combine(_state, "elsewhere.js");
+        File.WriteAllText(outside, "x");
+        Write("tools/mcp/server.js", "x");
+        Write(".mcp.json", JsonSerializer.Serialize(new
+        {
+            mcpServers = new
+            {
+                local = new { command = "node", args = new[] { "tools/mcp/server.js", outside, $"../{Path.GetFileName(_state)}/elsewhere.js" } },
+            },
+        }));
+
+        var server = await RepoMcpServers.CoverAsync(Server("local"), _repo);
+
+        Assert.Equal(["tools/mcp/server.js"], server.Files!.Select(f => f.Path));
+    }
+
+    [Fact]
+    public void APathTheRepositoryWrote_IsJudgedOnItsText()
+    {
+        var root = Path.GetFullPath(_repo);
+
+        Assert.True(RepoMcpFiles.Under(Path.Combine(root, "tools", "x.js"), root));
+        Assert.False(RepoMcpFiles.Under(root + "-other" + Path.DirectorySeparatorChar + "x.js", root));
+        Assert.False(RepoMcpFiles.Under(@"\\attacker\share\x.js", root));
+        Assert.False(RepoMcpFiles.Under(Path.GetFullPath(Path.Combine(root, "..", "x.js")), root));
+    }
+
+    [Theory]
+    [InlineData("""{ "command": "node", "args": ["tools/mcp/server"] }""", "tools/mcp/server.js")]
+    [InlineData("""{ "command": "python", "args": ["-m", "tools.mcp.server"] }""", "tools/mcp/server.py")]
+    [InlineData("""{ "command": "npm", "args": ["run", "mcp"] }""", "tools/mcp/server.js")]
+    [InlineData("""{ "command": "uv", "args": ["run", "--directory", "tools/mcp", "server.py"] }""", "tools/mcp/server.py")]
+    public async Task WhatTheRuntimeFindsByItself_IsCoveredToo(string definition, string script)
+    {
+        Write("tools/mcp/server.js", "v1");
+        Write("tools/mcp/server.py", "v1");
+        Write("package.json", """{ "scripts": { "mcp": "node tools/mcp/server.js" } }""");
+        Write(".mcp.json", $$"""{ "mcpServers": { "local": {{definition}} } }""");
+        var (service, approval, _) = Service();
+        await service.RefreshAsync();
+
+        Write(script, "v2, other code");
+        await service.RefreshAsync();
+
+        Assert.Equal(2, approval.Prompts);
+        await service.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task APathBehindAnEnvironmentVariable_IsCovered()
+    {
+        Write("tools/mcp/server.js", "v1");
+        var definition = JsonNode.Parse("""{ "command": "node", "args": ["${env:MCP_HOME}/server.js"] }""")!.AsObject();
+
+        var coverage = await RepoMcpFiles.CoverAsync(definition, _repo,
+            environment: name => name == "MCP_HOME" ? Path.Combine(_repo, "tools", "mcp") : null);
+
+        Assert.Contains("tools/mcp/server.js", coverage.Files!.Select(f => f.Path));
+    }
+
+    [Fact]
+    public async Task InAGitRepository_WhatThisMachineWritesBesideTheCode_AsksNothingAgain()
+    {
+        var repo = Path.Combine(_state, "git-repo");
+        Directory.CreateDirectory(Path.Combine(repo, "tools", "mcp"));
+        File.WriteAllText(Path.Combine(repo, "tools", "mcp", "server.py"), "import lib");
+        File.WriteAllText(Path.Combine(repo, "tools", "mcp", "lib.py"), "VALUE = 1");
+        Assert.True(Git("init -q", repo) && Git("add -A", repo)
+                    && Git("-c user.email=t@example.com -c user.name=t -c commit.gpgsign=false commit -q -m init", repo),
+            "git could not make the repository this test needs: UNDECIDED, not green.");
+        var definition = JsonNode.Parse("""{ "command": "python", "args": ["tools/mcp/server.py"] }""")!.AsObject();
+        var before = (await RepoMcpFiles.CoverAsync(definition, repo)).Files!;
+        Assert.Equal(["tools/mcp/lib.py", "tools/mcp/server.py"], before.Select(f => f.Path));
+
+        // What running it writes: Python's cache, a log, a database — none of them a pull brings.
+        Directory.CreateDirectory(Path.Combine(repo, "tools", "mcp", "__pycache__"));
+        File.WriteAllText(Path.Combine(repo, "tools", "mcp", "__pycache__", "lib.cpython-312.pyc"), "bytecode");
+        File.WriteAllText(Path.Combine(repo, "tools", "mcp", "server.log"), "started");
+        Assert.Equal(before, (await RepoMcpFiles.CoverAsync(definition, repo)).Files!);
+
+        File.WriteAllText(Path.Combine(repo, "tools", "mcp", "lib.py"), "VALUE = 2");   // and what a pull does
+        Assert.NotEqual(before.Single(f => f.Path == "tools/mcp/lib.py").Digest,
+                        (await RepoMcpFiles.CoverAsync(definition, repo)).Files!.Single(f => f.Path == "tools/mcp/lib.py").Digest);
+    }
+
+    private static bool Git(string args, string workDir)
+    {
+        try
+        {
+            using var p = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("git", args)
+            {
+                WorkingDirectory = workDir,
+                RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false,
+            })!;
+            p.WaitForExit(20_000);
+            return p.ExitCode == 0;
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException) { return false; }
+    }
+
+    [Fact]
+    public async Task ALinkThatLeadsOutOfTheRepository_IsCoveredByItsOwnTarget_AndNothingBehindItIsRead()
+    {
+        Write("tools/mcp/server.js", "v1");
+        var outside = Path.Combine(_state, "outside.txt");
+        File.WriteAllText(outside, "outside, first");
+        var link = Path.Combine(_repo, "tools", "mcp", "data.txt");
+        try { File.CreateSymbolicLink(link, outside); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+        Assert.True(new FileInfo(link).LinkTarget is not null,
+            "The link could not be created (symbolic-link creation privilege): this test is UNDECIDED, not green.");
+        var definition = JsonNode.Parse("""{ "command": "node", "args": ["tools/mcp/server.js"] }""")!.AsObject();
+        string DataDigest(RepoMcpCoverage c) => c.Files!.Single(f => f.Path == "tools/mcp/data.txt").Digest;
+
+        var before = DataDigest(await RepoMcpFiles.CoverAsync(definition, _repo));
+        File.WriteAllText(outside, "outside, rewritten to another length");
+        var behind = DataDigest(await RepoMcpFiles.CoverAsync(definition, _repo));
+        File.Delete(link);
+        File.CreateSymbolicLink(link, Path.Combine(_state, "elsewhere.txt"));
+        var retargeted = DataDigest(await RepoMcpFiles.CoverAsync(definition, _repo));
+
+        Assert.StartsWith("link:", before);
+        Assert.Equal(before, behind);                                      // what lies behind it was never read
+        Assert.NotEqual(before, retargeted);                               // the link itself is covered
+    }
+
+    [Fact]
+    public async Task AScriptThatIsALinkOutOfTheRepository_IsCoveredByItsTarget()
+    {
+        var outside = Path.Combine(_state, "server.js");
+        File.WriteAllText(outside, "v1");
+        Directory.CreateDirectory(Path.Combine(_repo, "tools", "mcp"));
+        var link = Path.Combine(_repo, "tools", "mcp", "server.js");
+        try { File.CreateSymbolicLink(link, outside); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+        Assert.True(new FileInfo(link).LinkTarget is not null,
+            "The link could not be created (symbolic-link creation privilege): this test is UNDECIDED, not green.");
+        var definition = JsonNode.Parse("""{ "command": "node", "args": ["tools/mcp/server.js"] }""")!.AsObject();
+
+        var coverage = await RepoMcpFiles.CoverAsync(definition, _repo);
+
+        Assert.StartsWith("link:", coverage.Files!.Single(f => f.Path == "tools/mcp/server.js").Digest);
+    }
+
+    [Fact]
+    public async Task FoldersTooLargeToCover_AreAskedAboutAtEveryStart_AndNoAgreementIsKept()
+    {
+        for (var i = 0; i < 4; i++) Write($"tools/mcp/f{i}.js", "x");
+        Write(".mcp.json", """{ "mcpServers": { "local": { "command": "node", "args": ["tools/mcp/f0.js"] } } }""");
+        var (service, approval, started) = Service();
+        service.CoveredFilesCap = 3;
+
+        await service.RefreshAsync();
+        await service.RefreshAsync();
+
+        Assert.Equal(2, approval.Prompts);
+        Assert.Equal(2, started.Count);
+        Assert.False(File.Exists(Path.Combine(_state, "consents.json")), "an agreement that covers nothing was kept");
+        await service.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task AServerWhoseFilesCannotBeCovered_IsNotRestarted_AndSaysWhy()
+    {
+        for (var i = 0; i < 4; i++) Write($"tools/mcp/f{i}.js", "x");
+        Write(".mcp.json", """{ "mcpServers": { "local": { "command": "node", "args": ["tools/mcp/f0.js"] } } }""");
+        var (service, _, started) = Service();
+        service.CoveredFilesCap = 3;
+        await service.RefreshAsync();
+        Assert.Single(started);
+
+        _clients[^1].Die();
+
+        var status = await StatusOnceAsync(service, "local", s => s.Error?.Contains("not restarted") == true);
+        Assert.Contains("more than 3 files", status.Error);
+        Assert.Single(started);
+        await service.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task TheNoteThatFilesCannotBeCovered_IsSaidAgain_OnceTheyCouldBeAndThenNot()
+    {
+        var name = "uncovered" + Guid.NewGuid().ToString("N");
+        for (var i = 0; i < 4; i++) Write($"tools/mcp/f{i}.js", "x");
+        Write(".mcp.json", $$"""{ "mcpServers": { "{{name}}": { "command": "node", "args": ["tools/mcp/f0.js"] } } }""");
+        var (service, _, _) = Service();
+        service.CoveredFilesCap = 3;
+        int Notes() => Diagnostics.Snapshot().Count(e => e.Detail.Contains($"'{name}'") && e.Detail.Contains("no agreement can cover"));
+
+        await service.RefreshAsync();                                      // four files: said
+        File.Delete(Path.Combine(_repo, "tools", "mcp", "f3.js"));
+        await service.RefreshAsync();                                      // three: covered
+        Write("tools/mcp/f3.js", "x");
+        await service.RefreshAsync();                                      // four again: said again
+
+        Assert.Equal(2, Notes());
+        await service.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task ARestart_ChecksTheAgreementItsServerCarries_EvenWhenARefreshEmptiedTheMap()
+    {
+        Write("tools/mcp/server.js", "v1");
+        Write(".mcp.json", LocalScript);
+        var (service, _, started) = Service();
+        await service.RefreshAsync();
+
+        // What a refresh does to the map while a restart is past its last look at the list of servers.
+        typeof(McpToolService).GetField("_agreedRepository", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .SetValue(service, new Dictionary<McpServerConfig, (string Root, RepoMcpServer Server)>());
+        Write("tools/mcp/server.js", "v2");
+        _clients[^1].Die();
+
+        var status = await StatusOnceAsync(service, "local", s => s.Error?.Contains("server.js") == true);
+        Assert.Contains("not restarted", status.Error);
+        Assert.Single(started);
+        await service.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task PastTheHashingBudget_AFileIsJudgedByItsSizeAndWriteTime()
+    {
+        var data = Write("tools/mcp/model.bin", "aaaa");
+        Write("tools/mcp/server.js", "x");
+        var definition = JsonNode.Parse("""{ "command": "node", "args": ["tools/mcp/server.js"] }""")!.AsObject();
+        File.SetLastWriteTimeUtc(data, new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        var before = (await RepoMcpFiles.CoverAsync(definition, _repo, hashBudget: 0)).Files!;
+
+        File.WriteAllText(data, "bbbb");                                      // the same size, other content
+        File.SetLastWriteTimeUtc(data, new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc));
+        var after = (await RepoMcpFiles.CoverAsync(definition, _repo, hashBudget: 0)).Files!;
+
+        Assert.NotEqual(before.Single(f => f.Path == "tools/mcp/model.bin").Digest,
+                        after.Single(f => f.Path == "tools/mcp/model.bin").Digest);
     }
 
     // ── A real process: nothing runs before the agreement ───────────────────

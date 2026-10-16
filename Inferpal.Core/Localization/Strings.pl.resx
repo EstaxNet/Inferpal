@@ -1398,7 +1398,7 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="SkillUnreadableNow" xml:space="preserve"><value>Nie można odczytać umiejętności `{0}`.</value></data>
   <data name="SkillApplyDefault" xml:space="preserve"><value>Zastosuj umiejętność {0}.</value></data>
   <data name="SkillAttachmentLabel" xml:space="preserve"><value>Umiejętność: {0}</value></data>
-  <data name="McpRepoServerQuestion" xml:space="preserve"><value>To repozytorium deklaruje serwer MCP: {0} ({1}). Uruchomienie go wykona `{2}`. Uruchomić? Jeśli się zgodzisz, będzie odtąd uruchamiany sam, dopóki jego definicja się nie zmieni.</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>To repozytorium deklaruje serwer MCP: {0} ({1}). Uruchomienie go wykona `{2}`. Uruchomić? Jeśli się zgodzisz, będzie odtąd uruchamiany sam, dopóki nie zmieni się jego definicja ani pliki repozytorium, które uruchamia.</value></data>
   <data name="McpRepoInputQuestion" xml:space="preserve"><value>Serwer MCP {0} tego repozytorium prosi o wartość: {1}</value></data>
   <data name="McpRepoInputNotMasked" xml:space="preserve"><value>(Visual Studio pokazuje to, co wpisujesz: nie jest to ukrywane.)</value></data>
   <data name="LabelSkillsAutoMode" xml:space="preserve"><value>Pozwól modelowi wczytać umiejętność, gdy pasuje</value></data>

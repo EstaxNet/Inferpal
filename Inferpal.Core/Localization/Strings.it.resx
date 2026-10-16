@@ -1398,7 +1398,7 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="SkillUnreadableNow" xml:space="preserve"><value>Impossibile leggere la competenza `{0}`.</value></data>
   <data name="SkillApplyDefault" xml:space="preserve"><value>Applica la competenza {0}.</value></data>
   <data name="SkillAttachmentLabel" xml:space="preserve"><value>Competenza: {0}</value></data>
-  <data name="McpRepoServerQuestion" xml:space="preserve"><value>Questo repository dichiara un server MCP: {0} ({1}). Avviarlo esegue `{2}`. Avviarlo? Se accetti, d'ora in poi si avvierà da solo, finché la sua definizione non cambia.</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>Questo repository dichiara un server MCP: {0} ({1}). Avviarlo esegue `{2}`. Avviarlo? Se accetti, d'ora in poi si avvierà da solo, finché non cambiano la sua definizione o i file del repository che esegue.</value></data>
   <data name="McpRepoInputQuestion" xml:space="preserve"><value>Il server MCP {0} di questo repository chiede un valore: {1}</value></data>
   <data name="McpRepoInputNotMasked" xml:space="preserve"><value>(Visual Studio mostra ciò che digiti: non viene nascosto.)</value></data>
   <data name="LabelSkillsAutoMode" xml:space="preserve"><value>Lascia che il modello carichi una competenza quando serve</value></data>

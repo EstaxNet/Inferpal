@@ -1398,7 +1398,7 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="SkillUnreadableNow" xml:space="preserve"><value>No se pudo leer la habilidad `{0}`.</value></data>
   <data name="SkillApplyDefault" xml:space="preserve"><value>Aplica la habilidad {0}.</value></data>
   <data name="SkillAttachmentLabel" xml:space="preserve"><value>Habilidad: {0}</value></data>
-  <data name="McpRepoServerQuestion" xml:space="preserve"><value>Este repositorio declara un servidor MCP: {0} ({1}). Iniciarlo ejecuta `{2}`. ¿Iniciarlo? Si acepta, se iniciará solo a partir de ahora, hasta que cambie su definición.</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>Este repositorio declara un servidor MCP: {0} ({1}). Iniciarlo ejecuta `{2}`. ¿Iniciarlo? Si acepta, se iniciará solo a partir de ahora, hasta que cambien su definición o los archivos del repositorio que ejecuta.</value></data>
   <data name="McpRepoInputQuestion" xml:space="preserve"><value>El servidor MCP {0} de este repositorio pide un valor: {1}</value></data>
   <data name="McpRepoInputNotMasked" xml:space="preserve"><value>(Visual Studio muestra lo que escribe: no se oculta.)</value></data>
   <data name="LabelSkillsAutoMode" xml:space="preserve"><value>Dejar que el modelo cargue una habilidad cuando corresponda</value></data>

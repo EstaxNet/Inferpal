@@ -58,6 +58,17 @@ internal sealed class McpToolService : IAsyncDisposable
     /// <summary>The agreements given to start a repository's servers. Test seam.</summary>
     internal RepoMcpConsents Consents { get; set; } = new();
 
+    /// <summary>See <see cref="RepoMcpFiles.MaxFiles"/>. Test seam.</summary>
+    internal int CoveredFilesCap { get; set; } = RepoMcpFiles.MaxFiles;
+
+    /// <summary>
+    /// The repository's servers agreed to at the last refresh, by the very config each one starts from: what the
+    /// agreement covered, which the first start of each takes along (<see cref="ServerEntry.Agreement"/>). Replaced whole,
+    /// never changed in place.
+    /// </summary>
+    private volatile IReadOnlyDictionary<McpServerConfig, (string Root, RepoMcpServer Server)> _agreedRepository =
+        new Dictionary<McpServerConfig, (string Root, RepoMcpServer Server)>();
+
     /// <summary>
     /// Servers the editor hands this session — an Agent Client Protocol client passes the ones its user configured for
     /// every agent (<c>session/new</c>'s <c>mcpServers</c>). Started with Inferpal's own at the next
@@ -95,6 +106,14 @@ internal sealed class McpToolService : IAsyncDisposable
         public string? Error { get; set; }
         /// <summary>The server refused its sign-in during the session: the card offers "Sign in" again.</summary>
         public bool AuthRequired { get; set; }
+        /// <summary>
+        /// For a repository's server, what its agreement covered: a restart checks it against the files as they are then.
+        /// </summary>
+        /// <remarks>
+        /// ⚠ On the server, not looked up when it restarts: a refresh empties the map of agreements while a restart may
+        /// be past its last look at the list, and a lookup that misses would start the server unchecked.
+        /// </remarks>
+        public (string Root, RepoMcpServer Server)? Agreement { get; init; }
 
         private int _reconnecting;
         private IMcpClient? _closedDuringReconnect;
@@ -298,6 +317,7 @@ internal sealed class McpToolService : IAsyncDisposable
             // about before it runs anything.
             var repository = await RepositoryServersAsync(
                 [.. servers.Select(s => s.Name), .. rejected.Select(r => r.Name)]).ConfigureAwait(false);
+            _agreedRepository = repository.Agreed;
             // An editor's server signed in to keeps its sign-in while the editor passes it.
             ForgetSignInsOfRemovedServers(servers, rejected, [.. repository.Names, .. given.Select(g => g.Name)]);
             // The editor's servers come last, and a name already taken is the user's own server: said, not started twice.
@@ -372,7 +392,9 @@ internal sealed class McpToolService : IAsyncDisposable
         IMcpClient? client = null;
         try
         {
-            client = _clientFactory(server);
+            var agreement = _agreedRepository.TryGetValue(server, out var agreed) ? agreed : ((string, RepoMcpServer)?)null;
+            (client, var refused) = await NewClientAsync(server, agreement, restart: false).ConfigureAwait(false);
+            if (client is null) return (null, new McpServerStatus(server.Name, false, 0, refused));
             if (!await client.StartAsync(CancellationToken.None).ConfigureAwait(false))
             {
                 // Two distinct outcomes: "you need to authorize" is an action for the user,
@@ -390,7 +412,7 @@ internal sealed class McpToolService : IAsyncDisposable
             }
 
             // Wire lifecycle events before discovery so a death mid-listing still triggers reconnect.
-            var entry  = new ServerEntry(server, client);
+            var entry  = new ServerEntry(server, client) { Agreement = agreement };
             var events = client;
             client.ToolsChanged          += () => OnServerToolsChanged(entry);
             client.Closed                += () => OnServerClosed(entry, events);
@@ -426,14 +448,17 @@ internal sealed class McpToolService : IAsyncDisposable
     /// <remarks>
     /// ⚠ The agreement is FORCED (<c>forcePrompt</c>): no <c>allow</c> rule, no "don't ask", no "Always" given to
     /// another tool starts a program the repository chose. Given once per <see cref="RepoMcpServer.Fingerprint"/> and
-    /// kept (<see cref="RepoMcpConsents"/>); a declined server is asked about again at the next start.
+    /// kept (<see cref="RepoMcpConsents"/>); a declined server is asked about again at the next start. A server whose
+    /// folders hold too many files to cover (<see cref="RepoMcpServer.Files"/> <c>null</c>) keeps no agreement.
     /// </remarks>
-    private async Task<(List<McpServerConfig> Start, List<McpServerStatus> NotStarted, List<string> Names)> RepositoryServersAsync(
+    private async Task<(List<McpServerConfig> Start, List<McpServerStatus> NotStarted, List<string> Names,
+                        Dictionary<McpServerConfig, (string Root, RepoMcpServer Server)> Agreed)> RepositoryServersAsync(
         IReadOnlyCollection<string> configured)
     {
         var start = new List<McpServerConfig>();
         var notStarted = new List<McpServerStatus>();
         var names = new List<string>();
+        var agreedTo = new Dictionary<McpServerConfig, (string Root, RepoMcpServer Server)>(ReferenceEqualityComparer.Instance);
         RepoMcpScan scan;
         // ⚠ Any failure, not a list of them: this runs after the teardown, and an exception out of here left the user's
         // own servers stopped. The repository's servers are the ones that do not start.
@@ -441,9 +466,9 @@ internal sealed class McpToolService : IAsyncDisposable
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             Diagnostics.Swallow("McpToolService.RepositoryServers", ex);
-            return (start, notStarted, names);
+            return (start, notStarted, names, agreedTo);
         }
-        if (scan.Root is not { } root) return (start, notStarted, names);
+        if (scan.Root is not { } root) return (start, notStarted, names, agreedTo);
 
         foreach (var p in scan.Problems)
         {
@@ -457,8 +482,9 @@ internal sealed class McpToolService : IAsyncDisposable
         // to, and ran unasked.
         var taken = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var name in configured) taken.TryAdd(McpTool.ToolNamesOf(name), name);
-        foreach (var server in scan.Servers)
+        foreach (var declared in scan.Servers)
         {
+            var server = declared;
             names.Add(server.Name);
             if (!taken.TryAdd(McpTool.ToolNamesOf(server.Name), server.Name))
             {
@@ -469,7 +495,23 @@ internal sealed class McpToolService : IAsyncDisposable
                       "declared earlier, which runs instead"));
                 continue;
             }
-            if (!Consents.IsAgreed(root, server))
+            // The files it runs, looked at only for a server that reaches its question: off the caller's thread, since the
+            // Save button waits for this refresh.
+            try { server = await Task.Run(() => RepoMcpServers.CoverAsync(server, root, CoveredFilesCap)).ConfigureAwait(false); }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                Diagnostics.Swallow("McpToolService.RepositoryServerFiles", ex);
+                server = server with { Files = null, Uncovered = "its files could not be read" };
+            }
+            // Once per server while its files cannot be covered — said again if they become coverable and then not.
+            var uncovered = "repo-mcp-uncovered:" + root + "|" + server.Name;
+            if (server.Files is null)
+                Diagnostics.RecordOnce("Mcp", $"Repository MCP server '{server.Name}' ({server.Source}): {server.Uncovered}, so no " +
+                    "agreement can cover the files it runs; it is asked about at every start, and not restarted when it stops.",
+                    uncovered);
+            else
+                Diagnostics.Forget("Mcp", uncovered);
+            if (server.Files is null || !Consents.IsAgreed(root, server))
             {
                 bool agreed;
                 try
@@ -490,7 +532,7 @@ internal sealed class McpToolService : IAsyncDisposable
                     Diagnostics.Record("Mcp", $"Repository MCP server '{server.Name}' ({server.Source}) not started: not agreed to.");
                     continue;
                 }
-                Consents.Agree(root, server);
+                if (server.Files is not null) Consents.Agree(root, server);
             }
 
             var inputs = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -522,8 +564,56 @@ internal sealed class McpToolService : IAsyncDisposable
                 continue;
             }
             start.Add(config);
+            agreedTo[config] = (root, server);
         }
-        return (start, notStarted, names);
+        return (start, notStarted, names, agreedTo);
+    }
+
+    /// <summary>
+    /// The one place a server's client is made — first start and restart alike: a repository's server whose files are no
+    /// longer the ones agreed to gets none, and the status line says why.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Checked HERE, just before the process starts, not at the agreement: the card waits while the user reads it, other
+    /// servers' cards wait before this one starts, and a server that exits is restarted on whatever its script holds
+    /// now — after a pull, the code nobody agreed to. What remains is the moment between this look and the process
+    /// reading its files. ⚠ A server whose files cannot be covered is asked about at every start, so its first start
+    /// follows a question; a restart has none, and is refused.
+    /// </remarks>
+    /// <param name="agreement">What its agreement covered — <c>null</c> for a server that is not the repository's.</param>
+    /// <param name="restart">A restart after the server stopped, which no question precedes.</param>
+    private async Task<(IMcpClient? Client, string? Refused)> NewClientAsync(
+        McpServerConfig cfg, (string Root, RepoMcpServer Server)? agreement, bool restart)
+    {
+        if (agreement is { } agreed)
+        {
+            var what = restart ? "not restarted" : "not started";
+            string? refused = null;
+            if (agreed.Server.Files is null)
+            {
+                if (restart)
+                    refused = $"{agreed.Server.Source}: {what} — {agreed.Server.Uncovered}, so nothing can check it still runs " +
+                              "the code agreed to; asked again at the next start";
+            }
+            else
+            {
+                string? changed;
+                try { changed = await RepoMcpServers.ChangedSinceAsync(agreed.Server, agreed.Root, CoveredFilesCap).ConfigureAwait(false); }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    Diagnostics.Swallow("McpToolService.NewClient", ex);
+                    changed = "its files";
+                }
+                if (changed is not null)
+                    refused = $"{agreed.Server.Source}: {what} — {changed} changed since it was agreed to; asked again at the next start";
+            }
+            if (refused is not null)
+            {
+                Diagnostics.Record("Mcp", $"Repository MCP server '{cfg.Name}': {refused}.");
+                return (null, refused);
+            }
+        }
+        return (_clientFactory(cfg), null);
     }
 
     private static async Task<string?> AskSafelyAsync(
@@ -694,7 +784,22 @@ internal sealed class McpToolService : IAsyncDisposable
                 await Task.Delay(delay).ConfigureAwait(false);
                 if (_disposed || !_servers.Contains(entry)) return;
 
-                var client = _clientFactory(entry.Config);
+                var (client, refused) = await NewClientAsync(entry.Config, entry.Agreement, restart: true).ConfigureAwait(false);
+                if (client is null)
+                {
+                    // Retrying cannot help: the files stay what they are until the user is asked again.
+                    if (_disposed) return;
+                    try { await _gate.WaitAsync().ConfigureAwait(false); }
+                    catch (ObjectDisposedException) { return; }
+                    try
+                    {
+                        if (_disposed || !_servers.Contains(entry)) return;
+                        entry.Error = refused;
+                        RebuildSnapshot();
+                    }
+                    finally { _gate.Release(); }
+                    return;
+                }
                 if (!await client.StartAsync(CancellationToken.None).ConfigureAwait(false))
                 {
                     lastFailure = client.LastError;
@@ -843,6 +948,7 @@ internal sealed class McpToolService : IAsyncDisposable
         _failed   = [];
         _rejected = [];
         _others   = [];
+        _agreedRepository = new Dictionary<McpServerConfig, (string Root, RepoMcpServer Server)>();
         _snapshot = _snapshot with { Tools = [] };
         foreach (var entry in old)
             await entry.Client.DisposeAsync().ConfigureAwait(false);

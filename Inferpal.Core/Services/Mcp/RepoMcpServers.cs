@@ -20,11 +20,25 @@ internal sealed record RepoMcpInput(string Id, string Description, bool Password
 /// <summary>A server a repository declares, as written — its variables not yet replaced.</summary>
 /// <param name="Source">The file it is declared in, relative to the repository's root, with <c>/</c>.</param>
 /// <param name="Definition">Its definition, as written.</param>
-/// <param name="Fingerprint">What an agreement to start it is given to: the file and the definition, hashed.</param>
+/// <param name="Fingerprint">What an agreement to start it is given to: the file and the definition, hashed — and,
+/// once <see cref="RepoMcpServers.CoverAsync"/> has looked, the repository's files it runs (<see cref="Files"/>).</param>
 /// <param name="Inputs">The <c>${input:…}</c> values it uses, with how VS Code describes them.</param>
 internal sealed record RepoMcpServer(string Name, string Source, string Origin, JsonObject Definition, string Fingerprint,
                                      IReadOnlyList<RepoMcpInput> Inputs)
 {
+    /// <summary>The file and the definition alone, hashed: what an agreement held before any file was covered.</summary>
+    public string DefinitionFingerprint { get; init; } = Fingerprint;
+
+    /// <summary>
+    /// The repository's files starting it runs (<see cref="RepoMcpServers.CoverAsync"/>) — <c>null</c> until they were
+    /// looked at, or when they cannot be covered (<see cref="Uncovered"/>): no agreement is then kept, it is asked about at
+    /// every start, and it is not restarted after it stops.
+    /// </summary>
+    public IReadOnlyList<RepoMcpFile>? Files { get; init; }
+
+    /// <summary>Why <see cref="Files"/> is <c>null</c>, in English: the status line and <c>/diagnostics</c> read it.</summary>
+    public string? Uncovered { get; init; } = "its files were not looked at";
+
     /// <summary>
     /// What starting it runs, as the agreement question shows it: the command line or the address, then everything else
     /// the definition sets that changes what runs — its environment, its folder, its headers — as written.
@@ -76,7 +90,10 @@ internal sealed record RepoMcpScan(string? Root, IReadOnlyList<RepoMcpServer> Se
 /// <remarks>
 /// ⚠ A server of the repository runs a program the repository chose: nothing here starts it. <see cref="McpToolService"/>
 /// asks the user first, every time its <see cref="RepoMcpServer.Fingerprint"/> has no agreement — the definition, not the
-/// name: a changed command under an agreement given to the old one would run unasked.
+/// name: a changed command under an agreement given to the old one would run unasked. ⚠ And the files of the repository
+/// the definition names, not only its text: <c>node tools/mcp/server.js</c> keeps its definition when a <c>git pull</c>
+/// rewrites <c>server.js</c>, and would run the new code unasked — <see cref="CoverAsync"/> puts those files in the
+/// fingerprint, and <see cref="McpToolService"/> checks them again just before every start, a restart included.
 /// </remarks>
 internal static class RepoMcpServers
 {
@@ -202,6 +219,75 @@ internal static class RepoMcpServers
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(source + "\n" + name + "\n" + definition)));
 
     /// <summary>
+    /// The definition's fingerprint with the repository's files it runs — exactly the definition's alone when it runs
+    /// none, so an agreement given to such a server is still the same one.
+    /// </summary>
+    internal static string Fingerprint(string definitionFingerprint, IReadOnlyList<RepoMcpFile> files) =>
+        files.Count == 0
+            ? definitionFingerprint
+            : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
+                definitionFingerprint + string.Concat(files.Select(f => "\n" + f.Path + "\t" + f.Digest)))));
+
+    /// <summary>
+    /// <paramref name="server"/> with the repository's files it runs (<see cref="RepoMcpFiles.CoverAsync"/>) in its
+    /// fingerprint — or, when they cannot be covered, with no files and the reason.
+    /// </summary>
+    public static async Task<RepoMcpServer> CoverAsync(RepoMcpServer server, string root, int cap = RepoMcpFiles.MaxFiles,
+                                                       CancellationToken ct = default)
+    {
+        var coverage = await RepoMcpFiles.CoverAsync(server.Definition, root, cap, ct: ct).ConfigureAwait(false);
+        return server with
+        {
+            Files       = coverage.Files,
+            Uncovered   = coverage.Uncovered,
+            Fingerprint = coverage.Files is { } files ? Fingerprint(server.DefinitionFingerprint, files) : server.DefinitionFingerprint,
+        };
+    }
+
+    /// <summary>
+    /// The first of an agreed server's files that is not what it was when the agreement was asked for — changed, gone, or
+    /// new — or <c>null</c> when none; <c>null</c> as well for a server whose files were never covered, which the caller
+    /// judges itself.
+    /// </summary>
+    public static async Task<string?> ChangedSinceAsync(RepoMcpServer agreed, string root, int cap = RepoMcpFiles.MaxFiles,
+                                                         CancellationToken ct = default)
+    {
+        if (agreed.Files is not { } then) return null;
+        var now = await RepoMcpFiles.CoverAsync(agreed.Definition, root, cap, previous: then, ct: ct).ConfigureAwait(false);
+        if (now.Files is not { } files) return $"its files ({now.Uncovered})";
+        var before = then.ToDictionary(f => f.Path, f => f.Digest, StringComparer.Ordinal);
+        foreach (var file in files)
+            if (!before.Remove(file.Path, out var digest) || digest != file.Digest) return file.Path;
+        return before.Keys.Order(StringComparer.Ordinal).FirstOrDefault();
+    }
+
+    /// <summary>
+    /// A value of a definition with its variables replaced, as starting the server replaces them; <c>${input:…}</c> left
+    /// as written when <paramref name="inputs"/> is <c>null</c> (nothing has been asked yet).
+    /// </summary>
+    /// <param name="missing">Receives each variable nothing fills; <c>null</c> = not collected.</param>
+    internal static string Expand(string value, string root, string home, Func<string, string?> environment,
+                                  IReadOnlyDictionary<string, string>? inputs, List<string>? missing) =>
+        Variable.Replace(value, m =>
+        {
+            if (m.Groups[1].Success) { missing?.Add(m.Value); return m.Value; }               // Continue's ${{ secrets.X }}
+            var name = m.Groups[2].Value;
+            if (inputs is null && name.StartsWith("input:", StringComparison.Ordinal)) return m.Value;
+            string? found = name switch
+            {
+                "workspaceFolder"         => root,
+                "workspaceFolderBasename" => Path.GetFileName(root),
+                "userHome"                => home,
+                "pathSeparator" or "/"    => Path.DirectorySeparatorChar.ToString(),
+                _ when name.StartsWith("env:", StringComparison.Ordinal)   => environment(name[4..]),
+                _ when name.StartsWith("input:", StringComparison.Ordinal) => inputs!.TryGetValue(name[6..], out var v) ? v : null,
+                _ => ClaudeVariable(name, environment),
+            };
+            if (found is null) missing?.Add(m.Value);
+            return found ?? m.Value;
+        });
+
+    /// <summary>
     /// The server ready to start: its variables replaced, run in the repository (or the <c>cwd</c> it declares, resolved
     /// against it) — or <c>null</c> with the variables nothing fills, and nothing started on an empty value.
     /// </summary>
@@ -213,23 +299,7 @@ internal static class RepoMcpServers
         environment ??= Environment.GetEnvironmentVariable;
         home ??= Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var missing = new List<string>();
-        string Expand(string value) => Variable.Replace(value, m =>
-        {
-            if (m.Groups[1].Success) { missing.Add(m.Value); return m.Value; }                 // Continue's ${{ secrets.X }}
-            var name = m.Groups[2].Value;
-            string? found = name switch
-            {
-                "workspaceFolder"         => root,
-                "workspaceFolderBasename" => Path.GetFileName(root),
-                "userHome"                => home,
-                "pathSeparator" or "/"    => Path.DirectorySeparatorChar.ToString(),
-                _ when name.StartsWith("env:", StringComparison.Ordinal)   => environment(name[4..]),
-                _ when name.StartsWith("input:", StringComparison.Ordinal) => inputs.TryGetValue(name[6..], out var v) ? v : null,
-                _ => ClaudeVariable(name, environment),
-            };
-            if (found is null) missing.Add(m.Value);
-            return found ?? m.Value;
-        });
+        string Expand(string value) => RepoMcpServers.Expand(value, root, home, environment, inputs, missing);
 
         var expanded = (JsonObject)server.Definition.DeepClone();
         foreach (var key in new[] { "command", "url", "cwd" })

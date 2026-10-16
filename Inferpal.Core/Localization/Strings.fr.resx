@@ -1398,7 +1398,7 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="SkillUnreadableNow" xml:space="preserve"><value>La compétence `{0}` est illisible.</value></data>
   <data name="SkillApplyDefault" xml:space="preserve"><value>Applique la compétence {0}.</value></data>
   <data name="SkillAttachmentLabel" xml:space="preserve"><value>Compétence : {0}</value></data>
-  <data name="McpRepoServerQuestion" xml:space="preserve"><value>Ce dépôt déclare un serveur MCP : {0} ({1}). Le démarrer exécute `{2}`. Le démarrer ? Si vous acceptez, il démarrera désormais seul, jusqu'à ce que sa définition change.</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>Ce dépôt déclare un serveur MCP : {0} ({1}). Le démarrer exécute `{2}`. Le démarrer ? Si vous acceptez, il démarrera désormais seul, jusqu'à ce que sa définition ou les fichiers du dépôt qu'il exécute changent.</value></data>
   <data name="McpRepoInputQuestion" xml:space="preserve"><value>Le serveur MCP {0} de ce dépôt demande une valeur : {1}</value></data>
   <data name="McpRepoInputNotMasked" xml:space="preserve"><value>(Visual Studio affiche ce que vous tapez : rien n'est masqué.)</value></data>
   <data name="LabelSkillsAutoMode" xml:space="preserve"><value>Laisser le modèle charger une compétence quand elle s'applique</value></data>

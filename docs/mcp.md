@@ -102,6 +102,26 @@ The MCP servers a repository declares for other tools start beside yours — onc
   first — the server, its file and the command it runs — **even with approvals switched off and under an `allow`
   rule**. Your agreement is kept for that repository and that exact definition: change one argument and you are asked
   again. A declined server is asked about again at the next start.
+- **Your agreement also covers the repository's files the server runs.** Inferpal looks for every file and folder of
+  the repository the definition names — in its command, its arguments or its environment, variables replaced, and in
+  the `package.json` script that `npm run` (or `pnpm`, `yarn`, `bun`) starts — and covers each named file with the
+  folder it lives in, the `cwd` it declares, and the manifest its runner reads (`package.json`, `pyproject.toml`, a
+  `.csproj`…). A name the runtime completes counts too: `node tools/mcp/server` covers `tools/mcp`, and
+  `python -m tools.mcp.server` covers `tools/mcp/server.py`. In a git repository a folder means the files git
+  **tracks** there — what a pull changes — so what your machine writes beside the code (build output, installed
+  dependencies, caches, logs, a database) never asks again; outside git, those folders are read whole, build output,
+  dependency and cache folders excepted. When one of these files changes, the server is asked about again. They are
+  checked once more just before the server starts, and before Inferpal restarts a server that exited: one whose files
+  changed stays stopped, and its status names the file.
+  - A link that leads out of the repository is never followed: the agreement covers where it points, not what lies
+    there.
+  - Not covered — the command on the card is what you agree to there: what the program fetches or finds on its own
+    (an `npx` package, a module on its own path), the files a build pulls in from elsewhere, and the imports of a script
+    at the repository's root, which covers that file alone rather than the whole repository.
+  - A server whose folders hold more than 20,000 files, or whose files cannot be read, cannot be covered: it is asked
+    about at every start, its status and `/diagnostics` say why, and it is not restarted after it stops.
+  - An agreement given by an earlier version of Inferpal to a server that runs repository files is asked again once.
+    The editor still on that version keeps its own agreement, so the two editors do not undo each other's.
 - **Variables** are replaced the way each tool does: `${workspaceFolder}`, `${workspaceFolderBasename}`,
   `${userHome}`, `${env:NAME}`, `${NAME}` and `${NAME:-default}`, `${input:id}` — asked once per session, in VS
   Code's input box (hidden when the input is a `password`) or Visual Studio's input prompt (which cannot hide what is

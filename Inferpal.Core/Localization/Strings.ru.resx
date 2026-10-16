@@ -1398,7 +1398,7 @@
   <data name="SkillUnreadableNow" xml:space="preserve"><value>Не удалось прочитать навык `{0}`.</value></data>
   <data name="SkillApplyDefault" xml:space="preserve"><value>Примени навык {0}.</value></data>
   <data name="SkillAttachmentLabel" xml:space="preserve"><value>Навык: {0}</value></data>
-  <data name="McpRepoServerQuestion" xml:space="preserve"><value>Этот репозиторий объявляет MCP-сервер: {0} ({1}). Его запуск выполняет `{2}`. Запустить? Если вы согласитесь, он будет запускаться сам, пока не изменится его определение.</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>Этот репозиторий объявляет MCP-сервер: {0} ({1}). Его запуск выполняет `{2}`. Запустить? Если вы согласитесь, он будет запускаться сам, пока не изменятся его определение или файлы репозитория, которые он запускает.</value></data>
   <data name="McpRepoInputQuestion" xml:space="preserve"><value>MCP-сервер {0} этого репозитория запрашивает значение: {1}</value></data>
   <data name="McpRepoInputNotMasked" xml:space="preserve"><value>(Visual Studio показывает вводимый текст: он не скрывается.)</value></data>
   <data name="LabelSkillsAutoMode" xml:space="preserve"><value>Позволить модели загружать навык, когда он подходит</value></data>

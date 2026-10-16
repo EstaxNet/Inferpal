@@ -1402,7 +1402,7 @@ What you save there applies from your next question, in this thread and the othe
   <data name="SkillUnreadableNow" xml:space="preserve"><value>The skill `{0}` could not be read.</value></data>
   <data name="SkillApplyDefault" xml:space="preserve"><value>Apply the skill {0}.</value></data>
   <data name="SkillAttachmentLabel" xml:space="preserve"><value>Skill: {0}</value></data>
-  <data name="McpRepoServerQuestion" xml:space="preserve"><value>This repository declares an MCP server: {0} ({1}). Starting it runs `{2}`. Start it? If you agree, it starts on its own from now on, until its definition changes.</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>This repository declares an MCP server: {0} ({1}). Starting it runs `{2}`. Start it? If you agree, it starts on its own from now on, until its definition or the repository files it runs change.</value></data>
   <data name="McpRepoInputQuestion" xml:space="preserve"><value>The MCP server {0} of this repository asks for a value: {1}</value></data>
   <data name="McpRepoInputNotMasked" xml:space="preserve"><value>(Visual Studio shows what you type: it is not hidden.)</value></data>
   <data name="LabelSkillsAutoMode" xml:space="preserve"><value>Let the model load a skill when it fits</value></data>
