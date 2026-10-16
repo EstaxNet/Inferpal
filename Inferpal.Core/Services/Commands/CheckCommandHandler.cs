@@ -56,7 +56,7 @@ internal static class CheckCommandHandler
         if (checks.Count == 0) return new(Named(Strings.ChecksNone));
 
         var narrowed = !string.IsNullOrEmpty(arg);
-        if (narrowed)
+        if (arg is { Length: > 0 })
         {
             var one = checks.FirstOrDefault(c => c.Name.Equals(arg, StringComparison.OrdinalIgnoreCase));
             if (one is null) return new(Named(Strings.CheckUnknownName(arg)));
