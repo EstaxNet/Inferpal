@@ -94,7 +94,13 @@ record OpenAiFnDelta(
 record OpenAiUsage(
     [property: JsonPropertyName("prompt_tokens")]     int? PromptTokens = null,
     [property: JsonPropertyName("completion_tokens")] int? CompletionTokens = null,
-    [property: JsonPropertyName("total_tokens")]      int? TotalTokens = null);
+    [property: JsonPropertyName("total_tokens")]      int? TotalTokens = null,
+    [property: JsonPropertyName("prompt_tokens_details")] OpenAiPromptTokensDetails? PromptTokensDetails = null);
+
+/// <summary>What the prompt's tokens were made of: the ones served from the server's cache (vLLM, llama-server; LM
+/// Studio's <c>/v1</c> says nothing).</summary>
+record OpenAiPromptTokensDetails(
+    [property: JsonPropertyName("cached_tokens")] int? CachedTokens = null);
 
 // ── /v1/completions DTOs (legacy text completion, used for client-side FIM) ──────
 

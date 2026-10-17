@@ -221,6 +221,10 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="CodeActionReplyCut" xml:space="preserve"><value>The answer stopped at the model's length limit before the end of the code — nothing was applied. Select a smaller part of the file, or increase the context length.</value></data>
   <data name="OnboardContextCut" xml:space="preserve"><value>The draft stopped at the model's length limit before its end — .inferpal/context.md was not written. Increase the context length, or pick a model with a larger window, then run /onboard context again.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>Connection timed out — the backend at {0} stopped responding (inactivity timeout).</value></data>
+  <data name="StatusReadingPrompt" xml:space="preserve"><value>Reading the prompt: about {0:N0} {0:token|tokens} · {1}</value></data>
+  <data name="StatusReadingPromptEstimate" xml:space="preserve"><value>Reading the prompt: about {0:N0} {0:token|tokens}, up to about {1} if none of it is cached · {2}</value></data>
+  <data name="MsgPrefillOverran" xml:space="preserve"><value>No answer from {0} after {1}: it was still reading a prompt of about {2:N0} {2:token|tokens}. A slow server can read a long prompt for minutes: the next request to this model waits longer, and “{3}” sets the shortest wait ({4} → {5}).</value></data>
+  <data name="MsgPrefillNoAnswer" xml:space="preserve"><value>No answer from {0} after {1}: it was still reading a prompt of about {2:N0} {2:token|tokens}, or it does not answer. “{3}” sets how long Inferpal waits for a first word ({4} → {5}).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>Cannot reach the backend at {0}. Check the URL in Settings.</value></data>
   <data name="MsgStreamDropped" xml:space="preserve"><value>The backend at {0} closed the connection in the middle of the answer. It was reached, so the URL is fine: the server may have stopped, crashed or run out of memory. The answer is incomplete — ask again once it answers.</value></data>
   <data name="MsgBackendRefused" xml:space="preserve"><value>The backend at {0} answered {1}: it is running but refused the request. Check the API key and the URL in Settings.</value></data>
@@ -582,9 +586,9 @@ Edit the file or ask the agent to use `update_memory`. It is read again before e
   <data name="LabelAgentMaxIterations" xml:space="preserve"><value>Steps per request</value></data>
   <data name="HintAgentMaxIterations" xml:space="preserve"><value>When it runs out, the answer says the task is not finished. 0: the default.</value></data>
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>Explain, fix, edit with AI</value></data>
-  <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>Short actions, and the agent's plan.</value></data>
+  <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>Short actions, and the agent's plan. The least Inferpal waits for a first word, then between two; a long prompt is waited for as long as the server's measured speed says.</value></data>
   <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>One agent turn</value></data>
-  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Each round of a conversation, with or without tools.</value></data>
+  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Each round of a conversation, with or without tools. The least Inferpal waits for a first word, then between two.</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 Planning…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 Observing…</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>Execute the request</value></data>
@@ -1086,7 +1090,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="SettingsSectionApprovals" xml:space="preserve"><value>Approvals</value></data>
   <data name="SettingsSectionInstructions" xml:space="preserve"><value>Instructions</value></data>
   <data name="SettingsSectionTimeLimits" xml:space="preserve"><value>Time limits</value></data>
-  <data name="SettingsTimeLimitsNote" xml:space="preserve"><value>The last two measure silence: a model that keeps writing is never cut off, only a server that stops answering.</value></data>
+  <data name="SettingsTimeLimitsNote" xml:space="preserve"><value>The last two measure silence: a model that keeps writing is never cut off, only a server that stops answering — and one still reading a long prompt is waited for as long as its measured speed says.</value></data>
   <data name="SettingsSectionLongConversations" xml:space="preserve"><value>Long conversations</value></data>
   <data name="SettingsSectionAlwaysInPrompt" xml:space="preserve"><value>Always in the prompt</value></data>
   <data name="SettingsSectionAlwaysInPromptDesc" xml:space="preserve"><value>Read again before each question, so an edit counts at once.</value></data>

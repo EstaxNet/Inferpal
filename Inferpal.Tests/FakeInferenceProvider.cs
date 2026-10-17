@@ -24,12 +24,12 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     public bool                     ConnectionOk { get; set; } = true;
     public bool                     IsEmbeddingCircuitOpen { get; set; }
 
-    /// <summary>Optional override of <see cref="SendChatAsync(string, List{ChatMessageDto}, IToolRegistry, Action{string}, ReasoningEffort, CancellationToken, TaskComplexity, string, Action{string})"/> (token callback + ct);
+    /// <summary>Optional override of <see cref="SendChatAsync(string, List{ChatMessageDto}, IToolRegistry, Action{string}, ReasoningEffort, CancellationToken, TaskComplexity, string, Action{string}, Action{string})"/> (token callback + ct);
     /// null keeps the default constant <see cref="ChatResult"/>. Lets protocol tests
     /// stream tokens and honour cancellation.</summary>
     public Func<Action<string>?, CancellationToken, Task<ChatTurnResult>>? OnChat { get; set; }
 
-    /// <summary>Richer override of <see cref="SendChatAsync(string, List{ChatMessageDto}, IToolRegistry, Action{string}, ReasoningEffort, CancellationToken, TaskComplexity, string, Action{string})"/> for tests that need the prompt and
+    /// <summary>Richer override of <see cref="SendChatAsync(string, List{ChatMessageDto}, IToolRegistry, Action{string}, ReasoningEffort, CancellationToken, TaskComplexity, string, Action{string}, Action{string})"/> for tests that need the prompt and
     /// the exposed tools (e.g. the /bench runner) — checked before <see cref="OnChat"/>.</summary>
     public Func<string, List<ChatMessageDto>, IToolRegistry, Action<string>?, Task<ChatTurnResult>>? OnChatRequest { get; set; }
 
@@ -39,6 +39,10 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     /// throttle, to a client that threw the text away.
     /// </summary>
     public Action<Action<string>>? DriveThinking { get; set; }
+
+    /// <summary>Drives the waiting line a turn was given (what a client says while the server reads the prompt), so a
+    /// test sees where the caller shows it, and what it shows once the first token came (<c>null</c>).</summary>
+    public Action<Action<string?>>? DriveWaiting { get; set; }
 
     /// <summary>Scripted FIM completion (prefix, suffix → streamed text); null = no-op like a
     /// backend without FIM output.</summary>
@@ -64,7 +68,7 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     public List<string> Deleted    { get; } = [];
     public List<string> Pulled     { get; } = [];
     public List<string> Unloaded   { get; } = [];
-    /// <summary>Model name of every <see cref="SendChatAsync(string, List{ChatMessageDto}, IToolRegistry, Action{string}, ReasoningEffort, CancellationToken, TaskComplexity, string, Action{string})"/> call, in order.</summary>
+    /// <summary>Model name of every <see cref="SendChatAsync(string, List{ChatMessageDto}, IToolRegistry, Action{string}, ReasoningEffort, CancellationToken, TaskComplexity, string, Action{string}, Action{string})"/> call, in order.</summary>
     public List<string> ChatModels { get; } = [];
     /// <summary>Every <see cref="RunAgentAsync"/> call (model + the history it received), in order.</summary>
     public List<(string Model, List<ChatMessageDto> History)> AgentRuns { get; } = [];
@@ -81,11 +85,12 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     public Task<ChatTurnResult> SendChatAsync(
         string model, List<ChatMessageDto> messages, IToolRegistry tools, Action<string>? onToken,
         ReasoningEffort effort, CancellationToken ct, TaskComplexity complexity = TaskComplexity.Normal,
-        string? toolChoice = null, Action<string>? onThinking = null)
+        string? toolChoice = null, Action<string>? onThinking = null, Action<string?>? onWaiting = null)
     {
         ChatModels.Add(model);
         Efforts.Add(effort);
         if (onThinking is not null) DriveThinking?.Invoke(onThinking);
+        if (onWaiting is not null) DriveWaiting?.Invoke(onWaiting);
         return OnChatRequest?.Invoke(model, messages, tools, onToken)
             ?? OnChat?.Invoke(onToken, ct)
             ?? Task.FromResult(ChatResult);
@@ -93,7 +98,7 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
 
     // ── IInferenceProvider ──────────────────────────────────────────────────────
     /// <summary>
-    /// When true, <see cref="RunAgentAsync"/> answers through <see cref="SendChatAsync(string, List{ChatMessageDto}, IToolRegistry, Action{string}, ReasoningEffort, CancellationToken, TaskComplexity, string, Action{string})"/> — one model turn, like the
+    /// When true, <see cref="RunAgentAsync"/> answers through <see cref="SendChatAsync(string, List{ChatMessageDto}, IToolRegistry, Action{string}, ReasoningEffort, CancellationToken, TaskComplexity, string, Action{string}, Action{string})"/> — one model turn, like the
     /// real basic loop, so <see cref="OnChat"/>/<see cref="OnChatRequest"/> script it (streaming, cancellation,
     /// failures, the model name). Off, it returns the constant <see cref="ChatResult"/>.
     /// </summary>

@@ -75,6 +75,21 @@ public class CompactionFallbackCauseTests
     }
 
     [Fact]
+    public async Task ASummarizerStillReading_WhenItsWaitRanOut_SaysTheRead_NotTheWritingTime()
+    {
+        // The client's first-token wait ran out while the server read the request: the fuse's sentence names
+        // compactionTimeoutSeconds, the writing time — the one setting that would change nothing.
+        var overran  = Strings.MsgPrefillOverran("http://llama.home", TimeSpan.FromSeconds(300), 40_000, quick: false);
+        var decision = await Compact(new FakeInferenceProvider
+        {
+            OnChat = (_, _) => throw new AgentHttpException(overran, isTimeout: true, prefillOverran: true),
+        });
+
+        Assert.Equal(ContextOutcome.CompactionFellBack, decision.Outcome);             // witness
+        Assert.Equal(Strings.MsgContextCompactionFailed(overran), decision.Notice);
+    }
+
+    [Fact]
     public async Task TheFuse_IsStillATimeout()
     {
         // Reference arm: compactionTimeoutSeconds blew.

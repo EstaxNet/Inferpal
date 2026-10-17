@@ -459,7 +459,7 @@ internal sealed class AgentOrchestrator
             var request = HistoryCompaction.BuildSummarizeRequest(range, HistoryCompaction.SummaryInputBudgetChars(window));
             // The fuse now that the size to READ is known (restarts the countdown), rearmed by every streamed chunk.
             var fuse = new SummaryFuse(cts, _config.CompactionTimeoutSeconds);
-            fuse.Arm(request);
+            fuse.Arm(request, PrefillRates.Shared.Estimate(_config.BaseUrl, utility, RequestSize.Of(request.Messages, null).Total));
 
             var turn = await _client.SendChatAsync(
                 utility, request.Messages, EmptyToolRegistry.Instance, fuse.Progress, ReasoningEffort.Off, cts.Token,
@@ -584,7 +584,8 @@ internal sealed class AgentOrchestrator
         try
         {
             var turn   = await _client.SendChatAsync(
-                model, synth, EmptyToolRegistry.Instance, onToken, effort, ct, TaskComplexity.Normal, onThinking: onThinking);
+                model, synth, EmptyToolRegistry.Instance, onToken, effort, ct, TaskComplexity.Normal, onThinking: onThinking,
+                onWaiting: text => onStep(text ?? Strings.StatusAgentSynthesizing));
             var answer = MarkdownParser.StripThinkTags(turn.TextContent);
             // ⚠ A synthesis the client stopped because it kept repeating is cut AND repeating: carried as a cut alone,
             // the end notice advised a longer context — the one remedy that does nothing for a loop.
@@ -844,7 +845,9 @@ internal sealed class AgentOrchestrator
         try
         {
             // No tools during planning — we want a pure JSON response.  Quick timeout: plans are short.
-            planTurn = await _client.SendChatAsync(model, planMessages, EmptyToolRegistry.Instance, null, runEffort, ct, TaskComplexity.Quick, onThinking: onThinking);
+            // While the server reads the prompt the line says so, then gives the step back.
+            planTurn = await _client.SendChatAsync(model, planMessages, EmptyToolRegistry.Instance, null, runEffort, ct, TaskComplexity.Quick,
+                                                   onThinking: onThinking, onWaiting: text => onStep(text ?? Strings.StatusAgentPlanning));
         }
         catch (OperationCanceledException) { throw; }
         catch (AgentHttpException ex)
@@ -917,7 +920,8 @@ internal sealed class AgentOrchestrator
                 // real mitigation.) Other iterations stay on "auto" so the model can still finish.
                 var toolChoice = (iteration == 0 || retryForcesTool) ? "required" : null;
                 retryForcesTool = false;
-                turn = await _client.SendChatAsync(model, messages, tools, onToken, runEffort, ct, TaskComplexity.Normal, toolChoice, onThinking);
+                turn = await _client.SendChatAsync(model, messages, tools, onToken, runEffort, ct, TaskComplexity.Normal, toolChoice, onThinking,
+                                                   text => onStep(text ?? Strings.StatusThinking));
             }
             catch (OperationCanceledException) { throw; }
             catch (AgentHttpException ex)

@@ -188,8 +188,12 @@ internal record ChatTurnResult(
     bool               AnswerIsReasoning = false);
 
 /// <summary>Thrown by <c>OllamaClient.SendChatAsync</c> on HTTP / network failure.</summary>
-internal sealed class AgentHttpException(string message, bool isTimeout)
+internal sealed class AgentHttpException(string message, bool isTimeout, bool prefillOverran = false)
     : Exception(message)
 {
     internal bool IsTimeout { get; } = isTimeout;
+
+    /// <summary>The wait ran out before the first token: the server was still reading the prompt, as far as anyone can
+    /// tell — not a silence in the middle of an answer, and not a reason to call the server unreachable.</summary>
+    internal bool PrefillOverran { get; } = prefillOverran;
 }

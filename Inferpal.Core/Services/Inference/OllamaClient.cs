@@ -67,7 +67,11 @@ internal class OllamaClient : InferenceProviderBase
     /// </returns>
     /// <exception cref="AgentHttpException">Thrown on network error or timeout.</exception>
     /// <exception cref="OperationCanceledException">Re-thrown when the user cancels.</exception>
-    public override async Task<ChatTurnResult> SendChatAsync(
+    /// <remarks>
+    /// ⚠ Sealed: the agent loop sends the turn that carries the effort and the waiting line, so a subclass that overrode
+    /// this one would be passed by in silence — it overrides the other.
+    /// </remarks>
+    public sealed override Task<ChatTurnResult> SendChatAsync(
         string model,
         List<ChatMessageDto> messages,
         IToolRegistry tools,
@@ -76,6 +80,27 @@ internal class OllamaClient : InferenceProviderBase
         TaskComplexity complexity = TaskComplexity.Normal,
         string? toolChoice = null,
         Action<string>? onThinking = null)
+        => SendChatAsync(model, messages, tools, onToken, ReasoningEffort.Server, ct, complexity, toolChoice, onThinking, null);
+
+    /// <inheritdoc/>
+    /// <remarks>Ollama is sent no reasoning effort (not measured there): what this turn adds is the line said while the
+    /// server reads the prompt.</remarks>
+    public override Task<ChatTurnResult> SendChatAsync(
+        string model,
+        List<ChatMessageDto> messages,
+        IToolRegistry tools,
+        Action<string>? onToken,
+        ReasoningEffort effort,
+        CancellationToken ct,
+        TaskComplexity complexity = TaskComplexity.Normal,
+        string? toolChoice = null,
+        Action<string>? onThinking = null,
+        Action<string?>? onWaiting = null)
+        => ChatAsync(model, messages, tools, onToken, ct, complexity, toolChoice, onThinking, onWaiting);
+
+    private async Task<ChatTurnResult> ChatAsync(
+        string model, List<ChatMessageDto> messages, IToolRegistry tools, Action<string>? onToken, CancellationToken ct,
+        TaskComplexity complexity, string? toolChoice, Action<string>? onThinking, Action<string?>? onWaiting)
     {
         var base_ = _config.BaseUrl.TrimEnd('/');
         if (string.IsNullOrWhiteSpace(base_))
@@ -113,29 +138,57 @@ internal class OllamaClient : InferenceProviderBase
             Options: ComputeOptions(model, prompted ? PromptedTools.ResponseMarkers : null),
             ToolChoice: effectiveToolChoice);
 
-        // The complexity deadline bounds time-to-first-byte (connection, queue, model load,
-        // prompt eval) and then acts as an INACTIVITY timeout between streamed chunks —
-        // it no longer caps the total generation time, only a silent/hung server.
-        var deadline = TimeSpan.FromSeconds(TimeoutFor(complexity));
+        // ⚠ Two waits. Ollama sends nothing — not even its headers — until the first token, and a slow server reading a
+        // long prompt is not a dead one: until the first useful chunk the wait is twice the measured cold read, never less
+        // than the configured one (PrefillDeadline). After it, the configured silence between two chunks (OutputBound):
+        // it no longer caps the total generation time, only a silent or hung server.
+        var size      = RequestSize.Of(messages, defs);
+        var deadline  = TimeSpan.FromSeconds(TimeoutFor(complexity));
+        var reading   = PrefillRates.Shared.Describe(base_, model, size.Total);
+        var firstWait = PrefillDeadline.For(deadline, reading.ColdRead);
+        var toRead    = reading.Tokens;
+        using var wait = new PrefillWait(onWaiting, toRead, reading.Measured);
+        TimeSpan? firstUseful = null;
+        // No first token when the wait ran out. ⚠ Before the connect deadline nothing says a connection was even made (a
+        // floor set under it, a server that drops the handshake): that expiry is the ordinary one. Past it, the server
+        // was reached and as far as anyone can tell still reading — said so, kept as "slower than this" so the next
+        // request waits longer (while the wait may still grow), and not counted against the server's reachability.
+        AgentHttpException Overran(bool connected)
+        {
+            var waited = wait.Elapsed;
+            if (!connected && waited < ConnectDeadline.Timeout)
+            {
+                RecordFailure();
+                return new AgentHttpException(Strings.MsgTimeout(base_), isTimeout: true);
+            }
+            var grew = PrefillRates.Shared.RecordOverrun(base_, model, size.Total, waited);
+            Diagnostics.Record("OllamaClient.SendChat",
+                $"\"{model}\" at {base_} had not started answering after {waited.TotalSeconds:0} s, a request of ~{size.Total} "
+                + (grew ? "tokens: its reading speed is now taken to be slower than that."
+                        : "tokens: nothing learned (too small a request to say a speed, or the wait no longer grows)."));
+            return new AgentHttpException(
+                Strings.MsgPrefillOverran(base_, waited, toRead, complexity == TaskComplexity.Quick, waitsLonger: grew),
+                isTimeout: true, prefillOverran: true);
+        }
 
         HttpResponseMessage http;
         try
         {
             using var sendCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            sendCts.CancelAfter(deadline);
+            sendCts.CancelAfter(firstWait);
             http = await PostForStreamingAsync($"{base_}/api/chat", request, sendCts.Token);
             RecordSuccess();
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (OperationCanceledException)
         {
-            RecordFailure();
-            throw new AgentHttpException(Strings.MsgTimeout(base_), isTimeout: true);
+            throw Overran(connected: false);   // Ollama's headers come with its first token
         }
         catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal)
                                               && FallsBackToPromptedTools(ex.Message))
         {
-            return await SendChatAsync(model, messages, tools, onToken, ct, complexity, toolChoice, onThinking);
+            wait.Dispose();
+            return await ChatAsync(model, messages, tools, onToken, ct, complexity, toolChoice, onThinking, onWaiting);
         }
         catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal))
         {
@@ -159,12 +212,12 @@ internal class OllamaClient : InferenceProviderBase
         var reasoningBuilder = new System.Text.StringBuilder();
         List<ToolCallDto>? toolCalls = null;
         int tokensUsed = 0, promptTokens = 0, chunkCount = 0;
+        long loadNanoseconds = 0;
         string? doneReason = null;
         var cut = false;   // the answer stopped at the length limit (done_reason "length")
         var bounded = false;   // the client stopped reading at OutputBound
         // Ollama is loaded with num_ctx = the configured window (ComputeOptions); past OutputBound the client stops
         // reading — its context shift would otherwise let a looping model generate for as long as it likes.
-        var size     = RequestSize.Of(messages, defs);
         var maxChars = OutputBound.MaxChars(_config.ContextWindowSize, size.Total);
         long received = 0;
         // Text going round in circles, in either channel: stopped, and said to be (StoppedRepeating).
@@ -175,7 +228,7 @@ internal class OllamaClient : InferenceProviderBase
         var envelope     = new ChannelEnvelope();
 
         using var bodyCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        bodyCts.CancelAfter(deadline);
+        bodyCts.CancelAfter(firstWait);
 
         try
         {
@@ -185,7 +238,7 @@ internal class OllamaClient : InferenceProviderBase
             string? line;
             while ((line = await reader.ReadLineAsync(bodyCts.Token)) is not null)
             {
-                bodyCts.CancelAfter(deadline); // re-arm: a chunk arrived, push the deadline back
+                bodyCts.CancelAfter(firstUseful is null ? firstWait : deadline); // re-arm: a chunk arrived, push the deadline back
                 if (string.IsNullOrWhiteSpace(line)) continue;
 
                 ChatResponse? chunk;
@@ -198,13 +251,26 @@ internal class OllamaClient : InferenceProviderBase
                 {
                     // The same refusal as an error line in a 200 stream: nothing generated yet, so asked again.
                     if (chunkCount == 1 && FallsBackToPromptedTools(serverError))
-                        return await SendChatAsync(model, messages, tools, onToken, ct, complexity, toolChoice, onThinking);
+                    {
+                        wait.Dispose();
+                        return await ChatAsync(model, messages, tools, onToken, ct, complexity, toolChoice, onThinking, onWaiting);
+                    }
                     RecordFailure();
                     throw new AgentHttpException(MapServerError(serverError, base_, () => RequestSize.Of(messages, defs)), isTimeout: false);
                 }
 
                 if (chunk.Message is not null)
                 {
+                    // The first word, thought or call: the reading is over.
+                    if (firstUseful is null
+                        && (!string.IsNullOrEmpty(chunk.Message.Content) || !string.IsNullOrEmpty(chunk.Message.Thinking)
+                            || chunk.Message.ToolCalls is { Count: > 0 }))
+                    {
+                        firstUseful = wait.Elapsed;
+                        wait.Arrived();
+                        // ⚠ From now on the wait is the one between two chunks (see the re-arm above).
+                        bodyCts.CancelAfter(deadline);
+                    }
                     // Accumulate: Ollama streams each parsed call in its own chunk.
                     if (chunk.Message.ToolCalls is { Count: > 0 } tc)
                         (toolCalls ??= []).AddRange(tc);
@@ -267,6 +333,7 @@ internal class OllamaClient : InferenceProviderBase
                 {
                     promptTokens = chunk.PromptEvalCount ?? 0;
                     tokensUsed   = promptTokens + (chunk.EvalCount ?? 0);
+                    loadNanoseconds = chunk.LoadDuration ?? 0;
                     doneReason   = chunk.DoneReason;
                     cut          = chunk.DoneReason == "length";
                     break;
@@ -276,7 +343,8 @@ internal class OllamaClient : InferenceProviderBase
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (OperationCanceledException)
         {
-            // No chunk for `deadline` — the server hung mid-stream.
+            // Nothing yet: still reading. Else no chunk for `deadline` — the server hung mid-stream.
+            if (firstUseful is null) throw Overran(connected: true);   // its headers came: it was reached
             RecordFailure();
             throw new AgentHttpException(Strings.MsgTimeout(base_), isTimeout: true);
         }
@@ -287,6 +355,17 @@ internal class OllamaClient : InferenceProviderBase
             // streamed: "cannot reach… check the URL" sends the user to a URL that is fine.
             RecordFailure();
             throw new AgentHttpException(Strings.MsgStreamDropped(base_) + "\n" + ex.Message, isTimeout: false);
+        }
+
+        // A read that went through is a sample of the server's speed, from sending to the first useful chunk, the model's
+        // load taken out (Ollama says how long it took: a cold load is not a reading speed). ⚠ Ollama counts only the
+        // tokens it evaluated, not those its cache served, and says nothing of the cache: a read that evaluated less than
+        // half the request was mostly served from it, and is no cold read at all.
+        if (firstUseful is { } read && (promptTokens == 0 || promptTokens * 2 >= size.Total))
+        {
+            var load = TimeSpan.FromTicks(loadNanoseconds / 100);
+            PrefillRates.Shared.Record(base_, model, size.Total, promptTokens > 0 ? promptTokens : size.Total,
+                                       load < read ? read - load : read);
         }
 
         // What the envelope held back — a marker the end of the stream cut in two — is released now.

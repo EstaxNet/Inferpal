@@ -113,6 +113,14 @@ an agent; only the transport changes.
 first; Inferpal never sends one elsewhere. A response that loops (the same passage, or the same tool call, again and
 again) is stopped and said to be incomplete, instead of running until the context window is full.
 
+**A long prompt takes time to read.** Before its first word, the server reads the whole prompt — the conversation,
+the attached files, the tool definitions — and sends nothing meanwhile. On the test server, Qwen3.8 27B reads about
+600 tokens a second (a 26 000-token conversation: 44 s before the first word); a smaller or slower card can take
+minutes. Inferpal learns how fast each server reads, per model, and waits for a first word twice as long as the read
+is measured to take ([time limits](configuration.md)); in the chat, the status line says what it is reading. A reverse
+proxy between Inferpal and the server cuts a connection that stays silent past its own limit (nginx's
+`proxy_read_timeout` is 60 s by default): raise it for a slow machine.
+
 **Sampling.** For the families on this page, Inferpal sends the sampling settings their vendor recommends — only the
 values the vendor publishes; the **Settings** line of each section says exactly which. A server applies its generic
 defaults to a model it has no preset for, and those can hurt a model badly (GLM's vendor says to disable the repeat

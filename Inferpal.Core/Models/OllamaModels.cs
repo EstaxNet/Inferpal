@@ -78,11 +78,13 @@ record ChatMessageDto(
 /// then carries a bare <c>{"error":"…"}</c> line instead of a chunk.</param>
 /// <param name="DoneReason">On the final chunk: <c>"stop"</c>, or <c>"length"</c> when the answer stopped at the
 /// limit.</param>
+/// <param name="LoadDuration">On the final chunk: the nanoseconds spent loading the model before reading the prompt.</param>
 record ChatResponse(
     [property: JsonPropertyName("done")]               bool Done,
     [property: JsonPropertyName("message")]            ChatMessageDto? Message          = null,
     [property: JsonPropertyName("eval_count")]         int?            EvalCount        = null,
     [property: JsonPropertyName("prompt_eval_count")]  int?            PromptEvalCount  = null,
+    [property: JsonPropertyName("load_duration")]      long?           LoadDuration     = null,
     [property: JsonPropertyName("error")]              JsonElement     Error            = default,
     [property: JsonPropertyName("done_reason")]        string?         DoneReason       = null);
 

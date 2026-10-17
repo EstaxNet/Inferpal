@@ -129,24 +129,30 @@ internal static class HistoryCompaction
         windowTokens <= 0 ? int.MaxValue : (int)Math.Min(int.MaxValue, 2L * windowTokens);
 
     /// <summary>
-    /// The reading speed the summarizing call's fuse allows for: slower than a 27B model reads on a slow backend
-    /// (~170 tokens/s on Vulkan llama.cpp), so the smaller cards are covered too.
+    /// The reading speed the summarizing call's fuse allows for when the summarizer's own is not measured yet
+    /// (<see cref="PrefillRates"/>): slower than a 27B model reads on a slow backend, so the smaller cards are covered too.
     /// </summary>
     internal const int FuseReadTokensPerSecond = 100;
 
     /// <summary>
     /// How long a summarizing call may run before the safety fuse falls back to hard truncation: the configured seconds
-    /// (<c>compactionTimeoutSeconds</c>, 10 at least) for WRITING, plus the time a slow reader needs to READ the request.
+    /// (<c>compactionTimeoutSeconds</c>, 10 at least) for WRITING, plus the time to READ the request — twice its measured
+    /// cold read (<paramref name="coldRead"/>), as the client waits for a first token, or a slow reader's when not measured.
     /// </summary>
     /// <remarks>
     /// ⚠ The fuse guards against a model that never answers, not against a slow one. A fixed one fired on reading alone:
     /// a model spends its first seconds reading the whole slice before it writes a word, and the slice is largest when a
     /// conversation outgrows its window — so a summary that would have kept the facts became a truncation that kept none.
-    /// Both summarizing calls (the conversation's and an agent run's) read it once their request is built.
+    /// Both summarizing calls (the conversation's and an agent run's) read it once their request is built. The reading
+    /// part allows the measured read twice over, as the client's first-token wait does (<see cref="PrefillDeadline"/>),
+    /// and never less than a slow reader's time: a fit made of warm reads cannot make the fuse shorter than it was.
+    /// ⚠ The fuse can still fire before the client's own wait — a floor longer than the fuse — and then names the
+    /// writing time: the fuse bounds how long a compaction holds the question, and its cancellation teaches nothing.
     /// </remarks>
-    public static TimeSpan SummaryTimeout(int configuredSeconds, SummarizeRequest request) =>
+    public static TimeSpan SummaryTimeout(int configuredSeconds, SummarizeRequest request, TimeSpan? coldRead = null) =>
         TimeSpan.FromSeconds(Math.Max(10, configuredSeconds)
-                             + AgentOrchestrator.EstimateTokens(request.Messages) / FuseReadTokensPerSecond);
+                             + Math.Max(PrefillDeadline.Margin * (coldRead?.TotalSeconds ?? 0),
+                                        AgentOrchestrator.EstimateTokens(request.Messages) / FuseReadTokensPerSecond));
 
     /// <summary>
     /// The request that asks the model for a summary: the labelled transcript ("User:"/"Assistant:"/"Tool:", empty
@@ -298,8 +304,9 @@ internal sealed class SummaryFuse(CancellationTokenSource cts, int configuredSec
     private readonly TimeSpan _idle = TimeSpan.FromSeconds(Math.Max(10, configuredSeconds));
 
     /// <summary>Starts the countdown before the first output: the configured seconds plus the time to read
-    /// <paramref name="request"/>.</summary>
-    public void Arm(SummarizeRequest request) => cts.CancelAfter(HistoryCompaction.SummaryTimeout(configuredSeconds, request));
+    /// <paramref name="request"/>, from the summarizer's measured cold read (<paramref name="coldRead"/>) when there is one.</summary>
+    public void Arm(SummarizeRequest request, TimeSpan? coldRead = null) =>
+        cts.CancelAfter(HistoryCompaction.SummaryTimeout(configuredSeconds, request, coldRead));
 
     /// <summary>A streamed chunk — answer or reasoning: the model is producing, so the countdown restarts.</summary>
     public void Progress(string _)

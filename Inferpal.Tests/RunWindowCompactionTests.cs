@@ -28,7 +28,7 @@ public class RunWindowCompactionTests
         public override Task<ChatTurnResult> SendChatAsync(
             string model, List<ChatMessageDto> messages, IToolRegistry tools, Action<string>? onToken,
             ReasoningEffort effort, CancellationToken ct, TaskComplexity complexity = TaskComplexity.Normal,
-            string? toolChoice = null, Action<string>? onThinking = null)
+            string? toolChoice = null, Action<string>? onThinking = null, Action<string?>? onWaiting = null)
         {
             ElidedPerRequest.Add(messages.Count(m => m.Content?.StartsWith(Elided, StringComparison.Ordinal) == true));
             _calls++;

@@ -754,6 +754,22 @@ internal static class Strings
     public static string MsgTimeout(string url) =>
         Format(Get(nameof(MsgTimeout)), url);
 
+    /// <summary>The line said while a server reads a prompt and nothing has come back: the tokens, the measured cold read
+    /// when there is one (an upper bound: what is cached is read at once), and the time waited.</summary>
+    public static string StatusReadingPrompt(int tokens, TimeSpan? coldRead, TimeSpan elapsed) =>
+        coldRead is { } read
+            ? Format(Get("StatusReadingPromptEstimate"), tokens,
+                     Services.Presentation.RunSummary.Duration(read), Services.Presentation.RunSummary.Duration(elapsed))
+            : Format(Get(nameof(StatusReadingPrompt)), tokens, Services.Presentation.RunSummary.Duration(elapsed));
+
+    /// <summary>A request with no first token when its wait ran out, the server still reading: not an unreachable one.
+    /// <paramref name="quick"/> names the short wait's setting, the turn's otherwise; <paramref name="waitsLonger"/> says
+    /// whether the next request waits longer — once the wait no longer grows, the server may not answer at all.</summary>
+    public static string MsgPrefillOverran(string url, TimeSpan waited, int tokens, bool quick, bool waitsLonger = true) =>
+        Format(waitsLonger ? Get(nameof(MsgPrefillOverran)) : Get("MsgPrefillNoAnswer"), url,
+               Services.Presentation.RunSummary.Duration(waited), tokens,
+               quick ? LabelTaskTimeoutQuick : LabelTaskTimeoutNormal, SettingsPageAgent, SettingsSectionTimeLimits);
+
     public static string MsgUnreachable(string url) =>
         Format(Get(nameof(MsgUnreachable)), url);
 

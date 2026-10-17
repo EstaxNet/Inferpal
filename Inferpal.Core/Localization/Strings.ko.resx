@@ -220,6 +220,10 @@
   <data name="CodeActionReplyCut" xml:space="preserve"><value>코드가 끝나기 전에 응답이 모델의 길이 제한에서 멈췄습니다. 아무것도 적용되지 않았습니다. 파일의 더 작은 부분을 선택하거나 컨텍스트 길이를 늘리세요.</value></data>
   <data name="OnboardContextCut" xml:space="preserve"><value>초안이 끝나기 전에 모델의 길이 제한에서 멈췄습니다. .inferpal/context.md는 작성되지 않았습니다. 컨텍스트 길이를 늘리거나 더 큰 창의 모델을 선택한 뒤 /onboard context를 다시 실행하세요.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>연결 시간 초과 — {0}의 백엔드가 더 이상 응답하지 않습니다(무응답 시간 초과).</value></data>
+  <data name="StatusReadingPrompt" xml:space="preserve"><value>프롬프트 읽는 중: 약 {0:N0}개 토큰 · {1}</value></data>
+  <data name="StatusReadingPromptEstimate" xml:space="preserve"><value>프롬프트 읽는 중: 약 {0:N0}개 토큰, 캐시된 것이 없으면 최대 약 {1} · {2}</value></data>
+  <data name="MsgPrefillOverran" xml:space="preserve"><value>{1} 후에도 {0}에서 응답이 없습니다. 약 {2:N0}개 토큰의 프롬프트를 아직 읽고 있었습니다. 느린 서버는 긴 프롬프트를 몇 분 동안 읽을 수 있습니다. 이 모델에 대한 다음 요청은 더 오래 기다리며, 가장 짧은 대기는 "{3}"에서 정합니다({4} → {5}).</value></data>
+  <data name="MsgPrefillNoAnswer" xml:space="preserve"><value>{1} 후에도 {0}에서 응답이 없습니다. 약 {2:N0}개 토큰의 프롬프트를 아직 읽고 있거나 응답하지 않습니다. Inferpal이 첫 단어를 기다리는 시간은 "{3}"에서 정합니다({4} → {5}).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>{0}의 백엔드에 연결할 수 없습니다. 설정에서 URL을 확인하세요.</value></data>
   <data name="MsgStreamDropped" xml:space="preserve"><value>{0}의 백엔드가 답변 도중 연결을 닫았습니다. 연결은 되었으므로 URL은 올바릅니다. 서버가 중지되었거나, 충돌했거나, 메모리가 부족했을 수 있습니다. 답변이 불완전합니다. 서버가 응답하면 다시 질문하세요.</value></data>
   <data name="MsgBackendRefused" xml:space="preserve"><value>{0}의 백엔드가 {1}(으)로 응답했습니다. 실행 중이지만 요청을 거부했습니다. 설정에서 API 키와 URL을 확인하세요.</value></data>
@@ -597,9 +601,9 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="LabelAgentMaxIterations" xml:space="preserve"><value>요청당 단계 수</value></data>
   <data name="HintAgentMaxIterations" xml:space="preserve"><value>다 쓰면 작업이 끝나지 않았다고 답변에 표시됩니다. 0: 기본값.</value></data>
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>설명, 수정, AI로 편집</value></data>
-  <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>짧은 작업과 에이전트의 계획.</value></data>
+  <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>짧은 작업과 에이전트의 계획. Inferpal이 첫 단어를, 그다음에는 단어 사이를 기다리는 최소 시간입니다. 긴 프롬프트는 서버의 측정된 속도가 말하는 만큼 기다립니다.</value></data>
   <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>에이전트 한 차례</value></data>
-  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>대화의 각 차례 (도구 사용 여부와 무관).</value></data>
+  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>대화의 각 라운드(도구 사용 여부와 관계없이). Inferpal이 첫 단어를, 그다음에는 단어 사이를 기다리는 최소 시간입니다.</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 계획 중…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 관찰 중…</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>요청 실행</value></data>
@@ -1082,7 +1086,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="SettingsSectionApprovals" xml:space="preserve"><value>승인</value></data>
   <data name="SettingsSectionInstructions" xml:space="preserve"><value>지침</value></data>
   <data name="SettingsSectionTimeLimits" xml:space="preserve"><value>시간 제한</value></data>
-  <data name="SettingsTimeLimitsNote" xml:space="preserve"><value>마지막 두 항목은 침묵을 잽니다. 계속 쓰는 모델은 끊지 않고, 응답을 멈춘 서버만 끊습니다.</value></data>
+  <data name="SettingsTimeLimitsNote" xml:space="preserve"><value>마지막 두 항목은 침묵을 잽니다. 계속 쓰는 모델은 절대 끊기지 않고, 응답을 멈춘 서버만 끊깁니다. 긴 프롬프트를 아직 읽고 있는 서버는 측정된 속도가 말하는 만큼 기다립니다.</value></data>
   <data name="SettingsSectionLongConversations" xml:space="preserve"><value>긴 대화</value></data>
   <data name="SettingsSectionAlwaysInPrompt" xml:space="preserve"><value>항상 프롬프트에 포함</value></data>
   <data name="SettingsSectionAlwaysInPromptDesc" xml:space="preserve"><value>질문할 때마다 다시 읽으므로 수정이 바로 반영됩니다.</value></data>

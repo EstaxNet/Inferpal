@@ -233,7 +233,7 @@ internal static class ContextManager
                 HistoryCompaction.SliceToCompact(history, plan), HistoryCompaction.SummaryInputBudgetChars(window));
             // The fuse now that the size to READ is known (restarts the countdown), rearmed by every streamed chunk.
             var fuse = new SummaryFuse(cts, config.CompactionTimeoutSeconds);
-            fuse.Arm(request);
+            fuse.Arm(request, PrefillRates.Shared.Estimate(config.BaseUrl, model, RequestSize.Of(request.Messages, null).Total));
 
             // ⚠ SendChatAsync, never RunAgentAsync: the agent loop reports a network failure as its
             // FinalResponse, and the error text would become the "summary" that replaces the turns.
@@ -257,10 +257,11 @@ internal static class ContextManager
         catch (OperationCanceledException) { return (null, false, 0, Strings.MsgContextCompactionFallback); }
         catch (AgentHttpException ex)
         {
-            // The client's message is already the user-facing cause (refusal, unreachable server, open breaker).
+            // The client's message is already the user-facing cause (refusal, unreachable server, open breaker) — and
+            // a request still being read when its wait ran out says so: the fuse's message would name the writing time.
             Diagnostics.Swallow("ContextManager.Summarize", ex);
-            return (null, false, 0, ex.IsTimeout ? Strings.MsgContextCompactionFallback
-                                                 : Strings.MsgContextCompactionFailed(ex.Message));
+            return (null, false, 0, ex.IsTimeout && !ex.PrefillOverran ? Strings.MsgContextCompactionFallback
+                                                                       : Strings.MsgContextCompactionFailed(ex.Message));
         }
         catch (Exception ex)
         {

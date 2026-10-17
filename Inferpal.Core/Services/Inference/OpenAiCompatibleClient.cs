@@ -255,7 +255,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         TaskComplexity complexity = TaskComplexity.Normal,
         string? toolChoice = null,
         Action<string>? onThinking = null)
-        => SendChatAsync(model, messages, tools, onToken, ReasoningEffort.Server, ct, complexity, toolChoice, onThinking);
+        => SendChatAsync(model, messages, tools, onToken, ReasoningEffort.Server, ct, complexity, toolChoice, onThinking, null);
 
     /// <summary>
     /// The servers and models that refused the reasoning effort they were sent (<c>base|model|value</c>): asked again
@@ -282,7 +282,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         CancellationToken ct,
         TaskComplexity complexity = TaskComplexity.Normal,
         string? toolChoice = null,
-        Action<string>? onThinking = null)
+        Action<string>? onThinking = null,
+        Action<string?>? onWaiting = null)
     {
         var base_ = BaseV1;
         if (string.IsNullOrWhiteSpace(base_))
@@ -323,6 +324,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // generated yet in any of them, so each one retries.
         // The reasoning the caller asks for, in the words this server takes for this model — nothing once refused.
         var effortValue = effort != ReasoningEffort.Server ? await ReasoningEffortFieldAsync(model, effort, ct) : null;
+        // The line said while the server reads the prompt; a retry stops it and says its own.
+        PrefillWait? wait = null;
         var effortKey   = base_ + "|" + model + "|" + effortValue;
         if (effortValue is not null && ReasoningRefusals.ContainsKey(effortKey)) effortValue = null;
         // ⚠ Judged BEFORE the tools' refusal: a template that cannot render the effort fails in the words of one that
@@ -339,7 +342,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         {
             var named       = error.Contains("reasoning_effort", StringComparison.OrdinalIgnoreCase);
             var wasPrompted = PromptedTools.Models.ContainsKey(promptedKey);
-            var answer = await SendChatAsync(model, messages, tools, onToken, ReasoningEffort.Server, ct, complexity, toolChoice, onThinking);
+            wait?.Dispose();
+            var answer = await SendChatAsync(model, messages, tools, onToken, ReasoningEffort.Server, ct, complexity, toolChoice, onThinking, onWaiting);
             if (named || PromptedTools.Models.ContainsKey(promptedKey) == wasPrompted) RememberRefusal(error);
             return answer;
         }
@@ -376,21 +380,50 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             RepeatPenalty: SendsExtendedSampling ? sampling?.RepeatPenalty : null,
             ReasoningEffort: effortValue);
 
-        var deadline = TimeSpan.FromSeconds(TimeoutFor(complexity));
+        // ⚠ Two waits. Until the first useful chunk the server reads the prompt, and a slow one reading a long prompt sends
+        // nothing: that wait is twice its measured cold read, never less than the configured one (PrefillDeadline). After
+        // it, the configured silence between two chunks (OutputBound).
+        var deadline  = TimeSpan.FromSeconds(TimeoutFor(complexity));
+        var reading   = PrefillRates.Shared.Describe(base_, model, size.Total);
+        var firstWait = PrefillDeadline.For(deadline, reading.ColdRead);
+        var toRead    = reading.Tokens;
+        wait = new PrefillWait(onWaiting, toRead, reading.Measured);
+        using var waitScope = wait;
+        TimeSpan? firstUseful = null;
+        // No first token when the wait ran out. ⚠ Before the connect deadline nothing says a connection was even made (a
+        // floor set under it, a server that drops the handshake): that expiry is the ordinary one. Past it, the server
+        // was reached and as far as anyone can tell still reading — said so, kept as "slower than this" so the next
+        // request waits longer (while the wait may still grow), and not counted against the server's reachability.
+        AgentHttpException Overran(bool connected)
+        {
+            var waited = wait!.Elapsed;
+            if (!connected && waited < ConnectDeadline.Timeout)
+            {
+                RecordFailure();
+                return new AgentHttpException(Strings.MsgTimeout(base_), isTimeout: true);
+            }
+            var grew = PrefillRates.Shared.RecordOverrun(base_, model, size.Total, waited);
+            Diagnostics.Record("OpenAiCompatibleClient.SendChat",
+                $"\"{model}\" at {base_} had not started answering after {waited.TotalSeconds:0} s, a request of ~{size.Total} "
+                + (grew ? "tokens: its reading speed is now taken to be slower than that."
+                        : "tokens: nothing learned (too small a request to say a speed, or the wait no longer grows)."));
+            return new AgentHttpException(
+                Strings.MsgPrefillOverran(base_, waited, toRead, complexity == TaskComplexity.Quick, waitsLonger: grew),
+                isTimeout: true, prefillOverran: true);
+        }
 
         HttpResponseMessage http;
         try
         {
             using var sendCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            sendCts.CancelAfter(deadline);
+            sendCts.CancelAfter(firstWait);
             http = await PostForStreamingAsync($"{base_}/chat/completions", request, sendCts.Token, AuthHeaders());
             RecordSuccess();
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (OperationCanceledException)
         {
-            RecordFailure();
-            throw new AgentHttpException(Strings.MsgTimeout(base_), isTimeout: true);
+            throw Overran(connected: false);
         }
         catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal) && DropsTheEffort(ex.Message))
         {
@@ -399,7 +432,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal)
                                               && FallsBackToPromptedTools(ex.Message))
         {
-            return await SendChatAsync(model, messages, tools, onToken, effort, ct, complexity, toolChoice, onThinking);
+            wait.Dispose();
+            return await SendChatAsync(model, messages, tools, onToken, effort, ct, complexity, toolChoice, onThinking, onWaiting);
         }
         catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal))
         {
@@ -424,6 +458,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // Accumulate streamed tool-call fragments (name + arguments arrive piecewise).
         var toolAcc        = new ToolCallAccumulator();
         int tokensUsed = 0, promptTokens = 0;
+        int? cachedTokens = null;
         // What the stream contained: the one thing missing to diagnose an empty turn.
         var chunkCount   = 0;
         string? finishReason = null;
@@ -448,7 +483,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         var  envelope      = new ChannelEnvelope();
 
         using var bodyCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        bodyCts.CancelAfter(deadline);
+        bodyCts.CancelAfter(firstWait);
         // Every call's arguments are closed: the end of the turn comes at once, so the wait for it is short.
         var closedQuiet = false;
 
@@ -462,7 +497,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             {
                 // Re-arm: a chunk arrived, push the deadline back — a short one once every call's arguments are closed.
                 closedQuiet = argsShape.AllClosed;
-                bodyCts.CancelAfter(closedQuiet ? ClosedArgumentsSilence : deadline);
+                bodyCts.CancelAfter(closedQuiet ? ClosedArgumentsSilence : firstUseful is null ? firstWait : deadline);
                 if (string.IsNullOrWhiteSpace(line)) continue;
                 if (!line.StartsWith("data:", StringComparison.Ordinal))
                 {
@@ -472,7 +507,10 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                     {
                         if (chunkCount == 0 && DropsTheEffort(bareError)) return await WithoutTheEffortAsync(bareError);
                         if (chunkCount == 0 && FallsBackToPromptedTools(bareError))
-                            return await SendChatAsync(model, messages, tools, onToken, effort, ct, complexity, toolChoice, onThinking);
+                        {
+                            wait.Dispose();
+                            return await SendChatAsync(model, messages, tools, onToken, effort, ct, complexity, toolChoice, onThinking, onWaiting);
+                        }
                         RecordFailure();
                         throw new AgentHttpException(MapServerError(bareError, base_, () => RequestSize.Of(messages, defs)), isTimeout: false);
                     }
@@ -495,7 +533,10 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                 {
                     if (chunkCount == 0 && DropsTheEffort(serverError)) return await WithoutTheEffortAsync(serverError);
                     if (chunkCount == 0 && FallsBackToPromptedTools(serverError))
-                        return await SendChatAsync(model, messages, tools, onToken, effort, ct, complexity, toolChoice, onThinking);
+                    {
+                        wait.Dispose();
+                        return await SendChatAsync(model, messages, tools, onToken, effort, ct, complexity, toolChoice, onThinking, onWaiting);
+                    }
                     RecordFailure();
                     throw new AgentHttpException(MapServerError(serverError, base_, () => RequestSize.Of(messages, defs)), isTimeout: false);
                 }
@@ -503,6 +544,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                 if (chunk?.Usage is { } usage)
                 {
                     promptTokens = usage.PromptTokens ?? promptTokens;
+                    cachedTokens = usage.PromptTokensDetails?.CachedTokens ?? cachedTokens;
                     tokensUsed   = usage.TotalTokens
                                    ?? ((usage.PromptTokens ?? 0) + (usage.CompletionTokens ?? 0));
                 }
@@ -513,6 +555,18 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
 
                 var delta = chunk?.Choices is { Count: > 0 } ch ? ch[0].Delta : null;
                 if (delta is null) continue;
+
+                // The first word, thought or call: the reading is over. A role alone, a ping or a progress note is not one.
+                if (firstUseful is null
+                    && (!string.IsNullOrEmpty(delta.ReasoningContent) || !string.IsNullOrEmpty(delta.Reasoning)
+                        || !string.IsNullOrEmpty(delta.Content) || delta.ToolCalls is { Count: > 0 }))
+                {
+                    firstUseful = wait.Elapsed;
+                    wait.Arrived();
+                    // ⚠ From now on the wait is the one between two chunks: armed with the reading's wait above, a server
+                    // that hangs right after its first token would be noticed only when that long wait ran out.
+                    bodyCts.CancelAfter(closedQuiet ? ClosedArgumentsSilence : deadline);
+                }
 
                 // Servers disagree on the reasoning field name: vLLM/DeepSeek use "reasoning_content",
                 // Ollama's OpenAI endpoint uses "reasoning". Surface whichever is present.
@@ -620,6 +674,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         }
         catch (OperationCanceledException)
         {
+            if (firstUseful is null) throw Overran(connected: true);   // its headers came: it was reached
             RecordFailure();
             throw new AgentHttpException(Strings.MsgTimeout(base_), isTimeout: true);
         }
@@ -637,6 +692,16 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             // The stream broke after the server had answered: it was reached, so not "cannot reach… check the URL".
             RecordFailure();
             throw new AgentHttpException(Strings.MsgStreamDropped(base_) + "\n" + ex.Message, isTimeout: false);
+        }
+
+        // A read that went through is a sample of the server's speed: the tokens it read anew (what it served from its
+        // cache, when it says, is not reading), from sending to the first useful chunk.
+        if (firstUseful is { } read)
+        {
+            var counted = promptTokens > 0 ? promptTokens : size.Total;
+            var cached  = Math.Clamp(cachedTokens ?? 0, 0, counted);
+            var fresh   = counted - cached;
+            PrefillRates.Shared.Record(base_, model, (int)Math.Round((double)size.Total * fresh / Math.Max(1, counted)), fresh, read);
         }
 
         // What the envelope held back — a marker the end of the stream cut in two — is released now.
@@ -705,7 +770,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         if (toolChoice == "required" && defs is not null
             && toolCalls is null && !contentPrintable && reasoningBuilder.Length == 0)
         {
-            return await SendChatAsync(model, messages, tools, onToken, effort, ct, complexity, "auto", onThinking);
+            wait.Dispose();
+            return await SendChatAsync(model, messages, tools, onToken, effort, ct, complexity, "auto", onThinking, onWaiting);
         }
 
         // ⚠ A turn that returns NOTHING — no text, no tool call, no reasoning, and no error — was

@@ -514,7 +514,9 @@ internal sealed partial class HostServer : IDisposable
             var turn = await s.Client.SendChatAsync(
                 model, s.History, EmptyToolRegistry.Instance, OnToken,
                 ChatTurnPolicy.TurnEffort(s.Config, p.CodeAction), cts.Token,
-                complexity: ChatTurnPolicy.TurnComplexity(p.CodeAction), onThinking: OnThinking);
+                complexity: ChatTurnPolicy.TurnComplexity(p.CodeAction), onThinking: OnThinking,
+                // While the server reads the prompt the turn's status line says so, then goes back to thinking.
+                onWaiting: text => Notify("chat/step", new { text = text ?? Strings.StatusThinking }));
             // The answer the user saw, as on the two paths above and in Visual Studio: without the model's reasoning.
             var said = ChatTurnPolicy.ChoosePersistedAnswer(
                 !ChatTurnPolicy.IsVisiblyEmpty(streamed.ToString()) ? streamed.ToString() : null, turn.TextContent);

@@ -26,10 +26,11 @@ public class OllamaClientAgentLoopTests
         public ScriptedOllamaClient(InferpalConfig config, IEnumerable<Func<ChatTurnResult>> script)
             : base(config) => _script = new(script);
 
+        // The turn the loop sends, effort and waiting line included: the plain one forwards to it.
         public override Task<ChatTurnResult> SendChatAsync(
             string model, List<ChatMessageDto> messages, IToolRegistry tools, Action<string>? onToken,
-            CancellationToken ct, TaskComplexity complexity = TaskComplexity.Normal, string? toolChoice = null,
-            Action<string>? onThinking = null)
+            ReasoningEffort effort, CancellationToken ct, TaskComplexity complexity = TaskComplexity.Normal,
+            string? toolChoice = null, Action<string>? onThinking = null, Action<string?>? onWaiting = null)
         {
             SeenMessages.Add(new List<ChatMessageDto>(messages));
             var reply = _script.Count > 1 ? _script.Dequeue() : _script.Peek();

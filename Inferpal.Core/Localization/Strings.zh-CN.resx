@@ -220,6 +220,10 @@
   <data name="CodeActionReplyCut" xml:space="preserve"><value>回答在代码结束前就达到了模型的长度限制——未应用任何更改。请选择文件中较小的部分，或增大上下文长度。</value></data>
   <data name="OnboardContextCut" xml:space="preserve"><value>草稿在结束前就达到了模型的长度限制——未写入 .inferpal/context.md。请增大上下文长度，或选择窗口更大的模型，然后重新运行 /onboard context。</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>连接超时 — {0} 的后端已停止响应（空闲超时）。</value></data>
+  <data name="StatusReadingPrompt" xml:space="preserve"><value>正在读取提示：约 {0:N0} 个令牌 · {1}</value></data>
+  <data name="StatusReadingPromptEstimate" xml:space="preserve"><value>正在读取提示：约 {0:N0} 个令牌，若无缓存最多约 {1} · {2}</value></data>
+  <data name="MsgPrefillOverran" xml:space="preserve"><value>{1} 后仍未收到 {0} 的回复：它还在读取约 {2:N0} 个令牌的提示。慢速服务器读取长提示可能需要数分钟：对此模型的下一个请求会等待更久，最短等待时间由“{3}”设置（{4} → {5}）。</value></data>
+  <data name="MsgPrefillNoAnswer" xml:space="preserve"><value>{1} 后仍未收到 {0} 的回复：它还在读取约 {2:N0} 个令牌的提示，或者没有响应。Inferpal 等待第一个词的时间由“{3}”设置（{4} → {5}）。</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>无法连接到 {0} 的后端。请在设置中检查 URL。</value></data>
   <data name="MsgStreamDropped" xml:space="preserve"><value>{0} 的后端在回答中途关闭了连接。连接曾经成功，所以 URL 没有问题：服务器可能已停止、崩溃或内存不足。回答不完整——请在它恢复响应后重新提问。</value></data>
   <data name="MsgBackendRefused" xml:space="preserve"><value>{0} 的后端以 {1} 响应：它正在运行，但拒绝了该请求。请在设置中检查 API 密钥和 URL。</value></data>
@@ -597,9 +601,9 @@
   <data name="LabelAgentMaxIterations" xml:space="preserve"><value>每次请求的步骤数</value></data>
   <data name="HintAgentMaxIterations" xml:space="preserve"><value>用完时，回答会说明任务尚未完成。0：使用默认值。</value></data>
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>解释、修复、用 AI 编辑</value></data>
-  <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>简短的操作，以及代理的计划。</value></data>
+  <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>简短操作，以及代理的计划。Inferpal 等待第一个词、之后两个词之间的最短时间；长提示会按服务器的实测速度等待。</value></data>
   <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>代理的一轮</value></data>
-  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>对话中的每一轮，无论是否使用工具。</value></data>
+  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>对话的每一轮，无论是否使用工具。Inferpal 等待第一个词、之后两个词之间的最短时间。</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 规划中…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 观察中…</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>执行请求</value></data>
@@ -1082,7 +1086,7 @@
   <data name="SettingsSectionApprovals" xml:space="preserve"><value>审批</value></data>
   <data name="SettingsSectionInstructions" xml:space="preserve"><value>指令</value></data>
   <data name="SettingsSectionTimeLimits" xml:space="preserve"><value>时间限制</value></data>
-  <data name="SettingsTimeLimitsNote" xml:space="preserve"><value>后两项衡量的是静默：仍在输出的模型绝不会被打断，只有停止响应的服务器才会。</value></data>
+  <data name="SettingsTimeLimitsNote" xml:space="preserve"><value>后两项衡量的是沉默：持续书写的模型不会被中断，只有停止回应的服务器才会——仍在读取长提示的服务器会按其实测速度等待。</value></data>
   <data name="SettingsSectionLongConversations" xml:space="preserve"><value>长对话</value></data>
   <data name="SettingsSectionAlwaysInPrompt" xml:space="preserve"><value>始终在提示词中</value></data>
   <data name="SettingsSectionAlwaysInPromptDesc" xml:space="preserve"><value>每次提问前都会重新读取，修改立即生效。</value></data>

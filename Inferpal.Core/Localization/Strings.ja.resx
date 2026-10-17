@@ -220,6 +220,10 @@
   <data name="CodeActionReplyCut" xml:space="preserve"><value>コードの終わりに達する前に、応答がモデルの長さ制限で止まりました。何も適用されていません。ファイルのより小さい部分を選択するか、コンテキスト長を増やしてください。</value></data>
   <data name="OnboardContextCut" xml:space="preserve"><value>下書きが終わる前にモデルの長さ制限で止まりました。.inferpal/context.md は書き込まれていません。コンテキスト長を増やすか、より大きなウィンドウのモデルを選んでから、/onboard context を再実行してください。</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>接続タイムアウト — {0} のバックエンドが応答しなくなりました（無通信タイムアウト）。</value></data>
+  <data name="StatusReadingPrompt" xml:space="preserve"><value>プロンプトを読み込み中: 約 {0:N0} トークン · {1}</value></data>
+  <data name="StatusReadingPromptEstimate" xml:space="preserve"><value>プロンプトを読み込み中: 約 {0:N0} トークン、キャッシュがなければ最大で約 {1} · {2}</value></data>
+  <data name="MsgPrefillOverran" xml:space="preserve"><value>{1} 経っても {0} から応答がありません。約 {2:N0} トークンのプロンプトをまだ読み込んでいました。遅いサーバーは長いプロンプトを何分もかけて読みます。このモデルへの次のリクエストはもっと長く待ちます。最短の待ち時間は「{3}」で設定します（{4} → {5}）。</value></data>
+  <data name="MsgPrefillNoAnswer" xml:space="preserve"><value>{1} 経っても {0} から応答がありません。約 {2:N0} トークンのプロンプトをまだ読み込んでいるか、応答していません。Inferpal が最初の語を待つ時間は「{3}」で設定します（{4} → {5}）。</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>{0} のバックエンドに接続できません。設定で URL を確認してください。</value></data>
   <data name="MsgStreamDropped" xml:space="preserve"><value>{0} のバックエンドが回答の途中で接続を閉じました。接続はできていたので URL は正しく、サーバーが停止、クラッシュ、またはメモリ不足になった可能性があります。回答は不完全です。応答するようになったら、もう一度質問してください。</value></data>
   <data name="MsgBackendRefused" xml:space="preserve"><value>{0} のバックエンドは {1} で応答しました。動作していますが、リクエストを拒否しました。設定で API キーと URL を確認してください。</value></data>
@@ -597,9 +601,9 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="LabelAgentMaxIterations" xml:space="preserve"><value>1 回の依頼あたりのステップ数</value></data>
   <data name="HintAgentMaxIterations" xml:space="preserve"><value>使い切ると、タスクが終わっていないことが回答に示されます。0 は既定値。</value></data>
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>説明・修正・AI で編集</value></data>
-  <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>短いアクションと、エージェントの計画。</value></data>
+  <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>短い操作と、エージェントの計画。Inferpal が最初の語を、その後は語と語の間を待つ最短時間です。長いプロンプトは、サーバーの測定された速度が示すだけ待ちます。</value></data>
   <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>エージェントの 1 ターン</value></data>
-  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>会話の各ラウンド（ツールの有無を問わず）。</value></data>
+  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>会話の各ラウンド（ツールの有無を問わず）。Inferpal が最初の語を、その後は語と語の間を待つ最短時間です。</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 計画中…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 観察中…</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>リクエストを実行する</value></data>
@@ -1082,7 +1086,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SettingsSectionApprovals" xml:space="preserve"><value>承認</value></data>
   <data name="SettingsSectionInstructions" xml:space="preserve"><value>指示</value></data>
   <data name="SettingsSectionTimeLimits" xml:space="preserve"><value>制限時間</value></data>
-  <data name="SettingsTimeLimitsNote" xml:space="preserve"><value>最後の 2 つは無応答の時間を測ります。書き続けているモデルは止めず、応答しなくなったサーバーだけを止めます。</value></data>
+  <data name="SettingsTimeLimitsNote" xml:space="preserve"><value>最後の 2 つは沈黙を測ります。書き続けるモデルは決して打ち切られず、応答しなくなったサーバーだけが対象です。長いプロンプトをまだ読み込んでいるサーバーは、測定された速度が示すだけ待ちます。</value></data>
   <data name="SettingsSectionLongConversations" xml:space="preserve"><value>長い会話</value></data>
   <data name="SettingsSectionAlwaysInPrompt" xml:space="preserve"><value>常にプロンプトに含めるもの</value></data>
   <data name="SettingsSectionAlwaysInPromptDesc" xml:space="preserve"><value>質問のたびに読み直すので、編集はすぐに反映されます。</value></data>

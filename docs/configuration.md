@@ -122,11 +122,20 @@ Every persisted setting, its type, and default value.
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| `quickTimeoutSeconds` | int | `120` | Quick tasks (explain/review/fix/doc/inline edit/plan) |
-| `normalTimeoutSeconds` | int | `300` | Per-turn timeout for chat questions, with or without tools, and the orchestrator |
+| `quickTimeoutSeconds` | int | `120` | The shortest wait of quick tasks (explain/review/fix/doc/inline edit/plan): for a first word, then between two |
+| `normalTimeoutSeconds` | int | `300` | The shortest wait of chat questions, with or without tools, and of the orchestrator: for a first word, then between two |
 | `deepTimeoutSeconds` | int | `600` | Extended-reasoning timeout. Not in the Settings window: no request uses this budget today |
 
-These budgets wait for the model. Connecting to the backend has its own fixed budget of 15 s: a backend that never
+These budgets wait for the model, and measure silence: a model that keeps writing is never cut off. Before its first
+word, a server reads the prompt and sends nothing — minutes for a long prompt on a slow machine. Inferpal learns how
+fast each server reads, per model, from the requests that went through (kept in
+`%AppData%\Inferpal\prefill-rates.json`), and waits for a first word twice as long as a cold read of the request is
+measured to take — never less than these settings. In the chat (questions and agent runs), after 8 s of waiting the
+status line says so: the tokens to read, how long they take when nothing is cached, and the time waited. A request
+given up while the server was still reading says so (and the next one to that model waits longer, twice at most in a
+row); it is not counted against the server's reachability.
+
+Connecting to the backend has its own fixed budget of 15 s: a backend that never
 answers the connection (machine switched off, firewall, Ollama not started under WSL's mirrored networking) is
 reported as unreachable after 15 s, not after the operating system's own retries (up to two minutes on Linux).
 

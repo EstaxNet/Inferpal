@@ -220,6 +220,10 @@
   <data name="CodeActionReplyCut" xml:space="preserve"><value>Ответ остановился на ограничении длины модели до конца кода — ничего не применено. Выделите меньшую часть файла или увеличьте длину контекста.</value></data>
   <data name="OnboardContextCut" xml:space="preserve"><value>Черновик остановился на ограничении длины модели, не дойдя до конца, — .inferpal/context.md не записан. Увеличьте длину контекста или выберите модель с большим окном, затем снова выполните /onboard context.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>Таймаут подключения — бэкенд по адресу {0} перестал отвечать (таймаут бездействия).</value></data>
+  <data name="StatusReadingPrompt" xml:space="preserve"><value>Чтение промпта: около {0:N0} {0:токен|токена|токенов} · {1}</value></data>
+  <data name="StatusReadingPromptEstimate" xml:space="preserve"><value>Чтение промпта: около {0:N0} {0:токен|токена|токенов}, до примерно {1}, если ничего нет в кэше · {2}</value></data>
+  <data name="MsgPrefillOverran" xml:space="preserve"><value>Нет ответа от {0} через {1}: он ещё читал промпт примерно из {2:N0} {2:токена|токенов|токенов}. Медленный сервер может читать длинный промпт несколько минут: следующий запрос к этой модели будет ждать дольше, а «{3}» задаёт самое короткое ожидание ({4} → {5}).</value></data>
+  <data name="MsgPrefillNoAnswer" xml:space="preserve"><value>Нет ответа от {0} через {1}: он ещё читал промпт примерно из {2:N0} {2:токена|токенов|токенов} или не отвечает. «{3}» задаёт, сколько Inferpal ждёт первого слова ({4} → {5}).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>Не удаётся подключиться к бэкенду по адресу {0}. Проверьте URL в настройках.</value></data>
   <data name="MsgStreamDropped" xml:space="preserve"><value>Бэкенд по адресу {0} закрыл соединение посреди ответа. Соединение было установлено, значит URL верный: сервер мог остановиться, упасть или исчерпать память. Ответ неполный — спросите снова, когда он ответит.</value></data>
   <data name="MsgBackendRefused" xml:space="preserve"><value>Бэкенд по адресу {0} ответил {1}: он работает, но отклонил запрос. Проверьте ключ API и URL в Настройках.</value></data>
@@ -595,9 +599,9 @@
   <data name="LabelAgentMaxIterations" xml:space="preserve"><value>Шагов на запрос</value></data>
   <data name="HintAgentMaxIterations" xml:space="preserve"><value>Когда шаги закончатся, ответ скажет, что задача не завершена. 0 — значение по умолчанию.</value></data>
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>Объяснить, исправить, правка с ИИ</value></data>
-  <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>Короткие действия и план агента.</value></data>
+  <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>Короткие действия и план агента. Минимальное время, которое Inferpal ждёт первое слово, а затем между двумя; длинный промпт ждут столько, сколько говорит измеренная скорость сервера.</value></data>
   <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>Один ход агента</value></data>
-  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Каждый раунд разговора, с инструментами или без.</value></data>
+  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Каждый раунд разговора, с инструментами или без. Минимальное время, которое Inferpal ждёт первое слово, а затем между двумя.</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 Планирование…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 Наблюдение…</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>Выполнить запрос</value></data>
@@ -1082,7 +1086,7 @@
   <data name="SettingsSectionApprovals" xml:space="preserve"><value>Подтверждения</value></data>
   <data name="SettingsSectionInstructions" xml:space="preserve"><value>Инструкции</value></data>
   <data name="SettingsSectionTimeLimits" xml:space="preserve"><value>Ограничения времени</value></data>
-  <data name="SettingsTimeLimitsNote" xml:space="preserve"><value>Последние два измеряют молчание: модель, которая продолжает писать, не прерывается — только сервер, переставший отвечать.</value></data>
+  <data name="SettingsTimeLimitsNote" xml:space="preserve"><value>Последние два измеряют тишину: модель, которая продолжает писать, никогда не обрывается, только сервер, переставший отвечать, — а сервер, который ещё читает длинный промпт, ждут столько, сколько говорит его измеренная скорость.</value></data>
   <data name="SettingsSectionLongConversations" xml:space="preserve"><value>Длинные разговоры</value></data>
   <data name="SettingsSectionAlwaysInPrompt" xml:space="preserve"><value>Всегда в промпте</value></data>
   <data name="SettingsSectionAlwaysInPromptDesc" xml:space="preserve"><value>Перечитываются перед каждым вопросом, поэтому правка действует сразу.</value></data>

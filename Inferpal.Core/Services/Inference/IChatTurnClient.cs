@@ -10,7 +10,7 @@ namespace Inferpal.Services.Inference;
 /// </summary>
 internal interface IChatTurnClient
 {
-    /// <inheritdoc cref="OllamaClient.SendChatAsync"/>
+    /// <inheritdoc cref="OllamaClient.SendChatAsync(string, List{ChatMessageDto}, IToolRegistry, Action{string}, CancellationToken, TaskComplexity, string, Action{string})"/>
     Task<ChatTurnResult> SendChatAsync(
         string model,
         List<ChatMessageDto> messages,
@@ -21,7 +21,10 @@ internal interface IChatTurnClient
         string? toolChoice = null,
         Action<string>? onThinking = null);
 
-    /// <summary>The same turn, asking the model for <paramref name="effort"/> reasoning.</summary>
+    /// <summary>The same turn, asking the model for <paramref name="effort"/> reasoning, and saying the wait while the
+    /// server reads the prompt through <paramref name="onWaiting"/>.</summary>
+    /// <param name="onWaiting">The line said while nothing has come back (<c>PrefillWait</c>), and <c>null</c> when the
+    /// first token came: the caller shows the step it covered again.</param>
     /// <remarks>
     /// A client that cannot ask for an effort answers as the plain turn does: this body is the default for it, so a
     /// test's fake client needs nothing.
@@ -35,6 +38,7 @@ internal interface IChatTurnClient
         CancellationToken ct,
         TaskComplexity complexity = TaskComplexity.Normal,
         string? toolChoice = null,
-        Action<string>? onThinking = null)
+        Action<string>? onThinking = null,
+        Action<string?>? onWaiting = null)
         => SendChatAsync(model, messages, tools, onToken, ct, complexity, toolChoice, onThinking);
 }

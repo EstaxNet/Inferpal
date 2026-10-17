@@ -14,7 +14,7 @@ namespace Inferpal.Services.Inference;
 /// (Ollama and OpenAI-compatible). Holds the cross-cutting concerns that do not depend on the
 /// wire format: the shared <see cref="HttpClient"/>, the chat + embedding circuit breakers, the
 /// per-task timeout policy, the streaming POST helper, and the whole agentic loop
-/// (<see cref="RunAgentAsync"/>, which only ever calls <see cref="SendChatAsync(string, List{ChatMessageDto}, IToolRegistry, Action{string}, ReasoningEffort, CancellationToken, TaskComplexity, string, Action{string})"/>).
+/// (<see cref="RunAgentAsync"/>, which only ever calls <see cref="SendChatAsync(string, List{ChatMessageDto}, IToolRegistry, Action{string}, ReasoningEffort, CancellationToken, TaskComplexity, string, Action{string}, Action{string})"/>).
 /// </summary>
 /// <remarks>
 /// Wire-format-specific operations are <c>abstract</c> (chat, embeddings, model listing, connection
@@ -89,6 +89,9 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     private long _cooldownUntilTicks  = 0; // UTC ticks; 0 = no cooldown
 
     protected bool IsInCooldown()  => DateTime.UtcNow.Ticks < Interlocked.Read(ref _cooldownUntilTicks);
+
+    /// <summary>The failures counted against the server's reachability since its last answer — what the tests read.</summary>
+    internal int ConsecutiveFailures => Volatile.Read(ref _consecutiveFailures);
     protected void RecordSuccess() => Interlocked.Exchange(ref _consecutiveFailures, 0);
 
     protected void RecordFailure()
@@ -410,7 +413,8 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         CancellationToken ct,
         TaskComplexity complexity = TaskComplexity.Normal,
         string? toolChoice = null,
-        Action<string>? onThinking = null)
+        Action<string>? onThinking = null,
+        Action<string?>? onWaiting = null)
         => SendChatAsync(model, messages, tools, onToken, ct, complexity, toolChoice, onThinking);
 
     /// <inheritdoc/>
@@ -505,7 +509,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     // ── Agentic loop (backend-agnostic: only calls SendChatAsync) ──────────────
 
     /// <summary>
-    /// Runs the basic agentic loop: one <see cref="SendChatAsync(string, List{ChatMessageDto}, IToolRegistry, Action{string}, ReasoningEffort, CancellationToken, TaskComplexity, string, Action{string})"/> turn at a time, executing any
+    /// Runs the basic agentic loop: one <see cref="SendChatAsync(string, List{ChatMessageDto}, IToolRegistry, Action{string}, ReasoningEffort, CancellationToken, TaskComplexity, string, Action{string}, Action{string})"/> turn at a time, executing any
     /// returned tool calls, until the model answers without tools or the configured iteration cap
     /// (<see cref="InferpalConfig.AgentMaxIterations"/>) is reached. Tool results are size-capped
     /// and the oldest are elided when the running context nears num_ctx (shared policies with
@@ -582,7 +586,9 @@ internal abstract class InferenceProviderBase : IInferenceProvider
             ChatTurnResult turn;
             try
             {
-                turn = await SendChatAsync(model, messages, tools, onToken, effort, ct, complexity, null, onThinking);
+                // While the server reads the prompt the line says so, then gives the step back.
+                turn = await SendChatAsync(model, messages, tools, onToken, effort, ct, complexity, null, onThinking,
+                                           onWaiting: text => onStep(text ?? Strings.StatusThinking));
             }
             catch (OperationCanceledException) { throw; } // propagate user-initiated cancel
             catch (AgentHttpException ex)

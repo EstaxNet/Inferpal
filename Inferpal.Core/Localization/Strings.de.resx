@@ -220,6 +220,10 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <data name="CodeActionReplyCut" xml:space="preserve"><value>Die Antwort endete an der Längengrenze des Modells vor dem Ende des Codes — nichts wurde angewendet. Wählen Sie einen kleineren Teil der Datei aus oder erhöhen Sie die Kontextlänge.</value></data>
   <data name="OnboardContextCut" xml:space="preserve"><value>Der Entwurf endete an der Längengrenze des Modells vor seinem Ende — .inferpal/context.md wurde nicht geschrieben. Erhöhen Sie die Kontextlänge oder wählen Sie ein Modell mit größerem Fenster und führen Sie /onboard context erneut aus.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>Verbindungstimeout – das Backend unter {0} antwortet nicht mehr (Inaktivitäts-Timeout).</value></data>
+  <data name="StatusReadingPrompt" xml:space="preserve"><value>Prompt wird gelesen: etwa {0:N0} {0:Token|Token} · {1}</value></data>
+  <data name="StatusReadingPromptEstimate" xml:space="preserve"><value>Prompt wird gelesen: etwa {0:N0} {0:Token|Token}, bis zu etwa {1}, wenn nichts davon im Cache liegt · {2}</value></data>
+  <data name="MsgPrefillOverran" xml:space="preserve"><value>Keine Antwort von {0} nach {1}: Er las noch einen Prompt von etwa {2:N0} {2:Token|Token}. Ein langsamer Server kann einen langen Prompt minutenlang lesen: Die nächste Anfrage an dieses Modell wartet länger, und „{3}“ legt die kürzeste Wartezeit fest ({4} → {5}).</value></data>
+  <data name="MsgPrefillNoAnswer" xml:space="preserve"><value>Keine Antwort von {0} nach {1}: Er las noch einen Prompt von etwa {2:N0} {2:Token|Token}, oder er antwortet nicht. „{3}“ legt fest, wie lange Inferpal auf ein erstes Wort wartet ({4} → {5}).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>Backend unter {0} nicht erreichbar. Überprüfen Sie die URL in den Einstellungen.</value></data>
   <data name="MsgStreamDropped" xml:space="preserve"><value>Das Backend unter {0} hat die Verbindung mitten in der Antwort geschlossen. Es war erreichbar, die URL stimmt also: Der Server wurde womöglich beendet, ist abgestürzt oder hatte keinen Speicher mehr. Die Antwort ist unvollständig — fragen Sie erneut, sobald er antwortet.</value></data>
   <data name="MsgBackendRefused" xml:space="preserve"><value>Das Backend unter {0} hat mit {1} geantwortet: Es läuft, hat die Anfrage aber abgelehnt. Prüfen Sie API-Schlüssel und URL in den Einstellungen.</value></data>
@@ -597,9 +601,9 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="LabelAgentMaxIterations" xml:space="preserve"><value>Schritte pro Anfrage</value></data>
   <data name="HintAgentMaxIterations" xml:space="preserve"><value>Sind sie aufgebraucht, sagt die Antwort, dass die Aufgabe nicht fertig ist. 0: die Vorgabe.</value></data>
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>Erklären, korrigieren, mit KI bearbeiten</value></data>
-  <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>Kurze Aktionen und der Plan des Agenten.</value></data>
+  <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>Kurze Aktionen und der Plan des Agenten. Die Mindestzeit, die Inferpal auf ein erstes Wort wartet, dann zwischen zwei; auf einen langen Prompt wird so lange gewartet, wie die gemessene Geschwindigkeit des Servers angibt.</value></data>
   <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>Ein Agent-Durchgang</value></data>
-  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Jede Runde eines Gesprächs, mit oder ohne Werkzeuge.</value></data>
+  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Jede Runde eines Gesprächs, mit oder ohne Werkzeuge. Die Mindestzeit, die Inferpal auf ein erstes Wort wartet, dann zwischen zwei.</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 Planung…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 Beobachte…</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>Anfrage ausführen</value></data>
@@ -1082,7 +1086,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="SettingsSectionApprovals" xml:space="preserve"><value>Freigaben</value></data>
   <data name="SettingsSectionInstructions" xml:space="preserve"><value>Anweisungen</value></data>
   <data name="SettingsSectionTimeLimits" xml:space="preserve"><value>Zeitlimits</value></data>
-  <data name="SettingsTimeLimitsNote" xml:space="preserve"><value>Die letzten beiden messen Stille: Ein Modell, das weiterschreibt, wird nie abgebrochen, nur ein Server, der nicht mehr antwortet.</value></data>
+  <data name="SettingsTimeLimitsNote" xml:space="preserve"><value>Die letzten beiden messen Stille: Ein Modell, das weiterschreibt, wird nie abgebrochen, nur ein Server, der nicht mehr antwortet — und auf einen, der noch einen langen Prompt liest, wird so lange gewartet, wie seine gemessene Geschwindigkeit angibt.</value></data>
   <data name="SettingsSectionLongConversations" xml:space="preserve"><value>Lange Gespräche</value></data>
   <data name="SettingsSectionAlwaysInPrompt" xml:space="preserve"><value>Immer im Prompt</value></data>
   <data name="SettingsSectionAlwaysInPromptDesc" xml:space="preserve"><value>Vor jeder Frage neu gelesen, eine Änderung zählt sofort.</value></data>

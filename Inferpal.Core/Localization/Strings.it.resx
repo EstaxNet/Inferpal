@@ -220,6 +220,10 @@ Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una 
   <data name="CodeActionReplyCut" xml:space="preserve"><value>La risposta si è interrotta al limite di lunghezza del modello prima della fine del codice: non è stato applicato nulla. Seleziona una parte più piccola del file oppure aumenta la lunghezza del contesto.</value></data>
   <data name="OnboardContextCut" xml:space="preserve"><value>La bozza si è interrotta al limite di lunghezza del modello prima della fine: .inferpal/context.md non è stato scritto. Aumenta la lunghezza del contesto oppure scegli un modello con una finestra più ampia, poi esegui di nuovo /onboard context.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>Timeout connessione — il backend su {0} ha smesso di rispondere (timeout di inattività).</value></data>
+  <data name="StatusReadingPrompt" xml:space="preserve"><value>Lettura del prompt: circa {0:N0} {0:token|token} · {1}</value></data>
+  <data name="StatusReadingPromptEstimate" xml:space="preserve"><value>Lettura del prompt: circa {0:N0} {0:token|token}, fino a circa {1} se nulla è in cache · {2}</value></data>
+  <data name="MsgPrefillOverran" xml:space="preserve"><value>Nessuna risposta da {0} dopo {1}: stava ancora leggendo un prompt di circa {2:N0} {2:token|token}. Un server lento può leggere un prompt lungo per minuti: la prossima richiesta a questo modello attenderà di più, e «{3}» fissa l'attesa più breve ({4} → {5}).</value></data>
+  <data name="MsgPrefillNoAnswer" xml:space="preserve"><value>Nessuna risposta da {0} dopo {1}: stava ancora leggendo un prompt di circa {2:N0} {2:token|token}, oppure non risponde. «{3}» fissa quanto Inferpal attende una prima parola ({4} → {5}).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>Impossibile raggiungere il backend su {0}. Controlla l'URL nelle impostazioni.</value></data>
   <data name="MsgStreamDropped" xml:space="preserve"><value>Il backend su {0} ha chiuso la connessione a metà della risposta. È stato raggiunto, quindi l'URL è corretto: il server potrebbe essersi fermato, bloccato o aver esaurito la memoria. La risposta è incompleta: chiedi di nuovo quando risponde.</value></data>
   <data name="MsgBackendRefused" xml:space="preserve"><value>Il backend su {0} ha risposto {1}: è attivo, ma ha rifiutato la richiesta. Controlla la chiave API e l'URL nelle Impostazioni.</value></data>
@@ -597,9 +601,9 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="LabelAgentMaxIterations" xml:space="preserve"><value>Passaggi per richiesta</value></data>
   <data name="HintAgentMaxIterations" xml:space="preserve"><value>Quando finiscono, la risposta dice che l'attività non è conclusa. 0: il valore predefinito.</value></data>
   <data name="LabelTaskTimeoutQuick" xml:space="preserve"><value>Spiegare, correggere, modificare con l'IA</value></data>
-  <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>Le azioni brevi e il piano dell'agente.</value></data>
+  <data name="HintTaskTimeoutQuick" xml:space="preserve"><value>Azioni brevi e il piano dell'agente. Il minimo che Inferpal attende una prima parola, poi tra due; un prompt lungo viene atteso quanto indica la velocità misurata del server.</value></data>
   <data name="LabelTaskTimeoutNormal" xml:space="preserve"><value>Un turno dell'agente</value></data>
-  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Ogni giro di una conversazione, con o senza strumenti.</value></data>
+  <data name="HintTaskTimeoutNormal" xml:space="preserve"><value>Ogni giro di una conversazione, con o senza strumenti. Il minimo che Inferpal attende una prima parola, poi tra due.</value></data>
   <data name="StatusAgentPlanning" xml:space="preserve"><value>📋 Pianificazione…</value></data>
   <data name="StatusAgentObserving" xml:space="preserve"><value>🔍 Osservazione…</value></data>
   <data name="AgentPlanFallbackGoal" xml:space="preserve"><value>Eseguire la richiesta</value></data>
@@ -1082,7 +1086,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="SettingsSectionApprovals" xml:space="preserve"><value>Approvazioni</value></data>
   <data name="SettingsSectionInstructions" xml:space="preserve"><value>Istruzioni</value></data>
   <data name="SettingsSectionTimeLimits" xml:space="preserve"><value>Limiti di tempo</value></data>
-  <data name="SettingsTimeLimitsNote" xml:space="preserve"><value>Gli ultimi due misurano il silenzio: un modello che continua a scrivere non viene mai interrotto, solo un server che smette di rispondere.</value></data>
+  <data name="SettingsTimeLimitsNote" xml:space="preserve"><value>Gli ultimi due misurano il silenzio: un modello che continua a scrivere non viene mai interrotto, solo un server che smette di rispondere — e uno che sta ancora leggendo un prompt lungo viene atteso quanto indica la sua velocità misurata.</value></data>
   <data name="SettingsSectionLongConversations" xml:space="preserve"><value>Conversazioni lunghe</value></data>
   <data name="SettingsSectionAlwaysInPrompt" xml:space="preserve"><value>Sempre nel prompt</value></data>
   <data name="SettingsSectionAlwaysInPromptDesc" xml:space="preserve"><value>Riletti prima di ogni domanda: una modifica conta subito.</value></data>

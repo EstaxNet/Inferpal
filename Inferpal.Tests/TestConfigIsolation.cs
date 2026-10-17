@@ -24,5 +24,9 @@ internal static class TestConfigIsolation
         // developer's own %AppData%\Inferpal\sessions folder.
         Inferpal.Services.Persistence.ConversationStore.OverrideDirForTests =
             Path.Combine(root, $"sessions-{Environment.ProcessId}");
+
+        // And for the reading speeds every client learns: a test's turn against a loopback server is a read too.
+        Inferpal.Services.Inference.PrefillRates.Shared.File.PathOverride =
+            Path.Combine(root, $"prefill-rates-{Environment.ProcessId}.json");
     }
 }
