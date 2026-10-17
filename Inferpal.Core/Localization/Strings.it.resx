@@ -1071,7 +1071,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="SettingsUnsavedChanges" xml:space="preserve"><value>Modifiche non salvate: {0}</value></data>
   <data name="SettingsNoUnsavedChanges" xml:space="preserve"><value>Nessuna modifica non salvata</value></data>
   <data name="SettingsCancel" xml:space="preserve"><value>Annulla</value></data>
-  <data name="SettingsShowAdvanced" xml:space="preserve"><value>Mostra impostazioni avanzate — un modello per attività, campionamento, la vostra GPU, connessione</value></data>
+  <data name="SettingsShowAdvanced" xml:space="preserve"><value>Mostra impostazioni avanzate — un modello per attività, campionamento e ragionamento, la vostra GPU, connessione</value></data>
   <data name="SettingsApprovalRulesCount" xml:space="preserve"><value>Regole di approvazione: {0}</value></data>
   <data name="SettingsEditRules" xml:space="preserve"><value>Modifica regole</value></data>
   <data name="SettingsSectionModelPerTask" xml:space="preserve"><value>Un modello per attività</value></data>
@@ -1406,7 +1406,9 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="SkillUnreadableNow" xml:space="preserve"><value>Impossibile leggere la competenza `{0}`.</value></data>
   <data name="SkillApplyDefault" xml:space="preserve"><value>Applica la competenza {0}.</value></data>
   <data name="SkillAttachmentLabel" xml:space="preserve"><value>Competenza: {0}</value></data>
-  <data name="McpRepoServerQuestion" xml:space="preserve"><value>Questo repository dichiara un server MCP: {0} ({1}). Avviarlo esegue `{2}`. Avviarlo? Se accetti, d'ora in poi si avvierà da solo, finché non cambiano la sua definizione o i file del repository che esegue.</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>Questo repository dichiara un server MCP: {0} ({1}). Avviarlo esegue `{2}`. Avviarlo? {3}</value></data>
+  <data name="McpRepoServerStartsOnItsOwn" xml:space="preserve"><value>Se accetti, d'ora in poi si avvierà da solo, finché non cambiano la sua definizione o i file del repository che esegue.</value></data>
+  <data name="McpRepoServerAskedEveryStart" xml:space="preserve"><value>I file che esegue non possono essere verificati tutti: la domanda tornerà a ogni avvio, e non verrà riavviato se si ferma.</value></data>
   <data name="McpRepoInputQuestion" xml:space="preserve"><value>Il server MCP {0} di questo repository chiede un valore: {1}</value></data>
   <data name="McpRepoInputNotMasked" xml:space="preserve"><value>(Visual Studio mostra ciò che digiti: non viene nascosto.)</value></data>
   <data name="LabelSkillsAutoMode" xml:space="preserve"><value>Lascia che il modello carichi una competenza quando serve</value></data>

@@ -83,7 +83,7 @@ OpenAI-compatible servers are sent nothing yet: not measured.
 A level is sent only to a model whose LM Studio entry publishes it. Measured on Qwen3.8 27B, on a 24 GB server: `/check`
 at `Low` found the same ten defects as at the server's setting in 38 seconds instead of 136, and three tool tasks
 passed at `Low`, in the chat as in an agent run — but an agent run gained only a tenth of its time, which goes to its
-tools, so it keeps the server's setting by default. Code actions, `/onboard context` and `/test` keep the server's.
+tools, so it keeps the server's setting by default. Code actions, `/onboard context`, `/test`, `/arena` and `/bench` keep the server's.
 
 ## How Inferpal reads a model
 

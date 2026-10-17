@@ -1071,7 +1071,7 @@
   <data name="SettingsUnsavedChanges" xml:space="preserve"><value>未保存的更改：{0}</value></data>
   <data name="SettingsNoUnsavedChanges" xml:space="preserve"><value>没有未保存的更改</value></data>
   <data name="SettingsCancel" xml:space="preserve"><value>取消</value></data>
-  <data name="SettingsShowAdvanced" xml:space="preserve"><value>显示高级设置 — 按任务的模型、采样、GPU、连接</value></data>
+  <data name="SettingsShowAdvanced" xml:space="preserve"><value>显示高级设置 — 按任务的模型、采样与推理、GPU、连接</value></data>
   <data name="SettingsApprovalRulesCount" xml:space="preserve"><value>审批规则：{0}</value></data>
   <data name="SettingsEditRules" xml:space="preserve"><value>编辑规则</value></data>
   <data name="SettingsSectionModelPerTask" xml:space="preserve"><value>按任务的模型</value></data>
@@ -1406,7 +1406,9 @@
   <data name="SkillUnreadableNow" xml:space="preserve"><value>无法读取技能 `{0}`。</value></data>
   <data name="SkillApplyDefault" xml:space="preserve"><value>应用技能 {0}。</value></data>
   <data name="SkillAttachmentLabel" xml:space="preserve"><value>技能：{0}</value></data>
-  <data name="McpRepoServerQuestion" xml:space="preserve"><value>此仓库声明了一个 MCP 服务器：{0}（{1}）。启动它将运行 `{2}`。是否启动？如果同意，它此后会自动启动，直到其定义或它运行的仓库文件发生变化。</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>此仓库声明了一个 MCP 服务器：{0}（{1}）。启动它将运行 `{2}`。是否启动？{3}</value></data>
+  <data name="McpRepoServerStartsOnItsOwn" xml:space="preserve"><value>如果同意，它此后会自动启动，直到其定义或它运行的仓库文件发生变化。</value></data>
+  <data name="McpRepoServerAskedEveryStart" xml:space="preserve"><value>无法检查它运行的所有文件，因此每次启动时都会再次询问，停止后也不会重新启动。</value></data>
   <data name="McpRepoInputQuestion" xml:space="preserve"><value>此仓库的 MCP 服务器 {0} 需要一个值：{1}</value></data>
   <data name="McpRepoInputNotMasked" xml:space="preserve"><value>（Visual Studio 会显示您输入的内容，不会隐藏。）</value></data>
   <data name="LabelSkillsAutoMode" xml:space="preserve"><value>允许模型在适用时加载技能</value></data>

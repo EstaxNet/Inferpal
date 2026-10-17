@@ -162,6 +162,9 @@ internal static class RepoMcpFiles
                                          root, cap, ct).ConfigureAwait(false);
             if (listed.Uncovered is { } why) return new RepoMcpCoverage(null, why);
 
+            // ⚠ Every named file is covered, tracked or not: "git does not track it" cannot be read safely — a path
+            // written in another case than git's matches no pathspec, and a workspace inside another repository's work
+            // tree is tracked by nobody — and either would leave the very script the server runs uncovered.
             var entries = new Dictionary<string, Entry>(named, PathComparer.Default);
             foreach (var path in listed.Files!)
                 if (!entries.ContainsKey(path)) entries[path] = Probe(path, root);
@@ -292,8 +295,15 @@ internal static class RepoMcpFiles
         // A name git's command line cannot carry as written is walked instead.
         if (relative.All(r => r.IndexOfAny(['"', '\\']) < 0))
         {
-            var pathspecs = string.Join(" ", relative.Select(r => "\":(literal)" + r + "\""));
-            var run = await GitProcess.CaptureAsync("ls-files -z -- " + pathspecs, root, ct).ConfigureAwait(false);
+            // ⚠ A pathspec matches case even where the file system does not: `Tools/MCP` would list nothing of `tools/mcp`
+            // while a sibling written in git's case lists, and the folder would be neither listed nor walked. Where the
+            // file system folds case (PathComparer), git is asked to fold it too.
+            var icase = PathComparer.Comparison == StringComparison.OrdinalIgnoreCase;
+            var magic = icase ? ":(literal,icase)" : ":(literal)";
+            var pathspecs = string.Join(" ", relative.Select(r => "\"" + magic + r + "\""));
+            // ⚠ --recurse-submodules: without it a submodule is one gitlink entry, and what a pull rewrites inside it
+            // is covered by nothing.
+            var run = await GitProcess.CaptureAsync("ls-files -z --recurse-submodules -- " + pathspecs, root, ct).ConfigureAwait(false);
             if (run.TimedOut) return (null, "git gave no answer when its files were listed");
             if (run.ExitCode == 0)
             {
@@ -301,11 +311,46 @@ internal static class RepoMcpFiles
                     return (null, $"the folders it names hold more than {cap} files");
                 var tracked = run.Stdout.Split('\0', StringSplitOptions.RemoveEmptyEntries);
                 if (tracked.Length > cap) return (null, $"the folders it names hold more than {cap} files");
-                return ([.. tracked.Select(t => Join(root, t)).OfType<string>().Where(p => Under(p, root))], null);
+                var listed = tracked.Select(t => Join(root, t)).OfType<string>().Where(p => Under(p, root)).ToList();
+                // ⚠ A folder git lists nothing under, while it holds files, is not git's to describe: written in
+                // another case than git's (a pathspec matches case), or a workspace inside another repository's work
+                // tree that does not track it. Walked, as outside git — covered too much rather than not at all.
+                var untracked = folders.Where(f => !listed.Any(p => ListedUnder(p, f, icase))).ToList();
+                if (untracked.Count == 0) return (listed, null);
+                var (walked, overCap) = Walk(untracked, cap - listed.Count);
+                return overCap ? (null, $"the folders it names hold more than {cap} files") : ([.. listed, .. walked], null);
             }
             // Not a git repository, or no git: the walk below.
         }
 
+        var (all, over) = Walk(folders, cap);
+        return over ? (null, $"the folders it names hold more than {cap} files") : (all, null);
+    }
+
+    /// <summary>
+    /// Whether git's own pathspec rule puts <paramref name="path"/> under <paramref name="folder"/>: exact, or with A to Z
+    /// folded when <paramref name="icase"/>.
+    /// </summary>
+    /// <remarks>⚠ Never <see cref="Under"/> here: git's <c>icase</c> folds ASCII letters only, the file system and
+    /// <see cref="PathComparer"/> fold <c>Ö</c> and <c>ö</c> too — a file git listed under <c>ö/data</c> would pass for
+    /// one under <c>Ö</c>, which git listed nothing of, and <c>Ö</c> would be neither listed nor walked.</remarks>
+    private static bool ListedUnder(string path, string folder, bool icase)
+    {
+        static string Fold(string s) => string.Create(s.Length, s, static (span, source) =>
+        {
+            for (var i = 0; i < source.Length; i++)
+                span[i] = source[i] is >= 'A' and <= 'Z' ? (char)(source[i] + ('a' - 'A')) : source[i];
+        });
+        var p = icase ? Fold(path) : path;
+        var f = icase ? Fold(folder) : folder;
+        if (string.Equals(p, f, StringComparison.Ordinal)) return true;
+        var prefix = System.IO.Path.EndsInDirectorySeparator(f) ? f : f + System.IO.Path.DirectorySeparatorChar;
+        return p.StartsWith(prefix, StringComparison.Ordinal);
+    }
+
+    /// <summary>The files under <paramref name="folders"/>, regenerated folders left out; over when more than <paramref name="cap"/>.</summary>
+    private static (List<string> Files, bool OverCap) Walk(IEnumerable<string> folders, int cap)
+    {
         var files = new List<string>();
         foreach (var folder in folders)
         {
@@ -314,10 +359,10 @@ internal static class RepoMcpFiles
             {
                 if (IsRegenerated(path, folder)) continue;
                 files.Add(path);
-                if (files.Count > cap) return (null, $"the folders it names hold more than {cap} files");
+                if (files.Count > cap) return (files, true);
             }
         }
-        return (files, null);
+        return (files, false);
     }
 
     /// <summary>Whether a folder of <see cref="Regenerated"/> lies between <paramref name="start"/> and the file.</summary>

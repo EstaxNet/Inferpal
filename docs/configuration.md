@@ -18,7 +18,7 @@ counts the unsaved changes, and **Cancel** puts the form back as it was saved.
 
 | Page | Contains |
 |---|---|
-| **Server and models** | Server address and **Test**, chat model, autocomplete model, code search model, context window; **Suggest the best models** (picks among the installed models from Inferpal's measurements, fills the form, saves nothing); **Loaded now** (the models in memory, what each is used for, its memory, context and when it unloads, with **Unload** and **Unload all**). *Show advanced settings* adds: a model per task (agent, explain/fix/refactor, edit with AI, background tasks, `/bench` routing), sampling, your GPU (graphics memory, unloading idle models), connection (server type, API key) |
+| **Server and models** | Server address and **Test**, chat model, autocomplete model, code search model, context window; **Suggest the best models** (picks among the installed models from Inferpal's measurements, fills the form, saves nothing); **Loaded now** (the models in memory, what each is used for, its memory, context and when it unloads, with **Unload** and **Unload all**). *Show advanced settings* adds: a model per task (agent, explain/fix/refactor, edit with AI, background tasks, `/bench` routing), sampling and reasoning (the level for a question and for an agent run), your GPU (graphics memory, unloading idle models), connection (server type, API key) |
 | **Agent and approvals** | Plan before acting, check the build after each edit, steps per request; *Ask me before changing files, running commands or going online*, with the number of approval rules; custom instructions, language persona; time limits (folded) |
 | **Context and memory** | Long conversations (summarizing, turns kept whole, session recap, summary time limit, opening messages kept as is); pinned files |
 | **Code search** | Background indexing, relevant code added to each question, language servers, results per search, minimum similarity |
@@ -27,7 +27,7 @@ counts the unsaved changes, and **Cancel** puts the form back as it was saved.
 | **Language and appearance** | Interface language (independent of the editor's), the theme in use (Inferpal follows the editor's, high contrast included), density, agent steps shown open |
 
 The *Show advanced settings* box only folds: it never changes a value, and it opens by itself when a
-model per task or the sampling setting is no longer at its factory value — the settings that change,
+model per task, the sampling setting or a reasoning level is no longer at its factory value — the settings that change,
 without a word on screen, which model answers or how are never hidden.
 
 > [!TIP]

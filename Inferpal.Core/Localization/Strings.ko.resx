@@ -1071,7 +1071,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="SettingsUnsavedChanges" xml:space="preserve"><value>저장되지 않은 변경: {0}</value></data>
   <data name="SettingsNoUnsavedChanges" xml:space="preserve"><value>저장되지 않은 변경 없음</value></data>
   <data name="SettingsCancel" xml:space="preserve"><value>취소</value></data>
-  <data name="SettingsShowAdvanced" xml:space="preserve"><value>고급 설정 표시 — 작업별 모델, 샘플링, GPU, 연결</value></data>
+  <data name="SettingsShowAdvanced" xml:space="preserve"><value>고급 설정 표시 — 작업별 모델, 샘플링과 추론, GPU, 연결</value></data>
   <data name="SettingsApprovalRulesCount" xml:space="preserve"><value>승인 규칙: {0}</value></data>
   <data name="SettingsEditRules" xml:space="preserve"><value>규칙 편집</value></data>
   <data name="SettingsSectionModelPerTask" xml:space="preserve"><value>작업별 모델</value></data>
@@ -1406,7 +1406,9 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="SkillUnreadableNow" xml:space="preserve"><value>스킬 `{0}`을(를) 읽을 수 없습니다.</value></data>
   <data name="SkillApplyDefault" xml:space="preserve"><value>스킬 {0}을(를) 적용해 주세요.</value></data>
   <data name="SkillAttachmentLabel" xml:space="preserve"><value>스킬: {0}</value></data>
-  <data name="McpRepoServerQuestion" xml:space="preserve"><value>이 저장소는 MCP 서버를 선언합니다: {0} ({1}). 시작하면 `{2}`을(를) 실행합니다. 시작할까요? 동의하면 정의 또는 실행하는 저장소 파일이 바뀔 때까지 앞으로 자동으로 시작됩니다.</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>이 저장소는 MCP 서버를 선언합니다: {0} ({1}). 시작하면 `{2}`을(를) 실행합니다. 시작할까요? {3}</value></data>
+  <data name="McpRepoServerStartsOnItsOwn" xml:space="preserve"><value>동의하면 정의 또는 실행하는 저장소 파일이 바뀔 때까지 앞으로 자동으로 시작됩니다.</value></data>
+  <data name="McpRepoServerAskedEveryStart" xml:space="preserve"><value>실행하는 파일을 모두 확인할 수 없으므로 시작할 때마다 다시 묻고, 멈추면 다시 시작하지 않습니다.</value></data>
   <data name="McpRepoInputQuestion" xml:space="preserve"><value>이 저장소의 MCP 서버 {0}이(가) 값을 요청합니다: {1}</value></data>
   <data name="McpRepoInputNotMasked" xml:space="preserve"><value>(Visual Studio는 입력한 내용을 그대로 표시합니다. 가려지지 않습니다.)</value></data>
   <data name="LabelSkillsAutoMode" xml:space="preserve"><value>적합할 때 모델이 스킬을 불러오도록 허용</value></data>

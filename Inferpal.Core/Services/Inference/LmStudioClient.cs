@@ -245,21 +245,24 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
             var models = await NativeSnapshotAsync(ct);
             var entry  = models.FirstOrDefault(m => IdMatches(m.Id, model));
             options    = entry.ReasoningOptions ?? [];
+            // ⚠ Two causes, two keys: an empty list and a read that fails are told apart, and each note is forgotten when
+            // its own cause passes — one key would let whichever came first silence the other.
             if (models.Count == 0)
                 // A server that lists nothing natively (a /v1-only proxy) does not say what its models take: nothing sent.
                 Diagnostics.RecordOnce("LmStudio.ReasoningSettings",
-                    "LM Studio's native model list is empty or absent (/api/v1/models); no reasoning effort is sent.",
-                    "unreadable:" + HostRoot);
+                    $"LM Studio's native model list at {HostRoot} is empty or absent (/api/v1/models); no reasoning effort is sent.",
+                    "empty:" + HostRoot);
             else
-                // Read again: the next time it cannot be is said again.
-                Diagnostics.Forget("LmStudio.ReasoningSettings", "unreadable:" + HostRoot);
+                Diagnostics.Forget("LmStudio.ReasoningSettings", "empty:" + HostRoot);
+            // Read again: the next time it cannot be is said again.
+            Diagnostics.Forget("LmStudio.ReasoningSettings", "unreadable:" + HostRoot);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (Exception ex)
         {
             // Not known is not "it can": nothing is sent, said once.
             Diagnostics.RecordOnce("LmStudio.ReasoningSettings",
-                $"The reasoning settings of the models could not be read ({ex.GetType().Name}: {ex.Message}); no reasoning "
+                $"The reasoning settings of the models at {HostRoot} could not be read ({ex.GetType().Name}: {ex.Message}); no reasoning "
                 + "effort is sent.", "unreadable:" + HostRoot);
             options = [];
         }

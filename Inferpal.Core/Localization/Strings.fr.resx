@@ -1071,7 +1071,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="SettingsUnsavedChanges" xml:space="preserve"><value>Modifications non enregistrées : {0}</value></data>
   <data name="SettingsNoUnsavedChanges" xml:space="preserve"><value>Aucune modification non enregistrée</value></data>
   <data name="SettingsCancel" xml:space="preserve"><value>Annuler</value></data>
-  <data name="SettingsShowAdvanced" xml:space="preserve"><value>Afficher les réglages avancés — un modèle par tâche, échantillonnage, votre GPU, connexion</value></data>
+  <data name="SettingsShowAdvanced" xml:space="preserve"><value>Afficher les réglages avancés — un modèle par tâche, échantillonnage et réflexion, votre GPU, connexion</value></data>
   <data name="SettingsApprovalRulesCount" xml:space="preserve"><value>Règles d'approbation : {0}</value></data>
   <data name="SettingsEditRules" xml:space="preserve"><value>Modifier les règles</value></data>
   <data name="SettingsSectionModelPerTask" xml:space="preserve"><value>Un modèle par tâche</value></data>
@@ -1406,7 +1406,9 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="SkillUnreadableNow" xml:space="preserve"><value>La compétence `{0}` est illisible.</value></data>
   <data name="SkillApplyDefault" xml:space="preserve"><value>Applique la compétence {0}.</value></data>
   <data name="SkillAttachmentLabel" xml:space="preserve"><value>Compétence : {0}</value></data>
-  <data name="McpRepoServerQuestion" xml:space="preserve"><value>Ce dépôt déclare un serveur MCP : {0} ({1}). Le démarrer exécute `{2}`. Le démarrer ? Si vous acceptez, il démarrera désormais seul, jusqu'à ce que sa définition ou les fichiers du dépôt qu'il exécute changent.</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>Ce dépôt déclare un serveur MCP : {0} ({1}). Le démarrer exécute `{2}`. Le démarrer ? {3}</value></data>
+  <data name="McpRepoServerStartsOnItsOwn" xml:space="preserve"><value>Si vous acceptez, il démarrera désormais seul, jusqu'à ce que sa définition ou les fichiers du dépôt qu'il exécute changent.</value></data>
+  <data name="McpRepoServerAskedEveryStart" xml:space="preserve"><value>Les fichiers qu'il exécute ne peuvent pas tous être vérifiés : la question reviendra à chaque démarrage, et il ne sera pas relancé s'il s'arrête.</value></data>
   <data name="McpRepoInputQuestion" xml:space="preserve"><value>Le serveur MCP {0} de ce dépôt demande une valeur : {1}</value></data>
   <data name="McpRepoInputNotMasked" xml:space="preserve"><value>(Visual Studio affiche ce que vous tapez : rien n'est masqué.)</value></data>
   <data name="LabelSkillsAutoMode" xml:space="preserve"><value>Laisser le modèle charger une compétence quand elle s'applique</value></data>

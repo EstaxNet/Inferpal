@@ -1071,7 +1071,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="SettingsUnsavedChanges" xml:space="preserve"><value>Niezapisane zmiany: {0}</value></data>
   <data name="SettingsNoUnsavedChanges" xml:space="preserve"><value>Brak niezapisanych zmian</value></data>
   <data name="SettingsCancel" xml:space="preserve"><value>Anuluj</value></data>
-  <data name="SettingsShowAdvanced" xml:space="preserve"><value>Pokaż ustawienia zaawansowane — model na zadanie, próbkowanie, GPU, połączenie</value></data>
+  <data name="SettingsShowAdvanced" xml:space="preserve"><value>Pokaż ustawienia zaawansowane — model na zadanie, próbkowanie i rozumowanie, GPU, połączenie</value></data>
   <data name="SettingsApprovalRulesCount" xml:space="preserve"><value>Reguły zatwierdzania: {0}</value></data>
   <data name="SettingsEditRules" xml:space="preserve"><value>Edytuj reguły</value></data>
   <data name="SettingsSectionModelPerTask" xml:space="preserve"><value>Model na zadanie</value></data>
@@ -1406,7 +1406,9 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="SkillUnreadableNow" xml:space="preserve"><value>Nie można odczytać umiejętności `{0}`.</value></data>
   <data name="SkillApplyDefault" xml:space="preserve"><value>Zastosuj umiejętność {0}.</value></data>
   <data name="SkillAttachmentLabel" xml:space="preserve"><value>Umiejętność: {0}</value></data>
-  <data name="McpRepoServerQuestion" xml:space="preserve"><value>To repozytorium deklaruje serwer MCP: {0} ({1}). Uruchomienie go wykona `{2}`. Uruchomić? Jeśli się zgodzisz, będzie odtąd uruchamiany sam, dopóki nie zmieni się jego definicja ani pliki repozytorium, które uruchamia.</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>To repozytorium deklaruje serwer MCP: {0} ({1}). Uruchomienie go wykona `{2}`. Uruchomić? {3}</value></data>
+  <data name="McpRepoServerStartsOnItsOwn" xml:space="preserve"><value>Jeśli się zgodzisz, będzie odtąd uruchamiany sam, dopóki nie zmieni się jego definicja ani pliki repozytorium, które uruchamia.</value></data>
+  <data name="McpRepoServerAskedEveryStart" xml:space="preserve"><value>Nie da się sprawdzić wszystkich plików, które uruchamia: pytanie wróci przy każdym uruchomieniu, a po zatrzymaniu nie zostanie uruchomiony ponownie.</value></data>
   <data name="McpRepoInputQuestion" xml:space="preserve"><value>Serwer MCP {0} tego repozytorium prosi o wartość: {1}</value></data>
   <data name="McpRepoInputNotMasked" xml:space="preserve"><value>(Visual Studio pokazuje to, co wpisujesz: nie jest to ukrywane.)</value></data>
   <data name="LabelSkillsAutoMode" xml:space="preserve"><value>Pozwól modelowi wczytać umiejętność, gdy pasuje</value></data>

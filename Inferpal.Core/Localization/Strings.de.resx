@@ -1071,7 +1071,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="SettingsUnsavedChanges" xml:space="preserve"><value>Ungespeicherte Änderungen: {0}</value></data>
   <data name="SettingsNoUnsavedChanges" xml:space="preserve"><value>Keine ungespeicherten Änderungen</value></data>
   <data name="SettingsCancel" xml:space="preserve"><value>Abbrechen</value></data>
-  <data name="SettingsShowAdvanced" xml:space="preserve"><value>Erweiterte Einstellungen anzeigen — ein Modell pro Aufgabe, Sampling, Ihre GPU, Verbindung</value></data>
+  <data name="SettingsShowAdvanced" xml:space="preserve"><value>Erweiterte Einstellungen anzeigen — ein Modell pro Aufgabe, Sampling und Nachdenken, Ihre GPU, Verbindung</value></data>
   <data name="SettingsApprovalRulesCount" xml:space="preserve"><value>Freigaberegeln: {0}</value></data>
   <data name="SettingsEditRules" xml:space="preserve"><value>Regeln bearbeiten</value></data>
   <data name="SettingsSectionModelPerTask" xml:space="preserve"><value>Ein Modell pro Aufgabe</value></data>
@@ -1406,7 +1406,9 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="SkillUnreadableNow" xml:space="preserve"><value>Der Skill `{0}` konnte nicht gelesen werden.</value></data>
   <data name="SkillApplyDefault" xml:space="preserve"><value>Wende den Skill {0} an.</value></data>
   <data name="SkillAttachmentLabel" xml:space="preserve"><value>Skill: {0}</value></data>
-  <data name="McpRepoServerQuestion" xml:space="preserve"><value>Dieses Repository deklariert einen MCP-Server: {0} ({1}). Ihn zu starten führt `{2}` aus. Starten? Wenn Sie zustimmen, startet er künftig von selbst, bis sich seine Definition oder die Repository-Dateien ändern, die er ausführt.</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>Dieses Repository deklariert einen MCP-Server: {0} ({1}). Ihn zu starten führt `{2}` aus. Starten? {3}</value></data>
+  <data name="McpRepoServerStartsOnItsOwn" xml:space="preserve"><value>Wenn Sie zustimmen, startet er künftig von selbst, bis sich seine Definition oder die Repository-Dateien ändern, die er ausführt.</value></data>
+  <data name="McpRepoServerAskedEveryStart" xml:space="preserve"><value>Die Dateien, die er ausführt, können nicht alle geprüft werden: Die Frage kommt bei jedem Start wieder, und er wird nicht neu gestartet, wenn er anhält.</value></data>
   <data name="McpRepoInputQuestion" xml:space="preserve"><value>Der MCP-Server {0} dieses Repositorys fragt nach einem Wert: {1}</value></data>
   <data name="McpRepoInputNotMasked" xml:space="preserve"><value>(Visual Studio zeigt, was Sie eingeben: Es wird nicht verborgen.)</value></data>
   <data name="LabelSkillsAutoMode" xml:space="preserve"><value>Das Modell einen Skill laden lassen, wenn er passt</value></data>

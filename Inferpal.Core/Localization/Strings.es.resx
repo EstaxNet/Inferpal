@@ -1071,7 +1071,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="SettingsUnsavedChanges" xml:space="preserve"><value>Cambios sin guardar: {0}</value></data>
   <data name="SettingsNoUnsavedChanges" xml:space="preserve"><value>No hay cambios sin guardar</value></data>
   <data name="SettingsCancel" xml:space="preserve"><value>Cancelar</value></data>
-  <data name="SettingsShowAdvanced" xml:space="preserve"><value>Mostrar ajustes avanzados — un modelo por tarea, muestreo, su GPU, conexión</value></data>
+  <data name="SettingsShowAdvanced" xml:space="preserve"><value>Mostrar ajustes avanzados — un modelo por tarea, muestreo y razonamiento, su GPU, conexión</value></data>
   <data name="SettingsApprovalRulesCount" xml:space="preserve"><value>Reglas de aprobación: {0}</value></data>
   <data name="SettingsEditRules" xml:space="preserve"><value>Editar reglas</value></data>
   <data name="SettingsSectionModelPerTask" xml:space="preserve"><value>Un modelo por tarea</value></data>
@@ -1406,7 +1406,9 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="SkillUnreadableNow" xml:space="preserve"><value>No se pudo leer la habilidad `{0}`.</value></data>
   <data name="SkillApplyDefault" xml:space="preserve"><value>Aplica la habilidad {0}.</value></data>
   <data name="SkillAttachmentLabel" xml:space="preserve"><value>Habilidad: {0}</value></data>
-  <data name="McpRepoServerQuestion" xml:space="preserve"><value>Este repositorio declara un servidor MCP: {0} ({1}). Iniciarlo ejecuta `{2}`. ¿Iniciarlo? Si acepta, se iniciará solo a partir de ahora, hasta que cambien su definición o los archivos del repositorio que ejecuta.</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>Este repositorio declara un servidor MCP: {0} ({1}). Iniciarlo ejecuta `{2}`. ¿Iniciarlo? {3}</value></data>
+  <data name="McpRepoServerStartsOnItsOwn" xml:space="preserve"><value>Si acepta, se iniciará solo a partir de ahora, hasta que cambien su definición o los archivos del repositorio que ejecuta.</value></data>
+  <data name="McpRepoServerAskedEveryStart" xml:space="preserve"><value>Los archivos que ejecuta no se pueden comprobar todos: la pregunta volverá en cada inicio, y no se reiniciará si se detiene.</value></data>
   <data name="McpRepoInputQuestion" xml:space="preserve"><value>El servidor MCP {0} de este repositorio pide un valor: {1}</value></data>
   <data name="McpRepoInputNotMasked" xml:space="preserve"><value>(Visual Studio muestra lo que escribe: no se oculta.)</value></data>
   <data name="LabelSkillsAutoMode" xml:space="preserve"><value>Dejar que el modelo cargue una habilidad cuando corresponda</value></data>

@@ -1071,7 +1071,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SettingsUnsavedChanges" xml:space="preserve"><value>未保存の変更: {0}</value></data>
   <data name="SettingsNoUnsavedChanges" xml:space="preserve"><value>未保存の変更はありません</value></data>
   <data name="SettingsCancel" xml:space="preserve"><value>キャンセル</value></data>
-  <data name="SettingsShowAdvanced" xml:space="preserve"><value>詳細設定を表示 — タスクごとのモデル、サンプリング、GPU、接続</value></data>
+  <data name="SettingsShowAdvanced" xml:space="preserve"><value>詳細設定を表示 — タスクごとのモデル、サンプリングと推論、GPU、接続</value></data>
   <data name="SettingsApprovalRulesCount" xml:space="preserve"><value>承認ルール: {0}</value></data>
   <data name="SettingsEditRules" xml:space="preserve"><value>ルールを編集</value></data>
   <data name="SettingsSectionModelPerTask" xml:space="preserve"><value>タスクごとのモデル</value></data>
@@ -1406,7 +1406,9 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SkillUnreadableNow" xml:space="preserve"><value>スキル `{0}` を読み取れませんでした。</value></data>
   <data name="SkillApplyDefault" xml:space="preserve"><value>スキル {0} を適用してください。</value></data>
   <data name="SkillAttachmentLabel" xml:space="preserve"><value>スキル: {0}</value></data>
-  <data name="McpRepoServerQuestion" xml:space="preserve"><value>このリポジトリは MCP サーバーを宣言しています: {0}（{1}）。起動すると `{2}` を実行します。起動しますか？同意すると、定義または実行するリポジトリのファイルが変わるまで、以後は自動で起動します。</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>このリポジトリは MCP サーバーを宣言しています: {0}（{1}）。起動すると `{2}` を実行します。起動しますか？{3}</value></data>
+  <data name="McpRepoServerStartsOnItsOwn" xml:space="preserve"><value>同意すると、定義または実行するリポジトリのファイルが変わるまで、以後は自動で起動します。</value></data>
+  <data name="McpRepoServerAskedEveryStart" xml:space="preserve"><value>実行するファイルをすべて確認することはできないため、起動のたびに確認し、停止しても再起動しません。</value></data>
   <data name="McpRepoInputQuestion" xml:space="preserve"><value>このリポジトリの MCP サーバー {0} が値を求めています: {1}</value></data>
   <data name="McpRepoInputNotMasked" xml:space="preserve"><value>（Visual Studio は入力内容を表示します。伏せ字にはなりません。）</value></data>
   <data name="LabelSkillsAutoMode" xml:space="preserve"><value>適したスキルをモデルに読み込ませる</value></data>

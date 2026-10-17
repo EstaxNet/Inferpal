@@ -2,6 +2,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Inferpal.Config;
+using Inferpal.Localization;
 using Inferpal.Services;
 using Inferpal.Services.CodeActions;
 using Inferpal.Services.Execution;
@@ -776,6 +777,105 @@ public sealed class RepoMcpServersTests : IDisposable
                         (await RepoMcpFiles.CoverAsync(definition, repo)).Files!.Single(f => f.Path == "tools/mcp/lib.py").Digest);
     }
 
+    private const string Commit = "-c user.email=t@example.com -c user.name=t -c commit.gpgsign=false commit -q -m c";
+
+    [Fact]
+    public async Task AWorkspaceInsideAnotherRepositoryThatDoesNotTrackIt_HasItsFoldersReadWhole()
+    {
+        var outer = Path.Combine(_state, "git-home");
+        Directory.CreateDirectory(outer);
+        File.WriteAllText(Path.Combine(outer, "notes.md"), "home");
+        Assert.True(Git("init -q", outer) && Git("add -A", outer) && Git(Commit, outer),
+            "git could not make the repository this test needs: UNDECIDED, not green.");
+        var workspace = Path.Combine(outer, "unpacked", "project");   // tracked by nobody: git lists nothing here
+        Directory.CreateDirectory(Path.Combine(workspace, "tools", "mcp"));
+        File.WriteAllText(Path.Combine(workspace, "tools", "mcp", "server.js"), "require('./lib')");
+        File.WriteAllText(Path.Combine(workspace, "tools", "mcp", "lib.js"), "v1");
+        var definition = JsonNode.Parse("""{ "command": "node", "args": ["tools/mcp/server.js"] }""")!.AsObject();
+
+        var paths = (await RepoMcpFiles.CoverAsync(definition, workspace)).Files!.Select(f => f.Path).ToList();
+
+        Assert.Equal(["tools/mcp/lib.js", "tools/mcp/server.js"], paths);
+    }
+
+    [Fact]
+    public async Task InAGitRepository_AFolderWrittenInAnotherCase_IsStillCovered()
+    {
+        if (OperatingSystem.IsLinux()) return;   // the file system does not fold case: another case is another file
+        var repo = Path.Combine(_state, "git-case");
+        Directory.CreateDirectory(Path.Combine(repo, "tools", "mcp"));
+        File.WriteAllText(Path.Combine(repo, "tools", "mcp", "server.js"), "require('./lib')");
+        File.WriteAllText(Path.Combine(repo, "tools", "mcp", "lib.js"), "v1");
+        Assert.True(Git("init -q", repo) && Git("add -A", repo) && Git(Commit, repo),
+            "git could not make the repository this test needs: UNDECIDED, not green.");
+        var definition = JsonNode.Parse("""{ "command": "node", "args": ["Tools/MCP/server.js"] }""")!.AsObject();
+
+        var paths = (await RepoMcpFiles.CoverAsync(definition, repo)).Files!.Select(f => f.Path).ToList();
+
+        Assert.Contains(paths, p => p.EndsWith("/lib.js", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task InAGitRepository_ANonAsciiFolderWrittenInAnotherCase_IsCovered()
+    {
+        if (OperatingSystem.IsLinux()) return;   // the file system does not fold case: another case is another file
+        var repo = Path.Combine(_state, "git-case-o");
+        Directory.CreateDirectory(Path.Combine(repo, "ö", "data"));
+        File.WriteAllText(Path.Combine(repo, "ö", "server.js"), "require('./lib')");
+        File.WriteAllText(Path.Combine(repo, "ö", "lib.js"), "v1");
+        File.WriteAllText(Path.Combine(repo, "ö", "data", "seed.json"), "{}");
+        Assert.True(Git("init -q", repo) && Git("add -A", repo) && Git(Commit, repo),
+            "git could not make the repository this test needs: UNDECIDED, not green.");
+        // git's icase folds A to Z only: Ö lists nothing of ö, while ö/data lists a file the file system puts under Ö.
+        var definition = JsonNode.Parse("""{ "command": "node", "args": ["Ö/server.js", "ö/data"] }""")!.AsObject();
+
+        var paths = (await RepoMcpFiles.CoverAsync(definition, repo)).Files!.Select(f => f.Path).ToList();
+
+        Assert.Contains(paths, p => p.EndsWith("/lib.js", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task InAGitRepository_AFolderWrittenInAnotherCase_BesideOneWrittenInGitsCase_IsCovered()
+    {
+        if (OperatingSystem.IsLinux()) return;   // the file system does not fold case: another case is another file
+        var repo = Path.Combine(_state, "git-case-mixed");
+        Directory.CreateDirectory(Path.Combine(repo, "tools", "mcp", "data"));
+        File.WriteAllText(Path.Combine(repo, "tools", "mcp", "server.js"), "require('./lib')");
+        File.WriteAllText(Path.Combine(repo, "tools", "mcp", "lib.js"), "v1");
+        File.WriteAllText(Path.Combine(repo, "tools", "mcp", "data", "seed.json"), "{}");
+        Assert.True(Git("init -q", repo) && Git("add -A", repo) && Git(Commit, repo),
+            "git could not make the repository this test needs: UNDECIDED, not green.");
+        // The data folder in git's case lists a file under the folder written otherwise: that folder is not walked.
+        var definition = JsonNode.Parse("""{ "command": "node", "args": ["Tools/MCP/server.js", "tools/mcp/data"] }""")!.AsObject();
+
+        var paths = (await RepoMcpFiles.CoverAsync(definition, repo)).Files!.Select(f => f.Path).ToList();
+
+        Assert.Contains(paths, p => p.EndsWith("/lib.js", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task InAGitRepository_TheFilesOfASubmoduleItRuns_AreCovered()
+    {
+        var sub = Path.Combine(_state, "git-sub");
+        Directory.CreateDirectory(Path.Combine(sub, "lib"));
+        File.WriteAllText(Path.Combine(sub, "index.js"), "require('./lib/tool')");
+        File.WriteAllText(Path.Combine(sub, "lib", "tool.js"), "v1");
+        var repo = Path.Combine(_state, "git-outer");
+        Directory.CreateDirectory(repo);
+        File.WriteAllText(Path.Combine(repo, "README.md"), "outer");
+        Assert.True(Git("init -q", sub) && Git("add -A", sub) && Git(Commit, sub)
+                    && Git("init -q", repo) && Git("add -A", repo) && Git(Commit, repo)
+                    && Git($"-c protocol.file.allow=always submodule add -q \"{sub}\" vendor/mcp", repo) && Git(Commit, repo),
+            "git could not make the repositories this test needs: UNDECIDED, not green.");
+        var definition = JsonNode.Parse("""{ "command": "node", "args": ["vendor/mcp/index.js"] }""")!.AsObject();
+
+        var before = (await RepoMcpFiles.CoverAsync(definition, repo)).Files!;
+        File.WriteAllText(Path.Combine(repo, "vendor", "mcp", "lib", "tool.js"), "v2");   // what a submodule update does
+
+        Assert.Contains("vendor/mcp/lib/tool.js", before.Select(f => f.Path));
+        Assert.NotEqual(before, (await RepoMcpFiles.CoverAsync(definition, repo)).Files!);
+    }
+
     private static bool Git(string args, string workDir)
     {
         try
@@ -847,6 +947,23 @@ public sealed class RepoMcpServersTests : IDisposable
         Assert.Equal(2, approval.Prompts);
         Assert.Equal(2, started.Count);
         Assert.False(File.Exists(Path.Combine(_state, "consents.json")), "an agreement that covers nothing was kept");
+        // The question says it comes back, never that the server starts on its own from now on.
+        Assert.Contains(Strings.McpRepoServerAskedEveryStart, approval.LastMessage);
+        Assert.DoesNotContain(Strings.McpRepoServerStartsOnItsOwn, approval.LastMessage);
+        await service.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task AServerWhoseFilesAreCovered_IsToldItStartsOnItsOwn()
+    {
+        Write("tools/mcp/server.js", "v1");
+        Write(".mcp.json", """{ "mcpServers": { "local": { "command": "node", "args": ["tools/mcp/server.js"] } } }""");
+        var (service, approval, _) = Service();
+
+        await service.RefreshAsync();
+
+        Assert.Contains(Strings.McpRepoServerStartsOnItsOwn, approval.LastMessage);
+        Assert.DoesNotContain(Strings.McpRepoServerAskedEveryStart, approval.LastMessage);
         await service.DisposeAsync();
     }
 

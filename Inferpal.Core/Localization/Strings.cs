@@ -1489,7 +1489,9 @@ internal static class Strings
     public static string TooltipXrayClose                    => Get(nameof(TooltipXrayClose));
 
     // ── MCP OAuth ──────────────────────────────────────────────────────────────
-    public static string McpRepoServerQuestion(string name, string source, string runs) => Format(Get(nameof(McpRepoServerQuestion)), name, source, runs);
+    public static string McpRepoServerQuestion(string name, string source, string runs, string closing) => Format(Get(nameof(McpRepoServerQuestion)), name, source, runs, closing);
+    public static string McpRepoServerStartsOnItsOwn  => Get(nameof(McpRepoServerStartsOnItsOwn));
+    public static string McpRepoServerAskedEveryStart => Get(nameof(McpRepoServerAskedEveryStart));
     public static string McpRepoInputQuestion(string server, string description) => Format(Get(nameof(McpRepoInputQuestion)), server, description);
     public static string McpRepoInputNotMasked => Get(nameof(McpRepoInputNotMasked));
     public static string McpOAuthUnsupportedPlatform => Get(nameof(McpOAuthUnsupportedPlatform));

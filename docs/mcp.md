@@ -108,9 +108,12 @@ The MCP servers a repository declares for other tools start beside yours — onc
   folder it lives in, the `cwd` it declares, and the manifest its runner reads (`package.json`, `pyproject.toml`, a
   `.csproj`…). A name the runtime completes counts too: `node tools/mcp/server` covers `tools/mcp`, and
   `python -m tools.mcp.server` covers `tools/mcp/server.py`. In a git repository a folder means the files git
-  **tracks** there — what a pull changes — so what your machine writes beside the code (build output, installed
-  dependencies, caches, logs, a database) never asks again; outside git, those folders are read whole, build output,
-  dependency and cache folders excepted. When one of these files changes, the server is asked about again. They are
+  **tracks** there — what a pull changes, the files of a submodule included — so what your machine writes beside the
+  code (build output, installed dependencies, caches, logs, a database) never asks again; outside git, those folders
+  are read whole, build output, dependency and cache folders excepted — and so is a folder git tracks nothing in (a
+  workspace inside another repository's work tree, a name written in another case than git's). A file the definition
+  names is always covered, even one git does not track: a database named in its arguments asks again when it
+  changes. When one of these files changes, the server is asked about again. They are
   checked once more just before the server starts, and before Inferpal restarts a server that exited: one whose files
   changed stays stopped, and its status names the file.
   - A link that leads out of the repository is never followed: the agreement covers where it points, not what lies

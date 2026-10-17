@@ -517,7 +517,10 @@ internal sealed class McpToolService : IAsyncDisposable
                 try
                 {
                     agreed = await _approval.RequestApprovalAsync("mcp_server",
-                        Strings.McpRepoServerQuestion(server.Name, server.Source, server.Runs), CancellationToken.None,
+                        // A server whose files cannot be covered keeps no agreement: the question says it comes back.
+                        Strings.McpRepoServerQuestion(server.Name, server.Source, server.Runs,
+                            server.Files is null ? Strings.McpRepoServerAskedEveryStart : Strings.McpRepoServerStartsOnItsOwn),
+                        CancellationToken.None,
                         subject: server.Runs, forcePrompt: true).ConfigureAwait(false);
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)

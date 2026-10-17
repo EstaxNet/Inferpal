@@ -1071,7 +1071,7 @@
   <data name="SettingsUnsavedChanges" xml:space="preserve"><value>Несохранённые изменения: {0}</value></data>
   <data name="SettingsNoUnsavedChanges" xml:space="preserve"><value>Несохранённых изменений нет</value></data>
   <data name="SettingsCancel" xml:space="preserve"><value>Отмена</value></data>
-  <data name="SettingsShowAdvanced" xml:space="preserve"><value>Показать расширенные настройки — модель на задачу, сэмплирование, ваш GPU, подключение</value></data>
+  <data name="SettingsShowAdvanced" xml:space="preserve"><value>Показать расширенные настройки — модель на задачу, сэмплирование и рассуждение, ваш GPU, подключение</value></data>
   <data name="SettingsApprovalRulesCount" xml:space="preserve"><value>Правила подтверждения: {0}</value></data>
   <data name="SettingsEditRules" xml:space="preserve"><value>Изменить правила</value></data>
   <data name="SettingsSectionModelPerTask" xml:space="preserve"><value>Модель на задачу</value></data>
@@ -1406,7 +1406,9 @@
   <data name="SkillUnreadableNow" xml:space="preserve"><value>Не удалось прочитать навык `{0}`.</value></data>
   <data name="SkillApplyDefault" xml:space="preserve"><value>Примени навык {0}.</value></data>
   <data name="SkillAttachmentLabel" xml:space="preserve"><value>Навык: {0}</value></data>
-  <data name="McpRepoServerQuestion" xml:space="preserve"><value>Этот репозиторий объявляет MCP-сервер: {0} ({1}). Его запуск выполняет `{2}`. Запустить? Если вы согласитесь, он будет запускаться сам, пока не изменятся его определение или файлы репозитория, которые он запускает.</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>Этот репозиторий объявляет MCP-сервер: {0} ({1}). Его запуск выполняет `{2}`. Запустить? {3}</value></data>
+  <data name="McpRepoServerStartsOnItsOwn" xml:space="preserve"><value>Если вы согласитесь, он будет запускаться сам, пока не изменятся его определение или файлы репозитория, которые он запускает.</value></data>
+  <data name="McpRepoServerAskedEveryStart" xml:space="preserve"><value>Не все файлы, которые он запускает, можно проверить: вопрос будет задаваться при каждом запуске, а после остановки он не будет перезапущен.</value></data>
   <data name="McpRepoInputQuestion" xml:space="preserve"><value>MCP-сервер {0} этого репозитория запрашивает значение: {1}</value></data>
   <data name="McpRepoInputNotMasked" xml:space="preserve"><value>(Visual Studio показывает вводимый текст: он не скрывается.)</value></data>
   <data name="LabelSkillsAutoMode" xml:space="preserve"><value>Позволить модели загружать навык, когда он подходит</value></data>

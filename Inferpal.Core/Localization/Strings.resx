@@ -1075,7 +1075,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="SettingsUnsavedChanges" xml:space="preserve"><value>Unsaved changes: {0}</value></data>
   <data name="SettingsNoUnsavedChanges" xml:space="preserve"><value>No unsaved changes</value></data>
   <data name="SettingsCancel" xml:space="preserve"><value>Cancel</value></data>
-  <data name="SettingsShowAdvanced" xml:space="preserve"><value>Show advanced settings — a model per task, sampling, your GPU, connection</value></data>
+  <data name="SettingsShowAdvanced" xml:space="preserve"><value>Show advanced settings — a model per task, sampling and reasoning, your GPU, connection</value></data>
   <data name="SettingsApprovalRulesCount" xml:space="preserve"><value>Approval rules: {0}</value></data>
   <data name="SettingsEditRules" xml:space="preserve"><value>Edit rules</value></data>
   <data name="SettingsSectionModelPerTask" xml:space="preserve"><value>A model per task</value></data>
@@ -1410,7 +1410,9 @@ What you save there applies from your next question, in this thread and the othe
   <data name="SkillUnreadableNow" xml:space="preserve"><value>The skill `{0}` could not be read.</value></data>
   <data name="SkillApplyDefault" xml:space="preserve"><value>Apply the skill {0}.</value></data>
   <data name="SkillAttachmentLabel" xml:space="preserve"><value>Skill: {0}</value></data>
-  <data name="McpRepoServerQuestion" xml:space="preserve"><value>This repository declares an MCP server: {0} ({1}). Starting it runs `{2}`. Start it? If you agree, it starts on its own from now on, until its definition or the repository files it runs change.</value></data>
+  <data name="McpRepoServerQuestion" xml:space="preserve"><value>This repository declares an MCP server: {0} ({1}). Starting it runs `{2}`. Start it? {3}</value></data>
+  <data name="McpRepoServerStartsOnItsOwn" xml:space="preserve"><value>If you agree, it starts on its own from now on, until its definition or the repository files it runs change.</value></data>
+  <data name="McpRepoServerAskedEveryStart" xml:space="preserve"><value>The files it runs cannot all be checked, so it is asked about again each time it starts, and not restarted if it stops.</value></data>
   <data name="McpRepoInputQuestion" xml:space="preserve"><value>The MCP server {0} of this repository asks for a value: {1}</value></data>
   <data name="McpRepoInputNotMasked" xml:space="preserve"><value>(Visual Studio shows what you type: it is not hidden.)</value></data>
   <data name="LabelSkillsAutoMode" xml:space="preserve"><value>Let the model load a skill when it fits</value></data>

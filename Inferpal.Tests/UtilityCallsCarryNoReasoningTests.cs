@@ -17,6 +17,7 @@ namespace Inferpal.Tests;
 /// sent anything. To a model that publishes no such setting the field is not a lower effort: GLM 4.7 Flash, sent
 /// "none", reasons six times longer, and sent "low" answers nothing.
 /// </summary>
+[Collection("Diagnostics")]   // reads the notes of the shared ring: never beside a test that clears it
 public sealed class UtilityCallsCarryNoReasoningTests
 {
     // ── The five background tasks ask for no reasoning ──────────────────────────
@@ -226,6 +227,26 @@ public sealed class UtilityCallsCarryNoReasoningTests
         var bodies = ChatBodies(server).ToList();
         Assert.Equal(2, bodies.Count);
         Assert.DoesNotContain("reasoning_effort", bodies[1], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AListThatCannotBeRead_AndAnEmptyList_AreTwoNotes()
+    {
+        var answer = "{ not json";
+        using var server = new LoopbackHttpServer(
+            (path, _) => path.StartsWith("/api/v1/models", StringComparison.Ordinal) ? answer
+                       : path.StartsWith("/v1/chat/completions", StringComparison.Ordinal) ? Sse : null);
+        var host = server.BaseUrl.TrimEnd('/');
+        int Notes(string words) => Diagnostics.Snapshot().Count(e => e.Context == "LmStudio.ReasoningSettings"
+                                                                  && e.Detail.Contains(words, StringComparison.Ordinal)
+                                                                  && e.Detail.Contains(host, StringComparison.Ordinal));
+
+        await AskAsync(new LmStudioClient(new InferpalConfig { Provider = "lmstudio", BaseUrl = server.BaseUrl }), "m", ReasoningEffort.Off);
+        answer = """{ "models": [] }""";   // the server now lists nothing: a second client, a fresh read
+        await AskAsync(new LmStudioClient(new InferpalConfig { Provider = "lmstudio", BaseUrl = server.BaseUrl }), "m", ReasoningEffort.Off);
+
+        Assert.True(Notes("could not be read") >= 1, "the failed read was not said");
+        Assert.True(Notes("is empty or absent") >= 1, "the empty list was silenced by the earlier failure's note");
     }
 
     [Fact]
