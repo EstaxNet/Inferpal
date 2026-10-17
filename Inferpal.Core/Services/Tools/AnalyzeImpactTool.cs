@@ -173,7 +173,7 @@ internal class AnalyzeImpactTool : ITool
         var (depth, depthNotice) = ClampedArgument.Read(
             args, "depth", DefaultDepth, MinAllowedDepth, MaxAllowedDepth);
 
-        var source   = await File.ReadAllTextAsync(filePath, ct);
+        var source   = await TextFileEncoding.ReadTextAsync(filePath, ct);
         var ext      = Path.GetExtension(filePath).ToLowerInvariant();
         // ⚠ The scan starts at the WORKSPACE root, not at the analysed file's own folder. Started
         // at the folder, a question about Services/Commands/TaskCommandHandler.cs only ever looks
@@ -480,7 +480,7 @@ internal class AnalyzeImpactTool : ITool
 
             try
             {
-                var src = await File.ReadAllTextAsync(file, ct);
+                var src = await TextFileEncoding.ReadTextAsync(file, ct);
                 contentCache[file] = src;   // layer 2 re-read every one of these from disk (lot 4)
                 bool referenced;
                 List<string> referencedTypes;
@@ -532,7 +532,7 @@ internal class AnalyzeImpactTool : ITool
             string? depSource;
             if (!contentCache.TryGetValue(dep.FilePath, out depSource))
             {
-                try { contentCache[dep.FilePath] = depSource = await File.ReadAllTextAsync(dep.FilePath, ct); }
+                try { contentCache[dep.FilePath] = depSource = await TextFileEncoding.ReadTextAsync(dep.FilePath, ct); }
                 catch { continue; }
             }
 
@@ -552,7 +552,7 @@ internal class AnalyzeImpactTool : ITool
                 try
                 {
                     if (!contentCache.TryGetValue(file, out var src))
-                        contentCache[file] = src = await File.ReadAllTextAsync(file, ct);
+                        contentCache[file] = src = await TextFileEncoding.ReadTextAsync(file, ct);
 
                     // Does this file reference the layer-1 file?
                     var (referenced, refTypes, kind) = depExt is ".cs"

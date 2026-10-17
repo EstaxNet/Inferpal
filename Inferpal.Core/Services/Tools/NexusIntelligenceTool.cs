@@ -102,7 +102,7 @@ internal sealed class NexusIntelligenceTool : ITool
             ct.ThrowIfCancellationRequested();
             try
             {
-                var src = await File.ReadAllTextAsync(f, ct);
+                var src = await TextFileEncoding.ReadTextAsync(f, ct);
                 if (doRest)    ScanCsRest(src, f, root, csBridges);
                 if (doInterop) ScanCsInterop(src, f, root, csBridges);
                 if (doSignalR) ScanCsSignalR(src, f, root, csBridges);
@@ -119,7 +119,7 @@ internal sealed class NexusIntelligenceTool : ITool
             ct.ThrowIfCancellationRequested();
             try
             {
-                var src = await File.ReadAllTextAsync(f, ct);
+                var src = await TextFileEncoding.ReadTextAsync(f, ct);
                 if (doRest)    ScanTsRest(src, f, root, tsBridges);
                 if (doInterop) ScanTsInterop(src, f, root, tsBridges);
                 if (doSignalR) ScanTsSignalR(src, f, root, tsBridges);

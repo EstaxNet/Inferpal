@@ -26,9 +26,12 @@ internal sealed record RenamePlan(
 /// <param name="Declaration">The declaration the references belong to; null when nothing resolved.</param>
 /// <param name="References">Uses of that exact symbol.</param>
 /// <param name="OtherDeclarations">
-/// Other declarations sharing the same name. <b>Non-empty means the answer is about one of
+/// Other symbols sharing the same name. <b>Non-empty means the answer is about one of
 /// several candidates</b> and the caller should disambiguate.
 /// </param>
+/// <param name="Through">Calls through a member the symbol implements or overrides — asked for only
+/// (<c>viaImplemented</c>), and never in <paramref name="References"/>: they can run the symbol, but changing its
+/// signature alone does not break them.</param>
 /// <remarks>
 /// A bare list would hide the one thing that matters: <c>Diagnostics</c> names a class in the Core
 /// and two test members here, so "references to Diagnostics" is not a question with one answer.
@@ -38,10 +41,14 @@ internal sealed record RenamePlan(
 internal sealed record ReferenceResult(
     SymbolLocation? Declaration,
     IReadOnlyList<SymbolLocation> References,
-    IReadOnlyList<SymbolLocation> OtherDeclarations)
+    IReadOnlyList<SymbolLocation> OtherDeclarations,
+    IReadOnlyList<SymbolLocation>? Through = null)
 {
     /// <summary>True when the name matches several declarations, so the answer is partial.</summary>
     public bool IsAmbiguous => OtherDeclarations.Count > 0;
+
+    /// <summary>The calls through an implemented or overridden member; empty unless asked for.</summary>
+    public IReadOnlyList<SymbolLocation> ThroughCalls => Through ?? [];
 
     public static readonly ReferenceResult None = new(null, [], []);
 }
@@ -353,16 +360,34 @@ internal sealed class CSharpSemanticIndex
     /// Returns an empty list when the symbol cannot be resolved — never a guess.
     /// </summary>
     public ReferenceResult FindReferences(
-        string symbolName, string? declaringFile = null, CancellationToken ct = default)
+        string symbolName, string? declaringFile = null, CancellationToken ct = default) =>
+        FindReferences(symbolName, declaringFile, declaringLine: null, viaImplemented: false, ct);
+
+    /// <summary>
+    /// <see cref="FindReferences(string, string?, CancellationToken)"/>, the declaration chosen by its line when several
+    /// share the name in the file (overloads), and — <paramref name="viaImplemented"/> — the calls through the members
+    /// the symbol implements or overrides, in <see cref="ReferenceResult.Through"/>: a call through the interface is a
+    /// call that can land here. One pass for both lists.
+    /// </summary>
+    /// <param name="declaringLine">A line of the declaration — its attributes, signature or body (<see cref="AtLine"/>). A
+    /// line that falls in none designates nothing: <see cref="ReferenceResult.None"/>, never another declaration.</param>
+    public ReferenceResult FindReferences(
+        string symbolName, string? declaringFile, int? declaringLine, bool viaImplemented, CancellationToken ct = default)
     {
         var snap = Current();
         var declarations = ResolveDeclarations(snap, symbolName, declaringFile, ct);
+        if (declaringLine is { } line) declarations = AtLine(declarations, line);
         if (declarations.Count == 0) return ReferenceResult.None;
 
-        var (target, targetLocation) = declarations[0];
-        var others = declarations.Skip(1).Select(d => d.Location).ToList();
+        var (target, targetLocation, _, _) = declarations[0];
+        // ⚠ The other parts of a partial type or member are the SAME symbol: listed as others, one class would read as
+        // ambiguous.
+        var others = declarations.Skip(1).Where(d => !SymbolEqualityComparer.Default.Equals(PartialDefinition(d.Symbol), PartialDefinition(target)))
+                                 .Select(d => d.Location).ToList();
+        var through = viaImplemented ? CallableThrough(snap, target, ct) : [];
 
         var hits = new List<SymbolLocation>();
+        var throughHits = new List<SymbolLocation>();
         // Pre-filter: a reference cannot exist in a file that never spells the name.
         foreach (var (_, tree) in snap.Trees)
         {
@@ -375,14 +400,120 @@ internal sealed class CSharpSemanticIndex
                 if (node is not (IdentifierNameSyntax or GenericNameSyntax)) continue;
                 if (((SimpleNameSyntax)node).Identifier.Text != symbolName) continue;
 
-                if (!ResolvesTo(model, node, target, ct)) continue;
-                if (IsWithinDeclaration(node, target)) continue;   // a declaration is not a use
+                // One binding per name, compared to every member a call can go through. ⚠ Not through `base.`: a call
+                // to the base's member from another derived class runs that member, never this one.
+                var viaBase = node.Parent is MemberAccessExpressionSyntax { Expression: BaseExpressionSyntax } access
+                              && access.Name == node;
+                var bound = Bound(model.GetSymbolInfo(node, ct)).ToList();
+                var exact = bound.Any(b => Same(b, target));
+                if (!exact && (viaBase || !bound.Any(b => through.Any(t => Through(b, t))))) continue;
+                // Inside a type's own declaration, its name is no dependent; inside a method's, it is a recursive call.
+                if (target is INamedTypeSymbol && IsWithinDeclaration(node, target)) continue;
 
-                hits.Add(Locate(tree, node.Span));
+                (exact ? hits : throughHits).Add(Locate(tree, node.Span));
             }
         }
 
-        return new ReferenceResult(targetLocation, hits, others);
+        return new ReferenceResult(targetLocation, hits, others, viaImplemented ? throughHits : null);
+    }
+
+    /// <summary>
+    /// The members a call can go through and land in <paramref name="target"/>: the members it overrides, up the chain,
+    /// and the interface members it implements — for its own type and for every source type deriving from it, since a
+    /// derived class can declare an interface its base satisfies.
+    /// </summary>
+    /// <remarks>⚠ Members declared in the workspace's source only: through <c>object.ToString()</c> or
+    /// <c>IDisposable.Dispose()</c>, every call of the framework member anywhere would be a caller.</remarks>
+    private static List<ISymbol> CallableThrough(Snapshot snap, ISymbol target, CancellationToken ct)
+    {
+        // Only a method, property or event can be reached through another member — a static one only by implementing a
+        // static abstract or virtual interface member (T.Make() through IMake<T>) — and the walk below rescans the workspace.
+        if (target is not (IMethodSymbol or IPropertySymbol or IEventSymbol)) return [];
+        if (target.IsStatic && target.ContainingType?.AllInterfaces.Any(i => i.GetMembers().Any(m => m.IsStatic && (m.IsAbstract || m.IsVirtual))) != true)
+            return [];
+        var chain = new List<ISymbol> { target };
+        for (var over = Overridden(target); over is not null; over = Overridden(over)) chain.Add(over);
+        var through = new List<ISymbol>(chain.Skip(1));
+        if (target.ContainingType is { TypeKind: TypeKind.Class or TypeKind.Struct } own)
+            foreach (var type in WithDerivedTypes(snap, own, ct))
+                foreach (var iface in type.AllInterfaces)
+                    // ⚠ Every member, never a lookup by the target's name: an explicit implementation is named "App.IRule.Check".
+                    foreach (var member in iface.GetMembers())
+                        if (type.FindImplementationForInterfaceMember(member) is { } impl
+                            && chain.Any(c => SymbolEqualityComparer.Default.Equals(impl.OriginalDefinition, c.OriginalDefinition)))
+                            through.Add(member);
+        return [.. through.Where(m => m.Locations.Any(l => l.IsInSource))];
+    }
+
+    /// <summary><paramref name="type"/> and the source types deriving from it, at any depth.</summary>
+    private static List<INamedTypeSymbol> WithDerivedTypes(Snapshot snap, INamedTypeSymbol type, CancellationToken ct)
+    {
+        var found = new List<INamedTypeSymbol> { type };
+        if (type.IsSealed || type.TypeKind != TypeKind.Class) return found;
+
+        // A type spells its base's name in its base list — or an alias of it, which this does not follow (a base named
+        // through a `using` alias is missed): a file that spells none of the names found so far declares none of their
+        // derived types. A new name found makes another pass — over the files not examined yet only: an
+        // examined file had every type checked against the whole base chain, its grandchildren included.
+        var origin = type.OriginalDefinition;
+        var names = new HashSet<string>(StringComparer.Ordinal) { type.Name };
+        var seen = new HashSet<ISymbol>(SymbolEqualityComparer.Default) { origin };
+        var texts = new Dictionary<SyntaxTree, string>();
+        var examined = new HashSet<SyntaxTree>();
+        for (var grew = true; grew;)
+        {
+            grew = false;
+            foreach (var (_, tree) in snap.Trees)
+            {
+                ct.ThrowIfCancellationRequested();
+                if (examined.Contains(tree)) continue;
+                if (!texts.TryGetValue(tree, out var text)) texts[tree] = text = tree.ToString();
+                if (!names.Any(n => text.Contains(n, StringComparison.Ordinal))) continue;
+                examined.Add(tree);
+
+                var model = snap.Compilation.GetSemanticModel(tree);
+                foreach (var declaration in tree.GetRoot(ct).DescendantNodes().OfType<TypeDeclarationSyntax>())
+                    if (model.GetDeclaredSymbol(declaration, ct) is { } derived && DerivesFrom(derived, origin) && seen.Add(derived))
+                    {
+                        found.Add(derived);
+                        grew |= names.Add(derived.Name);
+                    }
+            }
+        }
+        return found;
+
+        static bool DerivesFrom(INamedTypeSymbol t, INamedTypeSymbol baseType)
+        {
+            for (var b = t.BaseType; b is not null; b = b.BaseType)
+                if (SymbolEqualityComparer.Default.Equals(b.OriginalDefinition, baseType)) return true;
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// A call bound to <paramref name="bound"/> goes through <paramref name="member"/>: the same member, in a construction
+    /// of its type that can be the one implemented.
+    /// </summary>
+    /// <remarks>⚠ Compared by definition alone, a call through <c>IRule&lt;string&gt;</c> would count for a type that
+    /// implements <c>IRule&lt;int&gt;</c> only. A type argument still open (a type parameter) can be either.</remarks>
+    private static bool Through(ISymbol bound, ISymbol member)
+    {
+        var b = (bound as IMethodSymbol)?.ConstructedFrom ?? bound;
+        return SymbolEqualityComparer.Default.Equals(b.OriginalDefinition, member.OriginalDefinition)
+            && Compatible(b.ContainingType, member.ContainingType);
+
+        static bool Compatible(ITypeSymbol? x, ITypeSymbol? y)
+        {
+            if (x is null || y is null) return x is null && y is null;
+            if (x is ITypeParameterSymbol || y is ITypeParameterSymbol) return true;
+            if (SymbolEqualityComparer.Default.Equals(x, y)) return true;
+            if (x is IArrayTypeSymbol xa && y is IArrayTypeSymbol ya)
+                return xa.Rank == ya.Rank && Compatible(xa.ElementType, ya.ElementType);
+            return x is INamedTypeSymbol xn && y is INamedTypeSymbol yn
+                && SymbolEqualityComparer.Default.Equals(xn.OriginalDefinition, yn.OriginalDefinition)
+                && xn.TypeArguments.Zip(yn.TypeArguments).All(p => Compatible(p.First, p.Second))
+                && Compatible(xn.ContainingType, yn.ContainingType);
+        }
     }
 
     /// <summary>
@@ -396,25 +527,39 @@ internal sealed class CSharpSemanticIndex
     /// <c>ExecuteToolSafeAsync</c> report <b>zero</b> references when it has four: silent, total,
     /// and exactly the kind of wrong answer this class exists to prevent.
     /// </remarks>
-    private static bool ResolvesTo(SemanticModel model, SyntaxNode node, ISymbol target, CancellationToken ct)
+    private static bool ResolvesTo(SemanticModel model, SyntaxNode node, ISymbol target, CancellationToken ct) =>
+        Bound(model.GetSymbolInfo(node, ct)).Any(s => Same(s, target));
+
+    /// <summary>What a name binds to: the symbol, and the candidates (<see cref="ResolvesTo"/>).</summary>
+    private static IEnumerable<ISymbol> Bound(SymbolInfo info)
     {
-        var info = model.GetSymbolInfo(node, ct);
-
-        if (info.Symbol is { } s && Same(s, target)) return true;
-        foreach (var candidate in info.CandidateSymbols)
-            if (Same(candidate, target)) return true;
-        return false;
-
-        static bool Same(ISymbol a, ISymbol b) =>
-            SymbolEqualityComparer.Default.Equals(a.OriginalDefinition, b);
+        if (info.Symbol is { } s) yield return s;
+        foreach (var candidate in info.CandidateSymbols) yield return candidate;
     }
+
+    /// <summary>A bound symbol is <paramref name="target"/>, in any construction of its type.</summary>
+    /// <remarks>⚠ An extension method called on its receiver (<c>x.Twice()</c>) binds to its REDUCED form, another symbol:
+    /// it is compared by the method it was reduced from, or no such call is a reference.</remarks>
+    private static bool Same(ISymbol bound, ISymbol target) =>
+        SymbolEqualityComparer.Default.Equals(PartialDefinition(((bound as IMethodSymbol)?.ReducedFrom ?? bound).OriginalDefinition),
+                                              PartialDefinition(target));
+
+    /// <summary>A partial member's definition part — the one its calls bind to —, or the symbol itself.</summary>
+    /// <remarks>⚠ The two parts of a partial method or property are two symbols to Roslyn and one member to C#: compared
+    /// as they are, the implementation part had no reference, and a rename rewrote one part under "applied".</remarks>
+    private static ISymbol PartialDefinition(ISymbol s) => s switch
+    {
+        IMethodSymbol { PartialDefinitionPart: { } definition }   => definition,
+        IPropertySymbol { PartialDefinitionPart: { } definition } => definition,
+        _                                                         => s,
+    };
 
     /// <summary>
     /// Identifier tokens that must change when the symbol is renamed: every use <b>and</b> its
     /// declaration, grouped by file. Empty when the symbol does not resolve.
     /// </summary>
     /// <remarks>
-    /// The difference with <see cref="FindReferences"/> is the declaration, which is a reference to
+    /// The difference with <see cref="FindReferences(string, string?, CancellationToken)"/> is the declaration, which is a reference to
     /// nothing but must obviously be rewritten. Returned as spans so the caller edits text and
     /// keeps the file byte-identical everywhere else.
     /// </remarks>
@@ -435,9 +580,8 @@ internal sealed class CSharpSemanticIndex
     public RenamePlan PlanRename(string symbolName, string? declaringFile, int? declaringLine, CancellationToken ct = default)
     {
         var snap = Current();
-        var declarations = ResolveDeclarations(snap, symbolName, declaringFile, ct)
-            .Where(d => declaringLine is null || d.Location.Line == declaringLine)
-            .ToList();
+        var declarations = ResolveDeclarations(snap, symbolName, declaringFile, ct);
+        if (declaringLine is { } line) declarations = AtLine(declarations, line);
         // ⚠ Members C# links by name — an interface member and its implementations, a virtual member and its overrides —
         // are ONE rename: renamed alone, the other keeps the old name and the build breaks (CS0535, CS0115) under
         // "✅ Applied". Families are formed over EVERY declaration of the name, so a narrowed one still brings its links.
@@ -470,7 +614,9 @@ internal sealed class CSharpSemanticIndex
     }
 
     private static bool Linked(ISymbol a, ISymbol b) =>
-        Overrides(a, b) || Overrides(b, a) || Implements(a, b) || Implements(b, a);
+        Overrides(a, b) || Overrides(b, a) || Implements(a, b) || Implements(b, a)
+        // The two parts of a partial member are one member: renamed alone, the other keeps the old name (CS0759).
+        || SymbolEqualityComparer.Default.Equals(PartialDefinition(a), PartialDefinition(b));
 
     private static bool Overrides(ISymbol member, ISymbol baseMember)
     {
@@ -570,6 +716,38 @@ internal sealed class CSharpSemanticIndex
         return found;
     }
 
+    /// <summary>
+    /// Where <paramref name="name"/> is written, as a whole word, in code this index does not compile: the inactive
+    /// branches of <c>#if</c> — no preprocessor symbol is defined here, so a target framework's or a configuration's
+    /// branch is text. A reference written there is one no answer of this index counts.
+    /// </summary>
+    public IReadOnlyList<SymbolLocation> FindInInactiveCode(string name, CancellationToken ct = default)
+    {
+        var snap = Current();
+        var found = new List<SymbolLocation>();
+        foreach (var (_, tree) in snap.Trees.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            ct.ThrowIfCancellationRequested();
+            if (!tree.ToString().Contains(name, StringComparison.Ordinal)) continue;
+            foreach (var trivia in tree.GetRoot(ct).DescendantTrivia(descendIntoTrivia: true))
+            {
+                if (!trivia.IsKind(SyntaxKind.DisabledTextTrivia)) continue;
+                var text = trivia.ToString();
+                for (var at = text.IndexOf(name, StringComparison.Ordinal); at >= 0;
+                     at = text.IndexOf(name, at + name.Length, StringComparison.Ordinal))
+                    if (IsWordAt(text, at, name.Length))
+                        found.Add(Locate(tree, new TextSpan(trivia.SpanStart + at, name.Length)));
+            }
+        }
+        return found;
+
+        static bool IsWordAt(string text, int at, int length) =>
+            (at == 0 || !IsIdentifierChar(text[at - 1]))
+            && (at + length == text.Length || !IsIdentifierChar(text[at + length]));
+
+        static bool IsIdentifierChar(char c) => char.IsLetterOrDigit(c) || c == '_';
+    }
+
     // ── Internals ─────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -577,10 +755,10 @@ internal sealed class CSharpSemanticIndex
     /// runs: dictionary enumeration order is not a defensible way to pick which
     /// <c>Diagnostics</c> the user meant.
     /// </summary>
-    private List<(ISymbol Symbol, SymbolLocation Location)> ResolveDeclarations(
+    private List<(ISymbol Symbol, SymbolLocation Location, int StartLine, int EndLine)> ResolveDeclarations(
         Snapshot snap, string symbolName, string? declaringFile, CancellationToken ct)
     {
-        var found = new List<(ISymbol, SymbolLocation)>();
+        var found = new List<(ISymbol, SymbolLocation, int, int)>();
 
         foreach (var (path, tree) in snap.Trees.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase))
         {
@@ -594,7 +772,14 @@ internal sealed class CSharpSemanticIndex
             {
                 if (!IsDeclarationNamed(node, symbolName)) continue;
                 if (model.GetDeclaredSymbol(node, ct) is { } s)
-                    found.Add((s, Locate(tree, node.Span)));
+                {
+                    // A field or an event declarator spans its name only: its extent is the member declaration, so the
+                    // attribute line above it designates it like any other member's.
+                    var extent = node is VariableDeclaratorSyntax { Parent.Parent: BaseFieldDeclarationSyntax member }
+                        ? member.Span : node.Span;
+                    var lines = tree.GetLineSpan(extent);
+                    found.Add((s, Locate(tree, node.Span), lines.StartLinePosition.Line + 1, lines.EndLinePosition.Line + 1));
+                }
             }
         }
 
@@ -604,6 +789,26 @@ internal sealed class CSharpSemanticIndex
             .OrderByDescending(f => f.Item1.Kind == SymbolKind.NamedType)
             .ThenByDescending(f => f.Item1.Kind == SymbolKind.Method)
             .ToList();
+    }
+
+    /// <summary>
+    /// The declarations <paramref name="line"/> designates: those whose declaration spans it — attributes, signature or
+    /// body —, the innermost when one nests in another. Empty when the line falls in none.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ One reader for every designation (rename, references): the same file and line name the same symbol to both,
+    /// and a designation that designates nothing is refused by both. ⚠ Only a declaration that CONTAINS another one on
+    /// the line gives way: two overloads written on one line both stay, and the answer is ambiguous — kept to the first,
+    /// a rename would rewrite one of them under "applied".
+    /// </remarks>
+    private static List<(ISymbol Symbol, SymbolLocation Location, int StartLine, int EndLine)> AtLine(
+        List<(ISymbol Symbol, SymbolLocation Location, int StartLine, int EndLine)> declarations, int line)
+    {
+        var spanning = declarations.Where(d => d.StartLine <= line && line <= d.EndLine).ToList();
+        return [.. spanning.Where(d => !spanning.Any(e =>
+            Services.PathComparer.Default.Equals(e.Location.RelPath, d.Location.RelPath)
+            && d.StartLine <= e.StartLine && e.EndLine <= d.EndLine
+            && (d.StartLine, d.EndLine) != (e.StartLine, e.EndLine)))];
     }
 
     /// <summary>

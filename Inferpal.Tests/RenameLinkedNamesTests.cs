@@ -72,6 +72,41 @@ public sealed class RenameLinkedNamesTests : IDisposable
         Assert.Contains("ShoppingCart", said);
     }
 
+    /// <summary>
+    /// ⚠ An extension method called on its receiver (<c>5.Twice()</c>) binds to its reduced form: unless it is compared
+    /// by the method it was reduced from, those calls are no reference, and the rename leaves them on the old name —
+    /// CS1061 — under "✅ Applied".
+    /// </summary>
+    [Fact]
+    public async Task AnExtensionMethod_IsRenamedWhereItIsCalledOnItsReceiver()
+    {
+        Write("Ext.cs", "namespace App;\npublic static class Ext { public static int Twice(this int x) => x * 2; }\n");
+        Write("Use.cs", "namespace App;\npublic static class Use { public static int Go() => 5.Twice() + Ext.Twice(1); }\n");
+
+        await Rename("Twice", "Double");
+
+        Assert.Contains("5.Double()", Read("Use.cs"));
+        Assert.Contains("Ext.Double(1)", Read("Use.cs"));
+        Assert.Empty(Errors("Ext.cs", "Use.cs"));
+    }
+
+    /// <summary>
+    /// ⚠ A partial method's two parts are one member: designated by either part's file, both are renamed — renamed alone,
+    /// the other keeps the old name (CS0759) under "✅ Applied".
+    /// </summary>
+    [Fact]
+    public async Task APartialMethod_IsRenamedInBothParts()
+    {
+        Write("Order.cs", "namespace App;\npublic partial class Order { partial void OnSaved(); public void Save() => OnSaved(); }\n");
+        Write("Order.Hooks.cs", "namespace App;\npublic partial class Order { partial void OnSaved() { } }\n");
+
+        await Rename("OnSaved", "AfterSave", declaringFile: "Order.Hooks.cs");
+
+        Assert.DoesNotContain("OnSaved", Read("Order.cs"));
+        Assert.DoesNotContain("OnSaved", Read("Order.Hooks.cs"));
+        Assert.Empty(Errors("Order.cs", "Order.Hooks.cs"));
+    }
+
     [Fact]
     public async Task AnInterfaceMethod_IsRenamedWithItsImplementations_EvenWhenOneIsNamed()
     {

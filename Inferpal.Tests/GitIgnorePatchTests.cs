@@ -79,6 +79,35 @@ public class GitIgnorePatchTests
         }
     }
 
+    /// <summary>
+    /// A host that must leave the repository as it found it (the MCP server) indexes without the patch — and the same
+    /// repository indexed with it is patched (reference arm: the test cannot pass with the patch gone).
+    /// </summary>
+    [Fact]
+    public void IndexingWithoutThePatch_LeavesTheRepositoryAsItWas()
+    {
+        TestRagStore.Redirect();
+        bool Indexed(bool patch)
+        {
+            var root = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"gitignore-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(Path.Combine(root, ".git"));
+            try
+            {
+                using (var lsp = new LspSemanticProvider())
+                using (var svc = new ProjectIndexService(new FakeInferenceProvider(), new InferpalConfig { RagEnabled = true }, lsp))
+                    svc.StartIndexing(root, patchGitIgnore: patch);
+                return File.Exists(Path.Combine(root, ".gitignore"));
+            }
+            finally
+            {
+                try { Directory.Delete(root, recursive: true); } catch { }
+            }
+        }
+
+        Assert.False(Indexed(patch: false));
+        Assert.True(Indexed(patch: true));
+    }
+
     /// <summary>Indexes a fresh repository holding <paramref name="gitIgnore"/>; returns the bytes it leaves there.</summary>
     private static byte[] IndexWith(byte[] gitIgnore)
     {

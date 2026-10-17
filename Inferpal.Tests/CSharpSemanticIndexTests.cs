@@ -354,6 +354,441 @@ public class CSharpSemanticIndexTests : IDisposable
         Assert.Single(refs);
     }
 
+    /// <summary>
+    /// ⚠ An extension method called as an instance method binds to its REDUCED form, a symbol of its own: compared
+    /// as is, no <c>x.Twice()</c> is a reference — the references say nobody calls it, and a rename leaves the calls on
+    /// the old name under "applied".
+    /// </summary>
+    [Fact]
+    public void AnExtensionMethodCalledOnItsReceiver_IsAReference()
+    {
+        Write("Ext.cs", """
+            namespace App;
+            public static class Ext { public static int Twice(this int x) => x * 2; }
+            """);
+        Write("Caller.cs", """
+            namespace App;
+            public class C
+            {
+                public int R() => 5.Twice();
+                public int S() => Ext.Twice(3);
+            }
+            """);
+
+        var refs = Built().FindReferences("Twice").References;
+
+        Assert.Equal(2, refs.Count);
+        Assert.All(refs, r => Assert.Equal("Caller.cs", r.RelPath));
+    }
+
+    /// <summary>Overloads in one file: the declaring line picks the one asked about, never the first one scanned.</summary>
+    [Fact]
+    public void TheDeclaringLine_PicksTheOverload()
+    {
+        Write("Job.cs", """
+            namespace App;
+            public class Job
+            {
+                public void Run() { }
+                public void Run(int times) { }
+            }
+            """);
+        Write("Caller.cs", """
+            namespace App;
+            public class C { public void R(Job j) { j.Run(); j.Run(2); j.Run(3); } }
+            """);
+        var idx = Built();
+
+        var second = idx.FindReferences("Run", "Job.cs", declaringLine: 5, viaImplemented: false);
+        var first = idx.FindReferences("Run", "Job.cs", declaringLine: 4, viaImplemented: false);
+
+        Assert.Equal(5, second.Declaration!.Line);
+        Assert.Equal(2, second.References.Count);
+        Assert.Equal(4, first.Declaration!.Line);
+        Assert.Single(first.References);
+        // Designated exactly: the other overload is no ambiguity.
+        Assert.False(second.IsAmbiguous);
+        Assert.False(first.IsAmbiguous);
+    }
+
+    /// <summary>
+    /// A declaring line designates the declaration that spans it — an attribute above it, a line of its body — the same
+    /// way for the references and for a rename; a line in no declaration designates nothing, never another one.
+    /// </summary>
+    [Fact]
+    public void TheDeclaringLine_DesignatesTheSpanningDeclaration_ForReferencesAndRenameAlike()
+    {
+        Write("Job.cs", """
+            namespace App;
+            public class Job
+            {
+                [System.Obsolete]
+                public void Run() { }
+
+                public void Run(int times)
+                {
+                    System.Console.WriteLine(times);
+                }
+            }
+            """);
+        Write("Caller.cs", """
+            namespace App;
+            public class C { public void R(Job j) { j.Run(2); } }
+            """);
+        var idx = Built();
+
+        var byAttribute = idx.FindReferences("Run", "Job.cs", declaringLine: 4, viaImplemented: false);
+        var byBody = idx.FindReferences("Run", "Job.cs", declaringLine: 9, viaImplemented: false);
+        var inNone = idx.FindReferences("Run", "Job.cs", declaringLine: 6, viaImplemented: false);
+
+        Assert.Empty(byAttribute.References);
+        Assert.Single(byBody.References);
+        Assert.Null(inNone.Declaration);
+        Assert.Empty(inNone.References);
+        // Run(int): its declaration and its one call — Run() would be its declaration alone.
+        Assert.Equal(2, idx.PlanRename("Run", "Job.cs", 9).Spans.Values.Sum(s => s.Count));
+        Assert.Empty(idx.PlanRename("Run", "Job.cs", 6).Spans);
+    }
+
+    /// <summary>
+    /// An explicit implementation is reached through its interface only: its callers are the interface's, and an
+    /// interface a DERIVED class declares, satisfied by the inherited member, is a way in too.
+    /// </summary>
+    [Fact]
+    public void CallsThroughTheInterface_ReachAnExplicitImplementation_AndAnInheritedOne()
+    {
+        Write("Rule.cs", """
+            namespace App;
+            public interface IRule { bool Check(int v); }
+            public class Explicit : IRule { bool IRule.Check(int v) => v > 0; }
+            public class Base { public bool Check(int v) => v < 0; }
+            public class Derived : Base, IRule { }
+            """);
+        Write("Caller.cs", """
+            namespace App;
+            public class C
+            {
+                public bool ByInterface(IRule r) => r.Check(1);
+                public bool OnBase(Base b) => b.Check(2);
+            }
+            """);
+        var idx = Built();
+
+        var viaExplicit = idx.FindReferences("Check", "Rule.cs", declaringLine: 3, viaImplemented: true);
+        var viaInherited = idx.FindReferences("Check", "Rule.cs", declaringLine: 4, viaImplemented: true);
+
+        Assert.Empty(viaExplicit.References);
+        Assert.Equal(4, Assert.Single(viaExplicit.ThroughCalls).Line);
+        Assert.Equal(5, Assert.Single(viaInherited.References).Line);
+        Assert.Equal(4, Assert.Single(viaInherited.ThroughCalls).Line);
+    }
+
+    /// <summary>
+    /// A call through another construction of a generic interface cannot land in an implementation of this one; a call
+    /// through an open construction (a type parameter) can.
+    /// </summary>
+    [Fact]
+    public void CallsThroughAnotherConstructionOfTheInterface_DoNotCount()
+    {
+        Write("Rule.cs", """
+            namespace App;
+            public interface IRule<T> { bool Check(T v); }
+            public class Positive : IRule<int> { public bool Check(int v) => v > 0; }
+            """);
+        Write("Caller.cs", """
+            namespace App;
+            public class C
+            {
+                public bool OnInts(IRule<int> r) => r.Check(1);
+                public bool OnText(IRule<string> r) => r.Check("x");
+                public bool OnAny<T>(IRule<T> r, T v) => r.Check(v);
+            }
+            """);
+
+        var refs = Built().FindReferences("Check", "Rule.cs", declaringLine: 3, viaImplemented: true).ThroughCalls;
+
+        Assert.Equal(new[] { 4, 6 }, refs.Select(r => r.Line).Order());
+    }
+
+    /// <summary>
+    /// A call through the interface (or the overridden abstract member) can land in the implementation: counted when
+    /// asked, and only then.
+    /// </summary>
+    [Fact]
+    public void CallsThroughTheImplementedMember_CountWhenAsked()
+    {
+        Write("Rule.cs", """
+            namespace App;
+            public interface IRule { bool Check(int v); }
+            public abstract class RuleBase : IRule { public abstract bool Check(int v); }
+            public class Positive : RuleBase { public override bool Check(int v) => v > 0; }
+            """);
+        Write("Caller.cs", """
+            namespace App;
+            public class C
+            {
+                public bool ByInterface(IRule r) => r.Check(1);
+                public bool ByBase(RuleBase r) => r.Check(2);
+                public bool Direct(Positive p) => p.Check(3);
+            }
+            """);
+        var idx = Built();
+
+        var direct = idx.FindReferences("Check", "Rule.cs", declaringLine: 4, viaImplemented: false);
+        var all = idx.FindReferences("Check", "Rule.cs", declaringLine: 4, viaImplemented: true);
+
+        Assert.Single(direct.References);
+        Assert.Empty(direct.ThroughCalls);
+        // The exact use stays apart from the calls through the members it implements or overrides.
+        Assert.Single(all.References);
+        Assert.Equal(2, all.ThroughCalls.Count);
+    }
+
+    /// <summary>
+    /// Through a FRAMEWORK member, every call of it anywhere would be a caller (<c>object.ToString()</c>,
+    /// <c>IDisposable.Dispose()</c>): only the members declared in the workspace are a way in.
+    /// </summary>
+    [Fact]
+    public void CallsThroughAFrameworkMember_DoNotCount()
+    {
+        Write("Shape.cs", """
+            namespace App;
+            public class Shape : System.IDisposable
+            {
+                public override string ToString() => "shape";
+                public void Dispose() { }
+            }
+            """);
+        Write("Caller.cs", """
+            namespace App;
+            public class C
+            {
+                public string Any(object o) => o.ToString();
+                public string Mine(Shape s) => s.ToString();
+                public void Free(System.IDisposable d) => d.Dispose();
+                public void FreeMine(Shape s) => s.Dispose();
+            }
+            """);
+        var idx = Built();
+
+        var toString = idx.FindReferences("ToString", "Shape.cs", declaringLine: 4, viaImplemented: true);
+        var dispose = idx.FindReferences("Dispose", "Shape.cs", declaringLine: 5, viaImplemented: true);
+
+        Assert.Equal(5, Assert.Single(toString.References).Line);
+        Assert.Empty(toString.ThroughCalls);
+        Assert.Equal(7, Assert.Single(dispose.References).Line);
+        Assert.Empty(dispose.ThroughCalls);
+    }
+
+    /// <summary>
+    /// A <c>base.</c> call from another derived class runs the base's member, never this override; a call through the
+    /// base on any instance can land here.
+    /// </summary>
+    [Fact]
+    public void ABaseCallFromASiblingOverride_IsNoCaller()
+    {
+        Write("Shapes.cs", """
+            namespace App;
+            public abstract class Shape { public virtual int Sides() => 0; }
+            public class Square : Shape { public override int Sides() => 4; }
+            public class Odd : Shape { public override int Sides() => base.Sides() + 1; }
+            """);
+        Write("Caller.cs", """
+            namespace App;
+            public class C { public int Count(Shape s) => s.Sides(); }
+            """);
+
+        var refs = Built().FindReferences("Sides", "Shapes.cs", declaringLine: 3, viaImplemented: true).ThroughCalls;
+
+        Assert.Equal("Caller.cs", Assert.Single(refs).RelPath);
+    }
+
+    /// <summary>A method that calls itself is one of its callers; a type named inside its own declaration is no dependent.</summary>
+    [Fact]
+    public void ARecursiveCall_IsAReference_ASelfUseOfATypeIsNot()
+    {
+        Write("Math.cs", """
+            namespace App;
+            public class Calc
+            {
+                public static Calc Make() => new Calc();
+                public static int Fact(int n) => n <= 1 ? 1 : n * Fact(n - 1);
+            }
+            """);
+        Write("Caller.cs", """
+            namespace App;
+            public class C { public int R() => Calc.Fact(3); }
+            """);
+        var idx = Built();
+
+        var fact = idx.FindReferences("Fact").References;
+        var calc = idx.FindReferences("Calc").References;
+
+        Assert.Equal(new[] { "Caller.cs", "Math.cs" }, fact.Select(r => r.RelPath).Order());
+        Assert.Equal("Caller.cs", Assert.Single(calc).RelPath);
+    }
+
+    /// <summary>
+    /// A use inside an inactive <c>#if</c> branch is text to the compiler: no reference, so it is found as text — whole
+    /// words only — for the answer to say what it could not count.
+    /// </summary>
+    [Fact]
+    public void ANameInAnInactiveBranch_IsFoundAsText_NotAsAReference()
+    {
+        Write("Job.cs", """
+            namespace App;
+            public class Job { public void Run() { } }
+            """);
+        Write("Caller.cs", """
+            namespace App;
+            public class C
+            {
+                public void R(Job j)
+                {
+                    j.Run();
+            #if NETFRAMEWORK_ONLY
+                    j.Run(); j.RunAll();
+            #endif
+                }
+            }
+            """);
+        var idx = Built();
+
+        Assert.Single(idx.FindReferences("Run").References);
+        var inactive = idx.FindInInactiveCode("Run");
+        Assert.Equal(8, Assert.Single(inactive).Line);
+        Assert.Equal("Caller.cs", inactive[0].RelPath);
+    }
+
+    /// <summary>
+    /// An exact call and a call through the interface written on ONE line are two calls: each list keeps its own, with
+    /// nothing dropped as a duplicate of the other.
+    /// </summary>
+    [Fact]
+    public void AnExactCallAndAnInterfaceCallOnOneLine_AreBothCounted()
+    {
+        Write("Rule.cs", """
+            namespace App;
+            public interface IRule { bool Check(int v); }
+            public class Positive : IRule { public bool Check(int v) => v > 0; }
+            """);
+        Write("Caller.cs", """
+            namespace App;
+            public class C { public bool Both(Positive p, IRule r) => p.Check(3) && r.Check(1); }
+            """);
+
+        var result = Built().FindReferences("Check", "Rule.cs", declaringLine: 3, viaImplemented: true);
+
+        Assert.Equal(2, Assert.Single(result.References).Line);
+        Assert.Equal(2, Assert.Single(result.ThroughCalls).Line);
+    }
+
+    /// <summary>A partial type declared in two files is ONE symbol: no ambiguity, the other part is no other symbol.</summary>
+    [Fact]
+    public void APartialTypeInTwoFiles_IsNotAmbiguous()
+    {
+        Write("Invoice.cs", """
+            namespace App;
+            public partial class Invoice { public int Total() => 1; }
+            """);
+        Write("Invoice.Designer.cs", """
+            namespace App;
+            public partial class Invoice { private int _lines; }
+            """);
+        Write("Caller.cs", """
+            namespace App;
+            public class C { public int R() => new Invoice().Total(); }
+            """);
+
+        var result = Built().FindReferences("Invoice");
+
+        Assert.False(result.IsAmbiguous);
+        Assert.Contains(result.References, r => r.RelPath == "Caller.cs");
+    }
+
+    /// <summary>
+    /// Two overloads written on ONE line are both designated by it: the answer is ambiguous, and a rename is refused —
+    /// never one of them picked as if it were the only one.
+    /// </summary>
+    [Fact]
+    public void TwoOverloadsOnOneLine_AreBothDesignated()
+    {
+        Write("Job.cs", """
+            namespace App;
+            public class Job
+            {
+                public void Run() { } public void Run(int t) { }
+            }
+            """);
+        var idx = Built();
+
+        Assert.True(idx.FindReferences("Run", "Job.cs", declaringLine: 4, viaImplemented: false).IsAmbiguous);
+        var plan = idx.PlanRename("Run", "Job.cs", 4);
+        Assert.Equal(2, plan.Candidates.Count);
+        Assert.Empty(plan.Spans);
+    }
+
+    /// <summary>The attribute line above a field designates the field, as it does for any other member.</summary>
+    [Fact]
+    public void TheAttributeLineOfAField_DesignatesIt()
+    {
+        Write("Job.cs", """
+            namespace App;
+            public class Job
+            {
+                [System.Obsolete]
+                public int Count;
+                public void Bump() => Count++;
+            }
+            """);
+
+        var result = Built().FindReferences("Count", "Job.cs", declaringLine: 4, viaImplemented: false);
+
+        Assert.Equal(5, result.Declaration!.Line);
+        Assert.Single(result.References);
+    }
+
+    /// <summary>
+    /// The two parts of a partial method are one member: designated by either file, its calls are its references, and
+    /// no part is "another symbol".
+    /// </summary>
+    [Fact]
+    public void APartialMethod_IsOneMember_WhicheverPartIsDesignated()
+    {
+        Write("Order.cs", """
+            namespace App;
+            public partial class Order { partial void OnSaved(); public void Save() => OnSaved(); }
+            """);
+        Write("Order.Hooks.cs", """
+            namespace App;
+            public partial class Order { partial void OnSaved() { } }
+            """);
+        var idx = Built();
+
+        var byDefinition = idx.FindReferences("OnSaved", "Order.cs");
+        var byImplementation = idx.FindReferences("OnSaved", "Order.Hooks.cs");
+
+        Assert.Single(byDefinition.References);
+        Assert.Single(byImplementation.References);
+        Assert.False(byDefinition.IsAmbiguous);
+    }
+
+    /// <summary>A static member implementing a static abstract interface member is called through it (<c>T.Make()</c>).</summary>
+    [Fact]
+    public void AStaticAbstractInterfaceMember_IsAWayIn()
+    {
+        Write("Make.cs", """
+            namespace App;
+            public interface IMake<T> where T : IMake<T> { static abstract T Make(); }
+            public class Widget : IMake<Widget> { public static Widget Make() => new(); }
+            public static class Factory { public static T Build<T>() where T : IMake<T> => T.Make(); }
+            """);
+
+        var result = Built().FindReferences("Make", "Make.cs", declaringLine: 3, viaImplemented: true);
+
+        Assert.Equal(4, Assert.Single(result.ThroughCalls).Line);
+    }
+
     [Fact]
     public void EmptyWorkspace_IsHarmless()
     {

@@ -388,8 +388,8 @@ internal sealed class RenameSymbolTool : ITool
             declaringLine is null ? null : $"declaring_line {declaringLine}",
         }.Where(s => s is not null));
         return indexAvailable
-            ? $"Error: no declaration of `{oldName}` matches {asked}; nothing was renamed. The line is the one where the "
-              + "declaration starts, attributes included. Call again without them to list the declarations of "
+            ? $"Error: no declaration of `{oldName}` matches {asked}; nothing was renamed. The line is any line of the "
+              + "declaration: its attributes, signature or body. Call again without them to list the declarations of "
               + $"`{oldName}` with their files and lines."
             : $"Error: {asked} need the C# compiler's view of the workspace, which is not available here; nothing was "
               + $"renamed. Without them, every identifier spelled `{oldName}` would be renamed — check that preview first.";

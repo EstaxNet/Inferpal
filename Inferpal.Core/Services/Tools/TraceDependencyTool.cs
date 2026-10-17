@@ -95,7 +95,7 @@ internal class TraceDependencyTool : ITool
         if (direction is not ("callees" or "callers" or "both"))
             return $"Unknown direction '{direction}'. Use one of: 'callees' (default), 'callers', 'both'.";
 
-        var source = await File.ReadAllTextAsync(filePath, ct);
+        var source = await TextFileEncoding.ReadTextAsync(filePath, ct);
         var ext    = Path.GetExtension(filePath).ToLowerInvariant();
 
         // ── Parse file ────────────────────────────────────────────────────────
@@ -331,7 +331,7 @@ internal class TraceDependencyTool : ITool
             if (file == targetFile) continue;
             try
             {
-                var src      = File.ReadAllText(file);
+                var src      = TextFileEncoding.ReadText(file);
                 var fext     = Path.GetExtension(file).ToLowerInvariant();
                 var fileMths = ParseMethods(src, fext, file);
                 var relPath  = Path.GetRelativePath(rootDir, file);
@@ -385,7 +385,7 @@ internal class TraceDependencyTool : ITool
             ct.ThrowIfCancellationRequested();
             try
             {
-                var src     = await File.ReadAllTextAsync(file, ct);
+                var src     = await TextFileEncoding.ReadTextAsync(file, ct);
                 var fext    = Path.GetExtension(file).ToLowerInvariant();
                 var methods = ParseMethods(src, fext, file);
                 foreach (var m in methods)

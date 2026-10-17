@@ -195,7 +195,10 @@ internal sealed class ProjectIndexService : IDisposable
     /// If a previous pass is running it is cancelled before the new one begins.
     /// Also patches <c>.gitignore</c> to exclude <c>.inferpal/</c> if not already present.
     /// </summary>
-    public void StartIndexing(string rootDir)
+    /// <param name="rootDir">The workspace root.</param>
+    /// <param name="patchGitIgnore">False for a host that must leave the repository as it found it: the MCP server
+    /// serves read-only tools, and an edit to <c>.gitignore</c> is a write nobody asked it for.</param>
+    public void StartIndexing(string rootDir, bool patchGitIgnore = true)
     {
         var previousCts  = _cts;
         var previousPass = _indexingPass;
@@ -207,7 +210,7 @@ internal sealed class ProjectIndexService : IDisposable
         RootDir = rootDir;
         IndexedRoot = rootDir;
         _profileExcludes = ProjectProfile.Load(rootDir).IndexExcludes;
-        PatchGitIgnore(rootDir);
+        if (patchGitIgnore) PatchGitIgnore(rootDir);
         // Language servers started for another workspace would otherwise run until the editor closes.
         _lsp.ReleaseSessionsExcept(rootDir);
 
