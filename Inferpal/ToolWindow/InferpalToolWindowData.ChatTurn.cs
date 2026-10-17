@@ -226,7 +226,6 @@ internal partial class InferpalToolWindowData
             // skipping anything already attached. Guarantees per-turn RAG context even when the
             // debounced auto-attach chips did not fire (e.g. the user typed fast and sent).
             var autoCtx = await BuildAutoContextAsync(userText, attachments, localCts!.Token);
-            historyText = Services.Agent.ChatTurnPolicy.WithInjectedContext(historyText, autoCtx, workspaceCtx);
 
             await RunOnVMContextAsync(() =>
             {
@@ -238,6 +237,10 @@ internal partial class InferpalToolWindowData
                 // gestures (a toggle, /note, a change of active file when rules are glob-scoped), an
                 // edited file reached the model in its OLD version for the rest of the session.
                 RefreshSystemPrompt();
+                // What follows the active file rides with the question, when the history does not already say it — judged
+                // here, on the history the question joins (ActiveFileContext).
+                var activeFile = ActiveFileContext.ToSend(BuildActiveFileBlock(), _history);
+                historyText = Services.Agent.ChatTurnPolicy.WithInjectedContext(historyText, autoCtx, workspaceCtx, activeFile);
                 _history.Add(new ChatMessageDto("user", historyText));
                 _questionInHistory = _lastSent?.Question;
                 // ⚠ Sent once the question carrying it is in the history: set when the block was BUILT, a Stop during

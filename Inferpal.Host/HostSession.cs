@@ -142,6 +142,12 @@ internal sealed class HostSession : IDisposable
     /// </summary>
     public string? OodaSummary { get; set; }
 
+    /// <summary>The session summary the system message carries: <see cref="OodaSummary"/> as it was when the history was
+    /// last compacted (mirror of the VS VM's <c>_recapInSystem</c>).</summary>
+    /// <remarks>⚠ Never the newest one in between: each summary written into the head of the request would make the
+    /// server read the whole conversation again.</remarks>
+    public string? RecapInSystem { get; set; }
+
     /// <summary>File the adapter last reported active (`editor/didChangeActiveDocument`): the glob-scoped
     /// project rules of the system prompt follow it (mirror of the VS VM's <c>_activeFilePath</c>).</summary>
     public string? ActiveFilePath { get; set; }
@@ -214,11 +220,12 @@ internal sealed class HostSession : IDisposable
     /// submitted the task — it therefore never sees the turn's cancellation token.
     /// </summary>
     public BackgroundTaskQueue GetOrCreateTasks(
-        BackgroundTaskQueue.ProposingTaskRunner runner, Action<BackgroundTaskSnapshot> onFinished)
+        BackgroundTaskQueue.ProposingTaskRunner runner, Action<BackgroundTaskSnapshot> onFinished,
+        Func<string?>? submissionContext = null)
     {
         if (_tasks is not null) return _tasks;
         // The session's root never changes (another folder is another host): given for the same rule as Visual Studio's.
-        _tasks = new BackgroundTaskQueue(runner, currentRoot: () => RootDir);
+        _tasks = new BackgroundTaskQueue(runner, currentRoot: () => RootDir, submissionContext: submissionContext);
         _tasks.TaskFinished += onFinished;
         return _tasks;
     }

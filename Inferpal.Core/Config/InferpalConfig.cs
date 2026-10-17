@@ -221,7 +221,8 @@ internal class InferpalConfig
     [JsonPropertyName("personaAutoSwitch")]
     public bool PersonaAutoSwitch { get; set; } = true;
 
-    /// <summary>Every N conversation turns a session recap is generated and injected into the system prompt (0 = disabled).</summary>
+    /// <summary>Every N conversation turns a session recap is generated and shown; it joins the system prompt when the
+    /// history is compacted (0 = disabled).</summary>
     [JsonPropertyName("oodaTurnThreshold")]
     public int OodaTurnThreshold { get; set; } = 10;
 

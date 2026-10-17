@@ -156,7 +156,7 @@ Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una 
   <data name="LabelPersonaAutoSwitch" xml:space="preserve"><value>Adattarsi al linguaggio del file aperto</value></data>
   <data name="HintPersonaAutoSwitch" xml:space="preserve"><value>Aggiunge un'indicazione per C#, Python o TypeScript quando cambiate file.</value></data>
   <data name="LabelOodaTurnThreshold" xml:space="preserve"><value>Riepilogare la sessione ogni</value></data>
-  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>Obiettivo, avanzamento e domande aperte, conservati nelle istruzioni. 0: mai.</value></data>
+  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>Obiettivo, avanzamento e domande aperte, conservati nelle istruzioni quando i turni precedenti vengono riassunti. 0: mai.</value></data>
   <data name="StatusOodaSummarizing" xml:space="preserve"><value>Generazione riepilogo sessione…</value></data>
   <data name="MsgOodaRecap" xml:space="preserve"><value>**Riepilogo sessione OODA** (turno {0})</value></data>
   <data name="OodaSummarizePrompt" xml:space="preserve"><value>Riassumi la nostra conversazione finora. Produci un riepilogo in stile OODA con tre sezioni — Obiettivo (cosa vuole fare l'utente), Progresso (passi già completati) e Aperto (compiti rimanenti o domande irrisolte). Massimo 150 parole.</value></data>
@@ -855,6 +855,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="XrayHeader" xml:space="preserve"><value>🩻 Radiografia del contesto — prompt di sistema ≈ {0} token</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>Prompt di sistema di base</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>Frammento persona</value></data>
+  <data name="XrayWithTheQuestion" xml:space="preserve"><value>con la domanda</value></data>
   <data name="XrayLabelCustom" xml:space="preserve"><value>Prompt di sistema personalizzato</value></data>
   <data name="XrayLabelTemplate" xml:space="preserve"><value>Modello di sessione</value></data>
   <data name="XrayLabelRules" xml:space="preserve"><value>Regole ({0} applicate)</value></data>

@@ -156,7 +156,7 @@
   <data name="LabelPersonaAutoSwitch" xml:space="preserve"><value>開いているファイルの言語に合わせる</value></data>
   <data name="HintPersonaAutoSwitch" xml:space="preserve"><value>ファイルを切り替えると、C#、Python、TypeScript 向けのヒントを加えます。</value></data>
   <data name="LabelOodaTurnThreshold" xml:space="preserve"><value>セッションの振り返り間隔</value></data>
-  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>目的・進捗・未解決の質問を指示に残します。0 は無効。</value></data>
+  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>目的・進捗・未解決の質問を、古いやり取りが要約されたときに指示に残します。0 は無効。</value></data>
   <data name="StatusOodaSummarizing" xml:space="preserve"><value>セッション要約を生成中…</value></data>
   <data name="MsgOodaRecap" xml:space="preserve"><value>**OODA セッション要約**（ターン {0}）</value></data>
   <data name="OodaSummarizePrompt" xml:space="preserve"><value>これまでの会話を要約してください。OODA スタイルのリキャップを3つのセクションで作成してください — 目標（ユーザーが達成したいこと）、進捗（完了した手順）、未解決（残っているタスクまたは未解決の質問）。150 語以内でお願いします。</value></data>
@@ -855,6 +855,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="XrayHeader" xml:space="preserve"><value>🩻 コンテキスト X 線 — システムプロンプト ≈ {0} トークン</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>基本システムプロンプト</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>ペルソナスニペット</value></data>
+  <data name="XrayWithTheQuestion" xml:space="preserve"><value>質問と一緒に</value></data>
   <data name="XrayLabelCustom" xml:space="preserve"><value>カスタムシステムプロンプト</value></data>
   <data name="XrayLabelTemplate" xml:space="preserve"><value>セッションテンプレート</value></data>
   <data name="XrayLabelRules" xml:space="preserve"><value>ルール（適用 {0} 件）</value></data>

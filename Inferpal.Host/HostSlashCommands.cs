@@ -82,7 +82,7 @@ internal sealed partial class HostServer
             var history = new List<Inferpal.Models.ChatMessageDto>
             {
                 new("system", BuildSystemPromptText(s) + suffix),
-                new("user",   task.Objective),
+                new("user",   ChatTurnPolicy.WithInjectedContext(task.Objective, task.Context)),
             };
 
             // RunAgentAsync never throws for network/backend errors — they come back in the
@@ -100,7 +100,9 @@ internal sealed partial class HostServer
         },
         // Dedicated notification, not a chat/step status line: the adapter renders it as a
         // persistent bubble (VS parity) instead of a status wiped by the next setBusy.
-        onFinished: snapshot => Notify("task/finished", new { text = TaskCommandHandler.FinishedNotice(snapshot) }));
+        onFinished: snapshot => Notify("task/finished", new { text = TaskCommandHandler.FinishedNotice(snapshot) }),
+        // The active file the task was submitted with: its instructions ride with the objective, as with a question.
+        submissionContext: () => BuildActiveFileBlock(s));
 
     /// <summary>Direct tool invocation (/read /ls /grep /run /git /map …): executed by the
     /// registry — approvals and permission rules apply exactly as in an agent run.</summary>
@@ -335,7 +337,8 @@ internal sealed partial class HostServer
                         AgentOrchestrator.EstimateConversationTokens(s.History),
                         s.ContextWindowInUse,
                         s.Config,
-                        toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode)));
+                        toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode),
+                        questionLayersInHistory: QuestionLayersInHistory(s)));
                 }
 
                 case SlashCommandId.Bench:
@@ -364,6 +367,7 @@ internal sealed partial class HostServer
                     // explanation — gathered ahead of the verdict, there being no assistant bubble to
                     // stream into while a command runs.
                     var fixes  = new List<string>();
+                    var activeFile = BuildActiveFileBlock(s);
                     var result = await TddCommandHandler.HandleAsync(
                         s.Client, s.Config, s.Tools,
                         BuildSystemPromptText(s), parts,
@@ -379,7 +383,8 @@ internal sealed partial class HostServer
                                 lock (fixes) fixes.Add(visible);
                         },
                         cts.Token,
-                        s.TestCapture, s.Approval);
+                        s.TestCapture, s.Approval,
+                        activeFileContext: activeFile);
                     lock (fixes)
                         return new SlashCommandResult(true, fixes.Count == 0
                             ? result.Message

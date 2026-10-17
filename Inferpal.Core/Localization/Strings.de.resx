@@ -156,7 +156,7 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <data name="LabelPersonaAutoSwitch" xml:space="preserve"><value>An die Sprache der geöffneten Datei anpassen</value></data>
   <data name="HintPersonaAutoSwitch" xml:space="preserve"><value>Fügt beim Dateiwechsel einen Hinweis zu C#, Python oder TypeScript hinzu.</value></data>
   <data name="LabelOodaTurnThreshold" xml:space="preserve"><value>Die Sitzung zusammenfassen alle</value></data>
-  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>Ziel, Fortschritt und offene Fragen, in den Anweisungen behalten. 0: nie.</value></data>
+  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>Ziel, Fortschritt und offene Fragen, in den Anweisungen behalten, sobald ältere Runden zusammengefasst werden. 0: nie.</value></data>
   <data name="StatusOodaSummarizing" xml:space="preserve"><value>Sitzungszusammenfassung wird erstellt…</value></data>
   <data name="MsgOodaRecap" xml:space="preserve"><value>**OODA-Sitzungszusammenfassung** (Runde {0})</value></data>
   <data name="OodaSummarizePrompt" xml:space="preserve"><value>Fasse unser bisheriges Gespräch zusammen. Erstelle eine kurze OODA-Zusammenfassung mit drei Abschnitten — Ziel (was der Benutzer erreichen möchte), Fortschritt (bereits abgeschlossene Schritte) und Offen (verbleibende Aufgaben oder offene Fragen). Maximal 150 Wörter.</value></data>
@@ -855,6 +855,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="XrayHeader" xml:space="preserve"><value>🩻 Kontext-Röntgen — System-Prompt ≈ {0} Token</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>Basis-System-Prompt</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>Persona-Snippet</value></data>
+  <data name="XrayWithTheQuestion" xml:space="preserve"><value>mit der Frage</value></data>
   <data name="XrayLabelCustom" xml:space="preserve"><value>Benutzerdefinierter System-Prompt</value></data>
   <data name="XrayLabelTemplate" xml:space="preserve"><value>Sitzungsvorlage</value></data>
   <data name="XrayLabelRules" xml:space="preserve"><value>Regeln ({0} angewendet)</value></data>

@@ -439,11 +439,16 @@ public class BackgroundTaskQueueTests
     public void BothEditors_GiveTheQueueTheirWorkspace()
     {
         var root = ConventionCoverageTests.RepoRoot();
-        Assert.Contains("currentRoot: () => _indexService.RootDir);",
-                        ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal", "ToolWindow", "InferpalToolWindowData.SlashCommands.cs")),
-                        StringComparison.Ordinal);
-        Assert.Contains("new BackgroundTaskQueue(runner, currentRoot: () => RootDir)",
-                        ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal.Host", "HostSession.cs")),
+        var vm   = ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal", "ToolWindow", "InferpalToolWindowData.SlashCommands.cs"));
+        var host = ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal.Host", "HostSession.cs"));
+        Assert.Contains("currentRoot: () => _indexService.RootDir,", vm, StringComparison.Ordinal);
+        Assert.Contains("new BackgroundTaskQueue(runner, currentRoot: () => RootDir, submissionContext: submissionContext)",
+                        host, StringComparison.Ordinal);
+        // And the active file they were submitted with, whose instructions ride with the objective.
+        Assert.Contains("submissionContext: () => _taskSubmissionBlock);", vm, StringComparison.Ordinal);
+        Assert.Contains("RunOnVMContextAsync(() => _taskSubmissionBlock = BuildActiveFileBlock());", vm, StringComparison.Ordinal);
+        Assert.Contains("submissionContext: () => BuildActiveFileBlock(s));",
+                        ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal.Host", "HostSlashCommands.cs")),
                         StringComparison.Ordinal);
     }
 }

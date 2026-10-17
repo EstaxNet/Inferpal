@@ -19,6 +19,10 @@ namespace Inferpal.Services.Execution;
 internal class ToolRegistry : IToolRegistry, IDisposable
 {
     private readonly Dictionary<string, ITool> _tools = [];
+    // The built-in tools in the order they were registered: the definitions are sent in it. ⚠ An order of its own, not
+    // the dictionary's — the tool list sits near the head of a request, and a server that reuses its cache reads again
+    // everything after the first change.
+    private readonly List<ITool> _registered = [];
     private readonly InferpalConfig         _config;
     private readonly IApprovalService          _approval;
     private readonly McpToolService            _mcp;
@@ -283,10 +287,10 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     internal IReadOnlyCollection<string> BuiltInNames => _tools.Keys;
 
     /// <summary>The same set as <see cref="BuiltInNames"/>, with what each declares — what the documentation describes.</summary>
-    internal IReadOnlyCollection<ITool> BuiltInTools => _tools.Values;
+    internal IReadOnlyCollection<ITool> BuiltInTools => _registered;
 
     public IReadOnlyList<ToolDefinition> Definitions =>
-        _tools.Values
+        _registered
             .Where(t => t.IsOffered)
             .Concat(UserTools)
             .Concat(McpTools)
@@ -426,7 +430,12 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         return found;
     }
 
-    private void Register(ITool tool) => _tools[tool.Name] = tool;
+    private void Register(ITool tool)
+    {
+        if (_tools.TryGetValue(tool.Name, out var previous)) _registered[_registered.IndexOf(previous)] = tool;
+        else _registered.Add(tool);
+        _tools[tool.Name] = tool;
+    }
 
     /// <summary>The background commands <c>run_command</c> started that still run.</summary>
     internal IReadOnlyList<(string Id, string Command)> RunningJobs =>

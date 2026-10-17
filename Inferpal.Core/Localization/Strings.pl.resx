@@ -156,7 +156,7 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
   <data name="LabelPersonaAutoSwitch" xml:space="preserve"><value>Dostosuj do języka otwartego pliku</value></data>
   <data name="HintPersonaAutoSwitch" xml:space="preserve"><value>Dodaje wskazówkę dla C#, Pythona lub TypeScriptu po zmianie pliku.</value></data>
   <data name="LabelOodaTurnThreshold" xml:space="preserve"><value>Podsumowuj sesję co</value></data>
-  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>Cel, postęp i otwarte pytania, zachowane w instrukcjach. 0: nigdy.</value></data>
+  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>Cel, postęp i otwarte pytania, zachowane w instrukcjach, gdy starsze tury zostaną podsumowane. 0: nigdy.</value></data>
   <data name="StatusOodaSummarizing" xml:space="preserve"><value>Generowanie podsumowania sesji…</value></data>
   <data name="MsgOodaRecap" xml:space="preserve"><value>**Podsumowanie sesji OODA** (tura {0})</value></data>
   <data name="OodaSummarizePrompt" xml:space="preserve"><value>Podsumuj naszą rozmowę do tej pory. Stwórz krótkie podsumowanie w stylu OODA z trzema sekcjami — Cel (co użytkownik chce osiągnąć), Postęp (już wykonane kroki) i Otwarte (pozostałe zadania lub nierozwiązane pytania). Maksymalnie 150 słów.</value></data>
@@ -855,6 +855,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="XrayHeader" xml:space="preserve"><value>🩻 Prześwietlenie kontekstu — prompt systemowy ≈ {0} tokenów</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>Bazowy prompt systemowy</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>Fragment persony</value></data>
+  <data name="XrayWithTheQuestion" xml:space="preserve"><value>z pytaniem</value></data>
   <data name="XrayLabelCustom" xml:space="preserve"><value>Niestandardowy prompt systemowy</value></data>
   <data name="XrayLabelTemplate" xml:space="preserve"><value>Szablon sesji</value></data>
   <data name="XrayLabelRules" xml:space="preserve"><value>Reguły (zastosowano: {0})</value></data>

@@ -23,8 +23,9 @@ alwaysApply: false
   block list of `- pattern` lines), `alwaysApply` (bool). Everything after the frontmatter is the
   rule body.
 - **Scoping**: a rule is injected when its glob matches the **active editor file**, or when
-  `alwaysApply: true` / no `globs`. Injected rules appear in the system prompt under a
-  `## Rules` section.
+  `alwaysApply: true` / no `globs`. Rules that always apply are in the system prompt under a
+  `## Rules` section; rules a glob selects ride with the question, in the `## Active file` block sent when the active
+  file changes — so opening another file never changes the start of the request, which a server's prompt cache keeps.
 - **Glob dialect** (the same one `indexExclude` uses): `*` matches within one path segment, `?` one
   character in a segment, `**/` any number of whole segments — including none, so `**/Program.cs`
   matches `Program.cs` and `src/Program.cs` but **not** `src/MyProgram.cs` — and a trailing `**`

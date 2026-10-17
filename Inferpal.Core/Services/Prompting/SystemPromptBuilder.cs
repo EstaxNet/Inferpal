@@ -19,7 +19,26 @@ internal enum PromptSectionKind { Base, Persona, Custom, Template, Pinned, Proje
 /// carries the identity when the label is not one; <c>XRayPanelPresenter.SectionId</c> is what
 /// reads it, and the user's on/off switch depends on that id not moving under it.
 /// </para></summary>
-internal sealed record PromptSection(PromptSectionKind Kind, string? Detail, string Content, string? Key = null);
+/// <param name="Placement">Where the layer is sent: in the system message, or with the question.</param>
+internal sealed record PromptSection(PromptSectionKind Kind, string? Detail, string Content, string? Key = null,
+                                     PromptPlacement Placement = PromptPlacement.System);
+
+/// <summary>Where a prompt layer is sent.</summary>
+/// <remarks>
+/// ⚠ A server that reuses its cache of the request's prefix (llama.cpp, LM Studio, Ollama, vLLM) reads again everything
+/// after the first character that changed. What follows the active file — the persona of its language, the
+/// <c>AGENTS.md</c> of its folders, the instructions and rules its globs select — therefore never sits in the system
+/// message, the head of every request: one file opened in another language would make the server read the whole
+/// conversation again. It rides with the question instead (<see cref="ActiveFileContext"/>).
+/// </remarks>
+internal enum PromptPlacement
+{
+    /// <summary>In the system message.</summary>
+    System,
+
+    /// <summary>With the question, in the active-file block.</summary>
+    Question,
+}
 
 /// <summary>
 /// Builds the layered system prompt sent with every chat/agent request:
@@ -183,9 +202,40 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
         string? activeFilePath    = null)
         => string.Concat(BuildSections(basePrompt, language, templateSuffix, projectRoot, activeFileRelPath, disabledSectionIds,
                                        activeFilePath)
-                         .Where(s => disabledSectionIds is null
-                                     || !disabledSectionIds.Contains(Presentation.XRayPanelPresenter.SectionId(s)))
+                         .Where(s => s.Placement == PromptPlacement.System
+                                     && (disabledSectionIds is null
+                                         || !disabledSectionIds.Contains(Presentation.XRayPanelPresenter.SectionId(s))))
                          .Select(s => s.Content));
+
+    /// <summary>
+    /// The active-file block of a question asked with these inputs (<see cref="ActiveFileContext.Compose"/>): what the
+    /// system message leaves to the question — the persona, the instructions of the file's folders and globs, the rules
+    /// its globs select. Empty without an active file.
+    /// </summary>
+    /// <param name="language">Active document language, as for <see cref="Build"/>.</param>
+    /// <param name="projectRoot">Project root containing <c>.inferpal/</c>, as for <see cref="Build"/>.</param>
+    /// <param name="activeFileRelPath">Active file relative to the root, as for <see cref="Build"/>.</param>
+    /// <param name="disabledSectionIds">Sections switched off from the X-Ray panel: not sent.</param>
+    /// <param name="activeFilePath">The active file, absolute, as for <see cref="Build"/>.</param>
+    public string ActiveFileBlock(
+        string? language          = null,
+        string? projectRoot       = null,
+        string? activeFileRelPath = null,
+        IReadOnlySet<string>? disabledSectionIds = null,
+        string? activeFilePath    = null)
+    {
+        // Named as the model's tools name it: relative to the root they confine to, absolute outside it.
+        var shown = RelativeActivePath(workspaceRoot, activeFilePath) ?? activeFilePath ?? activeFileRelPath;
+        if (string.IsNullOrEmpty(shown)) return string.Empty;
+        var sections = BuildSections(string.Empty, language, null, projectRoot, activeFileRelPath, disabledSectionIds, activeFilePath)
+            .Where(s => s.Placement == PromptPlacement.Question
+                        && (disabledSectionIds is null
+                            || !disabledSectionIds.Contains(Presentation.XRayPanelPresenter.SectionId(s))))
+            .ToList();
+        // The heading names the file's own language: the persona may stay the last code file's (a Markdown file opened
+        // keeps it), and the heading would then call README.md C#.
+        return ActiveFileContext.Compose(shown, LanguageOf(shown), sections);
+    }
 
     /// <summary>
     /// Same layering as <see cref="Build"/>, one <see cref="PromptSection"/> per contributing layer —
@@ -206,11 +256,13 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     {
         var sections = new List<PromptSection> { new(PromptSectionKind.Base, null, basePrompt + EnvironmentFacts()) };
 
-        if (config.PersonaAutoSwitch && !string.IsNullOrEmpty(language))
+        // With a file open only: the persona rides in the active-file block, and there is none without a file.
+        if (config.PersonaAutoSwitch && !string.IsNullOrEmpty(language)
+            && (!string.IsNullOrEmpty(activeFileRelPath) || !string.IsNullOrEmpty(activeFilePath)))
         {
             var snippet = PersonaSnippetFor(language);
             if (!string.IsNullOrEmpty(snippet))
-                sections.Add(new(PromptSectionKind.Persona, language, "\n\n" + snippet));
+                sections.Add(new(PromptSectionKind.Persona, language, "\n\n" + snippet, Placement: PromptPlacement.Question));
         }
 
         var custom = config.CustomSystemPrompt?.Trim();
@@ -270,7 +322,10 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
         }
 
         // The repository's own instructions to coding agents — after the pins, before .inferpal/, which wins a conflict.
-        AddRepoInstructions(files, RepoInstructions(projectRoot, activeFileRelPath, activeFilePath), disabledSectionIds);
+        // ⚠ The system message's instructions are composed as if no file were open: composed with the file's own, a root
+        // CLAUDE.md that imports a folder's AGENTS.md, or repeats a scoped instruction, would change with the file opened.
+        AddRepoInstructions(files, RepoInstructions(projectRoot), RepoInstructions(projectRoot, activeFileRelPath, activeFilePath),
+                            disabledSectionIds);
         AddSkillsCatalog(files, string.IsNullOrEmpty(workspaceRoot) ? projectRoot : workspaceRoot);
 
         if (projectRoot is not null)
@@ -279,16 +334,22 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
             AddFileSection(files, PromptSectionKind.Memory,         Path.Combine(projectRoot, ".inferpal", "memory.md"),  "Agent memory",    ".inferpal/memory.md");
             AddFileSection(files, PromptSectionKind.Notes,          NotesStore.NotesPath(projectRoot),                       "Project notes",   ".inferpal/notes.md");
 
-            // Project rules (.inferpal/rules/*.md) — scoped by glob against the active file.
+            // Project rules (.inferpal/rules/*.md): those that always apply in the system message, those their globs
+            // select for the active file with the question.
             try
             {
                 var rules = RulesService.Load(Path.Combine(projectRoot, ".inferpal", "rules"));
                 if (rules.Count > 0)
                 {
-                    var matched = rules.Where(r => RulesService.Matches(r, activeFileRelPath)).ToList();
-                    if (matched.Count > 0)
-                        files.Add(new(PromptSectionKind.Rules, matched.Count.ToString(), "",
-                                      RulesService.Render(matched), ".inferpal/rules"));
+                    var always = rules.Where(r => RulesService.Matches(r, null)).ToList();
+                    var scoped = rules.Where(r => !RulesService.Matches(r, null) && RulesService.Matches(r, activeFileRelPath))
+                                      .ToList();
+                    if (always.Count > 0)
+                        files.Add(new(PromptSectionKind.Rules, always.Count.ToString(), "",
+                                      RulesService.Render(always), ".inferpal/rules"));
+                    if (scoped.Count > 0)
+                        files.Add(new(PromptSectionKind.Rules, scoped.Count.ToString(), "",
+                                      RulesService.Render(scoped), ".inferpal/rules", Placement: PromptPlacement.Question));
                 }
             }
             catch (Exception ex) { Diagnostics.Swallow("SystemPromptBuilder.Rules", ex); }
@@ -310,10 +371,18 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
 
     /// <summary>A file-backed layer before the budget is applied: <see cref="Header"/> + the (capped) body.</summary>
     private sealed record FileLayer(
-        PromptSectionKind Kind, string? Detail, string Header, string Body, string What, string? Key = null)
+        PromptSectionKind Kind, string? Detail, string Header, string Body, string What, string? Key = null,
+        PromptPlacement Placement = PromptPlacement.System)
     {
-        public PromptSection Section(string body) => new(Kind, Detail, Header + body, Key);
+        public PromptSection Section(string body) => new(Kind, Detail, Header + body, Key, Placement);
     }
+
+    /// <summary>The active-file block's least budget: one character in this many of the files' budget
+    /// (<see cref="FileSectionsBudget"/>) — and what the system message's files leave of it when that is more.</summary>
+    /// <remarks>⚠ Taken after the system message's files, never shared with them: sharing, the part of a pinned file would
+    /// change with the file opened — and so would the head of every request (see <see cref="PromptPlacement"/>). What
+    /// they leave does not depend on the active file: none of them does.</remarks>
+    internal const int QuestionShareDivisor = 4;
 
     /// <summary>
     /// Characters the file-backed sections share, all of them together: one per token of the context window —
@@ -352,17 +421,27 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
         return allotted;
     }
 
-    // A section switched off is not sent, so it takes no share; it is still capped on its own, for the panel.
+    // A section switched off is not sent, so it takes no share; it is still capped on its own, for the panel. The
+    // system message's files share the budget; the active-file block has its own (QuestionShareDivisor).
     private static IEnumerable<PromptSection> ShareBudget(
         List<FileLayer> files, int budget, IReadOnlySet<string>? disabledSectionIds)
     {
-        var sent = Enumerable.Range(0, files.Count)
-            .Where(i => disabledSectionIds is null
-                        || !disabledSectionIds.Contains(Presentation.XRayPanelPresenter.SectionId(files[i].Section(""))))
-            .ToList();
-        var shares   = Allot(sent.Select(i => files[i].Body.Length).ToList(), budget);
         var allotted = files.Select(f => Math.Min(f.Body.Length, MaxFileSectionChars)).ToArray();
-        for (var j = 0; j < sent.Count; j++) allotted[sent[j]] = shares[j];
+        var systemUsed = 0;
+        foreach (var placement in new[] { PromptPlacement.System, PromptPlacement.Question })
+        {
+            var part = placement == PromptPlacement.System
+                ? Math.Max(0, budget)
+                : Math.Max(Math.Max(0, budget) / QuestionShareDivisor, Math.Max(0, budget) - systemUsed);
+            var sent = Enumerable.Range(0, files.Count)
+                .Where(i => files[i].Placement == placement
+                            && (disabledSectionIds is null
+                                || !disabledSectionIds.Contains(Presentation.XRayPanelPresenter.SectionId(files[i].Section("")))))
+                .ToList();
+            var shares = Allot(sent.Select(i => files[i].Body.Length).ToList(), part);
+            for (var j = 0; j < sent.Count; j++) allotted[sent[j]] = shares[j];
+            if (placement == PromptPlacement.System) systemUsed = shares.Sum();
+        }
 
         for (var i = 0; i < files.Count; i++)
             yield return files[i].Section(CapSection(files[i].Body, files[i].What, allotted[i], KeepsItsEnd(files[i].Kind)));
@@ -523,24 +602,41 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     /// question.
     /// </para>
     /// </remarks>
-    private static void AddRepoInstructions(List<FileLayer> files, RepoInstructionPlan? plan, IReadOnlySet<string>? disabledSectionIds)
+    private static void AddRepoInstructions(
+        List<FileLayer> files, RepoInstructionPlan? rootPlan, RepoInstructionPlan? plan, IReadOnlySet<string>? disabledSectionIds)
     {
         if (plan is null) return;
         var headed = false;
-        foreach (var sent in plan.Composed.Sent)
+        // The root's in the system message, composed alone; then what the active file adds, with the question.
+        var layers = (rootPlan?.Composed.Sent ?? []).Select(s => (Sent: s, Plan: rootPlan!, Placement: PromptPlacement.System))
+            .Concat(plan.Composed.Sent.Where(s => FollowsTheActiveFile(s.Instruction, plan))
+                                      .Select(s => (Sent: s, Plan: plan, Placement: PromptPlacement.Question)));
+        foreach (var (sent, from, placement) in layers)
         {
-            var relative = plan.Relative(sent.Instruction.Source.Path);
-            var layer    = new FileLayer(PromptSectionKind.RepoInstructions, relative, string.Empty, sent.Text, relative,
-                                         Key: sent.Instruction.Source.Path);
-            var isSent   = disabledSectionIds is null
-                           || !disabledSectionIds.Contains(Presentation.XRayPanelPresenter.SectionId(layer.Section("")));
-            var heading  = isSent && !headed
+            var relative  = from.Relative(sent.Instruction.Source.Path);
+            var layer     = new FileLayer(PromptSectionKind.RepoInstructions, relative, string.Empty, sent.Text, relative,
+                                          Key: sent.Instruction.Source.Path, Placement: placement);
+            var isSent    = disabledSectionIds is null
+                            || !disabledSectionIds.Contains(Presentation.XRayPanelPresenter.SectionId(layer.Section("")));
+            // The heading is the system message's; the active-file block says where its own come from.
+            var heading   = placement == PromptPlacement.System && isSent && !headed
                 ? "\n\n" + ModelPrompts.RepoInstructionsHeading + "\n\n" + ModelPrompts.RepoInstructionsIntro
                 : string.Empty;
-            headed |= isSent;
+            headed |= placement == PromptPlacement.System && isSent;
             files.Add(layer with { Header = heading + "\n\n### " + relative + "\n\n" });
         }
     }
+
+    /// <summary>
+    /// Whether an instruction is sent because of the active file: the <c>AGENTS.md</c> of a folder below the search root
+    /// (found down to the active file's folder), or one its front matter scopes to files.
+    /// </summary>
+    internal static bool FollowsTheActiveFile(RepoInstruction instruction, RepoInstructionPlan plan) =>
+        instruction.Scope == RepoInstructionScope.Files
+        || (instruction.Source.Format.Placement == RepoInstructionPlacement.Chain
+            && Path.GetDirectoryName(instruction.Source.Path) is { } folder
+            && plan.Discovery.SearchRoot is { } root
+            && !PathComparer.SameDirectory(folder, root));
 
     /// <summary>
     /// What the repository's instructions are for a question asked from <paramref name="root"/> with

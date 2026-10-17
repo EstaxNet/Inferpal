@@ -261,6 +261,7 @@ internal partial class InferpalToolWindowData
             _baseSystemPrompt         = BuildSystemPrompt();
             _history               = [new("system", _baseSystemPrompt)];
             _oodaSummary           = string.Empty;
+            _recapInSystem         = string.Empty;
             _conversationTurnCount = 0;
             _currentSessionName    = string.Empty;   // the archived conversation keeps its own file
             _conversationRoot.Discarded();           // the next conversation belongs where it is first saved
@@ -355,6 +356,7 @@ internal partial class InferpalToolWindowData
         _baseSystemPrompt         = BuildSystemPrompt();
         _history                  = SessionManager.BuildRestoredHistory(_baseSystemPrompt, messages);
         _oodaSummary              = string.Empty;
+        _recapInSystem            = string.Empty;
         _conversationTurnCount    = 0;
         _currentSessionName       = sessionName == "last_session" ? string.Empty : sessionName;
         ResetTurnAccounting();

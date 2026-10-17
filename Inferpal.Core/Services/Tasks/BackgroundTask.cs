@@ -35,6 +35,11 @@ internal enum BackgroundTaskState
 /// How many steps the task took. <paramref name="Steps"/> keeps only the last ones: a report that counted them would
 /// read "200 steps" for a run of 600.
 /// </param>
+/// <param name="Context">
+/// What a question asked at submission would have carried about the file then open — its active-file block
+/// (<c>ActiveFileContext</c>), sent before the objective; <c>null</c> = none. ⚠ Taken at SUBMISSION: the objective is
+/// about the file open when the user typed it, not the one open when the queue reaches it.
+/// </param>
 internal sealed record BackgroundTaskSnapshot(
     string              Id,
     string              Objective,
@@ -48,7 +53,8 @@ internal sealed record BackgroundTaskSnapshot(
     int                 QueuePosition,
     bool                ProposeWrites = false,
     IReadOnlyList<TaskProposal>? Proposals = null,
-    int                 StepsTaken = 0)
+    int                 StepsTaken = 0,
+    string?             Context = null)
 {
     /// <summary>Steps taken that the journal no longer holds.</summary>
     internal int StepsNotKept => Math.Max(0, StepsTaken - Steps.Count);

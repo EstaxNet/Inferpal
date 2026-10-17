@@ -385,6 +385,9 @@ internal partial class InferpalToolWindowData
     /// </summary>
     private async Task HandleTaskCommandAsync(string[] parts)
     {
+        // The active-file block a submission carries, read on the VM context, where the X-Ray switches live: the queue
+        // reads it at submission, from this thread.
+        await RunOnVMContextAsync(() => _taskSubmissionBlock = BuildActiveFileBlock());
         var result = Services.Commands.TaskCommandHandler.Handle(BackgroundTasks(), parts);
 
         // `/task apply <id> <n>`: the handler names the proposal, the write goes through the real
@@ -468,7 +471,7 @@ internal partial class InferpalToolWindowData
             var history = new List<ChatMessageDto>();
             if (!string.IsNullOrWhiteSpace(systemPrompt))
                 history.Add(new("system", systemPrompt + suffix));
-            history.Add(new("user", task.Objective));
+            history.Add(new("user", Services.Agent.ChatTurnPolicy.WithInjectedContext(task.Objective, task.Context)));
 
             // RunAgentAsync never throws on network/backend errors — they come back in the result, flagged Failed, and
             // TaskRunOutcome.Of turns that into a failed task with its cause.
@@ -484,7 +487,9 @@ internal partial class InferpalToolWindowData
             return BackgroundTaskQueue.TaskRunOutcome.Of(run, recorder?.Proposals ?? []);
         },
         // The workspace a task is submitted in is the one it runs in, or it does not run (another solution opened).
-        currentRoot: () => _indexService.RootDir);
+        currentRoot: () => _indexService.RootDir,
+        // The active file the task was submitted with: its instructions ride with the objective, as with a question.
+        submissionContext: () => _taskSubmissionBlock);
 
         // A finished task must announce itself: its report is worthless if nobody knows it exists.
         _backgroundTasks.TaskFinished += snapshot =>
@@ -503,6 +508,10 @@ internal partial class InferpalToolWindowData
         {
             var systemPrompt = _history.Count > 0 && _history[0].Role == "system"
                 ? _history[0].Content : null;
+            // The active file's instructions ride with each fix request (the system prompt has none) — read on the VM
+            // context, where the X-Ray switches live.
+            var activeFile = string.Empty;
+            await RunOnVMContextAsync(() => activeFile = BuildActiveFileBlock());
 
             var result = await Services.Commands.TddCommandHandler.HandleAsync(
                 _client, _config, _tools, systemPrompt, parts, FindProjectRoot(),
@@ -528,7 +537,8 @@ internal partial class InferpalToolWindowData
                 }),
                 tok,
                 debugCapture: new Services.Debugging.SignalTestDebugCapture(),
-                approval:     _tools.Approval);
+                approval:     _tools.Approval,
+                activeFileContext: activeFile);
             await ShowInfoAsync(result.Message);
         }
         catch (OperationCanceledException)

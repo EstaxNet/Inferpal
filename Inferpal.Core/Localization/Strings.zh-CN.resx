@@ -159,7 +159,7 @@
   <data name="LabelPersonaAutoSwitch" xml:space="preserve"><value>适应当前打开文件的语言</value></data>
   <data name="HintPersonaAutoSwitch" xml:space="preserve"><value>切换文件时添加 C#、Python 或 TypeScript 的提示。</value></data>
   <data name="LabelOodaTurnThreshold" xml:space="preserve"><value>会话回顾间隔</value></data>
-  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>目标、进展和待解决的问题会保存在指令中。0：从不。</value></data>
+  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>目标、进展和待解决的问题会在较早的对话被总结时保存在指令中。0：从不。</value></data>
   <data name="StatusOodaSummarizing" xml:space="preserve"><value>正在生成会话摘要…</value></data>
   <data name="MsgOodaRecap" xml:space="preserve"><value>**OODA 会话摘要**（第 {0} 轮）</value></data>
   <data name="OodaSummarizePrompt" xml:space="preserve"><value>总结我们到目前为止的对话。用三个部分生成 OODA 风格的摘要——目标（用户想要实现的目标）、进度（已完成的步骤）和待办（剩余任务或未解决的问题）。总字数不超过 150 字。</value></data>
@@ -855,6 +855,7 @@
   <data name="XrayHeader" xml:space="preserve"><value>🩻 上下文透视 — 系统提示词 ≈ {0} 个 token</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>基础系统提示词</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>角色片段</value></data>
+  <data name="XrayWithTheQuestion" xml:space="preserve"><value>随问题发送</value></data>
   <data name="XrayLabelCustom" xml:space="preserve"><value>自定义系统提示词</value></data>
   <data name="XrayLabelTemplate" xml:space="preserve"><value>会话模板</value></data>
   <data name="XrayLabelRules" xml:space="preserve"><value>规则（应用 {0} 条）</value></data>

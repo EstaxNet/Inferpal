@@ -64,7 +64,8 @@ internal sealed partial class HostServer
         return SettingsWidgets.ContextUsage(XRayPanelPresenter.Build(
             BuildPromptSections(s), s.XrayDisabledSections,
             AgentOrchestrator.EstimateConversationTokens(SnapshotHistory(s)), s.ContextWindowInUse,
-            toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode)));
+            toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode),
+            questionLayersInHistory: QuestionLayersInHistory(s)));
     }
 
     /// <summary>`settings/repoInstructions` — the instruction files the repository gives coding agents, and what the next
@@ -112,7 +113,8 @@ internal sealed partial class HostServer
         var prompt = XRayPanelPresenter.Build(
             BuildPromptSections(s), s.XrayDisabledSections,
             AgentOrchestrator.EstimateConversationTokens(SnapshotHistory(s)), s.ContextWindowInUse,
-            toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode));
+            toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode),
+            questionLayersInHistory: QuestionLayersInHistory(s));
         return SettingsWidgets.PinnedSizes((p.Pins ?? string.Empty).Split('\n')
             .Select(l => l.Trim().TrimStart('#').Trim()).Where(l => l.Length > 0), prompt);
     }

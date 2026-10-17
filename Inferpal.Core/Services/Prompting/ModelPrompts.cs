@@ -24,12 +24,33 @@ internal static class ModelPrompts
     /// <summary>
     /// Under <see cref="RepoInstructionsHeading"/>, once: where these instructions come from and which wins a conflict.
     /// </summary>
-    /// <remarks>The order states the precedence: the closest folder last, then Inferpal's own project files after
-    /// them all — written for this tool, by this team, so they win.</remarks>
+    /// <remarks>The order states the precedence: Inferpal's own project files after them — written for this tool, by
+    /// this team, so they win. The instructions of the active file's folders and globs ride with the question
+    /// (<see cref="ActiveFileIntro"/>).</remarks>
     public const string RepoInstructionsIntro =
-        "The repository's own instructions for coding agents follow, from its root down to the active file's folder — "
-        + "the closest last, and it wins over those before it. Where they conflict with the project context, agent "
+        "The repository's own instructions for coding agents follow. Where they conflict with the project context, agent "
         + "memory, project notes or rules after them, those win.";
+
+    /// <summary>
+    /// Under the active-file block's heading (<see cref="ActiveFileContext"/>): what it holds, how long it holds, and
+    /// which wins a conflict.
+    /// </summary>
+    /// <remarks>The precedence is the one the system message had when these layers were in it: a folder's instructions
+    /// win over the repository's root instructions, Inferpal's own files over both, and the closest folder last.</remarks>
+    public const string ActiveFileIntro =
+        "The file the user has open. What follows applies while it is active and replaces any earlier active-file block: "
+        + "the repository's instructions for its folders and globs (the closest folder last) win over the repository "
+        + "instructions in the system prompt; the project context, agent memory, project notes and rules still win over "
+        + "them.";
+
+    /// <summary>The active-file block of a file no instruction applies to, after a block that held some.</summary>
+    public const string NoFileInstructions =
+        "No instruction of the repository or the project applies to this file: those of the earlier active-file block no "
+        + "longer do.";
+
+    /// <summary>The active-file block once the file is closed: the instructions of the earlier block no longer hold.</summary>
+    public const string NoActiveFile =
+        "No file is open any more: the instructions of the earlier active-file block no longer apply.";
 
     /// <summary>
     /// In place of a Claude Code <c>!`command`</c> line of a repository command: Claude Code runs it before sending and

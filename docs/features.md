@@ -183,10 +183,11 @@ exists.
   down to the active file's folder), `.github/copilot-instructions.md` and
   `.github/instructions/*.instructions.md` (`applyTo`), `CLAUDE.md` with the files it imports,
   `.claude/rules/`, `.cursor/rules/*.mdc`, `.cursorrules`, `.clinerules`, `.roo/rules/` and
-  `.continue/rules/` are read as each tool reads them and sent with every question — always, or
-  when the active file matches their globs. They come after pinned files and before `.inferpal/`,
-  which wins a conflict; a file identical to another is sent once; they share the prompt's file
-  budget and a cut says so. Rules meant to load on demand or by hand are not sent yet.
+  `.continue/rules/` are read as each tool reads them and sent — those of the repository's root in
+  the system prompt, after pinned files and before `.inferpal/`, which wins a conflict; those of the
+  active file's folders and globs with the question, in a block sent when the active file changes,
+  so the start of the request never moves with it. A file identical to another is sent once; the
+  root's share the prompt's file budget, the active file's have their own, and a cut says so. Rules meant to load on demand or by hand are not sent yet.
   `/instructions` and the Context settings page list every file found — its tool, when it
   applies, what the next question sends of it (cut or whole), and why not when it does not —
   and `repoInstructionFamilies` chooses which tools' files are read (all by default).

@@ -152,7 +152,7 @@ reported as unreachable after 15 s, not after the operating system's own retries
 |---|---|---|---|
 | `promptTemplates` | string | `""` | User slash templates, one per line: `/name=text` (placeholder `{args}`; without it, the words typed after the command are added at the end). They win over a command file of the same name |
 | `customTools` | string | `""` | Custom shell tools, one per line: `name=command` |
-| `personaAutoSwitch` | bool | `true` | Persona adapts to the active file's language |
+| `personaAutoSwitch` | bool | `true` | Persona adapts to the active file's language (sent with the question, when the active file changes) |
 | `mcpEnabled` | bool | `false` | Spawn MCP servers at startup and expose their tools |
 | `mcpServersJson` | string | `""` | MCP server map (Claude Desktop / Continue JSON) |
 | `docSitesJson` | string | `""` | `@Docs` indexed sources (managed via `/docs`) |

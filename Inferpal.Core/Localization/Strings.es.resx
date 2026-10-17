@@ -159,7 +159,7 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
   <data name="LabelPersonaAutoSwitch" xml:space="preserve"><value>Adaptarse al lenguaje del archivo abierto</value></data>
   <data name="HintPersonaAutoSwitch" xml:space="preserve"><value>Añade una pista de C#, Python o TypeScript cuando cambia de archivo.</value></data>
   <data name="LabelOodaTurnThreshold" xml:space="preserve"><value>Recapitular la sesión cada</value></data>
-  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>Objetivo, progreso y preguntas abiertas, guardados en las instrucciones. 0: nunca.</value></data>
+  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>Objetivo, progreso y preguntas abiertas, guardados en las instrucciones cuando se resumen los turnos antiguos. 0: nunca.</value></data>
   <data name="StatusOodaSummarizing" xml:space="preserve"><value>Generando resumen de sesión…</value></data>
   <data name="MsgOodaRecap" xml:space="preserve"><value>**Resumen de sesión OODA** (turno {0})</value></data>
   <data name="OodaSummarizePrompt" xml:space="preserve"><value>Resume nuestra conversación hasta ahora. Produce un resumen de estilo OODA con tres secciones — Objetivo (lo que el usuario quiere lograr), Progreso (pasos ya completados) y Abierto (tareas pendientes o preguntas sin resolver). Máximo 150 palabras.</value></data>
@@ -855,6 +855,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="XrayHeader" xml:space="preserve"><value>🩻 Radiografía del contexto — prompt del sistema ≈ {0} tokens</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>Prompt del sistema base</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>Fragmento de persona</value></data>
+  <data name="XrayWithTheQuestion" xml:space="preserve"><value>con la pregunta</value></data>
   <data name="XrayLabelCustom" xml:space="preserve"><value>Prompt del sistema personalizado</value></data>
   <data name="XrayLabelTemplate" xml:space="preserve"><value>Plantilla de sesión</value></data>
   <data name="XrayLabelRules" xml:space="preserve"><value>Reglas ({0} aplicadas)</value></data>

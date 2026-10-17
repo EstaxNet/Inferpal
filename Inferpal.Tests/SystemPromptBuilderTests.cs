@@ -44,13 +44,15 @@ public class SystemPromptBuilderTests : IDisposable
     }
 
     [Fact]
-    public void Persona_AppendedOnlyWhenAutoSwitchEnabled()
+    public void Persona_RidesWithTheQuestion_OnlyWhenAutoSwitchEnabled()
     {
-        var on  = new SystemPromptBuilder(new InferpalConfig { PersonaAutoSwitch = true  }).Build("BASE", language: "csharp");
-        var off = new SystemPromptBuilder(new InferpalConfig { PersonaAutoSwitch = false }).Build("BASE", language: "csharp");
+        var on  = new SystemPromptBuilder(new InferpalConfig { PersonaAutoSwitch = true  });
+        var off = new SystemPromptBuilder(new InferpalConfig { PersonaAutoSwitch = false });
 
-        Assert.Contains("idiomatic C#", on);
-        Assert.DoesNotContain("idiomatic C#", off);
+        Assert.Contains("idiomatic C#", on.ActiveFileBlock(language: "csharp", activeFileRelPath: "src/A.cs"));
+        Assert.DoesNotContain("idiomatic C#", off.ActiveFileBlock(language: "csharp", activeFileRelPath: "src/A.cs"));
+        // The head of every request does not follow the language of the file opened.
+        Assert.Equal(on.Build("BASE"), on.Build("BASE", language: "csharp"));
     }
 
     [Fact]
@@ -109,7 +111,7 @@ public class SystemPromptBuilderTests : IDisposable
     }
 
     [Fact]
-    public void Rules_AreScopedByGlob_AgainstActiveFile()
+    public void Rules_AreScopedByGlob_AgainstActiveFile_TheScopedOnesWithTheQuestion()
     {
         WriteProjectFile(Path.Combine(".inferpal", "rules", "csharp.md"),
             "---\ndescription: CS rule\nglobs: **/*.cs\n---\nUse PascalCase.");
@@ -118,16 +120,16 @@ public class SystemPromptBuilderTests : IDisposable
         var builder = new SystemPromptBuilder(new InferpalConfig());
 
         var forCs = builder.Build("BASE", projectRoot: _root, activeFileRelPath: "src/Program.cs");
-        Assert.Contains("Use PascalCase.", forCs);
-        Assert.Contains("Be concise.", forCs);
-
         var forTs = builder.Build("BASE", projectRoot: _root, activeFileRelPath: "src/app.ts");
-        Assert.DoesNotContain("Use PascalCase.", forTs);  // glob does not match the active file
-        Assert.Contains("Be concise.", forTs);            // alwaysApply ignores the active file
+        var none  = builder.Build("BASE", projectRoot: _root, activeFileRelPath: null);
+        Assert.Contains("Be concise.", forCs);            // alwaysApply ignores the active file, in the system message
+        Assert.Equal(forCs, forTs);
+        Assert.Equal(forCs, none);
+        Assert.DoesNotContain("Use PascalCase.", forCs);
 
-        var noFile = builder.Build("BASE", projectRoot: _root, activeFileRelPath: null);
-        Assert.DoesNotContain("Use PascalCase.", noFile);
-        Assert.Contains("Be concise.", noFile);
+        Assert.Contains("Use PascalCase.", builder.ActiveFileBlock(projectRoot: _root, activeFileRelPath: "src/Program.cs"));
+        Assert.DoesNotContain("Be concise.", builder.ActiveFileBlock(projectRoot: _root, activeFileRelPath: "src/Program.cs"));
+        Assert.DoesNotContain("Use PascalCase.", builder.ActiveFileBlock(projectRoot: _root, activeFileRelPath: "src/app.ts"));
     }
 
     [Fact]

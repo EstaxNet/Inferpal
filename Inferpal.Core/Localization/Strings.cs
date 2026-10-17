@@ -1490,6 +1490,7 @@ internal static class Strings
     public static string XrayHeader(string tokens)           => Format(Get(nameof(XrayHeader)), tokens);
     public static string XrayLabelBase                       => Get(nameof(XrayLabelBase));
     public static string XrayLabelPersona                    => Get(nameof(XrayLabelPersona));
+    public static string XrayWithTheQuestion                 => Get(nameof(XrayWithTheQuestion));
     public static string XrayLabelCustom                     => Get(nameof(XrayLabelCustom));
     public static string XrayLabelTemplate                   => Get(nameof(XrayLabelTemplate));
     public static string XrayLabelRules(string count)        => Format(Get(nameof(XrayLabelRules)), count);

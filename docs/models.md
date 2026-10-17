@@ -110,7 +110,10 @@ calls and results written as text, and keeps doing so for that model for the res
 an agent; only the transport changes.
 
 **Constraints Inferpal respects.** The templates of Qwen3.8, Bonsai and Devstral refuse a system message anywhere but
-first; Inferpal never sends one elsewhere. A response that loops (the same passage, or the same tool call, again and
+first; Inferpal never sends one elsewhere. The start of the request does not change with the active file: what follows
+it rides with the question, so a server that keeps its prompt cache reads only what is new — on the test server, a
+question asked after opening another file starts in under a second on a long conversation, instead of 33 s spent
+reading it all again. A response that loops (the same passage, or the same tool call, again and
 again) is stopped and said to be incomplete, instead of running until the context window is full.
 
 **A long prompt takes time to read.** Before its first word, the server reads the whole prompt — the conversation,

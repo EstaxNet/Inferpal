@@ -46,7 +46,8 @@ internal static class TddCommandHandler
         Action<string>? onProgress, Action<string, bool>? onTestReport,
         Action<string>? onStep, Action<string>? onToken, Action<string>? onFixResult,
         CancellationToken ct,
-        Debugging.ITestDebugCapture? debugCapture = null, IApprovalService? approval = null)
+        Debugging.ITestDebugCapture? debugCapture = null, IApprovalService? approval = null,
+        string? activeFileContext = null)
     {
         var filter = parts.Length >= 2 ? string.Join(" ", parts[1..]) : null;
         bool captureApproved = false, captureDeclined = false, captureAbsenceAnnounced = false;
@@ -162,7 +163,8 @@ internal static class TddCommandHandler
 
             var history = new List<ChatMessageDto>();
             if (!string.IsNullOrWhiteSpace(systemPrompt)) history.Add(new("system", systemPrompt));
-            history.Add(new("user", BuildFixPrompt(output, filter, debugBlock)));
+            // The active file's instructions ride with the request, as with a question: the system prompt has none.
+            history.Add(new("user", ChatTurnPolicy.WithInjectedContext(BuildFixPrompt(output, filter, debugBlock), activeFileContext)));
 
             // RunAgentAsync never throws (network errors come back inside AgentResult);
             // only cancellation propagates, which is exactly what we want here.

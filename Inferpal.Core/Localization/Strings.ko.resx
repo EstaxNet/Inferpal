@@ -156,7 +156,7 @@
   <data name="LabelPersonaAutoSwitch" xml:space="preserve"><value>열린 파일의 언어에 맞추기</value></data>
   <data name="HintPersonaAutoSwitch" xml:space="preserve"><value>파일을 바꾸면 C#, Python, TypeScript용 힌트를 더합니다.</value></data>
   <data name="LabelOodaTurnThreshold" xml:space="preserve"><value>세션 요약 주기</value></data>
-  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>목표, 진행 상황, 남은 질문을 지침에 남깁니다. 0: 사용 안 함.</value></data>
+  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>목표, 진행 상황, 남은 질문을 이전 대화가 요약될 때 지침에 남깁니다. 0: 사용 안 함.</value></data>
   <data name="StatusOodaSummarizing" xml:space="preserve"><value>세션 요약 생성 중…</value></data>
   <data name="MsgOodaRecap" xml:space="preserve"><value>**OODA 세션 요약** (턴 {0})</value></data>
   <data name="OodaSummarizePrompt" xml:space="preserve"><value>지금까지의 대화를 요약해 주세요. OODA 스타일 요약을 세 섹션으로 작성하세요 — 목표(사용자가 달성하려는 것), 진행(이미 완료된 단계), 미해결(남은 작업 또는 해결되지 않은 질문). 총 150단어 이내로 작성하세요.</value></data>
@@ -855,6 +855,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="XrayHeader" xml:space="preserve"><value>🩻 컨텍스트 엑스레이 — 시스템 프롬프트 ≈ {0} 토큰</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>기본 시스템 프롬프트</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>페르소나 스니펫</value></data>
+  <data name="XrayWithTheQuestion" xml:space="preserve"><value>질문과 함께</value></data>
   <data name="XrayLabelCustom" xml:space="preserve"><value>사용자 지정 시스템 프롬프트</value></data>
   <data name="XrayLabelTemplate" xml:space="preserve"><value>세션 템플릿</value></data>
   <data name="XrayLabelRules" xml:space="preserve"><value>규칙(적용 {0}개)</value></data>

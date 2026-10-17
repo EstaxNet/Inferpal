@@ -156,7 +156,7 @@
   <data name="LabelPersonaAutoSwitch" xml:space="preserve"><value>Подстраиваться под язык открытого файла</value></data>
   <data name="HintPersonaAutoSwitch" xml:space="preserve"><value>Добавляет подсказку для C#, Python или TypeScript при смене файла.</value></data>
   <data name="LabelOodaTurnThreshold" xml:space="preserve"><value>Подводить итог сессии каждые</value></data>
-  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>Цель, ход работы и открытые вопросы сохраняются в инструкциях. 0 — никогда.</value></data>
+  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>Цель, ход работы и открытые вопросы сохраняются в инструкциях, когда старые ходы сворачиваются в сводку. 0 — никогда.</value></data>
   <data name="StatusOodaSummarizing" xml:space="preserve"><value>Генерация сводки сессии…</value></data>
   <data name="MsgOodaRecap" xml:space="preserve"><value>**Сводка сессии OODA** (ход {0})</value></data>
   <data name="OodaSummarizePrompt" xml:space="preserve"><value>Подведи итог нашего разговора до сих пор. Составь краткую сводку в стиле OODA с тремя разделами — Цель (чего хочет достичь пользователь), Прогресс (уже выполненные шаги) и Открытые (оставшиеся задачи или неразрешённые вопросы). Не более 150 слов.</value></data>
@@ -855,6 +855,7 @@
   <data name="XrayHeader" xml:space="preserve"><value>🩻 Рентген контекста — системный промпт ≈ {0} токенов</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>Базовый системный промпт</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>Фрагмент персоны</value></data>
+  <data name="XrayWithTheQuestion" xml:space="preserve"><value>с вопросом</value></data>
   <data name="XrayLabelCustom" xml:space="preserve"><value>Пользовательский системный промпт</value></data>
   <data name="XrayLabelTemplate" xml:space="preserve"><value>Шаблон сессии</value></data>
   <data name="XrayLabelRules" xml:space="preserve"><value>Правила (применено: {0})</value></data>

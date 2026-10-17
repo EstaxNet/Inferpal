@@ -135,7 +135,7 @@ public partial class HostServerTests
             await h.InitializeAsync(rootDir: root).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
             await h.Client.NotifyWithParameterObjectAsync("editor/didChangeActiveDocument",
                 new { path = Path.Combine(root, "src", "Program.cs") });
-            await WaitForXraySectionAsync(h, id => id == "Rules");   // witness
+            await WaitForXraySectionAsync(h, id => id == "Rules|scoped");   // witness
 
             var xray = await h.Client.InvokeWithParameterObjectAsync<SlashCommandResult>(
                 "command/slash", new { text = "/xray" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));

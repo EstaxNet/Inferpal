@@ -86,6 +86,8 @@ internal sealed class BackgroundTaskQueue : IDisposable
         public required DateTimeOffset CreatedAt;
         /// <summary>The workspace the task was submitted in — the one its objective is about.</summary>
         public string? WorkspaceRoot;
+        /// <summary>The active-file block at submission (<see cref="BackgroundTaskSnapshot.Context"/>).</summary>
+        public string? Context;
         public bool ProposeWrites;
         public IReadOnlyList<TaskProposal> Proposals = [];
         /// <summary>Where a proposal-mode task records its changes while it runs.</summary>
@@ -108,6 +110,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
     private readonly Func<CancellationToken, Task> _waitForChatIdle;
     private readonly Func<DateTimeOffset>          _now;
     private readonly Func<string?>?                _currentRoot;
+    private readonly Func<string?>?                _submissionContext;
 
     private readonly object                  _lock = new();
     private readonly Queue<Job>              _pending = new();
@@ -124,27 +127,33 @@ internal sealed class BackgroundTaskQueue : IDisposable
     /// <param name="now">Clock, overridable so tests can assert timings.</param>
     /// <param name="currentRoot">The workspace open now: read at submission and again at the start (see
     /// <see cref="RunJobAsync"/>); <c>null</c> when the front-end's workspace cannot change.</param>
+    /// <param name="submissionContext">The active-file block a question would carry now, read at submission
+    /// (<see cref="BackgroundTaskSnapshot.Context"/>); <c>null</c> = none.</param>
     internal BackgroundTaskQueue(
         TaskRunner runner,
         Func<CancellationToken, Task>? waitForChatIdle = null,
         Func<DateTimeOffset>? now = null,
-        Func<string?>? currentRoot = null)
-        : this((task, onStep, _, ct) => runner(task, onStep, ct), waitForChatIdle, now, currentRoot) { }
+        Func<string?>? currentRoot = null,
+        Func<string?>? submissionContext = null)
+        : this((task, onStep, _, ct) => runner(task, onStep, ct), waitForChatIdle, now, currentRoot, submissionContext) { }
 
     /// <param name="runner">Executes a task, recording its proposals in the recorder the queue hands it.</param>
     /// <param name="waitForChatIdle">Yield point before taking the slot; defaults to the GPU scheduler.</param>
     /// <param name="now">Clock, overridable so tests can assert timings.</param>
     /// <param name="currentRoot">The workspace open now (see the other constructor).</param>
+    /// <param name="submissionContext">The active-file block now (see the other constructor).</param>
     internal BackgroundTaskQueue(
         ProposingTaskRunner runner,
         Func<CancellationToken, Task>? waitForChatIdle = null,
         Func<DateTimeOffset>? now = null,
-        Func<string?>? currentRoot = null)
+        Func<string?>? currentRoot = null,
+        Func<string?>? submissionContext = null)
     {
-        _runner          = runner;
-        _waitForChatIdle = waitForChatIdle ?? Hardware.GpuScheduler.WaitForChatIdleAsync;
-        _now             = now ?? (() => DateTimeOffset.UtcNow);
-        _currentRoot     = currentRoot;
+        _runner            = runner;
+        _waitForChatIdle   = waitForChatIdle ?? Hardware.GpuScheduler.WaitForChatIdleAsync;
+        _now               = now ?? (() => DateTimeOffset.UtcNow);
+        _currentRoot       = currentRoot;
+        _submissionContext = submissionContext;
     }
 
     /// <summary>Raised once per task when it reaches a terminal state — the front-end's notification
@@ -159,6 +168,10 @@ internal sealed class BackgroundTaskQueue : IDisposable
     /// </summary>
     internal string? Submit(string objective, bool proposeWrites = false)
     {
+        // Read before the lock: it reads the editor's state and the repository's files.
+        string? context = null;
+        try { context = _submissionContext?.Invoke(); }
+        catch (Exception ex) { Diagnostics.Swallow("BackgroundTaskQueue.SubmissionContext", ex); }
         Job job;
         lock (_lock)
         {
@@ -169,6 +182,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
             {
                 Id = "t" + (++_seq), Objective = objective, CreatedAt = _now(),
                 ProposeWrites = proposeWrites, WorkspaceRoot = _currentRoot?.Invoke(),
+                Context = string.IsNullOrWhiteSpace(context) ? null : context,
             };
             _pending.Enqueue(job);
 
@@ -427,7 +441,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
         return new BackgroundTaskSnapshot(
             job.Id, job.Objective, job.State, job.CreatedAt, job.StartedAt, job.FinishedAt,
             job.Result, job.Error, job.Steps.ToArray(), position,
-            job.ProposeWrites, job.Proposals, job.StepsTaken);
+            job.ProposeWrites, job.Proposals, job.StepsTaken, job.Context);
     }
 
     private void RaiseFinished(BackgroundTaskSnapshot snapshot)

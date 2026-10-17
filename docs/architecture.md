@@ -120,20 +120,26 @@ errors — it converts them into a result; only cancellation propagates.
 
 ## System prompt layering
 
-`BuildSystemPrompt()` assembles the prompt in this order at the start of each conversation:
+`BuildSystemPrompt()` assembles the system message in this order:
 
 ```
-[Base prompt]          ← hardcoded in the extension
-[Custom system prompt] ← Settings (optional)
-[Pinned files]         ← up to 3 pinned context files (optional)
-[## Project context]   ← .inferpal/context.md (optional)
-[## Agent memory]      ← .inferpal/memory.md (optional)
-[## Project notes]     ← .inferpal/notes.md (optional)
-[## Rules]             ← .inferpal/rules/*.md matching the active file (optional)
+[Base prompt]                ← hardcoded in the extension, with the environment's facts
+[Custom system prompt]       ← Settings (optional)
+[Template]                   ← the active /template (optional)
+[Pinned files]               ← up to 3 pinned context files (optional)
+[## Repository instructions] ← AGENTS.md, CLAUDE.md, … of the repository's root (optional)
+[## Project context]         ← .inferpal/context.md (optional)
+[## Agent memory]            ← .inferpal/memory.md (optional)
+[## Project notes]           ← .inferpal/notes.md (optional)
+[## Rules]                   ← .inferpal/rules/*.md that always apply (optional)
 ```
 
-It is rebuilt on `/clear`, on session load, and when the active editor file changes (so
-glob-scoped rules and the persona re-scope automatically).
+It is rebuilt before every question, so an edited file never reaches the model in its old version — and nothing in
+it depends on the active file. A server that reuses its cache of the request's prefix (llama.cpp, LM Studio, Ollama,
+vLLM) reads again everything after the first change, so what follows the active file rides with the question instead,
+in an `## Active file` block placed before the request: the persona of its language, the `AGENTS.md` of its folders,
+the instructions and rules whose globs select it. The block is sent when the file changes, not with every question.
+The files of the system message share one budget; the block has its own.
 
 ## GPU scheduling
 

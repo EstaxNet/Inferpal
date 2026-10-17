@@ -364,48 +364,55 @@ public partial class HostServerTests
     }
 
     /// <summary>
-    /// Under VS Code, the system prompt follows the active file as in Visual Studio: the glob-scoped project rules
-    /// and the persona of its language.
+    /// Under VS Code, the question follows the active file as in Visual Studio: the glob-scoped project rules and the
+    /// persona of its language ride with it — and the system prompt, the head of every request, does not move.
     /// </summary>
     /// <remarks>
     /// The host received the active document (<c>editor/didChangeActiveDocument</c>) and never passed it to the
     /// prompt: a <c>globs: *.cs</c> rule never applied, and the "persona auto-switch" box did nothing.
     /// </remarks>
     [Fact]
-    public async Task TheSystemPrompt_FollowsTheActiveFile_ScopedRulesAndPersona()
+    public async Task TheActiveFilesRulesAndPersona_RideWithTheQuestion_AndTheSystemPromptDoesNotMove()
     {
         var root = NewRootWithCSharpRule();
         try
         {
             using var h = CreateHarness();
-            string? system = null;
+            string? system = null, question = null;
             h.Fake.OnChatRequest = (_, history, _, _) =>
             {
-                system = history.FirstOrDefault(m => m.Role == "system")?.Content;
+                system   = history.FirstOrDefault(m => m.Role == "system")?.Content;
+                question = history.Last(m => m.Role == "user").Content;
                 return Task.FromResult(new ChatTurnResult("ok", null, 1, 1));
             };
             await h.InitializeAsync(rootDir: root).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
             await h.Client.NotifyWithParameterObjectAsync("editor/didChangeActiveDocument",
                 new { path = Path.Combine(root, "src", "Program.cs") });
-            await WaitForXraySectionAsync(h, id => id == "Rules");
+            await WaitForXraySectionAsync(h, id => id == "Rules|scoped");
             await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send", new { prompt = "hi", agentMode = false })
                 .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
             Assert.NotNull(system);
-            Assert.Contains("RULE-FOR-CSHARP-FILES", system);
-            Assert.Contains(SystemPromptBuilder.PersonaSnippetFor("csharp"), system);
+            Assert.Contains("RULE-FOR-CSHARP-FILES", question);
+            Assert.Contains(SystemPromptBuilder.PersonaSnippetFor("csharp"), question);
+            Assert.Contains("## Active file: src/Program.cs (csharp)", question);
+            Assert.DoesNotContain("RULE-FOR-CSHARP-FILES", system);
+            Assert.DoesNotContain(SystemPromptBuilder.PersonaSnippetFor("csharp"), system);
+            var first = system;
 
             // Reference arm: a file the rule does not target removes it; the persona stays the one of the last code
             // file, as in Visual Studio (a Markdown file picks none).
             await h.Client.NotifyWithParameterObjectAsync("editor/didChangeActiveDocument",
                 new { path = Path.Combine(root, "README.md") });
-            await WaitForXraySectionAsync(h, id => id == "Rules", present: false);
+            await WaitForXraySectionAsync(h, id => id == "Rules|scoped", present: false);
             await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send", new { prompt = "again", agentMode = false })
                 .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
-            Assert.DoesNotContain("RULE-FOR-CSHARP-FILES", system);
-            Assert.Contains(SystemPromptBuilder.PersonaSnippetFor("csharp"), system);
+            Assert.DoesNotContain("RULE-FOR-CSHARP-FILES", question);
+            Assert.Contains(SystemPromptBuilder.PersonaSnippetFor("csharp"), question);
+            Assert.Contains("## Active file: README.md\n\n", question);   // its own language, not the persona's
+            Assert.Equal(first, system);
         }
         finally
         {
@@ -429,10 +436,11 @@ public partial class HostServerTests
         try
         {
             using var h = CreateHarness();
-            string? system = null;
+            string? system = null, question = null;
             h.Fake.OnChatRequest = (_, history, _, _) =>
             {
-                system = history.FirstOrDefault(m => m.Role == "system")?.Content;
+                system   = history.FirstOrDefault(m => m.Role == "system")?.Content;
+                question = history.Last(m => m.Role == "user").Content;
                 return Task.FromResult(new ChatTurnResult("ok", null, 1, 1));
             };
             await h.InitializeAsync(rootDir: root).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
@@ -445,7 +453,9 @@ public partial class HostServerTests
 
             Assert.NotNull(system);
             Assert.Contains("AGENTS-FOR-EVERY-QUESTION", system);
-            Assert.Contains("INSTRUCTION-FOR-CSHARP-FILES", system);
+            Assert.Contains("INSTRUCTION-FOR-CSHARP-FILES", question);     // the file's own: with the question
+            Assert.DoesNotContain("INSTRUCTION-FOR-CSHARP-FILES", system);
+            var first = system;
 
             // Reference arm: a file the instruction does not target removes it; AGENTS.md stays.
             await h.Client.NotifyWithParameterObjectAsync("editor/didChangeActiveDocument",
@@ -455,7 +465,8 @@ public partial class HostServerTests
                 .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
             Assert.Contains("AGENTS-FOR-EVERY-QUESTION", system);
-            Assert.DoesNotContain("INSTRUCTION-FOR-CSHARP-FILES", system);
+            Assert.DoesNotContain("INSTRUCTION-FOR-CSHARP-FILES", question);
+            Assert.Equal(first, system);
         }
         finally
         {
@@ -471,22 +482,24 @@ public partial class HostServerTests
         try
         {
             using var h = CreateHarness(cfg => cfg.PersonaAutoSwitch = false);
-            string? system = null;
+            string? system = null, question = null;
             h.Fake.OnChatRequest = (_, history, _, _) =>
             {
-                system = history.FirstOrDefault(m => m.Role == "system")?.Content;
+                system   = history.FirstOrDefault(m => m.Role == "system")?.Content;
+                question = history.Last(m => m.Role == "user").Content;
                 return Task.FromResult(new ChatTurnResult("ok", null, 1, 1));
             };
             await h.InitializeAsync(rootDir: root).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
             await h.Client.NotifyWithParameterObjectAsync("editor/didChangeActiveDocument",
                 new { path = Path.Combine(root, "Program.cs") });
-            await WaitForXraySectionAsync(h, id => id == "Rules");
+            await WaitForXraySectionAsync(h, id => id == "Rules|scoped");
             await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send", new { prompt = "hi", agentMode = false })
                 .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
             Assert.NotNull(system);
-            Assert.Contains("RULE-FOR-CSHARP-FILES", system);   // witness: the active file did arrive
+            Assert.Contains("RULE-FOR-CSHARP-FILES", question);   // witness: the active file did arrive
+            Assert.DoesNotContain(SystemPromptBuilder.PersonaSnippetFor("csharp"), question);
             Assert.DoesNotContain(SystemPromptBuilder.PersonaSnippetFor("csharp"), system);
         }
         finally
@@ -1392,18 +1405,21 @@ public partial class HostServerTests
     }
 
     /// <summary>
-    /// Every <c>oodaTurnThreshold</c> turns the host folds a session summary into the system prompt and
-    /// shows it, as in Visual Studio. The setting was offered in the VS Code panel and did nothing there.
-    /// A new conversation leaves the summary behind.
+    /// Every <c>oodaTurnThreshold</c> turns the host writes a session summary and shows it, as in Visual Studio; it
+    /// joins the system prompt when the history is compacted — never before: written into the head of every request,
+    /// each summary would make the server read the whole conversation again. A new conversation leaves it behind.
     /// </summary>
     [Fact]
-    public async Task ChatSend_AtTheOodaThreshold_FoldsASessionSummaryIntoTheSystemPrompt()
+    public async Task ChatSend_AtTheOodaThreshold_WritesASessionSummary_ThatJoinsTheSystemPromptAtTheCompaction()
     {
-        using var h = CreateHarness(cfg => cfg.OodaTurnThreshold = 2);
+        using var h = CreateHarness(cfg => { cfg.OodaTurnThreshold = 2; cfg.ContextWindowSize = 8_192; cfg.CompactionEnabled = true; });
         await h.InitializeAsync();
-        // Turns answer "done"; the utility model, asked for the session summary, answers with the summary.
+        // Turns answer "done" — long ones once asked to, so the history outgrows the window; the utility model, asked
+        // for the session summary, answers with the summary.
+        var words = string.Join(' ', Enumerable.Range(0, 1_500).Select(i => $"word{i}"));
         h.Fake.OnChatRequest = (_, messages, _, _) => Task.FromResult(new ChatTurnResult(
-            messages[^1].Content == Inferpal.Localization.Strings.OodaSummarizePrompt ? "the session so far" : "done",
+            messages[^1].Content == Inferpal.Localization.Strings.OodaSummarizePrompt ? "the session so far"
+                : messages[^1].Content?.Contains("long", StringComparison.Ordinal) == true ? "done " + words : "done",
             null, 3, 5));
 
         async Task Send(string prompt) =>
@@ -1416,12 +1432,21 @@ public partial class HostServerTests
         Assert.DoesNotContain("the session so far", SystemPrompt(), StringComparison.Ordinal);
 
         await Send("second question");
-        Assert.Contains("## Session Summary\n\nthe session so far", SystemPrompt(), StringComparison.Ordinal);
         // Notifications are one-way: a round-trip request guarantees they were dispatched.
         await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { })
             .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
         Assert.Contains(h.Target.ToolNotes,
             n => n.Name == "ooda_recap" && n.Output.Contains("the session so far", StringComparison.Ordinal));
+        Assert.DoesNotContain("the session so far", SystemPrompt(), StringComparison.Ordinal);   // not compacted yet
+
+        for (var i = 0; i < 6 && !h.Target.ToolNotes.Any(n => n.Name == "context_compact"); i++)
+        {
+            await Send($"long question {i}");
+            await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        }
+        Assert.Contains(h.Target.ToolNotes, n => n.Name == "context_compact");   // witness: the history was compacted
+        Assert.Contains("## Session Summary\n\nthe session so far", SystemPrompt(), StringComparison.Ordinal);
 
         await h.Client.InvokeAsync("chat/reset").WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
         Assert.DoesNotContain("the session so far", SystemPrompt(), StringComparison.Ordinal);
@@ -1452,9 +1477,8 @@ public partial class HostServerTests
         await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { })
             .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
-        var systemPrompt = h.Server.CurrentSession!.History[0].Content;
-        Assert.Contains("## Session Summary\n\nthe session so far", systemPrompt, StringComparison.Ordinal);
-        Assert.DoesNotContain("private reasoning", systemPrompt, StringComparison.Ordinal);
+        Assert.Equal("the session so far", h.Server.CurrentSession!.OodaSummary);   // what joins the system prompt later
+        Assert.DoesNotContain("private reasoning", h.Server.CurrentSession!.History[0].Content, StringComparison.Ordinal);
         Assert.DoesNotContain(h.Target.ToolNotes,
             n => n.Name == "ooda_recap" && n.Output.Contains("private reasoning", StringComparison.Ordinal));
     }

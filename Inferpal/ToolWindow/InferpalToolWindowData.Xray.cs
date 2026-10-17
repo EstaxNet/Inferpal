@@ -50,7 +50,8 @@ internal partial class InferpalToolWindowData
         return XRayPanelPresenter.Build(
             sections, _xrayDisabledSections,
             AgentOrchestrator.EstimateConversationTokens(_history), ContextWindowInUse,
-            toolTokens: NextTurnToolTokens());
+            toolTokens: NextTurnToolTokens(),
+            questionLayersInHistory: ActiveFileContext.ToSend(BuildActiveFileBlock(), _history) is null);
     }
 
     /// <summary>The counts the settings' Context page shows, read on the VM context.</summary>

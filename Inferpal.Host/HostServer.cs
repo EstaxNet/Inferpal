@@ -340,11 +340,12 @@ internal sealed partial class HostServer : IDisposable
             // the whole of it.
             var autoCtx    = await BuildRagAutoContextAsync(s, string.IsNullOrWhiteSpace(p.Query) ? p.Prompt : p.Query,
                                                             p.AttachedPaths, cts.Token);
-            var promptText = ChatTurnPolicy.WithInjectedContext(p.Prompt, autoCtx, workspace);
-
-            // The system prompt follows the active file (glob-scoped rules, persona), which the adapter reports by
-            // notification; it is rebuilt here, inside the turn slot, never from the notification itself.
+            // The system prompt is rebuilt here, inside the turn slot, never from the active-file notification itself;
+            // what follows the active file rides with the question, when the history does not already say it
+            // (ActiveFileContext).
             RefreshSystemPrompt(s);
+            var activeFile = ActiveFileContext.ToSend(BuildActiveFileBlock(s), s.History);
+            var promptText = ChatTurnPolicy.WithInjectedContext(p.Prompt, autoCtx, workspace, activeFile);
             s.History.Add(new ChatMessageDto("user", promptText));
             questionKept = true;
             // ⚠ Sent once the question carrying it is in the history: set when the block was BUILT, a Stop during the
@@ -378,7 +379,11 @@ internal sealed partial class HostServer : IDisposable
             s.LastContextWindow = ctxDecision.Window;
             // The prompt was built above, against the window known then: when this check reveals another one — the
             // first question, a model loaded smaller since — its files are re-budgeted before anything is sent.
-            if (ctxDecision.Window > 0 && ctxDecision.Window != windowBefore) RefreshSystemPrompt(s);
+            if (ctxDecision.Window > 0 && ctxDecision.Window != windowBefore)
+            {
+                RefreshSystemPrompt(s);
+                ActiveFileContext.Restore(s.History, BuildActiveFileBlock(s));   // the block too: built for that window
+            }
 
             if (ctxDecision.Outcome != Services.Agent.ContextOutcome.None)
             {
@@ -386,6 +391,11 @@ internal sealed partial class HostServer : IDisposable
                     Services.Agent.HistoryCompaction.ApplySummary(s.History, ctxDecision.Plan, ctxDecision.Summary!);
                 else
                     Services.Agent.HistoryCompaction.ApplyTruncation(s.History, ctxDecision.Plan);
+                // The one moment the session summary joins the system message: the turns it covers have just left.
+                s.RecapInSystem = s.OodaSummary;
+                RefreshSystemPrompt(s);
+                // And the question being asked gets the active file's block back if the turns just dropped carried it.
+                ActiveFileContext.Restore(s.History, BuildActiveFileBlock(s));
 
                 // ⚠ Measured, never zeroed: 0 is the measure of a first turn, which the next check reads as "nothing to
                 // decide". A turn stopped after this point ends without a count of its own, and the next question —
@@ -1687,8 +1697,18 @@ internal sealed partial class HostServer : IDisposable
             disabledSectionIds: s.XrayDisabledSections,
             activeFilePath:     s.ActiveFilePath);
         if (s.PlanMode)                              prompt += PlanModeToolRegistry.SystemPromptSuffix;
-        if (!string.IsNullOrEmpty(s.OodaSummary))    prompt += "\n\n## Session Summary\n\n" + s.OodaSummary;
+        if (!string.IsNullOrEmpty(s.RecapInSystem))  prompt += "\n\n## Session Summary\n\n" + s.RecapInSystem;
         return prompt;
+    }
+
+    /// <summary>The active-file block of the next question (<see cref="ActiveFileContext"/>) — same inputs as
+    /// <see cref="BuildSystemPromptText"/>.</summary>
+    private static string BuildActiveFileBlock(HostSession s)
+    {
+        var root = string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir;
+        return new SystemPromptBuilder(s.Config, s.EditorName, s.ContextWindowInUse, s.Index.RootDir, s.FoldersOutOfReach)
+            .ActiveFileBlock(s.PersonaLanguage, root, SystemPromptBuilder.RelativeActivePath(root, s.ActiveFilePath),
+                             s.XrayDisabledSections, s.ActiveFilePath);
     }
 
     /// <summary>Prompt layers for the X-Ray panel — same inputs as <see cref="BuildSystemPromptText"/>.</summary>
@@ -1710,7 +1730,13 @@ internal sealed partial class HostServer : IDisposable
         XRayPanelPresenter.Build(
             BuildPromptSections(s), s.XrayDisabledSections,
             AgentOrchestrator.EstimateConversationTokens(SnapshotHistory(s)), s.ContextWindowInUse,
-            toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode));
+            toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode),
+            questionLayersInHistory: QuestionLayersInHistory(s));
+
+    /// <summary>Whether the history already carries the active-file block the next question would send — its layers
+    /// are then counted in the history, not again (<see cref="XRayPanelPresenter.Build"/>).</summary>
+    private static bool QuestionLayersInHistory(HostSession s) =>
+        ActiveFileContext.ToSend(BuildActiveFileBlock(s), SnapshotHistory(s)) is null;
 
     /// <summary>
     /// The repository's instruction files and what the next question sends of each — <c>/instructions</c> and the
@@ -1753,6 +1779,7 @@ internal sealed partial class HostServer : IDisposable
     private static void ForgetConversationState(HostSession s)
     {
         s.OodaSummary           = null;
+        s.RecapInSystem         = null;
         s.ConversationTurnCount = 0;
         s.WorkspaceContextSent  = false;
     }

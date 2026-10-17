@@ -214,6 +214,11 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     // (see RulesService) in BuildSystemPrompt. Updated by OnActiveFileChanged.
     private string?          _activeFilePath;
     private string           _oodaSummary      = string.Empty;
+    // The session summary the system message carries: the one written last when the history was compacted — never a
+    // newer one in between, or every summary would make the server read the whole conversation again.
+    private string           _recapInSystem    = string.Empty;
+    // The active-file block of the /task being submitted, read on the VM context (HandleTaskCommandAsync).
+    private string?          _taskSubmissionBlock;
     // Language of the last code file that selected a persona (PersonaAutoSwitch). A field, not an
     // argument: the system prompt is rebuilt from many places, and the persona must survive them all.
     private string?          _personaLanguage;

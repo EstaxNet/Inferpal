@@ -29,13 +29,16 @@ internal static class XRayCommandHandler
         int  historyTokens,
         int  contextWindow,
         Config.InferpalConfig config,
-        int  toolTokens = 0)
+        int  toolTokens = 0,
+        bool questionLayersInHistory = false)
     {
         var sized = sections
             .Select(s => (Section: s, Tokens: EstimateTokens(s.Content)))
             .Where(x => x.Tokens > 0)
             .ToList();
-        var total = sized.Sum(x => x.Tokens);
+        // Counted as the panel counts them (XRayPanelPresenter.Build): a block the history already carries, once.
+        var total = sized.Where(x => !(questionLayersInHistory && x.Section.Placement == PromptPlacement.Question))
+                         .Sum(x => x.Tokens);
 
         var sb = new StringBuilder();
         sb.AppendLine(Strings.XrayHeader($"~{total:N0}"));

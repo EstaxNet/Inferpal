@@ -37,16 +37,21 @@ public class SystemPromptPerTurnTests
             Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowData.ChatTurn.cs"));
         var host = ConventionCoverageTests.CodeOnly(Path.Combine(RepoRoot(), "Inferpal.Host", "HostServer.cs"));
 
-        // The last statement before the question is appended must be the rebuild — anywhere earlier
-        // in the file would not prove it runs on THIS path.
-        foreach (var (code, append) in new[]
+        // The statements right before the question is appended must be the rebuild, then the active-file block judged
+        // on that same history (ActiveFileContext) and put into the question — anywhere earlier in the file would not
+        // prove it runs on THIS path, and the two front-ends must do it the same way.
+        foreach (var (code, append, steps) in new[]
                  {
-                     (vm,   "_history.Add(new ChatMessageDto(\"user\", historyText));"),
-                     (host, "s.History.Add(new ChatMessageDto(\"user\", promptText));"),
+                     (vm,   "_history.Add(new ChatMessageDto(\"user\", historyText));",
+                      "RefreshSystemPrompt();var activeFile = ActiveFileContext.ToSend(BuildActiveFileBlock(), _history);"
+                      + "historyText = Services.Agent.ChatTurnPolicy.WithInjectedContext(historyText, autoCtx, workspaceCtx, activeFile);"),
+                     (host, "s.History.Add(new ChatMessageDto(\"user\", promptText));",
+                      "RefreshSystemPrompt(s);var activeFile = ActiveFileContext.ToSend(BuildActiveFileBlock(s), s.History);"
+                      + "var promptText = ChatTurnPolicy.WithInjectedContext(p.Prompt, autoCtx, workspace, activeFile);"),
                  })
         {
-            var head = Before(code, append).TrimEnd();
-            Assert.EndsWith(code == vm ? "RefreshSystemPrompt();" : "RefreshSystemPrompt(s);", head, StringComparison.Ordinal);
+            var head = string.Concat(Before(code, append).Where(c => !char.IsWhiteSpace(c)));
+            Assert.EndsWith(string.Concat(steps.Where(c => !char.IsWhiteSpace(c))), head, StringComparison.Ordinal);
         }
     }
 }

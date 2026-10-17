@@ -363,7 +363,11 @@ internal partial class InferpalToolWindowData
             _contextWindowInUse = decision.Window;
             // The prompt was built at the start of the turn, against the window known then: when this check reveals
             // another one — the first question, a model loaded smaller since — its files are re-budgeted now.
-            if (decision.Window > 0 && decision.Window != before) RefreshSystemPrompt();
+            if (decision.Window > 0 && decision.Window != before)
+            {
+                RefreshSystemPrompt();
+                ActiveFileContext.Restore(_history, BuildActiveFileBlock());   // the block too: built for that window
+            }
         });
 
         if (decision.Outcome == Services.Agent.ContextOutcome.None) return;
@@ -374,6 +378,11 @@ internal partial class InferpalToolWindowData
                 Services.Agent.HistoryCompaction.ApplySummary(_history, decision.Plan, decision.Summary!);
             else
                 Services.Agent.HistoryCompaction.ApplyTruncation(_history, decision.Plan);
+            // The one moment the session summary joins the system message: the turns it covers have just left.
+            _recapInSystem = _oodaSummary;
+            ApplySystemPrompt();
+            // And the question being asked gets the active file's block back if the turns just dropped carried it.
+            ActiveFileContext.Restore(_history, BuildActiveFileBlock());
 
             _lastPromptTokens = 0;
 
@@ -404,6 +413,15 @@ internal partial class InferpalToolWindowData
         return _planMode ? prompt + PlanModeToolRegistry.SystemPromptSuffix : prompt;
     }
 
+    /// <summary>The active-file block of the next question (<see cref="ActiveFileContext"/>), from the inputs of
+    /// <see cref="BuildSystemPrompt"/>: what follows the active file, which the system message no longer carries.</summary>
+    private string BuildActiveFileBlock()
+    {
+        var dir = FindProjectRoot();
+        return new SystemPromptBuilder(_config, EditorName, ContextWindowInUse, _indexService.RootDir).ActiveFileBlock(
+            PersonaLanguage, dir, ActiveFileRelativeTo(dir), _xrayDisabledSections, _activeFilePath);
+    }
+
     /// <summary>Language of the persona the next prompt carries — none when auto-switching is off.</summary>
     private string? PersonaLanguage => _config.PersonaAutoSwitch ? _personaLanguage : null;
 
@@ -421,9 +439,9 @@ internal partial class InferpalToolWindowData
     private void ApplySystemPrompt()
     {
         if (_history.Count == 0 || _history[0].Role != "system") return;
-        var content = string.IsNullOrEmpty(_oodaSummary)
+        var content = string.IsNullOrEmpty(_recapInSystem)
             ? _baseSystemPrompt
-            : _baseSystemPrompt + "\n\n## Session Summary\n\n" + _oodaSummary;
+            : _baseSystemPrompt + "\n\n## Session Summary\n\n" + _recapInSystem;
         _history[0] = new ChatMessageDto("system", content);
     }
 

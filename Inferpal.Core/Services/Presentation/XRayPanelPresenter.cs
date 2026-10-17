@@ -69,12 +69,19 @@ internal static class XRayPanelPresenter
     /// </remarks>
     public static string SectionId(PromptSection s) => s.Kind switch
     {
+        // The rules a glob selects ride with the question, those that always apply in the system message: two rows, two
+        // switches — one id, and switching off one row switched off both.
+        PromptSectionKind.Rules when s.Placement == PromptPlacement.Question => "Rules|scoped",
         PromptSectionKind.Persona or PromptSectionKind.Rules => s.Kind.ToString(),
         _ => (s.Key ?? s.Detail) is { } identity ? $"{s.Kind}|{identity}" : s.Kind.ToString(),
     };
 
-    /// <summary>Localized display label of a section (shared with the <c>/xray</c> markdown rendering).</summary>
-    public static string Label(PromptSection s) => s.Kind switch
+    /// <summary>Localized display label of a section (shared with the <c>/xray</c> markdown rendering); a layer sent
+    /// with the question says so.</summary>
+    public static string Label(PromptSection s) =>
+        s.Placement == PromptPlacement.Question ? KindLabel(s) + " · " + Strings.XrayWithTheQuestion : KindLabel(s);
+
+    private static string KindLabel(PromptSection s) => s.Kind switch
     {
         PromptSectionKind.Base     => Strings.XrayLabelBase,
         PromptSectionKind.Persona  => Strings.XrayLabelPersona + (s.Detail is null ? "" : $" ({s.Detail})"),
@@ -94,12 +101,15 @@ internal static class XRayPanelPresenter
     /// <param name="contextWindow">Configured context window in tokens; ≤ 0 = no limit configured.</param>
     /// <param name="toolTokens">The tool definitions the next turn carries — counted in the fill, like the
     /// <c>/xray</c> markdown (<see cref="XRayCommandHandler.Handle"/>).</param>
+    /// <param name="questionLayersInHistory">The active-file block the next question would carry is already in the history
+    /// (<see cref="ActiveFileContext.ToSend"/> returns nothing): its layers are counted there, not again.</param>
     public static XRayPanelModel Build(
         IReadOnlyList<PromptSection> sections,
         IReadOnlySet<string>?        disabledIds,
         int                          historyTokens,
         int                          contextWindow,
-        int                          toolTokens = 0)
+        int                          toolTokens = 0,
+        bool                         questionLayersInHistory = false)
     {
         var sized = sections
             .Select(s => (Section: s, Id: SectionId(s), Tokens: XRayCommandHandler.EstimateTokens(s.Content)))
@@ -119,9 +129,14 @@ internal static class XRayPanelPresenter
             .OrderByDescending(r => r.Tokens)
             .ToList();
 
-        var enabledTokens = rows.Where(r => r.Enabled).Sum(r => r.Tokens);
+        // What the next turn adds: the history already holds a block it would not send again.
+        var enabledTokens = sized
+            .Where(x => (disabledIds is null || !disabledIds.Contains(x.Id))
+                        && !(questionLayersInHistory && x.Section.Placement == PromptPlacement.Question))
+            .Sum(x => x.Tokens);
+        // The system message as sent: the layers placed with the question are not in it.
         var rawPrompt = string.Concat(sized
-            .Where(x => disabledIds is null || !disabledIds.Contains(x.Id))
+            .Where(x => x.Section.Placement == PromptPlacement.System && (disabledIds is null || !disabledIds.Contains(x.Id)))
             .Select(x => x.Section.Content));
 
         var overhead = sized

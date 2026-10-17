@@ -160,7 +160,7 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="LabelPersonaAutoSwitch" xml:space="preserve"><value>Adapt to the language of the open file</value></data>
   <data name="HintPersonaAutoSwitch" xml:space="preserve"><value>Adds a C#, Python or TypeScript hint when you switch files.</value></data>
   <data name="LabelOodaTurnThreshold" xml:space="preserve"><value>Recap the session every</value></data>
-  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>Goal, progress and open questions, kept in the instructions. 0: never.</value></data>
+  <data name="HintOodaTurnThreshold" xml:space="preserve"><value>Goal, progress and open questions, kept in the instructions once older turns are summarized. 0: never.</value></data>
   <data name="StatusOodaSummarizing" xml:space="preserve"><value>Generating session recap…</value></data>
   <data name="MsgOodaRecap" xml:space="preserve"><value>**OODA Session Recap** (turn {0})</value></data>
   <data name="OodaSummarizePrompt" xml:space="preserve"><value>Summarize our conversation so far. Produce a short OODA-style recap with three labeled sections — Goal (what the user wants to achieve), Progress (steps already completed), and Open (remaining tasks or unresolved questions). Keep the total under 150 words.</value></data>
@@ -863,6 +863,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="XrayHeader" xml:space="preserve"><value>🩻 Context X-Ray — system prompt ≈ {0} tokens</value></data>
   <data name="XrayLabelBase" xml:space="preserve"><value>Base system prompt</value></data>
   <data name="XrayLabelPersona" xml:space="preserve"><value>Persona snippet</value></data>
+  <data name="XrayWithTheQuestion" xml:space="preserve"><value>with the question</value></data>
   <data name="XrayLabelCustom" xml:space="preserve"><value>Custom system prompt</value></data>
   <data name="XrayLabelTemplate" xml:space="preserve"><value>Session template</value></data>
   <data name="XrayLabelRules" xml:space="preserve"><value>Rules ({0} matched)</value></data>

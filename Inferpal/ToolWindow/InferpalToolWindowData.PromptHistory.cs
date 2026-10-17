@@ -271,10 +271,13 @@ internal partial class InferpalToolWindowData
     /// <returns><c>false</c> when the model run failed (its error is shown): there was no fix attempt.</returns>
     private async Task<bool> RunFixIterationAsync(string buildOutput, int round, CancellationToken ct)
     {
+        // The active file's instructions ride with the request, as with a question: the system prompt has none.
+        var activeFile = string.Empty;
+        await RunOnVMContextAsync(() => activeFile = BuildActiveFileBlock());
         var fixHistory = new List<ChatMessageDto>
         {
             _history[0],                          // system prompt (context + memory)
-            new("user", BuildFixPrompt(buildOutput))
+            new("user", Services.Agent.ChatTurnPolicy.WithInjectedContext(BuildFixPrompt(buildOutput), activeFile))
         };
 
         ChatMessageItem? streamItem = null;
