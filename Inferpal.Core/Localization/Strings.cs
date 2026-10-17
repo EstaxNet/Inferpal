@@ -794,6 +794,10 @@ internal static class Strings
     public static string ContextPartTools(int tokens) =>
         Format(Get(nameof(ContextPartTools)), tokens);
 
+    /// <summary>The tool definitions' line when MCP servers bring tools: how many, and their share.</summary>
+    public static string ContextPartToolsMcp(int tokens, int mcpTokens, int mcpTools) =>
+        Format(Get(nameof(ContextPartToolsMcp)), tokens, mcpTokens, mcpTools);
+
     public static string ContextPartSystem(int tokens) =>
         Format(Get(nameof(ContextPartSystem)), tokens);
 

@@ -242,6 +242,7 @@ Server detail: {0}</value></data>
 
 Reduce the largest part, or load the model with a larger context (more than ~{0} tokens).</value></data>
   <data name="ContextPartTools" xml:space="preserve"><value>tool definitions: ~{0} tokens — fewer enabled tools</value></data>
+  <data name="ContextPartToolsMcp" xml:space="preserve"><value>tool definitions: ~{0} tokens, ~{1} of them for {2} MCP server {2:tool|tools} — fewer enabled tools, starting with those servers' tools</value></data>
   <data name="ContextPartSystem" xml:space="preserve"><value>system prompt: ~{0} tokens — pinned files, project context, memory, rules</value></data>
   <data name="ContextPartEarlier" xml:space="preserve"><value>earlier conversation: ~{0} tokens — /clear starts a new one</value></data>
   <data name="ContextPartLast" xml:space="preserve"><value>last message: ~{0} tokens — attached files, pasted code</value></data>

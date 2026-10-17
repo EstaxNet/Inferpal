@@ -241,6 +241,7 @@ Dettaglio del server: {0}</value></data>
 
 Riduci la parte più grande oppure carica il modello con un contesto più ampio (oltre ~{0} token).</value></data>
   <data name="ContextPartTools" xml:space="preserve"><value>definizioni degli strumenti: ~{0} token — meno strumenti abilitati</value></data>
+  <data name="ContextPartToolsMcp" xml:space="preserve"><value>definizioni degli strumenti: ~{0} token, di cui ~{1} per {2} {2:strumento|strumenti} di server MCP — meno strumenti abilitati, a cominciare da quelli di quei server</value></data>
   <data name="ContextPartSystem" xml:space="preserve"><value>prompt di sistema: ~{0} token — file fissati, contesto del progetto, memoria, regole</value></data>
   <data name="ContextPartEarlier" xml:space="preserve"><value>conversazione precedente: ~{0} token — /clear ne inizia una nuova</value></data>
   <data name="ContextPartLast" xml:space="preserve"><value>ultimo messaggio: ~{0} token — file allegati, codice incollato</value></data>

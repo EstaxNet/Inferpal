@@ -241,6 +241,7 @@ Serverdetails: {0}</value></data>
 
 Verkleinern Sie den größten Teil oder laden Sie das Modell mit einem größeren Kontext (mehr als ~{0} Tokens).</value></data>
   <data name="ContextPartTools" xml:space="preserve"><value>Werkzeugdefinitionen: ~{0} Tokens — weniger aktivierte Werkzeuge</value></data>
+  <data name="ContextPartToolsMcp" xml:space="preserve"><value>Werkzeugdefinitionen: ~{0} Tokens, davon ~{1} für {2} {2:Werkzeug|Werkzeuge} von MCP-Servern — weniger aktivierte Werkzeuge, zuerst die dieser Server</value></data>
   <data name="ContextPartSystem" xml:space="preserve"><value>System-Prompt: ~{0} Tokens — angeheftete Dateien, Projektkontext, Gedächtnis, Regeln</value></data>
   <data name="ContextPartEarlier" xml:space="preserve"><value>bisherige Unterhaltung: ~{0} Tokens — /clear beginnt eine neue</value></data>
   <data name="ContextPartLast" xml:space="preserve"><value>letzte Nachricht: ~{0} Tokens — angehängte Dateien, eingefügter Code</value></data>

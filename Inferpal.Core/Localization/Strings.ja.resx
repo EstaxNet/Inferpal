@@ -241,6 +241,7 @@
 
 最も大きい部分を減らすか、より大きなコンテキスト（約 {0} トークン超）でモデルをロードしてください。</value></data>
   <data name="ContextPartTools" xml:space="preserve"><value>ツール定義: 約 {0} トークン — 有効なツールを減らす</value></data>
+  <data name="ContextPartToolsMcp" xml:space="preserve"><value>ツール定義: 約 {0} トークン（うち MCP サーバーのツール {2} 個で約 {1}）— 有効なツールを減らす（まずそれらのサーバーのツールから）</value></data>
   <data name="ContextPartSystem" xml:space="preserve"><value>システムプロンプト: 約 {0} トークン — ピン留めしたファイル、プロジェクトコンテキスト、メモリ、ルール</value></data>
   <data name="ContextPartEarlier" xml:space="preserve"><value>これまでの会話: 約 {0} トークン — /clear で新しい会話を開始</value></data>
   <data name="ContextPartLast" xml:space="preserve"><value>最後のメッセージ: 約 {0} トークン — 添付ファイル、貼り付けたコード</value></data>

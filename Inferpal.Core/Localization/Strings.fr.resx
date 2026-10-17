@@ -241,6 +241,7 @@ Détail du serveur : {0}</value></data>
 
 Réduisez la plus grande part, ou chargez le modèle avec un contexte plus grand (plus de ~{0} tokens).</value></data>
   <data name="ContextPartTools" xml:space="preserve"><value>définitions d'outils : ~{0} tokens — moins d'outils activés</value></data>
+  <data name="ContextPartToolsMcp" xml:space="preserve"><value>définitions d'outils : ~{0} tokens, dont ~{1} pour {2} {2:outil|outils} de serveurs MCP — moins d'outils activés, à commencer par ceux de ces serveurs</value></data>
   <data name="ContextPartSystem" xml:space="preserve"><value>prompt système : ~{0} tokens — fichiers épinglés, contexte du projet, mémoire, règles</value></data>
   <data name="ContextPartEarlier" xml:space="preserve"><value>conversation précédente : ~{0} tokens — /clear en commence une nouvelle</value></data>
   <data name="ContextPartLast" xml:space="preserve"><value>dernier message : ~{0} tokens — fichiers joints, code collé</value></data>

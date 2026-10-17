@@ -241,6 +241,7 @@
 
 Уменьшите самую большую часть или загрузите модель с большим контекстом (более ~{0} токенов).</value></data>
   <data name="ContextPartTools" xml:space="preserve"><value>определения инструментов: ~{0} токенов — меньше включённых инструментов</value></data>
+  <data name="ContextPartToolsMcp" xml:space="preserve"><value>определения инструментов: ~{0} токенов, из них ~{1} — {2} {2:инструмент|инструмента|инструментов} MCP-серверов — меньше включённых инструментов, начиная с инструментов этих серверов</value></data>
   <data name="ContextPartSystem" xml:space="preserve"><value>системный промпт: ~{0} токенов — закреплённые файлы, контекст проекта, память, правила</value></data>
   <data name="ContextPartEarlier" xml:space="preserve"><value>предыдущий разговор: ~{0} токенов — /clear начинает новый</value></data>
   <data name="ContextPartLast" xml:space="preserve"><value>последнее сообщение: ~{0} токенов — прикреплённые файлы, вставленный код</value></data>

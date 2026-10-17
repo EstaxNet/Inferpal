@@ -241,6 +241,7 @@
 
 请缩减最大的部分，或以更大的上下文（超过约 {0} 个 token）加载模型。</value></data>
   <data name="ContextPartTools" xml:space="preserve"><value>工具定义：约 {0} 个 token — 减少已启用的工具</value></data>
+  <data name="ContextPartToolsMcp" xml:space="preserve"><value>工具定义：约 {0} 个 token，其中 MCP 服务器的 {2} 个工具约占 {1} — 减少已启用的工具，先从这些服务器的工具开始</value></data>
   <data name="ContextPartSystem" xml:space="preserve"><value>系统提示词：约 {0} 个 token — 固定的文件、项目上下文、记忆、规则</value></data>
   <data name="ContextPartEarlier" xml:space="preserve"><value>之前的对话：约 {0} 个 token — /clear 开始新对话</value></data>
   <data name="ContextPartLast" xml:space="preserve"><value>最后一条消息：约 {0} 个 token — 附加的文件、粘贴的代码</value></data>

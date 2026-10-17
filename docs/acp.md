@@ -1,9 +1,10 @@
-# Inferpal in Zed, JetBrains IDEs, Neovim and Emacs
+# Inferpal in Zed, JetBrains IDEs, Qt Creator, Neovim and Emacs
 
 Inferpal speaks the [Agent Client Protocol](https://agentclientprotocol.com) (ACP), the protocol editors use to run a
 coding agent the way they run a language server. The same engine as the Visual Studio and VS Code extensions —
 the agent, the tools, the approvals, semantic search, MCP — runs in any ACP client: **Zed**, **JetBrains IDEs**
-(Rider, IntelliJ IDEA, PyCharm, …), **Neovim** (CodeCompanion, avante.nvim) and **Emacs** (agent-shell).
+(Rider, IntelliJ IDEA, PyCharm, …), **Qt Creator**, **Neovim** (CodeCompanion, avante.nvim), **Emacs** (agent-shell),
+and Visual Studio through **Code Wicket**.
 
 It runs against **your** model server — Ollama, LM Studio or any OpenAI-compatible endpoint. No account, no telemetry.
 
@@ -98,6 +99,50 @@ require("codecompanion").setup({
 ```
 
 A local model can take a while to load on the first question: keep `timeout` generous.
+
+### Qt Creator
+
+Qt Creator 21 has an ACP client built in. **Preferences → AI → ACP Servers → Add**: a name, the **Executable** (full
+path of `Inferpal.Host`) and **Arguments** `--acp`. Open the chat with the AI chat button of the editor's toolbar (or
+**Tools → ACP Client → Show Agentic AI Chat in Side Panel**) and pick **Inferpal**.
+
+Seen with the Qt Creator 21 beta: answers with their thinking, the context gauge, the mode and model buttons, every
+change asked first with its diff on the card, Stop, and the threads listed and reopened after a restart.
+
+- ⚠ **Qt Creator hands every session its own MCP server**: 159 tools, about 30,000 tokens of tool definitions sent
+  with every question — more than a model loaded with a 32K context can take, before the question itself. Inferpal's
+  message then names that share. Turn off the tool groups you do not need in **Preferences → AI → Qt Creator MCP
+  Server** (that choice is kept; in the beta, the server's own *Enable* switch is back on at every start), or load
+  the model with a larger context.
+- It sends the Qt documentation MCP server too, which is reached over the Internet.
+- Set Inferpal up before the first session (`Inferpal.Host --acp --setup` in a terminal, or the settings of Visual
+  Studio or VS Code).
+
+### Visual Studio, beside other agents (Code Wicket)
+
+Inferpal's own Visual Studio extension is the way to use it in Visual Studio. To run it among other agents in the
+[Code Wicket](https://github.com/MattDarg/code-wicket) chat, add it under **Settings → Backends → Custom ACP agents**:
+
+```json
+[
+  {
+    "providerId": "inferpal",
+    "displayName": "Inferpal",
+    "cliPath": "C:\\Tools\\Inferpal\\Inferpal.Host.exe",
+    "args": ["--acp"]
+  }
+]
+```
+
+Open **Extensions → Code Wicket → Code Wicket Chat** and pick **Inferpal** in the agent list.
+
+Seen with Code Wicket 1.0.0 in Visual Studio 2022: answers with their thinking, the model list, the context ring,
+every change asked first (the card shows the call's arguments — for an edit, the old and the new text — not a diff),
+and Stop.
+
+- Code Wicket hands Inferpal its own MCP server: 17 tools (build, diagnostics, tests, debugger), about 9,000 tokens.
+- With a folder opened instead of a solution, Code Wicket started the session in the folder **above** it, and
+  Inferpal worked on that whole folder. Not tried with a solution open.
 
 ### Emacs and other clients
 

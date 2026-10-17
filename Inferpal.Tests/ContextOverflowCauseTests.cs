@@ -61,6 +61,22 @@ public class ContextOverflowCauseTests
     }
 
     [Fact]
+    public void ToolsAnMcpServerBrings_AreCounted_InTheToolsLine()
+    {
+        // An editor that hands the agent its own MCP server (Qt Creator: 159 tools): the line says whose tools fill it.
+        var defs = Tools(4).Concat(Enumerable.Range(0, 20).Select(i => new ToolDefinition("function",
+            new ToolFunction(Inferpal.Services.Mcp.McpTool.BuildName("qt-creator", $"tool_{i}"), new string('d', 1_600), new { })))).ToList();
+        var size = RequestSize.Of(Conversation(earlierChars: 400, lastChars: 400), defs);
+        var msg  = OpenAiCompatibleClient.CheckContextFit(size, loadedContext: 8_192);
+
+        Assert.Equal(20, size.McpCount);
+        Assert.True(size.McpTools > 0 && size.McpTools < size.Tools);
+        Assert.Contains(Strings.ContextPartToolsMcp(size.Tools, size.McpTools, 20), msg);
+        // Reference arm: without an MCP tool, the plain line (AnAgentRequestWhoseToolsDominate_StillNamesTheTools_First).
+        Assert.Equal(0, RequestSize.Of(Conversation(earlierChars: 400, lastChars: 400), Tools(24)).McpCount);
+    }
+
+    [Fact]
     public void ALongConversation_IsNamedAsSuch()
     {
         var size = RequestSize.Of(Conversation(earlierChars: 60_000, lastChars: 400), defs: null);

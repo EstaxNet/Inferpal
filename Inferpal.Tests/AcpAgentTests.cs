@@ -800,14 +800,23 @@ public sealed class AcpAgentTests : IDisposable
         Assert.True(Path.IsPathRooted(diff.GetProperty("path").GetString()));
         Assert.Equal("new text\n", diff.GetProperty("newText").GetString());
 
-        var done = Assert.Single(h.Client.Updates(sid, "tool_call_update"));
+        var updates = h.Client.Updates(sid, "tool_call_update").ToList();
+        Assert.Equal(2, updates.Count);
+        // The card shows the change before the question: a client that keeps the card and ignores what the request
+        // carries (Qt Creator, Code Wicket) still shows the diff being approved.
+        var shown = updates[0];
+        Assert.Equal(id, shown.GetProperty("toolCallId").GetString());
+        var shownDiff = Assert.Single(shown.GetProperty("content").EnumerateArray(), c => c.GetProperty("type").GetString() == "diff");
+        Assert.Equal("new text\n", shownDiff.GetProperty("newText").GetString());
+        var done = updates[^1];
         Assert.Equal(id, done.GetProperty("toolCallId").GetString());
         Assert.Equal("completed", done.GetProperty("status").GetString());
         Assert.Equal("new text\n", File.ReadAllText(file));
-        // The call is on the wire before the question about it.
+        // The call, then its diff, are on the wire before the question about it.
         var lines = h.Client.Lines.ToList();
-        Assert.True(lines.FindIndex(l => l.Contains("\"tool_call\"", StringComparison.Ordinal))
-                    < lines.FindIndex(l => l.Contains("session/request_permission", StringComparison.Ordinal)));
+        var asking = lines.FindIndex(l => l.Contains("session/request_permission", StringComparison.Ordinal));
+        Assert.True(lines.FindIndex(l => l.Contains("\"tool_call\"", StringComparison.Ordinal)) < asking);
+        Assert.True(lines.FindIndex(l => l.Contains("\"tool_call_update\"", StringComparison.Ordinal)) < asking);
     }
 
     /// <summary>
@@ -896,7 +905,8 @@ public sealed class AcpAgentTests : IDisposable
         await PromptAsync(h, sid, "write it");
 
         Assert.False(File.Exists(file));
-        Assert.Equal("failed", Assert.Single(h.Client.Updates(sid, "tool_call_update")).GetProperty("status").GetString());
+        // The card showed the change before the question, then ends failed.
+        Assert.Equal("failed", h.Client.Updates(sid, "tool_call_update").Last().GetProperty("status").GetString());
     }
 
     [Fact]
@@ -983,6 +993,68 @@ public sealed class AcpAgentTests : IDisposable
 
         Assert.Contains(Strings.AcpCommandNeedsEditor("/xray"), h.Client.Said(sid));
         Assert.Empty(h.Fake.ChatModels);
+    }
+
+    [Fact]
+    public async Task ACommand_IsTheCommand_WithTheFileTheClientAttachesToEveryMessage()
+    {
+        var file = Path.Combine(_root, "current.cs");
+        File.WriteAllText(file, "class Current { }\n");
+        await using var h = await StartAsync();
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+
+        // What Qt Creator sends: the typed text, then the current file.
+        var r = await h.Client.RequestAsync("session/prompt", new
+        {
+            sessionId = sid,
+            prompt = new object[]
+            {
+                new { type = "text", text = "/xray" },
+                new { type = "resource_link", uri = new Uri(file).AbsoluteUri, name = "current.cs" },
+            },
+        });
+
+        Assert.Equal("end_turn", StopReason(r));
+        Assert.Contains(Strings.AcpCommandNeedsEditor("/xray"), h.Client.Said(sid));
+        Assert.Empty(h.Fake.ChatModels);
+    }
+
+    [Fact]
+    public async Task ACommandThatBecomesAPrompt_KeepsWhatTheClientAttached()
+    {
+        var file = Path.Combine(_root, "notes.cs");
+        File.WriteAllText(file, "class Notes { /* ATTACHED-BODY */ }\n");
+        // A command the repository wrote: the host expands it into a prompt.
+        Directory.CreateDirectory(Path.Combine(_root, ".git"));
+        Directory.CreateDirectory(Path.Combine(_root, ".claude", "commands"));
+        File.WriteAllText(Path.Combine(_root, ".claude", "commands", "standup.md"),
+            "---\ndescription: Summarize\n---\nSummarize $ARGUMENTS for me.");
+        var asked = new List<string>();
+        await using var h = await StartAsync(fake: f => f.OnChatRequest = (_, history, _, _) =>
+        {
+            lock (asked) asked.Add(string.Join("\n", history.Where(m => m.Role == "user").Select(m => m.Content)));
+            return Task.FromResult(new ChatTurnResult("ok", null, 0, 0));
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+
+        var r = await h.Client.RequestAsync("session/prompt", new
+        {
+            sessionId = sid,
+            prompt = new object[]
+            {
+                new { type = "text", text = "/standup today" },
+                new { type = "resource_link", uri = new Uri(file).AbsoluteUri, name = "notes.cs" },
+            },
+        });
+
+        Assert.Equal("end_turn", StopReason(r));
+        lock (asked)
+        {
+            Assert.True(asked.Any(q => q.Contains("Summarize today for me.", StringComparison.Ordinal)), "said: " + h.Client.Said(sid));   // WITNESS: expanded
+            Assert.Contains(asked, q => q.Contains("ATTACHED-BODY", StringComparison.Ordinal));
+        }
     }
 
     [Fact]

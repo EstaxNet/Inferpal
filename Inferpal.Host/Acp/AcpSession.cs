@@ -551,15 +551,18 @@ internal sealed class AcpSession : IAsyncDisposable
         catch (Exception ex) { Diagnostics.Swallow("AcpSession.Cancel", ex); }
     }
 
+    /// <remarks>⚠ A command is what the user typed, whatever the client attached beside it: Qt Creator attaches the
+    /// current file to a new chat's first message, and a command that also asks for no attachment never reaches the host
+    /// there — it goes to the model as a question. ⚠ And what the client attached goes with whatever the command becomes:
+    /// a prompt it expands to, or the question it is when the host leaves it.</remarks>
     private async Task<string> RunTurnAsync(AcpPromptContent content)
     {
         var typed = content.Text.Trim();
-        if (typed.StartsWith('/') && content.Attachments.Count == 0 && content.Notes.Count == 0)
-            return await SlashAsync(typed);
+        if (typed.StartsWith('/')) return await SlashAsync(typed, content);
         return await ChatAsync(typed, content);
     }
 
-    private async Task<string> SlashAsync(string typed)
+    private async Task<string> SlashAsync(string typed, AcpPromptContent content)
     {
         var head = typed.Split([' ', '\t', '\n'], 2)[0];
         if (EditorOnlyCommands.Contains(head)) return SayNotice(typed, Strings.AcpCommandNeedsEditor(head.ToLowerInvariant()));
@@ -581,7 +584,7 @@ internal sealed class AcpSession : IAsyncDisposable
             // The host refused (a turn already running): its sentence, never the command sent to the model.
             return SayNotice(typed, ex.Message);
         }
-        if (!result.Handled) return await ChatAsync(typed, new AcpPromptContent(typed, [], []));
+        if (!result.Handled) return await ChatAsync(typed, content);
 
         var notes = new List<string>();
         string? sendAsPrompt = null;
@@ -627,7 +630,7 @@ internal sealed class AcpSession : IAsyncDisposable
                     break;
             }
         }
-        if (sendAsPrompt is not null) return await ChatAsync(sendAsPrompt, new AcpPromptContent(sendAsPrompt, [], []));
+        if (sendAsPrompt is not null) return await ChatAsync(sendAsPrompt, content with { Text = sendAsPrompt });
 
         var said = string.Join("\n\n", new[] { result.Markdown ?? string.Empty }.Concat(notes).Where(s => s.Length > 0));
         return SayNotice(typed, said);
@@ -1155,6 +1158,12 @@ internal sealed class AcpSession : IAsyncDisposable
         // The changes themselves when there are some (the client draws them), else the question as the card words it —
         // the command, the URL, the summary of a rename: what the human reads before answering.
         var content = diffs.Count > 0 ? diffs : [TextContent(note.Message)];
+        // ⚠ The card the client already draws for the call gets the diffs first (same queue: on screen before the
+        // question). Qt Creator keeps that card and ignores what the request carries: without this update the user
+        // approves a change the card does not show. Diffs only — a question written on the card would stay there if the
+        // turn ended before the call does.
+        if (diffs.Count > 0 && note.CallId is not null && _calls.ContainsKey(note.CallId))
+            Update(new { sessionUpdate = "tool_call_update", toolCallId = id, content = diffs });
 
         try
         {
