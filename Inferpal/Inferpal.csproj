@@ -637,11 +637,13 @@
     <PackageReference Include="Microsoft.VisualStudio.Text.UI.Wpf"  Version="17.14.249"   PrivateAssets="all" />
 
     <!-- ── Security remediation ─────────────────────────────────────────────
-         MessagePack is pulled in transitively by the VS Extensibility SDK at 2.5.198,
-         which GHSA-hv8m-jj95-wg3x flags (LZ4 decompression out-of-bounds read). Pin the
-         patched 2.5.301. PrivateAssets="all" keeps it compile/restore-only: like the rest
-         of the SDK, VS provides MessagePack at runtime and it is not shipped in the VSIX. -->
-    <PackageReference Include="MessagePack" Version="2.5.301" PrivateAssets="all" />
+         MessagePack is pulled in transitively by the VS Extensibility SDK at 2.5.198, which
+         advisories flag (GHSA-hv8m-jj95-wg3x: LZ4 decompression out-of-bounds read;
+         GHSA-qhrr-8q5h-9q3h: an array allocated before the depth check). Pin a release none
+         flags, the same in Inferpal.InProc and Inferpal.Host. PrivateAssets="all" keeps it
+         compile/restore-only: like the rest of the SDK, VS provides MessagePack at runtime and
+         it is not shipped in the VSIX. -->
+    <PackageReference Include="MessagePack" Version="2.5.303" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>
