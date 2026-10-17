@@ -135,15 +135,21 @@ public sealed class AcpAgentTests : IDisposable
     private async Task<Harness> StartAsync(Func<CancellationToken, Task<bool>>? ready = null,
                                           Action<FakeInferenceProvider>? fake = null,
                                           Func<FakeInferenceProvider, HostServer>? host = null,
-                                          string? webDir = null, Func<string, bool>? openBrowser = null)
+                                          string? webDir = null, Func<string, bool>? openBrowser = null,
+                                          string? limitsTold = null)
     {
         var provider = new FakeInferenceProvider { RunAgentThroughChat = true, ModelNames = ["test-model"] };
         provider.ChatResult = new ChatTurnResult("ok", null, 0, 0);
         fake?.Invoke(provider);
+        // Each agent its own record of the editors told the limits, unless a test shares one between "processes".
+        var told = new Inferpal.Services.Persistence.AppDataJsonFile<Dictionary<string, string>>("acp-limits-told.json", "Test")
+        {
+            PathOverride = limitsTold ?? Path.Combine(_root, $"limits-told-{Guid.NewGuid():N}.json"),
+        };
         var agent = new AcpAgent(
             () => host?.Invoke(provider)
                   ?? new HostServer(_ => provider, () => new InferpalConfig { RagEnabled = false, DefaultModel = "test-model" }),
-            ready ?? (_ => Task.FromResult(true)), webDir, openBrowser ?? (_ => true));
+            ready ?? (_ => Task.FromResult(true)), webDir, openBrowser ?? (_ => true), told);
         var (agentSide, clientSide) = FullDuplexStream.CreatePair();
         var rpc = AcpRpc.Create(agentSide, agentSide, agent);
         agent.Attach(rpc);
@@ -817,6 +823,123 @@ public sealed class AcpAgentTests : IDisposable
         var asking = lines.FindIndex(l => l.Contains("session/request_permission", StringComparison.Ordinal));
         Assert.True(lines.FindIndex(l => l.Contains("\"tool_call\"", StringComparison.Ordinal)) < asking);
         Assert.True(lines.FindIndex(l => l.Contains("\"tool_call_update\"", StringComparison.Ordinal)) < asking);
+    }
+
+    /// <summary>
+    /// ⚠ The editor's stdio MCP server is the same server with or without <c>"type": "stdio"</c>: JetBrains IDEs write
+    /// the type, and a reader that only takes the untyped form refuses their server as a transport it does support.
+    /// </summary>
+    [Fact]
+    public void AnEditorsStdioServer_IsTaken_WithOrWithoutItsType()
+    {
+        var p = JsonSerializer.SerializeToElement(new
+        {
+            mcpServers = new object[]
+            {
+                new { name = "zed-style", command = "tool", args = new[] { "a" }, env = Array.Empty<object>() },
+                new { type = "stdio", name = "rider", command = "rider64.exe", args = new[] { "stdioMcpServer" },
+                      env = new[] { new { name = "IJ_MCP_AUTH_TOKEN", value = "t" } } },
+                new { type = "http", name = "web", url = "http://127.0.0.1:1/mcp", headers = Array.Empty<object>() },
+                new { type = "sse", name = "old", url = "http://127.0.0.1:1/sse", headers = Array.Empty<object>() },
+            },
+        });
+
+        var servers = AcpAgent.McpServers(p);
+
+        Assert.Equal(["zed-style", "rider", "web"], servers.Select(s => s.Name));
+        var rider = servers[1];
+        Assert.Equal("rider64.exe", rider.Command);
+        Assert.Equal(["stdioMcpServer"], rider.Args!);
+        Assert.Equal("t", rider.Env!["IJ_MCP_AUTH_TOKEN"]);
+    }
+
+    /// <summary>
+    /// ⚠ What Inferpal does not do in an ACP client is told once per editor on the machine, not once per agent process:
+    /// a JetBrains IDE starts one agent per chat, and a notice told per process comes after the first answer of every
+    /// chat.
+    /// </summary>
+    [Fact]
+    public async Task TheLimitsNotice_IsToldOncePerEditor_NotOncePerAgentProcess()
+    {
+        var told = Path.Combine(_root, "told.json");
+        var notice = Strings.AcpLimitsNotice(AcpReadiness.DocsUrl);
+        async Task<(string First, string Second)> ChatAsync(string client)
+        {
+            await using var h = await StartAsync(limitsTold: told);
+            await h.Client.RequestAsync("initialize", new
+            {
+                protocolVersion = 1,
+                clientCapabilities = new { },
+                clientInfo = new { name = client, version = "1.0" },
+            });
+            var sid = await NewSessionAsync(h);
+            await PromptAsync(h, sid, "first");
+            var first = h.Client.Said(sid);
+            await PromptAsync(h, sid, "second");
+            return (first, h.Client.Said(sid)[first.Length..]);
+        }
+
+        var rider = await ChatAsync("JetBrains.JetBrains Rider");
+        Assert.Contains(notice, rider.First);
+        Assert.DoesNotContain(notice, rider.Second);
+        // The next chat is another agent process: the same editor was told already.
+        var next = await ChatAsync("JetBrains.JetBrains Rider");
+        Assert.Contains("ok", next.First);
+        Assert.DoesNotContain(notice, next.First);
+        // Another editor has not been told.
+        Assert.Contains(notice, (await ChatAsync("zed")).First);
+
+        // A record that cannot be read leaves the notice said, and is replaced: it does not come back at every chat.
+        File.WriteAllText(told, "not json");
+        Assert.Contains(notice, (await ChatAsync("JetBrains.JetBrains Rider")).First);
+        var after = await ChatAsync("JetBrains.JetBrains Rider");
+        Assert.Contains("ok", after.First);
+        Assert.DoesNotContain(notice, after.First);
+    }
+
+    /// <summary>
+    /// One call that changes two files asks one question: the card carries every file's change, before the question
+    /// and in it — the second file is approved too, so it is shown too.
+    /// </summary>
+    [Fact]
+    public async Task ACallThatChangesTwoFiles_ShowsBothChanges_BeforeItsOneQuestion()
+    {
+        var alpha = Path.Combine(_root, "alpha.txt");
+        var gamma = Path.Combine(_root, "gamma.txt");
+        File.WriteAllText(alpha, "ALPHA is the first word.\n");
+        File.WriteAllText(gamma, "BETA is the second word.\n");
+        await using var h = await StartAsync(fake: f => f.OnChatRequest = async (_, _, tools, _) =>
+        {
+            await tools.ExecuteAsync("apply_edits", JsonSerializer.SerializeToElement(new
+            {
+                edits = new[]
+                {
+                    new { path = alpha, old_content = "ALPHA", new_content = "OMEGA" },
+                    new { path = gamma, old_content = "BETA", new_content = "DELTA" },
+                },
+            }), CancellationToken.None);
+            return new ChatTurnResult("Both edited.", null, 0, 0);
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+        h.Client.Answer = (method, _) => method == "session/request_permission"
+            ? new { outcome = new { outcome = "selected", optionId = "allow_once" } }
+            : null;
+
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, sid, "edit both")));
+
+        var permission = Assert.Single(h.Client.Requests, r => r.GetProperty("method").GetString() == "session/request_permission");
+        static string[] Paths(JsonElement content) => [.. content.EnumerateArray()
+            .Where(c => c.GetProperty("type").GetString() == "diff")
+            .Select(c => Path.GetFileName(c.GetProperty("path").GetString()!))];
+        Assert.Equal(["alpha.txt", "gamma.txt"], Paths(permission.GetProperty("params").GetProperty("toolCall").GetProperty("content")));
+        var shown = h.Client.Updates(sid, "tool_call_update").First();
+        Assert.Equal(["alpha.txt", "gamma.txt"], Paths(shown.GetProperty("content")));
+        var lines = h.Client.Lines.ToList();
+        Assert.True(lines.FindIndex(l => l.Contains("\"tool_call_update\"", StringComparison.Ordinal))
+                    < lines.FindIndex(l => l.Contains("session/request_permission", StringComparison.Ordinal)));
+        Assert.Equal("OMEGA is the first word.\n", File.ReadAllText(alpha));
+        Assert.Equal("DELTA is the second word.\n", File.ReadAllText(gamma));
     }
 
     /// <summary>

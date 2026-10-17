@@ -227,14 +227,9 @@ internal sealed class PrefillRates
         lock (_lock)
         {
             // Read again: the other editor of the machine may have written since. ⚠ A read that fails is read again
-            // before anything is written: the other editor replacing the file holds it for a moment, and a write made
-            // from the empty fallback would erase every other model's reads. Still unreadable, it is replaced.
-            var (all, unreadable) = _file.Read(new Dictionary<string, Entry>());
-            for (var retry = 0; unreadable && retry < 3; retry++)
-            {
-                Thread.Sleep(50);
-                (all, unreadable) = _file.Read(new Dictionary<string, Entry>());
-            }
+            // before anything is written: a write made from the empty fallback would erase every other model's reads.
+            // Still unreadable, it is replaced.
+            var (all, _) = _file.ReadSettled(new Dictionary<string, Entry>());
             var key   = Key(server, model);
             var entry = all.GetValueOrDefault(key) ?? new Entry();
             change(entry);

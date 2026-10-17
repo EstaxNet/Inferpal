@@ -47,14 +47,18 @@ internal sealed class AcpAgent : IAsyncDisposable
     private readonly Task _sender;
     private JsonRpc? _rpc;
     private int _limitsSaid;
+    private readonly Services.Persistence.AppDataJsonFile<Dictionary<string, string>> _limitsTold;
 
     /// <param name="hostFactory">The host each session drives (test seam).</param>
     /// <param name="ready">Whether Inferpal can answer without being set up first (<see cref="AcpReadiness"/>).</param>
     /// <param name="webDir">The settings window's files (test seam; <see cref="SettingsWindowServer.DefaultWebDir"/>).</param>
     /// <param name="openBrowser">Opens an address in the browser (test seam; <see cref="SettingsWindowServer.OpenInBrowser"/>).</param>
+    /// <param name="limitsTold">Where the editors told the limits are kept (test seam; <see cref="LimitsToldShared"/>).</param>
     public AcpAgent(Func<HostServer>? hostFactory = null, Func<CancellationToken, Task<bool>>? ready = null,
-                    string? webDir = null, Func<string, bool>? openBrowser = null)
+                    string? webDir = null, Func<string, bool>? openBrowser = null,
+                    Services.Persistence.AppDataJsonFile<Dictionary<string, string>>? limitsTold = null)
     {
+        _limitsTold  = limitsTold ?? LimitsToldShared;
         _hostFactory = hostFactory ?? (() => new HostServer());
         _ready       = ready ?? AcpReadiness.IsReadyAsync;
         _webDir      = webDir ?? SettingsWindowServer.DefaultWebDir;
@@ -129,6 +133,9 @@ internal sealed class AcpAgent : IAsyncDisposable
     /// <summary>The client for diagnostics ("zed/0.210.4").</summary>
     internal string? ClientName { get; private set; }
 
+    /// <summary>The client as its versions share it ("zed", "JetBrains.JetBrains Rider"): whom the limits were told.</summary>
+    private string? _clientKey;
+
     // ── Lifecycle ──────────────────────────────────────────────────────────────
 
     [JsonRpcMethod("initialize", UseSingleObjectParameterDeserialization = true)]
@@ -141,6 +148,7 @@ internal sealed class AcpAgent : IAsyncDisposable
         var info = Obj(p, "clientInfo");
         if ((Str(info, "title") ?? Str(info, "name")) is { Length: > 0 } editor) EditorName = editor;
         ClientName = Str(info, "name") is { } n ? n + (Str(info, "version") is { } v ? "/" + v : string.Empty) : null;
+        _clientKey = Str(info, "name");
 
         // Only version 1 exists here: it is the answer whatever was asked, as the protocol says.
         return new
@@ -541,9 +549,49 @@ internal sealed class AcpAgent : IAsyncDisposable
         }
     }
 
-    /// <summary>What Inferpal does not do in an ACP client, said once per process, after the first answer.</summary>
-    internal string? TakeLimitsNotice() =>
-        Interlocked.Exchange(ref _limitsSaid, 1) == 0 ? Strings.AcpLimitsNotice(AcpReadiness.DocsUrl) : null;
+    /// <summary>The editors already told what Inferpal does not do in them, shared by every agent process.</summary>
+    internal static readonly Services.Persistence.AppDataJsonFile<Dictionary<string, string>> LimitsToldShared =
+        new("acp-limits-told.json", "AcpAgent.LimitsTold");
+
+    private static readonly object LimitsToldGate = new();
+
+    /// <summary>
+    /// What Inferpal does not do in an ACP client, said after the first answer — once per editor and per wording of
+    /// the notice, for this user on this machine.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠ Not once per process: JetBrains IDEs start one agent per chat, and a notice said per process comes back after
+    /// the first answer of every chat — a reopened thread that already shows it included. Each editor told is kept on
+    /// disk with the wording it was told, link left out (a link that follows the version would make every release a new
+    /// wording): a notice whose words change, or change language, is said again. An editor that gives no
+    /// <c>clientInfo.name</c> is told once per process — its displayed title can change with its edition or language.
+    /// </para>
+    /// <para>
+    /// A file that cannot be written leaves the notice said, never lost. One that cannot be read is read again, then
+    /// replaced: what it held costs at most one more notice per editor — as do two processes recording at the same
+    /// moment, each from its own read, or a notice recorded whose thread closes before it is shown.
+    /// </para>
+    /// </remarks>
+    internal string? TakeLimitsNotice()
+    {
+        if (Interlocked.Exchange(ref _limitsSaid, 1) != 0) return null;
+        var notice = Strings.AcpLimitsNotice(AcpReadiness.DocsUrl);
+        if (_clientKey is not { Length: > 0 } client) return notice;
+        var wording = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(Strings.AcpLimitsNotice(string.Empty))))[..12];
+        lock (LimitsToldGate)
+        {
+            var (told, unreadable) = _limitsTold.ReadSettled(new Dictionary<string, string>(StringComparer.Ordinal));
+            if (!unreadable && told.TryGetValue(client, out var was) && was == wording) return null;
+            var record = unreadable
+                ? new Dictionary<string, string>(StringComparer.Ordinal)
+                : new Dictionary<string, string>(told, StringComparer.Ordinal);
+            record[client] = wording;
+            _limitsTold.Save(record);
+        }
+        return notice;
+    }
 
     // ── Reading params ──────────────────────────────────────────────────────────
 
@@ -585,6 +633,8 @@ internal sealed class AcpAgent : IAsyncDisposable
         Services.Tools.PathSanitizer.IsForeignAbsolute(path) || (OperatingSystem.IsWindows() && path.StartsWith('/'));
 
     /// <summary>The editor's MCP servers (<c>mcpServers</c>): stdio and HTTP; an SSE one is not supported, and skipped.</summary>
+    /// <remarks>⚠ A stdio server comes with no <c>type</c> (Zed, Qt Creator) or with <c>"type": "stdio"</c> (JetBrains
+    /// IDEs): both are the same server.</remarks>
     internal static IReadOnlyList<McpSessionServerDto> McpServers(JsonElement p)
     {
         var list = new List<McpSessionServerDto>();
@@ -596,10 +646,16 @@ internal sealed class AcpAgent : IAsyncDisposable
             var type = Str(s, "type");
             if (type == "http" && Str(s, "url") is { } url)
                 list.Add(new McpSessionServerDto(name, Url: url, Headers: Pairs(s, "headers")));
-            else if (type is null && Str(s, "command") is { } command)
+            else if (type is null or "stdio" && Str(s, "command") is { } command)
                 list.Add(new McpSessionServerDto(name, command, StringList(s, "args"), Pairs(s, "env")));
             else
-                Diagnostics.Record("Acp", $"MCP server '{name}' from the editor was not started: transport '{type ?? "?"}' is not supported here.");
+                Diagnostics.Record("Acp", $"MCP server '{name}' from the editor was not started: " + (type switch
+                {
+                    null when Str(s, "url") is not null => "it gives a 'url' without \"type\": \"http\".",
+                    null or "stdio"                     => "it has no 'command'.",
+                    "http"                              => "it has no 'url'.",
+                    _                                   => $"transport '{type}' is not supported here.",
+                }));
         }
         return list;
     }

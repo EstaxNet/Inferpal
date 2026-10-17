@@ -28,5 +28,9 @@ internal static class TestConfigIsolation
         // And for the reading speeds every client learns: a test's turn against a loopback server is a read too.
         Inferpal.Services.Inference.PrefillRates.Shared.File.PathOverride =
             Path.Combine(root, $"prefill-rates-{Environment.ProcessId}.json");
+
+        // And for the editors an ACP agent has told what it does not do in them.
+        Inferpal.Host.Acp.AcpAgent.LimitsToldShared.PathOverride =
+            Path.Combine(root, $"acp-limits-told-{Environment.ProcessId}.json");
     }
 }

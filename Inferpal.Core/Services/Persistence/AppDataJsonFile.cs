@@ -142,6 +142,26 @@ internal sealed class AppDataJsonFile<T>
         }
     }
 
+    /// <summary>
+    /// <see cref="Read"/> for a document another process of the machine rewrites: a read that fails is read again
+    /// before the caller decides anything.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The other process replacing the file holds it for a moment, and the read fails meanwhile. A caller that writes
+    /// right after from the fallback erases whatever that process kept. Still unreadable after the retries, the caller
+    /// is told so.
+    /// </remarks>
+    public (T Value, bool Unreadable) ReadSettled(T fallback)
+    {
+        var read = Read(fallback);
+        for (var retry = 0; read.Unreadable && retry < 3; retry++)
+        {
+            Thread.Sleep(50);
+            read = Read(fallback);
+        }
+        return read;
+    }
+
     /// <summary>Synchronous <see cref="LoadAsync"/>, for a caller the difference does not concern.</summary>
     public T Load(T fallback) => Read(fallback).Value;
 

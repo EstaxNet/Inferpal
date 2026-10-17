@@ -46,7 +46,8 @@ Start a thread with **Inferpal** from the Agent Panel's new-thread menu.
 
 ### JetBrains IDEs (Rider and the others)
 
-AI Chat → **⋯** → **Add Custom Agent**, which opens `~/.jetbrains/acp.json`:
+The AI Chat needs the **AI Assistant** plugin: the AI Chat panel offers to install it, then restart the IDE. AI
+Chat → **⋯** → **Add Custom Agent** opens `~/.jetbrains/acp.json`:
 
 ```json
 {
@@ -59,8 +60,23 @@ AI Chat → **⋯** → **Add Custom Agent**, which opens `~/.jetbrains/acp.json
 }
 ```
 
-Give the **full path** of the executable. No JetBrains AI subscription is needed. Pick **Inferpal** in the AI Chat
-agent list.
+Give the **full path** of the executable. No JetBrains AI subscription is needed, and the JetBrains AI activation
+the panel asks for can be left incomplete. Pick **Inferpal** in the AI Chat agent list.
+
+Seen with Rider 2026.2: answers with their thinking, the mode and model buttons, every change asked first — **click
+the file name on the card** to open its diff before you answer —, Stop, and the threads listed in **Chat History** and
+reopened after Rider was closed and started again (a Rider ended by force came back with an empty list).
+
+- ⚠ **Rider hands every session its own MCP server**: 93 tools, about 40,000 tokens of tool definitions sent with
+  every question — more than a model loaded with a 32K context can take. Inferpal's message then names that share.
+  Turn off the tool groups you do not need in **Settings → Tools → MCP Server → Exposed Tools** (each group off comes
+  off every question: dotTrace's six tools are about 4,400 tokens), or load the model with a larger context.
+- ⚠ **When one call changes several files, Rider's card names the first one only, and opens only its diff.** The
+  other files are in the same approval: Inferpal sends every file's change with the question, but Rider does not show
+  them. To see each change before it is made, ask for one file at a time.
+- Rider attaches the file you are viewing to every message.
+- Inferpal reads files through Rider, as Rider holds them: a file another program has just changed can be read in the
+  version Rider loaded last, until Rider reloads it.
 
 ### Neovim (CodeCompanion)
 
@@ -204,8 +220,8 @@ With a local Ollama already running, there is nothing to set up: Inferpal finds 
 
 ## What stays in Visual Studio and VS Code
 
-ACP gives an agent no editor of its own, so these are not available in an ACP client — the first answer of a session
-says so once:
+ACP gives an agent no editor of its own, so these are not available in an ACP client — the first answer in each
+editor says so, once:
 
 - inline suggestions (ghost text);
 - the debugger tools (`/debug`, the debugger capture of `/tdd`);

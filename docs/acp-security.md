@@ -74,15 +74,19 @@ started directly. Not yet tried from Zed or a JetBrains IDE.
 ## Phones and browsers: WebSocket bridges
 
 Mobile and web clients cannot start a program; they connect to a WebSocket address, and a bridge on your machine starts
-the agent for each connection. The bridge some clients recommend, `stdio-to-ws` (0.2.0, read in its source and
-measured):
+the agent for each connection. Two bridges go by the name some clients recommend — `stdio-to-ws` and
+`@rebornix/stdio-to-ws`, the one acp-ui shows (both 0.2.0, read in their source and measured). Both:
 
-- **listens on every network interface** of the machine — measured; its command line has no option to choose the
+- **listen on every network interface** of the machine — measured; their command line has no option to choose the
   address;
-- has **no authentication and no encryption**, and **does not check which web page connects**: a page open in a
-  browser that can reach its port — on the same machine included — can try to connect; some browsers ask you first,
+- have **no authentication and no encryption**, and **do not check which web page connects**: a page open in a
+  browser that can reach the port — on the same machine included — can try to connect; some browsers ask you first,
   the bridge never refuses;
-- starts **a new agent for every connection**, with your settings, your models and your permissions.
+- start **a new agent for every connection**, with your settings, your models and your permissions.
+
+`@rebornix/stdio-to-ws` also keeps the agent running after the connection drops when started with `--persist`
+(`--grace-period -1`: until the bridge stops), and prints every message — your files' contents included — to its
+console, even when started with `--quiet` (measured).
 
 So, with such a bridge:
 
