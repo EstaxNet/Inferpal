@@ -160,9 +160,44 @@ and Stop.
 - With a folder opened instead of a solution, Code Wicket started the session in the folder **above** it, and
   Inferpal worked on that whole folder. Not tried with a solution open.
 
+### acp-ui (desktop)
+
+[acp-ui](https://github.com/formulahendry/acp-ui) reads its agents from `agents.json` (`%APPDATA%\acp-ui\` on
+Windows, `~/.config/acp-ui/` on Linux, `~/Library/Application Support/acp-ui/` on macOS):
+
+```json
+{
+  "agents": {
+    "Inferpal": {
+      "command": "C:\\Tools\\Inferpal\\Inferpal.Host.exe",
+      "args": ["--acp"],
+      "env": {}
+    }
+  }
+}
+```
+
+Pick **Inferpal**, choose the folder with the folder button (the field does not take a typed path on the desktop),
+then **New Session**.
+
+Seen with acp-ui 0.1.16 on Windows: answers with their thinking, the mode button, every change asked first, Stop, and
+the saved sessions reopened after a restart.
+
+- ⚠ **acp-ui's approval dialog shows the call's title (*Change a file · alpha.txt*) and its kind, not the diff**, and
+  neither does the call's line afterwards: the change is seen in the file once it is made.
+- A reopened session has no mode button until a new one is started.
+- Its phone and browser builds reach an agent through a WebSocket bridge: read
+  [Running the agent across machines](acp-security.md) first — the bridge acp-ui shows listens on every interface.
+
 ### Emacs and other clients
 
-Any ACP client runs Inferpal the same way: the executable, with `--acp`, as a local agent over stdio.
+Any ACP client runs Inferpal the same way: the executable, with `--acp`, as a local agent over stdio. Two that we
+have not played, read in their code and documentation:
+
+- **Toad** (terminal, Linux and macOS — WSL on Windows): its agent list is the one it ships, and
+  `toad acp "/path/to/Inferpal.Host --acp" /path/to/project -t Inferpal` starts any agent.
+- **hapi** (phone and browser) offers a fixed list of agents; its DeepSeek Harness entry takes any ACP server —
+  `HAPI_DSH_ACP_COMMAND=/path/to/Inferpal.Host HAPI_DSH_ACP_ARGS_JSON='["--acp"]' hapi dsh` —, for fresh sessions only.
 
 ## Set it up
 
