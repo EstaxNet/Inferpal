@@ -98,7 +98,8 @@ internal static class CommitCommandHandler
                 tools:   EmptyToolRegistry.Instance,
                 onStep:  _ => { },
                 onToken: token => onToken?.Invoke(token),
-                ct:      ct);
+                ct:      ct,
+                effort:  ReasoningEffort.Off);
 
             // ⚠ A FAILED run returns its error as the reply: pre-filled, the refusal would sit one Enter away from
             // becoming a commit message. The message says why nothing is proposed.

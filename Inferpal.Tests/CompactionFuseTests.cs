@@ -154,7 +154,8 @@ public sealed class CompactionFuseTests
         Assert.True(at >= 0, "the fuse is gone from this summarizing call");          // WITNESS
         var send = code.IndexOf("SendChatAsync(", at, StringComparison.Ordinal);
         var call = code[send..code.IndexOf(';', send)];
-        Assert.Contains("fuse.Progress, cts.Token", call.Replace("onToken: ", ""), StringComparison.Ordinal);
+        // The fuse's progress as the token callback, and a summary asks for no reasoning (UtilityCallsCarryNoReasoningTests).
+        Assert.Contains("fuse.Progress, ReasoningEffort.Off, cts.Token", call.Replace("onToken: ", ""), StringComparison.Ordinal);
         Assert.Contains("onThinking: fuse.Progress", call, StringComparison.Ordinal);
     }
 

@@ -24,10 +24,11 @@ public class RunWindowCompactionTests
         private int _calls;
         public List<int> ElidedPerRequest { get; } = [];
 
+        // The turn the loop sends, effort included: the plain one forwards to it.
         public override Task<ChatTurnResult> SendChatAsync(
             string model, List<ChatMessageDto> messages, IToolRegistry tools, Action<string>? onToken,
-            CancellationToken ct, TaskComplexity complexity = TaskComplexity.Normal, string? toolChoice = null,
-            Action<string>? onThinking = null)
+            ReasoningEffort effort, CancellationToken ct, TaskComplexity complexity = TaskComplexity.Normal,
+            string? toolChoice = null, Action<string>? onThinking = null)
         {
             ElidedPerRequest.Add(messages.Count(m => m.Content?.StartsWith(Elided, StringComparison.Ordinal) == true));
             _calls++;

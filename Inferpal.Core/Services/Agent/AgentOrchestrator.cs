@@ -462,8 +462,8 @@ internal sealed class AgentOrchestrator
             fuse.Arm(request);
 
             var turn = await _client.SendChatAsync(
-                utility, request.Messages, EmptyToolRegistry.Instance, fuse.Progress, cts.Token, TaskComplexity.Quick,
-                onThinking: fuse.Progress);
+                utility, request.Messages, EmptyToolRegistry.Instance, fuse.Progress, ReasoningEffort.Off, cts.Token,
+                TaskComplexity.Quick, onThinking: fuse.Progress);
             summary   = MarkdownParser.StripThinkTags(turn.TextContent);
             cut       = turn.CutAtLimit;
             repeating = turn.StoppedRepeating;

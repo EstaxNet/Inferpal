@@ -242,11 +242,43 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
     // ── Chat (SSE streaming) ───────────────────────────────────────────────────
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// ⚠ Sealed: the agent loop sends the turn that carries the effort, so a subclass that overrode this one would be
+    /// passed by in silence — it overrides the other.
+    /// </remarks>
+    public sealed override Task<ChatTurnResult> SendChatAsync(
+        string model,
+        List<ChatMessageDto> messages,
+        IToolRegistry tools,
+        Action<string>? onToken,
+        CancellationToken ct,
+        TaskComplexity complexity = TaskComplexity.Normal,
+        string? toolChoice = null,
+        Action<string>? onThinking = null)
+        => SendChatAsync(model, messages, tools, onToken, ReasoningEffort.Server, ct, complexity, toolChoice, onThinking);
+
+    /// <summary>
+    /// The servers and models that refused the reasoning effort they were sent (<c>base|model</c>): asked again without
+    /// it, for the rest of the process — as <see cref="PromptedTools.Models"/> keeps the models whose template refused
+    /// tools.
+    /// </summary>
+    internal static readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> ReasoningRefusals = new();
+
+    /// <summary>
+    /// The <c>reasoning_effort</c> this server takes for <paramref name="model"/> to give <paramref name="effort"/>, or
+    /// <c>null</c> to send nothing — the generic server's answer: a value a model's template does not know is not a lower
+    /// effort, so nothing is sent where the server does not say what the model takes.
+    /// </summary>
+    private protected virtual Task<string?> ReasoningEffortFieldAsync(string model, ReasoningEffort effort, CancellationToken ct)
+        => Task.FromResult<string?>(null);
+
+    /// <inheritdoc/>
     public override async Task<ChatTurnResult> SendChatAsync(
         string model,
         List<ChatMessageDto> messages,
         IToolRegistry tools,
         Action<string>? onToken,
+        ReasoningEffort effort,
         CancellationToken ct,
         TaskComplexity complexity = TaskComplexity.Normal,
         string? toolChoice = null,
@@ -289,6 +321,36 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // ⚠ The refusal comes through any of the three doors a server refuses by — an HTTP status, an error event in
         // the stream (LM Studio answers 200 and streams "event: error"), a bare error object — and nothing has been
         // generated yet in any of them, so each one retries.
+        // The reasoning the caller asks for, in the words this server takes for this model — nothing once refused.
+        var effortKey   = base_ + "|" + model;
+        var effortValue = effort != ReasoningEffort.Server && !ReasoningRefusals.ContainsKey(effortKey)
+            ? await ReasoningEffortFieldAsync(model, effort, ct)
+            : null;
+        // ⚠ Judged BEFORE the tools' refusal: a template that cannot render the effort fails in the words of one that
+        // cannot render tools ("Error rendering prompt with jinja template"), and the tools of the whole session would
+        // move into the prompt for a field one request carried. The effort goes first; only a second refusal, without
+        // it, moves the tools.
+        bool DropsTheEffort(string error) =>
+            effortValue is not null
+            && (error.Contains("reasoning_effort", StringComparison.OrdinalIgnoreCase) || PromptedTools.IsTemplateRefusal(error));
+        // The same request without the effort. The refusal is kept only once the request without it went through — a
+        // template error, only if the tools stayed where they were: otherwise the template failed on the tools, and one
+        // conversation's failing request would cost every later title its effort.
+        async Task<ChatTurnResult> WithoutTheEffortAsync(string error)
+        {
+            var named       = error.Contains("reasoning_effort", StringComparison.OrdinalIgnoreCase);
+            var wasPrompted = PromptedTools.Models.ContainsKey(promptedKey);
+            var answer = await SendChatAsync(model, messages, tools, onToken, ReasoningEffort.Server, ct, complexity, toolChoice, onThinking);
+            if (named || PromptedTools.Models.ContainsKey(promptedKey) == wasPrompted) RememberRefusal(error);
+            return answer;
+        }
+        void RememberRefusal(string error)
+        {
+            ReasoningRefusals.TryAdd(effortKey, 0);
+            Diagnostics.RecordOnce("OpenAiCompatible.ReasoningEffort",
+                $"{base_} refused reasoning_effort \"{effortValue}\" for \"{model}\" ({GitProcess.FirstLine(error)}): asked "
+                + "again without it, for the rest of this session.", effortKey);
+        }
         bool FallsBackToPromptedTools(string error)
         {
             if (defs is null || prompted || !PromptedTools.IsToolRefusal(error)) return false;
@@ -312,7 +374,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             TopP:        sampling?.TopP,
             TopK:        SendsExtendedSampling ? sampling?.TopK : null,
             MinP:        SendsExtendedSampling ? sampling?.MinP : null,
-            RepeatPenalty: SendsExtendedSampling ? sampling?.RepeatPenalty : null);
+            RepeatPenalty: SendsExtendedSampling ? sampling?.RepeatPenalty : null,
+            ReasoningEffort: effortValue);
 
         var deadline = TimeSpan.FromSeconds(TimeoutFor(complexity));
 
@@ -330,10 +393,14 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             RecordFailure();
             throw new AgentHttpException(Strings.MsgTimeout(base_), isTimeout: true);
         }
+        catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal) && DropsTheEffort(ex.Message))
+        {
+            return await WithoutTheEffortAsync(ex.Message);
+        }
         catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal)
                                               && FallsBackToPromptedTools(ex.Message))
         {
-            return await SendChatAsync(model, messages, tools, onToken, ct, complexity, toolChoice, onThinking);
+            return await SendChatAsync(model, messages, tools, onToken, effort, ct, complexity, toolChoice, onThinking);
         }
         catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal))
         {
@@ -404,8 +471,9 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                     // bare JSON error object here (no "data:" prefix) when it aborts after the 200 headers.
                     if (line.TrimStart().StartsWith('{') && TryExtractError(ParseErrorElement(line)) is { } bareError)
                     {
+                        if (chunkCount == 0 && DropsTheEffort(bareError)) return await WithoutTheEffortAsync(bareError);
                         if (chunkCount == 0 && FallsBackToPromptedTools(bareError))
-                            return await SendChatAsync(model, messages, tools, onToken, ct, complexity, toolChoice, onThinking);
+                            return await SendChatAsync(model, messages, tools, onToken, effort, ct, complexity, toolChoice, onThinking);
                         RecordFailure();
                         throw new AgentHttpException(MapServerError(bareError, base_, () => RequestSize.Of(messages, defs)), isTimeout: false);
                     }
@@ -426,8 +494,9 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                 // request in a tight loop, ending on a blank bubble with no explanation for the user.
                 if (TryExtractError(chunk?.Error ?? default) is { } serverError)
                 {
+                    if (chunkCount == 0 && DropsTheEffort(serverError)) return await WithoutTheEffortAsync(serverError);
                     if (chunkCount == 0 && FallsBackToPromptedTools(serverError))
-                        return await SendChatAsync(model, messages, tools, onToken, ct, complexity, toolChoice, onThinking);
+                        return await SendChatAsync(model, messages, tools, onToken, effort, ct, complexity, toolChoice, onThinking);
                     RecordFailure();
                     throw new AgentHttpException(MapServerError(serverError, base_, () => RequestSize.Of(messages, defs)), isTimeout: false);
                 }
@@ -637,7 +706,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         if (toolChoice == "required" && defs is not null
             && toolCalls is null && !contentPrintable && reasoningBuilder.Length == 0)
         {
-            return await SendChatAsync(model, messages, tools, onToken, ct, complexity, "auto", onThinking);
+            return await SendChatAsync(model, messages, tools, onToken, effort, ct, complexity, "auto", onThinking);
         }
 
         // ⚠ A turn that returns NOTHING — no text, no tool call, no reasoning, and no error — was

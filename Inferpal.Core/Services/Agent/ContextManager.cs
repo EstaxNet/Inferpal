@@ -238,7 +238,7 @@ internal static class ContextManager
             // ⚠ SendChatAsync, never RunAgentAsync: the agent loop reports a network failure as its
             // FinalResponse, and the error text would become the "summary" that replaces the turns.
             var turn = await client.SendChatAsync(
-                model, request.Messages, EmptyToolRegistry.Instance, onToken: fuse.Progress, cts.Token,
+                model, request.Messages, EmptyToolRegistry.Instance, fuse.Progress, ReasoningEffort.Off, cts.Token,
                 onThinking: fuse.Progress).ConfigureAwait(false);
 
             // ⚠ Stopped because the model kept repeating itself, the reply is a loop: kept, it would replace the turns

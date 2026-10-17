@@ -112,6 +112,11 @@ internal static class ModelRouter
     /// running-models read is a plain HTTP call, not gated by the <see cref="GpuScheduler"/>, so this
     /// is safe to call while holding the chat lease.
     /// </summary>
+    /// <remarks>
+    /// ⚠ What it resolves answers a background task — a title, a commit message, a summary, a recap — and is asked for
+    /// with <see cref="ReasoningEffort.Off"/>: the utility model is the chat model when its field is empty, and a title
+    /// must not pay the reasoning a question pays. Each caller has its test (<c>UtilityCallsCarryNoReasoningTests</c>).
+    /// </remarks>
     public static async Task<string> ResolveUtilityAsync(
         InferpalConfig config, IChatTurnClient client, CancellationToken ct)
     {

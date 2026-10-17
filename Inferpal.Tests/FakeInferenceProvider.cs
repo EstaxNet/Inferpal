@@ -24,12 +24,12 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     public bool                     ConnectionOk { get; set; } = true;
     public bool                     IsEmbeddingCircuitOpen { get; set; }
 
-    /// <summary>Optional override of <see cref="SendChatAsync"/> (token callback + ct);
+    /// <summary>Optional override of <see cref="SendChatAsync(string, List{ChatMessageDto}, IToolRegistry, Action{string}, ReasoningEffort, CancellationToken, TaskComplexity, string, Action{string})"/> (token callback + ct);
     /// null keeps the default constant <see cref="ChatResult"/>. Lets protocol tests
     /// stream tokens and honour cancellation.</summary>
     public Func<Action<string>?, CancellationToken, Task<ChatTurnResult>>? OnChat { get; set; }
 
-    /// <summary>Richer override of <see cref="SendChatAsync"/> for tests that need the prompt and
+    /// <summary>Richer override of <see cref="SendChatAsync(string, List{ChatMessageDto}, IToolRegistry, Action{string}, ReasoningEffort, CancellationToken, TaskComplexity, string, Action{string})"/> for tests that need the prompt and
     /// the exposed tools (e.g. the /bench runner) — checked before <see cref="OnChat"/>.</summary>
     public Func<string, List<ChatMessageDto>, IToolRegistry, Action<string>?, Task<ChatTurnResult>>? OnChatRequest { get; set; }
 
@@ -64,18 +64,27 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     public List<string> Deleted    { get; } = [];
     public List<string> Pulled     { get; } = [];
     public List<string> Unloaded   { get; } = [];
-    /// <summary>Model name of every <see cref="SendChatAsync"/> call, in order.</summary>
+    /// <summary>Model name of every <see cref="SendChatAsync(string, List{ChatMessageDto}, IToolRegistry, Action{string}, ReasoningEffort, CancellationToken, TaskComplexity, string, Action{string})"/> call, in order.</summary>
     public List<string> ChatModels { get; } = [];
     /// <summary>Every <see cref="RunAgentAsync"/> call (model + the history it received), in order.</summary>
     public List<(string Model, List<ChatMessageDto> History)> AgentRuns { get; } = [];
+    /// <summary>The reasoning effort every call asked for — chat turn and agent run alike — in order.</summary>
+    public List<ReasoningEffort> Efforts { get; } = [];
 
     // ── IChatTurnClient ───────────────────────────────────────────────────────
     public Task<ChatTurnResult> SendChatAsync(
         string model, List<ChatMessageDto> messages, IToolRegistry tools, Action<string>? onToken,
         CancellationToken ct, TaskComplexity complexity = TaskComplexity.Normal,
         string? toolChoice = null, Action<string>? onThinking = null)
+        => SendChatAsync(model, messages, tools, onToken, ReasoningEffort.Server, ct, complexity, toolChoice, onThinking);
+
+    public Task<ChatTurnResult> SendChatAsync(
+        string model, List<ChatMessageDto> messages, IToolRegistry tools, Action<string>? onToken,
+        ReasoningEffort effort, CancellationToken ct, TaskComplexity complexity = TaskComplexity.Normal,
+        string? toolChoice = null, Action<string>? onThinking = null)
     {
         ChatModels.Add(model);
+        Efforts.Add(effort);
         if (onThinking is not null) DriveThinking?.Invoke(onThinking);
         return OnChatRequest?.Invoke(model, messages, tools, onToken)
             ?? OnChat?.Invoke(onToken, ct)
@@ -84,7 +93,7 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
 
     // ── IInferenceProvider ──────────────────────────────────────────────────────
     /// <summary>
-    /// When true, <see cref="RunAgentAsync"/> answers through <see cref="SendChatAsync"/> — one model turn, like the
+    /// When true, <see cref="RunAgentAsync"/> answers through <see cref="SendChatAsync(string, List{ChatMessageDto}, IToolRegistry, Action{string}, ReasoningEffort, CancellationToken, TaskComplexity, string, Action{string})"/> — one model turn, like the
     /// real basic loop, so <see cref="OnChat"/>/<see cref="OnChatRequest"/> script it (streaming, cancellation,
     /// failures, the model name). Off, it returns the constant <see cref="ChatResult"/>.
     /// </summary>
@@ -101,26 +110,29 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     public Task<AgentResult> RunAgentAsync(
         string model, List<ChatMessageDto> history, IToolRegistry tools, Action<string> onStep,
         Action<string>? onToken, CancellationToken ct, TaskComplexity complexity = TaskComplexity.Normal,
-        Action<ToolExecution>? onToolExecuted = null, Action<string>? onThinking = null)
+        Action<ToolExecution>? onToolExecuted = null, Action<string>? onThinking = null,
+        ReasoningEffort effort = ReasoningEffort.Server)
     {
         AgentRuns.Add((model, history));
+        // A run answered through SendChatAsync records its effort there.
+        if (!RunAgentThroughChat) Efforts.Add(effort);
         if (OnAgentRun is { } run) return run(history, tools, onToolExecuted, ct);
         if (AgentRunResult is not null)
             return Task.FromResult(AgentRunResult with { UpdatedHistory = history });
         if (RunAgentThroughChat)
-            return RunOneChatTurnAsync(model, history, tools, onToken, ct, complexity, onThinking);
+            return RunOneChatTurnAsync(model, history, tools, onToken, effort, ct, complexity, onThinking);
         if (onThinking is not null) DriveThinking?.Invoke(onThinking);
         return Task.FromResult(new AgentResult(ChatResult.TextContent, [], history));
     }
 
     private async Task<AgentResult> RunOneChatTurnAsync(
         string model, List<ChatMessageDto> history, IToolRegistry tools, Action<string>? onToken,
-        CancellationToken ct, TaskComplexity complexity, Action<string>? onThinking)
+        ReasoningEffort effort, CancellationToken ct, TaskComplexity complexity, Action<string>? onThinking)
     {
         // The real loop never throws for a backend failure: it returns the message as the result. Mirrored, or a test
         // of a caller would see an exception the caller never gets.
         ChatTurnResult turn;
-        try { turn = await SendChatAsync(model, history, tools, onToken, ct, complexity, null, onThinking); }
+        try { turn = await SendChatAsync(model, history, tools, onToken, effort, ct, complexity, null, onThinking); }
         catch (AgentHttpException ex) { return new AgentResult(ex.Message, [], history, Failed: true); }
         return new AgentResult(turn.TextContent, [], history, turn.TokensUsed, turn.PromptTokens,
                                AnswerCut: turn.CutAtLimit, AnswerRepeating: turn.StoppedRepeating,

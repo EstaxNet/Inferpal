@@ -14,7 +14,7 @@ namespace Inferpal.Services.Inference;
 /// (Ollama and OpenAI-compatible). Holds the cross-cutting concerns that do not depend on the
 /// wire format: the shared <see cref="HttpClient"/>, the chat + embedding circuit breakers, the
 /// per-task timeout policy, the streaming POST helper, and the whole agentic loop
-/// (<see cref="RunAgentAsync"/>, which only ever calls the abstract <see cref="SendChatAsync"/>).
+/// (<see cref="RunAgentAsync"/>, which only ever calls <see cref="SendChatAsync(string, List{ChatMessageDto}, IToolRegistry, Action{string}, ReasoningEffort, CancellationToken, TaskComplexity, string, Action{string})"/>).
 /// </summary>
 /// <remarks>
 /// Wire-format-specific operations are <c>abstract</c> (chat, embeddings, model listing, connection
@@ -400,6 +400,20 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         Action<string>? onThinking = null);
 
     /// <inheritdoc/>
+    /// <remarks>A backend that cannot ask for an effort answers as the plain turn does.</remarks>
+    public virtual Task<ChatTurnResult> SendChatAsync(
+        string model,
+        List<ChatMessageDto> messages,
+        IToolRegistry tools,
+        Action<string>? onToken,
+        ReasoningEffort effort,
+        CancellationToken ct,
+        TaskComplexity complexity = TaskComplexity.Normal,
+        string? toolChoice = null,
+        Action<string>? onThinking = null)
+        => SendChatAsync(model, messages, tools, onToken, ct, complexity, toolChoice, onThinking);
+
+    /// <inheritdoc/>
     public abstract Task<float[]?> GetEmbeddingAsync(string text, string model, CancellationToken ct);
 
     /// <inheritdoc/>
@@ -491,7 +505,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     // ── Agentic loop (backend-agnostic: only calls SendChatAsync) ──────────────
 
     /// <summary>
-    /// Runs the basic agentic loop: one <see cref="SendChatAsync"/> turn at a time, executing any
+    /// Runs the basic agentic loop: one <see cref="SendChatAsync(string, List{ChatMessageDto}, IToolRegistry, Action{string}, ReasoningEffort, CancellationToken, TaskComplexity, string, Action{string})"/> turn at a time, executing any
     /// returned tool calls, until the model answers without tools or the configured iteration cap
     /// (<see cref="InferpalConfig.AgentMaxIterations"/>) is reached. Tool results are size-capped
     /// and the oldest are elided when the running context nears num_ctx (shared policies with
@@ -502,6 +516,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     /// <param name="tools">Registry of tools to expose to the model.</param>
     /// <param name="onStep">Called with a status string on each major step (thinking, calling tool).</param>
     /// <param name="onToken">Called with each streamed token for real-time display; <c>null</c> to disable.</param>
+    /// <param name="effort">The reasoning every turn of the run asks for — one effort for the whole run.</param>
     /// <returns>
     /// An <see cref="AgentResult"/> with the final response text, all tool executions,
     /// the updated conversation history, and token counts.
@@ -515,7 +530,8 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         CancellationToken ct,
         TaskComplexity complexity = TaskComplexity.Normal,
         Action<ToolExecution>? onToolExecuted = null,
-        Action<string>? onThinking = null)
+        Action<string>? onThinking = null,
+        ReasoningEffort effort = ReasoningEffort.Server)
     {
         var base_ = _config.BaseUrl.TrimEnd('/');
         if (string.IsNullOrWhiteSpace(base_))
@@ -566,7 +582,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
             ChatTurnResult turn;
             try
             {
-                turn = await SendChatAsync(model, messages, tools, onToken, ct, complexity, null, onThinking);
+                turn = await SendChatAsync(model, messages, tools, onToken, effort, ct, complexity, null, onThinking);
             }
             catch (OperationCanceledException) { throw; } // propagate user-initiated cancel
             catch (AgentHttpException ex)

@@ -63,9 +63,11 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     /// <summary>Normalized native model entry, shape-agnostic between the v1 and v0 APIs.
     /// <paramref name="MaxContextLength"/> is the model's capability; <paramref name="LoadedContextLength"/>
     /// (only meaningful while <paramref name="Loaded"/>) is the n_ctx the running instance was loaded with —
-    /// the window a request actually has to fit into.</summary>
+    /// the window a request actually has to fit into. <paramref name="ReasoningOptions"/> are the reasoning settings the
+    /// server publishes for the model (<c>off</c>, <c>low</c>, <c>on</c>…), <c>null</c> when it publishes none.</summary>
     private readonly record struct NativeModel(
-        string Id, bool Loaded, int? LoadedContextLength, int? MaxContextLength, long SizeBytes);
+        string Id, bool Loaded, int? LoadedContextLength, int? MaxContextLength, long SizeBytes,
+        IReadOnlyList<string>? ReasoningOptions = null);
 
     // Queries the native models endpoint, tolerating both LM Studio shapes: the 0.4.0+ v1 payload
     // ({"models":[{"key",...}]}) first, then the legacy v0 payload ({"data":[{"id",...}]}). Whichever
@@ -90,7 +92,8 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
                         .Where(m => !string.IsNullOrEmpty(m.Key))
                         .Select(m => new NativeModel(
                             m.Key!, m.LoadedInstances is { Count: > 0 },
-                            LoadedContextFromInstances(m.LoadedInstances), m.MaxContextLength, m.SizeBytes ?? 0))
+                            LoadedContextFromInstances(m.LoadedInstances), m.MaxContextLength, m.SizeBytes ?? 0,
+                            ReasoningOptionsOf(m.Capabilities)))
                         .ToList();
             }
         }
@@ -113,6 +116,16 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
         }
 
         return [];
+    }
+
+    /// <summary>The reasoning settings a v1 entry publishes (<c>capabilities.reasoning.allowed_options</c>), or <c>null</c>.</summary>
+    internal static IReadOnlyList<string>? ReasoningOptionsOf(JsonElement? capabilities)
+    {
+        if (capabilities is not { ValueKind: JsonValueKind.Object } c
+            || !c.TryGetProperty("reasoning", out var reasoning) || reasoning.ValueKind != JsonValueKind.Object
+            || !reasoning.TryGetProperty("allowed_options", out var options) || options.ValueKind != JsonValueKind.Array)
+            return null;
+        return [.. options.EnumerateArray().Where(o => o.ValueKind == JsonValueKind.String).Select(o => o.GetString()!)];
     }
 
     // Digs the loaded context window out of a v1 entry's loaded_instances. LM Studio nests the
@@ -155,7 +168,8 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
         int? ctx;
         try
         {
-            var models = await GetNativeModelsAsync(ct);
+            // Read fresh, never from the shared snapshot: a model loaded since the last read would read as unknown.
+            var models = await NativeSnapshotAsync(ct, fresh: true);
             // Prefer the loaded instance of this model; the loaded n_ctx is only meaningful when loaded.
             var match = models.FirstOrDefault(m => m.Loaded && IdMatches(m.Id, model));
             ctx = match.Id is not null ? match.LoadedContextLength : null;
@@ -174,6 +188,83 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
 
         lock (_ctxLock) _ctxCache = (model, ctx, DateTime.UtcNow);
         return ctx;
+    }
+
+    // One read of the native list serves the requests a turn makes of it — the loaded window reads it fresh and keeps it,
+    // the reasoning settings take what it kept. A read that failed is kept too: a native API that hangs costs its budget
+    // once, not once per question asked of it — the title's whole budget otherwise goes on probes.
+    private readonly object _nativeLock = new();
+    private (List<NativeModel>? Models, Exception? Failure, DateTime At)? _nativeSnapshot;
+
+    /// <summary>The native model list — read now when <paramref name="fresh"/>, else as last read within 30 s.</summary>
+    private async Task<List<NativeModel>> NativeSnapshotAsync(CancellationToken ct, bool fresh = false)
+    {
+        if (!fresh)
+            lock (_nativeLock)
+                if (_nativeSnapshot is { } snapshot && DateTime.UtcNow - snapshot.At < TimeSpan.FromSeconds(30))
+                    return snapshot.Models ?? throw snapshot.Failure!;
+        try
+        {
+            var models = await GetNativeModelsAsync(ct);
+            lock (_nativeLock) _nativeSnapshot = (models, null, DateTime.UtcNow);
+            return models;
+        }
+        // The caller's Stop is not an answer of the server: never kept.
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex)
+        {
+            lock (_nativeLock) _nativeSnapshot = (null, ex, DateTime.UtcNow);
+            throw;
+        }
+    }
+
+    // What a model publishes describes the model, not an instance, and changes only when LM Studio does: cached briefly,
+    // keyed by model, like the loaded window.
+    private readonly object _reasoningLock = new();
+    private (string Model, bool CanTurnOff, DateTime At) _reasoningCache;
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// ⚠ <c>"none"</c> only, and only to a model whose native entry publishes <c>off</c> among its reasoning settings.
+    /// To one that publishes none, the field is not a lower effort: GLM 4.7 Flash, sent <c>"none"</c>, reasons six times
+    /// longer, and sent <c>"low"</c> answers nothing. And <c>/v1</c> refuses the native names themselves (<c>off</c>,
+    /// <c>on</c>) with HTTP 400: it takes <c>none</c>, <c>minimal</c>, <c>low</c>, <c>medium</c>, <c>high</c>,
+    /// <c>xhigh</c>.
+    /// </remarks>
+    private protected override async Task<string?> ReasoningEffortFieldAsync(string model, ReasoningEffort effort, CancellationToken ct)
+    {
+        if (effort != ReasoningEffort.Off) return null;
+        lock (_reasoningLock)
+            if (_reasoningCache.Model == model && DateTime.UtcNow - _reasoningCache.At < TimeSpan.FromSeconds(30))
+                return _reasoningCache.CanTurnOff ? "none" : null;
+
+        bool canTurnOff;
+        try
+        {
+            var models = await NativeSnapshotAsync(ct);
+            var entry  = models.FirstOrDefault(m => IdMatches(m.Id, model));
+            canTurnOff = entry.ReasoningOptions?.Contains("off", StringComparer.OrdinalIgnoreCase) == true;
+            if (models.Count == 0)
+                // A server that lists nothing natively (a /v1-only proxy) does not say what its models take: nothing sent.
+                Diagnostics.RecordOnce("LmStudio.ReasoningSettings",
+                    "LM Studio's native model list is empty or absent (/api/v1/models); no reasoning effort is sent.",
+                    "unreadable:" + HostRoot);
+            else
+                // Read again: the next time it cannot be is said again.
+                Diagnostics.Forget("LmStudio.ReasoningSettings", "unreadable:" + HostRoot);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex)
+        {
+            // Not known is not "it can": nothing is sent, said once.
+            Diagnostics.RecordOnce("LmStudio.ReasoningSettings",
+                $"The reasoning settings of the models could not be read ({ex.GetType().Name}: {ex.Message}); no reasoning "
+                + "effort is sent.", "unreadable:" + HostRoot);
+            canTurnOff = false;
+        }
+
+        lock (_reasoningLock) _reasoningCache = (model, canTurnOff, DateTime.UtcNow);
+        return canTurnOff ? "none" : null;
     }
 
     // LM Studio model keys can carry a quantization/variant suffix (e.g. "qwen/qwen3-27b" vs the

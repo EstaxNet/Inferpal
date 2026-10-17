@@ -70,6 +70,13 @@ Gemma 4 12B 77, Qwen3.5 4B 75, Ministral 3 3B 64, Qwen3.5 2B and Gemma 4 E4B 59,
 LFM2.5 1.2B 16. Qwen3.5 4B comes close to Gemma 4 12B in a third of the time, but does not fit beside the setups above
 on a 12 or 16 GB card.
 
+**Background tasks ask for no reasoning.** A session title, a commit message, a summary and the session recap are sent
+with `reasoning_effort: "none"` when LM Studio says the model can turn its reasoning off — when `off` is among the
+reasoning settings its model list publishes for that model (Qwen3.8 27B, Gemma 4 31B and Bonsai 27B do: they then write
+63 to 87 % fewer tokens). Nothing is sent to any other model: to one that publishes no such setting, the field is not a
+lower effort — GLM 4.7 Flash, sent `none`, reasons six times longer. Questions, agent runs and code actions keep the
+server's own setting. Ollama, llama-server and other OpenAI-compatible servers are sent nothing yet: not measured.
+
 ## How Inferpal reads a model
 
 **Tool calls.** When the server parses the model's calls, they arrive as structured `tool_calls` and nothing more is

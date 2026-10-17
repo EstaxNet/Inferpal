@@ -25,7 +25,10 @@ record OpenAiChatRequest(
     [property: JsonPropertyName("top_p")]          double? TopP          = null,
     [property: JsonPropertyName("top_k")]          int?    TopK          = null,
     [property: JsonPropertyName("min_p")]          double? MinP          = null,
-    [property: JsonPropertyName("repeat_penalty")] double? RepeatPenalty = null);
+    [property: JsonPropertyName("repeat_penalty")] double? RepeatPenalty = null,
+    // How much the model reasons: only in the words the server takes for that model (OpenAiCompatibleClient.
+    // ReasoningEffortFieldAsync), null otherwise — a value a template does not know is not a lower effort.
+    [property: JsonPropertyName("reasoning_effort")] string? ReasoningEffort = null);
 
 /// <summary>Asks the server to emit a final <c>usage</c> chunk while streaming.</summary>
 record OpenAiStreamOptions(
@@ -128,7 +131,9 @@ record LmStudioV1Model(
     [property: JsonPropertyName("loaded_instances")]   List<JsonElement>? LoadedInstances = null,
     [property: JsonPropertyName("max_context_length")] int? MaxContextLength = null,
     [property: JsonPropertyName("architecture")]       string? Architecture = null,
-    [property: JsonPropertyName("size_bytes")]         long? SizeBytes = null);
+    [property: JsonPropertyName("size_bytes")]         long? SizeBytes = null,
+    // What the model can do — under it, "reasoning": { "allowed_options": [...], "default": ... } for a model that reasons.
+    [property: JsonPropertyName("capabilities")]       JsonElement? Capabilities = null);
 
 /// <summary>Response from the legacy <c>GET /api/v0/models</c> (pre-0.4.0): list under <c>"data"</c>.</summary>
 record LmStudioModelsResponse(

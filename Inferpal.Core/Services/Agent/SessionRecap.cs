@@ -42,7 +42,8 @@ internal static class SessionRecap
             tools:   EmptyToolRegistry.Instance,
             onStep:  _ => { },
             onToken: null,
-            ct:      ct).ConfigureAwait(false);
+            ct:      ct,
+            effort:  ReasoningEffort.Off).ConfigureAwait(false);
 
         // ⚠ A failed run returns its error as the reply — and the recap joins the system prompt of every following
         // question.

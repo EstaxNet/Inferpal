@@ -52,7 +52,8 @@ internal static class SessionTitleGenerator
                 tools:   EmptyToolRegistry.Instance,
                 onStep:  _ => { },
                 onToken: null,
-                ct:      cts.Token);
+                ct:      cts.Token,
+                effort:  ReasoningEffort.Off);
 
             // A failed run returns its error as the reply: the session would be named after the refusal.
             if (result.Failed) return fallback;
