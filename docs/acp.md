@@ -168,6 +168,12 @@ says so once:
 - the commands that work on the editor or its panels: `/xray`, `/explain`, `/review`, `/fix`, `/refactor`, `/doc`,
   `/export`, `/branch`, `/agent-step`. To start over, open a new thread instead of `/clear`.
 
+## On another machine
+
+The agent is meant to run on the machine of the editor that starts it. To drive it from another computer, a phone or a
+browser, read [Running Inferpal's ACP agent across machines](acp-security.md) first: whoever holds the agent's
+connection answers its approvals.
+
 ## When something goes wrong
 
 - **Zed**: Command Palette → `dev: open acp logs` shows every message, and what the agent wrote on stderr.

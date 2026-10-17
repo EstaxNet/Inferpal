@@ -88,7 +88,7 @@ internal static class PathSanitizer
     /// model wrote out of habit would resolve INSIDE the workspace — a file literally named
     /// <c>C:\elsewhere\Other.cs</c> under the root, accepted where it has always been refused.
     /// </remarks>
-    private static bool IsForeignAbsolute(string path) =>
+    internal static bool IsForeignAbsolute(string path) =>
         (path.Length >= 3 && char.IsAsciiLetter(path[0]) && path[1] == ':' && path[2] is '\\' or '/')
         || path.StartsWith(@"\\", StringComparison.Ordinal);
 

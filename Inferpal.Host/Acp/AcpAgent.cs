@@ -195,7 +195,7 @@ internal sealed class AcpAgent : IAsyncDisposable
     [JsonRpcMethod("session/new", UseSingleObjectParameterDeserialization = true)]
     public async Task<object> NewSessionAsync(JsonElement p, CancellationToken ct)
     {
-        var cwd = Cwd(p);
+        var cwd = Cwd(p, mustExist: true);
         var servers = McpServers(p);
         // ⚠ Gated only for a client that can run the setup: without it, refusing would leave no way forward — the turn
         // then says what is missing, as it does in the editors.
@@ -556,13 +556,33 @@ internal sealed class AcpAgent : IAsyncDisposable
     private static string? Str(JsonElement o, string name) =>
         o.ValueKind == JsonValueKind.Object && o.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
 
-    /// <summary>The session's folder: required, absolute (the protocol says so), and a folder that exists.</summary>
-    private static string Cwd(JsonElement p)
+    /// <summary>The session's folder: required, absolute (the protocol says so) and, for a new session, a folder the agent
+    /// can open on its machine.</summary>
+    /// <remarks>
+    /// ⚠ The client names the folder as ITS machine does: through SSH or a bridge, a Windows client's <c>C:\…</c>
+    /// reaches an agent on Linux, a Linux client's <c>/home/…</c> one on Windows, and a folder only the client has
+    /// reaches a machine without it. A new session on such a folder works on nothing — no file, no instructions, every
+    /// tool answering "not found" — so it is refused, and named. ⚠ Fully qualified, never merely rooted: on Windows
+    /// <c>\repo</c> and <c>D:repo</c> are rooted, and resolve against wherever the agent was started. A saved conversation
+    /// reopens whatever became of its folder: reading it back needs none.
+    /// </remarks>
+    private static string Cwd(JsonElement p, bool mustExist = false)
     {
         var cwd = Str(p, "cwd");
-        if (string.IsNullOrWhiteSpace(cwd) || !Path.IsPathRooted(cwd)) throw new ArgumentException("'cwd' must be an absolute path.");
-        return Path.GetFullPath(cwd);
+        if (string.IsNullOrWhiteSpace(cwd) || !Path.IsPathFullyQualified(cwd))
+            throw new ArgumentException(cwd is not null && WrittenByAnotherSystem(cwd)
+                ? $"'cwd' is a path of another system ({cwd}): name the folder as the machine running the agent names it."
+                : "'cwd' must be an absolute path.");
+        var full = Path.GetFullPath(cwd);
+        if (mustExist && !Directory.Exists(full))
+            throw new ArgumentException($"'cwd' is not a folder the agent can open on its machine: {full}");
+        return full;
     }
+
+    /// <summary>A path written the way the other systems write one: a drive or a share off Windows, a path from the
+    /// root on Windows.</summary>
+    private static bool WrittenByAnotherSystem(string path) =>
+        Services.Tools.PathSanitizer.IsForeignAbsolute(path) || (OperatingSystem.IsWindows() && path.StartsWith('/'));
 
     /// <summary>The editor's MCP servers (<c>mcpServers</c>): stdio and HTTP; an SSE one is not supported, and skipped.</summary>
     internal static IReadOnlyList<McpSessionServerDto> McpServers(JsonElement p)

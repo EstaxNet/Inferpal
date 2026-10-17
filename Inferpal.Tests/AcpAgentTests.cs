@@ -223,6 +223,41 @@ public sealed class AcpAgentTests : IDisposable
     }
 
     [Fact]
+    public async Task AFolderTheAgentsMachineLacks_IsRefused_AndNamed()
+    {
+        await using var h = await StartAsync();
+        await h.Client.RequestAsync("initialize", Init());
+
+        var missing = await h.Client.RequestAsync("session/new", new { cwd = Path.Combine(_root, "not-here"), mcpServers = Array.Empty<object>() });
+        var error = missing.GetProperty("error");
+        Assert.Equal(AcpRpc.InvalidParams, error.GetProperty("code").GetInt32());
+        Assert.Contains("not a folder the agent can open on its machine", error.GetProperty("message").GetString());
+        Assert.Contains("not-here", error.GetProperty("message").GetString());
+
+        // The other system's way of writing a folder: a Linux client's to an agent on Windows, a Windows client's elsewhere.
+        var other = OperatingSystem.IsWindows() ? "/home/me/project" : @"C:\Users\me\project";
+        var foreign = (await h.Client.RequestAsync("session/new", new { cwd = other, mcpServers = Array.Empty<object>() })).GetProperty("error");
+        Assert.Contains("a path of another system", foreign.GetProperty("message").GetString());
+        Assert.Contains(other, foreign.GetProperty("message").GetString());
+
+        // Reference arm: the folder that exists opens.
+        var opened = await h.Client.RequestAsync("session/new", new { cwd = _root, mcpServers = Array.Empty<object>() });
+        Assert.True(opened.TryGetProperty("result", out _), opened.GetRawText());
+    }
+
+    [Fact]
+    public async Task ASavedConversation_IsLookedUp_WhateverBecameOfItsFolder()
+    {
+        await using var h = await StartAsync();
+        await h.Client.RequestAsync("initialize", Init());
+        var r = await h.Client.RequestAsync("session/load",
+            new { sessionId = "acp-never-" + Guid.NewGuid().ToString("N"), cwd = Path.Combine(_root, "moved"), mcpServers = Array.Empty<object>() });
+
+        // Looked up (and not found), never refused for its folder: reading a conversation back needs none.
+        Assert.Equal(AcpRpc.NotFound, r.GetProperty("error").GetProperty("code").GetInt32());
+    }
+
+    [Fact]
     public async Task AFailure_IsNeverReportedAsAuthenticationRequired()
     {
         await using var h = await StartAsync();
