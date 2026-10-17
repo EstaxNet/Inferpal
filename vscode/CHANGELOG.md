@@ -3,6 +3,22 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.8.0
+
+With LM Studio, a `/check` review on Qwen3.8 comes back two to three and a half times sooner, and titles, commit
+messages and summaries no longer wait for a reasoning model to think.
+
+- **Reasoning models**: a question asks for a low reasoning effort — on Qwen3.8 27B, a `/check` review found the same
+  issues in 38 seconds instead of 136 — sent only to a model LM Studio says takes that level (gpt-oss is now always
+  asked for low: if you raised it in LM Studio, set it in Inferpal instead); titles, commit messages and summaries ask
+  for none. Settings → Server and models → Show advanced settings → Sampling and reasoning sets the level for a
+  question and for an agent run; agent runs keep your server's setting by default.
+- **`/check` reviews the whole change**, with your checks on top: it no longer answers "all checks pass" on a change
+  that breaks something none of them names. `/check <name>` still reviews against that one check.
+- **Security**: a repository's MCP server is asked about again when a file it runs changes — submodules included —,
+  not only its definition, so a server you had agreed to is asked about once more after this update; and the host
+  ships MessagePack 2.5.303 (GHSA-qhrr-8q5h-9q3h, not reachable: the host speaks JSON).
+
 ## 1.7.10
 
 Fifteen fixes for VS Code, starting with your rules: on Windows, a file they protect can no longer be written under
