@@ -88,12 +88,12 @@ public sealed class UtilityCallsCarryNoReasoningTests
 
     // ── What the clients send ───────────────────────────────────────────────────
 
-    private const string Sse =
+    internal const string Sse =
         "data: {\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ok\"}}]}\n\n"
         + "data: {\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n";
 
     /// <summary>LM Studio's native model list, the model publishing <paramref name="options"/> (none: no reasoning entry).</summary>
-    private static string NativeModels(string model, params string[] options) =>
+    internal static string NativeModels(string model, params string[] options) =>
         JsonSerializer.Serialize(new
         {
             models = new[]
@@ -108,16 +108,16 @@ public sealed class UtilityCallsCarryNoReasoningTests
             },
         });
 
-    private static LoopbackHttpServer LmStudio(string model, params string[] options) =>
+    internal static LoopbackHttpServer LmStudio(string model, params string[] options) =>
         new((path, _) => path.StartsWith("/api/v1/models", StringComparison.Ordinal) ? NativeModels(model, options)
                        : path.StartsWith("/v1/chat/completions", StringComparison.Ordinal) ? Sse
                        : null);
 
-    private static IEnumerable<string> ChatBodies(LoopbackHttpServer server) =>
+    internal static IEnumerable<string> ChatBodies(LoopbackHttpServer server) =>
         server.Paths.Zip(server.Bodies).Where(p => p.First.StartsWith("/v1/chat/completions", StringComparison.Ordinal))
               .Select(p => p.Second);
 
-    private static Task<ChatTurnResult> AskAsync(IChatTurnClient client, string model, ReasoningEffort effort,
+    internal static Task<ChatTurnResult> AskAsync(IChatTurnClient client, string model, ReasoningEffort effort,
                                                  IToolRegistry? tools = null) =>
         client.SendChatAsync(model, [new("user", "summarize")], tools ?? EmptyToolRegistry.Instance, null, effort,
                              CancellationToken.None);

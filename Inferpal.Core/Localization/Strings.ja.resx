@@ -1076,7 +1076,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SettingsEditRules" xml:space="preserve"><value>ルールを編集</value></data>
   <data name="SettingsSectionModelPerTask" xml:space="preserve"><value>タスクごとのモデル</value></data>
   <data name="SettingsSectionModelPerTaskDesc" xml:space="preserve"><value>「チャットと同じ」のままなら、チャット モデルが担当します。</value></data>
-  <data name="SettingsSectionSampling" xml:space="preserve"><value>サンプリング</value></data>
+  <data name="SettingsSectionSampling" xml:space="preserve"><value>サンプリングと推論</value></data>
   <data name="SettingsSectionGpu" xml:space="preserve"><value>GPU</value></data>
   <data name="SettingsSectionHowItWorks" xml:space="preserve"><value>動作</value></data>
   <data name="SettingsSectionApprovals" xml:space="preserve"><value>承認</value></data>
@@ -1098,6 +1098,14 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SettingsSectionAgentRuns" xml:space="preserve"><value>エージェントの実行</value></data>
   <data name="LabelUseRecommendedSampling" xml:space="preserve"><value>各モデル開発元の推奨設定を使う</value></data>
   <data name="HintUseRecommendedSampling" xml:space="preserve"><value>モデル ファミリー向けに公開された温度や top-p を使います。オフならサーバーの設定が適用されます。</value></data>
+  <data name="LabelReasoningEffortChat" xml:space="preserve"><value>質問への推論</value></data>
+  <data name="HintReasoningEffortChat" xml:space="preserve"><value>推論するモデルが、質問(エージェント モードがオフのとき)や /check のレビューに答える前にどれだけ考えるか。LM Studio がその段階を受け付けると示すモデルにだけ送られ、それ以外ではサーバーの設定が使われます。</value></data>
+  <data name="LabelReasoningEffortAgent" xml:space="preserve"><value>エージェント実行での推論</value></data>
+  <data name="HintReasoningEffortAgent" xml:space="preserve"><value>エージェント実行(エージェント モードでの質問、/task、/tdd)でも同じ。実行全体で一つの段階です。</value></data>
+  <data name="ReasoningEffortServer" xml:space="preserve"><value>サーバーの設定</value></data>
+  <data name="ReasoningEffortLow" xml:space="preserve"><value>低</value></data>
+  <data name="ReasoningEffortMedium" xml:space="preserve"><value>中</value></data>
+  <data name="ReasoningEffortHigh" xml:space="preserve"><value>高</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>ファイルの変更、コマンドの実行、オンライン アクセスの前に確認する</value></data>
   <data name="HintAskBeforeActions" xml:space="preserve"><value>実際の差分や正確なコマンドを確認できます。オフにすると、すべて黙って承認されます (壊滅的なコマンドは引き続き拒否されます)。</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>適用する前に変更を表示する</value></data>

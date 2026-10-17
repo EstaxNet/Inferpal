@@ -170,7 +170,8 @@ internal static class TddCommandHandler
                 ModelRouter.Resolve(config, ModelRole.Agent), history, tools,
                 onStep:  step  => onStep?.Invoke(step),
                 onToken: token => onToken?.Invoke(token),
-                ct:      ct);
+                ct:      ct,
+                effort:  ReasoningEffortSetting.Agent(config));
             // A failed run is not a fix attempt: going on would re-run the whole suite, round after round, against a
             // backend that has already said no. The error is the answer.
             if (fix.Failed) return new(fix.FinalResponse);

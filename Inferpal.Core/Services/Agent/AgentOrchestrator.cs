@@ -531,11 +531,11 @@ internal sealed class AgentOrchestrator
     private async Task<(string Answer, bool Cut, bool Repeating)> SynthesizeFinalAnswerAsync(
         string model, List<ChatMessageDto> messages, int anchorCount,
         IReadOnlyList<ToolExecution> executions, string userTask, string fallback,
-        Action<string>? onToken, Action? onStreamReset, Action<string> onStep, CancellationToken ct,
+        Action<string>? onToken, Action? onStreamReset, Action<string> onStep, ReasoningEffort effort, CancellationToken ct,
         Action<string>? onThinking = null)
     {
         var (answer, synthesized, cut, repeating) = await TrySynthesizeAsync(
-            model, messages, anchorCount, executions, userTask, fallback, onToken, onStreamReset, onStep, ct, onThinking);
+            model, messages, anchorCount, executions, userTask, fallback, onToken, onStreamReset, onStep, effort, ct, onThinking);
 
         // The synthesized answer is what the user read: it must also be what the model reads next
         // turn (the host keeps this history), not the empty or refused turn it replaced.
@@ -552,7 +552,7 @@ internal sealed class AgentOrchestrator
     private async Task<(string Answer, bool Synthesized, bool Cut, bool Repeating)> TrySynthesizeAsync(
         string model, List<ChatMessageDto> messages, int anchorCount,
         IReadOnlyList<ToolExecution> executions, string userTask, string fallback,
-        Action<string>? onToken, Action? onStreamReset, Action<string> onStep, CancellationToken ct,
+        Action<string>? onToken, Action? onStreamReset, Action<string> onStep, ReasoningEffort effort, CancellationToken ct,
         Action<string>? onThinking)
     {
         // Clear any think-only / partial tokens from the stalled final ACT so they don't pollute
@@ -584,7 +584,7 @@ internal sealed class AgentOrchestrator
         try
         {
             var turn   = await _client.SendChatAsync(
-                model, synth, EmptyToolRegistry.Instance, onToken, ct, TaskComplexity.Normal, onThinking: onThinking);
+                model, synth, EmptyToolRegistry.Instance, onToken, effort, ct, TaskComplexity.Normal, onThinking: onThinking);
             var answer = MarkdownParser.StripThinkTags(turn.TextContent);
             // ⚠ A synthesis the client stopped because it kept repeating is cut AND repeating: carried as a cut alone,
             // the end notice advised a longer context — the one remedy that does nothing for a loop.
@@ -778,6 +778,9 @@ internal sealed class AgentOrchestrator
         // background embedding loops keep the GPU busy and the cross-process FIM never yields
         // during an orchestrated (Agent mode) run. Re-entrant, so nesting under RunAgentAsync is safe.
         using var gpuLease = GpuScheduler.AcquireChatLease();
+        // One effort for every call of the run — plan, actions, synthesis: a model that carries the effort in its system
+        // message (gpt-oss, Gemma 4) rewrites the head of its prompt when it changes, and the server reads the run again.
+        var runEffort = ReasoningEffortSetting.Agent(_config);
 
         // Early-exit checks (circuit breaker, URL) are handled inside SendChatAsync.
         var messages    = new List<ChatMessageDto>(history);
@@ -841,7 +844,7 @@ internal sealed class AgentOrchestrator
         try
         {
             // No tools during planning — we want a pure JSON response.  Quick timeout: plans are short.
-            planTurn = await _client.SendChatAsync(model, planMessages, EmptyToolRegistry.Instance, null, ct, TaskComplexity.Quick, onThinking: onThinking);
+            planTurn = await _client.SendChatAsync(model, planMessages, EmptyToolRegistry.Instance, null, runEffort, ct, TaskComplexity.Quick, onThinking: onThinking);
         }
         catch (OperationCanceledException) { throw; }
         catch (AgentHttpException ex)
@@ -914,7 +917,7 @@ internal sealed class AgentOrchestrator
                 // real mitigation.) Other iterations stay on "auto" so the model can still finish.
                 var toolChoice = (iteration == 0 || retryForcesTool) ? "required" : null;
                 retryForcesTool = false;
-                turn = await _client.SendChatAsync(model, messages, tools, onToken, ct, TaskComplexity.Normal, toolChoice, onThinking);
+                turn = await _client.SendChatAsync(model, messages, tools, onToken, runEffort, ct, TaskComplexity.Normal, toolChoice, onThinking);
             }
             catch (OperationCanceledException) { throw; }
             catch (AgentHttpException ex)
@@ -951,7 +954,8 @@ internal sealed class AgentOrchestrator
 
                     var (loopMsg, loopCut, loopRepeating) = executions.Count > 0
                         ? await SynthesizeFinalAnswerAsync(
-                            model, messages, anchorCount, executions, userTask, string.Empty, onToken, onStreamReset, onStep, ct, onThinking)
+                            model, messages, anchorCount, executions, userTask, string.Empty, onToken, onStreamReset, onStep,
+                            runEffort, ct, onThinking)
                         : (Strings.MsgLoopDetected, false, false);
                     return new OrchestratorResult(
                         loopMsg, plan, executions, messages,
@@ -1167,7 +1171,7 @@ internal sealed class AgentOrchestrator
                     (finalText, finalCut, finalRepeating) = await SynthesizeFinalAnswerAsync(
                         model, messages, anchorCount, executions, userTask,
                         degenerate ? string.Empty : finalText,   // never keep a refusal or a plan as the fallback
-                        onToken, onStreamReset, onStep, ct, onThinking);
+                        onToken, onStreamReset, onStep, runEffort, ct, onThinking);
                 }
 
                 return new OrchestratorResult(
@@ -1181,7 +1185,8 @@ internal sealed class AgentOrchestrator
         // the user gets a real reply instead of only the "iteration limit" notice.
         var (capFinal, capCut, capRepeating) = executions.Count > 0
             ? await SynthesizeFinalAnswerAsync(
-                model, messages, anchorCount, executions, userTask, Strings.MsgIterationLimit(maxIter), onToken, onStreamReset, onStep, ct, onThinking)
+                model, messages, anchorCount, executions, userTask, Strings.MsgIterationLimit(maxIter), onToken, onStreamReset, onStep,
+                runEffort, ct, onThinking)
             : (Strings.MsgIterationLimit(maxIter), false, false);
         return new OrchestratorResult(
             capFinal, plan, executions, messages,

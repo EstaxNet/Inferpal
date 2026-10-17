@@ -290,6 +290,7 @@ internal partial class InferpalSettingsData
         nameof(BaseUrl), nameof(SelectedProvider), nameof(ApiKey), nameof(SelectedModel), nameof(InlineCompletionModel),
         nameof(RagEmbeddingModel), nameof(ContextWindowSizeText), nameof(AgentModel), nameof(CodeActionsModel),
         nameof(InlineEditModel), nameof(UtilityModel), nameof(ModelRouterAuto), nameof(UseRecommendedSampling),
+        nameof(ReasoningEffortChat), nameof(ReasoningEffortAgent),
         nameof(VramBudgetText), nameof(ModelAutoUnloadEnabled), nameof(ModelIdleTimeoutText), nameof(AgentModeEnabled),
         nameof(SmartFixEnabled), nameof(AgentMaxIterationsText), nameof(AskBeforeActions), nameof(CustomSystemPrompt), nameof(RepoInstructionFamilies),
         nameof(PersonaAutoSwitch), nameof(SkillsAutoMode), nameof(TimeoutHoursText), nameof(TimeoutMinutesText), nameof(TimeoutSecondsText),
@@ -344,6 +345,8 @@ internal partial class InferpalSettingsData
             (ContextWindowSizeText.Trim(), N(saved.ContextWindowSize)),
             (ModelRouterAuto.ToString(), saved.ModelRouterAuto.ToString()),
             (UseRecommendedSampling.ToString(), saved.UseRecommendedSampling.ToString()),
+            (ReasoningToSave.Chat, saved.ReasoningEffortChat ?? string.Empty),
+            (ReasoningToSave.Agent, saved.ReasoningEffortAgent ?? string.Empty),
             (VramBudgetText.Trim(), vramSaved),
             (ModelAutoUnloadEnabled.ToString(), saved.ModelAutoUnloadEnabled.ToString()),
             (ModelIdleTimeoutText.Trim(), N(saved.ModelIdleTimeoutMinutes)),
@@ -402,6 +405,7 @@ internal partial class InferpalSettingsData
         UtilityModel = c.UtilityModel;
         ModelRouterAuto = c.ModelRouterAuto;
         UseRecommendedSampling = c.UseRecommendedSampling;
+        LoadReasoning(c);
         ContextWindowSizeText = N(c.ContextWindowSize);
         VramBudgetText = c.VramBudgetGb > 0 ? c.VramBudgetGb.ToString("0.#", CultureInfo.CurrentCulture) : string.Empty;
         ModelAutoUnloadEnabled = c.ModelAutoUnloadEnabled;

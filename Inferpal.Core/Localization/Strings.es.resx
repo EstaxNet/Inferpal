@@ -1076,7 +1076,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="SettingsEditRules" xml:space="preserve"><value>Editar reglas</value></data>
   <data name="SettingsSectionModelPerTask" xml:space="preserve"><value>Un modelo por tarea</value></data>
   <data name="SettingsSectionModelPerTaskDesc" xml:space="preserve"><value>Si se deja en «Igual que el chat», el modelo de chat hace el trabajo.</value></data>
-  <data name="SettingsSectionSampling" xml:space="preserve"><value>Muestreo</value></data>
+  <data name="SettingsSectionSampling" xml:space="preserve"><value>Muestreo y razonamiento</value></data>
   <data name="SettingsSectionGpu" xml:space="preserve"><value>Su GPU</value></data>
   <data name="SettingsSectionHowItWorks" xml:space="preserve"><value>Cómo trabaja</value></data>
   <data name="SettingsSectionApprovals" xml:space="preserve"><value>Aprobaciones</value></data>
@@ -1098,6 +1098,14 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="SettingsSectionAgentRuns" xml:space="preserve"><value>Ejecuciones del agente</value></data>
   <data name="LabelUseRecommendedSampling" xml:space="preserve"><value>Usar los ajustes del creador de cada modelo</value></data>
   <data name="HintUseRecommendedSampling" xml:space="preserve"><value>Temperatura y top-p tal como se publican para la familia del modelo. Desactivado: se aplican los ajustes de su servidor.</value></data>
+  <data name="LabelReasoningEffortChat" xml:space="preserve"><value>Razonamiento para una pregunta</value></data>
+  <data name="HintReasoningEffortChat" xml:space="preserve"><value>Cuánto piensa un modelo que razona antes de responder a una pregunta (modo Agente desactivado) o a una revisión /check. Solo se envía a un modelo del que LM Studio dice que admite ese nivel; en los demás, se aplica el ajuste del servidor.</value></data>
+  <data name="LabelReasoningEffortAgent" xml:space="preserve"><value>Razonamiento en una ejecución del agente</value></data>
+  <data name="HintReasoningEffortAgent" xml:space="preserve"><value>Lo mismo para una ejecución del agente —una pregunta en modo Agente, /task, /tdd—, un solo nivel para toda la ejecución.</value></data>
+  <data name="ReasoningEffortServer" xml:space="preserve"><value>Del servidor</value></data>
+  <data name="ReasoningEffortLow" xml:space="preserve"><value>Bajo</value></data>
+  <data name="ReasoningEffortMedium" xml:space="preserve"><value>Medio</value></data>
+  <data name="ReasoningEffortHigh" xml:space="preserve"><value>Alto</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Preguntarme antes de cambiar archivos, ejecutar comandos o conectarse a internet</value></data>
   <data name="HintAskBeforeActions" xml:space="preserve"><value>Ve el diff real o el comando exacto. Desactivado: todo se aprueba en silencio — los comandos catastróficos se siguen rechazando.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Mostrar el cambio antes de aplicarlo</value></data>

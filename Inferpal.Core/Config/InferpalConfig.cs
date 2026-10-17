@@ -143,6 +143,18 @@ internal class InferpalConfig
     [JsonPropertyName("useRecommendedSampling")]
     public bool UseRecommendedSampling { get; set; } = true;
 
+    /// <summary>How much the model reasons for a question: <c>server</c> (its own setting), <c>low</c>, <c>medium</c> or
+    /// <c>high</c> — sent only where the server says the model takes that level.</summary>
+    /// <remarks>Low by default: a question, a /check review included, keeps its answer at a low effort and takes a
+    /// fraction of the time; an agent run spends its time in its tools, not in reasoning, and keeps the server's.</remarks>
+    [JsonPropertyName("reasoningEffortChat")]
+    public string ReasoningEffortChat { get; set; } = "low";
+
+    /// <summary>How much the model reasons in an agent run, one effort for the whole run: <c>server</c>, <c>low</c>,
+    /// <c>medium</c> or <c>high</c> — sent only where the server says the model takes that level.</summary>
+    [JsonPropertyName("reasoningEffortAgent")]
+    public string ReasoningEffortAgent { get; set; } = "server";
+
     /// <summary>Number of most-recent conversation turns to preserve when the context window is trimmed.</summary>
     [JsonPropertyName("contextWindowKeepTurns")]
     public int ContextWindowKeepTurns { get; set; } = 4;

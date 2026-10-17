@@ -93,7 +93,8 @@ internal sealed partial class HostServer
                 registry,
                 onStep:  onStep,
                 onToken: null,
-                ct:      ct);
+                ct:      ct,
+                effort:  ReasoningEffortSetting.Agent(s.Config));
 
             return BackgroundTaskQueue.TaskRunOutcome.Of(run, recorder?.Proposals ?? []);
         },

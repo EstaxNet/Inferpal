@@ -1076,7 +1076,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="SettingsEditRules" xml:space="preserve"><value>Regeln bearbeiten</value></data>
   <data name="SettingsSectionModelPerTask" xml:space="preserve"><value>Ein Modell pro Aufgabe</value></data>
   <data name="SettingsSectionModelPerTaskDesc" xml:space="preserve"><value>Auf „Wie der Chat“ belassen, erledigt das Chat-Modell die Arbeit.</value></data>
-  <data name="SettingsSectionSampling" xml:space="preserve"><value>Sampling</value></data>
+  <data name="SettingsSectionSampling" xml:space="preserve"><value>Sampling und Nachdenken</value></data>
   <data name="SettingsSectionGpu" xml:space="preserve"><value>Ihre GPU</value></data>
   <data name="SettingsSectionHowItWorks" xml:space="preserve"><value>Arbeitsweise</value></data>
   <data name="SettingsSectionApprovals" xml:space="preserve"><value>Freigaben</value></data>
@@ -1098,6 +1098,14 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="SettingsSectionAgentRuns" xml:space="preserve"><value>Agent-Durchläufe</value></data>
   <data name="LabelUseRecommendedSampling" xml:space="preserve"><value>Die Einstellungen des jeweiligen Modellherstellers verwenden</value></data>
   <data name="HintUseRecommendedSampling" xml:space="preserve"><value>Temperatur und Top-p, wie für die Modellfamilie veröffentlicht. Aus: Es gelten die Einstellungen Ihres Servers.</value></data>
+  <data name="LabelReasoningEffortChat" xml:space="preserve"><value>Nachdenken bei einer Frage</value></data>
+  <data name="HintReasoningEffortChat" xml:space="preserve"><value>Wie lange ein Modell, das nachdenkt, überlegt, bevor es eine Frage (Agentenmodus aus) oder ein /check-Review beantwortet. Nur an ein Modell gesendet, von dem LM Studio sagt, dass es diese Stufe annimmt; sonst gilt die Einstellung des Servers.</value></data>
+  <data name="LabelReasoningEffortAgent" xml:space="preserve"><value>Nachdenken in einem Agentenlauf</value></data>
+  <data name="HintReasoningEffortAgent" xml:space="preserve"><value>Dasselbe für einen Agentenlauf – eine Frage im Agentenmodus, /task, /tdd –, eine Stufe für den ganzen Lauf.</value></data>
+  <data name="ReasoningEffortServer" xml:space="preserve"><value>Des Servers</value></data>
+  <data name="ReasoningEffortLow" xml:space="preserve"><value>Niedrig</value></data>
+  <data name="ReasoningEffortMedium" xml:space="preserve"><value>Mittel</value></data>
+  <data name="ReasoningEffortHigh" xml:space="preserve"><value>Hoch</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Vor dem Ändern von Dateien, dem Ausführen von Befehlen oder Online-Zugriffen fragen</value></data>
   <data name="HintAskBeforeActions" xml:space="preserve"><value>Sie sehen den echten Diff oder den genauen Befehl. Aus: Alles wird stillschweigend freigegeben — katastrophale Befehle werden weiterhin abgelehnt.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Die Änderung vor dem Anwenden zeigen</value></data>

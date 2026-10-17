@@ -562,7 +562,8 @@ internal partial class InferpalToolWindowData
                     ct:         localCts.Token,
                     complexity: loopComplexity,
                     onToolExecuted: StreamToolBubble,
-                    onThinking: OnThinking);
+                    onThinking: OnThinking,
+                    effort:     ChatTurnPolicy.TurnEffort(_config, codeAction: oneTimeModel is not null));
 
                 agentFinalResponse = result.FinalResponse;
                 agentFailed        = result.Failed;

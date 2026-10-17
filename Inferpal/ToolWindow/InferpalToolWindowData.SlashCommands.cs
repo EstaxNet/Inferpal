@@ -478,7 +478,8 @@ internal partial class InferpalToolWindowData
                 registry,
                 onStep:  onStep,
                 onToken: null,
-                ct:      taskCt);
+                ct:      taskCt,
+                effort:  ReasoningEffortSetting.Agent(_config));
 
             return BackgroundTaskQueue.TaskRunOutcome.Of(run, recorder?.Proposals ?? []);
         },

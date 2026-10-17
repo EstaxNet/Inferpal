@@ -194,6 +194,15 @@ internal static class SettingsSchema
     /// <summary><see cref="SettingField.Only"/> of a setting only Visual Studio acts on.</summary>
     public const string VisualStudioOnly = "vs";
 
+    /// <summary>How much a model reasons, per role: the values <see cref="ReasoningEffortSetting.Parse"/> reads.</summary>
+    public static readonly IReadOnlyList<SettingOption> ReasoningEfforts =
+    [
+        new("server", "Server's", () => Strings.ReasoningEffortServer),
+        new("low",    "Low",      () => Strings.ReasoningEffortLow),
+        new("medium", "Medium",   () => Strings.ReasoningEffortMedium),
+        new("high",   "High",     () => Strings.ReasoningEffortHigh),
+    ];
+
     /// <summary>How much space the chat leaves around its turns: two options, drawn as a segmented switch.
     /// ⚠ Above <see cref="Tabs"/>: a static initialiser reads the fields declared before it, and one declared after is still
     /// null there, and the switch shows no option.</summary>
@@ -247,6 +256,10 @@ internal static class SettingsSchema
             new("SettingsSectionSampling",
             [
                 new("useRecommendedSampling", SettingKind.Bool, "LabelUseRecommendedSampling", "HintUseRecommendedSampling", OpensFold: true),
+                new("reasoningEffortChat",  SettingKind.Select, "LabelReasoningEffortChat",  "HintReasoningEffortChat",
+                    Options: ReasoningEfforts, Editor: "segmented", OpensFold: true),
+                new("reasoningEffortAgent", SettingKind.Select, "LabelReasoningEffortAgent", "HintReasoningEffortAgent",
+                    Options: ReasoningEfforts, Editor: "segmented", OpensFold: true),
             ],
             Gate: AdvancedGate),
             new("SettingsSectionGpu",

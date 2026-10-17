@@ -74,8 +74,16 @@ on a 12 or 16 GB card.
 with `reasoning_effort: "none"` when LM Studio says the model can turn its reasoning off — when `off` is among the
 reasoning settings its model list publishes for that model (Qwen3.8 27B, Gemma 4 31B and Bonsai 27B do: they then write
 63 to 87 % fewer tokens). Nothing is sent to any other model: to one that publishes no such setting, the field is not a
-lower effort — GLM 4.7 Flash, sent `none`, reasons six times longer. Questions, agent runs and code actions keep the
-server's own setting. Ollama, llama-server and other OpenAI-compatible servers are sent nothing yet: not measured.
+lower effort — GLM 4.7 Flash, sent `none`, reasons six times longer. Ollama, llama-server and other
+OpenAI-compatible servers are sent nothing yet: not measured.
+
+**A question reasons low, an agent run as your server says.** Settings → Server and models → Sampling and reasoning
+(advanced) sets how long a model that reasons thinks: `Server's`, `Low`, `Medium` or `High`, one setting for a question
+(with tools or without, a `/check` review included) and one for an agent run, which keeps its level for the whole run.
+A level is sent only to a model whose LM Studio entry publishes it. Measured on Qwen3.8 27B, on a 24 GB server: `/check`
+at `Low` found the same ten defects as at the server's setting in 38 seconds instead of 136, and three tool tasks
+passed at `Low`, in the chat as in an agent run — but an agent run gained only a tenth of its time, which goes to its
+tools, so it keeps the server's setting by default. Code actions, `/onboard context` and `/test` keep the server's.
 
 ## How Inferpal reads a model
 

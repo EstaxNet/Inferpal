@@ -347,6 +347,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         InitEditors(workspaceRoot);
         InitWidgets(live);
         InitAppearance(config);
+        InitReasoning(config);
         _baseUrl              = config.BaseUrl;
         _selectedProvider     = ProviderOptions.FirstOrDefault(p => p.Code == config.Provider).Name
                                     is { Length: > 0 } pn ? pn : ProviderOptions[0].Name;
@@ -547,6 +548,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         LabelRunEndSound             = Strings.LabelRunEndSound;
         HintRunEndSound              = Strings.HintRunEndSound;
         ApplyAppearanceLabels();
+        ApplyReasoningLabels();
         LabelSmartFixEnabled         = Strings.LabelSmartFixEnabled;
         HintSmartFixEnabled          = Strings.HintSmartFixEnabled;
         LabelAgentModeEnabled        = Strings.LabelAgentModeEnabled;
@@ -1175,6 +1177,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         string modelIdleTimeoutText = string.Empty;
         string mcpServersJson = string.Empty;
         var density = "comfortable";
+        string effortChat = "low", effortAgent = "server";
         bool toolExpanded = false, runEndSound = true, askBefore = true, compactionEnabled = true, inlineEnabled = true, ragEnabled = true, ragAutoContextEnabled = true, smartFixEnabled = true, agentModeEnabled = false, lspEnabled = false, modelAutoUnload = true, personaAutoSwitch = true, skillsAutoMode = false, mcpEnabled = false, modelRouterAuto = false, useSampling = true, inlineDiff = true;
         await RunOnVMContextAsync(() =>
         {
@@ -1188,6 +1191,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             toolExpanded         = ToolBubblesExpanded;
             runEndSound          = RunEndSoundEnabled;
             density              = ChatDensity;
+            (effortChat, effortAgent) = ReasoningToSave;
             askBefore            = AskBeforeActions;
             smartFixEnabled      = SmartFixEnabled;
             agentModeEnabled         = AgentModeEnabled;
@@ -1359,6 +1363,8 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         edited.UtilityModel          = Kept(utilityModel,     edited.UtilityModel,          () => Strings.LabelUtilityModel);
         edited.ModelRouterAuto       = modelRouterAuto;
         edited.UseRecommendedSampling   = useSampling;
+        edited.ReasoningEffortChat      = effortChat;
+        edited.ReasoningEffortAgent     = effortAgent;
         edited.InlineDiffPreviewEnabled = inlineDiff;
         edited.RagEnabled                = ragEnabled;
         edited.RagAutoContextEnabled     = ragAutoContextEnabled;

@@ -218,32 +218,33 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
         }
     }
 
-    // What a model publishes describes the model, not an instance, and changes only when LM Studio does: cached briefly,
-    // keyed by model, like the loaded window.
-    private readonly object _reasoningLock = new();
-    private (string Model, bool CanTurnOff, DateTime At) _reasoningCache;
-
     /// <inheritdoc/>
     /// <remarks>
-    /// ⚠ <c>"none"</c> only, and only to a model whose native entry publishes <c>off</c> among its reasoning settings.
-    /// To one that publishes none, the field is not a lower effort: GLM 4.7 Flash, sent <c>"none"</c>, reasons six times
-    /// longer, and sent <c>"low"</c> answers nothing. And <c>/v1</c> refuses the native names themselves (<c>off</c>,
-    /// <c>on</c>) with HTTP 400: it takes <c>none</c>, <c>minimal</c>, <c>low</c>, <c>medium</c>, <c>high</c>,
-    /// <c>xhigh</c>.
+    /// ⚠ A level only to a model whose native entry publishes it among its reasoning settings — <c>off</c> sent as
+    /// <c>"none"</c>, <c>low</c>, <c>medium</c>, <c>high</c> as themselves. To one that does not publish it, the field is
+    /// not that effort: GLM 4.7 Flash, which publishes none, reasons six times longer sent <c>"none"</c> and answers
+    /// nothing sent <c>"low"</c>. And <c>/v1</c> refuses the native names <c>off</c> and <c>on</c> with HTTP 400: it takes
+    /// <c>none</c>, <c>minimal</c>, <c>low</c>, <c>medium</c>, <c>high</c>, <c>xhigh</c>.
     /// </remarks>
     private protected override async Task<string?> ReasoningEffortFieldAsync(string model, ReasoningEffort effort, CancellationToken ct)
     {
-        if (effort != ReasoningEffort.Off) return null;
-        lock (_reasoningLock)
-            if (_reasoningCache.Model == model && DateTime.UtcNow - _reasoningCache.At < TimeSpan.FromSeconds(30))
-                return _reasoningCache.CanTurnOff ? "none" : null;
+        var (published, value) = effort switch
+        {
+            ReasoningEffort.Off    => ("off", "none"),
+            ReasoningEffort.Low    => ("low", "low"),
+            ReasoningEffort.Medium => ("medium", "medium"),
+            ReasoningEffort.High   => ("high", "high"),
+            _                      => ((string?)null, (string?)null),
+        };
+        if (published is null) return null;
 
-        bool canTurnOff;
+        // Read from the native snapshot, cached briefly: a question and its title ask two models in turn.
+        IReadOnlyList<string> options;
         try
         {
             var models = await NativeSnapshotAsync(ct);
             var entry  = models.FirstOrDefault(m => IdMatches(m.Id, model));
-            canTurnOff = entry.ReasoningOptions?.Contains("off", StringComparer.OrdinalIgnoreCase) == true;
+            options    = entry.ReasoningOptions ?? [];
             if (models.Count == 0)
                 // A server that lists nothing natively (a /v1-only proxy) does not say what its models take: nothing sent.
                 Diagnostics.RecordOnce("LmStudio.ReasoningSettings",
@@ -260,11 +261,10 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
             Diagnostics.RecordOnce("LmStudio.ReasoningSettings",
                 $"The reasoning settings of the models could not be read ({ex.GetType().Name}: {ex.Message}); no reasoning "
                 + "effort is sent.", "unreadable:" + HostRoot);
-            canTurnOff = false;
+            options = [];
         }
 
-        lock (_reasoningLock) _reasoningCache = (model, canTurnOff, DateTime.UtcNow);
-        return canTurnOff ? "none" : null;
+        return options.Contains(published, StringComparer.OrdinalIgnoreCase) ? value : null;
     }
 
     // LM Studio model keys can carry a quantization/variant suffix (e.g. "qwen/qwen3-27b" vs the

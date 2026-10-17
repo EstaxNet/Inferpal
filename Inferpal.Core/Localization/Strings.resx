@@ -1080,7 +1080,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="SettingsEditRules" xml:space="preserve"><value>Edit rules</value></data>
   <data name="SettingsSectionModelPerTask" xml:space="preserve"><value>A model per task</value></data>
   <data name="SettingsSectionModelPerTaskDesc" xml:space="preserve"><value>Left on “Same as chat”, the chat model does the work.</value></data>
-  <data name="SettingsSectionSampling" xml:space="preserve"><value>Sampling</value></data>
+  <data name="SettingsSectionSampling" xml:space="preserve"><value>Sampling and reasoning</value></data>
   <data name="SettingsSectionGpu" xml:space="preserve"><value>Your GPU</value></data>
   <data name="SettingsSectionHowItWorks" xml:space="preserve"><value>How it works</value></data>
   <data name="SettingsSectionApprovals" xml:space="preserve"><value>Approvals</value></data>
@@ -1102,6 +1102,14 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="SettingsSectionAgentRuns" xml:space="preserve"><value>Agent runs</value></data>
   <data name="LabelUseRecommendedSampling" xml:space="preserve"><value>Use each model maker's settings</value></data>
   <data name="HintUseRecommendedSampling" xml:space="preserve"><value>Temperature and top-p as published for the model's family. Off: your server's settings apply.</value></data>
+  <data name="LabelReasoningEffortChat" xml:space="preserve"><value>Reasoning for a question</value></data>
+  <data name="HintReasoningEffortChat" xml:space="preserve"><value>How long a model that reasons thinks before it answers a question (Agent mode off) or a /check review. Sent only to a model LM Studio says takes that level; elsewhere, the server's setting applies.</value></data>
+  <data name="LabelReasoningEffortAgent" xml:space="preserve"><value>Reasoning in an agent run</value></data>
+  <data name="HintReasoningEffortAgent" xml:space="preserve"><value>The same for an agent run — a question in Agent mode, /task, /tdd — one level for the whole run.</value></data>
+  <data name="ReasoningEffortServer" xml:space="preserve"><value>Server's</value></data>
+  <data name="ReasoningEffortLow" xml:space="preserve"><value>Low</value></data>
+  <data name="ReasoningEffortMedium" xml:space="preserve"><value>Medium</value></data>
+  <data name="ReasoningEffortHigh" xml:space="preserve"><value>High</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Ask me before changing files, running commands or going online</value></data>
   <data name="HintAskBeforeActions" xml:space="preserve"><value>You see the real diff or the exact command. Off: everything is approved silently — catastrophic commands are still refused.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Show the change before applying it</value></data>

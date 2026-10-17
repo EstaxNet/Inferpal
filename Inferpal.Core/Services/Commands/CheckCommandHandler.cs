@@ -126,7 +126,8 @@ internal static class CheckCommandHandler
         var    model = ModelRouter.Resolve(config, ModelRole.Chat);
         try
         {
-            var result = await client.SendChatAsync(model, history, EmptyToolRegistry.Instance, null, ct);
+            var result = await client.SendChatAsync(model, history, EmptyToolRegistry.Instance, null,
+                                                    ReasoningEffortSetting.Chat(config), ct);
             // A finding drafted while the model reasons is not one it gave — inline reasoning comes off first.
             answer        = MarkdownParser.WithoutLeadingReasoning(result.TextContent);
             cut           = result.CutAtLimit;

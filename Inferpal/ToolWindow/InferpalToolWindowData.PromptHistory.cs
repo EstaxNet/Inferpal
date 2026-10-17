@@ -300,7 +300,8 @@ internal partial class InferpalToolWindowData
                 tools:   _tools,
                 onStep:  step  => Post(() => CurrentStep = step),
                 onToken: token => sink.Append(token),
-                ct:      ct);
+                ct:      ct,
+                effort:  ReasoningEffortSetting.Agent(_config));
             sink.Stop();
         }
         catch

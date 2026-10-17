@@ -27,7 +27,7 @@ public sealed class ChatTurnBudgetParityTests
     }
 
     /// <summary>The model calls of a file's chat turn, read from its syntax tree (comments never count).</summary>
-    private static InvocationExpressionSyntax[] ModelCalls(string relativePath)
+    internal static InvocationExpressionSyntax[] ModelCalls(string relativePath)
     {
         var path = Path.Combine(ConversationPersistenceSilenceTests.RepoRoot(), relativePath);
         var root = CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path).GetRoot();

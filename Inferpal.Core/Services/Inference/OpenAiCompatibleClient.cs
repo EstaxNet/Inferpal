@@ -258,9 +258,9 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         => SendChatAsync(model, messages, tools, onToken, ReasoningEffort.Server, ct, complexity, toolChoice, onThinking);
 
     /// <summary>
-    /// The servers and models that refused the reasoning effort they were sent (<c>base|model</c>): asked again without
-    /// it, for the rest of the process — as <see cref="PromptedTools.Models"/> keeps the models whose template refused
-    /// tools.
+    /// The servers and models that refused the reasoning effort they were sent (<c>base|model|value</c>): asked again
+    /// without it, for the rest of the process — as <see cref="PromptedTools.Models"/> keeps the models whose template
+    /// refused tools. ⚠ Per VALUE: a question's refused <c>low</c> says nothing of the <c>none</c> a title asks.
     /// </summary>
     internal static readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> ReasoningRefusals = new();
 
@@ -322,10 +322,9 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // the stream (LM Studio answers 200 and streams "event: error"), a bare error object — and nothing has been
         // generated yet in any of them, so each one retries.
         // The reasoning the caller asks for, in the words this server takes for this model — nothing once refused.
-        var effortKey   = base_ + "|" + model;
-        var effortValue = effort != ReasoningEffort.Server && !ReasoningRefusals.ContainsKey(effortKey)
-            ? await ReasoningEffortFieldAsync(model, effort, ct)
-            : null;
+        var effortValue = effort != ReasoningEffort.Server ? await ReasoningEffortFieldAsync(model, effort, ct) : null;
+        var effortKey   = base_ + "|" + model + "|" + effortValue;
+        if (effortValue is not null && ReasoningRefusals.ContainsKey(effortKey)) effortValue = null;
         // ⚠ Judged BEFORE the tools' refusal: a template that cannot render the effort fails in the words of one that
         // cannot render tools ("Error rendering prompt with jinja template"), and the tools of the whole session would
         // move into the prompt for a field one request carried. The effort goes first; only a second refusal, without

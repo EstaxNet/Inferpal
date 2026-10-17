@@ -1076,7 +1076,7 @@
   <data name="SettingsEditRules" xml:space="preserve"><value>Изменить правила</value></data>
   <data name="SettingsSectionModelPerTask" xml:space="preserve"><value>Модель на задачу</value></data>
   <data name="SettingsSectionModelPerTaskDesc" xml:space="preserve"><value>Если оставить «Как в чате», работу выполняет модель чата.</value></data>
-  <data name="SettingsSectionSampling" xml:space="preserve"><value>Сэмплирование</value></data>
+  <data name="SettingsSectionSampling" xml:space="preserve"><value>Сэмплирование и рассуждение</value></data>
   <data name="SettingsSectionGpu" xml:space="preserve"><value>Ваш GPU</value></data>
   <data name="SettingsSectionHowItWorks" xml:space="preserve"><value>Как он работает</value></data>
   <data name="SettingsSectionApprovals" xml:space="preserve"><value>Подтверждения</value></data>
@@ -1098,6 +1098,14 @@
   <data name="SettingsSectionAgentRuns" xml:space="preserve"><value>Запуски агента</value></data>
   <data name="LabelUseRecommendedSampling" xml:space="preserve"><value>Использовать настройки создателя каждой модели</value></data>
   <data name="HintUseRecommendedSampling" xml:space="preserve"><value>Температура и top-p, опубликованные для семейства модели. Выключено: действуют настройки вашего сервера.</value></data>
+  <data name="LabelReasoningEffortChat" xml:space="preserve"><value>Рассуждение для вопроса</value></data>
+  <data name="HintReasoningEffortChat" xml:space="preserve"><value>Сколько рассуждающая модель думает, прежде чем ответить на вопрос (режим агента выключен) или выполнить проверку /check. Отправляется только модели, о которой LM Studio сообщает, что она принимает этот уровень; в остальных случаях действует настройка сервера.</value></data>
+  <data name="LabelReasoningEffortAgent" xml:space="preserve"><value>Рассуждение в запуске агента</value></data>
+  <data name="HintReasoningEffortAgent" xml:space="preserve"><value>То же для запуска агента — вопроса в режиме агента, /task, /tdd — один уровень на весь запуск.</value></data>
+  <data name="ReasoningEffortServer" xml:space="preserve"><value>Сервера</value></data>
+  <data name="ReasoningEffortLow" xml:space="preserve"><value>Низкое</value></data>
+  <data name="ReasoningEffortMedium" xml:space="preserve"><value>Среднее</value></data>
+  <data name="ReasoningEffortHigh" xml:space="preserve"><value>Высокое</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Спрашивать перед изменением файлов, запуском команд или выходом в сеть</value></data>
   <data name="HintAskBeforeActions" xml:space="preserve"><value>Вы видите настоящий diff или точную команду. Выключено: всё одобряется молча — катастрофические команды по-прежнему отклоняются.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Показывать изменение перед применением</value></data>

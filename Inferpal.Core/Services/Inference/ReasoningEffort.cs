@@ -1,3 +1,5 @@
+using Inferpal.Config;
+
 namespace Inferpal.Services.Inference;
 
 /// <summary>How much a model reasons before it answers, asked call by call.</summary>
@@ -14,4 +16,33 @@ internal enum ReasoningEffort
 
     /// <summary>No reasoning, where the server says the model can turn it off; nothing sent elsewhere.</summary>
     Off,
+
+    /// <summary>A short reasoning, where the server says the model takes that level.</summary>
+    Low,
+
+    /// <summary>A middle reasoning, where the server says the model takes that level.</summary>
+    Medium,
+
+    /// <summary>A long reasoning, where the server says the model takes that level.</summary>
+    High,
+}
+
+/// <summary>The effort a setting names (<c>server</c>, <c>off</c>, <c>low</c>, <c>medium</c>, <c>high</c>).</summary>
+internal static class ReasoningEffortSetting
+{
+    /// <summary>The effort <paramref name="value"/> names; anything else is the server's own setting.</summary>
+    public static ReasoningEffort Parse(string? value) => value?.Trim().ToLowerInvariant() switch
+    {
+        "off"    => ReasoningEffort.Off,
+        "low"    => ReasoningEffort.Low,
+        "medium" => ReasoningEffort.Medium,
+        "high"   => ReasoningEffort.High,
+        _        => ReasoningEffort.Server,
+    };
+
+    /// <summary>The effort a question asks for (<see cref="InferpalConfig.ReasoningEffortChat"/>).</summary>
+    public static ReasoningEffort Chat(InferpalConfig config) => Parse(config.ReasoningEffortChat);
+
+    /// <summary>The effort an agent run asks for, the whole run (<see cref="InferpalConfig.ReasoningEffortAgent"/>).</summary>
+    public static ReasoningEffort Agent(InferpalConfig config) => Parse(config.ReasoningEffortAgent);
 }

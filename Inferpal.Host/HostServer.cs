@@ -482,7 +482,8 @@ internal sealed partial class HostServer : IDisposable
                     ct:             cts.Token,
                     complexity:     ChatTurnPolicy.TurnComplexity(codeAction: false),
                     onToolExecuted: te => Notify("chat/tool", new ToolNotice(te.Name, te.Input, te.Output, te.HasErrors)),
-                    onThinking:     OnThinking);
+                    onThinking:     OnThinking,
+                    effort:         ChatTurnPolicy.TurnEffort(s.Config, codeAction: false));
 
                 // A FAILED run: the error, not an answer — see the agent path above.
                 if (run.Failed)
@@ -511,7 +512,8 @@ internal sealed partial class HostServer : IDisposable
             }
 
             var turn = await s.Client.SendChatAsync(
-                model, s.History, EmptyToolRegistry.Instance, OnToken, cts.Token,
+                model, s.History, EmptyToolRegistry.Instance, OnToken,
+                ChatTurnPolicy.TurnEffort(s.Config, p.CodeAction), cts.Token,
                 complexity: ChatTurnPolicy.TurnComplexity(p.CodeAction), onThinking: OnThinking);
             // The answer the user saw, as on the two paths above and in Visual Studio: without the model's reasoning.
             var said = ChatTurnPolicy.ChoosePersistedAnswer(

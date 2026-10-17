@@ -98,6 +98,8 @@ Every persisted setting, its type, and default value.
 |---|---|---|---|
 | `contextWindowSize` | int | `8192` | `num_ctx` + client token budget. 0 = the model's default: the window LM Studio, vLLM or llama-server report loading is then the budget; with Ollama, which reports none, trimming is off |
 | `useRecommendedSampling` | bool | `true` | Send the sampling settings the model's vendor recommends, for the families in [Models](models.md) (`false` = the server's own settings) |
+| `reasoningEffortChat` | string | `"low"` | How much the model reasons for a question: `server` (its own setting), `low`, `medium`, `high` — sent only to a model LM Studio says takes that level ([Models](models.md)) |
+| `reasoningEffortAgent` | string | `"server"` | The same for an agent run, one effort for the whole run |
 | `contextWindowKeepTurns` | int | `4` | Recent turns to keep when trimming — at most: turns too long to fit next to the tool definitions are summarized with the rest |
 | `compactionEnabled` | bool | `true` | Summarize old messages (LLM) instead of hard truncation |
 | `compactionTimeoutSeconds` | int | `45` | Compaction safety fuse: seconds the summary may go without writing anything (its reasoning counts), on top of the time needed to read what it summarizes (about 1 s per 100 tokens); past it, the older turns are dropped instead. A model that keeps writing, or reasoning, is waited for |

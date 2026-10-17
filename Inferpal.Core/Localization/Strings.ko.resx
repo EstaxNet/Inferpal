@@ -1076,7 +1076,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="SettingsEditRules" xml:space="preserve"><value>규칙 편집</value></data>
   <data name="SettingsSectionModelPerTask" xml:space="preserve"><value>작업별 모델</value></data>
   <data name="SettingsSectionModelPerTaskDesc" xml:space="preserve"><value>'채팅과 동일'로 두면 채팅 모델이 맡습니다.</value></data>
-  <data name="SettingsSectionSampling" xml:space="preserve"><value>샘플링</value></data>
+  <data name="SettingsSectionSampling" xml:space="preserve"><value>샘플링과 추론</value></data>
   <data name="SettingsSectionGpu" xml:space="preserve"><value>GPU</value></data>
   <data name="SettingsSectionHowItWorks" xml:space="preserve"><value>작동 방식</value></data>
   <data name="SettingsSectionApprovals" xml:space="preserve"><value>승인</value></data>
@@ -1098,6 +1098,14 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="SettingsSectionAgentRuns" xml:space="preserve"><value>에이전트 실행</value></data>
   <data name="LabelUseRecommendedSampling" xml:space="preserve"><value>각 모델 제작사의 설정 사용</value></data>
   <data name="HintUseRecommendedSampling" xml:space="preserve"><value>모델 계열에 공개된 temperature와 top-p를 씁니다. 끄면 서버 설정이 적용됩니다.</value></data>
+  <data name="LabelReasoningEffortChat" xml:space="preserve"><value>질문에 대한 추론</value></data>
+  <data name="HintReasoningEffortChat" xml:space="preserve"><value>추론하는 모델이 질문(에이전트 모드 꺼짐)이나 /check 리뷰에 답하기 전에 얼마나 생각할지입니다. LM Studio가 그 단계를 받는다고 알려 주는 모델에만 보내며, 그 밖에는 서버 설정이 적용됩니다.</value></data>
+  <data name="LabelReasoningEffortAgent" xml:space="preserve"><value>에이전트 실행의 추론</value></data>
+  <data name="HintReasoningEffortAgent" xml:space="preserve"><value>에이전트 실행(에이전트 모드의 질문, /task, /tdd)에도 같으며, 실행 전체에 한 단계입니다.</value></data>
+  <data name="ReasoningEffortServer" xml:space="preserve"><value>서버 설정</value></data>
+  <data name="ReasoningEffortLow" xml:space="preserve"><value>낮음</value></data>
+  <data name="ReasoningEffortMedium" xml:space="preserve"><value>중간</value></data>
+  <data name="ReasoningEffortHigh" xml:space="preserve"><value>높음</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>파일 변경, 명령 실행, 온라인 접근 전에 묻기</value></data>
   <data name="HintAskBeforeActions" xml:space="preserve"><value>실제 diff나 정확한 명령을 보여 줍니다. 끄면 모든 것이 조용히 승인됩니다. 치명적인 명령은 여전히 거부됩니다.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>적용하기 전에 변경 내용 보기</value></data>

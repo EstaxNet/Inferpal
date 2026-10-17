@@ -1076,7 +1076,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="SettingsEditRules" xml:space="preserve"><value>Edytuj reguły</value></data>
   <data name="SettingsSectionModelPerTask" xml:space="preserve"><value>Model na zadanie</value></data>
   <data name="SettingsSectionModelPerTaskDesc" xml:space="preserve"><value>Pozostawione na „Jak czat” — pracuje model czatu.</value></data>
-  <data name="SettingsSectionSampling" xml:space="preserve"><value>Próbkowanie</value></data>
+  <data name="SettingsSectionSampling" xml:space="preserve"><value>Próbkowanie i rozumowanie</value></data>
   <data name="SettingsSectionGpu" xml:space="preserve"><value>Twój GPU</value></data>
   <data name="SettingsSectionHowItWorks" xml:space="preserve"><value>Sposób pracy</value></data>
   <data name="SettingsSectionApprovals" xml:space="preserve"><value>Zatwierdzenia</value></data>
@@ -1098,6 +1098,14 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="SettingsSectionAgentRuns" xml:space="preserve"><value>Przebiegi agenta</value></data>
   <data name="LabelUseRecommendedSampling" xml:space="preserve"><value>Używaj ustawień twórcy każdego modelu</value></data>
   <data name="HintUseRecommendedSampling" xml:space="preserve"><value>Temperatura i top-p opublikowane dla rodziny modelu. Wyłączone: obowiązują ustawienia serwera.</value></data>
+  <data name="LabelReasoningEffortChat" xml:space="preserve"><value>Rozumowanie przy pytaniu</value></data>
+  <data name="HintReasoningEffortChat" xml:space="preserve"><value>Jak długo rozumujący model myśli, zanim odpowie na pytanie (tryb agenta wyłączony) lub przegląd /check. Wysyłane tylko do modelu, o którym LM Studio mówi, że przyjmuje ten poziom; gdzie indziej obowiązuje ustawienie serwera.</value></data>
+  <data name="LabelReasoningEffortAgent" xml:space="preserve"><value>Rozumowanie w przebiegu agenta</value></data>
+  <data name="HintReasoningEffortAgent" xml:space="preserve"><value>To samo dla przebiegu agenta — pytania w trybie agenta, /task, /tdd — jeden poziom na cały przebieg.</value></data>
+  <data name="ReasoningEffortServer" xml:space="preserve"><value>Serwera</value></data>
+  <data name="ReasoningEffortLow" xml:space="preserve"><value>Niskie</value></data>
+  <data name="ReasoningEffortMedium" xml:space="preserve"><value>Średnie</value></data>
+  <data name="ReasoningEffortHigh" xml:space="preserve"><value>Wysokie</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Pytaj przed zmianą plików, uruchomieniem poleceń lub wyjściem do sieci</value></data>
   <data name="HintAskBeforeActions" xml:space="preserve"><value>Widzisz prawdziwy diff lub dokładne polecenie. Wyłączone: wszystko jest zatwierdzane bez pytania — katastrofalne polecenia nadal są odrzucane.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Pokaż zmianę przed jej zastosowaniem</value></data>

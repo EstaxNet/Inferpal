@@ -430,6 +430,164 @@
                             <TextBlock Text="{Binding HintUseRecommendedSampling}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
                         </StackPanel>
                     </CheckBox>
+                    <TextBlock Text="{Binding LabelReasoningEffortChat}" Style="{StaticResource FieldLabel}"/>
+                    <Border HorizontalAlignment="Left" Padding="3" CornerRadius="8" BorderThickness="1" BorderBrush="{Binding NavLineBrush}"
+                            Margin="0,2,0,0" AutomationProperties.Name="{Binding LabelReasoningEffortChat}">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Command="{Binding SetReasoningEffortChatCommand}" CommandParameter="server" Cursor="Hand"
+                                    AutomationProperties.Name="{Binding LabelEffortServer}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="bd" CornerRadius="6" Height="30" Padding="12,0" Background="Transparent">
+                                            <TextBlock x:Name="txt" Text="{Binding LabelEffortServer}" Foreground="{Binding SubtleForeground}"
+                                                       VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding ReasoningEffortChat}" Value="server">
+                                                <Setter TargetName="bd" Property="Background" Value="{Binding SegmentSelectedBg}"/>
+                                                <Setter TargetName="txt" Property="Foreground" Value="{Binding TextForeground}"/>
+                                                <Setter TargetName="txt" Property="FontWeight" Value="SemiBold"/>
+                                            </DataTrigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                            <Button Command="{Binding SetReasoningEffortChatCommand}" CommandParameter="low" Cursor="Hand"
+                                    AutomationProperties.Name="{Binding LabelEffortLow}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="bd" CornerRadius="6" Height="30" Padding="12,0" Background="Transparent">
+                                            <TextBlock x:Name="txt" Text="{Binding LabelEffortLow}" Foreground="{Binding SubtleForeground}"
+                                                       VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding ReasoningEffortChat}" Value="low">
+                                                <Setter TargetName="bd" Property="Background" Value="{Binding SegmentSelectedBg}"/>
+                                                <Setter TargetName="txt" Property="Foreground" Value="{Binding TextForeground}"/>
+                                                <Setter TargetName="txt" Property="FontWeight" Value="SemiBold"/>
+                                            </DataTrigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                            <Button Command="{Binding SetReasoningEffortChatCommand}" CommandParameter="medium" Cursor="Hand"
+                                    AutomationProperties.Name="{Binding LabelEffortMedium}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="bd" CornerRadius="6" Height="30" Padding="12,0" Background="Transparent">
+                                            <TextBlock x:Name="txt" Text="{Binding LabelEffortMedium}" Foreground="{Binding SubtleForeground}"
+                                                       VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding ReasoningEffortChat}" Value="medium">
+                                                <Setter TargetName="bd" Property="Background" Value="{Binding SegmentSelectedBg}"/>
+                                                <Setter TargetName="txt" Property="Foreground" Value="{Binding TextForeground}"/>
+                                                <Setter TargetName="txt" Property="FontWeight" Value="SemiBold"/>
+                                            </DataTrigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                            <Button Command="{Binding SetReasoningEffortChatCommand}" CommandParameter="high" Cursor="Hand"
+                                    AutomationProperties.Name="{Binding LabelEffortHigh}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="bd" CornerRadius="6" Height="30" Padding="12,0" Background="Transparent">
+                                            <TextBlock x:Name="txt" Text="{Binding LabelEffortHigh}" Foreground="{Binding SubtleForeground}"
+                                                       VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding ReasoningEffortChat}" Value="high">
+                                                <Setter TargetName="bd" Property="Background" Value="{Binding SegmentSelectedBg}"/>
+                                                <Setter TargetName="txt" Property="Foreground" Value="{Binding TextForeground}"/>
+                                                <Setter TargetName="txt" Property="FontWeight" Value="SemiBold"/>
+                                            </DataTrigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+                    <TextBlock Text="{Binding HintReasoningEffortChat}" Style="{StaticResource Hint}" Margin="0,4,0,18" TextWrapping="Wrap" MaxWidth="680" HorizontalAlignment="Left"/>
+                    <TextBlock Text="{Binding LabelReasoningEffortAgent}" Style="{StaticResource FieldLabel}"/>
+                    <Border HorizontalAlignment="Left" Padding="3" CornerRadius="8" BorderThickness="1" BorderBrush="{Binding NavLineBrush}"
+                            Margin="0,2,0,0" AutomationProperties.Name="{Binding LabelReasoningEffortAgent}">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Command="{Binding SetReasoningEffortAgentCommand}" CommandParameter="server" Cursor="Hand"
+                                    AutomationProperties.Name="{Binding LabelEffortServer}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="bd" CornerRadius="6" Height="30" Padding="12,0" Background="Transparent">
+                                            <TextBlock x:Name="txt" Text="{Binding LabelEffortServer}" Foreground="{Binding SubtleForeground}"
+                                                       VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding ReasoningEffortAgent}" Value="server">
+                                                <Setter TargetName="bd" Property="Background" Value="{Binding SegmentSelectedBg}"/>
+                                                <Setter TargetName="txt" Property="Foreground" Value="{Binding TextForeground}"/>
+                                                <Setter TargetName="txt" Property="FontWeight" Value="SemiBold"/>
+                                            </DataTrigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                            <Button Command="{Binding SetReasoningEffortAgentCommand}" CommandParameter="low" Cursor="Hand"
+                                    AutomationProperties.Name="{Binding LabelEffortLow}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="bd" CornerRadius="6" Height="30" Padding="12,0" Background="Transparent">
+                                            <TextBlock x:Name="txt" Text="{Binding LabelEffortLow}" Foreground="{Binding SubtleForeground}"
+                                                       VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding ReasoningEffortAgent}" Value="low">
+                                                <Setter TargetName="bd" Property="Background" Value="{Binding SegmentSelectedBg}"/>
+                                                <Setter TargetName="txt" Property="Foreground" Value="{Binding TextForeground}"/>
+                                                <Setter TargetName="txt" Property="FontWeight" Value="SemiBold"/>
+                                            </DataTrigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                            <Button Command="{Binding SetReasoningEffortAgentCommand}" CommandParameter="medium" Cursor="Hand"
+                                    AutomationProperties.Name="{Binding LabelEffortMedium}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="bd" CornerRadius="6" Height="30" Padding="12,0" Background="Transparent">
+                                            <TextBlock x:Name="txt" Text="{Binding LabelEffortMedium}" Foreground="{Binding SubtleForeground}"
+                                                       VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding ReasoningEffortAgent}" Value="medium">
+                                                <Setter TargetName="bd" Property="Background" Value="{Binding SegmentSelectedBg}"/>
+                                                <Setter TargetName="txt" Property="Foreground" Value="{Binding TextForeground}"/>
+                                                <Setter TargetName="txt" Property="FontWeight" Value="SemiBold"/>
+                                            </DataTrigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                            <Button Command="{Binding SetReasoningEffortAgentCommand}" CommandParameter="high" Cursor="Hand"
+                                    AutomationProperties.Name="{Binding LabelEffortHigh}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="bd" CornerRadius="6" Height="30" Padding="12,0" Background="Transparent">
+                                            <TextBlock x:Name="txt" Text="{Binding LabelEffortHigh}" Foreground="{Binding SubtleForeground}"
+                                                       VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding ReasoningEffortAgent}" Value="high">
+                                                <Setter TargetName="bd" Property="Background" Value="{Binding SegmentSelectedBg}"/>
+                                                <Setter TargetName="txt" Property="Foreground" Value="{Binding TextForeground}"/>
+                                                <Setter TargetName="txt" Property="FontWeight" Value="SemiBold"/>
+                                            </DataTrigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+                    <TextBlock Text="{Binding HintReasoningEffortAgent}" Style="{StaticResource Hint}" Margin="0,4,0,18" TextWrapping="Wrap" MaxWidth="680" HorizontalAlignment="Left"/>
 
                     <TextBlock Text="{Binding LabelSectionGpu}" Style="{StaticResource SectionTitle}"/>
                     <StackPanel Margin="0,0,0,14">

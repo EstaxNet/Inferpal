@@ -1076,7 +1076,7 @@
   <data name="SettingsEditRules" xml:space="preserve"><value>编辑规则</value></data>
   <data name="SettingsSectionModelPerTask" xml:space="preserve"><value>按任务的模型</value></data>
   <data name="SettingsSectionModelPerTaskDesc" xml:space="preserve"><value>保留为“与聊天相同”时，由聊天模型完成工作。</value></data>
-  <data name="SettingsSectionSampling" xml:space="preserve"><value>采样</value></data>
+  <data name="SettingsSectionSampling" xml:space="preserve"><value>采样与推理</value></data>
   <data name="SettingsSectionGpu" xml:space="preserve"><value>您的 GPU</value></data>
   <data name="SettingsSectionHowItWorks" xml:space="preserve"><value>工作方式</value></data>
   <data name="SettingsSectionApprovals" xml:space="preserve"><value>审批</value></data>
@@ -1098,6 +1098,14 @@
   <data name="SettingsSectionAgentRuns" xml:space="preserve"><value>代理运行</value></data>
   <data name="LabelUseRecommendedSampling" xml:space="preserve"><value>使用各模型发布方推荐的设置</value></data>
   <data name="HintUseRecommendedSampling" xml:space="preserve"><value>使用为该模型系列发布的 temperature 和 top-p。关闭时采用服务器自身的设置。</value></data>
+  <data name="LabelReasoningEffortChat" xml:space="preserve"><value>提问时的推理</value></data>
+  <data name="HintReasoningEffortChat" xml:space="preserve"><value>会推理的模型在回答问题(代理模式关闭时)或 /check 评审前思考多久。仅发送给 LM Studio 表明支持该级别的模型；其他情况下使用服务器的设置。</value></data>
+  <data name="LabelReasoningEffortAgent" xml:space="preserve"><value>代理运行中的推理</value></data>
+  <data name="HintReasoningEffortAgent" xml:space="preserve"><value>代理运行(代理模式下的提问、/task、/tdd)同样适用，整个运行使用同一级别。</value></data>
+  <data name="ReasoningEffortServer" xml:space="preserve"><value>服务器设置</value></data>
+  <data name="ReasoningEffortLow" xml:space="preserve"><value>低</value></data>
+  <data name="ReasoningEffortMedium" xml:space="preserve"><value>中</value></data>
+  <data name="ReasoningEffortHigh" xml:space="preserve"><value>高</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>在修改文件、运行命令或联网前先询问我</value></data>
   <data name="HintAskBeforeActions" xml:space="preserve"><value>您会看到真实的 diff 或确切的命令。关闭后一切将被静默批准——灾难性命令仍会被拒绝。</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>应用前先显示修改</value></data>

@@ -353,6 +353,14 @@ internal static class Strings
     public static string SettingsSectionAgentToolsDesc => Get(nameof(SettingsSectionAgentToolsDesc));
     public static string SettingsSectionAgentRuns => Get(nameof(SettingsSectionAgentRuns));
     public static string LabelUseRecommendedSampling => Get(nameof(LabelUseRecommendedSampling));
+    public static string LabelReasoningEffortChat  => Get(nameof(LabelReasoningEffortChat));
+    public static string HintReasoningEffortChat   => Get(nameof(HintReasoningEffortChat));
+    public static string LabelReasoningEffortAgent => Get(nameof(LabelReasoningEffortAgent));
+    public static string HintReasoningEffortAgent  => Get(nameof(HintReasoningEffortAgent));
+    public static string ReasoningEffortServer     => Get(nameof(ReasoningEffortServer));
+    public static string ReasoningEffortLow        => Get(nameof(ReasoningEffortLow));
+    public static string ReasoningEffortMedium     => Get(nameof(ReasoningEffortMedium));
+    public static string ReasoningEffortHigh       => Get(nameof(ReasoningEffortHigh));
     public static string HintUseRecommendedSampling => Get(nameof(HintUseRecommendedSampling));
     public static string LabelAskBeforeActions => Get(nameof(LabelAskBeforeActions));
     public static string HintAskBeforeActions => Get(nameof(HintAskBeforeActions));
