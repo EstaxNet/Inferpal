@@ -795,6 +795,22 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} {1:plik|pliki|plików}</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Ich poprzedni stan został wcześniej zapisany — `/restore &lt;pełna ścieżka&gt;` przywraca plik.</value></data>
   <data name="UndoRunRetryFailed" xml:space="preserve"><value>Pliki oznaczone ⚠ nie zostały przywrócone. Wpisz ponownie `/undo-run`, gdy przyczyna zniknie (na przykład program blokujący plik): ponowiona zostanie próba tylko dla tych plików.</value></data>
+  <data name="UndoRunNotCovered" xml:space="preserve"><value>Niezapisane, więc niecofnięte:</value></data>
+  <data name="UndoRunNotCoveredMore" xml:space="preserve"><value>… i {0} więcej.</value></data>
+  <data name="UndoRunIgnoredNote" xml:space="preserve"><value>Nigdy nie są zapisywane: pliki ignorowane przez git (wyniki kompilacji, node_modules, ignorowany .env), zagnieżdżone repozytoria i submoduły oraz pliki spoza repozytorium.</value></data>
+  <data name="NotCoveredNoRepository" xml:space="preserve"><value>{0}: obszar roboczy nie jest w repozytorium git, więc wprowadzone zmiany nie zostały zapisane.</value></data>
+  <data name="NotCoveredTooMany" xml:space="preserve"><value>{0}: zbyt wiele zmienionych lub nieśledzonych plików w repozytorium, by zapisać zmiany.</value></data>
+  <data name="NotCoveredTooSlow" xml:space="preserve"><value>{0}: repozytorium czyta się zbyt wolno, więc zmiany wprowadzane w nim przez polecenia nie są zapisywane w tej sesji.</value></data>
+  <data name="NotCoveredReadFailed" xml:space="preserve"><value>{0}: git nie mógł odczytać repozytorium (szczegóły w /diagnostics), więc zmiany nie zostały zapisane.</value></data>
+  <data name="NotCoveredBackground" xml:space="preserve"><value>{0}: zadanie w tle — zmiany po jego uruchomieniu nie zostały zapisane.</value></data>
+  <data name="NotCoveredFileTooLarge" xml:space="preserve"><value>{0}: {1} jest większy niż {2} MB i nie został zapisany.</value></data>
+  <data name="NotCoveredFileLfs" xml:space="preserve"><value>{0}: {1} jest przechowywany w Git LFS i nie został zapisany.</value></data>
+  <data name="NotCoveredFileLink" xml:space="preserve"><value>{0}: {1} jest dowiązaniem symbolicznym i nie został zapisany.</value></data>
+  <data name="NotCoveredFileUnreadable" xml:space="preserve"><value>{0}: nie udało się odczytać {1}, nie został zapisany.</value></data>
+  <data name="NotCoveredFileOutside" xml:space="preserve"><value>{0}: {1} jest poza obszarem roboczym i nie został zapisany.</value></data>
+  <data name="NotCoveredUnknownOrigin" xml:space="preserve"><value>{0}: {1} pojawił się po zmianie reguły ignorowania — mógł istnieć wcześniej — i nie został zapisany.</value></data>
+  <data name="NotCoveredBeforeUnknown" xml:space="preserve"><value>{0}: nie udało się dokładnie ustalić wcześniejszej zawartości {1} (kopia git ma inne końce wierszy), nie został zapisany.</value></data>
+  <data name="NotCoveredSavedByEditor" xml:space="preserve"><value>{0}: {1} miał niezapisane zmiany w edytorze i został w międzyczasie zapisany — Twoja praca, nie została zapisana.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Cofnięto ostatnie uruchomienie — przywrócono {0} {0:plik|pliki|plików}, usunięto {1}.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Oś czasu ostatniego przebiegu agenta (narzędzia, czasy, pliki)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>W tej sesji nie zarejestrowano przebiegu agenta z wywołaniami narzędzi.</value></data>

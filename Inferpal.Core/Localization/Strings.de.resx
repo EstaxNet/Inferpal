@@ -795,6 +795,22 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} {1:Datei|Dateien}</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Ihr vorheriger Zustand wurde vorher gesichert — `/restore &lt;vollständiger Pfad&gt;` stellt eine Datei wieder her.</value></data>
   <data name="UndoRunRetryFailed" xml:space="preserve"><value>Die mit ⚠ markierten Dateien wurden nicht zurückgegeben. Geben Sie `/undo-run` erneut ein, sobald die Ursache behoben ist (etwa ein Programm, das die Datei geöffnet hält): Nur diese Dateien werden erneut versucht.</value></data>
+  <data name="UndoRunNotCovered" xml:space="preserve"><value>Nicht aufgezeichnet, daher nicht rückgängig gemacht:</value></data>
+  <data name="UndoRunNotCoveredMore" xml:space="preserve"><value>… und {0} weitere.</value></data>
+  <data name="UndoRunIgnoredNote" xml:space="preserve"><value>Nie aufgezeichnet: Dateien, die git ignoriert (Build-Ausgaben, node_modules, eine ignorierte .env), verschachtelte Repositories und Submodule sowie Dateien außerhalb des Repositorys.</value></data>
+  <data name="NotCoveredNoRepository" xml:space="preserve"><value>{0}: Der Arbeitsbereich liegt in keinem git-Repository, daher wurden die Änderungen nicht aufgezeichnet.</value></data>
+  <data name="NotCoveredTooMany" xml:space="preserve"><value>{0}: Zu viele geänderte oder nicht verfolgte Dateien im Repository, um die Änderungen aufzuzeichnen.</value></data>
+  <data name="NotCoveredTooSlow" xml:space="preserve"><value>{0}: Das Repository lässt sich zu langsam lesen; was Befehle dort ändern, wird in dieser Sitzung nicht aufgezeichnet.</value></data>
+  <data name="NotCoveredReadFailed" xml:space="preserve"><value>{0}: git konnte das Repository nicht lesen (Details in /diagnostics), daher wurden die Änderungen nicht aufgezeichnet.</value></data>
+  <data name="NotCoveredBackground" xml:space="preserve"><value>{0}: ein Hintergrundjob — was er nach dem Start geändert hat, wurde nicht aufgezeichnet.</value></data>
+  <data name="NotCoveredFileTooLarge" xml:space="preserve"><value>{0}: {1} ist größer als {2} MB und wurde nicht aufgezeichnet.</value></data>
+  <data name="NotCoveredFileLfs" xml:space="preserve"><value>{0}: {1} ist mit Git LFS gespeichert und wurde nicht aufgezeichnet.</value></data>
+  <data name="NotCoveredFileLink" xml:space="preserve"><value>{0}: {1} ist ein symbolischer Link und wurde nicht aufgezeichnet.</value></data>
+  <data name="NotCoveredFileUnreadable" xml:space="preserve"><value>{0}: {1} konnte nicht gelesen werden und wurde nicht aufgezeichnet.</value></data>
+  <data name="NotCoveredFileOutside" xml:space="preserve"><value>{0}: {1} liegt außerhalb des Arbeitsbereichs und wurde nicht aufgezeichnet.</value></data>
+  <data name="NotCoveredUnknownOrigin" xml:space="preserve"><value>{0}: {1} ist erschienen, als sich eine Ignorierregel änderte — die Datei gab es vielleicht schon vorher — und wurde nicht aufgezeichnet.</value></data>
+  <data name="NotCoveredBeforeUnknown" xml:space="preserve"><value>{0}: Der vorherige Inhalt von {1} ließ sich nicht genau bestimmen (die Kopie von git hat andere Zeilenenden) und wurde nicht aufgezeichnet.</value></data>
+  <data name="NotCoveredSavedByEditor" xml:space="preserve"><value>{0}: {1} hatte ungespeicherte Änderungen im Editor und wurde inzwischen gespeichert — Ihre Arbeit, nicht aufgezeichnet.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Letzter Lauf rückgängig gemacht — {0} {0:Datei|Dateien} wiederhergestellt, {1} gelöscht.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Zeitachse des letzten Agent-Laufs (Tools, Dauern, Dateien)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>In dieser Sitzung wurde kein Agent-Lauf mit Tool-Aufrufen aufgezeichnet.</value></data>

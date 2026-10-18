@@ -77,6 +77,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
             // the generic "cancelled by user": ToolRegistry turns this into a distinct string for the
             // model (uniform across every tool, including MCP and custom shell, with no per-tool change).
             Diagnostics.Record("Permission", $"Blocked {toolName}: {matchOn}");
+            WorkTreeBracket.NoteRefused();
             throw new PermissionDeniedException(
                 PermissionPolicy.IsHardDenied(matchOn)
                     ? Strings.PermissionBlockedHard(matchOn)
@@ -124,10 +125,25 @@ internal abstract class ApprovalServiceBase : IApprovalService
 
         var message = Strings.ApprovalMessage(toolName, details);
 
-        var promptDecision = await PromptUserAsync(
-            new Services.Presentation.ApprovalPrompt(toolName, details, subject, diff, message), ct);
+        ApprovalDecision promptDecision;
+        try
+        {
+            promptDecision = await PromptUserAsync(
+                new Services.Presentation.ApprovalPrompt(toolName, details, subject, diff, message), ct);
+        }
+        catch (OperationCanceledException)
+        {
+            // Stopped at its card, the call runs nothing: what the person saved while it waited is theirs.
+            WorkTreeBracket.NoteRefused();
+            throw;
+        }
         if (promptDecision == ApprovalDecision.Always)
             Grant(toolName);
+
+        // ⚠ A card can wait for minutes, and the person edits and saves meanwhile: those changes are not the call's. Its
+        // watch of the work tree starts again from the moment it was approved — here, where every approval passes.
+        if (promptDecision == ApprovalDecision.Deny) WorkTreeBracket.NoteRefused();
+        else if (WorkTreeBracket.Current is { } watch) await watch.ReadAgainAsync(ct);
 
         return promptDecision != ApprovalDecision.Deny;
     }

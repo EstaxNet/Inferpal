@@ -46,6 +46,10 @@ internal class UpdateMemoryTool : ITool
 
     public string Name => "update_memory";
 
+    /// <inheritdoc/>
+    /// <remarks>Each file is backed up before it is written: its writes are in the run already.</remarks>
+    public bool NeedsWorkTreeWatch => false;
+
     public string Description =>
         "Updates the agent's persistent memory stored in .inferpal/memory.md. " +
         "Use mode='append' (default) to add a new note, 'replace' to rewrite the entire memory, " +

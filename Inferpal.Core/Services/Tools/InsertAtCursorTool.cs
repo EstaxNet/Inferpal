@@ -20,6 +20,10 @@ internal class InsertAtCursorTool : ITool
 
     public string Name => "insert_at_cursor";
 
+    /// <inheritdoc/>
+    /// <remarks>It writes the editor's buffer, never the disk.</remarks>
+    public bool NeedsWorkTreeWatch => false;
+
     /// <summary>Not offered where there is no editor at all (<see cref="IEditorSurface.HasEditor"/>).</summary>
     public bool IsOffered => _editor.HasEditor;
 

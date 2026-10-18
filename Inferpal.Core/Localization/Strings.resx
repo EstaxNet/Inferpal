@@ -803,6 +803,22 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} {1:file|files}</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Their previous state was saved first — `/restore &lt;full path&gt;` brings a file back.</value></data>
   <data name="UndoRunRetryFailed" xml:space="preserve"><value>The files marked ⚠ were not given back. Type `/undo-run` again once their cause is gone (a program holding the file, say): it tries those files only.</value></data>
+  <data name="UndoRunNotCovered" xml:space="preserve"><value>Not recorded, so not undone:</value></data>
+  <data name="UndoRunNotCoveredMore" xml:space="preserve"><value>… and {0} more.</value></data>
+  <data name="UndoRunIgnoredNote" xml:space="preserve"><value>Never recorded: files git ignores (build output, node_modules, an ignored .env), nested repositories and submodules, and files outside the repository.</value></data>
+  <data name="NotCoveredNoRepository" xml:space="preserve"><value>{0}: the workspace is not in a git repository, so what it changed was not recorded.</value></data>
+  <data name="NotCoveredTooMany" xml:space="preserve"><value>{0}: too many changed or untracked files in the repository to record what it changed.</value></data>
+  <data name="NotCoveredTooSlow" xml:space="preserve"><value>{0}: the repository is too slow to read, so what commands change there is not recorded in this session.</value></data>
+  <data name="NotCoveredReadFailed" xml:space="preserve"><value>{0}: git could not read the repository (details in /diagnostics), so what it changed was not recorded.</value></data>
+  <data name="NotCoveredBackground" xml:space="preserve"><value>{0}: a background job — what it changed after it started was not recorded.</value></data>
+  <data name="NotCoveredFileTooLarge" xml:space="preserve"><value>{0}: {1} is larger than {2} MB and was not recorded.</value></data>
+  <data name="NotCoveredFileLfs" xml:space="preserve"><value>{0}: {1} is stored with Git LFS and was not recorded.</value></data>
+  <data name="NotCoveredFileLink" xml:space="preserve"><value>{0}: {1} is a symbolic link and was not recorded.</value></data>
+  <data name="NotCoveredFileUnreadable" xml:space="preserve"><value>{0}: {1} could not be read and was not recorded.</value></data>
+  <data name="NotCoveredFileOutside" xml:space="preserve"><value>{0}: {1} is outside the workspace and was not recorded.</value></data>
+  <data name="NotCoveredUnknownOrigin" xml:space="preserve"><value>{0}: {1} appeared when an ignore rule changed — it may have been there before — and was not recorded.</value></data>
+  <data name="NotCoveredBeforeUnknown" xml:space="preserve"><value>{0}: what {1} held before could not be told exactly (git's copy has other line endings) and it was not recorded.</value></data>
+  <data name="NotCoveredSavedByEditor" xml:space="preserve"><value>{0}: {1} had unsaved changes in the editor and was saved meanwhile — your work, not recorded.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Last run undone — {0} {0:file|files} restored, {1} deleted.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Timeline of the last agent run (tools, durations, files)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>No agent run with tool calls recorded in this session.</value></data>

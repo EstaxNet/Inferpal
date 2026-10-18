@@ -32,6 +32,10 @@ internal sealed class ApplyEditsTool : ITool
 
     public string Name => "apply_edits";
 
+    /// <inheritdoc/>
+    /// <remarks>Each file is backed up before it is written: its writes are in the run already.</remarks>
+    public bool NeedsWorkTreeWatch => false;
+
     public string Description =>
         "Applies multiple edits across one or more files atomically (all-or-nothing): each edit " +
         "replaces old_content with new_content in its file (whitespace-tolerant, like apply_diff). " +

@@ -22,6 +22,10 @@ internal class DeleteFileTool : ITool
     }
 
     public string Name        => "delete_file";
+
+    /// <inheritdoc/>
+    /// <remarks>Each file is backed up before it is written: its writes are in the run already.</remarks>
+    public bool NeedsWorkTreeWatch => false;
     public string Description => "Permanently deletes a file. A snapshot is saved beforehand so restore_file can undo the deletion.";
     public object Parameters  => new
     {

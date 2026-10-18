@@ -33,6 +33,10 @@ internal sealed class RenameSymbolTool : ITool
 
     public string Name => "rename_symbol";
 
+    /// <inheritdoc/>
+    /// <remarks>Each file is backed up before it is written: its writes are in the run already.</remarks>
+    public bool NeedsWorkTreeWatch => false;
+
     // ⚠ No "every occurrence across all source files". This tool builds a ScanCoverage — files it
     // could not read, files past the size cap, a folder it could not list — precisely because it
     // CANNOT promise that, and the description is read BEFORE the report: a first claim is harder

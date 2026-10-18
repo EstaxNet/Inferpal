@@ -795,6 +795,22 @@
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} 个文件</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>它们之前的状态已先行保存 — 使用 `/restore &lt;完整路径&gt;` 可恢复文件。</value></data>
   <data name="UndoRunRetryFailed" xml:space="preserve"><value>标有 ⚠ 的文件未能还原。待原因消除后（例如占用该文件的程序），请再次输入 `/undo-run`：只会重试这些文件。</value></data>
+  <data name="UndoRunNotCovered" xml:space="preserve"><value>未记录，因此未撤销：</value></data>
+  <data name="UndoRunNotCoveredMore" xml:space="preserve"><value>… 另有 {0} 项。</value></data>
+  <data name="UndoRunIgnoredNote" xml:space="preserve"><value>永远不会被记录：git 忽略的文件（构建输出、node_modules、被忽略的 .env）、嵌套仓库和子模块，以及仓库之外的文件。</value></data>
+  <data name="NotCoveredNoRepository" xml:space="preserve"><value>{0}：工作区不在 git 仓库中，因此未记录其更改。</value></data>
+  <data name="NotCoveredTooMany" xml:space="preserve"><value>{0}：仓库中已更改或未跟踪的文件过多，无法记录其更改。</value></data>
+  <data name="NotCoveredTooSlow" xml:space="preserve"><value>{0}：仓库读取过慢，因此本会话不再记录命令在其中的更改。</value></data>
+  <data name="NotCoveredReadFailed" xml:space="preserve"><value>{0}：git 无法读取仓库（详情见 /diagnostics），因此未记录其更改。</value></data>
+  <data name="NotCoveredBackground" xml:space="preserve"><value>{0}：后台任务——启动后所做的更改未被记录。</value></data>
+  <data name="NotCoveredFileTooLarge" xml:space="preserve"><value>{0}：{1} 大于 {2} MB，未被记录。</value></data>
+  <data name="NotCoveredFileLfs" xml:space="preserve"><value>{0}：{1} 以 Git LFS 存储，未被记录。</value></data>
+  <data name="NotCoveredFileLink" xml:space="preserve"><value>{0}：{1} 是符号链接，未被记录。</value></data>
+  <data name="NotCoveredFileUnreadable" xml:space="preserve"><value>{0}：无法读取 {1}，未被记录。</value></data>
+  <data name="NotCoveredFileOutside" xml:space="preserve"><value>{0}：{1} 位于工作区之外，未被记录。</value></data>
+  <data name="NotCoveredUnknownOrigin" xml:space="preserve"><value>{0}：{1} 在忽略规则更改时出现（可能之前就已存在），未被记录。</value></data>
+  <data name="NotCoveredBeforeUnknown" xml:space="preserve"><value>{0}：无法准确确定 {1} 之前的内容（git 的副本换行符不同），未被记录。</value></data>
+  <data name="NotCoveredSavedByEditor" xml:space="preserve"><value>{0}：{1} 在编辑器中有未保存的更改，并在此期间被保存——这是您的工作，未被记录。</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ 已撤销上一次运行 — 恢复 {0} 个文件，删除 {1} 个。</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>最近一次代理运行的时间线（工具、耗时、文件）</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>本会话中没有记录包含工具调用的代理运行。</value></data>

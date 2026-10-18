@@ -795,6 +795,22 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} {1:archivo|archivos}</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Su estado anterior se guardó antes — `/restore &lt;ruta completa&gt;` restaura un archivo.</value></data>
   <data name="UndoRunRetryFailed" xml:space="preserve"><value>Los archivos marcados con ⚠ no se devolvieron. Vuelva a escribir `/undo-run` cuando su causa haya desaparecido (un programa que tiene el archivo abierto, por ejemplo): solo se reintentan esos archivos.</value></data>
+  <data name="UndoRunNotCovered" xml:space="preserve"><value>No registrado, por tanto no deshecho:</value></data>
+  <data name="UndoRunNotCoveredMore" xml:space="preserve"><value>… y {0} más.</value></data>
+  <data name="UndoRunIgnoredNote" xml:space="preserve"><value>Nunca se registran: los archivos que git ignora (salida de compilación, node_modules, un .env ignorado), los repositorios anidados y submódulos, y los archivos fuera del repositorio.</value></data>
+  <data name="NotCoveredNoRepository" xml:space="preserve"><value>{0}: el espacio de trabajo no está en un repositorio git, así que no se registró lo que cambió.</value></data>
+  <data name="NotCoveredTooMany" xml:space="preserve"><value>{0}: demasiados archivos modificados o sin seguimiento en el repositorio para registrar lo que cambió.</value></data>
+  <data name="NotCoveredTooSlow" xml:space="preserve"><value>{0}: el repositorio es demasiado lento de leer, así que lo que los comandos cambian allí no se registra en esta sesión.</value></data>
+  <data name="NotCoveredReadFailed" xml:space="preserve"><value>{0}: git no pudo leer el repositorio (detalles en /diagnostics), así que no se registró lo que cambió.</value></data>
+  <data name="NotCoveredBackground" xml:space="preserve"><value>{0}: una tarea en segundo plano — lo que cambió después de iniciarse no se registró.</value></data>
+  <data name="NotCoveredFileTooLarge" xml:space="preserve"><value>{0}: {1} supera {2} MB y no se registró.</value></data>
+  <data name="NotCoveredFileLfs" xml:space="preserve"><value>{0}: {1} se almacena con Git LFS y no se registró.</value></data>
+  <data name="NotCoveredFileLink" xml:space="preserve"><value>{0}: {1} es un enlace simbólico y no se registró.</value></data>
+  <data name="NotCoveredFileUnreadable" xml:space="preserve"><value>{0}: {1} no se pudo leer y no se registró.</value></data>
+  <data name="NotCoveredFileOutside" xml:space="preserve"><value>{0}: {1} está fuera del espacio de trabajo y no se registró.</value></data>
+  <data name="NotCoveredUnknownOrigin" xml:space="preserve"><value>{0}: {1} apareció al cambiar una regla de exclusión — quizá ya existía antes — y no se registró.</value></data>
+  <data name="NotCoveredBeforeUnknown" xml:space="preserve"><value>{0}: no se pudo saber con exactitud el contenido anterior de {1} (la copia de git tiene otros finales de línea) y no se registró.</value></data>
+  <data name="NotCoveredSavedByEditor" xml:space="preserve"><value>{0}: {1} tenía cambios sin guardar en el editor y se guardó mientras tanto — su trabajo, no se registró.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Último run deshecho — {0} {0:archivo restaurado|archivos restaurados}, {1} {1:eliminado|eliminados}.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Cronología del último run del agente (herramientas, duraciones, archivos)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>No hay ningún run del agente con llamadas a herramientas registrado en esta sesión.</value></data>

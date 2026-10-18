@@ -55,11 +55,19 @@ internal static class UndoRunCommandHandler
         else
         {
             run = runs.FirstOrDefault(r => r.FileCount > 0);
-            if (run is null) return Strings.UndoRunNone;
+            // Nothing recorded is not nothing changed: a run whose commands could not be watched says so.
+            if (run is null)
+                return runs.Count > 0 && runs[0].Uncovered.Count > 0
+                    ? $"{Strings.UndoRunNone}\n{NotCovered([runs[0]], root)}".TrimEnd()
+                    : Strings.UndoRunNone;
             // Undone already: nothing is touched. Moving on to the run before would answer a click on THIS run's Undo
             // button by undoing another one.
             if (run.Undone) return Strings.UndoRunAlreadyUndone;
         }
+
+        // ⚠ The runs after this one changed no file that could be recorded, or they would be the one undone — but what
+        // their commands changed unrecorded (a `sed -i` outside git) lies on top of what this undo writes back: said too.
+        var said = runs.TakeWhile(r => r != run).Where(r => r.Uncovered.Count > 0).Append(run).ToList();
 
         var result = await history.UndoRunAsync(run, ct);
 
@@ -71,7 +79,55 @@ internal static class UndoRunCommandHandler
         foreach (var f in result.Failed)   sb.AppendLine($"  ⚠ {Relativise(f, root)}");
         // The run stays to undo while a file failed: said, or the retry that brings it back is never tried.
         if (result.Failed.Count > 0) sb.AppendLine(Strings.UndoRunRetryFailed);
+        sb.Append(NotCovered(said, root));
         return sb.ToString().TrimEnd();
+    }
+
+    /// <summary>The lines a run's undo shows that are not shown elsewhere.</summary>
+    private const int MaxNotCoveredLines = 12;
+
+    /// <summary>
+    /// What the run's commands may have changed without its being recorded, and why — and, when it ran commands, that
+    /// files git ignores are never recorded.
+    /// </summary>
+    /// <remarks>⚠ "Undo run" promises the run's changes back. What a command changed outside what could be watched
+    /// (no git repository, a background job, a file too large…) is not given back, and a silent undo reads as a whole
+    /// one: said under the result, by cause.</remarks>
+    private static string NotCovered(IReadOnlyList<HistoryRun> runs, string? root)
+    {
+        var sb = new StringBuilder();
+        var uncovered = runs.SelectMany(r => r.Uncovered).ToList();
+        if (uncovered.Count > 0)
+        {
+            sb.AppendLine(Strings.UndoRunNotCovered);
+            foreach (var (call, note) in uncovered.Take(MaxNotCoveredLines))
+                sb.Append("  · ").AppendLine(Line(call, note, root));
+            if (uncovered.Count > MaxNotCoveredLines)
+                sb.Append("  · ").AppendLine(Strings.UndoRunNotCoveredMore(uncovered.Count - MaxNotCoveredLines));
+        }
+        if (runs.Any(r => r.WatchedCalls > 0)) sb.AppendLine(Strings.UndoRunIgnoredNote);
+        return sb.ToString();
+    }
+
+    private static string Line(string call, UncoveredNote note, string? root)
+    {
+        var file = note.File is null ? string.Empty : Relativise(note.File, root);
+        return note.Reason switch
+        {
+            UncoveredReason.NoRepository   => Strings.NotCoveredNoRepository(call),
+            UncoveredReason.TooManyFiles   => Strings.NotCoveredTooMany(call),
+            UncoveredReason.TooSlow        => Strings.NotCoveredTooSlow(call),
+            UncoveredReason.ReadFailed     => Strings.NotCoveredReadFailed(call),
+            UncoveredReason.Background     => Strings.NotCoveredBackground(call),
+            UncoveredReason.FileTooLarge   => Strings.NotCoveredFileTooLarge(call, file, (WorkTreeWatch.MaxFileBytes + 1024 * 1024 - 1) / (1024 * 1024)),
+            UncoveredReason.LfsFile        => Strings.NotCoveredFileLfs(call, file),
+            UncoveredReason.SymbolicLink   => Strings.NotCoveredFileLink(call, file),
+            UncoveredReason.OutsideWorkspace => Strings.NotCoveredFileOutside(call, file),
+            UncoveredReason.UnknownOrigin  => Strings.NotCoveredUnknownOrigin(call, file),
+            UncoveredReason.BeforeUnknown  => Strings.NotCoveredBeforeUnknown(call, file),
+            UncoveredReason.SavedByEditor  => Strings.NotCoveredSavedByEditor(call, file),
+            _                              => Strings.NotCoveredFileUnreadable(call, file),
+        };
     }
 
     /// <summary>Shortens a path under <paramref name="root"/>; anything else passes through.</summary>

@@ -330,8 +330,15 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         var sw = System.Diagnostics.Stopwatch.StartNew();
         // Every write this call backs up is checked when it ends: one that did not land leaves the run.
         using var writes = _fileHistory.TrackCall();
+        WorkTreeBracket? watch = null;
         try
         {
+            // ⚠ A command, a test run, a user's shell tool, an MCP tool change files WITHOUT a backup of their own: watched
+            // here, what they change enters the run like a write — /undo-run gives it back, the result bar counts it.
+            // Every call plan mode does not list as read-only, so a tool added tomorrow is watched without being named — but
+            // one that backs up its own writes or writes the editor's buffer says so (NeedsWorkTreeWatch), and is spared it.
+            if (!PlanModeToolRegistry.IsAllowed(name) && tool.NeedsWorkTreeWatch && _fileHistory.IsTracking)
+                WorkTreeBracket.Enter(watch = await WorkTreeBracket.OpenAsync(_indexService.RootDir, UnsavedNow(), ct));
             var result = await tool.ExecuteAsync(args, ct);
             _fileHistory.RecordToolCall(name, ExtractSubject(args), sw.ElapsedMilliseconds, error: false);
             return result;
@@ -363,6 +370,17 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         }
         finally
         {
+            // Stopped or failed, the call may have written halfway: what it changed is recorded all the same, without the
+            // cancelled token (each git reading has its own budget).
+            if (watch is not null)
+            {
+                var call = ExtractSubject(args) is { } subject ? $"{name} `{CallLabel(subject)}`" : name;
+                // A budget of its own: Stop must not wait on a repository that does not answer.
+                using var budget = new CancellationTokenSource(RecordBudget);
+                try { await _fileHistory.RecordWatchedCallAsync(watch, writes.Paths, call, budget.Token); }
+                catch (Exception ex) { Diagnostics.Swallow("ToolRegistry.RecordWatchedCall", ex); }
+                finally { watch.Close(); }
+            }
             // ⚠ The project map is cached for two minutes. An agent that writes a file and then looks
             // at the map — the ordinary way to check its own work, and `@tree` reads the same cache —
             // read the map from before, with nothing saying so: the file it had just created was not in
@@ -372,6 +390,21 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             if (!PlanModeToolRegistry.IsAllowed(name)) _mapService.Invalidate();
         }
     }
+
+    /// <summary>How long recording what a watched call changed may take once the call is over.</summary>
+    internal static TimeSpan RecordBudget { get; set; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>A call's subject as one short line, for <c>/undo-run</c> to name it: a script of forty lines is not a name.</summary>
+    /// <remarks>The label goes between backticks: one of its own (PowerShell's escape) would end the code span there.</remarks>
+    internal static string CallLabel(string subject)
+    {
+        var line = subject.Trim().Split('\n', 2)[0].TrimEnd('\r').Trim().Replace('`', '\'');
+        return line.Length > 80 ? line[..79] + "…" : line;
+    }
+
+    /// <summary>The files the editor holds unsaved changes for, as the overlay was just refreshed.</summary>
+    private IReadOnlyCollection<string>? UnsavedNow() =>
+        _overlay is null ? null : [.. _overlay.Paths.Where(_overlay.HasUnsavedChanges)];
 
     /// <summary>Best-effort human-readable target of a tool call for the run journal:
     /// the first well-known string argument (path, command, query…), <c>null</c> when none.</summary>

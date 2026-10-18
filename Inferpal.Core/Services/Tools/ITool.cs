@@ -51,6 +51,15 @@ internal interface ITool
     bool IsOffered => true;
 
     /// <summary>
+    /// Whether what the tool changes on disk has to be watched (<see cref="Inferpal.Services.Execution.WorkTreeBracket"/>)
+    /// to enter the run: <c>false</c> for a tool that backs up each file before writing it (its writes are in the run
+    /// already) and for one that writes only the editor's buffer.
+    /// </summary>
+    /// <remarks>⚠ Watching costs two readings of the work tree per call. A command, a test run, a user's shell tool or an
+    /// MCP tool keep the default: what they change has no other way into <c>/undo-run</c>.</remarks>
+    bool NeedsWorkTreeWatch => true;
+
+    /// <summary>
     /// Executes the tool and returns a human-readable result string.
     /// The result is appended to the conversation and fed back to the model.
     /// </summary>

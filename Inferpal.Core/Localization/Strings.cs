@@ -1426,6 +1426,23 @@ internal static class Strings
     public static string UndoRunResult(int restored, int deleted) => Format(Get(nameof(UndoRunResult)), restored, deleted);
     public static string UndoRunSavedFirst                    => Get(nameof(UndoRunSavedFirst));
     public static string UndoRunRetryFailed                   => Get(nameof(UndoRunRetryFailed));
+    public static string UndoRunNotCovered                    => Get(nameof(UndoRunNotCovered));
+    public static string UndoRunNotCoveredMore(int count)     => Format(Get(nameof(UndoRunNotCoveredMore)), count);
+    public static string UndoRunIgnoredNote                   => Get(nameof(UndoRunIgnoredNote));
+    public static string NotCoveredNoRepository(string call)  => Format(Get(nameof(NotCoveredNoRepository)), call);
+    public static string NotCoveredTooMany(string call)       => Format(Get(nameof(NotCoveredTooMany)), call);
+    public static string NotCoveredTooSlow(string call)       => Format(Get(nameof(NotCoveredTooSlow)), call);
+    public static string NotCoveredReadFailed(string call)    => Format(Get(nameof(NotCoveredReadFailed)), call);
+    public static string NotCoveredBackground(string call)    => Format(Get(nameof(NotCoveredBackground)), call);
+    public static string NotCoveredFileTooLarge(string call, string file, long megabytes) =>
+        Format(Get(nameof(NotCoveredFileTooLarge)), call, file, megabytes);
+    public static string NotCoveredFileLfs(string call, string file)        => Format(Get(nameof(NotCoveredFileLfs)), call, file);
+    public static string NotCoveredFileLink(string call, string file)       => Format(Get(nameof(NotCoveredFileLink)), call, file);
+    public static string NotCoveredFileUnreadable(string call, string file) => Format(Get(nameof(NotCoveredFileUnreadable)), call, file);
+    public static string NotCoveredFileOutside(string call, string file)    => Format(Get(nameof(NotCoveredFileOutside)), call, file);
+    public static string NotCoveredUnknownOrigin(string call, string file)  => Format(Get(nameof(NotCoveredUnknownOrigin)), call, file);
+    public static string NotCoveredBeforeUnknown(string call, string file)  => Format(Get(nameof(NotCoveredBeforeUnknown)), call, file);
+    public static string NotCoveredSavedByEditor(string call, string file)  => Format(Get(nameof(NotCoveredSavedByEditor)), call, file);
 
     // ── /replay command ─────────────────────────────────────────────────────────
     public static string SlashHintReplay                     => Get(nameof(SlashHintReplay));

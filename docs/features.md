@@ -73,7 +73,15 @@ exists.
   asks as before.
 - **Undo a whole run** — `/undo-run` reverts every file changed during the last agent run
   (restores edited files, deletes files created that run); `/undo-run list` shows the
-  session's tracked runs.
+  session's tracked runs. **What commands changed is undone too**: in a git repository, the
+  files a `run_command`, a test run, one of your shell tools or an MCP tool changed are recorded
+  like the agent's own edits — byte for byte, nothing written to your repository — and counted on
+  the result bar. A file you save while an approval card waits is yours, not the command's, and so
+  is a file your editor held unsaved changes for when the command started. What could not be
+  recorded is said under the undo: a command run outside a git repository, a background job after
+  it started, a file larger than 20 MB or stored with Git LFS. Files git ignores (build output,
+  `node_modules`, an ignored `.env`), nested repositories and submodules are never recorded, and an
+  undo gives back files, never a commit, a branch or the index.
 - **Run replay** — `/replay [n]` shows a post-mortem timeline of an agent run: every tool
   call with its target and duration, then the files it touched.
 

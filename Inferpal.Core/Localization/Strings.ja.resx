@@ -795,6 +795,22 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} 個のファイル</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>直前の状態は先に保存されています — `/restore &lt;フルパス&gt;` でファイルを復元できます。</value></data>
   <data name="UndoRunRetryFailed" xml:space="preserve"><value>⚠ の付いたファイルは元に戻せませんでした。原因 (ファイルを開いているプログラムなど) を取り除いてから、もう一度 `/undo-run` と入力してください。再試行されるのはこれらのファイルだけです。</value></data>
+  <data name="UndoRunNotCovered" xml:space="preserve"><value>記録されていないため、元に戻していません：</value></data>
+  <data name="UndoRunNotCoveredMore" xml:space="preserve"><value>… ほか {0} 件。</value></data>
+  <data name="UndoRunIgnoredNote" xml:space="preserve"><value>記録されないもの：git が無視するファイル（ビルド出力、node_modules、無視された .env）、入れ子のリポジトリとサブモジュール、リポジトリ外のファイル。</value></data>
+  <data name="NotCoveredNoRepository" xml:space="preserve"><value>{0}：ワークスペースが git リポジトリ内にないため、変更内容は記録されていません。</value></data>
+  <data name="NotCoveredTooMany" xml:space="preserve"><value>{0}：リポジトリ内の変更済みまたは未追跡のファイルが多すぎるため、変更内容を記録できませんでした。</value></data>
+  <data name="NotCoveredTooSlow" xml:space="preserve"><value>{0}：リポジトリの読み取りが遅すぎるため、このセッションではコマンドによる変更は記録されません。</value></data>
+  <data name="NotCoveredReadFailed" xml:space="preserve"><value>{0}：git がリポジトリを読み取れなかったため（詳細は /diagnostics）、変更内容は記録されていません。</value></data>
+  <data name="NotCoveredBackground" xml:space="preserve"><value>{0}：バックグラウンドジョブのため、開始後の変更は記録されていません。</value></data>
+  <data name="NotCoveredFileTooLarge" xml:space="preserve"><value>{0}：{1} は {2} MB を超えるため記録されていません。</value></data>
+  <data name="NotCoveredFileLfs" xml:space="preserve"><value>{0}：{1} は Git LFS で保存されているため記録されていません。</value></data>
+  <data name="NotCoveredFileLink" xml:space="preserve"><value>{0}：{1} はシンボリックリンクのため記録されていません。</value></data>
+  <data name="NotCoveredFileUnreadable" xml:space="preserve"><value>{0}：{1} を読み取れなかったため記録されていません。</value></data>
+  <data name="NotCoveredFileOutside" xml:space="preserve"><value>{0}：{1} はワークスペースの外にあるため記録されていません。</value></data>
+  <data name="NotCoveredUnknownOrigin" xml:space="preserve"><value>{0}：{1} は除外ルールの変更で現れました（以前から存在した可能性があります）。記録されていません。</value></data>
+  <data name="NotCoveredBeforeUnknown" xml:space="preserve"><value>{0}：{1} の以前の内容を正確に特定できませんでした（git のコピーは改行コードが異なります）。記録されていません。</value></data>
+  <data name="NotCoveredSavedByEditor" xml:space="preserve"><value>{0}：{1} はエディターに未保存の変更があり、その間に保存されました。あなたの作業のため記録されていません。</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ 直近の実行を取り消しました — 復元 {0} 件、削除 {1} 件。</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>直近のエージェント実行のタイムライン（ツール・所要時間・ファイル）</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>このセッションにはツール呼び出しのあるエージェント実行が記録されていません。</value></data>

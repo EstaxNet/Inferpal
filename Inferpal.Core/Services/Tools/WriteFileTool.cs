@@ -26,6 +26,10 @@ internal class WriteFileTool : ITool
     }
 
     public string Name => "write_file";
+
+    /// <inheritdoc/>
+    /// <remarks>Each file is backed up before it is written: its writes are in the run already.</remarks>
+    public bool NeedsWorkTreeWatch => false;
     public string Description =>
         "Writes or replaces the whole content of a file. Creates the file, and any missing folders, if absent. Before " +
         "creating a new file, read an existing file of the same kind next to it and follow its conventions (module " +

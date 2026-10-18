@@ -799,6 +799,22 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} {1:fichier|fichiers}</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Leur état précédent a été sauvegardé avant — `/restore &lt;chemin complet&gt;` rend un fichier.</value></data>
   <data name="UndoRunRetryFailed" xml:space="preserve"><value>Les fichiers marqués ⚠ n'ont pas été rendus. Retapez `/undo-run` une fois leur cause levée (un programme qui tient le fichier, par exemple) : seuls ces fichiers seront retentés.</value></data>
+  <data name="UndoRunNotCovered" xml:space="preserve"><value>Non enregistré, donc non annulé :</value></data>
+  <data name="UndoRunNotCoveredMore" xml:space="preserve"><value>… et {0} de plus.</value></data>
+  <data name="UndoRunIgnoredNote" xml:space="preserve"><value>Jamais enregistrés : les fichiers que git ignore (sorties de build, node_modules, un .env ignoré), les dépôts imbriqués et sous-modules, et les fichiers hors du dépôt.</value></data>
+  <data name="NotCoveredNoRepository" xml:space="preserve"><value>{0} : l'espace de travail n'est pas dans un dépôt git, ce qu'il a changé n'a donc pas été enregistré.</value></data>
+  <data name="NotCoveredTooMany" xml:space="preserve"><value>{0} : trop de fichiers modifiés ou non suivis dans le dépôt pour enregistrer ce qu'il a changé.</value></data>
+  <data name="NotCoveredTooSlow" xml:space="preserve"><value>{0} : le dépôt est trop lent à lire, ce que les commandes y changent n'est donc pas enregistré pendant cette session.</value></data>
+  <data name="NotCoveredReadFailed" xml:space="preserve"><value>{0} : git n'a pas pu lire le dépôt (détails dans /diagnostics), ce qu'il a changé n'a donc pas été enregistré.</value></data>
+  <data name="NotCoveredBackground" xml:space="preserve"><value>{0} : une tâche de fond — ce qu'elle a changé après son lancement n'a pas été enregistré.</value></data>
+  <data name="NotCoveredFileTooLarge" xml:space="preserve"><value>{0} : {1} dépasse {2} Mo et n'a pas été enregistré.</value></data>
+  <data name="NotCoveredFileLfs" xml:space="preserve"><value>{0} : {1} est stocké avec Git LFS et n'a pas été enregistré.</value></data>
+  <data name="NotCoveredFileLink" xml:space="preserve"><value>{0} : {1} est un lien symbolique et n'a pas été enregistré.</value></data>
+  <data name="NotCoveredFileUnreadable" xml:space="preserve"><value>{0} : {1} n'a pas pu être lu et n'a pas été enregistré.</value></data>
+  <data name="NotCoveredFileOutside" xml:space="preserve"><value>{0} : {1} est hors de l'espace de travail et n'a pas été enregistré.</value></data>
+  <data name="NotCoveredUnknownOrigin" xml:space="preserve"><value>{0} : {1} est apparu quand une règle d'exclusion a changé — il existait peut-être avant — et n'a pas été enregistré.</value></data>
+  <data name="NotCoveredBeforeUnknown" xml:space="preserve"><value>{0} : le contenu d'avant de {1} n'a pas pu être retrouvé exactement (la copie de git a d'autres fins de ligne) et il n'a pas été enregistré.</value></data>
+  <data name="NotCoveredSavedByEditor" xml:space="preserve"><value>{0} : {1} avait des modifications non enregistrées dans l'éditeur et a été enregistré entre-temps — votre travail, non enregistré ici.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Dernier run annulé — {0} {0:fichier restauré|fichiers restaurés}, {1} {1:supprimé|supprimés}.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Chronologie du dernier run agent (outils, durées, fichiers)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>Aucun run agent avec appels d'outils enregistré dans cette session.</value></data>

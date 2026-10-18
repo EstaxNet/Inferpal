@@ -21,6 +21,10 @@ internal class RestoreFileTool : ITool
     }
 
     public string Name        => "restore_file";
+
+    /// <inheritdoc/>
+    /// <remarks>Each file is backed up before it is written: its writes are in the run already.</remarks>
+    public bool NeedsWorkTreeWatch => false;
     public string Description =>
         "Restores a file from a previously saved backup snapshot in .inferpal/history/ (at the git root, or else at " +
         "the workspace root) — every write takes one and names it in its result. " +

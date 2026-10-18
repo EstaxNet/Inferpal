@@ -793,6 +793,22 @@
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} {1:файл|файла|файлов}</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Их предыдущее состояние сохранено заранее — `/restore &lt;полный путь&gt;` восстановит файл.</value></data>
   <data name="UndoRunRetryFailed" xml:space="preserve"><value>Файлы, отмеченные ⚠, не возвращены. Введите `/undo-run` ещё раз, когда причина будет устранена (например, программа, удерживающая файл): повторно обрабатываются только эти файлы.</value></data>
+  <data name="UndoRunNotCovered" xml:space="preserve"><value>Не записано, поэтому не отменено:</value></data>
+  <data name="UndoRunNotCoveredMore" xml:space="preserve"><value>… и ещё {0}.</value></data>
+  <data name="UndoRunIgnoredNote" xml:space="preserve"><value>Никогда не записываются: файлы, которые git игнорирует (результаты сборки, node_modules, игнорируемый .env), вложенные репозитории и подмодули, а также файлы вне репозитория.</value></data>
+  <data name="NotCoveredNoRepository" xml:space="preserve"><value>{0}: рабочая область не находится в репозитории git, поэтому сделанные изменения не записаны.</value></data>
+  <data name="NotCoveredTooMany" xml:space="preserve"><value>{0}: в репозитории слишком много изменённых или неотслеживаемых файлов, чтобы записать изменения.</value></data>
+  <data name="NotCoveredTooSlow" xml:space="preserve"><value>{0}: репозиторий читается слишком медленно, поэтому изменения команд в нём не записываются в этом сеансе.</value></data>
+  <data name="NotCoveredReadFailed" xml:space="preserve"><value>{0}: git не смог прочитать репозиторий (подробности в /diagnostics), поэтому изменения не записаны.</value></data>
+  <data name="NotCoveredBackground" xml:space="preserve"><value>{0}: фоновая задача — изменения после её запуска не записаны.</value></data>
+  <data name="NotCoveredFileTooLarge" xml:space="preserve"><value>{0}: {1} больше {2} МБ и не записан.</value></data>
+  <data name="NotCoveredFileLfs" xml:space="preserve"><value>{0}: {1} хранится в Git LFS и не записан.</value></data>
+  <data name="NotCoveredFileLink" xml:space="preserve"><value>{0}: {1} — символическая ссылка и не записан.</value></data>
+  <data name="NotCoveredFileUnreadable" xml:space="preserve"><value>{0}: не удалось прочитать {1}, он не записан.</value></data>
+  <data name="NotCoveredFileOutside" xml:space="preserve"><value>{0}: {1} находится вне рабочей области и не записан.</value></data>
+  <data name="NotCoveredUnknownOrigin" xml:space="preserve"><value>{0}: {1} появился при изменении правила игнорирования — возможно, он существовал и раньше — и не записан.</value></data>
+  <data name="NotCoveredBeforeUnknown" xml:space="preserve"><value>{0}: не удалось точно определить прежнее содержимое {1} (у копии git другие концы строк), он не записан.</value></data>
+  <data name="NotCoveredSavedByEditor" xml:space="preserve"><value>{0}: в редакторе у {1} были несохранённые изменения, и тем временем он был сохранён — это ваша работа, она не записана.</value></data>
   <data name="UndoRunResult" xml:space="preserve"><value>↩ Последний запуск отменён — восстановлено файлов: {0}, удалено: {1}.</value></data>
   <data name="SlashHintReplay" xml:space="preserve"><value>Хронология последнего запуска агента (инструменты, длительность, файлы)</value></data>
   <data name="ReplayNone" xml:space="preserve"><value>В этой сессии не записано ни одного запуска агента с вызовами инструментов.</value></data>

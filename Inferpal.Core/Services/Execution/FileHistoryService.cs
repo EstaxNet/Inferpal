@@ -133,12 +133,29 @@ internal class FileHistoryService
     /// <summary>Clock the snapshot names are stamped from; tests freeze it.</summary>
     internal Func<DateTime> UtcNow { get; init; } = () => DateTime.UtcNow;
 
-    internal async Task<string> SnapshotAsync(string filePath, CancellationToken ct)
+    /// <param name="pruneLater">When given, the old snapshots of the file are pruned by <see cref="PruneBatch"/> once the
+    /// batch is written, not after this one (see <see cref="PruneBatch"/>).</param>
+    internal async Task<string> SnapshotAsync(string filePath, CancellationToken ct,
+                                              ICollection<(string Dir, string Suffix)>? pruneLater = null)
+    {
+        if (!File.Exists(filePath)) return string.Empty;
+        return await SnapshotOfAsync(filePath, () => File.ReadAllBytesAsync(filePath, ct), ct, pruneLater);
+    }
+
+    /// <summary>
+    /// A snapshot of <paramref name="filePath"/> made of <paramref name="before"/> — the content it held before a call
+    /// changed it without a backup of its own (a command: see <see cref="RecordWatchedCallAsync"/>) — recorded in the run
+    /// like any other. Empty when it could not be written, and the file is then recorded as failed.
+    /// </summary>
+    internal Task<string> SnapshotBytesAsync(string filePath, byte[] before, CancellationToken ct,
+                                             ICollection<(string Dir, string Suffix)>? pruneLater = null) =>
+        SnapshotOfAsync(filePath, () => Task.FromResult(before), ct, pruneLater);
+
+    private async Task<string> SnapshotOfAsync(string filePath, Func<Task<byte[]>> content, CancellationToken ct,
+                                               ICollection<(string Dir, string Suffix)>? pruneLater = null)
     {
         try
         {
-            if (!File.Exists(filePath)) return string.Empty;
-
             var historyDir = HistoryDirOf(filePath);
             Directory.CreateDirectory(historyDir);
             IgnoreInGit(historyDir);
@@ -149,7 +166,7 @@ internal class FileHistoryService
             // (th-TH, ar-SA) would also rewrite the year outright.
             var stamp  = UtcNow();
             var suffix = SnapshotSuffix(filePath);
-            var bytes  = await File.ReadAllBytesAsync(filePath, ct);
+            var bytes  = await content();
 
             // The name is CLAIMED, never assumed free: two snapshots of one file in the same
             // millisecond shared a name and the second silently replaced the first — and /undo-run
@@ -175,7 +192,8 @@ internal class FileHistoryService
 
             RecordInRun(filePath, snapPath);   // for /undo-run (no-op when no run is active)
             // After the run records it: the list published for the other processes then holds this backup too.
-            PruneOldSnapshots(historyDir, suffix);
+            if (pruneLater is null) PruneOldSnapshots(historyDir, [suffix]);
+            else pruneLater.Add((historyDir, suffix));
             return snapPath;
         }
         catch (OperationCanceledException) { throw; }
@@ -225,7 +243,7 @@ internal class FileHistoryService
     }
 
     /// <summary>A backup taken for a write of the tool call in flight, checked when the call ends.</summary>
-    private sealed record PendingWrite(string Path, string? Snapshot, bool Failed, bool FirstInRun);
+    internal sealed record PendingWrite(string Path, string? Snapshot, bool Failed, bool FirstInRun);
 
     // The backups of the tool call in flight: async-local, so a call's own awaits keep its list and a parallel batch of
     // reads (which never writes) has none of its own.
@@ -243,15 +261,19 @@ internal class FileHistoryService
     /// left it counted: "edited 1" on the result bar with Undo offered, no "edits without effect" notice, the plan step
     /// marked done, a failed last check said to "a turn that changed files". Checked here, once, for every tool.
     /// </remarks>
-    internal IDisposable TrackCall()
+    internal CallScope TrackCall()
     {
         var writes = new List<PendingWrite>();
         _callWrites.Value = writes;
         return new CallScope(this, writes);
     }
 
-    private sealed class CallScope(FileHistoryService owner, List<PendingWrite> writes) : IDisposable
+    /// <summary>One tool call's own backups (<see cref="TrackCall"/>).</summary>
+    internal sealed class CallScope(FileHistoryService owner, List<PendingWrite> writes) : IDisposable
     {
+        /// <summary>The files the call backed up itself: a watch of the work tree does not record them a second time.</summary>
+        public IReadOnlyCollection<string> Paths => writes.Select(w => w.Path).ToList();
+
         public void Dispose()
         {
             _callWrites.Value = null;
@@ -291,7 +313,7 @@ internal class FileHistoryService
         + "restore_file could not have undone it. Check that the .inferpal/history folder is writable, then retry.";
 
     /// <summary>
-    /// Deletes the oldest snapshots carrying <paramref name="suffix"/> (path hash + file name)
+    /// Deletes, for each of <paramref name="suffixes"/> (path hash + file name), the oldest snapshots carrying it
     /// beyond <see cref="MaxSnapshotsPerFile"/>. Best-effort — never throws.
     /// </summary>
     /// <remarks>
@@ -299,7 +321,7 @@ internal class FileHistoryService
     /// like the others, a run that wrote one file twenty times — five <c>/tdd</c> rounds — lost its pre-run backup to its own
     /// later snapshots, and the undo reported the file as failed.
     /// </remarks>
-    private void PruneOldSnapshots(string historyDir, string suffix)
+    private void PruneOldSnapshots(string historyDir, IReadOnlyCollection<string> suffixes)
     {
         try
         {
@@ -315,20 +337,48 @@ internal class FileHistoryService
             // the file back. Each process publishes what it holds; the others honour it.
             PublishHeld(historyDir, held);
             held.UnionWith(HeldByOthers(historyDir));
-            // Same ordering as the lookup, and for the same reason: pruning by name would delete
-            // the NEWEST snapshots for an hour every autumn.
-            var snaps = Directory.EnumerateFiles(historyDir)
-                .Where(f => MatchesSuffix(f, suffix))
-                .OrderByDescending(File.GetLastWriteTimeUtc)
-                .ThenByDescending(f => f)
-                .Skip(MaxSnapshotsPerFile)
-                .Where(f => !held.Contains(f))
-                .ToList();
 
-            foreach (var old in snaps)
-                try { File.Delete(old); } catch { }
+            // The folder listed once, each snapshot under the suffixes its name can carry (MatchesSuffix reads both forms).
+            var bySuffix = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var file in Directory.EnumerateFiles(historyDir))
+            {
+                var name = Path.GetFileName(file);
+                if (name.Length <= TimestampPrefixLength) continue;
+                var rest = name[TimestampPrefixLength..];
+                Add(rest, file);
+                if (rest.EndsWith(SnapshotExtension, StringComparison.OrdinalIgnoreCase)) Add(rest[..^SnapshotExtension.Length], file);
+            }
+            foreach (var suffix in suffixes)
+            {
+                if (!bySuffix.TryGetValue(suffix, out var files)) continue;
+                // Same ordering as the lookup, and for the same reason: pruning by name would delete
+                // the NEWEST snapshots for an hour every autumn.
+                var snaps = files.Distinct(PathComparer.Default)
+                    .OrderByDescending(File.GetLastWriteTimeUtc)
+                    .ThenByDescending(f => f)
+                    .Skip(MaxSnapshotsPerFile)
+                    .Where(f => !held.Contains(f))
+                    .ToList();
+                foreach (var old in snaps)
+                    try { File.Delete(old); } catch { }
+            }
+
+            void Add(string key, string file)
+            {
+                if (!bySuffix.TryGetValue(key, out var list)) bySuffix[key] = list = [];
+                list.Add(file);
+            }
         }
         catch { /* best-effort retention — never break the write path */ }
+    }
+
+    /// <summary>Prunes, once per history folder, the old snapshots of the files a batch backed up.</summary>
+    /// <remarks>⚠ One snapshot at a time, each pruning lists the folder and rewrites the list of held snapshots: a checkout
+    /// that changed two thousand files, recorded or undone, wrote that list two thousand times.</remarks>
+    private void PruneBatch(IEnumerable<(string Dir, string Suffix)> pruneLater)
+    {
+        foreach (var folder in pruneLater.GroupBy(p => p.Dir, PathComparer.Default))
+            PruneOldSnapshots(folder.Key, [.. folder.Select(p => p.Suffix).Distinct(StringComparer.OrdinalIgnoreCase)]);
     }
 
     /// <summary>The snapshots a process's runs hold, one file per service instance: <c>.held-&lt;pid&gt;-&lt;id&gt;</c>.</summary>
@@ -687,6 +737,70 @@ internal class FileHistoryService
         }
     }
 
+    /// <summary>Whether a run is tracking this flow's calls — no run, no watch (a code action, a slash command, a task).</summary>
+    internal bool IsTracking
+    {
+        get { lock (_runLock) return Run is not null; }
+    }
+
+    /// <summary>
+    /// Records in the run what a watched call (<see cref="WorkTreeBracket"/>) changed in the work tree without backing it
+    /// up — a command, a test run, an MCP tool —, as if each change were one of its writes; and what it could not cover.
+    /// </summary>
+    /// <param name="ownWrites">Files the call backed up itself (its own writes): already in the run.</param>
+    /// <param name="call">The call as <c>/undo-run</c> names it: the tool and its subject.</param>
+    /// <remarks>
+    /// ⚠ The first change of a file in the run stays the one an undo goes back to (<see cref="HistoryRun.RecordFirst"/>):
+    /// a file a command changes after a <c>write_file</c> of the run is restored to what it held before the run, and a
+    /// file the run created and a command then changed is still deleted.
+    /// </remarks>
+    internal async Task RecordWatchedCallAsync(WorkTreeBracket bracket, IReadOnlyCollection<string> ownWrites, string call,
+                                               CancellationToken ct)
+    {
+        // Refused at its card or by a rule, the call ran nothing: what changed meanwhile is someone else's.
+        if (bracket.Refused) return;
+
+        IReadOnlyList<WorkTreeChange> changes;
+        IReadOnlyList<UncoveredNote> notes;
+        try { (changes, notes) = await WorkTreeWatch.CompareAsync(bracket.Before, ct); }
+        catch (OperationCanceledException)
+        {
+            // Out of time: nothing is recorded, and that is said rather than left to look like a complete undo.
+            (changes, notes) = ([], [new UncoveredNote(UncoveredReason.ReadFailed)]);
+        }
+        var own = new HashSet<string>(ownWrites, PathComparer.Default);
+        lock (_runLock)
+        {
+            if (Run is not { } run) return;
+            run.CountWatchedCall();
+            foreach (var note in notes.Concat(bracket.Notes)) run.NoteUncovered(call, note);
+        }
+        // ⚠ The bytes are in hand: written without the budget, every change found is recorded. Stopped halfway, the loop
+        // left part of a `git stash` out of the run with nothing said, and a backup half written.
+        var pruneLater = new List<(string Dir, string Suffix)>();
+        try
+        {
+            foreach (var change in changes)
+            {
+                if (own.Contains(change.Path)) continue;
+                bool known;
+                lock (_runLock)
+                {
+                    if (Run is not { } run) return;
+                    known = run.Has(change.Path);
+                    if (known) run.CountWrite();
+                }
+                if (known) continue;
+                if (change.Before is null) NoteCreated(change.Path);
+                else await SnapshotBytesAsync(change.Path, change.Before, CancellationToken.None, pruneLater);
+            }
+        }
+        finally
+        {
+            PruneBatch(pruneLater);
+        }
+    }
+
     /// <summary>All tracked runs, most recent first.</summary>
     internal IReadOnlyList<HistoryRun> Runs
     {
@@ -708,63 +822,73 @@ internal class FileHistoryService
         List<RunChange> pending;
         lock (_runLock) pending = run.Changes.Where(c => !run.IsGivenBack(c.OriginalPath)).ToList();
 
-        foreach (var change in pending)
+        var pruneLater = new List<(string Dir, string Suffix)>();
+        try
         {
-            ct.ThrowIfCancellationRequested();
-            try
+            foreach (var change in pending)
             {
-                if (change.SnapshotFailed)
+                ct.ThrowIfCancellationRequested();
+                try
                 {
-                    // The file was modified but its pre-run content was never captured: undoing
-                    // cannot restore it, and deleting it (the created-file path below) would
-                    // destroy data. Report it as failed so the user knows this one is manual.
-                    failed.Add(change.OriginalPath);
-                }
-                else if (change.SnapshotPath is null)
-                {
-                    // ⚠ No backup, no deletion: the file may hold work done since the run, and nothing could bring it back.
-                    if (File.Exists(change.OriginalPath) && await SnapshotAsync(change.OriginalPath, ct) is not { Length: > 0 })
+                    if (change.SnapshotFailed)
                     {
+                        // The file was modified but its pre-run content was never captured: undoing
+                        // cannot restore it, and deleting it (the created-file path below) would
+                        // destroy data. Report it as failed so the user knows this one is manual.
                         failed.Add(change.OriginalPath);
-                        continue;
                     }
-                    // ⚠ The CURRENT state is captured first, and that is the half that was missing.
-                    // Undoing a run writes with no approval prompt — the only write path of the
-                    // product that does — and what the run wrote may have been edited since: by
-                    // hand, by a later run, by a merge. Without this line a file CREATED by the run
-                    // and then filled in by the user was deleted without a trace, and a modified
-                    // file was overwritten by a state older than the user's own corrections. The
-                    // refusal two branches above already said it, for the other case.
-                    if (File.Exists(change.OriginalPath))
+                    else if (change.SnapshotPath is null)
                     {
-                        savedFirst++;
-                        File.Delete(change.OriginalPath);
-                        deleted.Add(change.OriginalPath);
-                    }
-                }
-                else if (File.Exists(change.SnapshotPath))
-                {
-                    // Read before the backup of the current state, which goes through the per-file cap.
-                    var bytes = await File.ReadAllBytesAsync(change.SnapshotPath, ct);
-                    if (File.Exists(change.OriginalPath))
-                    {
-                        if (await SnapshotAsync(change.OriginalPath, ct) is not { Length: > 0 })
+                        // ⚠ No backup, no deletion: the file may hold work done since the run, and nothing could bring it back.
+                        if (File.Exists(change.OriginalPath) && await SnapshotAsync(change.OriginalPath, ct, pruneLater) is not { Length: > 0 })
                         {
-                            failed.Add(change.OriginalPath);   // no backup, no overwrite
+                            failed.Add(change.OriginalPath);
                             continue;
                         }
-                        savedFirst++;
+                        // ⚠ The CURRENT state is captured first, and that is the half that was missing.
+                        // Undoing a run writes with no approval prompt — the only write path of the
+                        // product that does — and what the run wrote may have been edited since: by
+                        // hand, by a later run, by a merge. Without this line a file CREATED by the run
+                        // and then filled in by the user was deleted without a trace, and a modified
+                        // file was overwritten by a state older than the user's own corrections. The
+                        // refusal two branches above already said it, for the other case.
+                        if (File.Exists(change.OriginalPath))
+                        {
+                            savedFirst++;
+                            File.Delete(change.OriginalPath);
+                            deleted.Add(change.OriginalPath);
+                        }
                     }
-                    await File.WriteAllBytesAsync(change.OriginalPath, bytes, ct);
-                    restored.Add(change.OriginalPath);
+                    else if (File.Exists(change.SnapshotPath))
+                    {
+                        // Read before the backup of the current state, which goes through the per-file cap.
+                        var bytes = await File.ReadAllBytesAsync(change.SnapshotPath, ct);
+                        if (File.Exists(change.OriginalPath))
+                        {
+                            if (await SnapshotAsync(change.OriginalPath, ct, pruneLater) is not { Length: > 0 })
+                            {
+                                failed.Add(change.OriginalPath);   // no backup, no overwrite
+                                continue;
+                            }
+                            savedFirst++;
+                        }
+                        // A command deletes a folder with its files (`rm -rf`): giving a file back gives its folder back.
+                        if (Path.GetDirectoryName(change.OriginalPath) is { Length: > 0 } folder) Directory.CreateDirectory(folder);
+                        await File.WriteAllBytesAsync(change.OriginalPath, bytes, ct);
+                        restored.Add(change.OriginalPath);
+                    }
+                    else
+                    {
+                        failed.Add(change.OriginalPath);   // snapshot pruned/missing
+                    }
                 }
-                else
-                {
-                    failed.Add(change.OriginalPath);   // snapshot pruned/missing
-                }
+                catch (OperationCanceledException) { throw; }
+                catch { failed.Add(change.OriginalPath); }
             }
-            catch (OperationCanceledException) { throw; }
-            catch { failed.Add(change.OriginalPath); }
+        }
+        finally
+        {
+            PruneBatch(pruneLater);
         }
 
         lock (_runLock)
@@ -977,6 +1101,26 @@ internal sealed class HistoryRun
 
     public IReadOnlyCollection<RunChange> Changes => _firstByPath.Values;
     public int FileCount => _firstByPath.Count;
+
+    // What watched calls could not record (WorkTreeWatch). Mutated under FileHistoryService's run lock.
+    private readonly List<(string Call, UncoveredNote Note)> _uncovered = [];
+
+    /// <summary>What the run's calls may have changed without its being recorded, and why — for <c>/undo-run</c> to say.</summary>
+    public IReadOnlyList<(string Call, UncoveredNote Note)> Uncovered => _uncovered.ToList();
+
+    public void NoteUncovered(string call, UncoveredNote note)
+    {
+        // One file is named once per run, by the first call that left it out: a file nobody can read would otherwise be
+        // named again under every call.
+        if (note.File is not null ? _uncovered.Any(u => u.Note == note) : _uncovered.Contains((call, note))) return;
+        _uncovered.Add((call, note));
+    }
+
+    /// <summary>How many calls of the run were watched and ran — commands, tests, MCP tools: what makes <c>/undo-run</c>
+    /// say that files git ignores are never recorded.</summary>
+    public int WatchedCalls { get; private set; }
+
+    public void CountWatchedCall() => WatchedCalls++;
 
     // Every write, where _firstByPath keeps each file once. Mutated under FileHistoryService's run lock.
     public int WriteCount { get; private set; }

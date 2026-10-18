@@ -26,6 +26,10 @@ internal class ApplyDiffTool : ITool
 
     public string Name => "apply_diff";
 
+    /// <inheritdoc/>
+    /// <remarks>Each file is backed up before it is written: its writes are in the run already.</remarks>
+    public bool NeedsWorkTreeWatch => false;
+
     public string Description =>
         "Modifies a file by replacing old_content with new_content. More precise than write_file for " +
         "targeted changes. old_content should match the existing text; if an exact match fails, a " +

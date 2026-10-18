@@ -110,6 +110,8 @@ internal sealed class RunCommandTool : ITool, IDisposable
             var (dialect, _) = Shell.ShellLauncher.Resolve();
             var script     = ShellStateProtocol.BuildBackgroundScript(dialect, startCwd, env, command);
             var id         = _background.Start(script, command, startCwd);
+            // What the job changes after this call returns happens outside any watch: said by /undo-run, not promised.
+            WorkTreeBracket.NoteUncovered(UncoveredReason.Background);
             return (vanished is null ? "" : ShellSession.VanishedNote(vanished, startCwd))
                  + $"Started background job '{id}'. Use action='poll' id='{id}' to read its output, action='stop' id='{id}' to terminate it.";
         }

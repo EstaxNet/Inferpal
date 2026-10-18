@@ -90,6 +90,111 @@ internal static class GitProcess
     }
 
     /// <summary>
+    /// Runs git and hands back stdout as the bytes git wrote — a file's content, NUL-separated listings — whole, or
+    /// with why it is not (<see cref="GitBytes.Failure"/>): git refused, did not start, ran out of its budget, or wrote
+    /// more than <paramref name="maxBytes"/>.
+    /// </summary>
+    /// <param name="args">Arguments after <c>git</c>, one per element: never joined into a command line, so a path with
+    /// a space or a quote stays one argument.</param>
+    /// <param name="environment">Variables set for this git only.</param>
+    /// <remarks>
+    /// ⚠ Not <see cref="CaptureAsync"/>: its capture keeps the head and the tail of a long output with the middle cut
+    /// (<see cref="ChildProcess.MaxCapturedChars"/>) and decodes it as text — right for a diff someone reads, fatal for
+    /// the content of a file that is going to be written back. Here an output is whole or refused.
+    /// </remarks>
+    public static async Task<GitBytes> CaptureBytesAsync(
+        IReadOnlyList<string> args, string workDir, CancellationToken ct, long maxBytes,
+        IReadOnlyDictionary<string, string>? environment = null, TimeSpan? budget = null)
+    {
+        var psi = new ProcessStartInfo("git")
+        {
+            WorkingDirectory       = workDir,
+            RedirectStandardOutput = true,
+            RedirectStandardError  = true,
+            UseShellExecute        = false,
+            CreateNoWindow         = true,
+        };
+        psi.ArgumentList.Add("-c");
+        psi.ArgumentList.Add("core.quotePath=false");
+        foreach (var arg in args) psi.ArgumentList.Add(arg);
+        psi.Environment["GIT_TERMINAL_PROMPT"] = "0";
+        psi.Environment["LANG"]                = "en_US.UTF-8";
+        if (environment is not null)
+            foreach (var (name, value) in environment) psi.Environment[name] = value;
+
+        Process proc;
+        try { proc = ChildProcess.Start(psi); }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            return new GitBytes(null, $"git did not start ({ex.Message})", NotStarted: true);
+        }
+        using (proc)
+        {
+            // ⚠ The budget KILLS: a read on an anonymous pipe does not honour a token under Windows, so a git that waits
+            // without writing (a lock, a network share) would hold the call for ever. Killing closes the pipes, and the
+            // reads below end on their own — no token on them, as in ChildProcess.RunAsync.
+            var allowed = budget ?? Timeout;
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            deadline.CancelAfter(allowed);
+            using var kill = deadline.Token.Register(() =>
+            {
+                try { proc.Kill(entireProcessTree: true); } catch { /* already gone */ }
+            });
+            // stderr drained beside stdout: a child that fills one pipe while nobody reads it never finishes the other.
+            var stderr   = proc.StandardError.ReadToEndAsync(CancellationToken.None);
+            var output   = new MemoryStream();
+            var buffer   = new byte[81920];
+            var overflow = false;
+            var stdout   = proc.StandardOutput.BaseStream;
+            int read;
+            while ((read = await stdout.ReadAsync(buffer, CancellationToken.None)) > 0)
+            {
+                if (output.Length + read > maxBytes)
+                {
+                    overflow = true;
+                    try { proc.Kill(entireProcessTree: true); } catch { /* already gone */ }
+                    break;
+                }
+                output.Write(buffer, 0, read);
+            }
+            var exited = true;
+            try { await proc.WaitForExitAsync(deadline.Token); }
+            catch (OperationCanceledException) { exited = false; }
+            // ⚠ An exited child is not a closed pipe: a process it started may still hold stderr. Bounded.
+            await Task.WhenAny(stderr, Task.Delay(ChildProcess.PipeGraceAfterExit, CancellationToken.None));
+            ct.ThrowIfCancellationRequested();
+
+            if (overflow)                                   return new GitBytes(null, $"git wrote more than {maxBytes} bytes", Overflow: true);
+            if (!exited || deadline.IsCancellationRequested) return new GitBytes(null, $"git gave no answer within {allowed.TotalSeconds:0}s and was stopped");
+            if (proc.ExitCode != 0)
+                return new GitBytes(null, $"git exited with code {proc.ExitCode}"
+                    + (stderr.IsCompletedSuccessfully && FirstLine(stderr.Result) is { Length: > 0 } why ? $": {why}" : string.Empty));
+            return new GitBytes(output.ToArray(), null);
+        }
+    }
+
+    // Per work tree: where git keeps a path of its own (`--git-path`). ⚠ `.git` is a file in a linked worktree and in a
+    // submodule, and some of its paths live in the common directory: only git can say where they are.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string?> GitPaths =
+        new(PathComparer.Default);
+
+    /// <summary>
+    /// The full path git uses for <paramref name="name"/> (<c>info/exclude</c>, say) in the work tree at
+    /// <paramref name="workTree"/>; <c>null</c> when git cannot say. Asked once per work tree and name.
+    /// </summary>
+    public static async Task<string?> GitPathAsync(string workTree, string name, CancellationToken ct)
+    {
+        var key = workTree + "\0" + name;
+        if (GitPaths.TryGetValue(key, out var known)) return known;
+        var r = await CaptureBytesAsync(["rev-parse", "--git-path", name], workTree, ct, maxBytes: 64 * 1024);
+        var path = r.Output is { } bytes && Encoding.UTF8.GetString(bytes).Trim() is { Length: > 0 } line
+            ? Path.GetFullPath(Path.Combine(workTree, line))
+            : null;
+        GitPaths[key] = path;
+        return path;
+    }
+
+    /// <summary>
     /// stdout captured as Latin-1 — one char per byte — and decoded here; a char above U+00FF can only be the capture's
     /// own truncation marker, and passes through (turned back into a byte it would become "?").
     /// </summary>
@@ -331,3 +436,9 @@ internal static class GitProcess
       : exitCode < 0 ? "git could not be started (is it installed and on PATH?)"
       : $"exit code {exitCode}";
 }
+
+/// <summary>
+/// What <see cref="GitProcess.CaptureBytesAsync"/> got: the whole output, or why not — and whether that is because git
+/// could not start at all, or wrote more than was allowed.
+/// </summary>
+internal readonly record struct GitBytes(byte[]? Output, string? Failure, bool NotStarted = false, bool Overflow = false);
