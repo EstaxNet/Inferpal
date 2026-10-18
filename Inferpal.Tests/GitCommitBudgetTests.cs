@@ -30,33 +30,51 @@ public sealed class GitCommitBudgetTests : IDisposable
     private async Task Git(string args) =>
         Assert.Equal(0, (await GitProcess.RunAsync(args, _repo, CancellationToken.None)).ExitCode);
 
-    /// <summary>A repository with one commit, a staged change, and a pre-commit hook that sleeps 3 s.</summary>
-    private async Task SlowHookRepo()
+    private string HookRuns => Path.Combine(_repo, ".git", "hook-runs");
+
+    /// <summary>
+    /// A repository with one commit, a staged change, and a pre-commit hook that sleeps 3 s; <c>false</c> when this
+    /// machine never ran the hook (UNDECIDED: nothing below can be measured — never read as a pass).
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The hook is written BEFORE the first commit, and sleeps only once a flag exists: on the Windows CI runner, a
+    /// hook written just before the commit it should slow does not always slow it (the commit answers 0 within the
+    /// budget). Each run leaves a mark, so the first commit proves the hook runs here, the measured commit uses a hook
+    /// file several git calls old, and a failure says how many times the hook ran.
+    /// </remarks>
+    private async Task<bool> SlowHookRepo()
     {
         await Git("init -q");
         await Git("config user.email t@example.test");
         await Git("config user.name t");
         await Git("config commit.gpgsign false");
+        var hook = Path.Combine(_repo, ".git", "hooks", "pre-commit");
+        File.WriteAllText(hook, "#!/bin/sh\necho ran >> .git/hook-runs\n[ -f .git/slow ] || exit 0\nsleep 3\n");
+        if (!OperatingSystem.IsWindows())
+            File.SetUnixFileMode(hook, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         File.WriteAllText(Path.Combine(_repo, "a.txt"), "1\n");
         await Git("add a.txt");
         await Git("commit -q -m first");
-        var hook = Path.Combine(_repo, ".git", "hooks", "pre-commit");
-        File.WriteAllText(hook, "#!/bin/sh\nsleep 3\n");
-        if (!OperatingSystem.IsWindows())
-            File.SetUnixFileMode(hook, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        if (!File.Exists(HookRuns)) return false;
+        File.WriteAllText(Path.Combine(_repo, ".git", "slow"), "");
         File.WriteAllText(Path.Combine(_repo, "a.txt"), "2\n");
         await Git("add a.txt");
+        return true;
     }
+
+    private string Runs() => File.Exists(HookRuns) ? $"{File.ReadAllLines(HookRuns).Length} hook run(s)" : "the hook never ran";
 
     [Fact]
     public async Task AGitStoppedAtItsBudget_SaysSo_NotThatGitIsMissing()
     {
-        await SlowHookRepo();
+        if (!await SlowHookRepo()) return;   // UNDECIDED: this machine does not run git hooks — never read as a pass
 
+        var clock  = System.Diagnostics.Stopwatch.StartNew();
         var result = await GitProcess.RunAsync("commit -m second", _repo, CancellationToken.None, TimeSpan.FromSeconds(1));
         var note   = GitProcess.FailureNote("commit", result);
 
-        Assert.NotNull(note);
+        Assert.True(note is not null,
+            $"git commit answered {result.ExitCode} in {clock.Elapsed.TotalSeconds:0.0} s ({Runs()}): {result.Output}");
         Assert.Contains("no answer within 1s", note);
         Assert.DoesNotContain("installed", note);
     }
@@ -64,11 +82,12 @@ public sealed class GitCommitBudgetTests : IDisposable
     [Fact]
     public async Task CommitExec_LetsTheHookFinish()
     {
-        await SlowHookRepo();
+        if (!await SlowHookRepo()) return;   // UNDECIDED: this machine does not run git hooks — never read as a pass
 
         var run = await CommitCommandHandler.ExecuteAsync("second", GitProcess.ForCommit(_repo), CancellationToken.None);
 
         Assert.True(run.Ok, run.Output);
+        Assert.Equal(2, File.ReadAllLines(HookRuns).Length);   // witness: the slow hook did run, and was let finish
         var log = await GitProcess.RunAsync("log --oneline", _repo, CancellationToken.None);
         Assert.Contains("second", log.Output);
     }
