@@ -1590,4 +1590,8 @@ What you save there applies from your next question, in this thread and the othe
   <data name="PermissionsHistoryUnreadable" xml:space="preserve"><value>The approval history ({0}) could not be read: no suggestion can be made from it.</value></data>
   <data name="PermissionsAddUnknown" xml:space="preserve"><value>There is no suggestion {0}: `/permissions suggest` lists them.</value></data>
   <data name="PermissionsAddFailed" xml:space="preserve"><value>The rule could not be saved ({0}).</value></data>
+  <data name="RenameMarkupByName" xml:space="preserve"><value>Markup (.razor, .cshtml, .xaml) is matched by name, not compiled: {0} {0:position|positions} rewritten where it binds this symbol.</value></data>
+  <data name="RenameLeftAsTheyAre" xml:space="preserve"><value>{0} {0:occurrence|occurrences} of `{1}` left as they are — this rename cannot tell they are this symbol. Check them:</value></data>
+  <data name="RenameMoreLeft" xml:space="preserve"><value>… and {0} more.</value></data>
+  <data name="DesignerFileWarning" xml:space="preserve"><value>⚠ {0} is the Windows Forms designer's code: the designer rewrites InitializeComponent and may no longer open the form after a hand edit. Approve only what the designer cannot do itself (removing a handler that no longer exists); a change to the form belongs in the designer.</value></data>
 </root>

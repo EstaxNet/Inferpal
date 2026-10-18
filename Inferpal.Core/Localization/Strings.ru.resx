@@ -1586,4 +1586,8 @@
   <data name="PermissionsHistoryUnreadable" xml:space="preserve"><value>Не удалось прочитать историю подтверждений ({0}): по ней нельзя ничего предложить.</value></data>
   <data name="PermissionsAddUnknown" xml:space="preserve"><value>Предложения {0} нет: `/permissions suggest` показывает их.</value></data>
   <data name="PermissionsAddFailed" xml:space="preserve"><value>Не удалось сохранить правило ({0}).</value></data>
+  <data name="RenameMarkupByName" xml:space="preserve"><value>Разметка (.razor, .cshtml, .xaml) читается по имени, а не компилируется: {0} {0:позиция переписана|позиции переписаны|позиций переписано} там, где она связывает этот символ.</value></data>
+  <data name="RenameLeftAsTheyAre" xml:space="preserve"><value>{0} {0:вхождение|вхождения|вхождений} `{1}` оставлено без изменений — это переименование не может определить, тот ли это символ. Проверьте их:</value></data>
+  <data name="RenameMoreLeft" xml:space="preserve"><value>… и ещё {0}.</value></data>
+  <data name="DesignerFileWarning" xml:space="preserve"><value>⚠ {0} — код конструктора Windows Forms: он переписывает InitializeComponent и после ручной правки может не открыть форму. Одобряйте только то, что конструктор сам не сделает (удалить обработчик, которого больше нет); изменения формы делаются в конструкторе.</value></data>
 </root>

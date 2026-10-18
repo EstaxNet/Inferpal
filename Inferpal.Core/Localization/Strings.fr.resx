@@ -1586,4 +1586,8 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="PermissionsHistoryUnreadable" xml:space="preserve"><value>L'historique des accords ({0}) n'a pas pu être lu : aucune proposition ne peut en être tirée.</value></data>
   <data name="PermissionsAddUnknown" xml:space="preserve"><value>Il n'y a pas de proposition {0} : `/permissions suggest` les liste.</value></data>
   <data name="PermissionsAddFailed" xml:space="preserve"><value>La règle n'a pas pu être enregistrée ({0}).</value></data>
+  <data name="RenameMarkupByName" xml:space="preserve"><value>Le balisage (.razor, .cshtml, .xaml) est lu par le nom, pas compilé : {0} {0:position réécrite|positions réécrites} là où il lie ce symbole.</value></data>
+  <data name="RenameLeftAsTheyAre" xml:space="preserve"><value>{0} {0:occurrence|occurrences} de `{1}` laissée(s) telle(s) quelle(s) — ce renommage ne peut pas dire si c'est ce symbole. Vérifiez-les :</value></data>
+  <data name="RenameMoreLeft" xml:space="preserve"><value>… et {0} de plus.</value></data>
+  <data name="DesignerFileWarning" xml:space="preserve"><value>⚠ {0} est le code du concepteur Windows Forms : il réécrit InitializeComponent et peut ne plus ouvrir le formulaire après une modification à la main. N'approuvez que ce que le concepteur ne sait pas faire (retirer un gestionnaire qui n'existe plus) ; un changement du formulaire se fait dans le concepteur.</value></data>
 </root>

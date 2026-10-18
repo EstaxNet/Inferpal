@@ -87,7 +87,8 @@ internal sealed class ProposalRecorder : IApprovalService
     /// change was recorded"), never lined up with the same file's other proposals — and replaced a usable one.
     /// </remarks>
     public Task<bool> RequestBatchApprovalAsync(
-        string toolName, string details, IReadOnlyList<FileChange> files, CancellationToken ct, string? subject = null)
+        string toolName, string details, IReadOnlyList<FileChange> files, CancellationToken ct, string? subject = null,
+        bool forcePrompt = false)
     {
         Interlocked.Increment(ref _requests);
         lock (_gate)

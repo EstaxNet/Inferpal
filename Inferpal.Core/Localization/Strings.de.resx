@@ -1586,4 +1586,8 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="PermissionsHistoryUnreadable" xml:space="preserve"><value>Der Verlauf der Freigaben ({0}) konnte nicht gelesen werden: Daraus kann kein Vorschlag abgeleitet werden.</value></data>
   <data name="PermissionsAddUnknown" xml:space="preserve"><value>Es gibt keinen Vorschlag {0}: `/permissions suggest` listet sie auf.</value></data>
   <data name="PermissionsAddFailed" xml:space="preserve"><value>Die Regel konnte nicht gespeichert werden ({0}).</value></data>
+  <data name="RenameMarkupByName" xml:space="preserve"><value>Markup (.razor, .cshtml, .xaml) wird über den Namen gelesen, nicht kompiliert: {0} {0:Stelle|Stellen} umgeschrieben, wo es dieses Symbol bindet.</value></data>
+  <data name="RenameLeftAsTheyAre" xml:space="preserve"><value>{0} {0:Vorkommen|Vorkommen} von `{1}` unverändert gelassen – diese Umbenennung kann nicht erkennen, ob es dieses Symbol ist. Prüfe sie:</value></data>
+  <data name="RenameMoreLeft" xml:space="preserve"><value>… und {0} weitere.</value></data>
+  <data name="DesignerFileWarning" xml:space="preserve"><value>⚠ {0} ist der Code des Windows-Forms-Designers: Er schreibt InitializeComponent neu und öffnet das Formular nach einer Handänderung womöglich nicht mehr. Genehmige nur, was der Designer selbst nicht kann (einen nicht mehr vorhandenen Handler entfernen); eine Änderung am Formular gehört in den Designer.</value></data>
 </root>

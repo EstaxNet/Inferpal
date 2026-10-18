@@ -324,6 +324,12 @@ exists.
   home folder or a drive root, and not while the solution's folder keeps its own `.inferpal/`
   files (move them up to the wider folder to let it widen). Projects still out of reach are
   marked by `get_solution_info` and named in `/diagnostics`.
+- **Markup and generated code** — a rename follows the markup that binds the symbol (`.razor`,
+  `.cshtml`, `.xaml`: bindings under a matching `x:DataType`, `Model.X` and `asp-for`, a component's
+  own code, route parameter and attributes on its tag) and lists every other occurrence of the
+  name instead of rewriting it; `analyze_code impact` lists the markup that uses a type. A file a
+  generator writes is refused for hand edits, with the source to change instead; an edit of the
+  Windows Forms designer's code goes to a card that warns ([Tools](tools.md)).
 - **Approval prompts** — `write_file`, `apply_diff`, `apply_edits`, `delete_file`,
   `run_command`, `rename_symbol`, `fetch_url`, `web_search`, custom shell tools, and MCP calls
   each prompt **Allow once / Always allow this tool / Cancel** (session-scoped, never

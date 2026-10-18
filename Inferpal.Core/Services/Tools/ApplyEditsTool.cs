@@ -138,6 +138,7 @@ internal sealed class ApplyEditsTool : ITool
             {
                 if (FileTarget.DirectoryRefusal(edit.Path) is { } isDirectory) return isDirectory;
                 if (FileTarget.UnsavedRefusal(_overlay, edit.Path) is { } unsaved) return unsaved;
+                if (GeneratedFiles.EditRefusal(edit.Path) is { } generated) return generated;
                 if (!File.Exists(edit.Path)) return Strings.ToolFileNotFound(edit.Path);
                 var content = await TextFileEncoding.ReadTextAsync(edit.Path, ct);
                 current[edit.Path]  = content;
@@ -170,7 +171,10 @@ internal sealed class ApplyEditsTool : ITool
         // Each file's own change travels with the batch: a /task proposal is applied file by file, from its diff.
         var files = changed.Select(p => new FileChange(new DiffInfo(original[p], current[p], p),
                                                        BuildApprovalDetails(root, [p], original, current))).ToList();
-        if (!await _approval.RequestBatchApprovalAsync("apply_edits", details, files, ct, subject: subject))
+        // The designer's file in the batch: the person decides, warned, on a card no rule approves.
+        var designers = changed.Select(GeneratedFiles.DesignerWarning).OfType<string>().ToList();
+        if (designers.Count > 0) details = string.Join("\n", designers) + "\n\n" + details;
+        if (!await _approval.RequestBatchApprovalAsync("apply_edits", details, files, ct, subject: subject, forcePrompt: designers.Count > 0))
             return Strings.DiffCancelled;
         // Before the first backup: the batch stays all or nothing.
         if (await FileTarget.ChangedSinceApprovalAsync(_overlay, changed.Select(p => new ApprovedFile(p, original[p])), ct) is { } typedMeanwhile)

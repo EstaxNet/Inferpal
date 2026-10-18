@@ -56,6 +56,7 @@ internal class ApplyDiffTool : ITool
         PathSanitizer.AssertUnderRoot(path, root);
         if (FileTarget.DirectoryRefusal(path) is { } isDirectory) return isDirectory;
         if (FileTarget.UnsavedRefusal(_overlay, path) is { } unsaved) return unsaved;
+        if (GeneratedFiles.EditRefusal(path) is { } generated) return generated;
         var oldContent = args.Str("old_content") ?? throw new ArgumentException("old_content is required.");
         // ⚠ Was `?? ""`, on an argument the schema declares REQUIRED: omitting it therefore
         // became a DELETION of the matched block, and the answer said "diff applied". The model
@@ -91,8 +92,10 @@ internal class ApplyDiffTool : ITool
         // Pass the structured change so the approval prompt shows the actual diff, not just a path
         // (colored viewer in VS; textual fallback elsewhere).
         var details = Strings.DiffConfirm(path);
-        if (!await _approval.RequestApprovalAsync("apply_diff", details, ct, subject: path,
-                diff: new DiffInfo(fileContent, modified, path)))
+        // The designer's file: the person decides, warned, on a card no rule approves.
+        var designer = GeneratedFiles.DesignerWarning(path);
+        if (!await _approval.RequestApprovalAsync("apply_diff", designer is null ? details : designer + "\n\n" + details, ct, subject: path,
+                diff: new DiffInfo(fileContent, modified, path), forcePrompt: designer is not null))
             return Strings.DiffCancelled;
         if (await FileTarget.ChangedSinceApprovalAsync(_overlay, new ApprovedFile(path, fileContent), ct) is { } changedMeanwhile) return changedMeanwhile;
 

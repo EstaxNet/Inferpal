@@ -46,9 +46,10 @@ internal interface IApprovalService
     /// ⚠ An implementation that KEEPS changes instead of applying them (the <c>/task</c> recorder) needs each file's own
     /// change: a proposal is applied file by file, from its diff, and a batch recorded without one can never be applied.
     /// </remarks>
+    /// <param name="forcePrompt">As for <see cref="RequestApprovalAsync"/>: no rule, no grant approves this batch.</param>
     Task<bool> RequestBatchApprovalAsync(string toolName, string details, IReadOnlyList<FileChange> files,
-                                         CancellationToken ct, string? subject = null) =>
-        RequestApprovalAsync(toolName, details, ct, subject: subject);
+                                         CancellationToken ct, string? subject = null, bool forcePrompt = false) =>
+        RequestApprovalAsync(toolName, details, ct, subject: subject, forcePrompt: forcePrompt);
 }
 
 /// <summary>One file of a multi-file change: its old→new text, and the summary a reviewer reads for it.</summary>

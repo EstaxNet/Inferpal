@@ -1586,4 +1586,8 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="PermissionsHistoryUnreadable" xml:space="preserve"><value>승인 기록({0})을 읽을 수 없습니다. 이를 바탕으로 제안할 수 없습니다.</value></data>
   <data name="PermissionsAddUnknown" xml:space="preserve"><value>제안 {0}이(가) 없습니다. `/permissions suggest`에 목록이 표시됩니다.</value></data>
   <data name="PermissionsAddFailed" xml:space="preserve"><value>규칙을 저장할 수 없습니다({0}).</value></data>
+  <data name="RenameMarkupByName" xml:space="preserve"><value>마크업(.razor, .cshtml, .xaml)은 컴파일되지 않고 이름으로 찾습니다: 이 심볼을 바인딩하는 위치 {0}곳을 다시 씁니다.</value></data>
+  <data name="RenameLeftAsTheyAre" xml:space="preserve"><value>`{1}`의 {0}곳은 그대로 둡니다 — 이 심볼인지 판단할 수 없습니다. 확인하세요:</value></data>
+  <data name="RenameMoreLeft" xml:space="preserve"><value>… 외 {0}개.</value></data>
+  <data name="DesignerFileWarning" xml:space="preserve"><value>⚠ {0}은(는) Windows Forms 디자이너의 코드입니다. 디자이너가 InitializeComponent를 다시 쓰므로 손으로 편집하면 폼을 열지 못할 수 있습니다. 디자이너가 스스로 할 수 없는 것(더 이상 없는 처리기 제거)만 승인하고, 폼 변경은 디자이너에서 하세요.</value></data>
 </root>

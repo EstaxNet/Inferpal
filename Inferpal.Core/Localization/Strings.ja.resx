@@ -1586,4 +1586,8 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="PermissionsHistoryUnreadable" xml:space="preserve"><value>承認履歴（{0}）を読み取れませんでした。ここから提案することはできません。</value></data>
   <data name="PermissionsAddUnknown" xml:space="preserve"><value>提案 {0} はありません。`/permissions suggest` で一覧表示できます。</value></data>
   <data name="PermissionsAddFailed" xml:space="preserve"><value>ルールを保存できませんでした（{0}）。</value></data>
+  <data name="RenameMarkupByName" xml:space="preserve"><value>マークアップ (.razor, .cshtml, .xaml) はコンパイルされず名前で照合されます: このシンボルをバインドしている {0} 箇所を書き換えます。</value></data>
+  <data name="RenameLeftAsTheyAre" xml:space="preserve"><value>`{1}` の {0} 箇所はそのままです — このシンボルかどうかを判断できません。確認してください:</value></data>
+  <data name="RenameMoreLeft" xml:space="preserve"><value>… ほか {0} 件。</value></data>
+  <data name="DesignerFileWarning" xml:space="preserve"><value>⚠ {0} は Windows フォーム デザイナーのコードです。デザイナーは InitializeComponent を書き直すため、手で編集するとフォームを開けなくなることがあります。デザイナー自身ではできないこと (もう存在しないハンドラーの削除) だけを承認し、フォームの変更はデザイナーで行ってください。</value></data>
 </root>

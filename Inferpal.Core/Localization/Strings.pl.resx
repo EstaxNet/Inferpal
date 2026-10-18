@@ -1586,4 +1586,8 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="PermissionsHistoryUnreadable" xml:space="preserve"><value>Nie udało się odczytać historii zatwierdzeń ({0}): nie można na jej podstawie nic zaproponować.</value></data>
   <data name="PermissionsAddUnknown" xml:space="preserve"><value>Nie ma propozycji {0}: `/permissions suggest` je wyświetla.</value></data>
   <data name="PermissionsAddFailed" xml:space="preserve"><value>Nie udało się zapisać reguły ({0}).</value></data>
+  <data name="RenameMarkupByName" xml:space="preserve"><value>Znaczniki (.razor, .cshtml, .xaml) są odczytywane po nazwie, nie kompilowane: {0} {0:pozycja przepisana|pozycje przepisane|pozycji przepisanych} tam, gdzie wiążą ten symbol.</value></data>
+  <data name="RenameLeftAsTheyAre" xml:space="preserve"><value>{0} {0:wystąpienie|wystąpienia|wystąpień} `{1}` pozostawiono bez zmian — ta zmiana nazwy nie rozpozna, czy to ten symbol. Sprawdź je:</value></data>
+  <data name="RenameMoreLeft" xml:space="preserve"><value>… i {0} więcej.</value></data>
+  <data name="DesignerFileWarning" xml:space="preserve"><value>⚠ {0} to kod projektanta Windows Forms: przepisuje on InitializeComponent i po ręcznej zmianie może nie otworzyć formularza. Zatwierdzaj tylko to, czego projektant sam nie zrobi (usunięcie nieistniejącej już obsługi zdarzenia); zmiana formularza należy do projektanta.</value></data>
 </root>

@@ -53,6 +53,7 @@ internal class WriteFileTool : ITool
         PathSanitizer.AssertUnderRoot(path, root);
         if (FileTarget.DirectoryRefusal(path) is { } isDirectory) return isDirectory;
         if (FileTarget.UnsavedRefusal(_overlay, path) is { } unsaved) return unsaved;
+        if (GeneratedFiles.EditRefusal(path) is { } generated) return generated;
         if (FileTarget.UnreadRefusal(_history, path) is { } unread) return unread;
         var content = args.Str("content") ?? throw new ArgumentException("content is required.");
 
@@ -74,8 +75,10 @@ internal class WriteFileTool : ITool
 
         // Pass the structured change so the approval prompt shows the actual diff, not just a path
         // (colored viewer in VS; textual fallback elsewhere).
-        if (!await _approval.RequestApprovalAsync("write_file", details, ct, subject: path,
-                diff: new DiffInfo(oldContent, content, path)))
+        // The designer's file: the person decides, warned, on a card no rule approves.
+        var designer = GeneratedFiles.DesignerWarning(path);
+        if (!await _approval.RequestApprovalAsync("write_file", designer is null ? details : designer + "\n\n" + details, ct, subject: path,
+                diff: new DiffInfo(oldContent, content, path), forcePrompt: designer is not null))
             return Strings.WriteCancelled;
         if (await FileTarget.ChangedSinceApprovalAsync(_overlay, exists ? new ApprovedFile(path, oldContent) : ApprovedFile.Absent(path), ct) is { } changedMeanwhile)
             return changedMeanwhile;

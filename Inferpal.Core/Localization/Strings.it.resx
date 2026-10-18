@@ -1586,4 +1586,8 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="PermissionsHistoryUnreadable" xml:space="preserve"><value>Impossibile leggere la cronologia delle approvazioni ({0}): non se ne può ricavare alcun suggerimento.</value></data>
   <data name="PermissionsAddUnknown" xml:space="preserve"><value>Non esiste il suggerimento {0}: `/permissions suggest` li elenca.</value></data>
   <data name="PermissionsAddFailed" xml:space="preserve"><value>Impossibile salvare la regola ({0}).</value></data>
+  <data name="RenameMarkupByName" xml:space="preserve"><value>Il markup (.razor, .cshtml, .xaml) è letto per nome, non compilato: {0} {0:posizione riscritta|posizioni riscritte} dove lega questo simbolo.</value></data>
+  <data name="RenameLeftAsTheyAre" xml:space="preserve"><value>{0} {0:occorrenza|occorrenze} di `{1}` lasciate come sono: questa ridenominazione non può dire se sono questo simbolo. Controllale:</value></data>
+  <data name="RenameMoreLeft" xml:space="preserve"><value>… e altre {0}.</value></data>
+  <data name="DesignerFileWarning" xml:space="preserve"><value>⚠ {0} è il codice della finestra di progettazione Windows Forms: riscrive InitializeComponent e potrebbe non aprire più il form dopo una modifica a mano. Approva solo ciò che la finestra di progettazione non sa fare (togliere un gestore che non esiste più); una modifica del form si fa nella finestra di progettazione.</value></data>
 </root>

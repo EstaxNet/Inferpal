@@ -47,7 +47,9 @@ internal sealed class RenameSymbolTool : ITool
         "hand: it renames every occurrence — callers and tests included — in one call, after the user approves the " +
         "diff. Renames an identifier across the source files found under 'root'. Uses Roslyn for C# (no false " +
         "matches in strings or comments; when the name designates several symbols it lists them and renames nothing " +
-        "until declaring_file says which) and word-boundary regex for other languages. The report states " +
+        "until declaring_file says which) and word-boundary regex for other languages. Markup (.razor, .cshtml, .xaml) " +
+        "is matched by name, not compiled: rewritten only where it binds the symbol, every other occurrence listed. " +
+        "The report states " +
         "what was actually scanned — files it could not read, folders it could not list — and the write " +
         "is all-or-nothing: nothing is changed if any file cannot be. dry_run=true only previews, and writes nothing.";
 
@@ -84,7 +86,7 @@ internal sealed class RenameSymbolTool : ITool
             declaring_file = new
             {
                 type        = "string",
-                description = "C#: when old_name names several symbols (the tool lists them and renames nothing), the file declaring the one to rename."
+                description = "When old_name names several symbols (the tool lists them and renames nothing), the file declaring the one to rename — a .cs file, or the .razor component whose @code declares it."
             },
             declaring_line = new
             {
@@ -141,15 +143,63 @@ internal sealed class RenameSymbolTool : ITool
         // below rewrites EVERY identifier token spelled like the target, so renaming a method
         // called `Handle` would also rewrite the dozen unrelated `Handle` methods of other types —
         // and this tool writes files. Semantics narrows that to the symbol actually asked for.
-        var plan          = TryPlanRename(oldName, root, declaringFile, declaringLine, ct);
-        if (plan is { Candidates.Count: > 1 })
-            return Ambiguous(oldName, plan.Candidates);
-        // ⚠ A narrowing that designates nothing is refused, never dropped: falling through to the text-based path
-        // renamed EVERY symbol spelled `old_name` — both Handle methods the model had just picked between — because the
-        // file it named was written "./src/Cart.cs" or the line was the identifier's, not the declaration's.
-        if ((declaringFile is not null || declaringLine is not null) && plan is not { Spans.Count: > 0 })
-            return NarrowingMatchedNothing(oldName, declaringFile, declaringLine, indexAvailable: plan is not null);
+        // Members a component declares in its @code are no C# the compiler reads: found by their declaration.
+        var markupFiles = files.Where(MarkupRename.IsMarkup).ToList();
+        var razorDecls  = MarkupRename.RazorDeclarations(markupFiles, oldName, ReadOrNull);
+        string? owner   = null;
+        Lsp.RenamePlan? plan = null;
+        if (declaringFile is not null && declaringFile.EndsWith(".razor", StringComparison.OrdinalIgnoreCase))
+        {
+            var chosen = razorDecls.Where(d => Lsp.CSharpSemanticIndex.IsDeclaringFile(d.File, declaringFile)
+                                               && (declaringLine is null || (declaringLine >= d.FirstLine && declaringLine <= d.LastLine))).ToList();
+            if (chosen.Count != 1)
+                return $"Error: no member `{oldName}` is declared in the @code of {declaringFile}"
+                     + (declaringLine is null ? string.Empty : $" at line {declaringLine}") + "; nothing was renamed. "
+                     + "Call again without declaring_file to list the declarations of `" + oldName + "`.";
+            owner = chosen[0].File;
+        }
+        else
+        {
+            plan = TryPlanRename(oldName, root, declaringFile, declaringLine, ct);
+            var resolved = plan is { Spans.Count: > 0 };
+            var narrowed = declaringFile is not null || declaringLine is not null;
+            if (plan is { Candidates.Count: > 1 } || (!narrowed && razorDecls.Count > (resolved ? 0 : 1)))
+                return Ambiguous(oldName, [.. CSharpCandidates(plan, resolved, oldName, root, ct),
+                                           .. razorDecls.Select(d => ($"component {MarkupRename.ComponentName(d.File)} (@code)",
+                                                                      new Lsp.SymbolLocation(Path.GetRelativePath(root, d.File).Replace('\\', '/'), d.Line, string.Empty)))]);
+            // ⚠ A narrowing that designates nothing is refused, never dropped: falling through to the text-based path
+            // renamed EVERY symbol spelled `old_name` — both Handle methods the model had just picked between — because
+            // the file it named was written "./src/Cart.cs" or the line was the identifier's, not the declaration's.
+            if (narrowed && !resolved)
+                return NarrowingMatchedNothing(oldName, declaringFile, declaringLine, indexAvailable: plan is not null);
+            if (!resolved && razorDecls.Count == 1) owner = razorDecls[0].File;
+        }
         var semanticSpans = plan is { Spans.Count: > 0 } ? plan.Spans : null;
+        // ⚠ A Razor component's name is its FILE's: renaming the identifier would leave every <X …> on a class that no
+        // longer exists, and the file name decides the class anyway. Only when the name IS the component: unresolved by
+        // the compiler, or resolved to the type its code-behind declares — a C# `Error` beside an Error.razor is renamed.
+        if (owner is null && (semanticSpans is null || plan!.Markup is { IsType: true })
+            && files.FirstOrDefault(f => f.EndsWith(".razor", StringComparison.OrdinalIgnoreCase)
+                                         && MarkupRename.ComponentName(f) == oldName
+                                         && (semanticSpans is null || File.Exists(f + ".cs"))) is { } component)
+            return $"`{oldName}` is a Razor component: its name is its file's ({Path.GetRelativePath(root, component)}). "
+                 + $"Rename the file to {newName}.razor (and a {oldName}.razor.cs or .razor.css beside it), then its uses "
+                 + "<" + oldName + " …>; nothing was renamed.";
+        // A component with a code-behind: its parameters are set as attributes of <X …> and bound by its route.
+        owner ??= semanticSpans is not null && plan!.Markup is { IsType: false } held ? CodeBehindComponent(held, markupFiles) : null;
+        // Two components of one name: a tag <X …> elsewhere is the owner's where the file sees its namespace only.
+        string? NamespaceOf(string razor) =>
+            ReadOrNull(razor) is { } t ? MarkupRename.ScopeOf(razor, t, workspace ?? root, ReadOrNull)?.Own : null;
+        var namesakes = owner is null ? null
+            : markupFiles.Where(f => f.EndsWith(".razor", StringComparison.OrdinalIgnoreCase)
+                                     && MarkupRename.ComponentName(f) == MarkupRename.ComponentName(owner)
+                                     && !PathComparer.Default.Equals(Path.GetFullPath(f), Path.GetFullPath(owner)))
+                         .Select(NamespaceOf).ToList();
+        var markup = new MarkupRename.Symbol(oldName, newName, semanticSpans is not null ? plan!.Markup : null, owner,
+                                             owner is null ? null : Path.GetRelativePath(root, owner).Replace('\\', '/'),
+                                             owner is null ? null : NamespaceOf(owner), namesakes);
+        // A component's member is no symbol of the C# files: they cannot be renamed by its name alone.
+        var componentOwned = semanticSpans is null && owner is not null;
 
         // ⚠ A root narrowed below the workspace hides every caller outside it: the narrowed compilation does not contain
         // them, so the rename covered the folder, left them on the old name, and the build broke under "Applied to 4
@@ -161,8 +211,10 @@ internal sealed class RenameSymbolTool : ITool
 
         var hits            = new List<(string FilePath, int Count, string OldContent, string NewContent)>();
         var stale           = new List<string>();
+        var left            = new List<(string File, MarkupRename.Left Item)>();
         int totalOccurrences = 0;
         int unreadable       = 0;
+        int markupRewritten  = 0;
 
         foreach (var file in files)
         {
@@ -174,7 +226,23 @@ internal sealed class RenameSymbolTool : ITool
                 var isCSharp = Path.GetExtension(file).Equals(".cs", StringComparison.OrdinalIgnoreCase);
                 string newContent;
                 int    count;
-                if (semanticSpans is not null && isCSharp)
+                if (MarkupRename.IsMarkup(file))
+                {
+                    var outcome = MarkupRename.Apply(file, content, markup, MarkupRename.ScopeOf(file, content, workspace ?? root, ReadOrNull));
+                    (newContent, count) = (outcome.NewText, outcome.Rewritten);
+                    markupRewritten += count;
+                    left.AddRange(outcome.Left.Select(l => (file, l)));
+                }
+                else if (componentOwned)
+                {
+                    // No other language can name a component's @code member: a script's word of that spelling is its own.
+                    (newContent, count) = (content, 0);
+                    foreach (var (line, snippet) in WordLines(content, oldName))
+                        left.Add((file, new MarkupRename.Left(line, snippet, isCSharp
+                            ? $"C#, where `{MarkupRename.ComponentName(owner!)}`'s @code members are not compiled: not rewritten"
+                            : $"another language's word, which `{MarkupRename.ComponentName(owner!)}`'s @code member cannot be")));
+                }
+                else if (semanticSpans is not null && isCSharp)
                 {
                     bool isStale;
                     (newContent, count, isStale) = ApplySpans(content, semanticSpans.GetValueOrDefault(file), oldName, newName);
@@ -219,9 +287,12 @@ internal sealed class RenameSymbolTool : ITool
             .WithGap(WorkspaceScan.FirstWalkGap(root, root));
         var partial  = coverage.IsIncomplete ? "\n" + coverage.Warning() : string.Empty;
 
+        var leftReport = LeftReport(left, root);
         if (hits.Count == 0)
-            return $"No occurrences of `{oldName}` found in {files.Count - unreadable} scanned file(s)."
-                 + partial;
+            return (left.Count == 0
+                       ? $"No occurrences of `{oldName}` found in {files.Count - unreadable} scanned file(s)."
+                       : $"Nothing was renamed: no occurrence of `{oldName}` is one this rename can rewrite.")
+                 + partial + leftReport;
 
         // The compiler could not resolve the symbol: every identifier spelled like it gets renamed.
         var textBased = semanticSpans is null
@@ -239,7 +310,11 @@ internal sealed class RenameSymbolTool : ITool
         sb.AppendLine();
 
         foreach (var (f, count, _, _) in hits.OrderBy(h => h.FilePath))
-            sb.AppendLine($"- `{Path.GetRelativePath(root, f)}` — {count} occurrence(s)");
+            sb.AppendLine($"- `{Path.GetRelativePath(root, f)}` — {count} occurrence(s)"
+                          + (MarkupRename.IsMarkup(f) ? " (markup: matched by name, not compiled)" : string.Empty));
+        var regenerated = Regenerated(hits.Select(h => (h.FilePath, h.OldContent)), root);
+        foreach (var note in regenerated) sb.AppendLine(note);
+        if (leftReport.Length > 0) sb.Append(leftReport.TrimStart('\n')).AppendLine();
 
         // A name one of the files cannot hold in its own encoding is said now, the dry run included: applied, it would
         // be written as another character.
@@ -263,6 +338,15 @@ internal sealed class RenameSymbolTool : ITool
         var details = new StringBuilder(Strings.RenameConfirm(oldName, newName, hits.Count, totalOccurrences));
         if (coverage.IsIncomplete) details.Append("\n\n").Append(coverage.Warning());
         if (textBased) details.Append("\n\n").Append(Strings.RenameTextBased(oldName));
+        if (markupRewritten > 0) details.Append("\n\n").Append(Strings.RenameMarkupByName(markupRewritten));
+        if (left.Count > 0)
+        {
+            details.Append("\n\n").Append(Strings.RenameLeftAsTheyAre(left.Count, oldName));
+            foreach (var (file, item) in left.Take(MaxLeftListed))
+                details.Append("\n- ").Append(Path.GetRelativePath(root, file)).Append(':').Append(item.Line).Append("  ").Append(item.Snippet);
+            if (left.Count > MaxLeftListed) details.Append("\n").Append(Strings.RenameMoreLeft(left.Count - MaxLeftListed));
+        }
+        foreach (var note in regenerated) details.Append("\n\n").Append(note);
         foreach (var (f, _, oldContent, newContent) in hits.OrderBy(h => h.FilePath).Take(MaxFilesInPrompt))
         {
             details.Append("\n\n### ").Append(Path.GetRelativePath(root, f));
@@ -319,6 +403,84 @@ internal sealed class RenameSymbolTool : ITool
         }
 
         return sb.ToString().TrimEnd();
+    }
+
+    // ── Markup ─────────────────────────────────────────────────────────────────
+
+    /// <summary>Occurrences of the old name left as they are that the report and the card list; the rest are counted.</summary>
+    private const int MaxLeftListed = 20;
+
+    private static string? ReadOrNull(string path)
+    {
+        try { return TextFileEncoding.ReadText(path); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Diagnostics.Swallow("RenameSymbolTool.ReadMarkup", ex);
+            return null;
+        }
+    }
+
+    /// <summary>What the rename did not rewrite, with why, for the model: every occurrence of the word it left.</summary>
+    private static string LeftReport(List<(string File, MarkupRename.Left Item)> left, string root)
+    {
+        if (left.Count == 0) return string.Empty;
+        var sb = new StringBuilder();
+        sb.Append($"\n⚠ Left as they are — {left.Count} occurrence(s) of the name this rename did not rewrite. Check each; "
+                + "change the ones that are this symbol with apply_edits:");
+        foreach (var (file, item) in left.Take(MaxLeftListed))
+            sb.Append($"\n- {Path.GetRelativePath(root, file)}:{item.Line} — {item.Why}: `{item.Snippet}`");
+        if (left.Count > MaxLeftListed) sb.Append($"\n- … and {left.Count - MaxLeftListed} more");
+        return sb.ToString();
+    }
+
+    /// <summary>The lines of <paramref name="text"/> that spell <paramref name="name"/> as a word.</summary>
+    private static IEnumerable<(int Line, string Snippet)> WordLines(string text, string name)
+    {
+        var lines = text.Split('\n');
+        var word = new Regex($@"(?<!\w){Regex.Escape(name)}(?!\w)", RegexOptions.CultureInvariant, RegexBudget.Default);
+        for (var i = 0; i < lines.Length; i++)
+            foreach (Match _ in word.Matches(lines[i]))
+                yield return (i + 1, lines[i].Trim());
+    }
+
+    /// <summary>The component whose code-behind declares the member: an <c>X.razor</c> whose <c>X.razor.cs</c> is the
+    /// declaring file; <c>null</c> when the member is no component's. Never by name: a model <c>Product</c> is no
+    /// component <c>Product</c>.</summary>
+    private static string? CodeBehindComponent(Lsp.MarkupTarget held, List<string> markupFiles)
+    {
+        var declaring = held.DeclaringFiles ?? [];
+        var components = markupFiles
+            .Where(f => f.EndsWith(".razor", StringComparison.OrdinalIgnoreCase)
+                        && declaring.Any(d => PathComparer.Default.Equals(Path.GetFullPath(d), Path.GetFullPath(f + ".cs"))))
+            .ToList();
+        return components.Count == 1 ? components[0] : null;
+    }
+
+    /// <summary>The C# symbols the name designates, for an ambiguity listing that also holds components' members.</summary>
+    private static IEnumerable<(string Symbol, Lsp.SymbolLocation Location)> CSharpCandidates(
+        Lsp.RenamePlan? plan, bool resolved, string oldName, string root, CancellationToken ct)
+    {
+        if (plan is { Candidates.Count: > 1 }) return plan.Candidates;
+        if (!resolved) return [];
+        try
+        {
+            if (Lsp.CSharpSemanticIndex.ForWorkspace(root).FindReferences(oldName, null, ct).Declaration is { } declaration)
+                return [($"the C# symbol `{oldName}`", declaration)];
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) { Diagnostics.Swallow("RenameSymbolTool.CSharpCandidate", ex); }
+        return [];
+    }
+
+    /// <summary>A note for each file renamed that a generator writes again from a source, which keeps the old name.</summary>
+    private static List<string> Regenerated(IEnumerable<(string File, string Text)> renamed, string root)
+    {
+        var notes = new List<string>();
+        foreach (var (file, text) in renamed)
+            if (GeneratedFiles.Of(file, text) is { Source: { } source })
+                notes.Add($"⚠ {Path.GetRelativePath(root, file)} is generated from {source}: rename there too, or the next "
+                        + "generation brings the old name back.");
+        return notes;
     }
 
     // ── Semantic rename (C#, when a workspace is known) ────────────────────────
@@ -504,7 +666,8 @@ internal sealed class RenameSymbolTool : ITool
             // every supported language.
             foreach (var f in WorkspaceScan.EnumerateFiles(rootDir, filePattern ?? "*"))
             {
-                if (!CodeChunker.SupportedExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase))
+                if (!CodeChunker.SupportedExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase)
+                    && !MarkupRename.IsMarkup(f))
                     continue;
                 try
                 {

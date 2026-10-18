@@ -1586,4 +1586,8 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="PermissionsHistoryUnreadable" xml:space="preserve"><value>No se pudo leer el historial de aprobaciones ({0}): no se puede sugerir nada a partir de él.</value></data>
   <data name="PermissionsAddUnknown" xml:space="preserve"><value>No hay ninguna sugerencia {0}: `/permissions suggest` las muestra.</value></data>
   <data name="PermissionsAddFailed" xml:space="preserve"><value>No se pudo guardar la regla ({0}).</value></data>
+  <data name="RenameMarkupByName" xml:space="preserve"><value>El marcado (.razor, .cshtml, .xaml) se lee por el nombre, no se compila: {0} {0:posición reescrita|posiciones reescritas} donde enlaza este símbolo.</value></data>
+  <data name="RenameLeftAsTheyAre" xml:space="preserve"><value>{0} {0:aparición|apariciones} de `{1}` sin cambiar: este renombrado no puede saber si es este símbolo. Revíselas:</value></data>
+  <data name="RenameMoreLeft" xml:space="preserve"><value>… y {0} más.</value></data>
+  <data name="DesignerFileWarning" xml:space="preserve"><value>⚠ {0} es el código del diseñador de Windows Forms: reescribe InitializeComponent y puede no volver a abrir el formulario tras una edición a mano. Apruebe solo lo que el diseñador no puede hacer (quitar un controlador que ya no existe); un cambio del formulario se hace en el diseñador.</value></data>
 </root>

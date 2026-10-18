@@ -18,9 +18,97 @@ internal sealed record SymbolLocation(string RelPath, int Line, string Snippet)
 /// <summary>A rename's rewrites, or — when the name designates several symbols — the candidates, and nothing to rewrite.</summary>
 /// <param name="Spans">Tokens to rewrite per file; empty when ambiguous or unresolved.</param>
 /// <param name="Candidates">Each symbol the name designates, when there is more than one.</param>
+/// <param name="Markup">What markup may bind of the symbol renamed; <c>null</c> when nothing resolved.</param>
 internal sealed record RenamePlan(
     IReadOnlyDictionary<string, IReadOnlyList<Microsoft.CodeAnalysis.Text.TextSpan>> Spans,
-    IReadOnlyList<(string Symbol, SymbolLocation Location)> Candidates);
+    IReadOnlyList<(string Symbol, SymbolLocation Location)> Candidates,
+    MarkupTarget? Markup = null);
+
+/// <summary>A C# type as markup names it: its namespace and its simple name.</summary>
+internal sealed record TypeName(string Namespace, string Name)
+{
+    public override string ToString() => Namespace.Length == 0 ? Name : Namespace + "." + Name;
+}
+
+/// <summary>
+/// What markup can bind of a renamed symbol: the type itself, or the types a member belongs to.
+/// </summary>
+/// <param name="IsType">The symbol renamed is a type (markup names it), not a member (markup binds it).</param>
+/// <param name="Holders">For a type, the type; for a member, every type of the compilation that has it — the types
+/// declaring it and every type deriving from them or implementing them: a binding on a view model derived from the
+/// base class that declares <c>IsBusy</c> binds that <c>IsBusy</c>.</param>
+/// <param name="Namesakes">The other types of the compilation that bear a holder's simple name: markup that names a
+/// type without its namespace (<c>@model IndexModel</c>, one per Razor Pages folder; a <c>LoginViewModel</c> in another
+/// app of the workspace) says which only through the namespaces the file sees.</param>
+/// <param name="DeclaringFiles">The files declaring the symbol renamed.</param>
+internal sealed record MarkupTarget(bool IsType, IReadOnlyList<TypeName> Holders,
+                                    IReadOnlyList<TypeName>? Namesakes = null, IReadOnlyList<string>? DeclaringFiles = null)
+{
+    /// <summary>What a type written in markup is: a holder, another type, or a name the file does not tell apart.</summary>
+    public enum Reading { Other, Holder, Ambiguous }
+
+    /// <summary>
+    /// What markup that writes <paramref name="written"/> — a simple or a qualified type name — names, looked up as C#
+    /// looks it up from <paramref name="scope"/>: the first level that holds a candidate decides, and a level that
+    /// holds a holder and a namesake, or no level at all, leaves it <see cref="Reading.Ambiguous"/>.
+    /// </summary>
+    public Reading Read(string written, MarkupScope? scope)
+    {
+        var name = written.StartsWith("global::", StringComparison.Ordinal) ? written[8..] : written;
+        if (name.Contains('.'))
+        {
+            if (Holders.Any(h => h.ToString() == name)) return Reading.Holder;
+            bool Ends(TypeName t) => t.ToString().EndsWith("." + name, StringComparison.Ordinal);
+            var holder = Holders.Any(Ends);
+            return holder && Namesakes?.Any(Ends) == true ? Reading.Ambiguous : holder ? Reading.Holder : Reading.Other;
+        }
+        var holders = Holders.Where(h => h.Name == name).ToList();
+        if (holders.Count == 0) return Reading.Other;
+        var namesakes = Namesakes?.Where(n => n.Name == name).ToList() ?? [];
+        if (namesakes.Count == 0) return Reading.Holder;
+        if (scope is null) return Reading.Ambiguous;
+        foreach (var level in scope.Levels())
+        {
+            var holder = holders.Any(h => level.Contains(h.Namespace));
+            var namesake = namesakes.Any(n => level.Contains(n.Namespace));
+            if (holder || namesake) return holder && namesake ? Reading.Ambiguous : holder ? Reading.Holder : Reading.Other;
+        }
+        // Seen through no namespace this pass reads (a global using in C#): either may be meant.
+        return Reading.Ambiguous;
+    }
+}
+
+/// <summary>
+/// The namespaces a Razor file sees: its own, and those its <c>@using</c>s bring in — its own and those of the
+/// <c>_Imports.razor</c> or <c>_ViewImports.cshtml</c> above it, and the project's <c>&lt;Using&gt;</c> items.
+/// </summary>
+/// <param name="Own">The file's namespace (<c>@namespace</c>, or the project's root namespace and its folders);
+/// <c>null</c> for a view that has none.</param>
+/// <param name="Usings">The namespaces brought in by a using.</param>
+internal sealed record MarkupScope(string? Own, IReadOnlySet<string> Usings)
+{
+    /// <summary>The levels C# looks a simple type name up in, innermost first: the file's namespace, its usings, the
+    /// namespaces enclosing its own, the global namespace.</summary>
+    public IEnumerable<IReadOnlySet<string>> Levels()
+    {
+        if (Own is not null) yield return new HashSet<string>(StringComparer.Ordinal) { Own };
+        yield return Usings;
+        for (var ns = Own; ns is not null;)
+        {
+            var dot = ns.LastIndexOf('.');
+            if (dot <= 0) break;
+            ns = ns[..dot];
+            yield return new HashSet<string>(StringComparer.Ordinal) { ns };
+        }
+        yield return new HashSet<string>(StringComparer.Ordinal) { string.Empty };
+    }
+
+    /// <summary>Whether a component of namespace <paramref name="ns"/> is in scope: imported, or the file's namespace or
+    /// one enclosing it. Razor puts every component in scope on the same footing: two of one name are ambiguous.</summary>
+    public bool Sees(string ns) =>
+        ns.Length == 0 || Usings.Contains(ns)
+        || (Own is not null && (Own == ns || Own.StartsWith(ns + ".", StringComparison.Ordinal)));
+}
 
 /// <summary>Answer to a reference query — including which declaration it is about.</summary>
 /// <param name="Declaration">The declaration the references belong to; null when nothing resolved.</param>
@@ -486,7 +574,64 @@ internal sealed class CSharpSemanticIndex
             return new RenamePlan(new Dictionary<string, IReadOnlyList<TextSpan>>(),
                 [.. symbols.Select(s => (s.Symbol.ToDisplayString(), s.Location))]);
         var targets = families.Where(f => f.Value == symbols[0].Family).Select(f => f.Key).ToList();
-        return new RenamePlan(RenameSpans(snap, symbolName, targets, ct), []);
+        return new RenamePlan(RenameSpans(snap, symbolName, targets, ct), [], MarkupTargetOf(snap, targets));
+    }
+
+    /// <summary>The type renamed, or every type of the compilation that has the member renamed.</summary>
+    private static MarkupTarget MarkupTargetOf(Snapshot snap, IReadOnlyList<ISymbol> targets)
+    {
+        var files = targets.SelectMany(t => t.Locations).Where(l => l.IsInSource)
+                           .Select(l => snap.Trees.FirstOrDefault(p => p.Value == l.SourceTree).Key)
+                           .Where(p => p is not null).Distinct(Services.PathComparer.Default).ToList();
+        var all = AllTypes(snap.Compilation.Assembly.GlobalNamespace).ToList();
+        List<TypeName> Namesakes(IEnumerable<TypeName> holders)
+        {
+            var named = holders.ToHashSet();
+            var names = named.Select(h => h.Name).ToHashSet(StringComparer.Ordinal);
+            return [.. all.Select(NameOf).Where(t => !named.Contains(t) && names.Contains(t.Name)).Distinct()];
+        }
+        if (targets.FirstOrDefault() is INamedTypeSymbol type)
+        {
+            TypeName[] self = [NameOf(type)];
+            return new MarkupTarget(true, self, Namesakes(self), files);
+        }
+        var declaring = targets.Select(t => t.ContainingType).OfType<INamedTypeSymbol>()
+                               .Select(t => t.OriginalDefinition).Distinct(SymbolEqualityComparer.Default)
+                               .Cast<INamedTypeSymbol>().ToList();
+        var holders = new HashSet<TypeName>();
+        foreach (var t in all)
+            if (declaring.Any(d => Has(t, d))) holders.Add(NameOf(t));
+        foreach (var d in declaring) holders.Add(NameOf(d));
+        return new MarkupTarget(false, [.. holders.OrderBy(h => h.ToString(), StringComparer.Ordinal)], Namesakes(holders), files);
+
+        static bool Has(INamedTypeSymbol type, INamedTypeSymbol declaring)
+        {
+            for (var b = type; b is not null; b = b.BaseType)
+                if (SymbolEqualityComparer.Default.Equals(b.OriginalDefinition, declaring)) return true;
+            return declaring.TypeKind == TypeKind.Interface
+                   && type.AllInterfaces.Any(i => SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, declaring));
+        }
+    }
+
+    private static TypeName NameOf(INamedTypeSymbol type) =>
+        new(type.ContainingNamespace is { IsGlobalNamespace: false } ns ? ns.ToDisplayString() : string.Empty, type.Name);
+
+    private static IEnumerable<INamedTypeSymbol> AllTypes(INamespaceSymbol ns)
+    {
+        foreach (var member in ns.GetMembers())
+        {
+            if (member is INamespaceSymbol child)
+                foreach (var t in AllTypes(child)) yield return t;
+            else if (member is INamedTypeSymbol type)
+                foreach (var t in WithNested(type)) yield return t;
+        }
+
+        static IEnumerable<INamedTypeSymbol> WithNested(INamedTypeSymbol type)
+        {
+            yield return type;
+            foreach (var nested in type.GetTypeMembers())
+                foreach (var t in WithNested(nested)) yield return t;
+        }
     }
 
     /// <summary>Each symbol's family: symbols linked by an override or an interface implementation share one.</summary>
@@ -714,7 +859,8 @@ internal sealed class CSharpSemanticIndex
     }
 
     /// <summary>
-    /// The runtime's own reference assemblies — enough to resolve BCL types without MSBuild.
+    /// The runtime's own reference assemblies — enough to resolve BCL types without MSBuild. Shared with what binds the
+    /// C# of Razor files.
     /// </summary>
     /// <remarks>
     /// Built once per process and shared. There are ~200 of them, they are read from disk, and they
@@ -722,6 +868,8 @@ internal sealed class CSharpSemanticIndex
     /// an index refresh needlessly expensive, and made a test suite that creates several indexes
     /// contend for the thread pool.
     /// </remarks>
+    internal static IReadOnlyList<MetadataReference> RuntimeReferences => _runtimeReferences.Value;
+
     private static readonly Lazy<IReadOnlyList<MetadataReference>> _runtimeReferences = new(() =>
     {
         var tpa  = AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string ?? string.Empty;

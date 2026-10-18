@@ -34,11 +34,11 @@ internal sealed class RpcApprovalService : ApprovalServiceBase, IApprovalService
     /// hand for the prompt below: the base question carries the summary only.
     /// </summary>
     public async Task<bool> RequestBatchApprovalAsync(string toolName, string details, IReadOnlyList<FileChange> files,
-                                                      CancellationToken ct, string? subject = null)
+                                                      CancellationToken ct, string? subject = null, bool forcePrompt = false)
     {
         var previous = Batch.Value;
         Batch.Value = files;
-        try { return await RequestApprovalAsync(toolName, details, ct, subject: subject); }
+        try { return await RequestApprovalAsync(toolName, details, ct, subject: subject, forcePrompt: forcePrompt); }
         finally { Batch.Value = previous; }
     }
 

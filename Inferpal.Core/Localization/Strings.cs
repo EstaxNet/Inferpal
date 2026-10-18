@@ -980,6 +980,10 @@ internal static class Strings
         Format(Get(nameof(RenameConfirm)), oldName, newName, files, occurrences);
     public static string RenameTextBased(string oldName) => Format(Get(nameof(RenameTextBased)), oldName);
     public static string RenameMoreFiles(int files) => Format(Get(nameof(RenameMoreFiles)), files);
+    public static string RenameMarkupByName(int positions) => Format(Get(nameof(RenameMarkupByName)), positions);
+    public static string RenameLeftAsTheyAre(int occurrences, string oldName) => Format(Get(nameof(RenameLeftAsTheyAre)), occurrences, oldName);
+    public static string RenameMoreLeft(int occurrences) => Format(Get(nameof(RenameMoreLeft)), occurrences);
+    public static string DesignerFileWarning(string file) => Format(Get(nameof(DesignerFileWarning)), file);
 
     public static string HistoryNote(string snapPath) =>
         Format(Get(nameof(HistoryNote)), snapPath);

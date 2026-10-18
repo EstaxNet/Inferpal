@@ -1586,4 +1586,8 @@
   <data name="PermissionsHistoryUnreadable" xml:space="preserve"><value>无法读取审批历史（{0}）：无法据此给出建议。</value></data>
   <data name="PermissionsAddUnknown" xml:space="preserve"><value>没有第 {0} 条建议：`/permissions suggest` 会列出它们。</value></data>
   <data name="PermissionsAddFailed" xml:space="preserve"><value>无法保存该规则（{0}）。</value></data>
+  <data name="RenameMarkupByName" xml:space="preserve"><value>标记 (.razor, .cshtml, .xaml) 按名称匹配，未经编译：在绑定此符号的位置改写 {0} 处。</value></data>
+  <data name="RenameLeftAsTheyAre" xml:space="preserve"><value>`{1}` 的 {0} 处保持不变——此重命名无法判断它们是否为该符号。请检查：</value></data>
+  <data name="RenameMoreLeft" xml:space="preserve"><value>… 以及另外 {0} 处。</value></data>
+  <data name="DesignerFileWarning" xml:space="preserve"><value>⚠ {0} 是 Windows 窗体设计器的代码：设计器会重写 InitializeComponent，手动编辑后可能无法再打开窗体。只批准设计器自身无法完成的操作（删除已不存在的事件处理程序）；窗体的更改应在设计器中进行。</value></data>
 </root>

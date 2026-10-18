@@ -221,6 +221,12 @@ internal class AnalyzeImpactTool : ITool
         var (layer1, unreadable1) = await ScanDirectDependantsAsync(api, filePath, allFiles, contentCache, ct);
         coverage = coverage.WithUnreadable(unreadable1);
 
+        // ── 2b. Markup that names the API ─────────────────────────────────────
+        // ⚠ No C# reads .razor, .cshtml or .xaml: without this, a component used only as <X …>, a view model only through
+        // x:DataType, a model only through @model would read "0 dependants — safe to refactor freely". Matched by name,
+        // and said so.
+        var (markupUses, markupCoverage) = MarkupDependants(api, ext, filePath, rootDir, ct);
+
         // ── Symbol grain for scripts: importing the file is not using the symbol ──
         // A C# dependant must mention the filtered type (CheckReference requires a match); the
         // script path only required importing the FILE, so a contract file reported every importer
@@ -265,7 +271,7 @@ internal class AnalyzeImpactTool : ITool
             .Select(r => r.RelPath)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Count() ?? 0;
-        var directCount = Math.Max(layer1.Count, semanticFiles);
+        var directCount = Math.Max(layer1.Count, semanticFiles) + markupUses.Count;
 
         var (riskLevel, riskBullets) = RiskCalculator.Compute(
             api, directCount, transitive.Count, tests.Count, entryPoints.Count);
@@ -335,6 +341,18 @@ internal class AnalyzeImpactTool : ITool
         }
         if (importersNotMentioning > 0)
             sb.AppendLine($"  *(+{importersNotMentioning} file(s) import {fileName} without mentioning `{symbol}` — not counted at the symbol grain)*");
+
+        // Markup
+        if (markupUses.Count > 0 || markupCoverage.IsIncomplete)
+        {
+            sb.AppendLine();
+            sb.AppendLine($"## Markup · matched by name, not compiled  ({markupUses.Count})");
+            sb.AppendLine("  *(.razor, .cshtml, .xaml that name the type where markup references one — a tag, x:DataType, "
+                        + "@model, @inject, typeof; check each, the compiler did not)*");
+            if (markupCoverage.IsIncomplete) sb.AppendLine("  " + markupCoverage.Warning());
+            AppendCapped(markupUses.OrderBy(u => u.RelPath, StringComparer.Ordinal)
+                                   .Select(u => $"  🧩 {u.RelPath}:{u.Line}  {u.Snippet}").ToList(), 0.2);
+        }
 
         // Layer 2
         if (depth >= 2)
@@ -411,6 +429,79 @@ internal class AnalyzeImpactTool : ITool
             sb.AppendLine($"  ↳ {bullet}");
 
         return ClampedArgument.Above(depthNotice, sb.ToString().TrimEnd());
+    }
+
+    /// <summary>Markup files scanned for the names of the API; the rest are counted, never silently dropped.</summary>
+    private const int MaxMarkupFilesScanned = 2_000;
+
+    /// <summary>
+    /// The markup files that name a type of <paramref name="api"/> — a C# type, or the component a <c>.razor</c> file is
+    /// — where markup references a type: <c>&lt;X …&gt;</c>, <c>prefix:X</c>, <c>@model X</c>, <c>@inject X</c>,
+    /// <c>typeof(X)</c>; the first such line of each.
+    /// </summary>
+    private static (List<(string RelPath, int Line, string Snippet)> Uses, ScanCoverage Coverage) MarkupDependants(
+        PublicApi api, string ext, string target, string rootDir, CancellationToken ct)
+    {
+        var names = api.Types.Select(t => t.Name)
+                       .Concat(ext == ".razor" ? api.ExportedNames : [])
+                       .Where(n => n.Length > 0).Distinct(StringComparer.Ordinal).ToList();
+        var uses = new List<(string, int, string)>();
+        if (names.Count == 0 || ext is not (".cs" or ".razor"))
+            return (uses, new ScanCoverage(0, 0));
+        var alternatives = string.Join("|", names.Select(Regex.Escape));
+        // ⚠ An unprefixed tag is the framework's (<Label>, <Image>) in XAML: a type of the project is written with its
+        // prefix. A bare <X> counts in Razor, and only for a component (a .razor, its code-behind, or a class that
+        // derives from a component base).
+        var isComponent = ext == ".razor" || target.EndsWith(".razor.cs", StringComparison.OrdinalIgnoreCase)
+                          || IsComponentClass(target);
+        var reference = new Regex(
+            $@"<(?:[\w]+:)(?:{alternatives})(?=[\s/>])|(?<=[\s""'{{(])[\w]+:(?:{alternatives})(?!\w)"
+            + $@"|@(?:model|inherits|inject|implements)\s+[\w.<>]*\b(?:{alternatives})\b|typeof\(\s*[\w.]*\b(?:{alternatives})\s*\)",
+            RegexOptions.CultureInvariant, RegexBudget.Default);
+        var tag = new Regex($@"<(?:[\w]+\.)*(?:{alternatives})(?=[\s/>])", RegexOptions.CultureInvariant, RegexBudget.Default);
+        var (files, coverage) = ScanCoverage.Take(
+            WorkspaceScan.EnumerateFiles(rootDir, "*").Where(f => MarkupRename.IsMarkup(f) && !PathComparer.Default.Equals(f, target)),
+            MaxMarkupFilesScanned);
+        var unreadable = 0;
+        foreach (var file in files)
+        {
+            ct.ThrowIfCancellationRequested();
+            try
+            {
+                var text = TextFileEncoding.ReadText(file);
+                var m = reference.Match(text);
+                if (!m.Success && isComponent && file.EndsWith(".razor", StringComparison.OrdinalIgnoreCase)) m = tag.Match(text);
+                if (!m.Success) continue;
+                var line = 1 + text[..m.Index].Count(c => c == '\n');
+                var start = text.LastIndexOf('\n', Math.Max(0, m.Index - 1)) + 1;
+                var end = text.IndexOf('\n', m.Index);
+                var snippet = text[start..(end < 0 ? text.Length : end)].Trim();
+                uses.Add((Path.GetRelativePath(rootDir, file), line, snippet.Length <= 120 ? snippet : snippet[..120] + "…"));
+            }
+            // A file the pattern cannot read in its budget is a file not examined, like one that cannot be opened.
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or RegexMatchTimeoutException)
+            {
+                unreadable++;
+                Diagnostics.Swallow("AnalyzeImpactTool.Markup", ex);
+            }
+        }
+        return (uses, coverage.WithUnreadable(unreadable));
+    }
+
+    /// <summary>Whether a C# file declares a Razor component written as a class: one that derives from a component base.</summary>
+    private static bool IsComponentClass(string path)
+    {
+        try
+        {
+            return Regex.IsMatch(TextFileEncoding.ReadText(path),
+                @":\s*(?:[\w.]+\.)?(?:ComponentBase|LayoutComponentBase|OwningComponentBase(?:<[^>]*>)?|IComponent)\b",
+                RegexOptions.CultureInvariant, RegexBudget.Default);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or RegexMatchTimeoutException)
+        {
+            Diagnostics.Swallow("AnalyzeImpactTool.IsComponentClass", ex);
+            return false;
+        }
     }
 
     /// <summary>
