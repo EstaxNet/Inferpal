@@ -258,6 +258,7 @@ internal partial class InferpalToolWindowData
             _workspaceContextInjected = false;
             _sessionStartTime         = null;
             _lastRegenerableMsg       = null;
+            _lastContinuableMsg       = null;
             _baseSystemPrompt         = BuildSystemPrompt();
             _history               = [new("system", _baseSystemPrompt)];
             _oodaSummary           = string.Empty;
@@ -353,6 +354,7 @@ internal partial class InferpalToolWindowData
         _workspaceContextInjected = false;
         _sessionStartTime         = null;
         _lastRegenerableMsg       = null;
+        _lastContinuableMsg       = null;
         _baseSystemPrompt         = BuildSystemPrompt();
         _history                  = SessionManager.BuildRestoredHistory(_baseSystemPrompt, messages);
         _oodaSummary              = string.Empty;

@@ -128,8 +128,11 @@ internal abstract class ApprovalServiceBase : IApprovalService
         ApprovalDecision promptDecision;
         try
         {
-            promptDecision = await PromptUserAsync(
-                new Services.Presentation.ApprovalPrompt(toolName, details, subject, diff, message), ct);
+            // Nothing is in flight while a person reads the card: the machine may sleep meanwhile (SleepGuard), and a card
+            // left for an hour does not drain a laptop's battery. Only this turn's hold is let go.
+            using (Services.Hardware.SleepGuard.Shared.PauseThisFlow())
+                promptDecision = await PromptUserAsync(
+                    new Services.Presentation.ApprovalPrompt(toolName, details, subject, diff, message), ct);
         }
         catch (OperationCanceledException)
         {

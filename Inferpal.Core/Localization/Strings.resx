@@ -81,6 +81,8 @@ This cannot be undone.</value></data>
   <data name="BtnFixWithAi" xml:space="preserve"><value>Fix with AI</value></data>
   <data name="BtnRegenerate" xml:space="preserve"><value>↺ Regenerate</value></data>
   <data name="BtnResume" xml:space="preserve"><value>▶ Resume</value></data>
+  <data name="BtnContinue" xml:space="preserve"><value>Continue</value></data>
+  <data name="ContinueQuestion" xml:space="preserve"><value>Continue.</value></data>
   <data name="PromptFixErrors" xml:space="preserve"><value>Fix the following build errors:
 
 {0}</value></data>

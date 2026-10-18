@@ -168,5 +168,8 @@
   "Sent after this turn": "Wysłane po tej turze",
   "Remove from the queue": "Usuń z kolejki",
   "The turn did not end normally: the messages waiting to be sent are back in the input box.": "Tura nie zakończyła się normalnie — wiadomości czekające na wysłanie wróciły do pola wprowadzania.",
-  "Your note was not read before the turn ended: it is back in the input box.": "Notatka nie została odczytana przed końcem tury — wróciła do pola wprowadzania."
+  "Your note was not read before the turn ended: it is back in the input box.": "Notatka nie została odczytana przed końcem tury — wróciła do pola wprowadzania.",
+  "Continue": "Kontynuuj",
+  "Continue.": "Kontynuuj.",
+  "Inferpal is waiting for your approval.": "Inferpal czeka na Twoją zgodę."
 }

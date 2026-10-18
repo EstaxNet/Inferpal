@@ -18,6 +18,9 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     private Action?         _onResume;
     private string          _btnResume       = string.Empty;
     private bool            _isResumable;
+    private Action?         _onContinue;
+    private string          _btnContinue     = string.Empty;
+    private bool            _isContinuable;
     private Action?         _onRegenerate;
     private string          _btnRegenerate   = string.Empty;
     private bool            _isRegeneratable;
@@ -49,6 +52,10 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     [DataMember] public bool   IsSearchDimmed   { get => _isSearchDimmed;   set => SetProperty(ref _isSearchDimmed,   value); }
 
     [DataMember] public bool   IsResumable      { get => _isResumable;      set => SetProperty(ref _isResumable,      value); }
+    /// <summary>The end notice of a turn stopped short (iteration limit, length limit) offers Continue — the last turn's
+    /// only, until another question leaves. Screen only: a reloaded session has none.</summary>
+    [DataMember] public bool   IsContinuable    { get => _isContinuable;    set => SetProperty(ref _isContinuable,    value); }
+    [DataMember] public string BtnContinue      { get => _btnContinue;      set => SetProperty(ref _btnContinue,      value); }
     [DataMember] public string BtnResume        { get => _btnResume;        set => SetProperty(ref _btnResume,        value); }
     [DataMember] public string BubbleBackground { get => _bubbleBackground; set => SetProperty(ref _bubbleBackground, value); }
     private string _bubbleBorder = "Transparent";
@@ -212,6 +219,7 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     [DataMember] public AsyncCommand CopyCommand         { get; }
     [DataMember] public AsyncCommand FixWithAiCommand    { get; }
     [DataMember] public AsyncCommand ResumeCommand       { get; }
+    [DataMember] public AsyncCommand ContinueCommand     { get; }
     [DataMember] public AsyncCommand RegenerateCommand   { get; }
 
     public ChatMessageItem()
@@ -220,6 +228,7 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
         CopyCommand         = new AsyncCommand(CopyContentAsync);
         FixWithAiCommand    = new AsyncCommand(FixWithAiAsync);
         ResumeCommand       = new AsyncCommand(ResumeAsync);
+        ContinueCommand     = new AsyncCommand((_, _) => { if (IsContinuable) _onContinue?.Invoke(); return Task.CompletedTask; });
         RegenerateCommand   = new AsyncCommand(RegenerateAsync);
         UndoCommand         = new AsyncCommand((_, _) => { _onUndo?.Invoke(); return Task.CompletedTask; });
         AllowOnceCommand    = new AsyncCommand((_, _) => { Answer(ApprovalDecision.Once);   return Task.CompletedTask; });
@@ -283,6 +292,14 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
         _onRegenerate   = onRegenerate;
         BtnRegenerate   = Strings.BtnRegenerate;
         IsRegeneratable = true;
+    }
+
+    /// <summary>Shows a "Continue" button on this end notice (<c>ChatTurnPolicy.OffersContinue</c>).</summary>
+    internal void InitContinueCallback(Action onContinue)
+    {
+        _onContinue   = onContinue;
+        BtnContinue   = Strings.BtnContinue;
+        IsContinuable = true;
     }
 
     /// <summary>Shows a "Resume" button on this bubble (used by the step-mode pause bubble).</summary>

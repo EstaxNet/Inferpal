@@ -168,5 +168,8 @@
   "Sent after this turn": "이 턴이 끝난 뒤 보냄",
   "Remove from the queue": "대기열에서 제거",
   "The turn did not end normally: the messages waiting to be sent are back in the input box.": "턴이 정상적으로 끝나지 않았습니다. 보내기를 기다리던 메시지가 입력란으로 되돌아갔습니다.",
-  "Your note was not read before the turn ended: it is back in the input box.": "턴이 끝나기 전에 메모를 읽지 않았습니다. 입력란으로 되돌아갔습니다."
+  "Your note was not read before the turn ended: it is back in the input box.": "턴이 끝나기 전에 메모를 읽지 않았습니다. 입력란으로 되돌아갔습니다.",
+  "Continue": "계속",
+  "Continue.": "계속해 주세요.",
+  "Inferpal is waiting for your approval.": "Inferpal이 승인을 기다리고 있습니다."
 }

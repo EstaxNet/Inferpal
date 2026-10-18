@@ -168,5 +168,8 @@
   "Sent after this turn": "このターンの後に送信",
   "Remove from the queue": "キューから削除",
   "The turn did not end normally: the messages waiting to be sent are back in the input box.": "ターンが正常に終了しませんでした。送信待ちのメッセージは入力欄に戻されました。",
-  "Your note was not read before the turn ended: it is back in the input box.": "ターンが終わる前にメモは読まれませんでした。入力欄に戻されました。"
+  "Your note was not read before the turn ended: it is back in the input box.": "ターンが終わる前にメモは読まれませんでした。入力欄に戻されました。",
+  "Continue": "続ける",
+  "Continue.": "続けてください。",
+  "Inferpal is waiting for your approval.": "Inferpal があなたの承認を待っています。"
 }

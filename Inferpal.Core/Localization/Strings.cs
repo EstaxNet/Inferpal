@@ -405,6 +405,9 @@ internal static class Strings
     public static string BtnFixWithAi             => Get(nameof(BtnFixWithAi));
     public static string BtnRegenerate            => Get(nameof(BtnRegenerate));
     public static string BtnResume                => Get(nameof(BtnResume));
+    public static string BtnContinue              => Get(nameof(BtnContinue));
+    /// <summary>What the Continue button sends — the question "ask it to continue" would have typed.</summary>
+    public static string ContinueQuestion         => Get(nameof(ContinueQuestion));
 
     public static string PromptFixErrors(string errors) =>
         Format(Get(nameof(PromptFixErrors)), errors);

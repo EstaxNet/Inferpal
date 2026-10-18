@@ -22,6 +22,7 @@ export function webviewStrings(): Record<string, string> {
     copy: t('Copy'),
     copied: t('Copied!'),
     regenerate: t('Regenerate'),
+    continueTurn: t('Continue'),
     deny: t('Deny'),
     allowOnce: t('Allow once'),
     allowAlways: t('Always this session'),

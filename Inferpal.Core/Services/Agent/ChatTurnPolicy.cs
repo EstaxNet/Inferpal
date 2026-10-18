@@ -94,6 +94,17 @@ internal static class ChatTurnPolicy
         return string.Join("\n\n", notices);
     }
 
+    /// <summary>
+    /// Whether the end notice offers Continue: the turn stopped short at the iteration limit, or its answer at the length
+    /// limit — the two whose notice says "ask it to continue".
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Never after a loop the run detected, nor an answer stopped because it repeated itself: continuing would do the
+    /// same thing again, and the detector's verdict stands. One reader for both editors.
+    /// </remarks>
+    public static bool OffersContinue(bool reachedIterationLimit, bool loopDetected, bool answerCut, bool answerRepeating) =>
+        !answerRepeating && !loopDetected && (reachedIterationLimit || answerCut);
+
     /// <summary>The tools that write a file — every one backs the file up first, so a write that lands counts in the run.</summary>
     /// <remarks>⚠ A property, held by <c>EditsWithoutEffectTests</c>: every tool whose code calls
     /// <c>BackUpBeforeChangeAsync</c> is here. Kept as a list of the three content edits, it missed

@@ -24,6 +24,9 @@ export interface WvTranscriptItem {
   /** A saved message of a role this window does not draw (Visual Studio's plan card): shown as a notice, written
    *  back exactly as it was read. */
   savedAs?: SavedMessage;
+  /** Screen only, never saved: this end notice offers Continue (ChatTurnPolicy.OffersContinue). Taken off when the next
+   *  turn starts; kept across a redraw of the view, which rebuilds it from the transcript. */
+  continues?: boolean;
   /** The `/import` preview this notice is: drawn as a card with a box per item instead of its text (the text, its
    *  Markdown, is what a saved conversation keeps). */
   importCard?: WvImportCard;
@@ -153,7 +156,7 @@ export type ExtToWebview =
   | { type: 'streamReset' }
   // notice: the turn's text is a notice no answer of the model (a slash command, a code action's outcome) — drawn as the
   // transcript keeps it, under no model's name.
-  | { type: 'turnEnded'; text: string; error: string | null; cancelled: boolean; tokens: number; promptTokens: number; timestamp: string; endNotice?: string | null; contextWindow?: number; run?: RunSummary | null; duration?: string | null; model?: string | null; canRegenerate?: boolean; notice?: boolean }
+  | { type: 'turnEnded'; text: string; error: string | null; cancelled: boolean; tokens: number; promptTokens: number; timestamp: string; endNotice?: string | null; offersContinue?: boolean; contextWindow?: number; run?: RunSummary | null; duration?: string | null; model?: string | null; canRegenerate?: boolean; notice?: boolean }
   | { type: 'editorContext'; file: string | null; problems: number }
   | { type: 'planMode'; enabled: boolean }
   | { type: 'backendStatus'; status: WvBackendStatus }
@@ -201,6 +204,7 @@ export type WebviewToExt =
   | { type: 'xrayToggle'; id: string; enabled: boolean }
   | { type: 'copyText'; text: string }
   | { type: 'regenerate' }
+  | { type: 'continue' }
   | { type: 'retryConnection' }
   /** The model picker opened: re-read the server's list. */
   | { type: 'listModels' }

@@ -168,5 +168,8 @@
   "Sent after this turn": "Envoyé après ce tour",
   "Remove from the queue": "Retirer de la file",
   "The turn did not end normally: the messages waiting to be sent are back in the input box.": "Le tour ne s’est pas terminé normalement : les messages en attente d’envoi sont de nouveau dans la zone de saisie.",
-  "Your note was not read before the turn ended: it is back in the input box.": "Votre note n’a pas été lue avant la fin du tour : elle est de nouveau dans la zone de saisie."
+  "Your note was not read before the turn ended: it is back in the input box.": "Votre note n’a pas été lue avant la fin du tour : elle est de nouveau dans la zone de saisie.",
+  "Continue": "Continuer",
+  "Continue.": "Continue.",
+  "Inferpal is waiting for your approval.": "Inferpal attend votre accord."
 }

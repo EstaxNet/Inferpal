@@ -32,7 +32,9 @@ internal sealed class StepModeToolRegistry(IToolRegistry inner, Func<Cancellatio
         try
         {
             var result = await inner.ExecuteAsync(name, args, ct);
-            await onAfterTool(ct);
+            // A step pause waits for a person, as an approval card does: nothing is in flight, the machine may sleep.
+            using (Services.Hardware.SleepGuard.Shared.PauseThisFlow())
+                await onAfterTool(ct);
             return result;
         }
         finally

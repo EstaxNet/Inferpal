@@ -123,6 +123,8 @@ internal sealed record TurnNoteDto(string Id, string Text, int AfterCalls = 0);
 /// question in the history.</param>
 /// <param name="UnappliedNotes">The notes no step read — typed during the final answer, or the turn stopped first. The
 /// adapter sends them as the next message after a turn that ended normally, and gives them back otherwise.</param>
+/// <param name="OffersContinue">The end notice offers Continue (<see cref="Services.Agent.ChatTurnPolicy.OffersContinue"/>):
+/// the turn stopped at the iteration limit or its answer at the length limit — never after a loop or a repetition.</param>
 internal sealed record ChatSendResult(
     string  Text,
     bool    Cancelled,
@@ -138,7 +140,8 @@ internal sealed record ChatSendResult(
     bool    QuestionKept = true,
     string? Ended = null,
     List<TurnNoteDto>? AppliedNotes = null,
-    List<TurnNoteDto>? UnappliedNotes = null);
+    List<TurnNoteDto>? UnappliedNotes = null,
+    bool    OffersContinue = false);
 
 /// <summary>One agent run as the chat shows it (<see cref="Services.Presentation.RunSummaryModel"/>).</summary>
 /// <param name="Check"><c>none</c>, <c>buildPassed</c>, <c>buildFailed</c>, <c>testsPassed</c> or <c>testsFailed</c>.</param>

@@ -29,6 +29,11 @@ internal static class TestConfigIsolation
         Inferpal.Services.Inference.PrefillRates.Shared.File.PathOverride =
             Path.Combine(root, $"prefill-rates-{Environment.ProcessId}.json");
 
+        // And for the lock that keeps the machine awake while the model works: every lease of the suite would take the
+        // real one — a power request, or a `caffeinate` / `systemd-inhibit` process per lease on the CI legs.
+        Inferpal.Services.Hardware.SleepGuard.Shared =
+            new Inferpal.Services.Hardware.SleepGuard(new Inferpal.Services.Hardware.SleepGuard.Silent(), TimeSpan.Zero);
+
         // And for the editors an ACP agent has told what it does not do in them.
         Inferpal.Host.Acp.AcpAgent.LimitsToldShared.PathOverride =
             Path.Combine(root, $"acp-limits-told-{Environment.ProcessId}.json");

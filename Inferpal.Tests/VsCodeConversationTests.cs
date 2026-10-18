@@ -141,8 +141,8 @@ public class VsCodeConversationTests
         var finish = WebviewRebuildTests.Body(provider, "private finishTurn(");
         Assert.Contains("this.append({ role: 'assistant', text, timestamp, notice: true })", finish, StringComparison.Ordinal);   // WITNESS: kept a notice
         Assert.Matches(@"type: 'turnEnded',[^}]*notice: true", finish);
-        Assert.Contains("this.append({ role: 'assistant', text: result.endNotice, timestamp: ChatViewProvider.now(), notice: true })",
-                        provider, StringComparison.Ordinal);   // WITNESS: the end notice is kept a notice too
+        Assert.Matches(@"this\.append\(\{\s*role: 'assistant', text: result\.endNotice, timestamp: ChatViewProvider\.now\(\), notice: true,",
+                       provider);   // WITNESS: the end notice is kept a notice too
 
         var ended = Case(WebviewRebuildTests.TsCode("webview/main.ts"), "case 'turnEnded':");
         Assert.Contains("text: msg.text, timestamp: msg.timestamp, notice: msg.notice === true", ended, StringComparison.Ordinal);

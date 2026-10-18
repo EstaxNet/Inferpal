@@ -360,8 +360,18 @@ const toolSpacer = document.createElement('span');
 toolSpacer.className = 'spacer';
 toolbarEl.append(plusBtn, modeGroup, toolSpacer, ring, sendBtn);
 
+/** No end notice offers Continue any more: another turn starts, or the gesture was used. */
+function forgetContinue(): void {
+  for (const el of messagesEl.querySelectorAll('.continue-turn')) {
+    el.remove();
+  }
+}
+
 function setBusy(value: boolean): void {
   busy = value;
+  if (value) {
+    forgetContinue();
+  }
   setIcon(sendBtn, value ? 'stop' : 'send', undefined, 15);
   sendBtn.title = value ? t('cancelTitle') : t('sendTitle');
   sendBtn.setAttribute('aria-label', sendBtn.title);
@@ -590,6 +600,16 @@ function addAnswer(role: string, item: WvTranscriptItem): HTMLElement {
     renderMarkdownInto(body, item.text);
   }
   el.appendChild(body);
+  // "Ask it to continue" as a gesture: on the last turn's end notice, gone once another turn starts (setBusy). Drawn from
+  // the item, so a redraw of the view keeps it. Kept on click: a send the extension refuses — the backend down —
+  // leaves it there.
+  if (item.continues && !busy) {
+    const go = document.createElement('button');
+    go.className = 'bubble-action continue-turn';
+    setIcon(go, 'play', t('continueTurn'), 12);
+    go.addEventListener('click', () => post({ type: 'continue' }));
+    el.appendChild(go);
+  }
   // Copy what the answer shows: it keeps the model's inline reasoning in its text. A question is copied whole.
   el.appendChild(metaRow(item, role === 'assistant' ? stripThinkTags(item.text) : undefined));
   target.body.appendChild(el);
@@ -2044,7 +2064,9 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       // The line saying why the run stopped, AFTER the answer and without replacing it — a notice, as the
       // transcript keeps it: drawn as an answer, it changed look on reload.
       if (msg.endNotice) {
-        addBubble('assistant', { role: 'assistant', text: msg.endNotice, timestamp: msg.timestamp, notice: true });
+        addBubble('assistant', {
+          role: 'assistant', text: msg.endNotice, timestamp: msg.timestamp, notice: true, continues: msg.offersContinue === true,
+        });
       }
       if (msg.error) {
         addBubble('error', { role: 'error', text: msg.error, timestamp: msg.timestamp });

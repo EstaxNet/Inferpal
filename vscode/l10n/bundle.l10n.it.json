@@ -168,5 +168,8 @@
   "Sent after this turn": "Inviato dopo questo turno",
   "Remove from the queue": "Rimuovi dalla coda",
   "The turn did not end normally: the messages waiting to be sent are back in the input box.": "Il turno non è terminato normalmente: i messaggi in attesa di invio sono di nuovo nella casella di input.",
-  "Your note was not read before the turn ended: it is back in the input box.": "La nota non è stata letta prima della fine del turno: è di nuovo nella casella di input."
+  "Your note was not read before the turn ended: it is back in the input box.": "La nota non è stata letta prima della fine del turno: è di nuovo nella casella di input.",
+  "Continue": "Continua",
+  "Continue.": "Continua.",
+  "Inferpal is waiting for your approval.": "Inferpal attende la tua approvazione."
 }

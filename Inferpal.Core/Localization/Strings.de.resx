@@ -77,6 +77,8 @@ Diese Aktion kann nicht rückgängig gemacht werden.</value></data>
   <data name="BtnFixWithAi" xml:space="preserve"><value>Mit KI reparieren</value></data>
   <data name="BtnRegenerate" xml:space="preserve"><value>↺ Neu generieren</value></data>
   <data name="BtnResume" xml:space="preserve"><value>▶ Fortsetzen</value></data>
+  <data name="BtnContinue" xml:space="preserve"><value>Weiter</value></data>
+  <data name="ContinueQuestion" xml:space="preserve"><value>Mach weiter.</value></data>
   <data name="PromptFixErrors" xml:space="preserve"><value>Behebe die folgenden Build-Fehler:
 
 {0}</value></data>

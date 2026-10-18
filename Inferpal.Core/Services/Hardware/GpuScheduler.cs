@@ -46,6 +46,9 @@ internal static class GpuScheduler
     /// </summary>
     public static IDisposable AcquireChatLease()
     {
+        // The machine stays awake while the model works (SleepGuard): every chat lease holds it. Taken in the caller's
+        // flow, outside this lock: an approval card later in the same flow lets it go while the card waits.
+        var awake = SleepGuard.Shared.Hold();
         lock (_lock)
         {
             if (++_chatLeases == 1)
@@ -59,7 +62,7 @@ internal static class GpuScheduler
                 _busyRefresh = new Timer(_ => RefreshBusyMarker(), null, BusyRefreshPeriod, BusyRefreshPeriod);
             }
         }
-        return new Lease();
+        return new Lease(awake);
     }
 
     /// <summary>
@@ -133,12 +136,14 @@ internal static class GpuScheduler
         }
     }
 
-    private sealed class Lease : IDisposable
+    private sealed class Lease(IDisposable awake) : IDisposable
     {
         private int _disposed;
         public void Dispose()
         {
-            if (Interlocked.Exchange(ref _disposed, 1) == 0) Release();
+            if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+            Release();
+            awake.Dispose();
         }
     }
 }

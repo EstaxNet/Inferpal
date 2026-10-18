@@ -77,6 +77,8 @@ Questa azione non può essere annullata.</value></data>
   <data name="BtnFixWithAi" xml:space="preserve"><value>Correggi con l'IA</value></data>
   <data name="BtnRegenerate" xml:space="preserve"><value>↺ Rigenera</value></data>
   <data name="BtnResume" xml:space="preserve"><value>▶ Riprendi</value></data>
+  <data name="BtnContinue" xml:space="preserve"><value>Continua</value></data>
+  <data name="ContinueQuestion" xml:space="preserve"><value>Continua.</value></data>
   <data name="PromptFixErrors" xml:space="preserve"><value>Correggi i seguenti errori di build:
 
 {0}</value></data>

@@ -34,6 +34,9 @@ const PICKER_EXCLUDED_DIRS = ['obj', 'bin', 'build', 'dist', '.git', '.vs', '.ge
 const HISTORY_KEY = 'inferpal.promptHistory';
 const HISTORY_MAX = 50;
 const STATUS_POLL_MS = 30_000;
+/** How long an approval card waits unanswered before a window without the focus says so — the Core's
+ *  `ApprovalCard.AttentionDelay`, the number Visual Studio flashes its taskbar at. */
+const APPROVAL_ATTENTION_MS = 15_000;
 
 /** A context chip waiting for the next question: its label, its content, and the file it came from. */
 type PendingAttachment = { name: string; content: string; sourcePath?: string };
@@ -200,9 +203,37 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // it cannot be answered into a run that no longer exists (ghost card).
     const cancelSub = token?.onCancellationRequested(() => this.dismissApproval(id));
     this.post({ type: 'approval', id, message, card });
+    // A card left unanswered while its author is elsewhere says so outside the panel: a notification for as long as it
+    // waits, gone with the answer — never one left behind after it. VS Code gives an extension no way to flash the
+    // taskbar.
+    // ⚠ And if the window has the focus then, as soon as it loses it: the card waits as long once its author has gone.
+    let notified = false;
+    let watch: vscode.Disposable | undefined;
+    const notify = (): void => {
+      if (notified || !this.pendingApprovals.has(id)) {
+        return;
+      }
+      notified = true;
+      void vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: t('Inferpal is waiting for your approval.') },
+        () => answer);
+    };
+    const attention = setTimeout(() => {
+      if (!vscode.window.state.focused) {
+        notify();
+      } else {
+        watch = vscode.window.onDidChangeWindowState((state) => {
+          if (!state.focused) {
+            notify();
+          }
+        });
+      }
+    }, APPROVAL_ATTENTION_MS);
     try {
       return await answer;
     } finally {
+      clearTimeout(attention);
+      watch?.dispose();
       cancelSub?.dispose();
     }
   }
@@ -1323,6 +1354,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       case 'regenerate':
         await this.regenerate();
         return;
+      case 'continue':
+        await this.continueTurn();
+        return;
       case 'retryConnection':
         // ⚠ A retry is a gesture: with no host to ask, it names the host's remedy (open a folder, restart the host).
         this.hostForGesture();
@@ -2056,6 +2090,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
       this.busy = true;
       this.stopPressed = false;
+      // Another turn leaves: the last one's Continue is no longer the gesture it was, here and at the next redraw.
+      for (const item of this.transcript) {
+        delete item.continues;
+      }
       this.streamText = '';
       this.plan = null;
       // Like the Visual Studio window (`_sessionStartTime ??= DateTime.Now`): the thread starts at
@@ -2400,7 +2438,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       const attachedPaths = [...mentions.paths];
       // Under the question: the chips, and any typed @file that was cut or not sent.
       const named = [...mentions.labels];
-      const chips = this.regenerating ? this.resendAttachments ?? [] : this.pendingAttachments;
+      const chips = this.regenerating ? this.resendAttachments ?? [] : this.continuing ? [] : this.pendingAttachments;
       if (chips.length > 0) {
         for (const a of chips) {
           expanded += `\n\n## Attached: ${a.name}\n\`\`\`\n${a.content}\n\`\`\``;
@@ -2483,7 +2521,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // limit returned fluent text, indistinguishable from a task carried to its end - the fact
       // lived in OrchestratorResult and was read by nobody, on either side.
       if (!result.error && result.endNotice) {
-        this.append({ role: 'assistant', text: result.endNotice, timestamp: ChatViewProvider.now(), notice: true });
+        this.append({
+          role: 'assistant', text: result.endNotice, timestamp: ChatViewProvider.now(), notice: true,
+          continues: result.offersContinue === true,
+        });
       }
       this.busy = false;
       this.lastTokens = result.tokensUsed;
@@ -2502,6 +2543,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         promptTokens: this.promptTokens,
         timestamp: ChatViewProvider.now(),
         endNotice: result.endNotice ?? null,
+        offersContinue: !result.error && result.offersContinue === true,
         contextWindow: this.contextWindow,
         run: result.run ?? null,
         duration: result.duration ?? null,
@@ -2573,6 +2615,26 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    */
   /** Set while Regenerate re-asks a question: the chips in the composer belong to the NEXT question, not to this one. */
   private regenerating = false;
+  /** A Continue is being sent: it carries none of the chips waiting in the composer, as in Visual Studio. */
+  private continuing = false;
+
+  /**
+   * Continue: the question "ask it to continue" would type, sent by the ordinary funnel — refused while the backend is
+   * down or a turn runs (and said), saved like any turn. Replayed, not typed: no slash-command reading, no prompt
+   * history, no composer chips; a code action's answer continues as one (its model, no tools), as Regenerate replays it.
+   */
+  private async continueTurn(): Promise<void> {
+    if (this.continuing) {
+      return;   // a second click while the first is on its way
+    }
+    const prompt = t('Continue.');
+    this.continuing = true;
+    try {
+      await this.send(prompt, false, { prompt, codeAction: this.lastSent?.codeAction === true, query: prompt });
+    } finally {
+      this.continuing = false;
+    }
+  }
 
   /** A question meant for the model: anything typed, or a refused /explain or /review — never a command served
    *  without it (/note, /commit-exec, a code action), whose bubble is a notice that starts with its slash. */

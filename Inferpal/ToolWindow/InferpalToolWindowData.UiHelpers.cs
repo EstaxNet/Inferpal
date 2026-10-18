@@ -159,6 +159,8 @@ internal partial class InferpalToolWindowData
         IsLoading   = true;
         _turnDone   = new(TaskCreationOptions.RunContinuationsAsynchronously);
         _turnFailed = false;
+        // Another turn leaves: the last one's Continue is no longer the gesture it was.
+        ForgetContinuable();
         // What the two keys do while a turn runs: a note for it, or a message sent after it — never a Stop.
         ComposerPlaceholder = Strings.ComposerPlaceholderBusy;
         return cts;

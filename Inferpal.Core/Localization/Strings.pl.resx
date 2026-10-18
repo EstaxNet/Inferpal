@@ -77,6 +77,8 @@ Tej operacji nie można cofnąć.</value></data>
   <data name="BtnFixWithAi" xml:space="preserve"><value>Napraw z AI</value></data>
   <data name="BtnRegenerate" xml:space="preserve"><value>↺ Wygeneruj ponownie</value></data>
   <data name="BtnResume" xml:space="preserve"><value>▶ Wznów</value></data>
+  <data name="BtnContinue" xml:space="preserve"><value>Kontynuuj</value></data>
+  <data name="ContinueQuestion" xml:space="preserve"><value>Kontynuuj.</value></data>
   <data name="PromptFixErrors" xml:space="preserve"><value>Napraw następujące błędy kompilacji:
 
 {0}</value></data>

@@ -77,6 +77,8 @@
   <data name="BtnFixWithAi" xml:space="preserve"><value>AI로 수정</value></data>
   <data name="BtnRegenerate" xml:space="preserve"><value>↺ 재생성</value></data>
   <data name="BtnResume" xml:space="preserve"><value>▶ 재개</value></data>
+  <data name="BtnContinue" xml:space="preserve"><value>계속</value></data>
+  <data name="ContinueQuestion" xml:space="preserve"><value>계속해 주세요.</value></data>
   <data name="PromptFixErrors" xml:space="preserve"><value>다음 빌드 오류를 수정해 주세요:
 
 {0}</value></data>

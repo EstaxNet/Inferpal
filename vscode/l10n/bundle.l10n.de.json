@@ -168,5 +168,8 @@
   "Sent after this turn": "Nach diesem Durchlauf gesendet",
   "Remove from the queue": "Aus der Warteschlange entfernen",
   "The turn did not end normally: the messages waiting to be sent are back in the input box.": "Der Durchlauf endete nicht normal: Die wartenden Nachrichten stehen wieder im Eingabefeld.",
-  "Your note was not read before the turn ended: it is back in the input box.": "Deine Notiz wurde vor dem Ende des Durchlaufs nicht gelesen: Sie steht wieder im Eingabefeld."
+  "Your note was not read before the turn ended: it is back in the input box.": "Deine Notiz wurde vor dem Ende des Durchlaufs nicht gelesen: Sie steht wieder im Eingabefeld.",
+  "Continue": "Weiter",
+  "Continue.": "Mach weiter.",
+  "Inferpal is waiting for your approval.": "Inferpal wartet auf Ihre Zustimmung."
 }

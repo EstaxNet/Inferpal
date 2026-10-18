@@ -114,7 +114,8 @@ public class AgentRunEndTests
     {
         var vm = CoreCode("Inferpal", "ToolWindow", "InferpalToolWindowData.ChatTurn.cs");
 
-        Assert.Contains("InsertThemed(ChatMessageItem.NoticeMsg(agentEndNotice))", vm, StringComparison.Ordinal);
+        Assert.Contains("var endNotice = ChatMessageItem.NoticeMsg(agentEndNotice);", vm, StringComparison.Ordinal);
+        Assert.Contains("InsertThemed(endNotice);", vm, StringComparison.Ordinal);
         Assert.DoesNotContain("agentFinalResponse = agentEndNotice", vm, StringComparison.Ordinal);
         Assert.DoesNotContain("agentFinalResponse += ", vm, StringComparison.Ordinal);
     }

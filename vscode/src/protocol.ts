@@ -79,6 +79,9 @@ export interface ChatSendResult {
   /** Why the run stopped, when it is not because the model was done. The answer stays in `text`;
    *  this is added after it, never in its place. */
   endNotice?: string | null;
+  /** The end notice offers Continue: the turn stopped at the iteration limit or its answer at the length limit — never
+   *  after a loop or a repetition (ChatTurnPolicy.OffersContinue, the reader of both editors). */
+  offersContinue?: boolean;
   /** The window this turn was measured against — the loaded one when the server reports a smaller one
    *  than configured. The context gauge shows this, not the setting. 0 = unknown. */
   contextWindow?: number;

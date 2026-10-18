@@ -80,6 +80,8 @@
   <data name="BtnFixWithAi" xml:space="preserve"><value>用 AI 修复</value></data>
   <data name="BtnRegenerate" xml:space="preserve"><value>↺ 重新生成</value></data>
   <data name="BtnResume" xml:space="preserve"><value>▶ 继续</value></data>
+  <data name="BtnContinue" xml:space="preserve"><value>继续</value></data>
+  <data name="ContinueQuestion" xml:space="preserve"><value>请继续。</value></data>
   <data name="PromptFixErrors" xml:space="preserve"><value>请修复以下构建错误：
 
 {0}</value></data>

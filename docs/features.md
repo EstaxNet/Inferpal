@@ -70,7 +70,19 @@ exists.
   (Enter), **Always this session** and **Deny** (Esc); *Open diff* shows the whole change. Enter
   and Esc answer only from an empty message box: the card never takes the keyboard, so a key typed
   for something else cannot approve. Outside a turn (a code action, a slash command), the dialog
-  asks as before.
+  asks as before. A card left unanswered for 15 seconds while the editor does not have the focus
+  says so outside the panel: Visual Studio flashes its taskbar button, VS Code shows a notification
+  that closes with the answer.
+- **Long runs stay awake** *(both editors, and ACP)* — while the model works (an answer, an agent
+  run, a `/task`), the machine does not go to sleep: a power request on Windows, `caffeinate` on
+  macOS, `systemd-inhibit` on Linux, released ten seconds after the last request and when the
+  editor closes, however it closes. A turn waiting for your approval lets the machine sleep:
+  nothing is in flight meanwhile. Where the system refuses (no systemd, WSL), `/diagnostics` says
+  so once.
+- **Continue** *(both editors)* — a turn stopped at its iteration limit, or an answer stopped at
+  the length limit, ends with a notice and a **Continue** button: it sends "Continue." as your
+  next question. It is not offered after a loop or an answer that repeated itself, where
+  continuing would do the same again.
 - **Undo a whole run** — `/undo-run` reverts every file changed during the last agent run
   (restores edited files, deletes files created that run); `/undo-run list` shows the
   session's tracked runs. **What commands changed is undone too**: in a git repository, the

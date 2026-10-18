@@ -26,7 +26,8 @@ public class RegenerateKeepsQueuedChipsTests
         Assert.True(flag >= 0 && flag < send, "Regenerate takes the chips queued for the next question");
 
         var turn = WebviewRebuildTests.Body(Provider(), "private async chatTurn(");
-        Assert.Contains("const chips = this.regenerating ? this.resendAttachments ?? [] : this.pendingAttachments;", turn, StringComparison.Ordinal);
+        // A Continue takes none either (ContinueButtonTests): the composer's chips wait for the next question.
+        Assert.Contains("const chips = this.regenerating ? this.resendAttachments ?? [] : this.continuing ? [] : this.pendingAttachments;", turn, StringComparison.Ordinal);
         Assert.Contains("if (!this.regenerating) {", turn, StringComparison.Ordinal);
     }
 

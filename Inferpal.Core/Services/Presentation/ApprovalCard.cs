@@ -25,6 +25,15 @@ internal static class ApprovalCard
     /// <summary>How many lines of the change the card shows before "… N more lines".</summary>
     internal const int PreviewLines = 8;
 
+    /// <summary>
+    /// How long a card waits unanswered before the editor draws attention to it (Visual Studio: the taskbar flashes;
+    /// VS Code: a notification while it waits) — only for a window without the focus. VS Code says the same number
+    /// (<c>APPROVAL_ATTENTION_MS</c>).
+    /// </summary>
+    /// <remarks>⚠ A run started before its author goes elsewhere stops at its first card: without the signal, nothing
+    /// outside the conversation says so, and the run waits on a window nobody looks at.</remarks>
+    internal static readonly TimeSpan AttentionDelay = TimeSpan.FromSeconds(15);
+
     private static readonly HashSet<string> FileChanges = new(StringComparer.Ordinal)
     {
         "write_file", "apply_diff", "apply_edits", "restore_file", "update_memory", "insert_at_cursor", "replace_selection",

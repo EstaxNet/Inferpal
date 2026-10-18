@@ -508,7 +508,9 @@ internal sealed partial class HostServer : IDisposable
                     FinalAnswer(result.FinalResponse, streamed.ToString(), result.Executions, endNotice, model, s),
                     false, result.TokensUsed, result.PromptTokens, EndNotice: endNotice, ContextWindow: ctxDecision.Window,
                     Run: RunSummaryDto.Of(Services.Presentation.RunSummary.Build(result.Executions, RunOf(s, runId))),
-                    Model: model, Ended: Ended(result.ReachedIterationLimit, result.AnswerCut, result.AnswerRepeating));
+                    Model: model, Ended: Ended(result.ReachedIterationLimit, result.AnswerCut, result.AnswerRepeating),
+                    OffersContinue: ChatTurnPolicy.OffersContinue(result.ReachedIterationLimit, result.WasLoopDetected,
+                                                                  result.AnswerCut, result.AnswerRepeating));
             }
 
             if (useTools)
@@ -559,7 +561,9 @@ internal sealed partial class HostServer : IDisposable
                     EndNotice: runEndNotice,
                     ContextWindow: ctxDecision.Window,
                     Run: RunSummaryDto.Of(Services.Presentation.RunSummary.Build(run.Executions, RunOf(s, runId))),
-                    Model: model, Ended: Ended(run.ReachedIterationLimit, run.AnswerCut, run.AnswerRepeating));
+                    Model: model, Ended: Ended(run.ReachedIterationLimit, run.AnswerCut, run.AnswerRepeating),
+                    OffersContinue: ChatTurnPolicy.OffersContinue(run.ReachedIterationLimit, run.WasLoopDetected,
+                                                                  run.AnswerCut, run.AnswerRepeating));
             }
 
             var turn = await s.Client.SendChatAsync(
@@ -590,7 +594,8 @@ internal sealed partial class HostServer : IDisposable
                 EndNotice: NoticeOrNull(ChatTurnPolicy.EndNotice(false, false, turn.CutAtLimit,
                                                                  answerRepeating: turn.StoppedRepeating)),
                 ContextWindow: ctxDecision.Window,
-                Model: model, Ended: Ended(false, turn.CutAtLimit, turn.StoppedRepeating));
+                Model: model, Ended: Ended(false, turn.CutAtLimit, turn.StoppedRepeating),
+                OffersContinue: ChatTurnPolicy.OffersContinue(false, false, turn.CutAtLimit, turn.StoppedRepeating));
         }
         catch (OperationCanceledException)
         {

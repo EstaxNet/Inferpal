@@ -117,6 +117,58 @@ internal partial class InferpalToolWindowData
         msg.InitRegenerateCallback(() => Post(() => _ = RegenerateAsync()));
     }
 
+    /// <summary>Offers Continue on this end notice — and takes it off the one before.</summary>
+    private void MarkContinuable(ChatMessageItem notice)
+    {
+        ForgetContinuable();
+        _lastContinuableMsg = notice;
+        notice.InitContinueCallback(() => Post(() => _ = ContinueAsync()));
+    }
+
+    /// <summary>A turn starts, or the conversation is replaced: no end notice offers Continue any more.</summary>
+    private void ForgetContinuable()
+    {
+        if (_lastContinuableMsg is not null) _lastContinuableMsg.IsContinuable = false;
+        _lastContinuableMsg = null;
+    }
+
+    /// <summary>
+    /// Continue: the question "ask it to continue" would type, sent as one — by the funnel of every typed question, so the
+    /// backend-down refusal, the turn's claim and the session save hold for it as for the others.
+    /// </summary>
+    /// <remarks>⚠ Not a resumed run: a new turn on the conversation as it stands, which the stable start of the request
+    /// lets the server answer without reading it again.</remarks>
+    private async Task ContinueAsync()
+    {
+        var claim = 0;
+        string? oneTimeModel = null;
+        await RunOnVMContextAsync(() =>
+        {
+            if (_sendStarting || IsLoading || _currentCts is not null || _lastContinuableMsg is null) return;
+            // A code action's answer continues as one — its model, without tools — as Regenerate replays it.
+            oneTimeModel = _lastSent?.Model;
+            if (!_isBackendReachable)
+            {
+                InsertThemed(ChatMessageItem.NoticeMsg(UnreachableText()));
+                ScrollToBottom();
+                return;
+            }
+            ForgetContinuable();
+            _sendStarting = true;
+            claim = ++_sendClaim;
+        });
+        if (claim == 0) return;
+        try
+        {
+            await SendCoreAsync(Strings.ContinueQuestion, oneTimeModel, attachments: [], CancellationToken.None,
+                                clearPrompt: false, typed: false);
+        }
+        finally
+        {
+            await RunOnVMContextAsync(() => { if (_sendClaim == claim) _sendStarting = false; });
+        }
+    }
+
     private async Task RegenerateAsync()
     {
         // Full turn guard, not just _currentCts: between SendAsync's claim and SendCoreAsync taking

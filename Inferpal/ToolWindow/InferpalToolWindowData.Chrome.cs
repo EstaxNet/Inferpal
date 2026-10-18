@@ -442,6 +442,9 @@ internal partial class InferpalToolWindowData
         });
         if (item is null) return null;
 
+        // A card left unanswered while its author is elsewhere says so outside the conversation: the taskbar flashes.
+        _ = DrawAttentionAfterAsync(answeredToken);
+
         try
         {
             // A stopped run retires its card: it freezes, and the tool's wait ends (fail closed).
@@ -465,6 +468,28 @@ internal partial class InferpalToolWindowData
                 TurnWorking();
             });
         }
+    }
+
+    /// <summary>
+    /// After <see cref="Services.Presentation.ApprovalCard.AttentionDelay"/> without an answer, the Visual Studio window
+    /// asks for attention (<see cref="Services.VsIntegration.WindowAttention"/>) — and if it is in front then, as soon as it
+    /// is left: the card waits as long once its author has gone elsewhere. An answer, or the run's end, cancels it.
+    /// </summary>
+    private static async Task DrawAttentionAfterAsync(CancellationToken answered)
+    {
+        var flashed = false;
+        try
+        {
+            await Task.Delay(Services.Presentation.ApprovalCard.AttentionDelay, answered);
+            Services.VsIntegration.WindowAttention.Outcome outcome;
+            while ((outcome = Services.VsIntegration.WindowAttention.Request()) == Services.VsIntegration.WindowAttention.Outcome.Looking)
+                await Task.Delay(TimeSpan.FromSeconds(2), answered);
+            flashed = outcome == Services.VsIntegration.WindowAttention.Outcome.Flashed;
+            await Task.Delay(Timeout.InfiniteTimeSpan, answered);   // until the answer
+        }
+        catch (OperationCanceledException) { }
+        // ⚠ Answered, the flash stops: left to itself it stops only when the main window comes to the front.
+        if (flashed) Services.VsIntegration.WindowAttention.Stop();
     }
 
     /// <summary>"Open diff": the dialog shows the whole change, and its answer, when it gives one, answers the card.</summary>

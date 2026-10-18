@@ -16,7 +16,7 @@
   <a href="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml"><img src="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/tests-6347%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-6379%20passing-brightgreen" alt="Tests">
   <img src="https://img.shields.io/badge/.NET-8.0-512BD4" alt=".NET 8">
   <img src="https://img.shields.io/badge/Visual%20Studio-2026%20%7C%202022-5C2D91" alt="Visual Studio 2026 | 2022">
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/VS%20Marketplace-install-5C2D91" alt="Visual Studio Marketplace"></a>
@@ -59,6 +59,7 @@ It ships as a **Visual Studio 2026 and 2022 extension** (the primary target) and
 - **Local-first** — Ollama, LM Studio, or any OpenAI-compatible server (llama.cpp, vLLM); run the backend locally or on a [remote GPU host](docs/remote-inference.md).
 - **A chat you can read at a glance** — an agent run's steps fold into one line (`3 steps · read 1 file · edited 1 · build passed`), the answer ends on a result bar with the files changed — what its commands, test runs and MCP tools changed in a git repository included — the last build or test check and **Undo run**, and approvals are cards inside the conversation (**Allow once** with Enter, **Deny** with Esc, *Open diff* for the whole change). Same chat, same seven-page settings window in both editors.
 - **Steer a running turn** — type a correction while the agent works and press **Enter**: the run reads it before its next step, nothing stopped and nothing explained again; **Ctrl+Enter** queues a message for after the turn.
+- **Long runs you can leave** — the machine stays awake while the model works (Windows, macOS, Linux) and may sleep while an approval waits; a card left unanswered in an unfocused editor flashes the VS taskbar or raises a VS Code notification; a turn stopped at its iteration or length limit ends with a **Continue** button.
 - **Inline ghost-text completions** — Fill-in-the-Middle as you type (Tab / Esc), with three speeds: Fast, Balanced, Accurate.
 - **Semantic codebase search** — background indexing with hybrid retrieval (cosine + BM25 fused with RRF) and per-turn auto-context.
 - **Smart Fix Protocol** — after every edit, a polyglot build/typecheck (.NET / TypeScript / Rust / Go) feeds compile errors back so the agent fixes them in the same loop.

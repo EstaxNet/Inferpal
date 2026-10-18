@@ -985,6 +985,14 @@
                                     Content="{Binding BtnResume}" Command="{Binding ResumeCommand}"
                                     Visibility="{Binding IsResumable, Converter={StaticResource b2v}}"/>
 
+                            <!-- Continue: on the end notice of a turn stopped at the iteration or the length limit -->
+                            <Button Template="{StaticResource Flat6}" Margin="0,6,0,0" HorizontalAlignment="Left" Padding="12,0" Height="28"
+                                    Background="{Binding DataContext.ThemeAccent, ElementName=root}" BorderThickness="0"
+                                    Foreground="{Binding DataContext.ThemeOnAccent, ElementName=root}" Cursor="Hand"
+                                    Content="{Binding BtnContinue}" Command="{Binding ContinueCommand}"
+                                    AutomationProperties.Name="{Binding BtnContinue}"
+                                    Visibility="{Binding IsContinuable, Converter={StaticResource b2v}}"/>
+
                             <!-- Time, copy and, on the last answer, regenerate: a quiet line under the answer -->
                             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                                 <StackPanel.Style>

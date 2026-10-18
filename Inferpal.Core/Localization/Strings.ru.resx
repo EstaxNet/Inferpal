@@ -77,6 +77,8 @@
   <data name="BtnFixWithAi" xml:space="preserve"><value>Исправить с ИИ</value></data>
   <data name="BtnRegenerate" xml:space="preserve"><value>↺ Повторить</value></data>
   <data name="BtnResume" xml:space="preserve"><value>▶ Продолжить</value></data>
+  <data name="BtnContinue" xml:space="preserve"><value>Продолжить</value></data>
+  <data name="ContinueQuestion" xml:space="preserve"><value>Продолжай.</value></data>
   <data name="PromptFixErrors" xml:space="preserve"><value>Исправь следующие ошибки сборки:
 
 {0}</value></data>

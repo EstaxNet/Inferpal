@@ -108,6 +108,8 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     // responding would each fire a full SendCoreAsync. See SendAsync.
     private bool                     _sendStarting;
     private ChatMessageItem?         _lastRegenerableMsg;
+    /// <summary>The end notice that offers Continue — one at a time, the last turn's.</summary>
+    private ChatMessageItem?         _lastContinuableMsg;
     // What the last question shown was sent WITH — the text, a one-time model (a code action's), its attachments —, so
     // Regenerate resends that, not the bubble's words. Tied to its bubble: another last question resends its words.
     private (ChatMessageItem Question, string Text, string? Model, List<AttachmentItem> Attachments)? _lastSent;

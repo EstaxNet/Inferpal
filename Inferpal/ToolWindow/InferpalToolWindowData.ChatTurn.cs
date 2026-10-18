@@ -129,6 +129,8 @@ internal partial class InferpalToolWindowData
     /// <c>true</c> for normal chat sends (clears the input box and attachments).
     /// <c>false</c> for code-action auto-sends (preserves the user's current draft).
     /// </param>
+    /// <param name="typed">The question was typed: it enters the prompt history (shared with VS Code, the Up key). A
+    /// Continue was not — as in VS Code, it stays out of it.</param>
     /// <param name="notes">Regenerate: the notes the question's first run read — asked again, it carries them, as the
     /// history kept it, and they come back under it.</param>
     private async Task SendCoreAsync(
@@ -137,7 +139,8 @@ internal partial class InferpalToolWindowData
         List<AttachmentItem> attachments,
         CancellationToken    ct,
         bool                 clearPrompt = true,
-        IReadOnlyList<string>? notes = null)
+        IReadOnlyList<string>? notes = null,
+        bool                 typed = true)
     {
         // Every turn can reach the file tools: never before the workspace root is pinned.
         PinWorkspaceRoot();
@@ -178,7 +181,7 @@ internal partial class InferpalToolWindowData
                 // ⚠ No configuration save here: every setting the window changes saves itself, and a save per question
                 // rewrites config.json — the ghost-text sidecar restarts on the next completion (its stamp moved), and
                 // Saved re-measures the model's window and rebuilds the pinned chips, all for nothing changed.
-                PromptHistoryFile.Append(_promptHistoryStore, _promptHistory, userText);   // also resets navigation state
+                if (typed) PromptHistoryFile.Append(_promptHistoryStore, _promptHistory, userText);   // also resets navigation state
                 if (clearPrompt)
                 {
                     // ⚠ A send that clears the chips SENDS them: a template, /explain, /review and /debug come here with
@@ -435,6 +438,8 @@ internal partial class InferpalToolWindowData
             // iteration limit returned a fluent answer, indistinguishable from a task carried to
             // its end.
             string               agentEndNotice     = string.Empty;
+            // The notice offers Continue: stopped at the iteration or the length limit, never on a loop or a repetition.
+            bool                 agentOffersContinue = false;
             List<ToolExecution>  agentExecutions    = [];
             int                  agentTokensUsed    = 0;
             // The run FAILED and agentFinalResponse is the error: shown, never kept as the answer the model gave.
@@ -568,6 +573,8 @@ internal partial class InferpalToolWindowData
                     ChatTurnPolicy.EditsWithoutEffect(orchResult.Executions, _tools.History.CurrentRunFileCount),
                     answerRepeating: orchResult.AnswerRepeating,
                     lastCheckFailed: ChatTurnPolicy.LastCheckFailed(orchResult.Executions, _tools.History.CurrentRunFileCount));
+                agentOffersContinue = ChatTurnPolicy.OffersContinue(orchResult.ReachedIterationLimit, orchResult.WasLoopDetected,
+                                                                    orchResult.AnswerCut, orchResult.AnswerRepeating);
             }
             else
             {
@@ -593,6 +600,8 @@ internal partial class InferpalToolWindowData
                     ChatTurnPolicy.EditsWithoutEffect(result.Executions, _tools.History.CurrentRunFileCount),
                     answerRepeating: result.AnswerRepeating,
                     lastCheckFailed: ChatTurnPolicy.LastCheckFailed(result.Executions, _tools.History.CurrentRunFileCount));
+                agentOffersContinue = ChatTurnPolicy.OffersContinue(result.ReachedIterationLimit, result.WasLoopDetected,
+                                                                    result.AnswerCut, result.AnswerRepeating);
                 agentExecutions    = result.Executions;
                 agentTokensUsed    = result.TokensUsed;
             }
@@ -687,7 +696,12 @@ internal partial class InferpalToolWindowData
                 // difference between "I finished" and "I was cut short" lived in a boolean nothing
                 // read.
                 if (agentEndNotice.Length > 0)
-                    InsertThemed(ChatMessageItem.NoticeMsg(agentEndNotice));
+                {
+                    var endNotice = ChatMessageItem.NoticeMsg(agentEndNotice);
+                    // "Ask it to continue" is a gesture: the question it would type, sent by the ordinary funnel.
+                    if (agentOffersContinue && !agentFailed) MarkContinuable(endNotice);
+                    InsertThemed(endNotice);
+                }
 
                 // The run line says what the run did; its result bar names the files it changed, its last check, and
                 // offers Undo — what the multi-file recap used to say for two files or more, for every run.

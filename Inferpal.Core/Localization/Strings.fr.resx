@@ -80,6 +80,8 @@ Cette action est irréversible.</value></data>
   <data name="BtnFixWithAi" xml:space="preserve"><value>Corriger avec l'IA</value></data>
   <data name="BtnRegenerate" xml:space="preserve"><value>↺ Régénérer</value></data>
   <data name="BtnResume" xml:space="preserve"><value>▶ Reprendre</value></data>
+  <data name="BtnContinue" xml:space="preserve"><value>Continuer</value></data>
+  <data name="ContinueQuestion" xml:space="preserve"><value>Continue.</value></data>
   <data name="PromptFixErrors" xml:space="preserve"><value>Corrige les erreurs de build suivantes :
 
 {0}</value></data>
