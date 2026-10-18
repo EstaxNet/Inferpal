@@ -1568,4 +1568,9 @@
   <data name="NoteNotRead" xml:space="preserve"><value>Заметка не была прочитана до конца хода — она возвращена в поле ввода.</value></data>
   <data name="QueueGivenBack" xml:space="preserve"><value>Ход завершился не как обычно — сообщения, ожидавшие отправки, возвращены в поле ввода.</value></data>
   <data name="QueueActionsKept" xml:space="preserve"><value>Ход завершился не как обычно — набранные сообщения возвращены в поле ввода; действия редактора остаются в очереди и выполнятся после следующего ответа.</value></data>
+  <data name="ExcludedFromAi" xml:space="preserve"><value>«{0}» исключён из инструментов ИИ файлом {1}, строка {2} (`{3}`): его содержимое не отправлено модели.</value></data>
+  <data name="ExcludedLeftOut" xml:space="preserve"><value>Модель не читала {0} {0:файл|файла|файлов}, исключённых из инструментов ИИ ({1}).</value></data>
+  <data name="LabelIgnoreFiles" xml:space="preserve"><value>Читаемые файлы исключений</value></data>
+  <data name="HintIgnoreFiles" xml:space="preserve"><value>Имена через запятую, читаются в корне рабочей области в синтаксисе gitignore: ни один инструмент ИИ не читает то, что они исключают, и о каждом исключении сообщается. Пусто — не читается ни один.</value></data>
+  <data name="BackupNotSent" xml:space="preserve"><value>«{0}» — резервная копия Inferpal: пока эта рабочая область исключает файлы из инструментов ИИ, резервные копии не отправляются модели.</value></data>
 </root>

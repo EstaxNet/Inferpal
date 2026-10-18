@@ -1568,4 +1568,9 @@
   <data name="NoteNotRead" xml:space="preserve"><value>回合结束前未读取你的备注：已放回输入框。</value></data>
   <data name="QueueGivenBack" xml:space="preserve"><value>本回合未正常结束：等待发送的消息已放回输入框。</value></data>
   <data name="QueueActionsKept" xml:space="preserve"><value>本回合未正常结束：你输入的消息已放回输入框；编辑器操作仍在队列中，将在下一次回答后运行。</value></data>
+  <data name="ExcludedFromAi" xml:space="preserve"><value>“{0}”已被 {1} 第 {2} 行（`{3}`）排除在 AI 工具之外：其内容未发送给模型。</value></data>
+  <data name="ExcludedLeftOut" xml:space="preserve"><value>{0} 个被排除在 AI 工具之外的文件（{1}）未被模型读取。</value></data>
+  <data name="LabelIgnoreFiles" xml:space="preserve"><value>读取的排除文件</value></data>
+  <data name="HintIgnoreFiles" xml:space="preserve"><value>以逗号分隔的名称，在工作区根目录按 gitignore 语法读取：任何 AI 工具都不会读取它们排除的内容，且每次排除都会说明。留空则不读取任何文件。</value></data>
+  <data name="BackupNotSent" xml:space="preserve"><value>“{0}”是 Inferpal 保存的备份副本：只要此工作区将文件排除在 AI 工具之外，备份就不会发送给模型。</value></data>
 </root>

@@ -212,18 +212,34 @@ internal class GetGitStatusTool : ITool
                 outcome = State.Clean;
                 sb.AppendLine("(no diff)");
             }
+            else if (WithoutExcluded(diff.Output, root) is var (readable, excludedNote) && readable.Length == 0)
+            {
+                // Only excluded files changed: what changed is said, and none of it is shown.
+                outcome = State.Changes;
+                sb.AppendLine(excludedNote);
+            }
             else
             {
-                var (shown, note) = CutDiff(diff.Output, DiffBudget(sb.Length), restricted: diffPath is not null);
+                if (excludedNote.Length > 0) sb.AppendLine(excludedNote);   // above the diff: it qualifies what follows
+                var (shown, note) = CutDiff(readable, DiffBudget(sb.Length), restricted: diffPath is not null);
                 if (note is not null) sb.AppendLine(note);   // above the diff: it qualifies what follows
                 sb.AppendLine(shown);
                 outcome   = State.Changes;
                 diffShown = shown.Length;
-                diffTotal = diff.Output.Length;
+                diffTotal = readable.Length;
             }
         }
 
         return new Report(sb.ToString().TrimEnd(), outcome, refusal, diffShown, diffTotal);
+    }
+
+    /// <summary>The diff without the files the workspace's ignore files exclude, and the note that names them (empty
+    /// when none) — the lines of an excluded file are its content.</summary>
+    private static (string Readable, string Note) WithoutExcluded(string diff, string root)
+    {
+        var dropped  = new Governance.ContentExclusions.Tally();
+        var readable = Governance.ContentExclusions.WithoutExcludedFiles(diff, root, dropped);
+        return (readable.Trim().Length == 0 ? string.Empty : readable, dropped.Note());
     }
 
     // ⚠ The report reaches the model as ONE tool result, and the loop cuts a longer one in its MIDDLE: with three

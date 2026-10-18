@@ -42,6 +42,11 @@ internal partial class InferpalToolWindowData
                     await ShowInfoAsync(info.Message);
                     break;
 
+                case SlashToolAction tool when tool.Excluded(_indexService.RootDir) is { } excluded:
+                    // Excluded by the workspace's ignore files: said to the person, translated, and nothing is read.
+                    await ShowInfoAsync(excluded);
+                    break;
+
                 case SlashToolAction tool:
                     // A read that did not happen is a message, never a chip named after the file.
                     await InvokeToolAsync(tool.Tool, tool.Args, ct,
@@ -95,7 +100,8 @@ internal partial class InferpalToolWindowData
             return;
         }
 
-        var (code, fn, label) = await GetActiveCodeAsync(ct);
+        var (code, fn, label, excluded) = await GetActiveCodeAsync(ct);
+        if (excluded is not null) { await ShowInfoAsync(excluded); return; }
         if (string.IsNullOrEmpty(code)) { await ShowInfoAsync(Strings.SlashNoActiveDocument); return; }
 
         var prompt = CodeActionRequest.InTheQuestion(kind switch
@@ -161,6 +167,8 @@ internal partial class InferpalToolWindowData
             await ShowInfoAsync(Strings.CodeActionPreviewShown);
         else if (result.Outcome == InPlaceEditOutcome.DocumentChanged)
             await ShowInfoAsync(Strings.CodeActionDocumentChanged);
+        else if (result.Outcome == InPlaceEditOutcome.Excluded)
+            await ShowInfoAsync(result.FailureDetail ?? string.Empty);
         // Model/network failure: tell the chat instead of leaving the turn silent.
         else if (result.Outcome == InPlaceEditOutcome.Failed)
             await ShowInfoAsync(InPlaceCodeEdit.FailureMessage(result.FailureDetail));

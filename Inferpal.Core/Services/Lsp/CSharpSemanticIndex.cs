@@ -189,6 +189,21 @@ internal sealed class CSharpSemanticIndex
         }
     }
 
+    /// <summary>
+    /// The ignore files of the workspace at <paramref name="root"/> changed: every file is judged again — the trees of
+    /// the files they now exclude leave the index, the files they no longer exclude enter it.
+    /// </summary>
+    public static void NotifyExclusionsChanged(string root)
+    {
+        CSharpSemanticIndex[] indexes;
+        lock (_byRoot) indexes = _byRoot.Values.ToArray();
+        foreach (var index in indexes.Where(i => Services.PathComparer.SameDirectory(i._root, root)))
+        {
+            try { index.UpdateDirectory(index._root); }
+            catch (Exception ex) { Diagnostics.Swallow("CSharpSemanticIndex.NotifyExclusionsChanged", ex); }
+        }
+    }
+
     private void UpdateDirectory(string dirPath)
     {
         lock (_gate)
@@ -322,7 +337,9 @@ internal sealed class CSharpSemanticIndex
 
         var existed = _treesByPath.TryGetValue(path, out var oldTree);
 
-        if (!File.Exists(path))
+        // ⚠ A file the workspace's ignore files exclude leaves the compilation as a deleted one does: its code is never
+        // read — and rename_symbol, whose edits come from these trees, never writes it.
+        if (!File.Exists(path) || Governance.ContentExclusions.Of(path) is not null)
         {
             if (!existed) return false;
             _treesByPath.Remove(path);

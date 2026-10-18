@@ -258,6 +258,10 @@ internal sealed partial class HostServer : IDisposable
     /// </remarks>
     private static void ApplyFoldersOutOfReach(HostSession s, string[]? others)
     {
+        // Each folder of the window keeps ITS files out of reach: a chip, a typed @path, a code action or a completion in
+        // the second folder is judged by that folder's ignore files.
+        foreach (var folder in others ?? [])
+            Services.Governance.ContentExclusions.Declare(folder, () => s.Config.IgnoreFiles);
         var outside = (others ?? [])
             .Where(f => !string.IsNullOrWhiteSpace(f) && !Services.Tools.PathSanitizer.IsUnderRoot(Path.GetFullPath(f), s.RootDir))
             .Select(f => Path.GetFullPath(f))
@@ -910,6 +914,9 @@ internal sealed partial class HostServer : IDisposable
     public async Task<CodeExcerptResult> CodeExcerptOfAsync(CodeExcerptParams p, CancellationToken ct)
     {
         var s = Session();
+        // Excluded by the workspace's ignore files: nothing to send, and the reason for the person.
+        if (Services.Governance.ContentExclusions.NoticeFor(p.Path, s.RootDir) is { } excluded)
+            return new(string.Empty, p.FileName ?? string.Empty, Truncated: false, Refusal: excluded);
         // Sized for the window the answering model REALLY loaded: the excerpt goes into a code-action turn, and read
         // from the setting (100 000 under LM Studio loading 4 096) the budget sent whole files that were then refused.
         // The model is the one chat/send resolves for that turn — the same call, or the excerpt is sized for one
@@ -941,6 +948,9 @@ internal sealed partial class HostServer : IDisposable
             "doc"      => SlashCodeActionKind.Doc,
             _          => throw new ArgumentException($"Unknown code action kind '{p.Kind}'."),
         };
+        // Excluded by the workspace's ignore files: the document never reaches the model, and the reason is the answer.
+        if (Services.Governance.ContentExclusions.NoticeFor(p.Path, s.RootDir) is { } excluded)
+            return new CodeActionResultDto("refused", [], FailureDetail: excluded);
         // ⚠ Inside the turn slot, like /test: outside it, Stop (chat/cancel cancels the slot) reached nothing — the chat
         // stayed busy, and minutes later the rewrite was offered, or applied straight to the file with the preview off.
         var cts = AcquireTurn(ct);
@@ -1193,6 +1203,8 @@ internal sealed partial class HostServer : IDisposable
         // the mode and the FIM model shown in its settings panel changed nothing.
         var config = s.Config;
         if (!config.InlineCompletionEnabled) return string.Empty;
+        // ⚠ A completion sends the document around the caret: an excluded file is never completed.
+        if (Services.Governance.ContentExclusions.Of(p.Path) is not null) return string.Empty;
         var preset = Services.CodeActions.FimContextBuilder.GetSettings(config.InlineCompletionMode);
         var model  = !string.IsNullOrWhiteSpace(p.Model) ? p.Model
                    : string.IsNullOrWhiteSpace(config.InlineCompletionModel) ? null : config.InlineCompletionModel;
@@ -1202,6 +1214,25 @@ internal sealed partial class HostServer : IDisposable
                                       p.Temperature ?? preset.Temperature, t => sb.Append(t), ct, model);
         // Without what already follows the caret: models repeat it, and accepted it is doubled.
         return Services.CodeActions.FimCompletion.Finish(sb.ToString(), p.Suffix);
+    }
+
+    /// <summary>
+    /// Which of the files the adapter is about to send — chips, typed <c>@path</c>s — the workspace's ignore files exclude:
+    /// the adapter reads those itself (its unsaved buffers), so it asks the one reader of the rules before sending.
+    /// </summary>
+    [JsonRpcMethod("exclusions/check", UseSingleObjectParameterDeserialization = true)]
+    public ExclusionsCheckResult ExclusionsCheck(ExclusionsCheckParams p)
+    {
+        var s = Session();
+        var notices  = new List<string?>();
+        var forModel = new List<string?>();
+        foreach (var path in p.Paths ?? [])
+        {
+            var why = Services.Governance.ContentExclusions.Of(path);
+            notices.Add(why is null ? null : Strings.ExcludedFromAi(Services.Governance.ContentExclusions.Shown(path, s.RootDir), why.File, why.Line, why.Pattern));
+            forModel.Add(why?.ForModel(Services.Governance.ContentExclusions.Shown(path, s.RootDir)));
+        }
+        return new ExclusionsCheckResult(notices, forModel);
     }
 
     /// <summary>

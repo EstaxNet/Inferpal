@@ -67,7 +67,7 @@ public partial class HostServerTests
     public void VsCode_SendsTheQuestion_BesideTheExpandedPrompt()
     {
         var turn = WebviewRebuildTests.Body(WebviewRebuildTests.TsCode("chatViewProvider.ts"), "private async chatTurn(");
-        Assert.Contains("expandMentions(prompt)", turn, StringComparison.Ordinal);   // WITNESS: the prompt is expanded here
+        Assert.Contains("expandMentions(prompt, host)", turn, StringComparison.Ordinal);   // WITNESS: the prompt is expanded here
         Assert.Contains("query: query ?? prompt", turn, StringComparison.Ordinal);
     }
 

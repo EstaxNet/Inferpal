@@ -274,6 +274,11 @@ internal static class DocContextExtractor
                     n.Equals(stem, StringComparison.OrdinalIgnoreCase) ||
                     stem.Contains(n, StringComparison.OrdinalIgnoreCase));
                 if (!isCandidate) continue;
+                if (Governance.ContentExclusions.Of(candidate) is { } excluded)
+                {
+                    Skip(skipped, candidate, $"excluded from AI tools by {excluded.File}, line {excluded.Line}");
+                    continue;
+                }
 
                 try
                 {

@@ -84,7 +84,8 @@ export class FimProvider implements vscode.InlineCompletionItemProvider {
 
     let completion: string;
     try {
-      completion = await host.fimComplete({ prefix, suffix }, token);
+      // The file goes with it: one the workspace's ignore files exclude is never completed.
+      completion = await host.fimComplete({ prefix, suffix, path: document.uri.scheme === 'file' ? document.uri.fsPath : undefined }, token);
     } catch (err) {
       if (!token.isCancellationRequested) {
         this.log(`[fim] failed: ${String(err)}`);

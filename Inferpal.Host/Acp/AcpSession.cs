@@ -756,6 +756,14 @@ internal sealed class AcpSession : IAsyncDisposable
         foreach (var (name, path, given) in files)
         {
             if (taken == MaxAttachedFiles) { left.Add(name); continue; }
+            // Excluded by the workspace's ignore files — even when the client sent the text: named to both readers.
+            if (path is not null && Services.Governance.ContentExclusions.Of(path) is { } why)
+            {
+                var shown = Relative(path);
+                prompt.Append("\n\n### ").Append(shown).Append('\n').Append(why.ForModel(shown));
+                labels.Add(Strings.ExcludedFromAi(shown, why.File, why.Line, why.Pattern));
+                continue;
+            }
             string body;
             try { body = given ?? await TextFileEncoding.ReadTextAsync(path!, CancellationToken.None); }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)

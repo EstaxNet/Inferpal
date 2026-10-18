@@ -181,7 +181,7 @@ public sealed class MentionWithASpaceTests
                         WebviewRebuildTests.Body(paths, "export function mentionFor("), StringComparison.Ordinal);
 
         var provider = WebviewRebuildTests.TsCode("chatViewProvider.ts");
-        var expand = WebviewRebuildTests.Body(provider, "private async expandMentions(prompt: string): Promise<{ text: string; paths: string[]; labels: string[] }>");
+        var expand = WebviewRebuildTests.Body(provider, "private async expandMentions(prompt: string, host: HostClient): Promise<{ text: string; paths: string[]; labels: string[] }>");
         Assert.Contains("mentionTokens(prompt)", expand, StringComparison.Ordinal);
         Assert.DoesNotContain("matchAll(", expand, StringComparison.Ordinal);
 

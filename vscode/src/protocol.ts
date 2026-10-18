@@ -319,8 +319,10 @@ export interface CodeActionEdit {
 
 /** `codeAction/run` answer; `newText` is the full rewritten document when edited,
  * `failureDetail` the underlying error message when failed. */
+/** `refused`: the document is excluded by the workspace's ignore files — nothing reached the model, `failureDetail`
+ *  says why. */
 export interface CodeActionResult {
-  outcome: 'edited' | 'noChange' | 'failed' | 'cancelled';
+  outcome: 'edited' | 'noChange' | 'failed' | 'cancelled' | 'refused';
   edits: CodeActionEdit[];
   newText?: string | null;
   failureDetail?: string | null;
@@ -332,6 +334,15 @@ export interface CodeExcerptResult {
   text: string;
   label: string;
   truncated: boolean;
+  /** The file is excluded by the workspace's ignore files: the sentence that says so, and nothing to send. */
+  refusal?: string | null;
+}
+
+/** `exclusions/check` answer, one entry per path: null = not excluded, else the sentence for the person — and the
+ *  same for the model, which is told what was asked and not sent. */
+export interface ExclusionsCheckResult {
+  notices: (string | null)[];
+  forModel: (string | null)[];
 }
 
 /** One prompt layer of the Context X-Ray panel (`xray/panel` / `xray/toggle`). */

@@ -108,6 +108,8 @@ internal sealed partial class HostServer
     /// registry — approvals and permission rules apply exactly as in an agent run.</summary>
     private async Task<SlashCommandResult> RunSlashToolAsync(HostSession s, SlashToolAction tool, CancellationToken ct)
     {
+        // Excluded by the workspace's ignore files: said to the person, translated, and nothing is read.
+        if (tool.Excluded(s.RootDir) is { } excluded) return new SlashCommandResult(true, excluded);
         var cts = AcquireTurn(ct);
         try
         {
@@ -825,7 +827,7 @@ internal sealed partial class HostServer
                 {
                     // A notice, never a chip, when there is no folder to walk (MentionController.FolderRefusal).
                     var folder = MentionController.FolderPath(p.Value!, s.RootDir);
-                    if (MentionController.FolderRefusal(folder) is { } why) return new MentionResolveResult(null, null, why);
+                    if (MentionController.FolderRefusal(folder, s.RootDir) is { } why) return new MentionResolveResult(null, null, why);
                     var content = MentionController.BuildFolderContext(folder, ct, s.Overlay);
                     return new MentionResolveResult("📁 " + Path.GetFileName(folder.TrimEnd('\\', '/')), content);
                 }

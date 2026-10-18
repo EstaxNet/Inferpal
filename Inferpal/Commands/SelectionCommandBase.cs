@@ -4,6 +4,7 @@ using Inferpal.Services;
 using Microsoft.VisualStudio.Extensibility;
 using Microsoft.VisualStudio.Extensibility.Commands;
 using Microsoft.VisualStudio.Extensibility.Editor;
+using Microsoft.VisualStudio.Extensibility.Shell;
 
 namespace Inferpal.Commands;
 
@@ -41,6 +42,13 @@ internal abstract class SelectionCommandBase : Command
             var view = _contextHolder.LatestView
                     ?? await Extensibility.Editor().GetActiveTextViewAsync(context, ct);
 
+            // Excluded by the workspace's ignore files: no pending prompt, and the reason said — the menu did something.
+            if (view is not null
+                && Services.Governance.ContentExclusions.NoticeFor(view.Document.Uri.LocalPath, null) is { } excluded)
+            {
+                await Extensibility.Shell().ShowPromptAsync(excluded, PromptOptions.OK, ct);
+                return;
+            }
             if (view is not null)
             {
                 fileName = Path.GetFileName(view.Document.Uri.LocalPath);

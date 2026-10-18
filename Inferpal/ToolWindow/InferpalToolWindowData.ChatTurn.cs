@@ -193,6 +193,14 @@ internal partial class InferpalToolWindowData
                     Attachments.Clear();
                     HasAttachments = false;
                 }
+                // ⚠ Judged again as the question leaves, as VS Code judges its chips: one added before the ignore file
+                // excluded its file, or resent by Regenerate, is said and not sent.
+                foreach (var refused in attachments.ToList())
+                    if (Services.Governance.ContentExclusions.NoticeFor(refused.Origin, _indexService.RootDir) is { } excluded)
+                    {
+                        attachments.Remove(refused);
+                        InsertThemed(ChatMessageItem.NoticeMsg(excluded));
+                    }
                 // The turn is taken HERE, before the context build below: Stop cancels _currentCts
                 // only, and that build can take seconds on a busy backend.
                 localCts      = BeginOwnedTurn(ct);

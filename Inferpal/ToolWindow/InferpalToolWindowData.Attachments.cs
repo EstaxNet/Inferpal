@@ -201,7 +201,7 @@ internal partial class InferpalToolWindowData
             {
                 // Selection snippet has no standalone on-disk path → not pinnable.
                 var content = sel.Extent.CopyToString();
-                await RunOnVMContextAsync(() => AddAttachment($"Selection ({fileName})", content));
+                await RunOnVMContextAsync(() => AddAttachment($"Selection ({fileName})", content, origin: path));
             }
             else
             {
@@ -256,8 +256,19 @@ internal partial class InferpalToolWindowData
             return dlg.ShowDialog() == true ? dlg.FileName : null;
         }, "AttachFileDialog");
 
-    private void AddAttachment(string label, string content, string? sourcePath = null)
+    /// <summary>Adds a chip to the question being written: its text capped, said when cut.</summary>
+    /// <param name="label">What the chip and the question show.</param>
+    /// <param name="content">The text the chip sends.</param>
+    /// <param name="sourcePath">The file a whole-file chip holds — pinnable, and skipped by the auto-context.</param>
+    /// <param name="origin">The file the text comes from when it is not <paramref name="sourcePath"/> (a selection).</param>
+    private void AddAttachment(string label, string content, string? sourcePath = null, string? origin = null)
     {
+        // ⚠ Every chip of a file's text comes here: one the workspace's ignore files exclude is refused, and said.
+        if (Services.Governance.ContentExclusions.NoticeFor(origin ?? sourcePath, _indexService.RootDir) is { } excluded)
+        {
+            InsertThemed(ChatMessageItem.NoticeMsg(excluded));
+            return;
+        }
         // ⚠ Every chip the user adds comes here: a whole file was sent whatever its size (the active document without any
         // limit), past the window the backend refuses or drops the head, and nothing said so. Cut as VS Code cuts, the
         // cut said to the model (the marker) and to the person (the label, on the chip and under the question).
@@ -276,7 +287,7 @@ internal partial class InferpalToolWindowData
         {
             Attachments.Remove(item!);
             HasAttachments = Attachments.Count > 0;
-        }), sourcePath: sourcePath, onPin: onPin, isCut: capped.Cut);
+        }), sourcePath: sourcePath, onPin: onPin, isCut: capped.Cut, origin: origin);
         var chip         = ThemePalette.For(_isDark, _isHighContrast);
         item.Background  = chip.AttachChipBg;
         item.Foreground  = chip.AttachChipText;

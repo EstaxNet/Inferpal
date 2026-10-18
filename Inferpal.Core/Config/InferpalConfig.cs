@@ -179,6 +179,15 @@ internal class InferpalConfig
     public string RepoInstructionFamilies { get; set; } = "agents, copilot, claude, cursor, cline, roo, continue";
 
     /// <summary>
+    /// The ignore files read at the workspace root, comma-separated: the files and folders they exclude are kept out of
+    /// everything that reads for the model (tools, @-mentions, auto-context, index, project map, git diffs, code actions)
+    /// — and each exclusion is said. Inferpal's own <c>.inferpalignore</c> and the other tools' by default; empty = none.
+    /// </summary>
+    [JsonPropertyName("ignoreFiles")]
+    public string IgnoreFiles { get; set; } =
+        ".inferpalignore, .aiignore, .cursorignore, .geminiignore, .aiexclude, .codeiumignore, .clineignore, .rooignore, .continueignore, .aiderignore";
+
+    /// <summary>
     /// The skills' automatic mode: their names and descriptions in every question's prompt, the model loading the one a
     /// request needs (<c>read_skill_file</c>). Off by default: <c>/skill</c> is then the only way to use one.
     /// </summary>

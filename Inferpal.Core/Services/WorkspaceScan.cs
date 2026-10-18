@@ -263,7 +263,9 @@ internal static class WorkspaceScan
         if (NormalizeFilePattern(pattern) is not { } safePattern) { failed = true; return []; }
         try
         {
-            return Walk(start, safePattern).Where(f => !IsExcludedPath(f, judgedBelow));
+            // A file the workspace's ignore files keep out of AI tools is skipped — and counted, for the note the tool call
+            // puts above its result (ContentExclusions.SkipInWalk): skipped in silence, it would read "not there".
+            return Walk(start, safePattern).Where(f => !IsExcludedPath(f, judgedBelow) && !Governance.ContentExclusions.SkipInWalk(f));
         }
         catch (Exception ex)
         {

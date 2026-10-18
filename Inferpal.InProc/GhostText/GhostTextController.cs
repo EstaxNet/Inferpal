@@ -112,7 +112,7 @@ internal sealed class GhostTextController
             var ctx = await _dispatcher.InvokeAsync(() => ReadContext(token));
             if (ctx is null || token.IsCancellationRequested) return;
 
-            var (prefix, suffix, anchor, snapshot) = ctx.Value;
+            var (prefix, suffix, anchor, snapshot, path) = ctx.Value;
             _triggerSnapshot = snapshot;
 
             var config = InProcConfig.Current();
@@ -130,7 +130,8 @@ internal sealed class GhostTextController
                 temperature: settings.Temperature,
                 model:       config.Model,
                 configStamp: config.Stamp,
-                ct:          token).ConfigureAwait(false);
+                ct:          token,
+                path:        path).ConfigureAwait(false);
 
             // ⚠ Nothing to show is not an empty suggestion: a pending "" is not null, so the next Tab was ACCEPTED —
             // swallowed, inserting nothing, instead of indenting. A backend without FIM answers "" after every pause,
@@ -157,7 +158,7 @@ internal sealed class GhostTextController
     private const int PrefixLines = 64;
     private const int SuffixLines = 16;
 
-    private (string prefix, string suffix, SnapshotPoint anchor, ITextSnapshot snapshot)?
+    private (string prefix, string suffix, SnapshotPoint anchor, ITextSnapshot snapshot, string? path)?
         ReadContext(CancellationToken token)
     {
         if (token.IsCancellationRequested) return null;
@@ -190,7 +191,11 @@ internal sealed class GhostTextController
         var prefix = snapshot.GetText(Span.FromBounds(start, cursor));
         var suffix = snapshot.GetText(Span.FromBounds(cursor, end));
 
-        return (prefix, suffix, caretPos, snapshot);
+        // The file goes with the request: one the workspace's ignore files exclude is never completed (the sidecar judges).
+        var path = _view.TextBuffer.Properties.TryGetProperty<ITextDocument>(typeof(ITextDocument), out var doc)
+            ? doc.FilePath
+            : null;
+        return (prefix, suffix, caretPos, snapshot, path);
     }
 
     // ── Keyboard — Tab accepts, Escape dismisses ───────────────────────────────

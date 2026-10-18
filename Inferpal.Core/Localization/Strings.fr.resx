@@ -1568,4 +1568,9 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="NoteNotRead" xml:space="preserve"><value>Votre note n’a pas été lue avant la fin du tour : elle est de nouveau dans la zone de saisie.</value></data>
   <data name="QueueGivenBack" xml:space="preserve"><value>Le tour ne s’est pas terminé normalement : les messages en attente d’envoi sont de nouveau dans la zone de saisie.</value></data>
   <data name="QueueActionsKept" xml:space="preserve"><value>Le tour ne s’est pas terminé normalement : les messages que vous aviez tapés sont de nouveau dans la zone de saisie ; les actions de l’éditeur restent dans la file et partiront après la prochaine réponse.</value></data>
+  <data name="ExcludedFromAi" xml:space="preserve"><value>« {0} » est exclu des outils d'IA par {1}, ligne {2} (`{3}`) : son contenu n'a pas été envoyé au modèle.</value></data>
+  <data name="ExcludedLeftOut" xml:space="preserve"><value>Le modèle n'a pas lu {0} {0:fichier exclu|fichiers exclus} des outils d'IA ({1}).</value></data>
+  <data name="LabelIgnoreFiles" xml:space="preserve"><value>Fichiers d'exclusion lus</value></data>
+  <data name="HintIgnoreFiles" xml:space="preserve"><value>Noms séparés par des virgules, lus à la racine de l'espace de travail, en syntaxe gitignore : aucun outil d'IA ne lit ce qu'ils excluent, et chaque exclusion est dite. Vide : aucun n'est lu.</value></data>
+  <data name="BackupNotSent" xml:space="preserve"><value>« {0} » est une copie de sauvegarde gardée par Inferpal : tant que cet espace de travail exclut des fichiers des outils d'IA, les sauvegardes ne sont pas envoyées au modèle.</value></data>
 </root>

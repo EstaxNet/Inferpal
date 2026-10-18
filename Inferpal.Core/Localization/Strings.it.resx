@@ -1568,4 +1568,9 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="NoteNotRead" xml:space="preserve"><value>La nota non è stata letta prima della fine del turno: è di nuovo nella casella di input.</value></data>
   <data name="QueueGivenBack" xml:space="preserve"><value>Il turno non è terminato normalmente: i messaggi in attesa di invio sono di nuovo nella casella di input.</value></data>
   <data name="QueueActionsKept" xml:space="preserve"><value>Il turno non è terminato normalmente: i messaggi digitati sono di nuovo nella casella di input; le azioni dell'editor restano in coda e verranno eseguite dopo la prossima risposta.</value></data>
+  <data name="ExcludedFromAi" xml:space="preserve"><value>«{0}» è escluso dagli strumenti di IA da {1}, riga {2} (`{3}`): il suo contenuto non è stato inviato al modello.</value></data>
+  <data name="ExcludedLeftOut" xml:space="preserve"><value>Il modello non ha letto {0} {0:file escluso|file esclusi} dagli strumenti di IA ({1}).</value></data>
+  <data name="LabelIgnoreFiles" xml:space="preserve"><value>File di esclusione letti</value></data>
+  <data name="HintIgnoreFiles" xml:space="preserve"><value>Nomi separati da virgole, letti alla radice dell'area di lavoro con la sintassi di gitignore: nessuno strumento di IA legge ciò che escludono, e ogni esclusione viene detta. Vuoto: nessuno viene letto.</value></data>
+  <data name="BackupNotSent" xml:space="preserve"><value>«{0}» è una copia di backup conservata da Inferpal: finché quest'area di lavoro esclude file dagli strumenti di IA, i backup non vengono inviati al modello.</value></data>
 </root>

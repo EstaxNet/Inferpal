@@ -1568,4 +1568,9 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="NoteNotRead" xml:space="preserve"><value>ターンが終わる前にメモは読まれませんでした。入力欄に戻されました。</value></data>
   <data name="QueueGivenBack" xml:space="preserve"><value>ターンが正常に終了しませんでした。送信待ちのメッセージは入力欄に戻されました。</value></data>
   <data name="QueueActionsKept" xml:space="preserve"><value>ターンが正常に終了しませんでした。入力したメッセージは入力欄に戻されました。エディターのアクションはキューに残り、次の回答の後に実行されます。</value></data>
+  <data name="ExcludedFromAi" xml:space="preserve"><value>「{0}」は {1} の {2} 行目 (`{3}`) により AI ツールから除外されています。内容はモデルに送信されていません。</value></data>
+  <data name="ExcludedLeftOut" xml:space="preserve"><value>AI ツールから除外されたファイル {0} 件（{1}）はモデルに読まれていません。</value></data>
+  <data name="LabelIgnoreFiles" xml:space="preserve"><value>読み込む除外ファイル</value></data>
+  <data name="HintIgnoreFiles" xml:space="preserve"><value>カンマ区切りの名前。ワークスペースのルートで gitignore 構文として読み込まれます。除外されたものはどの AI ツールも読まず、除外は必ず通知されます。空の場合は何も読みません。</value></data>
+  <data name="BackupNotSent" xml:space="preserve"><value>「{0}」は Inferpal が保持するバックアップです。このワークスペースが AI ツールからファイルを除外している間、バックアップはモデルに送信されません。</value></data>
 </root>

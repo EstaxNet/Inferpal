@@ -34,6 +34,12 @@ replaced with the corresponding attachment.
 > cut to the size of one attachment, and its chip says how many characters it kept.
 
 > [!NOTE]
+> **A file your repository keeps away from AI tools is never attached.** `@file`, a chip, a path typed after `@` or an ACP
+> attachment of a file that `.aiignore`, `.cursorignore` or another ignore file excludes answers with a notice naming the
+> ignore file, the line and the pattern; `@folder` leaves such files out of its list and says how many
+> (see [Features → Safety](features.md#safety)).
+
+> [!NOTE]
 > **VS Code:** typed mentions work there too (since 1.2.0) — the eight categories from
 > `@file` to `@tree` are offered in a two-level popup, and resolved mentions appear as
 > context chips in the composer, alongside a "+" attach menu (active file, selection, file

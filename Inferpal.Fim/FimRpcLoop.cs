@@ -4,8 +4,9 @@ using System.Text.Json;
 namespace Inferpal.Fim;
 
 /// <summary>What a completion request carries.</summary>
+/// <param name="Path">The document's file; <c>null</c> when the editor gave none.</param>
 internal sealed record FimRequest(
-    string Prefix, string Suffix, int MaxTokens, double Temperature, string? Model);
+    string Prefix, string Suffix, int MaxTokens, double Temperature, string? Model, string? Path = null);
 
 /// <summary>
 /// The sidecar service loop: reads header-framed JSON-RPC 2.0 messages
@@ -93,7 +94,8 @@ internal sealed class FimRpcLoop
             Suffix:      Str(p, "suffix") ?? string.Empty,
             MaxTokens:   Num(p, "maxTokens", 128),
             Temperature: Dbl(p, "temperature", 0.2),
-            Model:       Str(p, "model"));
+            Model:       Str(p, "model"),
+            Path:        Str(p, "path"));
 
         var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         lock (_gate) _inflight[id] = cts;

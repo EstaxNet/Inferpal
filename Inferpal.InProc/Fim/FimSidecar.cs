@@ -107,9 +107,10 @@ internal static class FimSidecar
     /// Requests a completion. Returns <c>null</c> when there is nothing to show — sidecar
     /// unavailable, cancellation, backend without FIM, or an empty answer. Never throws.
     /// </summary>
+    /// <param name="path">The document's file, for the sidecar to judge against the workspace's ignore files.</param>
     internal static async Task<string?> CompleteAsync(
         string prefix, string suffix, int maxTokens, double temperature, string? model,
-        long configStamp, CancellationToken ct)
+        long configStamp, CancellationToken ct, string? path = null)
     {
         Stream? stdin;
         int id;
@@ -135,6 +136,7 @@ internal static class FimSidecar
                 .Append(",\"temperature\":")
                 .Append(temperature.ToString("R", CultureInfo.InvariantCulture))
                 .Append(",\"model\":").Append(model is null ? "null" : JsonSerializer.Serialize(model))
+                .Append(",\"path\":").Append(path is null ? "null" : JsonSerializer.Serialize(path))
                 .Append("}}")
                 .ToString();
 

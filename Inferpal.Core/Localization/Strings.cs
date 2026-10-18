@@ -332,6 +332,8 @@ internal static class Strings
     public static string SettingsSectionRepoInstructionsDesc => Get(nameof(SettingsSectionRepoInstructionsDesc));
     public static string LabelRepoInstructionFamilies => Get(nameof(LabelRepoInstructionFamilies));
     public static string HintRepoInstructionFamilies => Get(nameof(HintRepoInstructionFamilies));
+    public static string LabelIgnoreFiles => Get(nameof(LabelIgnoreFiles));
+    public static string HintIgnoreFiles => Get(nameof(HintIgnoreFiles));
     public static string PinnedFileMissing => Get(nameof(PinnedFileMissing));
     public static string ProjectFilesTitle => Get(nameof(ProjectFilesTitle));
     public static string ProjectFileContext => Get(nameof(ProjectFileContext));
@@ -889,6 +891,12 @@ internal static class Strings
         Format(Get(nameof(MentionFolderIsFile)), name);
     public static string DirNotFound(string path) =>
         Format(Get(nameof(DirNotFound)), path);
+    public static string ExcludedFromAi(string name, string file, int line, string pattern) =>
+        Format(Get(nameof(ExcludedFromAi)), name, file, line, pattern);
+    public static string BackupNotSent(string name) =>
+        Format(Get(nameof(BackupNotSent)), name);
+    public static string ExcludedLeftOut(int count, string files) =>
+        Format(Get(nameof(ExcludedLeftOut)), count, files);
 
     public static string ToolPathInvalid(string path, string reason) =>
         Format(Get(nameof(ToolPathInvalid)), path, reason);

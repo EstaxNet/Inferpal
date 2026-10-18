@@ -115,6 +115,8 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     private string _labelCustomSystemPrompt      = string.Empty;
     private string _labelRepoInstructionFamilies = string.Empty;
     private string _hintRepoInstructionFamilies  = string.Empty;
+    private string _labelIgnoreFiles             = string.Empty;
+    private string _hintIgnoreFiles              = string.Empty;
     private string _labelPinnedContextFiles      = string.Empty;
     private string _hintPinnedContextFiles       = string.Empty;
 
@@ -259,6 +261,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     private string _vramBudgetText;
     private string _customSystemPrompt;
     private string _repoInstructionFamilies;
+    private string _ignoreFiles;
     private string _pinnedContextFiles;
     private string _promptTemplates;
     private string _hintPromptTemplates  = string.Empty;
@@ -378,6 +381,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             : string.Empty;
         _customSystemPrompt          = config.CustomSystemPrompt;
         _repoInstructionFamilies     = config.RepoInstructionFamilies;
+        _ignoreFiles                 = config.IgnoreFiles;
         _pinnedContextFiles          = config.PinnedContextFiles;
         _promptTemplates             = config.PromptTemplates;
         _customTools                 = config.CustomTools;
@@ -581,6 +585,8 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         HintCustomSystemPrompt       = Strings.HintCustomSystemPrompt;
         LabelRepoInstructionFamilies = Strings.LabelRepoInstructionFamilies;
         HintRepoInstructionFamilies  = Strings.HintRepoInstructionFamilies;
+        LabelIgnoreFiles             = Strings.LabelIgnoreFiles;
+        HintIgnoreFiles              = Strings.HintIgnoreFiles;
         LabelPinnedContextFiles      = Strings.LabelPinnedContextFiles;
         HintPinnedContextFiles       = Strings.HintPinnedContextFiles;
         HintPromptTemplates          = Strings.HintPromptTemplates;
@@ -831,6 +837,8 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string HintCustomSystemPrompt   { get => _hintCustomSystemPrompt;   set => SetProperty(ref _hintCustomSystemPrompt,   value); }
     [DataMember] public string LabelRepoInstructionFamilies { get => _labelRepoInstructionFamilies; set => SetProperty(ref _labelRepoInstructionFamilies, value); }
     [DataMember] public string HintRepoInstructionFamilies  { get => _hintRepoInstructionFamilies;  set => SetProperty(ref _hintRepoInstructionFamilies,  value); }
+    [DataMember] public string LabelIgnoreFiles             { get => _labelIgnoreFiles;             set => SetProperty(ref _labelIgnoreFiles,             value); }
+    [DataMember] public string HintIgnoreFiles              { get => _hintIgnoreFiles;              set => SetProperty(ref _hintIgnoreFiles,              value); }
     [DataMember] public string LabelPinnedContextFiles  { get => _labelPinnedContextFiles;  set => SetProperty(ref _labelPinnedContextFiles,  value); }
     [DataMember] public string HintPinnedContextFiles   { get => _hintPinnedContextFiles;   set => SetProperty(ref _hintPinnedContextFiles,   value); }
     [DataMember] public string HintPromptTemplates      { get => _hintPromptTemplates;      set => SetProperty(ref _hintPromptTemplates,      value); }
@@ -991,6 +999,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string VramBudgetText               { get => _vramBudgetText;               set => SetProperty(ref _vramBudgetText,               value); }
     [DataMember] public string CustomSystemPrompt           { get => _customSystemPrompt;            set => SetProperty(ref _customSystemPrompt,            value); }
     [DataMember] public string RepoInstructionFamilies      { get => _repoInstructionFamilies;       set => SetProperty(ref _repoInstructionFamilies,       value); }
+    [DataMember] public string IgnoreFiles                  { get => _ignoreFiles;                   set => SetProperty(ref _ignoreFiles,                   value); }
     [DataMember] public string PinnedContextFiles           { get => _pinnedContextFiles;            set => SetProperty(ref _pinnedContextFiles,            value); }
     [DataMember] public string PromptTemplates              { get => _promptTemplates;               set => SetProperty(ref _promptTemplates,               value); }
     [DataMember] public string CustomTools                  { get => _customTools;                   set => SetProperty(ref _customTools,                   value); }
@@ -1159,7 +1168,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
 
     private async Task SaveCoreAsync(CancellationToken ct)
     {
-        string url = string.Empty, customPrompt = string.Empty, repoFamilies = string.Empty, pinnedContextFiles = string.Empty, promptTemplates = string.Empty, customTools = string.Empty, permissionRules = string.Empty;
+        string url = string.Empty, customPrompt = string.Empty, repoFamilies = string.Empty, ignoreFiles = string.Empty, pinnedContextFiles = string.Empty, promptTemplates = string.Empty, customTools = string.Empty, permissionRules = string.Empty;
         string apiKey = string.Empty;
         // Dropdowns whose SelectedItem is bound: null when the selection left its list, never a
         // choice (see SettingsFallback.KeepSelection).
@@ -1203,6 +1212,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             vramBudgetText       = VramBudgetText.Trim();
             customPrompt         = CustomSystemPrompt;
             repoFamilies         = RepoInstructionFamilies ?? string.Empty;
+            ignoreFiles          = IgnoreFiles ?? string.Empty;
             SyncPinnedTextFromRows();   // rows are the source of truth → refresh the text mirrors
             SyncSlashTextFromRows();
             SyncToolTextFromRows();
@@ -1335,6 +1345,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
                                                : SettingsFallback.For(vramBudgetText, edited.VramBudgetGb, 0);
         edited.CustomSystemPrompt        = customPrompt;
         edited.RepoInstructionFamilies   = repoFamilies;
+        edited.IgnoreFiles               = ignoreFiles;
         edited.PinnedContextFiles        = PinnedFilesPolicy.MergeEdits(
             _config.PinnedContextFiles, edited.PinnedContextFiles, pinnedContextFiles);
         edited.PromptTemplates           = promptTemplates;

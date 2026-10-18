@@ -1572,4 +1572,9 @@ What you save there applies from your next question, in this thread and the othe
   <data name="NoteNotRead" xml:space="preserve"><value>Your note was not read before the turn ended: it is back in the input box.</value></data>
   <data name="QueueGivenBack" xml:space="preserve"><value>The turn did not end normally: the messages waiting to be sent are back in the input box.</value></data>
   <data name="QueueActionsKept" xml:space="preserve"><value>The turn did not end normally: the messages you typed are back in the input box; the editor actions stay in the queue and run after the next answer.</value></data>
+  <data name="ExcludedFromAi" xml:space="preserve"><value>{0} is excluded from AI tools by {1}, line {2} (`{3}`): its content was not sent to the model.</value></data>
+  <data name="ExcludedLeftOut" xml:space="preserve"><value>The model did not read {0} {0:file|files} excluded from AI tools ({1}).</value></data>
+  <data name="LabelIgnoreFiles" xml:space="preserve"><value>Ignore files read</value></data>
+  <data name="HintIgnoreFiles" xml:space="preserve"><value>Comma-separated names, read at the workspace root in the gitignore syntax: no AI tool reads what they exclude, and every exclusion is said. Empty reads none.</value></data>
+  <data name="BackupNotSent" xml:space="preserve"><value>{0} is a backup copy kept by Inferpal: while this workspace excludes files from AI tools, backups are not sent to the model.</value></data>
 </root>

@@ -50,6 +50,11 @@ selected by `mode`:
 
 Other parameters, all optional: `path?`, `root?`, `symbol?`, `depth?`, `direction?`, `focus?`, `bridges?`.
 
+A file the workspace's ignore files exclude (`.aiignore`, `.cursorignore`… — `ignoreFiles` in
+[Configuration](configuration.md)) is neither read nor changed by any tool: a call that names it is refused before it
+runs, with the ignore file, the line and the pattern; a walk (`list_files`, `search_in_files`, the analysis) skips it and
+says how many files it skipped, above its result.
+
 ## Approval model
 
 Tools that touch the filesystem, run commands, or reach the network are gated by a 3-way

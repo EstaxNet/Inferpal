@@ -42,6 +42,24 @@ internal static class GitProcess
     internal static TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(15);
 
     /// <summary>
+    /// A <c>diff</c> in the one shape its readers parse — sections opened by <c>diff --git a/… b/…</c>, paths from the
+    /// repository's top, no colour, no external tool — whatever the user's git configuration; any other command as is.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The readers cut a diff by its section headers — the ignore files' filter drops an excluded file's section by
+    /// them — and <c>diff.external</c> (difftastic), <c>color.ui=always</c>, <c>diff.relative</c>, <c>diff.noprefix</c> or
+    /// custom prefixes leave no header to find: without this shape the whole diff, excluded files included, reaches the
+    /// model. Old gits ignore a configuration key they do not know.
+    /// </remarks>
+    internal static string DiffShaped(string args)
+    {
+        var trimmed = args.TrimStart();
+        if (trimmed != "diff" && !trimmed.StartsWith("diff ", StringComparison.Ordinal)) return args;
+        return "-c color.ui=never -c color.diff=never -c diff.relative=false -c diff.noprefix=false -c diff.mnemonicPrefix=false "
+             + "diff --no-ext-diff --src-prefix=a/ --dst-prefix=b/" + trimmed["diff".Length..];
+    }
+
+    /// <summary>
     /// The primitive: runs git and hands back both streams separately.
     /// </summary>
     /// <remarks>
@@ -64,7 +82,7 @@ internal static class GitProcess
             // prints a file's content as the bytes the file holds, so a diff of a source saved in a legacy code page,
             // decoded as UTF-8 whole, reached /commit, /check and get_git_status as "caf�" — a line the model
             // cannot quote back into an edit, and that a review reads as corruption.
-            var psi = new ProcessStartInfo("git", "-c core.quotePath=false " + args)
+            var psi = new ProcessStartInfo("git", "-c core.quotePath=false " + DiffShaped(args))
             {
                 StandardOutputEncoding = Encoding.Latin1,
                 StandardErrorEncoding  = Encoding.UTF8,

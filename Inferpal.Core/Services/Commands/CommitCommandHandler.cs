@@ -47,11 +47,17 @@ internal static class CommitCommandHandler
         var stagedRun = await git("diff --staged", ct);
         if (GitProcess.FailureNote("diff --staged", stagedRun) is { } stagedFailed)
             return new(stagedFailed, null, null);
-        var staged = stagedRun.Output;
+        // ⚠ The lines of a file the workspace's ignore files exclude are its content: its sections leave what the model
+        // reads, and the proposal says it did not read them — the commit still carries them.
+        var excluded = new Governance.ContentExclusions.Tally();
+        var workTree = Governance.ContentExclusions.AnyRules()
+            ? (await git("rev-parse --show-toplevel", ct)) is { ExitCode: 0 } top ? top.Output.Trim() : null
+            : null;
+        var staged = Governance.ContentExclusions.WithoutExcludedFiles(stagedRun.Output, workTree, excluded);
 
         string diffContext;
         string? notice = null;
-        if (string.IsNullOrWhiteSpace(staged))
+        if (string.IsNullOrWhiteSpace(stagedRun.Output))
         {
             var statusRun = await git("status --short", ct);
             if (GitProcess.FailureNote("status --short", statusRun) is { } statusFailed)
@@ -68,14 +74,25 @@ internal static class CommitCommandHandler
             var unstagedRun = await git("diff", ct);
             if (GitProcess.FailureNote("diff", unstagedRun) is { } unstagedFailed)
                 return new(unstagedFailed, null, null);
-            diffContext  = GitCommitPolicy.BuildUnstagedContext(tracked, unstagedRun.Output);
+            diffContext  = GitCommitPolicy.BuildUnstagedContext(
+                tracked, Governance.ContentExclusions.WithoutExcludedFiles(unstagedRun.Output, workTree, excluded));
             notice       = Strings.CommitNothingStaged;
             if (untracked.Count > 0)
                 notice += "\n\n" + Strings.CommitUntrackedLeftOut(untracked.Count, GitCommitPolicy.NameList(untracked));
         }
+        else if (string.IsNullOrWhiteSpace(staged))
+        {
+            // Only excluded files are staged: nothing the model may read, so nothing it could describe.
+            return new(excluded.ForPerson(), null, null);
+        }
         else
         {
             diffContext = GitCommitPolicy.BuildStagedContext(staged);
+        }
+        if (excluded.Count > 0)
+        {
+            diffContext = excluded.Note() + "\n\n" + diffContext;
+            notice      = notice is null ? excluded.ForPerson() : notice + "\n\n" + excluded.ForPerson();
         }
 
         // ⚠ The notice is the same field as "nothing staged" and for the same reason: it is shown

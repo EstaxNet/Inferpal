@@ -292,7 +292,7 @@ internal partial class InferpalSettingsData
         nameof(InlineEditModel), nameof(UtilityModel), nameof(ModelRouterAuto), nameof(UseRecommendedSampling),
         nameof(ReasoningEffortChat), nameof(ReasoningEffortAgent),
         nameof(VramBudgetText), nameof(ModelAutoUnloadEnabled), nameof(ModelIdleTimeoutText), nameof(AgentModeEnabled),
-        nameof(SmartFixEnabled), nameof(AgentMaxIterationsText), nameof(AskBeforeActions), nameof(CustomSystemPrompt), nameof(RepoInstructionFamilies),
+        nameof(SmartFixEnabled), nameof(AgentMaxIterationsText), nameof(AskBeforeActions), nameof(CustomSystemPrompt), nameof(RepoInstructionFamilies), nameof(IgnoreFiles),
         nameof(PersonaAutoSwitch), nameof(SkillsAutoMode), nameof(TimeoutHoursText), nameof(TimeoutMinutesText), nameof(TimeoutSecondsText),
         nameof(QuickTimeoutHoursText), nameof(QuickTimeoutMinutesText), nameof(QuickTimeoutSecondsText),
         nameof(NormalTimeoutHoursText), nameof(NormalTimeoutMinutesText), nameof(NormalTimeoutSecondsText),
@@ -356,6 +356,7 @@ internal partial class InferpalSettingsData
             ((!AskBeforeActions).ToString(), saved.SecurityAlertsDisabled.ToString()),
             (CustomSystemPrompt ?? string.Empty, saved.CustomSystemPrompt),
             (RepoInstructionFamilies ?? string.Empty, saved.RepoInstructionFamilies),
+            (IgnoreFiles ?? string.Empty, saved.IgnoreFiles),
             (PersonaAutoSwitch.ToString(), saved.PersonaAutoSwitch.ToString()),
             (SkillsAutoMode.ToString(), saved.SkillsAutoMode.ToString()),
             (N(CombineDuration(TimeoutHoursText, TimeoutMinutesText, TimeoutSecondsText)), N(saved.CommandTimeoutSeconds)),
@@ -416,6 +417,7 @@ internal partial class InferpalSettingsData
         AskBeforeActions = !c.SecurityAlertsDisabled;
         CustomSystemPrompt = c.CustomSystemPrompt;
         RepoInstructionFamilies = c.RepoInstructionFamilies;
+        IgnoreFiles = c.IgnoreFiles;
         PersonaAutoSwitch = c.PersonaAutoSwitch;
         SkillsAutoMode = c.SkillsAutoMode;
         (TimeoutHoursText, TimeoutMinutesText, TimeoutSecondsText) = SplitDuration(c.CommandTimeoutSeconds);

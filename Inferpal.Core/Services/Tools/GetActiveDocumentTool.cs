@@ -35,6 +35,9 @@ internal class GetActiveDocumentTool : ITool
         var doc = await _editor.GetActiveDocumentAsync(ct);
         if (doc is null)
             return EditorWriteGate.NoActiveDocument(_editor);
+        // Excluded by the workspace's ignore files: the path is said, the content is not.
+        if (Governance.ContentExclusions.Of(doc.Path) is { } excluded)
+            return excluded.ForModel(doc.Path);
 
         // ⚠ Paged like read_file: whole, a long file entered the context cut in its MIDDLE, under a marker that named
         // no way to read what was cut — while this description promised the full content.

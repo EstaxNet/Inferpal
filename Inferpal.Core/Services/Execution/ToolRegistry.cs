@@ -325,7 +325,19 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         // An editor that answers on demand (Visual Studio) is asked now which buffers hold unsaved changes: what the
         // tool reads, and what it refuses to write over, is the state of the editor at this call. One that can only be
         // asked about a given file (an Agent Client Protocol client) is asked about the files this call names.
-        if (_overlay is not null) await _overlay.RefreshAsync(ct, NamedFiles(args, _indexService.RootDir));
+        var named = NamedFiles(args, _indexService.RootDir);
+        if (_overlay is not null) await _overlay.RefreshAsync(ct, named);
+
+        // ⚠ A file the workspace keeps out of AI tools (its ignore files: ContentExclusions) is neither read nor changed by
+        // any call that names it — built-in, MCP or the user's shell tool — and the refusal says by which file and line:
+        // an empty answer would read "this file does not exist".
+        if (ExcludedNamedFile(args, _indexService.RootDir, p => _overlay?.TryGetUnsaved(p, out _) == true) is var (excludedFile, excluded))
+        {
+            _fileHistory.RecordToolCall(name, ExtractSubject(args), durationMs: 0, error: true);
+            return excluded.ForModel(Shown(excludedFile));
+        }
+        // What a walk of this call skips for the same reason is counted, and said above the result.
+        var skipped = Governance.ContentExclusions.BeginTally();
 
         var sw = System.Diagnostics.Stopwatch.StartNew();
         // Every write this call backs up is checked when it ends: one that did not land leaves the run.
@@ -341,7 +353,8 @@ internal class ToolRegistry : IToolRegistry, IDisposable
                 WorkTreeBracket.Enter(watch = await WorkTreeBracket.OpenAsync(_indexService.RootDir, UnsavedNow(), ct));
             var result = await tool.ExecuteAsync(args, ct);
             _fileHistory.RecordToolCall(name, ExtractSubject(args), sw.ElapsedMilliseconds, error: false);
-            return result;
+            // Above the result: the note qualifies it ("3 files were skipped") before the model reads "no match".
+            return skipped.Note() is { Length: > 0 } note ? note + "\n\n" + result : result;
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -402,6 +415,9 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         return line.Length > 80 ? line[..79] + "…" : line;
     }
 
+    /// <summary>A path as the model names it: relative to the workspace when it is under it.</summary>
+    private string Shown(string path) => Governance.ContentExclusions.Shown(path, _indexService.RootDir);
+
     /// <summary>The files the editor holds unsaved changes for, as the overlay was just refreshed.</summary>
     private IReadOnlyCollection<string>? UnsavedNow() =>
         _overlay is null ? null : [.. _overlay.Paths.Where(_overlay.HasUnsavedChanges)];
@@ -461,6 +477,55 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         }
         Walk(args, 0);
         return found;
+    }
+
+    /// <summary>The arguments that carry TEXT — a search, an edit's lines, a command — never a path: a search for
+    /// <c>.env</c> is not a read of <c>.env</c>. Any other string is judged; one forgotten here refuses too much, never
+    /// too little. And <c>restore_file</c>'s <c>snapshot</c>: a backup it reads for the person's approval card, never
+    /// for the model — the file it restores is its <c>path</c>, judged.</summary>
+    private static readonly HashSet<string> TextArguments = new(StringComparer.Ordinal)
+    {
+        "pattern", "query", "old_content", "new_content", "content", "text", "command", "old_name", "new_name", "expression",
+        "snapshot",
+    };
+
+    /// <summary>
+    /// The first existing file a call names that the workspace's ignore files exclude, and why — every string of the
+    /// arguments, at any depth, resolved as the tools resolve a path (<see cref="PathSanitizer.Sanitize(string?, string?)"/>:
+    /// control characters and edge spaces dropped, against the root).
+    /// </summary>
+    /// <remarks>⚠ Not <see cref="NamedFiles"/>: its walk is budgeted for an editor refresh, and the 60th edit of a batch
+    /// is a file this gate must see as well as the first.</remarks>
+    /// <param name="isOpen">Whether the editor holds an unsaved buffer of a path: one whose file is not on disk is still the
+    /// file the path names.</param>
+    internal static (string File, Governance.ContentExclusions.Exclusion Why)? ExcludedNamedFile(
+        JsonElement args, string? root, Func<string, bool>? isOpen = null)
+    {
+        (string, Governance.ContentExclusions.Exclusion)? hit = null;
+        void Walk(JsonElement e, string? key, int depth)
+        {
+            if (hit is not null || depth > 64) return;
+            switch (e.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    foreach (var p in e.EnumerateObject()) Walk(p.Value, p.Name, depth + 1);
+                    break;
+                case JsonValueKind.Array:
+                    foreach (var item in e.EnumerateArray()) Walk(item, key, depth + 1);
+                    break;
+                case JsonValueKind.String when key is null || !TextArguments.Contains(key):
+                    var s = e.GetString();
+                    if (string.IsNullOrWhiteSpace(s) || s.Length > 4096) return;
+                    string full;
+                    try { full = PathSanitizer.Sanitize(s, root); }
+                    catch (ArgumentException) { return; }   // not a path at all
+                    if ((File.Exists(full) || isOpen?.Invoke(full) == true) && Governance.ContentExclusions.Of(full) is { } why)
+                        hit = (full, why);
+                    break;
+            }
+        }
+        Walk(args, null, 0);
+        return hit;
     }
 
     private void Register(ITool tool)

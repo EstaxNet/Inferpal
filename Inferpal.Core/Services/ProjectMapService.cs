@@ -65,7 +65,9 @@ internal sealed class ProjectMapService
     private static async Task<string> BuildMapAsync(string root, CancellationToken ct)
     {
         // ── 1. Scan ───────────────────────────────────────────────────────────
-        var files = EnumerateSourceFiles(root).ToList();
+        // Counted here, not by the call: the map is cached, and @tree builds it outside any tool call — its own line says
+        // what the workspace's ignore files kept out of it, every time it is shown.
+        var files = Governance.ContentExclusions.Counting(() => EnumerateSourceFiles(root).ToList(), out var ignored);
         // ⚠ The header below is literally labelled "Scanned: N source files", and N is what the walk
         // TOOK. Two holes never reach that number: a file taken and then unreadable (counted here,
         // skipped by the catch below) and a folder the walk never listed or would not follow, whose
@@ -147,6 +149,7 @@ internal sealed class ProjectMapService
         // Right under the count it qualifies, not at the far end of a sixty-line report.
         coverage = coverage.WithUnreadable(unreadable);
         if (coverage.IsIncomplete) sb.AppendLine($"    {coverage.Warning().Replace("\n", "\n    ")}");
+        if (ignored.Note() is { Length: > 0 } excludedNote) sb.AppendLine($"    {excludedNote}");
         sb.AppendLine(bar);
 
         // ── Namespace tree ───────────────────────────────────────────────────

@@ -162,12 +162,21 @@ internal sealed record ToolNotice(string Name, string Input, string Output, bool
 /// <param name="MaxTokens">Absent: the tokens of the configured inline-completion mode.</param>
 /// <param name="Temperature">Absent: the temperature of the configured inline-completion mode.</param>
 /// <param name="Model">Absent: the configured FIM model, else the client's default.</param>
+/// <param name="Path">The document's file: excluded by the workspace's ignore files, nothing is completed.</param>
 internal sealed record FimParams(
     string  Prefix,
     string  Suffix,
     int?    MaxTokens   = null,
     double? Temperature = null,
-    string? Model       = null);
+    string? Model       = null,
+    string? Path        = null);
+
+/// <summary>`exclusions/check` — files whose content the adapter is about to send (a chip, a typed <c>@path</c>).</summary>
+internal sealed record ExclusionsCheckParams(List<string> Paths);
+
+/// <summary>`exclusions/check` answer, one per path: <c>null</c> = not excluded, else the sentence for the person.</summary>
+/// <param name="ForModel">The same, one per path, for the model (the prompt names what was asked and not sent).</param>
+internal sealed record ExclusionsCheckResult(List<string?> Notices, List<string?> ForModel);
 
 /// <summary>`fim/settings` — whether inline completion is on, and the debounce of its mode.</summary>
 internal sealed record FimSettingsResult(bool Enabled, int DebounceMs);
@@ -440,7 +449,8 @@ internal sealed record CodeActionEditDto(int Index, int Start, int End, string N
 
 /// <summary>`codeAction/run` answer. <paramref name="Outcome"/> is <c>edited</c> (apply or
 /// preview <paramref name="Edits"/>), <c>noChange</c> (model judged the code already good) or
-/// <c>failed</c>. <paramref name="NewText"/> is the full rewritten document when edited;
+/// <c>failed</c>, or <c>refused</c> (the document is excluded by the workspace's ignore files: nothing was sent to the
+/// model, <paramref name="FailureDetail"/> says why). <paramref name="NewText"/> is the full rewritten document when edited;
 /// <paramref name="FailureDetail"/> is the underlying error message when failed.</summary>
 internal sealed record CodeActionResultDto(
     string                  Outcome,
@@ -454,13 +464,18 @@ internal sealed record CodeActionResultDto(
 /// the configured code-actions model, else that pick (null = the chat model of the settings).</summary>
 /// <remarks>The turn the code goes into, as <c>chat/send</c> receives it: a code action by default (VS Code's <c>/explain</c>,
 /// <c>/review</c>); an ACP thread's attachments go into a chat or agent turn.</remarks>
+/// <param name="Path">The file the code comes from, when it is one: excluded by the workspace's ignore files, the
+/// excerpt is refused.</param>
 internal sealed record CodeExcerptParams(string Code, string FileName, bool Selection = false, string? Model = null,
-                                         bool CodeAction = true, bool? AgentMode = null, bool ModelOverridesRoles = false);
+                                         bool CodeAction = true, bool? AgentMode = null, bool ModelOverridesRoles = false,
+                                         string? Path = null);
 
 /// <summary>`code/excerpt` answer: <paramref name="Text"/> is what goes into the prompt (the code, or
 /// its first lines and a marker naming the count), <paramref name="Label"/> what the chat shows under
 /// the question — carrying the count too when <paramref name="Truncated"/>.</summary>
-internal sealed record CodeExcerptResult(string Text, string Label, bool Truncated);
+/// <param name="Refusal">The file is excluded by the workspace's ignore files: the sentence that says so, nothing else to
+/// send (<paramref name="Text"/> is empty).</param>
+internal sealed record CodeExcerptResult(string Text, string Label, bool Truncated, string? Refusal = null);
 
 // ── Context X-Ray panel (interactive /xray V2) ───────────────────────────────
 

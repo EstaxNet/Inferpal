@@ -66,10 +66,13 @@ internal static class FixPromptBuilder
         var sb    = new StringBuilder(Strings.PromptFixErrors(rawErrors));
         var sites = ExtractErrorSites(rawErrors);
 
-        var files  = new StringBuilder();
-        var unread = new List<string>();
+        var files    = new StringBuilder();
+        var unread   = new List<string>();
+        var excluded = new Governance.ContentExclusions.Tally();
         foreach (var (path, lines) in sites.Take(MaxFiles))
         {
+            // Excluded by the workspace's ignore files: never read, and said with the others left out.
+            if (Governance.ContentExclusions.Of(path) is { } why) { excluded.Add(path, why); continue; }
             var content = tryReadFile(path);
             if (content is null) { unread.Add(path); continue; }
 
@@ -86,9 +89,12 @@ internal static class FixPromptBuilder
             }
         }
         var notShown = sites.Skip(MaxFiles).Select(s => s.Path).ToList();
-        if (files.Length == 0 && unread.Count == 0 && notShown.Count == 0) return sb.ToString();
+        if (files.Length == 0 && unread.Count == 0 && notShown.Count == 0 && excluded.Count == 0) return sb.ToString();
 
         sb.AppendLine("\n\nAffected files:");
+        if (excluded.Count > 0)
+            sb.AppendLine($"({excluded.Count} file(s) excluded from AI tools by {excluded.Rules()}, not shown — they exist, "
+                        + "and their content is not read)");
         if (notShown.Count > 0)
             sb.AppendLine($"({notShown.Count} more file(s) with diagnostics past the first {MaxFiles}, not shown here: "
                         + $"{Named(notShown)} — read_file gives them)");

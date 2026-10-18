@@ -108,6 +108,7 @@ Every persisted setting, its type, and default value.
 | `customSystemPrompt` | string | `""` | Appended to the base system prompt |
 | `pinnedContextFiles` | string | `""` | Up to 3 paths (`\n`-separated) always injected; also pinned and unpinned from the chat in both editors |
 | `repoInstructionFamilies` | string | `"agents, copilot, claude, cursor, cline, roo, continue"` | Whose files the repository wrote for coding agents are read: instructions sent with questions, and commands offered as slash commands (comma-separated; empty = none). An unknown name is said once in `/diagnostics`; `/instructions` lists what each file does |
+| `ignoreFiles` | string | `".inferpalignore, .aiignore, .cursorignore, .geminiignore, .aiexclude, .codeiumignore, .clineignore, .rooignore, .continueignore, .aiderignore"` | The ignore files read at the workspace root, in the gitignore syntax: what they exclude is read by nothing that reads for the model, and every exclusion is said (comma-separated; empty = none). See [Features → Safety](features.md#safety) |
 | `skillsAutoMode` | bool | `false` | List the skills' names and descriptions in every question's prompt, so the model loads the one a request needs (`read_skill_file`). Measured before it shipped: the right skill 8/10 and 10/10 with two local models, none loaded wrongly in 20 questions. Off: only `/skill` uses them |
 
 ### Hardware & model lifetime
@@ -207,7 +208,7 @@ interpreted.**
 
 | Category | Keys | What happens |
 |---|---|---|
-| Applied | `indexExclude` | Kept out of the semantic index, **additively**: the profile can exclude more, never include more. It shrinks the index only — nothing is hidden from `read_file`, `list_files` or `search_in_files`, and `/onboard` prints every pattern. |
+| Applied | `indexExclude` | Kept out of the semantic index, **additively**: the profile can exclude more, never include more. It shrinks the index only — nothing is hidden from `read_file`, `list_files` or `search_in_files`, and `/onboard` prints every pattern. To keep files out of every AI tool, write them in an ignore file (`ignoreFiles`). |
 | Recommended | `defaultModel`, `agentModel`, `utilityModel`, `codeActionsModel`, `inlineEditModel`, `inlineCompletionModel`, `ragEmbeddingModel`, `contextWindowSize` (under `recommend`) | Displayed next to the value currently in effect. Nothing changes until you type `/onboard apply`: which models are installed and how much VRAM you have are machine facts, not repository facts. A `contextWindowSize` is applied when it is `0` (the model's own window) or from 512 to 1,000,000; any other value is named and left aside. |
 | Never | everything else — `validators`, `permissions`, `baseUrl`, `apiKey`, `customTools`, … | Ignored, and named in the `/onboard` report (⛔) plus `/diagnostics`. Nesting one of them under `recommend` does not launder it. |
 

@@ -1568,4 +1568,9 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="NoteNotRead" xml:space="preserve"><value>턴이 끝나기 전에 메모를 읽지 않았습니다. 입력란으로 되돌아갔습니다.</value></data>
   <data name="QueueGivenBack" xml:space="preserve"><value>턴이 정상적으로 끝나지 않았습니다. 보내기를 기다리던 메시지가 입력란으로 되돌아갔습니다.</value></data>
   <data name="QueueActionsKept" xml:space="preserve"><value>턴이 정상적으로 끝나지 않았습니다. 입력한 메시지는 입력란으로 되돌아갔고, 편집기 작업은 대기열에 남아 다음 답변 후에 실행됩니다.</value></data>
+  <data name="ExcludedFromAi" xml:space="preserve"><value>'{0}'은(는) {1}의 {2}번째 줄(`{3}`)에 의해 AI 도구에서 제외되었습니다. 내용은 모델에 전송되지 않았습니다.</value></data>
+  <data name="ExcludedLeftOut" xml:space="preserve"><value>AI 도구에서 제외된 파일 {0}개({1})는 모델이 읽지 않았습니다.</value></data>
+  <data name="LabelIgnoreFiles" xml:space="preserve"><value>읽는 제외 파일</value></data>
+  <data name="HintIgnoreFiles" xml:space="preserve"><value>쉼표로 구분된 이름이며 작업 영역 루트에서 gitignore 구문으로 읽습니다. 제외된 내용은 어떤 AI 도구도 읽지 않으며 모든 제외는 알려집니다. 비워 두면 아무것도 읽지 않습니다.</value></data>
+  <data name="BackupNotSent" xml:space="preserve"><value>'{0}'은(는) Inferpal이 보관하는 백업 사본입니다. 이 작업 영역이 AI 도구에서 파일을 제외하는 동안 백업은 모델에 전송되지 않습니다.</value></data>
 </root>

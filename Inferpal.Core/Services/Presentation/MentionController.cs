@@ -307,10 +307,18 @@ internal static class MentionController
     /// receives a note in its place. A folder that exists but cannot be read, or one the walk skips by name, keeps its
     /// chip — its note is about that folder, and says so (<see cref="BuildFolderContext"/>).
     /// </remarks>
-    public static string? FolderRefusal(string folderPath) =>
+    public static string? FolderRefusal(string folderPath, string? root = null) =>
         File.Exists(folderPath)       ? Strings.MentionFolderIsFile(Path.GetFileName(folderPath))
         : !Directory.Exists(folderPath) ? Strings.DirNotFound(folderPath)
+        : Governance.ContentExclusions.Of(folderPath, isFolder: true) is { } why
+            ? Strings.ExcludedFromAi(Governance.ContentExclusions.Shown(folderPath, root), why.File, why.Line, why.Pattern)
         : null;
+
+    /// <summary>
+    /// Why <c>@file</c> — or any attachment of a file's content — attaches nothing because the workspace's ignore files
+    /// exclude it, or <c>null</c>; the notice names the file, the ignore file, the line and the pattern.
+    /// </summary>
+    public static string? FileRefusal(string filePath, string? root) => Governance.ContentExclusions.NoticeFor(filePath, root);
 
     /// <summary>
     /// Why <c>@code</c> attaches nothing — the notice shown in place of a chip — or <c>null</c> when there is an index to
@@ -432,6 +440,10 @@ internal static class MentionController
                     + string.Join(", ", limits.OtherTypes.OrderByDescending(t => t.Value).ThenBy(t => t.Key, StringComparer.Ordinal)
                                                      .Take(5).Select(t => $"{t.Key} ×{t.Value}"))
                     + (limits.OtherTypes.Count > 5 ? ", …" : string.Empty) + ")");
+        // ⚠ And the ones the workspace keeps out of reach: unlisted, a file the model is asked about reads as absent.
+        if (limits.Excluded.Count > 0)
+            notes.Add($"({limits.Excluded.Count} file(s) excluded from AI tools by {limits.Excluded.Rules()} are not listed "
+                    + "nor read — they exist)");
 
         if (notes.Count > 0) sb.Append('\n').AppendLine().AppendJoin('\n', notes);
         return sb.ToString();
@@ -461,6 +473,9 @@ internal static class MentionController
 
         /// <summary>Files left out because of their type, counted per extension ("(none)" for a name without one).</summary>
         public readonly Dictionary<string, int> OtherTypes = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>Files the workspace's ignore files exclude — neither listed nor read.</summary>
+        public readonly Governance.ContentExclusions.Tally Excluded = new();
     }
 
     private static void CollectFolderFiles(
@@ -499,6 +514,8 @@ internal static class MentionController
                 // five thousand files was listed whole, because the count was only ever consulted
                 // between directories. A cap that a common shape walks straight past is not a cap.
                 if (results.Count >= MaxWalkFiles) { limits.FileCapHit = true; return; }
+                // Excluded by the workspace's ignore files: neither listed nor read, counted for the note.
+                if (Governance.ContentExclusions.Of(file) is { } why) { limits.Excluded.Add(file, why); continue; }
                 results.Add(file);
             }
             foreach (var subDir in Directory.GetDirectories(dir).OrderBy(d => d, StringComparer.Ordinal))

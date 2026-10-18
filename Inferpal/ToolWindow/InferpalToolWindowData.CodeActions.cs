@@ -32,10 +32,14 @@ internal partial class InferpalToolWindowData
     /// Returns the raw source code (no fences) of the active selection or full document,
     /// together with a display label suitable for use as an <see cref="AttachmentItem"/> chip.
     /// </summary>
-    private async Task<(string RawCode, string FileName, string Label)> GetActiveCodeAsync(CancellationToken ct)
+    /// <remarks>An active document the workspace's ignore files exclude gives no code, and <c>Excluded</c> the sentence
+    /// that says so.</remarks>
+    private async Task<(string RawCode, string FileName, string Label, string? Excluded)> GetActiveCodeAsync(CancellationToken ct)
     {
         var view = await ResolveActiveViewAsync(ct);
-        if (view is null) return (string.Empty, string.Empty, string.Empty);
+        if (view is null) return (string.Empty, string.Empty, string.Empty, null);
+        if (Services.Governance.ContentExclusions.NoticeFor(view.Document.Uri.LocalPath, _indexService.RootDir) is { } excluded)
+            return (string.Empty, string.Empty, string.Empty, excluded);
 
         var fileName = Path.GetFileName(view.Document.Uri.LocalPath);
         var sel      = view.Selection;
@@ -49,7 +53,7 @@ internal partial class InferpalToolWindowData
         var window  = await Services.Agent.ContextManager.EffectiveWindowAsync(
             _config, _client, ModelRouter.Resolve(_config, ModelRole.CodeActions), ct);
         var excerpt = CodeExcerpt.Of(rawCode, CodeExcerpt.BudgetFor(window));
-        return (excerpt.Text, fileName, excerpt.Label(label));
+        return (excerpt.Text, fileName, excerpt.Label(label), null);
     }
 
     // One reader for both front-ends: the host picks the persona from the same table.

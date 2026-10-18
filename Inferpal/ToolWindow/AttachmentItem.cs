@@ -34,13 +34,18 @@ internal sealed class AttachmentItem : NotifyPropertyChangedObject
     /// path, but not "attached" for the relevant code added under the question, which skips an attached file's chunks.</summary>
     public bool    IsCut        { get; }
 
+    /// <summary>The file the chip's text comes from, whole or part (a selection's included): judged again against the
+    /// workspace's ignore files when the question leaves.</summary>
+    public string? Origin       { get; }
+
     public AttachmentItem(string label, string content, Action onRemove,
-        bool isAutoAttach = false, string? sourcePath = null, Action? onPin = null, bool isCut = false)
+        bool isAutoAttach = false, string? sourcePath = null, Action? onPin = null, bool isCut = false, string? origin = null)
     {
         Label         = label;
         Content       = content;
         IsAutoAttach  = isAutoAttach;
         SourcePath    = sourcePath;
+        Origin        = origin ?? sourcePath;
         IsCut         = isCut;
         CanPin        = onPin is not null && !string.IsNullOrEmpty(sourcePath);
         RemoveCommand = new AsyncCommand((_, _) => { onRemove(); return Task.CompletedTask; });

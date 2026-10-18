@@ -98,6 +98,12 @@ internal class InlineEditSelectionCommand : Command
         }
 
         if (string.IsNullOrWhiteSpace(originalCode)) return;
+        // Excluded by the workspace's ignore files: the code never reaches the model, and the reason is said.
+        if (Services.Governance.ContentExclusions.NoticeFor(view.Document.Uri.LocalPath, null) is { } excluded)
+        {
+            await ShowInfoAsync(excluded, ct);
+            return;
+        }
 
         // ── 3. Show dialog and collect instruction ────────────────────────────
         // The dialog runs on its own STA thread and stays visible as a spinner

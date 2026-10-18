@@ -18,6 +18,9 @@ internal enum InPlaceEditOutcome
     PreviewShown,
     /// <summary>The editor refused the edit: the document changed or was closed while the model was working.</summary>
     DocumentChanged,
+    /// <summary>The document is excluded by the workspace's ignore files: nothing was sent to the model, and the
+    /// result's detail is the sentence that says so.</summary>
+    Excluded,
 }
 
 /// <summary>Outcome of an in-place code edit plus, on <see cref="InPlaceEditOutcome.Failed"/>,
@@ -55,6 +58,10 @@ internal static class InPlaceCodeEdit
         var (originalCode, _, _, _) = CodeActionPipeline.ResolveTarget(
             docText, sel.Start.Offset, sel.End.Offset, sel.IsEmpty);
         if (string.IsNullOrWhiteSpace(originalCode)) return new(InPlaceEditOutcome.Failed);
+        // Excluded by the workspace's ignore files: the document never reaches the model (the slash commands and the
+        // context menu both come here).
+        if (Services.Governance.ContentExclusions.NoticeFor(view.Document.Uri.LocalPath, null) is { } excluded)
+            return new(InPlaceEditOutcome.Excluded, excluded);
 
         // Spinner overlay while the model generates.
         InlineEditInputWindow dlg;

@@ -58,6 +58,7 @@ internal sealed class ProjectIndexService : IDisposable
     private CancellationTokenSource?    _cts;
     private FileSystemWatcher?          _watcher;
     private FileSystemWatcher?          _dirWatcher;   // folders: see SetupFileWatcher
+    private FileSystemWatcher?          _rootWatcher;  // the root's own files — its ignore files: see SetupFileWatcher
     private System.Threading.Timer?     _debounceTimer;
 
     // The watcher raises changes on several thread-pool threads at once, and Dispose can land in
@@ -145,6 +146,16 @@ internal sealed class ProjectIndexService : IDisposable
     /// <summary>How many names <see cref="OversizeFiles"/> keeps; the count stays exact beyond it.</summary>
     internal const int OversizeNamesCap = 50;
 
+    /// <summary>
+    /// How many source files the last pass left out because the workspace's ignore files exclude them, and the rules
+    /// that did (<c>.aiignore line 3 (`secrets/`)</c>) — empty when none.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Said by <c>search_codebase</c> for the reason <see cref="SkippedBySize"/> is: a file missing from the index is
+    /// missing from every count, and "nothing found" about it reads as "it does not exist".
+    /// </remarks>
+    public IgnoredSourceFiles ExcludedByIgnoreFiles { get; private set; } = IgnoredSourceFiles.None;
+
     /// <summary>Solution root directory being indexed.</summary>
     public string RootDir    { get; private set; } = string.Empty;
 
@@ -180,6 +191,9 @@ internal sealed class ProjectIndexService : IDisposable
     {
         RootDir          = rootDir;
         _profileExcludes = ProjectProfile.Load(rootDir).IndexExcludes;
+        // The workspace's ignore files apply below it, to everything that reads for the model (ContentExclusions). Both
+        // front-ends and every ACP thread set their root here: one declaration per workspace.
+        ContentExclusions.Declare(rootDir, () => _config.IgnoreFiles);
         // ⚠ The watcher is armed HERE too, not only by the indexing pass, because it has a second
         // consumer that has nothing to do with RAG: the C# semantic index is cached per workspace
         // and this watcher is the only thing that invalidates it. Armed from the pass alone, it did
@@ -372,6 +386,11 @@ internal sealed class ProjectIndexService : IDisposable
                 lexical = bm25.Rank(queryTokens, pool);
             }
         }
+
+        // ⚠ A file an ignore file excludes since it was indexed (a saved index read at start, a rule added while the
+        // re-index waits) is never returned: dropped from both rankings, counted for the note of the call.
+        vector  = vector.Where(x => !ContentExclusions.SkipInWalk(allChunks[x.Idx].FilePath)).ToList();
+        lexical = lexical.Where(x => !ContentExclusions.SkipInWalk(allChunks[x.Idx].FilePath)).ToList();
 
         // ── Fuse / fall back ──────────────────────────────────────────────
         // Display score stays the cosine similarity (meaningful to the user); ranking is the fusion.
@@ -788,6 +807,8 @@ internal sealed class ProjectIndexService : IDisposable
         _watcher     = null;
         _dirWatcher?.Dispose();
         _dirWatcher  = null;
+        _rootWatcher?.Dispose();
+        _rootWatcher = null;
         _watchedRoot = null;
         try
         {
@@ -825,6 +846,23 @@ internal sealed class ProjectIndexService : IDisposable
             {
                 OnDirectoryChangedCore(e.OldFullPath);
                 OnDirectoryChangedCore(e.FullPath);
+            };
+
+            // ⚠ And the root's own files, whatever their extension: the watcher above filters on source extensions, so an
+            // edited .aiignore raised no event and both indexes kept answering with what it now excludes.
+            _rootWatcher = new FileSystemWatcher(rootDir)
+            {
+                IncludeSubdirectories = false,
+                NotifyFilter          = NotifyFilters.LastWrite | NotifyFilters.FileName,
+                EnableRaisingEvents   = true,
+            };
+            _rootWatcher.Changed += (_, e) => OnRootFileChanged(e.FullPath);
+            _rootWatcher.Created += (_, e) => OnRootFileChanged(e.FullPath);
+            _rootWatcher.Deleted += (_, e) => OnRootFileChanged(e.FullPath);
+            _rootWatcher.Renamed += (_, e) =>
+            {
+                OnRootFileChanged(e.OldFullPath);
+                OnRootFileChanged(e.FullPath);
             };
             _watchedRoot = rootDir;
         }
@@ -877,6 +915,52 @@ internal sealed class ProjectIndexService : IDisposable
 
     private void OnFileChanged(object _, FileSystemEventArgs e) => OnFileChangedCore(e.FullPath);
 
+    /// <summary>
+    /// When <paramref name="path"/> is an ignore file of the workspace, every file is judged again — the indexed ones it now
+    /// excludes leave the index (QueueDirectoryAsync queues every indexed file under the folder), the ones it no longer
+    /// excludes enter it; the C# index too, RAG on or off (rename_symbol and the analysis read its trees).
+    /// </summary>
+    /// <returns>Whether it was one.</returns>
+    internal bool OnRootFileChanged(string path)
+    {
+        if (!ContentExclusions.Changed(path)) return false;
+        var root = RootDir;
+        _ = Task.Run(() => Lsp.CSharpSemanticIndex.NotifyExclusionsChanged(root));
+        if (!string.IsNullOrEmpty(IndexedRoot)) _ = Task.Run(() => RejudgeAsync(root));
+        return true;
+    }
+
+    /// <summary>
+    /// After an ignore file changed: the files whose verdict changed are queued — indexed ones it now excludes (the
+    /// re-index forgets them), source files it no longer excludes and the index lacks (the re-index reads them) — and the
+    /// count search_codebase says is taken again.
+    /// </summary>
+    /// <remarks>Only those: queueing the whole repository re-chunks every file at each save of an ignore file, and
+    /// search_codebase then calls all of them "not re-indexed yet".</remarks>
+    private async Task RejudgeAsync(string root)
+    {
+        try
+        {
+            HashSet<string> indexed;
+            await _chunkLock.WaitAsync().ConfigureAwait(false);
+            try { indexed = new HashSet<string>(_chunksByFile.Keys, PathComparer.Default); }
+            finally { _chunkLock.Release(); }
+
+            bool Source(string f) => CodeChunker.SupportedExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase);
+            var listed = ContentExclusions.Counting(() => WorkspaceScan.EnumerateFiles(root, "*").ToList(), out var ignored);
+            ExcludedByIgnoreFiles = IgnoredSourceFiles.Of(ignored.Only(Source));
+
+            var changed = indexed.Where(f => ContentExclusions.Of(f) is not null)
+                                 .Concat(listed.Where(f => Source(f) && !indexed.Contains(f) && !IsExcluded(f) && !IsOversize(f)))
+                                 .ToList();
+            if (changed.Count == 0) return;
+            lock (_pendingRebuild) foreach (var f in changed) _pendingRebuild.Add(f);
+            lock (_notYetReindexed) foreach (var f in changed) _notYetReindexed.Add(f);
+            ArmDebounce();
+        }
+        catch (Exception ex) { Diagnostics.Swallow("ProjectIndexService.Rejudge", ex); }
+    }
+
     internal void OnFileChangedCore(string path)
     {
         // The C# semantic index is cached per workspace, so something has to keep it honest: a
@@ -890,7 +974,10 @@ internal sealed class ProjectIndexService : IDisposable
         // retry, or renamed part of the references, and analyze_impact answered about code that no longer existed.
         if (WorkspaceScan.IsExcludedPath(path, RootDir)) return;
         Lsp.CSharpSemanticIndex.NotifyFileChanged(path);
-        if (IsExcluded(path)) return;   // the profile's exclusions: the search index below
+        if (OnRootFileChanged(path)) return;
+        // The profile's exclusions: the search index below. The ignore files' are not: a file they exclude is
+        // queued, for the re-index to take it out of the index.
+        if (IndexExclusions.IsExcluded(path, RootDir, _profileExcludes)) return;
 
         // ⚠ The RAG half only when a pass owns this root. Since SetRoot arms the watcher, events now
         // arrive with `ragEnabled` off as well — and chunking a file into an index that does not
@@ -1122,6 +1209,14 @@ internal sealed class ProjectIndexService : IDisposable
                 continue;
             }
 
+            // ⚠ And excluded since it was indexed: its chunks would keep answering searches, the file the workspace
+            // asked to keep out of reach.
+            if (ContentExclusions.Of(file) is not null)
+            {
+                await ForgetFileAsync(file, db, ct);
+                continue;
+            }
+
             try
             {
                 var content    = await Tools.TextFileEncoding.ReadTextAsync(file, ct);
@@ -1222,8 +1317,10 @@ internal sealed class ProjectIndexService : IDisposable
         }
     }
 
-    /// <summary>Cosine similarity between two vectors (must have equal length; returns 0 if dimensions differ).</summary>
-    private bool IsExcluded(string path) => IndexExclusions.IsExcluded(path, RootDir, _profileExcludes);
+    /// <summary>Whether the search index leaves <paramref name="path"/> out: the project profile's exclusions, and the
+    /// workspace's ignore files (<see cref="ContentExclusions"/>) — what they exclude is never chunked nor embedded.</summary>
+    private bool IsExcluded(string path) =>
+        IndexExclusions.IsExcluded(path, RootDir, _profileExcludes) || ContentExclusions.Of(path) is not null;
 
     /// <summary>
     /// Collects source files under <paramref name="rootDir"/>, skipping generated
@@ -1237,6 +1334,7 @@ internal sealed class ProjectIndexService : IDisposable
         var result   = new List<string>();
         var tooBig   = 0;
         var tooBigAt = new List<string>();
+        var excludedByIgnore = IgnoredSourceFiles.None;
         // ⚠ Once per pass, BEFORE the walk: `IgnoreInaccessible` skips an unlistable folder without
         // throwing, so the `catch` below never sees it and the `null` it returns — "partial list,
         // does not replace the index" — does not fire either. The pass is legitimate (nothing better
@@ -1246,8 +1344,11 @@ internal sealed class ProjectIndexService : IDisposable
         try
         {
             // ONE walk filtered by extension: the per-extension loop walked the whole tree once for
-            // every supported language.
-            foreach (var f in WorkspaceScan.EnumerateFiles(rootDir, "*"))
+            // every supported language. Counted: what the ignore files keep out of it is said by search_codebase.
+            var listed = ContentExclusions.Counting(() => WorkspaceScan.EnumerateFiles(rootDir, "*").ToList(), out var ignored);
+            ignored = ignored.Only(f => CodeChunker.SupportedExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase));
+            excludedByIgnore = IgnoredSourceFiles.Of(ignored);
+            foreach (var f in listed)
             {
                 if (!CodeChunker.SupportedExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase)
                     || IsExcluded(f))
@@ -1276,6 +1377,7 @@ internal sealed class ProjectIndexService : IDisposable
         // pass whose result was thrown away.
         SkippedBySize = tooBig;
         OversizeFiles = tooBigAt;
+        ExcludedByIgnoreFiles = excludedByIgnore;
         return result;
     }
 
@@ -1347,12 +1449,25 @@ internal sealed class ProjectIndexService : IDisposable
         _cts?.Dispose();
         _watcher?.Dispose();
         _dirWatcher?.Dispose();
+        _rootWatcher?.Dispose();
         _watchedRoot = null;
 
         // Deliberately NOT disposing _chunkLock/_shadowLock: a background indexing pass may still
         // be awaiting them, and disposing a SemaphoreSlim under a waiter turns a clean cancellation
         // into an ObjectDisposedException in a detached task. They die with the process.
     }
+}
+
+/// <summary>The source files the workspace's ignore files keep out of the index, and the rules that do — as the coverage
+/// note of <c>search_codebase</c> says them.</summary>
+internal sealed record IgnoredSourceFiles(int Count, string Rules)
+{
+    /// <summary>None kept out.</summary>
+    public static readonly IgnoredSourceFiles None = new(0, string.Empty);
+
+    /// <summary>What a walk's tally counted.</summary>
+    public static IgnoredSourceFiles Of(ContentExclusions.Tally tally) =>
+        tally.Count == 0 ? None : new(tally.Count, tally.Rules());
 }
 
 /// <summary>The index as <see cref="ProjectIndexService.SnapshotAsync"/> reads it — what the settings card renders.</summary>

@@ -306,6 +306,16 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
                 continue;
             }
             ForgetMissingPin(pinnedPath);
+            // ⚠ Excluded by the workspace's ignore files: its section says so in place of its content — dropped, the pin
+            // the user sees in the chips would pass for one the model reads.
+            if (Governance.ContentExclusions.Of(pinnedPath) is { } excluded)
+            {
+                files.Add(new(PromptSectionKind.Pinned, Path.GetFileName(pinnedPath),
+                    "\n\n## Pinned: " + Path.GetFileName(pinnedPath) + "\n\n",
+                    $"(excluded from AI tools by {excluded.File}, line {excluded.Line} (`{excluded.Pattern}`): its content is "
+                    + "not sent)", Path.GetFileName(pinnedPath), Key: pinnedPath));
+                continue;
+            }
             try
             {
                 var pinnedContent = Tools.TextFileEncoding.ReadText(pinnedPath).Trim();

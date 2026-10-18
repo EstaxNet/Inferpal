@@ -321,6 +321,14 @@ internal static class OnboardCommandHandler
         }
 
         var readme = FindReadme(root);
+        // Excluded by the workspace's ignore files: named, never quoted — the brief is the system prompt of later sessions.
+        if (readme is not null && Governance.ContentExclusions.Of(readme) is { } excluded)
+        {
+            sb.Append("\n## ").Append(Path.GetFileName(readme)).Append('\n')
+              .Append("- ⚠ excluded from AI tools by ").Append(excluded.File).Append(", line ").Append(excluded.Line)
+              .Append(": not read\n");
+            readme = null;
+        }
         if (readme is not null)
         {
             try

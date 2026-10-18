@@ -68,6 +68,10 @@ internal sealed record TestGenerationPlan(
     public static TestGenerationPlan EmptyReply(string testPath, bool extended, string model, string server) =>
         new(false, testPath, Path.GetFileName(testPath), extended, NoChange: false, string.Empty,
             Refusal: Strings.MsgEmptyResponseFrom(model, server));
+
+    /// <summary>The source or its test file is excluded by the workspace's ignore files: nothing is sent to the model.</summary>
+    public static TestGenerationPlan Excluded(string testPath, string notice) =>
+        new(false, testPath, Path.GetFileName(testPath), Extended: false, NoChange: false, string.Empty, Refusal: notice);
 }
 
 /// <summary>
@@ -134,6 +138,13 @@ internal static class TestGenerationPlanner
         var sourceName = Path.GetFileName(sourcePath);
         var testPath   = TestFilePathResolver.Resolve(sourcePath);
         var testName   = Path.GetFileName(testPath);
+
+        // ⚠ Neither the source nor the test file it extends goes to the model when the workspace excludes it — both
+        // editors plan here, so the refusal holds for both.
+        if (Governance.ContentExclusions.NoticeFor(sourcePath, null) is { } sourceExcluded)
+            return TestGenerationPlan.Excluded(testPath, sourceExcluded);
+        if (Governance.ContentExclusions.NoticeFor(testPath, null) is { } testExcluded)
+            return TestGenerationPlan.Excluded(testPath, testExcluded);
 
         // Read any existing test file so the model extends it instead of clobbering it.
         // ⚠ And a read that FAILS is not "there is no test file": swallowing it left `existing`

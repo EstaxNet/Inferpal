@@ -39,7 +39,8 @@ const STATUS_POLL_MS = 30_000;
 const APPROVAL_ATTENTION_MS = 15_000;
 
 /** A context chip waiting for the next question: its label, its content, and the file it came from. */
-type PendingAttachment = { name: string; content: string; sourcePath?: string };
+/** `origin`: the file the chip's text comes from, whole or part — what the workspace's ignore files are asked about. */
+type PendingAttachment = { name: string; content: string; sourcePath?: string; origin?: string };
 /** A regenerated question's turn, as it was sent: the prompt, whether it was a code action, the relevant-code query. */
 type TurnReplay = { prompt: string; codeAction: boolean; query?: string };
 
@@ -1474,7 +1475,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           return;
         }
         this.addChip('📄 ' + vscode.workspace.asRelativePath(editor.document.uri), editor.document.getText(),
-                     editor.document.uri.fsPath);
+                     editor.document.uri.fsPath, editor.document.uri.fsPath);
         return;
       }
       case 'attachSelection': {
@@ -1484,7 +1485,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           void vscode.window.showInformationMessage(t('The selection is empty.'));
           return;
         }
-        this.addChip('✂ ' + vscode.workspace.asRelativePath(editor.document.uri), text);
+        this.addChip('✂ ' + vscode.workspace.asRelativePath(editor.document.uri), text, undefined, editor.document.uri.fsPath);
         return;
       }
       case 'attachBrowse': {
@@ -1494,7 +1495,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         }
         try {
           const doc = await vscode.workspace.openTextDocument(picked[0]);
-          this.addChip('📄 ' + (picked[0].path.split('/').pop() ?? picked[0].fsPath), doc.getText(), picked[0].fsPath);
+          this.addChip('📄 ' + (picked[0].path.split('/').pop() ?? picked[0].fsPath), doc.getText(), picked[0].fsPath,
+                       picked[0].fsPath);
         } catch (err) {
           // A binary or unreadable file: the user picked it, and no chip appearing reads as a broken menu.
           this.log(`[chat] attachBrowse failed: ${String(err)}`);
@@ -1517,8 +1519,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   /** `sourcePath`: the file a whole-file chip holds, as Visual Studio's `SourcePath` — never for a selection or a
-   * synthetic chip (clipboard, problems), which are not that file. */
-  private addChip(name: string, content: string, sourcePath?: string): void {
+   * synthetic chip (clipboard, problems), which are not that file. `origin`: the file the text comes from, a selection's
+   * included — judged against the workspace's ignore files when the question is sent. */
+  private addChip(name: string, content: string, sourcePath?: string, origin?: string): void {
     // A chip that holds part of its file says how much, on the chip and under the question.
     const capped = capAttachment(content, 60_000);
     this.pendingAttachments.push({
@@ -1527,8 +1530,20 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // code the host adds (it skips an attached file's chunks, "already in the prompt").
       sourcePath: capped.cut ? undefined : sourcePath,
       content: capped.text,
+      origin,
     });
     this.postChips();
+  }
+
+  /** Which of `paths` the workspace's ignore files exclude, one entry per path (an empty path is never excluded). */
+  private static async excluded(host: HostClient, paths: string[]): Promise<({ notice: string; forModel: string } | undefined)[]> {
+    if (!paths.some((p) => p.length > 0)) {
+      return paths.map(() => undefined);
+    }
+    const answer = await host.exclusionsCheck(paths);
+    return paths.map((p, i) => (p.length > 0 && answer.notices[i]
+      ? { notice: answer.notices[i] ?? '', forModel: answer.forModel[i] ?? '' }
+      : undefined));
   }
 
   /** "big.cs (first 60,000 of 183,402 characters)", in the interface language. */
@@ -1655,7 +1670,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * Reads through `openTextDocument`, so dirty buffers win over disk. Non-file tokens
    * (someone's @handle) simply resolve to nothing and stay as typed. */
   /** `labels`: what the person reads under the question when a file was not sent whole, or not sent at all. */
-  private async expandMentions(prompt: string): Promise<{ text: string; paths: string[]; labels: string[] }> {
+  private async expandMentions(prompt: string, host: HostClient): Promise<{ text: string; paths: string[]; labels: string[] }> {
     const folders = (vscode.workspace.workspaceFolders ?? []).map((f) => ({ name: f.name, target: f.uri }));
     if (folders.length === 0 || !prompt.includes('@')) {
       return { text: prompt, paths: [], labels: [] };
@@ -1688,6 +1703,24 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         } catch {
           // not a workspace file — plain text, as below
         }
+        continue;
+      }
+      // A token that is no file (someone's @handle, an annotation in pasted code) stays text, and costs the host nothing.
+      let isFile = false;
+      try {
+        isFile = ((await vscode.workspace.fs.stat(uri)).type & vscode.FileType.File) !== 0;
+      } catch {
+        // not a workspace file
+      }
+      if (!isFile) {
+        continue;
+      }
+      // ⚠ Excluded by the workspace's ignore files: never read, and named to both readers — the person under the
+      // question, the model in the prompt.
+      const excluded = await ChatViewProvider.excluded(host, [uri.fsPath]);
+      if (excluded[0]) {
+        attachments += `\n\n## Not attached: ${token}\n${excluded[0].forModel}`;
+        labels.push(excluded[0].notice);
         continue;
       }
       try {
@@ -2413,7 +2446,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     const code = selection ? doc.getText(editor.selection) : doc.getText();
     const file = vscode.workspace.asRelativePath(doc.uri);
     // The model the turn below will ask: the excerpt is sized for the window it really loaded.
-    const excerpt = await host.codeExcerpt(code, file, selection, this.model || undefined);
+    const excerpt = await host.codeExcerpt(code, file, selection, this.model || undefined, doc.uri.fsPath);
+    // Excluded by the workspace's ignore files: nothing goes to the model, and the reason is the answer.
+    if (excerpt.refusal) {
+      this.finishTurn('', excerpt.refusal, false, 0);
+      return;
+    }
     const sentence = kind === 'explain'
       ? t('Explain the following code from {0} — what it does, how, and any pitfalls.', file)
       : t('Review the following code from {0}: point out bugs, risks, and concrete improvements.', file);
@@ -2433,14 +2471,22 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private async chatTurn(prompt: string, host: HostClient, codeAction = false, query?: string): Promise<void> {
     try {
       const agentMode = vscode.workspace.getConfiguration('inferpal').get<boolean>('agentMode', false);
-      const mentions = await this.expandMentions(prompt);
+      const mentions = await this.expandMentions(prompt, host);
       let expanded = mentions.text;
       const attachedPaths = [...mentions.paths];
       // Under the question: the chips, and any typed @file that was cut or not sent.
       const named = [...mentions.labels];
       const chips = this.regenerating ? this.resendAttachments ?? [] : this.continuing ? [] : this.pendingAttachments;
       if (chips.length > 0) {
-        for (const a of chips) {
+        // A chip of a file the workspace's ignore files exclude is not sent: asked once, for every chip with a file.
+        const excluded = await ChatViewProvider.excluded(host, chips.map((a) => a.origin ?? ''));
+        for (const [i, a] of chips.entries()) {
+          const why = excluded[i];
+          if (why) {
+            expanded += `\n\n## Not attached: ${a.name}\n${why.forModel}`;
+            named.push(why.notice);
+            continue;
+          }
           expanded += `\n\n## Attached: ${a.name}\n\`\`\`\n${a.content}\n\`\`\``;
           // The file's path, never the chip's label: the host resolves these against the root to skip the RAG
           // chunks of a file already in the prompt, and "📄 src/x.ts" names no file — the same content went in twice.
@@ -2448,7 +2494,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             attachedPaths.push(a.sourcePath);
           }
         }
-        named.push(...chips.map((a) => a.name));
+        named.push(...chips.filter((_, i) => !excluded[i]).map((a) => a.name));
         if (!this.regenerating) {
           this.pendingAttachments = [];
           this.postChips();
@@ -2958,6 +3004,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
     if (result.outcome === 'noChange') {
       finish('assistant', t('Nothing to change — the code already looks good.'));
+      return;
+    }
+    if (result.outcome === 'refused') {
+      finish('error', result.failureDetail ?? '');
       return;
     }
     if (result.outcome !== 'edited' || result.edits.length === 0) {

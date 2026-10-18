@@ -340,6 +340,7 @@ internal static class SettingsSchema
             new("SettingsSectionRepoInstructions",
             [
                 new("repoInstructionFamilies", SettingKind.Text, "LabelRepoInstructionFamilies", "HintRepoInstructionFamilies"),
+                new("ignoreFiles", SettingKind.Text, "LabelIgnoreFiles", "HintIgnoreFiles"),
                 new("skillsAutoMode", SettingKind.Bool, "LabelSkillsAutoMode", "HintSkillsAutoMode"),
             ],
             Description: "SettingsSectionRepoInstructionsDesc", Widget: "repoInstructions"),

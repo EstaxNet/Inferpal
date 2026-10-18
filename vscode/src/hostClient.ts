@@ -30,6 +30,7 @@ import {
   CodeActionParams,
   CodeActionResult,
   CodeExcerptResult,
+  ExclusionsCheckResult,
   ChatExportParams,
   ConnectionCheckResult,
   DocumentParams,
@@ -399,7 +400,7 @@ export class HostClient {
   /** Fill-in-the-Middle completion. Cancelling `token` sends `$/cancelRequest`,
    * which the host maps to a CancellationToken that aborts the LLM call. */
   fimComplete(
-    params: { prefix: string; suffix: string; maxTokens?: number; temperature?: number; model?: string },
+    params: { prefix: string; suffix: string; maxTokens?: number; temperature?: number; model?: string; path?: string },
     token?: CancellationToken,
   ): Promise<string> {
     return this.connection().sendRequest<string>('fim/complete', params, token);
@@ -468,8 +469,13 @@ export class HostClient {
 
   /** The code /explain and /review send, sized for the window `model` is really loaded with (the Visual
    *  Studio window's excerpt, from the same Core), and the label that names it under the question. */
-  codeExcerpt(code: string, fileName: string, selection: boolean, model?: string): Promise<CodeExcerptResult> {
-    return this.connection().sendRequest<CodeExcerptResult>('code/excerpt', { code, fileName, selection, model });
+  codeExcerpt(code: string, fileName: string, selection: boolean, model?: string, path?: string): Promise<CodeExcerptResult> {
+    return this.connection().sendRequest<CodeExcerptResult>('code/excerpt', { code, fileName, selection, model, path });
+  }
+
+  /** Which of these files the workspace's ignore files exclude — asked before their content is sent (chips, `@path`). */
+  exclusionsCheck(paths: string[]): Promise<ExclusionsCheckResult> {
+    return this.connection().sendRequest<ExclusionsCheckResult>('exclusions/check', { paths });
   }
 
   /** Models of the backend the caller is LOOKING AT. Without overrides this is the saved

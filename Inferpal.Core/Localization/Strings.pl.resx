@@ -1568,4 +1568,9 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="NoteNotRead" xml:space="preserve"><value>Notatka nie została odczytana przed końcem tury — wróciła do pola wprowadzania.</value></data>
   <data name="QueueGivenBack" xml:space="preserve"><value>Tura nie zakończyła się normalnie — wiadomości czekające na wysłanie wróciły do pola wprowadzania.</value></data>
   <data name="QueueActionsKept" xml:space="preserve"><value>Tura nie zakończyła się normalnie — wpisane wiadomości wróciły do pola wprowadzania; akcje edytora zostają w kolejce i zostaną wykonane po następnej odpowiedzi.</value></data>
+  <data name="ExcludedFromAi" xml:space="preserve"><value>„{0}” jest wykluczony z narzędzi AI przez {1}, wiersz {2} (`{3}`): jego zawartość nie została wysłana do modelu.</value></data>
+  <data name="ExcludedLeftOut" xml:space="preserve"><value>Model nie przeczytał {0} {0:pliku|plików|plików} wykluczonych z narzędzi AI ({1}).</value></data>
+  <data name="LabelIgnoreFiles" xml:space="preserve"><value>Odczytywane pliki wykluczeń</value></data>
+  <data name="HintIgnoreFiles" xml:space="preserve"><value>Nazwy rozdzielone przecinkami, odczytywane w katalogu głównym obszaru roboczego w składni gitignore: żadne narzędzie AI nie czyta tego, co wykluczają, a każde wykluczenie jest zgłaszane. Puste: żaden nie jest odczytywany.</value></data>
+  <data name="BackupNotSent" xml:space="preserve"><value>„{0}” to kopia zapasowa przechowywana przez Inferpal: dopóki ten obszar roboczy wyklucza pliki z narzędzi AI, kopie zapasowe nie są wysyłane do modelu.</value></data>
 </root>

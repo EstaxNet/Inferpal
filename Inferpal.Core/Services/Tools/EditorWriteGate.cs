@@ -71,6 +71,9 @@ internal static class EditorWriteGate
         var document = await editor.GetActiveDocumentAsync(ct);
         if (document is null || string.IsNullOrEmpty(document.Path))
             return new(null, NoActiveDocument(editor));
+        // Excluded by the workspace's ignore files: neither read nor changed, refused before the card.
+        if (Governance.ContentExclusions.Of(document.Path) is { } excluded)
+            return new(null, excluded.ForModel(document.Path));
 
         if (!await approval.RequestApprovalAsync(toolName, $"{document.Path}\n\n{text}", ct, subject: document.Path))
             return new(null, Strings.RunCancelled);

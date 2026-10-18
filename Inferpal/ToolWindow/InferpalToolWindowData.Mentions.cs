@@ -396,7 +396,7 @@ internal partial class InferpalToolWindowData
         {
             // A notice, never a chip, when there is no folder to walk (MentionController.FolderRefusal).
             folderPath = MentionController.FolderPath(folderPath, _indexService.RootDir);
-            if (MentionController.FolderRefusal(folderPath) is { } why)
+            if (MentionController.FolderRefusal(folderPath, _indexService.RootDir) is { } why)
             {
                 await NotifyMentionAsync(why);
                 return;
@@ -453,6 +453,12 @@ internal partial class InferpalToolWindowData
     {
         try
         {
+            // Excluded by the workspace's ignore files: a notice that names the rule, never a chip.
+            if (MentionController.FileRefusal(filePath, _indexService.RootDir) is { } excluded)
+            {
+                await NotifyMentionAsync(excluded);
+                return;
+            }
             // The unsaved buffer, as read_file shows it: the file as the user sees it in the editor.
             if (_tools.Overlay is { } overlay) await overlay.RefreshAsync(ct, [filePath]);
             if (await MentionController.FileMentionTextAsync(filePath, _tools.Overlay, ct) is not { } content)

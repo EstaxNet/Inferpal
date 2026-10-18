@@ -61,6 +61,8 @@ internal abstract class InPlaceCodeActionBase : Command
             await Extensibility.Shell().ShowPromptAsync(InPlaceCodeEdit.FailureMessage(result.FailureDetail), PromptOptions.OK, ct);
         else if (result.Outcome == InPlaceEditOutcome.DocumentChanged)
             await Extensibility.Shell().ShowPromptAsync(Strings.CodeActionDocumentChanged, PromptOptions.OK, ct);
+        else if (result.Outcome == InPlaceEditOutcome.Excluded)
+            await Extensibility.Shell().ShowPromptAsync(result.FailureDetail ?? string.Empty, PromptOptions.OK, ct);
     }
 
     private string ResolveModel() => ModelRouter.Resolve(_config, ModelRole.CodeActions);

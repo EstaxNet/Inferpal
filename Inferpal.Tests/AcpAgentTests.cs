@@ -1622,6 +1622,41 @@ public sealed class AcpAgentTests : IDisposable
     /// picked in the thread when there is one, else the chat's —, never for the code-actions model.
     /// </summary>
     [Fact]
+    public async Task AnAttachedFile_TheWorkspaceExcludes_IsNamed_NeverSent()
+    {
+        File.WriteAllText(Path.Combine(_root, ".aiignore"), "secret.cs\n");
+        var secret = Path.Combine(_root, "secret.cs");
+        var open   = Path.Combine(_root, "open.cs");
+        File.WriteAllText(secret, "class Secret { const string K = \"SECRET_51c0\"; }\n");
+        File.WriteAllText(open, "class Open { const string K = \"OPEN_51c0\"; }\n");
+        var sent = new List<string>();
+        await using var h = await StartAsync(fake: p => p.OnChatRequest = (_, history, _, _) =>
+        {
+            lock (sent) sent.AddRange(history.Select(m => m.Content ?? string.Empty));
+            return Task.FromResult(new ChatTurnResult("ok", null, 0, 0));
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+
+        await h.Client.RequestAsync("session/prompt", new
+        {
+            sessionId = sid,
+            prompt = new object[]
+            {
+                new { type = "text", text = "look at these" },
+                new { type = "resource_link", uri = new Uri(secret).AbsoluteUri, name = "secret.cs" },
+                new { type = "resource_link", uri = new Uri(open).AbsoluteUri, name = "open.cs" },
+            },
+        });
+
+        string all;
+        lock (sent) all = string.Join("\n", sent);
+        Assert.Contains("OPEN_51c0", all);   // WITNESS (reference arm): an attachment nothing excludes is sent
+        Assert.DoesNotContain("SECRET_51c0", all);
+        Assert.Contains("excluded from AI tools by .aiignore, line 1", all);
+    }
+
+    [Fact]
     public async Task AnAttachedFile_IsSizedForTheModelThatAnswers()
     {
         var file = Path.Combine(_root, "orders.cs");

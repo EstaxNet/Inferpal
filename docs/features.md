@@ -335,6 +335,19 @@ exists.
   alike — is **force-prompted**: never auto-approved by any rule, session grant or setting,
   never blocked — the approval prompt, where the raw command is visible, is the actual boundary.
   See **[Tools → Permission rules](tools.md)**.
+- **Files kept out of reach** — the ignore files a repository writes for AI tools are honoured:
+  `.inferpalignore`, and JetBrains' `.aiignore`, Cursor's `.cursorignore`, Gemini's `.geminiignore`
+  and `.aiexclude`, Codeium's, Cline's, Roo's, Continue's and Aider's, read at the workspace root in
+  the gitignore syntax (negations, anchors, `**`, folders). What they exclude is never read nor
+  changed by a tool, never attached (`@file`, `@folder`, chips, ACP attachments), indexed, pinned,
+  completed by ghost text, sent by a code action (`/explain`, `/review`, `/fix`, `/refactor`, `/doc`,
+  `/test`, Edit with AI) or shown in a git diff (`get_git_status`, `@diff`, `/check`, `/commit`) —
+  and **every exclusion is said**: a refused call names the file, the line and the pattern, a walk
+  says how many files it skipped, and `/check` and `/commit` say which files the model did not read.
+  `ignoreFiles` chooses which files are read (empty = none). Not covered, by nature: what a command
+  reads by itself (`run_command` can `cat` a file — the approval card shows the command), what an MCP
+  server reads on its own, an ignore file in a subfolder, and the files written for the agent itself
+  (`.inferpal/`, `AGENTS.md` and the other instruction files, skills), which are never excluded.
 - **Instruction files always ask first** — a write to a file agents read back as instructions is
   force-prompted the same way: Inferpal's own `.inferpal/` memory, notes, context and rules, and the
   files a repository writes for coding agents (`AGENTS.md`, `CLAUDE.md`,

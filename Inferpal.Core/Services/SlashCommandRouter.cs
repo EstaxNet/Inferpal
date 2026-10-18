@@ -26,6 +26,22 @@ internal sealed record SlashToolAction(string Tool, object Args, string? AttachA
     internal static string Shown(string result) => string.IsNullOrWhiteSpace(result) ? Strings.SlashToolNoOutput : result;
 
     /// <summary>
+    /// Why <c>/read</c> reads nothing because the workspace's ignore files exclude the file — the sentence for the person,
+    /// said in place of running the tool — or <c>null</c>.
+    /// </summary>
+    internal string? Excluded(string? root)
+    {
+        if (Tool != "read_file") return null;
+        try
+        {
+            var path = Tools.PathSanitizer.Sanitize(
+                Tools.ToolArgs.Str(System.Text.Json.JsonSerializer.SerializeToElement(Args), "path"), root);
+            return Governance.ContentExclusions.NoticeFor(path, root);
+        }
+        catch (ArgumentException) { return null; }
+    }
+
+    /// <summary>
     /// Whether the tool's result goes under the chip <see cref="AttachAs"/> names: <c>/read</c> attaches a file it read,
     /// never the sentence saying it could not — a missing path, a folder, a binary file or a path outside the workspace
     /// is shown as a message instead.

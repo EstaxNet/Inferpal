@@ -1568,4 +1568,9 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="NoteNotRead" xml:space="preserve"><value>Deine Notiz wurde vor dem Ende des Durchlaufs nicht gelesen: Sie steht wieder im Eingabefeld.</value></data>
   <data name="QueueGivenBack" xml:space="preserve"><value>Der Durchlauf endete nicht normal: Die wartenden Nachrichten stehen wieder im Eingabefeld.</value></data>
   <data name="QueueActionsKept" xml:space="preserve"><value>Der Durchlauf endete nicht normal: Deine getippten Nachrichten stehen wieder im Eingabefeld; die Editor-Aktionen bleiben in der Warteschlange und laufen nach der nächsten Antwort.</value></data>
+  <data name="ExcludedFromAi" xml:space="preserve"><value>„{0}“ ist durch {1}, Zeile {2} (`{3}`) von KI-Werkzeugen ausgeschlossen: Sein Inhalt wurde nicht an das Modell gesendet.</value></data>
+  <data name="ExcludedLeftOut" xml:space="preserve"><value>Das Modell hat {0} {0:Datei|Dateien} nicht gelesen, die von KI-Werkzeugen ausgeschlossen {0:ist|sind} ({1}).</value></data>
+  <data name="LabelIgnoreFiles" xml:space="preserve"><value>Gelesene Ausschlussdateien</value></data>
+  <data name="HintIgnoreFiles" xml:space="preserve"><value>Kommagetrennte Namen, im Stammverzeichnis des Arbeitsbereichs in gitignore-Syntax gelesen: Kein KI-Werkzeug liest, was sie ausschließen, und jeder Ausschluss wird genannt. Leer: keine wird gelesen.</value></data>
+  <data name="BackupNotSent" xml:space="preserve"><value>„{0}“ ist eine von Inferpal aufbewahrte Sicherungskopie: Solange dieser Arbeitsbereich Dateien von KI-Werkzeugen ausschließt, werden Sicherungen nicht an das Modell gesendet.</value></data>
 </root>

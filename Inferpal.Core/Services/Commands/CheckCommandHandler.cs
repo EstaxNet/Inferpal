@@ -72,10 +72,16 @@ internal static class CheckCommandHandler
         var stagedRun = await git("diff --staged", ct);
         if (GitProcess.FailureNote("diff --staged", stagedRun) is { } stagedFailed)
             return new(Named(stagedFailed));
-        var staged = stagedRun.Output;
+        // ⚠ The lines of a file the workspace's ignore files exclude are its content: its sections leave the diff, and the
+        // review says it did not read them — never a clean verdict on what it never saw.
+        var excluded = new Governance.ContentExclusions.Tally();
+        var workTree = GitProcess.WorkTreeOf(projectRoot);
+        // Staged or not is decided on what git staged, excluded files included: the change under review stays the one
+        // /commit describes.
+        var staged = Governance.ContentExclusions.WithoutExcludedFiles(stagedRun.Output, workTree, excluded);
         string diff;
         List<string> notReviewed = [];
-        if (string.IsNullOrWhiteSpace(staged))
+        if (string.IsNullOrWhiteSpace(stagedRun.Output))
         {
             var unstagedRun = await git("diff", ct);
             if (GitProcess.FailureNote("diff", unstagedRun) is { } unstagedFailed)
@@ -83,10 +89,10 @@ internal static class CheckCommandHandler
             var statusRun = await git("status --short", ct);
             if (GitProcess.FailureNote("status --short", statusRun) is { } statusFailed)
                 return new(Named(statusFailed));
-            var unstaged = unstagedRun.Output;
+            var unstaged = Governance.ContentExclusions.WithoutExcludedFiles(unstagedRun.Output, workTree, excluded);
             var status   = statusRun.Output;
             if (string.IsNullOrWhiteSpace(unstaged) && string.IsNullOrWhiteSpace(status))
-                return new(Strings.CheckNoDiff);
+                return new(excluded.Count > 0 ? excluded.ForPerson() : Strings.CheckNoDiff);
             diff = GitCommitPolicy.BuildUnstagedContext(status, unstaged);
 
             // ⚠ A NEW file is part of the change under review, and `git diff` never shows one: reviewed from the
@@ -95,15 +101,21 @@ internal static class CheckCommandHandler
             var (_, untracked) = GitCommitPolicy.SplitUntracked(status);
             if (untracked.Count > 0)
             {
-                var (newFiles, notRead) = await NewFilesAsync(projectRoot, git, untracked, diff.Length, ct);
-                diff       += newFiles;
+                var (newFiles, notRead) = await NewFilesAsync(projectRoot, git, untracked, diff.Length, excluded, ct);
+                diff       += Governance.ContentExclusions.WithoutExcludedFiles(newFiles, workTree, excluded);
                 notReviewed = notRead;
             }
+        }
+        else if (string.IsNullOrWhiteSpace(staged))
+        {
+            // Only excluded files are staged: nothing the review may read.
+            return new(Named(excluded.ForPerson()));
         }
         else
         {
             diff = GitCommitPolicy.BuildStagedContext(staged);
         }
+        if (excluded.Count > 0) diff = excluded.Note() + "\n\n" + diff;
 
         // ⚠ The cut rides ABOVE the findings, because it qualifies them: "the review turned up
         // nothing on this diff" is a verdict the user acts on, and on a capped diff it is a verdict
@@ -153,6 +165,8 @@ internal static class CheckCommandHandler
         if (notReviewed.Count > 0)
             rendered = Strings.CheckNewFilesNotReviewed(notReviewed.Count, GitCommitPolicy.NameList(notReviewed))
                        + "\n\n" + rendered;
+        if (excluded.Count > 0)
+            rendered = excluded.ForPerson() + "\n\n" + rendered;
         return new(Named(rendered));
     }
 
@@ -173,8 +187,11 @@ internal static class CheckCommandHandler
     /// </summary>
     /// <param name="untracked">The status's own list, named whole when git cannot list the files one by one.</param>
     /// <param name="used">Characters of the review already taken by the status and the diff.</param>
+    /// <param name="excluded">Where the new files the workspace's ignore files exclude are counted — never read, so they
+    /// take none of the review's room.</param>
     private static async Task<(string Diff, List<string> NotRead)> NewFilesAsync(
-        string projectRoot, GitRunner git, IReadOnlyList<string> untracked, int used, CancellationToken ct)
+        string projectRoot, GitRunner git, IReadOnlyList<string> untracked, int used,
+        Governance.ContentExclusions.Tally excluded, CancellationToken ct)
     {
         var notRead = new List<string>();
         // One path per file: the status collapses a new folder into "?? folder/".
@@ -196,8 +213,9 @@ internal static class CheckCommandHandler
         var top = GitProcess.WorkTreeOf(projectRoot) ?? projectRoot;
         foreach (var relative in files)
         {
-            if (used + sb.Length >= GitCommitPolicy.MaxDiffChars) { notRead.Add(relative); continue; }
             var full = Path.Combine(top, relative);
+            if (Governance.ContentExclusions.Of(full) is { } why) { excluded.Add(full, why); continue; }
+            if (used + sb.Length >= GitCommitPolicy.MaxDiffChars) { notRead.Add(relative); continue; }
             try
             {
                 if (!File.Exists(full)) continue;   // deleted since the listing: nothing to review

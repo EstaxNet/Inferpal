@@ -1025,6 +1025,12 @@
                              AutomationProperties.Name="{Binding LabelRepoInstructionFamilies}"/>
                     <TextBlock Text="{Binding HintRepoInstructionFamilies}" Style="{StaticResource Hint}"/>
                 </StackPanel>
+                <StackPanel Margin="0,0,0,12">
+                    <TextBlock Text="{Binding LabelIgnoreFiles}" Style="{StaticResource FieldLabel}"/>
+                    <TextBox Text="{Binding IgnoreFiles, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.Name="{Binding LabelIgnoreFiles}"/>
+                    <TextBlock Text="{Binding HintIgnoreFiles}" Style="{StaticResource Hint}"/>
+                </StackPanel>
                 <CheckBox IsChecked="{Binding SkillsAutoMode, Mode=TwoWay}" Margin="0,0,0,12" VerticalContentAlignment="Top">
                     <StackPanel Margin="4,0,0,0">
                         <TextBlock Text="{Binding LabelSkillsAutoMode}" Style="{StaticResource FieldLabel}" Margin="0"/>
