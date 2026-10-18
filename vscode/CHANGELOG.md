@@ -3,6 +3,26 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.8.1
+
+Opening another file no longer makes your server read the whole conversation again, and a slow machine reading a long
+prompt is waited for instead of being given up on.
+
+- **Prompt cache kept**: the instructions that follow the active file (the persona of its language, the `AGENTS.md` of
+  its folder, the rules scoped to it) now travel with your question instead of the start of the prompt, so a server
+  that keeps its prompt cache (LM Studio, llama.cpp, Ollama, vLLM) no longer reads the whole conversation again each
+  time you open a file in another language or folder — 33 seconds saved per question on a long conversation on our
+  test server.
+- **Slow machines**: before its first word, a server reads the whole prompt and sends nothing, and Inferpal gave up
+  after 120 or 300 seconds. It now learns how fast each server reads, per model, and waits twice as long as that read
+  takes; after 8 seconds the status line says what the server is reading.
+- **Ollama**: a question larger than the context window set in Settings is refused before it is sent, with what fills
+  it, instead of Ollama silently dropping the start of the prompt.
+- **C# renames**: renaming an extension method renames its calls written on a value (`price.Rounded()`), renaming a
+  partial method renames both its parts, and `declaring_line` accepts any line of the declaration.
+- **Other editors (ACP)**: in the JetBrains IDEs the MCP server the IDE hands its agents starts, Qt Creator shows every
+  change's diff before you approve it, and a folder the agent's machine does not have is refused and named.
+
 ## 1.8.0
 
 With LM Studio, a `/check` review on Qwen3.8 comes back two to three and a half times sooner, and titles, commit

@@ -130,10 +130,11 @@ These budgets wait for the model, and measure silence: a model that keeps writin
 word, a server reads the prompt and sends nothing — minutes for a long prompt on a slow machine. Inferpal learns how
 fast each server reads, per model, from the requests that went through (kept in
 `%AppData%\Inferpal\prefill-rates.json`), and waits for a first word twice as long as a cold read of the request is
-measured to take — never less than these settings. In the chat (questions and agent runs), after 8 s of waiting the
-status line says so: the tokens to read, how long they take when nothing is cached, and the time waited. A request
-given up while the server was still reading says so (and the next one to that model waits longer, twice at most in a
-row); it is not counted against the server's reachability.
+measured to take — never less than these settings, nor than 20 s. In the chat of Visual Studio and VS Code (questions
+and agent runs), after 8 s of waiting the status line says so: the tokens to read, how long they take when nothing is
+cached, and the time waited. A request given up while the server was still reading a long prompt says so (and the next
+one to that model waits longer, twice at most in a row, since a server that never answers looks the same); those two
+are not counted against the server's reachability.
 
 Connecting to the backend has its own fixed budget of 15 s: a backend that never
 answers the connection (machine switched off, firewall, Ollama not started under WSL's mirrored networking) is

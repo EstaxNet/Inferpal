@@ -133,14 +133,26 @@ internal sealed class AppDataJsonFile<T>
         {
             if (!File.Exists(Path)) return (fallback, false);
             var value = JsonSerializer.Deserialize<T>(File.ReadAllText(Path), _opts);
-            return value is not null && Readable(value) ? (value, false) : (fallback, true);
+            if (value is not null && Readable(value))
+            {
+                if (ReportUnreadableOnce) Diagnostics.Forget($"{_diagnosticName}.Load", "unreadable");
+                return (value, false);
+            }
+            return (fallback, true);
         }
         catch (Exception ex)
         {
-            Diagnostics.Swallow($"{_diagnosticName}.Load", ex);
+            if (ReportUnreadableOnce)
+                Diagnostics.RecordOnce($"{_diagnosticName}.Load", $"{Path} cannot be read ({Diagnostics.RootMessage(ex)}).", "unreadable");
+            else
+                Diagnostics.Swallow($"{_diagnosticName}.Load", ex);
             return (fallback, true);
         }
     }
+
+    /// <summary>A file read on every request says it cannot be read ONCE, and again only after a read that went
+    /// through.</summary>
+    public bool ReportUnreadableOnce { get; init; }
 
     /// <summary>
     /// <see cref="Read"/> for a document another process of the machine rewrites: a read that fails is read again

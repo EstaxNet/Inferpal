@@ -213,6 +213,24 @@ public sealed class PromptPrefixStabilityTests : IDisposable
         Assert.Equal("## Active file: a.cs", await seen.Task.WaitAsync(TimeSpan.FromSeconds(30)));
     }
 
+    /// <summary>A task's history starts empty: a file nothing applies to says nothing there, as for a first question.</summary>
+    [Fact]
+    public async Task ATaskSubmittedOnAFileNothingAppliesTo_CarriesNoBlock()
+    {
+        var builder = new SystemPromptBuilder(new InferpalConfig { PersonaAutoSwitch = false }, workspaceRoot: _root);
+        var readme  = Block(builder, "README.md");
+        Assert.False(string.IsNullOrEmpty(readme));   // witness: the editor does hand a block for it
+        var seen = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var queue = new BackgroundTaskQueue(
+            (task, _, _) => { seen.TrySetResult(task.Context); return Task.FromResult(BackgroundTaskQueue.TaskRunOutcome.Of("done")); },
+            waitForChatIdle: _ => Task.CompletedTask,
+            submissionContext: () => readme);
+
+        Assert.NotNull(queue.Submit("Explain this file"));
+
+        Assert.Null(await seen.Task.WaitAsync(TimeSpan.FromSeconds(30)));
+    }
+
     [Fact]
     public void BothEditors_SendATasksContext_BeforeItsObjective()
     {
@@ -310,6 +328,22 @@ public sealed class PromptPrefixStabilityTests : IDisposable
         Assert.DoesNotContain("truncated to", block);
     }
 
+    /// <summary>A header that says "system prompt" counts the system message: the layers that ride with the question are
+    /// not in it (the table lists them, the fill counts them).</summary>
+    [Fact]
+    public void TheXRayHeader_CountsTheSystemPromptOnly()
+    {
+        var sections = new SystemPromptBuilder(Config(), workspaceRoot: _root).BuildSections(
+            "BASE", "python", null, _root, "tools/report.py", null, Path.Combine(_root, "tools", "report.py"));
+        Assert.Contains(sections, s => s.Placement == PromptPlacement.Question);   // witness: a layer rides with the question
+
+        var panel = XRayPanelPresenter.Build(sections, null, 0, 8_192);
+        var text  = Inferpal.Services.Commands.XRayCommandHandler.Handle(sections, 0, 8_192, Config());
+
+        Assert.True(panel.SystemTokens < panel.TotalTokens, $"{panel.SystemTokens} vs {panel.TotalTokens}");
+        Assert.Contains(Inferpal.Localization.Strings.XrayHeader($"~{panel.SystemTokens:N0}"), text);
+    }
+
     [Fact]
     public void SlashXray_CountsABlockTheHistoryCarries_Once_LikeThePanel()
     {
@@ -332,11 +366,17 @@ public sealed class PromptPrefixStabilityTests : IDisposable
             [new("user", ChatTurnPolicy.WithInjectedContext("quoting:\n\n## Active file: x", "## Relevant code\n\ny"))]));
     }
 
+    /// <summary>
+    /// A file nothing applies to is not announced before any block (its text refers to an earlier one), but once a block
+    /// named a file, the next one names the new file — instructions or not — and a close is said: the model must not
+    /// keep the previous file as the one the user has open.
+    /// </summary>
     [Fact]
-    public void AFileNothingAppliesTo_SaysSoOnceAfterAFileThatHadInstructions_AndOtherwiseNothing()
+    public void AFileNothingAppliesTo_IsNamedOnceABlockWasSaid_AndNotBefore()
     {
         var builder = new SystemPromptBuilder(new InferpalConfig { PersonaAutoSwitch = false }, workspaceRoot: _root);
         var bare    = Block(builder, "README.md");
+        var docs    = Block(builder, "docs.md");
         var cs      = Block(builder, "src/Api/Orders.cs");
         List<ChatMessageDto> history = [new("system", "s")];
 
@@ -344,9 +384,23 @@ public sealed class PromptPrefixStabilityTests : IDisposable
         history.Add(Asked(cs));
         Assert.Equal(bare, ActiveFileContext.ToSend(bare, history));        // the C# folder's no longer hold
         history.Add(Asked(bare));
-        Assert.Null(ActiveFileContext.ToSend(Block(builder, "docs.md"), history));
-        Assert.Null(ActiveFileContext.ToSend(string.Empty, history));        // closed: nothing held already
+        Assert.Null(ActiveFileContext.ToSend(bare, history));               // the same file: already said
+        Assert.Equal(docs, ActiveFileContext.ToSend(docs, history));        // another file: its name goes
+        Assert.Equal(ActiveFileContext.NoneBlock, ActiveFileContext.ToSend(string.Empty, history));   // closed: said
         Assert.EndsWith(ModelPrompts.NoFileInstructions, bare, StringComparison.Ordinal);
+    }
+
+    /// <summary>A request built on a fresh history carries what a first question would: never the raw block of a file
+    /// nothing applies to, whose text refers to an earlier block.</summary>
+    [Fact]
+    public void AFreshHistory_CarriesWhatAFirstQuestionWould()
+    {
+        var builder = new SystemPromptBuilder(new InferpalConfig { PersonaAutoSwitch = false }, workspaceRoot: _root);
+
+        Assert.Null(ActiveFileContext.ForFreshHistory(Block(builder, "README.md")));
+        Assert.Null(ActiveFileContext.ForFreshHistory(string.Empty));
+        var cs = Block(builder, "src/Api/Orders.cs");
+        Assert.Equal(cs, ActiveFileContext.ForFreshHistory(cs));
     }
 
     [Fact]
@@ -384,6 +438,37 @@ public sealed class PromptPrefixStabilityTests : IDisposable
         lock (asked) Assert.Contains(asked, q => q.StartsWith("## Active file: a.cs\n\nA-CS-RULE", StringComparison.Ordinal));
     }
 
+    /// <summary>A fix run's history starts empty: a file nothing applies to says nothing there, as for a first question.</summary>
+    [Fact]
+    public async Task ATddFixRequest_OnAFileNothingAppliesTo_CarriesNoBlock()
+    {
+        var builder = new SystemPromptBuilder(new InferpalConfig { PersonaAutoSwitch = false }, workspaceRoot: _root);
+        var readme  = Block(builder, "README.md");
+        Assert.False(string.IsNullOrEmpty(readme));   // witness: the editor does hand a block for it
+        var asked  = new List<string>();
+        var client = new FakeInferenceProvider
+        {
+            RunAgentThroughChat = true,
+            OnChatRequest = (_, history, _, _) =>
+            {
+                lock (asked) asked.Add(history.Last(m => m.Role == "user").Content);
+                return Task.FromResult(new ChatTurnResult("fixed", null, 1, 1));
+            },
+        };
+        var tests = new Queue<string>(["✗ FAILED — Failed: 1, Passed: 4, Skipped: 0, Total: 5\n\nFailing tests:\n  ✗ MyTest",
+                                       "✓ PASSED — Failed: 0, Passed: 5, Skipped: 0, Total: 5"]);
+
+        await Inferpal.Services.Commands.TddCommandHandler.HandleAsync(
+            client, new InferpalConfig(), new ScriptedTests(tests), "s", ["/tdd"], _root,
+            null, null, null, null, null, CancellationToken.None, activeFileContext: readme);
+
+        lock (asked)
+        {
+            Assert.NotEmpty(asked);   // witness: the fix run did ask the model
+            Assert.DoesNotContain(asked, q => q.Contains("## Active file:", StringComparison.Ordinal));
+        }
+    }
+
     private sealed class ScriptedTests(Queue<string> outputs) : Inferpal.Services.Execution.IToolRegistry
     {
         public IReadOnlyList<ToolDefinition> Definitions => [];
@@ -398,7 +483,7 @@ public sealed class PromptPrefixStabilityTests : IDisposable
         var vm = ConventionCoverageTests.CodeOnly(Path.Combine(ConventionCoverageTests.RepoRoot(), "Inferpal", "ToolWindow",
                                                                "InferpalToolWindowData.PromptHistory.cs"));
 
-        Assert.Contains("WithInjectedContext(BuildFixPrompt(buildOutput), activeFile)", vm, StringComparison.Ordinal);
+        Assert.Contains("WithInjectedContext(BuildFixPrompt(buildOutput), ActiveFileContext.ForFreshHistory(activeFile))", vm, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -93,7 +93,7 @@ internal partial class InferpalToolWindowData
         var model = BuildXrayModel();
 
         _xrayRawPrompt  = model.RawPrompt;
-        XrayTotalText   = Strings.XrayHeader($"~{model.TotalTokens:N0}");
+        XrayTotalText   = Strings.XrayHeader($"~{model.SystemTokens:N0}");   // the system message: not the question's layers
         XrayHistoryText = Strings.XrayHistory($"~{model.HistoryTokens:N0}")
                         + (model.ToolTokens > 0 ? "\n" + Strings.XrayTools($"~{model.ToolTokens:N0}") : "");
         HasXrayWarning  = model.OverheadWarning;
@@ -122,7 +122,7 @@ internal partial class InferpalToolWindowData
         var model = BuildXrayModel();
 
         _xrayRawPrompt  = model.RawPrompt;
-        XrayTotalText   = Strings.XrayHeader($"~{model.TotalTokens:N0}");
+        XrayTotalText   = Strings.XrayHeader($"~{model.SystemTokens:N0}");   // the system message: not the question's layers
         HasXrayWarning  = model.OverheadWarning;
     }
 

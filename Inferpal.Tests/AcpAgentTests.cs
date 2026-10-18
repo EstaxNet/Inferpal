@@ -1143,6 +1143,44 @@ public sealed class AcpAgentTests : IDisposable
         Assert.Empty(h.Fake.ChatModels);
     }
 
+    /// <summary>
+    /// A question that starts with a path (or a comment) is a question: read as a command it was answered "unknown
+    /// command" and never reached the model, the attached file dropped with it. Reference arm: the test above.
+    /// </summary>
+    [Fact]
+    public async Task AQuestionThatStartsWithAPath_GoesToTheModel_WithWhatTheClientAttached()
+    {
+        var file = Path.Combine(_root, "main.py");
+        File.WriteAllText(file, "print('PATH-QUESTION-BODY')\n");
+        var asked = new List<string>();
+        await using var h = await StartAsync(fake: f => f.OnChatRequest = (_, history, _, _) =>
+        {
+            lock (asked) asked.Add(string.Join("\n", history.Where(m => m.Role == "user").Select(m => m.Content)));
+            return Task.FromResult(new ChatTurnResult("ok", null, 0, 0));
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+
+        var r = await h.Client.RequestAsync("session/prompt", new
+        {
+            sessionId = sid,
+            prompt = new object[]
+            {
+                new { type = "text", text = "/home/me/app/main.py crashes on line 12, why?" },
+                new { type = "resource_link", uri = new Uri(file).AbsoluteUri, name = "main.py" },
+            },
+        });
+
+        Assert.Equal("end_turn", StopReason(r));
+        lock (asked)
+        {
+            Assert.Contains(asked, a => a.Contains("crashes on line 12", StringComparison.Ordinal)
+                                     && a.Contains("PATH-QUESTION-BODY", StringComparison.Ordinal));
+        }
+        Assert.True(Inferpal.Services.SlashCommandRouter.LooksLikeCommand("/xray"));
+        Assert.False(Inferpal.Services.SlashCommandRouter.LooksLikeCommand("// why does this loop?"));
+    }
+
     [Fact]
     public async Task ACommandThatBecomesAPrompt_KeepsWhatTheClientAttached()
     {

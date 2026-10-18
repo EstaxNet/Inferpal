@@ -164,7 +164,7 @@ internal static class TddCommandHandler
             var history = new List<ChatMessageDto>();
             if (!string.IsNullOrWhiteSpace(systemPrompt)) history.Add(new("system", systemPrompt));
             // The active file's instructions ride with the request, as with a question: the system prompt has none.
-            history.Add(new("user", ChatTurnPolicy.WithInjectedContext(BuildFixPrompt(output, filter, debugBlock), activeFileContext)));
+            history.Add(new("user", ChatTurnPolicy.WithInjectedContext(BuildFixPrompt(output, filter, debugBlock), ActiveFileContext.ForFreshHistory(activeFileContext))));
 
             // RunAgentAsync never throws (network errors come back inside AgentResult);
             // only cancellation propagates, which is exactly what we want here.

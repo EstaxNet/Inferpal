@@ -39,9 +39,12 @@ internal static class XRayCommandHandler
         // Counted as the panel counts them (XRayPanelPresenter.Build): a block the history already carries, once.
         var total = sized.Where(x => !(questionLayersInHistory && x.Section.Placement == PromptPlacement.Question))
                          .Sum(x => x.Tokens);
+        // ⚠ The header names the SYSTEM prompt: the layers placed with the question are not in it (they are listed
+        // "with the question", and the fill below still counts them).
+        var systemTokens = sized.Where(x => x.Section.Placement != PromptPlacement.Question).Sum(x => x.Tokens);
 
         var sb = new StringBuilder();
-        sb.AppendLine(Strings.XrayHeader($"~{total:N0}"));
+        sb.AppendLine(Strings.XrayHeader($"~{systemTokens:N0}"));
         sb.AppendLine();
         sb.AppendLine("```");
 

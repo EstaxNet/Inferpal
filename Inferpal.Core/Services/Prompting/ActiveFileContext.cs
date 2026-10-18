@@ -27,8 +27,7 @@ internal static class ActiveFileContext
     /// <summary>The block that says no file is active any more, after one was.</summary>
     public static string NoneBlock => Header + ": none\n\n" + ModelPrompts.NoActiveFile;
 
-    /// <summary>Whether a block carries no instruction at all — no file, or a file nothing applies to: after such a
-    /// block, another one of the kind says nothing new.</summary>
+    /// <summary>Whether a block carries no instruction at all — no file, or a file nothing applies to.</summary>
     private static bool SaysNothing(string block) =>
         block == NoneBlock || block.EndsWith(ModelPrompts.NoFileInstructions, StringComparison.Ordinal);
 
@@ -78,14 +77,23 @@ internal static class ActiveFileContext
     /// What the next question carries: <paramref name="block"/> when the history's last block is another one, the
     /// <see cref="NoneBlock"/> when the file was closed after a block, <c>null</c> when the history already says it.
     /// </summary>
+    /// <remarks>
+    /// ⚠ A block that carries no instruction is still the NAME of the file open: after one for <c>B.md</c>, the one for
+    /// <c>C.md</c> goes too, or the model keeps <c>B.md</c> as the file the user has open ("explain this file"). Before
+    /// any block, such a block says nothing the model lacks, and is not sent: its text refers to an earlier block.
+    /// </remarks>
     public static string? ToSend(string block, IEnumerable<Models.ChatMessageDto> history)
     {
         var last = LastIn(history);
-        var quiet = last is null || SaysNothing(last);
-        if (string.IsNullOrEmpty(block)) return quiet ? null : NoneBlock;
-        if (SaysNothing(block)) return quiet ? null : block;
+        if (string.IsNullOrEmpty(block)) return last is null || last == NoneBlock ? null : NoneBlock;
+        if (SaysNothing(block) && last is null) return null;
         return block == last ? null : block;
     }
+
+    /// <summary>What a request built on a FRESH history carries (a background task, a fix run): <see cref="ToSend"/>
+    /// with no earlier block — never the raw block, whose "no instruction applies" text refers to an earlier one.</summary>
+    public static string? ForFreshHistory(string? block) =>
+        string.IsNullOrEmpty(block) ? null : ToSend(block, Array.Empty<Models.ChatMessageDto>());
 
     /// <summary>
     /// Once the turn is measured and compacted: the question being asked — the history's last <c>user</c> message —

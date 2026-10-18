@@ -277,7 +277,7 @@ internal partial class InferpalToolWindowData
         var fixHistory = new List<ChatMessageDto>
         {
             _history[0],                          // system prompt (context + memory)
-            new("user", Services.Agent.ChatTurnPolicy.WithInjectedContext(BuildFixPrompt(buildOutput), activeFile))
+            new("user", Services.Agent.ChatTurnPolicy.WithInjectedContext(BuildFixPrompt(buildOutput), ActiveFileContext.ForFreshHistory(activeFile)))
         };
 
         ChatMessageItem? streamItem = null;

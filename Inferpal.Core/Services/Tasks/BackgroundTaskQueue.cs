@@ -170,7 +170,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
     {
         // Read before the lock: it reads the editor's state and the repository's files.
         string? context = null;
-        try { context = _submissionContext?.Invoke(); }
+        try { context = ActiveFileContext.ForFreshHistory(_submissionContext?.Invoke()); }
         catch (Exception ex) { Diagnostics.Swallow("BackgroundTaskQueue.SubmissionContext", ex); }
         Job job;
         lock (_lock)

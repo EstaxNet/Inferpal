@@ -250,6 +250,21 @@ internal static class SlashCommandRouter
         string.Equals(prompt?.Trim(), "/resume", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
+    /// True when <paramref name="text"/> is written as a command: a <c>/</c>, then a name with no <c>/</c>, <c>\</c> or
+    /// <c>.</c> — no command, alias or template name has one.
+    /// </summary>
+    /// <remarks>⚠ A question pasted after a path (<c>/home/me/app/main.py crashes on line 12</c>) or a comment
+    /// (<c>// why does this loop?</c>) is a question: read as a command, it was answered "unknown command" and never
+    /// reached the model — with the file the client attached beside it.</remarks>
+    internal static bool LooksLikeCommand(string? text)
+    {
+        var typed = text?.TrimStart() ?? string.Empty;
+        if (typed.Length < 2 || typed[0] != '/') return false;
+        var name = typed[1..].Split([' ', '\t', '\r', '\n'], 2)[0];
+        return name.Length > 0 && name.IndexOfAny(['/', '\\', '.']) < 0;
+    }
+
+    /// <summary>
     /// True when the router answers <paramref name="cmd"/> itself — a catalog command or a legacy alias. A
     /// user template with that name can never run: templates are only consulted for unknown commands.
     /// </summary>

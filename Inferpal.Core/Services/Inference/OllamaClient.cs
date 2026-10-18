@@ -143,25 +143,29 @@ internal class OllamaClient : InferenceProviderBase
         // than the configured one (PrefillDeadline). After it, the configured silence between two chunks (OutputBound):
         // it no longer caps the total generation time, only a silent or hung server.
         var size      = RequestSize.Of(messages, defs);
+        // ⚠ Ollama loads the configured window and, handed more, cuts the HEAD of the request — the system prompt first —
+        // and answers anyway, without a word. A request the estimate alone already overflows is refused here with what
+        // it is made of: an editor's MCP tools can be most of it (Rider's 93 are about 40,000 tokens). A window left to
+        // the server (0) is unknown: nothing is refused.
+        if (_config.ContextWindowSize > 0
+            && OpenAiCompatibleClient.CheckContextFit(size, _config.ContextWindowSize) is { } overflow)
+            throw new AgentHttpException(overflow, isTimeout: false);
         var deadline  = TimeSpan.FromSeconds(TimeoutFor(complexity));
         var reading   = PrefillRates.Shared.Describe(base_, model, size.Total);
         var firstWait = PrefillDeadline.For(deadline, reading.ColdRead);
         var toRead    = reading.Tokens;
         using var wait = new PrefillWait(onWaiting, toRead, reading.Measured);
         TimeSpan? firstUseful = null;
-        // No first token when the wait ran out. ⚠ Before the connect deadline nothing says a connection was even made (a
-        // floor set under it, a server that drops the handshake): that expiry is the ordinary one. Past it, the server
-        // was reached and as far as anyone can tell still reading — said so, kept as "slower than this" so the next
-        // request waits longer (while the wait may still grow), and not counted against the server's reachability.
-        AgentHttpException Overran(bool connected)
+        // No first token when the wait ran out — never before the connection deadline (PrefillDeadline.AfterConnect): the
+        // server was reached and as far as anyone can tell still reading. Said so, kept as "slower than this" so the next
+        // request waits longer, and not counted against the server's reachability WHILE the wait may still grow. ⚠ Once
+        // it no longer grows (or the request was too small to say a speed), the expiry counts again: a server that
+        // accepts a request and never answers must still open the breaker.
+        AgentHttpException Overran()
         {
             var waited = wait.Elapsed;
-            if (!connected && waited < ConnectDeadline.Timeout)
-            {
-                RecordFailure();
-                return new AgentHttpException(Strings.MsgTimeout(base_), isTimeout: true);
-            }
             var grew = PrefillRates.Shared.RecordOverrun(base_, model, size.Total, waited);
+            if (!grew) RecordFailure();
             Diagnostics.Record("OllamaClient.SendChat",
                 $"\"{model}\" at {base_} had not started answering after {waited.TotalSeconds:0} s, a request of ~{size.Total} "
                 + (grew ? "tokens: its reading speed is now taken to be slower than that."
@@ -182,7 +186,7 @@ internal class OllamaClient : InferenceProviderBase
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (OperationCanceledException)
         {
-            throw Overran(connected: false);   // Ollama's headers come with its first token
+            throw Overran();   // Ollama's headers come with its first token
         }
         catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal)
                                               && FallsBackToPromptedTools(ex.Message))
@@ -212,7 +216,7 @@ internal class OllamaClient : InferenceProviderBase
         var reasoningBuilder = new System.Text.StringBuilder();
         List<ToolCallDto>? toolCalls = null;
         int tokensUsed = 0, promptTokens = 0, chunkCount = 0;
-        long loadNanoseconds = 0;
+        long loadNanoseconds = 0, readNanoseconds = 0;
         string? doneReason = null;
         var cut = false;   // the answer stopped at the length limit (done_reason "length")
         var bounded = false;   // the client stopped reading at OutputBound
@@ -334,6 +338,7 @@ internal class OllamaClient : InferenceProviderBase
                     promptTokens = chunk.PromptEvalCount ?? 0;
                     tokensUsed   = promptTokens + (chunk.EvalCount ?? 0);
                     loadNanoseconds = chunk.LoadDuration ?? 0;
+                    readNanoseconds = chunk.PromptEvalDuration ?? 0;
                     doneReason   = chunk.DoneReason;
                     cut          = chunk.DoneReason == "length";
                     break;
@@ -344,7 +349,7 @@ internal class OllamaClient : InferenceProviderBase
         catch (OperationCanceledException)
         {
             // Nothing yet: still reading. Else no chunk for `deadline` — the server hung mid-stream.
-            if (firstUseful is null) throw Overran(connected: true);   // its headers came: it was reached
+            if (firstUseful is null) throw Overran();   // its headers came: it was reached
             RecordFailure();
             throw new AgentHttpException(Strings.MsgTimeout(base_), isTimeout: true);
         }
@@ -357,15 +362,16 @@ internal class OllamaClient : InferenceProviderBase
             throw new AgentHttpException(Strings.MsgStreamDropped(base_) + "\n" + ex.Message, isTimeout: false);
         }
 
-        // A read that went through is a sample of the server's speed, from sending to the first useful chunk, the model's
-        // load taken out (Ollama says how long it took: a cold load is not a reading speed). ⚠ Ollama counts only the
-        // tokens it evaluated, not those its cache served, and says nothing of the cache: a read that evaluated less than
-        // half the request was mostly served from it, and is no cold read at all.
+        // A read that went through is a sample of the server's speed: the reading Ollama measured itself
+        // (prompt_eval_duration) — from sending to the first useful chunk would count a load, and the time the model spent
+        // WRITING a tool call, which Ollama sends only once complete. Without that figure, the first chunk with the load
+        // taken out. ⚠ Ollama counts only the tokens it evaluated, not those its cache served, and says nothing of the
+        // cache: a read that evaluated less than half the request was mostly served from it, and is no cold read at all.
         if (firstUseful is { } read && (promptTokens == 0 || promptTokens * 2 >= size.Total))
         {
             var load = TimeSpan.FromTicks(loadNanoseconds / 100);
-            PrefillRates.Shared.Record(base_, model, size.Total, promptTokens > 0 ? promptTokens : size.Total,
-                                       load < read ? read - load : read);
+            var measured = readNanoseconds > 0 ? TimeSpan.FromTicks(readNanoseconds / 100) : load < read ? read - load : read;
+            PrefillRates.Shared.Record(base_, model, size.Total, promptTokens > 0 ? promptTokens : size.Total, measured);
         }
 
         // What the envelope held back — a marker the end of the stream cut in two — is released now.

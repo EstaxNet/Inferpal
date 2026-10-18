@@ -390,19 +390,18 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         wait = new PrefillWait(onWaiting, toRead, reading.Measured);
         using var waitScope = wait;
         TimeSpan? firstUseful = null;
-        // No first token when the wait ran out. ⚠ Before the connect deadline nothing says a connection was even made (a
-        // floor set under it, a server that drops the handshake): that expiry is the ordinary one. Past it, the server
-        // was reached and as far as anyone can tell still reading — said so, kept as "slower than this" so the next
-        // request waits longer (while the wait may still grow), and not counted against the server's reachability.
-        AgentHttpException Overran(bool connected)
+        // No first token when the wait ran out — never before the connection deadline (PrefillDeadline.AfterConnect): the
+        // server was reached and as far as anyone can tell still reading. Said so, kept as "slower than this" so the next
+        // request waits longer, and not counted against the server's reachability WHILE the wait may still grow. ⚠ Once
+        // it no longer grows (or the request was too small to say a speed), the expiry counts again. ⚠ Here the next
+        // request's headers reset that count (RecordSuccess below: the server did answer them), so a server that sends its
+        // headers and then nothing never adds up to the breaker's five — unlike Ollama, which sends none before its first
+        // token.
+        AgentHttpException Overran()
         {
             var waited = wait!.Elapsed;
-            if (!connected && waited < ConnectDeadline.Timeout)
-            {
-                RecordFailure();
-                return new AgentHttpException(Strings.MsgTimeout(base_), isTimeout: true);
-            }
             var grew = PrefillRates.Shared.RecordOverrun(base_, model, size.Total, waited);
+            if (!grew) RecordFailure();
             Diagnostics.Record("OpenAiCompatibleClient.SendChat",
                 $"\"{model}\" at {base_} had not started answering after {waited.TotalSeconds:0} s, a request of ~{size.Total} "
                 + (grew ? "tokens: its reading speed is now taken to be slower than that."
@@ -423,7 +422,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (OperationCanceledException)
         {
-            throw Overran(connected: false);
+            throw Overran();
         }
         catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal) && DropsTheEffort(ex.Message))
         {
@@ -674,7 +673,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         }
         catch (OperationCanceledException)
         {
-            if (firstUseful is null) throw Overran(connected: true);   // its headers came: it was reached
+            if (firstUseful is null) throw Overran();   // its headers came: it was reached
             RecordFailure();
             throw new AgentHttpException(Strings.MsgTimeout(base_), isTimeout: true);
         }
@@ -701,7 +700,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             var counted = promptTokens > 0 ? promptTokens : size.Total;
             var cached  = Math.Clamp(cachedTokens ?? 0, 0, counted);
             var fresh   = counted - cached;
-            PrefillRates.Shared.Record(base_, model, (int)Math.Round((double)size.Total * fresh / Math.Max(1, counted)), fresh, read);
+            PrefillRates.Shared.Record(base_, model, (int)Math.Round((double)size.Total * fresh / Math.Max(1, counted)), fresh, read,
+                                       mayIncludeLoad: true);
         }
 
         // What the envelope held back — a marker the end of the stream cut in two — is released now.

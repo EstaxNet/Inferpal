@@ -51,6 +51,44 @@ public sealed class PrefillDecisionTests
         Assert.Equal(floor, PrefillDeadline.For(floor, null));                              // nothing measured
         Assert.Equal(floor, PrefillDeadline.For(floor, TimeSpan.FromSeconds(100)));         // reads fast: the floor
         Assert.Equal(TimeSpan.FromSeconds(480), PrefillDeadline.For(floor, TimeSpan.FromSeconds(240)));
+        // A configured wait under the connection deadline still outlasts it.
+        Assert.Equal(PrefillDeadline.AfterConnect, PrefillDeadline.For(TimeSpan.FromSeconds(10), null));
+    }
+
+    /// <summary>
+    /// ⚠ A quick small answer says nothing of a long cold read: the bound a long prompt taught stays (a long run timed out,
+    /// a quick question, the run again — cleared, the run would time out again at the configured wait). Reference arm: a
+    /// read long enough to say a speed replaces the bound.
+    /// </summary>
+    [Fact]
+    public void AQuickSmallAnswer_LeavesTheBoundALongPromptTaught_AndALongReadReplacesIt()
+    {
+        var store = Store();
+        Assert.True(store.RecordOverrun("http://h:1", "m", estimated: 20_000, TimeSpan.FromSeconds(120)));
+
+        store.Record("http://h:1", "m", estimated: 500, tokens: 500, TimeSpan.FromSeconds(1));
+        Assert.Equal(120, store.Estimate("http://h:1", "m", 20_000)!.Value.TotalSeconds, precision: 3);
+
+        store.Record("http://h:1", "m", estimated: 20_000, tokens: 20_000, TimeSpan.FromSeconds(30));
+        Assert.Equal(30, store.Estimate("http://h:1", "m", 20_000)!.Value.TotalSeconds, precision: 3);
+    }
+
+    /// <summary>A store read on every request says ONCE that its file cannot be read.</summary>
+    [Fact]
+    public void AnUnreadableStore_IsSaidOnce_NotOncePerRequest()
+    {
+        var name = "PrefillOnce" + Guid.NewGuid().ToString("N")[..8];
+        var path = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"prefill-{Guid.NewGuid():N}.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, "{ not json");
+        var store = new PrefillRates(new AppDataJsonFile<Dictionary<string, PrefillRates.Entry>>("prefill-rates.json", name)
+        {
+            PathOverride = path, ReportUnreadableOnce = true,
+        });
+
+        for (var i = 0; i < 5; i++) store.Estimate("http://h:1", "m", 10_000);
+
+        Assert.Single(Diagnostics.Snapshot(), e => e.Context == name + ".Load");
     }
 
     [Fact]
@@ -391,12 +429,19 @@ public sealed class SlowPrefillOpenAiTests : IDisposable
         }
     }
 
+    /// <summary>
+    /// ⚠ An OpenAI-compatible server that loads a model on demand (LM Studio, llama-swap) counts the load in its first
+    /// read, and says nothing of it: the first read of a model in the process is no sample — the second is.
+    /// </summary>
     [Fact]
-    public async Task ARead_ThatWentThrough_IsASample_OfTheTokensReadAnew()
+    public async Task ARead_ThatWentThrough_IsASample_OfTheTokensReadAnew_ButNotTheFirstOfTheModel()
     {
         using var server = new SlowReadServer(headersFirst: true, TimeSpan.FromSeconds(6), "text/event-stream", Sse);
         var client = new OpenAiCompatibleClient(Config(server.BaseUrl));
 
+        await client.SendChatAsync(_model, new List<ChatMessageDto>(Question), EmptyToolRegistry.Instance, null,
+                                   CancellationToken.None);
+        Assert.Null(PrefillRates.Shared.Estimate(server.BaseUrl, _model, RequestSize.Of(Question, null).Total));
         await client.SendChatAsync(_model, new List<ChatMessageDto>(Question), EmptyToolRegistry.Instance, null,
                                    CancellationToken.None);
 
@@ -468,19 +513,22 @@ public sealed class SlowPrefillOpenAiTests : IDisposable
         }
     }
 
+    /// <summary>A wait configured under the connection deadline (10 s) still runs past it: the server was reached, the
+    /// expiry is a read, and it is learned.</summary>
     [Fact]
-    public async Task AWaitThatRunsOut_BeforeAnyHeader_AndBeforeTheConnectDeadline_IsTheOrdinaryExpiry()
+    public async Task AWaitConfiguredUnderTheConnectDeadline_StillRunsPastIt_AndIsLearned()
     {
-        // No header yet and under 15 s: nothing says a connection was even made.
         using var server = new SlowReadServer(headersFirst: false, Timeout.InfiniteTimeSpan, "text/event-stream", Sse);
         var client = new OpenAiCompatibleClient(Config(server.BaseUrl));
+        var clock = System.Diagnostics.Stopwatch.StartNew();
 
         var ex = await Assert.ThrowsAsync<AgentHttpException>(() => client.SendChatAsync(
             _model, new List<ChatMessageDto>(LongQuestion), EmptyToolRegistry.Instance, null, CancellationToken.None));
 
-        Assert.False(ex.PrefillOverran, ex.Message);
-        Assert.Equal(Strings.MsgTimeout(server.BaseUrl + "/v1"), ex.Message);
-        Assert.Null(PrefillRates.Shared.Estimate(server.BaseUrl, _model, 30_000));
+        Assert.True(ex.PrefillOverran, ex.Message);
+        Assert.True(clock.Elapsed >= PrefillDeadline.AfterConnect - TimeSpan.FromSeconds(1), $"{clock.Elapsed}");
+        Assert.NotNull(PrefillRates.Shared.Estimate(server.BaseUrl, _model, 30_000));
+        Assert.Equal(0, client.ConsecutiveFailures);   // the wait still grows: not a server that cannot be reached
     }
 
     [Fact]
@@ -505,15 +553,38 @@ public sealed class SlowPrefillOpenAiTests : IDisposable
 [Collection(SlowServerCollection.Name)]
 public sealed class SlowPrefillOllamaTests
 {
-    private static string Done(int evaluated, long loadNanoseconds = 0) =>
+    private static string Done(int evaluated, long loadNanoseconds = 0, long readNanoseconds = 0) =>
         "{\"message\":{\"role\":\"assistant\",\"content\":\"ok\"},\"done\":false}\n"
         + "{\"message\":{\"role\":\"assistant\",\"content\":\"\"},\"done\":true,"
-        + $"\"prompt_eval_count\":{evaluated},\"eval_count\":1,\"load_duration\":{loadNanoseconds}}}\n";
+        + $"\"prompt_eval_count\":{evaluated},\"eval_count\":1,\"load_duration\":{loadNanoseconds}"
+        + (readNanoseconds > 0 ? $",\"prompt_eval_duration\":{readNanoseconds}" : "") + "}\n";
+
+    /// <summary>
+    /// ⚠ Ollama's own measure of the read (prompt_eval_duration) is the sample: the time to the first chunk also counts
+    /// what the model spent writing a tool call, which Ollama sends only once complete. Here the first chunk comes after
+    /// 12 s, of which the server says 6 s were reading.
+    /// </summary>
+    [Fact]
+    public async Task OllamasOwnReadDuration_IsTheSample_NotTheTimeToTheFirstChunk()
+    {
+        using var server = new SlowReadServer(headersFirst: false, TimeSpan.FromSeconds(12), "application/x-ndjson",
+                                              Done(30_000, readNanoseconds: 6_000_000_000));
+        var client = new OllamaClient(Config(server.BaseUrl, floor: 60));
+
+        await client.SendChatAsync(_model, new List<ChatMessageDto>(LongQuestion), EmptyToolRegistry.Instance, null,
+                                   CancellationToken.None);
+
+        var cold = PrefillRates.Shared.Estimate(server.BaseUrl, _model, RequestSize.Of(LongQuestion, null).Total);
+        Assert.NotNull(cold);
+        Assert.InRange(cold!.Value.TotalSeconds, 5, 8);
+    }
 
     private readonly string _model = $"m-{Guid.NewGuid():N}";
 
+    // A window the long question fits in: these tests are about the wait, not the window (OllamaRequestFitTests).
     private static InferpalConfig Config(string url, int floor = 10) =>
-        new() { Provider = "ollama", BaseUrl = url, QuickTimeoutSeconds = floor, NormalTimeoutSeconds = floor };
+        new() { Provider = "ollama", BaseUrl = url, QuickTimeoutSeconds = floor, NormalTimeoutSeconds = floor,
+                ContextWindowSize = 32_768 };
 
     private static readonly List<ChatMessageDto> Question = [new("user", "Summarize the repository.")];
 
@@ -541,25 +612,45 @@ public sealed class SlowPrefillOllamaTests
         var client = new OllamaClient(Config(server.BaseUrl, floor: 16));
 
         var ex = await Assert.ThrowsAsync<AgentHttpException>(() => client.SendChatAsync(
-            _model, new List<ChatMessageDto>(Question), EmptyToolRegistry.Instance, null, CancellationToken.None));
+            _model, new List<ChatMessageDto>(LongQuestion), EmptyToolRegistry.Instance, null, CancellationToken.None));
 
         Assert.True(ex.PrefillOverran, ex.Message);
-        Assert.Equal(0, client.ConsecutiveFailures);   // a read that runs out is not a server that cannot be reached
+        Assert.Equal(0, client.ConsecutiveFailures);   // a read that runs out, while the wait grows, is not a dead server
     }
 
+    /// <summary>
+    /// ⚠ Once the wait no longer grows, an expiry counts against the server again: one that accepts a request and never
+    /// answers must still open the breaker. Reference arm: the same expiry while the wait grows counts nothing (above).
+    /// </summary>
     [Fact]
-    public async Task OllamaThatNeverAnswers_BeforeTheConnectDeadline_IsTheOrdinaryExpiry()
+    public async Task OllamaThatNeverAnswers_OnceTheWaitNoLongerGrows_CountsAgainstTheServer()
     {
-        // Ollama sends its headers with its first token: under 15 s nothing says a connection was even made.
+        using var server = new SlowReadServer(headersFirst: false, Timeout.InfiniteTimeSpan, "application/x-ndjson", Done(1));
+        var size = RequestSize.Of(LongQuestion, null).Total;
+        for (var i = 0; i < PrefillRates.MaxGrowth; i++)
+            Assert.True(PrefillRates.Shared.RecordOverrun(server.BaseUrl, _model, size, TimeSpan.FromSeconds(5)));
+        var client = new OllamaClient(Config(server.BaseUrl, floor: 16));
+
+        var ex = await Assert.ThrowsAsync<AgentHttpException>(() => client.SendChatAsync(
+            _model, new List<ChatMessageDto>(LongQuestion), EmptyToolRegistry.Instance, null, CancellationToken.None));
+
+        Assert.True(ex.PrefillOverran, ex.Message);
+        Assert.Equal(1, client.ConsecutiveFailures);
+    }
+
+    /// <summary>A wait configured under the connection deadline (10 s) still runs past it, so a slow read is learned —
+    /// Ollama sends nothing, not even its headers, before its first token.</summary>
+    [Fact]
+    public async Task OllamaWithAWaitUnderTheConnectDeadline_StillLearnsASlowRead()
+    {
         using var server = new SlowReadServer(headersFirst: false, Timeout.InfiniteTimeSpan, "application/x-ndjson", Done(1));
         var client = new OllamaClient(Config(server.BaseUrl, floor: 10));
 
         var ex = await Assert.ThrowsAsync<AgentHttpException>(() => client.SendChatAsync(
             _model, new List<ChatMessageDto>(LongQuestion), EmptyToolRegistry.Instance, null, CancellationToken.None));
 
-        Assert.False(ex.PrefillOverran, ex.Message);
-        Assert.Equal(Strings.MsgTimeout(server.BaseUrl), ex.Message);
-        Assert.Null(PrefillRates.Shared.Estimate(server.BaseUrl, _model, 30_000));   // and nothing is learned from it
+        Assert.True(ex.PrefillOverran, ex.Message);
+        Assert.NotNull(PrefillRates.Shared.Estimate(server.BaseUrl, _model, 30_000));
     }
 
     [Fact]

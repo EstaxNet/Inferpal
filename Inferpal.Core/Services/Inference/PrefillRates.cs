@@ -49,11 +49,18 @@ internal sealed class PrefillRates
     internal const int MaxGrowth = 2;
 
     /// <summary>The one store of the process, on the file every editor of the machine shares.</summary>
+    /// <remarks>⚠ Read on every request: an unreadable file is said ONCE (<c>ReportUnreadableOnce</c>), not once per
+    /// question — a note per request fills the diagnostics ring and erases the failure looked for in it.</remarks>
     internal static PrefillRates Shared { get; } =
-        new(new Persistence.AppDataJsonFile<Dictionary<string, Entry>>("prefill-rates.json", "PrefillRates"));
+        new(new Persistence.AppDataJsonFile<Dictionary<string, Entry>>("prefill-rates.json", "PrefillRates")
+        {
+            ReportUnreadableOnce = true,
+        });
 
     private readonly Persistence.AppDataJsonFile<Dictionary<string, Entry>> _file;
     private readonly object _lock = new();
+    // The servers and models read once in this process (Record's mayIncludeLoad).
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _seen = new(StringComparer.Ordinal);
 
     internal PrefillRates(Persistence.AppDataJsonFile<Dictionary<string, Entry>> file) => _file = file;
 
@@ -70,9 +77,23 @@ internal sealed class PrefillRates
     }
 
     /// <summary>Keeps a read that went through. A stopped or failed request is never a read: its callers do not come here.</summary>
-    public void Record(string server, string model, int estimated, int tokens, TimeSpan read)
+    /// <param name="server">The server's address.</param>
+    /// <param name="model">The model that read.</param>
+    /// <param name="estimated">The request's estimated size.</param>
+    /// <param name="tokens">The tokens the server counted, read anew.</param>
+    /// <param name="read">From sending to the first useful chunk.</param>
+    /// <param name="mayIncludeLoad">The client cannot tell a model's load from its read (an OpenAI-compatible server
+    /// that loads on demand: LM Studio, llama-swap): the first read of a model in this process is no sample — a load
+    /// of a minute recorded as reading would be the slowest read of its size, and the estimate follows the slowest.</param>
+    /// <remarks>⚠ Only a read that says a speed replaces a bound an expiry left. A short or cached read that beats the bound
+    /// scaled down to its size says nothing of a long cold read: cleared by it, a long run that timed out, then a quick
+    /// question, then the run again, would time out again at the configured wait. A bound only lengthens the wait of a
+    /// request that does not answer: a working server answers before it.</remarks>
+    public void Record(string server, string model, int estimated, int tokens, TimeSpan read, bool mayIncludeLoad = false)
     {
-        if (estimated <= 0 || tokens < MinTokens || read < MinRead) return;
+        // The first read of a model is spent on this mark whatever its size: the load happens then, not later.
+        var first = mayIncludeLoad && _seen.TryAdd(Key(server, model), 0);
+        if (first || estimated <= 0 || tokens < MinTokens || read < MinRead) return;
         Update(server, model, entry =>
         {
             entry.Samples.Add(new Sample(estimated, tokens, read.TotalSeconds));
@@ -247,8 +268,18 @@ internal static class PrefillDeadline
 
     /// <summary>Never less than <paramref name="floor"/> (the configured wait), and twice a cold read of the request when
     /// it is measured: a slow server reading a long prompt sends nothing, and is not a dead one.</summary>
-    public static TimeSpan For(TimeSpan floor, TimeSpan? coldRead) =>
-        coldRead is { } read && read * Margin > floor ? read * Margin : floor;
+    /// <remarks>⚠ And never before <see cref="AfterConnect"/>: Ollama sends nothing, not even its headers, before its first
+    /// token, so a wait that ran out before the connection deadline could not tell a slow read from a server never
+    /// reached — with a configured wait under it, nothing was ever learned and every expiry counted against the
+    /// server.</remarks>
+    public static TimeSpan For(TimeSpan floor, TimeSpan? coldRead)
+    {
+        var wait = coldRead is { } read && read * Margin > floor ? read * Margin : floor;
+        return wait > AfterConnect ? wait : AfterConnect;
+    }
+
+    /// <summary>The shortest first-token wait: the connection deadline has had its say.</summary>
+    internal static readonly TimeSpan AfterConnect = ConnectDeadline.Timeout + TimeSpan.FromSeconds(5);
 }
 
 /// <summary>

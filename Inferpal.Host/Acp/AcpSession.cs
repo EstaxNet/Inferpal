@@ -558,7 +558,7 @@ internal sealed class AcpSession : IAsyncDisposable
     private async Task<string> RunTurnAsync(AcpPromptContent content)
     {
         var typed = content.Text.Trim();
-        if (typed.StartsWith('/')) return await SlashAsync(typed, content);
+        if (SlashCommandRouter.LooksLikeCommand(typed)) return await SlashAsync(typed, content);
         return await ChatAsync(typed, content);
     }
 

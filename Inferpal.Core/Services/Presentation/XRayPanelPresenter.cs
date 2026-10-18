@@ -26,6 +26,8 @@ internal sealed record XRaySectionModel(
 /// enough to deserve a trim (see <see cref="XRayPanelPresenter"/> thresholds).</param>
 /// <param name="RawPrompt">Exact system prompt the next turn will send (enabled sections, in order).</param>
 /// <param name="ToolTokens">Estimated tokens of the tool definitions the next turn carries (0 = none).</param>
+/// <param name="SystemTokens">Estimated tokens of the enabled layers in the SYSTEM message — what a header that says
+/// "system prompt" counts: the layers placed with the question are not in it.</param>
 internal sealed record XRayPanelModel(
     IReadOnlyList<XRaySectionModel> Sections,
     int    TotalTokens,
@@ -34,7 +36,8 @@ internal sealed record XRayPanelModel(
     double FillPercent,
     bool   OverheadWarning,
     string RawPrompt,
-    int    ToolTokens = 0);
+    int    ToolTokens = 0,
+    int    SystemTokens = 0);
 
 /// <summary>
 /// Builds the interactive Context X-Ray panel model from the same
@@ -135,9 +138,10 @@ internal static class XRayPanelPresenter
                         && !(questionLayersInHistory && x.Section.Placement == PromptPlacement.Question))
             .Sum(x => x.Tokens);
         // The system message as sent: the layers placed with the question are not in it.
-        var rawPrompt = string.Concat(sized
+        var inSystem = sized
             .Where(x => x.Section.Placement == PromptPlacement.System && (disabledIds is null || !disabledIds.Contains(x.Id)))
-            .Select(x => x.Section.Content));
+            .ToList();
+        var rawPrompt = string.Concat(inSystem.Select(x => x.Section.Content));
 
         var overhead = sized
             .Where(x => OverheadKinds.Contains(x.Section.Kind)
@@ -154,6 +158,7 @@ internal static class XRayPanelPresenter
             ? (enabledTokens + historyTokens + toolTokens) * 100.0 / contextWindow
             : 0;
 
-        return new XRayPanelModel(rows, enabledTokens, historyTokens, contextWindow, fill, warning, rawPrompt, toolTokens);
+        return new XRayPanelModel(rows, enabledTokens, historyTokens, contextWindow, fill, warning, rawPrompt, toolTokens,
+                                  inSystem.Sum(x => x.Tokens));
     }
 }
