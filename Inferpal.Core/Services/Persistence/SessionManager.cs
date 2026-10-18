@@ -40,7 +40,17 @@ internal static class SessionManager
     /// as a question, the model read "/models" as something it was asked and never answered, and two questions in a
     /// row are refused by a strict chat template. Every reader that counts, names or replays questions asks this.
     /// </summary>
-    public static bool IsQuestion(SavedMessage m) => m.Role == "user" && m.ToolName != NoticeMarker;
+    public static bool IsQuestion(SavedMessage m) => m.Role == "user" && m.ToolName != NoticeMarker && m.ToolName != NoteMarker;
+
+    /// <summary>
+    /// The <c>toolName</c> a saved <c>user</c> message carries when it is a NOTE typed while a run worked
+    /// (<c>RunSteering</c>): drawn under its question, read by the model during the run, and kept in the history folded
+    /// into that question (<see cref="ChatTurnPolicy.WithUserNotes"/>) — never a question of its own.
+    /// </summary>
+    public const string NoteMarker = "note";
+
+    /// <summary>Whether a saved message is a note typed during a run (<see cref="NoteMarker"/>).</summary>
+    public static bool IsNote(SavedMessage m) => m.Role == "user" && m.ToolName == NoteMarker;
 
     /// <summary>Whether a saved message is an ANSWER the model gave — an assistant bubble that is not a notice.</summary>
     public static bool IsAnswer(SavedMessage m) => m.Role == "assistant" && m.ToolName != NoticeMarker;
@@ -138,10 +148,33 @@ internal static class SessionManager
         string systemPrompt, IEnumerable<SavedMessage> messages)
     {
         var history = new List<ChatMessageDto> { new("system", systemPrompt) };
+        // The question the notes typed during its run belong to, and those notes: folded into it as the live history did.
+        var asked = -1;
+        var notes = new List<string>();
+        void FoldNotes()
+        {
+            if (asked > 0 && notes.Count > 0)
+                history[asked] = history[asked] with { Content = ChatTurnPolicy.WithUserNotes(history[asked].Content ?? string.Empty, notes) };
+            notes.Clear();
+        }
         foreach (var m in messages)
         {
-            if (IsQuestion(m))
+            if (IsNote(m))
+                notes.Add(m.Content);
+            else if (IsQuestion(m))
+            {
+                FoldNotes();
                 history.Add(new ChatMessageDto(m.Role, m.Content));
+                asked = history.Count - 1;
+            }
+            // ⚠ A question that never reached the model (a notice in the user's place: a command served without it, a
+            // turn whose host was lost) closes the one before: notes read after it belong to no question of this history —
+            // folded into the previous one, they rewrote a question asked and answered long before.
+            else if (m.Role == "user")
+            {
+                FoldNotes();
+                asked = -1;
+            }
             // A notice is an assistant bubble on screen, never an answer: live, a turn keeps one (see NoticeMarker).
             else if (IsAnswer(m))
             {
@@ -153,6 +186,7 @@ internal static class SessionManager
             }
             // Tool bubbles (and every UI-only role) are not part of the live history: see the remarks.
         }
+        FoldNotes();
         return history;
     }
 

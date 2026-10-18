@@ -139,9 +139,12 @@ internal partial class InferpalToolWindowData
         var lastUserIdx = -1;
         for (var i = Messages.Count - 3; i >= 0; i--)
         {
-            if (Messages[i].Role == "user") { lastUserItem = Messages[i]; lastUserIdx = i; break; }
+            // A note typed during the run is not the question: the question is above it.
+            if (Messages[i].Role == "user" && !Messages[i].IsNote) { lastUserItem = Messages[i]; lastUserIdx = i; break; }
         }
         if (lastUserItem is null) return;
+        // The notes its run read are part of the question in the history: asked again, it carries them.
+        List<string> notes = [..Messages.Skip(lastUserIdx + 1).Where(m => m.IsNote && m.NoteRead).Select(m => m.Content)];
 
         // ⚠ What the question was sent WITH, when the bubble is that turn's: resent from its words alone, a /explain or a
         // context-menu action lost its code and became an ordinary agent turn (agent model, tools, approvals), and a
@@ -176,7 +179,7 @@ internal partial class InferpalToolWindowData
         // The workspace block rode with the question taken back: the question asked again carries it again.
         if (!Services.Prompting.WorkspaceContext.IsIn(_history)) _workspaceContextInjected = false;
 
-        await SendCoreAsync(userText, oneTimeModel, attachments, ct: CancellationToken.None, clearPrompt: false);
+        await SendCoreAsync(userText, oneTimeModel, attachments, ct: CancellationToken.None, clearPrompt: false, notes: notes);
     }
 
     private Task ShowInfoAsync(string markdown) =>
@@ -196,7 +199,8 @@ internal partial class InferpalToolWindowData
         {
             snapshot = Messages
                 .Where(m => m.Role is "user" or "assistant" or "tool")
-                .Select(m => new Services.Persistence.ExportMessage(m.Role, m.Label, m.Content, m.Timestamp))
+                // A note is not a turn of its own: the export counts the questions.
+                .Select(m => new Services.Persistence.ExportMessage(m.Role, m.Label, m.Content, m.Timestamp, IsNotice: m.IsNote))
                 .ToList();
         });
 

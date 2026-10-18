@@ -27,6 +27,14 @@ export interface WvTranscriptItem {
   /** The `/import` preview this notice is: drawn as a card with a box per item instead of its text (the text, its
    *  Markdown, is what a saved conversation keeps). */
   importCard?: WvImportCard;
+  /** A 'user' entry that is a NOTE typed while a run worked (`chat/steer`), not a question: `waiting` until the model
+   *  reads it at the run's next step, `read` after. Saved with the Core's `SessionManager.NoteMarker`, folded into its
+   *  question by the restore — never a question of its own. */
+  note?: 'waiting' | 'read';
+  /** The note's id in `chat/steer` and `chat/noteApplied`. */
+  noteId?: string;
+  /** The tool calls the run had made when the model read the note. */
+  noteAfter?: number;
 }
 
 /** An `/import` card in the transcript: the host's card, the id its Apply answers with, and whether it was used. */
@@ -123,6 +131,8 @@ export interface WvHydrate {
   problems: number;
   /** The line naming a question's attachments ("📎 Attached: {0}"), so its names can be drawn as chips. */
   attachedRecap: string;
+  /** The messages waiting to be sent after the turn, in order. */
+  queue: string[];
 }
 
 export type ExtToWebview =
@@ -156,6 +166,14 @@ export type ExtToWebview =
   | { type: 'pins'; pins: string[] }
   | { type: 'stepPaused' }
   | { type: 'stepResumed' }
+  /** A note typed during the run, drawn in the turn; `read` once the model read it, after `afterCalls` tool calls. */
+  | { type: 'note'; id: string; text: string; state: 'waiting' | 'read'; afterCalls?: number }
+  /** A note no step read: off the turn (sent next, or back in the input box). */
+  | { type: 'noteRemoved'; id: string }
+  /** The messages waiting to be sent after the turn, in order. */
+  | { type: 'queue'; items: string[] }
+  /** Text given back to the input box, in front of what is typed there. */
+  | { type: 'restoreDraft'; text: string }
   /** The model picker's list, re-read from the server when the menu opened; `model`: the window's model, when its
    *  setting changed outside the picker. */
   | { type: 'models'; models: string[]; model?: string }
@@ -166,6 +184,12 @@ export type WebviewToExt =
   | { type: 'ready' }
   /** `typed`: the composer's text, which the webview cleared as it sent — a refusal gives it back. */
   | { type: 'send'; text: string; typed?: boolean }
+  /** Enter during a turn: a note for the run's next step (sent after the turn when no step will read it). */
+  | { type: 'steer'; text: string }
+  /** Ctrl+Enter during a turn: sent as the next message once the turn ends. */
+  | { type: 'queue'; text: string }
+  /** A queued message taken out of the queue. */
+  | { type: 'unqueue'; index: number }
   /** The welcome banner's "Fix them": the Problems panel attached, then `text` sent. */
   | { type: 'fixProblems'; text: string }
   | { type: 'cancel' }

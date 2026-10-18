@@ -1540,4 +1540,14 @@
   <data name="ImportSkipUnsupportedLanguage" xml:space="preserve"><value>Inferpal 未提供该语言的翻译</value></data>
   <data name="ImportSkipNoServersInExport" xml:space="preserve"><value>导出文件中不含 MCP 服务器（Roo 将其保存在单独的文件中）</value></data>
   <data name="ImportApplyWhileBusy" xml:space="preserve"><value>仍有回合在运行：请等其结束后再应用。</value></data>
+  <data name="NoteLabel" xml:space="preserve"><value>备注</value></data>
+  <data name="NoteWaiting" xml:space="preserve"><value>备注——将在下一步读取</value></data>
+  <data name="NoteReadFirst" xml:space="preserve"><value>备注——已在第一步之前读取</value></data>
+  <data name="NoteReadAfter" xml:space="preserve"><value>备注——已在 {0} 个步骤后读取</value></data>
+  <data name="QueueTitle" xml:space="preserve"><value>在本回合结束后发送</value></data>
+  <data name="QueueRemove" xml:space="preserve"><value>从队列中移除</value></data>
+  <data name="ComposerPlaceholderBusy" xml:space="preserve"><value>Enter：给正在进行的回合加一条备注 · Ctrl+Enter：在回合结束后发送</value></data>
+  <data name="NoteNotRead" xml:space="preserve"><value>回合结束前未读取你的备注：已放回输入框。</value></data>
+  <data name="QueueGivenBack" xml:space="preserve"><value>本回合未正常结束：等待发送的消息已放回输入框。</value></data>
+  <data name="QueueActionsKept" xml:space="preserve"><value>本回合未正常结束：你输入的消息已放回输入框；编辑器操作仍在队列中，将在下一次回答后运行。</value></data>
 </root>

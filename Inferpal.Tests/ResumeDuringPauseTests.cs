@@ -28,24 +28,25 @@ public class ResumeDuringPauseTests
         var turn = ConventionCoverageTests.CodeOnly(Path.Combine(
             ConversationPersistenceSilenceTests.RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowData.ChatTurn.cs"));
 
+        // During a turn, a text is a note for the run (Steer): a /resume typed during a pause must resume before that.
         var resume = turn.IndexOf("if (_stepResume is not null && SlashCommandRouter.IsResume(Prompt))", StringComparison.Ordinal);
-        var stop   = turn.IndexOf("_currentCts?.Cancel();", StringComparison.Ordinal);
-        Assert.True(stop > 0, "Stop moved — the rule reads nothing");   // WITNESS
-        Assert.True(resume > 0 && resume < stop, "a /resume typed during a pause stops the run");
-        Assert.Contains("ResumeStep();", turn[resume..stop]);
+        var note   = turn.IndexOf("Steer(text)", StringComparison.Ordinal);
+        Assert.True(note > 0, "the note moved — the rule reads nothing");   // WITNESS
+        Assert.True(resume > 0 && resume < note, "a /resume typed during a pause becomes a note instead of resuming");
+        Assert.Contains("ResumeStep();", turn[resume..note]);
     }
 
     [Fact]
     public void VsCode_LetsResumeThroughDuringAPause()
     {
         var main = WebviewRebuildTests.TsCode("webview/main.ts");
-        var send = WebviewRebuildTests.Body(main, "function send(): void");
+        var send = WebviewRebuildTests.Body(main, "function send(later = false): void");
 
         var resume = send.IndexOf("if (busy && stepPausedNow && text.trim().toLowerCase() === '/resume') {", StringComparison.Ordinal);
-        var refuse = send.IndexOf("if (!text.trim() || busy) {", StringComparison.Ordinal);
-        Assert.True(refuse > 0, "the busy guard moved — the rule reads nothing");   // WITNESS
-        Assert.True(resume > 0 && resume < refuse, "a /resume typed during a pause is dropped with every other send");
-        Assert.Contains("post({ type: 'resumeStep' });", send[resume..refuse]);
+        var steer  = send.IndexOf("{ type: 'steer', text }", StringComparison.Ordinal);
+        Assert.True(steer > 0, "the note a turn reads moved — the rule reads nothing");   // WITNESS
+        Assert.True(resume > 0 && resume < steer, "a /resume typed during a pause becomes a note instead of resuming");
+        Assert.Contains("post({ type: 'resumeStep' });", send[resume..steer]);
 
         // The flag follows the pause: set by it, cleared when it is resumed and when the turn ends.
         string CaseHead(string label)

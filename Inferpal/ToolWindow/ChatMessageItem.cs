@@ -76,6 +76,19 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     [DataMember] public bool   HasChips { get => _hasChips; set => SetProperty(ref _hasChips, value); }
     [DataMember] public ObservableCollection<string> Chips { get; } = [];
 
+    // ── A note typed while the run worked: a user bubble, with the line that says whether the model read it ──
+    private string _noteState = string.Empty;
+    private bool   _isNote;
+    [DataMember] public string NoteState { get => _noteState; set => SetProperty(ref _noteState, value); }
+    [DataMember] public bool   IsNote    { get => _isNote;    set => SetProperty(ref _isNote,    value); }
+
+    /// <summary>The note's id in the run's steering: the run says by it that the model read the note.</summary>
+    internal string? NoteId { get; private init; }
+
+    /// <summary>The model read this note: saved with <c>SessionManager.NoteMarker</c>, folded into its question by a
+    /// restore. A note not read yet is not saved as one — the model never read it with its question.</summary>
+    internal bool NoteRead { get; private set; }
+
     // ── A turn's header line ("turn"): the model in Label, then how long, or what it is doing ──
     private string _turnState = string.Empty;
     [DataMember] public string TurnState { get => _turnState; set => SetProperty(ref _turnState, value); }
@@ -354,6 +367,31 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
         return item;
     }
 
+    /// <summary>
+    /// A note typed while the run worked (<c>RunSteering</c>): drawn like a question, under a line saying it waits for the
+    /// run's next step, then that the model read it. Never a question: <c>ToolName</c> carries
+    /// <c>SessionManager.NoteMarker</c> once read (see <see cref="Saved"/>), and Regenerate skips it.
+    /// </summary>
+    internal static ChatMessageItem NoteMsg(string id, string text, bool read = false, int afterCalls = 0)
+    {
+        var item = new ChatMessageItem
+        {
+            Role = "user", Content = text, UserText = text, IsNote = true, NoteId = id,
+            Label = Strings.NoteLabel, Timestamp = Now(),
+        };
+        if (read) item.MarkNoteRead(afterCalls);
+        else item.NoteState = Strings.NoteWaiting;
+        return item;
+    }
+
+    /// <summary>The model read this note, after <paramref name="afterCalls"/> tool calls.</summary>
+    internal void MarkNoteRead(int afterCalls)
+    {
+        NoteRead  = true;
+        ToolName  = Services.Persistence.SessionManager.NoteMarker;
+        NoteState = afterCalls == 0 ? Strings.NoteReadFirst : Strings.NoteReadAfter(afterCalls);
+    }
+
     /// <summary>A question is drawn as its text, with what went with it as chips under it.</summary>
     private void SplitQuestion()
     {
@@ -531,7 +569,9 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     /// editor does not draw — shown as a notice, never rewritten as one.</summary>
     internal (string Role, string Content, string ToolName, string Timestamp) Saved =>
         _foreign is { } f ? (f.Role, f.Content, f.ToolName ?? string.Empty, f.Timestamp ?? string.Empty)
-                          : (Role, Content, ToolName, Timestamp);
+        // A note the model has not read is a notice: saved as a note, a reload folded it into a question it never went with.
+        : IsNote && !NoteRead ? (Role, Content, Services.Persistence.SessionManager.NoticeMarker, Timestamp)
+        : (Role, Content, ToolName, Timestamp);
 
     internal static ChatMessageItem FromSaved(string role, string content, string toolName, bool toolBubblesExpanded = false, string timestamp = "")
     {
@@ -563,7 +603,16 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
         };
         if (role == "assistant")
             item.ParseMarkdown();
-        if (role == "user")
+        if (role == "user" && toolName == Services.Persistence.SessionManager.NoteMarker)
+        {
+            // A note keeps its look across a reload; how many steps it waited is not saved.
+            item.UserText  = content;
+            item.IsNote    = true;
+            item.NoteRead  = true;
+            item.NoteState = Strings.NoteLabel;
+            item.Label     = Strings.NoteLabel;
+        }
+        else if (role == "user")
             item.SplitQuestion();
         if (role == "plan")
             item.ApplyPlanCard();

@@ -545,6 +545,7 @@ internal partial class InferpalToolWindowData
         {
             await ShowInfoAsync(Strings.MsgCancelled);
         }
+        catch (Exception ex) when (ex is not OperationCanceledException && FailsTheTurn()) { }
         finally
         {
             await RunOnVMContextAsync(() => EndOwnedTurn(localCts));

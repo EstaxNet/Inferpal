@@ -35,9 +35,11 @@ public sealed class RefusedTypedTextGivenBackTests
     {
         var give = WebviewRebuildTests.Body(Provider(), "private giveBackTyped(");
         Assert.Contains("if (typed) {", give, StringComparison.Ordinal);
-        Assert.Contains("this.post({ type: 'setPrompt', text });", give, StringComparison.Ordinal);
+        // In front of the draft, never over it (a queued message is refused when the turn before it ends).
+        Assert.Contains("this.post({ type: 'restoreDraft', text });", give, StringComparison.Ordinal);
         // No refusal posts the text straight: it would land over a draft.
-        Assert.Equal(1, Count(Provider(), "this.post({ type: 'setPrompt', text });"));
+        Assert.Equal(1, Count(Provider(), "this.post({ type: 'restoreDraft', text });"));
+        Assert.Equal(0, Count(Provider(), "this.post({ type: 'setPrompt', text });"));
 
         // The composer marks its send; the provider reads the mark; a card or a button does not set it.
         var webview = WebviewRebuildTests.TsCode("webview/main.ts");

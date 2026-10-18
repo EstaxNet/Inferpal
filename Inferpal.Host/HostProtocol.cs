@@ -77,12 +77,28 @@ internal sealed record InitializeResult(
 /// <param name="ModelOverridesRoles"><see cref="Model"/> is a model the user picked for this thread: it answers
 /// whatever the turn's role — an ACP client sends one only after a pick, so the per-role models stay reachable
 /// otherwise.</param>
+/// <param name="Notes">The notes the question carried when it was first answered (Regenerate): folded into it as its run
+/// folded them (<c>ChatTurnPolicy.WithUserNotes</c>), so the question asked again is the one the history kept.</param>
 internal sealed record ChatSendParams(
     string Prompt, string? Model = null, bool? AgentMode = null,
     List<string>? AttachedPaths = null,
     bool CodeAction = false,
     string? Query = null,
-    bool ModelOverridesRoles = false);
+    bool ModelOverridesRoles = false,
+    List<string>? Notes = null);
+
+/// <summary><c>chat/steer</c>: a note typed while the turn runs, for its next boundary.</summary>
+/// <param name="Id">The adapter's id for the note, given back by <c>chat/noteApplied</c> and in the turn's result.</param>
+internal sealed record ChatSteerParams(string Id, string Text);
+
+/// <summary>The answer to <c>chat/steer</c>.</summary>
+/// <param name="Reason">Why the note was not taken: <c>noTurn</c> (no turn runs), <c>noBoundary</c> (the turn has no step
+/// to read it before — a chat without tools, a code action, a slash command), <c>closed</c> (the run is ending). The
+/// adapter then sends it as the next message.</param>
+internal sealed record ChatSteerResult(bool Accepted, string? Reason = null);
+
+/// <summary>A note of the turn: the adapter's id, its words, and — read — after how many tool calls the model read it.</summary>
+internal sealed record TurnNoteDto(string Id, string Text, int AfterCalls = 0);
 
 /// <summary>Final outcome of a turn. <paramref name="Text"/> holds the partial stream on cancel.</summary>
 /// <param name="EndNotice">Why the run stopped, when it is not because the model was done. The answer stays in
@@ -103,6 +119,10 @@ internal sealed record ChatSendParams(
 /// <c>iterationLimit</c> (the run reached its tool-call budget) or <c>cut</c> (the answer stopped at the length limit);
 /// <c>null</c> otherwise. <see cref="EndNotice"/> says it to the user; this is for an adapter that maps it to its own
 /// vocabulary.</param>
+/// <param name="AppliedNotes">The notes typed during the turn that the model read (<c>chat/steer</c>), now part of the
+/// question in the history.</param>
+/// <param name="UnappliedNotes">The notes no step read — typed during the final answer, or the turn stopped first. The
+/// adapter sends them as the next message after a turn that ended normally, and gives them back otherwise.</param>
 internal sealed record ChatSendResult(
     string  Text,
     bool    Cancelled,
@@ -116,7 +136,9 @@ internal sealed record ChatSendResult(
     string? Duration = null,
     string? Model = null,
     bool    QuestionKept = true,
-    string? Ended = null);
+    string? Ended = null,
+    List<TurnNoteDto>? AppliedNotes = null,
+    List<TurnNoteDto>? UnappliedNotes = null);
 
 /// <summary>One agent run as the chat shows it (<see cref="Services.Presentation.RunSummaryModel"/>).</summary>
 /// <param name="Check"><c>none</c>, <c>buildPassed</c>, <c>buildFailed</c>, <c>testsPassed</c> or <c>testsFailed</c>.</param>

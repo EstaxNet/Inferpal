@@ -78,6 +78,12 @@ public partial class HostServerTests
         [JsonRpcMethod("chat/tool", UseSingleObjectParameterDeserialization = true)]
         public void ChatTool(ToolNote note) => ToolNotes.Enqueue(note);
 
+        /// <summary>Every <c>chat/noteApplied</c> received: the note's id and the calls made before the model read it.</summary>
+        public readonly System.Collections.Concurrent.ConcurrentQueue<(string Id, int AfterCalls)> NotesApplied = new();
+
+        [JsonRpcMethod("chat/noteApplied")]
+        public void ChatNoteApplied(string id, int afterCalls) => NotesApplied.Enqueue((id, afterCalls));
+
         // Opt-in: stand in for an approval card the user never answers, so only the host's
         // $/cancelRequest can end the wait. Off by default; the other approval tests answer
         // immediately as before.
@@ -3750,5 +3756,127 @@ public partial class HostServerTests
         Assert.Equal("sendAsPrompt", effect.Kind);
         Assert.Contains("why is total 106 instead of 105", effect.Value);
         Assert.Empty(h.Target.DebugCalls);
+    }
+
+    // ── chat/steer ─────────────────────────────────────────────────────────────
+
+    private static ChatTurnResult ListFilesCall() =>
+        new(string.Empty, [new ToolCallDto(new ToolCallFunction("list_files", System.Text.Json.JsonDocument.Parse("{}").RootElement.Clone()))], 0, 0);
+
+    private const string OneListPlan = """{"goal":"g","steps":[{"i":1,"desc":"list","tool":"list_files"}]}""";
+
+    /// <summary>
+    /// A note typed during an agent turn is taken while the turn holds the slot, read before the run's next step — the
+    /// last text of that request —, said when it is read, and kept with its question: the history the next question and
+    /// a reload see.
+    /// </summary>
+    [Fact]
+    public async Task ChatSteer_DuringAnAgentTurn_IsReadAtTheNextStep_AndKeptWithTheQuestion()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+        var requests = new List<List<ChatMessageDto>>();
+        ChatSteerResult? steered = null;
+        h.Fake.OnChatRequest = async (_, messages, tools, _) =>
+        {
+            requests.Add([.. messages]);
+            if (tools.Definitions.Count == 0) return new ChatTurnResult(OneListPlan, null, 0, 0);
+            if (requests.Count == 2)
+            {
+                // Over the wire, while the turn runs: the host must answer it outside the turn's slot.
+                steered = await h.Client.InvokeWithParameterObjectAsync<ChatSteerResult>(
+                    "chat/steer", new { id = "n1", text = "Put it in Billing/" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+                return ListFilesCall();
+            }
+            return new ChatTurnResult("done", null, 0, 0);
+        };
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "first question", agentMode = true }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.True(steered!.Accepted);
+        Assert.Contains("Put it in Billing/", requests[2][^1].Content);   // the request after the step: the note last
+        var applied = Assert.Single(result.AppliedNotes!);
+        Assert.Equal(("n1", 1), (applied.Id, applied.AfterCalls));
+        Assert.Null(result.UnappliedNotes);
+        var question = h.Server.CurrentSession!.History.Last(m => m.Role == "user");
+        Assert.Equal(ChatTurnPolicy.WithUserNotes("first question", ["Put it in Billing/"]), question.Content);
+        var deadline = DateTime.UtcNow.AddMilliseconds(TimeoutMs);
+        while (h.Target.NotesApplied.IsEmpty && DateTime.UtcNow < deadline) await Task.Delay(20);
+        Assert.Contains(("n1", 1), h.Target.NotesApplied);
+    }
+
+    /// <summary>
+    /// A note typed while the final answer is written has no step left to be read before: it comes back with the result,
+    /// for the adapter to send next — never lost, and never folded into a question the model did not read it with.
+    /// </summary>
+    [Fact]
+    public async Task ChatSteer_DuringTheFinalAnswer_ComesBackUnread()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+        var calls = 0;
+        h.Fake.OnChatRequest = async (_, _, tools, _) =>
+        {
+            calls++;
+            if (tools.Definitions.Count == 0) return new ChatTurnResult(OneListPlan, null, 0, 0);
+            if (calls == 2) return ListFilesCall();
+            await h.Client.InvokeWithParameterObjectAsync<ChatSteerResult>("chat/steer", new { id = "late", text = "and tests" })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            return new ChatTurnResult("done", null, 0, 0);
+        };
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "first question", agentMode = true }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Null(result.AppliedNotes);
+        Assert.Equal(("late", "and tests"), (Assert.Single(result.UnappliedNotes!).Id, result.UnappliedNotes![0].Text));
+        Assert.Equal("first question", h.Server.CurrentSession!.History.Last(m => m.Role == "user").Content);
+    }
+
+    /// <summary>
+    /// No turn, or a turn with no step to read a note before (a chat without tools): refused with the reason, so the
+    /// adapter sends the text as the next message instead of promising it to a run that will never read it.
+    /// </summary>
+    [Fact]
+    public async Task ChatSteer_WithoutAStepToReadIt_IsRefusedWithTheReason()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+
+        var idle = await h.Client.InvokeWithParameterObjectAsync<ChatSteerResult>("chat/steer", new { id = "a", text = "x" })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.Equal((false, "noTurn"), (idle.Accepted, idle.Reason));
+
+        h.Server.CurrentSession!.ToolsEnabled = false;   // /tools off: chat without tools
+        ChatSteerResult? during = null;
+        h.Fake.OnChatRequest = async (_, _, _, _) =>
+        {
+            during = await h.Client.InvokeWithParameterObjectAsync<ChatSteerResult>("chat/steer", new { id = "b", text = "x" })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            return new ChatTurnResult("answer", null, 0, 0);
+        };
+        var result = await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "question", agentMode = false }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Equal((false, "noBoundary"), (during!.Accepted, during.Reason));
+        Assert.Null(result.UnappliedNotes);
+    }
+
+    /// <summary>Asked again (Regenerate), a question carries the notes its first answer read — the question the history
+    /// kept, not its bare words.</summary>
+    [Fact]
+    public async Task ChatSend_WithNotes_AsksTheQuestionTheHistoryKept()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+        h.Fake.OnChat = (_, _) => Task.FromResult(new ChatTurnResult("done", null, 0, 0));
+
+        await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "first question", notes = new[] { "Put it in Billing/" } })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Equal(ChatTurnPolicy.WithUserNotes("first question", ["Put it in Billing/"]),
+                     h.Server.CurrentSession!.History.Last(m => m.Role == "user").Content);
     }
 }

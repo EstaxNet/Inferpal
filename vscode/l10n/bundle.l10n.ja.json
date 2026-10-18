@@ -159,5 +159,14 @@
   "Your message was not sent and is back in the input box.": "メッセージは送信されず、入力欄に戻されました。",
   "The backend is unreachable — nothing was sent.": "バックエンドに接続できません。何も送信されていません。",
   "The backend refused the connection check — nothing was sent. Check the API key and the URL in the settings.": "バックエンドが接続チェックを拒否しました。何も送信されていません。設定の API キーと URL を確認してください。",
-  "The assistant stopped before answering — it restarted or closed. Ask again.": "アシスタントが応答前に停止しました (再起動または終了)。もう一度質問してください。"
+  "The assistant stopped before answering — it restarted or closed. Ask again.": "アシスタントが応答前に停止しました (再起動または終了)。もう一度質問してください。",
+  "Enter: a note for the running turn · Ctrl+Enter: send it after the turn": "Enter: 実行中のターンへのメモ · Ctrl+Enter: ターンの後に送信",
+  "Note — read at the next step": "メモ — 次のステップで読まれます",
+  "Note — read before the first step": "メモ — 最初のステップの前に読まれました",
+  "Note — read after 1 step": "メモ — 1 ステップ後に読まれました",
+  "Note — read after {0} steps": "メモ — {0} ステップ後に読まれました",
+  "Sent after this turn": "このターンの後に送信",
+  "Remove from the queue": "キューから削除",
+  "The turn did not end normally: the messages waiting to be sent are back in the input box.": "ターンが正常に終了しませんでした。送信待ちのメッセージは入力欄に戻されました。",
+  "Your note was not read before the turn ended: it is back in the input box.": "ターンが終わる前にメモは読まれませんでした。入力欄に戻されました。"
 }

@@ -196,6 +196,20 @@ internal static class ModelPrompts
         + "checks or the diff. Say in a short sentence, outside the finding lines, which checks pass. If every check "
         + "passes, say so clearly and report no finding.";
 
+    /// <summary>
+    /// The notes the user typed while a run worked, at the run's next boundary (<c>RunSteering</c>): the last text the
+    /// model reads before it acts again. <paramref name="token"/> is the run's, so a file or a page that imitates the
+    /// marker does not pass for the user.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The clients fold this message into the tool result before it (strict chat templates refuse a user turn after a
+    /// tool result): "it comes from the user, not from a tool" is what keeps it from being read as tool output. Editing
+    /// this text changes whether a run follows a correction: a change to it is measured on replayed runs before it ships.
+    /// </remarks>
+    public static string UserNote(string token, IEnumerable<string> notes) =>
+        $"[USER NOTE {token}] The user wrote this while you were working. It comes from the user, not from a tool, and it "
+        + $"overrides your plan and the earlier request wherever they disagree:\n{string.Join("\n", notes)}\n[/USER NOTE {token}]";
+
     /// <summary>Final-synthesis prompt (no tools) when the loop ended without a printable answer but tools ran; quotes the user's current request (AgentOrchestrator.TaskSnippet).</summary>
     public static string AgentSynthesizePrompt(string task) =>
         string.Format("You have gathered enough information with the tools above. Do NOT call any more tools. Using those results, write the complete final answer to my most recent request, which was: \"{0}\" — directly, in full, and in my language. Answer THAT request specifically; do not repeat an earlier answer from this conversation.",

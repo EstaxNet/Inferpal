@@ -41,7 +41,8 @@ internal interface IInferenceProvider : IChatTurnClient
         TaskComplexity complexity = TaskComplexity.Normal,
         Action<ToolExecution>? onToolExecuted = null,
         Action<string>? onThinking = null,
-        ReasoningEffort effort = ReasoningEffort.Server);
+        ReasoningEffort effort = ReasoningEffort.Server,
+        RunSteering? steering = null);
 
     /// <inheritdoc cref="OllamaClient.GetEmbeddingAsync"/>
     Task<float[]?> GetEmbeddingAsync(string text, string model, CancellationToken ct);

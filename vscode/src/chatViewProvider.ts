@@ -12,7 +12,7 @@ import { openTabPaths, panelDiagnostics } from './editorBridge';
 import { capAttachment, CappedText } from './attachmentCap';
 import { renderChatHtml } from './webview/chatWebviewHtml';
 import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
-import { ApprovalCard, CodeActionResult, SavedMessage, SlashEffect } from './protocol';
+import { ApprovalCard, CodeActionResult, SavedMessage, SlashEffect, TurnNote } from './protocol';
 import {
   WebviewToExt,
   WvBackendStatus,
@@ -106,6 +106,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   } | undefined;
   /** The chips a regenerated question carries again — never the ones waiting in the composer for the next question. */
   private resendAttachments: PendingAttachment[] | undefined;
+  /** The notes a regenerated question's run read: asked again, it carries them (`chat/send` `notes`). */
+  private resendNotes: string[] | undefined;
+  /** Ids of the notes typed during a turn (`chat/steer`, `chat/noteApplied`). */
+  private noteSeq = 0;
+  /** How the last turn ended, and how many have: a queued message is sent after a turn that ended normally only —
+   *  after a Stop, an error or a lost host it goes back to the input box (see {@link afterTurn}). */
+  private turnOutcome: 'normal' | 'stopped' | 'failed' = 'normal';
+  private turnsEnded = 0;
   /** Files pinned into every request, as the host reports them. */
   private pins: string[] = [];
   private mentionCats: WvMentionCategory[] = [];
@@ -307,14 +315,29 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.releaseQueuedPrompts();
   }
 
+  /** The questions that waited for the start are being sent: the end of their turns does not send the queue too. */
+  private releasingQueue = false;
+
   /** The start is over: the questions that waited are sent now, in order. */
   private releaseQueuedPrompts(): void {
     this.hostStarting = false;
     const queued = this.queuedPrompts.splice(0);
+    this.postQueue();
     if (queued.length > 0) {
       void (async () => {
-        for (const q of queued) {
-          await this.send(q.text, q.typed);
+        // ⚠ One sender at a time: each of these turns ends in send(), which sends the next queued message — sent from
+        // both, the second found a turn running and was refused.
+        this.releasingQueue = true;
+        try {
+          for (const q of queued) {
+            await this.send(q.text, q.typed);
+          }
+        } finally {
+          this.releasingQueue = false;
+        }
+        // What was queued meanwhile (Ctrl+Enter during those turns) goes now.
+        if (!this.busy) {
+          this.afterTurn();
         }
       })();
     }
@@ -387,6 +410,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         this.stepPaused = false;
         this.post({ type: 'stepResumed' });
       },
+      onNoteApplied: (id, afterCalls) => this.noteRead(id, afterCalls),
       // A persistent bubble, like the VS front-end — not an ephemeral status line wiped by the next setBusy.
       onTaskFinished: (text) => this.sayOutOfTurn(text),
       onNotice: (text) => this.sayOutOfTurn(text),
@@ -948,7 +972,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     if (this.transcript.length === 0) {
       return;
     }
-    const first = this.transcript.find((m) => m.role === 'user' && !m.notice)?.text ?? '';
+    const first = this.transcript.find((m) => m.role === 'user' && !m.notice && !m.note)?.text ?? '';
     const suggested = await vscode.window.withProgress(
       { location: vscode.ProgressLocation.Window, title: t('Naming the session…') },
       async () => {
@@ -1103,8 +1127,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           name: item.role === 'tool' ? item.text : undefined,
           content: (item.role === 'tool' ? item.toolOutput : item.text) ?? '',
           timestamp: item.timestamp,
-          // A slash command shown as typed is a notice: exported, never counted as a turn.
-          notice: item.notice === true,
+          // A slash command shown as typed is a notice, a note typed during a run is part of its turn: exported, never
+          // counted as a turn of their own.
+          notice: item.notice === true || item.note !== undefined,
         })),
         sessionTokens: this.sessionTokens,
         durationSeconds: this.sessionStart === null
@@ -1159,6 +1184,18 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         return;
       case 'send':
         await this.send(msg.text, msg.typed === true);
+        return;
+      case 'steer':
+        await this.steer(msg.text);
+        return;
+      case 'queue':
+        await this.enqueue(msg.text);
+        return;
+      case 'unqueue':
+        if (msg.index >= 0 && msg.index < this.queuedPrompts.length) {
+          this.queuedPrompts.splice(msg.index, 1);
+        }
+        this.postQueue();
         return;
       case 'importApply': {
         // The card's Apply runs the command the user could have typed: the numbers left ticked, or none. The card is
@@ -1791,178 +1828,356 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
+
+  /** A turn ended: how, for {@link afterTurn}. Called where each way out of a turn tells the webview it ended. */
+  private turnEnded(outcome: 'normal' | 'stopped' | 'failed'): void {
+    this.turnOutcome = outcome;
+    this.turnsEnded++;
+  }
+
   /**
+   * After a turn: the next queued message is sent when it ended normally. After a Stop, an error or a lost host, nothing
+   * is sent on its own — the user stopped for a reason: the queue goes back to the input box, and that is said.
+   */
+  private afterTurn(): void {
+    if (this.queuedPrompts.length === 0 || this.hostStarting || this.releasingQueue) {
+      return;
+    }
+    if (this.turnOutcome === 'normal') {
+      const next = this.queuedPrompts.shift()!;
+      this.postQueue();
+      // ⚠ On the next turn of the event loop, never from inside the send that just ended: its caller may still hold
+      // state for that turn — Regenerate's chips and notes are cleared only once its send returns, and the queued message
+      // left with them.
+      setTimeout(() => {
+        // A message sent meanwhile took the turn: this one waits for its end, first in line.
+        if (this.busy) {
+          this.queuedPrompts.unshift(next);
+          this.postQueue();
+          return;
+        }
+        void this.send(next.text, next.typed);
+      }, 0);
+      return;
+    }
+    const texts = this.queuedPrompts.splice(0).map((q) => q.text);
+    this.postQueue();
+    this.post({ type: 'restoreDraft', text: texts.join('\n\n') });
+    this.sayOutOfTurn(t('The turn did not end normally: the messages waiting to be sent are back in the input box.'));
+  }
+
+  private postQueue(): void {
+    this.post({ type: 'queue', items: this.queuedPrompts.map((q) => q.text) });
+  }
+
+  /**
+   * Ctrl+Enter, a note no step can read, a context-menu action: the next message, sent once the turn ends — at once
+   * when none runs. `typed`: the composer's text, given back if its turn is refused.
+   */
+  private async enqueue(text: string, typed = true): Promise<void> {
+    const prompt = text.trim();
+    if (!prompt) {
+      return;
+    }
+    if (!this.busy && !this.hostStarting) {
+      await this.send(prompt, typed);
+      return;
+    }
+    this.queuedPrompts.push({ text: prompt, typed });
+    this.postQueue();
+  }
+
+  /**
+   * Enter during a turn: a note for the run's next step (`chat/steer`), drawn in the turn as waiting, then as read. A
+   * turn with no step to read it before — a chat without tools, a code action, a slash command, a turn not yet at the
+   * host — refuses it: it goes to the queue instead, never lost.
+   */
+  private async steer(text: string): Promise<void> {
+    const prompt = text.trim();
+    if (!prompt) {
+      return;
+    }
+    if (!this.busy) {
+      await this.send(prompt, true);   // the turn ended meanwhile: an ordinary message
+      return;
+    }
+    // A slash command is a command to run, never words for the model: it waits for the turn.
+    if (prompt.startsWith('/')) {
+      await this.enqueue(prompt);
+      return;
+    }
+    const host = this.getHost();
+    const id = `note-${++this.noteSeq}`;
+    // Drawn before the host answers, so the note precedes the step that reads it.
+    const item: WvTranscriptItem = { role: 'user', text: prompt, timestamp: ChatViewProvider.now(), note: 'waiting', noteId: id };
+    this.append(item);
+    this.post({ type: 'note', id, text: prompt, state: 'waiting' });
+    let accepted = false;
+    if (host?.isRunning) {
+      try {
+        accepted = (await host.chatSteer(id, prompt)).accepted;
+      } catch (err) {
+        this.log(`[chat] chat/steer failed: ${String(err)}`);
+      }
+    }
+    if (accepted) {
+      // Read by the run: a card waiting is refused — a text never approves — and the note says why; a paused run
+      // resumes, to read it at the step it resumes to. Queued instead, neither is touched.
+      if (this.pendingApprovals.size === 1) {
+        this.dismissApproval([...this.pendingApprovals.keys()][0]);
+      }
+      if (this.stepPaused) {
+        try {
+          await host!.chatResumeStep();
+        } catch (err) {
+          this.gestureFailed('resumeStep', err);
+        }
+      }
+      return;
+    }
+    // ⚠ Unless the turn's end already settled it: refused because the run was closing, it was moved to the queue (or
+    // back to the input box) with the other notes — queued here too, it was sent twice.
+    if (this.transcript.includes(item)) {
+      this.dropNote(item);
+      await this.enqueue(prompt);
+    }
+  }
+
+  /** The model read a note: drawn as read, and saved as one. */
+  private noteRead(id: string, afterCalls: number): void {
+    const item = this.transcript.find((m) => m.noteId === id);
+    if (!item || item.note === 'read') {
+      return;
+    }
+    item.note = 'read';
+    item.noteAfter = afterCalls;
+    this.post({ type: 'note', id, text: item.text, state: 'read', afterCalls });
+  }
+
+  /** A note the turn will not read leaves it. */
+  private dropNote(item: WvTranscriptItem): void {
+    const at = this.transcript.indexOf(item);
+    if (at >= 0) {
+      this.transcript.splice(at, 1);
+    }
+    if (item.noteId) {
+      this.post({ type: 'noteRemoved', id: item.noteId });
+    }
+  }
+
+  /**
+   * The end of a turn's notes: those the host says were read are drawn as read (a notification can arrive after the
+   * result); those still waiting leave the turn — the next message after a turn that ended normally, back in the input
+   * box otherwise, said.
+   */
+  private settleNotes(applied: readonly TurnNote[] | null | undefined, normal: boolean): void {
+    for (const n of applied ?? []) {
+      this.noteRead(n.id, n.afterCalls ?? 0);
+    }
+    const waiting = this.transcript.filter((m) => m.note === 'waiting');
+    if (waiting.length === 0) {
+      return;
+    }
+    for (const item of waiting) {
+      this.dropNote(item);
+    }
+    const texts = waiting.map((m) => m.text);
+    if (normal) {
+      this.queuedPrompts.unshift(...texts.map((text) => ({ text, typed: true })));
+      this.postQueue();
+      return;
+    }
+    this.post({ type: 'restoreDraft', text: texts.join('\n\n') });
+    this.sayOutOfTurn(t('Your note was not read before the turn ended: it is back in the input box.'));
+  }
+
+  /** The last question of the thread — never a note typed during its run. */
+  private lastQuestion(): WvTranscriptItem | undefined {
+    return [...this.transcript].reverse().find((m) => m.role === 'user' && !m.note);
+  }
+
+  /**
+   * Every message goes through here: once its turn has ended, the next queued message is sent — or, after a turn that
+   * did not end normally, the queue goes back to the input box ({@link afterTurn}).
    * @param typed The composer's text: the webview cleared the box as it sent, so a refusal before the turn starts gives
    * it back. Any other gesture (a card, Undo, the editor's menu, Regenerate) leaves the box alone: it may hold a draft.
    */
   private async send(text: string, typed = false, replay?: TurnReplay): Promise<void> {
-    const prompt = text.trim();
-    const host = this.getHost();
-    if (!prompt) {
-      return;
-    }
-    // ⚠ The composer cannot send during a turn, but other gestures come here too — the editor's context menu
-    // (Explain, Fix, Refactor, Doc), the result bar's Undo: dropped in silence, the click did nothing at all.
-    if (this.busy) {
-      void vscode.window.showWarningMessage(t('A turn is still running — wait for it to finish or stop it, then try again.'));
-      return;
-    }
-    if (this.hostStarting) {
-      // ⚠ Said in the thread, and kept with its mark: as a status line — drawn during a turn only — the question left
-      // the box with no sign it waited; replayed without `typed`, a refusal after the start (no host, backend down)
-      // did not give it back, and the text was lost. Said once per start: the notice is not part of the conversation.
-      if (this.queuedPrompts.length === 0) {
-        this.sayOutOfTurn(t('Inferpal is starting — your message is sent as soon as it is ready.'));
-      }
-      this.queuedPrompts.push({ text: prompt, typed });
-      return;
-    }
-    if (!host?.isRunning) {
-      // Two states, two remedies: with no folder open the host was never spawned, and
-      // "Restart Host" cannot change that (hostStatus.ts). A notice: read as a conversation, the host's next start
-      // saved this line over the last one instead of bringing it back.
-      // ⚠ Typed, the text is given back: the box was cleared as it sent, and the message was lost with the refusal.
-      const said = typed ? `${hostUnavailableMessage()} ${t('Your message was not sent and is back in the input box.')}` : hostUnavailableMessage();
-      this.append({ role: 'error', text: said, timestamp: ChatViewProvider.now(), notice: true });
-      this.hydrate();
-      this.giveBackTyped(text, typed);
-      promptOpenFolder();
-      return;
-    }
-
-    // /xray opens the interactive panel (ephemeral overlay — no transcript entry, no model call).
-    if (prompt.split(/\s+/, 1)[0].toLowerCase() === '/xray') {
-      await this.openXray();
-      return;
-    }
-
-    // Slash commands are served by the host and still run when the backend is down — except the ones that ask the
-    // model: /explain and /review, known by their name (a template is known only once the host has expanded it).
-    const head = prompt.split(/\s+/, 1)[0].toLowerCase();
-    const asksTheModel = !prompt.startsWith('/') || head === '/explain' || head === '/review';
-    if (asksTheModel && (await this.refusedWhileBackendDown(text, typed))) {
-      return;
-    }
-
-    this.busy = true;
-    this.stopPressed = false;
-    this.streamText = '';
-    this.plan = null;
-    // Like the Visual Studio window (`_sessionStartTime ??= DateTime.Now`): the thread starts at
-    // the first turn, not when the panel is opened.
-    this.sessionStart ??= Date.now();
-    const timestamp = ChatViewProvider.now();
-    // Shown as typed. A slash command served without the model marks it a notice below: saved as a question, a reload
-    // handed "/models" to the model as something it had been asked (Visual Studio shows no question for one).
-    const question: WvTranscriptItem = { role: 'user', text: prompt, timestamp };
-    this.append(question);
-    // A regenerated question is not typed again: the prompt history keeps what the user wrote.
-    const history = replay ? this.historyEntries() : this.appendHistory(prompt);
-    this.post({ type: 'turnStarted', prompt, timestamp, history });
-
-    // ⚠ A regenerated question is replayed with what it carried — the same prompt, as a code action if it was one —
-    // never dispatched again from its words: resent as words, an /explain answer came back as an agent turn (tools,
-    // the chat model) with the whole excerpt pasted into the question and the prompt history.
-    if (replay) {
-      await this.chatTurn(replay.prompt, host, replay.codeAction, replay.query);
-      return;
-    }
-
-    // In-place code actions (/fix /refactor /doc): rewrite the active editor's file (or
-    // selection) with a native per-hunk preview — never sent to the chat history.
-    const codeAction = ChatViewProvider.codeActionKind(prompt);
-    if (codeAction) {
-      question.notice = true;
-      try {
-        await this.runCodeAction(codeAction, host, ChatViewProvider.requestOf(prompt));
-      } catch (err) {
-        // runCodeAction ends the turn itself on every path it returns from; a throw (workspace edit
-        // rejected, document closed under it) would otherwise leave the webview busy with no error.
-        this.log(`[chat] code action failed: ${String(err)}`);
-        this.finishTurn('', ChatViewProvider.errorText(err), false, 0);
-      } finally {
-        this.busy = false;
-        this.autoSaveLast();
-      }
-      return;
-    }
-
-    // /explain and /review stay read-only and editor-side (VS parity): the active
-    // document (or selection) is attached and the answer streams into the chat.
-    const first = prompt.split(/\s+/, 1)[0].toLowerCase();
-    if (first === '/explain' || first === '/review') {
-      // ⚠ Not in the host's history until the turn reaches it: refused here (no file open, the excerpt failed), it was
-      // left an unmarked question, and Regenerate then took back the exchange BEFORE it — the host forgot a question
-      // and answer the screen still showed. A notice until the turn starts (runExplainReview clears the mark).
-      question.notice = true;
-      try {
-        await this.runExplainReview(first === '/explain' ? 'explain' : 'review', host, question,
-          ChatViewProvider.requestOf(prompt));
-      } catch (err) {
-        // The editor is read after the turn started: a throw there would leave the provider busy for good,
-        // every later message dropped by the busy guard. The chat turn itself never throws.
-        this.log(`[chat] ${first} failed: ${String(err)}`);
-        this.finishTurn('', ChatViewProvider.errorText(err), false, 0);
-      }
-      return;
-    }
-
-    // Slash commands the host serves headlessly: rendered as an instant bubble (with
-    // optional editor-side effects), never sent to the model. Unhandled ones fall through.
-    if (prompt.startsWith('/')) {
-      try {
-        const slash = await host.commandSlash(prompt, this.historyEntries());
-        if (slash.handled) {
-          const outcome = await this.applySlashEffects(slash.effects ?? []);
-          if (outcome.chatPrompt !== null) {
-            // sendAsPrompt (expanded user template): continue as a normal chat turn — refused like a typed question
-            // when the backend is known to be down, its bubble taken back.
-            if (await this.refusedWhileBackendDown(text, typed, question)) {
-              return;
-            }
-            // The question IS the expanded prompt, as in the Visual Studio window: saved as "/name args", a reload
-            // handed the model the template's name instead of what it had been asked.
-            question.text = outcome.chatPrompt;
-            this.hydrate();
-            await this.chatTurn(outcome.chatPrompt, host);
-            return;
-          }
-          question.notice = true;
-          // A failed effect means the host's answer (e.g. "Switched to branch X") did not come true.
-          const answer = [outcome.dropHostMarkdown ? '' : slash.markdown ?? '', ...outcome.notes]
-            .filter((s) => s.length > 0)
-            .join('\n\n');
-          this.finishTurn(answer, null, false, 0);
-          // /import's preview is a card with a box per item; its Markdown stays the notice's text — what a saved
-          // conversation keeps, and what the agent protocol, which draws no card, shows.
-          const last = this.transcript[this.transcript.length - 1];
-          if (slash.importCard && last?.role === 'assistant') {
-            last.importCard = { ...slash.importCard, id: `import-${++this.importCards}` };
-            outcome.rehydrate = true;
-          }
-          if (outcome.rehydrate) {
-            this.hydrate();
-          }
-          return;
-        }
-      } catch (err) {
-        // A failed RPC is not "the host doesn't know this command" (that answer is
-        // `handled: false`, handled above): it is the host refusing or erroring — typically
-        // "a chat turn is already running". Falling through would send the raw `/branch 2`
-        // to the model as a prompt, which is both useless and confusing.
-        this.log(`[chat] command/slash failed: ${String(err)}`);
-        question.notice = true;
-        // The host is gone: no one waits for an approval card any more. A host that refused (its slot is held) still
-        // waits for the cards of what holds it — denied here, a settings save's or a turn's question was answered "no".
-        if (isConnectionLost(err)) {
-          this.dismissAllPending();
-        }
-        this.finishTurn('', ChatViewProvider.errorText(err), false, 0);
+    const before = this.turnsEnded;
+    try {
+      const prompt = text.trim();
+      const host = this.getHost();
+      if (!prompt) {
         return;
       }
-    }
+      // ⚠ The composer cannot send during a turn, but other gestures come here too — the editor's context menu
+      // (Explain, Fix, Refactor, Doc), the result bar's Undo: dropped in silence, the click did nothing at all.
+      if (this.busy) {
+        void vscode.window.showWarningMessage(t('A turn is still running — wait for it to finish or stop it, then try again.'));
+        return;
+      }
+      if (this.hostStarting) {
+        // ⚠ Said in the thread, and kept with its mark: as a status line — drawn during a turn only — the question left
+        // the box with no sign it waited; replayed without `typed`, a refusal after the start (no host, backend down)
+        // did not give it back, and the text was lost. Said once per start: the notice is not part of the conversation.
+        if (this.queuedPrompts.length === 0) {
+          this.sayOutOfTurn(t('Inferpal is starting — your message is sent as soon as it is ready.'));
+        }
+        this.queuedPrompts.push({ text: prompt, typed });
+        this.postQueue();
+        return;
+      }
+      if (!host?.isRunning) {
+        // Two states, two remedies: with no folder open the host was never spawned, and
+        // "Restart Host" cannot change that (hostStatus.ts). A notice: read as a conversation, the host's next start
+        // saved this line over the last one instead of bringing it back.
+        // ⚠ Typed, the text is given back: the box was cleared as it sent, and the message was lost with the refusal.
+        const said = typed ? `${hostUnavailableMessage()} ${t('Your message was not sent and is back in the input box.')}` : hostUnavailableMessage();
+        this.append({ role: 'error', text: said, timestamp: ChatViewProvider.now(), notice: true });
+        this.hydrate();
+        this.giveBackTyped(text, typed);
+        promptOpenFolder();
+        return;
+      }
 
-    await this.chatTurn(prompt, host);
+      // /xray opens the interactive panel (ephemeral overlay — no transcript entry, no model call).
+      if (prompt.split(/\s+/, 1)[0].toLowerCase() === '/xray') {
+        await this.openXray();
+        return;
+      }
+
+      // Slash commands are served by the host and still run when the backend is down — except the ones that ask the
+      // model: /explain and /review, known by their name (a template is known only once the host has expanded it).
+      const head = prompt.split(/\s+/, 1)[0].toLowerCase();
+      const asksTheModel = !prompt.startsWith('/') || head === '/explain' || head === '/review';
+      if (asksTheModel && (await this.refusedWhileBackendDown(text, typed))) {
+        return;
+      }
+
+      this.busy = true;
+      this.stopPressed = false;
+      this.streamText = '';
+      this.plan = null;
+      // Like the Visual Studio window (`_sessionStartTime ??= DateTime.Now`): the thread starts at
+      // the first turn, not when the panel is opened.
+      this.sessionStart ??= Date.now();
+      const timestamp = ChatViewProvider.now();
+      // Shown as typed. A slash command served without the model marks it a notice below: saved as a question, a reload
+      // handed "/models" to the model as something it had been asked (Visual Studio shows no question for one).
+      const question: WvTranscriptItem = { role: 'user', text: prompt, timestamp };
+      this.append(question);
+      // A regenerated question is not typed again: the prompt history keeps what the user wrote.
+      const history = replay ? this.historyEntries() : this.appendHistory(prompt);
+      this.post({ type: 'turnStarted', prompt, timestamp, history });
+
+      // ⚠ A regenerated question is replayed with what it carried — the same prompt, as a code action if it was one —
+      // never dispatched again from its words: resent as words, an /explain answer came back as an agent turn (tools,
+      // the chat model) with the whole excerpt pasted into the question and the prompt history.
+      if (replay) {
+        await this.chatTurn(replay.prompt, host, replay.codeAction, replay.query);
+        return;
+      }
+
+      // In-place code actions (/fix /refactor /doc): rewrite the active editor's file (or
+      // selection) with a native per-hunk preview — never sent to the chat history.
+      const codeAction = ChatViewProvider.codeActionKind(prompt);
+      if (codeAction) {
+        question.notice = true;
+        try {
+          await this.runCodeAction(codeAction, host, ChatViewProvider.requestOf(prompt));
+        } catch (err) {
+          // runCodeAction ends the turn itself on every path it returns from; a throw (workspace edit
+          // rejected, document closed under it) would otherwise leave the webview busy with no error.
+          this.log(`[chat] code action failed: ${String(err)}`);
+          this.finishTurn('', ChatViewProvider.errorText(err), false, 0);
+        } finally {
+          this.busy = false;
+          this.autoSaveLast();
+        }
+        return;
+      }
+
+      // /explain and /review stay read-only and editor-side (VS parity): the active
+      // document (or selection) is attached and the answer streams into the chat.
+      const first = prompt.split(/\s+/, 1)[0].toLowerCase();
+      if (first === '/explain' || first === '/review') {
+        // ⚠ Not in the host's history until the turn reaches it: refused here (no file open, the excerpt failed), it was
+        // left an unmarked question, and Regenerate then took back the exchange BEFORE it — the host forgot a question
+        // and answer the screen still showed. A notice until the turn starts (runExplainReview clears the mark).
+        question.notice = true;
+        try {
+          await this.runExplainReview(first === '/explain' ? 'explain' : 'review', host, question,
+            ChatViewProvider.requestOf(prompt));
+        } catch (err) {
+          // The editor is read after the turn started: a throw there would leave the provider busy for good,
+          // every later message dropped by the busy guard. The chat turn itself never throws.
+          this.log(`[chat] ${first} failed: ${String(err)}`);
+          this.finishTurn('', ChatViewProvider.errorText(err), false, 0);
+        }
+        return;
+      }
+
+      // Slash commands the host serves headlessly: rendered as an instant bubble (with
+      // optional editor-side effects), never sent to the model. Unhandled ones fall through.
+      if (prompt.startsWith('/')) {
+        try {
+          const slash = await host.commandSlash(prompt, this.historyEntries());
+          if (slash.handled) {
+            const outcome = await this.applySlashEffects(slash.effects ?? []);
+            if (outcome.chatPrompt !== null) {
+              // sendAsPrompt (expanded user template): continue as a normal chat turn — refused like a typed question
+              // when the backend is known to be down, its bubble taken back.
+              if (await this.refusedWhileBackendDown(text, typed, question)) {
+                return;
+              }
+              // The question IS the expanded prompt, as in the Visual Studio window: saved as "/name args", a reload
+              // handed the model the template's name instead of what it had been asked.
+              question.text = outcome.chatPrompt;
+              this.hydrate();
+              await this.chatTurn(outcome.chatPrompt, host);
+              return;
+            }
+            question.notice = true;
+            // A failed effect means the host's answer (e.g. "Switched to branch X") did not come true.
+            const answer = [outcome.dropHostMarkdown ? '' : slash.markdown ?? '', ...outcome.notes]
+              .filter((s) => s.length > 0)
+              .join('\n\n');
+            this.finishTurn(answer, null, false, 0);
+            // /import's preview is a card with a box per item; its Markdown stays the notice's text — what a saved
+            // conversation keeps, and what the agent protocol, which draws no card, shows.
+            const last = this.transcript[this.transcript.length - 1];
+            if (slash.importCard && last?.role === 'assistant') {
+              last.importCard = { ...slash.importCard, id: `import-${++this.importCards}` };
+              outcome.rehydrate = true;
+            }
+            if (outcome.rehydrate) {
+              this.hydrate();
+            }
+            return;
+          }
+        } catch (err) {
+          // A failed RPC is not "the host doesn't know this command" (that answer is
+          // `handled: false`, handled above): it is the host refusing or erroring — typically
+          // "a chat turn is already running". Falling through would send the raw `/branch 2`
+          // to the model as a prompt, which is both useless and confusing.
+          this.log(`[chat] command/slash failed: ${String(err)}`);
+          question.notice = true;
+          // The host is gone: no one waits for an approval card any more. A host that refused (its slot is held) still
+          // waits for the cards of what holds it — denied here, a settings save's or a turn's question was answered "no".
+          if (isConnectionLost(err)) {
+            this.dismissAllPending();
+          }
+          this.finishTurn('', ChatViewProvider.errorText(err), false, 0);
+          return;
+        }
+      }
+
+      await this.chatTurn(prompt, host);
+    } finally {
+      if (this.turnsEnded !== before && !this.busy) {
+        this.afterTurn();
+      }
+    }
   }
 
   /**
@@ -2004,10 +2219,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     return true;
   }
 
-  /** A typed text refused before its turn goes back in the box the webview cleared; any other gesture's text does not. */
+  /**
+   * A typed text refused before its turn goes back in the box the webview cleared; any other gesture's text does not.
+   * ⚠ In front of what is typed there, never over it: a queued message is refused when the turn before it ends, and the
+   * box then holds the draft typed meanwhile.
+   */
   private giveBackTyped(text: string, typed: boolean): void {
     if (typed) {
-      this.post({ type: 'setPrompt', text });
+      this.post({ type: 'restoreDraft', text });
     }
   }
 
@@ -2197,9 +2416,17 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           this.postChips();
         }
       }
-      const asked = [...this.transcript].reverse().find((m) => m.role === 'user');
+      const asked = this.lastQuestion();
       if (asked) {
         this.lastSent = { question: asked, text: prompt, codeAction, query, shown: asked.text, attachments: [...chips] };
+      }
+      // A regenerated question's notes come back under it, read: asked again with them, it is the question the history
+      // keeps — and the next save keeps them too.
+      const notes = this.regenerating ? this.resendNotes ?? [] : [];
+      for (const text of notes) {
+        const id = `note-${++this.noteSeq}`;
+        this.append({ role: 'user', text, timestamp: ChatViewProvider.now(), note: 'read', noteId: id });
+        this.post({ type: 'note', id, text, state: 'read' });
       }
       if (named.length > 0) {
         this.nameAttachmentsInQuestion(named);
@@ -2218,6 +2445,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         // The question, not the expanded prompt: searched with the attachments' bodies, the auto-context followed the
         // attached file instead of the question (Visual Studio searches the typed text).
         query: query ?? prompt,
+        notes: notes.length > 0 ? notes : undefined,
       });
       // A stopped turn's partial answer is the host's: empty when nothing visible had come (reasoning only).
       const finalText = result.cancelled ? result.text : result.text || this.streamText;
@@ -2234,7 +2462,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         // Stopped before the question entered the host's history (during the context build): a notice, like a refused
         // request — Regenerate resends it without taking back the exchange before it, which the screen still shows.
         if (result.questionKept === false) {
-          const asked = [...this.transcript].reverse().find((m) => m.role === 'user');
+          const asked = this.lastQuestion();
           if (asked) {
             asked.notice = true;
           }
@@ -2280,6 +2508,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         model: result.model ?? null,
         canRegenerate: this.canRegenerate(),
       });
+      const normal = !result.error && !result.cancelled;
+      this.settleNotes(result.appliedNotes, normal);
+      this.turnEnded(result.error ? 'failed' : result.cancelled ? 'stopped' : 'normal');
       void this.pollBackendStatus(); // the turn may have loaded a model — refresh the VRAM badge
     } catch (err) {
       // The request itself failed. Host gone (crashed or restarted): no one waits for these cards any more. Refused by a
@@ -2290,7 +2521,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       const message = ChatViewProvider.errorText(err);
       // A REFUSED request (a turn already in flight, a host that died) never reached the host's history: its
       // question is a notice, so Regenerate does not take back the exchange before it and a restart does not replay it.
-      const asked = [...this.transcript].reverse().find((m) => m.role === 'user');
+      const asked = this.lastQuestion();
       if (asked) {
         asked.notice = true;
       }
@@ -2307,6 +2538,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         timestamp: ChatViewProvider.now(),
         canRegenerate: this.canRegenerate(),
       });
+      // No result: no note can be said read. Those drawn waiting go back to the input box.
+      this.settleNotes(undefined, false);
+      this.turnEnded('failed');
     } finally {
       this.busy = false;
       // The webview removes the pause banner on stepResumed only: a turn cancelled while paused
@@ -2343,7 +2577,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** A question meant for the model: anything typed, or a refused /explain or /review — never a command served
    *  without it (/note, /commit-exec, a code action), whose bubble is a notice that starts with its slash. */
   private static isModelQuestion(m: WvTranscriptItem): boolean {
-    return m.role === 'user'
+    return m.role === 'user' && !m.note
       && (!m.notice || !m.text.startsWith('/') || /^\/(explain|review)\b/i.test(m.text));
   }
 
@@ -2398,6 +2632,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     if (this.busy || at < 0) {
       return;
     }
+    // The notes its run read are part of the question in the host's history: asked again, it carries them.
+    const notes = this.transcript.slice(at + 1).filter((m) => m.note === 'read').map((m) => m.text);
     this.transcript.splice(at);
     this.hydrate();
     // ⚠ The chips waiting in the composer were attached for the NEXT question: sent with this one, they left the
@@ -2406,12 +2642,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     const sent = this.lastSent?.question === question ? this.lastSent : undefined;
     this.regenerating = true;
     this.resendAttachments = sent?.attachments;
+    this.resendNotes = notes;
     try {
       await this.send(sent?.shown ?? question.text, false,
                       sent && { prompt: sent.text, codeAction: sent.codeAction, query: sent.query });
     } finally {
       this.regenerating = false;
       this.resendAttachments = undefined;
+      this.resendNotes = undefined;
     }
   }
 
@@ -2426,7 +2664,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * is a notice (Regenerate resends it, with what it carried), and the stop is a lasting line, as for a sent turn.
    */
   private endStoppedBeforeTheHost(): void {
-    const asked = [...this.transcript].reverse().find((m) => m.role === 'user');
+    const asked = this.lastQuestion();
     if (asked) {
       asked.notice = true;
     }
@@ -2442,10 +2680,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       timestamp: ChatViewProvider.now(),
       canRegenerate: this.canRegenerate(),
     });
+    this.settleNotes(undefined, false);
+    this.turnEnded('stopped');
   }
 
   private nameAttachmentsInQuestion(names: readonly string[]): void {
-    const question = [...this.transcript].reverse().find((m) => m.role === 'user');
+    const question = this.lastQuestion();
     if (!question || names.length === 0) {
       return;
     }
@@ -2563,6 +2803,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // the header named — the one /import had just written, served or not — and as a notice once reloaded.
       notice: true,
     });
+    this.settleNotes(undefined, !error && !cancelled);
+    this.turnEnded(error ? 'failed' : cancelled ? 'stopped' : 'normal');
     this.autoSaveLast();
     void this.refreshRunningWork();   // a /task submitted, a docs source added: seen before a crash can take them
   }
@@ -2579,6 +2821,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     } catch {
       // view can't be revealed (rare) — the action still runs, bubbles land on next open
     }
+    // ⚠ A turn running: refused with the reason (send), never queued — the action reads the active editor and its
+    // selection when it RUNS, and queued it would rewrite whatever is selected once the turn ends. Visual Studio queues
+    // its context-menu actions because it takes their code at the click.
     await this.send(text);
   }
 
@@ -2737,6 +2982,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       planMode: this.planMode,
       ...this.editorContext(),
       attachedRecap: t('📎 Attached: {0}'),
+      queue: this.queuedPrompts.map((q) => q.text),
     });
     // The transcript carries no card and the webview just rebuilt from it: a card still waiting
     // would vanish while the host keeps waiting for its answer, with no timeout.

@@ -212,6 +212,9 @@ internal sealed class HostSession : IDisposable
     /// <summary>Pending step-mode pause; null when the agent is not paused.</summary>
     public TaskCompletionSource<bool>? StepResume;
 
+    /// <summary>The notes of the turn running now (<c>chat/steer</c>); null when no turn with steps runs.</summary>
+    public volatile RunSteering? Steering;
+
     private BackgroundTaskQueue? _tasks;
 
     /// <summary>

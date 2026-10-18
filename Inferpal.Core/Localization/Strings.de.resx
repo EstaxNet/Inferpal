@@ -1540,4 +1540,14 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="ImportSkipUnsupportedLanguage" xml:space="preserve"><value>eine Sprache, in die Inferpal nicht übersetzt ist</value></data>
   <data name="ImportSkipNoServersInExport" xml:space="preserve"><value>der Export enthält keinen MCP-Server (Roo speichert sie in einer eigenen Datei)</value></data>
   <data name="ImportApplyWhileBusy" xml:space="preserve"><value>Ein Durchgang läuft noch: Warten Sie, bis er beendet ist, dann wenden Sie an.</value></data>
+  <data name="NoteLabel" xml:space="preserve"><value>Notiz</value></data>
+  <data name="NoteWaiting" xml:space="preserve"><value>Notiz — wird beim nächsten Schritt gelesen</value></data>
+  <data name="NoteReadFirst" xml:space="preserve"><value>Notiz — vor dem ersten Schritt gelesen</value></data>
+  <data name="NoteReadAfter" xml:space="preserve"><value>Notiz — nach {0} {0:Schritt|Schritten} gelesen</value></data>
+  <data name="QueueTitle" xml:space="preserve"><value>Nach diesem Durchlauf gesendet</value></data>
+  <data name="QueueRemove" xml:space="preserve"><value>Aus der Warteschlange entfernen</value></data>
+  <data name="ComposerPlaceholderBusy" xml:space="preserve"><value>Eingabe: eine Notiz für den laufenden Durchlauf · Strg+Eingabe: nach dem Durchlauf senden</value></data>
+  <data name="NoteNotRead" xml:space="preserve"><value>Deine Notiz wurde vor dem Ende des Durchlaufs nicht gelesen: Sie steht wieder im Eingabefeld.</value></data>
+  <data name="QueueGivenBack" xml:space="preserve"><value>Der Durchlauf endete nicht normal: Die wartenden Nachrichten stehen wieder im Eingabefeld.</value></data>
+  <data name="QueueActionsKept" xml:space="preserve"><value>Der Durchlauf endete nicht normal: Deine getippten Nachrichten stehen wieder im Eingabefeld; die Editor-Aktionen bleiben in der Warteschlange und laufen nach der nächsten Antwort.</value></data>
 </root>

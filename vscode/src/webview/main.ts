@@ -366,6 +366,38 @@ function setBusy(value: boolean): void {
   sendBtn.title = value ? t('cancelTitle') : t('sendTitle');
   sendBtn.setAttribute('aria-label', sendBtn.title);
   sendBtn.classList.toggle('stop', value);
+  // What the two keys do while a turn runs: a note for it, or a message sent after it — never a Stop.
+  promptEl.placeholder = value ? t('composerPlaceholderBusy') : t('composerPlaceholder');
+}
+
+// ── The queue: messages sent after the turn, in order, each removable ──────────
+const queueEl = document.createElement('div');
+queueEl.id = 'queue';
+queueEl.hidden = true;
+composerEl.insertBefore(queueEl, promptEl);
+
+function renderQueue(items: readonly string[]): void {
+  queueEl.textContent = '';
+  queueEl.hidden = items.length === 0;
+  if (items.length === 0) {
+    return;
+  }
+  const title = document.createElement('div');
+  title.className = 'queue-title';
+  title.textContent = t('queueTitle');
+  queueEl.appendChild(title);
+  items.forEach((text, index) => {
+    const row = document.createElement('div');
+    row.className = 'queue-item';
+    const label = document.createElement('span');
+    label.className = 'queue-text';
+    label.textContent = text;
+    label.title = text;
+    const remove = iconButton('close', t('queueRemove'), 12);
+    remove.addEventListener('click', () => post({ type: 'unqueue', index }));
+    row.append(label, remove);
+    queueEl.appendChild(row);
+  });
 }
 
 /** Same thresholds as the Visual Studio gauge (50/80/95 %), the theme's chart colours. */
@@ -736,6 +768,52 @@ function stepSubject(input: string | undefined): string {
     // Not JSON (a custom tool's raw arguments): the name alone says enough.
   }
   return '';
+}
+
+/** The note lines of the thread, by id: a note's state changes once the model reads it. */
+const noteLines = new Map<string, HTMLElement>();
+
+function noteState(state: 'waiting' | 'read', afterCalls?: number): string {
+  if (state === 'waiting') {
+    return t('noteWaiting');
+  }
+  return !afterCalls ? t('noteReadFirst') : afterCalls === 1 ? t('noteReadOne') : t('noteReadMany', afterCalls);
+}
+
+/**
+ * A note typed during the run: a line of the run where it was typed — never a question bubble, which would close the
+ * turn being written — saying whether the model has read it yet.
+ */
+function addNoteLine(id: string | undefined, text: string, state: 'waiting' | 'read', afterCalls?: number): void {
+  const list = ensureRun(ensureTurn());
+  const line = document.createElement('div');
+  line.className = 'step note' + (state === 'waiting' ? ' waiting' : '');
+  const head = document.createElement('div');
+  head.className = 'note-state';
+  head.append(icon('edit', 13), document.createTextNode(noteState(state, afterCalls)));
+  const body = document.createElement('div');
+  body.className = 'note-text';
+  body.textContent = text;
+  line.append(head, body);
+  list.appendChild(line);
+  if (id) {
+    noteLines.set(id, line);
+  }
+  scrollToBottom();
+}
+
+function showNote(id: string, text: string, state: 'waiting' | 'read', afterCalls?: number): void {
+  const line = noteLines.get(id);
+  if (!line) {
+    addNoteLine(id, text, state, afterCalls);
+    return;
+  }
+  line.classList.toggle('waiting', state === 'waiting');
+  const head = line.querySelector('.note-state');
+  if (head) {
+    head.textContent = '';
+    head.append(icon('edit', 13), document.createTextNode(noteState(state, afterCalls)));
+  }
 }
 
 /** One tool call: a line of the run, its arguments and output folded under it. */
@@ -1599,15 +1677,16 @@ function historyDown(): void {
 }
 
 // ── Composer events ──────────────────────────────────────────────────────────
-function send(): void {
+/** @param later Ctrl+Enter: during a turn, the message is sent once the turn ends instead of being read by it. */
+function send(later = false): void {
   const text = promptEl.value;
-  // A step pause takes /resume, the remedy the step-mode notice names: the only send let through during a turn.
+  // A step pause takes /resume, the remedy the step-mode notice names.
   if (busy && stepPausedNow && text.trim().toLowerCase() === '/resume') {
     promptEl.value = '';
     post({ type: 'resumeStep' });
     return;
   }
-  if (!text.trim() || busy) {
+  if (!text.trim()) {
     return;
   }
   closeMentions();
@@ -1615,7 +1694,14 @@ function send(): void {
   historyIndex = -1;
   historyDraft = '';
   promptEl.value = '';
-  post({ type: 'send', text, typed: true });
+  if (!busy) {
+    post({ type: 'send', text, typed: true });
+    return;
+  }
+  // ⚠ During a turn the text is never dropped (it was, in silence): Ctrl+Enter sends it after the turn, Enter makes it a
+  // note the run reads at its next step — the extension decides, once the host took it, whether a card waiting is
+  // refused by it (a text never approves) and a paused run resumes to read it.
+  post(later ? { type: 'queue', text } : { type: 'steer', text });
 }
 
 promptEl.placeholder = t('composerPlaceholder');
@@ -1670,11 +1756,11 @@ promptEl.addEventListener('keydown', (e) => {
   }
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
-    // A card waiting and nothing typed: Enter is the "Allow once" the card names. With text, it never answers.
+    // A card waiting and nothing typed: Enter is the "Allow once" the card names. With text, it never approves.
     if (promptEl.value.trim() === '' && answerWaitingCard(1)) {
       return;
     }
-    send();
+    send(e.ctrlKey || e.metaKey);
     return;
   }
   if (e.key === 'Escape' && promptEl.value.trim() === '' && answerWaitingCard(0)) {
@@ -1692,9 +1778,12 @@ function renderTranscript(transcript: WvTranscriptItem[], running = false): void
   streamEl = null;
   turn = null;
   transcriptEmpty = true;
+  noteLines.clear();
   for (const item of transcript) {
     if (item.role === 'tool') {
       addToolBubble(item, toolBubblesExpanded);
+    } else if (item.role === 'user' && item.note) {
+      addNoteLine(item.noteId, item.text, item.note, item.noteAfter);
     } else if (item.role === 'user' || item.role === 'assistant' || item.role === 'error') {
       addBubble(item.role, item);
       // An answer of this session keeps its model, duration and run; a saved one comes back without them.
@@ -1765,6 +1854,7 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       mentionCategories = msg.mentionCategories ?? [];
       renderChips(msg.chips ?? []);
       renderPins(msg.pins ?? []);
+      renderQueue(msg.queue ?? []);
       renderTranscript(msg.transcript ?? [], msg.busy === true);
 
       // The model list opens from the header; an empty list says the backend listed nothing (openModelMenu), never a
@@ -1921,6 +2011,20 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       for (const el of messagesEl.querySelectorAll('.step-pause')) {
         el.remove();
       }
+      break;
+    case 'note':
+      showNote(msg.id, msg.text, msg.state, msg.afterCalls);
+      break;
+    case 'noteRemoved':
+      noteLines.get(msg.id)?.remove();
+      noteLines.delete(msg.id);
+      break;
+    case 'queue':
+      renderQueue(msg.items);
+      break;
+    case 'restoreDraft':
+      // In front of what is typed there: the draft is the user's too.
+      promptEl.value = promptEl.value.trim() ? `${msg.text}\n\n${promptEl.value}` : msg.text;
       break;
     case 'turnEnded': {
       stepPausedNow = false;

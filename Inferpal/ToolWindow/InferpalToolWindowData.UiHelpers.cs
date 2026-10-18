@@ -158,6 +158,9 @@ internal partial class InferpalToolWindowData
         _currentCts = cts;
         IsLoading   = true;
         _turnDone   = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        _turnFailed = false;
+        // What the two keys do while a turn runs: a note for it, or a message sent after it — never a Stop.
+        ComposerPlaceholder = Strings.ComposerPlaceholderBusy;
         return cts;
     }
 
@@ -169,13 +172,18 @@ internal partial class InferpalToolWindowData
     private void EndOwnedTurn(CancellationTokenSource? cts)
     {
         if (cts is null) return;
+        var stopped = cts.IsCancellationRequested;
         cts.Dispose();
         if (!ReferenceEquals(_currentCts, cts)) return;
         _currentCts = null;
         IsLoading   = false;
         CurrentStep = string.Empty;
+        ComposerPlaceholder = Strings.ComposerPlaceholder;
         _turnDone?.TrySetResult();
         _turnDone   = null;
+        // Every turn taken here ends here — a chat turn, a slash command, a code action: the messages typed meanwhile go
+        // now, or back to the input box after a Stop or a failure.
+        AfterTurn(normal: !stopped && !_turnFailed);
     }
 
     /// <summary>
@@ -193,6 +201,8 @@ internal partial class InferpalToolWindowData
         {
             await ShowInfoAsync(Strings.MsgCancelled);
         }
+        // A command that failed does not send the messages queued meanwhile on its own (AfterTurn).
+        catch (Exception ex) when (ex is not OperationCanceledException && FailsTheTurn()) { }
         finally
         {
             await RunOnVMContextAsync(() => EndOwnedTurn(cts));

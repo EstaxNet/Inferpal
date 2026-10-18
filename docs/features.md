@@ -33,8 +33,19 @@ exists.
   (`read_file`, `list_files`, `search_in_files`) in a single turn run **in parallel**.
 - **29 built-in tools** plus user-defined shell tools and [MCP](mcp.md) server tools — see
   **[Tools](tools.md)**.
+- **Steer a running turn** — while the agent works, type a correction and press **Enter**: it is
+  a note the run reads before its next step ("use `ILogger`, not `Console`", "that is the wrong
+  file"), shown in the turn as waiting, then as read. Nothing is stopped and nothing is explained
+  again. **Ctrl+Enter** sends the message after the turn instead, in the queue above the input box
+  (each entry can be removed). A turn with no step to read a note before — a chat without tools,
+  a code action, a slash command — queues it. A note the run could not read (typed during the
+  final answer) is sent next; after **Stop**, notes and queued messages come back to the input
+  box. With an approval card waiting, Enter with text refuses the card and the text goes with the
+  refusal. The conversation keeps the notes with their question: the next question, a reload and
+  **Regenerate** see them. Stop is the button — Enter never stops a turn.
 - **Agent Step Mode** — pause between tool calls to inspect or override each action. Toggle
-  with the 🦶 button (or `/agent-step`); continue with **▶ Resume** (or `/resume`).
+  with the 🦶 button (or `/agent-step`); continue with **▶ Resume** (or `/resume`). A note typed
+  during the pause resumes the run, which reads it at the next step.
 - **Agent Orchestrator** — an optional Plan→Act→Observe loop: the **Agent** mode of the Chat/Agent
   switch (`agentModeEnabled`, `inferpal.agentMode` in VS Code). **Chat** mode still uses tools — the
   simple tool loop, without a plan — and `/tools off` gives a chat without tools. Both editors start in

@@ -52,6 +52,22 @@ export interface ChatSendParams {
   /** The question as the user wrote it, before the attached files were appended: what the per-turn auto-context
    * searches for (Visual Studio searches the typed text). */
   query?: string;
+  /** Regenerate: the notes the question's first answer read — asked again, it carries them, as the history kept it. */
+  notes?: string[];
+}
+
+/** A note typed while a turn runs (`chat/steer`), and — read — after how many tool calls the model read it. */
+export interface TurnNote {
+  id: string;
+  text: string;
+  afterCalls?: number;
+}
+
+/** The answer to `chat/steer`: `reason` says why a note was not taken — `noTurn`, `noBoundary` (no step to read it
+ *  before), `closed` (the run is ending). Then the note is sent as the next message. */
+export interface ChatSteerResult {
+  accepted: boolean;
+  reason?: string | null;
 }
 
 export interface ChatSendResult {
@@ -77,6 +93,11 @@ export interface ChatSendResult {
   model?: string | null;
   /** False when the turn stopped before its question entered the host's history (a Stop during the context build). */
   questionKept?: boolean;
+  /** The notes typed during the turn that the model read — now part of the question in the host's history. */
+  appliedNotes?: TurnNote[] | null;
+  /** The notes no step read (typed during the final answer, or the turn stopped first): sent as the next message after
+   *  a turn that ended normally, given back to the composer otherwise. */
+  unappliedNotes?: TurnNote[] | null;
 }
 
 export interface ToolNotice {

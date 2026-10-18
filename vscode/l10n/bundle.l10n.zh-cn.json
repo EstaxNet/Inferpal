@@ -159,5 +159,14 @@
   "Your message was not sent and is back in the input box.": "消息未发送，已放回输入框。",
   "The backend is unreachable — nothing was sent.": "无法连接后端——未发送任何内容。",
   "The backend refused the connection check — nothing was sent. Check the API key and the URL in the settings.": "后端拒绝了连接检查——未发送任何内容。请检查设置中的 API 密钥和 URL。",
-  "The assistant stopped before answering — it restarted or closed. Ask again.": "助手在回答前停止了（已重启或关闭）。请重新提问。"
+  "The assistant stopped before answering — it restarted or closed. Ask again.": "助手在回答前停止了（已重启或关闭）。请重新提问。",
+  "Enter: a note for the running turn · Ctrl+Enter: send it after the turn": "Enter：给正在进行的回合加一条备注 · Ctrl+Enter：在回合结束后发送",
+  "Note — read at the next step": "备注——将在下一步读取",
+  "Note — read before the first step": "备注——已在第一步之前读取",
+  "Note — read after 1 step": "备注——已在 1 个步骤后读取",
+  "Note — read after {0} steps": "备注——已在 {0} 个步骤后读取",
+  "Sent after this turn": "在本回合结束后发送",
+  "Remove from the queue": "从队列中移除",
+  "The turn did not end normally: the messages waiting to be sent are back in the input box.": "本回合未正常结束：等待发送的消息已放回输入框。",
+  "Your note was not read before the turn ended: it is back in the input box.": "回合结束前未读取你的备注：已放回输入框。"
 }

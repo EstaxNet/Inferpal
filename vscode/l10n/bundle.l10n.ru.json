@@ -159,5 +159,14 @@
   "Your message was not sent and is back in the input box.": "Сообщение не отправлено и возвращено в поле ввода.",
   "The backend is unreachable — nothing was sent.": "Бэкенд недоступен — ничего не отправлено.",
   "The backend refused the connection check — nothing was sent. Check the API key and the URL in the settings.": "Бэкенд отклонил проверку подключения — ничего не отправлено. Проверьте ключ API и URL в настройках.",
-  "The assistant stopped before answering — it restarted or closed. Ask again.": "Ассистент остановился, не ответив — он перезапустился или закрылся. Спросите ещё раз."
+  "The assistant stopped before answering — it restarted or closed. Ask again.": "Ассистент остановился, не ответив — он перезапустился или закрылся. Спросите ещё раз.",
+  "Enter: a note for the running turn · Ctrl+Enter: send it after the turn": "Enter: заметка для текущего хода · Ctrl+Enter: отправить после хода",
+  "Note — read at the next step": "Заметка — будет прочитана на следующем шаге",
+  "Note — read before the first step": "Заметка — прочитана до первого шага",
+  "Note — read after 1 step": "Заметка — прочитана после 1 шага",
+  "Note — read after {0} steps": "Заметка — прочитана после шагов: {0}",
+  "Sent after this turn": "Будет отправлено после этого хода",
+  "Remove from the queue": "Убрать из очереди",
+  "The turn did not end normally: the messages waiting to be sent are back in the input box.": "Ход завершился не как обычно — сообщения, ожидавшие отправки, возвращены в поле ввода.",
+  "Your note was not read before the turn ended: it is back in the input box.": "Заметка не была прочитана до конца хода — она возвращена в поле ввода."
 }

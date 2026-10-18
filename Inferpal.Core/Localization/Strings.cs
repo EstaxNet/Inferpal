@@ -188,6 +188,16 @@ internal static class Strings
     public static string ContextRingTip(int percent, string window) => Format(Get(nameof(ContextRingTip)), percent, window);
     public static string TurnWorking(int step) => Format(Get(nameof(TurnWorking)), step);
     public static string TurnWaiting => Get(nameof(TurnWaiting));
+    public static string NoteLabel => Get(nameof(NoteLabel));
+    public static string NoteWaiting => Get(nameof(NoteWaiting));
+    public static string NoteReadFirst => Get(nameof(NoteReadFirst));
+    public static string NoteReadAfter(int steps) => Format(Get(nameof(NoteReadAfter)), steps);
+    public static string QueueTitle => Get(nameof(QueueTitle));
+    public static string QueueRemove => Get(nameof(QueueRemove));
+    public static string ComposerPlaceholderBusy => Get(nameof(ComposerPlaceholderBusy));
+    public static string NoteNotRead => Get(nameof(NoteNotRead));
+    public static string QueueGivenBack => Get(nameof(QueueGivenBack));
+    public static string QueueActionsKept => Get(nameof(QueueActionsKept));
     public static string RunUndo => Get(nameof(RunUndo));
     public static string WelcomeTitle => Get(nameof(WelcomeTitle));
     public static string WelcomeLine(string model, string server) => Format(Get(nameof(WelcomeLine)), model, server);

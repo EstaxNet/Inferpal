@@ -203,7 +203,9 @@ internal partial class InferpalToolWindowData
         TipModeChat          = Strings.ModeChatTip;
         TipModeAgent         = Strings.ModeAgentTip;
         TipModePlan          = Strings.ModePlanTip;
-        ComposerPlaceholder  = Strings.ComposerPlaceholder;
+        ComposerPlaceholder  = IsLoading ? Strings.ComposerPlaceholderBusy : Strings.ComposerPlaceholder;
+        QueueTitle           = Strings.QueueTitle;
+        QueueRemoveLabel     = Strings.QueueRemove;
         TooltipAttach        = Strings.ChatAttach;
         WelcomeTitle         = Strings.WelcomeTitle;
         WelcomeExplainTitle  = Strings.WelcomeExplainFile;

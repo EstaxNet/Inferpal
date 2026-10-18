@@ -1540,4 +1540,14 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="ImportSkipUnsupportedLanguage" xml:space="preserve"><value>una lingua in cui Inferpal non è tradotto</value></data>
   <data name="ImportSkipNoServersInExport" xml:space="preserve"><value>l'esportazione non contiene server MCP (Roo li tiene in un proprio file)</value></data>
   <data name="ImportApplyWhileBusy" xml:space="preserve"><value>Un turno è ancora in corso: attendi che finisca, poi applica.</value></data>
+  <data name="NoteLabel" xml:space="preserve"><value>Nota</value></data>
+  <data name="NoteWaiting" xml:space="preserve"><value>Nota: verrà letta al passaggio successivo</value></data>
+  <data name="NoteReadFirst" xml:space="preserve"><value>Nota: letta prima del primo passaggio</value></data>
+  <data name="NoteReadAfter" xml:space="preserve"><value>Nota: letta dopo {0} {0:passaggio|passaggi}</value></data>
+  <data name="QueueTitle" xml:space="preserve"><value>Inviato dopo questo turno</value></data>
+  <data name="QueueRemove" xml:space="preserve"><value>Rimuovi dalla coda</value></data>
+  <data name="ComposerPlaceholderBusy" xml:space="preserve"><value>Invio: una nota per il turno in corso · Ctrl+Invio: inviarla dopo il turno</value></data>
+  <data name="NoteNotRead" xml:space="preserve"><value>La nota non è stata letta prima della fine del turno: è di nuovo nella casella di input.</value></data>
+  <data name="QueueGivenBack" xml:space="preserve"><value>Il turno non è terminato normalmente: i messaggi in attesa di invio sono di nuovo nella casella di input.</value></data>
+  <data name="QueueActionsKept" xml:space="preserve"><value>Il turno non è terminato normalmente: i messaggi digitati sono di nuovo nella casella di input; le azioni dell'editor restano in coda e verranno eseguite dopo la prossima risposta.</value></data>
 </root>

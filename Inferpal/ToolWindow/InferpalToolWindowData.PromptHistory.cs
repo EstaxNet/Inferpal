@@ -254,6 +254,7 @@ internal partial class InferpalToolWindowData
             var msg = ex.Message;
             await RunOnVMContextAsync(() =>
             {
+                _turnFailed = true;   // the messages queued meanwhile go back to the input box (AfterTurn)
                 InsertThemed(ChatMessageItem.NoticeMsg(Strings.MsgError(msg)));
                 ScrollToBottom();
             });
@@ -391,6 +392,7 @@ internal partial class InferpalToolWindowData
             gotProposal = true;
         }
         catch (OperationCanceledException) { /* cancelled: nothing is suggested */ }
+        catch (Exception ex) when (ex is not OperationCanceledException && FailsTheTurn()) { }
         finally
         {
             sink.Stop();

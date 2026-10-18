@@ -521,6 +521,8 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     /// <param name="onStep">Called with a status string on each major step (thinking, calling tool).</param>
     /// <param name="onToken">Called with each streamed token for real-time display; <c>null</c> to disable.</param>
     /// <param name="effort">The reasoning every turn of the run asks for — one effort for the whole run.</param>
+    /// <param name="steering">The notes the user types while the run works, read before each request
+    /// (<see cref="RunSteering"/>); <c>null</c> for a run nobody steers.</param>
     /// <returns>
     /// An <see cref="AgentResult"/> with the final response text, all tool executions,
     /// the updated conversation history, and token counts.
@@ -535,7 +537,8 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         TaskComplexity complexity = TaskComplexity.Normal,
         Action<ToolExecution>? onToolExecuted = null,
         Action<string>? onThinking = null,
-        ReasoningEffort effort = ReasoningEffort.Server)
+        ReasoningEffort effort = ReasoningEffort.Server,
+        RunSteering? steering = null)
     {
         var base_ = _config.BaseUrl.TrimEnd('/');
         if (string.IsNullOrWhiteSpace(base_))
@@ -578,6 +581,11 @@ internal abstract class InferenceProviderBase : IInferenceProvider
             // results so the model never silently truncates the head (system prompt + task).
             // No LLM summary on this basic path — that extra call is the orchestrator's.
             AgentOrchestrator.CompactRunContext(messages, anchorCount, window, RequestSize.ToolTokens(tools.Definitions));
+
+            // The user's notes, the last text read before the next request; a note restarts the loop count (see the
+            // orchestrator: the call it corrects is sent again).
+            if (steering is not null && steering.AddTo(messages, executions.Count) > 0)
+                sigCounts.Clear();
 
             onStep(Strings.StatusThinking);
 

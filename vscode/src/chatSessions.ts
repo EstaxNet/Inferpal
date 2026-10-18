@@ -14,15 +14,22 @@ export function toSavedMessages(transcript: readonly WvTranscriptItem[]): SavedM
       ? item.savedAs
       : item.role === 'tool'
         ? { role: 'tool', content: item.toolOutput ?? '', toolName: item.text, timestamp: item.timestamp }
-        : item.notice
-          // The Core's SessionManager.NoticeMarker: the restore leaves a notice on screen, out of the model's history.
-          ? { role: item.role, content: item.text, toolName: NOTICE_MARKER, timestamp: item.timestamp }
-          : { role: item.role, content: item.text, timestamp: item.timestamp },
+        : item.note === 'read'
+          // The Core's SessionManager.NoteMarker: the restore folds the note into its question, as the live history did.
+          ? { role: 'user', content: item.text, toolName: NOTE_MARKER, timestamp: item.timestamp }
+          : item.notice || item.note
+            // The Core's SessionManager.NoticeMarker: the restore leaves a notice on screen, out of the model's history.
+            // A note no step has read yet is one too: the model never read it with its question.
+            ? { role: item.role, content: item.text, toolName: NOTICE_MARKER, timestamp: item.timestamp }
+            : { role: item.role, content: item.text, timestamp: item.timestamp },
   );
 }
 
 /** Mirror of SessionManager.NoticeMarker (Core): the toolName a saved notice carries. */
 export const NOTICE_MARKER = 'notice';
+
+/** Mirror of SessionManager.NoteMarker (Core): the toolName a saved note typed during a run carries. */
+export const NOTE_MARKER = 'note';
 
 /** The inverse: a restored session rendered back into transcript items. */
 export function toTranscript(messages: readonly SavedMessage[]): WvTranscriptItem[] {
@@ -35,6 +42,9 @@ export function toTranscript(messages: readonly SavedMessage[]): WvTranscriptIte
         toolOutput: m.content,
         timestamp: m.timestamp ?? undefined,
       });
+    } else if (m.role === 'user' && m.toolName === NOTE_MARKER) {
+      // Kept a note across a reload: re-saved as a question, it became a second question with no answer.
+      items.push({ role: 'user', text: m.content, timestamp: m.timestamp ?? undefined, note: 'read' });
     } else if (m.role === 'user' || m.role === 'assistant' || m.role === 'error') {
       items.push({
         role: m.role,

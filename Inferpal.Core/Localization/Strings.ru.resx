@@ -1540,4 +1540,14 @@
   <data name="ImportSkipUnsupportedLanguage" xml:space="preserve"><value>язык, на который Inferpal не переведён</value></data>
   <data name="ImportSkipNoServersInExport" xml:space="preserve"><value>в экспорте нет серверов MCP (Roo хранит их в своём файле)</value></data>
   <data name="ImportApplyWhileBusy" xml:space="preserve"><value>Ход ещё выполняется: дождитесь его завершения, затем примените.</value></data>
+  <data name="NoteLabel" xml:space="preserve"><value>Заметка</value></data>
+  <data name="NoteWaiting" xml:space="preserve"><value>Заметка — будет прочитана на следующем шаге</value></data>
+  <data name="NoteReadFirst" xml:space="preserve"><value>Заметка — прочитана до первого шага</value></data>
+  <data name="NoteReadAfter" xml:space="preserve"><value>Заметка — прочитана после {0} {0:шага|шагов|шагов}</value></data>
+  <data name="QueueTitle" xml:space="preserve"><value>Будет отправлено после этого хода</value></data>
+  <data name="QueueRemove" xml:space="preserve"><value>Убрать из очереди</value></data>
+  <data name="ComposerPlaceholderBusy" xml:space="preserve"><value>Enter: заметка для текущего хода · Ctrl+Enter: отправить после хода</value></data>
+  <data name="NoteNotRead" xml:space="preserve"><value>Заметка не была прочитана до конца хода — она возвращена в поле ввода.</value></data>
+  <data name="QueueGivenBack" xml:space="preserve"><value>Ход завершился не как обычно — сообщения, ожидавшие отправки, возвращены в поле ввода.</value></data>
+  <data name="QueueActionsKept" xml:space="preserve"><value>Ход завершился не как обычно — набранные сообщения возвращены в поле ввода; действия редактора остаются в очереди и выполнятся после следующего ответа.</value></data>
 </root>

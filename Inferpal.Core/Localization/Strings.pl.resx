@@ -1540,4 +1540,14 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="ImportSkipUnsupportedLanguage" xml:space="preserve"><value>język, na który Inferpal nie jest przetłumaczony</value></data>
   <data name="ImportSkipNoServersInExport" xml:space="preserve"><value>eksport nie zawiera serwerów MCP (Roo trzyma je we własnym pliku)</value></data>
   <data name="ImportApplyWhileBusy" xml:space="preserve"><value>Tura wciąż trwa: poczekaj, aż się zakończy, a potem zastosuj.</value></data>
+  <data name="NoteLabel" xml:space="preserve"><value>Notatka</value></data>
+  <data name="NoteWaiting" xml:space="preserve"><value>Notatka — zostanie odczytana w następnym kroku</value></data>
+  <data name="NoteReadFirst" xml:space="preserve"><value>Notatka — odczytana przed pierwszym krokiem</value></data>
+  <data name="NoteReadAfter" xml:space="preserve"><value>Notatka — odczytana po {0} {0:kroku|krokach|krokach}</value></data>
+  <data name="QueueTitle" xml:space="preserve"><value>Wysłane po tej turze</value></data>
+  <data name="QueueRemove" xml:space="preserve"><value>Usuń z kolejki</value></data>
+  <data name="ComposerPlaceholderBusy" xml:space="preserve"><value>Enter: notatka dla trwającej tury · Ctrl+Enter: wyślij po turze</value></data>
+  <data name="NoteNotRead" xml:space="preserve"><value>Notatka nie została odczytana przed końcem tury — wróciła do pola wprowadzania.</value></data>
+  <data name="QueueGivenBack" xml:space="preserve"><value>Tura nie zakończyła się normalnie — wiadomości czekające na wysłanie wróciły do pola wprowadzania.</value></data>
+  <data name="QueueActionsKept" xml:space="preserve"><value>Tura nie zakończyła się normalnie — wpisane wiadomości wróciły do pola wprowadzania; akcje edytora zostają w kolejce i zostaną wykonane po następnej odpowiedzi.</value></data>
 </root>

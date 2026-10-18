@@ -68,6 +68,10 @@ record ChatMessageDto(
     /// <c>HistoryCompaction</c> must not count it as a turn, or a single run's scaffolding would push
     /// the user's real previous questions out of the kept turns.</summary>
     [JsonIgnore] public bool IsScaffolding { get; init; }
+
+    /// <summary>A note the user typed while the run worked (<c>RunSteering</c>), not a question: a summary of the run's
+    /// earlier context keeps it word for word, since a paraphrased correction is not the one the user gave.</summary>
+    [JsonIgnore] public bool IsUserNote { get; init; }
 }
 
 /// <summary>

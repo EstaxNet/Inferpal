@@ -159,5 +159,14 @@
   "Your message was not sent and is back in the input box.": "Wiadomość nie została wysłana i wróciła do pola wprowadzania.",
   "The backend is unreachable — nothing was sent.": "Backend jest nieosiągalny — nic nie zostało wysłane.",
   "The backend refused the connection check — nothing was sent. Check the API key and the URL in the settings.": "Backend odrzucił sprawdzenie połączenia — nic nie zostało wysłane. Sprawdź klucz API i adres URL w ustawieniach.",
-  "The assistant stopped before answering — it restarted or closed. Ask again.": "Asystent zatrzymał się przed odpowiedzią — został ponownie uruchomiony lub zamknięty. Zapytaj ponownie."
+  "The assistant stopped before answering — it restarted or closed. Ask again.": "Asystent zatrzymał się przed odpowiedzią — został ponownie uruchomiony lub zamknięty. Zapytaj ponownie.",
+  "Enter: a note for the running turn · Ctrl+Enter: send it after the turn": "Enter: notatka dla trwającej tury · Ctrl+Enter: wyślij po turze",
+  "Note — read at the next step": "Notatka — zostanie odczytana w następnym kroku",
+  "Note — read before the first step": "Notatka — odczytana przed pierwszym krokiem",
+  "Note — read after 1 step": "Notatka — odczytana po 1 kroku",
+  "Note — read after {0} steps": "Notatka — odczytana po krokach: {0}",
+  "Sent after this turn": "Wysłane po tej turze",
+  "Remove from the queue": "Usuń z kolejki",
+  "The turn did not end normally: the messages waiting to be sent are back in the input box.": "Tura nie zakończyła się normalnie — wiadomości czekające na wysłanie wróciły do pola wprowadzania.",
+  "Your note was not read before the turn ended: it is back in the input box.": "Notatka nie została odczytana przed końcem tury — wróciła do pola wprowadzania."
 }

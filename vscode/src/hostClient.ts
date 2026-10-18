@@ -26,6 +26,7 @@ import {
   BackendStatusResult,
   ChatSendParams,
   ChatSendResult,
+  ChatSteerResult,
   CodeActionParams,
   CodeActionResult,
   CodeExcerptResult,
@@ -99,6 +100,8 @@ export interface ChatEvents {
   onStreamReset?(): void;
   onStepPaused?(): void;
   onStepResumed?(): void;
+  /** A note typed during the turn (`chat/steer`) was read by the model, after `afterCalls` tool calls. */
+  onNoteApplied?(id: string, afterCalls: number): void;
   /** A background `/task` reached a terminal state — rendered as a persistent bubble, like VS. */
   onTaskFinished?(text: string): void;
   /** Something that failed after the fact (the auto-save slot not emptied…), said in the thread. */
@@ -331,6 +334,8 @@ export class HostClient {
     conn.onNotification('chat/streamReset', () => this.events.onStreamReset?.());
     conn.onNotification('chat/stepPaused', () => this.events.onStepPaused?.());
     conn.onNotification('chat/stepResumed', () => this.events.onStepResumed?.());
+    conn.onNotification('chat/noteApplied', (n: { id: string; afterCalls: number }) =>
+      this.events.onNoteApplied?.(n.id, n.afterCalls));
     // Dedicated channel: as a `chat/step` status line the notice was wiped by the next
     // setBusy(false) — a task finishing while the user looked away left no trace.
     conn.onNotification('task/finished', (n: TextNote) => this.events.onTaskFinished?.(n.text));
@@ -407,6 +412,11 @@ export class HostClient {
 
   chatCancel(): Promise<void> {
     return this.connection().sendRequest('chat/cancel');
+  }
+
+  /** A note typed while the turn runs, for its next step; refused (with the reason) when no step will read it. */
+  chatSteer(id: string, text: string): Promise<ChatSteerResult> {
+    return this.connection().sendRequest<ChatSteerResult>('chat/steer', { id, text });
   }
 
   chatReset(): Promise<void> {

@@ -77,15 +77,17 @@ internal partial class InferpalToolWindowData
         // The model is captured in the closure — no volatile field or
         // cross-thread race condition possible.
         // clearPrompt: false so the user's current draft is preserved.
-        // Cancel any in-flight request on the VM context before starting — and WAIT for it to
-        // unwind: firing the next turn immediately lets the cancelled turn's finally stomp
-        // IsLoading/_currentCts under the new one (dead stop button, a third send possible,
-        // interleaved bubbles). _turnDone is completed by the owning turn's conditional
-        // finalisation.
+        // ⚠ A turn running is never cancelled by a context-menu action: it was, and the run's work went with it — VS Code
+        // never did that. The action waits for the turn, in the queue under the composer, sent when it ends.
         Post(() =>
         {
+            if (IsLoading)
+            {
+                Enqueue(new QueuedMessage(p, m, atts));
+                return;
+            }
+            // A send claimed but not yet a turn (its context being built): its end is waited for, as before.
             var previousTurn = _turnDone?.Task;
-            _currentCts?.Cancel();
             _ = RunPendingTurnAsync(previousTurn, p, m, atts);
         });
     }

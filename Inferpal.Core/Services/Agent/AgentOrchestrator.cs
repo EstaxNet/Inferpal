@@ -499,10 +499,16 @@ internal sealed class AgentOrchestrator
         if (omitted > 0) summary += HistoryCompaction.PartialSummaryMarker(omitted);
         if (cut)         summary += HistoryCompaction.CutSummaryMarker;
 
-        // Replace the summarised range with a single [summary] pair.
+        // Replace the summarised range with a single [summary] pair — followed by the user's notes it held, word for word:
+        // paraphrased by the summary, or left out of it, a correction is no longer the one the user gave.
+        var notes = range.Where(m => m.IsUserNote).ToList();
         messages.RemoveRange(start, rangeLen);
-        messages.Insert(start, new ChatMessageDto("assistant", summary));
-        messages.Insert(start, new ChatMessageDto("user", "[Summary of this run's earlier context]") { IsScaffolding = true });
+        messages.InsertRange(start,
+        [
+            new ChatMessageDto("user", "[Summary of this run's earlier context]") { IsScaffolding = true },
+            new ChatMessageDto("assistant", summary),
+            .. notes,
+        ]);
         return RunSummaryOutcome.Summarized;
     }
 
@@ -574,7 +580,7 @@ internal sealed class AgentOrchestrator
         // results" in the prompt resolves to the digest directly above it, bounded by what the window
         // leaves after the head (SynthesisDigestBudget).
         var window      = await RunWindowAsync(model, ct);
-        var instruction = ModelPrompts.AgentSynthesizePrompt(TaskSnippet(userTask));
+        var instruction = ModelPrompts.AgentSynthesizePrompt(userTask);
         var digest = BuildToolDigest(executions, SynthesisDigestBudget(window, EstimateChars(synth), instruction.Length));
         var prompt = digest.Length > 0
             ? digest + "\n\n" + instruction
@@ -761,6 +767,8 @@ internal sealed class AgentOrchestrator
     /// the final bubble).
     /// </param>
     /// <param name="ct">Cancellation token.</param>
+    /// <param name="steering">The notes the user types while the run works, read before each action (<see cref="RunSteering"/>);
+    /// <c>null</c> for a run nobody steers.</param>
     public async Task<OrchestratorResult> RunAsync(
         string                     model,
         List<ChatMessageDto>       history,
@@ -772,7 +780,8 @@ internal sealed class AgentOrchestrator
         Action<ToolExecution>?     onToolExecuted,
         Action?                    onStreamReset,
         CancellationToken          ct,
-        Action<string>?            onThinking = null)
+        Action<string>?            onThinking = null,
+        RunSteering?               steering = null)
     {
         // Claim the shared GPU for the whole run, like InferenceProviderBase.RunAgentAsync does for
         // the basic loop: this path calls SendChatAsync directly, so without its own lease the
@@ -790,6 +799,10 @@ internal sealed class AgentOrchestrator
         var userTask    = string.Empty;
         for (int i = history.Count - 1; i >= 0; i--)
             if (history[i].Role == "user") { userTask = history[i].Content ?? string.Empty; break; }
+        // The request as the prompts quote it (TaskSnippet), and later with the notes read during the run — each cut on
+        // its own: one 400-character tail of "request + notes" lost the request behind two long notes.
+        var askedTask   = userTask;
+        userTask        = TaskSnippet(askedTask);
         var executions  = new List<ToolExecution>();
         // Per-batch repeat counts for loop detection (see AgentLoopPolicy).
         var sigCounts   = new Dictionary<string, int>();
@@ -885,6 +898,9 @@ internal sealed class AgentOrchestrator
 
         // ── Phase 2: Act-Observe loop ────────────────────────────────────────
         int stepIdx = 0;
+        // The last answer-now OBSERVE, and the generic one that stands in for it when a note arrives after it — found by its
+        // text: a summary of the run's middle shifts the messages under it.
+        (string Complete, string Generic)? answerNowObserve = null;
         // The writes no finished write step has claimed yet: what lets a step the run closes at its end count as done
         // only when a file was written for it (CloseRemainingSteps).
         int unclaimedWrites = 0;
@@ -906,6 +922,22 @@ internal sealed class AgentOrchestrator
             // overflow → one LLM summary of the old turns; later overflows → deterministic elision.
             runSummarized = await CompactRunContextAsync(messages, anchorCount, model, runSummarized, onStep, ct,
                                                          RequestSize.ToolTokens(tools.Definitions));
+
+            // ── The user's notes, the last text read before acting ───────────
+            // ⚠ A note restarts the loop count: told "not that file", the model sends the call it was refused again with
+            // other arguments — or the same, once the note is lifted — and a mutating batch repeated once ends the run.
+            // ⚠ And the request the final answer quotes carries the notes: the synthesis rebuilds its context without them.
+            if (steering is not null && steering.AddTo(messages, executions.Count) > 0)
+            {
+                sigCounts.Clear();
+                // ⚠ A note that came after the answer-now prompt was chosen (during a summary, a stream reset) was read under
+                // "WITHOUT calling any more tools": that prompt becomes the generic one, which leaves them open.
+                if (answerNowObserve is { } observe
+                    && messages.FindLastIndex(m => m.IsScaffolding && m.Content == observe.Complete) is var at and >= 0)
+                    messages[at] = messages[at] with { Content = observe.Generic };
+                answerNowObserve = null;
+                userTask = ChatTurnPolicy.WithUserNotes(TaskSnippet(askedTask), steering.Applied.Select(n => TaskSnippet(n.Text)));
+            }
 
             // ── ACT ──────────────────────────────────────────────────────────
             onStep(Strings.StatusThinking);
@@ -1094,13 +1126,21 @@ internal sealed class AgentOrchestrator
                 // ⚠ A prose answer after the repair prompt IS an answer ("these errors were there before my change"):
                 // counted as a narration, it was told to "call the first tool from your plan".
                 answerRequested = remaining == 0 && !editChangedNothing;
+                // ⚠ A note waiting for the next action gets the generic prompt, which leaves the tools open: after "write the
+                // answer WITHOUT calling any more tools", a note that asks for one more change was answered in prose. The
+                // answer is still requested — a prose reply to "stop, just tell me what you changed" IS the answer, never a
+                // narration to send back.
+                var noteWaiting = steering?.HasPending == true;
                 var observeMsg = editChangedNothing
                     ? ModelPrompts.AgentObservePromptEditUnchanged(iteration + 1, maxIter, toolNames)
                     : buildFixAsked
                     ? ModelPrompts.AgentObservePromptBuildBroken(iteration + 1, maxIter, toolNames)
-                    : answerRequested
-                        ? ModelPrompts.AgentObservePromptComplete(iteration + 1, maxIter, toolNames, TaskSnippet(userTask))
+                    : answerRequested && !noteWaiting
+                        ? ModelPrompts.AgentObservePromptComplete(iteration + 1, maxIter, toolNames, userTask)
                         : ModelPrompts.AgentObservePrompt(iteration + 1, maxIter, toolNames, remaining);
+                answerNowObserve = answerRequested && !noteWaiting && !editChangedNothing && !buildFixAsked
+                    ? (observeMsg, ModelPrompts.AgentObservePrompt(iteration + 1, maxIter, toolNames, remaining))
+                    : null;
                 messages.Add(new ChatMessageDto("user", observeMsg) { IsScaffolding = true });
 
                 // Signal the UI to clear the streaming bubble so that think-only tokens

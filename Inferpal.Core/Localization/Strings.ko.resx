@@ -1540,4 +1540,14 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="ImportSkipUnsupportedLanguage" xml:space="preserve"><value>Inferpal이 번역되지 않은 언어</value></data>
   <data name="ImportSkipNoServersInExport" xml:space="preserve"><value>내보내기에 MCP 서버가 없습니다(Roo는 별도 파일에 보관합니다)</value></data>
   <data name="ImportApplyWhileBusy" xml:space="preserve"><value>아직 턴이 진행 중입니다. 끝날 때까지 기다린 뒤 적용하세요.</value></data>
+  <data name="NoteLabel" xml:space="preserve"><value>메모</value></data>
+  <data name="NoteWaiting" xml:space="preserve"><value>메모 — 다음 단계에서 읽음</value></data>
+  <data name="NoteReadFirst" xml:space="preserve"><value>메모 — 첫 단계 전에 읽음</value></data>
+  <data name="NoteReadAfter" xml:space="preserve"><value>메모 — {0}단계 후에 읽음</value></data>
+  <data name="QueueTitle" xml:space="preserve"><value>이 턴이 끝난 뒤 보냄</value></data>
+  <data name="QueueRemove" xml:space="preserve"><value>대기열에서 제거</value></data>
+  <data name="ComposerPlaceholderBusy" xml:space="preserve"><value>Enter: 진행 중인 턴에 메모 · Ctrl+Enter: 턴이 끝난 뒤 보내기</value></data>
+  <data name="NoteNotRead" xml:space="preserve"><value>턴이 끝나기 전에 메모를 읽지 않았습니다. 입력란으로 되돌아갔습니다.</value></data>
+  <data name="QueueGivenBack" xml:space="preserve"><value>턴이 정상적으로 끝나지 않았습니다. 보내기를 기다리던 메시지가 입력란으로 되돌아갔습니다.</value></data>
+  <data name="QueueActionsKept" xml:space="preserve"><value>턴이 정상적으로 끝나지 않았습니다. 입력한 메시지는 입력란으로 되돌아갔고, 편집기 작업은 대기열에 남아 다음 답변 후에 실행됩니다.</value></data>
 </root>

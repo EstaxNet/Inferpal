@@ -500,7 +500,8 @@ public class WebviewRebuildTests
 
         var naming = Body(source, "private nameAttachmentsInQuestion(");
         Assert.Contains("t('📎 Attached: {0}'", naming, StringComparison.Ordinal);
-        Assert.Contains("m.role === 'user'", naming, StringComparison.Ordinal);
+        // Under the QUESTION: never a note typed during its run.
+        Assert.Contains("this.lastQuestion()", naming, StringComparison.Ordinal);
     }
 
     /// <summary>

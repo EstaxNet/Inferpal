@@ -1540,4 +1540,14 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ImportSkipUnsupportedLanguage" xml:space="preserve"><value>Inferpal が翻訳されていない言語</value></data>
   <data name="ImportSkipNoServersInExport" xml:space="preserve"><value>エクスポートに MCP サーバーは含まれません（Roo は専用ファイルに保存します）</value></data>
   <data name="ImportApplyWhileBusy" xml:space="preserve"><value>ターンがまだ実行中です。終了を待ってから適用してください。</value></data>
+  <data name="NoteLabel" xml:space="preserve"><value>メモ</value></data>
+  <data name="NoteWaiting" xml:space="preserve"><value>メモ — 次のステップで読まれます</value></data>
+  <data name="NoteReadFirst" xml:space="preserve"><value>メモ — 最初のステップの前に読まれました</value></data>
+  <data name="NoteReadAfter" xml:space="preserve"><value>メモ — {0} ステップ後に読まれました</value></data>
+  <data name="QueueTitle" xml:space="preserve"><value>このターンの後に送信</value></data>
+  <data name="QueueRemove" xml:space="preserve"><value>キューから削除</value></data>
+  <data name="ComposerPlaceholderBusy" xml:space="preserve"><value>Enter: 実行中のターンへのメモ · Ctrl+Enter: ターンの後に送信</value></data>
+  <data name="NoteNotRead" xml:space="preserve"><value>ターンが終わる前にメモは読まれませんでした。入力欄に戻されました。</value></data>
+  <data name="QueueGivenBack" xml:space="preserve"><value>ターンが正常に終了しませんでした。送信待ちのメッセージは入力欄に戻されました。</value></data>
+  <data name="QueueActionsKept" xml:space="preserve"><value>ターンが正常に終了しませんでした。入力したメッセージは入力欄に戻されました。エディターのアクションはキューに残り、次の回答の後に実行されます。</value></data>
 </root>

@@ -67,7 +67,7 @@ public class SlashCommandQuestionRestoreTests
         // (ExplainRefusedQuestionTests). A template sent as a prompt is a turn: its question stays one.
         Assert.Equal(4, Regex.Matches(code, @"question\.notice = true;").Count);
         Assert.Single(Regex.Matches(code, @"question\.notice = false;"));
-        Assert.Contains("question.notice = true;\n      try {\n        await this.runCodeAction(", code.Replace("\r\n", "\n"));
+        Assert.Matches(@"question\.notice = true;\n\s*try \{\n\s*await this\.runCodeAction\(", code.Replace("\r\n", "\n"));
 
         var sessions = SettingsSchemaDriftTests.NeutralizeTypeScriptComments(
             File.ReadAllText(Path.Combine(root.FullName, "vscode", "src", "chatSessions.ts")));

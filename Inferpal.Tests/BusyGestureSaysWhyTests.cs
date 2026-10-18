@@ -4,13 +4,15 @@ using Xunit;
 namespace Inferpal.Tests;
 
 /// <summary>
-/// VS Code: a gesture that sends while a turn runs — the editor's context menu (Explain, Fix, Refactor, Doc), the result
-/// bar's Undo — says why nothing happens.
+/// VS Code: a gesture that sends while a turn runs by another door than the composer — the editor's context menu
+/// (Explain, Fix, Refactor, Doc), the result bar's Undo — says why nothing happens.
 /// </summary>
 /// <remarks>
-/// The composer cannot send during a turn, but these gestures reach <c>send()</c> by another door, and it returned on
-/// <c>busy</c> without a word: the chat took the focus and the click did nothing at all. Visual Studio says it
-/// (<c>Strings.UndoRunWhileBusy</c>; Explain stops the running turn first).
+/// These gestures reach <c>send()</c> by another door, and it returned on <c>busy</c> without a word: the chat took the
+/// focus and the click did nothing at all. Visual Studio says it (<c>Strings.UndoRunWhileBusy</c>), and queues a
+/// context-menu action, whose code it takes at the click; VS Code's reads the editor when it runs, so queued it would
+/// rewrite whatever is selected by then — refused instead. The composer itself sends a note or queues
+/// (<see cref="SteeringFrontEndTests"/>).
 /// </remarks>
 public sealed class BusyGestureSaysWhyTests
 {

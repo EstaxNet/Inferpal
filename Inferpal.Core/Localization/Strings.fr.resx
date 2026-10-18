@@ -1540,4 +1540,14 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="ImportSkipUnsupportedLanguage" xml:space="preserve"><value>langue dans laquelle Inferpal n'est pas traduit</value></data>
   <data name="ImportSkipNoServersInExport" xml:space="preserve"><value>l'export ne contient aucun serveur MCP (Roo les garde dans son propre fichier)</value></data>
   <data name="ImportApplyWhileBusy" xml:space="preserve"><value>Un tour est encore en cours : attendez qu'il se termine, puis appliquez.</value></data>
+  <data name="NoteLabel" xml:space="preserve"><value>Note</value></data>
+  <data name="NoteWaiting" xml:space="preserve"><value>Note — lue à la prochaine étape</value></data>
+  <data name="NoteReadFirst" xml:space="preserve"><value>Note — lue avant la première étape</value></data>
+  <data name="NoteReadAfter" xml:space="preserve"><value>Note — lue après {0} {0:étape|étapes}</value></data>
+  <data name="QueueTitle" xml:space="preserve"><value>Envoyé après ce tour</value></data>
+  <data name="QueueRemove" xml:space="preserve"><value>Retirer de la file</value></data>
+  <data name="ComposerPlaceholderBusy" xml:space="preserve"><value>Entrée : une note pour le tour en cours · Ctrl+Entrée : l’envoyer après le tour</value></data>
+  <data name="NoteNotRead" xml:space="preserve"><value>Votre note n’a pas été lue avant la fin du tour : elle est de nouveau dans la zone de saisie.</value></data>
+  <data name="QueueGivenBack" xml:space="preserve"><value>Le tour ne s’est pas terminé normalement : les messages en attente d’envoi sont de nouveau dans la zone de saisie.</value></data>
+  <data name="QueueActionsKept" xml:space="preserve"><value>Le tour ne s’est pas terminé normalement : les messages que vous aviez tapés sont de nouveau dans la zone de saisie ; les actions de l’éditeur restent dans la file et partiront après la prochaine réponse.</value></data>
 </root>

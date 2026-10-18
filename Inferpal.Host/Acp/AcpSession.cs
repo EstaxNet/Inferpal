@@ -893,7 +893,9 @@ internal sealed class AcpSession : IAsyncDisposable
             switch (m.Role)
             {
                 case "user":
-                    Update(new { sessionUpdate = "user_message_chunk", content = Text(m.Content) });
+                    // A note typed during a run (an editor saved it) follows its question: set apart, never glued to it.
+                    Update(new { sessionUpdate = "user_message_chunk",
+                                 content = Text(m.ToolName == SessionManager.NoteMarker ? "\n\n" + m.Content : m.Content) });
                     break;
                 case "tool":
                     var id = "replay_" + Interlocked.Increment(ref _replayed).ToString(CultureInfo.InvariantCulture);

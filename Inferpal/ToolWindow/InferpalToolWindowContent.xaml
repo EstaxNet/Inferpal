@@ -367,6 +367,10 @@
                                     </Style.Triggers>
                                 </Style>
                             </StackPanel.Style>
+                            <!-- A note typed during the run: whether the model read it yet, above its bubble -->
+                            <TextBlock Text="{Binding NoteState}" FontSize="11" HorizontalAlignment="Right" Margin="0,0,0,3"
+                                       Foreground="{Binding ThemeSubtleText}"
+                                       Visibility="{Binding IsNote, Converter={StaticResource b2v}}"/>
                             <Grid HorizontalAlignment="Right">
                                 <Border CornerRadius="12,12,4,12" Background="{Binding BubbleBackground}" Padding="12,8"
                                         BorderBrush="{Binding BubbleBorder}" BorderThickness="1">
@@ -2196,6 +2200,33 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </WrapPanel>
+                    <!-- The messages sent after the turn (Ctrl+Enter, or a note no step can read), in order, each removable -->
+                    <StackPanel Visibility="{Binding HasQueuedMessages, Converter={StaticResource b2v}}" Margin="0,0,0,4">
+                        <TextBlock Text="{Binding QueueTitle}" FontSize="11" Foreground="{Binding ThemeSubtleText}" Margin="0,0,0,2"/>
+                        <ItemsControl ItemsSource="{Binding QueuedMessages}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Text}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                                                   ToolTip="{Binding Text}"
+                                                   Foreground="{Binding DataContext.ThemeText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                                        <Button Grid.Column="1" Template="{StaticResource Flat5}" Background="Transparent" BorderThickness="0"
+                                                Width="20" Height="20" Margin="4,0,0,0" Cursor="Hand"
+                                                Command="{Binding RemoveCommand}"
+                                                ToolTip="{Binding DataContext.QueueRemoveLabel, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                AutomationProperties.Name="{Binding DataContext.QueueRemoveLabel, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
+                                            <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE711;" FontSize="9"
+                                                       Foreground="{Binding DataContext.ThemeSubtleText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                                        </Button>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
                 </StackPanel>
 
                 <!-- The question (row 2): its placeholder shows through while it is empty -->
@@ -2222,9 +2253,11 @@
                              FontSize="13"
                              AutomationProperties.Name="{Binding ComposerPlaceholder}">
                         <TextBox.InputBindings>
-                            <!-- Plain Enter → send (or, while an approval card waits, Allow once); KeyBinding marks the
-                                 event Handled before AcceptsReturn runs. Shift+Enter falls through: a new line. -->
+                            <!-- Plain Enter → send (or, while an approval card waits, Allow once; during a turn, a note for
+                                 it — never Stop); KeyBinding marks the event Handled before AcceptsReturn runs. Shift+Enter
+                                 falls through: a new line. Ctrl+Enter during a turn: sent once the turn ends. -->
                             <KeyBinding Key="Return" Command="{Binding SendCommand}"/>
+                            <KeyBinding Key="Return" Modifiers="Control" Command="{Binding QueueCommand}"/>
                             <!-- Esc: Deny, while an approval card waits -->
                             <KeyBinding Key="Escape" Command="{Binding DenyApprovalCommand}"/>
                             <!-- History: only fires when IsEnabled=true (single-line prompt). When IsEnabled=false,

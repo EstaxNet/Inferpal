@@ -318,6 +318,33 @@ internal static class ChatTurnPolicy
         return names.Length == 0 ? (bubble, []) : (bubble[..at].TrimEnd('\n'), names);
     }
 
+    /// <summary>The heading of the notes a question keeps (<see cref="WithUserNotes"/>). English and never translated: it
+    /// structures the model's transcript, like the compaction markers.</summary>
+    public const string UserNotesHeader = "[Notes I added while you were working on this request]";
+
+    /// <summary>
+    /// The question as the conversation keeps it once its run is over: followed by the notes the user typed while it ran
+    /// and the model read. One writer for the live history, the restored one and Regenerate.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Folded into the question, never a turn of its own: a user turn is the product's unit of count — a note kept as a
+    /// message of its own was a question with no answer, which Regenerate, <c>/branch</c>'s numbering and compaction all
+    /// read as one. And kept at all: dropped, the next question and a reloaded conversation lost the correction.
+    /// </remarks>
+    public static string WithUserNotes(string question, IEnumerable<string> notes)
+    {
+        var lines = notes.Select(n => n.Trim()).Where(n => n.Length > 0)
+                         .Select(n => "- " + n.Replace("\r\n", "\n").Replace("\n", "\n  "))
+                         .ToList();
+        if (lines.Count == 0) return question;
+        // ⚠ A question that already carries notes (asked again by Regenerate, then corrected again) gets the new ones under
+        // the same heading: a second heading made the live history differ from the restored one, which folds them all.
+        var kept = question.TrimEnd();
+        return kept.Contains(UserNotesHeader, StringComparison.Ordinal)
+            ? kept + "\n" + string.Join("\n", lines)
+            : kept + "\n\n" + UserNotesHeader + "\n" + string.Join("\n", lines);
+    }
+
     /// <summary>
     /// The line that closes a STOPPED answer in the history the model reads. English and never translated: it
     /// structures the model's transcript, like the compaction markers.

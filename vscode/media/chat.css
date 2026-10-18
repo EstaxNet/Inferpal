@@ -903,6 +903,62 @@ kbd {
   margin: 2px 0 4px 21px;
 }
 
+/* A note typed during the run: a line of the run, waiting until the model reads it. */
+.step.note {
+  padding: 3px 10px;
+}
+
+.note-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ip-muted);
+  font-size: 12px;
+}
+
+.note-state svg {
+  flex: none;
+  color: var(--vscode-textLink-foreground);
+}
+
+.step.note.waiting .note-state svg {
+  color: var(--ip-muted);
+}
+
+.note-text {
+  margin: 2px 0 2px 21px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* The messages sent after the turn, above the composer. */
+#queue {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0;
+}
+
+.queue-title {
+  color: var(--ip-muted);
+  font-size: 0.8em;
+}
+
+.queue-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.queue-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .step .tool-body {
   margin: 0 0 6px 21px;
 }

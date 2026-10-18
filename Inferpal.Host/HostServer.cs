@@ -281,7 +281,8 @@ internal sealed partial class HostServer : IDisposable
     public async Task<ChatSendResult> ChatSendAsync(ChatSendParams p, CancellationToken ct)
     {
         var clock  = System.Diagnostics.Stopwatch.StartNew();
-        var result = await SendTurnAsync(p, ct);
+        var notes  = new TurnNotes();
+        var result = await SendTurnAsync(p, ct, notes);
         // Every way out of the turn reports what the NEXT question will send: the context gauge shows it, and it is the
         // figure of the X-Ray the gauge opens. The turn's own prompt measure includes the run's internal transcript, which
         // the next question does not carry — read as the fill, the gauge said 88 % where the X-Ray said 56 %.
@@ -290,13 +291,44 @@ internal sealed partial class HostServer : IDisposable
         {
             NextTurnTokens = NextTurnTokens(s),
             Duration = Services.Presentation.RunSummary.Duration(clock.Elapsed),
+            AppliedNotes = notes.Applied.Count > 0 ? [.. notes.Applied.Select(n => new TurnNoteDto(n.Id, n.Text, n.AfterCalls))] : null,
+            UnappliedNotes = notes.Unapplied.Count > 0 ? [.. notes.Unapplied.Select(n => new TurnNoteDto(n.Id, n.Text))] : null,
         };
     }
 
-    private async Task<ChatSendResult> SendTurnAsync(ChatSendParams p, CancellationToken ct)
+    /// <summary>The notes of one turn, as its end left them: read by the model, or for the adapter to send next.</summary>
+    private sealed class TurnNotes
+    {
+        public IReadOnlyList<AppliedNote> Applied   { get; set; } = [];
+        public IReadOnlyList<UserNote>    Unapplied { get; set; } = [];
+    }
+
+    /// <summary>
+    /// A note typed while the turn runs, for its next step (<see cref="RunSteering"/>). Outside the turn slot: the turn is
+    /// what holds it. Refused, with the reason, when no turn runs or the one running has no step to read it before (a
+    /// chat without tools, a code action, a slash command): the adapter sends it as the next message instead.
+    /// </summary>
+    [JsonRpcMethod("chat/steer", UseSingleObjectParameterDeserialization = true)]
+    public ChatSteerResult ChatSteer(ChatSteerParams p)
+    {
+        var s = Session();
+        if (s.Steering is { } steering)
+            return steering.TryPush(new UserNote(p.Id, p.Text)) ? new ChatSteerResult(true) : new ChatSteerResult(false, "closed");
+        bool turnRuns;
+        lock (_gate) turnRuns = _chatCts is not null && _slotHeldByTurn;
+        return new ChatSteerResult(false, turnRuns ? "noBoundary" : "noTurn");
+    }
+
+    private async Task<ChatSendResult> SendTurnAsync(ChatSendParams p, CancellationToken ct, TurnNotes notes)
     {
         var s   = Session();
         var cts = AcquireTurn(ct);
+        // A turn with steps reads the notes typed while it runs — those typed during the context build too, read before
+        // its first step. Decided now: neither depends on the build.
+        var steering = !p.CodeAction && (TurnIsAgent(s, p.CodeAction, p.AgentMode) || s.ToolsEnabled)
+            ? new RunSteering { OnApplied = n => Notify("chat/noteApplied", new { id = n.Id, afterCalls = n.AfterCalls }) }
+            : null;
+        s.Steering = steering;
 
         // The reasoning as it streams, for an adapter that shows it (an ACP client): batched, and flushed before the
         // first token of the answer so the two never interleave on screen.
@@ -345,7 +377,9 @@ internal sealed partial class HostServer : IDisposable
             // (ActiveFileContext).
             RefreshSystemPrompt(s);
             var activeFile = ActiveFileContext.ToSend(BuildActiveFileBlock(s), s.History);
-            var promptText = ChatTurnPolicy.WithInjectedContext(p.Prompt, autoCtx, workspace, activeFile);
+            // Asked again (Regenerate), the question carries the notes its first answer read, as the history kept it.
+            var promptText = ChatTurnPolicy.WithInjectedContext(ChatTurnPolicy.WithUserNotes(p.Prompt, p.Notes ?? []),
+                                                                autoCtx, workspace, activeFile);
             s.History.Add(new ChatMessageDto("user", promptText));
             questionKept = true;
             // ⚠ Sent once the question carrying it is in the history: set when the block was BUILT, a Stop during the
@@ -439,7 +473,8 @@ internal sealed partial class HostServer : IDisposable
                     onToolExecuted: te => Notify("chat/tool", new ToolNotice(te.Name, te.Input, te.Output, te.HasErrors)),
                     onStreamReset:  () => { streamed.Clear(); Notify("chat/streamReset", new { }); },
                     ct:             cts.Token,
-                    onThinking:     OnThinking);
+                    onThinking:     OnThinking,
+                    steering:       steering);
 
                 // ⚠ A FAILED run returns its error as the answer: said as the error it is, like the plain chat whose
                 // request threw — kept, the model re-read it as what it had said, and a reload handed it back.
@@ -465,6 +500,9 @@ internal sealed partial class HostServer : IDisposable
                 // The run's last call measured the discarded transcript, not what the next turn sends:
                 // compaction decides on the durable history instead.
                 s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
+                // The notes join the question before the turn is counted: the session recap reads this history.
+                EndSteering(s, steering, notes, questionKept);
+                steering = null;
                 await CountTurnAsync(s, cts.Token);
                 return new ChatSendResult(
                     FinalAnswer(result.FinalResponse, streamed.ToString(), result.Executions, endNotice, model, s),
@@ -493,7 +531,8 @@ internal sealed partial class HostServer : IDisposable
                     complexity:     ChatTurnPolicy.TurnComplexity(codeAction: false),
                     onToolExecuted: te => Notify("chat/tool", new ToolNotice(te.Name, te.Input, te.Output, te.HasErrors)),
                     onThinking:     OnThinking,
-                    effort:         ChatTurnPolicy.TurnEffort(s.Config, codeAction: false));
+                    effort:         ChatTurnPolicy.TurnEffort(s.Config, codeAction: false),
+                    steering:       steering);
 
                 // A FAILED run: the error, not an answer — see the agent path above.
                 if (run.Failed)
@@ -511,6 +550,8 @@ internal sealed partial class HostServer : IDisposable
                     durable.Add(new ChatMessageDto("assistant", answer));
                 s.History          = durable;
                 s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
+                EndSteering(s, steering, notes, questionKept);
+                steering = null;
                 await CountTurnAsync(s, cts.Token);
                 return new ChatSendResult(
                     FinalAnswer(run.FinalResponse, streamed.ToString(), run.Executions, runEndNotice, model, s),
@@ -584,8 +625,31 @@ internal sealed partial class HostServer : IDisposable
             // attaches to it and /undo-run reverts that write along with the turn we just watched.
             s.Tools.History.EndRun();   // `s`, not Session(): nothing may throw inside this finally
             reasoning?.Flush();
+            // Before the slot is released, so no other request sees the question without its notes.
+            EndSteering(s, steering, notes, questionKept);
             ReleaseTurn(cts);
         }
+    }
+
+    /// <summary>
+    /// The end of a turn's steering, on every way out of it: the notes no step read are taken back for the adapter, and
+    /// those the model read join the question in the history (<see cref="ChatTurnPolicy.WithUserNotes"/>) — the next
+    /// question, a reload and Regenerate then see the correction the run followed.
+    /// </summary>
+    private static void EndSteering(HostSession s, RunSteering? steering, TurnNotes notes, bool questionKept)
+    {
+        if (steering is null) return;
+        notes.Unapplied = steering.Close();
+        notes.Applied   = steering.Applied;
+        s.Steering      = null;
+        if (!questionKept || notes.Applied.Count == 0) return;
+        var at = s.History.FindLastIndex(m => m.Role == "user" && !m.IsScaffolding);
+        if (at < 0) return;
+        s.History[at] = s.History[at] with
+        {
+            Content = ChatTurnPolicy.WithUserNotes(s.History[at].Content ?? string.Empty, notes.Applied.Select(n => n.Text)),
+        };
+        s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
     }
 
     /// <summary>

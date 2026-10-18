@@ -30,31 +30,34 @@ internal partial class InferpalToolWindowData
 
     private async Task SendAsync(object? _, CancellationToken ct)
     {
-        // The send button doubles as a stop button: while a request is running it cancels
-        // the in-flight request instead of starting a new one (the XAML shows a red square).
-        // _currentCts is only wired once the request is actually in flight, so an extra Enter
-        // during the brief startup window (before there is anything to cancel) is a no-op here
-        // and is instead absorbed by the atomic claim below.
+        // ⚠ During a turn, Enter never stops it — Stop is the button (CancelCommand). It stopped the turn: the user who
+        // typed a correction got "Cancelled" and the run's work was lost. Now the text is a note for the run's next step,
+        // or waits for the turn to end when no step will read it (Steer). Nothing typed: nothing happens.
         if (IsLoading)
         {
-            // Marshalled for the same reason as CancelAsync: the finally disposes _currentCts on
-            // the VM context, and cancelling from here raced it. An approval card waiting with an
-            // empty prompt takes Enter as "Allow once", the key the card names.
             await RunOnVMContextAsync(() =>
             {
-                if (_pendingApproval is { IsAnswered: false } card)
+                var text = Prompt.Trim();
+                // An approval card waiting with an empty prompt takes Enter as "Allow once", the key the card names.
+                if (_pendingApproval is { IsAnswered: false } card && text.Length == 0)
                 {
-                    if (string.IsNullOrWhiteSpace(Prompt)) card.Answer(ApprovalDecision.Once);
+                    card.Answer(ApprovalDecision.Once);
                     return;
                 }
-                // A step pause takes /resume, the remedy its notice names — never Stop.
+                // A step pause takes /resume, the remedy its notice names.
                 if (_stepResume is not null && SlashCommandRouter.IsResume(Prompt))
                 {
                     Prompt = string.Empty;
                     ResumeStep();
                     return;
                 }
-                _currentCts?.Cancel();
+                if (text.Length == 0) return;
+                Prompt = string.Empty;
+                if (!Steer(text)) return;
+                // Read by the run: a card waiting is refused — a text never approves — and the note says why; a paused run
+                // resumes, to read it at the step it resumes to. Queued instead, neither is touched.
+                if (_pendingApproval is { IsAnswered: false } waiting) waiting.Answer(ApprovalDecision.Deny);
+                if (_stepResume is not null) ResumeStep();
             });
             return;
         }
@@ -85,7 +88,7 @@ internal partial class InferpalToolWindowData
         // SendCoreAsync flips IsLoading on — from which point IsLoading is the guard.
         string               userText    = string.Empty;
         List<AttachmentItem> attachments = [];
-        var                  claimed     = false;
+        var                  claim       = 0;
 
         await RunOnVMContextAsync(() =>
         {
@@ -94,9 +97,9 @@ internal partial class InferpalToolWindowData
             if (userText.Length == 0) return;
             attachments   = [..Attachments];
             _sendStarting = true;
-            claimed       = true;
+            claim         = ++_sendClaim;
         });
-        if (!claimed) return;
+        if (claim == 0) return;
 
         try
         {
@@ -116,7 +119,9 @@ internal partial class InferpalToolWindowData
             // Safety net: release the claim for any path that returned before SendCoreAsync
             // handed the guard over to IsLoading (slash command, backend unreachable, error).
             // For a normal send this is already false by now, so it is a harmless no-op.
-            await RunOnVMContextAsync(() => _sendStarting = false);
+            // ⚠ Only while the claim is still this send's: the turn it ended sends the next queued message, which claims
+            // first — cleared here, a second send could start under it.
+            await RunOnVMContextAsync(() => { if (_sendClaim == claim) _sendStarting = false; });
         }
     }
 
@@ -124,12 +129,15 @@ internal partial class InferpalToolWindowData
     /// <c>true</c> for normal chat sends (clears the input box and attachments).
     /// <c>false</c> for code-action auto-sends (preserves the user's current draft).
     /// </param>
+    /// <param name="notes">Regenerate: the notes the question's first run read — asked again, it carries them, as the
+    /// history kept it, and they come back under it.</param>
     private async Task SendCoreAsync(
         string               userText,
         string?              oneTimeModel,
         List<AttachmentItem> attachments,
         CancellationToken    ct,
-        bool                 clearPrompt = true)
+        bool                 clearPrompt = true,
+        IReadOnlyList<string>? notes = null)
     {
         // Every turn can reach the file tools: never before the workspace root is pinned.
         PinWorkspaceRoot();
@@ -152,6 +160,8 @@ internal partial class InferpalToolWindowData
         string                   historyText  = string.Empty;
         CancellationTokenSource? localCts     = null;
         var                      sendStart    = DateTime.UtcNow;
+        // The notes typed while this turn runs — a turn with steps only: a code action answers without tools.
+        RunSteering?             steering     = null;
 
         try
         {
@@ -184,6 +194,8 @@ internal partial class InferpalToolWindowData
                 // only, and that build can take seconds on a busy backend.
                 localCts      = BeginOwnedTurn(ct);
                 _sendStarting = false;
+                // Taken with the turn: a note typed during the context build below is read before the run's first step.
+                steering = _steering = oneTimeModel is null && _toolsEnabled ? new RunSteering { OnApplied = OnNoteApplied } : null;
                 // The bubble names what goes WITH the question. The chips were cleared just above:
                 // without this line nothing — on screen, in the export, or in the session file —
                 // said that a file, a selection or a @diff went with this turn, and a reloaded
@@ -194,15 +206,17 @@ internal partial class InferpalToolWindowData
                 ApplyItemTheme(userItem);
                 Messages.Insert(Messages.Count - 2, userItem);
                 _lastSent = (userItem, userText, oneTimeModel, attachments.ToList());
+                foreach (var note in notes ?? [])
+                    InsertThemed(ChatMessageItem.NoteMsg("note-" + ++_noteSeq, note, read: true));
                 ScrollToBottom();
             });
 
             // Build context-enriched history message (not shown in chat bubble).
             // The observable attachment chips are projected to the neutral (label, content)
             // pairs the pure policy works with.
-            historyText = Services.Agent.ChatTurnPolicy.BuildHistoryText(
+            historyText = Services.Agent.ChatTurnPolicy.WithUserNotes(Services.Agent.ChatTurnPolicy.BuildHistoryText(
                 userText,
-                attachments.Select(a => new Services.Agent.AttachmentContent(a.Label, a.Content)).ToList());
+                attachments.Select(a => new Services.Agent.AttachmentContent(a.Label, a.Content)).ToList()), notes ?? []);
 
             // First-turn workspace context: silently prepend solution + open editors
             string? workspaceCtx = null;
@@ -262,6 +276,7 @@ internal partial class InferpalToolWindowData
             {
                 InsertThemed(ChatMessageItem.NoticeMsg(Strings.MsgCancelled));
                 ScrollToBottom();
+                SettleNotes(steering, normal: false);
                 EndOwnedTurn(localCts);
             });
             return;
@@ -274,6 +289,8 @@ internal partial class InferpalToolWindowData
             await RunOnVMContextAsync(() =>
             {
                 _sendStarting = false;
+                _turnFailed   = true;
+                SettleNotes(steering, normal: false);
                 EndOwnedTurn(localCts);
                 InsertThemed(ChatMessageItem.NoticeMsg(Strings.MsgError(msg)));
             });
@@ -539,7 +556,8 @@ internal partial class InferpalToolWindowData
                         });
                     },
                     ct: localCts.Token,
-                    onThinking: OnThinking);
+                    onThinking: OnThinking,
+                    steering: steering);
 
                 agentFinalResponse = orchResult.FinalResponse;
                 agentFailed        = orchResult.Failed;
@@ -566,7 +584,8 @@ internal partial class InferpalToolWindowData
                     complexity: loopComplexity,
                     onToolExecuted: StreamToolBubble,
                     onThinking: OnThinking,
-                    effort:     ChatTurnPolicy.TurnEffort(_config, codeAction: oneTimeModel is not null));
+                    effort:     ChatTurnPolicy.TurnEffort(_config, codeAction: oneTimeModel is not null),
+                    steering:   steering);
 
                 agentFinalResponse = result.FinalResponse;
                 agentFailed        = result.Failed;
@@ -617,6 +636,7 @@ internal partial class InferpalToolWindowData
                 // what it had said, and a reload handed it back.
                 if (agentFailed)
                 {
+                    _turnFailed = true;
                     KeepAsNotice(streamingMsg);
                     var failedMsg = ChatMessageItem.NoticeMsg(agentFinalResponse);
                     ApplyItemTheme(failedMsg);
@@ -701,6 +721,10 @@ internal partial class InferpalToolWindowData
                 // transcript, not what the next turn will send — estimate from the durable
                 // history instead so CompactOrTruncateAsync and the budget badge stay honest.
                 _lastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(_history);
+                // The run is over: its notes join the question now, before the session recap below reads the history (the
+                // finally is the net for every other way out).
+                SettleNotes(steering, normal: !agentFailed);
+                steering = null;
                 _sessionTokens   += agentTokensUsed;
                 _conversationTurnCount++;
                 if (agentTokensUsed > 0)
@@ -738,6 +762,7 @@ internal partial class InferpalToolWindowData
             var msg = ex.Message;
             await RunOnVMContextAsync(() =>
             {
+                _turnFailed = true;
                 // Remove the live-status bubble (if any) before showing the error message.
                 RemoveStatusBubble();
                 streamingMsg = FinalizeStreamingBubble(streamingMsg);
@@ -766,6 +791,8 @@ internal partial class InferpalToolWindowData
                 if (_turnHead is not null) _turnHead.TurnState = Services.Presentation.RunSummary.Duration(DateTime.UtcNow - sendStart);
                 _turnHead = null;
                 _runLine  = null;
+                // Before the turn is released: no other gesture sees the question without its notes.
+                SettleNotes(steering, normal: localCts is { IsCancellationRequested: false } && !_turnFailed);
                 // Only the turn that still owns the state releases it (see EndOwnedTurn).
                 EndOwnedTurn(localCts);
             });

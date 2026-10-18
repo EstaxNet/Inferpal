@@ -112,13 +112,17 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     /// test that plays a batch of calls the way the loop does (the real funnel, the real registry).</summary>
     public Func<List<ChatMessageDto>, IToolRegistry, Action<ToolExecution>?, CancellationToken, Task<AgentResult>>? OnAgentRun { get; set; }
 
+    /// <summary>The steering each <see cref="RunAgentAsync"/> was given, in order (<c>null</c>: a run nobody steers).</summary>
+    public List<RunSteering?> Steerings { get; } = new();
+
     public Task<AgentResult> RunAgentAsync(
         string model, List<ChatMessageDto> history, IToolRegistry tools, Action<string> onStep,
         Action<string>? onToken, CancellationToken ct, TaskComplexity complexity = TaskComplexity.Normal,
         Action<ToolExecution>? onToolExecuted = null, Action<string>? onThinking = null,
-        ReasoningEffort effort = ReasoningEffort.Server)
+        ReasoningEffort effort = ReasoningEffort.Server, RunSteering? steering = null)
     {
         AgentRuns.Add((model, history));
+        Steerings.Add(steering);
         // A run answered through SendChatAsync records its effort there.
         if (!RunAgentThroughChat) Efforts.Add(effort);
         if (OnAgentRun is { } run) return run(history, tools, onToolExecuted, ct);
