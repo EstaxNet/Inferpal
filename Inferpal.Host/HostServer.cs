@@ -109,6 +109,8 @@ internal sealed partial class HostServer : IDisposable
             : new OpenDocumentOverlay();
         var editor   = new RpcEditorSurface(rpc, overlay, hasEditor: p.EditorSurface);
         var approval = new RpcApprovalService(config, () => p.RootDir, rpc, structured: p.ToolEvents);
+        // A rule an answer wrote to the settings (or could not) is said in the conversation the card was in.
+        approval.Notice = text => Notify("host/notice", new { text });
         var lsp      = new LspSemanticProvider();
         var index    = new ProjectIndexService(client, config, lsp);
         // Off Windows the default DPAPI protection is unavailable, so the token store fails loud

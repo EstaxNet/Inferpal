@@ -178,6 +178,7 @@ internal partial class InferpalToolWindowData
                 : Task.CompletedTask);
         DenyApprovalCommand    = new AsyncCommand((_, _) => RunOnVMContextAsync(() => _pendingApproval?.Answer(ApprovalDecision.Deny)));
         _contextHolder.InlineApproval = AskInlineAsync;
+        _contextHolder.Notice         = text => Post(() => InsertThemed(ChatMessageItem.NoticeMsg(text)));
         _isCompact             = _config.IsCompactChat;
         // A save from the settings window can change the density: the open conversation follows at once.
         _config.Saved         += () => Post(() => IsCompact = _config.IsCompactChat);

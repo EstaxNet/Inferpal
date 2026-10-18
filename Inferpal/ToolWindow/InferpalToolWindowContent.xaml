@@ -1262,6 +1262,38 @@
                                                                VerticalAlignment="Center"/>
                                                 </StackPanel>
                                             </Button>
+                                            <!-- The narrow rule, offered only when one describes the call: written to the machine's rules. -->
+                                            <Button Height="32" Padding="10,0" Margin="0,0,8,6"
+                                                    BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                                    Command="{Binding AlwaysRuleCommand}" ToolTip="{Binding CardRuleTip}"
+                                                    AutomationProperties.Name="{Binding BtnAlwaysRule}">
+                                                <Button.Style>
+                                                    <Style TargetType="Button" BasedOn="{StaticResource LineBtn}">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding HasRule}" Value="False">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Button.Style>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE73E;" FontSize="11" Foreground="{Binding ThemeText}"
+                                                               VerticalAlignment="Center" Margin="0,0,6,0">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding ChosenAnswer}" Value="rule">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                    <TextBlock Text="{Binding BtnAlwaysRule}" FontSize="13" Foreground="{Binding ThemeText}"
+                                                               VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="420"/>
+                                                </StackPanel>
+                                            </Button>
                                         </WrapPanel>
                                     </DockPanel>
                                 </Grid>

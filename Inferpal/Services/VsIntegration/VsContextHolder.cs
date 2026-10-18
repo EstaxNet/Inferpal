@@ -55,6 +55,10 @@ internal class VsContextHolder
     /// <summary>Opens the chat window's X-Ray panel — the settings' "Open Context X-Ray". Set by the chat window.</summary>
     public Func<Task>? OpenXray { get; set; }
 
+    /// <summary>Says a sentence in the chat as a notice — a rule an approval wrote to the settings. Set by the chat
+    /// window.</summary>
+    public Action<string>? Notice { get; set; }
+
     /// <summary>
     /// Asks an approval as a card in the chat, while a turn runs there; answers <c>null</c> when no turn is running,
     /// and the approval then keeps its dialog. Set by the chat window. The second argument opens the full diff (the

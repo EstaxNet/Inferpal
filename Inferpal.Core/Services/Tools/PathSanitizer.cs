@@ -146,6 +146,9 @@ internal static class PathSanitizer
     private static string Trim(string path) =>
         path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
+    /// <summary>The path with its links resolved at every level, as <see cref="AssertUnderRoot"/> compares it.</summary>
+    internal static string Resolved(string fullPath) => Trim(ResolveLinks(fullPath));
+
     /// <summary>
     /// Resolves symlinks/junctions along <paramref name="path"/>. The target itself usually does
     /// not exist yet (a file about to be written), so the deepest existing ancestor is resolved

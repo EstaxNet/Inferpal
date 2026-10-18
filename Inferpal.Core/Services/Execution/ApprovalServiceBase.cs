@@ -5,8 +5,10 @@ using Inferpal.Localization;
 
 namespace Inferpal.Services.Execution;
 
-/// <summary>The three outcomes a user can pick in the approval prompt.</summary>
-internal enum ApprovalDecision { Deny = 0, Once = 1, Always = 2 }
+/// <summary>The outcomes a user can pick in the approval prompt.</summary>
+/// <remarks><see cref="Rule"/>: allowed, and the narrow rule the card offered written to the machine's permission rules.
+/// An editor or a client that does not know it answers it as a refusal — fail closed.</remarks>
+internal enum ApprovalDecision { Deny = 0, Once = 1, Always = 2, Rule = 3 }
 
 /// <summary>
 /// Editor-agnostic approval pipeline: pattern permission rules (per-machine config +
@@ -60,6 +62,16 @@ internal abstract class ApprovalServiceBase : IApprovalService
 
     /// <summary>The workspace root approval cards show paths relative to.</summary>
     protected string? RootDir => _rootDir();
+
+    /// <summary>
+    /// Where a sentence for the person goes when an answer did something they must know — a rule written to their
+    /// settings, or one that could not be: the editor's notice in the conversation. Null: said nowhere but
+    /// <c>/diagnostics</c>.
+    /// </summary>
+    internal Action<string>? Notice { get; set; }
+
+    /// <summary>Where the answers to cards that offered a rule are counted; tests give their own.</summary>
+    internal ApprovalHistory History { get; set; } = ApprovalHistory.Shared;
 
     public async Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null, Services.CodeActions.DiffInfo? diff = null, bool forcePrompt = false)
     {
@@ -124,6 +136,9 @@ internal abstract class ApprovalServiceBase : IApprovalService
         }
 
         var message = Strings.ApprovalMessage(toolName, details);
+        // A narrow rule to offer beside "Always this session" — never for a call the prompt is forced for: the rule
+        // would not apply to it, and the card would promise what the next identical call does not get.
+        var rule = opaque ? null : ApprovalRuleProposal.For(toolName, matchOn, _rootDir());
 
         ApprovalDecision promptDecision;
         try
@@ -132,7 +147,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
             // left for an hour does not drain a laptop's battery. Only this turn's hold is let go.
             using (Services.Hardware.SleepGuard.Shared.PauseThisFlow())
                 promptDecision = await PromptUserAsync(
-                    new Services.Presentation.ApprovalPrompt(toolName, details, subject, diff, message), ct);
+                    new Services.Presentation.ApprovalPrompt(toolName, details, subject, diff, message, rule), ct);
         }
         catch (OperationCanceledException)
         {
@@ -142,6 +157,24 @@ internal abstract class ApprovalServiceBase : IApprovalService
         }
         if (promptDecision == ApprovalDecision.Always)
             Grant(toolName);
+        if (promptDecision == ApprovalDecision.Rule)
+        {
+            // ⚠ Offered by this card only: a Rule answer to a card that offered none comes from a peer that answers what
+            // was not asked, and fails closed.
+            if (rule is null) promptDecision = ApprovalDecision.Deny;
+            else
+            {
+                SaveRule(rule);
+                promptDecision = ApprovalDecision.Once;
+            }
+        }
+        // ⚠ Counted only as an ANSWER: a card retired with its stopped run resolves denied, and one refusal keeps a rule
+        // out of the suggestions for good.
+        if (rule is not null && !ct.IsCancellationRequested)
+        {
+            try { History.Note(rule, granted: promptDecision != ApprovalDecision.Deny); }
+            catch (Exception ex) { Diagnostics.Swallow("ApprovalHistory.Note", ex); }
+        }
 
         // ⚠ A card can wait for minutes, and the person edits and saves meanwhile: those changes are not the call's. Its
         // watch of the work tree starts again from the moment it was approved — here, where every approval passes.
@@ -149,6 +182,15 @@ internal abstract class ApprovalServiceBase : IApprovalService
         else if (WorkTreeBracket.Current is { } watch) await watch.ReadAgainAsync(ct);
 
         return promptDecision != ApprovalDecision.Deny;
+    }
+
+    /// <summary>Writes the rule the person picked on the card, and says so — or says why it could not be.</summary>
+    /// <remarks>Here, after the answer, not through the settings RPC: a card exists only during a turn, when the host
+    /// refuses <c>config/update</c>. The next call reads it through <see cref="GetPolicy"/>, which follows the file.</remarks>
+    private void SaveRule(ApprovalRuleProposal.Proposal rule)
+    {
+        var failure = ApprovalRuleWriter.Add(_config, rule);
+        Notice?.Invoke(failure is null ? Strings.ApprovalRuleSaved(rule.Describe) : Strings.ApprovalRuleNotSaved(failure));
     }
 
     /// <summary>Whether the user chose "Always" for <paramref name="toolName"/> — in THIS workspace.</summary>

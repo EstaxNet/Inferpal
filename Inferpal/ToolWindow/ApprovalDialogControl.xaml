@@ -60,6 +60,10 @@
         <!-- Deny (safe, left) — Always allow — Allow once (default, right) -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button Content="{Binding BtnDeny}"        Command="{Binding DenyCommand}"        IsCancel="True" />
+            <!-- The narrow rule, only when the card offers one: written to the machine's rules. -->
+            <Button Content="{Binding BtnRule}" Command="{Binding RuleCommand}" ToolTip="{Binding RuleTip}"
+                    Visibility="{Binding HasRule, Converter={StaticResource b2v}}"
+                    AutomationProperties.Name="{Binding BtnRule}" />
             <Button Content="{Binding BtnAlwaysAllow}" Command="{Binding AlwaysAllowCommand}" />
             <Button Content="{Binding BtnAllowOnce}"   Command="{Binding AllowOnceCommand}"   IsDefault="True" />
         </StackPanel>

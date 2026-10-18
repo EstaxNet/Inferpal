@@ -175,7 +175,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   /**
    * Shows an approval card in the chat and resolves with the user's answer
-   * (0 deny / 1 once / 2 always). Returns undefined when the card cannot be
+   * (0 deny / 1 once / 2 always / 3 the card's narrow rule). Returns undefined when the card cannot be
    * shown (no resolved view, or no turn running) — the caller then falls back to a modal dialog.
    */
   async requestApproval(message: string, token?: CancellationToken, card: ApprovalCard | null = null): Promise<number | undefined> {

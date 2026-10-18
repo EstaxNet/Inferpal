@@ -37,5 +37,10 @@ internal static class TestConfigIsolation
         // And for the editors an ACP agent has told what it does not do in them.
         Inferpal.Host.Acp.AcpAgent.LimitsToldShared.PathOverride =
             Path.Combine(root, $"acp-limits-told-{Environment.ProcessId}.json");
+
+        // And for the approvals every prompt remembers: each test that answers a card would count in the real history,
+        // and /permissions suggest would offer the suite's commands to the developer.
+        Inferpal.Services.Execution.ApprovalHistory.Shared.File.PathOverride =
+            Path.Combine(root, $"approval-history-{Environment.ProcessId}.json");
     }
 }

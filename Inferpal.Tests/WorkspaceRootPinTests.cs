@@ -204,10 +204,11 @@ public class WorkspaceRootPinTests
     {
         var call = Method("InferpalToolWindowData.PromptHistory.cs", "HandlePermissionsCommandAsync")
             .DescendantNodes().OfType<InvocationExpressionSyntax>()
-            .FirstOrDefault(i => i.Expression is MemberAccessExpressionSyntax m && m.Name.Identifier.Text == "Permissions");
-        Assert.True(call is not null, "HandlePermissionsCommandAsync no longer calls PermissionsCommandHandler.Permissions.");
+            .FirstOrDefault(i => i.Expression is MemberAccessExpressionSyntax m && m.Name.Identifier.Text == "Handle");
+        Assert.True(call is not null, "HandlePermissionsCommandAsync no longer calls PermissionsCommandHandler.Handle.");
 
-        Assert.Equal("_indexService.RootDir", call!.ArgumentList.Arguments[0].Expression.ToString());
+        // Handle(parts, projectRoot, config, history): the listing, the suggestions and the rules added all read this root.
+        Assert.Equal("_indexService.RootDir", call!.ArgumentList.Arguments[1].Expression.ToString());
     }
 
     [Theory]

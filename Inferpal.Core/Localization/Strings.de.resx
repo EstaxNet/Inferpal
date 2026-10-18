@@ -1573,4 +1573,17 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="LabelIgnoreFiles" xml:space="preserve"><value>Gelesene Ausschlussdateien</value></data>
   <data name="HintIgnoreFiles" xml:space="preserve"><value>Kommagetrennte Namen, im Stammverzeichnis des Arbeitsbereichs in gitignore-Syntax gelesen: Kein KI-Werkzeug liest, was sie ausschließen, und jeder Ausschluss wird genannt. Leer: keine wird gelesen.</value></data>
   <data name="BackupNotSent" xml:space="preserve"><value>„{0}“ ist eine von Inferpal aufbewahrte Sicherungskopie: Solange dieser Arbeitsbereich Dateien von KI-Werkzeugen ausschließt, werden Sicherungen nicht an das Modell gesendet.</value></data>
+  <data name="ApprovalRuleCommands" xml:space="preserve"><value>Befehle, die mit `{0}` beginnen</value></data>
+  <data name="ApprovalRuleWrites" xml:space="preserve"><value>Schreibvorgänge unter `{0}`</value></data>
+  <data name="ApprovalAlwaysRule" xml:space="preserve"><value>Immer: {0}</value></data>
+  <data name="ApprovalRuleTooltip" xml:space="preserve"><value>Schreibt diese Regel in die Berechtigungsregeln des Computers, die einen Neustart überdauern:
+{0}</value></data>
+  <data name="ApprovalRuleSaved" xml:space="preserve"><value>Regel zu den Berechtigungsregeln dieses Computers hinzugefügt: {0} fragen nicht mehr nach. /permissions listet sie auf, in den Einstellungen wird sie entfernt.</value></data>
+  <data name="ApprovalRuleNotSaved" xml:space="preserve"><value>Die Regel konnte nicht gespeichert werden ({0}): Dieser Aufruf wird einmal erlaubt, die nächsten fragen erneut.</value></data>
+  <data name="PermissionsSuggestHeader" xml:space="preserve"><value>Regeln, die Ihre Antworten rechtfertigen — mindestens {0}-mal gewährt, nie abgelehnt. `/permissions add &lt;n&gt;` schreibt eine; sonst wird nichts geschrieben.</value></data>
+  <data name="PermissionsSuggestGranted" xml:space="preserve"><value>{0} {0:Mal|Mal} gewährt, nie abgelehnt</value></data>
+  <data name="PermissionsSuggestNone" xml:space="preserve"><value>Noch keine Regel vorzuschlagen: Eine Regel wird vorgeschlagen, sobald ihre Karte {0}-mal gewährt und nie abgelehnt wurde.</value></data>
+  <data name="PermissionsHistoryUnreadable" xml:space="preserve"><value>Der Verlauf der Freigaben ({0}) konnte nicht gelesen werden: Daraus kann kein Vorschlag abgeleitet werden.</value></data>
+  <data name="PermissionsAddUnknown" xml:space="preserve"><value>Es gibt keinen Vorschlag {0}: `/permissions suggest` listet sie auf.</value></data>
+  <data name="PermissionsAddFailed" xml:space="preserve"><value>Die Regel konnte nicht gespeichert werden ({0}).</value></data>
 </root>

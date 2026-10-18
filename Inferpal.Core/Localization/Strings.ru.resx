@@ -1573,4 +1573,17 @@
   <data name="LabelIgnoreFiles" xml:space="preserve"><value>Читаемые файлы исключений</value></data>
   <data name="HintIgnoreFiles" xml:space="preserve"><value>Имена через запятую, читаются в корне рабочей области в синтаксисе gitignore: ни один инструмент ИИ не читает то, что они исключают, и о каждом исключении сообщается. Пусто — не читается ни один.</value></data>
   <data name="BackupNotSent" xml:space="preserve"><value>«{0}» — резервная копия Inferpal: пока эта рабочая область исключает файлы из инструментов ИИ, резервные копии не отправляются модели.</value></data>
+  <data name="ApprovalRuleCommands" xml:space="preserve"><value>команды, начинающиеся с `{0}`</value></data>
+  <data name="ApprovalRuleWrites" xml:space="preserve"><value>записи в `{0}`</value></data>
+  <data name="ApprovalAlwaysRule" xml:space="preserve"><value>Всегда: {0}</value></data>
+  <data name="ApprovalRuleTooltip" xml:space="preserve"><value>Записывает это правило в правила разрешений компьютера, которые сохраняются после перезапуска:
+{0}</value></data>
+  <data name="ApprovalRuleSaved" xml:space="preserve"><value>Правило добавлено в правила разрешений этого компьютера: {0} больше не требуют подтверждения. /permissions показывает его, удалить можно в настройках.</value></data>
+  <data name="ApprovalRuleNotSaved" xml:space="preserve"><value>Не удалось сохранить правило ({0}): этот вызов разрешён один раз, следующие снова запросят подтверждение.</value></data>
+  <data name="PermissionsSuggestHeader" xml:space="preserve"><value>Правила, которые оправдывают ваши ответы: разрешены не менее {0} раз и ни разу не отклонены. `/permissions add &lt;n&gt;` записывает одно; иначе ничего не записывается.</value></data>
+  <data name="PermissionsSuggestGranted" xml:space="preserve"><value>разрешено {0} {0:раз|раза|раз}, ни разу не отклонено</value></data>
+  <data name="PermissionsSuggestNone" xml:space="preserve"><value>Пока нечего предложить: правило предлагается, когда его карточку разрешили {0} раз и ни разу не отклонили.</value></data>
+  <data name="PermissionsHistoryUnreadable" xml:space="preserve"><value>Не удалось прочитать историю подтверждений ({0}): по ней нельзя ничего предложить.</value></data>
+  <data name="PermissionsAddUnknown" xml:space="preserve"><value>Предложения {0} нет: `/permissions suggest` показывает их.</value></data>
+  <data name="PermissionsAddFailed" xml:space="preserve"><value>Не удалось сохранить правило ({0}).</value></data>
 </root>

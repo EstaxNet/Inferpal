@@ -1573,4 +1573,17 @@
   <data name="LabelIgnoreFiles" xml:space="preserve"><value>读取的排除文件</value></data>
   <data name="HintIgnoreFiles" xml:space="preserve"><value>以逗号分隔的名称，在工作区根目录按 gitignore 语法读取：任何 AI 工具都不会读取它们排除的内容，且每次排除都会说明。留空则不读取任何文件。</value></data>
   <data name="BackupNotSent" xml:space="preserve"><value>“{0}”是 Inferpal 保存的备份副本：只要此工作区将文件排除在 AI 工具之外，备份就不会发送给模型。</value></data>
+  <data name="ApprovalRuleCommands" xml:space="preserve"><value>以 `{0}` 开头的命令</value></data>
+  <data name="ApprovalRuleWrites" xml:space="preserve"><value>`{0}` 下的写入</value></data>
+  <data name="ApprovalAlwaysRule" xml:space="preserve"><value>始终：{0}</value></data>
+  <data name="ApprovalRuleTooltip" xml:space="preserve"><value>将此规则写入本机的权限规则（重启后仍保留）：
+{0}</value></data>
+  <data name="ApprovalRuleSaved" xml:space="preserve"><value>已添加到本机的权限规则：{0}不再需要确认。/permissions 会列出它，可在设置中删除。</value></data>
+  <data name="ApprovalRuleNotSaved" xml:space="preserve"><value>无法保存该规则（{0}）：本次调用仅允许一次，之后会再次询问。</value></data>
+  <data name="PermissionsSuggestHeader" xml:space="preserve"><value>根据你的回答可以添加的规则（至少允许 {0} 次，从未拒绝）。`/permissions add &lt;n&gt;` 写入其中一条；否则不会写入任何内容。</value></data>
+  <data name="PermissionsSuggestGranted" xml:space="preserve"><value>已允许 {0} 次，从未拒绝</value></data>
+  <data name="PermissionsSuggestNone" xml:space="preserve"><value>暂无可建议的规则：当某条规则的卡片被允许 {0} 次且从未被拒绝时才会建议。</value></data>
+  <data name="PermissionsHistoryUnreadable" xml:space="preserve"><value>无法读取审批历史（{0}）：无法据此给出建议。</value></data>
+  <data name="PermissionsAddUnknown" xml:space="preserve"><value>没有第 {0} 条建议：`/permissions suggest` 会列出它们。</value></data>
+  <data name="PermissionsAddFailed" xml:space="preserve"><value>无法保存该规则（{0}）。</value></data>
 </root>

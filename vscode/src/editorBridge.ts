@@ -303,13 +303,16 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
     // the dialog lingers until the user closes it, cosmetic only, its answer is ignored.
     const once = t('Allow once');
     const always = t('Always this session');
+    // The narrow rule the card offers, offered here too: the label is the host's, already in the user's language.
+    const rule = note.card?.ruleLabel || undefined;
+    const choices = rule ? [once, always, rule] : [once, always];
     let cancelSub: { dispose(): void } | undefined;
     try {
       const cancelled = new Promise<undefined>((resolve) => {
         cancelSub = token?.onCancellationRequested(() => resolve(undefined));
       });
       const answer = await Promise.race([
-        vscode.window.showWarningMessage(note.message, { modal: true }, once, always),
+        vscode.window.showWarningMessage(note.message, { modal: true }, ...choices),
         cancelled,
       ]);
       if (answer === once) {
@@ -317,6 +320,9 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
       }
       if (answer === always) {
         return ApprovalAnswer.Always;
+      }
+      if (rule && answer === rule) {
+        return ApprovalAnswer.Rule;
       }
       return ApprovalAnswer.Deny;
     } finally {

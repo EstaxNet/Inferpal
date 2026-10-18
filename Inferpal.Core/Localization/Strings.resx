@@ -1577,4 +1577,17 @@ What you save there applies from your next question, in this thread and the othe
   <data name="LabelIgnoreFiles" xml:space="preserve"><value>Ignore files read</value></data>
   <data name="HintIgnoreFiles" xml:space="preserve"><value>Comma-separated names, read at the workspace root in the gitignore syntax: no AI tool reads what they exclude, and every exclusion is said. Empty reads none.</value></data>
   <data name="BackupNotSent" xml:space="preserve"><value>{0} is a backup copy kept by Inferpal: while this workspace excludes files from AI tools, backups are not sent to the model.</value></data>
+  <data name="ApprovalRuleCommands" xml:space="preserve"><value>commands that start with `{0}`</value></data>
+  <data name="ApprovalRuleWrites" xml:space="preserve"><value>writes under `{0}`</value></data>
+  <data name="ApprovalAlwaysRule" xml:space="preserve"><value>Always: {0}</value></data>
+  <data name="ApprovalRuleTooltip" xml:space="preserve"><value>Writes this rule to the machine's permission rules, kept after a restart:
+{0}</value></data>
+  <data name="ApprovalRuleSaved" xml:space="preserve"><value>Rule added to this machine's permission rules: {0} no longer ask. /permissions lists it; the settings remove it.</value></data>
+  <data name="ApprovalRuleNotSaved" xml:space="preserve"><value>The rule could not be saved ({0}): this call is allowed once, the next ones will ask again.</value></data>
+  <data name="PermissionsSuggestHeader" xml:space="preserve"><value>Rules your answers justify — granted at least {0} times, never refused. `/permissions add &lt;n&gt;` writes one; nothing is written otherwise.</value></data>
+  <data name="PermissionsSuggestGranted" xml:space="preserve"><value>granted {0} {0:time|times}, never refused</value></data>
+  <data name="PermissionsSuggestNone" xml:space="preserve"><value>No rule to suggest yet: a rule is suggested once its card has been granted {0} times and never refused.</value></data>
+  <data name="PermissionsHistoryUnreadable" xml:space="preserve"><value>The approval history ({0}) could not be read: no suggestion can be made from it.</value></data>
+  <data name="PermissionsAddUnknown" xml:space="preserve"><value>There is no suggestion {0}: `/permissions suggest` lists them.</value></data>
+  <data name="PermissionsAddFailed" xml:space="preserve"><value>The rule could not be saved ({0}).</value></data>
 </root>

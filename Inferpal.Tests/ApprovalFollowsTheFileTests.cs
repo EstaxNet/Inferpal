@@ -117,9 +117,11 @@ public class ApprovalFollowsTheFileTests : IDisposable
         var root = ConventionCoverageTests.RepoRoot();
         var vs   = ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal", "ToolWindow", "InferpalToolWindowData.PromptHistory.cs"));
         var host = ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal.Host", "HostSlashCommands.cs"));
+        var core = ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal.Core", "Services", "Commands", "PermissionsCommandHandler.cs"));
 
-        Assert.Contains("PermissionsCommandHandler.Permissions(", vs, StringComparison.Ordinal);    // witness
-        Assert.Contains("SharedPermissionRules", vs, StringComparison.Ordinal);
-        Assert.Contains("s.Config.SharedPermissionRules", host, StringComparison.Ordinal);
+        // Both editors go through one dispatcher, which reads the rules as the file holds them now.
+        Assert.Contains("PermissionsCommandHandler.Handle(", vs, StringComparison.Ordinal);
+        Assert.Contains("PermissionsCommandHandler.Handle(", host, StringComparison.Ordinal);
+        Assert.Contains("return Permissions(projectRoot, config.SharedPermissionRules);", core, StringComparison.Ordinal);
     }
 }

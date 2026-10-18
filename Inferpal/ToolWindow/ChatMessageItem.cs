@@ -156,13 +156,18 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     [DataMember] public string BtnAlwaysAllow { get; private set; } = string.Empty;
     [DataMember] public string BtnDeny        { get; private set; } = string.Empty;
     [DataMember] public string BtnOpenDiff    { get; private set; } = string.Empty;
+    /// <summary>The narrow rule the card offers ("Always: commands that start with `dotnet test`"); empty when none.</summary>
+    [DataMember] public string BtnAlwaysRule  { get; private set; } = string.Empty;
+    [DataMember] public string CardRuleTip    { get; private set; } = string.Empty;
+    [DataMember] public bool   HasRule        { get; private set; }
     [DataMember] public ObservableCollection<DiffLine> CardLines { get; } = [];
     /// <summary>Answered (or retired with its run): the buttons stop answering.</summary>
     [DataMember] public bool   IsAnswered     { get => _isAnswered; set => SetProperty(ref _isAnswered, value); }
-    /// <summary>The answer given — <c>once</c>, <c>always</c> or <c>deny</c> — so the card shows which.</summary>
+    /// <summary>The answer given — <c>once</c>, <c>always</c>, <c>rule</c> or <c>deny</c> — so the card shows which.</summary>
     [DataMember] public string ChosenAnswer   { get => _chosen;     set => SetProperty(ref _chosen,     value); }
     [DataMember] public AsyncCommand AllowOnceCommand   { get; }
     [DataMember] public AsyncCommand AlwaysAllowCommand { get; }
+    [DataMember] public AsyncCommand AlwaysRuleCommand  { get; }
     [DataMember] public AsyncCommand DenyCommand        { get; }
     [DataMember] public AsyncCommand OpenDiffCommand    { get; }
 
@@ -203,7 +208,10 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     {
         if (_decision is null || !_decision.TrySetResult(decision)) return false;
         IsAnswered   = true;
-        ChosenAnswer = decision switch { ApprovalDecision.Once => "once", ApprovalDecision.Always => "always", _ => "deny" };
+        ChosenAnswer = decision switch
+        {
+            ApprovalDecision.Once => "once", ApprovalDecision.Always => "always", ApprovalDecision.Rule => "rule", _ => "deny",
+        };
         return true;
     }
 
@@ -233,6 +241,7 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
         UndoCommand         = new AsyncCommand((_, _) => { _onUndo?.Invoke(); return Task.CompletedTask; });
         AllowOnceCommand    = new AsyncCommand((_, _) => { Answer(ApprovalDecision.Once);   return Task.CompletedTask; });
         AlwaysAllowCommand  = new AsyncCommand((_, _) => { Answer(ApprovalDecision.Always); return Task.CompletedTask; });
+        AlwaysRuleCommand   = new AsyncCommand((_, _) => { if (HasRule) Answer(ApprovalDecision.Rule); return Task.CompletedTask; });
         DenyCommand         = new AsyncCommand((_, _) => { Answer(ApprovalDecision.Deny);   return Task.CompletedTask; });
         OpenDiffCommand     = new AsyncCommand((_, _) => { _onOpenDiff?.Invoke(); return Task.CompletedTask; });
         ImportApplyCommand  = new AsyncCommand(ApplyImportAsync);
@@ -460,6 +469,9 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
             BtnAlwaysAllow = Strings.ApprovalAlwaysAllow,
             BtnDeny        = Strings.ApprovalDeny,
             BtnOpenDiff    = Strings.ApprovalOpenDiff,
+            BtnAlwaysRule  = card.RuleLabel,
+            CardRuleTip    = card.RuleTooltip,
+            HasRule        = card.RuleLabel.Length > 0,
             _decision      = new TaskCompletionSource<ApprovalDecision>(TaskCreationOptions.RunContinuationsAsynchronously),
             _onOpenDiff    = onOpenDiff,
             CanOpenDiff    = onOpenDiff is not null,

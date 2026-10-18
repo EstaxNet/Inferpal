@@ -1573,4 +1573,17 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="LabelIgnoreFiles" xml:space="preserve"><value>読み込む除外ファイル</value></data>
   <data name="HintIgnoreFiles" xml:space="preserve"><value>カンマ区切りの名前。ワークスペースのルートで gitignore 構文として読み込まれます。除外されたものはどの AI ツールも読まず、除外は必ず通知されます。空の場合は何も読みません。</value></data>
   <data name="BackupNotSent" xml:space="preserve"><value>「{0}」は Inferpal が保持するバックアップです。このワークスペースが AI ツールからファイルを除外している間、バックアップはモデルに送信されません。</value></data>
+  <data name="ApprovalRuleCommands" xml:space="preserve"><value>`{0}` で始まるコマンド</value></data>
+  <data name="ApprovalRuleWrites" xml:space="preserve"><value>`{0}` 以下への書き込み</value></data>
+  <data name="ApprovalAlwaysRule" xml:space="preserve"><value>常に許可：{0}</value></data>
+  <data name="ApprovalRuleTooltip" xml:space="preserve"><value>このルールをマシンの許可ルールに書き込みます（再起動後も保持されます）：
+{0}</value></data>
+  <data name="ApprovalRuleSaved" xml:space="preserve"><value>このマシンの許可ルールに追加しました：{0}は確認されなくなります。/permissions で一覧表示され、設定で削除できます。</value></data>
+  <data name="ApprovalRuleNotSaved" xml:space="preserve"><value>ルールを保存できませんでした（{0}）：この呼び出しは一度だけ許可され、次回以降は再度確認されます。</value></data>
+  <data name="PermissionsSuggestHeader" xml:space="preserve"><value>あなたの回答から妥当と判断されたルール（{0} 回以上許可、拒否なし）。`/permissions add &lt;n&gt;` で 1 件を書き込みます。それ以外は何も書き込みません。</value></data>
+  <data name="PermissionsSuggestGranted" xml:space="preserve"><value>{0} 回許可、拒否なし</value></data>
+  <data name="PermissionsSuggestNone" xml:space="preserve"><value>まだ提案できるルールはありません。カードが {0} 回許可され、一度も拒否されなかったルールが提案されます。</value></data>
+  <data name="PermissionsHistoryUnreadable" xml:space="preserve"><value>承認履歴（{0}）を読み取れませんでした。ここから提案することはできません。</value></data>
+  <data name="PermissionsAddUnknown" xml:space="preserve"><value>提案 {0} はありません。`/permissions suggest` で一覧表示できます。</value></data>
+  <data name="PermissionsAddFailed" xml:space="preserve"><value>ルールを保存できませんでした（{0}）。</value></data>
 </root>

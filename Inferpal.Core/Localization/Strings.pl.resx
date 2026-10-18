@@ -1573,4 +1573,17 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="LabelIgnoreFiles" xml:space="preserve"><value>Odczytywane pliki wykluczeń</value></data>
   <data name="HintIgnoreFiles" xml:space="preserve"><value>Nazwy rozdzielone przecinkami, odczytywane w katalogu głównym obszaru roboczego w składni gitignore: żadne narzędzie AI nie czyta tego, co wykluczają, a każde wykluczenie jest zgłaszane. Puste: żaden nie jest odczytywany.</value></data>
   <data name="BackupNotSent" xml:space="preserve"><value>„{0}” to kopia zapasowa przechowywana przez Inferpal: dopóki ten obszar roboczy wyklucza pliki z narzędzi AI, kopie zapasowe nie są wysyłane do modelu.</value></data>
+  <data name="ApprovalRuleCommands" xml:space="preserve"><value>polecenia zaczynające się od `{0}`</value></data>
+  <data name="ApprovalRuleWrites" xml:space="preserve"><value>zapisy w `{0}`</value></data>
+  <data name="ApprovalAlwaysRule" xml:space="preserve"><value>Zawsze: {0}</value></data>
+  <data name="ApprovalRuleTooltip" xml:space="preserve"><value>Zapisuje tę regułę w regułach uprawnień komputera, zachowywanych po ponownym uruchomieniu:
+{0}</value></data>
+  <data name="ApprovalRuleSaved" xml:space="preserve"><value>Reguła dodana do reguł uprawnień tego komputera: {0} nie wymagają już zgody. /permissions ją wyświetla, usunąć można w ustawieniach.</value></data>
+  <data name="ApprovalRuleNotSaved" xml:space="preserve"><value>Nie udało się zapisać reguły ({0}): to wywołanie jest dozwolone raz, kolejne znów zapytają.</value></data>
+  <data name="PermissionsSuggestHeader" xml:space="preserve"><value>Reguły uzasadnione Twoimi odpowiedziami — zatwierdzone co najmniej {0} razy, nigdy nie odrzucone. `/permissions add &lt;n&gt;` zapisuje jedną; poza tym nic nie jest zapisywane.</value></data>
+  <data name="PermissionsSuggestGranted" xml:space="preserve"><value>zatwierdzono {0} {0:raz|razy|razy}, nigdy nie odrzucono</value></data>
+  <data name="PermissionsSuggestNone" xml:space="preserve"><value>Na razie nie ma reguły do zaproponowania: reguła jest proponowana, gdy jej karta została zatwierdzona {0} razy i nigdy nie odrzucona.</value></data>
+  <data name="PermissionsHistoryUnreadable" xml:space="preserve"><value>Nie udało się odczytać historii zatwierdzeń ({0}): nie można na jej podstawie nic zaproponować.</value></data>
+  <data name="PermissionsAddUnknown" xml:space="preserve"><value>Nie ma propozycji {0}: `/permissions suggest` je wyświetla.</value></data>
+  <data name="PermissionsAddFailed" xml:space="preserve"><value>Nie udało się zapisać reguły ({0}).</value></data>
 </root>

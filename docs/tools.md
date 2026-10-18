@@ -60,9 +60,44 @@ says how many files it skipped, above its result.
 Tools that touch the filesystem, run commands, or reach the network are gated by a 3-way
 prompt:
 
-> **Allow once** · **Always allow this tool** · **Cancel**
+> **Allow once** · **Always allow this tool** · **Always: *the narrow rule*** · **Cancel**
 
 - "Always allow" remembers that tool **for the session only** — it is never written to disk.
+- **Always: …** — when one narrow rule describes the call, the card offers it beside "Always":
+  *commands that start with `dotnet test`*, *writes under `tests/`*. Picking it writes that rule
+  to the per-machine **Permission rules** setting (the button's tooltip shows the exact lines), says
+  so in the conversation, and the calls it covers are then approved without a card — after a
+  restart too, and in the other editor. `/permissions` lists it; the settings remove it. An ACP
+  client shows it as one more option.
+  - A **command** rule covers one command that starts with the same program and subcommands
+    (`dotnet test`, `git log`, `npm run build`, `python -m pytest`, `npx eslint`), with any
+    arguments that keep it one command: no chain, pipe, substitution or redirection —
+    `dotnet test && rm -rf src` still has its card. ⚠ The rule does not read the options: one
+    that writes elsewhere or runs a program (`git diff --output=…`, `dotnet build -o …`) is
+    covered like any other, as with any prefix rule. Pick it for the commands you would approve
+    with whatever options the agent adds.
+  - None is offered for a program that runs whatever it is given (`python script.py`, `node`,
+    `bash`, `pwsh`, `cmd`, `npx` without a package, `npx tsx`, `uv run`, `docker run`, `sudo`,
+    `find`, `sed`…), a program that deletes, overwrites, moves or reaches another machine (`rm`,
+    `del`, `mv`, `cp`, `tar`, `chmod`, `curl`, `ssh`…), a subcommand that rewrites history, throws
+    work away, installs or publishes, or changes what later commands run (`git push`,
+    `git reset`, `git checkout`, `npm install`, `pip install`, `npm exec`, `npm publish`,
+    `git config`…), a subcommand whose own subcommands the arguments would choose (`git stash`
+    covers `git stash drop`, `dotnet nuget` covers `dotnet nuget push`), a program alone that
+    needs its subcommand to say what it does (`dotnet`, `git`, `npm`…), a first word that is not
+    a program name (a quoted path, `FOO=1 …`), or a call whose prompt is forced (instruction
+    files, indirect execution, a repository's own commands).
+  - A **write** rule covers the folder of the file — of every file of the change, when they share
+    one — and what is under it, for `write_file`, `apply_diff` and `apply_edits`; never the
+    workspace root, a folder outside the workspace or reached through a link, nor any folder
+    whose name starts with a dot (`.inferpal/`, `.git/`, `.github/`, `.vscode/`: settings, hooks
+    and workflows run later). Instruction files under it keep their card.
+- `/permissions suggest` lists the narrow rules you granted at least three times and never
+  refused — counted per rule in `approval-history.json`, beside the settings: the prefix or the
+  folder, never the whole command; a card retired with a stopped run is not a refusal — in the
+  order they were first counted, and `/permissions add <n>` writes one, named in its reply.
+  Nothing is written otherwise. A rule is suggested only as a card would offer it now, in this
+  workspace.
 - Default action is *Allow once*; dismissing the prompt denies the call.
 - For file edits (`write_file`, `apply_diff`, `apply_edits`, `delete_file`), the prompt shows
   the **actual diff** so you confirm the change, not just a path.
@@ -100,8 +135,9 @@ deny  * \.env$                                       # never touch secrets, any 
   `git status; Remove-Item -Recurse src` is not approved by a rule written for `git`.
 - `allow` auto-approves (no prompt); `deny` blocks the call outright (recorded in
   `/diagnostics`); no match falls back to the prompt.
-- Sources, evaluated in order: the per-machine **Permission rules** setting, then the
-  committable workspace overlay `.inferpal/permissions.json` (`{ "rules": ["deny …", …] }`).
+- Sources, evaluated in order: the committable workspace overlay `.inferpal/permissions.json`
+  (`{ "rules": ["deny …", …] }`), then the per-machine **Permission rules** setting — where the
+  narrow rule an approval card offers is written.
 - **The workspace overlay can only restrict, never grant.** It ships inside the repository, so
   `allow` rules found there are ignored (and recorded in `/diagnostics`): a cloned project must
   never be able to switch off your approval prompt. Only the per-machine setting can

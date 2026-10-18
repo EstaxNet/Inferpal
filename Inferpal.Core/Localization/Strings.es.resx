@@ -1573,4 +1573,17 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="LabelIgnoreFiles" xml:space="preserve"><value>Archivos de exclusión leídos</value></data>
   <data name="HintIgnoreFiles" xml:space="preserve"><value>Nombres separados por comas, leídos en la raíz del espacio de trabajo con la sintaxis de gitignore: ninguna herramienta de IA lee lo que excluyen, y cada exclusión se indica. Vacío: no se lee ninguno.</value></data>
   <data name="BackupNotSent" xml:space="preserve"><value>«{0}» es una copia de seguridad que guarda Inferpal: mientras este espacio de trabajo excluya archivos de las herramientas de IA, las copias no se envían al modelo.</value></data>
+  <data name="ApprovalRuleCommands" xml:space="preserve"><value>los comandos que empiezan por `{0}`</value></data>
+  <data name="ApprovalRuleWrites" xml:space="preserve"><value>las escrituras en `{0}`</value></data>
+  <data name="ApprovalAlwaysRule" xml:space="preserve"><value>Siempre: {0}</value></data>
+  <data name="ApprovalRuleTooltip" xml:space="preserve"><value>Escribe esta regla en las reglas de permisos del equipo, que se conservan tras reiniciar:
+{0}</value></data>
+  <data name="ApprovalRuleSaved" xml:space="preserve"><value>Regla añadida a las reglas de permisos de este equipo: {0} ya no piden permiso. /permissions la muestra; la configuración la quita.</value></data>
+  <data name="ApprovalRuleNotSaved" xml:space="preserve"><value>No se pudo guardar la regla ({0}): esta llamada se permite una vez, las siguientes volverán a preguntar.</value></data>
+  <data name="PermissionsSuggestHeader" xml:space="preserve"><value>Reglas que justifican sus respuestas: concedidas al menos {0} veces, nunca rechazadas. `/permissions add &lt;n&gt;` escribe una; de lo contrario no se escribe nada.</value></data>
+  <data name="PermissionsSuggestGranted" xml:space="preserve"><value>concedida {0} {0:vez|veces}, nunca rechazada</value></data>
+  <data name="PermissionsSuggestNone" xml:space="preserve"><value>Aún no hay ninguna regla que sugerir: se sugiere una regla cuando su tarjeta se ha concedido {0} veces y nunca se ha rechazado.</value></data>
+  <data name="PermissionsHistoryUnreadable" xml:space="preserve"><value>No se pudo leer el historial de aprobaciones ({0}): no se puede sugerir nada a partir de él.</value></data>
+  <data name="PermissionsAddUnknown" xml:space="preserve"><value>No hay ninguna sugerencia {0}: `/permissions suggest` las muestra.</value></data>
+  <data name="PermissionsAddFailed" xml:space="preserve"><value>No se pudo guardar la regla ({0}).</value></data>
 </root>

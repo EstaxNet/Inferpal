@@ -8,7 +8,8 @@ namespace Inferpal.Host;
 /// Approval prompt over reverse JSON-RPC: the whole pipeline (pattern permission rules,
 /// hard denylist, session grants) lives in <see cref="ApprovalServiceBase"/>; this class
 /// only forwards the user-facing question to the editor adapter (`approval/request`),
-/// which renders the approval card and answers 0 = deny, 1 = once, 2 = always.
+/// which renders the approval card and answers 0 = deny, 1 = once, 2 = always, 3 = the narrow rule the card offers
+/// (any other number denies, so an adapter that predates an answer fails closed).
 /// </summary>
 internal sealed class RpcApprovalService : ApprovalServiceBase, IApprovalService
 {
@@ -108,6 +109,7 @@ internal sealed class RpcApprovalService : ApprovalServiceBase, IApprovalService
             {
                 1 => ApprovalDecision.Once,
                 2 => ApprovalDecision.Always,
+                3 => ApprovalDecision.Rule,
                 _ => ApprovalDecision.Deny,
             };
         }

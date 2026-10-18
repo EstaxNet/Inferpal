@@ -6,7 +6,9 @@ namespace Inferpal.Services.Presentation;
 /// <summary>Everything an approval prompt knows: the tool, what it acts on, the change it would make.</summary>
 /// <param name="Subject">The raw subject the rules match (a path for the file tools), or <c>null</c>.</param>
 /// <param name="Message">The one-sentence prompt every editor can show, whatever else it can draw.</param>
-internal sealed record ApprovalPrompt(string ToolName, string Details, string? Subject, DiffInfo? Diff, string Message);
+/// <param name="Rule">The narrow rule the card offers beside "Always this session", or <c>null</c>.</param>
+internal sealed record ApprovalPrompt(string ToolName, string Details, string? Subject, DiffInfo? Diff, string Message,
+                                      Execution.ApprovalRuleProposal.Proposal? Rule = null);
 
 /// <summary>One line of an approval card's preview: <c>add</c>, <c>del</c>, <c>ctx</c> or <c>gap</c>.</summary>
 internal sealed record ApprovalPreviewLine(string Kind, string Text);
@@ -15,9 +17,12 @@ internal sealed record ApprovalPreviewLine(string Kind, string Text);
 /// <param name="Meta">"12 lines" for a new file, "+4 −2" for a change, empty otherwise.</param>
 /// <param name="More">"… 6 more lines" when the preview stops before the change does; empty otherwise.</param>
 /// <param name="AlwaysTooltip">What "Always this session" grants: this tool, without asking, until the editor restarts.</param>
+/// <param name="RuleLabel">The button of the narrow rule ("Always: commands that start with `dotnet test`"); empty when
+/// the card offers none.</param>
+/// <param name="RuleTooltip">What that button writes, the rule spelled out; empty when none.</param>
 internal sealed record ApprovalCardModel(
     string Title, string Subject, string Meta, IReadOnlyList<ApprovalPreviewLine> Preview, string More,
-    string AlwaysTooltip, string Message);
+    string AlwaysTooltip, string Message, string RuleLabel = "", string RuleTooltip = "");
 
 /// <summary>Builds <see cref="ApprovalCardModel"/> — the same card in both editors.</summary>
 internal static class ApprovalCard
@@ -109,7 +114,9 @@ internal static class ApprovalCard
         }
 
         return new ApprovalCardModel(title, subject, meta, preview, more > 0 ? Strings.ApprovalMoreLines(more) : string.Empty,
-                                     Strings.ApprovalAlwaysTooltip(prompt.ToolName), prompt.Message);
+                                     Strings.ApprovalAlwaysTooltip(prompt.ToolName), prompt.Message,
+                                     prompt.Rule is { } rule ? Strings.ApprovalAlwaysRule(rule.Describe) : string.Empty,
+                                     prompt.Rule is { } spelled ? Strings.ApprovalRuleTooltip(string.Join("\n", spelled.Lines)) : string.Empty);
     }
 
     /// <summary>

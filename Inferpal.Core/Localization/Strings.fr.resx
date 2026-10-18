@@ -1573,4 +1573,17 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="LabelIgnoreFiles" xml:space="preserve"><value>Fichiers d'exclusion lus</value></data>
   <data name="HintIgnoreFiles" xml:space="preserve"><value>Noms séparés par des virgules, lus à la racine de l'espace de travail, en syntaxe gitignore : aucun outil d'IA ne lit ce qu'ils excluent, et chaque exclusion est dite. Vide : aucun n'est lu.</value></data>
   <data name="BackupNotSent" xml:space="preserve"><value>« {0} » est une copie de sauvegarde gardée par Inferpal : tant que cet espace de travail exclut des fichiers des outils d'IA, les sauvegardes ne sont pas envoyées au modèle.</value></data>
+  <data name="ApprovalRuleCommands" xml:space="preserve"><value>les commandes qui commencent par `{0}`</value></data>
+  <data name="ApprovalRuleWrites" xml:space="preserve"><value>les écritures sous `{0}`</value></data>
+  <data name="ApprovalAlwaysRule" xml:space="preserve"><value>Toujours : {0}</value></data>
+  <data name="ApprovalRuleTooltip" xml:space="preserve"><value>Écrit cette règle dans les règles d'accord de la machine, gardées après un redémarrage :
+{0}</value></data>
+  <data name="ApprovalRuleSaved" xml:space="preserve"><value>Règle ajoutée aux règles d'accord de cette machine : {0} ne demandent plus d'accord. /permissions la liste, les Réglages la retirent.</value></data>
+  <data name="ApprovalRuleNotSaved" xml:space="preserve"><value>La règle n'a pas pu être enregistrée ({0}) : cet appel est accordé une fois, les suivants redemanderont.</value></data>
+  <data name="PermissionsSuggestHeader" xml:space="preserve"><value>Règles que vos réponses justifient — accordées au moins {0} fois, jamais refusées. `/permissions add &lt;n&gt;` en écrit une ; rien n'est écrit sinon.</value></data>
+  <data name="PermissionsSuggestGranted" xml:space="preserve"><value>accordée {0} {0:fois|fois}, jamais refusée</value></data>
+  <data name="PermissionsSuggestNone" xml:space="preserve"><value>Aucune règle à proposer pour l'instant : une règle est proposée quand sa carte a été accordée {0} fois et jamais refusée.</value></data>
+  <data name="PermissionsHistoryUnreadable" xml:space="preserve"><value>L'historique des accords ({0}) n'a pas pu être lu : aucune proposition ne peut en être tirée.</value></data>
+  <data name="PermissionsAddUnknown" xml:space="preserve"><value>Il n'y a pas de proposition {0} : `/permissions suggest` les liste.</value></data>
+  <data name="PermissionsAddFailed" xml:space="preserve"><value>La règle n'a pas pu être enregistrée ({0}).</value></data>
 </root>

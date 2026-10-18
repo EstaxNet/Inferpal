@@ -390,6 +390,10 @@ export interface ApprovalCard {
   more: string;
   alwaysTooltip: string;
   message: string;
+  /** The narrow rule the card offers ("Always: commands that start with `dotnet test`"); empty or absent when none. */
+  ruleLabel?: string;
+  /** The rule's lines as the settings will hold them. */
+  ruleTooltip?: string;
 }
 
 /** One file a run changed. */
@@ -488,11 +492,13 @@ export interface InputRequest {
   value?: string | null;
 }
 
-/** approval/request answer: 0 = deny, 1 = allow once, 2 = always allow (session). */
+/** approval/request answer: 0 = deny, 1 = allow once, 2 = always allow (session), 3 = the card's narrow rule, written to
+ *  the machine's rules (any other number denies). */
 export const enum ApprovalAnswer {
   Deny = 0,
   Once = 1,
   Always = 2,
+  Rule = 3,
 }
 
 /** One choice of a select field (texts are product names — never localized). */

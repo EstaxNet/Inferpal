@@ -1188,17 +1188,13 @@ internal sealed class AcpSession : IAsyncDisposable
                     status     = "pending",
                     content,
                 },
-                options = new object[]
-                {
-                    new { optionId = "allow_once",   name = Strings.ApprovalAllowOnce,   kind = "allow_once" },
-                    new { optionId = "allow_always", name = Strings.ApprovalAlwaysAllow, kind = "allow_always" },
-                    new { optionId = "reject_once",  name = Strings.ApprovalDeny,        kind = "reject_once" },
-                },
+                options = Options(note.Card?.RuleLabel),
             });
             var decision = answer?.Outcome is { Outcome: "selected" } o ? o.OptionId switch
             {
                 "allow_once"   => 1,
                 "allow_always" => 2,
+                "allow_rule"   => string.IsNullOrEmpty(note.Card?.RuleLabel) ? 0 : 3,
                 _              => 0,
             } : 0;
             if (decision == 0 && note.CallId is not null && _calls.TryGetValue(note.CallId, out var refused)) refused.Rejected = true;
@@ -1210,6 +1206,23 @@ internal sealed class AcpSession : IAsyncDisposable
             if (note.CallId is not null && _calls.TryGetValue(note.CallId, out var failed)) failed.Rejected = true;
             return 0;
         }
+    }
+
+    /// <summary>
+    /// The answers a permission request offers: the narrow rule the card describes, when it describes one, beside
+    /// "always" — written to the machine's rules, where "always" lasts the session.
+    /// </summary>
+    private static object[] Options(string? ruleLabel)
+    {
+        var options = new List<object>
+        {
+            new { optionId = "allow_once",   name = Strings.ApprovalAllowOnce,   kind = "allow_once" },
+            new { optionId = "allow_always", name = Strings.ApprovalAlwaysAllow, kind = "allow_always" },
+        };
+        if (!string.IsNullOrEmpty(ruleLabel))
+            options.Add(new { optionId = "allow_rule", name = ruleLabel, kind = "allow_always" });
+        options.Add(new { optionId = "reject_once", name = Strings.ApprovalDeny, kind = "reject_once" });
+        return [.. options];
     }
 
     /// <summary>
@@ -1249,7 +1262,7 @@ internal sealed class AcpSession : IAsyncDisposable
     public sealed record ToolStartNote(string CallId, string Name, string? Input);
     public sealed record ToolEndNote(string CallId, string? Output);
     public sealed record PathNote(string? Path);
-    public sealed record CardNote(string? Title, string? Subject);
+    public sealed record CardNote(string? Title, string? Subject, string? RuleLabel = null);
     public sealed record DiffNote(string? Path, string? OldText, string? NewText);
     public sealed record ApprovalNote(string Message, CardNote? Card, string? CallId, string? Tool, string? Details, List<DiffNote>? Diffs);
     public sealed record PermissionOutcome(string? Outcome, string? OptionId);

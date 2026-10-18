@@ -1141,7 +1141,18 @@ function addApprovalCard(id: number, message: string, card?: ApprovalCard | null
   deny.className = 'deny';
   deny.append(document.createTextNode(t('deny')), kbd('Esc'));
   deny.addEventListener('click', () => answer(0, deny));
-  actions.append(allow, always, deny);
+  actions.append(allow, always);
+  // The narrow rule, offered only when one describes the call: written to the machine's rules, where "Always" lasts
+  // the session. Its label comes from the host, in the user's language.
+  if (card?.ruleLabel) {
+    const rule = document.createElement('button');
+    rule.className = 'rule';
+    rule.textContent = card.ruleLabel;
+    rule.title = card.ruleTooltip ?? '';
+    rule.addEventListener('click', () => answer(3, rule));
+    actions.append(rule);
+  }
+  actions.append(deny);
   el.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       e.preventDefault();

@@ -111,7 +111,7 @@ editor with tools disabled).
 |---|---|
 | `/rules [init]` | List rules in `.inferpal/rules`, or scaffold an example |
 | `/checks [init]` | List checks in `.inferpal/checks`, or scaffold an example |
-| `/permissions` | Show the permission rules **actually in force**, in evaluation order — the workspace `.inferpal/permissions.json` overlay first (deny-only), then the per-machine rules — and name what was ignored: an overlay that could not be read as a rule list, malformed entries, and `allow` rules an overlay cannot grant |
+| `/permissions [suggest\|add <n>]` | Show the permission rules **actually in force**, in evaluation order — the workspace `.inferpal/permissions.json` overlay first (deny-only), then the per-machine rules — and name what was ignored: an overlay that could not be read as a rule list, malformed entries, and `allow` rules an overlay cannot grant. `suggest` lists the narrow rules approval cards offered that you granted at least three times and never refused; `add <n>` writes the n-th to the per-machine rules |
 | `/check [name\|init]` | AI-review the current git diff for any bug or regression, plus your checks (100% local); `<name>` reviews against that one check only. Findings come back **anchored to the diff** — `file:line`, severity, grouped by file — and a location the diff does not confirm is labelled as such rather than presented as one |
 
 ## Agent

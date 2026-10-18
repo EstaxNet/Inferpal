@@ -25,6 +25,8 @@ internal class VsApprovalService : ApprovalServiceBase
     {
         _vs      = vs;
         _context = context;
+        // What an answer wrote to the settings is said in the conversation the card was in.
+        Notice   = text => context.Notice?.Invoke(text);
     }
 
     protected override async Task<ApprovalDecision> PromptUserAsync(ApprovalPrompt prompt, CancellationToken ct)
@@ -39,7 +41,7 @@ internal class VsApprovalService : ApprovalServiceBase
                     ? async answered =>
                     {
                         using var both = CancellationTokenSource.CreateLinkedTokenSource(ct, answered);
-                        try { return await ShowDiffDialogAsync(prompt.Message, d, both.Token); }
+                        try { return await ShowDiffDialogAsync(prompt.Message, d, card, both.Token); }
                         catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return null; }
                     }
                     : null;
@@ -53,17 +55,22 @@ internal class VsApprovalService : ApprovalServiceBase
                 Diagnostics.Swallow("VsApprovalService.InlineCard", ex);
             }
         }
-        return await PromptUserAsync(prompt.Message, prompt.Diff, ct);
+        // Outside a turn the dialog asks — offering the card's narrow rule too, as VS Code's dialog does.
+        return await AskInDialogAsync(prompt.Message, prompt.Diff, ApprovalCard.Build(prompt, RootDir), ct);
     }
 
-    protected override async Task<ApprovalDecision> PromptUserAsync(string message, DiffInfo? diff, CancellationToken ct)
+    protected override Task<ApprovalDecision> PromptUserAsync(string message, DiffInfo? diff, CancellationToken ct) =>
+        AskInDialogAsync(message, diff, card: null, ct);
+
+    /// <param name="card">The card of the call, for the narrow rule it offers; <c>null</c> for a prompt without one.</param>
+    private async Task<ApprovalDecision> AskInDialogAsync(string message, DiffInfo? diff, ApprovalCardModel? card, CancellationToken ct)
     {
         if (diff is not null)
         {
             try
             {
                 // Dismissed (Esc / close box) → fail closed.
-                return await ShowDiffDialogAsync(message, diff, ct) ?? ApprovalDecision.Deny;
+                return await ShowDiffDialogAsync(message, diff, card, ct) ?? ApprovalDecision.Deny;
             }
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
@@ -79,16 +86,17 @@ internal class VsApprovalService : ApprovalServiceBase
             }
         }
 
-        return await ShowClassicPromptAsync(message, ct);
+        return await ShowClassicPromptAsync(message, card, ct);
     }
 
     /// <summary>Modal dialog with the colored diff viewer and the three in-content choices.
     /// Built-in dialog buttons are hidden; a content button completes <c>Decision</c> and the
     /// linked token then closes the dialog. <c>null</c> when the dialog was dismissed: the prompt denies (fail closed),
     /// a card opened from the chat keeps waiting.</summary>
-    private async Task<ApprovalDecision?> ShowDiffDialogAsync(string message, DiffInfo diff, CancellationToken ct)
+    private async Task<ApprovalDecision?> ShowDiffDialogAsync(string message, DiffInfo diff, ApprovalCardModel? card,
+                                                              CancellationToken ct)
     {
-        var data = new ApprovalDialogData(message, diff);
+        var data = new ApprovalDialogData(message, diff, card?.RuleLabel ?? string.Empty, card?.RuleTooltip ?? string.Empty);
         using var control = new ApprovalDialogControl(data);
 
         using var close = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -109,13 +117,14 @@ internal class VsApprovalService : ApprovalServiceBase
         return decision;
     }
 
-    private async Task<ApprovalDecision> ShowClassicPromptAsync(string message, CancellationToken ct)
+    private async Task<ApprovalDecision> ShowClassicPromptAsync(string message, ApprovalCardModel? card, CancellationToken ct)
     {
         // Three choices: "Allow once" (default, preserves the old Enter=approve behaviour),
-        // "Always allow this tool" (remembers for the session), and "Cancel".
+        // "Always allow this tool" (remembers for the session), and "Cancel" — and the narrow rule when the card offers one.
         var choices = new ChoiceResultCollection<ApprovalDecision>();
         choices.Add(Strings.ApprovalAllowOnce,   ApprovalDecision.Once);
         choices.Add(Strings.ApprovalAlwaysAllow, ApprovalDecision.Always);
+        if (card is { RuleLabel.Length: > 0 }) choices.Add(card.RuleLabel, ApprovalDecision.Rule);
         choices.Add(Strings.ApprovalDeny,        ApprovalDecision.Deny);
 
         // Default = "Allow once"; dismissing the prompt (Esc/close) denies.

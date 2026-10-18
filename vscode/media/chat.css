@@ -1100,6 +1100,14 @@ kbd {
   margin-left: auto;
 }
 
+/* The narrow rule names what it covers: its label may wrap, never overflow the card. */
+.approval-actions button.rule {
+  height: auto;
+  min-height: 30px;
+  max-width: 100%;
+  text-align: left;
+}
+
 .approval.answered {
   opacity: 0.6;
 }

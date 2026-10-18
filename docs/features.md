@@ -67,7 +67,10 @@ exists.
   removed, the last build or test check, and **Undo run** (`/undo-run`), offered on the latest run.
 - **Approvals in the conversation** *(both editors)* — during a turn, an approval is a card under
   the steps: what will happen, to what, the first lines of the change, then **Allow once**
-  (Enter), **Always this session** and **Deny** (Esc); *Open diff* shows the whole change. Enter
+  (Enter), **Always this session** and **Deny** (Esc); *Open diff* shows the whole change. When a
+  narrow rule describes the call, a fourth button offers it — *Always: commands that start with
+  `dotnet test`*, *Always: writes under `tests/`* — and writes it to the per-machine permission
+  rules, said in the conversation ([Tools → Approval model](tools.md#approval-model)). Enter
   and Esc answer only from an empty message box: the card never takes the keyboard, so a key typed
   for something else cannot approve. Outside a turn (a code action, a slash command), the dialog
   asks as before. A card left unanswered for 15 seconds while the editor does not have the focus
@@ -324,7 +327,10 @@ exists.
 - **Approval prompts** — `write_file`, `apply_diff`, `apply_edits`, `delete_file`,
   `run_command`, `rename_symbol`, `fetch_url`, `web_search`, custom shell tools, and MCP calls
   each prompt **Allow once / Always allow this tool / Cancel** (session-scoped, never
-  persisted). Edit prompts show the **actual diff** before you confirm.
+  persisted). Edit prompts show the **actual diff** before you confirm. A command or a write that
+  one narrow rule describes also offers that rule (*commands that start with `dotnet test`*,
+  *writes under `tests/`*), written to the per-machine rules when picked; `/permissions suggest`
+  names the ones you keep granting.
 - **Permission rules** — `allow` / `deny` patterns classify a call before the prompt. The
   per-machine setting can do both; the committable `.inferpal/permissions.json` overlay can only
   *deny* (a cloned repository must not be able to grant itself auto-approval); a built-in denylist of

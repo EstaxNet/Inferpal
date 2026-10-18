@@ -27,6 +27,10 @@ internal sealed class ApprovalDialogData : NotifyPropertyChangedObject
     [DataMember] public string BtnAllowOnce   { get; }
     [DataMember] public string BtnAlwaysAllow { get; }
     [DataMember] public string BtnDeny        { get; }
+    /// <summary>The narrow rule the card offers ("Always: commands that start with `dotnet test`"); empty when none.</summary>
+    [DataMember] public string BtnRule        { get; }
+    [DataMember] public string RuleTip        { get; }
+    [DataMember] public bool   HasRule        { get; }
 
     // Theme colours as plain strings, same pattern as the chat VM (no theme propagation
     // across the Remote UI boundary): resolved once from the last known VS theme.
@@ -38,17 +42,24 @@ internal sealed class ApprovalDialogData : NotifyPropertyChangedObject
     [DataMember] public AsyncCommand AllowOnceCommand   { get; }
     [DataMember] public AsyncCommand AlwaysAllowCommand { get; }
     [DataMember] public AsyncCommand DenyCommand        { get; }
+    [DataMember] public AsyncCommand RuleCommand        { get; }
 
     /// <summary>Completes with the user's choice; never completes if the dialog is dismissed
     /// (the service then falls back to deny).</summary>
     public Task<ApprovalDecision> Decision => _decision.Task;
 
-    public ApprovalDialogData(string message, DiffInfo? diff)
+    /// <param name="ruleLabel">The narrow rule the card offers, as its button reads (<c>ApprovalCardModel.RuleLabel</c>);
+    /// empty when none.</param>
+    /// <param name="ruleTip">The rule's lines, for the button's tooltip.</param>
+    public ApprovalDialogData(string message, DiffInfo? diff, string ruleLabel = "", string ruleTip = "")
     {
         Message        = message;
         BtnAllowOnce   = Strings.ApprovalAllowOnce;
         BtnAlwaysAllow = Strings.ApprovalAlwaysAllow;
         BtnDeny        = Strings.ApprovalDeny;
+        BtnRule        = ruleLabel;
+        RuleTip        = ruleTip;
+        HasRule        = ruleLabel.Length > 0;
 
         var palette = ThemePalette.For(VsThemeDetector.CurrentIsDark, VsThemeDetector.HighContrastOn());
         ThemeText       = palette.Text;
@@ -67,5 +78,10 @@ internal sealed class ApprovalDialogData : NotifyPropertyChangedObject
         AllowOnceCommand   = new AsyncCommand((_, _) => { _decision.TrySetResult(ApprovalDecision.Once);   return Task.CompletedTask; });
         AlwaysAllowCommand = new AsyncCommand((_, _) => { _decision.TrySetResult(ApprovalDecision.Always); return Task.CompletedTask; });
         DenyCommand        = new AsyncCommand((_, _) => { _decision.TrySetResult(ApprovalDecision.Deny);   return Task.CompletedTask; });
+        RuleCommand        = new AsyncCommand((_, _) =>
+        {
+            if (HasRule) _decision.TrySetResult(ApprovalDecision.Rule);
+            return Task.CompletedTask;
+        });
     }
 }

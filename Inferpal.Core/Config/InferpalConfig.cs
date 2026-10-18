@@ -216,8 +216,9 @@ internal class InferpalConfig
     /// <c>allow|deny &lt;tool|*&gt; &lt;regex&gt;</c> (see <see cref="Services.Execution.PermissionPolicy"/>).
     /// An <c>allow</c> match auto-approves the call (no prompt); a <c>deny</c> match blocks it
     /// outright (even under <see cref="SecurityAlertsDisabled"/>); no match falls back to the
-    /// interactive prompt. Evaluated before the workspace <c>.inferpal/permissions.json</c> overlay;
-    /// first match wins. A built-in denylist of catastrophic shell commands always applies on top.
+    /// interactive prompt. Evaluated after the workspace <c>.inferpal/permissions.json</c> overlay (deny-only, so a
+    /// repository can only restrict); first match wins. A built-in denylist of catastrophic shell commands always
+    /// applies on top. The narrow rule an approval card offers is written here, never to the overlay.
     /// </summary>
     [CollectionSetting(CollectionShape.Lines)]
     [JsonPropertyName("permissionRules")]
@@ -930,6 +931,57 @@ internal class InferpalConfig
         p.SetValue(this, followed?.Deserialize(p.PropertyType) ?? p.GetValue(new InferpalConfig()));
         _baseline[key] = onDisk[key]?.DeepClone();
         _fileAsRead    = onDisk;
+    }
+
+    /// <summary>
+    /// Adds <paramref name="lines"/> to a one-per-line setting IN THE FILE as it is now, and writes nothing else this copy
+    /// holds: a model or a mode set for one thread, a value changed in memory and not saved, stay out of the file.
+    /// </summary>
+    /// <param name="property">The C# property name (<c>nameof</c>) of a <see cref="CollectionShape.Lines"/> setting.</param>
+    /// <returns>The lines the file did not hold, now written.</returns>
+    /// <exception cref="IOException">The file exists and cannot be read: a few lines never replace it.</exception>
+    /// <remarks>
+    /// For a write the person did not make in the settings (a rule an approval card offered, during a turn): a full
+    /// <see cref="Save"/> would carry every other change of this copy with it. ⚠ Added to the FILE's lines, never merged
+    /// from this copy's: a line another window removed, added again here, would read as unchanged to a three-way merge
+    /// and stay removed. This copy follows: it holds the file's lines, plus what it changed itself and did not save.
+    /// </remarks>
+    internal IReadOnlyList<string> AddLines(string property, IReadOnlyList<string> lines)
+    {
+        var p = typeof(InferpalConfig).GetProperty(property)
+                ?? throw new ArgumentException($"No setting named {property}.", nameof(property));
+        var key = JsonNameOf(property);
+        if (!CollectionSettings.TryGetValue(key, out var shape) || shape != CollectionShape.Lines)
+            throw new ArgumentException($"{property} is not a one-per-line setting.", nameof(property));
+        var path = SavePathForTests ?? EffectiveConfigPath;
+        System.Text.Json.Nodes.JsonObject toWrite;
+        if (TryReadSnapshot(path, out var onDisk)) toWrite = onDisk;
+        else if (!File.Exists(path)) toWrite = Snapshot(new InferpalConfig());   // a fresh install: the factory values
+        else throw new IOException($"{path} cannot be read.");
+
+        static List<string> Split(string text) =>
+            [.. text.Replace("\r\n", "\n").Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0)];
+        var inFile  = Split(Text(toWrite[key]));
+        var missing = lines.Where(l => !inFile.Contains(l, StringComparer.Ordinal)).Distinct(StringComparer.Ordinal).ToList();
+        if (missing.Count == 0) return missing;
+        var written = string.Join('\n', inFile.Concat(missing));
+        toWrite[key] = written;
+
+        Services.Persistence.AtomicFile.WriteAllText(path,
+            toWrite.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+
+        // This copy follows the file for that setting — its own unsaved change kept, the new lines added to it.
+        var mine = Snapshot(this)[key];
+        var changedHere = _baseline is not null && !System.Text.Json.Nodes.JsonNode.DeepEquals(mine, _baseline[key]);
+        var held = changedHere ? string.Join('\n', Split(Text(mine)).Concat(missing.Where(l => !Split(Text(mine)).Contains(l))))
+                               : written;
+        p.SetValue(this, held);
+        if (_baseline is not null && !changedHere) _baseline[key] = written;
+        _fileAsRead = toWrite.DeepClone().AsObject();
+        LastSaved = new Dictionary<string, System.Text.Json.Nodes.JsonNode?>(StringComparer.Ordinal) { [key] = written };
+        lock (_loadLock) { _cached = null; _cachedPath = null; _cachedStamp = default; }
+        Saved?.Invoke();
+        return missing;
     }
 
     /// <summary>The documentation sources as they stand NOW (another window may have changed them): see <see cref="Shared{T}"/>.</summary>

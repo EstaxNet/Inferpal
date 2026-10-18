@@ -893,6 +893,18 @@ internal static class Strings
         Format(Get(nameof(DirNotFound)), path);
     public static string ExcludedFromAi(string name, string file, int line, string pattern) =>
         Format(Get(nameof(ExcludedFromAi)), name, file, line, pattern);
+    public static string ApprovalRuleCommands(string shown) => Format(Get(nameof(ApprovalRuleCommands)), shown);
+    public static string ApprovalRuleWrites(string shown) => Format(Get(nameof(ApprovalRuleWrites)), shown);
+    public static string ApprovalAlwaysRule(string describe) => Format(Get(nameof(ApprovalAlwaysRule)), describe);
+    public static string ApprovalRuleTooltip(string lines) => Format(Get(nameof(ApprovalRuleTooltip)), lines);
+    public static string ApprovalRuleSaved(string describe) => Format(Get(nameof(ApprovalRuleSaved)), describe);
+    public static string ApprovalRuleNotSaved(string reason) => Format(Get(nameof(ApprovalRuleNotSaved)), reason);
+    public static string PermissionsSuggestHeader => Format(Get(nameof(PermissionsSuggestHeader)), Services.Execution.ApprovalHistory.SuggestAfter);
+    public static string PermissionsSuggestGranted(int count) => Format(Get(nameof(PermissionsSuggestGranted)), count);
+    public static string PermissionsSuggestNone(int threshold) => Format(Get(nameof(PermissionsSuggestNone)), threshold);
+    public static string PermissionsHistoryUnreadable(string path) => Format(Get(nameof(PermissionsHistoryUnreadable)), path);
+    public static string PermissionsAddUnknown(int n) => Format(Get(nameof(PermissionsAddUnknown)), n);
+    public static string PermissionsAddFailed(string reason) => Format(Get(nameof(PermissionsAddFailed)), reason);
     public static string BackupNotSent(string name) =>
         Format(Get(nameof(BackupNotSent)), name);
     public static string ExcludedLeftOut(int count, string files) =>
