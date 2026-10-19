@@ -150,7 +150,7 @@ public sealed class ReasoningEffortSettingTests
         var root = Directory.CreateTempSubdirectory("inferpal-effort-check-").FullName;
         try
         {
-            // A repository without a check answers before the model: one check, so the review is asked.
+            // A review with a check, as most repositories that use /check have one.
             Directory.CreateDirectory(Path.Combine(root, ".inferpal", "checks"));
             File.WriteAllText(Path.Combine(root, ".inferpal", "checks", "secrets.md"),
                               "---\ndescription: secrets\n---\nNo secret may be committed.");

@@ -355,8 +355,9 @@ public class CheckReviewAnchorTests
                     git: (_, _) => Task.FromResult(("", 0)), onProgress: null, CancellationToken.None)).Message;
             }
 
+            // Without a readable check the review still runs (here: a clean tree), and the unreadable one is named.
             Assert.Equal(
-                Inferpal.Localization.Strings.ChecksNone + "\n\n"
+                Inferpal.Localization.Strings.CheckNoDiff + "\n\n"
                 + Inferpal.Localization.Strings.GovernanceFilesUnreadable(1, "secrets.md"),
                 message);
         }

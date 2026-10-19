@@ -46,9 +46,12 @@ internal static class ChecksService
     /// </summary>
     public static string BuildReviewPrompt(IEnumerable<ReviewCheck> checks, string diff)
     {
+        var all = checks.ToList();
         var sb = new StringBuilder();
-        foreach (var c in checks)
+        foreach (var c in all)
             sb.Append("### ").Append(c.Name).Append('\n').Append(c.Criteria).Append("\n\n");
+        // Without any check the section says so: left empty under its heading, "which checks pass" is the model's guess.
+        if (all.Count == 0) sb.Append(ModelPrompts.CheckReviewNoChecks).Append("\n\n");
         return $"## Checks\n\n{sb}## Diff\n\n```diff\n{diff}\n```";
     }
 }

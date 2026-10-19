@@ -1268,6 +1268,9 @@ internal static class Strings
     public static string CheckNoDiff             => Get(nameof(CheckNoDiff));
     public static string CheckReviewingLabel     => Get(nameof(CheckReviewingLabel));
     public static string CheckUnknownName(string name, string checks) => Format(Get(nameof(CheckUnknownName)), name, checks);
+    public static string CheckUnknownRevision(string name) => Format(Get(nameof(CheckUnknownRevision)), name);
+    /// <summary>Under a review made without any check: what was done, and the gesture that adds criteria.</summary>
+    public static string CheckWithoutChecks      => Get(nameof(CheckWithoutChecks));
     public static string CheckAmbiguousRef(string name, string refs) => Format(Get(nameof(CheckAmbiguousRef)), name, refs);
     public static string CheckAmbiguousHash(string prefix, int objects) => Format(Get(nameof(CheckAmbiguousHash)), prefix, objects);
     public static string CheckNoCommonBase(string range) => Format(Get(nameof(CheckNoCommonBase)), range);

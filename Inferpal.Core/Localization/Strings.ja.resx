@@ -1599,6 +1599,8 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="CheckNameAlsoRevision" xml:space="preserve"><value>`{0}` は git のリビジョンでもあります。このレビューでは同名のチェックを使いました。`/check {1}` でリビジョンをレビューします。</value></data>
   <data name="CheckShallowBoundary" xml:space="preserve"><value>`{0}` には、このシャロークローン内に親コミットがありません。親が取得されていないため、比較できません。`git fetch --deepen=1` で取得できます。</value></data>
   <data name="CheckCommitDiffTruncated" xml:space="preserve"><value>⚠ このコミットの差分 {1} 文字のうち、先頭 {0} 文字だけがレビューされました。以下はその部分についてであり、コミットの残りは読まれていません。</value></data>
+  <data name="CheckUnknownRevision" xml:space="preserve"><value>「{0}」という名前の git リビジョンもチェックもありません（`/checks` でチェックの一覧、`/checks init` で作成）。`/check &lt;base&gt;..HEAD` でブランチ、`/check &lt;commit&gt;` でコミットをレビューします。</value></data>
+  <data name="CheckWithoutChecks" xml:space="preserve"><value>適用されたチェックはありません。これは一般的なレビューです。`/checks init` でサンプルのチェックを作成し、独自の基準を追加できます。</value></data>
   <data name="CheckRangeDiffTruncated" xml:space="preserve"><value>⚠ 差分全体 {1} 文字のうち、先頭 {0} 文字だけがレビューされました。以下はその部分についてであり、変更全体についてではありません。コミットを 1 つずつ（`/check &lt;commit&gt;`）、または短い範囲でレビューしてください。</value></data>
   <data name="CheckSeveralBases" xml:space="preserve"><value>両側に共通の基点が {0} 個あります（クリスクロスマージ）。差分は `{1}` から始まり、もう一方にすでにある変更が含まれることがあります。</value></data>
   <data name="CheckNoCommonBase" xml:space="preserve"><value>`{0}`: 2 つの履歴に共通のコミットがないため、変更の起点がありません。`/check &lt;commit&gt;` で 1 つのコミットをレビューします。</value></data>

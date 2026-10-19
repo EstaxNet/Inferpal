@@ -180,6 +180,15 @@ internal static class ModelPrompts
         + "find no problem, say so clearly and report no finding.";
 
     /// <summary>
+    /// The checks section of a review that no check applies to (none written, none readable): the review is the general
+    /// one the system prompt asks for. ⚠ The system prompt stays the measured text, and it also asks which checks pass:
+    /// answered here, so the model never declares absent checks passed.
+    /// </summary>
+    public const string CheckReviewNoChecks =
+        "None: no review check applies to this review. Review the diff for any bug, regression or behaviour change, and "
+        + "where you would say which checks pass, say that no check applied.";
+
+    /// <summary>
     /// System prompt of <c>/check &lt;name&gt;</c>: the user narrowed the review to that one check, and it stays a
     /// review against it.
     /// </summary>

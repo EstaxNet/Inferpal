@@ -58,8 +58,8 @@ internal static class CheckCommandHandler
             return alsoRevision is null ? message : message + "\n\n" + alsoRevision;
         }
 
-        if (checks.Count == 0) return new(Named(Strings.ChecksNone));
-
+        // ⚠ No check is not a reason to refuse: the review is the general one the system prompt asks for, the checks
+        // being added criteria — and the answer says it was made without any.
         // ⚠ A check's name wins over a revision of the same name: /check <name> keeps its meaning, and the answer says how
         // to review the revision. Anything else is read as a revision; neither is refused naming both.
         var narrowed = false;
@@ -74,11 +74,19 @@ internal static class CheckCommandHandler
                 if (await CheckTarget.RevisionSpellingAsync(arg, git, ct) is { } spelling)
                     alsoRevision = Strings.CheckNameAlsoRevision(arg, spelling);
             }
+            else if (unreadable.Any(f => Path.GetFileNameWithoutExtension(f).Equals(arg, StringComparison.OrdinalIgnoreCase)))
+            {
+                // The check of that name exists and could not be read: the note says so, and no other remedy is true
+                // (`/checks` would not list it, `/checks init` would write another).
+                return new(Named(string.Empty).TrimStart());
+            }
             else
             {
                 var (resolved, nothing) = await CheckTarget.ResolveAsync(arg, git, ct);
                 if (nothing is not null) return new(Named(nothing));
-                if (resolved is null) return new(Named(Strings.CheckUnknownName(arg, CheckNames(checks))));
+                if (resolved is null)
+                    return new(Named(checks.Count == 0 ? Strings.CheckUnknownRevision(arg)
+                                                       : Strings.CheckUnknownName(arg, CheckNames(checks))));
                 target = resolved;
             }
         }
@@ -204,6 +212,8 @@ internal static class CheckCommandHandler
         if (excluded.Count > 0)
             rendered = excluded.ForPerson() + "\n\n" + rendered;
         // What was reviewed rides on top: a verdict on a commit read as one on the working tree is the wrong verdict.
+        // Above the findings too: a verdict read as one against the person's checks is the wrong verdict.
+        if (checks.Count == 0) rendered = Strings.CheckWithoutChecks + "\n\n" + rendered;
         if (target is not null) rendered = target.Label + "\n\n" + rendered;
         return new(Named(rendered));
     }

@@ -41,7 +41,7 @@ Commands: `/rules` lists them; `/rules init` scaffolds an example (never overwri
 Each markdown file describes review criteria. `/check` reviews your current **git diff** for
 any bug, regression or behaviour change it introduces, **and** against your checks, **100% locally**.
 With all your checks, they add to the review and never narrow it: a defect none of them names is still
-reported. With no check in the repository, `/check` asks you to create one (`/check init`).
+reported. With no check in the repository, `/check` makes the general review and says so.
 
 - The diff is gathered staged → unstaged (plus status), capped to keep the prompt bounded. With nothing staged,
   files git does not track yet are reviewed too, as the diffs they will be once added; a new file that is not
@@ -69,7 +69,10 @@ wins over a branch of the same name; the answer then gives the spelling that rev
 A name a branch and a tag share, or a hash prefix several objects share, is refused naming them rather than
 guessed; so is a commit at the edge of a shallow clone, whose parent was not fetched. In VS Code,
 **Inferpal: Review a Commit…** (Command Palette) picks a recent commit — searchable by its message — or takes a
-branch, a tag or a range typed in the box. Like `/check` itself, it needs at least one check (`/checks init`).
+branch, a tag or a range typed in the box.
+
+**Without any check**, `/check` makes the general review — any bug, regression or behaviour change — and the answer
+says it was made without checks; `/checks init` writes one when you want your own criteria on top.
 
 `/checks` lists the available checks; `/checks init` scaffolds one. Available in
 **both front-ends** (VS and VS Code).
