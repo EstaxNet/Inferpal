@@ -738,7 +738,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // Fallback: some models emit the tool call as plain-text JSON in the content (see OllamaClient).
         if (toolCalls is null && contentBuilder.Length > 0)
         {
-            var known = new HashSet<string>(tools.Definitions.Select(d => d.Function.Name), StringComparer.Ordinal);
+            var known = OfferedNames(tools);
             var (inlineCalls, cleaned) = InlineToolCallParser.FromContent(contentText, known, schemaOf);
             if (inlineCalls is { Count: > 0 })
                 return new ChatTurnResult(cleaned, inlineCalls, tokensUsed, promptTokens, cut, StoppedRepeating: looping);

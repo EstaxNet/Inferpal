@@ -880,6 +880,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="XrayLabelRules" xml:space="preserve"><value>규칙(적용 {0}개)</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>대화 기록: {0} 토큰(추정)</value></data>
   <data name="XrayTools" xml:space="preserve"><value>매 턴마다 전송되는 도구 정의: {0} 토큰(추정)</value></data>
+  <data name="XrayToolsOnDemand" xml:space="preserve"><value>요청 시 불러오는 MCP 도구 {0}개(tool_search가 불러올 때까지 전송되지 않음): {1}</value></data>
   <data name="XrayRag" xml:space="preserve"><value>RAG 자동 컨텍스트: {0}</value></data>
   <data name="XrayRagNoIndexing" xml:space="preserve"><value>RAG 자동 컨텍스트: 비활성 — 시맨틱 인덱싱이 꺼져 있습니다 (`ragEnabled`)</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>컨텍스트 창: {0} / {1} 토큰({2}%)</value></data>

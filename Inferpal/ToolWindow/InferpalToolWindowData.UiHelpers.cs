@@ -73,6 +73,8 @@ internal partial class InferpalToolWindowData
         _sessionTokens     = 0;
         _lastPromptTokens  = 0;
         TokenInfo          = string.Empty;
+        // The MCP tools tool_search loaded belong to the conversation that loaded them.
+        _tools.ForgetLoadedTools();
         UpdateContextBudget();   // → HasContextBudget = false until a prompt has been measured
     }
 

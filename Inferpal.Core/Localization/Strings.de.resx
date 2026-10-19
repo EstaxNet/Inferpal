@@ -880,6 +880,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="XrayLabelRules" xml:space="preserve"><value>Regeln ({0} angewendet)</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>Konversationsverlauf: {0} Token (Schätzung)</value></data>
   <data name="XrayTools" xml:space="preserve"><value>Mit jeder Runde gesendete Tool-Definitionen: {0} Token (Schätzung)</value></data>
+  <data name="XrayToolsOnDemand" xml:space="preserve"><value>{0} {0:MCP-Tool|MCP-Tools} auf Abruf – Versand erst nach dem Laden durch tool_search: {1}</value></data>
   <data name="XrayRag" xml:space="preserve"><value>RAG-Auto-Kontext: {0}</value></data>
   <data name="XrayRagNoIndexing" xml:space="preserve"><value>RAG-Auto-Kontext: inaktiv — die semantische Indizierung ist ausgeschaltet (`ragEnabled`)</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>Kontextfenster: {0} / {1} Token ({2} %)</value></data>

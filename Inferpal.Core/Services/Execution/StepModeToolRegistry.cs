@@ -26,6 +26,8 @@ internal sealed class StepModeToolRegistry(IToolRegistry inner, Func<Cancellatio
 
     public int? WritesInRun => inner.WritesInRun;
 
+    public IEnumerable<string> CallableNames => inner.CallableNames;
+
     public async Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct)
     {
         await _oneAtATime.WaitAsync(ct).ConfigureAwait(false);

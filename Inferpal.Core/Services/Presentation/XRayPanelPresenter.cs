@@ -28,6 +28,8 @@ internal sealed record XRaySectionModel(
 /// <param name="ToolTokens">Estimated tokens of the tool definitions the next turn carries (0 = none).</param>
 /// <param name="SystemTokens">Estimated tokens of the enabled layers in the SYSTEM message — what a header that says
 /// "system prompt" counts: the layers placed with the question are not in it.</param>
+/// <param name="ToolsOnDemand">The line that says which MCP tools the next turn leaves out until <c>tool_search</c> loads
+/// them (<see cref="XRayPanelPresenter.ToolsOnDemandLine"/>); <c>null</c> when every tool is declared.</param>
 internal sealed record XRayPanelModel(
     IReadOnlyList<XRaySectionModel> Sections,
     int    TotalTokens,
@@ -37,7 +39,8 @@ internal sealed record XRayPanelModel(
     bool   OverheadWarning,
     string RawPrompt,
     int    ToolTokens = 0,
-    int    SystemTokens = 0);
+    int    SystemTokens = 0,
+    string? ToolsOnDemand = null);
 
 /// <summary>
 /// Builds the interactive Context X-Ray panel model from the same
@@ -106,13 +109,16 @@ internal static class XRayPanelPresenter
     /// <c>/xray</c> markdown (<see cref="XRayCommandHandler.Handle"/>).</param>
     /// <param name="questionLayersInHistory">The active-file block the next question would carry is already in the history
     /// (<see cref="ActiveFileContext.ToSend"/> returns nothing): its layers are counted there, not again.</param>
+    /// <param name="toolsOnDemand">The MCP servers whose tools wait on demand, with how many are not loaded
+    /// (<see cref="Agent.ContextManager.NextTurnToolsOnDemand"/>).</param>
     public static XRayPanelModel Build(
         IReadOnlyList<PromptSection> sections,
         IReadOnlySet<string>?        disabledIds,
         int                          historyTokens,
         int                          contextWindow,
         int                          toolTokens = 0,
-        bool                         questionLayersInHistory = false)
+        bool                         questionLayersInHistory = false,
+        IReadOnlyList<(string Server, int Tools)>? toolsOnDemand = null)
     {
         var sized = sections
             .Select(s => (Section: s, Id: SectionId(s), Tokens: XRayCommandHandler.EstimateTokens(s.Content)))
@@ -159,6 +165,15 @@ internal static class XRayPanelPresenter
             : 0;
 
         return new XRayPanelModel(rows, enabledTokens, historyTokens, contextWindow, fill, warning, rawPrompt, toolTokens,
-                                  inSystem.Sum(x => x.Tokens));
+                                  inSystem.Sum(x => x.Tokens), ToolsOnDemandLine(toolsOnDemand));
     }
+
+    /// <summary>
+    /// What the next turn leaves out until <c>tool_search</c> loads it: "N MCP tools on demand… rider (93)", or <c>null</c>
+    /// when nothing waits.
+    /// </summary>
+    /// <remarks>⚠ The tool line counts what is SENT: without this one, a server whose tools went on demand looks gone.</remarks>
+    public static string? ToolsOnDemandLine(IReadOnlyList<(string Server, int Tools)>? waiting) =>
+        waiting is not { Count: > 0 } ? null
+        : Strings.XrayToolsOnDemand(waiting.Sum(w => w.Tools), string.Join(", ", waiting.Select(w => $"{w.Server} ({w.Tools})")));
 }

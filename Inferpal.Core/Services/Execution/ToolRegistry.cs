@@ -27,6 +27,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     private readonly IApprovalService          _approval;
     private readonly McpToolService            _mcp;
     private readonly FileHistoryService        _fileHistory;
+    private readonly OnDemandTools             _onDemand;
     private DiffInfo? _pendingDiff;
 
     // Kept so a sibling registry can be built with a different approval service — see
@@ -68,11 +69,14 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// <param name="debug">Debugger surface of the host editor; null when this front-end has none,
     /// in which case the two debug tools are not registered at all — the model is never shown a
     /// tool that can only answer that it is unavailable.</param>
-    public ToolRegistry(IEditorSurface editor, IApprovalService approval, InferpalConfig config, ProjectIndexService indexService, IInferenceProvider client, ProjectMapService mapService, McpToolService mcp, DocsIndexService docsIndex, OpenDocumentOverlay? overlay = null, IDebugSession? debug = null, FileHistoryService? fileHistory = null)
+    /// <param name="onDemand">The MCP tools loaded on demand, shared with the registry this one is a sibling of: the
+    /// conversation's loaded tools stay loaded in <c>/tdd</c>, and what it loads stays for the conversation.</param>
+    public ToolRegistry(IEditorSurface editor, IApprovalService approval, InferpalConfig config, ProjectIndexService indexService, IInferenceProvider client, ProjectMapService mapService, McpToolService mcp, DocsIndexService docsIndex, OpenDocumentOverlay? overlay = null, IDebugSession? debug = null, FileHistoryService? fileHistory = null, OnDemandTools? onDemand = null)
     {
         _config      = config;
         _approval    = approval;
         _mcp         = mcp;
+        _onDemand    = onDemand ?? new OnDemandTools(() => mcp.Tools, () => WindowInUse?.Invoke() ?? 0);
         _fileHistory = fileHistory ?? new();
         // Outside a git repository the history lives at the workspace root — one folder, the one restore_file names.
         _fileHistory.WorkspaceRoot ??= () => indexService.RootDir;
@@ -138,6 +142,9 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             Register(new GetDebuggerStateTool(_debug, () => indexService.RootDir));
         }
 
+        // Last of the built-ins: offered or not, it never moves the definitions sent before it.
+        Register(new ToolSearchTool(_onDemand));
+
         // ⚠ There is deliberately no sub-agent `delegate` tool, and its absence is a decision, not
         // an omission: built and measured twice, it saved prompt tokens on the main thread and
         // roughly halved the accuracy, because the parent re-explores whatever the sub-agents fail
@@ -169,10 +176,24 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// rather than tools whose approval would be recorded as a proposal.
     /// </remarks>
     public ToolRegistry WithApprovalService(IApprovalService approval) =>
-        new(_editor, approval, _config, _indexService, _client, _mapService, _mcp, _docsIndex, _overlay, debug: null, fileHistory: _fileHistory)
+        new(_editor, approval, _config, _indexService, _client, _mapService, _mcp, _docsIndex, _overlay, debug: null,
+            fileHistory: _fileHistory, onDemand: _onDemand)
         {
             ProjectRootFallback = ProjectRootFallback,
+            WindowInUse         = WindowInUse,
         };
+
+    /// <summary>
+    /// The context window the next request is sized for (<c>ContextWindowInUse</c> of the front-end), read when the MCP
+    /// tools are split between declared and on demand (<see cref="OnDemandTools"/>); unset or 0: the window is unknown.
+    /// </summary>
+    public Func<int>? WindowInUse { get; set; }
+
+    /// <summary>Forgets the MCP tools loaded by <c>tool_search</c>: the conversation they were loaded for is gone.</summary>
+    public void ForgetLoadedTools() => _onDemand.Forget();
+
+    /// <summary>The MCP servers whose tools wait on demand, and how many are not loaded yet (X-Ray says so).</summary>
+    public IReadOnlyList<(string Server, int Tools)> ToolsOnDemand => _onDemand.Waiting();
 
     /// <summary>
     /// The root the skills are read from while nothing is pinned: the editor's project root (Visual Studio: the open
@@ -277,6 +298,17 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     private IEnumerable<ITool> McpTools =>
         _mcp.Tools.Select(t => t is Mcp.McpTool m ? m.WithApproval(_approval) : t);
 
+    /// <summary>The MCP tools a request declares (<see cref="OnDemandTools.Declared"/>).</summary>
+    /// <remarks>Not rebound to this registry's approval: a definition is a name, a description and a schema, which
+    /// rebinding copies unchanged; a call goes through <see cref="McpTools"/>, rebound.</remarks>
+    private IEnumerable<ITool> DeclaredMcpTools => _onDemand.Declared();
+
+    /// <inheritdoc/>
+    /// <remarks>The tools on demand included: a call written as text names one the model read in <c>tool_search</c>'s
+    /// description, and it runs — and loads — like a structured one.</remarks>
+    public IEnumerable<string> CallableNames =>
+        Definitions.Select(d => d.Function.Name).Concat(_onDemand.WaitingNames).Distinct(StringComparer.Ordinal);
+
     /// <summary>MCP server lines for the support bundle. The chat view-model holds this registry,
     /// not the MCP service (only the settings window does), and the bundle must say the same
     /// thing in both front-ends — so the single reader is delegated from here.</summary>
@@ -293,7 +325,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         _registered
             .Where(t => t.IsOffered)
             .Concat(UserTools)
-            .Concat(McpTools)
+            .Concat(DeclaredMcpTools)
             .Select(t => new ToolDefinition("function", new ToolFunction(t.Name, t.Description, t.Parameters)))
             .ToList();
 
@@ -353,6 +385,9 @@ internal class ToolRegistry : IToolRegistry, IDisposable
                 WorkTreeBracket.Enter(watch = await WorkTreeBracket.OpenAsync(_indexService.RootDir, UnsavedNow(), ct));
             var result = await tool.ExecuteAsync(args, ct);
             _fileHistory.RecordToolCall(name, ExtractSubject(args), sw.ElapsedMilliseconds, error: false);
+            // Called by its exact name — read in tool_search's description — a tool on demand that ran is loaded. A call
+            // refused before it ran (an excluded file) or that failed loads nothing.
+            _onDemand.LoadIfDeferred(name);
             // Above the result: the note qualifies it ("3 files were skipped") before the model reads "no match".
             return skipped.Note() is { Length: > 0 } note ? note + "\n\n" + result : result;
         }
@@ -400,7 +435,8 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             // the project. Any call that may have changed the workspace drops it; the set that may NOT
             // is plan mode's, so a tool it does not know (a new one, a user shell tool, an MCP tool)
             // costs a rescan, never a stale map. In `finally`: a write that failed halfway wrote halfway.
-            if (!PlanModeToolRegistry.IsAllowed(name)) _mapService.Invalidate();
+            // tool_search changes definitions, never the workspace.
+            if (!PlanModeToolRegistry.IsAllowed(name) && tool is not ToolSearchTool) _mapService.Invalidate();
         }
     }
 

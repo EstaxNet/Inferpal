@@ -367,6 +367,9 @@ export interface XRayPanel {
   rawPrompt: string;
   /** Tool definitions the next turn carries — counted in fillPercent. */
   toolTokens: number;
+  /** The MCP tools the next turn leaves out until tool_search loads them, said in the user's language; absent when
+   *  every tool is declared, and from an older host. */
+  toolsOnDemand?: string | null;
 }
 
 export interface ApprovalNote {

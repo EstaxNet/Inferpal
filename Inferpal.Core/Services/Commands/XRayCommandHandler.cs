@@ -24,13 +24,17 @@ internal static class XRayCommandHandler
     /// <param name="toolTokens">The tool definitions the next turn carries (<see cref="Agent.ContextManager.NextTurnToolTokens"/>).
     /// ⚠ Counted in the fill: with tools on they are the largest part of a small window, and an X-Ray without them
     /// read "2 %" of a window the next request filled at 55 %.</param>
+    /// <param name="questionLayersInHistory">The active-file block is already in the history: its layers are counted once.</param>
+    /// <param name="toolsOnDemand">The MCP tools the next turn leaves out until <c>tool_search</c> loads them, by server
+    /// (<see cref="Agent.ContextManager.NextTurnToolsOnDemand"/>).</param>
     public static string Handle(
         IReadOnlyList<PromptSection> sections,
         int  historyTokens,
         int  contextWindow,
         Config.InferpalConfig config,
         int  toolTokens = 0,
-        bool questionLayersInHistory = false)
+        bool questionLayersInHistory = false,
+        IReadOnlyList<(string Server, int Tools)>? toolsOnDemand = null)
     {
         var sized = sections
             .Select(s => (Section: s, Tokens: EstimateTokens(s.Content)))
@@ -62,6 +66,8 @@ internal static class XRayCommandHandler
         sb.AppendLine("- " + Strings.XrayHistory($"~{historyTokens:N0}"));
         if (toolTokens > 0)
             sb.AppendLine("- " + Strings.XrayTools($"~{toolTokens:N0}"));
+        if (Presentation.XRayPanelPresenter.ToolsOnDemandLine(toolsOnDemand) is { } onDemand)
+            sb.AppendLine("- " + onDemand);
         sb.AppendLine("- " + (Rag.RagAutoContext.IsEnabled(config) ? Strings.XrayRag("on")
                               : config.RagAutoContextEnabled ? Strings.XrayRagNoIndexing
                               : Strings.XrayRag("off")));

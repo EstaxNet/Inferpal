@@ -880,6 +880,7 @@
   <data name="XrayLabelRules" xml:space="preserve"><value>规则（应用 {0} 条）</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>会话历史：{0} 个 token（估算）</value></data>
   <data name="XrayTools" xml:space="preserve"><value>每轮发送的工具定义：{0} 个 token（估算）</value></data>
+  <data name="XrayToolsOnDemand" xml:space="preserve"><value>按需提供的 MCP 工具 {0} 个（tool_search 加载后才发送）：{1}</value></data>
   <data name="XrayRag" xml:space="preserve"><value>RAG 自动上下文：{0}</value></data>
   <data name="XrayRagNoIndexing" xml:space="preserve"><value>RAG 自动上下文：未生效 — 语义索引已关闭（`ragEnabled`）</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>上下文窗口：{0} / {1} 个 token（{2}%）</value></data>

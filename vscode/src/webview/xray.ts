@@ -105,6 +105,12 @@ export function renderXray(panel: XRayPanel): void {
     + (panel.toolTokens > 0 ? ' · ' + t('xrayTools', panel.toolTokens.toLocaleString()) : '')
     + (panel.contextWindow > 0 ? ' · ' + t('xrayWindow', panel.fillPercent.toFixed(0)) : '');
   footer.appendChild(info);
+  if (panel.toolsOnDemand) {
+    // What the next turn leaves out: without it, a server whose tools went on demand looks gone.
+    const onDemand = document.createElement('div');
+    onDemand.textContent = panel.toolsOnDemand;
+    footer.appendChild(onDemand);
+  }
   const hint = document.createElement('div');
   hint.textContent = t('xrayHint');
   footer.appendChild(hint);

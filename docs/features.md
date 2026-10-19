@@ -31,7 +31,7 @@ exists.
   commands, search the web, diagnose builds, run tests, search the codebase) for up to
   **20 turns**, showing each step as a collapsible bubble. Independent read-only tools
   (`read_file`, `list_files`, `search_in_files`) in a single turn run **in parallel**.
-- **29 built-in tools** plus user-defined shell tools and [MCP](mcp.md) server tools — see
+- **30 built-in tools** plus user-defined shell tools and [MCP](mcp.md) server tools — see
   **[Tools](tools.md)**.
 - **Steer a running turn** — while the agent works, type a correction and press **Enter**: it is
   a note the run reads before its next step ("use `ILogger`, not `Console`", "that is the wrong

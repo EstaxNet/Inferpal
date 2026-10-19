@@ -62,6 +62,12 @@ internal sealed class McpTool : ITool
     public string Description { get; }
     public object Parameters { get; }
 
+    /// <summary>The configured name of the server this tool is called on — what the user calls it.</summary>
+    internal string ServerName => _client.ServerName;
+
+    /// <summary>The tool's name on its server, before the <c>mcp__&lt;server&gt;__</c> prefix.</summary>
+    internal string LocalName => _serverLocalName;
+
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
         var details = args.ValueKind == JsonValueKind.Undefined ? string.Empty : args.GetRawText();

@@ -880,6 +880,7 @@
   <data name="XrayLabelRules" xml:space="preserve"><value>Правила (применено: {0})</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>История разговора: {0} токенов (оценка)</value></data>
   <data name="XrayTools" xml:space="preserve"><value>Определения инструментов, отправляемые с каждым ходом: {0} токенов (оценка)</value></data>
+  <data name="XrayToolsOnDemand" xml:space="preserve"><value>{0} {0:инструмент|инструмента|инструментов} MCP по запросу — отправка только после загрузки через tool_search: {1}</value></data>
   <data name="XrayRag" xml:space="preserve"><value>Автоконтекст RAG: {0}</value></data>
   <data name="XrayRagNoIndexing" xml:space="preserve"><value>Автоконтекст RAG: неактивен — семантическая индексация отключена (`ragEnabled`)</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>Контекстное окно: {0} / {1} токенов ({2} %)</value></data>

@@ -34,4 +34,12 @@ internal interface IToolRegistry
     /// <c>null</c> when this registry does not write files or no run is active, and nothing is to be read from it.
     /// </summary>
     int? WritesInRun => null;
+
+    /// <summary>
+    /// The names a call may carry: the declared ones, and the ones a request does not declare but the model can read and
+    /// call (MCP tools waiting on demand). The only names a call written as text is recognized by.
+    /// </summary>
+    /// <remarks>⚠ A decorator that only passes calls through forwards it: answered from its own <see cref="Definitions"/>,
+    /// a text call to a tool on demand would be shown as the answer instead of running.</remarks>
+    IEnumerable<string> CallableNames => Definitions.Select(d => d.Function.Name);
 }

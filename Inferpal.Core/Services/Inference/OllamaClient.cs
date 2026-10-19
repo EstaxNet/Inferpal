@@ -392,7 +392,7 @@ internal class OllamaClient : InferenceProviderBase
         // than printing the raw JSON as the final answer (and stopping).
         if ((toolCalls is null || toolCalls.Count == 0) && contentBuilder.Length > 0)
         {
-            var known = new HashSet<string>(tools.Definitions.Select(d => d.Function.Name), StringComparer.Ordinal);
+            var known = OfferedNames(tools);
             var (inlineCalls, cleaned) = InlineToolCallParser.FromContent(contentBuilder.ToString(), known, ToolSchemas.Of(defs));
             if (inlineCalls is { Count: > 0 })
                 return new ChatTurnResult(cleaned, inlineCalls, tokensUsed, promptTokens, cut, StoppedRepeating: looping);

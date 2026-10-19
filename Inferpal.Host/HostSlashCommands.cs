@@ -340,7 +340,8 @@ internal sealed partial class HostServer
                         s.ContextWindowInUse,
                         s.Config,
                         toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode),
-                        questionLayersInHistory: QuestionLayersInHistory(s)));
+                        questionLayersInHistory: QuestionLayersInHistory(s),
+                        toolsOnDemand: ContextManager.NextTurnToolsOnDemand(s.Tools, s.ToolsEnabled, s.PlanMode)));
                 }
 
                 case SlashCommandId.Bench:

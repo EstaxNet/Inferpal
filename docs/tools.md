@@ -1,6 +1,6 @@
 # Tools
 
-The agent completes tasks by calling tools. There are **29 built-in tools**, plus any
+The agent completes tasks by calling tools. There are **30 built-in tools**, plus any
 **user-defined shell tools** and any tools exposed by connected **[MCP](mcp.md) servers**.
 
 ## Built-in tools
@@ -34,6 +34,7 @@ The agent completes tasks by calling tools. There are **29 built-in tools**, plu
 | `search_codebase` | `query`, `top_k?` | Semantic search over the indexed project. Offered to the model only while there is an index, or one being built: with semantic search off and no index, the model uses `search_in_files` instead. While the first indexing pass runs, results say how many files it has read so far |
 | `search_docs` | `query`, `top_k?` | Semantic search over `@Docs` external documentation. Offered once some documentation is indexed (`/docs add`) |
 | `generate_project_map` | `refresh?` | Namespace tree, types, dependencies, hotspots — on a large solution the largest namespaces, the rest counted (cached for two minutes; `refresh=true` rescans) |
+| `tool_search` | `query` | Load MCP tools that wait on demand: keywords (matched against tool names and descriptions) or `select:name1,name2`; at most 5 per call, each returned with its schema and declared from the next request on, for the rest of the conversation. Offered only while an MCP server's tools are on demand — see **[MCP → Large tool sets](mcp.md#large-tool-sets-on-demand)** |
 | `read_skill_file` | `skill`, `path`, `start_line?`, `end_line?` | Read a file of a skill invoked with `/skill` — confined to that skill's folder (a `..` path or a link that leaves it is refused), which may lie outside the workspace (`~/.claude/skills`). Paged like `read_file`. Offered only while the repository or the user has a skill |
 | `rename_symbol` | `old_name`, `new_name`, `root?`, `file_pattern?`, `dry_run?`, `declaring_file?`, `declaring_line?` | Project-wide rename. On C# it renames the **symbol**, not the spelling: a method called `Handle` is renamed without touching the dozen unrelated `Handle` methods that share the name (compiler-resolved; falls back to syntax when no workspace is known). When the name designates several symbols, it lists them and renames nothing until `declaring_file` (and `declaring_line`) says which one. Other languages use a word-boundary regex. **Markup** (`.razor`, `.cshtml`, `.xaml`, `.axaml`) is matched by name, never compiled, and rewritten only where it binds the symbol: a `{Binding}` or `x:Bind` under an `x:DataType` that has the member (derived view models included), a type through the `clr-namespace` its prefix maps to, `Model.X` and `asp-for` under an `@model T` whose type has it, `@inject T Name` names, a component's own code, expressions and route parameter (`{itemId:int}`, in its case) and its attributes on `<X …>` elsewhere. A type or component written without its namespace is looked up as the compiler does, through the namespaces the file sees (`@using X`, `_Imports.razor`, `_ViewImports.cshtml`, `@namespace X`, the project's root namespace and folders): two `IndexModel`s or two `CatalogSearch` components in one workspace are told apart, and a name the file's usings do not tell apart is listed. Every other occurrence of the name — text, a comment, another component's member of the same name, a binding whose source is not declared — is left and **listed** with why, in the report and on the card. A member declared in a component's `@code` is found by its declaration (two components declaring the name are listed, like two C# symbols, and `declaring_file` can name the `.razor`); the name of a component is its file's, so renaming it is refused. A generated file the rename touches (`Resources.Designer.cs`, gRPC code) is renamed and named with its source, which keeps the old name. All-or-nothing: a file that cannot be written puts every other one back unchanged. **Approval** + snapshot — the approval shows every changed line, so it applies in one call; `dry_run=true` only previews. When `apply_edits` or `apply_diff` is used to rename by hand, a refusal names `rename_symbol` with its arguments, and a write that leaves the old name in other files says which |
 
@@ -187,7 +188,8 @@ to disable it.
 ## MCP tools
 
 When MCP is enabled, every connected server's tools appear as `mcp__<server>__<tool>` and go
-through the same approval prompt. See **[MCP](mcp.md)**.
+through the same approval prompt. When they would take more than a tenth of the context window, the heaviest
+servers' tools wait on demand and `tool_search` loads them. See **[MCP](mcp.md)**.
 
 ## Adding a built-in tool
 

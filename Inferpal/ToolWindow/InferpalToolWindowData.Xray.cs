@@ -51,7 +51,8 @@ internal partial class InferpalToolWindowData
             sections, _xrayDisabledSections,
             AgentOrchestrator.EstimateConversationTokens(_history), ContextWindowInUse,
             toolTokens: NextTurnToolTokens(),
-            questionLayersInHistory: ActiveFileContext.ToSend(BuildActiveFileBlock(), _history) is null);
+            questionLayersInHistory: ActiveFileContext.ToSend(BuildActiveFileBlock(), _history) is null,
+            toolsOnDemand: Services.Agent.ContextManager.NextTurnToolsOnDemand(_tools, _toolsEnabled, _planMode));
     }
 
     /// <summary>The counts the settings' Context page shows, read on the VM context.</summary>
@@ -95,7 +96,8 @@ internal partial class InferpalToolWindowData
         _xrayRawPrompt  = model.RawPrompt;
         XrayTotalText   = Strings.XrayHeader($"~{model.SystemTokens:N0}");   // the system message: not the question's layers
         XrayHistoryText = Strings.XrayHistory($"~{model.HistoryTokens:N0}")
-                        + (model.ToolTokens > 0 ? "\n" + Strings.XrayTools($"~{model.ToolTokens:N0}") : "");
+                        + (model.ToolTokens > 0 ? "\n" + Strings.XrayTools($"~{model.ToolTokens:N0}") : "")
+                        + (model.ToolsOnDemand is { } onDemand ? "\n" + onDemand : "");
         HasXrayWarning  = model.OverheadWarning;
 
         var palette = ThemePalette.For(_isDark, _isHighContrast);

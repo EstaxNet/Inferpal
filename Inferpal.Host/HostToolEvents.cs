@@ -34,6 +34,7 @@ internal sealed class ToolEventRegistry(
     public IReadOnlyList<ToolDefinition> Definitions => inner.Definitions;
     public DiffInfo? ConsumeDiff() => inner.ConsumeDiff();
     public int? WritesInRun => inner.WritesInRun;
+    public IEnumerable<string> CallableNames => inner.CallableNames;
 
     public async Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct)
     {

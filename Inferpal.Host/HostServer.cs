@@ -187,6 +187,7 @@ internal sealed partial class HostServer : IDisposable
         // followed — the file's value equalled the old one, and the thread kept its own for the rest of its life.
         // The keys it did not write keep their old value, so a change the window made meanwhile is still followed.
         var followed = _session;
+        tools.WindowInUse = () => followed.ContextWindowInUse;
         config.Saved += () =>
         {
             foreach (var (key, value) in config.LastSaved) followed.FileSettings[key] = value?.DeepClone();
@@ -1833,7 +1834,8 @@ internal sealed partial class HostServer : IDisposable
             BuildPromptSections(s), s.XrayDisabledSections,
             AgentOrchestrator.EstimateConversationTokens(SnapshotHistory(s)), s.ContextWindowInUse,
             toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode),
-            questionLayersInHistory: QuestionLayersInHistory(s));
+            questionLayersInHistory: QuestionLayersInHistory(s),
+            toolsOnDemand: ContextManager.NextTurnToolsOnDemand(s.Tools, s.ToolsEnabled, s.PlanMode));
 
     /// <summary>Whether the history already carries the active-file block the next question would send — its layers
     /// are then counted in the history, not again (<see cref="XRayPanelPresenter.Build"/>).</summary>
@@ -1859,7 +1861,7 @@ internal sealed partial class HostServer : IDisposable
             model.Sections.Select(x => new XRaySectionDto(
                 x.Id, x.Label, x.Tokens, x.Percent, x.Content, x.Enabled, x.CanToggle)).ToList(),
             model.TotalTokens, model.HistoryTokens, model.ContextWindow,
-            model.FillPercent, model.OverheadWarning, model.RawPrompt, model.ToolTokens);
+            model.FillPercent, model.OverheadWarning, model.RawPrompt, model.ToolTokens, model.ToolsOnDemand);
     }
 
     /// <summary>Bounded defensive copy of the history: `xray/panel` is a read the webview can ask
@@ -1884,6 +1886,7 @@ internal sealed partial class HostServer : IDisposable
         s.RecapInSystem         = null;
         s.ConversationTurnCount = 0;
         s.WorkspaceContextSent  = false;
+        s.Tools.ForgetLoadedTools();
     }
 
     /// <summary>Reseeds the history with the layered system prompt.</summary>

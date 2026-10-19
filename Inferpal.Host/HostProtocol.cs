@@ -492,7 +492,8 @@ internal sealed record XRayPanelDto(
     double FillPercent,
     bool   OverheadWarning,
     string RawPrompt,
-    int    ToolTokens);
+    int    ToolTokens,
+    string? ToolsOnDemand = null);
 
 /// <summary>`xray/toggle` — switches one section on/off for the next turns of this session.</summary>
 internal sealed record XRayToggleParams(string Id, bool Enabled);

@@ -880,6 +880,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="XrayLabelRules" xml:space="preserve"><value>Reglas ({0} aplicadas)</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>Historial de conversación: {0} tokens (estimación)</value></data>
   <data name="XrayTools" xml:space="preserve"><value>Definiciones de herramientas enviadas en cada turno: {0} tokens (estimación)</value></data>
+  <data name="XrayToolsOnDemand" xml:space="preserve"><value>{0} {0:herramienta|herramientas} MCP bajo demanda — envío solo tras la carga con tool_search: {1}</value></data>
   <data name="XrayRag" xml:space="preserve"><value>Autocontexto RAG: {0}</value></data>
   <data name="XrayRagNoIndexing" xml:space="preserve"><value>Autocontexto RAG: inactivo — la indexación semántica está desactivada (`ragEnabled`)</value></data>
   <data name="XrayBudget" xml:space="preserve"><value>Ventana de contexto: {0} / {1} tokens ({2} %)</value></data>

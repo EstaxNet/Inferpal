@@ -75,6 +75,26 @@ sequenceDiagram
     S-->>I: result
 ```
 
+## Large tool sets: on demand
+
+Every tool's definition is sent with every request, before the first word of the answer. An editor's own server can
+weigh more than the whole window: Rider's has 93 tools, about 49,000 tokens as Inferpal counts them, more than a 32K
+window. So the MCP tools are declared while they take at most **a tenth of the context window in use** (32,768 tokens
+are assumed while the window is not known yet); beyond that, servers go **on demand** one at a time, the heaviest
+first, until the rest fits — a small server stays declared beside a large one.
+
+- Their tools are not sent. The model gets one more tool, `tool_search`, whose description names the servers on demand
+  and their tools (within the same tenth of the window; a server whose names do not fit is named with its count). It
+  loads tools by name (`select:mcp__rider__get_run_configurations`, or the name without its prefix when only one server
+  has it) or by keywords — the closest matches, the others named so they can be selected — at most five per call, each
+  returned with its schema. A tool called directly by its name, as a structured call or written as text, is loaded once
+  it has run.
+- A loaded tool is declared from the next request on, **after every other tool, in the order it was loaded**, and never
+  moves: a server that reuses its cache reads the request again only from the first change — once per load, never once
+  per question. It stays loaded for the rest of the conversation; a new conversation starts without it.
+- **X-Ray** says which tools wait: "93 MCP tools on demand — not sent until loaded by tool_search: rider (93)".
+- Plan mode and background tasks send no MCP tool at all, so `tool_search` is not offered there.
+
 ## Approval
 
 Every MCP tool call is gated by the same 3-way prompt as the built-in tools:

@@ -38,6 +38,8 @@ internal partial class InferpalToolWindowData
         // While nothing is pinned, the skills are read where the system prompt's catalog reads them: the project root.
         _tools.ProjectRootFallback = () => FindProjectRoot();
         _config          = config;
+        // The MCP tools are split between declared and on demand against the window the next request is sized for.
+        _tools.WindowInUse = () => ContextWindowInUse;
         _agentMode       = config.AgentModeEnabled;   // main-window switch mirrors the persisted setting
         _vs              = extensibility;
         _contextHolder   = contextHolder;

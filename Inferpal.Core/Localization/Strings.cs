@@ -1573,6 +1573,7 @@ internal static class Strings
     public static string XrayLabelRules(string count)        => Format(Get(nameof(XrayLabelRules)), count);
     public static string XrayHistory(string tokens)          => Format(Get(nameof(XrayHistory)), tokens);
     public static string XrayTools(string tokens)            => Format(Get(nameof(XrayTools)), tokens);
+    public static string XrayToolsOnDemand(int tools, string servers) => Format(Get(nameof(XrayToolsOnDemand)), tools, servers);
     public static string XrayRag(string state)               => Format(Get(nameof(XrayRag)), state);
     public static string XrayRagNoIndexing                   => Get(nameof(XrayRagNoIndexing));
     public static string XrayBudget(string used, string limit, string pct) => Format(Get(nameof(XrayBudget)), used, limit, pct);

@@ -185,6 +185,13 @@ internal static class ContextManager
         : RequestSize.ToolTokens((planMode ? new PlanModeToolRegistry(tools) : tools).Definitions);
 
     /// <summary>
+    /// The MCP tools the next chat turn leaves out until <c>tool_search</c> loads them, by server: none with tools off
+    /// or in plan mode (which sends no MCP tool at all), the registry's waiting ones otherwise.
+    /// </summary>
+    internal static IReadOnlyList<(string Server, int Tools)> NextTurnToolsOnDemand(ToolRegistry tools, bool toolsEnabled, bool planMode) =>
+        !toolsEnabled || planMode ? [] : tools.ToolsOnDemand;
+
+    /// <summary>
     /// The window the conversation is measured against: the configured one, or the one the server
     /// really loaded <paramref name="model"/> with when that is SMALLER — or when none is configured.
     /// </summary>
