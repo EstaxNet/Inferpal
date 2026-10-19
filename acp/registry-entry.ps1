@@ -5,6 +5,8 @@
 #
 # The entry goes to agentclientprotocol/registry as <id>/agent.json beside acp/icon.svg — by a pull request someone
 # opens deliberately: this script writes the file, it publishes nothing.
+# acp/icon.svg is the chat bubble with a spark, 16 x 16, drawn in currentColor only, and it carries no comment: the
+# registry's build refuses an icon with a hardcoded colour or an HTML comment (a comment breaks its MDX embedding).
 param(
     [Parameter(Mandatory)][string]$Version,
     [string]$Sums,
