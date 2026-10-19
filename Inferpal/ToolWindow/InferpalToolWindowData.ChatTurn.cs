@@ -56,7 +56,7 @@ internal partial class InferpalToolWindowData
                 if (!Steer(text)) return;
                 // Read by the run: a card waiting is refused — a text never approves — and the note says why; a paused run
                 // resumes, to read it at the step it resumes to. Queued instead, neither is touched.
-                if (_pendingApproval is { IsAnswered: false } waiting) waiting.Answer(ApprovalDecision.Deny);
+                if (_pendingApproval is { IsAnswered: false } waiting) waiting.Answer(ApprovalDecision.Withdrawn);
                 if (_stepResume is not null) ResumeStep();
             });
             return;

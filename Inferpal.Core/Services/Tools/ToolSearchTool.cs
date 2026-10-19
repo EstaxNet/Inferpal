@@ -25,6 +25,10 @@ internal sealed class ToolSearchTool(OnDemandTools onDemand) : ITool
 
     public bool IsOffered => onDemand.HasDeferred;
 
+    // It changes which definitions a request carries, never a file: watched, each search would cost two readings of the
+    // work tree and could count, on a large repository, toward turning the watch off for the commands that need it.
+    public bool NeedsWorkTreeWatch => false;
+
     public Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
         var query = args.Str("query") ?? throw new ArgumentException("query is required.");

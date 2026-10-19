@@ -43,7 +43,8 @@ public class SteeringFrontEndTests
         Assert.Single(Regex.Matches(busy, @"ApprovalDecision\.Once"));
         // Refused only after the text became a note the run will read — queued, it leaves the card waiting.
         var steered = busy.IndexOf("if (!Steer(text)) return;", StringComparison.Ordinal);
-        var deny = busy.IndexOf("waiting.Answer(ApprovalDecision.Deny);", StringComparison.Ordinal);
+        // Withdrawn, not denied: a refusal for the call, never counted as the person's answer.
+        var deny = busy.IndexOf("waiting.Answer(ApprovalDecision.Withdrawn);", StringComparison.Ordinal);
         Assert.True(steered > 0 && deny > steered, "a card is refused before the text is known to be read by the run");
     }
 
@@ -170,6 +171,10 @@ public class SteeringFrontEndTests
         Assert.True(slash > 0 && slash < asked, "a slash command typed during a turn is sent to the run as a note");
         var accepted = WebviewRebuildTests.Body(steer, "if (accepted)");
         Assert.Contains("this.dismissApproval(", accepted, StringComparison.Ordinal);
+        // Withdrawn (4), not denied (0): never counted as the person's answer (RpcApprovalService reads 4 as Withdrawn).
+        Assert.Contains("this.dismissApproval([...this.pendingApprovals.keys()][0], 4);", accepted, StringComparison.Ordinal);
+        Assert.Contains("4 => ApprovalDecision.Withdrawn", File.ReadAllText(Path.Combine(
+            ConventionCoverageTests.RepoRoot(), "Inferpal.Host", "RpcApprovalService.cs")), StringComparison.Ordinal);
         Assert.Contains("chatResumeStep()", accepted, StringComparison.Ordinal);
         Assert.Single(Regex.Matches(steer, @"dismissApproval\("));
     }

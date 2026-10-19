@@ -146,7 +146,7 @@ internal static class ApprovalRuleProposal
     public static Proposal? For(string toolName, string? subject, string? root)
     {
         if (string.IsNullOrWhiteSpace(subject)) return null;
-        if (toolName == "run_command") return ForCommand(subject);
+        if (toolName == "run_command") return ForCommand(subject, root);
         if (WriteTools.Contains(toolName)) return ForWrites(toolName, subject, root);
         return null;
     }
@@ -162,7 +162,18 @@ internal static class ApprovalRuleProposal
     /// <summary>Whether <paramref name="program"/> runs what it is given — as named, or without its version.</summary>
     private static bool IsLauncher(string program) => Launchers.Contains(program) || Launchers.Contains(BaseName(program));
 
-    private static Proposal? ForCommand(string command)
+    /// <summary>Whether the first word names a file the agent can rewrite: a relative path (resolved in the working
+    /// directory, the workspace's), or an absolute one under the workspace — never a name looked up on the PATH, never a
+    /// system program named by its absolute path (<c>/usr/bin/dotnet</c>).</summary>
+    private static bool IsRewritable(string program, string? root)
+    {
+        if (program.IndexOfAny(['/', '\\']) < 0) return false;
+        if (!Path.IsPathRooted(program) || program.StartsWith('~') || string.IsNullOrEmpty(root)) return true;
+        try { return Tools.PathSanitizer.IsUnderRoot(Path.GetFullPath(program), Path.GetFullPath(root)); }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException) { return true; }
+    }
+
+    private static Proposal? ForCommand(string command, string? root)
     {
         var trimmed = command.Trim();
         if (trimmed.Length == 0 || trimmed.IndexOfAny(Metacharacters) >= 0) return null;
@@ -170,6 +181,9 @@ internal static class ApprovalRuleProposal
 
         var tokens = trimmed.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries);
         if (!ProgramToken.IsMatch(tokens[0]) || tokens[0].StartsWith('-')) return null;
+        // ⚠ A program the workspace holds (`./build.sh`, `scripts\run.ps1`, `bin/Debug/tool.exe`) is a file the agent can
+        // rewrite: a rule for it approves in advance whatever that file will hold.
+        if (IsRewritable(tokens[0], root)) return null;
         var program = ProgramName(tokens[0]);
         if (Destructive.Contains(program)) return null;
 
@@ -259,8 +273,10 @@ internal static class ApprovalRuleProposal
         // folder than the one the card named, so the folder keeps its case there.
         var escaped = Regex.Escape(Path.TrimEndingDirectorySeparator(folder));
         if (PathComparer.Comparison == StringComparison.Ordinal) escaped = "(?-i:" + escaped + ")";
-        // ⚠ No `..` after the folder: a subject that climbs out of it is not under it.
-        var pattern = "^" + escaped + @"[\\/](?![^\r\n]*\.\.)[^\r\n]+$";
+        // ⚠ No `..` after the folder: a subject that climbs out of it is not under it. ⚠ And no name starting with a dot
+        // at any depth below it: the folder proposed is never a dot folder, and its rule must not reach one either
+        // (`src/.husky/pre-commit`, `src/.vscode/tasks.json`, the hooks of a repository nested under it).
+        var pattern = "^" + escaped + @"[\\/](?!\.)(?![^\r\n]*[\\/]\.)(?![^\r\n]*\.\.)[^\r\n]+$";
         return new Proposal(toolName, pattern, relative + "/", IsFolder: true, Folder: Path.TrimEndingDirectorySeparator(folder));
     }
 }

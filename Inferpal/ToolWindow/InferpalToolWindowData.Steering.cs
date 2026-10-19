@@ -133,7 +133,8 @@ internal partial class InferpalToolWindowData
         if (read.Count > 0)
         {
             var at = _history.FindLastIndex(m => m.Role == "user" && !m.IsScaffolding);
-            if (at > 0)
+            // A question at the very start of the history (one restored without its system prompt) is a question too.
+            if (at >= 0)
             {
                 _history[at] = _history[at] with
                 {

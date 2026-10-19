@@ -206,17 +206,25 @@ internal static class GitProcess
 
     /// <summary>
     /// The full path git uses for <paramref name="name"/> (<c>info/exclude</c>, say) in the work tree at
-    /// <paramref name="workTree"/>; <c>null</c> when git cannot say. Asked once per work tree and name.
+    /// <paramref name="workTree"/>; <c>null</c> when git cannot say. An answer is asked once per work tree and name.
     /// </summary>
+    /// <remarks>⚠ A failure is not kept: one git that timed out under load would otherwise stop the session from ever
+    /// seeing that path again.</remarks>
     public static async Task<string?> GitPathAsync(string workTree, string name, CancellationToken ct)
     {
         var key = workTree + "\0" + name;
         if (GitPaths.TryGetValue(key, out var known)) return known;
         var r = await CaptureBytesAsync(["rev-parse", "--git-path", name], workTree, ct, maxBytes: 64 * 1024);
-        var path = r.Output is { } bytes && Encoding.UTF8.GetString(bytes).Trim() is { Length: > 0 } line
-            ? Path.GetFullPath(Path.Combine(workTree, line))
-            : null;
-        GitPaths[key] = path;
+        string? path = null;
+        // An answer that is no path (a warning, a truncated line) is "git cannot say", never an exception thrown into the
+        // watch of a command, which would then fail without having run.
+        try
+        {
+            if (r.Output is { } bytes && Encoding.UTF8.GetString(bytes).Trim() is { Length: > 0 } line)
+                path = Path.GetFullPath(Path.Combine(workTree, line));
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException) { }
+        if (path is not null) GitPaths[key] = path;
         return path;
     }
 

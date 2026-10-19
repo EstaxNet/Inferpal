@@ -110,6 +110,7 @@ internal sealed class RpcApprovalService : ApprovalServiceBase, IApprovalService
                 1 => ApprovalDecision.Once,
                 2 => ApprovalDecision.Always,
                 3 => ApprovalDecision.Rule,
+                4 => ApprovalDecision.Withdrawn,
                 _ => ApprovalDecision.Deny,
             };
         }

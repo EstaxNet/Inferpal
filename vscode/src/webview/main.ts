@@ -371,6 +371,10 @@ function setBusy(value: boolean): void {
   busy = value;
   if (value) {
     forgetContinue();
+  } else {
+    for (const el of messagesEl.querySelectorAll<HTMLElement>('.continue-turn')) {
+      el.hidden = false;
+    }
   }
   setIcon(sendBtn, value ? 'stop' : 'send', undefined, 15);
   sendBtn.title = value ? t('cancelTitle') : t('sendTitle');
@@ -603,9 +607,12 @@ function addAnswer(role: string, item: WvTranscriptItem): HTMLElement {
   // "Ask it to continue" as a gesture: on the last turn's end notice, gone once another turn starts (setBusy). Drawn from
   // the item, so a redraw of the view keeps it. Kept on click: a send the extension refuses — the backend down —
   // leaves it there.
-  if (item.continues && !busy) {
+  if (item.continues) {
     const go = document.createElement('button');
     go.className = 'bubble-action continue-turn';
+    // ⚠ The end notice is drawn before the turn is marked over: hidden until then, shown by setBusy(false) — drawn only
+    // when not busy, the live notice never had its button.
+    go.hidden = busy;
     setIcon(go, 'play', t('continueTurn'), 12);
     go.addEventListener('click', () => post({ type: 'continue' }));
     el.appendChild(go);

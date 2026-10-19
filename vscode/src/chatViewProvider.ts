@@ -239,14 +239,16 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private dismissApproval(id: number): void {
+  /** Takes a card away: denied (0) by default; withdrawn (4) when a note took it away, which is no answer of the person's
+   *  and is never counted as one. */
+  private dismissApproval(id: number, answer: 0 | 4 = 0): void {
     const pending = this.pendingApprovals.get(id);
     if (!pending) {
       return; // already answered
     }
     this.pendingApprovals.delete(id);
     this.post({ type: 'approvalDismiss', id });
-    pending.resolve(0);
+    pending.resolve(answer);
   }
 
   /** New conversation: clears both the host history and the local transcript. */
@@ -1991,7 +1993,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // Read by the run: a card waiting is refused — a text never approves — and the note says why; a paused run
       // resumes, to read it at the step it resumes to. Queued instead, neither is touched.
       if (this.pendingApprovals.size === 1) {
-        this.dismissApproval([...this.pendingApprovals.keys()][0]);
+        this.dismissApproval([...this.pendingApprovals.keys()][0], 4);
       }
       if (this.stepPaused) {
         try {

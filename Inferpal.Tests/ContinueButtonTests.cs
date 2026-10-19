@@ -83,7 +83,11 @@ public sealed class ContinueButtonTests
         Assert.Contains("this.continuing ? [] : this.pendingAttachments", provider, StringComparison.Ordinal);
         // A refused send keeps the button: only the turn's start takes it off. Drawn from the item, a redraw keeps it.
         Assert.Contains("go.addEventListener('click', () => post({ type: 'continue' }));", webview, StringComparison.Ordinal);
-        Assert.Contains("if (item.continues && !busy) {", webview, StringComparison.Ordinal);
+        // Drawn while the turn is still marked busy (the end notice comes before setBusy(false)): hidden, then shown.
+        Assert.Contains("if (item.continues) {", webview, StringComparison.Ordinal);
+        Assert.Contains("go.hidden = busy;", webview, StringComparison.Ordinal);
+        Assert.Matches(new Regex(@"\} else \{\s*for \(const el of messagesEl\.querySelectorAll<HTMLElement>\('\.continue-turn'\)\) \{\s*el\.hidden = false;"),
+                       setBusy);
         Assert.Contains("continues: result.offersContinue === true,", provider, StringComparison.Ordinal);
         Assert.Matches(new Regex(@"this\.busy = true;\s*this\.stopPressed = false;\s*for \(const item of this\.transcript\) \{\s*delete item\.continues;"), provider);
         // Never saved: the transcript-to-session mapping lists what it keeps.

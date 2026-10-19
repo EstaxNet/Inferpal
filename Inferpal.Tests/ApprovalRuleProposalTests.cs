@@ -250,6 +250,31 @@ public sealed class ApprovalRuleProposalTests : IDisposable
     }
 
     [Fact]
+    public void AFolderRule_DoesNotReachADotFolderOrADotFileBelowIt()
+    {
+        // The folder proposed is never a dot folder; its rule must not reach one either — hooks, tool settings, the
+        // hooks of a repository nested under it.
+        var policy = PolicyOf(ApprovalRuleProposal.For("write_file", At("src", "A.cs"), _dir)!);
+        Assert.Equal(PermissionDecision.Prompt, policy.Evaluate("write_file", At("src", ".husky", "pre-commit")));
+        Assert.Equal(PermissionDecision.Prompt, policy.Evaluate("write_file", At("src", ".vscode", "tasks.json")));
+        Assert.Equal(PermissionDecision.Prompt, policy.Evaluate("write_file", At("src", "vendor", "lib", ".git", "hooks", "post-checkout")));
+        Assert.Equal(PermissionDecision.Prompt, policy.Evaluate("write_file", At("src", ".env")));
+        Assert.Equal(PermissionDecision.Allow, policy.Evaluate("write_file", At("src", "Shop", "Cart.cs")));   // reference
+    }
+
+    [Fact]
+    public void AProgramNamedByItsPath_GetsNoRule()
+    {
+        // A script of the workspace is a file the agent can rewrite: a rule would approve whatever it will hold.
+        foreach (var command in (string[])["./build.sh", "./scripts/build.sh --release", @"scripts\run.ps1", "bin/Debug/tool.exe test",
+                                            "../tools/gen.py", "~/bin/gen", At("tools", "gen.exe") + " run"])
+            Assert.True(ApprovalRuleProposal.For("run_command", command, _dir) is null, $"a rule for: {command}");
+        // Reference arms: a program on the PATH, a system program named by its absolute path.
+        Assert.NotNull(ApprovalRuleProposal.For("run_command", "dotnet test", _dir));
+        Assert.NotNull(ApprovalRuleProposal.For("run_command", "/usr/bin/dotnet test", _dir));
+    }
+
+    [Fact]
     public void AFolderReachedThroughALink_GetsNoRule()
     {
         Directory.CreateDirectory(At("real"));
@@ -408,6 +433,29 @@ public sealed class ApprovalRuleProposalTests : IDisposable
             await yes.RequestApprovalAsync("run_command", "cargo test", CancellationToken.None);
         Assert.Contains(Strings.PermissionsSuggestGranted(ApprovalHistory.SuggestAfter),
                         PermissionsCommandHandler.Handle(["/permissions", "suggest"], _dir, Config(), history));
+    }
+
+    [Fact]
+    public async Task ACardANoteTookAway_IsARefusalForTheCall_AndNoAnswer()
+    {
+        // The person typed a correction while the card waited: the call does not run, and nobody refused the command.
+        var history = History();
+        var withdrawn = new Card(Config(), _dir, ApprovalDecision.Withdrawn) { History = history };
+        Assert.False(await withdrawn.RequestApprovalAsync("run_command", "cargo test", CancellationToken.None));
+        var yes = new Card(Config(), _dir, ApprovalDecision.Once) { History = history };
+        for (var i = 0; i < ApprovalHistory.SuggestAfter; i++)
+            await yes.RequestApprovalAsync("run_command", "cargo test", CancellationToken.None);
+        Assert.Contains(Strings.PermissionsSuggestGranted(ApprovalHistory.SuggestAfter),
+                        PermissionsCommandHandler.Handle(["/permissions", "suggest"], _dir, Config(), history));
+        // Reference arm: a real refusal keeps the rule out.
+        var refusedHistory = History();
+        await new Card(Config(), _dir, ApprovalDecision.Deny) { History = refusedHistory }
+            .RequestApprovalAsync("run_command", "cargo test", CancellationToken.None);
+        var yes2 = new Card(Config(), _dir, ApprovalDecision.Once) { History = refusedHistory };
+        for (var i = 0; i < ApprovalHistory.SuggestAfter; i++)
+            await yes2.RequestApprovalAsync("run_command", "cargo test", CancellationToken.None);
+        Assert.DoesNotContain(Strings.PermissionsSuggestGranted(ApprovalHistory.SuggestAfter),
+                              PermissionsCommandHandler.Handle(["/permissions", "suggest"], _dir, Config(), refusedHistory));
     }
 
     [Fact]

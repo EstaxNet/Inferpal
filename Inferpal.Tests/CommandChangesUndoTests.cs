@@ -586,6 +586,8 @@ public class CommandChangesUndoTests : IDisposable
             var buffer   = code.Contains("EditorWriteGate", StringComparison.Ordinal);
             var name     = Path.GetFileName(file);
             Assert.False(backsUp && !spared, $"{name} backs up its writes but is watched too (NeedsWorkTreeWatch).");
+            // Named exemption: tool_search loads definitions and writes nothing at all — no file, no buffer.
+            if (name == "ToolSearchTool.cs") continue;
             Assert.False(spared && !backsUp && !buffer,
                          $"{name} is spared the watch but neither backs up its writes nor writes the editor's buffer.");
         }

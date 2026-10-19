@@ -154,6 +154,29 @@ public sealed class ContentExclusionTests : IDisposable
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
+    public async Task AFileCreatedWhereTheIgnoreFilesExclude_IsNotWritten(bool excluded)
+    {
+        // A write that creates a file is a change to it: `secret/` excluded, `secret/new.cs` is not created there.
+        Workspace(excluded);
+        var tools = Registry();
+        var created = Path.Combine(_root, "secret", "new.cs");
+        var said = await tools.ExecuteAsync("write_file", Args(new { path = "secret/new.cs", content = "class New { }\n" }), default);
+        if (!excluded)
+        {
+            Assert.True(File.Exists(created), said);   // reference arm: the same call writes it
+            return;
+        }
+        Assert.False(File.Exists(created));
+        Assert.Contains(".aiignore, line 2 (`secret/`)", said);
+        // A search for that path is not a write of it: it runs (the walk still says what it skipped under src/).
+        var search = await tools.ExecuteAsync("search_in_files", Args(new { path = "src", pattern = "secret/new.cs" }), default);
+        Assert.DoesNotContain("line 2", search);
+        Assert.DoesNotContain("Error:", search);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
     public async Task TheActiveDocument_IsNeitherReadNorChanged_WhenExcluded(bool excluded)
     {
         Workspace(excluded);

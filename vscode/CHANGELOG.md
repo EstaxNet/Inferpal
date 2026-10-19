@@ -3,6 +3,28 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.8.2
+
+Steer a run while it works, undo what a command changed, and keep the files your repository excludes away from the
+model; `/check` reviews a branch or a commit, and an IDE's own MCP server no longer fills the context window.
+
+- **Steering**: while the agent works, **Enter** sends a note the run reads before its next step; **Ctrl+Enter**
+  queues a message for after the turn.
+- **`/undo-run`** gives back what `run_command`, `run_tests`, your shell tools and MCP tools changed on disk, byte for
+  byte; what it cannot record is named.
+- **Ignore files**: `.aiignore`, `.cursorignore`, `.geminiignore`, `.aiexclude` and `.inferpalignore` are honoured by
+  every tool, mention, chip, the index, ghost text and git diffs, and every exclusion is said.
+- **`/check main..HEAD`, `/check <branch>`, `/check <commit>`**, and **Inferpal: Review a Commit…** in the command
+  palette; without any review check, `/check` makes the general review instead of refusing.
+- **Approval card**: next to "Always", a narrow rule — this command and its subcommands, or this folder — saved to your
+  rules; `/permissions suggest` proposes more. A card left unanswered 15 s while VS Code is not focused shows a
+  notification.
+- **Long runs** keep the machine awake while the model works; an answer stopped at a limit offers **Continue**.
+- **MCP tools on demand**: beyond a tenth of the context window, the heaviest servers' tools wait and `tool_search`
+  loads them; X-Ray says which wait.
+- **Renames** follow Razor, XAML and `.cshtml` where they bind the symbol and list every other occurrence; generated
+  files are not edited by hand.
+
 ## 1.8.1
 
 Opening another file no longer makes your server read the whole conversation again, and a slow machine reading a long

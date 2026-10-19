@@ -150,6 +150,15 @@ public class AgentLoopPolicyTests
     }
 
     [Fact]
+    public void LoadingTheSameToolTwice_IsNotALoop()
+    {
+        // tool_search is outside plan mode (plan mode sends no MCP tool to load) but changes nothing: a compaction that
+        // dropped its result makes the model load the same tool again — the middle of a run, not a stall.
+        Assert.False(Inferpal.Services.Execution.PlanModeToolRegistry.IsAllowed("tool_search"));   // witness: not derived
+        Assert.True(AgentLoopPolicy.IsObservation("tool_search"));
+    }
+
+    [Fact]
     public void AToolThatWrites_IsStillNotAnObservation()
     {
         // Witness on the other side: the fix must not turn everything into an observation.

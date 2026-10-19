@@ -363,7 +363,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         // ⚠ A file the workspace keeps out of AI tools (its ignore files: ContentExclusions) is neither read nor changed by
         // any call that names it — built-in, MCP or the user's shell tool — and the refusal says by which file and line:
         // an empty answer would read "this file does not exist".
-        if (ExcludedNamedFile(args, _indexService.RootDir, p => _overlay?.TryGetUnsaved(p, out _) == true) is var (excludedFile, excluded))
+        if (ExcludedNamedFile(args, _indexService.RootDir) is var (excludedFile, excluded))
         {
             _fileHistory.RecordToolCall(name, ExtractSubject(args), durationMs: 0, error: true);
             return excluded.ForModel(Shown(excludedFile));
@@ -526,16 +526,13 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     };
 
     /// <summary>
-    /// The first existing file a call names that the workspace's ignore files exclude, and why — every string of the
-    /// arguments, at any depth, resolved as the tools resolve a path (<see cref="PathSanitizer.Sanitize(string?, string?)"/>:
-    /// control characters and edge spaces dropped, against the root).
+    /// The first file a call names — on disk, in an unsaved buffer, or about to be created — that the workspace's ignore
+    /// files exclude, and why: every string of the arguments, at any depth, resolved as the tools resolve a path
+    /// (<see cref="PathSanitizer.Sanitize(string?, string?)"/>: control characters and edge spaces dropped, against the root).
     /// </summary>
     /// <remarks>⚠ Not <see cref="NamedFiles"/>: its walk is budgeted for an editor refresh, and the 60th edit of a batch
     /// is a file this gate must see as well as the first.</remarks>
-    /// <param name="isOpen">Whether the editor holds an unsaved buffer of a path: one whose file is not on disk is still the
-    /// file the path names.</param>
-    internal static (string File, Governance.ContentExclusions.Exclusion Why)? ExcludedNamedFile(
-        JsonElement args, string? root, Func<string, bool>? isOpen = null)
+    internal static (string File, Governance.ContentExclusions.Exclusion Why)? ExcludedNamedFile(JsonElement args, string? root)
     {
         (string, Governance.ContentExclusions.Exclusion)? hit = null;
         void Walk(JsonElement e, string? key, int depth)
@@ -551,11 +548,14 @@ internal class ToolRegistry : IToolRegistry, IDisposable
                     break;
                 case JsonValueKind.String when key is null || !TextArguments.Contains(key):
                     var s = e.GetString();
-                    if (string.IsNullOrWhiteSpace(s) || s.Length > 4096) return;
+                    if (string.IsNullOrWhiteSpace(s) || s.Length > 4096 || s.Contains("://", StringComparison.Ordinal)) return;
                     string full;
                     try { full = PathSanitizer.Sanitize(s, root); }
                     catch (ArgumentException) { return; }   // not a path at all
-                    if ((File.Exists(full) || isOpen?.Invoke(full) == true) && Governance.ContentExclusions.Of(full) is { } why)
+                    // ⚠ A path that does not exist yet is judged too: a write that CREATES a file where the ignore files
+                    // exclude it (`secrets/new.key`, an excluded `.env`) is a change to an excluded file. A folder is
+                    // judged by the walk that lists it.
+                    if (!Directory.Exists(full) && Governance.ContentExclusions.Of(full) is { } why)
                         hit = (full, why);
                     break;
             }

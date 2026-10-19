@@ -34,13 +34,16 @@ internal static class AgentLoopPolicy
     /// "where am I?" twice, is the middle of an ordinary cycle, not a loop. ⚠ And a mutating key is
     /// never cleared — a new mutation resets only the read-only counts — so for those tools the
     /// second call anywhere in the run is enough to end it.
-    /// The two exceptions below are named with their reason: plan mode refuses them because they
-    /// <i>execute</i> or need a live session, not because they change anything.
+    /// The exceptions below are named with their reason: plan mode refuses them because they
+    /// <i>execute</i> or need a live session, not because they change anything — and <c>tool_search</c> because plan mode
+    /// sends no MCP tool to load; it changes which definitions go, never the workspace (a compaction that dropped its
+    /// result makes the model load the same tool again).
     /// </remarks>
     internal static bool IsObservation(string toolName) =>
         PlanModeToolRegistry.IsAllowed(toolName)
         || toolName.Equals("run_tests", StringComparison.OrdinalIgnoreCase)
-        || toolName.Equals(Tools.DebugInspectTool.ToolName, StringComparison.OrdinalIgnoreCase);
+        || toolName.Equals(Tools.DebugInspectTool.ToolName, StringComparison.OrdinalIgnoreCase)
+        || toolName.Equals("tool_search", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// A call that ADVANCES something by design, so its verbatim repeat is the next step, not a stall: reading a

@@ -7,8 +7,10 @@ namespace Inferpal.Services.Execution;
 
 /// <summary>The outcomes a user can pick in the approval prompt.</summary>
 /// <remarks><see cref="Rule"/>: allowed, and the narrow rule the card offered written to the machine's permission rules.
-/// An editor or a client that does not know it answers it as a refusal — fail closed.</remarks>
-internal enum ApprovalDecision { Deny = 0, Once = 1, Always = 2, Rule = 3 }
+/// An editor or a client that does not know it answers it as a refusal — fail closed. <see cref="Withdrawn"/>: the card
+/// was taken away without an answer — a note typed while it waited — a refusal for the call, never counted as the
+/// person's answer.</remarks>
+internal enum ApprovalDecision { Deny = 0, Once = 1, Always = 2, Rule = 3, Withdrawn = 4 }
 
 /// <summary>
 /// Editor-agnostic approval pipeline: pattern permission rules (per-machine config +
@@ -168,9 +170,11 @@ internal abstract class ApprovalServiceBase : IApprovalService
                 promptDecision = ApprovalDecision.Once;
             }
         }
-        // ⚠ Counted only as an ANSWER: a card retired with its stopped run resolves denied, and one refusal keeps a rule
-        // out of the suggestions for good.
-        if (rule is not null && !ct.IsCancellationRequested)
+        // ⚠ Counted only as an ANSWER: a card retired with its stopped run resolves denied, a card a note took away is
+        // withdrawn, and one refusal keeps a rule out of the suggestions for good.
+        var withdrawn = promptDecision == ApprovalDecision.Withdrawn;
+        if (withdrawn) promptDecision = ApprovalDecision.Deny;
+        if (rule is not null && !ct.IsCancellationRequested && !withdrawn)
         {
             try { History.Note(rule, granted: promptDecision != ApprovalDecision.Deny); }
             catch (Exception ex) { Diagnostics.Swallow("ApprovalHistory.Note", ex); }
