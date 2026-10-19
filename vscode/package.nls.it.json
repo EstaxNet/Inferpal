@@ -16,6 +16,7 @@
   "inferpal.command.fixSelection": "Inferpal: correggi questo codice",
   "inferpal.command.refactorSelection": "Inferpal: rifattorizza questo codice",
   "inferpal.command.docSelection": "Inferpal: documenta questo codice",
+  "inferpal.command.reviewCommit": "Inferpal: revisiona un commit…",
   "inferpal.command.exportChat": "Inferpal: Esporta la conversazione",
   "inferpal.command.openSettings": "Inferpal: Impostazioni",
   "inferpal.command.openDocs": "Inferpal: Documentazione (in inglese)"

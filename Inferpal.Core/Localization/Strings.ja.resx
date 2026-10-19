@@ -517,7 +517,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="ChecksListHeader" xml:space="preserve"><value>**レビューチェック** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>レビュー対象がありません — 作業ツリーはクリーンです。</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>差分をレビュー中…</value></data>
-  <data name="CheckUnknownName" xml:space="preserve"><value>「{0}」という名前のチェックはありません。`/checks` で一覧を表示してください。</value></data>
+  <data name="CheckUnknownName" xml:space="preserve"><value>「{0}」という名前のチェックも git リビジョンもありません。チェック: {1}。`/check &lt;base&gt;..HEAD` でブランチ、`/check &lt;commit&gt;` でコミットをレビューします。</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>差分に紐づく指摘はありません — レビューでは何も検出されませんでした。</value></data>
   <data name="CheckNoFindingsNarrowed" xml:space="preserve"><value>差分に紐づく指摘はありません — このチェックでは何も検出されませんでした。</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ レビューなし: **{0}** は回答全体を推論に費やし、指摘を書きませんでした。これは差分について何も示しておらず、問題なしという結果ではありません。より大きなコンテキストか、先に推論しないモデルで回避できます。</value></data>
@@ -725,7 +725,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SlashHintTemplate" xml:space="preserve"><value>プリセットテンプレートからセッションを開始 — /template &lt;id&gt;</value></data>
   <data name="TemplateUnknown" xml:space="preserve"><value>不明なテンプレート `{0}` です。`/template` と入力すると一覧を表示します。</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>git diff 全体をコンテキストチップとして添付 — /diff [パス]</value></data>
-  <data name="SlashHintCheck" xml:space="preserve"><value>現在の git diff を AI レビュー（.inferpal/checks も適用） — /check [名前|init]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>現在の git diff、ブランチ、コミットを AI レビュー（.inferpal/checks も適用） — /check [名前|init|&lt;リビジョン&gt;|A..B]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>.inferpal/rules 内のプロジェクトルールを一覧表示 — /rules [init]</value></data>
   <data name="SlashHintChecks" xml:space="preserve"><value>.inferpal/checks 内のレビューチェックを一覧表示 — /checks [init]</value></data>
   <data name="SlashHintSnippets" xml:space="preserve"><value>保存されたコードスニペットを一覧表示 — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>
@@ -1590,4 +1590,18 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="RenameLeftAsTheyAre" xml:space="preserve"><value>`{1}` の {0} 箇所はそのままです — このシンボルかどうかを判断できません。確認してください:</value></data>
   <data name="RenameMoreLeft" xml:space="preserve"><value>… ほか {0} 件。</value></data>
   <data name="DesignerFileWarning" xml:space="preserve"><value>⚠ {0} は Windows フォーム デザイナーのコードです。デザイナーは InitializeComponent を書き直すため、手で編集するとフォームを開けなくなることがあります。デザイナー自身ではできないこと (もう存在しないハンドラーの削除) だけを承認し、フォームの変更はデザイナーで行ってください。</value></data>
+  <data name="CheckRangeEmpty" xml:space="preserve"><value>`{0}` にはコミットがありません。レビューする対象はありません。</value></data>
+  <data name="CheckBranchAddsNothing" xml:space="preserve"><value>`{0}` には HEAD にないコミットがありません（HEAD そのもの、またはマージ済み）。レビューする対象はありません。`/check {1}..{0}` で別のブランチと比べてレビューできます。</value></data>
+  <data name="CheckReviewedRange" xml:space="preserve"><value>レビュー対象: `{0}`（{1} 件のコミット）。</value></data>
+  <data name="CheckReviewedBranch" xml:space="preserve"><value>レビュー対象: `{0}` が HEAD に加える変更（{1} 件のコミット）。</value></data>
+  <data name="CheckReviewedCommit" xml:space="preserve"><value>レビュー対象: コミット `{0}` — {1}</value></data>
+  <data name="CheckTargetDiffEmpty" xml:space="preserve"><value>`{0}` の変更は空です。レビューする対象はありません。</value></data>
+  <data name="CheckNameAlsoRevision" xml:space="preserve"><value>`{0}` は git のリビジョンでもあります。このレビューでは同名のチェックを使いました。`/check {1}` でリビジョンをレビューします。</value></data>
+  <data name="CheckShallowBoundary" xml:space="preserve"><value>`{0}` には、このシャロークローン内に親コミットがありません。親が取得されていないため、比較できません。`git fetch --deepen=1` で取得できます。</value></data>
+  <data name="CheckCommitDiffTruncated" xml:space="preserve"><value>⚠ このコミットの差分 {1} 文字のうち、先頭 {0} 文字だけがレビューされました。以下はその部分についてであり、コミットの残りは読まれていません。</value></data>
+  <data name="CheckRangeDiffTruncated" xml:space="preserve"><value>⚠ 差分全体 {1} 文字のうち、先頭 {0} 文字だけがレビューされました。以下はその部分についてであり、変更全体についてではありません。コミットを 1 つずつ（`/check &lt;commit&gt;`）、または短い範囲でレビューしてください。</value></data>
+  <data name="CheckSeveralBases" xml:space="preserve"><value>両側に共通の基点が {0} 個あります（クリスクロスマージ）。差分は `{1}` から始まり、もう一方にすでにある変更が含まれることがあります。</value></data>
+  <data name="CheckNoCommonBase" xml:space="preserve"><value>`{0}`: 2 つの履歴に共通のコミットがないため、変更の起点がありません。`/check &lt;commit&gt;` で 1 つのコミットをレビューします。</value></data>
+  <data name="CheckAmbiguousHash" xml:space="preserve"><value>`{0}` で始まるオブジェクトが {1} 個あります。ハッシュをもっと長く書いてください。</value></data>
+  <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` は複数の参照を指しています: {1}。レビューする参照を、ここに示した形で書いてください。</value></data>
 </root>

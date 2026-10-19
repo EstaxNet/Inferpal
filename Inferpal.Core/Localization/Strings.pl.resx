@@ -517,7 +517,7 @@ Kliknij **Napraw z AI**, aby automatycznie naprawić w pętli, lub wpisz `/fix-b
   <data name="ChecksListHeader" xml:space="preserve"><value>**Sprawdzenia recenzji** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>Nie ma czego recenzować — drzewo robocze jest czyste.</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>Recenzowanie diffa…</value></data>
-  <data name="CheckUnknownName" xml:space="preserve"><value>Brak sprawdzenia o nazwie „{0}". Uruchom `/checks`, aby je wyświetlić.</value></data>
+  <data name="CheckUnknownName" xml:space="preserve"><value>Brak sprawdzenia i rewizji git o nazwie „{0}". Sprawdzenia: {1}. `/check &lt;base&gt;..HEAD` przegląda gałąź, `/check &lt;commit&gt;` commit.</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>Brak zakotwiczonych spostrzeżeń — przegląd nic nie wykrył w tym diffie.</value></data>
   <data name="CheckNoFindingsNarrowed" xml:space="preserve"><value>Brak zakotwiczonych spostrzeżeń — ten check nic nie wykrył w tym diffie.</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ Brak przeglądu: **{0}** poświęcił całą odpowiedź na rozumowanie i nie napisał żadnego spostrzeżenia. To nic nie mówi o diffie — to nie jest czysty wynik. Zapobiega temu większy kontekst lub model, który nie rozumuje najpierw.</value></data>
@@ -725,7 +725,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="SlashHintTemplate" xml:space="preserve"><value>rozpocznij sesję z gotowego szablonu — /template &lt;id&gt;</value></data>
   <data name="TemplateUnknown" xml:space="preserve"><value>Nieznany szablon `{0}`. Wpisz `/template`, aby zobaczyć listę.</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>dołącz pełny git diff jako chip kontekstu — /diff [ścieżka]</value></data>
-  <data name="SlashHintCheck" xml:space="preserve"><value>przegląd AI bieżącego git diff, także względem .inferpal/checks — /check [nazwa|init]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>przegląd AI bieżącego git diff, gałęzi lub commita, także względem .inferpal/checks — /check [nazwa|init|&lt;rewizja&gt;|A..B]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>wyświetl reguły projektu w .inferpal/rules — /rules [init]</value></data>
   <data name="SlashHintChecks" xml:space="preserve"><value>wyświetl kontrole przeglądu w .inferpal/checks — /checks [init]</value></data>
   <data name="SlashHintSnippets" xml:space="preserve"><value>wyświetl zapisane fragmenty kodu — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>
@@ -1590,4 +1590,18 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="RenameLeftAsTheyAre" xml:space="preserve"><value>{0} {0:wystąpienie|wystąpienia|wystąpień} `{1}` pozostawiono bez zmian — ta zmiana nazwy nie rozpozna, czy to ten symbol. Sprawdź je:</value></data>
   <data name="RenameMoreLeft" xml:space="preserve"><value>… i {0} więcej.</value></data>
   <data name="DesignerFileWarning" xml:space="preserve"><value>⚠ {0} to kod projektanta Windows Forms: przepisuje on InitializeComponent i po ręcznej zmianie może nie otworzyć formularza. Zatwierdzaj tylko to, czego projektant sam nie zrobi (usunięcie nieistniejącej już obsługi zdarzenia); zmiana formularza należy do projektanta.</value></data>
+  <data name="CheckRangeEmpty" xml:space="preserve"><value>`{0}` nie zawiera żadnego commita: nie ma czego przeglądać.</value></data>
+  <data name="CheckBranchAddsNothing" xml:space="preserve"><value>`{0}` nie wnosi żadnego commita, którego nie ma HEAD (to HEAD albo gałąź jest już scalona): nie ma czego przeglądać. `/check {1}..{0}` przegląda ją względem innej gałęzi.</value></data>
+  <data name="CheckReviewedRange" xml:space="preserve"><value>Przejrzano: `{0}`, {1} {1:commit|commity|commitów}.</value></data>
+  <data name="CheckReviewedBranch" xml:space="preserve"><value>Przejrzano: to, co `{0}` wnosi do HEAD, {1} {1:commit|commity|commitów}.</value></data>
+  <data name="CheckReviewedCommit" xml:space="preserve"><value>Przejrzano: commit `{0}` — {1}</value></data>
+  <data name="CheckTargetDiffEmpty" xml:space="preserve"><value>Zmiana w `{0}` jest pusta: nie ma czego przeglądać.</value></data>
+  <data name="CheckNameAlsoRevision" xml:space="preserve"><value>`{0}` to także rewizja git; ten przegląd użył sprawdzenia o tej nazwie. `/check {1}` przegląda rewizję.</value></data>
+  <data name="CheckShallowBoundary" xml:space="preserve"><value>`{0}` nie ma rodzica w tym płytkim klonie: rodzic nie został pobrany, więc nie można z nim porównać commita. `git fetch --deepen=1` go pobiera.</value></data>
+  <data name="CheckCommitDiffTruncated" xml:space="preserve"><value>⚠ Sprawdzono tylko pierwsze {0} znaków diffa tego commita, na {1}. To, co niżej, dotyczy tej części: reszty commita nie przeczytano.</value></data>
+  <data name="CheckRangeDiffTruncated" xml:space="preserve"><value>⚠ Sprawdzono tylko pierwsze {0} znaków diffa, na {1}. To, co niżej, dotyczy tej części, a nie całej zmiany — przejrzyj jej commity po kolei (`/check &lt;commit&gt;`) albo krótszy zakres.</value></data>
+  <data name="CheckSeveralBases" xml:space="preserve"><value>Obie strony mają {0} {0:wspólną bazę|wspólne bazy|wspólnych baz} (scalanie krzyżowe): diff zaczyna się od `{1}` i może pokazywać zmiany, które druga strona już ma.</value></data>
+  <data name="CheckNoCommonBase" xml:space="preserve"><value>`{0}`: obie historie nie mają wspólnego commita, więc zmiana nie ma punktu początkowego. `/check &lt;commit&gt;` przegląda jeden commit.</value></data>
+  <data name="CheckAmbiguousHash" xml:space="preserve"><value>`{0}` to początek nazwy {1} {1:obiektu|obiektów|obiektów}: wpisz dłuższy fragment hasha.</value></data>
+  <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` wskazuje kilka referencji: {1}. Wpisz tę do przejrzenia tak, jak jest tu podana.</value></data>
 </root>

@@ -171,5 +171,7 @@
   "Your note was not read before the turn ended: it is back in the input box.": "回合结束前未读取你的备注：已放回输入框。",
   "Continue": "继续",
   "Continue.": "请继续。",
-  "Inferpal is waiting for your approval.": "Inferpal 正在等待您的批准。"
+  "Inferpal is waiting for your approval.": "Inferpal 正在等待您的批准。",
+  "Pick a commit, or type a branch or A..B, to review": "选择一个提交，或输入分支或 A..B 进行评审",
+  "Review this branch, tag or range": "评审此分支、标签或范围"
 }

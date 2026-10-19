@@ -517,7 +517,7 @@
   <data name="ChecksListHeader" xml:space="preserve"><value>**评审检查项** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>无内容可评审 — 工作区是干净的。</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>正在评审差异…</value></data>
-  <data name="CheckUnknownName" xml:space="preserve"><value>没有名为「{0}」的检查项。运行 `/checks` 查看列表。</value></data>
+  <data name="CheckUnknownName" xml:space="preserve"><value>没有名为「{0}」的检查项或 git 修订版本。检查项：{1}。`/check &lt;base&gt;..HEAD` 评审一个分支，`/check &lt;commit&gt;` 评审一个提交。</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>没有可定位的问题 — 评审在此 diff 中未发现任何内容。</value></data>
   <data name="CheckNoFindingsNarrowed" xml:space="preserve"><value>没有可定位的问题 — 该检查项在此 diff 中未发现任何内容。</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ 没有审查结果：**{0}** 把整个回复都用于推理，没有写出任何问题。这并不说明 diff 没有问题 — 这不是干净的结果。更大的上下文，或不先推理的模型，可以避免。</value></data>
@@ -725,7 +725,7 @@
   <data name="SlashHintTemplate" xml:space="preserve"><value>从预设模板开始会话 — /template &lt;id&gt;</value></data>
   <data name="TemplateUnknown" xml:space="preserve"><value>未知模板 `{0}`。输入 `/template` 查看列表。</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>将完整 git diff 作为上下文标签附加 — /diff [路径]</value></data>
-  <data name="SlashHintCheck" xml:space="preserve"><value>对当前 git diff 进行 AI 评审（并依据 .inferpal/checks） — /check [名称|init]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>对当前 git diff、分支或提交进行 AI 评审（并依据 .inferpal/checks） — /check [名称|init|&lt;修订版本&gt;|A..B]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>列出 .inferpal/rules 中的项目规则 — /rules [init]</value></data>
   <data name="SlashHintChecks" xml:space="preserve"><value>列出 .inferpal/checks 中的审查检查 — /checks [init]</value></data>
   <data name="SlashHintSnippets" xml:space="preserve"><value>列出已保存的代码片段 — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>
@@ -1590,4 +1590,18 @@
   <data name="RenameLeftAsTheyAre" xml:space="preserve"><value>`{1}` 的 {0} 处保持不变——此重命名无法判断它们是否为该符号。请检查：</value></data>
   <data name="RenameMoreLeft" xml:space="preserve"><value>… 以及另外 {0} 处。</value></data>
   <data name="DesignerFileWarning" xml:space="preserve"><value>⚠ {0} 是 Windows 窗体设计器的代码：设计器会重写 InitializeComponent，手动编辑后可能无法再打开窗体。只批准设计器自身无法完成的操作（删除已不存在的事件处理程序）；窗体的更改应在设计器中进行。</value></data>
+  <data name="CheckRangeEmpty" xml:space="preserve"><value>`{0}` 不包含任何提交：没有可评审的内容。</value></data>
+  <data name="CheckBranchAddsNothing" xml:space="preserve"><value>`{0}` 没有 HEAD 所缺少的提交（它就是 HEAD，或已合并）：没有可评审的内容。`/check {1}..{0}` 可与另一分支对比评审。</value></data>
+  <data name="CheckReviewedRange" xml:space="preserve"><value>已评审：`{0}`，{1} 个提交。</value></data>
+  <data name="CheckReviewedBranch" xml:space="preserve"><value>已评审：`{0}` 相对 HEAD 带来的变更，{1} 个提交。</value></data>
+  <data name="CheckReviewedCommit" xml:space="preserve"><value>已评审：提交 `{0}` — {1}</value></data>
+  <data name="CheckTargetDiffEmpty" xml:space="preserve"><value>`{0}` 中的变更为空：没有可评审的内容。</value></data>
+  <data name="CheckNameAlsoRevision" xml:space="preserve"><value>`{0}` 也是一个 git 修订版本；本次评审使用了同名的检查项。`/check {1}` 可评审该修订版本。</value></data>
+  <data name="CheckShallowBoundary" xml:space="preserve"><value>`{0}` 在此浅克隆中没有父提交：父提交未被获取，因此无法与之比较。`git fetch --deepen=1` 可获取它。</value></data>
+  <data name="CheckCommitDiffTruncated" xml:space="preserve"><value>⚠ 在此提交 {1} 个字符的 diff 中，只评审了前 {0} 个字符。以下内容只针对这部分：该提交的其余部分未被读取。</value></data>
+  <data name="CheckRangeDiffTruncated" xml:space="preserve"><value>⚠ 在 {1} 个字符的 diff 中，只评审了前 {0} 个字符。以下内容只针对这部分，而非整个变更——请逐个评审其提交（`/check &lt;commit&gt;`），或评审更短的范围。</value></data>
+  <data name="CheckSeveralBases" xml:space="preserve"><value>两侧有 {0} 个共同基点（交叉合并）：diff 从 `{1}` 开始，可能显示另一侧已有的变更。</value></data>
+  <data name="CheckNoCommonBase" xml:space="preserve"><value>`{0}`：两段历史没有共同的提交，因此变更没有起点。`/check &lt;commit&gt;` 评审单个提交。</value></data>
+  <data name="CheckAmbiguousHash" xml:space="preserve"><value>以 `{0}` 开头的对象有 {1} 个：请写出更长的哈希。</value></data>
+  <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` 指向多个引用：{1}。请按此处列出的写法写出要评审的那一个。</value></data>
 </root>

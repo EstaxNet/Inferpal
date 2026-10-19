@@ -316,20 +316,22 @@ public class CheckReviewAnchorTests
         finally { Directory.Delete(root, true); }
     }
 
+    /// <summary>A name that is no check is looked up as a revision, read-only: no diff is ever taken for it.</summary>
     [Fact]
-    public async Task Handle_UnknownCheckName_IsRejectedBeforeAnyGitCall()
+    public async Task Handle_UnknownCheckName_IsRejectedBeforeAnyDiff()
     {
         var root = NewRootWithCheck();
         try
         {
-            bool gitCalled = false;
+            var calls = new List<string>();
             var result = await CheckCommandHandler.HandleAsync(
                 Answering(""), new InferpalConfig(), root, ["/check", "nope"],
-                git: (_, _) => { gitCalled = true; return Task.FromResult(("", 0)); },
+                git: (args, _) => { calls.Add(args); return Task.FromResult(("", 1)); },
                 onProgress: null, CancellationToken.None);
 
-            Assert.Equal(Inferpal.Localization.Strings.CheckUnknownName("nope"), result.Message);
-            Assert.False(gitCalled);
+            Assert.Equal(Inferpal.Localization.Strings.CheckUnknownName("nope", "`no secrets`"), result.Message);
+            Assert.NotEmpty(calls);   // WITNESS: the name was looked up as a revision
+            Assert.DoesNotContain(calls, c => c.StartsWith("diff", StringComparison.Ordinal));
         }
         finally { Directory.Delete(root, true); }
     }

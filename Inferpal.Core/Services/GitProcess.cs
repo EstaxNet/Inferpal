@@ -24,6 +24,14 @@ internal static class GitProcess
     /// <summary>Binds a working directory, giving the <see cref="GitRunner"/> the handlers expect.</summary>
     public static GitRunner For(string? workDir) => (args, ct) => RunAsync(args, workDir, ct);
 
+    /// <summary>The empty tree of a repository whose object format is <paramref name="objectFormat"/> (the output of
+    /// <c>rev-parse --show-object-format</c>) — what a repository with no commit, or a root commit, is compared with.
+    /// git knows it without storing it; its name depends on the hash (SHA-1, or SHA-256 since git 2.29).</summary>
+    public static string EmptyTree(string objectFormat) =>
+        objectFormat.Trim() == "sha256"
+            ? "6ef19b41225c5369f1c104d45d8d85efa9b057b53b14b4b9b939dd74decc5321"
+            : "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
+
     /// <summary>The runner of <c>/commit-exec</c>: a commit runs the repository's hooks, with their own budget.</summary>
     /// <remarks>⚠ Under the 15 s read budget, a pre-commit hook that formats, lints or builds — or a GPG passphrase typed
     /// slowly — was killed mid-run: the commit failed every time, and a kill during a post-commit hook reported a commit

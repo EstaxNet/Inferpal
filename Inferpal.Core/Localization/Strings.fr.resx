@@ -517,7 +517,7 @@ Cliquez sur **Corriger avec l'IA** pour lancer la correction automatique en bouc
   <data name="ChecksListHeader" xml:space="preserve"><value>**Checks de revue** (`.inferpal/checks`) :</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>Rien à relire — l'arbre de travail est propre.</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>Revue du diff en cours…</value></data>
-  <data name="CheckUnknownName" xml:space="preserve"><value>Aucun check nommé « {0} ». Lance `/checks` pour les lister.</value></data>
+  <data name="CheckUnknownName" xml:space="preserve"><value>Aucun check ni aucune révision git nommés « {0} ». Les checks : {1}. `/check &lt;base&gt;..HEAD` relit une branche, `/check &lt;commit&gt;` un commit.</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>Aucun constat ancré — la relecture n'a rien relevé sur ce diff.</value></data>
   <data name="CheckNoFindingsNarrowed" xml:space="preserve"><value>Aucun constat ancré — le check n'a rien relevé sur ce diff.</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ Pas de relecture : **{0}** a passé toute sa réponse à raisonner sans écrire de constat. Cela ne dit rien du diff — ce n'est pas un résultat propre. Un contexte plus grand, ou un modèle qui ne raisonne pas d'abord, l'évite.</value></data>
@@ -729,7 +729,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="SlashHintTemplate" xml:space="preserve"><value>démarrer une session depuis un modèle prédéfini — /template &lt;id&gt;</value></data>
   <data name="TemplateUnknown" xml:space="preserve"><value>Modèle inconnu : `{0}`. Tapez `/template` pour voir la liste.</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>joindre le diff git complet comme chip de contexte — /diff [chemin]</value></data>
-  <data name="SlashHintCheck" xml:space="preserve"><value>faire relire le diff git actuel par l'IA, avec vos .inferpal/checks en plus — /check [nom|init]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>faire relire par l'IA le diff git actuel, une branche ou un commit, avec vos .inferpal/checks en plus — /check [nom|init|&lt;révision&gt;|A..B]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>lister les règles du projet dans .inferpal/rules — /rules [init]</value></data>
   <data name="SlashHintChecks" xml:space="preserve"><value>lister les contrôles de revue dans .inferpal/checks — /checks [init]</value></data>
   <data name="SlashHintSnippets" xml:space="preserve"><value>lister les extraits de code enregistrés — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>
@@ -1590,4 +1590,18 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="RenameLeftAsTheyAre" xml:space="preserve"><value>{0} {0:occurrence|occurrences} de `{1}` laissée(s) telle(s) quelle(s) — ce renommage ne peut pas dire si c'est ce symbole. Vérifiez-les :</value></data>
   <data name="RenameMoreLeft" xml:space="preserve"><value>… et {0} de plus.</value></data>
   <data name="DesignerFileWarning" xml:space="preserve"><value>⚠ {0} est le code du concepteur Windows Forms : il réécrit InitializeComponent et peut ne plus ouvrir le formulaire après une modification à la main. N'approuvez que ce que le concepteur ne sait pas faire (retirer un gestionnaire qui n'existe plus) ; un changement du formulaire se fait dans le concepteur.</value></data>
+  <data name="CheckRangeEmpty" xml:space="preserve"><value>`{0}` ne contient aucun commit : rien à relire.</value></data>
+  <data name="CheckBranchAddsNothing" xml:space="preserve"><value>`{0}` n'apporte aucun commit que HEAD n'a pas (c'est HEAD, ou elle est déjà fusionnée) : rien à relire. `/check {1}..{0}` la relit par rapport à une autre branche.</value></data>
+  <data name="CheckReviewedRange" xml:space="preserve"><value>Relu : `{0}`, {1} {1:commit|commits}.</value></data>
+  <data name="CheckReviewedBranch" xml:space="preserve"><value>Relu : ce que `{0}` apporte à HEAD, {1} {1:commit|commits}.</value></data>
+  <data name="CheckReviewedCommit" xml:space="preserve"><value>Relu : le commit `{0}` — {1}</value></data>
+  <data name="CheckTargetDiffEmpty" xml:space="preserve"><value>Le changement de `{0}` est vide : rien à relire.</value></data>
+  <data name="CheckNameAlsoRevision" xml:space="preserve"><value>`{0}` est aussi une révision git ; cette relecture a pris le check de ce nom. `/check {1}` relit la révision.</value></data>
+  <data name="CheckShallowBoundary" xml:space="preserve"><value>`{0}` n'a pas de parent dans ce clone superficiel : son parent n'a pas été récupéré, le commit ne peut donc pas lui être comparé. `git fetch --deepen=1` le récupère.</value></data>
+  <data name="CheckCommitDiffTruncated" xml:space="preserve"><value>⚠ Seuls les {0} premiers caractères du diff de ce commit ont été relus, sur {1}. Ce qui suit porte sur cette partie : le reste du commit n'a pas été lu.</value></data>
+  <data name="CheckRangeDiffTruncated" xml:space="preserve"><value>⚠ Seuls les {0} premiers caractères du diff ont été relus, sur {1}. Ce qui suit porte sur cette partie, pas sur tout le changement — relisez ses commits un par un (`/check &lt;commit&gt;`) ou une plage plus courte.</value></data>
+  <data name="CheckSeveralBases" xml:space="preserve"><value>Les deux côtés ont {0} {0:base commune|bases communes} (fusion croisée) : le diff part de `{1}` et peut montrer des changements que l'autre côté a déjà.</value></data>
+  <data name="CheckNoCommonBase" xml:space="preserve"><value>`{0}` : les deux historiques n'ont aucun commit en commun, le changement n'a donc pas de point de départ. `/check &lt;commit&gt;` relit un commit.</value></data>
+  <data name="CheckAmbiguousHash" xml:space="preserve"><value>`{0}` commence le nom de {1} {1:objet|objets} : écrivez davantage de l'empreinte.</value></data>
+  <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` désigne plusieurs références : {1}. Écrivez celle à relire telle qu'elle est listée ici.</value></data>
 </root>

@@ -171,5 +171,7 @@
   "Your note was not read before the turn ended: it is back in the input box.": "Notatka nie została odczytana przed końcem tury — wróciła do pola wprowadzania.",
   "Continue": "Kontynuuj",
   "Continue.": "Kontynuuj.",
-  "Inferpal is waiting for your approval.": "Inferpal czeka na Twoją zgodę."
+  "Inferpal is waiting for your approval.": "Inferpal czeka na Twoją zgodę.",
+  "Pick a commit, or type a branch or A..B, to review": "Wybierz commit albo wpisz gałąź lub A..B do przejrzenia",
+  "Review this branch, tag or range": "Przejrzyj tę gałąź, tag lub zakres"
 }

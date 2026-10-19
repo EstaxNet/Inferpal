@@ -518,7 +518,7 @@ Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</val
   <data name="ChecksListHeader" xml:space="preserve"><value>**Review checks** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>Nothing to review — the working tree is clean.</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>Reviewing the diff…</value></data>
-  <data name="CheckUnknownName" xml:space="preserve"><value>No check named '{0}'. Run `/checks` to list them.</value></data>
+  <data name="CheckUnknownName" xml:space="preserve"><value>No check and no git revision named '{0}'. The checks: {1}. `/check &lt;base&gt;..HEAD` reviews a branch, `/check &lt;commit&gt;` a commit.</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>No anchored finding — the review turned up nothing on this diff.</value></data>
   <data name="CheckNoFindingsNarrowed" xml:space="preserve"><value>No anchored finding — the check turned up nothing on this diff.</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ No review: **{0}** spent its whole reply reasoning and wrote no finding. This says nothing about the diff — it is not a clean result. A larger context, or a model that does not reason first, avoids it.</value></data>
@@ -733,7 +733,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="SlashHintTemplate" xml:space="preserve"><value>start a session from a preset template — /template &lt;id&gt;</value></data>
   <data name="TemplateUnknown" xml:space="preserve"><value>Unknown template `{0}`. Type `/template` to see the list.</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>attach full git diff as context chip — /diff [path]</value></data>
-  <data name="SlashHintCheck" xml:space="preserve"><value>AI-review the current git diff, plus your .inferpal/checks — /check [name|init]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>AI-review the current git diff, a branch or a commit, plus your .inferpal/checks — /check [name|init|&lt;revision&gt;|A..B]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>list project rules in .inferpal/rules — /rules [init]</value></data>
   <data name="SlashHintChecks" xml:space="preserve"><value>list review checks in .inferpal/checks — /checks [init]</value></data>
   <data name="SlashHintSnippets" xml:space="preserve"><value>list saved code snippets — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>
@@ -1594,4 +1594,18 @@ What you save there applies from your next question, in this thread and the othe
   <data name="RenameLeftAsTheyAre" xml:space="preserve"><value>{0} {0:occurrence|occurrences} of `{1}` left as they are — this rename cannot tell they are this symbol. Check them:</value></data>
   <data name="RenameMoreLeft" xml:space="preserve"><value>… and {0} more.</value></data>
   <data name="DesignerFileWarning" xml:space="preserve"><value>⚠ {0} is the Windows Forms designer's code: the designer rewrites InitializeComponent and may no longer open the form after a hand edit. Approve only what the designer cannot do itself (removing a handler that no longer exists); a change to the form belongs in the designer.</value></data>
+  <data name="CheckRangeEmpty" xml:space="preserve"><value>`{0}` holds no commit: nothing to review.</value></data>
+  <data name="CheckBranchAddsNothing" xml:space="preserve"><value>`{0}` brings no commit that HEAD lacks (it is HEAD, or already merged): nothing to review. `/check {1}..{0}` reviews it against another branch.</value></data>
+  <data name="CheckReviewedRange" xml:space="preserve"><value>Reviewed: `{0}`, {1} {1:commit|commits}.</value></data>
+  <data name="CheckReviewedBranch" xml:space="preserve"><value>Reviewed: what `{0}` brings to HEAD, {1} {1:commit|commits}.</value></data>
+  <data name="CheckReviewedCommit" xml:space="preserve"><value>Reviewed: commit `{0}` — {1}</value></data>
+  <data name="CheckTargetDiffEmpty" xml:space="preserve"><value>The change in `{0}` is empty: nothing to review.</value></data>
+  <data name="CheckNameAlsoRevision" xml:space="preserve"><value>`{0}` is also a git revision; this review used the check of that name. `/check {1}` reviews the revision.</value></data>
+  <data name="CheckShallowBoundary" xml:space="preserve"><value>`{0}` has no parent in this shallow clone: its parent was not fetched, so the commit cannot be compared with it. `git fetch --deepen=1` fetches it.</value></data>
+  <data name="CheckCommitDiffTruncated" xml:space="preserve"><value>⚠ Only the first {0} characters of this commit's diff were reviewed, out of {1}. What follows is about that part: the rest of the commit was not read.</value></data>
+  <data name="CheckRangeDiffTruncated" xml:space="preserve"><value>⚠ Only the first {0} characters of the diff were reviewed, out of {1}. What follows is about that part, not about the whole change — review its commits one at a time (`/check &lt;commit&gt;`) or a shorter range.</value></data>
+  <data name="CheckSeveralBases" xml:space="preserve"><value>The two sides have {0} {0:common base|common bases} (a criss-cross merge): the diff starts at `{1}` and may show changes the other side already has.</value></data>
+  <data name="CheckNoCommonBase" xml:space="preserve"><value>`{0}`: the two histories have no commit in common, so the change has no point to start from. `/check &lt;commit&gt;` reviews one commit.</value></data>
+  <data name="CheckAmbiguousHash" xml:space="preserve"><value>`{0}` begins the names of {1} {1:object|objects}: write more of the hash.</value></data>
+  <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` names several refs: {1}. Write the one to review as it is listed here.</value></data>
 </root>

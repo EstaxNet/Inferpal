@@ -16,6 +16,7 @@
   "inferpal.command.fixSelection": "Inferpal: 이 코드 수정",
   "inferpal.command.refactorSelection": "Inferpal: 이 코드 리팩터링",
   "inferpal.command.docSelection": "Inferpal: 이 코드 문서화",
+  "inferpal.command.reviewCommit": "Inferpal: 커밋 검토…",
   "inferpal.command.exportChat": "Inferpal: 대화 내보내기",
   "inferpal.command.openSettings": "Inferpal: 설정",
   "inferpal.command.openDocs": "Inferpal: 문서(영어)"

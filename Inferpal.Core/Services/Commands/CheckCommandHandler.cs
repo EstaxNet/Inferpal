@@ -9,8 +9,8 @@ using Inferpal.Services.Inference;
 namespace Inferpal.Services.Commands;
 
 /// <summary>
-/// Pure logic of <c>/check</c> — review the current git diff against <c>.inferpal/checks/*.md</c>
-/// and give back findings <b>anchored to the diff</b>.
+/// Pure logic of <c>/check</c> — review the current git diff, or a branch, a range, a commit (<see cref="CheckTarget"/>),
+/// against <c>.inferpal/checks/*.md</c> and give back findings <b>anchored to the diff</b>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -35,7 +35,7 @@ internal static class CheckCommandHandler
     /// <param name="client">Inference provider; the review uses the chat-role model.</param>
     /// <param name="config">Read for model resolution only.</param>
     /// <param name="projectRoot">Repository root — where checks are loaded and git runs.</param>
-    /// <param name="parts">Tokenised command: <c>init</c>, a check name, or nothing.</param>
+    /// <param name="parts">Tokenised command: <c>init</c>, a check name, a git revision or range, or nothing.</param>
     /// <param name="git">Git runner supplied by the front-end.</param>
     /// <param name="onProgress">Status line while the model reviews; null = silent.</param>
     public static async Task<CheckCommandResult> HandleAsync(
@@ -50,70 +50,102 @@ internal static class CheckCommandHandler
         // Checks that cannot be read are named on every answer that depends on them: dropped silently, the
         // diff would be reviewed against fewer checks than the user wrote.
         var checks = ChecksService.Load(Path.Combine(projectRoot, ".inferpal", "checks"), out var unreadable);
-        string Named(string message) =>
-            RulesChecksPromptsCommandHandler.Unreadable(unreadable) is { } note ? message + "\n\n" + note : message;
+        // A check's name that is also a revision: every answer says how to review the revision.
+        string? alsoRevision = null;
+        string Named(string message)
+        {
+            if (RulesChecksPromptsCommandHandler.Unreadable(unreadable) is { } note) message += "\n\n" + note;
+            return alsoRevision is null ? message : message + "\n\n" + alsoRevision;
+        }
 
         if (checks.Count == 0) return new(Named(Strings.ChecksNone));
 
-        var narrowed = !string.IsNullOrEmpty(arg);
+        // ⚠ A check's name wins over a revision of the same name: /check <name> keeps its meaning, and the answer says how
+        // to review the revision. Anything else is read as a revision; neither is refused naming both.
+        var narrowed = false;
+        CheckTarget? target = null;
         if (arg is { Length: > 0 })
         {
             var one = checks.FirstOrDefault(c => c.Name.Equals(arg, StringComparison.OrdinalIgnoreCase));
-            if (one is null) return new(Named(Strings.CheckUnknownName(arg)));
-            checks = [one];
+            if (one is not null)
+            {
+                checks   = [one];
+                narrowed = true;
+                if (await CheckTarget.RevisionSpellingAsync(arg, git, ct) is { } spelling)
+                    alsoRevision = Strings.CheckNameAlsoRevision(arg, spelling);
+            }
+            else
+            {
+                var (resolved, nothing) = await CheckTarget.ResolveAsync(arg, git, ct);
+                if (nothing is not null) return new(Named(nothing));
+                if (resolved is null) return new(Named(Strings.CheckUnknownName(arg, CheckNames(checks))));
+                target = resolved;
+            }
         }
 
-        // Staged first, unstaged as a fallback — same rule as /commit, so the two commands always
-        // talk about the same change.
-        // ⚠ Same gate as /commit, for the same reason: `Strings.CheckNoDiff` says "the working tree
-        // is clean", which is a claim about the user's repository — and a git that refused would
-        // instead have its `fatal:` line reviewed against the user's checks, since RunAsync appends
-        // stderr to the output.
-        var stagedRun = await git("diff --staged", ct);
-        if (GitProcess.FailureNote("diff --staged", stagedRun) is { } stagedFailed)
-            return new(Named(stagedFailed));
         // ⚠ The lines of a file the workspace's ignore files exclude are its content: its sections leave the diff, and the
         // review says it did not read them — never a clean verdict on what it never saw.
         var excluded = new Governance.ContentExclusions.Tally();
         var workTree = GitProcess.WorkTreeOf(projectRoot);
-        // Staged or not is decided on what git staged, excluded files included: the change under review stays the one
-        // /commit describes.
-        var staged = Governance.ContentExclusions.WithoutExcludedFiles(stagedRun.Output, workTree, excluded);
         string diff;
         List<string> notReviewed = [];
-        if (string.IsNullOrWhiteSpace(stagedRun.Output))
+        if (target is not null)
         {
-            var unstagedRun = await git("diff", ct);
-            if (GitProcess.FailureNote("diff", unstagedRun) is { } unstagedFailed)
-                return new(Named(unstagedFailed));
-            var statusRun = await git("status --short", ct);
-            if (GitProcess.FailureNote("status --short", statusRun) is { } statusFailed)
-                return new(Named(statusFailed));
-            var unstaged = Governance.ContentExclusions.WithoutExcludedFiles(unstagedRun.Output, workTree, excluded);
-            var status   = statusRun.Output;
-            if (string.IsNullOrWhiteSpace(unstaged) && string.IsNullOrWhiteSpace(status))
-                return new(excluded.Count > 0 ? excluded.ForPerson() : Strings.CheckNoDiff);
-            diff = GitCommitPolicy.BuildUnstagedContext(status, unstaged);
-
-            // ⚠ A NEW file is part of the change under review, and `git diff` never shows one: reviewed from the
-            // status line alone, "?? src/NewService.cs" came back "the review turned up nothing on this diff" — a clean
-            // verdict on code nobody read. (/commit leaves them out on purpose: /commit-exec commits tracked files only.)
-            var (_, untracked) = GitCommitPolicy.SplitUntracked(status);
-            if (untracked.Count > 0)
-            {
-                var (newFiles, notRead) = await NewFilesAsync(projectRoot, git, untracked, diff.Length, excluded, ct);
-                diff       += Governance.ContentExclusions.WithoutExcludedFiles(newFiles, workTree, excluded);
-                notReviewed = notRead;
-            }
-        }
-        else if (string.IsNullOrWhiteSpace(staged))
-        {
-            // Only excluded files are staged: nothing the review may read.
-            return new(Named(excluded.ForPerson()));
+            var run = await git(target.DiffArgs, ct);
+            if (GitProcess.FailureNote(target.DiffArgs, run) is { } failed) return new(Named(failed));
+            var text = Governance.ContentExclusions.WithoutExcludedFiles(run.Output, workTree, excluded);
+            if (string.IsNullOrWhiteSpace(text))
+                return new(Named(excluded.Count > 0 ? excluded.ForPerson() : Strings.CheckTargetDiffEmpty(target.Shown)));
+            diff = $"git diff {target.Shown}:\n{text}";
         }
         else
         {
-            diff = GitCommitPolicy.BuildStagedContext(staged);
+            // Staged first, unstaged as a fallback — same rule as /commit, so the two commands always
+            // talk about the same change.
+            // ⚠ Same gate as /commit, for the same reason: `Strings.CheckNoDiff` says "the working tree
+            // is clean", which is a claim about the user's repository — and a git that refused would
+            // instead have its `fatal:` line reviewed against the user's checks, since RunAsync appends
+            // stderr to the output.
+            var stagedRun = await git("diff --staged", ct);
+            if (GitProcess.FailureNote("diff --staged", stagedRun) is { } stagedFailed)
+                return new(Named(stagedFailed));
+            // Staged or not is decided on what git staged, excluded files included: the change under review stays the one
+            // /commit describes.
+            var staged = Governance.ContentExclusions.WithoutExcludedFiles(stagedRun.Output, workTree, excluded);
+            if (string.IsNullOrWhiteSpace(stagedRun.Output))
+            {
+                var unstagedRun = await git("diff", ct);
+                if (GitProcess.FailureNote("diff", unstagedRun) is { } unstagedFailed)
+                    return new(Named(unstagedFailed));
+                var statusRun = await git("status --short", ct);
+                if (GitProcess.FailureNote("status --short", statusRun) is { } statusFailed)
+                    return new(Named(statusFailed));
+                var unstaged = Governance.ContentExclusions.WithoutExcludedFiles(unstagedRun.Output, workTree, excluded);
+                var status   = statusRun.Output;
+                if (string.IsNullOrWhiteSpace(unstaged) && string.IsNullOrWhiteSpace(status))
+                    return new(Named(excluded.Count > 0 ? excluded.ForPerson() : Strings.CheckNoDiff));
+                diff = GitCommitPolicy.BuildUnstagedContext(status, unstaged);
+
+                // ⚠ A NEW file is part of the change under review, and `git diff` never shows one: reviewed from the
+                // status line alone, "?? src/NewService.cs" came back "the review turned up nothing on this diff" — a clean
+                // verdict on code nobody read. (/commit leaves them out on purpose: /commit-exec commits tracked files only.)
+                var (_, untracked) = GitCommitPolicy.SplitUntracked(status);
+                if (untracked.Count > 0)
+                {
+                    var (newFiles, notRead) = await NewFilesAsync(projectRoot, git, untracked, diff.Length, excluded, ct);
+                    diff       += Governance.ContentExclusions.WithoutExcludedFiles(newFiles, workTree, excluded);
+                    notReviewed = notRead;
+                }
+            }
+            else if (string.IsNullOrWhiteSpace(staged))
+            {
+                // Only excluded files are staged: nothing the review may read.
+                return new(Named(excluded.ForPerson()));
+            }
+            else
+            {
+                diff = GitCommitPolicy.BuildStagedContext(staged);
+            }
         }
         if (excluded.Count > 0) diff = excluded.Note() + "\n\n" + diff;
 
@@ -160,15 +192,25 @@ internal static class CheckCommandHandler
         // reached, and the absence of the rest reads as "the rest is fine" — a verdict nobody gave.
         if (cut)
             rendered = Strings.CheckReviewCut + "\n\n" + rendered;
+        // ⚠ The remedy follows what was reviewed: a committed change has nothing to stage in smaller pieces.
         if (capped.IsTruncated)
-            rendered = Strings.CheckDiffTruncated(capped.Kept, capped.Total) + "\n\n" + rendered;
+            rendered = (target is null ? Strings.CheckDiffTruncated(capped.Kept, capped.Total)
+                      : target.IsCommit ? Strings.CheckCommitDiffTruncated(capped.Kept, capped.Total)
+                      : Strings.CheckRangeDiffTruncated(capped.Kept, capped.Total))
+                       + "\n\n" + rendered;
         if (notReviewed.Count > 0)
             rendered = Strings.CheckNewFilesNotReviewed(notReviewed.Count, GitCommitPolicy.NameList(notReviewed))
                        + "\n\n" + rendered;
         if (excluded.Count > 0)
             rendered = excluded.ForPerson() + "\n\n" + rendered;
+        // What was reviewed rides on top: a verdict on a commit read as one on the working tree is the wrong verdict.
+        if (target is not null) rendered = target.Label + "\n\n" + rendered;
         return new(Named(rendered));
     }
+
+    /// <summary>The checks a refusal names, so a mistyped name is corrected without another command.</summary>
+    private static string CheckNames(IReadOnlyList<ReviewCheck> checks) =>
+        string.Join(", ", checks.Select(c => $"`{c.Name}`"));
 
     /// <summary>
     /// The system prompt of a review: the whole change with the checks as added criteria, or — for <c>/check

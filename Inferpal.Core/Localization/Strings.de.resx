@@ -517,7 +517,7 @@ Klicken Sie auf **Mit KI reparieren**, um die automatische Korrektur in einer Sc
   <data name="ChecksListHeader" xml:space="preserve"><value>**Review-Checks** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>Nichts zu prüfen – der Arbeitsbaum ist sauber.</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>Diff wird geprüft…</value></data>
-  <data name="CheckUnknownName" xml:space="preserve"><value>Kein Check namens „{0}". Führe `/checks` aus, um sie aufzulisten.</value></data>
+  <data name="CheckUnknownName" xml:space="preserve"><value>Kein Check und keine git-Revision namens „{0}". Die Checks: {1}. `/check &lt;base&gt;..HEAD` prüft einen Branch, `/check &lt;commit&gt;` einen Commit.</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>Kein verankerter Befund — die Prüfung hat in diesem Diff nichts gefunden.</value></data>
   <data name="CheckNoFindingsNarrowed" xml:space="preserve"><value>Kein verankerter Befund — der Check hat in diesem Diff nichts gefunden.</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ Kein Review: **{0}** hat die ganze Antwort mit Nachdenken verbracht und keinen Befund geschrieben. Das sagt nichts über den Diff aus – es ist kein sauberes Ergebnis. Ein größerer Kontext oder ein Modell, das nicht zuerst nachdenkt, vermeidet das.</value></data>
@@ -725,7 +725,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="SlashHintTemplate" xml:space="preserve"><value>Sitzung aus einer Vorlage starten — /template &lt;id&gt;</value></data>
   <data name="TemplateUnknown" xml:space="preserve"><value>Unbekannte Vorlage `{0}`. Geben Sie `/template` ein, um die Liste zu sehen.</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>vollständigen git-Diff als Kontext-Chip anhängen — /diff [Pfad]</value></data>
-  <data name="SlashHintCheck" xml:space="preserve"><value>aktuellen git-Diff per KI prüfen, zusätzlich gegen .inferpal/checks — /check [Name|init]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>aktuellen git-Diff, einen Branch oder einen Commit per KI prüfen, zusätzlich gegen .inferpal/checks — /check [Name|init|&lt;Revision&gt;|A..B]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>Projektregeln in .inferpal/rules auflisten — /rules [init]</value></data>
   <data name="SlashHintChecks" xml:space="preserve"><value>Prüfungen in .inferpal/checks auflisten — /checks [init]</value></data>
   <data name="SlashHintSnippets" xml:space="preserve"><value>gespeicherte Code-Snippets auflisten — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>
@@ -1590,4 +1590,18 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="RenameLeftAsTheyAre" xml:space="preserve"><value>{0} {0:Vorkommen|Vorkommen} von `{1}` unverändert gelassen – diese Umbenennung kann nicht erkennen, ob es dieses Symbol ist. Prüfe sie:</value></data>
   <data name="RenameMoreLeft" xml:space="preserve"><value>… und {0} weitere.</value></data>
   <data name="DesignerFileWarning" xml:space="preserve"><value>⚠ {0} ist der Code des Windows-Forms-Designers: Er schreibt InitializeComponent neu und öffnet das Formular nach einer Handänderung womöglich nicht mehr. Genehmige nur, was der Designer selbst nicht kann (einen nicht mehr vorhandenen Handler entfernen); eine Änderung am Formular gehört in den Designer.</value></data>
+  <data name="CheckRangeEmpty" xml:space="preserve"><value>`{0}` enthält keinen Commit: nichts zu prüfen.</value></data>
+  <data name="CheckBranchAddsNothing" xml:space="preserve"><value>`{0}` bringt keinen Commit, den HEAD nicht hat (es ist HEAD oder bereits gemergt): nichts zu prüfen. `/check {1}..{0}` prüft ihn gegen einen anderen Branch.</value></data>
+  <data name="CheckReviewedRange" xml:space="preserve"><value>Geprüft: `{0}`, {1} {1:Commit|Commits}.</value></data>
+  <data name="CheckReviewedBranch" xml:space="preserve"><value>Geprüft: was `{0}` zu HEAD hinzufügt, {1} {1:Commit|Commits}.</value></data>
+  <data name="CheckReviewedCommit" xml:space="preserve"><value>Geprüft: Commit `{0}` — {1}</value></data>
+  <data name="CheckTargetDiffEmpty" xml:space="preserve"><value>Die Änderung in `{0}` ist leer: nichts zu prüfen.</value></data>
+  <data name="CheckNameAlsoRevision" xml:space="preserve"><value>`{0}` ist auch eine git-Revision; diese Prüfung hat den gleichnamigen Check verwendet. `/check {1}` prüft die Revision.</value></data>
+  <data name="CheckShallowBoundary" xml:space="preserve"><value>`{0}` hat in diesem flachen Klon keinen Eltern-Commit: er wurde nicht abgerufen, daher kann der Commit nicht mit ihm verglichen werden. `git fetch --deepen=1` ruft ihn ab.</value></data>
+  <data name="CheckCommitDiffTruncated" xml:space="preserve"><value>⚠ Nur die ersten {0} Zeichen des Diffs dieses Commits wurden geprüft, von {1}. Das Folgende betrifft diesen Teil: Der Rest des Commits wurde nicht gelesen.</value></data>
+  <data name="CheckRangeDiffTruncated" xml:space="preserve"><value>⚠ Nur die ersten {0} Zeichen des Diffs wurden geprüft, von {1}. Das Folgende betrifft diesen Teil, nicht die ganze Änderung — prüfe ihre Commits einzeln (`/check &lt;commit&gt;`) oder einen kürzeren Bereich.</value></data>
+  <data name="CheckSeveralBases" xml:space="preserve"><value>Die beiden Seiten haben {0} {0:gemeinsame Basis|gemeinsame Basen} (Kreuz-Merge): Der Diff beginnt bei `{1}` und kann Änderungen zeigen, die die andere Seite schon hat.</value></data>
+  <data name="CheckNoCommonBase" xml:space="preserve"><value>`{0}`: Die beiden Historien haben keinen gemeinsamen Commit, die Änderung hat also keinen Ausgangspunkt. `/check &lt;commit&gt;` prüft einen Commit.</value></data>
+  <data name="CheckAmbiguousHash" xml:space="preserve"><value>`{0}` ist der Anfang der Namen von {1} {1:Objekt|Objekten}: Schreibe mehr vom Hash.</value></data>
+  <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` bezeichnet mehrere Refs: {1}. Schreibe die zu prüfende so, wie sie hier aufgeführt ist.</value></data>
 </root>

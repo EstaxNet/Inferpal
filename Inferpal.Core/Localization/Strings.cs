@@ -1267,7 +1267,19 @@ internal static class Strings
     public static string ChecksListHeader        => Get(nameof(ChecksListHeader));
     public static string CheckNoDiff             => Get(nameof(CheckNoDiff));
     public static string CheckReviewingLabel     => Get(nameof(CheckReviewingLabel));
-    public static string CheckUnknownName(string name) => Format(Get(nameof(CheckUnknownName)), name);
+    public static string CheckUnknownName(string name, string checks) => Format(Get(nameof(CheckUnknownName)), name, checks);
+    public static string CheckAmbiguousRef(string name, string refs) => Format(Get(nameof(CheckAmbiguousRef)), name, refs);
+    public static string CheckAmbiguousHash(string prefix, int objects) => Format(Get(nameof(CheckAmbiguousHash)), prefix, objects);
+    public static string CheckNoCommonBase(string range) => Format(Get(nameof(CheckNoCommonBase)), range);
+    public static string CheckSeveralBases(int bases, string used) => Format(Get(nameof(CheckSeveralBases)), bases, used);
+    public static string CheckRangeEmpty(string range) => Format(Get(nameof(CheckRangeEmpty)), range);
+    public static string CheckBranchAddsNothing(string branch, string baseBranch) => Format(Get(nameof(CheckBranchAddsNothing)), branch, baseBranch);
+    public static string CheckReviewedRange(string range, int commits) => Format(Get(nameof(CheckReviewedRange)), range, commits);
+    public static string CheckReviewedBranch(string branch, int commits) => Format(Get(nameof(CheckReviewedBranch)), branch, commits);
+    public static string CheckReviewedCommit(string sha, string subject) => Format(Get(nameof(CheckReviewedCommit)), sha, subject);
+    public static string CheckTargetDiffEmpty(string change) => Format(Get(nameof(CheckTargetDiffEmpty)), change);
+    public static string CheckNameAlsoRevision(string name, string spelling) => Format(Get(nameof(CheckNameAlsoRevision)), name, spelling);
+    public static string CheckShallowBoundary(string sha) => Format(Get(nameof(CheckShallowBoundary)), sha);
     public static string CheckNoFindings         => Get(nameof(CheckNoFindings));
     /// <summary><c>/check &lt;name&gt;</c> found nothing: a verdict on that one check, not on the change.</summary>
     public static string CheckNoFindingsNarrowed => Get(nameof(CheckNoFindingsNarrowed));
@@ -1275,6 +1287,10 @@ internal static class Strings
     /// <summary>The verdict below covers only what fit — said above the findings, which it qualifies.</summary>
     public static string CheckDiffTruncated(int kept, int total) =>
         Format(Get(nameof(CheckDiffTruncated)), kept, total);
+    public static string CheckRangeDiffTruncated(int kept, int total) =>
+        Format(Get(nameof(CheckRangeDiffTruncated)), kept, total);
+    public static string CheckCommitDiffTruncated(int kept, int total) =>
+        Format(Get(nameof(CheckCommitDiffTruncated)), kept, total);
     public static string CheckNewFilesNotReviewed(int count, string names) =>
         Format(Get(nameof(CheckNewFilesNotReviewed)), count, names);
     public static string CheckSeverityBlocker    => Get(nameof(CheckSeverityBlocker));

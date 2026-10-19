@@ -58,7 +58,20 @@ reported. With no check in the repository, `/check` asks you to create one (`/ch
 - Findings are grouped by file, blockers first, so the reading order is the fixing order.
 
 Commands: `/check` reviews the change with all checks; `/check <name>` reviews it against that one
-check **only** (the narrow review you ask for); `/check init` scaffolds an example. `/checks` lists the available checks; `/checks init` scaffolds one. Available in
+check **only** (the narrow review you ask for); `/check init` scaffolds an example.
+
+**A branch, a range, a commit.** `/check main..HEAD` reviews a branch before its pull request: the commits
+`HEAD` has and `main` has not, diffed from where the two parted — what a pull request shows, never the changes
+`main` received since (`A...B` is the same). `/check feature` reviews what `feature` brings to the branch you are
+on; `/check 1a2b3c4` (or a tag, `HEAD~2`) one commit, against its first parent (a merge: what it brought to its
+branch). The answer starts by naming what was reviewed, and a branch that brings nothing says so. A check's name
+wins over a branch of the same name; the answer then gives the spelling that reviews the branch (`refs/heads/…`).
+A name a branch and a tag share, or a hash prefix several objects share, is refused naming them rather than
+guessed; so is a commit at the edge of a shallow clone, whose parent was not fetched. In VS Code,
+**Inferpal: Review a Commit…** (Command Palette) picks a recent commit — searchable by its message — or takes a
+branch, a tag or a range typed in the box. Like `/check` itself, it needs at least one check (`/checks init`).
+
+`/checks` lists the available checks; `/checks init` scaffolds one. Available in
 **both front-ends** (VS and VS Code).
 
 > [!NOTE]

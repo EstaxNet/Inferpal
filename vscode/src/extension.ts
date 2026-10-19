@@ -10,6 +10,7 @@ import { EditorBridge } from './editorBridge';
 import { HostClient } from './hostClient';
 import { hostErrorText, otherWorkspaceFolders, promptOpenFolder, workspaceRoot } from './hostStatus';
 import { FimProvider } from './inlineCompletions';
+import { reviewCommit } from './reviewCommit';
 import { followModelRouterSettings, initModelRouterSync, syncModelRouterSettings } from './modelRouterSettings';
 import { docsUrl } from './docsLinks';
 import { setLanguage, t } from './i18n';
@@ -79,6 +80,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('inferpal.fixSelection', () => chatView.runSlashCommand('/fix')),
     vscode.commands.registerCommand('inferpal.refactorSelection', () => chatView.runSlashCommand('/refactor')),
     vscode.commands.registerCommand('inferpal.docSelection', () => chatView.runSlashCommand('/doc')),
+    // A commit picked, or a branch or range typed: reviewed by /check, like typing it.
+    vscode.commands.registerCommand('inferpal.reviewCommit', () =>
+      reviewCommit((text) => chatView.runSlashCommand(text))),
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('inferpal.utilityModel') || e.affectsConfiguration('inferpal.modelRouterAuto')) {
         // config/update is refused while a turn runs: the push waits for it to end.

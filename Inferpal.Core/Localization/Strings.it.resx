@@ -517,7 +517,7 @@ Fai clic su **Correggi con l'IA** per correggere automaticamente in loop, o digi
   <data name="ChecksListHeader" xml:space="preserve"><value>**Check di revisione** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>Niente da revisionare — l'albero di lavoro è pulito.</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>Revisione del diff in corso…</value></data>
-  <data name="CheckUnknownName" xml:space="preserve"><value>Nessun check chiamato «{0}». Esegui `/checks` per elencarli.</value></data>
+  <data name="CheckUnknownName" xml:space="preserve"><value>Nessun check e nessuna revisione git chiamati «{0}». I check: {1}. `/check &lt;base&gt;..HEAD` revisiona un branch, `/check &lt;commit&gt;` un commit.</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>Nessun rilievo ancorato: la revisione non ha trovato nulla su questo diff.</value></data>
   <data name="CheckNoFindingsNarrowed" xml:space="preserve"><value>Nessun rilievo ancorato: il check non ha trovato nulla su questo diff.</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ Nessuna revisione: **{0}** ha passato tutta la risposta a ragionare senza scrivere rilievi. Questo non dice nulla sul diff: non è un risultato pulito. Un contesto più ampio, o un modello che non ragiona prima, lo evita.</value></data>
@@ -725,7 +725,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="SlashHintTemplate" xml:space="preserve"><value>avviare una sessione da un modello predefinito — /template &lt;id&gt;</value></data>
   <data name="TemplateUnknown" xml:space="preserve"><value>Modello sconosciuto: `{0}`. Digita `/template` per vedere l’elenco.</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>allegare il diff git completo come chip di contesto — /diff [percorso]</value></data>
-  <data name="SlashHintCheck" xml:space="preserve"><value>far revisionare all'IA il diff git attuale, anche secondo .inferpal/checks — /check [nome|init]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>far revisionare all'IA il diff git attuale, un branch o un commit, anche secondo .inferpal/checks — /check [nome|init|&lt;revisione&gt;|A..B]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>elencare le regole del progetto in .inferpal/rules — /rules [init]</value></data>
   <data name="SlashHintChecks" xml:space="preserve"><value>elencare i controlli di revisione in .inferpal/checks — /checks [init]</value></data>
   <data name="SlashHintSnippets" xml:space="preserve"><value>elencare gli snippet di codice salvati — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>
@@ -1590,4 +1590,18 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="RenameLeftAsTheyAre" xml:space="preserve"><value>{0} {0:occorrenza|occorrenze} di `{1}` lasciate come sono: questa ridenominazione non può dire se sono questo simbolo. Controllale:</value></data>
   <data name="RenameMoreLeft" xml:space="preserve"><value>… e altre {0}.</value></data>
   <data name="DesignerFileWarning" xml:space="preserve"><value>⚠ {0} è il codice della finestra di progettazione Windows Forms: riscrive InitializeComponent e potrebbe non aprire più il form dopo una modifica a mano. Approva solo ciò che la finestra di progettazione non sa fare (togliere un gestore che non esiste più); una modifica del form si fa nella finestra di progettazione.</value></data>
+  <data name="CheckRangeEmpty" xml:space="preserve"><value>`{0}` non contiene alcun commit: niente da revisionare.</value></data>
+  <data name="CheckBranchAddsNothing" xml:space="preserve"><value>`{0}` non porta alcun commit che HEAD non abbia (è HEAD, o è già stato unito): niente da revisionare. `/check {1}..{0}` lo revisiona rispetto a un altro branch.</value></data>
+  <data name="CheckReviewedRange" xml:space="preserve"><value>Revisionato: `{0}`, {1} {1:commit|commit}.</value></data>
+  <data name="CheckReviewedBranch" xml:space="preserve"><value>Revisionato: ciò che `{0}` porta a HEAD, {1} {1:commit|commit}.</value></data>
+  <data name="CheckReviewedCommit" xml:space="preserve"><value>Revisionato: il commit `{0}` — {1}</value></data>
+  <data name="CheckTargetDiffEmpty" xml:space="preserve"><value>La modifica di `{0}` è vuota: niente da revisionare.</value></data>
+  <data name="CheckNameAlsoRevision" xml:space="preserve"><value>`{0}` è anche una revisione git; questa revisione ha usato il check con quel nome. `/check {1}` revisiona la revisione.</value></data>
+  <data name="CheckShallowBoundary" xml:space="preserve"><value>`{0}` non ha un genitore in questo clone superficiale: il genitore non è stato scaricato, quindi il commit non può essere confrontato con esso. `git fetch --deepen=1` lo scarica.</value></data>
+  <data name="CheckCommitDiffTruncated" xml:space="preserve"><value>⚠ Sono stati revisionati solo i primi {0} caratteri del diff di questo commit, su {1}. Quanto segue riguarda quella parte: il resto del commit non è stato letto.</value></data>
+  <data name="CheckRangeDiffTruncated" xml:space="preserve"><value>⚠ Sono stati revisionati solo i primi {0} caratteri del diff, su {1}. Quanto segue riguarda quella parte, non l'intera modifica: revisiona i suoi commit uno alla volta (`/check &lt;commit&gt;`) o un intervallo più breve.</value></data>
+  <data name="CheckSeveralBases" xml:space="preserve"><value>I due lati hanno {0} {0:base comune|basi comuni} (merge incrociato): il diff parte da `{1}` e può mostrare modifiche che l'altro lato ha già.</value></data>
+  <data name="CheckNoCommonBase" xml:space="preserve"><value>`{0}`: le due cronologie non hanno alcun commit in comune, quindi la modifica non ha un punto di partenza. `/check &lt;commit&gt;` revisiona un commit.</value></data>
+  <data name="CheckAmbiguousHash" xml:space="preserve"><value>`{0}` è l'inizio del nome di {1} {1:oggetto|oggetti}: scrivi più caratteri dell'hash.</value></data>
+  <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` indica più riferimenti: {1}. Scrivi quello da revisionare così come è elencato qui.</value></data>
 </root>

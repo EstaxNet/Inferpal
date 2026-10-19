@@ -171,5 +171,7 @@
   "Your note was not read before the turn ended: it is back in the input box.": "Заметка не была прочитана до конца хода — она возвращена в поле ввода.",
   "Continue": "Продолжить",
   "Continue.": "Продолжай.",
-  "Inferpal is waiting for your approval.": "Inferpal ждёт вашего подтверждения."
+  "Inferpal is waiting for your approval.": "Inferpal ждёт вашего подтверждения.",
+  "Pick a commit, or type a branch or A..B, to review": "Выберите коммит или введите ветку или A..B для проверки",
+  "Review this branch, tag or range": "Проверить эту ветку, тег или диапазон"
 }

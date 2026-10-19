@@ -171,5 +171,7 @@
   "Your note was not read before the turn ended: it is back in the input box.": "ターンが終わる前にメモは読まれませんでした。入力欄に戻されました。",
   "Continue": "続ける",
   "Continue.": "続けてください。",
-  "Inferpal is waiting for your approval.": "Inferpal があなたの承認を待っています。"
+  "Inferpal is waiting for your approval.": "Inferpal があなたの承認を待っています。",
+  "Pick a commit, or type a branch or A..B, to review": "レビューするコミットを選ぶか、ブランチまたは A..B を入力してください",
+  "Review this branch, tag or range": "このブランチ、タグ、または範囲をレビュー"
 }

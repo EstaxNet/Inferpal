@@ -517,7 +517,7 @@
   <data name="ChecksListHeader" xml:space="preserve"><value>**Проверки ревью** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>Нечего проверять — рабочее дерево чистое.</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>Идёт проверка диффа…</value></data>
-  <data name="CheckUnknownName" xml:space="preserve"><value>Нет проверки с именем «{0}». Выполните `/checks`, чтобы вывести список.</value></data>
+  <data name="CheckUnknownName" xml:space="preserve"><value>Нет ни проверки, ни ревизии git с именем «{0}». Проверки: {1}. `/check &lt;base&gt;..HEAD` проверяет ветку, `/check &lt;commit&gt;` — коммит.</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>Ни одного привязанного замечания — ревью ничего не нашло в этом диффе.</value></data>
   <data name="CheckNoFindingsNarrowed" xml:space="preserve"><value>Ни одного привязанного замечания — эта проверка ничего не нашла в этом диффе.</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ Проверки нет: **{0}** потратила весь ответ на рассуждения и не написала ни одного замечания. Это ничего не говорит о диффе — это не чистый результат. Избежать этого помогает больший контекст или модель, которая не рассуждает перед ответом.</value></data>
@@ -723,7 +723,7 @@
   <data name="SlashHintTemplate" xml:space="preserve"><value>начать сессию из готового шаблона — /template &lt;id&gt;</value></data>
   <data name="TemplateUnknown" xml:space="preserve"><value>Неизвестный шаблон `{0}`. Введите `/template`, чтобы увидеть список.</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>прикрепить полный git diff как чип контекста — /diff [путь]</value></data>
-  <data name="SlashHintCheck" xml:space="preserve"><value>проверка текущего git diff через ИИ, в том числе по .inferpal/checks — /check [имя|init]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>проверка через ИИ текущего git diff, ветки или коммита, в том числе по .inferpal/checks — /check [имя|init|&lt;ревизия&gt;|A..B]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>список правил проекта в .inferpal/rules — /rules [init]</value></data>
   <data name="SlashHintChecks" xml:space="preserve"><value>список проверок ревью в .inferpal/checks — /checks [init]</value></data>
   <data name="SlashHintSnippets" xml:space="preserve"><value>список сохранённых фрагментов кода — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>
@@ -1590,4 +1590,18 @@
   <data name="RenameLeftAsTheyAre" xml:space="preserve"><value>{0} {0:вхождение|вхождения|вхождений} `{1}` оставлено без изменений — это переименование не может определить, тот ли это символ. Проверьте их:</value></data>
   <data name="RenameMoreLeft" xml:space="preserve"><value>… и ещё {0}.</value></data>
   <data name="DesignerFileWarning" xml:space="preserve"><value>⚠ {0} — код конструктора Windows Forms: он переписывает InitializeComponent и после ручной правки может не открыть форму. Одобряйте только то, что конструктор сам не сделает (удалить обработчик, которого больше нет); изменения формы делаются в конструкторе.</value></data>
+  <data name="CheckRangeEmpty" xml:space="preserve"><value>`{0}` не содержит коммитов: проверять нечего.</value></data>
+  <data name="CheckBranchAddsNothing" xml:space="preserve"><value>`{0}` не приносит коммитов, которых нет в HEAD (это HEAD или ветка уже слита): проверять нечего. `/check {1}..{0}` проверит её относительно другой ветки.</value></data>
+  <data name="CheckReviewedRange" xml:space="preserve"><value>Проверено: `{0}`, коммитов: {1}.</value></data>
+  <data name="CheckReviewedBranch" xml:space="preserve"><value>Проверено: то, что `{0}` добавляет к HEAD, коммитов: {1}.</value></data>
+  <data name="CheckReviewedCommit" xml:space="preserve"><value>Проверено: коммит `{0}` — {1}</value></data>
+  <data name="CheckTargetDiffEmpty" xml:space="preserve"><value>Изменение в `{0}` пустое: проверять нечего.</value></data>
+  <data name="CheckNameAlsoRevision" xml:space="preserve"><value>`{0}` — это ещё и ревизия git; эта проверка использовала одноимённую проверку. `/check {1}` проверит ревизию.</value></data>
+  <data name="CheckShallowBoundary" xml:space="preserve"><value>У `{0}` нет родителя в этом неглубоком клоне: родительский коммит не был загружен, поэтому сравнить с ним нельзя. `git fetch --deepen=1` загрузит его.</value></data>
+  <data name="CheckCommitDiffTruncated" xml:space="preserve"><value>⚠ Проверены только первые {0} символов диффа этого коммита из {1}. Всё ниже относится к этой части: остальная часть коммита не прочитана.</value></data>
+  <data name="CheckRangeDiffTruncated" xml:space="preserve"><value>⚠ Проверены только первые {0} символов диффа из {1}. Всё ниже относится к этой части, а не ко всему изменению — проверьте его коммиты по одному (`/check &lt;commit&gt;`) или более короткий диапазон.</value></data>
+  <data name="CheckSeveralBases" xml:space="preserve"><value>У двух сторон несколько общих баз (перекрёстное слияние; всего: {0}): дифф начинается с `{1}` и может показать изменения, которые уже есть на другой стороне.</value></data>
+  <data name="CheckNoCommonBase" xml:space="preserve"><value>`{0}`: у двух историй нет общего коммита, поэтому у изменения нет начальной точки. `/check &lt;commit&gt;` проверит один коммит.</value></data>
+  <data name="CheckAmbiguousHash" xml:space="preserve"><value>С `{0}` начинаются имена нескольких объектов (всего: {1}): укажите хеш длиннее.</value></data>
+  <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` указывает на несколько ссылок: {1}. Укажите нужную так, как она записана здесь.</value></data>
 </root>

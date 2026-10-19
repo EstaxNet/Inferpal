@@ -336,12 +336,9 @@ internal class GetGitStatusTool : ITool
             !Ok ? Strings.GitCommandFailed(command, Detail) : Or(empty);
     }
 
-    /// <summary>The empty tree of this repository's object format — what a repository with no commit is compared with.
-    /// git knows it without storing it; its name depends on the hash (SHA-1, or SHA-256 since git 2.29).</summary>
+    /// <summary>The empty tree of this repository's object format — what a repository with no commit is compared with.</summary>
     private static async Task<string> EmptyTreeAsync(string root, CancellationToken ct) =>
-        (await GitAsync("rev-parse --show-object-format", root, ct)).Output.Trim() == "sha256"
-            ? "6ef19b41225c5369f1c104d45d8d85efa9b057b53b14b4b9b939dd74decc5321"
-            : "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
+        GitProcess.EmptyTree((await GitAsync("rev-parse --show-object-format", root, ct)).Output);
 
     /// <summary>Runs <c>git &lt;arguments&gt;</c> and keeps <b>whether it answered</b>.</summary>
     /// <remarks>
