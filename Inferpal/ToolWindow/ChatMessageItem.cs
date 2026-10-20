@@ -192,6 +192,112 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     [DataMember] public bool ImportSkipsOpen { get => _importSkipsOpen; set => SetProperty(ref _importSkipsOpen, value); }
     [DataMember] public AsyncCommand ToggleImportSkipsCommand { get; }
 
+    // ── An input card ("inputcard"): an MCP server's form, then Send, Decline, Cancel — the card the Core builds ──
+    // Its title is CardTitle, IsAnswered freezes it. Screen only: what it leaves is a receipt ("input"), saved.
+    private TaskCompletionSource<InputReply?>? _inputReply;
+    private string _inputErrorSummary = string.Empty;
+    private bool   _hasInputError;
+    [DataMember] public string InputSubtitle  { get; private set; } = string.Empty;
+    [DataMember] public string InputMessage   { get; private set; } = string.Empty;
+    [DataMember] public string InputReminder  { get; private set; } = string.Empty;
+    [DataMember] public string InputErrorSummary { get => _inputErrorSummary; private set => SetProperty(ref _inputErrorSummary, value); }
+    [DataMember] public bool   HasInputError  { get => _hasInputError; private set => SetProperty(ref _hasInputError, value); }
+    [DataMember] public string BtnInputSend    { get; private set; } = string.Empty;
+    [DataMember] public string BtnInputDecline { get; private set; } = string.Empty;
+    [DataMember] public string BtnInputCancel  { get; private set; } = string.Empty;
+    [DataMember] public string InputDeclineTip { get; private set; } = string.Empty;
+    [DataMember] public string InputCancelTip  { get; private set; } = string.Empty;
+    [DataMember] public ObservableCollection<InputFieldItem> InputFields { get; } = [];
+    [DataMember] public AsyncCommand InputSendCommand    { get; }
+    [DataMember] public AsyncCommand InputDeclineCommand { get; }
+    [DataMember] public AsyncCommand InputCancelCommand  { get; }
+
+    /// <summary>The Core's id of the card: the same card shown again with what to fix is drawn in this item.</summary>
+    internal string InputCardId { get; private set; } = string.Empty;
+
+    /// <summary>What the person did on the card; <c>null</c> when it was taken away unanswered (its run stopped).</summary>
+    internal Task<InputReply?> InputReply => _inputReply?.Task ?? Task.FromResult<InputReply?>(null);
+
+    /// <summary>An input card, waiting for its answer (<see cref="InputReply"/>).</summary>
+    internal static ChatMessageItem InputCardMsg(InputCardModel card)
+    {
+        var item = new ChatMessageItem
+        {
+            Role          = InputCard.CardRole,
+            Content       = card.Message,
+            CardTitle     = card.Title,
+            InputSubtitle = card.RequiredNote.Length > 0 ? card.Subtitle + " · " + card.RequiredNote : card.Subtitle,
+            // The server's own words, as plain text: never Markdown, never a link.
+            InputMessage  = "“" + card.Message + "”",
+            InputReminder = card.Reminder,
+            BtnInputSend    = card.SendLabel,
+            BtnInputDecline = card.DeclineLabel,
+            BtnInputCancel  = card.CancelLabel,
+            InputDeclineTip = card.DeclineTooltip,
+            InputCancelTip  = card.CancelTooltip,
+            InputCardId   = card.Id,
+        };
+        item.ShowInput(card);
+        return item;
+    }
+
+    /// <summary>The card shown again, under the same id, with what to fix: its fields as the Core rebuilt them, live.</summary>
+    internal void ShowInput(InputCardModel card)
+    {
+        InputFields.Clear();
+        foreach (var f in card.Fields)
+            InputFields.Add(new InputFieldItem(f, card.Id, () => AnswerInput(Services.Mcp.McpInputAction.Accept)));
+        InputErrorSummary = card.ErrorSummary;
+        HasInputError     = card.ErrorSummary.Length > 0;
+        _inputReply       = new TaskCompletionSource<InputReply?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        IsAnswered        = false;
+    }
+
+    /// <summary>Answers the card with the fields as they stand: the first answer wins, and the card freezes.</summary>
+    internal bool AnswerInput(Services.Mcp.McpInputAction action)
+    {
+        if (_inputReply is null || IsAnswered) return false;
+        var values = action == Services.Mcp.McpInputAction.Accept
+            ? InputFields.ToDictionary(f => f.Key, f => f.Value(), StringComparer.Ordinal)
+            : new Dictionary<string, Services.Mcp.McpInputValue>(StringComparer.Ordinal);
+        // ⚠ Frozen BEFORE the answer goes: its continuation may draw the card again with what to fix (ShowInput), and a
+        // freeze landing after it would leave that card unanswerable, the run waiting until Stop.
+        IsAnswered = true;
+        return _inputReply.TrySetResult(new InputReply(action, values));
+    }
+
+    /// <summary>The run this card belonged to was stopped: frozen, its wait ends unanswered.</summary>
+    internal void RetireInput()
+    {
+        if (_inputReply is null || _inputReply.Task.IsCompleted) return;
+        IsAnswered = true;
+        _inputReply.TrySetResult(null);
+    }
+
+    // ── An input card's receipt ("input"): what the person did with the form, and what they sent, folded ──
+    [DataMember] public string ReceiptTitle  { get; private set; } = string.Empty;
+    [DataMember] public string ReceiptDetail { get; private set; } = string.Empty;
+    [DataMember] public string ReceiptBody   { get; private set; } = string.Empty;
+    [DataMember] public bool   HasReceiptBody { get; private set; }
+
+    /// <summary>The line an answered card leaves; its <see cref="Content"/> is what the conversation saves.</summary>
+    internal static ChatMessageItem InputReceiptMsg(InputReceipt receipt, string? timestamp = null)
+    {
+        var item = new ChatMessageItem
+        {
+            Role           = InputCard.ReceiptRole,
+            Content        = receipt.Saved,
+            Timestamp      = timestamp ?? Now(),
+            ReceiptTitle   = receipt.Title,
+            ReceiptDetail  = receipt.Detail,
+            ReceiptBody    = receipt.Body,
+            HasReceiptBody = receipt.Body.Length > 0,
+            IsExpanded     = false,
+        };
+        item.RunGlyph = item.HasReceiptBody ? Glyphs.Check : Glyphs.Info;
+        return item;
+    }
+
     /// <summary>
     /// The import card's Apply: once, with the boxes left ticked. Refused (a turn running), the card comes back live.
     /// </summary>
@@ -246,11 +352,14 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
         OpenDiffCommand     = new AsyncCommand((_, _) => { _onOpenDiff?.Invoke(); return Task.CompletedTask; });
         ImportApplyCommand  = new AsyncCommand(ApplyImportAsync);
         ToggleImportSkipsCommand = new AsyncCommand((_, _) => { ImportSkipsOpen = !ImportSkipsOpen; return Task.CompletedTask; });
+        InputSendCommand    = new AsyncCommand((_, _) => { AnswerInput(Services.Mcp.McpInputAction.Accept);  return Task.CompletedTask; });
+        InputDeclineCommand = new AsyncCommand((_, _) => { AnswerInput(Services.Mcp.McpInputAction.Decline); return Task.CompletedTask; });
+        InputCancelCommand  = new AsyncCommand((_, _) => { AnswerInput(Services.Mcp.McpInputAction.Cancel);  return Task.CompletedTask; });
     }
 
     private Task ToggleExpandAsync(object? _, CancellationToken ct)
     {
-        if (Role == "tool")
+        if (Role == "tool" || Role == InputCard.ReceiptRole && HasReceiptBody)
             IsExpanded = !IsExpanded;
         else if (Role == "run")
             SetRunOpen(!IsExpanded);
@@ -615,6 +724,8 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
                                                 string.IsNullOrEmpty(timestamp) ? null : timestamp);
             return notice;
         }
+        if (role == InputCard.ReceiptRole)
+            return InputReceiptMsg(InputReceipt.FromSaved(content), timestamp);
 
         var item = new ChatMessageItem
         {
@@ -754,4 +865,5 @@ internal static class Glyphs
     public const string Running = "";  // Recent (a clock): the plan step being worked on
     public const string Pending = "";  // CircleRing: a plan step not started
     public const string Skipped = "";  // Next: a plan step the agent skipped
+    public const string Info    = "\uE946";  // Info: an input card answered with nothing sent
 }

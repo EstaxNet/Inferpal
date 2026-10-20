@@ -1639,4 +1639,49 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SettingsSectionToolListDesc" xml:space="preserve"><value>各リクエストが宣言するものとその重さ。オフにしたツールはモデルに提示されません。</value></data>
   <data name="ToolListNoChat" xml:space="preserve"><value>ツールの一覧を表示するにはチャット ウィンドウを開いてください。</value></data>
   <data name="ToolGroupNotHere" xml:space="preserve"><value>オフ（現在ここでは利用できません）</value></data>
+  <data name="InputCardTitle" xml:space="preserve"><value>{0} が情報の入力を求めています</value></data>
+  <data name="InputCardSubtitle" xml:space="preserve"><value>MCP サーバー（{0} を実行するため）</value></data>
+  <data name="InputCardRequired" xml:space="preserve"><value>* 必須</value></data>
+  <data name="InputCardReminder" xml:space="preserve"><value>このカードに答えるのはあなただけで、Inferpal が答えることはありません。パスワード、キー、トークンは決して入力しないでください。MCP サーバーがそれらを求めてはなりません。</value></data>
+  <data name="InputSend" xml:space="preserve"><value>送信</value></data>
+  <data name="InputDecline" xml:space="preserve"><value>拒否</value></data>
+  <data name="InputDeclineTip" xml:space="preserve"><value>拒否したことが {0} に伝えられます</value></data>
+  <data name="InputCancel" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="InputCancelTip" xml:space="preserve"><value>答えずに質問を閉じます。そのことが {0} に伝えられます</value></data>
+  <data name="InputFixCount" xml:space="preserve"><value>送信前に修正が必要な回答が {0} 件あります</value></data>
+  <data name="InputErrRequired" xml:space="preserve"><value>必須です</value></data>
+  <data name="InputErrEmail" xml:space="preserve"><value>メールアドレスではありません</value></data>
+  <data name="InputErrUri" xml:space="preserve"><value>https://example.com のような完全なアドレスではありません</value></data>
+  <data name="InputErrDate" xml:space="preserve"><value>YYYY-MM-DD 形式の日付ではありません</value></data>
+  <data name="InputErrDateTime" xml:space="preserve"><value>2026-11-09T14:30:00Z のような日時ではありません</value></data>
+  <data name="InputHintEmail" xml:space="preserve"><value>メールアドレス</value></data>
+  <data name="InputHintUri" xml:space="preserve"><value>https://example.com のような完全なアドレス</value></data>
+  <data name="InputHintDate" xml:space="preserve"><value>YYYY-MM-DD 形式の日付</value></data>
+  <data name="InputHintDateTime" xml:space="preserve"><value>タイムゾーン付きの日時（例: 2026-11-09T14:30:00Z）</value></data>
+  <data name="InputWhole" xml:space="preserve"><value>整数</value></data>
+  <data name="InputNumber" xml:space="preserve"><value>数値</value></data>
+  <data name="InputRangeWhole" xml:space="preserve"><value>{0} から {1} までの整数</value></data>
+  <data name="InputRangeNumber" xml:space="preserve"><value>{0} から {1} までの数値</value></data>
+  <data name="InputAtLeast" xml:space="preserve"><value>{0} 以上</value></data>
+  <data name="InputAtMost" xml:space="preserve"><value>{0} 以下</value></data>
+  <data name="InputLengthBetween" xml:space="preserve"><value>{0}〜{1} 文字</value></data>
+  <data name="InputLengthAtLeast" xml:space="preserve"><value>{0} 文字以上</value></data>
+  <data name="InputLengthAtMost" xml:space="preserve"><value>{0} 文字まで</value></data>
+  <data name="InputChooseOne" xml:space="preserve"><value>1 つ選択してください</value></data>
+  <data name="InputChooseExactly" xml:space="preserve"><value>ちょうど {0} 個選択してください</value></data>
+  <data name="InputChooseBetween" xml:space="preserve"><value>{0}〜{1} 個選択してください</value></data>
+  <data name="InputChooseAtLeast" xml:space="preserve"><value>{0} 個以上選択してください</value></data>
+  <data name="InputChooseAtMost" xml:space="preserve"><value>{0} 個まで選択してください</value></data>
+  <data name="InputSecretWarning" xml:space="preserve"><value>秘密情報のようです。MCP サーバーがこれを求めてはなりません</value></data>
+  <data name="InputYes" xml:space="preserve"><value>はい</value></data>
+  <data name="InputNo" xml:space="preserve"><value>いいえ</value></data>
+  <data name="InputReceiptSent" xml:space="preserve"><value>{0} に回答しました</value></data>
+  <data name="InputReceiptSentDetail" xml:space="preserve"><value>{0} 件の回答を送信</value></data>
+  <data name="InputReceiptSentNote" xml:space="preserve"><value>{0} にのみ送信されました。モデルが見るのは {0} の処理結果です。</value></data>
+  <data name="InputReceiptDeclined" xml:space="preserve"><value>{0} への回答を拒否しました</value></data>
+  <data name="InputReceiptCancelled" xml:space="preserve"><value>{0} の質問をキャンセルしました</value></data>
+  <data name="InputReceiptSetAside" xml:space="preserve"><value>メモにより {0} の質問は保留されました</value></data>
+  <data name="InputReceiptNothingSent" xml:space="preserve"><value>何も送信されていません</value></data>
+  <data name="InputReceiptStopped" xml:space="preserve"><value>{0} が回答を待っている間に停止しました</value></data>
+  <data name="InputReceiptUnanswered" xml:space="preserve"><value>質問には回答されませんでした</value></data>
 </root>

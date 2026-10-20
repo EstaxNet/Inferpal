@@ -191,10 +191,35 @@ The MCP servers a repository declares for other tools start beside yours — onc
 > names a folder of its own keeps it and is given no roots. `"roots": true` in its entry gives it the workspace anyway,
 > `"roots": false` keeps the workspace from any server.
 >
-> **Elicitation and sampling are not answered yet.** Inferpal declares neither, so a 2026-07-28 server may not ask for
-> one; a tool that still does is reported to the model as *needing input Inferpal does not provide*, never as an empty
-> result. A tool whose `x-mcp-header` annotation breaks the specification's rules is left out of the list, as the
-> specification requires, and `/diagnostics` names it.
+> **Sampling is not answered.** Inferpal does not declare it, so a 2026-07-28 server may not ask for it; a tool that
+> still does is reported to the model as *needing input Inferpal does not provide*, never as an empty result. A tool
+> whose `x-mcp-header` annotation breaks the specification's rules is left out of the list, as the specification
+> requires, and `/diagnostics` names it.
+
+## A server that asks you for information
+
+A server of the 2026-07-28 revision can stop a tool call to ask **you** for values — a repository, a date, a choice —
+through a form (*elicitation*, form mode). Inferpal shows it as a card in the conversation, in Visual Studio and in
+VS Code:
+
+- The card says **which server asks**, for which tool, and the server's own message, as plain text.
+- One field per value the server asks for: text (email, address, date, date and time), a number with its bounds, a
+  box for yes or no, one choice (buttons side by side when there are few) or several (a box each). Required fields carry
+  a `*`. What a server suggests is filled in; you can change everything before sending.
+- **Send** (Enter in a field) sends the values — **checked first** against what the server asked: a field to fix says
+  what to fix, and nothing is sent until every field passes. **Decline** tells the server you said no. **Cancel**
+  (Esc) closes the question without answering; the server is told so.
+- The card reminds you that **a server must never ask for a password, a key or a token** this way (the specification
+  forbids it), and a field whose name reads like one says so under it.
+- Only you answer a card: no rule, no "always", no setting answers it, and it never takes the keyboard on its own.
+  Stop ends the run, the question unanswered; a note typed while the card waits sets it aside.
+- Once answered, the card leaves a line in the conversation: what you did, and — folded under it — the values you sent.
+  It is saved with the conversation. **The values go to the server only**: the model reads what the server did with
+  them, and a line saying whether you answered, declined or cancelled.
+
+Not offered: a server asking to open a web page (URL mode) — it is reported to the model, like a form the card cannot
+draw (a nested field). A server is asked only where a card can be drawn: during a turn of the chat. An
+[Agent Client Protocol](acp.md) client has no such card, so its servers are never offered forms.
 
 > [!NOTE]
 > HTTP auth supports **static headers** (bearer token / custom headers, with `${ENV_VAR}` expansion)

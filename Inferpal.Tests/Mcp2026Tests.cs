@@ -200,6 +200,9 @@ public class Mcp2026Tests
         public Func<JsonNode, int, string>? Call { get; init; }
         private int _calls;
 
+        /// <summary>A <see cref="Call"/> answer that starts with this is sent as the JSON-RPC error that follows it.</summary>
+        public const string ErrorPrefix = "error:";
+
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
             var text = request.Content is null ? "" : await request.Content.ReadAsStringAsync(ct);
@@ -215,7 +218,7 @@ public class Mcp2026Tests
                 "server/discover" => Json(Result("""{"resultType":"complete","supportedVersions":["2026-07-28"],"capabilities":{"tools":{"listChanged":"""
                                                  + (ListChanged ? "true" : "false") + "}}}")),
                 "tools/list"      => Json(Result("""{"resultType":"complete","ttlMs":1000,"cacheScope":"private","tools":""" + Tools + "}")),
-                "tools/call"      => Json(Result(Call?.Invoke(body!, Interlocked.Increment(ref _calls)) ?? """{"resultType":"complete","content":[{"type":"text","text":"ok"}]}""")),
+                "tools/call"      => CallAnswer(Call?.Invoke(body!, Interlocked.Increment(ref _calls)), id),
                 "subscriptions/listen" => Sse(
                     """{"jsonrpc":"2.0","method":"notifications/subscriptions/acknowledged","params":{"notifications":{"toolsListChanged":true},"_meta":{"io.modelcontextprotocol/subscriptionId":""" + id + "}}}",
                     """{"jsonrpc":"2.0","method":"notifications/tools/list_changed","params":{"_meta":{"io.modelcontextprotocol/subscriptionId":""" + id + "}}}"),
@@ -225,6 +228,11 @@ public class Mcp2026Tests
                 },
             };
         }
+
+        private static HttpResponseMessage CallAnswer(string? answer, long id) =>
+            answer is not null && answer.StartsWith(ErrorPrefix, StringComparison.Ordinal)
+                ? Json($$"""{"jsonrpc":"2.0","id":{{id}},"error":{{answer[ErrorPrefix.Length..]}}}""")
+                : Json($$"""{"jsonrpc":"2.0","id":{{id}},"result":{{answer ?? """{"resultType":"complete","content":[{"type":"text","text":"ok"}]}"""}}}""");
 
         private static HttpResponseMessage Json(string json)
         {
@@ -354,6 +362,172 @@ public class Mcp2026Tests
         Assert.Contains("elicitation/create", said);
         Assert.Contains("did not complete", said);
         Assert.Single(server.Requests, r => r.Method == "tools/call");   // not retried: the input cannot be given
+    }
+
+    // ── forms (elicitation, form mode) ─────────────────────────────────────────────
+
+    private const string AskForRepo = """
+        {"resultType":"input_required","requestState":"rs-1","inputRequests":{"repo":{"method":"elicitation/create","params":{
+          "mode":"form","message":"Which repository?","requestedSchema":{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}}}}}
+        """;
+
+    private static string Capabilities(Seen s) => s.Body!["params"]!["_meta"]!["io.modelcontextprotocol/clientCapabilities"]!.ToJsonString();
+
+    [Fact]
+    public async Task AFormTheServerAsksFor_IsFilledByThePerson_AndTheCallIsMadeAgainWithTheAnswer_AndTheStateAsItCame()
+    {
+        var server = new ModernServer
+        {
+            Call = (body, n) => n == 1
+                ? AskForRepo
+                : $$"""{"resultType":"complete","content":[{"type":"text","text":"released to {{(string?)body["params"]!["inputResponses"]!["repo"]!["content"]!["name"]}}"}]}""",
+        };
+        await using var client = Client(server);
+        Assert.True(await client.StartAsync(CancellationToken.None), client.LastError);
+
+        McpInputForm? asked = null;
+        var said = await client.CallToolAsync("echo", Args("{}"), (form, _) =>
+        {
+            asked = form;
+            return Task.FromResult(new McpInputAnswer(McpInputAction.Accept, new JsonObject { ["name"] = "dams/inferpal" }));
+        }, CancellationToken.None);
+
+        Assert.Equal(("modern", "echo", "Which repository?"), (asked!.Server, asked.Tool, asked.Message));
+        // The model reads what the person did above the result, never the values themselves.
+        Assert.EndsWith("\n\nreleased to dams/inferpal", said);
+        Assert.Contains("answered the question MCP server 'modern' asked", said);
+        var calls = server.Requests.Where(r => r.Method == "tools/call").ToList();
+        Assert.Equal(2, calls.Count);
+        Assert.All(calls, c => Assert.Equal("""{"elicitation":{"form":{}}}""", Capabilities(c)));
+        Assert.Equal("""{"repo":{"action":"accept","content":{"name":"dams/inferpal"}}}""", calls[1].Body!["params"]!["inputResponses"]!.ToJsonString());
+        Assert.Equal("rs-1", (string?)calls[1].Body!["params"]!["requestState"]);
+        Assert.NotEqual((long)calls[0].Body!["id"]!, (long)calls[1].Body!["id"]!);
+    }
+
+    [Fact]
+    public async Task WithoutState_TheRetryInventsNone_AndADeclineIsSentAsOne()
+    {
+        var server = new ModernServer
+        {
+            Call = (body, n) => n == 1
+                ? AskForRepo.Replace("\"requestState\":\"rs-1\",", "", StringComparison.Ordinal)
+                : """{"resultType":"complete","content":[{"type":"text","text":"nothing released"}]}""",
+        };
+        await using var client = Client(server);
+        Assert.True(await client.StartAsync(CancellationToken.None), client.LastError);
+
+        var said = await client.CallToolAsync("echo", Args("{}"),
+            (_, _) => Task.FromResult(new McpInputAnswer(McpInputAction.Decline)), CancellationToken.None);
+
+        Assert.Contains("declined", said);
+        var retry = server.Requests.Where(r => r.Method == "tools/call").Last().Body!["params"]!;
+        Assert.Null(retry["requestState"]);
+        Assert.Equal("""{"repo":{"action":"decline"}}""", retry["inputResponses"]!.ToJsonString());
+    }
+
+    [Fact]
+    public async Task AServerThatAnswersADeclineWithAnError_StillLeavesTheModelWhatThePersonDid()
+    {
+        // Without the note, the model calls again and the person is asked the same thing again.
+        var server = new ModernServer
+        {
+            Call = (_, n) => n == 1 ? AskForRepo : ModernServer.ErrorPrefix + """{"code":-32000,"message":"user declined"}""",
+        };
+        await using var client = Client(server);
+        Assert.True(await client.StartAsync(CancellationToken.None), client.LastError);
+
+        var said = await client.CallToolAsync("echo", Args("{}"),
+            (_, _) => Task.FromResult(new McpInputAnswer(McpInputAction.Decline)), CancellationToken.None);
+
+        Assert.Contains("declined to answer the question MCP server 'modern' asked", said);
+        Assert.Contains("failed after the user's answer: MCP error: user declined", said);
+    }
+
+    [Fact]
+    public async Task WhereNoCardCanBeDrawn_NoFormIsDeclared_AndAFormAskedAnywayIsNamed()
+    {
+        // Reference arm of the first test: the same server, called where nobody can be asked.
+        var server = new ModernServer { Call = (_, _) => AskForRepo };
+        await using var client = Client(server);
+        Assert.True(await client.StartAsync(CancellationToken.None), client.LastError);
+
+        var said = await client.CallToolAsync("echo", Args("{}"), ask: null, CancellationToken.None);
+        Assert.Contains("asked for input Inferpal does not provide (elicitation/create)", said);
+        Assert.Equal("{}", Capabilities(Assert.Single(server.Requests, r => r.Method == "tools/call")));
+    }
+
+    [Theory]
+    [InlineData("""{"resultType":"input_required","inputRequests":{"m":{"method":"sampling/createMessage","params":{}}}}""", "sampling/createMessage")]
+    [InlineData("""{"resultType":"input_required","inputRequests":{"k":{"method":"elicitation/create","params":{"mode":"url","url":"https://x.example","message":"key"}}}}""", "url mode")]
+    public async Task ARequestThePersonCannotAnswerHere_IsNamed_TheCardNeverShown_TheCallNotMadeAgain(string answer, string said)
+    {
+        var server = new ModernServer { Call = (_, _) => answer };
+        await using var client = Client(server);
+        Assert.True(await client.StartAsync(CancellationToken.None), client.LastError);
+
+        var asked = false;
+        var result = await client.CallToolAsync("echo", Args("{}"), (_, _) =>
+        {
+            asked = true;
+            return Task.FromResult(new McpInputAnswer(McpInputAction.Cancel));
+        }, CancellationToken.None);
+
+        Assert.False(asked);
+        Assert.Contains(said, result);
+        Assert.Contains("did not complete", result);
+        Assert.Single(server.Requests, r => r.Method == "tools/call");
+    }
+
+    [Fact]
+    public async Task StoppedWhileThePersonFillsTheForm_TheRunStops_AndNothingIsSent()
+    {
+        var server = new ModernServer { Call = (_, _) => AskForRepo };
+        await using var client = Client(server);
+        Assert.True(await client.StartAsync(CancellationToken.None), client.LastError);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.CallToolAsync("echo", Args("{}"),
+            (_, _) => throw new OperationCanceledException(), CancellationToken.None));
+        Assert.Single(server.Requests, r => r.Method == "tools/call");
+    }
+
+    [Fact]
+    public async Task AToolAsksThePersonOnlyThroughAPipelineThatDrawsTheCard()
+    {
+        // McpTool reads its approval service at each call: the /task recorder, an ACP host, draw none.
+        var client = new AskRecordingClient();
+        var info = new McpToolInfo("echo", "", McpJsonRpc.EmptyObject());
+        await new McpTool(client, info, new DrawingApproval(draws: false)).ExecuteAsync(Args("{}"), CancellationToken.None);
+        Assert.False(client.Asked);
+        await new McpTool(client, info, new DrawingApproval(draws: true)).ExecuteAsync(Args("{}"), CancellationToken.None);
+        Assert.True(client.Asked);
+    }
+
+    private sealed class DrawingApproval(bool draws) : Inferpal.Services.Execution.IApprovalService
+    {
+        public bool CanAskForInput => draws;
+        public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null,
+            Inferpal.Services.CodeActions.DiffInfo? diff = null, bool forcePrompt = false) => Task.FromResult(true);
+    }
+
+    private sealed class AskRecordingClient : IMcpClient
+    {
+        public bool Asked { get; private set; }
+        public string ServerName => "s";
+        public string? LastError => null;
+        public bool NeedsAuthorization => false;
+#pragma warning disable CS0067 // the fake never changes its tools nor closes
+        public event Action? ToolsChanged;
+        public event Action? Closed;
+#pragma warning restore CS0067
+        public Task<bool> StartAsync(CancellationToken ct) => Task.FromResult(true);
+        public Task<IReadOnlyList<McpToolInfo>?> ListToolsAsync(CancellationToken ct) => Task.FromResult<IReadOnlyList<McpToolInfo>?>([]);
+        public Task<string> CallToolAsync(string toolName, JsonElement arguments, CancellationToken ct) => Task.FromResult("ok");
+        public Task<string> CallToolAsync(string toolName, JsonElement arguments, McpInputAsker? ask, CancellationToken ct)
+        {
+            Asked = ask is not null;
+            return Task.FromResult("ok");
+        }
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 
     // ── roots ─────────────────────────────────────────────────────────────────────

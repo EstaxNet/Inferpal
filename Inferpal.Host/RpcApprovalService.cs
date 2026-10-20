@@ -15,6 +15,7 @@ internal sealed class RpcApprovalService : ApprovalServiceBase, IApprovalService
 {
     private readonly JsonRpc _rpc;
     private readonly bool    _structured;
+    private readonly bool    _inputCards;
 
     /// <summary>The files of the multi-file change being approved in this flow (<see cref="RequestBatchApprovalAsync"/>).</summary>
     private static readonly AsyncLocal<IReadOnlyList<FileChange>?> Batch = new();
@@ -22,11 +23,62 @@ internal sealed class RpcApprovalService : ApprovalServiceBase, IApprovalService
     /// <param name="structured">The request also carries what an adapter draws on its own: the id of the tool call it
     /// belongs to (<see cref="ToolEventRegistry.CurrentCallId"/>), the tool, and each file's change as old and new
     /// text (<see cref="InitializeParams.ToolEvents"/>).</param>
-    public RpcApprovalService(InferpalConfig config, Func<string?> rootDir, JsonRpc rpc, bool structured = false)
+    /// <param name="inputCards">The adapter draws the card an MCP server's form is filled on (<c>input/form</c>,
+    /// <see cref="InitializeParams.InputCards"/>).</param>
+    public RpcApprovalService(InferpalConfig config, Func<string?> rootDir, JsonRpc rpc, bool structured = false,
+                              bool inputCards = false)
         : base(config, rootDir)
     {
         _rpc        = rpc;
         _structured = structured;
+        _inputCards = inputCards;
+    }
+
+    /// <summary>A chat turn runs: the only time the adapter draws a card. Set by the host.</summary>
+    internal Func<bool>? TurnRuns { get; set; }
+
+    /// <summary>The adapter draws input cards, and a turn is running to draw this one in.</summary>
+    public override bool CanAskForInput => _inputCards && TurnRuns?.Invoke() == true;
+
+    /// <summary>
+    /// The card, asked of the adapter (<c>input/form</c>): it answers what the person did and the values they left, or
+    /// <c>null</c> when it could not draw the card.
+    /// </summary>
+    protected override async Task<Services.Presentation.InputReply?> PromptInputAsync(Services.Presentation.InputCardModel card, CancellationToken ct)
+    {
+        try
+        {
+            var answer = await _rpc.InvokeWithParameterObjectAsync<InputFormAnswer?>("input/form", new { card }, ct);
+            // ⚠ An adapter that retires the card on the cancellation still answers the request (null): the Stop is the
+            // run's, and the card says it went unanswered, never that it could not be drawn.
+            ct.ThrowIfCancellationRequested();
+            return answer is null ? null : answer.ToReply();
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            // Not shown: the server is told the person did not answer, never that they sent nothing.
+            Diagnostics.Swallow("RpcApprovalService.InputForm", ex);
+            return null;
+        }
+    }
+
+    /// <summary>The answered card's line, for the adapter to draw where the card was and to keep in the conversation.</summary>
+    protected override void ShowInputReceipt(Services.Presentation.InputReceipt receipt)
+    {
+        var send = _rpc.NotifyWithParameterObjectAsync("chat/inputReceipt", new
+        {
+            id     = receipt.CardId,
+            title  = receipt.Title,
+            detail = receipt.Detail,
+            body   = receipt.Body,
+            saved  = receipt.Saved,
+        });
+        // A connection gone meanwhile has nobody left to show it to: traced, never left unobserved.
+        _ = send.ContinueWith(t => Diagnostics.Swallow("RpcApprovalService.InputReceipt", t.Exception!),
+                              CancellationToken.None,
+                              TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                              TaskScheduler.Default);
     }
 
     /// <summary>
@@ -86,6 +138,39 @@ internal sealed class RpcApprovalService : ApprovalServiceBase, IApprovalService
         catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
         {
             return path;   // shown as written: a path the file system refuses is still what the tool was given
+        }
+    }
+
+    /// <summary>What the adapter answers to <c>input/form</c>.</summary>
+    /// <param name="Action"><c>accept</c>, <c>decline</c>, <c>cancel</c> or <c>setAside</c> (a note took the card away);
+    /// anything else is read as <c>cancel</c>.</param>
+    /// <param name="Values">By field key: a string (text, number, the one choice), a boolean (a box), or an array of
+    /// strings (the choices ticked).</param>
+    internal sealed record InputFormAnswer(string? Action, Dictionary<string, System.Text.Json.JsonElement>? Values)
+    {
+        public Services.Presentation.InputReply ToReply()
+        {
+            var action = Action switch
+            {
+                "accept"   => Services.Mcp.McpInputAction.Accept,
+                "decline"  => Services.Mcp.McpInputAction.Decline,
+                "setAside" => Services.Mcp.McpInputAction.SetAside,
+                _          => Services.Mcp.McpInputAction.Cancel,
+            };
+            var values = new Dictionary<string, Services.Mcp.McpInputValue>(StringComparer.Ordinal);
+            foreach (var (key, v) in Values ?? [])
+            {
+                values[key] = v.ValueKind switch
+                {
+                    System.Text.Json.JsonValueKind.String => new Services.Mcp.McpInputValue(Text: v.GetString()),
+                    System.Text.Json.JsonValueKind.True or System.Text.Json.JsonValueKind.False => new Services.Mcp.McpInputValue(Flag: v.GetBoolean()),
+                    System.Text.Json.JsonValueKind.Array => new Services.Mcp.McpInputValue(Picks:
+                        [.. v.EnumerateArray().Where(e => e.ValueKind == System.Text.Json.JsonValueKind.String).Select(e => e.GetString()!)]),
+                    System.Text.Json.JsonValueKind.Number => new Services.Mcp.McpInputValue(Text: v.GetRawText()),
+                    _ => new Services.Mcp.McpInputValue(),
+                };
+            }
+            return new Services.Presentation.InputReply(action, values);
         }
     }
 

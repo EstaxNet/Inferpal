@@ -192,6 +192,60 @@ internal abstract class ApprovalServiceBase : IApprovalService
         return promptDecision != ApprovalDecision.Deny;
     }
 
+    /// <summary>The editor draws an input card now (<see cref="IApprovalService.CanAskForInput"/>). False by default.</summary>
+    public virtual bool CanAskForInput => false;
+
+    /// <summary>Draws the card (again, under the same <see cref="Services.Presentation.InputCardModel.Id"/>, with what to
+    /// fix) and returns what the person did; <c>null</c> when the card could not be drawn.</summary>
+    protected virtual Task<Services.Presentation.InputReply?> PromptInputAsync(Services.Presentation.InputCardModel card, CancellationToken ct) =>
+        Task.FromResult<Services.Presentation.InputReply?>(null);
+
+    /// <summary>Leaves the line of an answered card in the conversation, where the card was.</summary>
+    protected virtual void ShowInputReceipt(Services.Presentation.InputReceipt receipt) { }
+
+    public async Task<Mcp.McpInputAnswer> AskForInputAsync(Mcp.McpInputForm form, CancellationToken ct)
+    {
+        var id     = "input-" + Guid.NewGuid().ToString("N");
+        var values = form.Initial();
+        IReadOnlyDictionary<string, string> errors = new Dictionary<string, string>();
+        while (true)
+        {
+            Services.Presentation.InputReply? reply;
+            try
+            {
+                // As for an approval card: nothing is in flight while a person fills the form.
+                using (Services.Hardware.SleepGuard.Shared.PauseThisFlow())
+                    reply = await PromptInputAsync(Services.Presentation.InputCard.Build(form, id, values, errors), ct);
+            }
+            catch (OperationCanceledException)
+            {
+                ShowReceipt(Services.Presentation.InputCard.Stopped(form, id));
+                throw;
+            }
+            if (reply is null) return new Mcp.McpInputAnswer(Mcp.McpInputAction.NotShown);
+            if (reply.Action != Mcp.McpInputAction.Accept)
+            {
+                ShowReceipt(Services.Presentation.InputCard.Receipt(form, id, reply.Action, content: null));
+                return new Mcp.McpInputAnswer(reply.Action);
+            }
+            var check = form.Check(reply.Values);
+            if (check.Passed)
+            {
+                ShowReceipt(Services.Presentation.InputCard.Receipt(form, id, Mcp.McpInputAction.Accept, check.Content));
+                return new Mcp.McpInputAnswer(Mcp.McpInputAction.Accept, check.Content);
+            }
+            // Shown again with what to fix, the values as the person left them: never sent as typed.
+            values = reply.Values;
+            errors = check.Errors;
+        }
+    }
+
+    private void ShowReceipt(Services.Presentation.InputReceipt receipt)
+    {
+        try { ShowInputReceipt(receipt); }
+        catch (Exception ex) { Diagnostics.Swallow("ApprovalServiceBase.InputReceipt", ex); }
+    }
+
     /// <summary>Writes the rule the person picked on the card, and says so — or says why it could not be.</summary>
     /// <remarks>Here, after the answer, not through the settings RPC: a card exists only during a turn, when the host
     /// refuses <c>config/update</c>. The next call reads it through <see cref="GetPolicy"/>, which follows the file.</remarks>

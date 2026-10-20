@@ -1643,4 +1643,49 @@ What you save there applies from your next question, in this thread and the othe
   <data name="SettingsSectionToolListDesc" xml:space="preserve"><value>What each request declares, and what it weighs. A tool turned off is never offered to the model.</value></data>
   <data name="ToolListNoChat" xml:space="preserve"><value>Open the chat window to list its tools.</value></data>
   <data name="ToolGroupNotHere" xml:space="preserve"><value>Turned off, not available here now</value></data>
+  <data name="InputCardTitle" xml:space="preserve"><value>{0} asks you for information</value></data>
+  <data name="InputCardSubtitle" xml:space="preserve"><value>An MCP server, to run {0}</value></data>
+  <data name="InputCardRequired" xml:space="preserve"><value>* required</value></data>
+  <data name="InputCardReminder" xml:space="preserve"><value>Only you answer this card, never Inferpal. Never type a password, key or token here: an MCP server must not ask for one.</value></data>
+  <data name="InputSend" xml:space="preserve"><value>Send</value></data>
+  <data name="InputDecline" xml:space="preserve"><value>Decline</value></data>
+  <data name="InputDeclineTip" xml:space="preserve"><value>{0} is told you declined</value></data>
+  <data name="InputCancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="InputCancelTip" xml:space="preserve"><value>Close the question without answering; {0} is told so</value></data>
+  <data name="InputFixCount" xml:space="preserve"><value>{0} {0:answer|answers} to fix before sending</value></data>
+  <data name="InputErrRequired" xml:space="preserve"><value>Required</value></data>
+  <data name="InputErrEmail" xml:space="preserve"><value>Not an email address</value></data>
+  <data name="InputErrUri" xml:space="preserve"><value>Not a full address, such as https://example.com</value></data>
+  <data name="InputErrDate" xml:space="preserve"><value>Not a date written YYYY-MM-DD</value></data>
+  <data name="InputErrDateTime" xml:space="preserve"><value>Not a date and time, such as 2026-11-09T14:30:00Z</value></data>
+  <data name="InputHintEmail" xml:space="preserve"><value>An email address</value></data>
+  <data name="InputHintUri" xml:space="preserve"><value>A full address, such as https://example.com</value></data>
+  <data name="InputHintDate" xml:space="preserve"><value>A date, written YYYY-MM-DD</value></data>
+  <data name="InputHintDateTime" xml:space="preserve"><value>A date and time with its time zone, such as 2026-11-09T14:30:00Z</value></data>
+  <data name="InputWhole" xml:space="preserve"><value>A whole number</value></data>
+  <data name="InputNumber" xml:space="preserve"><value>A number</value></data>
+  <data name="InputRangeWhole" xml:space="preserve"><value>A whole number from {0} to {1}</value></data>
+  <data name="InputRangeNumber" xml:space="preserve"><value>A number from {0} to {1}</value></data>
+  <data name="InputAtLeast" xml:space="preserve"><value>At least {0}</value></data>
+  <data name="InputAtMost" xml:space="preserve"><value>At most {0}</value></data>
+  <data name="InputLengthBetween" xml:space="preserve"><value>{0} to {1} characters</value></data>
+  <data name="InputLengthAtLeast" xml:space="preserve"><value>At least {0} {0:character|characters}</value></data>
+  <data name="InputLengthAtMost" xml:space="preserve"><value>Up to {0} {0:character|characters}</value></data>
+  <data name="InputChooseOne" xml:space="preserve"><value>Choose one</value></data>
+  <data name="InputChooseExactly" xml:space="preserve"><value>Choose exactly {0}</value></data>
+  <data name="InputChooseBetween" xml:space="preserve"><value>Choose {0} to {1}</value></data>
+  <data name="InputChooseAtLeast" xml:space="preserve"><value>Choose at least {0}</value></data>
+  <data name="InputChooseAtMost" xml:space="preserve"><value>Choose at most {0}</value></data>
+  <data name="InputSecretWarning" xml:space="preserve"><value>This looks like a secret: an MCP server must not ask for one</value></data>
+  <data name="InputYes" xml:space="preserve"><value>Yes</value></data>
+  <data name="InputNo" xml:space="preserve"><value>No</value></data>
+  <data name="InputReceiptSent" xml:space="preserve"><value>You answered {0}</value></data>
+  <data name="InputReceiptSentDetail" xml:space="preserve"><value>{0} {0:answer|answers} sent</value></data>
+  <data name="InputReceiptSentNote" xml:space="preserve"><value>Sent to {0} only. The model sees what {0} does with it.</value></data>
+  <data name="InputReceiptDeclined" xml:space="preserve"><value>You declined {0}</value></data>
+  <data name="InputReceiptCancelled" xml:space="preserve"><value>You cancelled {0}'s question</value></data>
+  <data name="InputReceiptSetAside" xml:space="preserve"><value>Your note set {0}'s question aside</value></data>
+  <data name="InputReceiptNothingSent" xml:space="preserve"><value>nothing sent</value></data>
+  <data name="InputReceiptStopped" xml:space="preserve"><value>Stopped while {0} was waiting for your answer</value></data>
+  <data name="InputReceiptUnanswered" xml:space="preserve"><value>its question went unanswered</value></data>
 </root>

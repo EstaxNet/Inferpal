@@ -1639,4 +1639,49 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="SettingsSectionToolListDesc" xml:space="preserve"><value>Was jede Anfrage deklariert und was es wiegt. Ein abgeschaltetes Tool wird dem Modell nie angeboten.</value></data>
   <data name="ToolListNoChat" xml:space="preserve"><value>Öffnen Sie das Chatfenster, um seine Tools aufzulisten.</value></data>
   <data name="ToolGroupNotHere" xml:space="preserve"><value>Abgeschaltet, hier derzeit nicht verfügbar</value></data>
+  <data name="InputCardTitle" xml:space="preserve"><value>{0} bittet Sie um Angaben</value></data>
+  <data name="InputCardSubtitle" xml:space="preserve"><value>Ein MCP-Server, um {0} auszuführen</value></data>
+  <data name="InputCardRequired" xml:space="preserve"><value>* Pflichtfeld</value></data>
+  <data name="InputCardReminder" xml:space="preserve"><value>Nur Sie beantworten diese Karte, nie Inferpal. Geben Sie hier nie ein Passwort, einen Schlüssel oder ein Token ein: Ein MCP-Server darf so etwas nicht verlangen.</value></data>
+  <data name="InputSend" xml:space="preserve"><value>Senden</value></data>
+  <data name="InputDecline" xml:space="preserve"><value>Ablehnen</value></data>
+  <data name="InputDeclineTip" xml:space="preserve"><value>{0} erfährt, dass Sie abgelehnt haben</value></data>
+  <data name="InputCancel" xml:space="preserve"><value>Abbrechen</value></data>
+  <data name="InputCancelTip" xml:space="preserve"><value>Die Frage ohne Antwort schließen; {0} erfährt das</value></data>
+  <data name="InputFixCount" xml:space="preserve"><value>Vor dem Senden {0} {0:Antwort|Antworten} korrigieren</value></data>
+  <data name="InputErrRequired" xml:space="preserve"><value>Pflichtfeld</value></data>
+  <data name="InputErrEmail" xml:space="preserve"><value>Keine E-Mail-Adresse</value></data>
+  <data name="InputErrUri" xml:space="preserve"><value>Keine vollständige Adresse wie https://example.com</value></data>
+  <data name="InputErrDate" xml:space="preserve"><value>Kein Datum im Format JJJJ-MM-TT</value></data>
+  <data name="InputErrDateTime" xml:space="preserve"><value>Kein Datum mit Uhrzeit wie 2026-11-09T14:30:00Z</value></data>
+  <data name="InputHintEmail" xml:space="preserve"><value>Eine E-Mail-Adresse</value></data>
+  <data name="InputHintUri" xml:space="preserve"><value>Eine vollständige Adresse wie https://example.com</value></data>
+  <data name="InputHintDate" xml:space="preserve"><value>Ein Datum im Format JJJJ-MM-TT</value></data>
+  <data name="InputHintDateTime" xml:space="preserve"><value>Datum und Uhrzeit mit Zeitzone, wie 2026-11-09T14:30:00Z</value></data>
+  <data name="InputWhole" xml:space="preserve"><value>Eine ganze Zahl</value></data>
+  <data name="InputNumber" xml:space="preserve"><value>Eine Zahl</value></data>
+  <data name="InputRangeWhole" xml:space="preserve"><value>Eine ganze Zahl von {0} bis {1}</value></data>
+  <data name="InputRangeNumber" xml:space="preserve"><value>Eine Zahl von {0} bis {1}</value></data>
+  <data name="InputAtLeast" xml:space="preserve"><value>Mindestens {0}</value></data>
+  <data name="InputAtMost" xml:space="preserve"><value>Höchstens {0}</value></data>
+  <data name="InputLengthBetween" xml:space="preserve"><value>{0} bis {1} Zeichen</value></data>
+  <data name="InputLengthAtLeast" xml:space="preserve"><value>Mindestens {0} {0:Zeichen|Zeichen}</value></data>
+  <data name="InputLengthAtMost" xml:space="preserve"><value>Bis zu {0} {0:Zeichen|Zeichen}</value></data>
+  <data name="InputChooseOne" xml:space="preserve"><value>Wählen Sie eine Option</value></data>
+  <data name="InputChooseExactly" xml:space="preserve"><value>Wählen Sie genau {0}</value></data>
+  <data name="InputChooseBetween" xml:space="preserve"><value>Wählen Sie {0} bis {1}</value></data>
+  <data name="InputChooseAtLeast" xml:space="preserve"><value>Wählen Sie mindestens {0}</value></data>
+  <data name="InputChooseAtMost" xml:space="preserve"><value>Wählen Sie höchstens {0}</value></data>
+  <data name="InputSecretWarning" xml:space="preserve"><value>Das sieht nach einem Geheimnis aus: Ein MCP-Server darf so etwas nicht verlangen</value></data>
+  <data name="InputYes" xml:space="preserve"><value>Ja</value></data>
+  <data name="InputNo" xml:space="preserve"><value>Nein</value></data>
+  <data name="InputReceiptSent" xml:space="preserve"><value>Sie haben {0} geantwortet</value></data>
+  <data name="InputReceiptSentDetail" xml:space="preserve"><value>{0} {0:Antwort|Antworten} gesendet</value></data>
+  <data name="InputReceiptSentNote" xml:space="preserve"><value>Nur an {0} gesendet. Das Modell sieht, was {0} damit macht.</value></data>
+  <data name="InputReceiptDeclined" xml:space="preserve"><value>Sie haben {0} abgelehnt</value></data>
+  <data name="InputReceiptCancelled" xml:space="preserve"><value>Sie haben die Frage von {0} abgebrochen</value></data>
+  <data name="InputReceiptSetAside" xml:space="preserve"><value>Ihre Notiz hat die Frage von {0} zurückgestellt</value></data>
+  <data name="InputReceiptNothingSent" xml:space="preserve"><value>nichts gesendet</value></data>
+  <data name="InputReceiptStopped" xml:space="preserve"><value>Angehalten, während {0} auf Ihre Antwort wartete</value></data>
+  <data name="InputReceiptUnanswered" xml:space="preserve"><value>seine Frage blieb unbeantwortet</value></data>
 </root>

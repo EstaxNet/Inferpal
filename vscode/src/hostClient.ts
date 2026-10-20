@@ -63,6 +63,9 @@ import {
   XRayPanel,
   ConfigUpdateResult,
   InputRequest,
+  InputCard,
+  InputFormAnswer,
+  InputReceiptNote,
   ModelsByKind,
 } from './protocol';
 
@@ -81,6 +84,11 @@ export interface EditorDelegate {
   unprotectSecret(key: string, value: string): Promise<string>;
   /** A value a repository's MCP server asks for (`${input:id}`); null when the user gives none. */
   inputRequest(request: InputRequest): Promise<string | null>;
+  /**
+   * A form an MCP server asks the user to fill, as a card in the chat; null when no card can be drawn (no turn, no
+   * view). The token relays the host's `$/cancelRequest` (the turn stopped): the card is retired.
+   */
+  inputForm(card: InputCard, token?: CancellationToken): Promise<InputFormAnswer | null>;
   /**
    * Opens an MCP sign-in page in the person's browser, its `redirect` (the host's loopback address) forwarded to the
    * host; null when opened, else why not — said at once instead of a five-minute wait.
@@ -108,6 +116,8 @@ export interface ChatEvents {
   onTaskFinished?(text: string): void;
   /** Something that failed after the fact (the auto-save slot not emptied…), said in the thread. */
   onNotice?(text: string): void;
+  /** An input card was answered (or its turn stopped): the line it leaves where it was. */
+  onInputReceipt?(receipt: InputReceiptNote): void;
 }
 
 export interface HostClientOptions {
@@ -308,6 +318,8 @@ export class HostClient {
     conn.onRequest('secrets/unprotect', (p: { key: string; value: string }) =>
       this.delegate.unprotectSecret(p.key, p.value));
     conn.onRequest('input/request', (p: InputRequest) => this.delegate.inputRequest(p));
+    conn.onRequest('input/form', (p: { card: InputCard }, token: CancellationToken) =>
+      this.delegate.inputForm(p.card, token));
     conn.onRequest('env/openExternal', (p: { url: string; redirect: string }) =>
       this.delegate.openSignInPage(p.url, p.redirect));
 
@@ -342,6 +354,7 @@ export class HostClient {
     // setBusy(false) — a task finishing while the user looked away left no trace.
     conn.onNotification('task/finished', (n: TextNote) => this.events.onTaskFinished?.(n.text));
     conn.onNotification('host/notice', (n: TextNote) => this.events.onNotice?.(n.text));
+    conn.onNotification('chat/inputReceipt', (n: InputReceiptNote) => this.events.onInputReceipt?.(n));
 
     conn.onError((err) => this.options.log?.(`[rpc] error: ${String(err)}`));
     conn.listen();
@@ -353,6 +366,7 @@ export class HostClient {
       debug: this.debugDelegate !== undefined,
       otherFolders: this.options.otherFolders,
       openExternal: true,
+      inputCards: true,
     };
     try {
       this.info = await conn.sendRequest<InitializeResult>('initialize', params);

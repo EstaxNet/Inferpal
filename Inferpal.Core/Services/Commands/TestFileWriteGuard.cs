@@ -21,6 +21,12 @@ internal sealed class TestFileWriteGuard(IApprovalService inner) : IApprovalServ
         => inner.RequestApprovalAsync(toolName, details, ct, subject, diff,
             forcePrompt || TargetsTestFile(subject ?? details));
 
+    /// <summary>A server's form is the person's to fill, as outside the loop: the card is the inner pipeline's.</summary>
+    public bool CanAskForInput => inner.CanAskForInput;
+
+    public Task<Mcp.McpInputAnswer> AskForInputAsync(Mcp.McpInputForm form, CancellationToken ct) =>
+        inner.AskForInputAsync(form, ct);
+
     /// <summary>
     /// Heuristic on the approval subject (a path for file writes, possibly several for
     /// <c>apply_edits</c>): any segment or file name carrying "test"/"tests"/"spec" counts.

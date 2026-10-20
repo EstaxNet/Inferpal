@@ -42,6 +42,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     log,
   );
   bridge.setApprovalCard((note, token) => chatView.requestApproval(note.message, token, note.card ?? null));
+  bridge.setInputCard((card, token) => chatView.requestInput(card, token));
   context.subscriptions.push(
     chatView,
     vscode.window.registerWebviewViewProvider(ChatViewProvider.viewId, chatView, {

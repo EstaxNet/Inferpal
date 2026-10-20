@@ -57,19 +57,24 @@ internal static partial class McpModern
     /// <summary>
     /// A copy of <paramref name="params"/> carrying the per-request metadata the modern era requires.
     /// </summary>
+    /// <param name="params">The request's parameters.</param>
+    /// <param name="forms">The person can be asked to fill a form for this request: <c>{"elicitation":{"form":{}}}</c>
+    /// is declared, and nothing else.</param>
     /// <remarks>
-    /// The capabilities are EMPTY: Inferpal answers no elicitation, sampling or roots request of this era, and a server
-    /// must not ask a client for what it did not declare. Roots are deprecated by this revision ("new implementations
-    /// SHOULD NOT adopt it"), and a remote server would be handed a local path: they are given in the earlier handshake,
-    /// to a stdio server only (<see cref="Capabilities"/>).
+    /// Declared per request, as the revision has it: only a call made where a card can be drawn may be answered with a
+    /// form, and a server must not ask a client for what it did not declare. No sampling, no URL mode. Roots are
+    /// deprecated by this revision ("new implementations SHOULD NOT adopt it"), and a remote server would be handed a
+    /// local path: they are given in the earlier handshake, to a stdio server only (<see cref="Capabilities"/>).
     /// </remarks>
-    public static JsonObject WithMeta(JsonNode? @params)
+    public static JsonObject WithMeta(JsonNode? @params, bool forms = false)
     {
         var copy = @params?.DeepClone() as JsonObject ?? new JsonObject();
         var meta = copy["_meta"] as JsonObject ?? new JsonObject();
         meta[VersionKey]      = Version;
         meta[ClientInfoKey]   = ClientInfo();
-        meta[CapabilitiesKey] = new JsonObject();
+        meta[CapabilitiesKey] = forms
+            ? new JsonObject { ["elicitation"] = new JsonObject { ["form"] = new JsonObject() } }
+            : new JsonObject();
         copy["_meta"] = meta;
         return copy;
     }

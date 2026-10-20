@@ -85,7 +85,8 @@ internal sealed class McpTool : ITool
         if (!await _approval.RequestApprovalAsync(Name, details, ct, subject: McpApprovalSubject.From(args)))
             return Strings.McpCancelled;
 
-        return await _client.CallToolAsync(_serverLocalName, args, ct);
+        // The server may ask the person for values only where this pipeline can draw the card, at this call.
+        return await _client.CallToolAsync(_serverLocalName, args, _approval.CanAskForInput ? _approval.AskForInputAsync : null, ct);
     }
 
     /// <summary>

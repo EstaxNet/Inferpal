@@ -877,7 +877,7 @@
                                                             <Button.Template>
                                                                 <ControlTemplate TargetType="Button">
                                                                     <Border x:Name="bd" CornerRadius="3"
-                                                                            Background="{Binding DataContext.ThemePanelBg, ElementName=root}"
+                                                                            Background="{Binding DataContext.ThemeWindowBg, ElementName=root}"
                                                                             BorderThickness="1" BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
                                                                             Padding="{TemplateBinding Padding}">
                                                                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -898,7 +898,7 @@
                                                             <Button.Template>
                                                                 <ControlTemplate TargetType="Button">
                                                                     <Border x:Name="bd" CornerRadius="3"
-                                                                            Background="{Binding DataContext.ThemePanelBg, ElementName=root}"
+                                                                            Background="{Binding DataContext.ThemeWindowBg, ElementName=root}"
                                                                             BorderThickness="1" BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
                                                                             Padding="{TemplateBinding Padding}">
                                                                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -1297,6 +1297,330 @@
                                         </WrapPanel>
                                     </DockPanel>
                                 </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ── An input card: an MCP server's form, then Send, Decline, Cancel (InputCard in the Core) ──
+                             Never takes the keyboard: a field gets it from a click. Esc anywhere in it cancels; Enter in a box
+                             sends. -->
+                        <Border CornerRadius="10" BorderThickness="1"
+                                Background="{Binding DataContext.ThemeSurface, ElementName=root}"
+                                AutomationProperties.Name="{Binding CardTitle}">
+                            <Border.InputBindings>
+                                <KeyBinding Key="Escape" Command="{Binding InputCancelCommand}"/>
+                            </Border.InputBindings>
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Setter Property="BorderBrush" Value="{Binding DataContext.ThemeAccentLine, ElementName=root}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Role}" Value="inputcard">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsAnswered}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{Binding DataContext.ThemeBorder, ElementName=root}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel>
+                                <Border BorderThickness="0,0,0,1" Padding="12,10"
+                                        BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}">
+                                    <DockPanel LastChildFill="True">
+                                        <!-- A connector: what asks is a server Inferpal is connected to. -->
+                                        <TextBlock DockPanel.Dock="Left" FontFamily="Segoe MDL2 Assets" Text="&#xE839;" FontSize="14"
+                                                   Margin="0,2,10,0" VerticalAlignment="Top"
+                                                   Foreground="{Binding DataContext.ThemeAccentText, ElementName=root}"/>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding CardTitle}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap"
+                                                       Foreground="{Binding ThemeText}"/>
+                                            <TextBlock Text="{Binding InputSubtitle}" FontSize="12" TextWrapping="Wrap"
+                                                       Foreground="{Binding ThemeSubtleText}"/>
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+                                <StackPanel Margin="12,12,12,0">
+                                    <StackPanel.Style>
+                                        <Style TargetType="StackPanel">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsAnswered}" Value="True">
+                                                    <Setter Property="IsEnabled" Value="False"/>
+                                                    <Setter Property="Opacity" Value="0.55"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </StackPanel.Style>
+                                    <!-- The server's own words, as plain text: never Markdown, never a link. -->
+                                    <TextBlock Text="{Binding InputMessage}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,12"
+                                               Foreground="{Binding ThemeText}"/>
+                                    <Border CornerRadius="6" Padding="10,7" Margin="0,0,0,12" BorderThickness="1"
+                                            BorderBrush="{Binding DataContext.ThemeErrorText, ElementName=root}"
+                                            Visibility="{Binding HasInputError, Converter={StaticResource b2v}}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE7BA;" FontSize="13" VerticalAlignment="Center"
+                                                       Foreground="{Binding DataContext.ThemeErrorText, ElementName=root}"/>
+                                            <TextBlock Text="{Binding InputErrorSummary}" FontSize="12" FontWeight="SemiBold" Margin="8,0,0,0"
+                                                       TextWrapping="Wrap" VerticalAlignment="Center"
+                                                       Foreground="{Binding DataContext.ThemeErrorText, ElementName=root}"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <ItemsControl ItemsSource="{Binding InputFields}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Margin="0,0,0,12">
+                                                    <!-- The label, above the field; a box carries its own. -->
+                                                    <TextBlock FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,4"
+                                                               Foreground="{Binding DataContext.ThemeText, ElementName=root}">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsBox}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                        <Run Text="{Binding Label, Mode=OneWay}"/>
+                                                        <Run Text="{Binding RequiredMark, Mode=OneWay}"
+                                                             Foreground="{Binding DataContext.ThemeAccentText, ElementName=root}"/>
+                                                    </TextBlock>
+                                                    <!-- Text, a number, a date, an address: typed, and checked by the Core when sent. -->
+                                                    <TextBox Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                             Height="30" Padding="8,0" VerticalContentAlignment="Center" FontSize="13"
+                                                             Background="Transparent"
+                                                             Foreground="{Binding DataContext.ThemeText, ElementName=root}"
+                                                             CaretBrush="{Binding DataContext.ThemeText, ElementName=root}"
+                                                             AutomationProperties.Name="{Binding Label}"
+                                                             AutomationProperties.HelpText="{Binding Hint}"
+                                                             Visibility="{Binding IsTextBox, Converter={StaticResource b2v}}">
+                                                        <TextBox.Style>
+                                                            <Style TargetType="TextBox">
+                                                                <Setter Property="BorderThickness" Value="1"/>
+                                                                <Setter Property="BorderBrush" Value="{Binding DataContext.ThemeInputBorder, ElementName=root}"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding HasError}" Value="True">
+                                                                        <Setter Property="BorderThickness" Value="2"/>
+                                                                        <Setter Property="BorderBrush" Value="{Binding DataContext.ThemeErrorText, ElementName=root}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBox.Style>
+                                                        <TextBox.InputBindings>
+                                                            <KeyBinding Key="Return" Command="{Binding SendCommand}"/>
+                                                        </TextBox.InputBindings>
+                                                    </TextBox>
+                                                    <!-- Yes or no: a box. -->
+                                                    <CheckBox IsChecked="{Binding Flag, Mode=TwoWay}" VerticalContentAlignment="Center"
+                                                              AutomationProperties.Name="{Binding Label}"
+                                                              Visibility="{Binding IsBox, Converter={StaticResource b2v}}">
+                                                        <TextBlock Text="{Binding Label}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" Margin="4,0,0,0"
+                                                                   Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
+                                                    </CheckBox>
+                                                    <!-- One choice among few short ones: buttons side by side, one pressed. -->
+                                                    <Border CornerRadius="7" BorderThickness="1" Padding="2"
+                                                            BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                                            Background="{Binding DataContext.ThemeWindowBg, ElementName=root}"
+                                                            Visibility="{Binding IsSegmented, Converter={StaticResource b2v}}">
+                                                        <ItemsControl ItemsSource="{Binding Options}">
+                                                            <ItemsControl.ItemsPanel>
+                                                                <ItemsPanelTemplate>
+                                                                    <UniformGrid Rows="1"/>
+                                                                </ItemsPanelTemplate>
+                                                            </ItemsControl.ItemsPanel>
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <RadioButton GroupName="{Binding Group}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                                                 Cursor="Hand" AutomationProperties.Name="{Binding Label}">
+                                                                        <RadioButton.Template>
+                                                                            <ControlTemplate TargetType="RadioButton">
+                                                                                <Border x:Name="seg" CornerRadius="5" Height="26" Background="Transparent">
+                                                                                    <TextBlock x:Name="segText" Text="{Binding Label}" FontSize="13"
+                                                                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                                               Margin="8,0" TextTrimming="CharacterEllipsis"
+                                                                                               Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"/>
+                                                                                </Border>
+                                                                                <ControlTemplate.Triggers>
+                                                                                    <Trigger Property="IsChecked" Value="True">
+                                                                                        <Setter TargetName="seg" Property="Background" Value="{Binding DataContext.ThemeChip, ElementName=root}"/>
+                                                                                        <Setter TargetName="segText" Property="Foreground" Value="{Binding DataContext.ThemeText, ElementName=root}"/>
+                                                                                        <Setter TargetName="segText" Property="FontWeight" Value="SemiBold"/>
+                                                                                    </Trigger>
+                                                                                    <Trigger Property="IsKeyboardFocused" Value="True">
+                                                                                        <Setter TargetName="seg" Property="BorderThickness" Value="1"/>
+                                                                                        <Setter TargetName="seg" Property="BorderBrush" Value="{Binding DataContext.ThemeAccent, ElementName=root}"/>
+                                                                                    </Trigger>
+                                                                                </ControlTemplate.Triggers>
+                                                                            </ControlTemplate>
+                                                                        </RadioButton.Template>
+                                                                    </RadioButton>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </Border>
+                                                    <!-- One choice among many, or long ones: radio buttons, one under the other. -->
+                                                    <ItemsControl ItemsSource="{Binding Options}"
+                                                                  Visibility="{Binding IsRadioList, Converter={StaticResource b2v}}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <RadioButton GroupName="{Binding Group}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                                             Margin="0,2,14,2" VerticalContentAlignment="Center"
+                                                                             AutomationProperties.Name="{Binding Label}">
+                                                                    <TextBlock Text="{Binding Label}" FontSize="13" Margin="4,0,0,0"
+                                                                               Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
+                                                                </RadioButton>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                    <!-- Several choices: a box per choice. -->
+                                                    <ItemsControl ItemsSource="{Binding Options}"
+                                                                  Visibility="{Binding IsChoices, Converter={StaticResource b2v}}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="0,2"
+                                                                          VerticalContentAlignment="Center" AutomationProperties.Name="{Binding Label}">
+                                                                    <TextBlock Text="{Binding Label}" FontSize="13" Margin="4,0,0,0"
+                                                                               Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
+                                                                </CheckBox>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                    <TextBlock Text="{Binding Hint}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0"
+                                                               Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"
+                                                               Visibility="{Binding HasHint, Converter={StaticResource b2v}}"/>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0"
+                                                                Visibility="{Binding HasError, Converter={StaticResource b2v}}">
+                                                        <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE783;" FontSize="11" VerticalAlignment="Center"
+                                                                   Foreground="{Binding DataContext.ThemeErrorText, ElementName=root}"/>
+                                                        <TextBlock Text="{Binding Error}" FontSize="12" Margin="6,0,0,0" TextWrapping="Wrap"
+                                                                   Foreground="{Binding DataContext.ThemeErrorText, ElementName=root}"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <DockPanel Margin="0,0,0,12">
+                                        <TextBlock DockPanel.Dock="Left" FontFamily="Segoe MDL2 Assets" Text="&#xE946;" FontSize="12"
+                                                   Margin="0,2,8,0" VerticalAlignment="Top" Foreground="{Binding ThemeSubtleText}"/>
+                                        <TextBlock Text="{Binding InputReminder}" FontSize="12" TextWrapping="Wrap"
+                                                   Foreground="{Binding ThemeSubtleText}"/>
+                                    </DockPanel>
+                                </StackPanel>
+                                <Border BorderThickness="0,1,0,0" Padding="12,10"
+                                        BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}">
+                                    <DockPanel LastChildFill="True">
+                                        <DockPanel.Style>
+                                            <Style TargetType="DockPanel">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsAnswered}" Value="True">
+                                                        <Setter Property="IsEnabled" Value="False"/>
+                                                        <Setter Property="Opacity" Value="0.55"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </DockPanel.Style>
+                                        <Button DockPanel.Dock="Right" Template="{StaticResource Flat6}" Height="32" Padding="10,0"
+                                                Background="Transparent" BorderThickness="0" Cursor="Hand" VerticalAlignment="Top"
+                                                Command="{Binding InputCancelCommand}" ToolTip="{Binding InputCancelTip}"
+                                                AutomationProperties.Name="{Binding BtnInputCancel}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding BtnInputCancel}" FontSize="13" Foreground="{Binding ThemeSubtleText}"
+                                                           VerticalAlignment="Center"/>
+                                                <Border Style="{StaticResource Kbd}" BorderBrush="{Binding ThemeSubtleText}" Margin="8,0,0,0">
+                                                    <TextBlock Text="Esc" FontFamily="Cascadia Mono, Consolas" FontSize="10" Foreground="{Binding ThemeSubtleText}"/>
+                                                </Border>
+                                            </StackPanel>
+                                        </Button>
+                                        <WrapPanel Margin="0,0,0,-6">
+                                            <Button Template="{StaticResource Flat6}" Height="32" Padding="12,0" Margin="0,0,8,6" BorderThickness="0"
+                                                    Background="{Binding DataContext.ThemeAccent, ElementName=root}" Cursor="Hand"
+                                                    Command="{Binding InputSendCommand}" AutomationProperties.Name="{Binding BtnInputSend}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding BtnInputSend}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
+                                                               Foreground="{Binding DataContext.ThemeOnAccent, ElementName=root}"/>
+                                                    <Border Style="{StaticResource Kbd}" BorderBrush="{Binding DataContext.ThemeOnAccent, ElementName=root}" Margin="8,0,0,0">
+                                                        <TextBlock Text="Enter" FontFamily="Cascadia Mono, Consolas" FontSize="10" Foreground="{Binding DataContext.ThemeOnAccent, ElementName=root}"/>
+                                                    </Border>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Style="{StaticResource LineBtn}" Height="32" Padding="10,0" Margin="0,0,8,6"
+                                                    BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                                    Command="{Binding InputDeclineCommand}" ToolTip="{Binding InputDeclineTip}"
+                                                    AutomationProperties.Name="{Binding BtnInputDecline}">
+                                                <TextBlock Text="{Binding BtnInputDecline}" FontSize="13" Foreground="{Binding ThemeText}"
+                                                           VerticalAlignment="Center"/>
+                                            </Button>
+                                        </WrapPanel>
+                                    </DockPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ── An input card's receipt: what the person did with the form, what they sent folded under it ── -->
+                        <Border CornerRadius="8" BorderThickness="1" Padding="10,0"
+                                Background="{Binding DataContext.ThemeSurface, ElementName=root}"
+                                BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Role}" Value="input">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel>
+                                <Button Template="{StaticResource Flat6}" Background="Transparent" BorderThickness="0" Padding="0,6"
+                                        HorizontalContentAlignment="Stretch" Cursor="Hand"
+                                        Command="{Binding ToggleExpandCommand}" AutomationProperties.Name="{Binding ReceiptTitle}">
+                                    <DockPanel LastChildFill="True">
+                                        <TextBlock DockPanel.Dock="Right" FontFamily="Segoe MDL2 Assets" FontSize="10" Margin="8,0,0,0"
+                                                   VerticalAlignment="Center" Foreground="{Binding ThemeSubtleText}"
+                                                   Visibility="{Binding HasReceiptBody, Converter={StaticResource b2v}}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="&#xE70D;"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                                                            <Setter Property="Text" Value="&#xE70E;"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBlock DockPanel.Dock="Left" FontFamily="Segoe MDL2 Assets" Text="{Binding RunGlyph}" FontSize="12"
+                                                   VerticalAlignment="Center" Margin="0,0,8,0">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{Binding ThemeSubtleText}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding HasReceiptBody}" Value="True">
+                                                            <Setter Property="Foreground" Value="{Binding DataContext.ThemeOk, ElementName=root}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBlock TextWrapping="Wrap" VerticalAlignment="Center" FontSize="13">
+                                            <Run Text="{Binding ReceiptTitle, Mode=OneWay}" Foreground="{Binding ThemeText}"/>
+                                            <Run Text="  "/>
+                                            <Run Text="{Binding ReceiptDetail, Mode=OneWay}" Foreground="{Binding ThemeSubtleText}"/>
+                                        </TextBlock>
+                                    </DockPanel>
+                                </Button>
+                                <TextBlock Text="{Binding ReceiptBody}" FontSize="12" TextWrapping="Wrap" Margin="20,0,0,8"
+                                           Foreground="{Binding ThemeText}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                             </StackPanel>
                         </Border>
 

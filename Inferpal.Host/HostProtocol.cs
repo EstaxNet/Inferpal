@@ -39,6 +39,9 @@
 /// <param name="CompactionEvents">The adapter wants a compaction of the conversation as <c>chat/compaction</c> — its
 /// outcome and the summary the model now reads — instead of the <c>context_compact</c> tool note. True for an Agent Client
 /// Protocol session, whose client may draw it as a compaction (ACP 1.11).</param>
+/// <param name="InputCards">The adapter draws the card an MCP server's form is filled on (<c>input/form</c>, answered with
+/// what the person did) and the line it leaves (<c>chat/inputReceipt</c>): its calls declare forms to the servers. False for
+/// an Agent Client Protocol client, which has no such card.</param>
 internal sealed record InitializeParams(
     string    RootDir,
     string?   Locale          = null,
@@ -54,7 +57,8 @@ internal sealed record InitializeParams(
     bool      IndexesTheFolder = true,
     bool      AutoSaveSlot     = true,
     bool      OpenExternal     = false,
-    bool      CompactionEvents = false);
+    bool      CompactionEvents = false,
+    bool      InputCards       = false);
 
 /// <summary>`workspace/folders` — the editor's other workspace folders changed (a folder added or removed while the
 /// root stayed): restarting the host for it would kill the turn in flight, its shells and MCP servers.</summary>

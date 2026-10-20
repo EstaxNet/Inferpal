@@ -2,7 +2,7 @@
 // state pushed via postMessage and reports user intents back. It must survive being
 // destroyed on hide: everything re-renders from the 'hydrate' message.
 // No literal user-visible English here — strings go through t() (window.__l10n).
-import type { ApprovalCard, RunSummary } from '../protocol';
+import type { ApprovalCard, InputCard, InputCardField, InputFormAnswer, RunSummary } from '../protocol';
 import type {
   ExtToWebview,
   WebviewToExt,
@@ -1209,6 +1209,346 @@ function dismissApprovalCard(id: number): void {
   }
 }
 
+// ── Input card: an MCP server's form, filled by the user — Send, Decline, Cancel ──
+// Every word comes from the host's card (InputCard in the Core), already in the user's language; the host checks the
+// values and sends the same card back with what to fix, which replaces the one drawn.
+const inputCards = new Map<string, HTMLElement>();
+let inputSeq = 0;
+
+function addInputCard(card: InputCard): void {
+  // ⚠ A card drawn before the view was rebuilt is no longer in it: replaced there, the new one would never show.
+  const existing = inputCards.get(card.id)?.isConnected ? inputCards.get(card.id) : undefined;
+  const hadFocus = !!existing && existing.contains(document.activeElement);
+  const el = inputCardElement(card);
+  if (existing) {
+    existing.replaceWith(el);
+  } else {
+    if (streamEl) {
+      actNarration.push(streamEl);
+    }
+    finishStream();
+    const target = ensureTurn();
+    target.when.textContent = t('turnWaiting');
+    target.body.appendChild(el);
+  }
+  inputCards.set(card.id, el);
+  // ⚠ Never takes the keyboard on its own: a key typed for the composer or the code must not land in a form. Only
+  // when the user just sent it from inside, the first field to fix gets the focus.
+  if (hadFocus) {
+    el.querySelector<HTMLElement>('[aria-invalid="true"], .input-choice-row button[aria-invalid="true"]')?.focus();
+  }
+  scrollToBottom();
+}
+
+function inputCardElement(card: InputCard): HTMLFormElement {
+  const form = document.createElement('form');
+  form.className = 'input-card';
+  form.noValidate = true; // the host checks the values, in the user's language
+  form.setAttribute('aria-label', card.title);
+
+  const head = document.createElement('div');
+  head.className = 'input-head';
+  const titles = document.createElement('div');
+  titles.className = 'input-titles';
+  const title = document.createElement('span');
+  title.className = 'input-title';
+  title.textContent = card.title;
+  const sub = document.createElement('span');
+  sub.className = 'input-sub';
+  sub.textContent = [card.subtitle, card.requiredNote].filter((p) => p).join(' · ');
+  titles.append(title, sub);
+  head.append(icon('plug', 16), titles);
+
+  const body = document.createElement('div');
+  body.className = 'input-body';
+  // The server's own words, as plain text: never Markdown, never a link.
+  const message = document.createElement('p');
+  message.className = 'input-message';
+  message.textContent = '“' + card.message + '”';
+  body.appendChild(message);
+  if (card.errorSummary) {
+    const alert = document.createElement('div');
+    alert.className = 'input-alert';
+    alert.setAttribute('role', 'alert');
+    alert.append(icon('warning', 14), document.createTextNode(card.errorSummary));
+    body.appendChild(alert);
+  }
+  const readers: Array<() => [string, string | boolean | string[]]> = [];
+  for (const field of card.fields) {
+    const [row, read] = inputFieldElement(field);
+    body.appendChild(row);
+    readers.push(read);
+  }
+  const reminder = document.createElement('div');
+  reminder.className = 'input-reminder';
+  reminder.append(icon('info', 13), document.createTextNode(card.reminder));
+  body.appendChild(reminder);
+
+  const actions = document.createElement('div');
+  actions.className = 'approval-actions input-actions';
+  const answer = (action: InputFormAnswer['action']): void => {
+    if (inputCards.get(card.id) !== form || form.classList.contains('answered')) {
+      return;
+    }
+    const values: InputFormAnswer['values'] = {};
+    if (action === 'accept') {
+      for (const read of readers) {
+        const [key, value] = read();
+        values[key] = value;
+      }
+    }
+    form.classList.add('answered');
+    for (const b of actions.querySelectorAll('button')) {
+      (b as HTMLButtonElement).disabled = true;
+    }
+    post({ type: 'inputAnswer', id: card.id, action, values });
+  };
+  const send = document.createElement('button');
+  send.type = 'submit';
+  send.className = 'primary';
+  send.append(document.createTextNode(card.sendLabel), kbd('Enter'));
+  const decline = document.createElement('button');
+  decline.type = 'button';
+  decline.textContent = card.declineLabel;
+  decline.title = card.declineTooltip;
+  decline.addEventListener('click', () => answer('decline'));
+  const cancel = document.createElement('button');
+  cancel.type = 'button';
+  cancel.className = 'deny ghost';
+  cancel.title = card.cancelTooltip;
+  cancel.append(document.createTextNode(card.cancelLabel), kbd('Esc'));
+  cancel.addEventListener('click', () => answer('cancel'));
+  actions.append(send, decline, cancel);
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    answer('accept');
+  });
+  form.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      answer('cancel');
+    }
+  });
+  form.append(head, body, actions);
+  return form;
+}
+
+/** One field, and how to read its value when the form is sent. */
+function inputFieldElement(field: InputCardField): [HTMLElement, () => [string, string | boolean | string[]]] {
+  const id = `input-${++inputSeq}`;
+  const row = document.createElement('div');
+  row.className = 'input-field' + (field.error ? ' invalid' : '');
+  const described: string[] = [];
+  const note = (text: string, cls: string): void => {
+    if (!text) {
+      return;
+    }
+    const line = document.createElement('span');
+    line.id = `${id}-${cls}`;
+    line.className = cls;
+    if (cls === 'input-error') {
+      line.append(icon('failed', 12));
+    }
+    line.append(document.createTextNode(text));
+    row.appendChild(line);
+    described.push(line.id);
+  };
+  const labelText = (into: HTMLElement): void => {
+    into.append(document.createTextNode(field.label));
+    if (field.required) {
+      const star = document.createElement('span');
+      star.className = 'input-star';
+      star.setAttribute('aria-hidden', 'true');
+      star.textContent = ' *';
+      into.appendChild(star);
+    }
+  };
+
+  if (field.kind === 'boolean') {
+    const label = document.createElement('label');
+    label.className = 'input-check';
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.id = id;
+    box.checked = field.flag;
+    label.append(box);
+    labelText(label);
+    row.appendChild(label);
+    note(field.hint, 'input-hint');
+    note(field.error, 'input-error');
+    box.setAttribute('aria-describedby', described.join(' '));
+    return [row, () => [field.key, box.checked]];
+  }
+
+  if (field.kind === 'choices') {
+    const set = document.createElement('fieldset');
+    set.className = 'input-set';
+    const legend = document.createElement('legend');
+    labelText(legend);
+    set.appendChild(legend);
+    const boxes: Array<[HTMLInputElement, string]> = [];
+    for (const option of field.options) {
+      const label = document.createElement('label');
+      label.className = 'input-check';
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.checked = option.selected;
+      label.append(box, document.createTextNode(option.label));
+      set.appendChild(label);
+      boxes.push([box, option.value]);
+    }
+    row.appendChild(set);
+    note(field.hint, 'input-hint');
+    note(field.error, 'input-error');
+    set.setAttribute('aria-describedby', described.join(' '));
+    if (field.error) {
+      set.setAttribute('aria-invalid', 'true');
+    }
+    return [row, () => [field.key, boxes.filter(([b]) => b.checked).map(([, v]) => v)]];
+  }
+
+  const label = document.createElement('label');
+  label.className = 'input-label';
+  label.htmlFor = id;
+  labelText(label);
+  row.appendChild(label);
+
+  if (field.kind === 'choice' && field.buttons) {
+    // Few short choices: buttons side by side, one pressed.
+    let picked = field.options.find((o) => o.selected)?.value ?? '';
+    const group = document.createElement('div');
+    group.className = 'input-choice-row';
+    group.setAttribute('role', 'radiogroup');
+    group.setAttribute('aria-label', field.label);
+    group.id = id;
+    const buttons: HTMLButtonElement[] = [];
+    for (const option of field.options) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('role', 'radio');
+      b.setAttribute('aria-checked', String(option.value === picked));
+      b.textContent = option.label;
+      if (field.error) {
+        b.setAttribute('aria-invalid', 'true');
+      }
+      b.addEventListener('click', () => {
+        picked = option.value;
+        for (const other of buttons) {
+          other.setAttribute('aria-checked', String(other === b));
+        }
+      });
+      buttons.push(b);
+      group.appendChild(b);
+    }
+    row.appendChild(group);
+    note(field.hint, 'input-hint');
+    note(field.error, 'input-error');
+    group.setAttribute('aria-describedby', described.join(' '));
+    return [row, () => [field.key, picked]];
+  }
+
+  if (field.kind === 'choice') {
+    const select = document.createElement('select');
+    select.id = id;
+    // No choice made yet: an empty first entry, never a choice the user did not make.
+    if (!field.options.some((o) => o.selected)) {
+      select.appendChild(new Option('', '', true, true));
+    }
+    for (const option of field.options) {
+      select.appendChild(new Option(option.label, option.value, option.selected, option.selected));
+    }
+    row.appendChild(select);
+    note(field.hint, 'input-hint');
+    note(field.error, 'input-error');
+    select.setAttribute('aria-describedby', described.join(' '));
+    if (field.error) {
+      select.setAttribute('aria-invalid', 'true');
+    }
+    return [row, () => [field.key, select.value]];
+  }
+
+  const input = document.createElement('input');
+  input.id = id;
+  input.value = field.text;
+  // Typed as text and checked by the host, as in Visual Studio: the browser's own boxes would refuse a comma, drop a
+  // time zone the server asks for, or show a date in the machine's order under a hint that says YYYY-MM-DD.
+  input.type = field.inputType === 'email' || field.inputType === 'url' ? field.inputType : 'text';
+  if (field.kind === 'number') {
+    input.inputMode = 'decimal';
+  }
+  input.autocomplete = 'off';
+  input.spellcheck = false;
+  row.appendChild(input);
+  note(field.hint, 'input-hint');
+  note(field.error, 'input-error');
+  input.setAttribute('aria-describedby', described.join(' '));
+  if (field.error) {
+    input.setAttribute('aria-invalid', 'true');
+  }
+  return [row, () => [field.key, input.value]];
+}
+
+// The card's turn stopped, or a note set it aside: frozen until its line replaces it.
+function dismissInputCard(id: string): void {
+  const card = inputCards.get(id);
+  if (!card) {
+    return;
+  }
+  card.classList.add('answered');
+  for (const control of card.querySelectorAll('button, input, select')) {
+    (control as HTMLButtonElement).disabled = true;
+  }
+}
+
+/** The line an answered card leaves: drawn where the card was, or at the end of the turn when it is not drawn. */
+function showInputReceipt(id: string, saved: string): void {
+  const el = inputReceiptElement(saved);
+  const card = inputCards.get(id);
+  inputCards.delete(id);
+  if (card?.isConnected) {
+    card.replaceWith(el);
+  } else {
+    ensureTurn().body.appendChild(el);
+  }
+  if (busy && turn) {
+    turn.when.textContent = t('turnWorking', turn.steps + 1);
+  }
+  scrollToBottom();
+}
+
+/** A receipt as the conversation keeps it (`InputReceipt.Saved`): its title, its detail, then what was sent. */
+function inputReceiptElement(saved: string): HTMLElement {
+  const [title = '', detail = '', ...rest] = saved.replace(/\r\n/g, '\n').split('\n');
+  const body = rest.join('\n');
+  const el = document.createElement('div');
+  el.className = 'input-receipt';
+  const line = document.createElement('button');
+  line.type = 'button';
+  line.className = 'step-line';
+  const name = document.createElement('span');
+  name.className = 'input-receipt-title';
+  name.textContent = title;
+  const sub = document.createElement('span');
+  sub.className = 'step-subject';
+  sub.textContent = detail;
+  line.append(icon(body ? 'check' : 'info', 13), name, sub);
+  el.appendChild(line);
+  if (body) {
+    line.setAttribute('aria-expanded', 'false');
+    line.append(icon('chevronDown', 12));
+    const values = document.createElement('div');
+    values.className = 'input-receipt-body';
+    values.textContent = body;
+    values.hidden = true;
+    line.addEventListener('click', () => {
+      values.hidden = !values.hidden;
+      line.setAttribute('aria-expanded', String(!values.hidden));
+    });
+    el.appendChild(values);
+  }
+  return el;
+}
+
 // ── Welcome: what to work on — the open file's actions, the errors, the keys ──
 const welcomeEl = document.createElement('div');
 welcomeEl.id = 'welcome';
@@ -1817,9 +2157,13 @@ function renderTranscript(transcript: WvTranscriptItem[], running = false): void
   turn = null;
   transcriptEmpty = true;
   noteLines.clear();
+  // The cards still waiting are posted again after a rebuild (hydrate), into the new view.
+  inputCards.clear();
   for (const item of transcript) {
     if (item.role === 'tool') {
       addToolBubble(item, toolBubblesExpanded);
+    } else if (item.role === 'input') {
+      ensureTurn().body.appendChild(inputReceiptElement(item.text));
     } else if (item.role === 'user' && item.note) {
       addNoteLine(item.noteId, item.text, item.note, item.noteAfter);
     } else if (item.role === 'user' || item.role === 'assistant' || item.role === 'error') {
@@ -1970,6 +2314,15 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       break;
     case 'approvalDismiss':
       dismissApprovalCard(msg.id);
+      break;
+    case 'inputForm':
+      addInputCard(msg.card);
+      break;
+    case 'inputDismiss':
+      dismissInputCard(msg.id);
+      break;
+    case 'inputReceipt':
+      showInputReceipt(msg.id, msg.saved);
       break;
     case 'mentionSuggestions':
       if (msg.query === latestMentionQuery) {

@@ -1639,4 +1639,49 @@
   <data name="SettingsSectionToolListDesc" xml:space="preserve"><value>每个请求声明的内容及其分量。已关闭的工具绝不会提供给模型。</value></data>
   <data name="ToolListNoChat" xml:space="preserve"><value>请打开聊天窗口以列出其工具。</value></data>
   <data name="ToolGroupNotHere" xml:space="preserve"><value>已关闭（当前在此不可用）</value></data>
+  <data name="InputCardTitle" xml:space="preserve"><value>{0} 请求你提供信息</value></data>
+  <data name="InputCardSubtitle" xml:space="preserve"><value>一个 MCP 服务器，用于运行 {0}</value></data>
+  <data name="InputCardRequired" xml:space="preserve"><value>* 必填</value></data>
+  <data name="InputCardReminder" xml:space="preserve"><value>只有你会回答这张卡片，Inferpal 绝不会代答。切勿在此输入密码、密钥或令牌：MCP 服务器不得索取这些信息。</value></data>
+  <data name="InputSend" xml:space="preserve"><value>发送</value></data>
+  <data name="InputDecline" xml:space="preserve"><value>拒绝</value></data>
+  <data name="InputDeclineTip" xml:space="preserve"><value>会告知 {0} 你已拒绝</value></data>
+  <data name="InputCancel" xml:space="preserve"><value>取消</value></data>
+  <data name="InputCancelTip" xml:space="preserve"><value>不作回答直接关闭问题；会告知 {0}</value></data>
+  <data name="InputFixCount" xml:space="preserve"><value>发送前需修正 {0} 个回答</value></data>
+  <data name="InputErrRequired" xml:space="preserve"><value>必填</value></data>
+  <data name="InputErrEmail" xml:space="preserve"><value>不是电子邮件地址</value></data>
+  <data name="InputErrUri" xml:space="preserve"><value>不是完整地址，例如 https://example.com</value></data>
+  <data name="InputErrDate" xml:space="preserve"><value>不是 YYYY-MM-DD 格式的日期</value></data>
+  <data name="InputErrDateTime" xml:space="preserve"><value>不是日期和时间，例如 2026-11-09T14:30:00Z</value></data>
+  <data name="InputHintEmail" xml:space="preserve"><value>电子邮件地址</value></data>
+  <data name="InputHintUri" xml:space="preserve"><value>完整地址，例如 https://example.com</value></data>
+  <data name="InputHintDate" xml:space="preserve"><value>YYYY-MM-DD 格式的日期</value></data>
+  <data name="InputHintDateTime" xml:space="preserve"><value>带时区的日期和时间，例如 2026-11-09T14:30:00Z</value></data>
+  <data name="InputWhole" xml:space="preserve"><value>整数</value></data>
+  <data name="InputNumber" xml:space="preserve"><value>数字</value></data>
+  <data name="InputRangeWhole" xml:space="preserve"><value>{0} 到 {1} 之间的整数</value></data>
+  <data name="InputRangeNumber" xml:space="preserve"><value>{0} 到 {1} 之间的数字</value></data>
+  <data name="InputAtLeast" xml:space="preserve"><value>至少 {0}</value></data>
+  <data name="InputAtMost" xml:space="preserve"><value>至多 {0}</value></data>
+  <data name="InputLengthBetween" xml:space="preserve"><value>{0} 到 {1} 个字符</value></data>
+  <data name="InputLengthAtLeast" xml:space="preserve"><value>至少 {0} 个字符</value></data>
+  <data name="InputLengthAtMost" xml:space="preserve"><value>最多 {0} 个字符</value></data>
+  <data name="InputChooseOne" xml:space="preserve"><value>请选择一项</value></data>
+  <data name="InputChooseExactly" xml:space="preserve"><value>请恰好选择 {0} 项</value></data>
+  <data name="InputChooseBetween" xml:space="preserve"><value>请选择 {0} 到 {1} 项</value></data>
+  <data name="InputChooseAtLeast" xml:space="preserve"><value>请至少选择 {0} 项</value></data>
+  <data name="InputChooseAtMost" xml:space="preserve"><value>最多选择 {0} 项</value></data>
+  <data name="InputSecretWarning" xml:space="preserve"><value>这看起来像机密信息：MCP 服务器不得索取</value></data>
+  <data name="InputYes" xml:space="preserve"><value>是</value></data>
+  <data name="InputNo" xml:space="preserve"><value>否</value></data>
+  <data name="InputReceiptSent" xml:space="preserve"><value>你回答了 {0}</value></data>
+  <data name="InputReceiptSentDetail" xml:space="preserve"><value>已发送 {0} 个回答</value></data>
+  <data name="InputReceiptSentNote" xml:space="preserve"><value>仅发送给 {0}。模型看到的是 {0} 的处理结果。</value></data>
+  <data name="InputReceiptDeclined" xml:space="preserve"><value>你拒绝回答 {0}</value></data>
+  <data name="InputReceiptCancelled" xml:space="preserve"><value>你取消了 {0} 的问题</value></data>
+  <data name="InputReceiptSetAside" xml:space="preserve"><value>你的备注搁置了 {0} 的问题</value></data>
+  <data name="InputReceiptNothingSent" xml:space="preserve"><value>未发送任何内容</value></data>
+  <data name="InputReceiptStopped" xml:space="preserve"><value>在 {0} 等待你回答时已停止</value></data>
+  <data name="InputReceiptUnanswered" xml:space="preserve"><value>其问题未获回答</value></data>
 </root>

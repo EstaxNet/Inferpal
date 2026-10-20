@@ -1,12 +1,13 @@
 // Typed postMessage protocol between the extension host (chatViewProvider.ts) and the
 // chat webview (src/webview/main.ts). Both sides are bundled from this repo, so the
 // types are shared instead of mirrored. No 'vscode' import — the webview bundle uses it.
-import type { ApprovalCard, ImportCard, RunSummary, SavedMessage, XRayPanel } from './protocol';
+import type { ApprovalCard, ImportCard, InputCard, InputFormAnswer, RunSummary, SavedMessage, XRayPanel } from './protocol';
 
 /** One rendered transcript entry (the extension host owns the list). */
 export interface WvTranscriptItem {
-  role: 'user' | 'assistant' | 'status' | 'tool' | 'error';
-  /** Message text; for 'tool' entries this is the tool name. */
+  role: 'user' | 'assistant' | 'status' | 'tool' | 'error' | 'input';
+  /** Message text; for 'tool' entries this is the tool name; for 'input' entries, the receipt an answered input card
+   *  left (`InputReceipt.Saved` in the Core: its title, its detail, then what was sent). */
   text: string;
   toolInput?: string;
   toolOutput?: string;
@@ -151,6 +152,12 @@ export type ExtToWebview =
   | { type: 'plan'; plan: WvPlan }
   | { type: 'approval'; id: number; message: string; card?: ApprovalCard | null }
   | { type: 'approvalDismiss'; id: number }
+  /** An MCP server's form to fill; the same `card.id` again replaces the card drawn (what to fix). */
+  | { type: 'inputForm'; card: InputCard }
+  /** The input card's turn stopped, or a note set it aside: the card goes, its line follows. */
+  | { type: 'inputDismiss'; id: string }
+  /** The line an answered card leaves where it was (`InputReceipt.Saved` in the Core). */
+  | { type: 'inputReceipt'; id: string; saved: string }
   | { type: 'mentionSuggestions'; items: string[]; query: string }
   | { type: 'xrayPanel'; panel: XRayPanel }
   | { type: 'streamReset' }
@@ -199,6 +206,7 @@ export type WebviewToExt =
   | { type: 'reset' }
   | { type: 'pickModel'; model: string }
   | { type: 'approvalAnswer'; id: number; answer: number }
+  | { type: 'inputAnswer'; id: string; action: InputFormAnswer['action']; values: InputFormAnswer['values'] }
   | { type: 'mentionQuery'; query: string }
   | { type: 'openApprovalDiff'; text: string }
   | { type: 'xrayToggle'; id: string; enabled: boolean }

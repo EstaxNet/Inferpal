@@ -1112,6 +1112,216 @@ kbd {
   opacity: 0.6;
 }
 
+/* ── Input card: an MCP server's form, in the conversation ──────────────────── */
+.input-card {
+  margin: 0;
+  border-radius: 10px;
+  border: 1px solid var(--vscode-focusBorder, var(--ip-line));
+  background: var(--ip-surface);
+  overflow: hidden;
+}
+
+.input-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--ip-line);
+}
+
+.input-head > svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--vscode-textLink-foreground);
+}
+
+.input-titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.input-title {
+  font-weight: 600;
+}
+
+.input-sub {
+  color: var(--ip-muted);
+  font-size: 12px;
+}
+
+.input-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+
+.input-message {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.input-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  background: var(--vscode-inputValidation-errorBackground);
+  border: 1px solid var(--vscode-inputValidation-errorBorder);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.input-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.input-label,
+.input-set legend {
+  font-weight: 600;
+  font-size: 12px;
+  padding: 0;
+}
+
+.input-star {
+  color: var(--vscode-textLink-foreground);
+}
+
+.input-field input:not([type='checkbox']),
+.input-field select {
+  height: 30px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid var(--vscode-input-border, var(--ip-line));
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  font: inherit;
+}
+
+.input-field input:focus,
+.input-field select:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+.input-field.invalid input:not([type='checkbox']),
+.input-field.invalid select {
+  border: 2px solid var(--vscode-inputValidation-errorBorder, var(--vscode-errorForeground));
+}
+
+.input-hint {
+  color: var(--ip-muted);
+  font-size: 12px;
+}
+
+.input-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--vscode-errorForeground);
+  font-size: 12px;
+}
+
+.input-error svg {
+  flex: none;
+}
+
+.input-set {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.input-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+}
+
+.input-choice-row {
+  display: flex;
+  padding: 2px;
+  border-radius: 7px;
+  border: 1px solid var(--ip-line);
+  background: var(--vscode-sideBar-background);
+}
+
+.input-choice-row button {
+  flex: 1 1 0;
+  height: 26px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ip-muted);
+}
+
+.input-choice-row button[aria-checked='true'] {
+  background: var(--ip-chip, var(--vscode-badge-background));
+  color: var(--vscode-foreground);
+  font-weight: 600;
+}
+
+.input-reminder {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--ip-muted);
+  font-size: 12px;
+}
+
+.input-reminder svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.input-actions {
+  border-top: 1px solid var(--ip-line);
+}
+
+.input-actions button.ghost {
+  border-color: transparent;
+  color: var(--ip-muted);
+}
+
+.input-card.answered {
+  opacity: 0.6;
+}
+
+.input-receipt {
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  border: 1px solid var(--ip-line);
+  background: var(--ip-surface);
+  padding: 0 10px;
+}
+
+.input-receipt .step-line svg:last-child {
+  margin-left: auto;
+  color: var(--ip-muted);
+}
+
+.input-receipt-title {
+  color: var(--vscode-foreground);
+}
+
+.input-receipt-body {
+  padding: 0 0 8px 21px;
+  font-size: 12px;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
 /* ── /import preview, in the conversation ───────────────────────────────────── */
 .import-card {
   border-radius: 10px;

@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import { t } from './i18n';
 import type { CancellationToken } from 'vscode-jsonrpc';
 import { HostClient, EditorDelegate } from './hostClient';
-import { ActiveDocumentDto, ApprovalAnswer, ApprovalNote, EditResultDto, InputRequest } from './protocol';
+import { ActiveDocumentDto, ApprovalAnswer, ApprovalNote, EditResultDto, InputCard, InputFormAnswer, InputRequest } from './protocol';
 
 /** Documents above this size are not mirrored (the host reads them from disk instead). */
 const MAX_MIRRORED_BYTES = 1024 * 1024;
@@ -96,6 +96,9 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
   private approvalCard:
     | ((note: ApprovalNote, token?: CancellationToken) => Promise<number | undefined>)
     | undefined;
+  private inputCard:
+    | ((card: InputCard, token?: CancellationToken) => Promise<InputFormAnswer | null>)
+    | undefined;
 
   constructor(private readonly secrets?: vscode.SecretStorage) {
     this.lastActive = vscode.window.activeTextEditor;
@@ -137,6 +140,23 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
     handler: (note: ApprovalNote, token?: CancellationToken) => Promise<number | undefined>,
   ): void {
     this.approvalCard = handler;
+  }
+
+  /** The chat view's input card (an MCP server's form). Without one, no form is shown: the host is told so. */
+  setInputCard(handler: (card: InputCard, token?: CancellationToken) => Promise<InputFormAnswer | null>): void {
+    this.inputCard = handler;
+  }
+
+  async inputForm(card: InputCard, token?: CancellationToken): Promise<InputFormAnswer | null> {
+    // No dialog to fall back on: a form is filled on its card, in the conversation it belongs to.
+    if (token?.isCancellationRequested || !this.inputCard) {
+      return null;
+    }
+    try {
+      return await this.inputCard(card, token);
+    } catch {
+      return null;
+    }
   }
 
   /** Called once the host is running; seeds the overlay with already-open documents. */

@@ -178,6 +178,9 @@ internal partial class InferpalToolWindowData
                 : Task.CompletedTask);
         DenyApprovalCommand    = new AsyncCommand((_, _) => RunOnVMContextAsync(() => _pendingApproval?.Answer(ApprovalDecision.Deny)));
         _contextHolder.InlineApproval = AskInlineAsync;
+        _contextHolder.TurnRuns       = () => IsLoading;
+        _contextHolder.InlineInput    = AskInputInlineAsync;
+        _contextHolder.InputReceipt   = receipt => Post(() => ShowInputReceipt(receipt));
         _contextHolder.Notice         = text => Post(() => InsertThemed(ChatMessageItem.NoticeMsg(text)));
         _isCompact             = _config.IsCompactChat;
         // A save from the settings window can change the density: the open conversation follows at once.
@@ -431,11 +434,7 @@ internal partial class InferpalToolWindowData
             ChatMessageItem? created = null;
             created = ChatMessageItem.ApprovalMsg(card,
                 openDiff is null ? null : () => _ = OpenCardDiffAsync(created!, openDiff, answeredToken));
-            // Above what the turn is still writing (its live status, its answer so far), under its steps.
-            var idx = Messages.Count - 2;
-            while (idx > 0 && Messages[idx - 1] is { } prev && (prev.Role == "status" || prev.IsStreaming)) idx--;
-            ApplyItemTheme(created);
-            Messages.Insert(idx, created);
+            InsertCard(created);
             _pendingApproval = created;
             if (_turnHead is not null) _turnHead.TurnState = Strings.TurnWaiting;
             ScrollToBottom();
@@ -469,6 +468,91 @@ internal partial class InferpalToolWindowData
                 TurnWorking();
             });
         }
+    }
+
+    /// <summary>A card the turn waits on — an approval, a server's form — above what the turn is still writing (its live
+    /// status, its answer so far), under its steps. VM context.</summary>
+    private void InsertCard(ChatMessageItem card)
+    {
+        var idx = Messages.Count - 2;
+        while (idx > 0 && Messages[idx - 1] is { } prev && (prev.Role == "status" || prev.IsStreaming)) idx--;
+        ApplyItemTheme(card);
+        Messages.Insert(idx, card);
+    }
+
+    /// <summary>The input card waiting for the person (an MCP server's form): a note typed during the turn sets it aside.</summary>
+    private ChatMessageItem? _pendingInput;
+
+    /// <summary>
+    /// An MCP server's form, as a card in the conversation of the running turn (<see cref="VsContextHolder.InlineInput"/>);
+    /// <c>null</c> when no turn runs. The same card id again redraws the card already there, with what to fix.
+    /// </summary>
+    /// <remarks>⚠ The card never takes the keyboard: a key typed for the composer or the code must not land in a form.</remarks>
+    private async Task<InputReply?> AskInputInlineAsync(InputCardModel card, CancellationToken ct)
+    {
+        ChatMessageItem? item = null;
+        await RunOnVMContextAsync(() =>
+        {
+            if (!IsLoading) return;
+            if (Messages.FirstOrDefault(m => m.Role == InputCard.CardRole && m.InputCardId == card.Id) is { } shown)
+            {
+                shown.ShowInput(card);
+                item = shown;
+            }
+            else
+            {
+                var created = ChatMessageItem.InputCardMsg(card);
+                InsertCard(created);
+                item = created;
+            }
+            _pendingInput = item;
+            if (_turnHead is not null) _turnHead.TurnState = Strings.TurnWaiting;
+            ScrollToBottom();
+        });
+        if (item is null) return null;
+
+        using var answered = new CancellationTokenSource();
+        // Left unanswered while its author is elsewhere, the card flashes the taskbar, as an approval card does.
+        _ = DrawAttentionAfterAsync(answered.Token);
+        try
+        {
+            using (ct.Register(() => Post(item.RetireInput)))
+            {
+                // VSTHRD003 as in AskInlineAsync: the card's TCS completes asynchronously in this out-of-process host.
+#pragma warning disable VSTHRD003
+                var reply = await item.InputReply;
+#pragma warning restore VSTHRD003
+                ct.ThrowIfCancellationRequested();
+                return reply;
+            }
+        }
+        finally
+        {
+            await answered.CancelAsync();
+            await RunOnVMContextAsync(() =>
+            {
+                if (ReferenceEquals(_pendingInput, item)) _pendingInput = null;
+                TurnWorking();
+            });
+        }
+    }
+
+    /// <summary>The line an answered card leaves, where the card was; at the end of the turn when it is not drawn. VM
+    /// context.</summary>
+    private void ShowInputReceipt(InputReceipt receipt)
+    {
+        var line = ChatMessageItem.InputReceiptMsg(receipt);
+        ApplyItemTheme(line);
+        var at = -1;
+        for (var i = 0; i < Messages.Count; i++)
+            if (Messages[i].Role == InputCard.CardRole && Messages[i].InputCardId == receipt.CardId) { at = i; break; }
+        if (at >= 0)
+        {
+            Messages.RemoveAt(at);
+            Messages.Insert(at, line);
+        }
+        else Messages.Insert(Messages.Count - 2, line);
+        ScrollToBottom();
     }
 
     /// <summary>

@@ -50,6 +50,23 @@ internal interface IApprovalService
     Task<bool> RequestBatchApprovalAsync(string toolName, string details, IReadOnlyList<FileChange> files,
                                          CancellationToken ct, string? subject = null, bool forcePrompt = false) =>
         RequestApprovalAsync(toolName, details, ct, subject: subject, forcePrompt: forcePrompt);
+
+    /// <summary>
+    /// A form an MCP server asks for can be shown to the person now, as a card in the conversation of a running turn.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Read for each call: the call's request declares the elicitation capability only when this is true, and a
+    /// server must not ask what was not declared. False by default — a pipeline that cannot draw the card (a
+    /// <c>/task</c>, an Agent Client Protocol client) never lets a server ask.
+    /// </remarks>
+    bool CanAskForInput => false;
+
+    /// <summary>
+    /// Asks the person to fill a server's form: the card shows again with what to fix until the values pass its schema,
+    /// or the person declines or cancels. Never answered by anything but the person — no rule, no grant, no setting.
+    /// </summary>
+    Task<Mcp.McpInputAnswer> AskForInputAsync(Mcp.McpInputForm form, CancellationToken ct) =>
+        Task.FromResult(new Mcp.McpInputAnswer(Mcp.McpInputAction.NotShown));
 }
 
 /// <summary>One file of a multi-file change: its old→new text, and the summary a reviewer reads for it.</summary>

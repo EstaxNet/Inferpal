@@ -75,6 +75,18 @@ internal class VsContextHolder
     public Func<Services.Presentation.ApprovalCardModel, Func<CancellationToken, Task<ApprovalDecision?>>?, CancellationToken,
                 Task<ApprovalDecision?>>? InlineApproval { get; set; }
 
+    /// <summary>A chat turn runs: the only time the chat draws a card. Set by the chat window.</summary>
+    public Func<bool>? TurnRuns { get; set; }
+
+    /// <summary>
+    /// Asks the person to fill an MCP server's form, as a card in the chat; answers <c>null</c> when it cannot be drawn
+    /// (no turn running). The same card id again draws what to fix in the card already there. Set by the chat window.
+    /// </summary>
+    public Func<Services.Presentation.InputCardModel, CancellationToken, Task<Services.Presentation.InputReply?>>? InlineInput { get; set; }
+
+    /// <summary>Leaves an answered input card's line where the card was. Set by the chat window.</summary>
+    public Action<Services.Presentation.InputReceipt>? InputReceipt { get; set; }
+
     private ITextViewSnapshot? _latestView;
     private volatile string    _activeFilePath = string.Empty;
 

@@ -1639,4 +1639,49 @@
   <data name="SettingsSectionToolListDesc" xml:space="preserve"><value>Что объявляет каждый запрос и сколько это весит. Отключённый инструмент никогда не предлагается модели.</value></data>
   <data name="ToolListNoChat" xml:space="preserve"><value>Откройте окно чата, чтобы увидеть список его инструментов.</value></data>
   <data name="ToolGroupNotHere" xml:space="preserve"><value>Отключены, сейчас здесь недоступны</value></data>
+  <data name="InputCardTitle" xml:space="preserve"><value>{0} запрашивает у вас данные</value></data>
+  <data name="InputCardSubtitle" xml:space="preserve"><value>MCP-сервер, чтобы выполнить {0}</value></data>
+  <data name="InputCardRequired" xml:space="preserve"><value>* обязательно</value></data>
+  <data name="InputCardReminder" xml:space="preserve"><value>На эту карточку отвечаете только вы, никогда не Inferpal. Никогда не вводите здесь пароль, ключ или токен: MCP-сервер не должен их запрашивать.</value></data>
+  <data name="InputSend" xml:space="preserve"><value>Отправить</value></data>
+  <data name="InputDecline" xml:space="preserve"><value>Отклонить</value></data>
+  <data name="InputDeclineTip" xml:space="preserve"><value>{0} узнает, что вы отказались</value></data>
+  <data name="InputCancel" xml:space="preserve"><value>Отмена</value></data>
+  <data name="InputCancelTip" xml:space="preserve"><value>Закрыть вопрос без ответа; {0} узнает об этом</value></data>
+  <data name="InputFixCount" xml:space="preserve"><value>Перед отправкой исправьте {0} {0:ответ|ответа|ответов}</value></data>
+  <data name="InputErrRequired" xml:space="preserve"><value>Обязательное поле</value></data>
+  <data name="InputErrEmail" xml:space="preserve"><value>Это не адрес электронной почты</value></data>
+  <data name="InputErrUri" xml:space="preserve"><value>Это не полный адрес вида https://example.com</value></data>
+  <data name="InputErrDate" xml:space="preserve"><value>Это не дата в формате ГГГГ-ММ-ДД</value></data>
+  <data name="InputErrDateTime" xml:space="preserve"><value>Это не дата и время вида 2026-11-09T14:30:00Z</value></data>
+  <data name="InputHintEmail" xml:space="preserve"><value>Адрес электронной почты</value></data>
+  <data name="InputHintUri" xml:space="preserve"><value>Полный адрес вида https://example.com</value></data>
+  <data name="InputHintDate" xml:space="preserve"><value>Дата в формате ГГГГ-ММ-ДД</value></data>
+  <data name="InputHintDateTime" xml:space="preserve"><value>Дата и время с часовым поясом, например 2026-11-09T14:30:00Z</value></data>
+  <data name="InputWhole" xml:space="preserve"><value>Целое число</value></data>
+  <data name="InputNumber" xml:space="preserve"><value>Число</value></data>
+  <data name="InputRangeWhole" xml:space="preserve"><value>Целое число от {0} до {1}</value></data>
+  <data name="InputRangeNumber" xml:space="preserve"><value>Число от {0} до {1}</value></data>
+  <data name="InputAtLeast" xml:space="preserve"><value>Не меньше {0}</value></data>
+  <data name="InputAtMost" xml:space="preserve"><value>Не больше {0}</value></data>
+  <data name="InputLengthBetween" xml:space="preserve"><value>От {0} до {1} символов</value></data>
+  <data name="InputLengthAtLeast" xml:space="preserve"><value>Не меньше {0} {0:символа|символов|символов}</value></data>
+  <data name="InputLengthAtMost" xml:space="preserve"><value>До {0} {0:символа|символов|символов}</value></data>
+  <data name="InputChooseOne" xml:space="preserve"><value>Выберите один вариант</value></data>
+  <data name="InputChooseExactly" xml:space="preserve"><value>Выберите ровно {0}</value></data>
+  <data name="InputChooseBetween" xml:space="preserve"><value>Выберите от {0} до {1}</value></data>
+  <data name="InputChooseAtLeast" xml:space="preserve"><value>Выберите не меньше {0}</value></data>
+  <data name="InputChooseAtMost" xml:space="preserve"><value>Выберите не больше {0}</value></data>
+  <data name="InputSecretWarning" xml:space="preserve"><value>Похоже на секретные данные: MCP-сервер не должен их запрашивать</value></data>
+  <data name="InputYes" xml:space="preserve"><value>Да</value></data>
+  <data name="InputNo" xml:space="preserve"><value>Нет</value></data>
+  <data name="InputReceiptSent" xml:space="preserve"><value>Вы ответили {0}</value></data>
+  <data name="InputReceiptSentDetail" xml:space="preserve"><value>Отправлено {0} {0:ответ|ответа|ответов}</value></data>
+  <data name="InputReceiptSentNote" xml:space="preserve"><value>Отправлено только {0}. Модель видит, что {0} с этим сделает.</value></data>
+  <data name="InputReceiptDeclined" xml:space="preserve"><value>Вы отказались отвечать {0}</value></data>
+  <data name="InputReceiptCancelled" xml:space="preserve"><value>Вы отменили вопрос {0}</value></data>
+  <data name="InputReceiptSetAside" xml:space="preserve"><value>Ваша заметка отложила вопрос {0}</value></data>
+  <data name="InputReceiptNothingSent" xml:space="preserve"><value>ничего не отправлено</value></data>
+  <data name="InputReceiptStopped" xml:space="preserve"><value>Остановлено, пока {0} ждал вашего ответа</value></data>
+  <data name="InputReceiptUnanswered" xml:space="preserve"><value>его вопрос остался без ответа</value></data>
 </root>

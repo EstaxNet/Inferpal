@@ -149,14 +149,21 @@ internal static class McpJsonRpc
     internal const string CompleteResult      = "complete";
     internal const string InputRequiredResult = "input_required";
 
-    /// <summary>Each request of an <c>input_required</c> result: the key the answer goes under, and its method.</summary>
-    internal static IReadOnlyList<(string Key, string Method)> InputRequests(JsonElement result)
+    /// <summary>Each request of an <c>input_required</c> result: the key the answer goes under, its method, and its
+    /// parameters (<c>undefined</c> when it has none).</summary>
+    internal static IReadOnlyList<(string Key, string Method, JsonElement Params)> InputRequests(JsonElement result)
     {
         if (result.ValueKind != JsonValueKind.Object
             || !result.TryGetProperty("inputRequests", out var asks) || asks.ValueKind != JsonValueKind.Object)
             return [];
-        return [.. asks.EnumerateObject().Select(a => (a.Name, StringProperty(a.Value, "method") ?? "an unnamed request"))];
+        return [.. asks.EnumerateObject().Select(a => (
+            a.Name,
+            StringProperty(a.Value, "method") ?? "an unnamed request",
+            a.Value.ValueKind == JsonValueKind.Object && a.Value.TryGetProperty("params", out var p) ? p.Clone() : default))];
     }
+
+    /// <summary>The method a server asks the person through: a form to fill (revision 2026-07-28).</summary>
+    internal const string ElicitationMethod = "elicitation/create";
 
     /// <summary>The opaque <c>requestState</c> of an <c>input_required</c> result, to echo verbatim on the retry.</summary>
     internal static string? RequestState(JsonElement result) => StringProperty(result, "requestState");

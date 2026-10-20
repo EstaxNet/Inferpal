@@ -16,7 +16,7 @@
   <a href="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml"><img src="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/tests-6626%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-6699%20passing-brightgreen" alt="Tests">
   <img src="https://img.shields.io/badge/.NET-8.0-512BD4" alt=".NET 8">
   <img src="https://img.shields.io/badge/Visual%20Studio-2026%20%7C%202022-5C2D91" alt="Visual Studio 2026 | 2022">
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/VS%20Marketplace-install-5C2D91" alt="Visual Studio Marketplace"></a>
@@ -55,7 +55,7 @@ It ships as a **Visual Studio 2026 and 2022 extension** (the primary target) and
 
 ### Highlights
 
-- **Agentic loop** — 30 built-in tools, plus user-defined shell tools and **MCP** servers (stdio or Streamable HTTP, of the 2026-07-28 revision or an earlier one) — a server too heavy for the context window, like an IDE's own, waits on demand and `tool_search` loads its tools; any tool can be turned off one by one (`/tools off <tool>`, or the Tools page of the settings); independent read-only tools run in parallel.
+- **Agentic loop** — 30 built-in tools, plus user-defined shell tools and **MCP** servers (stdio or Streamable HTTP, of the 2026-07-28 revision or an earlier one) — a server too heavy for the context window, like an IDE's own, waits on demand and `tool_search` loads its tools; any tool can be turned off one by one (`/tools off <tool>`, or the Tools page of the settings); a server that needs a value from you — a repository, a date, a choice — asks on a card in the chat that you fill, checked before it is sent, answered by nobody but you; independent read-only tools run in parallel.
 - **Local-first** — Ollama, LM Studio, or any OpenAI-compatible server (llama.cpp, vLLM); run the backend locally or on a [remote GPU host](docs/remote-inference.md).
 - **A chat you can read at a glance** — an agent run's steps fold into one line (`3 steps · read 1 file · edited 1 · build passed`), the answer ends on a result bar with the files changed — what its commands, test runs and MCP tools changed in a git repository included — the last build or test check and **Undo run**, and approvals are cards inside the conversation (**Allow once** with Enter, **Deny** with Esc, *Open diff* for the whole change) — and when one narrow rule describes the call, **Always: commands that start with `dotnet test`** or **writes under `tests/`**, saved to your machine's rules, never a chain, a launcher or a program that deletes. Same chat, same seven-page settings window in both editors.
 - **Steer a running turn** — type a correction while the agent works and press **Enter**: the run reads it before its next step, nothing stopped and nothing explained again; **Ctrl+Enter** queues a message for after the turn.

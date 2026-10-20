@@ -56,9 +56,13 @@ internal abstract class McpClientBase
     /// <summary>How many times a call that answers <c>input_required</c> with state alone is retried.</summary>
     private const int MaxRoundTrips = 3;
 
+    /// <summary>How many forms one call may ask the person to fill, one after the other, before it is stopped.</summary>
+    private const int MaxFormRounds = 10;
+
     /// <summary>A request in the era this connection speaks: in the modern one, every request carries its <c>_meta</c>.</summary>
-    private protected Task<JsonElement> RequestAsync(string method, JsonObject @params, CancellationToken ct) =>
-        SendRequestAsync(method, Era == McpEra.Modern ? Meta(@params) : @params, ct);
+    /// <param name="forms">The request declares that the person can be asked to fill a form (<see cref="McpModern.WithMeta"/>).</param>
+    private protected Task<JsonElement> RequestAsync(string method, JsonObject @params, CancellationToken ct, bool forms = false) =>
+        SendRequestAsync(method, Era == McpEra.Modern ? McpModern.WithMeta(@params, forms) : @params, ct);
 
     /// <summary>
     /// The workspace folder a stdio server of the earlier revisions may ask for (<c>roots/list</c>); null, or a folder that
@@ -71,7 +75,7 @@ internal abstract class McpClientBase
     /// <summary>The folder <c>roots/list</c> answers with, or null when there is none to give.</summary>
     private protected string? RootsFolder => WorkspaceRoot?.Invoke() is { Length: > 0 } root && Directory.Exists(root) ? root : null;
 
-    /// <summary><paramref name="params"/> with the modern era's <c>_meta</c>.</summary>
+    /// <summary><paramref name="params"/> with the modern era's <c>_meta</c>, which declares no form.</summary>
     private protected static JsonObject Meta(JsonNode? @params) => McpModern.WithMeta(@params);
 
     /// <summary>The listed tools the transport can offer (all of them, unless a transport rule leaves one out).</summary>
@@ -141,9 +145,22 @@ internal abstract class McpClientBase
     }
 
     /// <summary>
-    /// Calls a tool by its server-local name and returns the concatenated text content.
+    /// Calls a tool by its server-local name and returns the concatenated text content. The server cannot ask the person
+    /// anything: no form is declared.
     /// </summary>
-    public async Task<string> CallToolAsync(string toolName, JsonElement arguments, CancellationToken ct)
+    public Task<string> CallToolAsync(string toolName, JsonElement arguments, CancellationToken ct) =>
+        CallToolAsync(toolName, arguments, ask: null, ct);
+
+    /// <summary>
+    /// Calls a tool by its server-local name; when <paramref name="ask"/> is given, the request declares forms, and a
+    /// server that answers with one (<c>elicitation/create</c> in an <c>input_required</c>) has it filled by the person
+    /// before the call is made again with the answer.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The call's budget is per REQUEST, never across the card: a person may take minutes to fill a form, and a budget
+    /// that counted them would stop the call while they type, the answer then sent nowhere.
+    /// </remarks>
+    public async Task<string> CallToolAsync(string toolName, JsonElement arguments, McpInputAsker? ask, CancellationToken ct)
     {
         var callParams = new JsonObject { ["name"] = toolName };
         // Anything that is not an object or an array is not arguments; sending it through would
@@ -152,36 +169,88 @@ internal abstract class McpClientBase
             ? JsonNode.Parse(arguments.GetRawText())
             : new JsonObject();
 
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        cts.CancelAfter(CallTimeout);
-        try
+        var notes = new List<string>();
+        var stateTrips = 0;
+        var formRounds = 0;
+        while (true)
         {
-            for (var trip = 0; ; trip++)
+            JsonElement result;
+            using (var cts = CancellationTokenSource.CreateLinkedTokenSource(ct))
             {
-                var result = await RequestAsync("tools/call", callParams, cts.Token).ConfigureAwait(false);
-                var type = McpJsonRpc.ResultTypeOf(result);
-                if (type == McpJsonRpc.CompleteResult) return McpJsonRpc.ExtractCallResult(result, toolName);
-                if (type != McpJsonRpc.InputRequiredResult)
-                    return $"MCP tool '{toolName}' answered a result of type '{type}', which Inferpal does not know; the call did not complete.";
+                cts.CancelAfter(CallTimeout);
+                try { result = await RequestAsync("tools/call", callParams, cts.Token, forms: ask is not null).ConfigureAwait(false); }
+                catch (Exception ex) when (!ct.IsCancellationRequested)
+                {
+                    // The call's own budget, not the user's Stop: an error the model reads. As an
+                    // OperationCanceledException it stopped the whole agent run like a Stop.
+                    var timeout = ex is OperationCanceledException
+                        ? new TimeoutException($"MCP tool '{toolName}' did not answer within {CallTimeout.TotalSeconds:0} s.")
+                        : null;
+                    // ⚠ After a form, the model still reads what the person did with it: a server that answers a refusal
+                    // with an error would otherwise have the model call again, and the person asked the same thing again.
+                    if (notes.Count > 0)
+                        return WithNotes(notes, $"MCP tool '{toolName}' failed after the user's answer: {(timeout is null ? Diagnostics.RootMessage(ex) : timeout.Message)}");
+                    if (timeout is not null) throw timeout;
+                    throw;
+                }
+            }
 
-                // ⚠ input_required is not a result: read as one, the model would conclude the tool answered nothing.
-                // Inferpal declares no elicitation, sampling or roots in this era, so a request for one cannot be answered —
-                // named.
-                if (McpJsonRpc.InputRequests(result).Select(a => a.Method).Distinct(StringComparer.Ordinal).ToList() is { Count: > 0 } asks)
-                    return $"MCP tool '{toolName}' asked for input Inferpal does not provide ({string.Join(", ", asks)}); the call did not complete.";
-                if (McpJsonRpc.RequestState(result) is not { } state)
-                    return $"MCP tool '{toolName}' answered input_required without saying what it needs; the call did not complete.";
-                if (trip + 1 >= MaxRoundTrips)
-                    return $"MCP tool '{toolName}' asked for another round trip {MaxRoundTrips} times in a row; the call was stopped there and did not complete.";
+            var type = McpJsonRpc.ResultTypeOf(result);
+            if (type == McpJsonRpc.CompleteResult) return WithNotes(notes, McpJsonRpc.ExtractCallResult(result, toolName));
+            if (type != McpJsonRpc.InputRequiredResult)
+                return WithNotes(notes, $"MCP tool '{toolName}' answered a result of type '{type}', which Inferpal does not know; the call did not complete.");
+
+            // ⚠ input_required is not a result: read as one, the model would conclude the tool answered nothing.
+            var state = McpJsonRpc.RequestState(result);
+            var asks  = McpJsonRpc.InputRequests(result);
+            if (asks.Count == 0)
+            {
+                if (state is null)
+                    return WithNotes(notes, $"MCP tool '{toolName}' answered input_required without saying what it needs; the call did not complete.");
+                if (++stateTrips >= MaxRoundTrips)
+                    return WithNotes(notes, $"MCP tool '{toolName}' asked for another round trip {MaxRoundTrips} times in a row; the call was stopped there and did not complete.");
                 // State alone: the retry echoes it verbatim, as a new request.
                 callParams["requestState"] = state;
+                callParams.Remove("inputResponses");
+                continue;
             }
-        }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
-        {
-            // The call's own budget, not the user's Stop: an error the model reads. As an
-            // OperationCanceledException it stopped the whole agent run like a Stop.
-            throw new TimeoutException($"MCP tool '{toolName}' did not answer within {CallTimeout.TotalSeconds:0} s.");
+
+            // Only a form, and only where one was declared: no sampling and no roots in this era, so a request for one
+            // cannot be answered — named.
+            var refused = asks.Where(a => ask is null || a.Method != McpJsonRpc.ElicitationMethod)
+                              .Select(a => a.Method).Distinct(StringComparer.Ordinal).ToList();
+            if (refused.Count > 0)
+                return WithNotes(notes, $"MCP tool '{toolName}' asked for input Inferpal does not provide ({string.Join(", ", refused)}); the call did not complete.");
+            if (++formRounds > MaxFormRounds)
+                return WithNotes(notes, $"MCP tool '{toolName}' asked the user to fill a form {MaxFormRounds} times for one call; the call was stopped there and did not complete.");
+            stateTrips = 0;
+
+            var forms = new List<(string Key, McpInputForm Form)>();
+            foreach (var (key, _, @params) in asks)
+            {
+                if (McpInputForm.Read(ServerName, toolName, @params, out var refusal) is not { } form)
+                    return WithNotes(notes, $"MCP tool '{toolName}' asked the user to fill a form Inferpal cannot show: {refusal}; the call did not complete.");
+                forms.Add((key, form));
+            }
+
+            var responses = new JsonObject();
+            foreach (var (key, form) in forms)
+            {
+                // The person's time: under the user's Stop only, never the call's budget.
+                var answer = await ask!(form, ct).ConfigureAwait(false);
+                ct.ThrowIfCancellationRequested();
+                responses[key] = answer.Result();
+                notes.Add(answer.NoteForModel(ServerName));
+            }
+            // A new request, with the answers under the keys they were asked by, and the state echoed exactly as it came —
+            // never invented when there was none.
+            callParams["inputResponses"] = responses;
+            if (state is not null) callParams["requestState"] = state;
+            else callParams.Remove("requestState");
         }
     }
+
+    /// <summary>The model reads what the person did with each form above what the call returned.</summary>
+    private static string WithNotes(List<string> notes, string result) =>
+        notes.Count == 0 ? result : string.Join("\n", notes) + "\n\n" + result;
 }

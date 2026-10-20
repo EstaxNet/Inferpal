@@ -21,6 +21,11 @@ export interface InitializeParams {
    * person sits at (VS Code Remote included), its redirect forwarded to the host.
    */
   openExternal?: boolean;
+  /**
+   * This adapter draws the card an MCP server's form is filled on (`input/form`) and the line it leaves
+   * (`chat/inputReceipt`): the host's calls then declare forms to the servers.
+   */
+  inputCards?: boolean;
 }
 
 export interface InitializeResult {
@@ -495,6 +500,72 @@ export interface InputRequest {
   password: boolean;
   /** Pre-filled value, if the server declares one. */
   value?: string | null;
+}
+
+/** One choice of an input card's field (`InputOptionModel` in the Core). */
+export interface InputCardOption {
+  value: string;
+  label: string;
+  selected: boolean;
+}
+
+/** One field of an input card (`InputFieldModel` in the Core), already in the user's language. */
+export interface InputCardField {
+  key: string;
+  /** `text`, `number`, `boolean`, `choice` (one) or `choices` (several). */
+  kind: 'text' | 'number' | 'boolean' | 'choice' | 'choices';
+  /** For a text or number field: `text`, `email`, `url`, `date`, `datetime` or `number`. */
+  inputType: string;
+  label: string;
+  hint: string;
+  required: boolean;
+  /** The field reads like a secret: the hint says a server must not ask for one. */
+  warns: boolean;
+  /** A `choice` field drawn as buttons side by side. */
+  buttons: boolean;
+  text: string;
+  flag: boolean;
+  options: InputCardOption[];
+  /** What to fix before sending; empty when nothing is. */
+  error: string;
+  min?: number | null;
+  max?: number | null;
+}
+
+/** `input/form` (host → editor): a form an MCP server asks the user to fill (`InputCardModel` in the Core). The same
+ *  `id` comes back with what to fix: that card replaces the one drawn. */
+export interface InputCard {
+  id: string;
+  server: string;
+  title: string;
+  subtitle: string;
+  /** The server's own words: drawn as plain text, never Markdown, never a link. */
+  message: string;
+  fields: InputCardField[];
+  errorSummary: string;
+  requiredNote: string;
+  reminder: string;
+  sendLabel: string;
+  declineLabel: string;
+  declineTooltip: string;
+  cancelLabel: string;
+  cancelTooltip: string;
+}
+
+/** The answer to `input/form`: what the user did, and the fields' values (a string, a boolean, or the choices ticked). */
+export interface InputFormAnswer {
+  action: 'accept' | 'decline' | 'cancel' | 'setAside';
+  values: Record<string, string | boolean | string[]>;
+}
+
+/** `chat/inputReceipt` (host → editor): the line an answered card leaves where it was. `saved` is what the conversation
+ *  keeps under the role `input`. */
+export interface InputReceiptNote {
+  id: string;
+  title: string;
+  detail: string;
+  body: string;
+  saved: string;
 }
 
 /** approval/request answer: 0 = deny, 1 = allow once, 2 = always allow (session), 3 = the card's narrow rule, written to

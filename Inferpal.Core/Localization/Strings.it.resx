@@ -1639,4 +1639,49 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="SettingsSectionToolListDesc" xml:space="preserve"><value>Ciò che ogni richiesta dichiara, e quanto pesa. Uno strumento disattivato non viene mai offerto al modello.</value></data>
   <data name="ToolListNoChat" xml:space="preserve"><value>Aprite la finestra della chat per elencarne gli strumenti.</value></data>
   <data name="ToolGroupNotHere" xml:space="preserve"><value>Disattivati, non disponibili qui al momento</value></data>
+  <data name="InputCardTitle" xml:space="preserve"><value>{0} le chiede delle informazioni</value></data>
+  <data name="InputCardSubtitle" xml:space="preserve"><value>Un server MCP, per eseguire {0}</value></data>
+  <data name="InputCardRequired" xml:space="preserve"><value>* obbligatorio</value></data>
+  <data name="InputCardReminder" xml:space="preserve"><value>Solo lei risponde a questa scheda, mai Inferpal. Non scriva mai qui una password, una chiave o un token: un server MCP non deve chiederli.</value></data>
+  <data name="InputSend" xml:space="preserve"><value>Invia</value></data>
+  <data name="InputDecline" xml:space="preserve"><value>Rifiuta</value></data>
+  <data name="InputDeclineTip" xml:space="preserve"><value>{0} viene informato che ha rifiutato</value></data>
+  <data name="InputCancel" xml:space="preserve"><value>Annulla</value></data>
+  <data name="InputCancelTip" xml:space="preserve"><value>Chiudere la domanda senza rispondere; {0} ne viene informato</value></data>
+  <data name="InputFixCount" xml:space="preserve"><value>{0} {0:risposta|risposte} da correggere prima dell'invio</value></data>
+  <data name="InputErrRequired" xml:space="preserve"><value>Obbligatorio</value></data>
+  <data name="InputErrEmail" xml:space="preserve"><value>Non è un indirizzo email</value></data>
+  <data name="InputErrUri" xml:space="preserve"><value>Non è un indirizzo completo, come https://example.com</value></data>
+  <data name="InputErrDate" xml:space="preserve"><value>Non è una data nel formato AAAA-MM-GG</value></data>
+  <data name="InputErrDateTime" xml:space="preserve"><value>Non è una data e ora, come 2026-11-09T14:30:00Z</value></data>
+  <data name="InputHintEmail" xml:space="preserve"><value>Un indirizzo email</value></data>
+  <data name="InputHintUri" xml:space="preserve"><value>Un indirizzo completo, come https://example.com</value></data>
+  <data name="InputHintDate" xml:space="preserve"><value>Una data nel formato AAAA-MM-GG</value></data>
+  <data name="InputHintDateTime" xml:space="preserve"><value>Una data e ora con il fuso orario, come 2026-11-09T14:30:00Z</value></data>
+  <data name="InputWhole" xml:space="preserve"><value>Un numero intero</value></data>
+  <data name="InputNumber" xml:space="preserve"><value>Un numero</value></data>
+  <data name="InputRangeWhole" xml:space="preserve"><value>Un numero intero da {0} a {1}</value></data>
+  <data name="InputRangeNumber" xml:space="preserve"><value>Un numero da {0} a {1}</value></data>
+  <data name="InputAtLeast" xml:space="preserve"><value>Almeno {0}</value></data>
+  <data name="InputAtMost" xml:space="preserve"><value>Al massimo {0}</value></data>
+  <data name="InputLengthBetween" xml:space="preserve"><value>Da {0} a {1} caratteri</value></data>
+  <data name="InputLengthAtLeast" xml:space="preserve"><value>Almeno {0} {0:carattere|caratteri}</value></data>
+  <data name="InputLengthAtMost" xml:space="preserve"><value>Fino a {0} {0:carattere|caratteri}</value></data>
+  <data name="InputChooseOne" xml:space="preserve"><value>Scelga un'opzione</value></data>
+  <data name="InputChooseExactly" xml:space="preserve"><value>Ne scelga esattamente {0}</value></data>
+  <data name="InputChooseBetween" xml:space="preserve"><value>Ne scelga da {0} a {1}</value></data>
+  <data name="InputChooseAtLeast" xml:space="preserve"><value>Ne scelga almeno {0}</value></data>
+  <data name="InputChooseAtMost" xml:space="preserve"><value>Ne scelga al massimo {0}</value></data>
+  <data name="InputSecretWarning" xml:space="preserve"><value>Sembra un segreto: un server MCP non deve chiederlo</value></data>
+  <data name="InputYes" xml:space="preserve"><value>Sì</value></data>
+  <data name="InputNo" xml:space="preserve"><value>No</value></data>
+  <data name="InputReceiptSent" xml:space="preserve"><value>Ha risposto a {0}</value></data>
+  <data name="InputReceiptSentDetail" xml:space="preserve"><value>{0} {0:risposta inviata|risposte inviate}</value></data>
+  <data name="InputReceiptSentNote" xml:space="preserve"><value>Inviato solo a {0}. Il modello vede ciò che {0} ne fa.</value></data>
+  <data name="InputReceiptDeclined" xml:space="preserve"><value>Ha rifiutato di rispondere a {0}</value></data>
+  <data name="InputReceiptCancelled" xml:space="preserve"><value>Ha annullato la domanda di {0}</value></data>
+  <data name="InputReceiptSetAside" xml:space="preserve"><value>La sua nota ha messo da parte la domanda di {0}</value></data>
+  <data name="InputReceiptNothingSent" xml:space="preserve"><value>nulla è stato inviato</value></data>
+  <data name="InputReceiptStopped" xml:space="preserve"><value>Interrotto mentre {0} aspettava la sua risposta</value></data>
+  <data name="InputReceiptUnanswered" xml:space="preserve"><value>la sua domanda è rimasta senza risposta</value></data>
 </root>

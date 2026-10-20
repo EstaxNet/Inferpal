@@ -57,6 +57,8 @@ internal partial class InferpalToolWindowData
                 // Read by the run: a card waiting is refused — a text never approves — and the note says why; a paused run
                 // resumes, to read it at the step it resumes to. Queued instead, neither is touched.
                 if (_pendingApproval is { IsAnswered: false } waiting) waiting.Answer(ApprovalDecision.Withdrawn);
+                // A form waiting is set aside the same way: the note answers the run, never the server.
+                if (_pendingInput is { IsAnswered: false } form) form.AnswerInput(Services.Mcp.McpInputAction.SetAside);
                 if (_stepResume is not null) ResumeStep();
             });
             return;

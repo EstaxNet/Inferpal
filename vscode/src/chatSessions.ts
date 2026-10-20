@@ -14,7 +14,10 @@ export function toSavedMessages(transcript: readonly WvTranscriptItem[]): SavedM
       ? item.savedAs
       : item.role === 'tool'
         ? { role: 'tool', content: item.toolOutput ?? '', toolName: item.text, timestamp: item.timestamp }
-        : item.note === 'read'
+        : item.role === 'input'
+          // The Core's InputCard.ReceiptRole: the line an answered card left, never a question or an answer.
+          ? { role: 'input', content: item.text, timestamp: item.timestamp }
+          : item.note === 'read'
           // The Core's SessionManager.NoteMarker: the restore folds the note into its question, as the live history did.
           ? { role: 'user', content: item.text, toolName: NOTE_MARKER, timestamp: item.timestamp }
           : item.notice || item.note
@@ -42,6 +45,8 @@ export function toTranscript(messages: readonly SavedMessage[]): WvTranscriptIte
         toolOutput: m.content,
         timestamp: m.timestamp ?? undefined,
       });
+    } else if (m.role === 'input') {
+      items.push({ role: 'input', text: m.content, timestamp: m.timestamp ?? undefined });
     } else if (m.role === 'user' && m.toolName === NOTE_MARKER) {
       // Kept a note across a reload: re-saved as a question, it became a second question with no answer.
       items.push({ role: 'user', text: m.content, timestamp: m.timestamp ?? undefined, note: 'read' });

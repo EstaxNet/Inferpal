@@ -108,7 +108,8 @@ internal sealed partial class HostServer : IDisposable
             ? new OpenDocumentOverlay((path, ct) => rpc.InvokeWithParameterObjectAsync<string?>("editor/buffer", new { path }, ct))
             : new OpenDocumentOverlay();
         var editor   = new RpcEditorSurface(rpc, overlay, hasEditor: p.EditorSurface);
-        var approval = new RpcApprovalService(config, () => p.RootDir, rpc, structured: p.ToolEvents);
+        var approval = new RpcApprovalService(config, () => p.RootDir, rpc, structured: p.ToolEvents, inputCards: p.InputCards);
+        approval.TurnRuns = TurnRuns;
         // A rule an answer wrote to the settings (or could not) is said in the conversation the card was in.
         approval.Notice  = text => Notify("host/notice", new { text, severity = "info" });
         approval.Warning = text => Notify("host/notice", new { text, severity = "warning" });
@@ -313,6 +314,12 @@ internal sealed partial class HostServer : IDisposable
         public IReadOnlyList<UserNote>    Unapplied { get; set; } = [];
     }
 
+    /// <summary>A chat turn holds the slot: the adapter draws its cards in the conversation then, and only then.</summary>
+    private bool TurnRuns()
+    {
+        lock (_gate) return _chatCts is not null && _slotHeldByTurn;
+    }
+
     /// <summary>
     /// A note typed while the turn runs, for its next step (<see cref="RunSteering"/>). Outside the turn slot: the turn is
     /// what holds it. Refused, with the reason, when no turn runs or the one running has no step to read it before (a
@@ -324,8 +331,7 @@ internal sealed partial class HostServer : IDisposable
         var s = Session();
         if (s.Steering is { } steering)
             return steering.TryPush(new UserNote(p.Id, p.Text)) ? new ChatSteerResult(true) : new ChatSteerResult(false, "closed");
-        bool turnRuns;
-        lock (_gate) turnRuns = _chatCts is not null && _slotHeldByTurn;
+        var turnRuns = TurnRuns();
         return new ChatSteerResult(false, turnRuns ? "noBoundary" : "noTurn");
     }
 

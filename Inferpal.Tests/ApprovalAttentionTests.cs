@@ -58,18 +58,36 @@ public sealed class ApprovalAttentionTests
     {
         var provider = SettingsSchemaDriftTests.NeutralizeTypeScriptComments(
             File.ReadAllText(Path.Combine(Root, "vscode", "src", "chatViewProvider.ts")));
-        var request = provider[provider.IndexOf("async requestApproval(", StringComparison.Ordinal)..];
-        request = request[..request.IndexOf("private dismissApproval(", StringComparison.Ordinal)];
+        string Between(string start, string end)
+        {
+            var from = provider.IndexOf(start, StringComparison.Ordinal);
+            Assert.True(from >= 0, start);
+            var rest = provider[from..];
+            return rest[..rest.IndexOf(end, StringComparison.Ordinal)];
+        }
+        var helper = Between("private static attentionWhileWaiting(", "async requestInput(");
 
-        Assert.Contains("}, APPROVAL_ATTENTION_MS);", request, StringComparison.Ordinal);
-        Assert.Contains("if (notified || !this.pendingApprovals.has(id)) {", request, StringComparison.Ordinal);
-        Assert.Contains("if (!vscode.window.state.focused) {", request, StringComparison.Ordinal);
+        Assert.Contains("}, APPROVAL_ATTENTION_MS);", helper, StringComparison.Ordinal);
+        Assert.Contains("if (notified || !waiting()) {", helper, StringComparison.Ordinal);
+        Assert.Contains("if (!vscode.window.state.focused) {", helper, StringComparison.Ordinal);
         // Focused at that moment, it waits for the window to lose the focus.
-        Assert.Contains("watch = vscode.window.onDidChangeWindowState((state) => {", request, StringComparison.Ordinal);
-        Assert.Contains("watch?.dispose();", request[request.IndexOf("finally", StringComparison.Ordinal)..], StringComparison.Ordinal);
+        Assert.Contains("watch = vscode.window.onDidChangeWindowState((state) => {", helper, StringComparison.Ordinal);
         // A progress notification tied to the card's answer: it closes with the answer, never left behind.
-        Assert.Matches(new Regex(@"withProgress\(\s*\{ location: vscode\.ProgressLocation\.Notification, title: t\('Inferpal is waiting for your approval\.'\) \},\s*\(\) => answer\)"),
-                       request);
-        Assert.Contains("clearTimeout(attention);", request[request.IndexOf("finally", StringComparison.Ordinal)..], StringComparison.Ordinal);
+        Assert.Contains("withProgress({ location: vscode.ProgressLocation.Notification, title }, () => answer);", helper, StringComparison.Ordinal);
+        Assert.Contains("return { dispose: () => { clearTimeout(timer); watch?.dispose(); } };", helper, StringComparison.Ordinal);
+
+        // Both cards a turn waits on: the approval under its sentence, the server's form under its own title, each while
+        // it is pending, and each stopped in its finally.
+        foreach (var (card, call) in new[]
+        {
+            (Between("async requestApproval(", "private static attentionWhileWaiting("),
+             "attentionWhileWaiting(\n      t('Inferpal is waiting for your approval.'), () => this.pendingApprovals.has(id), answer);"),
+            (Between("async requestInput(", "private dismissInput("),
+             "attentionWhileWaiting(card.title, () => this.pendingInputs.has(card.id), answer);"),
+        })
+        {
+            Assert.Contains(call, card.Replace("\r\n", "\n"), StringComparison.Ordinal);
+            Assert.Contains("attention.dispose();", card[card.IndexOf("finally", StringComparison.Ordinal)..], StringComparison.Ordinal);
+        }
     }
 }

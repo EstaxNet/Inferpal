@@ -13,7 +13,7 @@ import { openTabPaths, panelDiagnostics } from './editorBridge';
 import { capAttachment, CappedText } from './attachmentCap';
 import { renderChatHtml } from './webview/chatWebviewHtml';
 import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
-import { ApprovalCard, CodeActionResult, SavedMessage, SlashEffect, TurnNote } from './protocol';
+import { ApprovalCard, CodeActionResult, InputCard, InputFormAnswer, SavedMessage, SlashEffect, TurnNote } from './protocol';
 import {
   WebviewToExt,
   WvBackendStatus,
@@ -72,6 +72,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** The message is kept with the answer: a rehydration rebuilds the webview from the transcript,
    *  which carries no card, so every card still waiting is posted again (see hydrate). */
   private readonly pendingApprovals = new Map<number, { message: string; card: ApprovalCard | null; resolve: (answer: number) => void }>();
+  /** Input cards waiting for the user (an MCP server's form), by the host's card id: posted again by a rehydration, like
+   *  the approval cards. */
+  private readonly pendingInputs = new Map<string, { card: InputCard; resolve: (answer: InputFormAnswer | null) => void }>();
   /** Read-only plan mode, as the host holds it (the Plan segment of the mode switch). */
   private planMode = false;
   /** Whether the editor listeners feeding the welcome screen are set (once per extension life). */
@@ -205,22 +208,32 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // it cannot be answered into a run that no longer exists (ghost card).
     const cancelSub = token?.onCancellationRequested(() => this.dismissApproval(id));
     this.post({ type: 'approval', id, message, card });
-    // A card left unanswered while its author is elsewhere says so outside the panel: a notification for as long as it
-    // waits, gone with the answer — never one left behind after it. VS Code gives an extension no way to flash the
-    // taskbar.
-    // ⚠ And if the window has the focus then, as soon as it loses it: the card waits as long once its author has gone.
+    const attention = ChatViewProvider.attentionWhileWaiting(
+      t('Inferpal is waiting for your approval.'), () => this.pendingApprovals.has(id), answer);
+    try {
+      return await answer;
+    } finally {
+      attention.dispose();
+      cancelSub?.dispose();
+    }
+  }
+
+  /**
+   * A card left unanswered while its author is elsewhere says so outside the panel: a notification for as long as it
+   * waits, gone with the answer — never one left behind after it. VS Code gives an extension no way to flash the taskbar.
+   * ⚠ And if the window has the focus then, as soon as it loses it: the card waits as long once its author has gone.
+   */
+  private static attentionWhileWaiting(title: string, waiting: () => boolean, answer: Promise<unknown>): vscode.Disposable {
     let notified = false;
     let watch: vscode.Disposable | undefined;
     const notify = (): void => {
-      if (notified || !this.pendingApprovals.has(id)) {
+      if (notified || !waiting()) {
         return;
       }
       notified = true;
-      void vscode.window.withProgress(
-        { location: vscode.ProgressLocation.Notification, title: t('Inferpal is waiting for your approval.') },
-        () => answer);
+      void vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title }, () => answer);
     };
-    const attention = setTimeout(() => {
+    const timer = setTimeout(() => {
       if (!vscode.window.state.focused) {
         notify();
       } else {
@@ -231,13 +244,53 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         });
       }
     }, APPROVAL_ATTENTION_MS);
+    return { dispose: () => { clearTimeout(timer); watch?.dispose(); } };
+  }
+
+  /**
+   * Shows the card an MCP server's form is filled on and resolves with what the user did; null when it cannot be shown
+   * (no view, no turn). The host checks the values: a card that comes back with the same id and what to fix replaces
+   * the one drawn.
+   */
+  async requestInput(card: InputCard, token?: CancellationToken): Promise<InputFormAnswer | null> {
+    // As for an approval: outside a turn, nobody is watching the conversation the card would wait in.
+    if (!this.view || !this.busy) {
+      return null;
+    }
+    // Shown WITHOUT taking the keyboard: the keys typed for something else must never fill or send a form.
+    if (!this.view.visible) {
+      try {
+        this.view.show(true);
+      } catch {
+        // reveal unavailable — the card still lands in the retained webview
+      }
+      if (!this.view) {
+        return null;
+      }
+    }
+    const answer = new Promise<InputFormAnswer | null>((resolve) => this.pendingInputs.set(card.id, { card, resolve }));
+    // The turn stopped while the card waited: the card goes, and the host leaves its line.
+    const cancelSub = token?.onCancellationRequested(() => this.dismissInput(card.id, null));
+    this.post({ type: 'inputForm', card });
+    // Under the card's own title, already in the user's language.
+    const attention = ChatViewProvider.attentionWhileWaiting(card.title, () => this.pendingInputs.has(card.id), answer);
     try {
       return await answer;
     } finally {
-      clearTimeout(attention);
-      watch?.dispose();
+      attention.dispose();
       cancelSub?.dispose();
     }
+  }
+
+  /** Takes an input card away, its wait answered with `answer` (null: not shown). */
+  private dismissInput(id: string, answer: InputFormAnswer | null): void {
+    const pending = this.pendingInputs.get(id);
+    if (!pending) {
+      return; // already answered
+    }
+    this.pendingInputs.delete(id);
+    this.post({ type: 'inputDismiss', id });
+    pending.resolve(answer);
   }
 
   /** Takes a card away: denied (0) by default; withdrawn (4) when a note took it away, which is no answer of the person's
@@ -412,6 +465,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           this.plan.steps[update.index] = { ...this.plan.steps[update.index], status: update.status };
           this.post({ type: 'plan', plan: this.plan });
         }
+      },
+      onInputReceipt: (receipt) => {
+        // Kept with the conversation, where the card was: what the person sent, and to whom.
+        this.append({ role: 'input', text: receipt.saved, timestamp: ChatViewProvider.now() });
+        this.post({ type: 'inputReceipt', id: receipt.id, saved: receipt.saved });
       },
       onTool: (tool) => {
         const item: WvTranscriptItem = {
@@ -1308,6 +1366,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         pending?.resolve(msg.answer);
         return;
       }
+      case 'inputAnswer': {
+        const pending = this.pendingInputs.get(msg.id);
+        this.pendingInputs.delete(msg.id);
+        pending?.resolve({ action: msg.action, values: msg.values });
+        return;
+      }
       case 'mentionQuery': {
         const items = await this.mentionSuggestions(msg.query);
         this.post({ type: 'mentionSuggestions', items, query: msg.query });
@@ -1754,6 +1818,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       pending.resolve(0);
     }
     this.pendingApprovals.clear();
+    // The panel the card was on is gone: the person saw it and left it unanswered — a cancel, never "not shown".
+    for (const pending of this.pendingInputs.values()) {
+      pending.resolve({ action: 'cancel', values: {} });
+    }
+    this.pendingInputs.clear();
   }
 
   /** The host stopped or crashed: the approval cards it opened can no longer be answered. */
@@ -1896,6 +1965,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     for (const id of [...this.pendingApprovals.keys()]) {
       this.dismissApproval(id);
     }
+    for (const id of [...this.pendingInputs.keys()]) {
+      this.dismissInput(id, null);
+    }
   }
 
 
@@ -1995,6 +2067,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // resumes, to read it at the step it resumes to. Queued instead, neither is touched.
       if (this.pendingApprovals.size === 1) {
         this.dismissApproval([...this.pendingApprovals.keys()][0], 4);
+      }
+      // A form waiting is set aside the same way: the note is the person's answer to the run, never to the server.
+      if (this.pendingInputs.size === 1) {
+        this.dismissInput([...this.pendingInputs.keys()][0], { action: 'setAside', values: {} });
       }
       if (this.stepPaused) {
         try {
@@ -3105,6 +3181,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // would vanish while the host keeps waiting for its answer, with no timeout.
     for (const [id, pending] of this.pendingApprovals) {
       this.post({ type: 'approval', id, message: pending.message, card: pending.card });
+    }
+    for (const pending of this.pendingInputs.values()) {
+      this.post({ type: 'inputForm', card: pending.card });
     }
     if (this.busy && this.stepPaused) {
       this.post({ type: 'stepPaused' });

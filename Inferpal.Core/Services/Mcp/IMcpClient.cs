@@ -53,4 +53,9 @@ internal interface IMcpClient : IAsyncDisposable
 
     /// <summary>Calls a tool by its server-local name and returns the concatenated text content.</summary>
     Task<string> CallToolAsync(string toolName, JsonElement arguments, CancellationToken ct);
+
+    /// <summary>Calls a tool whose server may ask the person to fill a form (<paramref name="ask"/>). A client that speaks
+    /// no protocol revision with forms calls it as <see cref="CallToolAsync(string, JsonElement, CancellationToken)"/>.</summary>
+    Task<string> CallToolAsync(string toolName, JsonElement arguments, McpInputAsker? ask, CancellationToken ct) =>
+        CallToolAsync(toolName, arguments, ct);
 }

@@ -62,6 +62,24 @@ internal class VsApprovalService : ApprovalServiceBase
     protected override Task<ApprovalDecision> PromptUserAsync(string message, DiffInfo? diff, CancellationToken ct) =>
         AskInDialogAsync(message, diff, card: null, ct);
 
+    /// <summary>A server's form is a card of a running turn, never a dialog: outside a turn, no form is declared.</summary>
+    public override bool CanAskForInput => _context.InlineInput is not null && _context.TurnRuns?.Invoke() == true;
+
+    protected override async Task<InputReply?> PromptInputAsync(InputCardModel card, CancellationToken ct)
+    {
+        if (_context.InlineInput is not { } inline) return null;
+        try { return await inline(card, ct); }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            // Not drawn: the server is told the person did not answer, as VS Code's host tells it.
+            Diagnostics.Swallow("VsApprovalService.InputCard", ex);
+            return null;
+        }
+    }
+
+    protected override void ShowInputReceipt(InputReceipt receipt) => _context.InputReceipt?.Invoke(receipt);
+
     /// <param name="card">The card of the call, for the narrow rule it offers; <c>null</c> for a prompt without one.</param>
     private async Task<ApprovalDecision> AskInDialogAsync(string message, DiffInfo? diff, ApprovalCardModel? card, CancellationToken ct)
     {

@@ -43,6 +43,7 @@ const DRAWINGS = {
   list: [['p', 'M4 6h16M4 12h16M4 18h10']],
   history: [['c', '12 12 9'], ['p', 'M12 7v5l3 2']],
   more: [['p', 'M5 12h.01M12 12h.01M19 12h.01']],
+  plug: [['p', 'M9 7V3M15 7V3'], ['p', 'M6 7h12v4a6 6 0 0 1-12 0z'], ['p', 'M12 17v4']],
   attach: [['p', 'M20 11.5l-8.2 8.2a5 5 0 0 1-7-7L13 4.5a3.4 3.4 0 0 1 4.8 4.8l-8.1 8.1a1.7 1.7 0 0 1-2.4-2.4l7.4-7.4']],
 } satisfies Record<string, ReadonlyArray<readonly [string, string]>>;
 
