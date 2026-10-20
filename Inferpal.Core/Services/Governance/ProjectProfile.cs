@@ -98,7 +98,7 @@ internal sealed record ProjectProfile(
     private static readonly string[] SensitiveKeys =
     [
         "validators", "permissions", "permissionRules", "customTools", "mcpServers",
-        "baseUrl", "apiKey", "provider", "securityAlertsDisabled", "smartFixEnabled",
+        "baseUrl", "apiKey", "provider", "securityAlertsDisabled", "smartFixEnabled", "packageCheckEnabled",
     ];
 
     /// <summary>Reads and parses <c>.inferpal/project.json</c>; never throws, never returns null.</summary>

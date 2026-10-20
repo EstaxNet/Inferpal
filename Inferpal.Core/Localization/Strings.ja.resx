@@ -1133,6 +1133,8 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>高</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>ファイルの変更、コマンドの実行、オンライン アクセスの前に確認する</value></data>
   <data name="HintAskBeforeActions" xml:space="preserve"><value>実際の差分や正確なコマンドを確認できます。オフにすると、すべて黙って承認されます (壊滅的なコマンドは引き続き拒否されます)。</value></data>
+  <data name="LabelPackageCheck" xml:space="preserve"><value>パッケージを追加する前に存在を確認する</value></data>
+  <data name="HintPackageCheck" xml:space="preserve"><value>送信されるのは追加する名前だけで、送信先は公開レジストリ（nuget.org、npm、PyPI）のみです。架空の名前は確認を求める前に拒否されます。プライベートフィードや応答しないレジストリは確認されません。</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>適用する前に変更を表示する</value></data>
   <data name="HintInlineDiffPreview" xml:space="preserve"><value>エディターに追加行と削除行を表示し、変更ごとに、またはまとめて採用・破棄できます。オフならすぐに適用され、Ctrl+Z で元に戻せます。</value></data>
   <data name="McpCardConnected" xml:space="preserve"><value>接続済み · ツール {0} 個</value></data>

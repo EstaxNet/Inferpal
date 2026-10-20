@@ -1133,6 +1133,8 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>Alto</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Chiedermi prima di modificare file, eseguire comandi o andare online</value></data>
   <data name="HintAskBeforeActions" xml:space="preserve"><value>Vedete il diff reale o il comando esatto. Disattivato: tutto viene approvato in silenzio — i comandi catastrofici restano rifiutati.</value></data>
+  <data name="LabelPackageCheck" xml:space="preserve"><value>Verificare che un pacchetto esista prima di aggiungerlo</value></data>
+  <data name="HintPackageCheck" xml:space="preserve"><value>Viene inviato solo il nome aggiunto, e solo al registro pubblico (nuget.org, npm, PyPI). Un nome inventato viene rifiutato prima di chiederle conferma; un feed privato o un registro che non risponde non viene verificato.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Mostrare la modifica prima di applicarla</value></data>
   <data name="HintInlineDiffPreview" xml:space="preserve"><value>Righe aggiunte e rimosse nell'editor: tenete o scartate ogni modifica, o tutte insieme. Disattivato: applicata subito, Ctrl+Z la annulla.</value></data>
   <data name="McpCardConnected" xml:space="preserve"><value>Connesso · {0} {0:strumento|strumenti}</value></data>

@@ -292,6 +292,7 @@ internal static class SettingsSchema
             new("SettingsSectionApprovals",
             [
                 new("securityAlertsDisabled", SettingKind.Bool, "LabelAskBeforeActions", "HintAskBeforeActions", Inverted: true),
+                new("packageCheckEnabled",    SettingKind.Bool, "LabelPackageCheck",     "HintPackageCheck"),
             ],
             Widget: "approvalRules"),
             new("SettingsSectionInstructions",

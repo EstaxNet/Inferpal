@@ -256,6 +256,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     private bool   _toolBubblesExpanded;
     private bool   _runEndSoundEnabled;
     private bool   _askBeforeActions;
+    private bool   _packageCheckEnabled;
     private string _contextWindowSizeText;
     private string _contextWindowKeepTurnsText;
     private string _vramBudgetText;
@@ -366,6 +367,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         _toolBubblesExpanded         = config.ToolBubblesExpanded;
         _runEndSoundEnabled          = config.RunEndSoundEnabled;
         _askBeforeActions            = !config.SecurityAlertsDisabled;
+        _packageCheckEnabled         = config.PackageCheckEnabled;
         _smartFixEnabled             = config.SmartFixEnabled;
         _agentModeEnabled            = config.AgentModeEnabled;
         _config.AgentModeEnabledChanged += OnAgentModeConfigChanged;   // live-sync with the toolbar switch
@@ -996,6 +998,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public bool   RunEndSoundEnabled       { get => _runEndSoundEnabled;       set => SetProperty(ref _runEndSoundEnabled,       value); }
     /// <summary>The inverse of <see cref="InferpalConfig.SecurityAlertsDisabled"/>: the box says what happens.</summary>
     [DataMember] public bool   AskBeforeActions             { get => _askBeforeActions;             set => SetProperty(ref _askBeforeActions,             value); }
+    [DataMember] public bool   PackageCheckEnabled          { get => _packageCheckEnabled;          set => SetProperty(ref _packageCheckEnabled,          value); }
     [DataMember] public string ContextWindowSizeText        { get => _contextWindowSizeText;        set => SetProperty(ref _contextWindowSizeText,        value); }
     [DataMember] public string ContextWindowKeepTurnsText   { get => _contextWindowKeepTurnsText;   set => SetProperty(ref _contextWindowKeepTurnsText,   value); }
     [DataMember] public string VramBudgetText               { get => _vramBudgetText;               set => SetProperty(ref _vramBudgetText,               value); }
@@ -1189,7 +1192,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         string mcpServersJson = string.Empty;
         var density = "comfortable";
         string effortChat = "low", effortAgent = "server";
-        bool toolExpanded = false, runEndSound = true, askBefore = true, compactionEnabled = true, inlineEnabled = true, ragEnabled = true, ragAutoContextEnabled = true, smartFixEnabled = true, agentModeEnabled = false, lspEnabled = false, modelAutoUnload = true, personaAutoSwitch = true, skillsAutoMode = false, mcpEnabled = false, modelRouterAuto = false, useSampling = true, inlineDiff = true;
+        bool toolExpanded = false, runEndSound = true, askBefore = true, packageCheck = true, compactionEnabled = true, inlineEnabled = true, ragEnabled = true, ragAutoContextEnabled = true, smartFixEnabled = true, agentModeEnabled = false, lspEnabled = false, modelAutoUnload = true, personaAutoSwitch = true, skillsAutoMode = false, mcpEnabled = false, modelRouterAuto = false, useSampling = true, inlineDiff = true;
         await RunOnVMContextAsync(() =>
         {
             url                  = BaseUrl.Trim();
@@ -1204,6 +1207,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             density              = ChatDensity;
             (effortChat, effortAgent) = ReasoningToSave;
             askBefore            = AskBeforeActions;
+            packageCheck         = PackageCheckEnabled;
             smartFixEnabled      = SmartFixEnabled;
             agentModeEnabled         = AgentModeEnabled;
             agentMaxIterationsText   = AgentMaxIterationsText.Trim();
@@ -1325,6 +1329,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         edited.RunEndSoundEnabled       = runEndSound;
         edited.ChatDensity              = density;
         edited.SecurityAlertsDisabled   = !askBefore;
+        edited.PackageCheckEnabled      = packageCheck;
         edited.SmartFixEnabled          = smartFixEnabled;
         edited.AgentModeEnabled         = agentModeEnabled;
         edited.AgentMaxIterations       = ReadInt(agentMaxIterationsText, "agentMaxIterations", () => Strings.LabelAgentMaxIterations,

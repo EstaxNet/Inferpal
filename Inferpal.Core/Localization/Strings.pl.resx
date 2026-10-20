@@ -1133,6 +1133,8 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>Wysokie</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Pytaj przed zmianą plików, uruchomieniem poleceń lub wyjściem do sieci</value></data>
   <data name="HintAskBeforeActions" xml:space="preserve"><value>Widzisz prawdziwy diff lub dokładne polecenie. Wyłączone: wszystko jest zatwierdzane bez pytania — katastrofalne polecenia nadal są odrzucane.</value></data>
+  <data name="LabelPackageCheck" xml:space="preserve"><value>Sprawdzaj, czy pakiet istnieje, zanim zostanie dodany</value></data>
+  <data name="HintPackageCheck" xml:space="preserve"><value>Wysyłana jest tylko dodawana nazwa i tylko do publicznego rejestru (nuget.org, npm, PyPI). Zmyślona nazwa jest odrzucana, zanim zostaniesz zapytany; prywatny feed lub rejestr, który nie odpowiada, nie jest sprawdzany.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Pokaż zmianę przed jej zastosowaniem</value></data>
   <data name="HintInlineDiffPreview" xml:space="preserve"><value>Dodane i usunięte wiersze w edytorze: zachowaj lub odrzuć każdą zmianę albo wszystkie naraz. Wyłączone: stosowana od razu, Ctrl+Z ją cofa.</value></data>
   <data name="McpCardConnected" xml:space="preserve"><value>Połączono · narzędzia: {0}</value></data>

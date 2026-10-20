@@ -1133,6 +1133,8 @@
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>高</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>在修改文件、运行命令或联网前先询问我</value></data>
   <data name="HintAskBeforeActions" xml:space="preserve"><value>您会看到真实的 diff 或确切的命令。关闭后一切将被静默批准——灾难性命令仍会被拒绝。</value></data>
+  <data name="LabelPackageCheck" xml:space="preserve"><value>添加软件包前检查它是否存在</value></data>
+  <data name="HintPackageCheck" xml:space="preserve"><value>只把要添加的名称发送到公共注册表（nuget.org、npm、PyPI）。虚构的名称会在询问你之前被拒绝；私有源或不响应的注册表不会被检查。</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>应用前先显示修改</value></data>
   <data name="HintInlineDiffPreview" xml:space="preserve"><value>在编辑器中显示新增和删除的行：可逐个或一次性保留或丢弃修改。关闭时立即应用，Ctrl+Z 可撤销。</value></data>
   <data name="McpCardConnected" xml:space="preserve"><value>已连接 · {0} 个工具</value></data>

@@ -107,6 +107,18 @@ internal class InferpalConfig
     public bool SecurityAlertsDisabled { get; set; } = false;
 
     /// <summary>
+    /// When <c>true</c>, a package a call adds (<c>dotnet add package</c>, <c>npm install</c>, <c>pip install</c>, a
+    /// dependency written into a manifest) is first asked to its public registry, and refused before the approval card when
+    /// the registry does not have it — the name is invented. See <see cref="Services.Execution.PackageCheck"/>.
+    /// </summary>
+    /// <remarks>
+    /// A request sent without a card: to nuget.org, npm or PyPI only, carrying the added name and nothing else. Off, no
+    /// registry is asked and every such call goes to the approval card unchecked.
+    /// </remarks>
+    [JsonPropertyName("packageCheckEnabled")]
+    public bool PackageCheckEnabled { get; set; } = true;
+
+    /// <summary>
     /// Inline diff preview for in-place code actions (/fix /refactor /doc): the rewrite is shown
     /// as per-hunk ✓/✗ overlays in the editor instead of being applied immediately. Falls back to
     /// the direct apply when no in-process renderer picks the request up. Comfort feature only —

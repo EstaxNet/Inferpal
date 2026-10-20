@@ -28,6 +28,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     private readonly McpToolService            _mcp;
     private readonly FileHistoryService        _fileHistory;
     private readonly OnDemandTools             _onDemand;
+    private readonly PackageCheck              _packageCheck;
     private DiffInfo? _pendingDiff;
 
     // Kept so a sibling registry can be built with a different approval service — see
@@ -71,9 +72,12 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// tool that can only answer that it is unavailable.</param>
     /// <param name="onDemand">The MCP tools loaded on demand, shared with the registry this one is a sibling of: the
     /// conversation's loaded tools stay loaded in <c>/tdd</c>, and what it loads stays for the conversation.</param>
-    public ToolRegistry(IEditorSurface editor, IApprovalService approval, InferpalConfig config, ProjectIndexService indexService, IInferenceProvider client, ProjectMapService mapService, McpToolService mcp, DocsIndexService docsIndex, OpenDocumentOverlay? overlay = null, IDebugSession? debug = null, FileHistoryService? fileHistory = null, OnDemandTools? onDemand = null)
+    /// <param name="packageCheck">Asks the sources of the project whether a package a call adds exists;
+    /// <see cref="PackageCheck.Shared"/> when null.</param>
+    public ToolRegistry(IEditorSurface editor, IApprovalService approval, InferpalConfig config, ProjectIndexService indexService, IInferenceProvider client, ProjectMapService mapService, McpToolService mcp, DocsIndexService docsIndex, OpenDocumentOverlay? overlay = null, IDebugSession? debug = null, FileHistoryService? fileHistory = null, OnDemandTools? onDemand = null, PackageCheck? packageCheck = null)
     {
         _config      = config;
+        _packageCheck = packageCheck ?? PackageCheck.Shared;
         _approval    = approval;
         _mcp         = mcp;
         // The MCP tools a turned-off switch leaves out never reach the split: they weigh nothing in its budget, and
@@ -179,7 +183,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// </remarks>
     public ToolRegistry WithApprovalService(IApprovalService approval) =>
         new(_editor, approval, _config, _indexService, _client, _mapService, _mcp, _docsIndex, _overlay, debug: null,
-            fileHistory: _fileHistory, onDemand: _onDemand)
+            fileHistory: _fileHistory, onDemand: _onDemand, packageCheck: _packageCheck)
         {
             ProjectRootFallback = ProjectRootFallback,
             WindowInUse         = WindowInUse,
@@ -453,6 +457,12 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             .Select(t => new ToolDefinition("function", new ToolFunction(t.Name, t.Description, t.Parameters)))
             .ToList();
 
+    /// <summary>Where the shell session's next command starts and what it inherits — what a package a call adds is asked with.</summary>
+    private ShellState? ShellStateOf(ITool tool) =>
+        (tool as RunCommandTool ?? (_tools.TryGetValue("run_command", out var shell) ? shell as RunCommandTool : null))?.SessionState is var (cwd, env)
+            ? new ShellState(cwd, env)
+            : null;
+
     /// <summary>What a call to an invented name answers: the names that exist.</summary>
     /// <remarks>
     /// ⚠ An invented name is recoverable only if the answer says what to call instead. Bare, it is a dead end for a
@@ -491,6 +501,14 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         {
             _fileHistory.RecordToolCall(name, ExtractSubject(args), durationMs: 0, error: true);
             return excluded.ForModel(Shown(excludedFile));
+        }
+        // A package this call adds that no source of the project has — an invented name — is refused before the approval
+        // card, and the refusal offers the names that exist. Anything less certain than "absent" lets the call through.
+        if (_config.PackageCheckEnabled
+            && await _packageCheck.RefusalAsync(name, args, _indexService.RootDir, () => ShellStateOf(tool), ct) is { } absent)
+        {
+            _fileHistory.RecordToolCall(name, ExtractSubject(args), durationMs: 0, error: true);
+            return absent;
         }
         // What a walk of this call skips for the same reason is counted, and said above the result.
         var skipped = Governance.ContentExclusions.BeginTally();

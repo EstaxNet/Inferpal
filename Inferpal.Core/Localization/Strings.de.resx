@@ -1133,6 +1133,8 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>Hoch</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Vor dem Ändern von Dateien, dem Ausführen von Befehlen oder Online-Zugriffen fragen</value></data>
   <data name="HintAskBeforeActions" xml:space="preserve"><value>Sie sehen den echten Diff oder den genauen Befehl. Aus: Alles wird stillschweigend freigegeben — katastrophale Befehle werden weiterhin abgelehnt.</value></data>
+  <data name="LabelPackageCheck" xml:space="preserve"><value>Prüfen, ob ein Paket existiert, bevor es hinzugefügt wird</value></data>
+  <data name="HintPackageCheck" xml:space="preserve"><value>Nur der hinzugefügte Name wird gesendet, und nur an die öffentliche Registry (nuget.org, npm, PyPI). Ein erfundener Name wird abgelehnt, bevor Sie gefragt werden; ein privater Feed oder eine Registry, die nicht antwortet, wird nicht geprüft.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Die Änderung vor dem Anwenden zeigen</value></data>
   <data name="HintInlineDiffPreview" xml:space="preserve"><value>Hinzugefügte und entfernte Zeilen im Editor: jede Änderung behalten oder verwerfen, oder alle auf einmal. Aus: sofort angewendet, Strg+Z macht sie rückgängig.</value></data>
   <data name="McpCardConnected" xml:space="preserve"><value>Verbunden · {0} {0:Werkzeug|Werkzeuge}</value></data>

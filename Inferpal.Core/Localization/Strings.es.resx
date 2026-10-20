@@ -1133,6 +1133,8 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>Alto</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Preguntarme antes de cambiar archivos, ejecutar comandos o conectarse a internet</value></data>
   <data name="HintAskBeforeActions" xml:space="preserve"><value>Ve el diff real o el comando exacto. Desactivado: todo se aprueba en silencio — los comandos catastróficos se siguen rechazando.</value></data>
+  <data name="LabelPackageCheck" xml:space="preserve"><value>Comprobar que un paquete existe antes de añadirlo</value></data>
+  <data name="HintPackageCheck" xml:space="preserve"><value>Solo se envía el nombre añadido, y solo al registro público (nuget.org, npm, PyPI). Un nombre inventado se rechaza antes de preguntarle; un feed privado o un registro que no responde no se comprueba.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Mostrar el cambio antes de aplicarlo</value></data>
   <data name="HintInlineDiffPreview" xml:space="preserve"><value>Líneas añadidas y quitadas en el editor: conserve o descarte cada cambio, o todos a la vez. Desactivado: se aplica enseguida, Ctrl+Z lo deshace.</value></data>
   <data name="McpCardConnected" xml:space="preserve"><value>Conectado · {0} {0:herramienta|herramientas}</value></data>

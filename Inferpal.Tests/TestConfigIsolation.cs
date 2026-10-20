@@ -42,5 +42,19 @@ internal static class TestConfigIsolation
         // and /permissions suggest would offer the suite's commands to the developer.
         Inferpal.Services.Execution.ApprovalHistory.Shared.File.PathOverride =
             Path.Combine(root, $"approval-history-{Environment.ProcessId}.json");
+
+        // And for the check of the packages a call adds: every registry the suite builds would start `dotnet package
+        // search` or `npm view`, or ask PyPI, for each install a test runs.
+        Inferpal.Services.Execution.PackageCheck.Shared = new Inferpal.Services.Execution.PackageCheck(new NoAnswerPackageLookup());
     }
+}
+
+/// <summary>The suite's package source: it never answers, so no call a test makes is refused or reaches a registry.</summary>
+internal sealed class NoAnswerPackageLookup : Inferpal.Services.Execution.IPackageLookup
+{
+    public Task<Inferpal.Services.Execution.PackageLookupResult> LookUpAsync(Inferpal.Services.Execution.AddedPackage package, CancellationToken ct) =>
+        Task.FromResult(Inferpal.Services.Execution.PackageLookupResult.Unknown("the test suite asks no registry"));
+
+    public Task<IReadOnlyList<string>> CloseNamesAsync(Inferpal.Services.Execution.AddedPackage package, CancellationToken ct) =>
+        Task.FromResult<IReadOnlyList<string>>([]);
 }

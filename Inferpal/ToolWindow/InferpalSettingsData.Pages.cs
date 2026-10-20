@@ -99,7 +99,8 @@ internal partial class InferpalSettingsData
                    _labelSectionRules = "", _descSectionRules = "", _labelSectionSlash = "", _descSectionSlash = "",
                    _labelSectionAgentTools = "", _descSectionAgentTools = "", _labelSectionAgentRuns = "";
     private string _labelShowAdvanced = "", _labelUseRecommendedSampling = "", _hintUseRecommendedSampling = "",
-                   _labelAskBeforeActions = "", _hintAskBeforeActions = "", _labelInlineDiffPreview = "",
+                   _labelAskBeforeActions = "", _hintAskBeforeActions = "", _labelPackageCheck = "", _hintPackageCheck = "",
+                   _labelInlineDiffPreview = "",
                    _hintInlineDiffPreview = "", _labelEditRules = "", _searchPlaceholder = "", _labelSearchNoMatch = "",
                    _btnCancel = "", _unitRangeZeroToOne = "";
 
@@ -143,6 +144,8 @@ internal partial class InferpalSettingsData
     [DataMember] public string HintUseRecommendedSampling    { get => _hintUseRecommendedSampling;    set => SetProperty(ref _hintUseRecommendedSampling,    value); }
     [DataMember] public string LabelAskBeforeActions         { get => _labelAskBeforeActions;         set => SetProperty(ref _labelAskBeforeActions,         value); }
     [DataMember] public string HintAskBeforeActions          { get => _hintAskBeforeActions;          set => SetProperty(ref _hintAskBeforeActions,          value); }
+    [DataMember] public string LabelPackageCheck             { get => _labelPackageCheck;             set => SetProperty(ref _labelPackageCheck,             value); }
+    [DataMember] public string HintPackageCheck              { get => _hintPackageCheck;              set => SetProperty(ref _hintPackageCheck,              value); }
     [DataMember] public string LabelInlineDiffPreview        { get => _labelInlineDiffPreview;        set => SetProperty(ref _labelInlineDiffPreview,        value); }
     [DataMember] public string HintInlineDiffPreview         { get => _hintInlineDiffPreview;         set => SetProperty(ref _hintInlineDiffPreview,         value); }
     [DataMember] public string LabelEditRules                { get => _labelEditRules;                set => SetProperty(ref _labelEditRules,                value); }
@@ -192,6 +195,8 @@ internal partial class InferpalSettingsData
         HintUseRecommendedSampling    = Strings.HintUseRecommendedSampling;
         LabelAskBeforeActions         = Strings.LabelAskBeforeActions;
         HintAskBeforeActions          = Strings.HintAskBeforeActions;
+        LabelPackageCheck             = Strings.LabelPackageCheck;
+        HintPackageCheck              = Strings.HintPackageCheck;
         LabelInlineDiffPreview        = Strings.LabelInlineDiffPreview;
         HintInlineDiffPreview         = Strings.HintInlineDiffPreview;
         LabelEditRules                = Strings.SettingsEditRules;
@@ -292,7 +297,7 @@ internal partial class InferpalSettingsData
         nameof(InlineEditModel), nameof(UtilityModel), nameof(ModelRouterAuto), nameof(UseRecommendedSampling),
         nameof(ReasoningEffortChat), nameof(ReasoningEffortAgent),
         nameof(VramBudgetText), nameof(ModelAutoUnloadEnabled), nameof(ModelIdleTimeoutText), nameof(AgentModeEnabled),
-        nameof(SmartFixEnabled), nameof(AgentMaxIterationsText), nameof(AskBeforeActions), nameof(CustomSystemPrompt), nameof(RepoInstructionFamilies), nameof(IgnoreFiles),
+        nameof(SmartFixEnabled), nameof(AgentMaxIterationsText), nameof(AskBeforeActions), nameof(PackageCheckEnabled), nameof(CustomSystemPrompt), nameof(RepoInstructionFamilies), nameof(IgnoreFiles),
         nameof(PersonaAutoSwitch), nameof(SkillsAutoMode), nameof(TimeoutHoursText), nameof(TimeoutMinutesText), nameof(TimeoutSecondsText),
         nameof(QuickTimeoutHoursText), nameof(QuickTimeoutMinutesText), nameof(QuickTimeoutSecondsText),
         nameof(NormalTimeoutHoursText), nameof(NormalTimeoutMinutesText), nameof(NormalTimeoutSecondsText),
@@ -354,6 +359,7 @@ internal partial class InferpalSettingsData
             (SmartFixEnabled.ToString(), saved.SmartFixEnabled.ToString()),
             (AgentMaxIterationsText.Trim(), N(saved.AgentMaxIterations)),
             ((!AskBeforeActions).ToString(), saved.SecurityAlertsDisabled.ToString()),
+            (PackageCheckEnabled.ToString(), saved.PackageCheckEnabled.ToString()),
             (CustomSystemPrompt ?? string.Empty, saved.CustomSystemPrompt),
             (RepoInstructionFamilies ?? string.Empty, saved.RepoInstructionFamilies),
             (IgnoreFiles ?? string.Empty, saved.IgnoreFiles),
@@ -415,6 +421,7 @@ internal partial class InferpalSettingsData
         SmartFixEnabled = c.SmartFixEnabled;
         AgentMaxIterationsText = N(c.AgentMaxIterations);
         AskBeforeActions = !c.SecurityAlertsDisabled;
+        PackageCheckEnabled = c.PackageCheckEnabled;
         CustomSystemPrompt = c.CustomSystemPrompt;
         RepoInstructionFamilies = c.RepoInstructionFamilies;
         IgnoreFiles = c.IgnoreFiles;

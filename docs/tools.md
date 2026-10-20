@@ -170,6 +170,36 @@ See **[Configuration → Permission rules](configuration.md)**.
 > Unticking *Ask me before changing files, running commands or going online* (Settings → Agent and approvals) auto-approves the calls that
 > would otherwise prompt. The built-in catastrophic-command denylist still applies.
 
+### Packages that do not exist
+
+Local models invent package names — a plausible `Apache.Parquet`, `ibantools` on PyPI. Before the card, a package a
+call **adds** — `dotnet add package`, `npm install <name>`, `pip install <name>`, `uv add`, or a dependency that
+`write_file`, `apply_diff` or `apply_edits` writes into a `.csproj`, `Directory.Packages.props`, `package.json`,
+`requirements*.txt` or `pyproject.toml` — is looked up on its **public registry**: nuget.org (and the local package
+folders NuGet is configured with) through `dotnet package search`, the npm registry through `npm view`, PyPI directly.
+A name the registry does not have is **refused before you are asked**, and the model reads the names that do exist
+(*Packages that exist with close names: pdf-lib, …*).
+
+- **Only public registries are ever sent a name.** The lookup happens before the card, and the name is the model's, so
+  it never goes to a server a configuration chose. Each tool is first asked offline which sources apply
+  (`dotnet nuget list source`, `npm config get registry`, the pip and uv configuration): a project or a machine that
+  restores from another source — a company feed, a scope registry, a private index — is not checked at all, and its
+  calls go to the card as before.
+- Only a certain "absent" refuses. A registry that does not answer, a tool that is not installed, a lookup slower than
+  20 seconds, a command that picks its own source (`--index-url`, `--registry`, `--source`) or changes it (a `PIP_*` or
+  `npm_config_*` variable, `dotnet nuget add source`, `npm config set`), a call that also writes a source (`nuget.config`,
+  `.npmrc`, an `--extra-index-url` line, MSBuild `RestoreSources`), what the project serves itself (an npm, pnpm or uv
+  workspace package, `[tool.uv.sources]`, its own name) — the call goes to the card unchecked, and `/diagnostics` keeps
+  why.
+- A command is asked from where it runs, with the session's environment: a `cd` or a variable set by an earlier
+  `run_command` counts, and so does the project it names (`dotnet add src/App.csproj package`, `npm --prefix web`).
+- NuGet's search leaves out unlisted packages and lags behind new ones: an absent name is confirmed on the package's own
+  nuget.org index. Prerelease-only packages count as existing.
+- Names only: a version that does not exist is reported by the restore itself, and the model repairs it.
+- Not checked: a write at the editor's cursor (`insert_at_cursor`, `replace_selection`), your own shell tools, MCP tools.
+- Untick *Check that a package exists before it is added* (Settings → Agent and approvals) to send nothing: every such
+  call then goes to the card unchecked.
+
 ## Custom shell tools
 
 Expose your own shell commands as agent tools in **Settings → Tools and MCP servers → Your agent

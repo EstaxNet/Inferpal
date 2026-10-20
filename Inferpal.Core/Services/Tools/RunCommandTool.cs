@@ -22,6 +22,9 @@ internal sealed class RunCommandTool : ITool, IDisposable
     internal IReadOnlyList<(string Id, string Command)> RunningJobs =>
         _background.List().Where(j => j.Running).Select(j => (j.Id, j.Command)).ToList();
 
+    /// <summary>The folder the next command starts in and the environment overrides it inherits, as the session holds them.</summary>
+    internal (string Cwd, IReadOnlyDictionary<string, string> Env) SessionState => _session.Snapshot();
+
     public RunCommandTool(IApprovalService approval, InferpalConfig config, Func<string> root)
     {
         _approval = approval;

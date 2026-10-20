@@ -1137,6 +1137,8 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>High</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Ask me before changing files, running commands or going online</value></data>
   <data name="HintAskBeforeActions" xml:space="preserve"><value>You see the real diff or the exact command. Off: everything is approved silently — catastrophic commands are still refused.</value></data>
+  <data name="LabelPackageCheck" xml:space="preserve"><value>Check that a package exists before it is added</value></data>
+  <data name="HintPackageCheck" xml:space="preserve"><value>Only the added name is sent, and only to the public registry (nuget.org, npm, PyPI). An invented name is refused before you are asked; a private feed or a registry that does not answer is not checked.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Show the change before applying it</value></data>
   <data name="HintInlineDiffPreview" xml:space="preserve"><value>Added and removed lines in the editor: keep or drop each change, or all at once. Off: applied at once, Ctrl+Z undoes it.</value></data>
   <data name="McpCardConnected" xml:space="preserve"><value>Connected · {0} {0:tool|tools}</value></data>

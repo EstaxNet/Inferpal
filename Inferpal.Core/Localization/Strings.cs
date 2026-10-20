@@ -378,6 +378,8 @@ internal static class Strings
     public static string HintUseRecommendedSampling => Get(nameof(HintUseRecommendedSampling));
     public static string LabelAskBeforeActions => Get(nameof(LabelAskBeforeActions));
     public static string HintAskBeforeActions => Get(nameof(HintAskBeforeActions));
+    public static string LabelPackageCheck => Get(nameof(LabelPackageCheck));
+    public static string HintPackageCheck => Get(nameof(HintPackageCheck));
     public static string LabelInlineDiffPreview => Get(nameof(LabelInlineDiffPreview));
     public static string HintInlineDiffPreview => Get(nameof(HintInlineDiffPreview));
 

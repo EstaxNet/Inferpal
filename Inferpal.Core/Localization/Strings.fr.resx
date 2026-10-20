@@ -1133,6 +1133,8 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>Élevée</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Me demander avant de modifier des fichiers, de lancer des commandes ou d'aller en ligne</value></data>
   <data name="HintAskBeforeActions" xml:space="preserve"><value>Vous voyez le vrai diff ou la commande exacte. Désactivé : tout est approuvé sans bruit — les commandes catastrophiques restent refusées.</value></data>
+  <data name="LabelPackageCheck" xml:space="preserve"><value>Vérifier qu'un paquet existe avant de l'ajouter</value></data>
+  <data name="HintPackageCheck" xml:space="preserve"><value>Seul le nom ajouté est envoyé, et seulement au registre public (nuget.org, npm, PyPI). Un nom inventé est refusé avant qu'on vous demande ; un flux privé ou un registre qui ne répond pas n'est pas vérifié.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Montrer la modification avant de l'appliquer</value></data>
   <data name="HintInlineDiffPreview" xml:space="preserve"><value>Lignes ajoutées et retirées dans l'éditeur : gardez ou écartez chaque modification, ou toutes d'un coup. Désactivé : appliquée tout de suite, Ctrl+Z l'annule.</value></data>
   <data name="McpCardConnected" xml:space="preserve"><value>Connecté · {0} {0:outil|outils}</value></data>

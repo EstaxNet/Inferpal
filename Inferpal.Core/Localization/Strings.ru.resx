@@ -1133,6 +1133,8 @@
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>Высокое</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Спрашивать перед изменением файлов, запуском команд или выходом в сеть</value></data>
   <data name="HintAskBeforeActions" xml:space="preserve"><value>Вы видите настоящий diff или точную команду. Выключено: всё одобряется молча — катастрофические команды по-прежнему отклоняются.</value></data>
+  <data name="LabelPackageCheck" xml:space="preserve"><value>Проверять, что пакет существует, перед его добавлением</value></data>
+  <data name="HintPackageCheck" xml:space="preserve"><value>Отправляется только добавляемое имя и только в публичный реестр (nuget.org, npm, PyPI). Выдуманное имя отклоняется до того, как вас спросят; частный источник или реестр, который не отвечает, не проверяется.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Показывать изменение перед применением</value></data>
   <data name="HintInlineDiffPreview" xml:space="preserve"><value>Добавленные и удалённые строки в редакторе: оставьте или отбросьте каждое изменение или все сразу. Выключено: применяется сразу, Ctrl+Z отменяет.</value></data>
   <data name="McpCardConnected" xml:space="preserve"><value>Подключён · инструментов: {0}</value></data>
