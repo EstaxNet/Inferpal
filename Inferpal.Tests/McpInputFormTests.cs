@@ -261,12 +261,12 @@ public class McpInputFormTests
     [Fact]
     public void AValueThatReadsLikeASecret_IsSent_ButNeverKeptInTheReceipt()
     {
-        var form = Form("""{"type":"object","properties":{"apiKey":{"type":"string"},"repo":{"type":"string"}}}""");
-        var check = form.Check(Values(("apiKey", Text("sk-123")), ("repo", Text("dams/inferpal"))));
-        Assert.Equal("sk-123", (string?)check.Content!["apiKey"]);                       // the server gets what was typed
+        var form = Form("""{"type":"object","properties":{"privateKey":{"type":"string"},"repo":{"type":"string"}}}""");
+        var check = form.Check(Values(("privateKey", Text("sk-123")), ("repo", Text("dams/inferpal"))));
+        Assert.Equal("sk-123", (string?)check.Content!["privateKey"]);                       // the server gets what was typed
         var receipt = InputCard.Receipt(form, "c1", McpInputAction.Accept, check.Content);
         Assert.DoesNotContain("sk-123", receipt.Saved);
-        Assert.Contains("apiKey: " + InputCard.HiddenValue, receipt.Body);
+        Assert.Contains("privateKey: " + InputCard.HiddenValue, receipt.Body);
         Assert.Contains("repo: dams/inferpal", receipt.Body);
     }
 
