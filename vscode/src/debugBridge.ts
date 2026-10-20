@@ -42,6 +42,9 @@ const MAX_LOCALS = 40;
 
 type Transition = 'stopped' | 'ended' | 'timeout';
 
+/** The text tabs open and the editor in front, noted before a capture so they can be put back after it. */
+type ShownEditors = { open: Set<string>; active: vscode.Uri | undefined };
+
 export class DebugBridge implements DebugDelegate, vscode.Disposable {
   private readonly disposables: vscode.Disposable[] = [];
 
@@ -308,6 +311,9 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
       return null;
     }
 
+    // With Just My Code off the capture stops where the exception is thrown — for a failed assertion, inside the
+    // test framework — and VS Code opens that frame's source in front of the user's file. Noted now, put back after.
+    const shownBefore = this.shownEditors();
     const entrySettled = this.nextTransition(START_TIMEOUT_MS);
     let started = false;
     try {
@@ -391,6 +397,41 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
       } catch {
         // already gone
       }
+      await this.putBackEditors(shownBefore);
+    }
+  }
+
+  /** The text tabs open now and the editor in front of them. */
+  private shownEditors(): ShownEditors {
+    const open = new Set<string>();
+    for (const group of vscode.window.tabGroups.all) {
+      for (const tab of group.tabs) {
+        if (tab.input instanceof vscode.TabInputText) {
+          open.add(tab.input.uri.toString());
+        }
+      }
+    }
+    return { open, active: vscode.window.activeTextEditor?.document.uri };
+  }
+
+  /**
+   * Closes the tabs the capture opened — the source of the frame it stopped in, which the user never asked to see —
+   * and brings the editor that was in front back. A tab with unsaved changes stays: closing it would ask the user
+   * about a file they did not open.
+   */
+  private async putBackEditors(before: ShownEditors): Promise<void> {
+    try {
+      const opened = vscode.window.tabGroups.all
+        .flatMap((group) => group.tabs)
+        .filter((t) => t.input instanceof vscode.TabInputText && !t.isDirty && !before.open.has(t.input.uri.toString()));
+      if (opened.length > 0) {
+        await vscode.window.tabGroups.close(opened, true);
+      }
+      if (before.active) {
+        await vscode.window.showTextDocument(before.active, { preserveFocus: true });
+      }
+    } catch (err) {
+      this.log?.(`[debug] captureTest could not put the editors back: ${String(err)}`);
     }
   }
 
