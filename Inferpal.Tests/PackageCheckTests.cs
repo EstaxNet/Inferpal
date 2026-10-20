@@ -300,6 +300,22 @@ public class PackageCheckTests : IDisposable
     }
 
     [Fact]
+    public void AShellRedirection_IsNeverAName()
+    {
+        // Qwen3.8 27B's own commands: a pipe or a redirection after the install is the shell's, not a package.
+        Assert.Equal(["piexif"], Names("run_command", new { command = "python -m pip install piexif 2>&1 | tail -n 3 && python -m pytest -q" }));
+        Assert.Equal(["fpdf2"], Names("run_command", new { command = "pip install fpdf2 2>&1 | tail -3", timeout = 120 }));
+        Assert.Equal(["cld3"], Names("run_command", new { command = "npm install cld3 --save 2>&1 | tail -5" }));
+        Assert.Equal(["pytest", "aiolimiter"], Names("run_command", new
+        {
+            command = ".venv/bin/pip install pytest aiolimiter; echo \"exit=$?\"; .venv/bin/python -c \"print('pytest', 'ok')\"",
+        }));
+        Assert.Equal(["requests"], Names("run_command", new { command = "pip install requests 1>out.txt" }));
+        Assert.Equal(["requests"], Names("run_command", new { command = "pip install requests >log 2>&1" }));
+        Assert.Equal(["requests"], Names("run_command", new { command = "pip install \"requests>=2\"" }));
+    }
+
+    [Fact]
     public void AnOptionsValue_IsNeverAsked()
     {
         // An option this reader does not know as a switch takes the word after it: a date, a folder, a strategy.

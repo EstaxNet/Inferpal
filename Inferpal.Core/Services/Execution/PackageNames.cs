@@ -128,14 +128,18 @@ internal static class PackageCommands
     }
 
     /// <summary>The words of an argument list, quotes removed, up to a redirection.</summary>
+    /// <remarks>
+    /// ⚠ An UNQUOTED <c>&gt;</c> or <c>&lt;</c> is the shell's redirection, never part of a name (<c>2&gt;&amp;1</c>,
+    /// <c>1&gt;out.txt</c>, <c>&gt;log</c>): a requirement with a version bound is written quoted. Read as words, <c>2</c> and
+    /// <c>2&gt;&amp;1</c> would be asked of PyPI and npm, and refused — blocking the install they follow.
+    /// </remarks>
     private static List<string> Words(string rest)
     {
         var words = new List<string>();
-        foreach (Match m in Regex.Matches(rest, @"""(?<w>[^""]*)""|'(?<w>[^']*)'|(?<w>\S+)", RegexOptions.None, MatchTimeout))
+        foreach (Match m in Regex.Matches(rest, @"""(?<q>[^""]*)""|'(?<q>[^']*)'|(?<u>[^\s""']+)", RegexOptions.None, MatchTimeout))
         {
-            var w = m.Groups["w"].Value;
-            if (w.StartsWith('>') || w.StartsWith('<') || w.StartsWith("2>", StringComparison.Ordinal) || w == "&") break;
-            words.Add(w);
+            if (m.Groups["u"].Success && (m.Groups["u"].Value.IndexOfAny(['>', '<']) >= 0 || m.Groups["u"].Value.StartsWith('&'))) break;
+            words.Add(m.Groups["q"].Success ? m.Groups["q"].Value : m.Groups["u"].Value);
         }
         return words;
     }
