@@ -150,7 +150,36 @@ internal sealed partial class HostServer
     }
 
     private SettingsDocsActions DocsActions() => Session().DocsActions;
+
+    /// <summary>`settings/tools` — every tool, with what the next request does with it and what it weighs (the list
+    /// <c>/tools</c> prints).</summary>
+    [JsonRpcMethod("settings/tools")]
+    public SettingsToolsDto SettingsTools() => new(ToolList(Session()), Message: null);
+
+    /// <summary>`settings/toolSet` — turns one tool off or back on, as <c>/tools off|on &lt;tool&gt;</c> does.</summary>
+    /// <remarks>Inside the turn's slot, like a settings save: the definitions a running turn sends do not change under it,
+    /// and the refusal says what holds the slot.</remarks>
+    [JsonRpcMethod("settings/toolSet", UseSingleObjectParameterDeserialization = true)]
+    public Task<SettingsToolsDto> SettingsToolSet(SettingsToolSetParams p, CancellationToken ct)
+    {
+        var s = Session();
+        return WithTurnSlotAsync("settings/toolSet", ct, async token =>
+        {
+            var result = Services.Commands.ToolsCommandHandler.Switch([p.Key], p.Off, s.Tools, s.Config);
+            if (result.SaveConfig) await SaveAndApplyAsync(s, (s.Config.McpEnabled, s.Config.McpServersJson), token);
+            return new SettingsToolsDto(ToolList(s), result.Message);
+        });
+    }
+
+    private static ToolListModel ToolList(HostSession s) =>
+        ToolListPresenter.Build(s.Tools);
 }
+
+/// <summary>`settings/tools` and `settings/toolSet` answer. <c>Message</c>: what turning a tool off or on said, if anything.</summary>
+internal sealed record SettingsToolsDto(ToolListModel List, string? Message);
+
+/// <summary><c>Key</c>: the tool, as the list names it; <c>Off</c>: turn it off (<c>true</c>) or back on.</summary>
+internal sealed record SettingsToolSetParams(string Key, bool Off);
 
 /// <summary>`settings/exclusions` answer. <c>File</c>: the profile's path (empty without a workspace).</summary>
 internal sealed record SettingsExclusionsDto(List<string> Patterns, string File, bool Exists);

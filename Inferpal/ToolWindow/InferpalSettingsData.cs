@@ -369,6 +369,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         _smartFixEnabled             = config.SmartFixEnabled;
         _agentModeEnabled            = config.AgentModeEnabled;
         _config.AgentModeEnabledChanged += OnAgentModeConfigChanged;   // live-sync with the toolbar switch
+        _config.Saved += OnConfigSavedForToolList;                      // `/tools off` typed in the chat
         _agentMaxIterationsText      = config.AgentMaxIterations.ToString();
         (_quickTimeoutHoursText,  _quickTimeoutMinutesText,  _quickTimeoutSecondsText)  = SplitDuration(config.QuickTimeoutSeconds);
         (_normalTimeoutHoursText, _normalTimeoutMinutesText, _normalTimeoutSecondsText) = SplitDuration(config.NormalTimeoutSeconds);
@@ -738,6 +739,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     internal void Detach()
     {
         _config.AgentModeEnabledChanged -= OnAgentModeConfigChanged;
+        _config.Saved -= OnConfigSavedForToolList;
         // The window is opened and closed repeatedly: each instance's theme subscription outlived it.
         // Exchanged, because InitThemeAsync may assign it concurrently (see there).
         _detached = true;

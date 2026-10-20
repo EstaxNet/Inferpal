@@ -354,8 +354,10 @@ public sealed class McpToolsOnDemandTests : IDisposable
                 var target = $"{m.Expression}.{m.Name}";
                 if (target is not ("XRayPanelPresenter.Build" or "XRayCommandHandler.Handle")) continue;
                 sites++;
-                if (!call.ArgumentList.Arguments.Any(a => a.NameColon?.Name.Identifier.Text == "toolsOnDemand"))
-                    missing.Add($"{Path.GetRelativePath(root, file)}: {target}");
+                // The tools turned off travel the same way (ToolSwitchesTests): one line each, both or the X-Ray lies.
+                foreach (var argument in new[] { "toolsOnDemand", "turnedOff" })
+                    if (!call.ArgumentList.Arguments.Any(a => a.NameColon?.Name.Identifier.Text == argument))
+                        missing.Add($"{Path.GetRelativePath(root, file)}: {target} ({argument})");
             }
         }
         Assert.True(sites >= 3, $"only {sites} X-Ray sites found: the scan reads nothing");   // VS panel, host panel, /xray

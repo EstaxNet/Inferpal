@@ -6,6 +6,7 @@
 import type {
   ApprovalRuleTable, ConfigUpdateResult, ConnectionCheckResult, ContextUsage, IndexCard, LoadedModels, McpCardsResult,
   ModelsByKind, ModelSuggestion, PinnedFileSize, ProjectFileRow, RepoInstructionRow, SettingsDocs, SettingsExclusions, SettingsSchema,
+  SettingsTools,
 } from './protocol';
 
 /** The host calls the settings form makes (HostClient has them all, with the same names). */
@@ -26,6 +27,8 @@ export interface SettingsHost {
   settingsExclusions(): Promise<SettingsExclusions>;
   settingsDocsSites(): Promise<SettingsDocs>;
   settingsDocsAction(verb: 'add' | 'reindex' | 'remove', arg: string): Promise<SettingsDocs>;
+  settingsTools(): Promise<SettingsTools>;
+  settingsToolSet(key: string, off: boolean): Promise<SettingsTools>;
   settingsContextUsage(): Promise<ContextUsage>;
   settingsProjectFiles(): Promise<ProjectFileRow[]>;
   settingsRepoInstructions(): Promise<RepoInstructionRow[]>;
@@ -67,7 +70,7 @@ export interface SettingsInbound {
   type: 'ready' | 'save' | 'testConnection' | 'refreshModels'
     | 'mcpCards' | 'mcpRetry' | 'mcpAuthorize' | 'rulesTable' | 'newRule' | 'browsePinned'
     | 'indexCard' | 'indexRebuild' | 'exclusions' | 'docsSites' | 'docsAction' | 'contextUsage' | 'projectFiles'
-    | 'repoInstructions'
+    | 'repoInstructions' | 'toolList' | 'toolSet'
     | 'pinSizes' | 'openFile' | 'openXray' | 'loadedModels' | 'unloadModels' | 'suggestModels';
   /** unloadModels: the models to unload; absent = every loaded one. */
   names?: string[];
@@ -78,6 +81,9 @@ export interface SettingsInbound {
   /** docsAction: add | reindex | remove, and the URL or the site's id. */
   verb?: 'add' | 'reindex' | 'remove';
   arg?: string;
+  /** toolSet: the tool, as the list names it, and whether to turn it off (true) or back on. */
+  key?: string;
+  off?: boolean;
   /** openFile: the file or folder to open. */
   path?: string;
   /** pinSizes: the pinned paths the form holds. */
@@ -274,6 +280,8 @@ export class SettingsBridge {
       case 'contextUsage':
       case 'projectFiles':
       case 'repoInstructions':
+      case 'toolList':
+      case 'toolSet':
       case 'pinSizes':
       case 'loadedModels':
       case 'unloadModels':
@@ -297,6 +305,10 @@ export class SettingsBridge {
             case 'repoInstructions':
               this.shell.post({ type: 'repoInstructions', rows: await host.settingsRepoInstructions() });
               break;
+            case 'toolList':     this.shell.post({ type: 'toolList', tools: await host.settingsTools() }); break;
+            case 'toolSet':
+              this.shell.post({ type: 'toolList', tools: await host.settingsToolSet(msg.key ?? '', msg.off === true) });
+              break;
             case 'pinSizes':     this.shell.post({ type: 'pinSizes', sizes: await host.settingsPinSizes(msg.pins ?? '') }); break;
             case 'loadedModels': this.shell.post({ type: 'loadedModels', models: await host.settingsLoadedModels() }); break;
             case 'unloadModels': this.shell.post({ type: 'loadedModels', models: await host.settingsUnloadModels(msg.names) }); break;
@@ -313,7 +325,13 @@ export class SettingsBridge {
           }
         } catch (err) {
           this.shell.log(`[settings] ${msg.type} failed: ${String(err)}`);
-          this.shell.post({ type: 'error', message: this.shell.errorText(err) });
+          if (msg.type === 'toolSet') {
+            // To the list itself: it says why nothing changed under it and gives its button back (a reply that is being
+            // written holds the turn's slot).
+            this.shell.post({ type: 'toolList', error: this.shell.errorText(err) });
+          } else {
+            this.shell.post({ type: 'error', message: this.shell.errorText(err) });
+          }
         }
         return;
       }

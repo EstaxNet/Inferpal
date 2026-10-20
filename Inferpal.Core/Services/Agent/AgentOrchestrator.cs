@@ -149,6 +149,8 @@ internal sealed class AgentOrchestrator
         // the whole product with nobody judging it — and `ToolArgs`, which never throws by contract,
         // then returned the DEFAULT value of every argument. A `run_tests` whose filter arrived as a
         // string became the whole suite.
+        // A tool turned off first: "send the call again, well formed" would cost an iteration refused anyway.
+        if (tools.TurnedOffRefusal(call.Name) is { } turnedOff) return Task.FromResult(turnedOff);
         // ⚠ Before the cut: a reply stopped because its call kept repeating is cut too, and "split the work" is not the
         // remedy — the model has to write the call once.
         if (call.BrokenShape is { } broken)
@@ -201,6 +203,11 @@ internal sealed class AgentOrchestrator
     internal static async Task<string> ExecuteToolSafeAsync(
         IToolRegistry tools, string name, System.Text.Json.JsonElement args, CancellationToken ct)
     {
+        // ⚠ Here, the funnel of the model's calls, and never in the registry's ExecuteAsync: a tool turned off is not
+        // offered, but a model calls a name it remembers — and a gesture of the user that runs the tool itself must keep
+        // working (turning get_diagnostics off to lighten requests leaves @problems as it was). Not traced: the refusal is
+        // the call's result, in the transcript — traced once per call, a model that retries would fill the diagnostics ring.
+        if (tools.TurnedOffRefusal(name) is { } turnedOff) return turnedOff;
         try
         {
             // An empty result says nothing — not even "nothing": `cd` in run_command prints nothing, and the model

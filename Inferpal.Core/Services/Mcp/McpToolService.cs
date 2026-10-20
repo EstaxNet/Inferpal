@@ -425,7 +425,7 @@ internal sealed class McpToolService : IAsyncDisposable
                 entry.Error = $"its tool list could not be read: {client.LastError}";
                 Diagnostics.Record("Mcp", $"Server '{server.Name}' started, but {entry.Error}");
             }
-            entry.Tools = BuildTools(client, listed ?? []);
+            entry.Tools = BuildTools(entry.Config, client, listed ?? []);
             return (entry, null);
         }
         catch (Exception ex)
@@ -728,7 +728,7 @@ internal sealed class McpToolService : IAsyncDisposable
                     $"Server '{entry.Config.Name}': its tool list could not be refreshed ({client.LastError}); the previous tools are kept.");
                 return;
             }
-            entry.Tools = BuildTools(client, listed);
+            entry.Tools = BuildTools(entry.Config, client, listed);
             if (entry.Connected) entry.Error = null;
             RebuildSnapshot();
         }
@@ -848,7 +848,7 @@ internal sealed class McpToolService : IAsyncDisposable
                         return;
                     }
                     entry.Client       = client;
-                    entry.Tools        = BuildTools(client, discovered);
+                    entry.Tools        = BuildTools(entry.Config, client, discovered);
                     entry.Connected    = true;
                     entry.AuthRequired = false;
                     entry.Error        = null;
@@ -915,8 +915,10 @@ internal sealed class McpToolService : IAsyncDisposable
         finally { _gate.Release(); }
     }
 
-    private List<ITool> BuildTools(IMcpClient client, IReadOnlyList<McpToolInfo> infos) =>
-        infos.Select(info => (ITool)new McpTool(client, info, _approval)).ToList();
+    /// <summary>The tools a server lists, each knowing whether <paramref name="config"/> turns it off.</summary>
+    private List<ITool> BuildTools(McpServerConfig config, IMcpClient client, IReadOnlyList<McpToolInfo> infos) =>
+        infos.Select(info => (ITool)new McpTool(client, info, _approval,
+                                                config.DisabledTools?.Contains(info.Name, StringComparer.Ordinal) == true)).ToList();
 
     /// <summary>Recomputes the public <see cref="Tools"/>/<see cref="Status"/> snapshots from the
     /// current server entries. Must be called under <see cref="_gate"/>.</summary>

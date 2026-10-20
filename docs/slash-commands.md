@@ -20,7 +20,7 @@ editor with tools disabled).
 |---|---|
 | `/clear` | Save and clear the conversation |
 | `/model <name>` | Switch the active chat model |
-| `/tools on\|off` | Enable or disable tool calling |
+| `/tools [on\|off] [<tool>…]` | Without a name: list every tool with what it weighs and what the next request does with it, or turn tool calling on or off for this conversation. With names (`run_command`, `server/tool` for an MCP tool): turn those tools off — or back on — in every conversation (`disabledTools`; see **[Tools → Turning a tool off](tools.md#turning-a-tool-off)**) |
 | `/export` | Export the conversation to `.md` or `.txt` |
 | `/help` | Show all available commands, and the link to this documentation (the pages of your installed version) |
 | `/settings` | Open Inferpal's settings — the settings window in Visual Studio, the settings panel in VS Code, the settings page in your browser from Zed, a JetBrains IDE, Neovim or Emacs |

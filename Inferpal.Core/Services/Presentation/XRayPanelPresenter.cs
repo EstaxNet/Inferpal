@@ -30,6 +30,8 @@ internal sealed record XRaySectionModel(
 /// "system prompt" counts: the layers placed with the question are not in it.</param>
 /// <param name="ToolsOnDemand">The line that says which MCP tools the next turn leaves out until <c>tool_search</c> loads
 /// them (<see cref="XRayPanelPresenter.ToolsOnDemandLine"/>); <c>null</c> when every tool is declared.</param>
+/// <param name="ToolsTurnedOff">The line that says which tools are turned off (<see cref="XRayPanelPresenter.TurnedOffLine"/>);
+/// <c>null</c> when none is.</param>
 internal sealed record XRayPanelModel(
     IReadOnlyList<XRaySectionModel> Sections,
     int    TotalTokens,
@@ -40,7 +42,8 @@ internal sealed record XRayPanelModel(
     string RawPrompt,
     int    ToolTokens = 0,
     int    SystemTokens = 0,
-    string? ToolsOnDemand = null);
+    string? ToolsOnDemand = null,
+    string? ToolsTurnedOff = null);
 
 /// <summary>
 /// Builds the interactive Context X-Ray panel model from the same
@@ -111,6 +114,8 @@ internal static class XRayPanelPresenter
     /// (<see cref="ActiveFileContext.ToSend"/> returns nothing): its layers are counted there, not again.</param>
     /// <param name="toolsOnDemand">The MCP servers whose tools wait on demand, with how many are not loaded
     /// (<see cref="Agent.ContextManager.NextTurnToolsOnDemand"/>).</param>
+    /// <param name="turnedOff">The tools turned off, by the name they are turned off by
+    /// (<see cref="Agent.ContextManager.NextTurnTurnedOff"/>).</param>
     public static XRayPanelModel Build(
         IReadOnlyList<PromptSection> sections,
         IReadOnlySet<string>?        disabledIds,
@@ -118,7 +123,8 @@ internal static class XRayPanelPresenter
         int                          contextWindow,
         int                          toolTokens = 0,
         bool                         questionLayersInHistory = false,
-        IReadOnlyList<(string Server, int Tools)>? toolsOnDemand = null)
+        IReadOnlyList<(string Server, int Tools)>? toolsOnDemand = null,
+        IReadOnlyList<string>?       turnedOff = null)
     {
         var sized = sections
             .Select(s => (Section: s, Id: SectionId(s), Tokens: XRayCommandHandler.EstimateTokens(s.Content)))
@@ -165,8 +171,22 @@ internal static class XRayPanelPresenter
             : 0;
 
         return new XRayPanelModel(rows, enabledTokens, historyTokens, contextWindow, fill, warning, rawPrompt, toolTokens,
-                                  inSystem.Sum(x => x.Tokens), ToolsOnDemandLine(toolsOnDemand));
+                                  inSystem.Sum(x => x.Tokens), ToolsOnDemandLine(toolsOnDemand), TurnedOffLine(turnedOff));
     }
+
+    /// <summary>How many names the turned-off line spells out; the count says the rest.</summary>
+    internal const int TurnedOffNamed = 10;
+
+    /// <summary>
+    /// The tools the next turn does not send because they are turned off: "3 tools turned off, not sent: a, b, c", or
+    /// <c>null</c> when none is.
+    /// </summary>
+    /// <remarks>⚠ Like the on-demand line: a tool the user turned off weeks ago and forgot looks, from the tool count
+    /// alone, like a tool the product lost.</remarks>
+    public static string? TurnedOffLine(IReadOnlyList<string>? turnedOff) =>
+        turnedOff is not { Count: > 0 } ? null
+        : Strings.XrayToolsTurnedOff(turnedOff.Count,
+              string.Join(", ", turnedOff.Take(TurnedOffNamed)) + (turnedOff.Count > TurnedOffNamed ? ", …" : ""));
 
     /// <summary>
     /// What the next turn leaves out until <c>tool_search</c> loads it: "N MCP tools on demand… rider (93)", or <c>null</c>

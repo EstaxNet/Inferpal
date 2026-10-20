@@ -8,6 +8,7 @@ import { HostClient } from './hostClient';
 import { hostErrorText, hostUnavailableMessage, isConnectionLost, promptOpenFolder } from './hostStatus';
 import { mentionTokens, resolveMention } from './mentionPaths';
 import { followModelRouterSettings } from './modelRouterSettings';
+import { SettingsPanel } from './settingsPanel';
 import { openTabPaths, panelDiagnostics } from './editorBridge';
 import { capAttachment, CappedText } from './attachmentCap';
 import { renderChatHtml } from './webview/chatWebviewHtml';
@@ -2380,6 +2381,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           // start pushes the old utility model back; the chat re-reads its window, model and density.
           await followModelRouterSettings(this.getHost(), this.log);
           await this.configSaved();
+          // An open settings panel reads its live blocks again, or after `/tools off` its Tools page offers "Turn off".
+          SettingsPanel.onSavedElsewhere();
           break;
         case 'openFile':
           if (e.value) {

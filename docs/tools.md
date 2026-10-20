@@ -185,6 +185,29 @@ they are appended to the command.
 Built-in tools take priority over a custom tool with the same name; prefix a line with `#`
 to disable it.
 
+## Turning a tool off
+
+Every tool's definition goes with every request, before the first word of the answer: the built-in ones alone take more
+than half of an 8K window. `/tools` lists every tool with what its definition weighs and what the next request does
+with it — sent, on demand, turned off; `/tools off <tool>` turns one off in every conversation, `/tools on <tool>` turns
+it back on, and the **Tools** page of the settings has a button per tool. A built-in or custom tool is named by its own
+name (`run_command`), an MCP tool as `server/tool` (its name without the prefix is accepted when one server only has
+it). The list is the `disabledTools` setting.
+
+- A tool turned off is never offered to the model and counted nowhere (the context gauge, X-Ray, the tenth of the window
+  MCP tools may take). If the model calls it anyway, from memory, the call is refused and not run, and the answer names
+  `/tools on`. X-Ray names the tools turned off.
+- Only the model loses it: your own commands that use the tool — `/diff`, `/git`, `@problems`, `/tdd`'s test run — keep
+  working.
+- `tool_search` cannot be turned off: it is how the model reaches the MCP tools on demand.
+- A line that names no tool served here — its MCP server is stopped, or only the other editor has the tool — is listed
+  apart ("turned off, not available here now") and turned back on the same way.
+- A server whose name holds a space: designate its tools by the name the model calls them (`mcp__My_Server__tool`),
+  which `/tools` shows for them.
+- An MCP server's entry can turn some of its tools off too (`disabledTools`, Roo's field) — see
+  **[MCP](mcp.md#large-tool-sets-on-demand)**.
+- `/tools off` and `/tools on` without a name still switch tool calling for the current conversation only.
+
 ## MCP tools
 
 When MCP is enabled, every connected server's tools appear as `mcp__<server>__<tool>` and go

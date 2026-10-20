@@ -104,6 +104,12 @@ internal sealed class BackgroundTaskToolRegistry(
 
     public DiffInfo? ConsumeDiff() => inner.ConsumeDiff();
 
+    public string? TurnedOffRefusal(string name) => inner.TurnedOffRefusal(name);
+
+    /// <summary>The inner registry's names a task may call — a tool turned off included, so that a call written as text to
+    /// it is refused with its cause rather than shown as the report.</summary>
+    public IEnumerable<string> CallableNames => inner.CallableNames.Where(Permits);
+
     public async Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct)
     {
         if (!Permits(name))

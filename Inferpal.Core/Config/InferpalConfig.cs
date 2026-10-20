@@ -212,6 +212,15 @@ internal class InferpalConfig
     public string CustomTools { get; set; } = string.Empty;
 
     /// <summary>
+    /// The tools the user turned off, one per line: a built-in or custom tool by its name (<c>run_command</c>), an MCP
+    /// tool as <c>server/tool</c>. A tool turned off is never offered to the model nor run for it
+    /// (<see cref="Services.Execution.ToolSwitches"/>); written by <c>/tools off|on &lt;tool&gt;</c> and the Tools page.
+    /// </summary>
+    [CollectionSetting(CollectionShape.Lines)]
+    [JsonPropertyName("disabledTools")]
+    public string DisabledTools { get; set; } = string.Empty;
+
+    /// <summary>
     /// Per-machine permission rules for tool approval, one per line in the DSL
     /// <c>allow|deny &lt;tool|*&gt; &lt;regex&gt;</c> (see <see cref="Services.Execution.PermissionPolicy"/>).
     /// An <c>allow</c> match auto-approves the call (no prompt); a <c>deny</c> match blocks it

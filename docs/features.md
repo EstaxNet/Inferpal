@@ -50,6 +50,9 @@ exists.
   switch (`agentModeEnabled`, `inferpal.agentMode` in VS Code). **Chat** mode still uses tools — the
   simple tool loop, without a plan — and `/tools off` gives a chat without tools. Both editors start in
   Chat mode.
+- **Turning tools off** — `/tools` lists every tool with what it weighs in each request; `/tools off <tool>` (or the
+  Tools page's button) turns one off in every conversation, built-in or MCP: the model is never offered it, and your
+  own commands that use it keep working. See [Tools](tools.md#turning-a-tool-off).
 - **Plan mode** (`/plan`) — read-only: the agent explores and proposes a plan without editing
   any files.
 - **Persistent plans** (`/plan save`) — a plan proposed in the chat used to die at the next

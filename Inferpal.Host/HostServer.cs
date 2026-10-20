@@ -1835,7 +1835,8 @@ internal sealed partial class HostServer : IDisposable
             AgentOrchestrator.EstimateConversationTokens(SnapshotHistory(s)), s.ContextWindowInUse,
             toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode),
             questionLayersInHistory: QuestionLayersInHistory(s),
-            toolsOnDemand: ContextManager.NextTurnToolsOnDemand(s.Tools, s.ToolsEnabled, s.PlanMode));
+            toolsOnDemand: ContextManager.NextTurnToolsOnDemand(s.Tools, s.ToolsEnabled, s.PlanMode),
+            turnedOff: ContextManager.NextTurnTurnedOff(s.Tools, s.ToolsEnabled));
 
     /// <summary>Whether the history already carries the active-file block the next question would send — its layers
     /// are then counted in the history, not again (<see cref="XRayPanelPresenter.Build"/>).</summary>
@@ -1861,7 +1862,7 @@ internal sealed partial class HostServer : IDisposable
             model.Sections.Select(x => new XRaySectionDto(
                 x.Id, x.Label, x.Tokens, x.Percent, x.Content, x.Enabled, x.CanToggle)).ToList(),
             model.TotalTokens, model.HistoryTokens, model.ContextWindow,
-            model.FillPercent, model.OverheadWarning, model.RawPrompt, model.ToolTokens, model.ToolsOnDemand);
+            model.FillPercent, model.OverheadWarning, model.RawPrompt, model.ToolTokens, model.ToolsOnDemand, model.ToolsTurnedOff);
     }
 
     /// <summary>Bounded defensive copy of the history: `xray/panel` is a read the webview can ask

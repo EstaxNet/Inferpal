@@ -111,6 +111,12 @@ export function renderXray(panel: XRayPanel): void {
     onDemand.textContent = panel.toolsOnDemand;
     footer.appendChild(onDemand);
   }
+  if (panel.toolsTurnedOff) {
+    // The tools turned off: without it, one the user turned off long ago looks lost.
+    const turnedOff = document.createElement('div');
+    turnedOff.textContent = panel.toolsTurnedOff;
+    footer.appendChild(turnedOff);
+  }
   const hint = document.createElement('div');
   hint.textContent = t('xrayHint');
   footer.appendChild(hint);

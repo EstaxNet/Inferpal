@@ -393,7 +393,7 @@ Sicherung: {0}</value></data>
   <data name="SlashModelNotListed" xml:space="preserve"><value>⚠ Das Backend listet **{0}** nicht auf – die nächste Nachricht kann fehlschlagen. `/models` zeigt, was es bereitstellt.</value></data>
   <data name="SlashModelIsEmbedding" xml:space="preserve"><value>⚠ **{0}** ist ein Embedding-Modell: Es wandelt Text in Vektoren um und beantwortet keine Fragen. Nichts wurde geändert — `/models` listet die Chat-Modelle.</value></data>
   <data name="SlashModelNotServed" xml:space="preserve"><value>⚠ Das Backend stellt **{0}** nicht bereit. Nichts wurde geändert — `/models` zeigt, was es bereitstellt.</value></data>
-  <data name="SlashToolsCurrent" xml:space="preserve"><value>Verwendung: `/tools on|off`  —  aktuell: **{0}**</value></data>
+  <data name="SlashToolsCurrent" xml:space="preserve"><value>Tools in dieser Unterhaltung: **{0}** (`/tools on|off`).</value></data>
   <data name="SlashToolsChanged" xml:space="preserve"><value>Werkzeuge → **{0}**</value></data>
   <data name="SlashNoActiveDocument" xml:space="preserve"><value>⚠ Kein aktives Dokument. Öffnen Sie zuerst eine Datei im Editor.</value></data>
   <data name="TestsGenerated" xml:space="preserve"><value>✅ Tests generiert → **{0}** (im Editor geöffnet).</value></data>
@@ -687,7 +687,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="SlashHintDoc" xml:space="preserve"><value>XML-Dokumentationskommentare generieren</value></data>
   <data name="SlashHintClear" xml:space="preserve"><value>Unterhaltung löschen</value></data>
   <data name="SlashHintModel" xml:space="preserve"><value>Modell wechseln</value></data>
-  <data name="SlashHintTools" xml:space="preserve"><value>Tool-Aufrufe aktivieren oder deaktivieren</value></data>
+  <data name="SlashHintTools" xml:space="preserve"><value>Tools auflisten, ab- oder einschalten</value></data>
   <data name="SlashHintExport" xml:space="preserve"><value>Unterhaltung in eine Datei exportieren</value></data>
   <data name="SlashHintRestore" xml:space="preserve"><value>Datei aus Sicherung wiederherstellen</value></data>
   <data name="SlashHintHelp" xml:space="preserve"><value>alle verfügbaren Befehle anzeigen</value></data>
@@ -1607,4 +1607,34 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="CheckNoCommonBase" xml:space="preserve"><value>`{0}`: Die beiden Historien haben keinen gemeinsamen Commit, die Änderung hat also keinen Ausgangspunkt. `/check &lt;commit&gt;` prüft einen Commit.</value></data>
   <data name="CheckAmbiguousHash" xml:space="preserve"><value>`{0}` ist der Anfang der Namen von {1} {1:Objekt|Objekten}: Schreibe mehr vom Hash.</value></data>
   <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` bezeichnet mehrere Refs: {1}. Schreibe die zu prüfende so, wie sie hier aufgeführt ist.</value></data>
+  <data name="ToolListSent" xml:space="preserve"><value>{0} {0:Tool|Tools} gesendet, ~{1} Tokens</value></data>
+  <data name="ToolListTurnedOff" xml:space="preserve"><value>{0} abgeschaltet</value></data>
+  <data name="ToolListOnDemand" xml:space="preserve"><value>{0} auf Abruf</value></data>
+  <data name="ToolListHowTo" xml:space="preserve"><value>`/tools off &lt;Tool&gt;` schaltet ein Tool in allen Unterhaltungen ab, `/tools on &lt;Tool&gt;` wieder ein. Ein abgeschaltetes Tool wird dem Modell nie angeboten; Ihre eigenen Befehle, die es nutzen (`/diff`, `@problems`…), funktionieren weiter.</value></data>
+  <data name="ToolGroupBuiltIn" xml:space="preserve"><value>Integriert</value></data>
+  <data name="ToolGroupCustom" xml:space="preserve"><value>Ihre Tools</value></data>
+  <data name="ToolGroupServer" xml:space="preserve"><value>MCP-Server {0}</value></data>
+  <data name="ToolStateSent" xml:space="preserve"><value>gesendet</value></data>
+  <data name="ToolStateOnDemand" xml:space="preserve"><value>auf Abruf</value></data>
+  <data name="ToolStateOff" xml:space="preserve"><value>abgeschaltet</value></data>
+  <data name="ToolStateOffByEntry" xml:space="preserve"><value>vom Eintrag seines Servers abgeschaltet</value></data>
+  <data name="ToolStateNotOffered" xml:space="preserve"><value>derzeit nicht angeboten</value></data>
+  <data name="ToolTurnOff" xml:space="preserve"><value>Abschalten</value></data>
+  <data name="ToolTurnOn" xml:space="preserve"><value>Einschalten</value></data>
+  <data name="ToolListColTool" xml:space="preserve"><value>Tool</value></data>
+  <data name="ToolListColTokens" xml:space="preserve"><value>Tokens</value></data>
+  <data name="ToolListColState" xml:space="preserve"><value>Status</value></data>
+  <data name="SlashToolsTurnedOff" xml:space="preserve"><value>{0} {0:Tool|Tools} in allen Unterhaltungen abgeschaltet: {1}.</value></data>
+  <data name="SlashToolsTurnedOn" xml:space="preserve"><value>{0} {0:Tool|Tools} wieder eingeschaltet: {1}.</value></data>
+  <data name="SlashToolsAlreadyOff" xml:space="preserve"><value>{0} {0:Tool|Tools} bereits abgeschaltet: {1}.</value></data>
+  <data name="SlashToolsAlreadyOn" xml:space="preserve"><value>{0} {0:Tool|Tools} nicht abgeschaltet: {1}.</value></data>
+  <data name="SlashToolsUnknown" xml:space="preserve"><value>Hier heißt kein Tool `{0}` — `/tools` listet sie auf.</value></data>
+  <data name="SlashToolsAmbiguous" xml:space="preserve"><value>`{0}` bezeichnet mehrere Tools: {1} — schreiben Sie das gemeinte.</value></data>
+  <data name="SlashToolsSearchStaysOn" xml:space="preserve"><value>`tool_search` lässt sich nicht abschalten: Darüber erreicht das Modell die Tools auf Abruf. Schalten Sie stattdessen den Server oder einige seiner Tools ab.</value></data>
+  <data name="SlashToolsOffByEntry" xml:space="preserve"><value>`{0}` ist vom Eintrag des MCP-Servers {1} abgeschaltet (`disabledTools`): Dort wird es wieder eingeschaltet.</value></data>
+  <data name="XrayToolsTurnedOff" xml:space="preserve"><value>{0} {0:Tool|Tools} abgeschaltet, nicht gesendet: {1}</value></data>
+  <data name="SettingsSectionToolList" xml:space="preserve"><value>An das Modell gesendete Tools</value></data>
+  <data name="SettingsSectionToolListDesc" xml:space="preserve"><value>Was jede Anfrage deklariert und was es wiegt. Ein abgeschaltetes Tool wird dem Modell nie angeboten.</value></data>
+  <data name="ToolListNoChat" xml:space="preserve"><value>Öffnen Sie das Chatfenster, um seine Tools aufzulisten.</value></data>
+  <data name="ToolGroupNotHere" xml:space="preserve"><value>Abgeschaltet, hier derzeit nicht verfügbar</value></data>
 </root>

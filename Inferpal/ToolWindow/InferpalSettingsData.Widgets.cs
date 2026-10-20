@@ -15,10 +15,16 @@ namespace Inferpal.ToolWindow;
 /// <c>null</c> while no chat window exists.</param>
 /// <param name="OpenXray">Shows the chat window with its X-Ray panel open.</param>
 /// <param name="OpenFile">Opens a file in the editor, a folder in the file explorer.</param>
+/// <param name="ToolList">The chat window's tools as <c>/tools</c> lists them; <c>null</c> (or answering it) while no chat
+/// window exists.</param>
+/// <param name="SetTool">Turns one tool off (<c>true</c>) or back on through the chat window; answers <c>null</c> while none
+/// exists.</param>
 internal sealed record SettingsLiveSources(
     ProjectIndexService Index, DocsIndexService Docs, Func<Task<XRayPanelModel?>> ConversationUsage,
     Func<Task<IReadOnlyList<RepoInstructionRow>?>> RepoInstructions,
-    Func<Task> OpenXray, Func<string, Task> OpenFile);
+    Func<Task> OpenXray, Func<string, Task> OpenFile,
+    Func<Task<ToolListModel?>>? ToolList = null,
+    Func<string, bool, Task<(ToolListModel List, string Message)?>>? SetTool = null);
 
 /// <summary>
 /// The live blocks of the settings pages (<see cref="SettingSection.Widget"/>): the code index, the project's exclusions,
@@ -238,6 +244,7 @@ internal partial class InferpalSettingsData
         (FimDefaultName, FimDefaultDesc)   = (modes[1].Display, modes[1].Description);
         (FimAccurateName, FimAccurateDesc) = (modes[2].Display, modes[2].Description);
         OversizeToggleLabel = ShowOversizeFiles ? Strings.IndexCardHideThem : Strings.IndexCardShowThem;
+        ApplyToolListLabels();
         SyncInlineModeCards();
         UpdateModelLines();
     }
@@ -284,6 +291,7 @@ internal partial class InferpalSettingsData
             case "server":  _ = RefreshLoadedModelsAsync(CancellationToken.None); break;
             case "search":  _ = RefreshSearchPageAsync(); break;
             case "context": _ = RefreshContextPageAsync(); break;
+            case "tools":   _ = RefreshToolListAsync(); break;
         }
     }
 

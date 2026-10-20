@@ -94,6 +94,11 @@ first, until the rest fits — a small server stays declared beside a large one.
   per question. It stays loaded for the rest of the conversation; a new conversation starts without it.
 - **X-Ray** says which tools wait: "93 MCP tools on demand — not sent until loaded by tool_search: rider (93)".
 - Plan mode and background tasks send no MCP tool at all, so `tool_search` is not offered there.
+- **Tools you never want sent** are turned off one by one: `/tools off rider/execute_sql_query`, or the **Tools** page
+  of the settings (see **[Tools → Turning a tool off](tools.md#turning-a-tool-off)**). A tool turned off weighs nothing
+  in the tenth of the window and `tool_search` neither names nor loads it. A server's entry can list them as Roo writes
+  it — `"disabledTools": ["execute_sql_query"]`, in `mcpServersJson` or a repository's `.roo/mcp.json` — and they are
+  turned off the same way; `/tools` says "turned off by its server's entry", and that entry is where one is turned back on.
 
 ## Approval
 

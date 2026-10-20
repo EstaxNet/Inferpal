@@ -393,7 +393,7 @@ Copia de seguridad: {0}</value></data>
   <data name="SlashModelNotListed" xml:space="preserve"><value>⚠ El backend no lista **{0}**: el próximo mensaje puede fallar. `/models` muestra lo que ofrece.</value></data>
   <data name="SlashModelIsEmbedding" xml:space="preserve"><value>⚠ **{0}** es un modelo de embeddings: convierte texto en vectores y no responde preguntas. No se ha cambiado nada — `/models` lista los modelos de chat.</value></data>
   <data name="SlashModelNotServed" xml:space="preserve"><value>⚠ El backend no ofrece **{0}**. No se ha cambiado nada — `/models` muestra lo que ofrece.</value></data>
-  <data name="SlashToolsCurrent" xml:space="preserve"><value>Uso: `/tools on|off`  —  actual: **{0}**</value></data>
+  <data name="SlashToolsCurrent" xml:space="preserve"><value>Herramientas en esta conversación: **{0}** (`/tools on|off`).</value></data>
   <data name="SlashToolsChanged" xml:space="preserve"><value>Herramientas → **{0}**</value></data>
   <data name="SlashNoActiveDocument" xml:space="preserve"><value>⚠ No hay documento activo. Abre un archivo en el editor.</value></data>
   <data name="TestsGenerated" xml:space="preserve"><value>✅ Pruebas generadas → **{0}** (abierto en el editor).</value></data>
@@ -687,7 +687,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="SlashHintDoc" xml:space="preserve"><value>generar comentarios de documentación XML</value></data>
   <data name="SlashHintClear" xml:space="preserve"><value>borrar la conversación</value></data>
   <data name="SlashHintModel" xml:space="preserve"><value>cambiar de modelo</value></data>
-  <data name="SlashHintTools" xml:space="preserve"><value>activar o desactivar la llamada de herramientas</value></data>
+  <data name="SlashHintTools" xml:space="preserve"><value>enumerar las herramientas, desactivarlas o reactivarlas</value></data>
   <data name="SlashHintExport" xml:space="preserve"><value>exportar la conversación a un archivo</value></data>
   <data name="SlashHintRestore" xml:space="preserve"><value>restaurar un archivo desde una copia de seguridad</value></data>
   <data name="SlashHintHelp" xml:space="preserve"><value>mostrar todos los comandos disponibles</value></data>
@@ -1607,4 +1607,34 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="CheckNoCommonBase" xml:space="preserve"><value>`{0}`: los dos historiales no tienen ningún commit en común, así que el cambio no tiene punto de partida. `/check &lt;commit&gt;` revisa un commit.</value></data>
   <data name="CheckAmbiguousHash" xml:space="preserve"><value>`{0}` es el comienzo del nombre de {1} {1:objeto|objetos}: escribe más caracteres del hash.</value></data>
   <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` designa varias referencias: {1}. Escribe la que quieres revisar tal como aparece aquí.</value></data>
+  <data name="ToolListSent" xml:space="preserve"><value>{0} {0:herramienta enviada|herramientas enviadas}, ~{1} tokens</value></data>
+  <data name="ToolListTurnedOff" xml:space="preserve"><value>{0} {0:desactivada|desactivadas}</value></data>
+  <data name="ToolListOnDemand" xml:space="preserve"><value>{0} bajo demanda</value></data>
+  <data name="ToolListHowTo" xml:space="preserve"><value>`/tools off &lt;herramienta&gt;` desactiva una herramienta en todas las conversaciones, `/tools on &lt;herramienta&gt;` la reactiva. Una herramienta desactivada nunca se ofrece al modelo; sus propios comandos que la usan (`/diff`, `@problems`…) siguen funcionando.</value></data>
+  <data name="ToolGroupBuiltIn" xml:space="preserve"><value>Integradas</value></data>
+  <data name="ToolGroupCustom" xml:space="preserve"><value>Sus herramientas</value></data>
+  <data name="ToolGroupServer" xml:space="preserve"><value>Servidor MCP {0}</value></data>
+  <data name="ToolStateSent" xml:space="preserve"><value>enviada</value></data>
+  <data name="ToolStateOnDemand" xml:space="preserve"><value>bajo demanda</value></data>
+  <data name="ToolStateOff" xml:space="preserve"><value>desactivada</value></data>
+  <data name="ToolStateOffByEntry" xml:space="preserve"><value>desactivada por la entrada de su servidor</value></data>
+  <data name="ToolStateNotOffered" xml:space="preserve"><value>no ofrecida por ahora</value></data>
+  <data name="ToolTurnOff" xml:space="preserve"><value>Desactivar</value></data>
+  <data name="ToolTurnOn" xml:space="preserve"><value>Reactivar</value></data>
+  <data name="ToolListColTool" xml:space="preserve"><value>Herramienta</value></data>
+  <data name="ToolListColTokens" xml:space="preserve"><value>Tokens</value></data>
+  <data name="ToolListColState" xml:space="preserve"><value>Estado</value></data>
+  <data name="SlashToolsTurnedOff" xml:space="preserve"><value>{0} {0:herramienta desactivada|herramientas desactivadas} en todas las conversaciones: {1}.</value></data>
+  <data name="SlashToolsTurnedOn" xml:space="preserve"><value>{0} {0:herramienta reactivada|herramientas reactivadas}: {1}.</value></data>
+  <data name="SlashToolsAlreadyOff" xml:space="preserve"><value>{0} {0:herramienta ya desactivada|herramientas ya desactivadas}: {1}.</value></data>
+  <data name="SlashToolsAlreadyOn" xml:space="preserve"><value>{0} {0:herramienta no desactivada|herramientas no desactivadas}: {1}.</value></data>
+  <data name="SlashToolsUnknown" xml:space="preserve"><value>Ninguna herramienta se llama `{0}` aquí — `/tools` las enumera.</value></data>
+  <data name="SlashToolsAmbiguous" xml:space="preserve"><value>`{0}` designa varias herramientas: {1} — escriba la que quiere.</value></data>
+  <data name="SlashToolsSearchStaysOn" xml:space="preserve"><value>`tool_search` no se puede desactivar: es como el modelo llega a las herramientas bajo demanda. Desactive en su lugar el servidor, o algunas de sus herramientas.</value></data>
+  <data name="SlashToolsOffByEntry" xml:space="preserve"><value>`{0}` está desactivada por la entrada del servidor MCP {1} (`disabledTools`): es ahí donde se reactiva.</value></data>
+  <data name="XrayToolsTurnedOff" xml:space="preserve"><value>{0} {0:herramienta desactivada|herramientas desactivadas}, no {0:enviada|enviadas}: {1}</value></data>
+  <data name="SettingsSectionToolList" xml:space="preserve"><value>Herramientas enviadas al modelo</value></data>
+  <data name="SettingsSectionToolListDesc" xml:space="preserve"><value>Lo que declara cada solicitud, y lo que pesa. Una herramienta desactivada nunca se ofrece al modelo.</value></data>
+  <data name="ToolListNoChat" xml:space="preserve"><value>Abra la ventana de chat para enumerar sus herramientas.</value></data>
+  <data name="ToolGroupNotHere" xml:space="preserve"><value>Desactivadas, no disponibles aquí por ahora</value></data>
 </root>

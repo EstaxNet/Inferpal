@@ -60,7 +60,9 @@ internal static class RenameIntent
     /// ⚠ A scan that read PART of the workspace says so, found or not: silent past its cap, its absence of note read as
     /// "renamed everywhere" on exactly the repositories where a hand rename is the likeliest to miss one.
     /// </remarks>
-    public static string StaleNote((string Old, string New) rename, string root, string editedFile)
+    /// <param name="renameOffered"><c>rename_symbol</c> is offered to the model: the note names it as the remedy only then —
+    /// named while the user turned it off, it sends the model to a refusal.</param>
+    public static string StaleNote((string Old, string New) rename, string root, string editedFile, bool renameOffered = true)
     {
         if (Scan(root, Path.GetExtension(editedFile), rename.Old) is not var (still, coverage)) return string.Empty;
         var note = string.Empty;
@@ -69,13 +71,14 @@ internal static class RenameIntent
             var named = string.Join(", ", still.Take(5).Select(p => Path.GetRelativePath(root, p)))
                       + (still.Count > 5 ? $" and {still.Count - 5} more" : string.Empty);
             note = $"\n⚠ `{rename.Old}` still appears in {still.Count} file(s): {named}. If it is the same symbol, "
-                 + $"{Call(rename)} renames every remaining occurrence in one call.";
+                 + (renameOffered ? $"{Call(rename)} renames every remaining occurrence in one call." : "rename it there too.");
         }
         if (coverage.IsIncomplete)
             note += still.Count > 0
                 ? "\n" + coverage.Warning()
                 : $"\n⚠ `{rename.Old}` was looked for in part of the workspace only:\n{coverage.Warning()}\n"
-                  + $"It may remain in the files not read — {Call(rename)} finds every occurrence.";
+                  + (renameOffered ? $"It may remain in the files not read — {Call(rename)} finds every occurrence."
+                                   : "It may remain in the files not read.");
         return note;
     }
 

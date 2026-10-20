@@ -192,6 +192,13 @@ internal static class ContextManager
         !toolsEnabled || planMode ? [] : tools.ToolsOnDemand;
 
     /// <summary>
+    /// The tools the next chat turn does not send because they are turned off, by the name they are turned off by: none
+    /// with tools off for the conversation (nothing is sent at all), the registry's otherwise.
+    /// </summary>
+    internal static IReadOnlyList<string> NextTurnTurnedOff(ToolRegistry tools, bool toolsEnabled) =>
+        !toolsEnabled ? [] : tools.TurnedOffKeys();
+
+    /// <summary>
     /// The window the conversation is measured against: the configured one, or the one the server
     /// really loaded <paramref name="model"/> with when that is SMALLER — or when none is configured.
     /// </summary>

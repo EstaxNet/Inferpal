@@ -30,6 +30,10 @@ internal sealed class ApplyEditsTool : ITool
         _overlay         = overlay;
     }
 
+    /// <summary>Whether <c>rename_symbol</c> is offered to the model now; <c>null</c>: assumed. A refused hand rename points
+    /// to it only then — pointed to a tool turned off, the model's next call is refused too.</summary>
+    internal Func<bool>? RenameOffered { get; init; }
+
     public string Name => "apply_edits";
 
     /// <inheritdoc/>
@@ -150,7 +154,7 @@ internal sealed class ApplyEditsTool : ITool
             {
                 var reason = res.Count > 1 ? $"ambiguous ({res.Count} matches)" : "no exact or fuzzy match";
                 var rel    = RelPath(root, edit.Path);
-                var hint   = RenameIntent.Of(edits.Select(e => (e.Old, e.New))) is { } rename
+                var hint   = RenameOffered?.Invoke() != false && RenameIntent.Of(edits.Select(e => (e.Old, e.New))) is { } rename
                     ? RenameIntent.RefusalHint(rename) : string.Empty;
                 var closest = res.Count > 1 ? null : ApplyDiffMatcher.Closest(current[edit.Path], edit.Old);
                 return Aborted(i + 1, edits.Count, $"edit #{i + 1} in {rel}: {reason} for old_content") + closest + hint;
@@ -212,7 +216,7 @@ internal sealed class ApplyEditsTool : ITool
             : string.Empty;
 
         var staleNote = RenameIntent.Of(edits.Select(e => (e.Old, e.New))) is { } renamed && !string.IsNullOrEmpty(root)
-            ? RenameIntent.StaleNote(renamed, root, changed[0])
+            ? RenameIntent.StaleNote(renamed, root, changed[0], RenameOffered?.Invoke() != false)
             : string.Empty;
 
         return Strings.ApplyEditsOk(edits.Count, changed.Count) + staleNote + smartFixNote.TrimEnd();

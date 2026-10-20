@@ -370,6 +370,8 @@ export interface XRayPanel {
   /** The MCP tools the next turn leaves out until tool_search loads them, said in the user's language; absent when
    *  every tool is declared, and from an older host. */
   toolsOnDemand?: string | null;
+  /** The tools turned off, which the next turn does not send, said in the user's language; absent when none is. */
+  toolsTurnedOff?: string | null;
 }
 
 export interface ApprovalNote {
@@ -606,6 +608,33 @@ export interface DocsSiteRow {
 /** `settings/docsSites` and `settings/docsAction`: the sites, and what the command said. */
 export interface SettingsDocs {
   sites: DocsSiteRow[];
+  message?: string | null;
+}
+
+/** One tool of the Tools page (the Core's `ToolListRow`): the rows `/tools` prints. */
+export interface ToolListRow {
+  /** The name it is turned off and on by: its own, or `server/tool` for an MCP tool. */
+  key: string;
+  name: string;
+  weight: string;
+  /** The colour of its row, never read back from its label. */
+  state: 'sent' | 'onDemand' | 'off' | 'offByEntry' | 'notOffered';
+  stateLabel: string;
+  off: boolean;
+  /** A button is offered: never for tool_search, nor for a tool only its server's entry turns off. */
+  canToggle: boolean;
+  actionLabel: string;
+}
+
+/** The tools of one source: the built-in ones, the user's own, or one MCP server's. */
+export interface ToolListGroup {
+  title: string;
+  rows: ToolListRow[];
+}
+
+/** `settings/tools` and `settings/toolSet`: every tool, grouped, and what turning one off or on said. */
+export interface SettingsTools {
+  list: { summary: string; groups: ToolListGroup[]; howTo: string };
   message?: string | null;
 }
 

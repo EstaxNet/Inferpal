@@ -201,10 +201,13 @@ internal partial class InferpalToolWindowData
                 break;
 
             case SlashCommandId.Tools:
-                if (parts.Length < 2 || parts[1] is not ("on" or "off")) { await ShowInfoAsync(Strings.SlashToolsCurrent(_toolsEnabled ? "on" : "off")); break; }
-                _toolsEnabled = parts[1] == "on";
-                await ShowInfoAsync(Strings.SlashToolsChanged(parts[1]));
+            {
+                var tools = Services.Commands.ToolsCommandHandler.Handle(parts, _tools, _config, _toolsEnabled);
+                if (tools.SessionTools is { } on) _toolsEnabled = on;
+                if (tools.SaveConfig) _config.Save();
+                await ShowInfoAsync(tools.Message);
                 break;
+            }
 
             case SlashCommandId.Export:     await ExportConversationAsync(ct);                            break;
             case SlashCommandId.Context:    await HandleContextCommandAsync(ct);                          break;

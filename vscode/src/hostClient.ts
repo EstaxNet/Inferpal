@@ -18,6 +18,7 @@ import {
   ProjectFileRow,
   RepoInstructionRow,
   SettingsDocs,
+  SettingsTools,
   SettingsExclusions,
   DebugBreakpointParams,
   DebugCaptureTestParams,
@@ -611,6 +612,16 @@ export class HostClient {
   /** Adds, reindexes or removes a @Docs site through `/docs`; the crawl runs on. */
   settingsDocsAction(verb: 'add' | 'reindex' | 'remove', arg: string): Promise<SettingsDocs> {
     return this.connection().sendRequest<SettingsDocs>('settings/docsAction', { verb, arg });
+  }
+
+  /** Every tool, with what the next request does with it and what it weighs. */
+  settingsTools(): Promise<SettingsTools> {
+    return this.connection().sendRequest<SettingsTools>('settings/tools');
+  }
+
+  /** Turns one tool off or back on, as `/tools off|on <tool>` does. */
+  settingsToolSet(key: string, off: boolean): Promise<SettingsTools> {
+    return this.connection().sendRequest<SettingsTools>('settings/toolSet', { key, off });
   }
 
   /** How full the conversation's window is, and with what. */

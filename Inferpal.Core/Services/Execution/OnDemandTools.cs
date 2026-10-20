@@ -27,7 +27,11 @@ namespace Inferpal.Services.Execution;
 /// share, a match beyond the closest ones — answered "not found", the model concludes the tool does not exist.
 /// </para>
 /// </remarks>
-internal sealed class OnDemandTools(Func<IReadOnlyList<ITool>> mcpTools, Func<int> windowInUse)
+/// <param name="mcpTools">The MCP tools served now, without the ones turned off — the same list object while they do not
+/// change: the split is cached on that reference.</param>
+/// <param name="turnedOff">What a request to load a name answers when the tool it names is turned off; <c>null</c> when no
+/// tool turned off is named so. Said apart: "no tool is named" would read "it does not exist".</param>
+internal sealed class OnDemandTools(Func<IReadOnlyList<ITool>> mcpTools, Func<int> windowInUse, Func<string, string?>? turnedOff = null)
 {
     /// <summary>The share of the window in use the MCP definitions may take before servers go on demand.</summary>
     internal const double WindowShare = 0.10;
@@ -212,14 +216,15 @@ internal sealed class OnDemandTools(Func<IReadOnlyList<ITool>> mcpTools, Func<in
         if (asked.Count == 0) return "Error: \"select:\" needs one or more tool names.";
         var found = new List<McpTool>();
         var missing = new List<string>();
-        var ambiguous = new List<string>();
+        var apart = new List<string>();   // ambiguous names, tools turned off: each said in its own words
         foreach (var a in asked)
         {
             if (plan.Waiting.TryGetValue(a, out var exact)) { found.Add(exact); continue; }
             var byLocal = plan.Waiting.Values.Where(t => t.LocalName == a).OrderBy(t => t.Name, StringComparer.Ordinal).ToList();
             if (byLocal.Count == 1) found.Add(byLocal[0]);
             else if (byLocal.Count > 1)
-                ambiguous.Add($"'{a}' names several tools on demand: {string.Join(", ", byLocal.Select(t => t.Name))} — select one by its full name.");
+                apart.Add($"'{a}' names several tools on demand: {string.Join(", ", byLocal.Select(t => t.Name))} — select one by its full name.");
+            else if (turnedOff?.Invoke(a) is { } off) apart.Add(off);
             else missing.Add(a);
         }
 
@@ -232,7 +237,7 @@ internal sealed class OnDemandTools(Func<IReadOnlyList<ITool>> mcpTools, Func<in
             parts.Add($"Not loaded yet — at most {MaxPerSearch} per call, select them again: "
                     + string.Join(", ", fresh.Skip(MaxPerSearch).Select(t => t.Name)) + ".");
         if (already.Count > 0) parts.Add("Already loaded: " + string.Join(", ", already) + ". Call them by these names.");
-        parts.AddRange(ambiguous);
+        parts.AddRange(apart);
         if (missing.Count > 0)
             parts.Add($"No tool on demand is named {string.Join(", ", missing.Select(m => $"'{m}'"))}. " + Servers(plan));
         return string.Join("\n\n", parts);

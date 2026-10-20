@@ -151,9 +151,10 @@ public class ConfigCollectionMergeTests : IDisposable
     [Fact]
     public void TheSettingsThatHoldACollection_AreDeclaredSo()
     {
-        // Nominative: the six settings edited by adding and removing elements. The shape is declared on the property.
+        // Nominative: the seven settings edited by adding and removing elements. The shape is declared on the property.
         Assert.Equal(
-            ["customTools", "docSitesJson", "mcpServersJson", "permissionRules", "pinnedContextFiles", "promptTemplates"],
+            ["customTools", "disabledTools", "docSitesJson", "mcpServersJson", "permissionRules", "pinnedContextFiles",
+             "promptTemplates"],
             InferpalConfig.CollectionSettings.Keys.Order(StringComparer.Ordinal));
     }
 }

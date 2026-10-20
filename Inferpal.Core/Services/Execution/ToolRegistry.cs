@@ -76,7 +76,9 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         _config      = config;
         _approval    = approval;
         _mcp         = mcp;
-        _onDemand    = onDemand ?? new OnDemandTools(() => mcp.Tools, () => WindowInUse?.Invoke() ?? 0);
+        // The MCP tools a turned-off switch leaves out never reach the split: they weigh nothing in its budget, and
+        // tool_search neither names nor loads them.
+        _onDemand    = onDemand ?? new OnDemandTools(McpToolsOn, () => WindowInUse?.Invoke() ?? 0, TurnedOffOnDemand);
         _fileHistory = fileHistory ?? new();
         // Outside a git repository the history lives at the workspace root — one folder, the one restore_file names.
         _fileHistory.WorkspaceRoot ??= () => indexService.RootDir;
@@ -103,8 +105,8 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new ListFilesTool(() => indexService.RootDir));
         Register(new SearchInFilesTool(() => indexService.RootDir, overlay));
         Register(new RunCommandTool(approval, config, () => indexService.RootDir));
-        Register(new ApplyDiffTool(approval, history, () => indexService.RootDir, smartFix, setDiff, overlay));
-        Register(new ApplyEditsTool(approval, history, () => indexService.RootDir, smartFix, overlay));
+        Register(new ApplyDiffTool(approval, history, () => indexService.RootDir, smartFix, setDiff, overlay) { RenameOffered = RenameOffered });
+        Register(new ApplyEditsTool(approval, history, () => indexService.RootDir, smartFix, overlay) { RenameOffered = RenameOffered });
         Register(new RestoreFileTool(approval, history, () => indexService.RootDir, overlay));
         Register(new DeleteFileTool(approval, history, () => indexService.RootDir, overlay));
         Register(new GetDiagnosticsTool(editor, () => indexService.RootDir));
@@ -298,6 +300,124 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     private IEnumerable<ITool> McpTools =>
         _mcp.Tools.Select(t => t is Mcp.McpTool m ? m.WithApproval(_approval) : t);
 
+    // Swapped whole: two threads reading the setting never see one's text with the other's switches.
+    private sealed record SwitchesMemo(string Text, ToolSwitches Switches);
+    private SwitchesMemo? _switches;
+
+    /// <summary>The tools the user turned off, as the setting says now — read again only when its text changes.</summary>
+    /// <remarks>⚠ Per registry, never one slot for the process: two agent-protocol threads whose copies of the setting
+    /// differ would take turns in it, and each turn would split and weigh every MCP definition again.</remarks>
+    private ToolSwitches Switches
+    {
+        get
+        {
+            var text = _config.DisabledTools ?? string.Empty;
+            var memo = Volatile.Read(ref _switches);
+            if (memo is not null && string.Equals(memo.Text, text, StringComparison.Ordinal)) return memo.Switches;
+            var switches = ToolSwitches.Parse(text);
+            Volatile.Write(ref _switches, new SwitchesMemo(text, switches));
+            return switches;
+        }
+    }
+
+    /// <summary>
+    /// Whether <paramref name="tool"/> is turned off — by the user (<see cref="InferpalConfig.DisabledTools"/>) or, for an
+    /// MCP tool, by its server's entry (<c>disabledTools</c>). A tool turned off is never offered to the model.
+    /// </summary>
+    internal bool TurnedOff(ITool tool) => TurnedOff(tool, Switches);
+
+    private static bool TurnedOff(ITool tool, ToolSwitches switches) =>
+        tool is McpTool { TurnedOffByEntry: true } || switches.TurnsOff(tool);
+
+    /// <summary>Whether <c>rename_symbol</c> is offered now: a refused hand rename points to it only then.</summary>
+    private bool RenameOffered() => _tools.TryGetValue("rename_symbol", out var rename) && rename.IsOffered && !TurnedOff(rename);
+
+    private sealed record McpOnMemo(IReadOnlyList<ITool> Served, ToolSwitches Switches, IReadOnlyList<ITool> On);
+    private McpOnMemo? _mcpOn;
+
+    /// <summary>The MCP tools served now that are not turned off — the same list while neither the tools nor the switches
+    /// change, since the on-demand split is cached on that reference.</summary>
+    private IReadOnlyList<ITool> McpToolsOn()
+    {
+        var served = _mcp.Tools;
+        var switches = Switches;
+        var memo = Volatile.Read(ref _mcpOn);
+        if (memo is not null && ReferenceEquals(memo.Served, served) && ReferenceEquals(memo.Switches, switches)) return memo.On;
+        // Judged with the switches the memo is keyed on: read again, a setting saved in between would be cached under the
+        // other text.
+        IReadOnlyList<ITool> on = served.Any(t => TurnedOff(t, switches)) ? [.. served.Where(t => !TurnedOff(t, switches))] : served;
+        Volatile.Write(ref _mcpOn, new McpOnMemo(served, switches, on));
+        return on;
+    }
+
+    /// <summary>What a request to load <paramref name="asked"/> (its full or its server's name) answers when the tool
+    /// is turned off; <c>null</c> when no tool turned off is named so.</summary>
+    private string? TurnedOffOnDemand(string asked)
+    {
+        var off = _mcp.Tools.OfType<McpTool>().Where(t => (t.Name == asked || t.LocalName == asked) && TurnedOff(t)).ToList();
+        return off.Count == 0 ? null : string.Join(" ", off.Select(TurnedOffSentence));
+    }
+
+    /// <summary>Why <paramref name="tool"/> is not available — for the model, in English.</summary>
+    private string TurnedOffSentence(ITool tool)
+    {
+        var key = ToolSwitches.Typed(tool);
+        return tool is McpTool { TurnedOffByEntry: true } m && !Switches.TurnsOff(tool)
+            ? $"'{tool.Name}' is turned off by the entry of the MCP server '{m.ServerName}' (its \"disabledTools\"): it is not "
+              + "available. Do the task with the tools you have, or tell the user that it needs this tool."
+            : $"'{tool.Name}' is turned off by the user: it is not available. Do the task with the tools you have, or tell the "
+              + $"user that it needs this tool (they turn it back on with /tools on {key}).";
+    }
+
+    /// <inheritdoc/>
+    public string? TurnedOffRefusal(string name)
+    {
+        var tool = _tools.TryGetValue(name, out var builtIn) ? builtIn
+            : UserTools.FirstOrDefault(t => t.Name == name) ?? _mcp.Tools.FirstOrDefault(t => t.Name == name);
+        return tool is not null && TurnedOff(tool) ? "Error: " + TurnedOffSentence(tool) + " The call was NOT executed." : null;
+    }
+
+    /// <summary>The lines of the setting that name no tool served here — a server stopped, a tool only the other editor has
+    /// (its debugger): listed by <c>/tools</c> and the Tools page so they can be turned back on, or they stay unseen.</summary>
+    internal IReadOnlyList<string> TurnedOffElsewhere()
+    {
+        var all = _registered.Concat(UserTools).Concat(_mcp.Tools).ToList();
+        return [.. Switches.Entries.Where(e => !all.Any(t => ToolSwitches.KeyOf(t) == e || t.Name == e))];
+    }
+
+    /// <summary>The names the tools turned off are turned off by (<see cref="ToolSwitches.KeyOf"/>), in the order a request
+    /// would send them — X-Ray's line, without weighing every definition as <see cref="Profile"/> does.</summary>
+    internal IReadOnlyList<string> TurnedOffKeys() =>
+        [.. _registered.Concat(UserTools).Concat(_mcp.Tools).Where(TurnedOff).Select(ToolSwitches.KeyOf)];
+
+    /// <summary>
+    /// Every tool this registry holds, in the order a request sends them, with what happens to it on the next request
+    /// and what its definition weighs — what <c>/tools</c> and the Tools page list.
+    /// </summary>
+    internal IReadOnlyList<ToolProfileEntry> Profile()
+    {
+        var sent = Definitions.Select(d => d.Function.Name).ToHashSet(StringComparer.Ordinal);
+        var waiting = _onDemand.WaitingNames.ToHashSet(StringComparer.Ordinal);
+        var switches = Switches;
+        ToolProfileEntry Entry(ITool t, ToolSource source)
+        {
+            var state = switches.TurnsOff(t)                           ? ToolState.OffByUser
+                      : t is McpTool { TurnedOffByEntry: true }        ? ToolState.OffByEntry
+                      : sent.Contains(t.Name)                          ? ToolState.Sent
+                      : waiting.Contains(t.Name)                       ? ToolState.OnDemand
+                      :                                                  ToolState.NotOffered;
+            var tokens = RequestSize.ToolTokens(
+                [new ToolDefinition("function", new ToolFunction(t.Name, t.Description, t.Parameters))]);
+            return new(t, ToolSwitches.KeyOf(t), source, (t as McpTool)?.ServerName, state, tokens);
+        }
+        return
+        [
+            .. _registered.Select(t => Entry(t, ToolSource.BuiltIn)),
+            .. UserTools.Select(t => Entry(t, ToolSource.Custom)),
+            .. _mcp.Tools.Select(t => Entry(t, ToolSource.Mcp)),
+        ];
+    }
+
     /// <summary>The MCP tools a request declares (<see cref="OnDemandTools.Declared"/>).</summary>
     /// <remarks>Not rebound to this registry's approval: a definition is a name, a description and a schema, which
     /// rebinding copies unchanged; a call goes through <see cref="McpTools"/>, rebound.</remarks>
@@ -305,9 +425,13 @@ internal class ToolRegistry : IToolRegistry, IDisposable
 
     /// <inheritdoc/>
     /// <remarks>The tools on demand included: a call written as text names one the model read in <c>tool_search</c>'s
-    /// description, and it runs — and loads — like a structured one.</remarks>
+    /// description, and it runs — and loads — like a structured one. The tools turned off too: a call written as text to
+    /// one is read as a call and refused with its cause (<see cref="TurnedOffRefusal"/>) — left unread, it would be shown
+    /// as the answer, and the model would never learn why nothing ran.</remarks>
     public IEnumerable<string> CallableNames =>
-        Definitions.Select(d => d.Function.Name).Concat(_onDemand.WaitingNames).Distinct(StringComparer.Ordinal);
+        Definitions.Select(d => d.Function.Name).Concat(_onDemand.WaitingNames)
+            .Concat(_registered.Concat(UserTools).Concat(_mcp.Tools).Where(TurnedOff).Select(t => t.Name))
+            .Distinct(StringComparer.Ordinal);
 
     /// <summary>MCP server lines for the support bundle. The chat view-model holds this registry,
     /// not the MCP service (only the settings window does), and the bundle must say the same
@@ -323,8 +447,8 @@ internal class ToolRegistry : IToolRegistry, IDisposable
 
     public IReadOnlyList<ToolDefinition> Definitions =>
         _registered
-            .Where(t => t.IsOffered)
-            .Concat(UserTools)
+            .Where(t => t.IsOffered && !TurnedOff(t))
+            .Concat(UserTools.Where(t => !TurnedOff(t)))
             .Concat(DeclaredMcpTools)
             .Select(t => new ToolDefinition("function", new ToolFunction(t.Name, t.Description, t.Parameters)))
             .ToList();

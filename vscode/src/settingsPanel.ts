@@ -95,6 +95,11 @@ export class SettingsPanel {
     SettingsPanel.current?.bridge.loadIfNotLoaded();
   }
 
+  /** A command in the chat saved the settings (`/tools off`, `/import … apply`): the open panel's live blocks read again. */
+  static onSavedElsewhere(): void {
+    SettingsPanel.current?.post({ type: 'savedElsewhere' });
+  }
+
   /** The start failed: a panel waiting on "starting" says what applies now. */
   static onHostStartFailed(): void {
     SettingsPanel.hostStarting = false;

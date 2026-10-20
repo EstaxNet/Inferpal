@@ -42,4 +42,13 @@ internal interface IToolRegistry
     /// <remarks>⚠ A decorator that only passes calls through forwards it: answered from its own <see cref="Definitions"/>,
     /// a text call to a tool on demand would be shown as the answer instead of running.</remarks>
     IEnumerable<string> CallableNames => Definitions.Select(d => d.Function.Name);
+
+    /// <summary>
+    /// What a call by <paramref name="name"/> answers instead of running when the tool is turned off (by the user, or by
+    /// its MCP server's entry); <c>null</c> when nothing turns it off.
+    /// </summary>
+    /// <remarks>⚠ Asked by the funnel of the MODEL's calls alone (<c>AgentOrchestrator.ExecuteToolSafeAsync</c>): a gesture
+    /// of the user that runs a tool itself (<c>/diff</c>, <c>@problems</c>, <c>/tdd</c>'s test run) is not a call of the
+    /// model. A decorator forwards it — answered by default, a tool turned off would run in plan mode.</remarks>
+    string? TurnedOffRefusal(string name) => null;
 }

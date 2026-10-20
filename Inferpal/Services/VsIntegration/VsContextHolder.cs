@@ -55,6 +55,14 @@ internal class VsContextHolder
     /// <summary>Opens the chat window's X-Ray panel — the settings' "Open Context X-Ray". Set by the chat window.</summary>
     public Func<Task>? OpenXray { get; set; }
 
+    /// <summary>The chat's tools as the settings' Tools page lists them (what <c>/tools</c> prints). Set by the chat
+    /// window; <c>null</c> while none exists.</summary>
+    public Func<Task<Services.Presentation.ToolListModel>>? ToolList { get; set; }
+
+    /// <summary>Turns one tool off (<c>true</c>) or back on, as <c>/tools off|on &lt;tool&gt;</c> does — the Tools page's
+    /// buttons; answers the list after it and what the change said. Set by the chat window.</summary>
+    public Func<string, bool, Task<(Services.Presentation.ToolListModel List, string Message)>>? SetTool { get; set; }
+
     /// <summary>Says a sentence in the chat as a notice — a rule an approval wrote to the settings. Set by the chat
     /// window.</summary>
     public Action<string>? Notice { get; set; }

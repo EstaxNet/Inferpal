@@ -20,11 +20,13 @@ internal sealed class McpTool : ITool
     private readonly IApprovalService _approval;
     private readonly string           _serverLocalName;
 
-    public McpTool(IMcpClient client, McpToolInfo info, IApprovalService approval)
+    /// <param name="turnedOffByEntry">The server's entry lists this tool in its <c>disabledTools</c>.</param>
+    public McpTool(IMcpClient client, McpToolInfo info, IApprovalService approval, bool turnedOffByEntry = false)
     {
         _client          = client;
         _approval        = approval;
         _serverLocalName = info.Name;
+        TurnedOffByEntry = turnedOffByEntry;
         Name             = BuildName(client.ServerName, info.Name);
         Description      = string.IsNullOrWhiteSpace(info.Description)
             ? $"MCP tool '{info.Name}' from server '{client.ServerName}'."
@@ -38,6 +40,7 @@ internal sealed class McpTool : ITool
         _client          = source._client;
         _approval        = approval;
         _serverLocalName = source._serverLocalName;
+        TurnedOffByEntry = source.TurnedOffByEntry;
         Name             = name ?? source.Name;
         Description      = source.Description;
         Parameters       = source.Parameters;
@@ -67,6 +70,9 @@ internal sealed class McpTool : ITool
 
     /// <summary>The tool's name on its server, before the <c>mcp__&lt;server&gt;__</c> prefix.</summary>
     internal string LocalName => _serverLocalName;
+
+    /// <summary>The server's entry turns this tool off (<c>disabledTools</c>): it is never offered to the model.</summary>
+    internal bool TurnedOffByEntry { get; }
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {

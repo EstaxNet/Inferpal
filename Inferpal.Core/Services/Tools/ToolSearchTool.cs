@@ -9,7 +9,10 @@ namespace Inferpal.Services.Tools;
 /// <remarks>⚠ Offered only while a server is on demand: otherwise its every answer would be "nothing to load".</remarks>
 internal sealed class ToolSearchTool(OnDemandTools onDemand) : ITool
 {
-    public string Name => "tool_search";
+    /// <summary>The tool's name — the one tool the user cannot turn off (<see cref="ToolSwitches.AlwaysOn"/>).</summary>
+    internal const string ToolName = "tool_search";
+
+    public string Name => ToolName;
 
     public string Description => onDemand.Description();
 

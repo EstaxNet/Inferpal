@@ -393,7 +393,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="SlashModelNotListed" xml:space="preserve"><value>⚠ バックエンドは **{0}** を一覧に含めていません。次のメッセージは失敗する可能性があります。`/models` で提供中のモデルを確認できます。</value></data>
   <data name="SlashModelIsEmbedding" xml:space="preserve"><value>⚠ **{0}** は埋め込みモデルです。テキストをベクトルに変換するだけで、質問には答えません。何も変更されていません — `/models` でチャットモデルを確認できます。</value></data>
   <data name="SlashModelNotServed" xml:space="preserve"><value>⚠ バックエンドは **{0}** を提供していません。何も変更されていません — `/models` で提供中のモデルを確認できます。</value></data>
-  <data name="SlashToolsCurrent" xml:space="preserve"><value>使用法：`/tools on|off`  —  現在：**{0}**</value></data>
+  <data name="SlashToolsCurrent" xml:space="preserve"><value>この会話のツール: **{0}**（`/tools on|off`）。</value></data>
   <data name="SlashToolsChanged" xml:space="preserve"><value>ツール → **{0}**</value></data>
   <data name="SlashNoActiveDocument" xml:space="preserve"><value>⚠ アクティブなドキュメントがありません。まずエディターでファイルを開いてください。</value></data>
   <data name="TestsGenerated" xml:space="preserve"><value>✅ テストを生成しました → **{0}**（エディターで開きました）。</value></data>
@@ -687,7 +687,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SlashHintDoc" xml:space="preserve"><value>XML ドキュメントコメントを生成</value></data>
   <data name="SlashHintClear" xml:space="preserve"><value>会話をクリア</value></data>
   <data name="SlashHintModel" xml:space="preserve"><value>モデルを切り替え</value></data>
-  <data name="SlashHintTools" xml:space="preserve"><value>ツール呼び出しを有効/無効にする</value></data>
+  <data name="SlashHintTools" xml:space="preserve"><value>ツールの一覧表示、オン・オフの切り替え</value></data>
   <data name="SlashHintExport" xml:space="preserve"><value>会話をファイルにエクスポート</value></data>
   <data name="SlashHintRestore" xml:space="preserve"><value>バックアップからファイルを復元</value></data>
   <data name="SlashHintHelp" xml:space="preserve"><value>利用可能なすべてのコマンドを表示</value></data>
@@ -1607,4 +1607,34 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="CheckNoCommonBase" xml:space="preserve"><value>`{0}`: 2 つの履歴に共通のコミットがないため、変更の起点がありません。`/check &lt;commit&gt;` で 1 つのコミットをレビューします。</value></data>
   <data name="CheckAmbiguousHash" xml:space="preserve"><value>`{0}` で始まるオブジェクトが {1} 個あります。ハッシュをもっと長く書いてください。</value></data>
   <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` は複数の参照を指しています: {1}。レビューする参照を、ここに示した形で書いてください。</value></data>
+  <data name="ToolListSent" xml:space="preserve"><value>送信するツール {0} 個、約 {1} トークン</value></data>
+  <data name="ToolListTurnedOff" xml:space="preserve"><value>オフ {0} 個</value></data>
+  <data name="ToolListOnDemand" xml:space="preserve"><value>オンデマンド {0} 個</value></data>
+  <data name="ToolListHowTo" xml:space="preserve"><value>`/tools off &lt;ツール&gt;` はすべての会話でツールをオフにし、`/tools on &lt;ツール&gt;` で元に戻します。オフにしたツールはモデルに提示されません。そのツールを使うご自身のコマンド（`/diff`、`@problems` など）はそのまま動作します。</value></data>
+  <data name="ToolGroupBuiltIn" xml:space="preserve"><value>組み込み</value></data>
+  <data name="ToolGroupCustom" xml:space="preserve"><value>ユーザー定義ツール</value></data>
+  <data name="ToolGroupServer" xml:space="preserve"><value>MCP サーバー {0}</value></data>
+  <data name="ToolStateSent" xml:space="preserve"><value>送信</value></data>
+  <data name="ToolStateOnDemand" xml:space="preserve"><value>オンデマンド</value></data>
+  <data name="ToolStateOff" xml:space="preserve"><value>オフ</value></data>
+  <data name="ToolStateOffByEntry" xml:space="preserve"><value>サーバーのエントリでオフ</value></data>
+  <data name="ToolStateNotOffered" xml:space="preserve"><value>現在は提示されません</value></data>
+  <data name="ToolTurnOff" xml:space="preserve"><value>オフにする</value></data>
+  <data name="ToolTurnOn" xml:space="preserve"><value>オンにする</value></data>
+  <data name="ToolListColTool" xml:space="preserve"><value>ツール</value></data>
+  <data name="ToolListColTokens" xml:space="preserve"><value>トークン</value></data>
+  <data name="ToolListColState" xml:space="preserve"><value>状態</value></data>
+  <data name="SlashToolsTurnedOff" xml:space="preserve"><value>すべての会話でオフにしたツール {0} 個: {1}。</value></data>
+  <data name="SlashToolsTurnedOn" xml:space="preserve"><value>オンに戻したツール {0} 個: {1}。</value></data>
+  <data name="SlashToolsAlreadyOff" xml:space="preserve"><value>すでにオフのツール {0} 個: {1}。</value></data>
+  <data name="SlashToolsAlreadyOn" xml:space="preserve"><value>オフではないツール {0} 個: {1}。</value></data>
+  <data name="SlashToolsUnknown" xml:space="preserve"><value>ここには `{0}` という名前のツールはありません — `/tools` で一覧を表示できます。</value></data>
+  <data name="SlashToolsAmbiguous" xml:space="preserve"><value>`{0}` は複数のツールを指します: {1} — 目的のものを指定してください。</value></data>
+  <data name="SlashToolsSearchStaysOn" xml:space="preserve"><value>`tool_search` はオフにできません。モデルはこれを通じてオンデマンドのツールにアクセスします。代わりにサーバー、またはその一部のツールをオフにしてください。</value></data>
+  <data name="SlashToolsOffByEntry" xml:space="preserve"><value>`{0}` は MCP サーバー {1} のエントリ（`disabledTools`）でオフになっています。オンに戻すのもそこです。</value></data>
+  <data name="XrayToolsTurnedOff" xml:space="preserve"><value>オフで送信されないツール {0} 個: {1}</value></data>
+  <data name="SettingsSectionToolList" xml:space="preserve"><value>モデルに送信するツール</value></data>
+  <data name="SettingsSectionToolListDesc" xml:space="preserve"><value>各リクエストが宣言するものとその重さ。オフにしたツールはモデルに提示されません。</value></data>
+  <data name="ToolListNoChat" xml:space="preserve"><value>ツールの一覧を表示するにはチャット ウィンドウを開いてください。</value></data>
+  <data name="ToolGroupNotHere" xml:space="preserve"><value>オフ（現在ここでは利用できません）</value></data>
 </root>

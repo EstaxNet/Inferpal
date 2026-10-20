@@ -27,6 +27,7 @@ internal static class XRayCommandHandler
     /// <param name="questionLayersInHistory">The active-file block is already in the history: its layers are counted once.</param>
     /// <param name="toolsOnDemand">The MCP tools the next turn leaves out until <c>tool_search</c> loads them, by server
     /// (<see cref="Agent.ContextManager.NextTurnToolsOnDemand"/>).</param>
+    /// <param name="turnedOff">The tools turned off (<see cref="Agent.ContextManager.NextTurnTurnedOff"/>).</param>
     public static string Handle(
         IReadOnlyList<PromptSection> sections,
         int  historyTokens,
@@ -34,7 +35,8 @@ internal static class XRayCommandHandler
         Config.InferpalConfig config,
         int  toolTokens = 0,
         bool questionLayersInHistory = false,
-        IReadOnlyList<(string Server, int Tools)>? toolsOnDemand = null)
+        IReadOnlyList<(string Server, int Tools)>? toolsOnDemand = null,
+        IReadOnlyList<string>? turnedOff = null)
     {
         var sized = sections
             .Select(s => (Section: s, Tokens: EstimateTokens(s.Content)))
@@ -68,6 +70,8 @@ internal static class XRayCommandHandler
             sb.AppendLine("- " + Strings.XrayTools($"~{toolTokens:N0}"));
         if (Presentation.XRayPanelPresenter.ToolsOnDemandLine(toolsOnDemand) is { } onDemand)
             sb.AppendLine("- " + onDemand);
+        if (Presentation.XRayPanelPresenter.TurnedOffLine(turnedOff) is { } off)
+            sb.AppendLine("- " + off);
         sb.AppendLine("- " + (Rag.RagAutoContext.IsEnabled(config) ? Strings.XrayRag("on")
                               : config.RagAutoContextEnabled ? Strings.XrayRagNoIndexing
                               : Strings.XrayRag("off")));

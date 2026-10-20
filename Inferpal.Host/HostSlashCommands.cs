@@ -172,10 +172,13 @@ internal sealed partial class HostServer
                         [new SlashEffectDto("stateChange", parts[1], "model")]);
 
                 case SlashCommandId.Tools:
-                    if (parts.Length < 2 || parts[1] is not ("on" or "off"))
-                        return new SlashCommandResult(true, Strings.SlashToolsCurrent(s.ToolsEnabled ? "on" : "off"));
-                    s.ToolsEnabled = parts[1] == "on";
-                    return new SlashCommandResult(true, Strings.SlashToolsChanged(parts[1]));
+                {
+                    var result = ToolsCommandHandler.Handle(parts, s.Tools, s.Config, s.ToolsEnabled);
+                    if (result.SessionTools is { } on) s.ToolsEnabled = on;
+                    if (!result.SaveConfig) return new SlashCommandResult(true, result.Message);
+                    await SaveAndApplyAsync(s, (s.Config.McpEnabled, s.Config.McpServersJson), cts.Token);
+                    return new SlashCommandResult(true, result.Message, [new SlashEffectDto("configSaved")]);
+                }
 
                 case SlashCommandId.Export:
                     return new SlashCommandResult(true, null, [new SlashEffectDto("exportRequest")]);
@@ -341,7 +344,8 @@ internal sealed partial class HostServer
                         s.Config,
                         toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode),
                         questionLayersInHistory: QuestionLayersInHistory(s),
-                        toolsOnDemand: ContextManager.NextTurnToolsOnDemand(s.Tools, s.ToolsEnabled, s.PlanMode)));
+                        toolsOnDemand: ContextManager.NextTurnToolsOnDemand(s.Tools, s.ToolsEnabled, s.PlanMode),
+                        turnedOff: ContextManager.NextTurnTurnedOff(s.Tools, s.ToolsEnabled)));
                 }
 
                 case SlashCommandId.Bench:

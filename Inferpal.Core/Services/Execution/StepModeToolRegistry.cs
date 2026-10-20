@@ -28,6 +28,9 @@ internal sealed class StepModeToolRegistry(IToolRegistry inner, Func<Cancellatio
 
     public IEnumerable<string> CallableNames => inner.CallableNames;
 
+    public string? TurnedOffRefusal(string name) => inner.TurnedOffRefusal(name);
+
+
     public async Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct)
     {
         await _oneAtATime.WaitAsync(ct).ConfigureAwait(false);

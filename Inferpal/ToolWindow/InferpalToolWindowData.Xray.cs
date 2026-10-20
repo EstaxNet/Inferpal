@@ -52,7 +52,38 @@ internal partial class InferpalToolWindowData
             AgentOrchestrator.EstimateConversationTokens(_history), ContextWindowInUse,
             toolTokens: NextTurnToolTokens(),
             questionLayersInHistory: ActiveFileContext.ToSend(BuildActiveFileBlock(), _history) is null,
-            toolsOnDemand: Services.Agent.ContextManager.NextTurnToolsOnDemand(_tools, _toolsEnabled, _planMode));
+            toolsOnDemand: Services.Agent.ContextManager.NextTurnToolsOnDemand(_tools, _toolsEnabled, _planMode),
+            turnedOff: Services.Agent.ContextManager.NextTurnTurnedOff(_tools, _toolsEnabled));
+    }
+
+    /// <summary>The tools as the settings' Tools page lists them, read on the VM context.</summary>
+    private async Task<ToolListModel> CurrentToolListAsync()
+    {
+        ToolListModel? list = null;
+        await RunOnVMContextAsync(() => list = ToolListPresenter.Build(_tools));
+        return list!;
+    }
+
+    /// <summary>The Tools page's button: one tool turned off or back on, refused while a reply is being written — the
+    /// definitions a chat turn sends do not change under it.</summary>
+    /// <remarks>A background task reads the registry live: its next request carries the change, and a call it makes to a
+    /// tool turned off is refused with its cause.</remarks>
+    private async Task<(ToolListModel List, string Message)> SetToolFromSettingsAsync(string key, bool off)
+    {
+        var message = string.Empty;
+        ToolListModel? list = null;
+        await RunOnVMContextAsync(() =>
+        {
+            if (IsLoading || _sendStarting) message = Strings.HostTurnBusy;
+            else
+            {
+                var result = Services.Commands.ToolsCommandHandler.Switch([key], off, _tools, _config);
+                if (result.SaveConfig) _config.Save();
+                message = result.Message;
+            }
+            list = ToolListPresenter.Build(_tools);
+        });
+        return (list!, message);
     }
 
     /// <summary>The counts the settings' Context page shows, read on the VM context.</summary>
@@ -97,7 +128,8 @@ internal partial class InferpalToolWindowData
         XrayTotalText   = Strings.XrayHeader($"~{model.SystemTokens:N0}");   // the system message: not the question's layers
         XrayHistoryText = Strings.XrayHistory($"~{model.HistoryTokens:N0}")
                         + (model.ToolTokens > 0 ? "\n" + Strings.XrayTools($"~{model.ToolTokens:N0}") : "")
-                        + (model.ToolsOnDemand is { } onDemand ? "\n" + onDemand : "");
+                        + (model.ToolsOnDemand is { } onDemand ? "\n" + onDemand : "")
+                        + (model.ToolsTurnedOff is { } turnedOff ? "\n" + turnedOff : "");
         HasXrayWarning  = model.OverheadWarning;
 
         var palette = ThemePalette.For(_isDark, _isHighContrast);

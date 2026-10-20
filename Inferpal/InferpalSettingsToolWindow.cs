@@ -51,7 +51,9 @@ internal class InferpalSettingsToolWindow : VsToolWindow
             ConversationUsage: () => _context.ConversationUsage?.Invoke() ?? Task.FromResult<Services.Presentation.XRayPanelModel?>(null),
             RepoInstructions: async () => _context.RepoInstructions is { } rows ? await rows() : null,
             OpenXray: OpenXrayAsync,
-            OpenFile: OpenFileAsync);
+            OpenFile: OpenFileAsync,
+            ToolList: async () => _context.ToolList is { } list ? await list() : null,
+            SetTool: async (key, off) => _context.SetTool is { } set ? await set(key, off) : null);
         var data = new InferpalSettingsData(_config, _client, Extensibility, _mcp, () => _index.RootDir, live);
         return Task.FromResult<IRemoteUserControl>(new InferpalSettingsContent(data));
     }

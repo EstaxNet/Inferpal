@@ -393,7 +393,7 @@
   <data name="SlashModelNotListed" xml:space="preserve"><value>⚠ 后端未列出 **{0}**，下一条消息可能会失败。`/models` 会列出它提供的模型。</value></data>
   <data name="SlashModelIsEmbedding" xml:space="preserve"><value>⚠ **{0}** 是嵌入模型：它把文本转换为向量，不回答问题。未做任何更改 — `/models` 列出聊天模型。</value></data>
   <data name="SlashModelNotServed" xml:space="preserve"><value>⚠ 后端未提供 **{0}**。未做任何更改 — `/models` 显示它提供的模型。</value></data>
-  <data name="SlashToolsCurrent" xml:space="preserve"><value>用法：`/tools on|off` — 当前：**{0}**</value></data>
+  <data name="SlashToolsCurrent" xml:space="preserve"><value>本对话中的工具：**{0}**（`/tools on|off`）。</value></data>
   <data name="SlashToolsChanged" xml:space="preserve"><value>工具 → **{0}**</value></data>
   <data name="SlashNoActiveDocument" xml:space="preserve"><value>⚠ 没有活动文档，请先在编辑器中打开一个文件。</value></data>
   <data name="TestsGenerated" xml:space="preserve"><value>✅ 已生成测试 → **{0}**（已在编辑器中打开）。</value></data>
@@ -687,7 +687,7 @@
   <data name="SlashHintDoc" xml:space="preserve"><value>生成 XML 文档注释</value></data>
   <data name="SlashHintClear" xml:space="preserve"><value>清除对话</value></data>
   <data name="SlashHintModel" xml:space="preserve"><value>切换模型</value></data>
-  <data name="SlashHintTools" xml:space="preserve"><value>启用或禁用工具调用</value></data>
+  <data name="SlashHintTools" xml:space="preserve"><value>列出工具，关闭或打开它们</value></data>
   <data name="SlashHintExport" xml:space="preserve"><value>将对话导出到文件</value></data>
   <data name="SlashHintRestore" xml:space="preserve"><value>从备份还原文件</value></data>
   <data name="SlashHintHelp" xml:space="preserve"><value>显示所有可用命令</value></data>
@@ -1607,4 +1607,34 @@
   <data name="CheckNoCommonBase" xml:space="preserve"><value>`{0}`：两段历史没有共同的提交，因此变更没有起点。`/check &lt;commit&gt;` 评审单个提交。</value></data>
   <data name="CheckAmbiguousHash" xml:space="preserve"><value>以 `{0}` 开头的对象有 {1} 个：请写出更长的哈希。</value></data>
   <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` 指向多个引用：{1}。请按此处列出的写法写出要评审的那一个。</value></data>
+  <data name="ToolListSent" xml:space="preserve"><value>发送 {0} 个工具，约 {1} 个 token</value></data>
+  <data name="ToolListTurnedOff" xml:space="preserve"><value>已关闭 {0} 个</value></data>
+  <data name="ToolListOnDemand" xml:space="preserve"><value>按需 {0} 个</value></data>
+  <data name="ToolListHowTo" xml:space="preserve"><value>`/tools off &lt;工具&gt;` 在所有对话中关闭某个工具，`/tools on &lt;工具&gt;` 将其重新打开。已关闭的工具绝不会提供给模型；使用它的您自己的命令（`/diff`、`@problems` 等）仍可正常使用。</value></data>
+  <data name="ToolGroupBuiltIn" xml:space="preserve"><value>内置</value></data>
+  <data name="ToolGroupCustom" xml:space="preserve"><value>您的工具</value></data>
+  <data name="ToolGroupServer" xml:space="preserve"><value>MCP 服务器 {0}</value></data>
+  <data name="ToolStateSent" xml:space="preserve"><value>发送</value></data>
+  <data name="ToolStateOnDemand" xml:space="preserve"><value>按需</value></data>
+  <data name="ToolStateOff" xml:space="preserve"><value>已关闭</value></data>
+  <data name="ToolStateOffByEntry" xml:space="preserve"><value>已由其服务器条目关闭</value></data>
+  <data name="ToolStateNotOffered" xml:space="preserve"><value>当前未提供</value></data>
+  <data name="ToolTurnOff" xml:space="preserve"><value>关闭</value></data>
+  <data name="ToolTurnOn" xml:space="preserve"><value>打开</value></data>
+  <data name="ToolListColTool" xml:space="preserve"><value>工具</value></data>
+  <data name="ToolListColTokens" xml:space="preserve"><value>Token</value></data>
+  <data name="ToolListColState" xml:space="preserve"><value>状态</value></data>
+  <data name="SlashToolsTurnedOff" xml:space="preserve"><value>已在所有对话中关闭 {0} 个工具：{1}。</value></data>
+  <data name="SlashToolsTurnedOn" xml:space="preserve"><value>已重新打开 {0} 个工具：{1}。</value></data>
+  <data name="SlashToolsAlreadyOff" xml:space="preserve"><value>已经关闭的工具 {0} 个：{1}。</value></data>
+  <data name="SlashToolsAlreadyOn" xml:space="preserve"><value>未关闭的工具 {0} 个：{1}。</value></data>
+  <data name="SlashToolsUnknown" xml:space="preserve"><value>这里没有名为 `{0}` 的工具 —— `/tools` 会列出它们。</value></data>
+  <data name="SlashToolsAmbiguous" xml:space="preserve"><value>`{0}` 指向多个工具：{1} —— 请写出您要的那个。</value></data>
+  <data name="SlashToolsSearchStaysOn" xml:space="preserve"><value>`tool_search` 无法关闭：模型通过它获取按需工具。请改为关闭该服务器或其中部分工具。</value></data>
+  <data name="SlashToolsOffByEntry" xml:space="preserve"><value>`{0}` 已由 MCP 服务器 {1} 的条目（`disabledTools`）关闭：需在该处重新打开。</value></data>
+  <data name="XrayToolsTurnedOff" xml:space="preserve"><value>已关闭且不发送的工具 {0} 个：{1}</value></data>
+  <data name="SettingsSectionToolList" xml:space="preserve"><value>发送给模型的工具</value></data>
+  <data name="SettingsSectionToolListDesc" xml:space="preserve"><value>每个请求声明的内容及其分量。已关闭的工具绝不会提供给模型。</value></data>
+  <data name="ToolListNoChat" xml:space="preserve"><value>请打开聊天窗口以列出其工具。</value></data>
+  <data name="ToolGroupNotHere" xml:space="preserve"><value>已关闭（当前在此不可用）</value></data>
 </root>

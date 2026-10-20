@@ -393,7 +393,7 @@ Kopia zapasowa: {0}</value></data>
   <data name="SlashModelNotListed" xml:space="preserve"><value>⚠ Backend nie wymienia **{0}** — następna wiadomość może się nie powieść. `/models` pokazuje dostępne modele.</value></data>
   <data name="SlashModelIsEmbedding" xml:space="preserve"><value>⚠ **{0}** to model embeddingów: zamienia tekst na wektory i nie odpowiada na pytania. Nic nie zmieniono — `/models` wyświetla modele czatu.</value></data>
   <data name="SlashModelNotServed" xml:space="preserve"><value>⚠ Backend nie udostępnia **{0}**. Nic nie zmieniono — `/models` pokazuje, co udostępnia.</value></data>
-  <data name="SlashToolsCurrent" xml:space="preserve"><value>Użycie: `/tools on|off`  —  aktualnie: **{0}**</value></data>
+  <data name="SlashToolsCurrent" xml:space="preserve"><value>Narzędzia w tej rozmowie: **{0}** (`/tools on|off`).</value></data>
   <data name="SlashToolsChanged" xml:space="preserve"><value>Narzędzia → **{0}**</value></data>
   <data name="SlashNoActiveDocument" xml:space="preserve"><value>⚠ Brak aktywnego dokumentu. Najpierw otwórz plik w edytorze.</value></data>
   <data name="TestsGenerated" xml:space="preserve"><value>✅ Wygenerowano testy → **{0}** (otwarto w edytorze).</value></data>
@@ -687,7 +687,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="SlashHintDoc" xml:space="preserve"><value>generuj komentarze dokumentacji XML</value></data>
   <data name="SlashHintClear" xml:space="preserve"><value>wyczyść rozmowę</value></data>
   <data name="SlashHintModel" xml:space="preserve"><value>zmień model</value></data>
-  <data name="SlashHintTools" xml:space="preserve"><value>włącz lub wyłącz wywoływanie narzędzi</value></data>
+  <data name="SlashHintTools" xml:space="preserve"><value>wyświetl narzędzia, wyłącz je lub włącz</value></data>
   <data name="SlashHintExport" xml:space="preserve"><value>eksportuj rozmowę do pliku</value></data>
   <data name="SlashHintRestore" xml:space="preserve"><value>przywróć plik z kopii zapasowej</value></data>
   <data name="SlashHintHelp" xml:space="preserve"><value>pokaż wszystkie dostępne polecenia</value></data>
@@ -1607,4 +1607,34 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="CheckNoCommonBase" xml:space="preserve"><value>`{0}`: obie historie nie mają wspólnego commita, więc zmiana nie ma punktu początkowego. `/check &lt;commit&gt;` przegląda jeden commit.</value></data>
   <data name="CheckAmbiguousHash" xml:space="preserve"><value>`{0}` to początek nazwy {1} {1:obiektu|obiektów|obiektów}: wpisz dłuższy fragment hasha.</value></data>
   <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` wskazuje kilka referencji: {1}. Wpisz tę do przejrzenia tak, jak jest tu podana.</value></data>
+  <data name="ToolListSent" xml:space="preserve"><value>Wysyłane: {0} {0:narzędzie|narzędzia|narzędzi}, ~{1} tokenów</value></data>
+  <data name="ToolListTurnedOff" xml:space="preserve"><value>Wyłączone: {0}</value></data>
+  <data name="ToolListOnDemand" xml:space="preserve"><value>Na żądanie: {0}</value></data>
+  <data name="ToolListHowTo" xml:space="preserve"><value>`/tools off &lt;narzędzie&gt;` wyłącza narzędzie we wszystkich rozmowach, `/tools on &lt;narzędzie&gt;` włącza je z powrotem. Wyłączone narzędzie nigdy nie jest oferowane modelowi; Twoje własne polecenia, które go używają (`/diff`, `@problems`…), działają dalej.</value></data>
+  <data name="ToolGroupBuiltIn" xml:space="preserve"><value>Wbudowane</value></data>
+  <data name="ToolGroupCustom" xml:space="preserve"><value>Twoje narzędzia</value></data>
+  <data name="ToolGroupServer" xml:space="preserve"><value>Serwer MCP {0}</value></data>
+  <data name="ToolStateSent" xml:space="preserve"><value>wysyłane</value></data>
+  <data name="ToolStateOnDemand" xml:space="preserve"><value>na żądanie</value></data>
+  <data name="ToolStateOff" xml:space="preserve"><value>wyłączone</value></data>
+  <data name="ToolStateOffByEntry" xml:space="preserve"><value>wyłączone przez wpis swojego serwera</value></data>
+  <data name="ToolStateNotOffered" xml:space="preserve"><value>obecnie nieoferowane</value></data>
+  <data name="ToolTurnOff" xml:space="preserve"><value>Wyłącz</value></data>
+  <data name="ToolTurnOn" xml:space="preserve"><value>Włącz</value></data>
+  <data name="ToolListColTool" xml:space="preserve"><value>Narzędzie</value></data>
+  <data name="ToolListColTokens" xml:space="preserve"><value>Tokeny</value></data>
+  <data name="ToolListColState" xml:space="preserve"><value>Stan</value></data>
+  <data name="SlashToolsTurnedOff" xml:space="preserve"><value>Wyłączone we wszystkich rozmowach — {0} {0:narzędzie|narzędzia|narzędzi}: {1}.</value></data>
+  <data name="SlashToolsTurnedOn" xml:space="preserve"><value>Włączone z powrotem — {0} {0:narzędzie|narzędzia|narzędzi}: {1}.</value></data>
+  <data name="SlashToolsAlreadyOff" xml:space="preserve"><value>Już wyłączone — {0} {0:narzędzie|narzędzia|narzędzi}: {1}.</value></data>
+  <data name="SlashToolsAlreadyOn" xml:space="preserve"><value>Niewyłączone — {0} {0:narzędzie|narzędzia|narzędzi}: {1}.</value></data>
+  <data name="SlashToolsUnknown" xml:space="preserve"><value>Żadne narzędzie nie nazywa się tu `{0}` — `/tools` je wymienia.</value></data>
+  <data name="SlashToolsAmbiguous" xml:space="preserve"><value>`{0}` oznacza kilka narzędzi: {1} — wpisz to, o które chodzi.</value></data>
+  <data name="SlashToolsSearchStaysOn" xml:space="preserve"><value>Nie można wyłączyć `tool_search`: przez nie model sięga po narzędzia na żądanie. Zamiast tego wyłącz serwer albo niektóre jego narzędzia.</value></data>
+  <data name="SlashToolsOffByEntry" xml:space="preserve"><value>`{0}` jest wyłączone przez wpis serwera MCP {1} (`disabledTools`): tam też się je włącza.</value></data>
+  <data name="XrayToolsTurnedOff" xml:space="preserve"><value>Wyłączone, niewysyłane: {0} {0:narzędzie|narzędzia|narzędzi} — {1}</value></data>
+  <data name="SettingsSectionToolList" xml:space="preserve"><value>Narzędzia wysyłane do modelu</value></data>
+  <data name="SettingsSectionToolListDesc" xml:space="preserve"><value>Co deklaruje każde żądanie i ile to waży. Wyłączone narzędzie nigdy nie jest oferowane modelowi.</value></data>
+  <data name="ToolListNoChat" xml:space="preserve"><value>Otwórz okno czatu, aby wyświetlić jego narzędzia.</value></data>
+  <data name="ToolGroupNotHere" xml:space="preserve"><value>Wyłączone, obecnie niedostępne tutaj</value></data>
 </root>

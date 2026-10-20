@@ -39,6 +39,8 @@ internal sealed record McpRejectedServer(string Name, string Reason);
 /// </remarks>
 /// <param name="DeclaresSse">The entry declares the older SSE transport (<c>"type": "sse"</c>): Streamable HTTP is tried,
 /// and a failure says what it declared (<see cref="SseNote"/>).</param>
+/// <param name="DisabledTools">The server's own names of the tools its entry turns off (<c>disabledTools</c>, Roo's
+/// field): never offered to the model, like the ones the user turns off with <c>/tools off</c>.</param>
 internal sealed record McpServerConfig(
     string Name,
     string? Command,
@@ -49,7 +51,8 @@ internal sealed record McpServerConfig(
     McpOAuthConfig? OAuth = null,
     bool Enabled = true,
     string? WorkingDirectory = null,
-    bool DeclaresSse = false)
+    bool DeclaresSse = false,
+    IReadOnlyList<string>? DisabledTools = null)
 {
     /// <summary>True when this entry targets a Streamable HTTP server (has a <c>url</c>) rather than stdio.</summary>
     public bool IsHttp => !string.IsNullOrWhiteSpace(Url);
@@ -116,16 +119,19 @@ internal sealed record McpServerConfig(
 
     /// <summary>
     /// A server rebuilt from the fields the settings editor shows. What the editor does not show — the
-    /// OAuth block, the working directory — is carried over from <paramref name="source"/>.
+    /// OAuth block, the working directory, the declared SSE transport, the tools the entry turns off — is carried over
+    /// from <paramref name="source"/>.
     /// </summary>
     public static McpServerConfig FromEditor(
         McpServerConfig? source, string name, string? command, IReadOnlyList<string> args,
         IReadOnlyDictionary<string, string> env, string? url, IReadOnlyDictionary<string, string>? headers,
         bool enabled) =>
         string.IsNullOrWhiteSpace(url)
-            ? new(name, command, args, env, Enabled: enabled, WorkingDirectory: source?.WorkingDirectory)
+            ? new(name, command, args, env, Enabled: enabled, WorkingDirectory: source?.WorkingDirectory,
+                  DisabledTools: source?.DisabledTools)
             : new(name, null, [], new Dictionary<string, string>(), Url: url, Headers: headers,
-                  OAuth: source?.OAuth, Enabled: enabled);
+                  OAuth: source?.OAuth, Enabled: enabled, DeclaresSse: source?.DeclaresSse == true,
+                  DisabledTools: source?.DisabledTools);
 
     /// <summary>
     /// <see cref="Parse(string?)"/> for the settings editor, which rewrites the whole list from what it
@@ -233,10 +239,17 @@ internal sealed record McpServerConfig(
                 }
                 var sse = string.Equals(declared, "sse", StringComparison.OrdinalIgnoreCase);
 
+                // Roo's tools turned off for this server, by the server's own names.
+                var off = new List<string>();
+                if (def.TryGetProperty("disabledTools", out var dt) && dt.ValueKind == JsonValueKind.Array)
+                    foreach (var item in dt.EnumerateArray())
+                        if (item.ValueKind == JsonValueKind.String && item.GetString()!.Trim() is { Length: > 0 } t && !off.Contains(t))
+                            off.Add(t);
+
                 servers.Add(new McpServerConfig(
                     entry.Name.Trim(), command, args, env,
                     Url: url, Headers: headers.Count > 0 ? headers : null, OAuth: oauth, Enabled: enabled,
-                    WorkingDirectory: cwd, DeclaresSse: sse));
+                    WorkingDirectory: cwd, DeclaresSse: sse, DisabledTools: off.Count > 0 ? off : null));
             }
         }
         catch (JsonException ex)
@@ -321,6 +334,7 @@ internal sealed record McpServerConfig(
                 if (!string.IsNullOrWhiteSpace(s.WorkingDirectory)) def["cwd"] = s.WorkingDirectory;
             }
             if (!s.Enabled) def["disabled"] = true;
+            if (s.DisabledTools is { Count: > 0 } off) def["disabledTools"] = off;
 
             map[name] = def;
         }

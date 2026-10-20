@@ -1295,6 +1295,50 @@
 
             <!-- ── Tools and MCP servers ──────────────────────────────────── -->
             <StackPanel Visibility="{Binding PageToolsVisible, Converter={StaticResource b2v}}">
+                <!-- Tools sent to the model: one row per tool, what it weighs and what the next request does with it; the
+                     button turns it off or back on (disabledTools). The rows come from the chat window. -->
+                <TextBlock Text="{Binding LabelSectionToolList}" Style="{StaticResource SectionTitle}" Margin="0"/>
+                <TextBlock Text="{Binding DescSectionToolList}" Style="{StaticResource Hint}" Margin="0,2,0,8"/>
+                <TextBlock Text="{Binding ToolListNoChatText}" Foreground="{Binding SubtleForeground}" TextWrapping="Wrap" Margin="0,0,0,12"
+                           Visibility="{Binding ToolListNoChat, Converter={StaticResource b2v}}"/>
+                <StackPanel Visibility="{Binding HasToolList, Converter={StaticResource b2v}}" Margin="0,0,0,8">
+                    <TextBlock Text="{Binding ToolListSummary}" Foreground="{Binding TextForeground}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                    <TextBlock Text="{Binding ToolListMessage}" Foreground="{Binding WarningForeground}" TextWrapping="Wrap" Margin="0,0,0,6"
+                               Visibility="{Binding HasToolListMessage, Converter={StaticResource b2v}}"/>
+                    <ItemsControl ItemsSource="{Binding ToolRows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding GroupTitle}" FontWeight="SemiBold" Margin="0,10,0,4"
+                                               Foreground="{Binding DataContext.SubtleForeground, ElementName=root}"
+                                               Visibility="{Binding IsGroupStart, Converter={StaticResource b2v}}"/>
+                                    <Border BorderBrush="{Binding DataContext.McpRowBorder, ElementName=root}" BorderThickness="0,0,0,1" Padding="4,3">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="64"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding Key}" ToolTip="{Binding Key}" FontFamily="Cascadia Mono, Consolas" FontSize="11.5"
+                                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                                                       Foreground="{Binding DataContext.TextForeground, ElementName=root}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Weight}" TextAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0"
+                                                       Foreground="{Binding DataContext.SubtleForeground, ElementName=root}"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding StateLabel}" Foreground="{Binding StateForeground}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                            <Button Grid.Column="3" Content="{Binding ActionLabel}" Command="{Binding ToggleCommand}" Padding="10,2" VerticalAlignment="Center"
+                                                    AutomationProperties.Name="{Binding ActionName}"
+                                                    Visibility="{Binding CanToggle, Converter={StaticResource b2v}}"/>
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="{Binding ToolListHowTo}" Style="{StaticResource Hint}" Margin="0,8,0,0"/>
+                </StackPanel>
+                <Border BorderBrush="{Binding NavLineBrush}" BorderThickness="0,1,0,0" Margin="0,8,0,14"/>
+
                 <!-- MCP servers: title · count · view toggle (List ⇄ JSON) -->
                 <Grid Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>

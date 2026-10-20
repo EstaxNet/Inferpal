@@ -393,7 +393,7 @@
   <data name="SlashModelNotListed" xml:space="preserve"><value>⚠ Бэкенд не перечисляет **{0}** — следующее сообщение может завершиться ошибкой. `/models` показывает доступные модели.</value></data>
   <data name="SlashModelIsEmbedding" xml:space="preserve"><value>⚠ **{0}** — модель эмбеддингов: она превращает текст в векторы и не отвечает на вопросы. Ничего не изменено — `/models` показывает модели чата.</value></data>
   <data name="SlashModelNotServed" xml:space="preserve"><value>⚠ Бэкенд не предоставляет **{0}**. Ничего не изменено — `/models` показывает, что он предоставляет.</value></data>
-  <data name="SlashToolsCurrent" xml:space="preserve"><value>Использование: `/tools on|off`  —  текущее: **{0}**</value></data>
+  <data name="SlashToolsCurrent" xml:space="preserve"><value>Инструменты в этой беседе: **{0}** (`/tools on|off`).</value></data>
   <data name="SlashToolsChanged" xml:space="preserve"><value>Инструменты → **{0}**</value></data>
   <data name="SlashNoActiveDocument" xml:space="preserve"><value>⚠ Нет активного документа. Сначала откройте файл в редакторе.</value></data>
   <data name="TestsGenerated" xml:space="preserve"><value>✅ Тесты созданы → **{0}** (открыто в редакторе).</value></data>
@@ -685,7 +685,7 @@
   <data name="SlashHintDoc" xml:space="preserve"><value>сгенерировать XML-комментарии документации</value></data>
   <data name="SlashHintClear" xml:space="preserve"><value>очистить беседу</value></data>
   <data name="SlashHintModel" xml:space="preserve"><value>сменить модель</value></data>
-  <data name="SlashHintTools" xml:space="preserve"><value>включить или отключить вызов инструментов</value></data>
+  <data name="SlashHintTools" xml:space="preserve"><value>показать инструменты, отключить или включить их</value></data>
   <data name="SlashHintExport" xml:space="preserve"><value>экспортировать беседу в файл</value></data>
   <data name="SlashHintRestore" xml:space="preserve"><value>восстановить файл из резервной копии</value></data>
   <data name="SlashHintHelp" xml:space="preserve"><value>показать все доступные команды</value></data>
@@ -1607,4 +1607,34 @@
   <data name="CheckNoCommonBase" xml:space="preserve"><value>`{0}`: у двух историй нет общего коммита, поэтому у изменения нет начальной точки. `/check &lt;commit&gt;` проверит один коммит.</value></data>
   <data name="CheckAmbiguousHash" xml:space="preserve"><value>С `{0}` начинаются имена нескольких объектов (всего: {1}): укажите хеш длиннее.</value></data>
   <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` указывает на несколько ссылок: {1}. Укажите нужную так, как она записана здесь.</value></data>
+  <data name="ToolListSent" xml:space="preserve"><value>Отправляется: {0} {0:инструмент|инструмента|инструментов}, ~{1} токенов</value></data>
+  <data name="ToolListTurnedOff" xml:space="preserve"><value>Отключено: {0}</value></data>
+  <data name="ToolListOnDemand" xml:space="preserve"><value>По запросу: {0}</value></data>
+  <data name="ToolListHowTo" xml:space="preserve"><value>`/tools off &lt;инструмент&gt;` отключает инструмент во всех беседах, `/tools on &lt;инструмент&gt;` включает его снова. Отключённый инструмент никогда не предлагается модели; ваши собственные команды, которые его используют (`/diff`, `@problems`…), продолжают работать.</value></data>
+  <data name="ToolGroupBuiltIn" xml:space="preserve"><value>Встроенные</value></data>
+  <data name="ToolGroupCustom" xml:space="preserve"><value>Ваши инструменты</value></data>
+  <data name="ToolGroupServer" xml:space="preserve"><value>MCP-сервер {0}</value></data>
+  <data name="ToolStateSent" xml:space="preserve"><value>отправляется</value></data>
+  <data name="ToolStateOnDemand" xml:space="preserve"><value>по запросу</value></data>
+  <data name="ToolStateOff" xml:space="preserve"><value>отключён</value></data>
+  <data name="ToolStateOffByEntry" xml:space="preserve"><value>отключён записью своего сервера</value></data>
+  <data name="ToolStateNotOffered" xml:space="preserve"><value>сейчас не предлагается</value></data>
+  <data name="ToolTurnOff" xml:space="preserve"><value>Отключить</value></data>
+  <data name="ToolTurnOn" xml:space="preserve"><value>Включить</value></data>
+  <data name="ToolListColTool" xml:space="preserve"><value>Инструмент</value></data>
+  <data name="ToolListColTokens" xml:space="preserve"><value>Токены</value></data>
+  <data name="ToolListColState" xml:space="preserve"><value>Состояние</value></data>
+  <data name="SlashToolsTurnedOff" xml:space="preserve"><value>Отключено во всех беседах — {0} {0:инструмент|инструмента|инструментов}: {1}.</value></data>
+  <data name="SlashToolsTurnedOn" xml:space="preserve"><value>Снова включено — {0} {0:инструмент|инструмента|инструментов}: {1}.</value></data>
+  <data name="SlashToolsAlreadyOff" xml:space="preserve"><value>Уже отключено — {0} {0:инструмент|инструмента|инструментов}: {1}.</value></data>
+  <data name="SlashToolsAlreadyOn" xml:space="preserve"><value>Не отключено — {0} {0:инструмент|инструмента|инструментов}: {1}.</value></data>
+  <data name="SlashToolsUnknown" xml:space="preserve"><value>Здесь нет инструмента с именем `{0}` — `/tools` их перечисляет.</value></data>
+  <data name="SlashToolsAmbiguous" xml:space="preserve"><value>`{0}` обозначает несколько инструментов: {1} — напишите нужный.</value></data>
+  <data name="SlashToolsSearchStaysOn" xml:space="preserve"><value>`tool_search` нельзя отключить: через него модель получает инструменты по запросу. Отключите вместо этого сервер или некоторые его инструменты.</value></data>
+  <data name="SlashToolsOffByEntry" xml:space="preserve"><value>`{0}` отключён записью MCP-сервера {1} (`disabledTools`): включается он там же.</value></data>
+  <data name="XrayToolsTurnedOff" xml:space="preserve"><value>Отключено и не отправляется: {0} {0:инструмент|инструмента|инструментов} — {1}</value></data>
+  <data name="SettingsSectionToolList" xml:space="preserve"><value>Инструменты, отправляемые модели</value></data>
+  <data name="SettingsSectionToolListDesc" xml:space="preserve"><value>Что объявляет каждый запрос и сколько это весит. Отключённый инструмент никогда не предлагается модели.</value></data>
+  <data name="ToolListNoChat" xml:space="preserve"><value>Откройте окно чата, чтобы увидеть список его инструментов.</value></data>
+  <data name="ToolGroupNotHere" xml:space="preserve"><value>Отключены, сейчас здесь недоступны</value></data>
 </root>

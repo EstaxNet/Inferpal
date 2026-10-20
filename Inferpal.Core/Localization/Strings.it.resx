@@ -393,7 +393,7 @@ Backup: {0}</value></data>
   <data name="SlashModelNotListed" xml:space="preserve"><value>⚠ Il backend non elenca **{0}**: il prossimo messaggio potrebbe non riuscire. `/models` mostra cosa rende disponibile.</value></data>
   <data name="SlashModelIsEmbedding" xml:space="preserve"><value>⚠ **{0}** è un modello di embedding: trasforma il testo in vettori e non risponde alle domande. Non è cambiato nulla — `/models` elenca i modelli di chat.</value></data>
   <data name="SlashModelNotServed" xml:space="preserve"><value>⚠ Il backend non offre **{0}**. Non è cambiato nulla — `/models` mostra cosa offre.</value></data>
-  <data name="SlashToolsCurrent" xml:space="preserve"><value>Uso: `/tools on|off`  —  attuale: **{0}**</value></data>
+  <data name="SlashToolsCurrent" xml:space="preserve"><value>Strumenti in questa conversazione: **{0}** (`/tools on|off`).</value></data>
   <data name="SlashToolsChanged" xml:space="preserve"><value>Strumenti → **{0}**</value></data>
   <data name="SlashNoActiveDocument" xml:space="preserve"><value>⚠ Nessun documento attivo. Apri prima un file nell'editor.</value></data>
   <data name="TestsGenerated" xml:space="preserve"><value>✅ Test generati → **{0}** (aperto nell'editor).</value></data>
@@ -687,7 +687,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="SlashHintDoc" xml:space="preserve"><value>generare commenti di documentazione XML</value></data>
   <data name="SlashHintClear" xml:space="preserve"><value>cancellare la conversazione</value></data>
   <data name="SlashHintModel" xml:space="preserve"><value>cambiare modello</value></data>
-  <data name="SlashHintTools" xml:space="preserve"><value>abilitare o disabilitare la chiamata di strumenti</value></data>
+  <data name="SlashHintTools" xml:space="preserve"><value>elencare gli strumenti, disattivarli o riattivarli</value></data>
   <data name="SlashHintExport" xml:space="preserve"><value>esportare la conversazione in un file</value></data>
   <data name="SlashHintRestore" xml:space="preserve"><value>ripristinare un file da un backup</value></data>
   <data name="SlashHintHelp" xml:space="preserve"><value>mostrare tutti i comandi disponibili</value></data>
@@ -1607,4 +1607,34 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="CheckNoCommonBase" xml:space="preserve"><value>`{0}`: le due cronologie non hanno alcun commit in comune, quindi la modifica non ha un punto di partenza. `/check &lt;commit&gt;` revisiona un commit.</value></data>
   <data name="CheckAmbiguousHash" xml:space="preserve"><value>`{0}` è l'inizio del nome di {1} {1:oggetto|oggetti}: scrivi più caratteri dell'hash.</value></data>
   <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` indica più riferimenti: {1}. Scrivi quello da revisionare così come è elencato qui.</value></data>
+  <data name="ToolListSent" xml:space="preserve"><value>{0} {0:strumento inviato|strumenti inviati}, ~{1} token</value></data>
+  <data name="ToolListTurnedOff" xml:space="preserve"><value>{0} {0:disattivato|disattivati}</value></data>
+  <data name="ToolListOnDemand" xml:space="preserve"><value>{0} su richiesta</value></data>
+  <data name="ToolListHowTo" xml:space="preserve"><value>`/tools off &lt;strumento&gt;` disattiva uno strumento in tutte le conversazioni, `/tools on &lt;strumento&gt;` lo riattiva. Uno strumento disattivato non viene mai offerto al modello; i vostri comandi che lo usano (`/diff`, `@problems`…) continuano a funzionare.</value></data>
+  <data name="ToolGroupBuiltIn" xml:space="preserve"><value>Integrati</value></data>
+  <data name="ToolGroupCustom" xml:space="preserve"><value>I vostri strumenti</value></data>
+  <data name="ToolGroupServer" xml:space="preserve"><value>Server MCP {0}</value></data>
+  <data name="ToolStateSent" xml:space="preserve"><value>inviato</value></data>
+  <data name="ToolStateOnDemand" xml:space="preserve"><value>su richiesta</value></data>
+  <data name="ToolStateOff" xml:space="preserve"><value>disattivato</value></data>
+  <data name="ToolStateOffByEntry" xml:space="preserve"><value>disattivato dalla voce del suo server</value></data>
+  <data name="ToolStateNotOffered" xml:space="preserve"><value>non offerto al momento</value></data>
+  <data name="ToolTurnOff" xml:space="preserve"><value>Disattiva</value></data>
+  <data name="ToolTurnOn" xml:space="preserve"><value>Riattiva</value></data>
+  <data name="ToolListColTool" xml:space="preserve"><value>Strumento</value></data>
+  <data name="ToolListColTokens" xml:space="preserve"><value>Token</value></data>
+  <data name="ToolListColState" xml:space="preserve"><value>Stato</value></data>
+  <data name="SlashToolsTurnedOff" xml:space="preserve"><value>{0} {0:strumento disattivato|strumenti disattivati} in tutte le conversazioni: {1}.</value></data>
+  <data name="SlashToolsTurnedOn" xml:space="preserve"><value>{0} {0:strumento riattivato|strumenti riattivati}: {1}.</value></data>
+  <data name="SlashToolsAlreadyOff" xml:space="preserve"><value>{0} {0:strumento già disattivato|strumenti già disattivati}: {1}.</value></data>
+  <data name="SlashToolsAlreadyOn" xml:space="preserve"><value>{0} {0:strumento non disattivato|strumenti non disattivati}: {1}.</value></data>
+  <data name="SlashToolsUnknown" xml:space="preserve"><value>Nessuno strumento si chiama `{0}` qui — `/tools` li elenca.</value></data>
+  <data name="SlashToolsAmbiguous" xml:space="preserve"><value>`{0}` indica più strumenti: {1} — scrivete quello che intendete.</value></data>
+  <data name="SlashToolsSearchStaysOn" xml:space="preserve"><value>`tool_search` non si può disattivare: è così che il modello raggiunge gli strumenti su richiesta. Disattivate invece il server, o alcuni dei suoi strumenti.</value></data>
+  <data name="SlashToolsOffByEntry" xml:space="preserve"><value>`{0}` è disattivato dalla voce del server MCP {1} (`disabledTools`): è lì che si riattiva.</value></data>
+  <data name="XrayToolsTurnedOff" xml:space="preserve"><value>{0} {0:strumento disattivato|strumenti disattivati}, non {0:inviato|inviati}: {1}</value></data>
+  <data name="SettingsSectionToolList" xml:space="preserve"><value>Strumenti inviati al modello</value></data>
+  <data name="SettingsSectionToolListDesc" xml:space="preserve"><value>Ciò che ogni richiesta dichiara, e quanto pesa. Uno strumento disattivato non viene mai offerto al modello.</value></data>
+  <data name="ToolListNoChat" xml:space="preserve"><value>Aprite la finestra della chat per elencarne gli strumenti.</value></data>
+  <data name="ToolGroupNotHere" xml:space="preserve"><value>Disattivati, non disponibili qui al momento</value></data>
 </root>

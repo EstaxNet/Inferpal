@@ -903,6 +903,59 @@ table.rules tr.status-unreadable td {
   font-size: 0.92em;
 }
 
+/* The Tools page: one row per tool, grouped by source; a tool turned off reads in the warning colour. */
+.toollist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.toolsummary {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.toolgroup {
+  margin: 10px 0 2px;
+  color: var(--ip-muted);
+  font-size: 0.92em;
+  font-weight: 600;
+}
+
+.toolrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 4px;
+  border-bottom: 1px solid var(--ip-line);
+}
+
+.toolname {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toolweight {
+  flex: none;
+  width: 4.5em;
+  text-align: right;
+  color: var(--ip-muted);
+}
+
+.toolstate {
+  flex: none;
+  white-space: nowrap;
+}
+
+.toolrow.state-off .toolstate,
+.toolrow.state-offByEntry .toolstate { color: var(--vscode-editorWarning-foreground, #e3b341); }
+.toolrow.state-onDemand .toolstate   { color: var(--vscode-textLink-foreground, #3794ff); }
+.toolrow.state-notOffered .toolstate { color: var(--ip-muted); }
+
 .usage {
   display: flex;
   flex-direction: column;

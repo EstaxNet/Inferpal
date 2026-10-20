@@ -24,6 +24,10 @@ internal class ApplyDiffTool : ITool
         _overlay         = overlay;
     }
 
+    /// <summary>Whether <c>rename_symbol</c> is offered to the model now; <c>null</c>: assumed. A refused hand rename points
+    /// to it only then — pointed to a tool turned off, the model's next call is refused too.</summary>
+    internal Func<bool>? RenameOffered { get; init; }
+
     public string Name => "apply_diff";
 
     /// <inheritdoc/>
@@ -84,7 +88,8 @@ internal class ApplyDiffTool : ITool
                 ? Strings.DiffAmbiguous(resolution.Count, path)
                 : Strings.DiffOldNotFound(path)
                   + ApplyDiffMatcher.Closest(fileContent, oldContent)
-                  + (RenameIntent.Of([(oldContent, newContent)]) is { } rename ? RenameIntent.RefusalHint(rename) : string.Empty);
+                  + (RenameOffered?.Invoke() != false && RenameIntent.Of([(oldContent, newContent)]) is { } rename
+                        ? RenameIntent.RefusalHint(rename) : string.Empty);
 
         var modified = resolution.Modified;
         if (FileTarget.EncodingRefusal(path, modified) is { } cannotHold) return cannotHold;
@@ -112,7 +117,7 @@ internal class ApplyDiffTool : ITool
             : string.Empty;
 
         var staleNote = RenameIntent.Of([(oldContent, newContent)]) is { } renamed && !string.IsNullOrEmpty(root)
-            ? RenameIntent.StaleNote(renamed, root, path)
+            ? RenameIntent.StaleNote(renamed, root, path, RenameOffered?.Invoke() != false)
             : string.Empty;
 
         return Strings.DiffOk(path) + snapNote + staleNote + smartFixNote;

@@ -6,7 +6,7 @@ import { fill } from './l10n';
 import { icon, iconButton, setIcon } from './icons';
 import type {
   ApprovalRuleTable, ContextUsage, IndexCard, LoadedModels, ModelSuggestion, ProjectFileRow, RepoInstructionRow, SettingsDocs,
-  SettingsExclusions,
+  SettingsExclusions, SettingsTools,
 } from '../protocol';
 
 export interface WidgetHost {
@@ -42,6 +42,7 @@ export function createWidget(name: string, page: string, host: WidgetHost): Live
     case 'contextUsage':    return contextUsage(host);
     case 'projectFiles':    return projectFiles(host);
     case 'repoInstructions': return repoInstructions(host);
+    case 'toolList':        return toolList(host);
     case 'fimModel':        return modelLine(host, ['inlineCompletionModel', 'defaultModel']);
     case 'editModel':       return modelLine(host, ['inlineEditModel', 'codeActionsModel', 'defaultModel']);
     case 'themeCards':      return themeCards(host);
@@ -438,6 +439,72 @@ function docsSites(page: string, host: WidgetHost): LiveWidget {
       }
       if (sites.some((s) => s.busy) && host.isShown(page)) {
         polling = setTimeout(() => host.post({ type: 'docsSites' }), 2000);
+      }
+      return true;
+    },
+  };
+}
+
+// ── Tools page ───────────────────────────────────────────────────────────────
+
+/** Every tool, what it weighs and what the next request does with it, with a button that turns it off or back on —
+ * the rows `/tools` prints (the Core's ToolListPresenter). */
+function toolList(host: WidgetHost): LiveWidget {
+  const block = el('div', 'toollist');
+  const message = el('p', 'cardnote');
+  message.hidden = true;
+
+  const draw = (tools: SettingsTools): void => {
+    block.textContent = '';
+    block.append(el('p', 'toolsummary', tools.list.summary));
+    for (const group of tools.list.groups) {
+      block.append(el('p', 'toolgroup', group.title));
+      for (const r of group.rows) {
+        const row = el('div', 'toolrow state-' + r.state);
+        row.append(el('code', 'toolname mono', r.key), el('span', 'toolweight', r.weight),
+          el('span', 'toolstate', r.stateLabel));
+        if (r.canToggle) {
+          const toggle = el('button', 'secondary', r.actionLabel);
+          toggle.type = 'button';
+          toggle.setAttribute('aria-label', `${r.actionLabel} ${r.key}`);
+          toggle.addEventListener('click', () => {
+            toggle.disabled = true;
+            host.post({ type: 'toolSet', key: r.key, off: !r.off });
+          });
+          row.append(toggle);
+        }
+        block.append(row);
+      }
+    }
+    block.append(el('p', 'hint', tools.list.howTo), message);
+  };
+
+  let last: SettingsTools | null = null;
+  host.post({ type: 'toolList' });
+  return {
+    el: block,
+    onShown: () => host.post({ type: 'toolList' }),
+    onMessage(msg) {
+      if (msg.type === 'savedElsewhere') {
+        // A command in the chat saved the settings (`/tools off`): the rows read again. Not consumed — others may follow.
+        host.post({ type: 'toolList' });
+        return false;
+      }
+      if (msg.type !== 'toolList') {
+        return false;
+      }
+      // A button the host refused: the list as it was, its buttons back, and why under it.
+      const refused = typeof msg.error === 'string' ? msg.error : null;
+      const tools = refused === null ? msg.tools as SettingsTools : last;
+      if (tools) {
+        last = tools;
+        draw(tools);
+      }
+      // What the last button said (turned off, refused and why) stays under the list until the next one.
+      const said = refused ?? tools?.message;
+      if (said) {
+        message.textContent = said;
+        message.hidden = false;
       }
       return true;
     },

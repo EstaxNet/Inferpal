@@ -394,7 +394,7 @@ Backup: {0}</value></data>
   <data name="SlashModelNotListed" xml:space="preserve"><value>⚠ The backend does not list **{0}** — the next message may fail. `/models` shows what it serves.</value></data>
   <data name="SlashModelIsEmbedding" xml:space="preserve"><value>⚠ **{0}** is an embedding model: it turns text into vectors and answers no question. Nothing changed — `/models` lists the chat models.</value></data>
   <data name="SlashModelNotServed" xml:space="preserve"><value>⚠ The backend does not serve **{0}**. Nothing changed — `/models` shows what it serves.</value></data>
-  <data name="SlashToolsCurrent" xml:space="preserve"><value>Usage: `/tools on|off`  —  current: **{0}**</value></data>
+  <data name="SlashToolsCurrent" xml:space="preserve"><value>Tools in this conversation: **{0}** (`/tools on|off`).</value></data>
   <data name="SlashToolsChanged" xml:space="preserve"><value>Tools → **{0}**</value></data>
   <data name="SlashNoActiveDocument" xml:space="preserve"><value>⚠ No active document. Open a file in the editor first.</value></data>
   <data name="TestsGenerated" xml:space="preserve"><value>✅ Tests generated → **{0}** (opened in the editor).</value></data>
@@ -695,7 +695,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="SlashHintDoc" xml:space="preserve"><value>generate XML documentation comments</value></data>
   <data name="SlashHintClear" xml:space="preserve"><value>clear the conversation</value></data>
   <data name="SlashHintModel" xml:space="preserve"><value>switch model</value></data>
-  <data name="SlashHintTools" xml:space="preserve"><value>enable or disable tool calling</value></data>
+  <data name="SlashHintTools" xml:space="preserve"><value>list the tools, turn them on or off</value></data>
   <data name="SlashHintExport" xml:space="preserve"><value>export conversation to a file</value></data>
   <data name="SlashHintRestore" xml:space="preserve"><value>restore a file from backup</value></data>
   <data name="SlashHintHelp" xml:space="preserve"><value>show all available commands</value></data>
@@ -1611,4 +1611,34 @@ What you save there applies from your next question, in this thread and the othe
   <data name="CheckNoCommonBase" xml:space="preserve"><value>`{0}`: the two histories have no commit in common, so the change has no point to start from. `/check &lt;commit&gt;` reviews one commit.</value></data>
   <data name="CheckAmbiguousHash" xml:space="preserve"><value>`{0}` begins the names of {1} {1:object|objects}: write more of the hash.</value></data>
   <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` names several refs: {1}. Write the one to review as it is listed here.</value></data>
+  <data name="ToolListSent" xml:space="preserve"><value>{0} {0:tool|tools} sent, ~{1} tokens</value></data>
+  <data name="ToolListTurnedOff" xml:space="preserve"><value>{0} turned off</value></data>
+  <data name="ToolListOnDemand" xml:space="preserve"><value>{0} on demand</value></data>
+  <data name="ToolListHowTo" xml:space="preserve"><value>`/tools off &lt;tool&gt;` turns a tool off in every conversation, `/tools on &lt;tool&gt;` turns it back on. A tool turned off is never offered to the model; your own commands that use it (`/diff`, `@problems`…) keep working.</value></data>
+  <data name="ToolGroupBuiltIn" xml:space="preserve"><value>Built-in</value></data>
+  <data name="ToolGroupCustom" xml:space="preserve"><value>Your tools</value></data>
+  <data name="ToolGroupServer" xml:space="preserve"><value>MCP server {0}</value></data>
+  <data name="ToolStateSent" xml:space="preserve"><value>sent</value></data>
+  <data name="ToolStateOnDemand" xml:space="preserve"><value>on demand</value></data>
+  <data name="ToolStateOff" xml:space="preserve"><value>turned off</value></data>
+  <data name="ToolStateOffByEntry" xml:space="preserve"><value>turned off by its server's entry</value></data>
+  <data name="ToolStateNotOffered" xml:space="preserve"><value>not offered now</value></data>
+  <data name="ToolTurnOff" xml:space="preserve"><value>Turn off</value></data>
+  <data name="ToolTurnOn" xml:space="preserve"><value>Turn on</value></data>
+  <data name="ToolListColTool" xml:space="preserve"><value>Tool</value></data>
+  <data name="ToolListColTokens" xml:space="preserve"><value>Tokens</value></data>
+  <data name="ToolListColState" xml:space="preserve"><value>State</value></data>
+  <data name="SlashToolsTurnedOff" xml:space="preserve"><value>{0} {0:tool|tools} turned off in every conversation: {1}.</value></data>
+  <data name="SlashToolsTurnedOn" xml:space="preserve"><value>{0} {0:tool|tools} turned back on: {1}.</value></data>
+  <data name="SlashToolsAlreadyOff" xml:space="preserve"><value>{0} {0:tool|tools} already turned off: {1}.</value></data>
+  <data name="SlashToolsAlreadyOn" xml:space="preserve"><value>{0} {0:tool|tools} not turned off: {1}.</value></data>
+  <data name="SlashToolsUnknown" xml:space="preserve"><value>No tool is named `{0}` here — `/tools` lists them.</value></data>
+  <data name="SlashToolsAmbiguous" xml:space="preserve"><value>`{0}` names several tools: {1} — write the one you mean.</value></data>
+  <data name="SlashToolsSearchStaysOn" xml:space="preserve"><value>`tool_search` cannot be turned off: it is how the model reaches the tools on demand. Turn off the server, or some of its tools, instead.</value></data>
+  <data name="SlashToolsOffByEntry" xml:space="preserve"><value>`{0}` is turned off by the entry of the MCP server {1} (`disabledTools`): that is where it is turned back on.</value></data>
+  <data name="XrayToolsTurnedOff" xml:space="preserve"><value>{0} {0:tool|tools} turned off, not sent: {1}</value></data>
+  <data name="SettingsSectionToolList" xml:space="preserve"><value>Tools sent to the model</value></data>
+  <data name="SettingsSectionToolListDesc" xml:space="preserve"><value>What each request declares, and what it weighs. A tool turned off is never offered to the model.</value></data>
+  <data name="ToolListNoChat" xml:space="preserve"><value>Open the chat window to list its tools.</value></data>
+  <data name="ToolGroupNotHere" xml:space="preserve"><value>Turned off, not available here now</value></data>
 </root>

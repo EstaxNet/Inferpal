@@ -393,7 +393,7 @@ Sauvegarde : {0}</value></data>
   <data name="SlashModelNotListed" xml:space="preserve"><value>⚠ Le backend ne liste pas **{0}** — le prochain message risque d'échouer. `/models` affiche ce qu'il sert.</value></data>
   <data name="SlashModelIsEmbedding" xml:space="preserve"><value>⚠ **{0}** est un modèle d'embedding : il transforme du texte en vecteurs et ne répond à aucune question. Rien n'a changé — `/models` liste les modèles de chat.</value></data>
   <data name="SlashModelNotServed" xml:space="preserve"><value>⚠ Le backend ne sert pas **{0}**. Rien n'a changé — `/models` montre ce qu'il sert.</value></data>
-  <data name="SlashToolsCurrent" xml:space="preserve"><value>Utilisation : `/tools on|off`  —  actuel : **{0}**</value></data>
+  <data name="SlashToolsCurrent" xml:space="preserve"><value>Outils dans cette conversation : **{0}** (`/tools on|off`).</value></data>
   <data name="SlashToolsChanged" xml:space="preserve"><value>Outils → **{0}**</value></data>
   <data name="SlashNoActiveDocument" xml:space="preserve"><value>⚠ Aucun document actif. Ouvrez un fichier dans l'éditeur.</value></data>
   <data name="TestsGenerated" xml:space="preserve"><value>✅ Tests générés → **{0}** (ouvert dans l'éditeur).</value></data>
@@ -691,7 +691,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="SlashHintDoc" xml:space="preserve"><value>générer des commentaires de documentation XML</value></data>
   <data name="SlashHintClear" xml:space="preserve"><value>effacer la conversation</value></data>
   <data name="SlashHintModel" xml:space="preserve"><value>changer de modèle</value></data>
-  <data name="SlashHintTools" xml:space="preserve"><value>activer ou désactiver l'appel d'outils</value></data>
+  <data name="SlashHintTools" xml:space="preserve"><value>lister les outils, les couper ou les remettre</value></data>
   <data name="SlashHintExport" xml:space="preserve"><value>exporter la conversation dans un fichier</value></data>
   <data name="SlashHintRestore" xml:space="preserve"><value>restaurer un fichier depuis une sauvegarde</value></data>
   <data name="SlashHintHelp" xml:space="preserve"><value>afficher toutes les commandes disponibles</value></data>
@@ -1607,4 +1607,34 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="CheckNoCommonBase" xml:space="preserve"><value>`{0}` : les deux historiques n'ont aucun commit en commun, le changement n'a donc pas de point de départ. `/check &lt;commit&gt;` relit un commit.</value></data>
   <data name="CheckAmbiguousHash" xml:space="preserve"><value>`{0}` commence le nom de {1} {1:objet|objets} : écrivez davantage de l'empreinte.</value></data>
   <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` désigne plusieurs références : {1}. Écrivez celle à relire telle qu'elle est listée ici.</value></data>
+  <data name="ToolListSent" xml:space="preserve"><value>{0} {0:outil envoyé|outils envoyés}, ~{1} jetons</value></data>
+  <data name="ToolListTurnedOff" xml:space="preserve"><value>{0} {0:coupé|coupés}</value></data>
+  <data name="ToolListOnDemand" xml:space="preserve"><value>{0} à la demande</value></data>
+  <data name="ToolListHowTo" xml:space="preserve"><value>`/tools off &lt;outil&gt;` coupe un outil dans toutes les conversations, `/tools on &lt;outil&gt;` le remet. Un outil coupé n'est jamais proposé au modèle ; vos propres commandes qui s'en servent (`/diff`, `@problems`…) continuent de marcher.</value></data>
+  <data name="ToolGroupBuiltIn" xml:space="preserve"><value>Intégrés</value></data>
+  <data name="ToolGroupCustom" xml:space="preserve"><value>Vos outils</value></data>
+  <data name="ToolGroupServer" xml:space="preserve"><value>Serveur MCP {0}</value></data>
+  <data name="ToolStateSent" xml:space="preserve"><value>envoyé</value></data>
+  <data name="ToolStateOnDemand" xml:space="preserve"><value>à la demande</value></data>
+  <data name="ToolStateOff" xml:space="preserve"><value>coupé</value></data>
+  <data name="ToolStateOffByEntry" xml:space="preserve"><value>coupé par l'entrée de son serveur</value></data>
+  <data name="ToolStateNotOffered" xml:space="preserve"><value>non proposé pour l'instant</value></data>
+  <data name="ToolTurnOff" xml:space="preserve"><value>Couper</value></data>
+  <data name="ToolTurnOn" xml:space="preserve"><value>Remettre</value></data>
+  <data name="ToolListColTool" xml:space="preserve"><value>Outil</value></data>
+  <data name="ToolListColTokens" xml:space="preserve"><value>Jetons</value></data>
+  <data name="ToolListColState" xml:space="preserve"><value>État</value></data>
+  <data name="SlashToolsTurnedOff" xml:space="preserve"><value>{0} {0:outil coupé|outils coupés} dans toutes les conversations : {1}.</value></data>
+  <data name="SlashToolsTurnedOn" xml:space="preserve"><value>{0} {0:outil remis|outils remis} : {1}.</value></data>
+  <data name="SlashToolsAlreadyOff" xml:space="preserve"><value>{0} {0:outil déjà coupé|outils déjà coupés} : {1}.</value></data>
+  <data name="SlashToolsAlreadyOn" xml:space="preserve"><value>{0} {0:outil non coupé|outils non coupés} : {1}.</value></data>
+  <data name="SlashToolsUnknown" xml:space="preserve"><value>Aucun outil ne s'appelle `{0}` ici — `/tools` les liste.</value></data>
+  <data name="SlashToolsAmbiguous" xml:space="preserve"><value>`{0}` désigne plusieurs outils : {1} — écrivez celui que vous voulez.</value></data>
+  <data name="SlashToolsSearchStaysOn" xml:space="preserve"><value>`tool_search` ne se coupe pas : c'est par lui que le modèle atteint les outils à la demande. Coupez plutôt le serveur, ou certains de ses outils.</value></data>
+  <data name="SlashToolsOffByEntry" xml:space="preserve"><value>`{0}` est coupé par l'entrée du serveur MCP {1} (`disabledTools`) : c'est là qu'il se remet.</value></data>
+  <data name="XrayToolsTurnedOff" xml:space="preserve"><value>{0} {0:outil coupé|outils coupés}, non {0:envoyé|envoyés} : {1}</value></data>
+  <data name="SettingsSectionToolList" xml:space="preserve"><value>Outils envoyés au modèle</value></data>
+  <data name="SettingsSectionToolListDesc" xml:space="preserve"><value>Ce que chaque requête déclare, et ce que cela pèse. Un outil coupé n'est jamais proposé au modèle.</value></data>
+  <data name="ToolListNoChat" xml:space="preserve"><value>Ouvrez la fenêtre de chat pour lister ses outils.</value></data>
+  <data name="ToolGroupNotHere" xml:space="preserve"><value>Coupés, indisponibles ici pour l'instant</value></data>
 </root>

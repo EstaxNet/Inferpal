@@ -385,6 +385,8 @@ internal static class SettingsSchema
 
         new("tools", "SettingsPageTools", "SettingsPageToolsDesc",
         [
+            // What each request declares, tool by tool, and the switch that turns one off (disabledTools).
+            new("SettingsSectionToolList", [], Description: "SettingsSectionToolListDesc", Widget: "toolList"),
             new("SectionMcp",
             [
                 new("mcpEnabled",     SettingKind.Bool,     "LabelMcpEnabled", "HintMcpEnabled"),
