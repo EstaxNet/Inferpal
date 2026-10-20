@@ -72,6 +72,10 @@ internal abstract class ApprovalServiceBase : IApprovalService
     /// </summary>
     internal Action<string>? Notice { get; set; }
 
+    /// <summary>Where a sentence goes when what an answer asked for could NOT be done; <see cref="Notice"/> when null.
+    /// Apart, so that a front-end that grades what it shows (an ACP client's notices) never hears a failure as news.</summary>
+    internal Action<string>? Warning { get; set; }
+
     /// <summary>Where the answers to cards that offered a rule are counted; tests give their own.</summary>
     internal ApprovalHistory History { get; set; } = ApprovalHistory.Shared;
 
@@ -194,7 +198,8 @@ internal abstract class ApprovalServiceBase : IApprovalService
     private void SaveRule(ApprovalRuleProposal.Proposal rule)
     {
         var failure = ApprovalRuleWriter.Add(_config, rule);
-        Notice?.Invoke(failure is null ? Strings.ApprovalRuleSaved(rule.Describe) : Strings.ApprovalRuleNotSaved(failure));
+        if (failure is null) Notice?.Invoke(Strings.ApprovalRuleSaved(rule.Describe));
+        else (Warning ?? Notice)?.Invoke(Strings.ApprovalRuleNotSaved(failure));
     }
 
     /// <summary>Whether the user chose "Always" for <paramref name="toolName"/> — in THIS workspace.</summary>

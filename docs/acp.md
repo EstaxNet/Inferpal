@@ -244,6 +244,12 @@ With a local Ollama already running, there is nothing to set up: Inferpal finds 
   rules, deny lists and session grants as in Visual Studio and VS Code. A file you are editing with unsaved changes is
   never written over: Inferpal asks your editor for its buffer, and refuses.
 - **The tool calls on screen**: what runs, on which file, and its result; the agent's plan when it makes one.
+- **Notices and compactions, where your client shows them** (ACP 1.11, Zed 1.25 and later): what Inferpal says beside
+  the answer — the model it picked because the configured one is not installed, what this editor does not offer, a
+  rule written to your settings, a documentation crawl's verdict — arrives as a session notice, out of the transcript;
+  a conversation made to fit before a question arrives as a compaction, with the summary the model now reads. A client
+  that does not declare them gets the text and the `context_compact` step as before. The end of a cut answer and a
+  `/task` report always stay in the transcript.
 - **Slash commands** — the client lists them (`/help` describes them all). Your repository's instructions, commands,
   skills and MCP servers work as in the other editors — a repository MCP server asks for your agreement at the first
   prompt of a new thread — except a repository MCP server that asks for a value when it starts: an ACP client gives Inferpal no box to ask it in, so that server is not started — the support bundle

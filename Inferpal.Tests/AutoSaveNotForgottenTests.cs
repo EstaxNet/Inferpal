@@ -63,7 +63,7 @@ public sealed class AutoSaveNotForgottenTests : IDisposable
 
         var host = ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal.Host", "HostServer.cs"));
         Assert.Contains("s.Store.ForgetAutoSaveOrSayAsync(s.RootDir, CancellationToken.None) is { } notice", host);
-        Assert.Contains("Notify(\"host/notice\", new { text = notice });", host);
+        Assert.Contains("Notify(\"host/notice\", new { text = notice, severity = \"warning\" });", host);
         Assert.Contains("conn.onNotification('host/notice'", WebviewRebuildTests.TsCode("hostClient.ts"));
 
         var vm = ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal", "ToolWindow", "InferpalToolWindowData.Connection.cs"));

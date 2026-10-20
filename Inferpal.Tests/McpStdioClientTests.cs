@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Text.Json;
 using Inferpal.Services.Mcp;
 using Xunit;
 
@@ -53,6 +54,74 @@ public class McpStdioClientTests
             await client.DisposeAsync();
         }
         finally { try { File.Delete(script); } catch { } }
+    }
+
+    /// <summary>
+    /// A server of the earlier revisions asks for its roots with a request of its own (<c>roots/list</c>), allowed by the
+    /// <c>capabilities.roots</c> the handshake declared: it is answered with the workspace folder — and without a folder,
+    /// the capability is not declared and the request gets "method not found", as before.
+    /// </summary>
+    [Fact]
+    public async Task AnEarlierServer_AskingForItsRoots_IsGivenTheWorkspaceFolder_WhenOneIsDeclared()
+    {
+        if (!await PythonForTests.IsInstalledAsync()) return;   // UNDECIDED without Python on the machine — never read as a pass
+        var script = Path.Combine(Path.GetTempPath(), $"inferpal-mcp-roots-{Guid.NewGuid():N}.py");
+        var folder = Directory.CreateTempSubdirectory("inferpal-mcp-roots").FullName;
+        File.WriteAllText(script, """
+            import json, sys
+            caps = None
+            def send(o): print(json.dumps(o), flush=True)
+            def read():
+                return json.loads(sys.stdin.readline())
+            while True:
+                line = sys.stdin.readline()
+                if not line: break
+                msg = json.loads(line)
+                method, mid = msg.get("method"), msg.get("id")
+                if method == "initialize":
+                    caps = msg["params"].get("capabilities")
+                    send({"jsonrpc": "2.0", "id": mid, "result": {"protocolVersion": "2024-11-05",
+                          "capabilities": {"tools": {}}, "serverInfo": {"name": "roots", "version": "1"}}})
+                elif method == "tools/list":
+                    send({"jsonrpc": "2.0", "id": mid, "result": {"tools": [{"name": "where", "inputSchema": {"type": "object"}}]}})
+                elif method == "tools/call":
+                    send({"jsonrpc": "2.0", "id": "srv-1", "method": "roots/list"})
+                    answer = read()
+                    while answer.get("id") != "srv-1": answer = read()
+                    send({"jsonrpc": "2.0", "id": mid, "result": {"content": [{"type": "text",
+                          "text": json.dumps({"caps": caps, "answer": answer.get("result", answer.get("error"))})}]}})
+                elif mid is not None:
+                    send({"jsonrpc": "2.0", "id": mid, "error": {"code": -32601, "message": "Method not found"}})
+            """);
+        try
+        {
+            async Task<JsonElement> AskAsync(string? root)
+            {
+                var client = new McpStdioClient(new("roots", OperatingSystem.IsWindows() ? "python" : "python3", [script],
+                                                    new Dictionary<string, string>())) { WorkspaceRoot = () => root };
+                try
+                {
+                    Assert.True(await client.StartAsync(CancellationToken.None), client.LastError);
+                    var said = await client.CallToolAsync("where", JsonDocument.Parse("{}").RootElement, CancellationToken.None);
+                    return JsonDocument.Parse(said).RootElement.Clone();
+                }
+                finally { await client.DisposeAsync(); }
+            }
+
+            var given = await AskAsync(folder);
+            Assert.Equal("{}", given.GetProperty("caps").GetProperty("roots").GetRawText());
+            var root = given.GetProperty("answer").GetProperty("roots")[0];
+            Assert.Equal(new Uri(folder + Path.DirectorySeparatorChar).AbsoluteUri.TrimEnd('/'), root.GetProperty("uri").GetString());
+
+            var none = await AskAsync(null);
+            Assert.False(none.GetProperty("caps").TryGetProperty("roots", out _));
+            Assert.Equal(-32601, none.GetProperty("answer").GetProperty("code").GetInt32());
+        }
+        finally
+        {
+            try { File.Delete(script); } catch { }
+            try { Directory.Delete(folder, recursive: true); } catch { }
+        }
     }
 
     [Fact]

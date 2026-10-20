@@ -182,10 +182,19 @@ The MCP servers a repository declares for other tools start beside yours — onc
 > reference to another document is left as written and never fetched.
 
 > [!NOTE]
-> **Inferpal answers no request from the server.** It declares no elicitation, sampling or roots, so a 2026-07-28
-> server may not ask for one; a tool that still does is reported to the model as *needing input Inferpal does not
-> provide*, never as an empty result. A tool whose `x-mcp-header` annotation breaks the specification's rules is left
-> out of the list, as the specification requires, and `/diagnostics` names it.
+> **A local server that asks for its roots gets the workspace folder.** A stdio server of the earlier revisions (the
+> handshake Inferpal speaks with most servers today) is told Inferpal has `roots`, and `roots/list` answers the folder
+> Inferpal works in (`file://…`, its name). Without an open folder nothing is declared, never an empty list. Not given:
+> a remote server — it would be handed a path of your machine — and a server of the 2026-07-28 revision, which
+> deprecates roots. ⚠ The reference `filesystem` server **replaces** the folders it was started with by the roots it is
+> given, and in Inferpal it is mostly started for folders *outside* the workspace: a server whose command line already
+> names a folder of its own keeps it and is given no roots. `"roots": true` in its entry gives it the workspace anyway,
+> `"roots": false` keeps the workspace from any server.
+>
+> **Elicitation and sampling are not answered yet.** Inferpal declares neither, so a 2026-07-28 server may not ask for
+> one; a tool that still does is reported to the model as *needing input Inferpal does not provide*, never as an empty
+> result. A tool whose `x-mcp-header` annotation breaks the specification's rules is left out of the list, as the
+> specification requires, and `/diagnostics` names it.
 
 > [!NOTE]
 > HTTP auth supports **static headers** (bearer token / custom headers, with `${ENV_VAR}` expansion)

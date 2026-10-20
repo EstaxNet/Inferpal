@@ -160,7 +160,7 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
         try
         {
             return McpModern.Classify(
-                await SendRequestAsync("server/discover", McpModern.WithMeta(null), ct, allowReinit: false).ConfigureAwait(false));
+                await SendRequestAsync("server/discover", Meta(null), ct, allowReinit: false).ConfigureAwait(false));
         }
         catch (OperationCanceledException) { throw; }
         catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden) { throw; }
@@ -559,7 +559,7 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
             ["jsonrpc"] = "2.0",
             ["id"]      = Interlocked.Increment(ref _nextId),
             ["method"]  = "subscriptions/listen",
-            ["params"]  = McpModern.WithMeta(new JsonObject { ["notifications"] = new JsonObject { ["toolsListChanged"] = true } }),
+            ["params"]  = Meta(new JsonObject { ["notifications"] = new JsonObject { ["toolsListChanged"] = true } }),
         };
         return PostAsync(payload, ct);
     }

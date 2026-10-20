@@ -41,6 +41,8 @@ internal sealed record McpRejectedServer(string Name, string Reason);
 /// and a failure says what it declared (<see cref="SseNote"/>).</param>
 /// <param name="DisabledTools">The server's own names of the tools its entry turns off (<c>disabledTools</c>, Roo's
 /// field): never offered to the model, like the ones the user turns off with <c>/tools off</c>.</param>
+/// <param name="Roots">The entry's <c>"roots"</c>: whether the workspace folder is given to the server when it asks for its
+/// roots; <c>null</c> = decided by <see cref="GivesRoots"/>.</param>
 internal sealed record McpServerConfig(
     string Name,
     string? Command,
@@ -52,10 +54,45 @@ internal sealed record McpServerConfig(
     bool Enabled = true,
     string? WorkingDirectory = null,
     bool DeclaresSse = false,
-    IReadOnlyList<string>? DisabledTools = null)
+    IReadOnlyList<string>? DisabledTools = null,
+    bool? Roots = null)
 {
     /// <summary>True when this entry targets a Streamable HTTP server (has a <c>url</c>) rather than stdio.</summary>
     public bool IsHttp => !string.IsNullOrWhiteSpace(Url);
+
+    /// <summary>
+    /// Whether the workspace folder is given to this server when it asks for its roots: as its entry says, else unless its
+    /// command line already names a folder of its own.
+    /// </summary>
+    /// <remarks>⚠ The reference <c>filesystem</c> server REPLACES the folders it was started with by the roots a client
+    /// gives — and in Inferpal it is mostly started for folders OUTSIDE the workspace, which the built-in tools already
+    /// serve. A server handed a folder in its arguments keeps it; <c>"roots": true</c> gives the workspace anyway.</remarks>
+    internal bool GivesRoots(string? workspaceRoot) =>
+        Roots ?? !Args.Any(a => NamesAFolder(a, ServerFolder(workspaceRoot)));
+
+    /// <summary>The folder a relative argument is read from: the entry's <c>cwd</c>, itself against the workspace root;
+    /// never the process's own folder.</summary>
+    private string? ServerFolder(string? workspaceRoot)
+    {
+        var root = workspaceRoot is { Length: > 0 } r && Path.IsPathRooted(r) ? r : null;
+        if (string.IsNullOrWhiteSpace(WorkingDirectory)) return root;
+        if (Path.IsPathRooted(WorkingDirectory)) return WorkingDirectory;
+        return root is null ? null : Path.Combine(root, WorkingDirectory);
+    }
+
+    /// <summary>The argument names a folder: an existing one, or a network share — never asked, a share that does not answer
+    /// would hold the refresh, and a folder of the server's own is the safe reading.</summary>
+    private static bool NamesAFolder(string arg, string? from)
+    {
+        if (arg.Length == 0 || arg.StartsWith('-')) return false;
+        if (arg.StartsWith(@"\\", StringComparison.Ordinal) || arg.StartsWith("//", StringComparison.Ordinal)) return true;
+        try
+        {
+            var path = Path.IsPathRooted(arg) ? arg : from is null ? null : Path.Combine(from, arg);
+            return path is not null && Directory.Exists(path);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or IOException) { return false; }
+    }
 
     /// <summary>
     /// What a server's start failure adds when the entry declares the older SSE transport (<c>"type": "sse"</c>).
@@ -119,7 +156,7 @@ internal sealed record McpServerConfig(
 
     /// <summary>
     /// A server rebuilt from the fields the settings editor shows. What the editor does not show — the
-    /// OAuth block, the working directory, the declared SSE transport, the tools the entry turns off — is carried over
+    /// OAuth block, the working directory, the declared SSE transport, the tools the entry turns off, its roots — is carried over
     /// from <paramref name="source"/>.
     /// </summary>
     public static McpServerConfig FromEditor(
@@ -128,10 +165,10 @@ internal sealed record McpServerConfig(
         bool enabled) =>
         string.IsNullOrWhiteSpace(url)
             ? new(name, command, args, env, Enabled: enabled, WorkingDirectory: source?.WorkingDirectory,
-                  DisabledTools: source?.DisabledTools)
+                  DisabledTools: source?.DisabledTools, Roots: source?.Roots)
             : new(name, null, [], new Dictionary<string, string>(), Url: url, Headers: headers,
                   OAuth: source?.OAuth, Enabled: enabled, DeclaresSse: source?.DeclaresSse == true,
-                  DisabledTools: source?.DisabledTools);
+                  DisabledTools: source?.DisabledTools, Roots: source?.Roots);
 
     /// <summary>
     /// <see cref="Parse(string?)"/> for the settings editor, which rewrites the whole list from what it
@@ -246,10 +283,13 @@ internal sealed record McpServerConfig(
                         if (item.ValueKind == JsonValueKind.String && item.GetString()!.Trim() is { Length: > 0 } t && !off.Contains(t))
                             off.Add(t);
 
+                // Whether the workspace folder is given to a server that asks for its roots: true, false, or decided (GivesRoots).
+                bool? roots = def.TryGetProperty("roots", out var r) && r.ValueKind is JsonValueKind.True or JsonValueKind.False ? r.GetBoolean() : null;
+
                 servers.Add(new McpServerConfig(
                     entry.Name.Trim(), command, args, env,
                     Url: url, Headers: headers.Count > 0 ? headers : null, OAuth: oauth, Enabled: enabled,
-                    WorkingDirectory: cwd, DeclaresSse: sse, DisabledTools: off.Count > 0 ? off : null));
+                    WorkingDirectory: cwd, DeclaresSse: sse, DisabledTools: off.Count > 0 ? off : null, Roots: roots));
             }
         }
         catch (JsonException ex)
@@ -335,6 +375,7 @@ internal sealed record McpServerConfig(
             }
             if (!s.Enabled) def["disabled"] = true;
             if (s.DisabledTools is { Count: > 0 } off) def["disabledTools"] = off;
+            if (s.Roots is { } given) def["roots"] = given;
 
             map[name] = def;
         }

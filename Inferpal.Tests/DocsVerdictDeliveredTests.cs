@@ -63,7 +63,7 @@ public sealed class DocsVerdictDeliveredTests : IDisposable
     public void TheHost_ForwardsTheVerdict_AsALastingNotice()
     {
         var host = ConventionCoverageTests.CodeOnly(Path.Combine(ConventionCoverageTests.RepoRoot(), "Inferpal.Host", "HostServer.cs"));
-        Assert.Contains("docs.PassFinished += verdict => Notify(\"host/notice\", new { text = verdict });", host, StringComparison.Ordinal);
+        Assert.Contains("docs.PassFinished += verdict => Notify(\"host/notice\", new { text = verdict, result = true });", host, StringComparison.Ordinal);
         // WITNESS: a host notice is drawn out of a turn in VS Code.
         Assert.Contains("onNotice: (text) => this.sayOutOfTurn(text),", WebviewRebuildTests.TsCode("chatViewProvider.ts"), StringComparison.Ordinal);
     }

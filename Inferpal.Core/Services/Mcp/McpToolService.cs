@@ -152,8 +152,17 @@ internal sealed class McpToolService : IAsyncDisposable
 
     /// <summary>Picks the transport from the server entry: a <c>url</c> ⇒ Streamable HTTP (with an OAuth
     /// token provider bound to the encrypted store), otherwise stdio.</summary>
-    private IMcpClient DefaultClientFactory(McpServerConfig cfg) =>
-        cfg.IsHttp ? new McpHttpClient(cfg, tokenProvider: TokenProviderFor(cfg)) : new McpStdioClient(cfg);
+    private IMcpClient DefaultClientFactory(McpServerConfig cfg)
+    {
+        IMcpClient client = cfg.IsHttp ? new McpHttpClient(cfg, tokenProvider: TokenProviderFor(cfg)) : new McpStdioClient(cfg);
+        // The folder a server asking for its roots is given — read at each request: the workspace can move under it.
+        if (GivesRootsTo(cfg, WorkspaceRoot?.Invoke()) && client is McpClientBase rooted) rooted.WorkspaceRoot = () => WorkspaceRoot?.Invoke();
+        return client;
+    }
+
+    /// <summary>The workspace folder is offered to this server as its roots: a stdio server only — a remote one would be handed
+    /// a path of this machine — and as its entry decides (<see cref="McpServerConfig.GivesRoots"/>).</summary>
+    internal static bool GivesRootsTo(McpServerConfig cfg, string? workspaceRoot) => !cfg.IsHttp && cfg.GivesRoots(workspaceRoot);
 
     private McpStoredTokenProvider TokenProviderFor(McpServerConfig cfg) =>
         new(cfg.Name, McpOAuthMetadata.CanonicalResource(new Uri(cfg.Url!)), _tokenStore, new McpOAuthFlow(new RefreshOnlyReceiver()));

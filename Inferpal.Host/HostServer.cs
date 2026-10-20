@@ -110,7 +110,8 @@ internal sealed partial class HostServer : IDisposable
         var editor   = new RpcEditorSurface(rpc, overlay, hasEditor: p.EditorSurface);
         var approval = new RpcApprovalService(config, () => p.RootDir, rpc, structured: p.ToolEvents);
         // A rule an answer wrote to the settings (or could not) is said in the conversation the card was in.
-        approval.Notice = text => Notify("host/notice", new { text });
+        approval.Notice  = text => Notify("host/notice", new { text, severity = "info" });
+        approval.Warning = text => Notify("host/notice", new { text, severity = "warning" });
         var lsp      = new LspSemanticProvider();
         var index    = new ProjectIndexService(client, config, lsp);
         // Off Windows the default DPAPI protection is unavailable, so the token store fails loud
@@ -140,7 +141,8 @@ internal sealed partial class HostServer : IDisposable
         var docs     = new DocsIndexService(client, config);
         // A crawl's verdict reaches the conversation as a lasting notice: as progress (chat/step) it was shown only during
         // a turn, and /docs add, the settings page, /import answer before the crawl ends.
-        docs.PassFinished += verdict => Notify("host/notice", new { text = verdict });
+        // A result, not news: the only place /docs add says what it indexed — never a notice a client may let be dismissed.
+        docs.PassFinished += verdict => Notify("host/notice", new { text = verdict, result = true });
         // ⚠ The documentation index only ever HYDRATES: nothing re-crawls it at start, so a host that does not load it
         // serves none of the sites indexed in an earlier session — search_docs not even offered, /docs listing them with
         // no page. Visual Studio loads it when its window opens. Never awaited: docs.db can be large.
@@ -176,6 +178,7 @@ internal sealed partial class HostServer : IDisposable
             EditorName   = string.IsNullOrWhiteSpace(p.Editor) ? EditorName : p.Editor.Trim(),
             ToolEvents   = p.ToolEvents,
             ReasoningChunks = p.ReasoningChunks,
+            CompactionEvents = p.CompactionEvents,
             IndexesTheFolder = p.IndexesTheFolder,
             KeepsAutoSave = p.AutoSaveSlot,
             Approval     = approval,
@@ -447,8 +450,15 @@ internal sealed partial class HostServer : IDisposable
                 // lost turns, with no summary" looked exactly like a successful compaction. The VS
                 // window has always told them apart; the rule now lives in ContextDecision, and
                 // HasErrors opens the bubble on the webview side.
-                Notify("chat/tool", new ToolNotice(
-                    "context_compact", string.Empty, ctxDecision.Notice, ctxDecision.IsDegraded));
+                if (s.CompactionEvents)
+                    Notify("chat/compaction", new CompactionNote(
+                        Failed:   ctxDecision.Outcome == Services.Agent.ContextOutcome.CompactionFellBack,
+                        Summary:  ctxDecision.ShownSummary,
+                        Notice:   ctxDecision.Notice,
+                        Degraded: ctxDecision.IsDegraded));
+                else
+                    Notify("chat/tool", new ToolNotice(
+                        "context_compact", string.Empty, ctxDecision.Notice, ctxDecision.IsDegraded));
             }
 
             if (agentMode)
@@ -1940,7 +1950,7 @@ internal sealed partial class HostServer : IDisposable
         catch (Exception ex)
         {
             Diagnostics.Swallow("HostServer.ArchiveTheSlot", ex);
-            Notify("host/notice", new { text = Strings.SessionArchiveFailedSlotKept(Diagnostics.RootMessage(ex)) });
+            Notify("host/notice", new { text = Strings.SessionArchiveFailedSlotKept(Diagnostics.RootMessage(ex)), severity = "warning" });
             return false;
         }
     }
@@ -1975,7 +1985,7 @@ internal sealed partial class HostServer : IDisposable
         try
         {
             if (await docs.LoadAsync(CancellationToken.None) is { } notice)
-                Notify("host/notice", new { text = notice });
+                Notify("host/notice", new { text = notice, severity = "warning" });
         }
         catch (Exception ex) { Diagnostics.Swallow("HostServer.LoadDocs", ex); }
     }
@@ -1997,7 +2007,7 @@ internal sealed partial class HostServer : IDisposable
         try
         {
             if (await s.Store.ForgetAutoSaveOrSayAsync(s.RootDir, CancellationToken.None) is { } notice)
-                Notify("host/notice", new { text = notice });
+                Notify("host/notice", new { text = notice, severity = "warning" });
         }
         catch (Exception ex) { Diagnostics.Swallow("HostServer.ForgetAutoSave", ex); }
     }

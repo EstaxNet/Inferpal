@@ -356,6 +356,95 @@ public class Mcp2026Tests
         Assert.Single(server.Requests, r => r.Method == "tools/call");   // not retried: the input cannot be given
     }
 
+    // ── roots ─────────────────────────────────────────────────────────────────────
+
+    private static string RootFolder() => Directory.CreateTempSubdirectory("inferpal-mcp-roots").FullName;
+
+    /// <summary>
+    /// ⚠ The 2026-07-28 revision deprecates roots ("new implementations SHOULD NOT adopt it"), and over HTTP a remote server
+    /// would be handed a path of this machine: in this era none are declared, a folder to give or not, and a server that asks
+    /// anyway is named to the model.
+    /// </summary>
+    [Fact]
+    public async Task TheModernEra_DeclaresNoRoots_AndARootsRequestIsNamed_EvenWithAFolderToGive()
+    {
+        var folder = RootFolder();
+        try
+        {
+            var server = new ModernServer
+            {
+                Call = (_, _) => """{"resultType":"input_required","inputRequests":{"r":{"method":"roots/list"}},"requestState":"s"}""",
+            };
+            await using var client = Client(server);
+            client.WorkspaceRoot = () => folder;
+            Assert.True(await client.StartAsync(CancellationToken.None), client.LastError);
+
+            var said = await client.CallToolAsync("echo", Args("{}"), CancellationToken.None);
+            Assert.Contains("roots/list", said);
+            Assert.Contains("did not complete", said);
+            Assert.Single(server.Requests, r => r.Method == "tools/call");
+            var posted = server.Requests.Where(r => r.Body is not null).ToList();
+            Assert.NotEmpty(posted);
+            Assert.All(posted, r => Assert.Equal("{}", r.Body!["params"]!["_meta"]!["io.modelcontextprotocol/clientCapabilities"]!.ToJsonString()));
+        }
+        finally { Directory.Delete(folder, recursive: true); }
+    }
+
+    [Fact]
+    public void ARemoteServer_IsNeverGivenRoots_ALocalOneAsItsEntryDecides()
+    {
+        var servers = McpServerConfig.Parse("""{ "remote": { "url": "https://mcp.example.com/mcp", "roots": true }, "local": { "command": "x" } }""");
+        Assert.False(McpToolService.GivesRootsTo(servers.Single(s => s.Name == "remote"), workspaceRoot: null));
+        Assert.True(McpToolService.GivesRootsTo(servers.Single(s => s.Name == "local"), workspaceRoot: null));
+    }
+
+    [Fact]
+    public void AServerStartedWithAFolderOfItsOwn_KeepsIt_UnlessItsEntrySaysOtherwise()
+    {
+        // ⚠ The reference filesystem server replaces the folders it was started with by the roots it is given.
+        var folder = RootFolder();
+        try
+        {
+            var json = $$"""
+                {
+                  "fs":      { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", {{JsonSerializer.Serialize(folder)}}] },
+                  "fsAsked": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", {{JsonSerializer.Serialize(folder)}}], "roots": true },
+                  "plain":   { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem"] },
+                  "kept":    { "command": "uvx", "args": ["mcp-server-git"], "roots": false }
+                }
+                """;
+            var servers = McpServerConfig.Parse(json);
+            bool Gives(string name) => servers.Single(s => s.Name == name).GivesRoots(workspaceRoot: null);
+            Assert.False(Gives("fs"));
+            Assert.True(Gives("fsAsked"));
+            Assert.True(Gives("plain"));
+            Assert.False(Gives("kept"));
+
+            // The settings list rewrites the map from what it read, and its editor rebuilds an entry: the choice stays.
+            var again = McpServerConfig.Parse(McpServerConfig.Serialize(servers));
+            Assert.Equal(true, again.Single(s => s.Name == "fsAsked").Roots);
+            Assert.Equal(false, again.Single(s => s.Name == "kept").Roots);
+            Assert.Null(again.Single(s => s.Name == "plain").Roots);
+            var edited = McpServerConfig.FromEditor(servers.Single(s => s.Name == "kept"), "kept", "uvx", ["mcp-server-git"],
+                                                    new Dictionary<string, string>(), null, null, enabled: true);
+            Assert.Equal(false, edited.Roots);
+        }
+        finally { Directory.Delete(folder, recursive: true); }
+    }
+
+    [Theory]
+    [InlineData(@"C:\dev\my app", true, "file:///C:/dev/my%20app")]
+    [InlineData(@"C:\dev\a%20b", true, "file:///C:/dev/a%2520b")]
+    [InlineData(@"C:\", true, "file:///C:/")]
+    [InlineData(@"\\server\share\src", true, "file://server/share/src")]
+    [InlineData(@"\\?\C:\dev\src", true, "file:///C:/dev/src")]
+    [InlineData(@"\\?\UNC\server\share\src", true, "file://server/share/src")]
+    [InlineData("/home/me/my app", false, "file:///home/me/my%20app")]
+    [InlineData(@"/home/me/a\b", false, "file:///home/me/a%5Cb")]
+    [InlineData("/", false, "file:///")]
+    public void ARootsUri_EscapesThePathAsItIs(string fullPath, bool windows, string expected) =>
+        Assert.Equal(expected, McpModern.FileUri(fullPath, windows));
+
     [Fact]
     public async Task AServerThatKeepsAskingForAnotherRoundTrip_IsStoppedAndSaid_AndAnUnknownResultTypeIsNamed()
     {

@@ -39,6 +39,9 @@ internal sealed class AcpAgent : IAsyncDisposable
     /// <summary>Whether the session <paramref name="id"/> is open in this process now (not closed to make room).</summary>
     internal bool IsLive(string id) => _sessions.ContainsKey(id);
 
+    /// <summary>The live session <paramref name="id"/> names, or null.</summary>
+    internal AcpSession? Live(string id) => _sessions.TryGetValue(id, out var s) ? s : null;
+
     /// <summary>What opening a session needs (its folder, its MCP servers), kept for the sessions closed to make room.</summary>
     private readonly ConcurrentDictionary<string, (string Cwd, IReadOnlyList<McpSessionServerDto> Servers)> _opened =
         new(StringComparer.Ordinal);
@@ -127,6 +130,13 @@ internal sealed class AcpAgent : IAsyncDisposable
     /// <summary>The client can run the setup in a terminal (<c>auth.terminal</c>).</summary>
     internal bool ClientRunsTerminalAuth { get; private set; }
 
+    /// <summary>The client shows session notices (<c>session.notices</c>, ACP 1.11): without it, a notice is never sent as one.</summary>
+    internal bool ClientShowsNotices { get; private set; }
+
+    /// <summary>The client shows compactions (<c>session.compaction</c>, ACP 1.11): without it, no compaction update is sent,
+    /// live or replayed.</summary>
+    internal bool ClientShowsCompaction { get; private set; }
+
     /// <summary>The client as the model is told it ("Zed").</summary>
     internal string EditorName { get; private set; } = "an editor using the Agent Client Protocol";
 
@@ -145,6 +155,9 @@ internal sealed class AcpAgent : IAsyncDisposable
         var caps = Obj(p, "clientCapabilities");
         ClientReadsFiles       = Bool(Obj(caps, "fs"), "readTextFile");
         ClientRunsTerminalAuth = Bool(Obj(caps, "auth"), "terminal") || Bool(Obj(caps, "_meta"), "terminal-auth");
+        // An object declares the capability; absent or null does not.
+        ClientShowsNotices     = Obj(Obj(caps, "session"), "notices").ValueKind == JsonValueKind.Object;
+        ClientShowsCompaction  = Obj(Obj(caps, "session"), "compaction").ValueKind == JsonValueKind.Object;
         var info = Obj(p, "clientInfo");
         if ((Str(info, "title") ?? Str(info, "name")) is { Length: > 0 } editor) EditorName = editor;
         ClientName = Str(info, "name") is { } n ? n + (Str(info, "version") is { } v ? "/" + v : string.Empty) : null;

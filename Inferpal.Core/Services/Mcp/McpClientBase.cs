@@ -58,7 +58,21 @@ internal abstract class McpClientBase
 
     /// <summary>A request in the era this connection speaks: in the modern one, every request carries its <c>_meta</c>.</summary>
     private protected Task<JsonElement> RequestAsync(string method, JsonObject @params, CancellationToken ct) =>
-        SendRequestAsync(method, Era == McpEra.Modern ? McpModern.WithMeta(@params) : @params, ct);
+        SendRequestAsync(method, Era == McpEra.Modern ? Meta(@params) : @params, ct);
+
+    /// <summary>
+    /// The workspace folder a stdio server of the earlier revisions may ask for (<c>roots/list</c>); null, or a folder that
+    /// does not exist, declares no roots. Set by <see cref="McpToolService"/> (<see cref="McpToolService.GivesRootsTo"/>).
+    /// </summary>
+    /// <remarks>⚠ Never an empty list for "no workspace": a server reads it as "no folder is yours". Without a folder the
+    /// capability is not declared, and the server works as it did.</remarks>
+    public Func<string?>? WorkspaceRoot { get; set; }
+
+    /// <summary>The folder <c>roots/list</c> answers with, or null when there is none to give.</summary>
+    private protected string? RootsFolder => WorkspaceRoot?.Invoke() is { Length: > 0 } root && Directory.Exists(root) ? root : null;
+
+    /// <summary><paramref name="params"/> with the modern era's <c>_meta</c>.</summary>
+    private protected static JsonObject Meta(JsonNode? @params) => McpModern.WithMeta(@params);
 
     /// <summary>The listed tools the transport can offer (all of them, unless a transport rule leaves one out).</summary>
     private protected virtual IReadOnlyList<McpToolInfo> Admit(IReadOnlyList<McpToolInfo> tools) => tools;
@@ -151,8 +165,9 @@ internal abstract class McpClientBase
                     return $"MCP tool '{toolName}' answered a result of type '{type}', which Inferpal does not know; the call did not complete.";
 
                 // ⚠ input_required is not a result: read as one, the model would conclude the tool answered nothing.
-                // Inferpal declares no elicitation, sampling or roots, so a request for one cannot be answered — named.
-                if (McpJsonRpc.InputRequestMethods(result) is { Count: > 0 } asks)
+                // Inferpal declares no elicitation, sampling or roots in this era, so a request for one cannot be answered —
+                // named.
+                if (McpJsonRpc.InputRequests(result).Select(a => a.Method).Distinct(StringComparer.Ordinal).ToList() is { Count: > 0 } asks)
                     return $"MCP tool '{toolName}' asked for input Inferpal does not provide ({string.Join(", ", asks)}); the call did not complete.";
                 if (McpJsonRpc.RequestState(result) is not { } state)
                     return $"MCP tool '{toolName}' answered input_required without saying what it needs; the call did not complete.";

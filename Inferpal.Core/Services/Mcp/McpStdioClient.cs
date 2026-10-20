@@ -162,7 +162,7 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
     /// </remarks>
     private async Task<McpDiscovery> OpenAsync(CancellationToken ct)
     {
-        var discover = SendRequestAsync("server/discover", McpModern.WithMeta(null), ct);
+        var discover = SendRequestAsync("server/discover", Meta(null), ct);
         Task<JsonElement>? initialize = null;
         using (var wait = CancellationTokenSource.CreateLinkedTokenSource(ct))
         {
@@ -213,12 +213,21 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
         task?.ContinueWith(static t => _ = t.Exception, CancellationToken.None,
                            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
 
-    private static JsonObject InitializeParams() => new()
+    /// <summary>The handshake of the earlier revisions; what it declares about roots holds for the whole connection.</summary>
+    private JsonObject InitializeParams()
     {
-        ["protocolVersion"] = McpModern.LegacyVersion,
-        ["capabilities"]    = new JsonObject(),
-        ["clientInfo"]      = McpModern.ClientInfo(),
-    };
+        _rootsDeclared = RootsFolder is not null;
+        return new()
+        {
+            ["protocolVersion"] = McpModern.LegacyVersion,
+            ["capabilities"]    = McpModern.Capabilities(roots: _rootsDeclared),
+            ["clientInfo"]      = McpModern.ClientInfo(),
+        };
+    }
+
+    /// <summary>The handshake declared roots: <c>roots/list</c> is answered for the rest of the connection — the folder as
+    /// it is now, an empty list once it is gone — never "method not found" after the capability was given.</summary>
+    private volatile bool _rootsDeclared;
 
     /// <summary>
     /// The subscription a modern server delivers <c>notifications/tools/list_changed</c> on, kept for the session: the
@@ -229,7 +238,7 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
         try
         {
             var subscribe = new JsonObject { ["notifications"] = new JsonObject { ["toolsListChanged"] = true } };
-            await SendRequestAsync("subscriptions/listen", McpModern.WithMeta(subscribe), _listenCts.Token).ConfigureAwait(false);
+            await SendRequestAsync("subscriptions/listen", Meta(subscribe), _listenCts.Token).ConfigureAwait(false);
             if (!_disposed)
                 Diagnostics.Record("Mcp", $"'{ServerName}' ended its tools/list_changed subscription; a later change to its tools is seen on the next connection.");
         }
@@ -421,16 +430,28 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
         catch (JsonException) { /* skip non-JSON noise on stdout */ }
     }
 
-    /// <summary>Answers a request the server sent us: <c>ping</c> gets its empty result, anything else a
-    /// "method not found" error — never silence, which a server may read as a dead client.</summary>
+    /// <summary>Answers a request the server sent us: <c>ping</c> gets its empty result, <c>roots/list</c> the workspace
+    /// folder when roots were declared, anything else a "method not found" error — never silence, which a server may read
+    /// as a dead client.</summary>
     private async Task AnswerServerRequestAsync(JsonElement id, string? method)
     {
-        var response = new JsonObject { ["jsonrpc"] = "2.0", ["id"] = JsonNode.Parse(id.GetRawText()) };
-        if (method == "ping")
-            response["result"] = new JsonObject();
-        else
-            response["error"] = new JsonObject { ["code"] = -32601, ["message"] = $"Method not supported by this client: {method}" };
-        try { await WriteLineAsync(response.ToJsonString(), CancellationToken.None).ConfigureAwait(false); }
+        try
+        {
+            var response = new JsonObject { ["jsonrpc"] = "2.0", ["id"] = JsonNode.Parse(id.GetRawText()) };
+            if (method == "ping")
+                response["result"] = new JsonObject();
+            else if (method == "roots/list" && _rootsDeclared)
+            {
+                try { response["result"] = McpModern.RootsResult(RootsFolder); }
+                catch (Exception ex) when (ex is ArgumentException or IOException or UriFormatException or NotSupportedException)
+                {
+                    response["error"] = new JsonObject { ["code"] = -32603, ["message"] = "The workspace folder could not be read: " + ex.Message };
+                }
+            }
+            else
+                response["error"] = new JsonObject { ["code"] = -32601, ["message"] = $"Method not supported by this client: {method}" };
+            await WriteLineAsync(response.ToJsonString(), CancellationToken.None).ConfigureAwait(false);
+        }
         catch (Exception ex) { Diagnostics.Swallow($"McpStdioClient.AnswerServerRequest({_config.Name})", ex); }
     }
 

@@ -51,6 +51,9 @@ internal sealed class HostSession : IDisposable
     /// <summary>The model's reasoning goes to the adapter as it streams (<see cref="InitializeParams.ReasoningChunks"/>).</summary>
     public bool ReasoningChunks { get; init; }
 
+    /// <summary>A compaction goes to the adapter as <c>chat/compaction</c> (<see cref="InitializeParams.CompactionEvents"/>).</summary>
+    public bool CompactionEvents { get; init; }
+
     /// <summary>The host indexes the folder itself (<see cref="InitializeParams.IndexesTheFolder"/>); false: it only
     /// shows the index saved for it, whatever setting is saved — a pass starts on the page's Rebuild only.</summary>
     public bool IndexesTheFolder { get; init; } = true;

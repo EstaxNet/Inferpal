@@ -27,13 +27,15 @@ internal enum ContextOutcome
 /// </summary>
 /// <param name="Summary">Non-null only for <see cref="ContextOutcome.Compacted"/>.</param>
 /// <param name="Notice">What to show the user, or empty for <see cref="ContextOutcome.None"/>.</param>
+/// <param name="ShownSummary">The summary as the person may read it: <paramref name="Summary"/> without the notes written
+/// for the model about what it lacks (the person reads them in <paramref name="Notice"/>).</param>
 /// <param name="Window">
 /// The window, in tokens, the conversation was measured against (<see cref="ContextManager.EffectiveWindowAsync"/>)
 /// — what the context gauges must show too, or they announce room a smaller loaded window does not have.
 /// </param>
 internal sealed record ContextDecision(
     ContextOutcome Outcome, CompactionPlan Plan, string? Summary, string Notice, int Window = 0,
-    bool SummaryIncomplete = false)
+    bool SummaryIncomplete = false, string? ShownSummary = null)
 {
     /// <summary>
     /// The conversation lost turns with nothing — or only part of a summary — put in their place: a degraded
@@ -134,6 +136,7 @@ internal static class ContextManager
         // exactly when compaction runs — but it is said to both readers: read as whole, the model denies what was said
         // in the part it misses, and the user reads "compacted". Two causes, two sentences: the summary stopped at the
         // length limit, or the oldest turns never reached the summarizer.
+        var shown = summary;
         if (omitted > 0)
         {
             summary += HistoryCompaction.PartialSummaryMarker(omitted);
@@ -145,7 +148,7 @@ internal static class ContextManager
             notice  += "\n\n" + Strings.MsgContextSummaryCut;
         }
         return new ContextDecision(ContextOutcome.Compacted, plan, summary, notice, window,
-                                   SummaryIncomplete: cut || omitted > 0);
+                                   SummaryIncomplete: cut || omitted > 0, ShownSummary: shown);
     }
 
     /// <summary>

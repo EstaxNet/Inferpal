@@ -175,6 +175,7 @@ internal sealed class AcpSession : IAsyncDisposable
                 secrets         = false,
                 // A thread lives in its own session file: VS Code's last conversation in this folder is not its own.
                 autoSaveSlot    = false,
+                compactionEvents = true,
             }, ct);
             session._defaultModel = init.DefaultModel;
             await session.AdoptDefaultModelAsync(ct);
@@ -435,7 +436,7 @@ internal sealed class AcpSession : IAsyncDisposable
         {
             await AnnounceCommandsOnceAsync(CancellationToken.None);
             await ReadModelsAgainAsync();
-            if (Interlocked.Exchange(ref _startNotice, null) is { Length: > 0 } notice) Say(notice + "\n\n");
+            if (Interlocked.Exchange(ref _startNotice, null) is { Length: > 0 } notice) Notice("warning", notice, notice + "\n\n");
             await FollowSettingsAsync();
             await AskAgainWhatWasAskedTooEarlyAsync();
             AnnounceModelIfChanged();
@@ -720,7 +721,7 @@ internal sealed class AcpSession : IAsyncDisposable
             Say("\n\n" + result.EndNotice);
             RecordAnswer(result.EndNotice, notice: true);
         }
-        if (!result.Cancelled && _agent.TakeLimitsNotice() is { } limits) Say("\n\n---\n" + limits);
+        if (!result.Cancelled && _agent.TakeLimitsNotice() is { } limits) Notice("info", limits, "\n\n---\n" + limits);
         if (result.ContextWindow > 0)
             Update(new { sessionUpdate = "usage_update", used = Math.Max(0, result.NextTurnTokens), size = result.ContextWindow });
         await SaveAsync();
@@ -951,6 +952,50 @@ internal sealed class AcpSession : IAsyncDisposable
         Update(new { sessionUpdate = "agent_message_chunk", content = Text(text) });
     }
 
+    /// <summary>
+    /// Something Inferpal says beside the answer — a model it adopted, what this agent does not do, a rule written: a
+    /// session notice when the client declared it shows them (ACP 1.11), shown outside the transcript; the text
+    /// <paramref name="fallback"/> otherwise, as before.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Never what the person needs to finish a task — the end of a cut answer, a command's answer, a <c>/task</c>'s
+    /// report: a notice is not replayed, and a client may let it be dismissed.
+    /// </remarks>
+    /// <returns>True when it went as a notice.</returns>
+    private bool Notice(string severity, string text, string fallback)
+    {
+        if (!_agent.ClientShowsNotices || NoticeParts(text) is not var (title, description))
+        {
+            Say(fallback);
+            return false;
+        }
+        Update(new { sessionUpdate = "notice", severity, title, description });
+        return true;
+    }
+
+    /// <summary>A notice's plain-text title — the first sentence of <paramref name="text"/> — and the rest as its description;
+    /// <c>null</c> when there is no text.</summary>
+    /// <remarks>Title and description are plain text by the protocol, and the title short to be read: a whole paragraph
+    /// of Markdown drawn as one heading reads as noise. Code marks and emphasis are dropped, a link keeps its text and its
+    /// address.</remarks>
+    internal static (string Title, string? Description)? NoticeParts(string text)
+    {
+        var budget = RegexBudget.Default;
+        var plain = System.Text.RegularExpressions.Regex.Replace(text, @"\[([^\]]+)\]\(([^)\s]+)\)", "$1 ($2)",
+                        System.Text.RegularExpressions.RegexOptions.None, budget);
+        plain = System.Text.RegularExpressions.Regex.Replace(plain, @"\*\*(.+?)\*\*|__(.+?)__", "$1$2",
+                    System.Text.RegularExpressions.RegexOptions.None, budget);
+        plain = plain.Replace("`", string.Empty, StringComparison.Ordinal).Trim();
+        if (plain.Length == 0) return null;
+        var lineEnd = plain.IndexOf('\n');
+        var firstLine = lineEnd < 0 ? plain : plain[..lineEnd].TrimEnd();
+        var sentence = System.Text.RegularExpressions.Regex.Match(firstLine, @"^.+?[.!?](?=\s|$)",
+            System.Text.RegularExpressions.RegexOptions.None, RegexBudget.Default);
+        var title = sentence.Success ? sentence.Value : firstLine;
+        var rest = plain[title.Length..].Trim();
+        return (title, rest.Length > 0 ? rest : null);
+    }
+
     private static readonly JsonElement EmptyObject = JsonDocument.Parse("{}").RootElement.Clone();
 
     /// <summary>Waits until every notification the host has sent so far has been handled.</summary>
@@ -1121,11 +1166,49 @@ internal sealed class AcpSession : IAsyncDisposable
         });
     }
 
+    /// <summary>
+    /// A compaction before the question (<c>chat/compaction</c>): a <c>compaction_update</c> when the client declared it
+    /// shows them (ACP 1.11) — completed, with the summary the model now reads when there is one, or failed when the
+    /// summary could not be written and the turns were dropped instead — and otherwise the <c>context_compact</c> call the
+    /// client was always drawn.
+    /// </summary>
+    /// <remarks>⚠ An identifier is never reused within the session — a thread evicted and reopened is a new object with
+    /// the same session id, so it is never a counter. One update with the terminal status is the whole report. Turns lost
+    /// or a summary cut are said apart, beside the compaction they qualify: a warning notice, or the transcript's text.</remarks>
+    [JsonRpcMethod("chat/compaction", UseSingleObjectParameterDeserialization = true)]
+    public void ChatCompaction(CompactionNote note)
+    {
+        if (!InTurn) return;
+        if (!_agent.ClientShowsCompaction)
+        {
+            ChatTool(new ToolNotice("context_compact", string.Empty, note.Notice, note.Degraded));
+            return;
+        }
+        var id = "cmp_" + Guid.NewGuid().ToString("N");
+        if (note.Failed)
+        {
+            Update(new { sessionUpdate = "compaction_update", compactionId = id, status = "failed", error = note.Notice });
+            return;
+        }
+        Update(new
+        {
+            sessionUpdate = "compaction_update", compactionId = id, status = "completed",
+            summary = note.Summary is { Length: > 0 } s ? new[] { Text(s) } : null,
+        });
+        if (note.Degraded) Notice("warning", note.Notice, fallback: "\n\n" + note.Notice);
+    }
+
     [JsonRpcMethod("host/notice", UseSingleObjectParameterDeserialization = true)]
-    public void HostNotice(TextNote note)
+    public void HostNotice(TextNote note) => Keep(note, asNotice: !note.Result);
+
+    /// <summary>A sentence of the host, shown and kept with the thread: a notice when <paramref name="asNotice"/> and the
+    /// client shows notices, the answer's text otherwise.</summary>
+    private void Keep(TextNote note, bool asNotice)
     {
         if (string.IsNullOrEmpty(note.Text)) return;
-        Update(new { sessionUpdate = "agent_message_chunk", content = Text("\n\n" + note.Text) });
+        // A notice is live only: shown as one, it is not kept to come back as the answer's text when the thread reloads.
+        if (asNotice && Notice(note.Severity ?? "info", note.Text, "\n\n" + note.Text)) return;
+        if (!asNotice) Say("\n\n" + note.Text);
         // ⚠ Kept with the thread, as both editors keep it — a notice, out of what the model reads back. Shown only, a
         // /task's report (the only place its result is) was gone once the thread was reloaded, or reopened after an
         // eviction. Outside a turn nobody saves after it: saved here — once the user wrote in the thread, a command
@@ -1136,8 +1219,10 @@ internal sealed class AcpSession : IAsyncDisposable
         if (!InTurn && written) _ = SaveAsync();
     }
 
+    /// <summary>A <c>/task</c>'s report: the only place its result is, so never a notice — a notice is not replayed, and
+    /// carries nothing the person needs to finish a task (ACP 1.11).</summary>
     [JsonRpcMethod("task/finished", UseSingleObjectParameterDeserialization = true)]
-    public void TaskFinished(TextNote note) => HostNotice(note);
+    public void TaskFinished(TextNote note) => Keep(note, asNotice: false);
 
     /// <summary>
     /// The approval card, as <c>session/request_permission</c>: the call it belongs to with the files' real changes, and
@@ -1256,7 +1341,9 @@ internal sealed class AcpSession : IAsyncDisposable
 
     // ── Wire shapes of the host's notifications ────────────────────────────────
 
-    public sealed record TextNote(string? Text);
+    /// <summary>A sentence for the person; <paramref name="Severity"/> (<c>info</c>, <c>warning</c>) is set where it is said, and
+    /// <paramref name="Result"/> marks the outcome of something the person asked for, which stays the thread's text.</summary>
+    public sealed record TextNote(string? Text, string? Severity = null, bool Result = false);
     public sealed record PlanNote(string? Goal, List<string>? Steps);
     public sealed record StepUpdateNote(int Index, string? Status);
     public sealed record ToolStartNote(string CallId, string Name, string? Input);

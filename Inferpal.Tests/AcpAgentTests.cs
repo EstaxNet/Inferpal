@@ -518,6 +518,164 @@ public sealed class AcpAgentTests : IDisposable
         Assert.Equal(Services.Persistence.SessionManager.NoticeMarker, kept.ToolName);   // a notice: never read back as an answer
     }
 
+    // ── Session notices and compaction (ACP 1.11) ───────────────────────────────
+
+    private static object InitShowing(bool notices, bool compaction) => new
+    {
+        protocolVersion = 1,
+        clientCapabilities = new
+        {
+            session = new Dictionary<string, object?>
+            {
+                ["notices"]    = notices ? new { } : null,
+                ["compaction"] = compaction ? new { } : null,
+            },
+        },
+        clientInfo = new { name = "test-client", version = "1.0" },
+    };
+
+    /// <summary>
+    /// What the agent says beside the answer — here, once per editor, what it does not do in it — is a session notice for a
+    /// client that declared it shows them, outside the transcript; for one that did not (absent or null), the text it
+    /// always was, byte for byte.
+    /// </summary>
+    [Fact]
+    public async Task ANotice_IsANoticeForAClientThatShowsThem_AndTheSameTextAsBeforeForOneThatDoesNot()
+    {
+        var notice = Strings.AcpLimitsNotice(AcpReadiness.DocsUrl);
+        await using (var h = await StartAsync())
+        {
+            await h.Client.RequestAsync("initialize", InitShowing(notices: true, compaction: false));
+            var sid = await NewSessionAsync(h);
+            await PromptAsync(h, sid, "first");
+            var shown = Assert.Single(h.Client.Updates(sid, "notice"));
+            Assert.Equal("info", shown.GetProperty("severity").GetString());
+            // A plain-text title, the first sentence; the rest as the description — the notice as a whole, without Markdown.
+            var (title, description) = AcpSession.NoticeParts(notice)!.Value;
+            Assert.Equal(title, shown.GetProperty("title").GetString());
+            Assert.Equal(description, shown.GetProperty("description").GetString());
+            Assert.DoesNotContain("`", title + description, StringComparison.Ordinal);
+            Assert.True(title.Length < notice.Length, "the title is the whole notice");
+            Assert.DoesNotContain("---", h.Client.Said(sid));
+            Assert.Equal("ok", h.Client.Said(sid).Trim());   // the answer itself, alone in the transcript
+        }
+        await using (var h = await StartAsync())
+        {
+            await h.Client.RequestAsync("initialize", InitShowing(notices: false, compaction: true));
+            var sid = await NewSessionAsync(h);
+            await PromptAsync(h, sid, "first");
+            Assert.Empty(h.Client.Updates(sid, "notice"));
+            Assert.EndsWith("\n\n---\n" + notice, h.Client.Said(sid), StringComparison.Ordinal);
+        }
+    }
+
+    /// <summary>
+    /// The host's sentences keep the grade they were given where they were said — a rule written is news, one that could
+    /// not be is a warning — and a RESULT (what a documentation crawl indexed: the only place <c>/docs add</c> says it) stays
+    /// the thread's text, kept to come back, for a client that shows notices too. A notice shown as one is not kept: it
+    /// would come back as the answer's text when the thread reloads.
+    /// </summary>
+    [Fact]
+    public async Task AHostSentence_IsANoticeWithItsGrade_ButAResultStaysTheThreadsText()
+    {
+        await using var h = await StartAsync();
+        await h.Client.RequestAsync("initialize", InitShowing(notices: true, compaction: false));
+        var sid = await NewSessionAsync(h);
+        await PromptAsync(h, sid, "first");
+        var session = h.Agent.Live(sid)!;
+        var before = h.Client.Updates(sid, "notice").Count();
+
+        session.HostNotice(new AcpSession.TextNote("Always: commands that start with `dotnet test`. Saved to your rules.", "info"));
+        session.HostNotice(new AcpSession.TextNote("The rule could not be saved: access denied.", "warning"));
+        session.HostNotice(new AcpSession.TextNote("Docs: ✅ Vue — 120 pages, 900 chunks", Result: true));
+        await h.Client.RequestAsync("session/list", new { cwd = _root });   // a round trip: the notifications were sent
+
+        var notices = h.Client.Updates(sid, "notice").Skip(before).ToList();
+        Assert.Equal(["info", "warning"], notices.Select(n => n.GetProperty("severity").GetString()!));
+        Assert.Equal("Always: commands that start with dotnet test.", notices[0].GetProperty("title").GetString());
+        Assert.Contains("Docs: ✅ Vue — 120 pages", h.Client.Said(sid), StringComparison.Ordinal);
+        Assert.DoesNotContain("could not be saved", h.Client.Said(sid), StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// ⚠ A <c>/task</c>'s report is its result: never a notice, which a client may let be dismissed and never replays —
+    /// it stays the text of the thread for a client that shows notices too.
+    /// </summary>
+    [Fact]
+    public async Task ATasksReport_StaysTheThreadsText_ForAClientThatShowsNotices()
+    {
+        const string goal = "count the files";
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using var h = await StartAsync(fake: f => f.OnAgentRun = async (history, _, _, ct) =>
+        {
+            if (!history.Any(m => m.Content == goal)) return new AgentResult("ok", [], history);
+            await release.Task.WaitAsync(ct);
+            return new AgentResult("There are three files.", [], history);
+        });
+        await h.Client.RequestAsync("initialize", InitShowing(notices: true, compaction: true));
+        var sid = await NewSessionAsync(h);
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, sid, "/task " + goal)));
+
+        var before = h.Client.Said(sid).Length;
+        var noticesBefore = h.Client.Updates(sid, "notice").Count();
+        release.SetResult();
+        for (var i = 0; i < 300 && h.Client.Said(sid).Length == before; i++) await Task.Delay(100);
+        Assert.Contains("t1", h.Client.Said(sid)[before..], StringComparison.Ordinal);   // the report came, as text
+        Assert.Equal(noticesBefore, h.Client.Updates(sid, "notice").Count());
+    }
+
+    /// <summary>
+    /// A conversation made to fit before a question is a compaction for a client that declared it shows them — a
+    /// terminal <c>compaction_update</c>, never the tool call — and the <c>context_compact</c> call it always was for one
+    /// that did not. Each compaction of a session has an identifier of its own.
+    /// </summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ACompaction_IsACompactionForAClientThatShowsThem_AndTheToolCallForOneThatDoesNot(bool shows)
+    {
+        var words = string.Join(' ', Enumerable.Range(0, 1_500).Select(i => $"word{i}"));
+        await using var h = await StartAsync(
+            fake: f => f.OnChatRequest = (_, messages, _, _) => Task.FromResult(new ChatTurnResult(
+                messages[^1].Content?.Contains("long", StringComparison.Ordinal) == true ? "done " + words : "done", null, 3, 5)),
+            host: provider => new HostServer(_ => provider, () => new InferpalConfig
+            {
+                RagEnabled = false, DefaultModel = "test-model", ContextWindowSize = 8_192, CompactionEnabled = true,
+            }));
+        await h.Client.RequestAsync("initialize", InitShowing(notices: shows, compaction: shows));
+        var sid = await NewSessionAsync(h);
+
+        int Compactions() => h.Client.Updates(sid, "compaction_update").Count()
+                           + h.Client.Updates(sid, "tool_call").Count(u => u.GetProperty("title").GetString() == "context_compact");
+        for (var i = 0; i < 16 && Compactions() < 2; i++) await PromptAsync(h, sid, $"long question {i}");
+        Assert.True(Compactions() >= 2, "the conversation did not outgrow its window twice");   // WITNESS: two compactions
+
+        var updates = h.Client.Updates(sid, "compaction_update").ToList();
+        var calls = h.Client.Updates(sid, "tool_call").Where(u => u.GetProperty("title").GetString() == "context_compact").ToList();
+        if (shows)
+        {
+            Assert.Empty(calls);
+            Assert.Equal(updates.Count, updates.Select(u => u.GetProperty("compactionId").GetString()).Distinct().Count());
+            foreach (var u in updates)
+            {
+                var status = u.GetProperty("status").GetString();
+                Assert.Contains(status, new[] { "completed", "failed" });
+                if (status == "failed") Assert.False(string.IsNullOrEmpty(u.GetProperty("error").GetString()));
+                if (u.TryGetProperty("summary", out var summary))
+                {
+                    var block = Assert.Single(summary.EnumerateArray());
+                    Assert.Equal("text", block.GetProperty("type").GetString());
+                    Assert.DoesNotContain("[Context Note]", block.GetProperty("text").GetString(), StringComparison.Ordinal);
+                }
+            }
+        }
+        else
+        {
+            Assert.Empty(updates);
+            Assert.NotEmpty(calls);
+        }
+    }
+
     /// <summary>
     /// ⚠ A thread being closed to make room answers a prompt that comes meanwhile. It left the live sessions first and
     /// was recorded as reopenable only once its host was disposed — its MCP servers shutting down, seconds —: in between

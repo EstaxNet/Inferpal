@@ -58,8 +58,10 @@ internal static partial class McpModern
     /// A copy of <paramref name="params"/> carrying the per-request metadata the modern era requires.
     /// </summary>
     /// <remarks>
-    /// The capabilities are EMPTY: Inferpal answers no elicitation, sampling or roots request, and a server must not
-    /// ask a client for what it did not declare — so declaring nothing is what keeps such requests from arriving.
+    /// The capabilities are EMPTY: Inferpal answers no elicitation, sampling or roots request of this era, and a server
+    /// must not ask a client for what it did not declare. Roots are deprecated by this revision ("new implementations
+    /// SHOULD NOT adopt it"), and a remote server would be handed a local path: they are given in the earlier handshake,
+    /// to a stdio server only (<see cref="Capabilities"/>).
     /// </remarks>
     public static JsonObject WithMeta(JsonNode? @params)
     {
@@ -71,6 +73,52 @@ internal static partial class McpModern
         copy["_meta"] = meta;
         return copy;
     }
+
+    /// <summary>The <c>capabilities</c> of the earlier handshake: <c>{"roots": {}}</c> with a folder to give, else empty.</summary>
+    /// <remarks>No <c>listChanged</c>: a server asks <c>roots/list</c> again when it wants them, and a moved workspace
+    /// restarts its servers.</remarks>
+    public static JsonObject Capabilities(bool roots) => roots ? new JsonObject { ["roots"] = new JsonObject() } : new JsonObject();
+
+    /// <summary>The answer to <c>roots/list</c>: the workspace folder, as a <c>file://</c> URI with its name; no roots when
+    /// <paramref name="folder"/> is null.</summary>
+    public static JsonObject RootsResult(string? folder)
+    {
+        var roots = new JsonArray();
+        if (folder is not null)
+        {
+            var full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder));
+            var root = new JsonObject { ["uri"] = FileUri(full, OperatingSystem.IsWindows()) };
+            if (Path.GetFileName(full) is { Length: > 0 } name) root["name"] = name;
+            roots.Add(root);
+        }
+        return new JsonObject { ["roots"] = roots };
+    }
+
+    /// <summary>The <c>file://</c> URI of a full path, every character of the path escaped as itself.</summary>
+    /// <param name="fullPath">The path.</param>
+    /// <param name="windows">The path is a Windows one: <c>\</c> separates its folders, a share keeps its host, and the
+    /// long-path prefix (<c>\\?\</c>, <c>\\?\UNC\</c>) is not part of the folder. Elsewhere a <c>\</c> is a character of a
+    /// name, escaped as one.</param>
+    /// <remarks>⚠ <c>new Uri(path)</c> reads a <c>%20</c> IN a folder's name as an escape, and so hands the server another
+    /// folder.</remarks>
+    internal static string FileUri(string fullPath, bool windows)
+    {
+        if (!windows) return "file://" + Escaped(fullPath.StartsWith('/') ? fullPath : "/" + fullPath, drive: false);
+        var path = fullPath.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase) ? @"\\" + fullPath[8..]
+                 : fullPath.StartsWith(@"\\?\", StringComparison.Ordinal) ? fullPath[4..]
+                 : fullPath;
+        if (path.StartsWith(@"\\", StringComparison.Ordinal))
+        {
+            var parts = path.TrimStart('\\').Split('\\', 2);
+            return "file://" + parts[0] + Escaped("/" + (parts.Length > 1 ? parts[1].Replace('\\', '/') : string.Empty), drive: false);
+        }
+        var slashed = path.Replace('\\', '/');
+        return "file://" + Escaped(slashed.StartsWith('/') ? slashed : "/" + slashed, drive: true);
+    }
+
+    private static string Escaped(string path, bool drive) =>
+        string.Join('/', path.Split('/').Select((segment, i) =>
+            drive && i == 1 && segment.Length == 2 && segment[1] == ':' ? segment : Uri.EscapeDataString(segment)));
 
     /// <summary>True when the JSON-RPC message was written for the modern era: its <c>_meta</c> names this version.</summary>
     public static bool IsModern(JsonNode? message) =>

@@ -36,6 +36,9 @@
 /// conversation they discard (<c>/clear</c>, <c>/template</c>) is not the one it holds.</param>
 /// <param name="OpenExternal">The adapter serves the reverse <c>env/openExternal</c> request: a sign-in page opens in the
 /// editor's browser — on the machine the person sits at, VS Code Remote included — with its redirect forwarded here.</param>
+/// <param name="CompactionEvents">The adapter wants a compaction of the conversation as <c>chat/compaction</c> — its
+/// outcome and the summary the model now reads — instead of the <c>context_compact</c> tool note. True for an Agent Client
+/// Protocol session, whose client may draw it as a compaction (ACP 1.11).</param>
 internal sealed record InitializeParams(
     string    RootDir,
     string?   Locale          = null,
@@ -50,7 +53,8 @@ internal sealed record InitializeParams(
     bool      Secrets         = true,
     bool      IndexesTheFolder = true,
     bool      AutoSaveSlot     = true,
-    bool      OpenExternal     = false);
+    bool      OpenExternal     = false,
+    bool      CompactionEvents = false);
 
 /// <summary>`workspace/folders` — the editor's other workspace folders changed (a folder added or removed while the
 /// root stayed): restarting the host for it would kill the turn in flight, its shells and MCP servers.</summary>
@@ -157,6 +161,14 @@ internal sealed record RunSummaryDto(
 
 /// <summary>`chat/tool` notification — one executed tool call (uncapped output, like the VS bubble).</summary>
 internal sealed record ToolNotice(string Name, string Input, string Output, bool HasErrors);
+
+/// <summary>`chat/compaction` — the conversation was made to fit before a question (<see cref="InitializeParams.CompactionEvents"/>).</summary>
+/// <param name="Failed">The summary was asked for and could not be written: the turns were dropped instead. A truncation
+/// made on purpose (compaction off, nothing worth summarising) is not a failure.</param>
+/// <param name="Summary">The summary the model reads instead of the older turns; null when there is none.</param>
+/// <param name="Notice">What the person is told, the same sentence the <c>context_compact</c> note carries.</param>
+/// <param name="Degraded">Turns were lost, or the summary is incomplete.</param>
+internal sealed record CompactionNote(bool Failed, string? Summary, string Notice, bool Degraded);
 
 /// <summary>`fim/complete` — ghost-text request; cancellation aborts the LLM call via the RPC token.</summary>
 /// <param name="MaxTokens">Absent: the tokens of the configured inline-completion mode.</param>
