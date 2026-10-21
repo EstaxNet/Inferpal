@@ -110,7 +110,7 @@ public class VsCodeConversationTests
 
         var question = WebviewRebuildTests.Body(provider, "private static isModelQuestion(");
         Assert.Contains("!m.notice", question, StringComparison.Ordinal);
-        Assert.Contains("!m.text.startsWith('/')", question, StringComparison.Ordinal);
+        Assert.Contains("!looksLikeCommand(m.text)", question, StringComparison.Ordinal);
         // A refused /explain or /review never reached the model: it is still the question to resend.
         Assert.Contains("explain|review", question, StringComparison.Ordinal);
     }

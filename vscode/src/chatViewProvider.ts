@@ -39,6 +39,18 @@ const STATUS_POLL_MS = 30_000;
  *  `ApprovalCard.AttentionDelay`, the number Visual Studio flashes its taskbar at. */
 const APPROVAL_ATTENTION_MS = 15_000;
 
+/** Written as a command: a `/`, then a name that starts with a letter or a digit and has no `/` or `\` — the Core's
+ *  `SlashCommandRouter.LooksLikeCommand`. A pasted path (`/home/me/main.py crashes`) or a comment (`// why`, a block
+ *  comment) is a question, never "unknown command". */
+export function looksLikeCommand(text: string): boolean {
+  const typed = text.trimStart();
+  if (typed.length < 2 || typed[0] !== '/') {
+    return false;
+  }
+  const name = typed.slice(1).split(/[ \t\r\n]/, 1)[0];
+  return /^[\p{L}\p{N}]/u.test(name) && !/[/\\]/.test(name);
+}
+
 /** A context chip waiting for the next question: its label, its content, and the file it came from. */
 /** `origin`: the file the chip's text comes from, whole or part — what the workspace's ignore files are asked about. */
 type PendingAttachment = { name: string; content: string; sourcePath?: string; origin?: string };
@@ -955,7 +967,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
     const messages = this.snapshot();
     const last = messages[messages.length - 1];
-    if (last?.role === 'user' && last.content.startsWith('/')) {
+    if (last?.role === 'user' && looksLikeCommand(last.content)) {
       messages.pop();
     }
     try {
@@ -983,7 +995,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
     const messages = this.snapshot();
     const last = messages[messages.length - 1];
-    if (last?.role === 'user' && last.content.startsWith('/')) {
+    if (last?.role === 'user' && looksLikeCommand(last.content)) {
       messages.pop();
     }
     try {
@@ -2044,7 +2056,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       return;
     }
     // A slash command is a command to run, never words for the model: it waits for the turn.
-    if (prompt.startsWith('/')) {
+    if (looksLikeCommand(prompt)) {
       await this.enqueue(prompt);
       return;
     }
@@ -2195,7 +2207,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // Slash commands are served by the host and still run when the backend is down — except the ones that ask the
       // model: /explain and /review, known by their name (a template is known only once the host has expanded it).
       const head = prompt.split(/\s+/, 1)[0].toLowerCase();
-      const asksTheModel = !prompt.startsWith('/') || head === '/explain' || head === '/review';
+      const asksTheModel = !looksLikeCommand(prompt) || head === '/explain' || head === '/review';
       if (asksTheModel && (await this.refusedWhileBackendDown(text, typed))) {
         return;
       }
@@ -2269,7 +2281,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
       // Slash commands the host serves headlessly: rendered as an instant bubble (with
       // optional editor-side effects), never sent to the model. Unhandled ones fall through.
-      if (prompt.startsWith('/')) {
+      if (looksLikeCommand(prompt)) {
         try {
           const slash = await host.commandSlash(prompt, this.historyEntries());
           if (slash.handled) {
@@ -2410,7 +2422,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           // A new conversation archives the previous one first, like the reset button and the VS
           // window; the command bubble that asked for it is not part of the archive (as in branchAtTurn).
           const command = this.transcript[this.transcript.length - 1];
-          if (command?.role === 'user' && command.text.startsWith('/')) {
+          if (command?.role === 'user' && looksLikeCommand(command.text)) {
             this.transcript.pop();
           }
           this.archiveConversation();
@@ -2767,7 +2779,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    *  without it (/note, /commit-exec, a code action), whose bubble is a notice that starts with its slash. */
   private static isModelQuestion(m: WvTranscriptItem): boolean {
     return m.role === 'user' && !m.note
-      && (!m.notice || !m.text.startsWith('/') || /^\/(explain|review)\b/i.test(m.text));
+      && (!m.notice || !looksLikeCommand(m.text) || /^\/(explain|review)\b/i.test(m.text));
   }
 
   /** Regenerate has a question to ask again — the button is offered only then: under a thread of notices alone (a

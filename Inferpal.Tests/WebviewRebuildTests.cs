@@ -462,7 +462,7 @@ public class WebviewRebuildTests
         Assert.Contains("this.status?.connected !== false", check, StringComparison.Ordinal);
         Assert.Contains("await this.pollBackendStatus()", check, StringComparison.Ordinal);
         Assert.Contains("this.giveBackTyped(text, typed);", check, StringComparison.Ordinal);
-        Assert.Contains("startsWith('/')", send[..busy], StringComparison.Ordinal);
+        Assert.Contains("looksLikeCommand(prompt)", send[..busy], StringComparison.Ordinal);
     }
 
     /// <summary>

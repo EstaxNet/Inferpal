@@ -105,7 +105,8 @@ internal partial class InferpalToolWindowData
 
         try
         {
-            if (userText.StartsWith('/'))
+            // The shape of a command, not its first character: a pasted path or a // comment is a question.
+            if (SlashCommandRouter.LooksLikeCommand(userText))
             {
                 await RunOnVMContextAsync(() => Prompt = string.Empty);
                 // Slash commands reach the file tools too (/tdd, /test, /onboard…).
@@ -237,7 +238,7 @@ internal partial class InferpalToolWindowData
             // ⚠ The block describes the solution the ROOT holds: after a solution switch the conversation goes on, and the
             // model worked in solution B under A's projects and paths — the block was sent once per conversation.
             if ((!_workspaceContextInjected || !PathComparer.SameDirectory(_workspaceContextRoot, _indexService.RootDir))
-                && !userText.StartsWith('/'))
+                && !SlashCommandRouter.LooksLikeCommand(userText))
             {
                 // ⚠ The flag is set AFTER success. BuildWorkspaceContextAsync is best-effort —
                 // both of its tools carry a 5-second deadline and return an empty string when they

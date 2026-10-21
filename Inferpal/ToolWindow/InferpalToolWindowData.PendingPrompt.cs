@@ -109,7 +109,7 @@ internal partial class InferpalToolWindowData
             await _startupSessionLoad;
 #pragma warning restore VSTHRD003
             // Alt+M posts "/map": a slash command goes to the router, never to the model as chat text.
-            if (p.StartsWith('/'))
+            if (SlashCommandRouter.LooksLikeCommand(p))
             {
                 PinWorkspaceRoot();
                 await HandleSlashCommandAsync(p, CancellationToken.None);

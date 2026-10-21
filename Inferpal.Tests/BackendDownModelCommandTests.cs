@@ -18,7 +18,7 @@ public class BackendDownModelCommandTests
     {
         var send = WebviewRebuildTests.Body(Provider(), "private async send(");
 
-        Assert.Contains("const asksTheModel = !prompt.startsWith('/') || head === '/explain' || head === '/review';", send,
+        Assert.Contains("const asksTheModel = !looksLikeCommand(prompt) || head === '/explain' || head === '/review';", send,
                         StringComparison.Ordinal);
         var refusal = send.IndexOf("if (asksTheModel && (await this.refusedWhileBackendDown(text, typed)))", StringComparison.Ordinal);
         var bubble  = send.IndexOf("this.append(question);", StringComparison.Ordinal);

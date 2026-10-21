@@ -3,6 +3,14 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## Unreleased
+
+- **A pasted path or comment is a question**: a message that starts with `/home/me/app.py` or `// why…` went to the
+  command router and was answered "unknown command"; it now goes to the model. A single word after the `/` is still a
+  command.
+- **No package lookup for a call your rules refuse**: under a `deny` permission rule, an install or a dependency the model
+  wrote no longer sends the package name to nuget.org, npm or PyPI before the rule refuses the call.
+
 ## 1.8.3
 
 An invented package is refused before you are asked to approve it, a tool you never use can be turned off, an MCP

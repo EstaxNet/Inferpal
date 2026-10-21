@@ -266,18 +266,21 @@ internal static class SlashCommandRouter
         string.Equals(prompt?.Trim(), "/resume", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
-    /// True when <paramref name="text"/> is written as a command: a <c>/</c>, then a name with no <c>/</c>, <c>\</c> or
-    /// <c>.</c> — no command, alias or template name has one.
+    /// True when <paramref name="text"/> is written as a command: a <c>/</c>, then a name that starts with a letter or a
+    /// digit and has no <c>/</c> or <c>\</c> — a path has one, a block comment starts with <c>*</c>, no command, alias or
+    /// template name does (a template may have a dot: <c>/release-v1.2</c>).
     /// </summary>
     /// <remarks>⚠ A question pasted after a path (<c>/home/me/app/main.py crashes on line 12</c>) or a comment
-    /// (<c>// why does this loop?</c>) is a question: read as a command, it was answered "unknown command" and never
-    /// reached the model — with the file the client attached beside it.</remarks>
+    /// (<c>// why does this loop?</c>) is a question: read as a command, it is answered "unknown command" and never
+    /// reaches the model — with the file the client attached beside it. A single word stays a command (<c>/tmp is
+    /// full</c>): a mistyped command is answered "unknown command", never sent to the model. The one rule of every
+    /// front-end — VS Code mirrors it in TypeScript (<c>looksLikeCommand</c>).</remarks>
     internal static bool LooksLikeCommand(string? text)
     {
         var typed = text?.TrimStart() ?? string.Empty;
         if (typed.Length < 2 || typed[0] != '/') return false;
         var name = typed[1..].Split([' ', '\t', '\r', '\n'], 2)[0];
-        return name.Length > 0 && name.IndexOfAny(['/', '\\', '.']) < 0;
+        return name.Length > 0 && char.IsLetterOrDigit(name[0]) && name.IndexOfAny(['/', '\\']) < 0;
     }
 
     /// <summary>

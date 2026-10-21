@@ -53,7 +53,7 @@ public class SteeringFrontEndTests
     {
         var steer = WebviewRebuildTests.Body(Cs("Inferpal", "ToolWindow", "InferpalToolWindowData.Steering.cs"),
                                              "private bool Steer(string text)");
-        Assert.Contains("if (_steering is { } steering && !text.StartsWith('/'))", steer, StringComparison.Ordinal);
+        Assert.Contains("if (_steering is { } steering && !Services.SlashCommandRouter.LooksLikeCommand(text))", steer, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public class SteeringFrontEndTests
     {
         var send = WebviewRebuildTests.Body(Cs("Inferpal", "ToolWindow", "InferpalToolWindowData.Steering.cs"),
                                             "private async Task SendQueuedAsync(QueuedMessage message)");
-        var refused = WebviewRebuildTests.Body(send, "if (!message.Text.StartsWith('/') && !_isBackendReachable)");
+        var refused = WebviewRebuildTests.Body(send, "if (!Services.SlashCommandRouter.LooksLikeCommand(message.Text) && !_isBackendReachable)");
         Assert.Contains("GiveQueueBack([message]);", refused, StringComparison.Ordinal);
     }
 
@@ -166,7 +166,7 @@ public class SteeringFrontEndTests
     {
         var steer = WebviewRebuildTests.Body(WebviewRebuildTests.TsCode("chatViewProvider.ts"), "private async steer(text: string)");
 
-        var slash = steer.IndexOf("if (prompt.startsWith('/')) {", StringComparison.Ordinal);
+        var slash = steer.IndexOf("if (looksLikeCommand(prompt)) {", StringComparison.Ordinal);
         var asked = steer.IndexOf("host.chatSteer(id, prompt)", StringComparison.Ordinal);
         Assert.True(slash > 0 && slash < asked, "a slash command typed during a turn is sent to the run as a note");
         var accepted = WebviewRebuildTests.Body(steer, "if (accepted)");

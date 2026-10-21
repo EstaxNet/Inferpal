@@ -53,7 +53,7 @@ internal partial class InferpalToolWindowData
 
         // Skip slash commands and very short prompts (not worth embedding)
         var trimmed = prompt.Trim();
-        if (trimmed.Length < 12 || trimmed.StartsWith('/')) return;
+        if (trimmed.Length < 12 || SlashCommandRouter.LooksLikeCommand(trimmed)) return;
 
         var cts = _shadowSearchCts = new CancellationTokenSource();
         _ = Task.Run(async () =>

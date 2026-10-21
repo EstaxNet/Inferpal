@@ -70,7 +70,7 @@ internal partial class InferpalToolWindowData
         if (_indexService.ChunkCount == 0 || _client.IsEmbeddingCircuitOpen) return string.Empty;
 
         var trimmed = userText.Trim();
-        if (trimmed.Length < 12 || trimmed.StartsWith('/')) return string.Empty;   // same gate as the shadow
+        if (trimmed.Length < 12 || Services.SlashCommandRouter.LooksLikeCommand(trimmed)) return string.Empty;   // same gate as the shadow
 
         try
         {

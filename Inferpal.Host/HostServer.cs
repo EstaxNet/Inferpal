@@ -1764,7 +1764,7 @@ internal sealed partial class HostServer : IDisposable
         if (s.Index.ChunkCount == 0 || s.Client.IsEmbeddingCircuitOpen) return string.Empty;
 
         var trimmed = userText.Trim();
-        if (trimmed.Length < 12 || trimmed.StartsWith('/')) return string.Empty;   // same gate as VS
+        if (trimmed.Length < 12 || SlashCommandRouter.LooksLikeCommand(trimmed)) return string.Empty;   // same gate as VS
 
         try
         {

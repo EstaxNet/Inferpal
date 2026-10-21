@@ -76,7 +76,7 @@ internal partial class InferpalToolWindowData
     /// </summary>
     private bool Steer(string text)
     {
-        if (_steering is { } steering && !text.StartsWith('/'))
+        if (_steering is { } steering && !Services.SlashCommandRouter.LooksLikeCommand(text))
         {
             var id = "note-" + ++_noteSeq;
             var note = ChatMessageItem.NoteMsg(id, text);
@@ -221,7 +221,7 @@ internal partial class InferpalToolWindowData
             }
             // ⚠ Refused before its turn (the backend unreachable): back to the input box, never dropped — removed from the
             // queue already, it was lost with the refusal.
-            if (!message.Text.StartsWith('/') && !_isBackendReachable)
+            if (!Services.SlashCommandRouter.LooksLikeCommand(message.Text) && !_isBackendReachable)
             {
                 GiveQueueBack([message]);
                 InsertThemed(ChatMessageItem.NoticeMsg(UnreachableText()));
@@ -234,7 +234,7 @@ internal partial class InferpalToolWindowData
         if (claim == 0) return;
         try
         {
-            if (message.Text.StartsWith('/'))
+            if (Services.SlashCommandRouter.LooksLikeCommand(message.Text))
             {
                 PinWorkspaceRoot();
                 await HandleSlashCommandAsync(message.Text, CancellationToken.None);
