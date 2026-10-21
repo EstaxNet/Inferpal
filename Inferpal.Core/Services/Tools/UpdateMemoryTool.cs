@@ -30,15 +30,12 @@ namespace Inferpal.Services.Tools;
 /// </remarks>
 internal class UpdateMemoryTool : ITool
 {
-    private readonly IEditorSurface _editor;
     private readonly IApprovalService _approval;
     private readonly FileHistoryService _history;
     private readonly Func<string> _getWorkspaceRoot;
 
-    public UpdateMemoryTool(IEditorSurface editor, IApprovalService approval,
-                            FileHistoryService history, Func<string> getWorkspaceRoot)
+    public UpdateMemoryTool(IApprovalService approval, FileHistoryService history, Func<string> getWorkspaceRoot)
     {
-        _editor           = editor;
         _approval         = approval;
         _history          = history;
         _getWorkspaceRoot = getWorkspaceRoot;
@@ -101,8 +98,7 @@ internal class UpdateMemoryTool : ITool
         var ollamaDir = Path.Combine(projectRoot, ".inferpal");
         var memPath   = Path.Combine(ollamaDir, "memory.md");
 
-        // Confined like every other writing tool: without a known workspace root the location comes
-        // from the locator's fallbacks, which are a best guess.
+        // Confined like every other writing tool.
         PathSanitizer.AssertUnderRoot(memPath, _getWorkspaceRoot());
 
         // What the memory's own encoding cannot hold is refused before the prompt, like the other writing tools.
@@ -160,20 +156,8 @@ internal class UpdateMemoryTool : ITool
     /// </summary>
     /// <remarks>
     /// ⚠ The prompt reads <c>&lt;projectRoot&gt;/.inferpal/memory.md</c> with the root each front-end
-    /// resolves: the workspace root in the host (which is also the index root), and
-    /// <see cref="ProjectRootLocator.Locate"/> in the Visual Studio window. A search of its own —
-    /// up from the working directory, then from open files — lets the writer and the reader
-    /// disagree: in a VS Code workspace with no <c>.sln</c> it climbed into the PARENT folders
-    /// (refused as outside the workspace, or "no project"), from an open file it could stop at a
-    /// sub-folder the prompt never reads, and in Visual Studio with no document open it found
-    /// nothing at all while a solution was open.
+    /// resolves: the workspace root. A search of its own — up from the working directory, then from open files — lets the
+    /// writer and the reader disagree, and without a workspace no path is accepted anyway.
     /// </remarks>
-    private string ResolveProjectRoot() =>
-        _getWorkspaceRoot() is { Length: > 0 } root
-            ? root
-            : SolutionExtent.OfActiveSolution()?.Root
-              ?? SolutionExtent.RootForDir(new ProjectRootLocator().Locate(
-                  _editor.GetOpenDocumentPaths(),
-                  activeSolutionDir: null,
-                  Directory.GetCurrentDirectory()));
+    private string ResolveProjectRoot() => _getWorkspaceRoot();
 }

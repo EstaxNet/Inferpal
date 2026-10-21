@@ -86,8 +86,9 @@ internal partial class InferpalToolWindowData
             var (action, root) = WorkspaceRootPin.Decide(
                 _config.RagEnabled,
                 current,
-                // The folder that holds the whole solution, not only the .sln's own (SolutionExtent).
-                SolutionExtent.OfActiveSolution()?.Root,
+                // The folder that holds the whole solution, not only the .sln's own (SolutionExtent) — or the folder
+                // Visual Studio has open without a solution.
+                SolutionExtent.ActiveRoot(),
                 // Walks the file system: only worth it while nothing is pinned.
                 string.IsNullOrEmpty(current) ? FindReliableProjectRoot() : null,
                 _indexService.IndexedRoot);
@@ -458,7 +459,7 @@ internal partial class InferpalToolWindowData
     // is; the extent says what root it needs — on every path, or the tools and the .inferpal/ layers
     // would be rooted in two different folders.
     private string? FindReliableProjectRoot() =>
-        SolutionExtent.OfActiveSolution()?.Root
+        SolutionExtent.ActiveRoot()
         ?? SolutionExtent.RootForDir(_rootLocator.LocateReliable(
             _contextHolder.GetOpenPaths(),
             activeSolutionDir: null,
@@ -469,7 +470,7 @@ internal partial class InferpalToolWindowData
     private static readonly Services.Signals.ProjectRootLocator _rootLocator = new();
 
     private string FindProjectRoot(IReadOnlyList<string>? openPaths = null) =>
-        SolutionExtent.OfActiveSolution()?.Root
+        SolutionExtent.ActiveRoot()
         ?? SolutionExtent.RootForDir(_rootLocator.Locate(
             openPaths ?? _contextHolder.GetOpenPaths(),
             activeSolutionDir: null,

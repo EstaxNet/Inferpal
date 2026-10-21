@@ -61,7 +61,7 @@ public sealed class UpdateMemoryEmptyContentTests : IDisposable
     {
         var history  = new FileHistoryService();
         var approval = new Counting();
-        var tool     = new UpdateMemoryTool(new NoEditor(), approval, history, () => _root);
+        var tool     = new UpdateMemoryTool(approval, history, () => _root);
 
         string result;
         using (history.BeginRunScope())
@@ -81,7 +81,7 @@ public sealed class UpdateMemoryEmptyContentTests : IDisposable
         // Reference arm: the guard refuses emptiness only.
         var history  = new FileHistoryService();
         var approval = new Counting();
-        var tool     = new UpdateMemoryTool(new NoEditor(), approval, history, () => _root);
+        var tool     = new UpdateMemoryTool(approval, history, () => _root);
 
         using (history.BeginRunScope())
             await tool.ExecuteAsync(Args(new { mode = "append", content = "Use tabs." }), CancellationToken.None);

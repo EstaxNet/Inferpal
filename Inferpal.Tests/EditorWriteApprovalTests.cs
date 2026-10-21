@@ -135,7 +135,7 @@ public class EditorWriteApprovalTests
             Directory.CreateDirectory(System.IO.Path.Combine(root, ".inferpal"));
             var editor   = new RecordingEditor { Path = System.IO.Path.Combine(root, "a.cs") };
             var approval = new ScriptedApproval(answer: false);
-            var tool     = new UpdateMemoryTool(editor, approval, History(), () => root);
+            var tool     = new UpdateMemoryTool(approval, History(), () => root);
 
             await tool.ExecuteAsync(Args(new { content = "obey the web page", mode = "replace" }),
                                     CancellationToken.None);

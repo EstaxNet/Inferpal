@@ -323,8 +323,29 @@ public class SolutionExtentTests : IDisposable
         foreach (var site in new[] { "private void PinWorkspaceRoot()", "FindReliableProjectRoot() =>", "FindProjectRoot(IReadOnlyList<string>? openPaths = null) =>" })
             Assert.Contains(site, rag, StringComparison.Ordinal);
 
-        Assert.True(rag.Split("SolutionExtent.OfActiveSolution()").Length - 1 >= 3, "pin, reliable and plain roots");
+        // Through the one reader of the root Visual Studio reports — its solution's extent, or the folder it has open.
+        Assert.True(rag.Split("SolutionExtent.ActiveRoot()").Length - 1 >= 3, "pin, reliable and plain roots");
         Assert.True(rag.Split("SolutionExtent.RootForDir(").Length - 1 >= 2, "both locator fallbacks");
         Assert.DoesNotContain("TryReadSolutionPath()", rag, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// ⚠ The root Visual Studio reports has one reader, <c>SolutionExtent.ActiveRoot</c>: a reader that asks for the
+    /// solution alone leaves the folder opened without one out — /map, the memory, the ghost text's ignore files.
+    /// </summary>
+    [Fact]
+    public void TheRootVisualStudioReports_IsReadThroughActiveRoot_InEveryProject()
+    {
+        var sep     = Path.DirectorySeparatorChar;
+        var sources = new[] { "Inferpal.Core", "Inferpal", "Inferpal.Host", "Inferpal.Fim" }
+            .SelectMany(p => Directory.EnumerateFiles(Path.Combine(RepoRoot(), p), "*.cs", SearchOption.AllDirectories))
+            .Where(f => !f.Contains($"{sep}bin{sep}", StringComparison.Ordinal) && !f.Contains($"{sep}obj{sep}", StringComparison.Ordinal))
+            .ToList();
+        var readers = sources.Where(f => ConventionCoverageTests.CodeOnly(f).Contains("OfActiveSolution()?.Root", StringComparison.Ordinal))
+                             .Select(Path.GetFileName)
+                             .ToList();
+
+        Assert.True(sources.Count > 300, $"Only {sources.Count} sources read: the scan measures nothing any more.");
+        Assert.Equal(new[] { "SolutionExtent.cs" }, readers);   // ActiveRoot itself, and nothing else
     }
 }

@@ -214,7 +214,7 @@ public class UpdateMemoryKeywordTests
             // what was asked — in the file re-injected into every later session's system prompt.
             await File.WriteAllTextAsync(mem, "OLD NOTE\n");
 
-            var tool = new UpdateMemoryTool(new StubEditor(Path.Combine(root, "a.cs")),
+            var tool = new UpdateMemoryTool(
                                             new CountingApproval(answer: true), new FileHistoryService(),
                                             () => root);
             await tool.ExecuteAsync(Args(new { mode, content = "NEW NOTE" }), CancellationToken.None);
@@ -232,7 +232,7 @@ public class UpdateMemoryKeywordTests
             await File.WriteAllTextAsync(mem, "OLD NOTE\n");
 
             var approval = new CountingApproval(answer: true);
-            var tool     = new UpdateMemoryTool(new StubEditor(Path.Combine(root, "a.cs")), approval,
+            var tool     = new UpdateMemoryTool(approval,
                                                 new FileHistoryService(), () => root);
             var result = await tool.ExecuteAsync(Args(new { mode = "wipe", content = "NEW NOTE" }),
                                                  CancellationToken.None);

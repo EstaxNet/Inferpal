@@ -9,12 +9,12 @@ internal enum RootPinAction { None, Pin, Index }
 /// Fix reads <c>validators.json</c> from.
 /// </summary>
 /// <remarks>
-/// That root is not a RAG setting. An empty one switches all three off at once:
-/// <c>PathSanitizer.AssertUnderRoot</c> accepts any path and the deny overlay is never read, while
+/// That root is not a RAG setting. An empty one stops every file tool at once:
+/// <c>PathSanitizer.AssertUnderRoot</c> refuses every path, and the deny overlay is never read, while
 /// <c>/permissions</c> still lists it. So it is pinned whether or not indexing runs; RAG only decides
 /// whether the root is also indexed — on a solution switch, and as soon as RAG is turned on.
-/// A pinned root follows the authoritative solution signal only, never open files: a file opened
-/// from another folder must not re-point the confinement.
+/// A pinned root follows the authoritative signal only — the open solution, or the folder Visual Studio has open
+/// without one — never open files: a file opened from another folder must not re-point the confinement.
 /// </remarks>
 internal static class WorkspaceRootPin
 {

@@ -13,7 +13,7 @@ namespace Inferpal.GhostText;
 /// <c>/map</c>, RAG indexing, …) instead of relying on the host process working directory,
 /// which never follows solution open/close.
 /// </summary>
-internal sealed class VsSolutionTracker : IVsSolutionEvents, IDisposable
+internal sealed class VsSolutionTracker : IVsSolutionEvents, IVsSolutionEvents7, IDisposable
 {
     private readonly IVsSolution _solution;
     private          uint        _cookie;
@@ -47,6 +47,14 @@ internal sealed class VsSolutionTracker : IVsSolutionEvents, IDisposable
         {
 #pragma warning disable VSTHRD010  // called from UI-thread contexts (ctor / solution events)
             _solution.GetSolutionInfo(out var dir, out var file, out _);
+            // ⚠ A folder opened without a solution is the workspace too: published as a folder, whatever file name VS
+            // reports for it, so that it is never read as a solution — and the tools are not left without a root.
+            if (_solution.GetProperty((int)__VSPROPID7.VSPROPID_IsInOpenFolderMode, out var folderMode) == VSConstants.S_OK
+                && folderMode is true)
+            {
+                if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir)) ActiveSolutionSignal.WriteFolder(dir);
+                return;
+            }
 #pragma warning restore VSTHRD010
             if (!string.IsNullOrEmpty(dir) && !string.IsNullOrEmpty(file))
             {
@@ -62,7 +70,7 @@ internal sealed class VsSolutionTracker : IVsSolutionEvents, IDisposable
                 }
             }
         }
-        catch { /* non-critical */ }
+        catch (Exception ex) { Services.Diagnostics.Swallow("Solution.Publish", ex); }
     }
 
     // ── IVsSolutionEvents ──────────────────────────────────────────────────────
@@ -99,6 +107,19 @@ internal sealed class VsSolutionTracker : IVsSolutionEvents, IDisposable
     int IVsSolutionEvents.OnQueryUnloadProject(IVsHierarchy pRealHierarchy, ref int pfCancel)          => VSConstants.S_OK;
     int IVsSolutionEvents.OnBeforeUnloadProject(IVsHierarchy pRealHierarchy, IVsHierarchy pStubHierarchy) => VSConstants.S_OK;
     int IVsSolutionEvents.OnQueryCloseSolution(object pUnkReserved, ref int pfCancel)    => VSConstants.S_OK;
+
+    // ── IVsSolutionEvents7 (Open Folder) ───────────────────────────────────────
+
+    void IVsSolutionEvents7.OnAfterOpenFolder(string folderPath)
+    {
+        try { if (!string.IsNullOrEmpty(folderPath) && Directory.Exists(folderPath)) ActiveSolutionSignal.WriteFolder(folderPath); }
+        catch (Exception ex) { Services.Diagnostics.Swallow("Solution.OpenFolder", ex); }
+    }
+
+    void IVsSolutionEvents7.OnBeforeCloseFolder(string folderPath) => ActiveSolutionSignal.Clear();
+    void IVsSolutionEvents7.OnAfterCloseFolder(string folderPath)  => ActiveSolutionSignal.Clear();
+    void IVsSolutionEvents7.OnQueryCloseFolder(string folderPath, ref int pfCancel) { }
+    void IVsSolutionEvents7.OnAfterLoadAllDeferredProjects() { }
 
     // ── IDisposable ────────────────────────────────────────────────────────────
 

@@ -4,6 +4,11 @@ using Inferpal.Localization;
 
 namespace Inferpal.Services.Tools;
 
+/// <summary>A path refused because no workspace is open: no other path, and no retry, gets through.</summary>
+/// <remarks>An <see cref="ArgumentException"/>, so that every caller that catches a path outside the root catches this one
+/// too; told apart by <c>ToolFailure</c>, which must not advise the model to check its arguments and try again.</remarks>
+internal sealed class NoWorkspaceRootException() : ArgumentException(PathSanitizer.NoWorkspaceRoot);
+
 /// <summary>
 /// Normalises and validates file-system paths that originate from LLM output.
 /// Small models often produce paths with extra whitespace, null bytes, or other
@@ -92,14 +97,24 @@ internal static class PathSanitizer
         (path.Length >= 3 && char.IsAsciiLetter(path[0]) && path[1] == ':' && path[2] is '\\' or '/')
         || path.StartsWith(@"\\", StringComparison.Ordinal);
 
+    /// <summary>The refusal for a path asked while no workspace is open: it names the gesture that gives one.</summary>
+    internal const string NoWorkspaceRoot =
+        "Access denied: no workspace is known, and Inferpal reads and writes files only inside one. "
+        + "Open a folder or a solution in the editor — if one is already open, open one of its files; a whole drive or "
+        + "your user folder is not used as a workspace — then ask again.";
+
     /// <summary>
     /// Verifies that <paramref name="fullPath"/> (already sanitised) lives under
     /// <paramref name="workspaceRoot"/>. Throws <see cref="ArgumentException"/> if not.
-    /// No-ops when <paramref name="workspaceRoot"/> is null or empty (no solution open yet).
     /// </summary>
+    /// <remarks>
+    /// ⚠ Without a root, nothing is under it. Accepting every path when the root is empty lets the model read and write
+    /// anywhere on the disk whenever Visual Studio has no workspace yet, the deny overlay and the ignore files unread. A
+    /// caller for which "no root" means something else decides it before calling.
+    /// </remarks>
     internal static void AssertUnderRoot(string fullPath, string? workspaceRoot)
     {
-        if (string.IsNullOrEmpty(workspaceRoot)) return;
+        if (string.IsNullOrEmpty(workspaceRoot)) throw new NoWorkspaceRootException();
 
         // Compare link-resolved paths: Path.GetFullPath normalises ./ and ../ but follows no
         // symlink or junction, so a link planted inside the workspace would otherwise let a

@@ -370,11 +370,13 @@ internal class GetDiagnosticsTool : ITool
 
     /// <summary>Where the search for a project starts — the one reader, so the gap reported to the
     /// caller is the gap of the walk that actually ran.</summary>
+    /// <remarks>⚠ Never the working directory: in Visual Studio it is the host's own folder, and what is found there is built
+    /// — MSBuild targets are code — with no approval card.</remarks>
     private static string SearchStart(string? root) =>
-        string.IsNullOrEmpty(root) ? Directory.GetCurrentDirectory() : root;
+        string.IsNullOrEmpty(root) ? throw new NoWorkspaceRootException() : root;
 
-    /// <summary>The solution or project under <paramref name="root"/> that is built — the working directory only when no
-    /// workspace root is known: the shallowest, then the first in ordinal order (<see cref="WorkspaceScan.ShallowestFirst"/>).</summary>
+    /// <summary>The solution or project under <paramref name="root"/> that is built — refused when no workspace root is
+    /// known: the shallowest, then the first in ordinal order (<see cref="WorkspaceScan.ShallowestFirst"/>).</summary>
     /// <remarks>⚠ Both solution formats are ONE kind, compared together: searched one extension after the other, a
     /// <c>.sln</c> buried in <c>tools/</c> won over the <c>.slnx</c> at the root — the build of a side project, read as
     /// the workspace's verdict.</remarks>

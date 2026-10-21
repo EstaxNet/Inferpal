@@ -1450,11 +1450,11 @@ internal class RunTestsTool : ITool
         return null;
     }
 
-    /// <summary>Where the runner starts: the path given, else the workspace root — the working
-    /// directory only when no workspace root is known.</summary>
+    /// <summary>Where the runner starts: the path given, else the workspace root — never the working directory, which in
+    /// Visual Studio is the host's own folder.</summary>
     internal static string ResolveWorkDir(string? path, string? root)
     {
-        var fallback = string.IsNullOrEmpty(root) ? Directory.GetCurrentDirectory() : root;
+        var fallback = string.IsNullOrEmpty(root) ? throw new NoWorkspaceRootException() : root;
         if (path is null)                    return fallback;
         if (Directory.Exists(path))          return path;
         if (File.Exists(path))               return Path.GetDirectoryName(path) ?? fallback;

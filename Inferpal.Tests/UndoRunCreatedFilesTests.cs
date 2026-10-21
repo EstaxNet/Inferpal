@@ -62,7 +62,7 @@ public class UndoRunCreatedFilesTests
         try
         {
             var history = new FileHistoryService();
-            var tool    = new UpdateMemoryTool(new NoEditor(), new YesApproval(), history, () => root);
+            var tool    = new UpdateMemoryTool(new YesApproval(), history, () => root);
 
             using (history.BeginRunScope())
                 await tool.ExecuteAsync(

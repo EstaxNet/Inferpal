@@ -193,6 +193,30 @@ internal sealed record SolutionExtent(
         ActiveSolutionSignal.TryReadSolutionPath() is { } sln ? Noted(sln) : null;
 
     /// <summary>
+    /// The root Visual Studio reports: the extent of its open solution, or the folder it has open without one ("Open
+    /// Folder"), or <c>null</c> when it reports neither.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The one reader of that answer: a reader that asks for the solution alone pins no root in a folder.
+    /// </remarks>
+    internal static string? ActiveRoot() => OfActiveSolution()?.Root ?? OpenFolderRoot();
+
+    /// <summary>
+    /// The folder Visual Studio has open without a solution, unless it is a drive root or holds the user folder — the two
+    /// bounds a solution's extent never widens past, said in <c>/diagnostics</c> once.
+    /// </summary>
+    private static string? OpenFolderRoot()
+    {
+        if (ActiveSolutionSignal.TryReadOpenFolder() is not { } folder) return null;
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        if (Path.GetDirectoryName(folder) is not null && (string.IsNullOrEmpty(home) || !IsUnder(Bare(home), Bare(folder))))
+            return folder;
+        Diagnostics.RecordOnce(OutsideContext,
+            $"Open folder not used as the workspace: {folder} is a drive root or holds the user folder.", folder);
+        return null;
+    }
+
+    /// <summary>
     /// The workspace root for a folder a solution search returned: the extent of the solution it holds, or the folder
     /// itself when it holds none (a working directory, an open file's folder). What it leaves outside is said in
     /// <c>/diagnostics</c>.

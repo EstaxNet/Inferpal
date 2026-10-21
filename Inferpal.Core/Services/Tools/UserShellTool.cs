@@ -51,6 +51,8 @@ internal sealed class UserShellTool(string name, string command, IApprovalServic
     {
         var extra   = args.Str("args");
         var fullCmd = Expand(command, extra);
+        // Like run_command: without a workspace there is no folder to run in, and the card would name none.
+        if (string.IsNullOrEmpty(getRoot())) throw new NoWorkspaceRootException();
 
         if (!await approval.RequestApprovalAsync(name, fullCmd, ct))
             return "Cancelled.";

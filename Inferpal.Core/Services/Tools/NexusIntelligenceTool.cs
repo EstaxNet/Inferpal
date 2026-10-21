@@ -62,6 +62,8 @@ internal sealed class NexusIntelligenceTool : ITool
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
         var workspace = _getRoot();
+        // Before Sanitize: an empty root there reads as "path missing", and the model sends one only to be refused.
+        if (string.IsNullOrEmpty(workspace)) throw new NoWorkspaceRootException();
         var root   = PathSanitizer.Sanitize(args.Str("root") ?? workspace, workspace);
         // Keep scanning inside the workspace — the LLM must not point this at arbitrary disk paths.
         PathSanitizer.AssertUnderRoot(root, workspace);

@@ -126,7 +126,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new RunTestsTool(() => indexService.RootDir));
         Register(new InsertAtCursorTool(editor, approval, _fileHistory));
         Register(new ReplaceSelectionTool(editor, approval, _fileHistory));
-        Register(new UpdateMemoryTool(editor, approval, _fileHistory, () => indexService.RootDir));
+        Register(new UpdateMemoryTool(approval, _fileHistory, () => indexService.RootDir));
         // trace_dependency / analyze_impact / trace_nexus are unified behind one analyze_code(mode=…)
         // facade to keep the per-request tool list small (the three strategies live inside it).
         Register(new AnalyzeCodeTool(() => indexService.RootDir));

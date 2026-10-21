@@ -49,6 +49,11 @@ internal static class ToolFailure
               + "Other calls of this tool are not affected; say what you could not do."
         : Mcp.McpTool.IsMcpName(toolName)
             ? McpAdvice(Root(ex))
+        // ⚠ Every path is refused while no workspace is open: "check the arguments and try again" sends the model through
+        // one path after another until its loop limit.
+        : Root(ex) is Tools.NoWorkspaceRootException
+            ? "The arguments are not the cause: no file can be read or written, and no command run, until a workspace is "
+              + "open. Do not retry with another path; tell the user to open a folder or a solution."
         : IsAboutTheArguments(ex)
             ? "Check the arguments against the tool's schema and try again."
         // ⚠ A failure of ONE file is not a failure of the tool: read-only (a TFVC or Perforce workspace keeps files

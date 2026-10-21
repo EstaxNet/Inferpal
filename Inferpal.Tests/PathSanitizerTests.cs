@@ -56,9 +56,19 @@ public class PathSanitizerTests : IDisposable
         Assert.Throws<ArgumentException>(() => PathSanitizer.AssertUnderRoot(escaping, _root));
     }
 
-    [Fact]
-    public void NoWorkspaceRoot_DisablesTheCheck()
-        => PathSanitizer.AssertUnderRoot(Path.Combine(_outside, "a.cs"), null);
+    /// <summary>
+    /// ⚠ Without a root, nothing is "under" it: an empty root that accepts every path lets the model read and write
+    /// anywhere on the disk while Visual Studio has no workspace, the deny overlay and the ignore files unread.
+    /// </summary>
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void NoWorkspaceRoot_RefusesThePath_AndNamesTheGestureThatGivesOne(string? root)
+    {
+        var refused = Assert.Throws<NoWorkspaceRootException>(() => PathSanitizer.AssertUnderRoot(Path.Combine(_outside, "a.cs"), root));
+        Assert.Contains("Open a folder or a solution", refused.Message, StringComparison.Ordinal);
+        Assert.False(PathSanitizer.IsUnderRoot(Path.Combine(_outside, "a.cs"), root));
+    }
 
     // ── Relative paths: against the root, never against the working directory ─
 

@@ -51,7 +51,7 @@ public class GetDiagnosticsToolTests
     {
         // An explicit path means "build THAT project" — the live-panel shortcut must not hijack it.
         var editor  = new FakeEditorSurface { Diagnostics = "a.cs(1,2): error CS0103: boom" };
-        var tool    = new GetDiagnosticsTool(editor);
+        var tool    = new GetDiagnosticsTool(editor, () => Path.GetTempPath());
         var missing = Path.Combine(Path.GetTempPath(), "inferpal-does-not-exist", "x.csproj");
 
         var result = await tool.ExecuteAsync(Args(new { path = missing }), CancellationToken.None);

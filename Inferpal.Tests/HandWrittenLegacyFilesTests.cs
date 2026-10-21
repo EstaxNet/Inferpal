@@ -43,7 +43,7 @@ public sealed class HandWrittenLegacyFilesTests : IDisposable
     public async Task UpdateMemory_AppendingToAHandWrittenLegacyMemory_KeepsItsAccents()
     {
         File.WriteAllBytes(Inferpal("memory.md"), Memory);
-        var tool = new UpdateMemoryTool(new NullEditorSurface(), new YesApproval(), new FileHistoryService(), () => _root);
+        var tool = new UpdateMemoryTool(new YesApproval(), new FileHistoryService(), () => _root);
         using var args = JsonDocument.Parse("""{"content":"- the tests run with dotnet test"}""");
 
         await tool.ExecuteAsync(args.RootElement, CancellationToken.None);

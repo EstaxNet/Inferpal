@@ -64,6 +64,9 @@ internal class GetGitStatusTool : ITool
         var startPath    = args.Str("path");
         var includeDiff  = args.Bool("include_diff", false);
         var diffPath     = args.Str("diff_path");
+        // Without a workspace, the report's fallbacks (an open file's repository, the working directory) are no one's
+        // choice for the model: kept for the user's own @diff, refused here.
+        if (string.IsNullOrEmpty(_getRoot())) throw new NoWorkspaceRootException();
         if (diffPath is not null)
         {
             var workspace = _getRoot();

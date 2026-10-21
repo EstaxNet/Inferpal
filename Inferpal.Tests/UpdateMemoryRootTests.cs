@@ -26,17 +26,6 @@ public sealed class UpdateMemoryRootTests : IDisposable
         try { Directory.Delete(_root, recursive: true); } catch { /* cleanup */ }
     }
 
-    private sealed class NoEditor : IEditorSurface
-    {
-        public bool IsAvailable => false;
-        public string? ActiveDocumentPath => null;
-        public IReadOnlyList<string> GetOpenDocumentPaths() => [];
-        public Task<ActiveDocument?> GetActiveDocumentAsync(CancellationToken ct) => Task.FromResult<ActiveDocument?>(null);
-        public Task<string?> InsertAtCursorAsync(string text, CancellationToken ct) => Task.FromResult<string?>(null);
-        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, CancellationToken ct) => Task.FromResult<EditorEditResult?>(null);
-        public Task<string?> GetEditorDiagnosticsAsync(CancellationToken ct) => Task.FromResult<string?>(null);
-    }
-
     private sealed class Approve : IApprovalService
     {
         public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct,
@@ -45,7 +34,7 @@ public sealed class UpdateMemoryRootTests : IDisposable
 
     private static JsonElement Args(object o) => JsonDocument.Parse(JsonSerializer.Serialize(o)).RootElement;
 
-    private UpdateMemoryTool Tool() => new(new NoEditor(), new Approve(), new FileHistoryService(), () => _root);
+    private UpdateMemoryTool Tool() => new(new Approve(), new FileHistoryService(), () => _root);
 
     [Fact]
     public async Task WritesUnderTheWorkspaceRoot_WithoutASolutionOrAnInferpalFolder()

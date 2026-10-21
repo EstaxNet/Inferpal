@@ -88,7 +88,7 @@ public class MemoryWithoutANetTests
             var probe = await new FileHistoryService().SnapshotAsync(memPath, CancellationToken.None);
             Assert.Equal(string.Empty, probe);
 
-            var tool = new UpdateMemoryTool(new NoEditor(), new YesApproval(), new FileHistoryService(), () => root);
+            var tool = new UpdateMemoryTool(new YesApproval(), new FileHistoryService(), () => root);
 
             var answer = await tool.ExecuteAsync(
                 Raw("""{"mode":"clear"}"""), CancellationToken.None);
@@ -111,7 +111,7 @@ public class MemoryWithoutANetTests
             Directory.CreateDirectory(Path.GetDirectoryName(historyDir)!);
             await File.WriteAllTextAsync(historyDir, "not a directory");
 
-            var tool = new UpdateMemoryTool(new NoEditor(), new YesApproval(), new FileHistoryService(), () => root);
+            var tool = new UpdateMemoryTool(new YesApproval(), new FileHistoryService(), () => root);
 
             await tool.ExecuteAsync(
                 Raw("""{"mode":"replace","content":"nothing matters"}"""), CancellationToken.None);
@@ -128,7 +128,7 @@ public class MemoryWithoutANetTests
         var (root, memPath, historyDir) = await WorkspaceAsync();
         try
         {
-            var tool = new UpdateMemoryTool(new NoEditor(), new YesApproval(), new FileHistoryService(), () => root);
+            var tool = new UpdateMemoryTool(new YesApproval(), new FileHistoryService(), () => root);
 
             var answer = await tool.ExecuteAsync(Raw("""{"mode":"clear"}"""), CancellationToken.None);
 
@@ -150,7 +150,7 @@ public class MemoryWithoutANetTests
         var root = Directory.CreateTempSubdirectory("inferpal-mem").FullName;
         try
         {
-            var tool = new UpdateMemoryTool(new NoEditor(), new YesApproval(), new FileHistoryService(), () => root);
+            var tool = new UpdateMemoryTool(new YesApproval(), new FileHistoryService(), () => root);
 
             await tool.ExecuteAsync(
                 Raw("""{"mode":"append","content":"first note"}"""), CancellationToken.None);

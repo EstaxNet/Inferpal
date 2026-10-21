@@ -48,9 +48,14 @@ public sealed class WorkspaceRootFallbackTests : IDisposable
         Assert.Equal(sub, RunTestsTool.ResolveWorkDir(path: sub, root: _root));
     }
 
+    /// <summary>
+    /// ⚠ Without a root, the working directory is not a fallback: in Visual Studio it is the host's own folder, and a build
+    /// or a test run there executes code nobody chose, with no approval card.
+    /// </summary>
     [Fact]
-    public void WithoutARoot_TheWorkingDirectoryIsStillTheFallback()
+    public void WithoutARoot_NoBuildAndNoTestRun_StartsInTheWorkingDirectory()
     {
-        Assert.Equal(Directory.GetCurrentDirectory(), RunTestsTool.ResolveWorkDir(path: null, root: null));
+        Assert.Throws<NoWorkspaceRootException>(() => RunTestsTool.ResolveWorkDir(path: null, root: null));
+        Assert.Throws<NoWorkspaceRootException>(() => GetDiagnosticsTool.FindProjectFile(null));
     }
 }

@@ -42,17 +42,17 @@ var loop = new FimRpcLoop(stdin, stdout, async (request, ct) =>
     // A backend without FIM is not an error: it is "nothing to suggest".
     if (!client.Capabilities.Fim) return string.Empty;
     // ⚠ A completion sends the document around the caret: a file the workspace's ignore files exclude is never completed.
-    // The root is the open solution's extent, as the chat window decides it.
-    // Declared when the open solution changes, not at each pause in typing: the extent reads the solution and the
+    // The root is the open solution's extent, or the folder Visual Studio has open, as the chat window decides it.
+    // Declared when what is open changes, not at each pause in typing: the extent reads the solution and the
     // repository, and a declaration reads the ignore files again.
     if (request.Path is { Length: > 0 } path)
     {
-        var solution = ActiveSolutionSignal.TryReadSolutionPath();
-        if (!string.Equals(solution, declaredFor, StringComparison.Ordinal))
+        var open = ActiveSolutionSignal.TryReadSolutionPath() ?? ActiveSolutionSignal.TryReadOpenFolder();
+        if (!string.Equals(open, declaredFor, StringComparison.Ordinal))
         {
-            declaredFor = solution;
-            if (solution is not null)
-                Inferpal.Services.Governance.ContentExclusions.Declare(SolutionExtent.Of(solution).Root, () => config.IgnoreFiles);
+            declaredFor = open;
+            if (SolutionExtent.ActiveRoot() is { } root)
+                Inferpal.Services.Governance.ContentExclusions.Declare(root, () => config.IgnoreFiles);
         }
         if (Inferpal.Services.Governance.ContentExclusions.Of(path) is not null) return string.Empty;
     }

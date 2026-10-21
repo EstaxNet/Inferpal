@@ -102,6 +102,8 @@ internal sealed class RenameSymbolTool : ITool
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
         var workspace   = _getRoot();
+        // Before Sanitize: an empty root there reads as "path missing", and the model sends one only to be refused.
+        if (string.IsNullOrEmpty(workspace)) throw new NoWorkspaceRootException();
         var root        = PathSanitizer.Sanitize(args.Str("root") ?? workspace, workspace);
         // rename_symbol WRITES files — keep it inside the workspace like write_file/apply_diff.
         PathSanitizer.AssertUnderRoot(root, workspace);

@@ -4,8 +4,8 @@ using System.Text.Json;
 namespace Inferpal.Services.Signals;
 
 /// <summary>
-/// File-based IPC channel that publishes the <em>currently open</em> Visual Studio solution
-/// from the in-process <c>GhostTextPackage</c> (which can query
+/// File-based IPC channel that publishes the <em>currently open</em> Visual Studio solution — or the folder it has open
+/// without one — from the in-process <c>GhostTextPackage</c> (which can query
 /// <c>IVsSolution</c> and subscribe to <c>IVsSolutionEvents</c>) to the out-of-process
 /// extension host (Commands, ToolWindow, tools) which cannot access VS COM services.
 /// </summary>
@@ -49,7 +49,21 @@ internal static class ActiveSolutionSignal
             "ActiveSolutionSignal.Write");
     }
 
-    /// <summary>Deletes the signal file (called when the solution closes). Safe if absent.</summary>
+    /// <summary>
+    /// Records the folder Visual Studio has open with no solution ("Open Folder"), overwriting any previous value.
+    /// </summary>
+    /// <remarks>
+    /// The same file as the solution: one thing is open at a time, and the scripts that prove the in-process package
+    /// loaded test that file's existence. A folder is never read as a solution (<see cref="TryReadSolutionPath"/>).
+    /// </remarks>
+    internal static void WriteFolder(string folderPath)
+    {
+        SignalFile.Write(FilePath,
+            new { folderPath, pid = SignalFile.CurrentPid, ts = SignalFile.Now.ToUnixTimeMilliseconds() },
+            "ActiveSolutionSignal.WriteFolder");
+    }
+
+    /// <summary>Deletes the signal file (called when the solution or the folder closes). Safe if absent.</summary>
     internal static void Clear()
     {
         SignalFile.Delete(FilePath);
@@ -62,7 +76,31 @@ internal static class ActiveSolutionSignal
     /// solution is open, the package has not reported one yet, or the recorded file no longer
     /// exists on disk (stale entry from a previous session).
     /// </summary>
-    internal static string? TryReadSolutionPath()
+    internal static string? TryReadSolutionPath() =>
+        // Validate the recorded path still exists — guards against a stale file left behind
+        // by a crashed VS session pointing at a moved/deleted solution.
+        TryReadField("solutionPath") is { } path && File.Exists(path) ? path : null;
+
+    /// <summary>
+    /// Returns the folder Visual Studio has open with no solution, or <c>null</c> when a solution (or nothing) is open,
+    /// the package has not reported it yet, or the folder no longer exists.
+    /// </summary>
+    /// <remarks>One spelling, whichever event wrote it (VS ends one with a separator): a root that differs by a trailing
+    /// separator is re-pinned, and the index restarts.</remarks>
+    internal static string? TryReadOpenFolder()
+    {
+        if (TryReadField("folderPath") is not { } path || !Directory.Exists(path)) return null;
+        try
+        {
+            // By hand: also compiled into the net472 in-process assembly, which has no TrimEndingDirectorySeparator.
+            var full    = Path.GetFullPath(path);
+            var trimmed = full.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            return trimmed.Length < (Path.GetPathRoot(full)?.Length ?? 0) ? full : trimmed;   // a drive root keeps its "\"
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException) { return null; }
+    }
+
+    private static string? TryReadField(string field)
     {
         // This file is written by a Visual Studio in-process package and the folder is
         // machine-wide. A host with no such peer (Inferpal.Host, i.e. VS Code) would otherwise
@@ -74,15 +112,13 @@ internal static class ActiveSolutionSignal
         {
             if (!File.Exists(FilePath)) return null;
             var obj  = JsonSerializer.Deserialize<JsonElement>(File.ReadAllText(FilePath));
-            var path = obj.TryGetProperty("solutionPath", out var p) ? p.GetString() : null;
+            var path = obj.TryGetProperty(field, out var p) ? p.GetString() : null;
             // Its writer, when it said who it is (an older version did not): an earlier devenv's under the same PID is no
             // answer about this one.
             if (obj.TryGetProperty("pid", out var pid) && pid.TryGetInt32(out var writer)
                 && obj.TryGetProperty("ts", out var ts) && ts.TryGetInt64(out var stamp)
                 && !SignalFile.WriterAlive(writer, stamp)) return null;
-            // Validate the recorded path still exists — guards against a stale file left behind
-            // by a crashed VS session pointing at a moved/deleted solution.
-            return !string.IsNullOrEmpty(path) && File.Exists(path) ? path : null;
+            return string.IsNullOrEmpty(path) ? null : path;
         }
         catch { return null; }
     }

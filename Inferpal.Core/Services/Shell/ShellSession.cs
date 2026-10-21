@@ -71,7 +71,11 @@ internal sealed class ShellSession
     {
         string dir;
         lock (_lock) { DropIfRootMoved(); dir = workDirOverride ?? _cwd ?? _root(); }
-        return System.IO.Directory.Exists(dir) ? (dir, null) : (_root(), dir);
+        if (System.IO.Directory.Exists(dir)) return (dir, null);
+        // ⚠ No folder to fall back on: started bare, the command runs in the host's own folder, and its card names none.
+        var root = _root();
+        if (string.IsNullOrEmpty(root)) throw new Tools.NoWorkspaceRootException();
+        return (root, dir);
     }
 
     /// <summary>The line above a command's output when it did not run where the session was: read as the session's

@@ -332,7 +332,12 @@ exists.
   the root widens to hold them — within the git repository that holds the solution, never to your
   home folder or a drive root, and not while the solution's folder keeps its own `.inferpal/`
   files (move them up to the wider folder to let it widen). Projects still out of reach are
-  marked by `get_solution_info` and named in `/diagnostics`.
+  marked by `get_solution_info` and named in `/diagnostics`. A folder opened without a solution
+  (*File › Open › Folder*) is the workspace too, unless it is a whole drive or your user folder.
+  With no workspace — a file alone, or the few seconds before Visual Studio reports its solution —
+  no tool reads or writes a file, builds, runs tests or runs a command in a folder nobody named:
+  the refusal says to open a folder or a solution. `run_command` is not path-confined: when it
+  runs anywhere but the workspace root, its approval card names the folder.
 - **Markup and generated code** — a rename follows the markup that binds the symbol (`.razor`,
   `.cshtml`, `.xaml`: bindings under a matching `x:DataType`, `Model.X` and `asp-for`, a component's
   own code, route parameter and attributes on its tag) and lists every other occurrence of the
