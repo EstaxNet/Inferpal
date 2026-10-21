@@ -330,14 +330,17 @@ internal static class WorkspaceScan
     /// </para>
     /// <para>
     /// The <b>first</b> one, not all of them: naming one folder is what makes the message
-    /// actionable, and stopping there keeps a clean repository to a single traversal.
+    /// actionable, and stopping there keeps a clean repository to a single traversal. First in
+    /// <b>ordinal</b> order at each level, never in the file system's: under POSIX a listing's order
+    /// is arbitrary, and with two gaps side by side the folder named would change from one run to
+    /// the next on the same tree.
     /// </para>
     /// </remarks>
     public static WalkGap? FirstWalkGap(string start, string? root = null)
     {
         try
         {
-            foreach (var child in Directory.EnumerateDirectories(start))
+            foreach (var child in Directory.EnumerateDirectories(start).Order(StringComparer.Ordinal))
             {
                 if (IsExcludedDirName(child)) continue;
 

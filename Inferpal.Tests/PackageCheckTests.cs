@@ -128,6 +128,63 @@ public class PackageCheckTests : IDisposable
     }
 
     [Fact]
+    public async Task ACallThePersonMade_IsNeitherAskedNorRefused_AndTheNextModelCallIs()
+    {
+        // `/run pip install ibantools`: the person typed the name and knows whether it exists. Their call goes to the card
+        // as before; once the scope ends, a call is the model's again and is checked.
+        var path     = Requirements("pytest\n");
+        var approval = new CountingApproval();
+        var lookup   = new FakeLookup(_ => PackageLookupResult.Absent("PyPI"));
+        var tools    = Registry(approval, lookup);
+        var adds     = Args(new { path, old_content = "pytest\n", new_content = "pytest\nibantools==1.0\n" });
+
+        string theirs;
+        using (PackageCheck.ThePersonsOwnCalls())
+            theirs = await tools.ExecuteAsync("apply_diff", adds, CancellationToken.None);
+
+        Assert.DoesNotContain("does not exist", theirs, StringComparison.Ordinal);
+        Assert.Empty(lookup.Asked);
+        Assert.Equal(1, approval.Calls);
+        Assert.Contains("ibantools", File.ReadAllText(path), StringComparison.Ordinal);
+
+        File.WriteAllText(path, "pytest\n");
+        var models = await tools.ExecuteAsync("apply_diff", adds, CancellationToken.None);
+        Assert.StartsWith("Error: the package 'ibantools' does not exist on PyPI", models, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AManifestSavedInTheLegacyCodePage_IsReadAsTheEditReadsIt()
+    {
+        // A BOM-less requirements.txt in the machine's legacy code page, with an accented comment: read as UTF-8, its text
+        // no longer held the edit's old_content, and the name the edit adds was never asked.
+        var legacy = Inferpal.Services.Tools.TextFileEncoding.LegacyEncoding;
+        const string before = "# café\npytest\n";
+        var bytes = legacy.GetBytes(before);
+        Assert.True(legacy.GetString(bytes) == before && !Inferpal.Services.Tools.TextFileEncoding.Utf8NoBom.GetString(bytes).Equals(before),
+                    "this code page does not write the accent apart from UTF-8: the test is UNDECIDED");
+        var path = Path.Combine(_root, "requirements.txt");
+        File.WriteAllBytes(path, bytes);
+
+        Assert.Equal(["ibantools"], Names("apply_diff", new { path, old_content = before, new_content = before + "ibantools==1.0\n" }));
+    }
+
+    [Fact]
+    public void BothFrontEndsSlashCommandTools_RunAsThePersonsOwnCalls()
+    {
+        // The two places a typed command (/run, /read, /git…) reaches the registry, in Visual Studio and in the host that
+        // serves VS Code and the ACP agent. Read without comments: a call left in a comment is not a call.
+        var root = new DirectoryInfo(AppContext.BaseDirectory);
+        while (root is not null && !File.Exists(Path.Combine(root.FullName, "README.md"))) root = root.Parent;
+        Assert.NotNull(root);
+        foreach (var file in new[] { "Inferpal/ToolWindow/InferpalToolWindowData.ToolInvocation.cs", "Inferpal.Host/HostSlashCommands.cs" })
+        {
+            var code = ConventionCoverageTests.CodeOnly(Path.Combine(root!.FullName, file));
+            Assert.Contains("SlashToolAction.Shown(", code, StringComparison.Ordinal);
+            Assert.Contains("PackageCheck.ThePersonsOwnCalls()", code, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
     public async Task TheRefusal_OffersTheCloseNamesTheSourceKnows()
     {
         var approval = new CountingApproval();
@@ -518,6 +575,10 @@ public class PackageCheckTests : IDisposable
         Assert.Null(PackageManagerLookup.NuGetOtherSource(nugetDefault));
         Assert.Equal("https://pkgs.company.invalid/v3/index.json", PackageManagerLookup.NuGetOtherSource(nugetCompany));
         Assert.Null(PackageManagerLookup.NuGetOtherSource(nugetCompanyOff));
+        // A folder on a network share would receive the name over the network; a local one never does.
+        Assert.Equal("\\\\corp-nas\\nuget", PackageManagerLookup.NuGetOtherSource("E https://api.nuget.org/v3/index.json\nE \\\\corp-nas\\nuget\n"));
+        Assert.Equal("file://corp-nas/nuget", PackageManagerLookup.NuGetOtherSource("E file://corp-nas/nuget\n"));
+        Assert.Null(PackageManagerLookup.NuGetOtherSource("E file:///C:/feeds/local\nE /home/me/feed\n"));
 
         Assert.Null(PackageManagerLookup.NpmOtherRegistry("https://registry.npmjs.org/\n", scope: null));
         Assert.Equal("https://registry.company.invalid/", PackageManagerLookup.NpmOtherRegistry("https://registry.company.invalid/\n", scope: null));
@@ -525,6 +586,13 @@ public class PackageCheckTests : IDisposable
         Assert.Equal("https://npm.corp.invalid/", PackageManagerLookup.NpmOtherRegistry(scoped, "@corp"));
         Assert.Null(PackageManagerLookup.NpmOtherRegistry("registry=https://registry.npmjs.org/\n@other:registry=undefined\n", "@other"));
         Assert.NotNull(PackageManagerLookup.NpmOtherRegistry("", scope: null));
+
+        // The close names of a name found absent on the public registry are searched THERE: npm search would otherwise
+        // ask the default registry, which can be a company's even when the name's scope maps to the public one.
+        var search = PackageManagerLookup.NpmSearchArguments("@types/nodee");
+        Assert.Equal("search", search[0]);
+        Assert.Contains("--registry=https://registry.npmjs.org/", search);
+        Assert.Equal("@types/nodee", search[^1]);
     }
 
     [Fact]

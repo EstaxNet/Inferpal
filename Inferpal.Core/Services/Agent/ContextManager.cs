@@ -196,10 +196,13 @@ internal static class ContextManager
 
     /// <summary>
     /// The tools the next chat turn does not send because they are turned off, by the name they are turned off by: none
-    /// with tools off for the conversation (nothing is sent at all), the registry's otherwise.
+    /// with tools off for the conversation (nothing is sent at all), in plan mode only those plan mode would have sent
+    /// (the same request <see cref="NextTurnToolTokens"/> weighs), the registry's otherwise.
     /// </summary>
-    internal static IReadOnlyList<string> NextTurnTurnedOff(ToolRegistry tools, bool toolsEnabled) =>
-        !toolsEnabled ? [] : tools.TurnedOffKeys();
+    internal static IReadOnlyList<string> NextTurnTurnedOff(ToolRegistry tools, bool toolsEnabled, bool planMode) =>
+        !toolsEnabled ? []
+        : planMode ? [.. tools.TurnedOffKeys().Where(PlanModeToolRegistry.IsAllowed)]
+        : tools.TurnedOffKeys();
 
     /// <summary>
     /// The window the conversation is measured against: the configured one, or the one the server

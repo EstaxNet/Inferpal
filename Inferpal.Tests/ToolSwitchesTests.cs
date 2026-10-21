@@ -366,13 +366,16 @@ public sealed class ToolSwitchesTests : IDisposable
     public async Task XRay_NamesTheToolsTurnedOff_InTheUsersLanguage()
     {
         var b = await Build(32_768, [("tracker", Small)]);
-        Assert.Empty(Services.Agent.ContextManager.NextTurnTurnedOff(b.Tools, toolsEnabled: true));   // reference arm
+        Assert.Empty(Services.Agent.ContextManager.NextTurnTurnedOff(b.Tools, toolsEnabled: true, planMode: false));   // reference arm
         Assert.Null(XRayPanelPresenter.TurnedOffLine([]));
 
-        b.Config.DisabledTools = "run_command\ntracker/ping";
-        var off = Services.Agent.ContextManager.NextTurnTurnedOff(b.Tools, toolsEnabled: true);
-        Assert.Equal(["run_command", "tracker/ping"], off);
-        Assert.Empty(Services.Agent.ContextManager.NextTurnTurnedOff(b.Tools, toolsEnabled: false));
+        b.Config.DisabledTools = "run_command\ntracker/ping\nsearch_codebase";
+        var off = Services.Agent.ContextManager.NextTurnTurnedOff(b.Tools, toolsEnabled: true, planMode: false);
+        Assert.Equal(["run_command", "search_codebase", "tracker/ping"], off.Order(StringComparer.Ordinal));
+        Assert.Empty(Services.Agent.ContextManager.NextTurnTurnedOff(b.Tools, toolsEnabled: false, planMode: false));
+        // Plan mode sends neither a command nor an MCP tool: only what it would have sent is "turned off, not sent".
+        Assert.Equal(["search_codebase"], Services.Agent.ContextManager.NextTurnTurnedOff(b.Tools, toolsEnabled: true, planMode: true));
+        off = ["run_command", "tracker/ping"];
 
         var line = Strings.XrayToolsTurnedOff(2, "run_command, tracker/ping");
         Assert.Equal(line, XRayPanelPresenter.Build([], null, 0, 32_768, turnedOff: off).ToolsTurnedOff);

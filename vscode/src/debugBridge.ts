@@ -415,19 +415,30 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
   }
 
   /**
-   * Closes the tabs the capture opened — the source of the frame it stopped in, which the user never asked to see —
-   * and brings the editor that was in front back. A tab with unsaved changes stays: closing it would ask the user
-   * about a file they did not open.
+   * Closes the tabs the capture opened — the source of the frame it stopped in, outside the workspace (the test
+   * framework's), which the user never asked to see — and, when one of them was in front, brings the editor that was in
+   * front back. A file of the workspace opened meanwhile stays, and so does the editor in front: the capture can take
+   * minutes, and the user may have opened it to read while the test ran. A tab with unsaved changes stays too: closing
+   * it would ask the user about a file they did not open.
    */
   private async putBackEditors(before: ShownEditors): Promise<void> {
     try {
       const opened = vscode.window.tabGroups.all
         .flatMap((group) => group.tabs)
-        .filter((t) => t.input instanceof vscode.TabInputText && !t.isDirty && !before.open.has(t.input.uri.toString()));
+        .filter(
+          (t) =>
+            t.input instanceof vscode.TabInputText &&
+            !t.isDirty &&
+            !before.open.has(t.input.uri.toString()) &&
+            !vscode.workspace.getWorkspaceFolder(t.input.uri),
+        );
+      const inFront = vscode.window.activeTextEditor?.document.uri.toString();
+      const frontClosed =
+        inFront === undefined || opened.some((t) => (t.input as vscode.TabInputText).uri.toString() === inFront);
       if (opened.length > 0) {
         await vscode.window.tabGroups.close(opened, true);
       }
-      if (before.active) {
+      if (before.active && frontClosed) {
         await vscode.window.showTextDocument(before.active, { preserveFocus: true });
       }
     } catch (err) {

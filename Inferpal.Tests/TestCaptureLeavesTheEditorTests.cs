@@ -45,4 +45,17 @@ public class TestCaptureLeavesTheEditorTests
         Assert.Contains("vscode.window.tabGroups.close(", putBack);
         Assert.Contains("vscode.window.showTextDocument(before.active", putBack);
     }
+
+    [Fact]
+    public void AWorkspaceFileOpenedDuringTheCapture_StaysOpen_AndInFront()
+    {
+        // The capture can take minutes (the entry wait, up to twenty resumes): a file of the workspace the user opened to
+        // read meanwhile is theirs, not the debugger's — the debugger opens the framework's source, outside the workspace.
+        var putBack = WebviewRebuildTests.Body(WebviewRebuildTests.TsCode("debugBridge.ts"), "private async putBackEditors(");
+
+        Assert.Contains("!vscode.workspace.getWorkspaceFolder(t.input.uri)", putBack);
+        // The editor that was in front comes back only when the one in front now is a tab the capture closed.
+        Assert.Contains("const frontClosed", putBack);
+        Assert.Contains("if (before.active && frontClosed)", putBack);
+    }
 }

@@ -3,6 +3,25 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.8.3
+
+An invented package is refused before you are asked to approve it, a tool you never use can be turned off, an MCP
+server can ask you for a value on a card, and Inferpal no longer edits your `.gitignore`.
+
+- **Invented packages**: a package a call adds (`dotnet add package`, `npm install`, `pip install`, `uv add`, or a
+  dependency written into a project file) is first looked up on nuget.org, npm or PyPI; a name the registry does not
+  have is refused, and the model is told the close names that exist. A company feed or private index is never sent the
+  name. Settings → Agent and approvals turns it off.
+- **Turn a tool off**: `/tools` lists every tool with what it weighs in each request; `/tools off <tool>` and
+  `/tools on <tool>`, or the **Tools** page of the settings, turn one off in every conversation. Your own commands that
+  use it keep working.
+- **MCP servers can ask you for a value** — a repository, a date, a choice — on a card in the chat: **Send**,
+  **Decline** or **Cancel**, each field checked before it is sent. A local server that asks for its roots gets the
+  workspace folder.
+- **Your `.gitignore` is never edited** any more, and *Backups of changed files* (Settings → Agent and approvals) can
+  keep `/undo-run`'s copies in your user folder instead of `.inferpal/history/`.
+- **`/tdd`** no longer leaves the test framework's source open in front of your code after the debugger capture.
+
 ## 1.8.2
 
 Steer a run while it works, undo what a command changed, and keep the files your repository excludes away from the

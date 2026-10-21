@@ -53,7 +53,7 @@ internal partial class InferpalToolWindowData
             toolTokens: NextTurnToolTokens(),
             questionLayersInHistory: ActiveFileContext.ToSend(BuildActiveFileBlock(), _history) is null,
             toolsOnDemand: Services.Agent.ContextManager.NextTurnToolsOnDemand(_tools, _toolsEnabled, _planMode),
-            turnedOff: Services.Agent.ContextManager.NextTurnTurnedOff(_tools, _toolsEnabled));
+            turnedOff: Services.Agent.ContextManager.NextTurnTurnedOff(_tools, _toolsEnabled, _planMode));
     }
 
     /// <summary>The tools as the settings' Tools page lists them, read on the VM context.</summary>

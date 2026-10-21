@@ -203,8 +203,8 @@ internal sealed record McpInputForm(string Server, string Tool, string Message, 
 
     private static readonly HashSet<string> SecretWords = new(StringComparer.Ordinal)
     {
-        "password", "passwd", "passphrase", "pwd", "secret", "token", "apikey", "credential", "credentials", "otp", "cvv",
-        "cvc", "pat",
+        "password", "passwd", "passphrase", "passcode", "pwd", "pin", "secret", "token", "apikey", "credential", "credentials",
+        "otp", "cvv", "cvc", "pat", "iban", "ssn",
     };
 
     private static readonly HashSet<string> SecretPairs = new(StringComparer.Ordinal)

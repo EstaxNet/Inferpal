@@ -875,6 +875,14 @@ internal class InferpalConfig
     /// the project from one editor after the person chose "In my user folder" in the other.</remarks>
     internal bool SharedHistoryOutsideProject => IsUserFolder(Shared(nameof(HistoryStorage), HistoryStorage));
 
+    /// <summary>The tools turned off NOW: see <see cref="Shared{T}"/>.</summary>
+    /// <remarks>⚠ It decides whether a tool is offered and runs: a copy that kept its own value went on offering, and
+    /// running, a tool the person turned off in the other editor — under an <c>allow</c> rule, with no card at all.</remarks>
+    internal string SharedDisabledTools => Shared(nameof(DisabledTools), DisabledTools) ?? string.Empty;
+
+    /// <summary>Whether a package a call adds is checked NOW: see <see cref="Shared{T}"/>.</summary>
+    internal bool SharedPackageCheckEnabled => Shared(nameof(PackageCheckEnabled), PackageCheckEnabled);
+
     private sealed record FileSeen(string Path, DateTime Stamp, System.Text.Json.Nodes.JsonObject Snapshot);
     private readonly object _sharedLock = new();
     private FileSeen? _fileSeen;

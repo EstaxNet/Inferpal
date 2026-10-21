@@ -64,12 +64,19 @@ internal sealed class PackageManagerLookup : IPackageLookup
                 var nuget = await RunAsync("dotnet", "dotnet", [], ["package", "search", package.Name, "--take", "5", "--prerelease", "--format", "json"], package, ct);
                 return nuget.Unknown is null && nuget.Result.ExitCode == 0 ? NuGetNames(nuget.Result.Stdout) : [];
             case PackageEcosystem.Npm when RunTestsTool.ResolveNpm(OperatingSystem.IsWindows(), Shell.ShellLauncher.FindOnPath, File.Exists) is { } npm:
-                var search = await RunAsync("npm", npm.FileName, npm.Prefix, ["search", "--json", "--searchlimit=5", "--fetch-retries=0", package.Name], package, ct);
+                var search = await RunAsync("npm", npm.FileName, npm.Prefix, NpmSearchArguments(package.Name), package, ct);
                 return search.Unknown is null && search.Result.ExitCode == 0 ? NpmNames(search.Result.Stdout) : [];
             default:
                 return [];
         }
     }
+
+    /// <summary>The arguments of the <c>npm search</c> that finds the close names of an absent <paramref name="name"/>.</summary>
+    /// <remarks>⚠ The public registry, named: <c>npm search</c> asks the DEFAULT registry, not the one a scope maps to, and
+    /// a configuration that sends <c>@types</c> to the public registry and everything else to a company server would
+    /// send the company the name a public lookup just found absent.</remarks>
+    internal static string[] NpmSearchArguments(string name) =>
+        ["search", "--json", "--searchlimit=5", "--fetch-retries=0", "--registry=https://registry.npmjs.org/", name];
 
     // ── NuGet ────────────────────────────────────────────────────────────────
 
@@ -105,9 +112,13 @@ internal sealed class PackageManagerLookup : IPackageLookup
 
     /// <summary>The first enabled source of a <c>dotnet nuget list source --format short</c> that is a server other than
     /// nuget.org; <c>null</c> when only nuget.org and local folders are enabled.</summary>
+    /// <remarks>⚠ A folder on a network share (<c>\\server\feed</c>, <c>file://server/feed</c>) is a server: searched, it
+    /// would receive the name over the network.</remarks>
     internal static string? NuGetOtherSource(string listOutput) =>
         EnabledNuGetSources(listOutput).FirstOrDefault(s =>
-            Uri.TryCreate(s, UriKind.Absolute, out var u) && u.Scheme is "http" or "https" && !NuGetOrgHosts.Contains(u.Host, StringComparer.OrdinalIgnoreCase));
+            Uri.TryCreate(s, UriKind.Absolute, out var u)
+            && (u.Scheme is "http" or "https" && !NuGetOrgHosts.Contains(u.Host, StringComparer.OrdinalIgnoreCase)
+                || u.IsFile && u.IsUnc));
 
     private static bool NuGetOrgEnabled(string listOutput) =>
         EnabledNuGetSources(listOutput).Any(s => Uri.TryCreate(s, UriKind.Absolute, out var u) && NuGetOrgHosts.Contains(u.Host, StringComparer.OrdinalIgnoreCase));
@@ -463,7 +474,7 @@ internal sealed class PackageManagerLookup : IPackageLookup
 
     private static string? Read(string path)
     {
-        try { return File.Exists(path) ? File.ReadAllText(path) : null; }
+        try { return File.Exists(path) ? TextFileEncoding.ReadText(path) : null; }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return null; }
     }
 

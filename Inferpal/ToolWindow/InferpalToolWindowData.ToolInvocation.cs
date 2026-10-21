@@ -34,7 +34,9 @@ internal partial class InferpalToolWindowData
         {
             var json = JsonSerializer.Serialize(argsObj);
             var args = JsonDocument.Parse(json).RootElement.Clone();
-            result   = SlashToolAction.Shown(await _tools.ExecuteAsync(toolName, args, ct));
+            // A command the person typed is theirs: the package check judges what a model adds.
+            using (Services.Execution.PackageCheck.ThePersonsOwnCalls())
+                result = SlashToolAction.Shown(await _tools.ExecuteAsync(toolName, args, ct));
             diff     = _tools.ConsumeDiff();
         }
         catch (Exception ex)

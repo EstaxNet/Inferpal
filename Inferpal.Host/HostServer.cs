@@ -1852,7 +1852,7 @@ internal sealed partial class HostServer : IDisposable
             toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode),
             questionLayersInHistory: QuestionLayersInHistory(s),
             toolsOnDemand: ContextManager.NextTurnToolsOnDemand(s.Tools, s.ToolsEnabled, s.PlanMode),
-            turnedOff: ContextManager.NextTurnTurnedOff(s.Tools, s.ToolsEnabled));
+            turnedOff: ContextManager.NextTurnTurnedOff(s.Tools, s.ToolsEnabled, s.PlanMode));
 
     /// <summary>Whether the history already carries the active-file block the next question would send — its layers
     /// are then counted in the history, not again (<see cref="XRayPanelPresenter.Build"/>).</summary>

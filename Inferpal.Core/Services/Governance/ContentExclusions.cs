@@ -80,6 +80,9 @@ internal static class ContentExclusions
         // ⚠ Inferpal's backups hold copies of workspace files — of excluded ones too (a command that changed one, a backup
         // older than the rule) — under a name that keeps only a hash of the original path: no rule can judge them, so
         // while any workspace excludes something they are not read. The history may sit above the root (the git root).
+        // ⚠ The histories kept in the user's folder are never read, rules or not: they hold copies of OTHER repositories'
+        // files, which a workspace opened on the home folder would otherwise read through them.
+        if (FileHistoryService.InUserHistoryRoot(full)) return History;
         if (InHistory(full) && AnyRules()) return History;
         // ⚠ EVERY declared root that holds the path judges it, the closest first: a workspace nested in another (a solution
         // in a subfolder opened before the outer one, two ACP threads) has no ignore file of its own, and judged by it

@@ -114,7 +114,10 @@ internal sealed partial class HostServer
         try
         {
             var args   = JsonSerializer.SerializeToElement(tool.Args);
-            var result = SlashToolAction.Shown(await s.Tools.ExecuteAsync(tool.Tool, args, cts.Token));
+            // A command the person typed is theirs: the package check judges what a model adds.
+            string result;
+            using (PackageCheck.ThePersonsOwnCalls())
+                result = SlashToolAction.Shown(await s.Tools.ExecuteAsync(tool.Tool, args, cts.Token));
 
             // A read that did not happen is a message, never a chip named after the file.
             return tool.AttachesResult(s.RootDir, s.Overlay)
@@ -345,7 +348,7 @@ internal sealed partial class HostServer
                         toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode),
                         questionLayersInHistory: QuestionLayersInHistory(s),
                         toolsOnDemand: ContextManager.NextTurnToolsOnDemand(s.Tools, s.ToolsEnabled, s.PlanMode),
-                        turnedOff: ContextManager.NextTurnTurnedOff(s.Tools, s.ToolsEnabled)));
+                        turnedOff: ContextManager.NextTurnTurnedOff(s.Tools, s.ToolsEnabled, s.PlanMode)));
                 }
 
                 case SlashCommandId.Bench:

@@ -97,11 +97,33 @@ internal sealed class PackageCheck(IPackageLookup lookup, TimeSpan? budget = nul
     private readonly TimeSpan _budget = budget ?? DefaultBudget;
     private readonly TimeSpan _closeNamesBudget = closeNamesBudget ?? DefaultCloseNamesBudget;
 
+    private static readonly AsyncLocal<bool> ByThePerson = new();
+
+    /// <summary>Marks the calls made until it is disposed as the person's own (a <c>/run</c> they typed): no name of theirs
+    /// is asked or refused.</summary>
+    /// <remarks>
+    /// ⚠ The check judges what a MODEL adds. The person who typed the name knows whether it exists — a package published a
+    /// minute ago, which a registry's search does not list yet, would otherwise be refused to them, in words written for a
+    /// model, with no way past it but turning the check off.
+    /// </remarks>
+    public static IDisposable ThePersonsOwnCalls()
+    {
+        var before = ByThePerson.Value;
+        ByThePerson.Value = true;
+        return new Restore(before);
+    }
+
+    private sealed class Restore(bool before) : IDisposable
+    {
+        public void Dispose() => ByThePerson.Value = before;
+    }
+
     /// <summary>What a call answers instead of running when it adds a package no source has; <c>null</c> to let it run.</summary>
     /// <remarks>Never throws, except the caller's own cancellation.</remarks>
     public async Task<string?> RefusalAsync(string tool, JsonElement args, string? root, Func<ShellState?>? shell, CancellationToken ct)
     {
-        if (string.IsNullOrEmpty(root) || tool is not ("run_command" or "write_file" or "apply_diff" or "apply_edits")) return null;
+        if (ByThePerson.Value || string.IsNullOrEmpty(root) || tool is not ("run_command" or "write_file" or "apply_diff" or "apply_edits"))
+            return null;
 
         IReadOnlyList<AddedPackage> added;
         try { added = Added(tool, args, root, shell?.Invoke()); }
@@ -229,7 +251,7 @@ internal sealed class PackageCheck(IPackageLookup lookup, TimeSpan? budget = nul
         {
             var file = Path.GetFileName(path.Trim());
             if (PackageManifests.EcosystemOf(file) is not { } eco || ResolvedPath(path, root) is not { } full) continue;
-            var current = after.TryGetValue(full, out var pending) ? pending : File.Exists(full) ? File.ReadAllText(full) : string.Empty;
+            var current = after.TryGetValue(full, out var pending) ? pending : File.Exists(full) ? TextFileEncoding.ReadText(full) : string.Empty;
             // A replacement that does not match the file exactly (apply_diff tolerates whitespace) is not guessed at: the
             // result is unknown, so nothing it adds is refused.
             if ((oldText is null ? newText : Replaced(current, oldText, newText)) is not { } next) continue;

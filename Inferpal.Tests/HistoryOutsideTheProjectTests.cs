@@ -294,6 +294,22 @@ public sealed class HistoryOutsideTheProjectTests : IDisposable
     }
 
     [Fact]
+    public void AFileOfTheUserFoldersHistory_NamedByACall_IsRefused_EvenWhereNoIgnoreFileExcludesAnything()
+    {
+        // A workspace that holds the user's application data, with no ignore file: a backup there is a copy of another
+        // repository's file, and a call that names it (read_file, an @-mention) must not read it.
+        var root      = FileHistoryService.DefaultUserHistoryRoot;
+        Assert.True(Path.IsPathFullyQualified(root), "no application data folder on this machine: UNDECIDED, not green.");
+        var workspace = Path.GetDirectoryName(root)!;
+        Inferpal.Services.Governance.ContentExclusions.Declare(workspace, () => string.Empty);
+        var backup    = Path.Combine(root, "repo-0a1b2c3d4e5f", "2026-10-21_10-00-00-000_1234abcd_.env.bak");
+
+        Assert.Same(Inferpal.Services.Governance.ContentExclusions.History, Inferpal.Services.Governance.ContentExclusions.Of(backup));
+        // Reference arm: a neighbour in the same workspace is not a backup.
+        Assert.Null(Inferpal.Services.Governance.ContentExclusions.Of(Path.Combine(workspace, "rag", "x.db")));
+    }
+
+    [Fact]
     public void TheBackupFailedMessage_NamesTheFolderTheBackupWasMeantFor()
     {
         MarkedRepository();

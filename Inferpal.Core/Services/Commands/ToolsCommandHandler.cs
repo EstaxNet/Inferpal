@@ -46,6 +46,9 @@ internal static class ToolsCommandHandler
     /// <remarks>Nothing is written when nothing changes: a name already in the state asked, unknown, or refused.</remarks>
     public static ToolsCommandResult Switch(IReadOnlyList<string> names, bool off, ToolRegistry tools, InferpalConfig config)
     {
+        // ⚠ Decided on the FILE's list: a tool the other editor turned off since this copy was read would answer "already
+        // on" here, and nothing would be written.
+        config.FollowFile(nameof(InferpalConfig.DisabledTools));
         var profile = tools.Profile();
         var elsewhere = tools.TurnedOffElsewhere();
         var changed = new List<ToolProfileEntry>();

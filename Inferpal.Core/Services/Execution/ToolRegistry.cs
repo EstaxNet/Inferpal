@@ -312,13 +312,17 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     private SwitchesMemo? _switches;
 
     /// <summary>The tools the user turned off, as the setting says now — read again only when its text changes.</summary>
-    /// <remarks>⚠ Per registry, never one slot for the process: two agent-protocol threads whose copies of the setting
-    /// differ would take turns in it, and each turn would split and weigh every MCP definition again.</remarks>
+    /// <remarks>
+    /// ⚠ Per registry, never one slot for the process: two agent-protocol threads whose copies of the setting differ would
+    /// take turns in it, and each turn would split and weigh every MCP definition again. ⚠ Read from the FILE
+    /// (<see cref="InferpalConfig.SharedDisabledTools"/>): a tool turned off in the other editor is off here at once. A
+    /// lookup costs a check of the file's stamp: a walk over every tool reads it once.
+    /// </remarks>
     private ToolSwitches Switches
     {
         get
         {
-            var text = _config.DisabledTools ?? string.Empty;
+            var text = _config.SharedDisabledTools;
             var memo = Volatile.Read(ref _switches);
             if (memo is not null && string.Equals(memo.Text, text, StringComparison.Ordinal)) return memo.Switches;
             var switches = ToolSwitches.Parse(text);
@@ -394,8 +398,11 @@ internal class ToolRegistry : IToolRegistry, IDisposable
 
     /// <summary>The names the tools turned off are turned off by (<see cref="ToolSwitches.KeyOf"/>), in the order a request
     /// would send them — X-Ray's line, without weighing every definition as <see cref="Profile"/> does.</summary>
-    internal IReadOnlyList<string> TurnedOffKeys() =>
-        [.. _registered.Concat(UserTools).Concat(_mcp.Tools).Where(TurnedOff).Select(ToolSwitches.KeyOf)];
+    internal IReadOnlyList<string> TurnedOffKeys()
+    {
+        var switches = Switches;
+        return [.. _registered.Concat(UserTools).Concat(_mcp.Tools).Where(t => TurnedOff(t, switches)).Select(ToolSwitches.KeyOf)];
+    }
 
     /// <summary>
     /// Every tool this registry holds, in the order a request sends them, with what happens to it on the next request
@@ -435,10 +442,16 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// description, and it runs — and loads — like a structured one. The tools turned off too: a call written as text to
     /// one is read as a call and refused with its cause (<see cref="TurnedOffRefusal"/>) — left unread, it would be shown
     /// as the answer, and the model would never learn why nothing ran.</remarks>
-    public IEnumerable<string> CallableNames =>
-        Definitions.Select(d => d.Function.Name).Concat(_onDemand.WaitingNames)
-            .Concat(_registered.Concat(UserTools).Concat(_mcp.Tools).Where(TurnedOff).Select(t => t.Name))
-            .Distinct(StringComparer.Ordinal);
+    public IEnumerable<string> CallableNames
+    {
+        get
+        {
+            var switches = Switches;
+            return Definitions.Select(d => d.Function.Name).Concat(_onDemand.WaitingNames)
+                .Concat(_registered.Concat(UserTools).Concat(_mcp.Tools).Where(t => TurnedOff(t, switches)).Select(t => t.Name))
+                .Distinct(StringComparer.Ordinal);
+        }
+    }
 
     /// <summary>MCP server lines for the support bundle. The chat view-model holds this registry,
     /// not the MCP service (only the settings window does), and the bundle must say the same
@@ -452,13 +465,19 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// <summary>The same set as <see cref="BuiltInNames"/>, with what each declares — what the documentation describes.</summary>
     internal IReadOnlyCollection<ITool> BuiltInTools => _registered;
 
-    public IReadOnlyList<ToolDefinition> Definitions =>
-        _registered
-            .Where(t => t.IsOffered && !TurnedOff(t))
-            .Concat(UserTools.Where(t => !TurnedOff(t)))
-            .Concat(DeclaredMcpTools)
-            .Select(t => new ToolDefinition("function", new ToolFunction(t.Name, t.Description, t.Parameters)))
-            .ToList();
+    public IReadOnlyList<ToolDefinition> Definitions
+    {
+        get
+        {
+            var switches = Switches;
+            return _registered
+                .Where(t => t.IsOffered && !TurnedOff(t, switches))
+                .Concat(UserTools.Where(t => !TurnedOff(t, switches)))
+                .Concat(DeclaredMcpTools)
+                .Select(t => new ToolDefinition("function", new ToolFunction(t.Name, t.Description, t.Parameters)))
+                .ToList();
+        }
+    }
 
     /// <summary>Where the shell session's next command starts and what it inherits — what a package a call adds is asked with.</summary>
     private ShellState? ShellStateOf(ITool tool) =>
@@ -507,7 +526,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         }
         // A package this call adds that no source of the project has — an invented name — is refused before the approval
         // card, and the refusal offers the names that exist. Anything less certain than "absent" lets the call through.
-        if (_config.PackageCheckEnabled
+        if (_config.SharedPackageCheckEnabled
             && await _packageCheck.RefusalAsync(name, args, _indexService.RootDir, () => ShellStateOf(tool), ct) is { } absent)
         {
             _fileHistory.RecordToolCall(name, ExtractSubject(args), durationMs: 0, error: true);
