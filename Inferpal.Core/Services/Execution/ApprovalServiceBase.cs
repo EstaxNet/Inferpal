@@ -79,6 +79,12 @@ internal abstract class ApprovalServiceBase : IApprovalService
     /// <summary>Where the answers to cards that offered a rule are counted; tests give their own.</summary>
     internal ApprovalHistory History { get; set; } = ApprovalHistory.Shared;
 
+    /// <inheritdoc/>
+    /// <remarks>The card's own evaluation (<see cref="RequestApprovalAsync"/>), on the rules as the files hold them now. A
+    /// deny rule that could not be evaluated counts: the card does not let it approve, so nothing leaves on its account.</remarks>
+    public bool Refuses(string toolName, string subject) =>
+        GetPolicy().Evaluate(toolName, subject, out var unreadableDeny) == PermissionDecision.Deny || unreadableDeny;
+
     public async Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null, Services.CodeActions.DiffInfo? diff = null, bool forcePrompt = false)
     {
         // The value the rules match against: the explicit subject (raw path for file tools) when

@@ -25,6 +25,9 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     private readonly List<ITool> _registered = [];
     private readonly InferpalConfig         _config;
     private readonly IApprovalService          _approval;
+    // Whose rules decide what never leaves for a refused call: the service the registry was built with. A sibling that
+    // swaps in a recorder (/task) or a guard (/tdd) keeps it — they hold no rules of their own.
+    private readonly IApprovalService          _rules;
     private readonly McpToolService            _mcp;
     private readonly FileHistoryService        _fileHistory;
     private readonly OnDemandTools             _onDemand;
@@ -79,6 +82,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         _config      = config;
         _packageCheck = packageCheck ?? PackageCheck.Shared;
         _approval    = approval;
+        _rules       = approval;
         _mcp         = mcp;
         // The MCP tools a turned-off switch leaves out never reach the split: they weigh nothing in its budget, and
         // tool_search neither names nor loads them.
@@ -190,7 +194,11 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         {
             ProjectRootFallback = ProjectRootFallback,
             WindowInUse         = WindowInUse,
+            RulesFrom           = _rules,
         };
+
+    /// <summary>Sets whose rules a sibling keeps (<see cref="WithApprovalService"/>).</summary>
+    private IApprovalService RulesFrom { init => _rules = value; }
 
     /// <summary>
     /// The context window the next request is sized for (<c>ContextWindowInUse</c> of the front-end), read when the MCP
@@ -526,8 +534,9 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         }
         // A package this call adds that no source of the project has — an invented name — is refused before the approval
         // card, and the refusal offers the names that exist. Anything less certain than "absent" lets the call through.
+        // ⚠ Not for a call the person's rules refuse: the name would leave for a public registry, then the card refuse it.
         if (_config.SharedPackageCheckEnabled
-            && await _packageCheck.RefusalAsync(name, args, _indexService.RootDir, () => ShellStateOf(tool), ct) is { } absent)
+            && await _packageCheck.RefusalAsync(name, args, _indexService.RootDir, () => ShellStateOf(tool), ct, _rules.Refuses) is { } absent)
         {
             _fileHistory.RecordToolCall(name, ExtractSubject(args), durationMs: 0, error: true);
             return absent;

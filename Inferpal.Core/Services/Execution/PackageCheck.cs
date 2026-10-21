@@ -119,8 +119,11 @@ internal sealed class PackageCheck(IPackageLookup lookup, TimeSpan? budget = nul
     }
 
     /// <summary>What a call answers instead of running when it adds a package no source has; <c>null</c> to let it run.</summary>
+    /// <param name="refuses">Whether the person's rules refuse the call for a subject (<see cref="IApprovalService.Refuses"/>):
+    /// such a call sends no name, and its card refuses it as usual.</param>
     /// <remarks>Never throws, except the caller's own cancellation.</remarks>
-    public async Task<string?> RefusalAsync(string tool, JsonElement args, string? root, Func<ShellState?>? shell, CancellationToken ct)
+    public async Task<string?> RefusalAsync(string tool, JsonElement args, string? root, Func<ShellState?>? shell, CancellationToken ct,
+                                            Func<string, string, bool>? refuses = null)
     {
         if (ByThePerson.Value || string.IsNullOrEmpty(root) || tool is not ("run_command" or "write_file" or "apply_diff" or "apply_edits"))
             return null;
@@ -133,6 +136,9 @@ internal sealed class PackageCheck(IPackageLookup lookup, TimeSpan? budget = nul
             return null;
         }
         if (added.Count == 0) return null;
+        // ⚠ On the subjects the card judges — the command as written, each path resolved as the tool resolves it, every
+        // path of a batch: judged on the raw argument, a rule written for the absolute path let the name leave.
+        if (refuses is not null && RuleSubjects(tool, args, root).Any(s => refuses(tool, s))) return null;
 
         (AddedPackage Package, PackageLookupResult Result)[] answers;
         using (var spent = CancellationTokenSource.CreateLinkedTokenSource(ct))
@@ -296,6 +302,12 @@ internal sealed class PackageCheck(IPackageLookup lookup, TimeSpan? budget = nul
                 break;
         }
     }
+
+    /// <summary>What the permission rules match this call on at its card: the command, or each file it writes.</summary>
+    private static IEnumerable<string> RuleSubjects(string tool, JsonElement args, string root) =>
+        tool == "run_command"
+            ? args.Str("command") is { } command ? [command] : []
+            : Writes(tool, args).Select(w => ResolvedPath(w.Path, root)).OfType<string>();
 
     /// <summary><paramref name="raw"/> resolved against <paramref name="from"/>, existing or not; <c>null</c> when it is not a usable path.</summary>
     private static string? ResolvedPath(string raw, string from)

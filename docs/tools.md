@@ -197,7 +197,8 @@ A name the registry does not have is **refused before you are asked**, and the m
   nuget.org index. Prerelease-only packages count as existing.
 - Names only: a version that does not exist is reported by the restore itself, and the model repairs it.
 - Not checked: a write at the editor's cursor (`insert_at_cursor`, `replace_selection`), your own shell tools, MCP tools,
-  and a command you type yourself (`/run npm install …`) — you know whether the name exists.
+  and a command you type yourself (`/run npm install …`) — you know whether the name exists. Nor a call your
+  [permission rules](#permission-rules-allow--deny-by-pattern) refuse: the rule decides first, and no name leaves.
 - A network share among NuGet's sources (`\\server\feed`) counts as a server: the project is not checked.
 - Untick *Check that a package exists before it is added* (Settings → Agent and approvals) to send nothing: every such
   call then goes to the card unchecked.

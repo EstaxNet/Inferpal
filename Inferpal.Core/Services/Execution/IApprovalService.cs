@@ -62,6 +62,13 @@ internal interface IApprovalService
     bool CanAskForInput => false;
 
     /// <summary>
+    /// The person's rules refuse this call without asking — a <c>deny</c> rule, the built-in denylist. Read before anything
+    /// the call would send on its way to the card (the package check), so that nothing leaves for a refused call.
+    /// False when the service holds no rules.
+    /// </summary>
+    bool Refuses(string toolName, string subject) => false;
+
+    /// <summary>
     /// Asks the person to fill a server's form: the card shows again with what to fix until the values pass its schema,
     /// or the person declines or cancels. Never answered by anything but the person — no rule, no grant, no setting.
     /// </summary>

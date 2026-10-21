@@ -74,6 +74,17 @@ public class PackageCheckTests : IDisposable
         }
     }
 
+    /// <summary>The real rules: the repository's deny overlay under the root, read as at every approval.</summary>
+    private sealed class RuleApproval(string root) : ApprovalServiceBase(new InferpalConfig(), () => root)
+    {
+        public int Prompts { get; private set; }
+        protected override Task<ApprovalDecision> PromptUserAsync(string message, DiffInfo? diff, CancellationToken ct)
+        {
+            Prompts++;
+            return Task.FromResult(ApprovalDecision.Once);
+        }
+    }
+
     private ToolRegistry Registry(IApprovalService approval, IPackageLookup lookup, bool enabled = true)
     {
         var config = new InferpalConfig { PackageCheckEnabled = enabled, SmartFixEnabled = false };
@@ -107,6 +118,80 @@ public class PackageCheckTests : IDisposable
         PackageCheck.Added(tool, Args(args), _root, shell).Select(a => a.Name);
 
     // ── the funnel ─────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// ⚠ A call the person's rules refuse sends no name anywhere: checked before the card, the name would reach the public
+    /// registry under a `deny run_command`, and the card would then refuse the call.
+    /// </summary>
+    [Fact]
+    public async Task ACallTheRulesRefuse_SendsNoNameToTheRegistry_AndIsRefusedByTheRule()
+    {
+        var lookup   = new FakeLookup(_ => PackageLookupResult.Absent("PyPI"));
+        var approval = new RuleApproval(_root);
+        var tools    = Registry(approval, lookup);
+        var call     = Args(new { command = "pip install ibantools" });
+
+        // Reference arm: without the rule, the name is looked up and the invented package refused.
+        var unruled = await tools.ExecuteAsync("run_command", call, CancellationToken.None);
+        Assert.Contains("does not exist on PyPI", unruled, StringComparison.Ordinal);
+        Assert.Single(lookup.Asked);
+
+        DenyRules("deny run_command .*");
+        lookup.Asked.Clear();
+        var refused = await tools.ExecuteAsync("run_command", call, CancellationToken.None);
+
+        Assert.Empty(lookup.Asked);
+        Assert.Contains("permission rules refuse", refused, StringComparison.Ordinal);   // the rule's refusal, not another
+        Assert.Equal(0, approval.Prompts);
+    }
+
+    private void DenyRules(params string[] rules) =>
+        Write(Path.Combine(".inferpal", "permissions.json"), JsonSerializer.Serialize(new { rules }));
+
+    [Fact]
+    public async Task AWriteTheRulesRefuse_IsJudgedOnThePathTheCardSees_NotTheOneTheModelWrote()
+    {
+        // A rule written for the absolute path, a model that writes a relative one: the card resolves it, so must the check.
+        DenyRules($"deny write_file ^{System.Text.RegularExpressions.Regex.Escape(_root)}");
+        var lookup = new FakeLookup(_ => PackageLookupResult.Absent("npm"));
+        var tools  = Registry(new RuleApproval(_root), lookup);
+
+        var refused = await tools.ExecuteAsync("write_file",
+            Args(new { path = "package.json", content = "{ \"dependencies\": { \"left-pad-invented\": \"1.0.0\" } }" }), CancellationToken.None);
+
+        Assert.Empty(lookup.Asked);
+        Assert.Contains("permission rules refuse", refused, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ABatchTheRulesRefuse_SendsNoName_WhicheverOfItsFilesTheRuleNames()
+    {
+        var path = Requirements("pytest\n");
+        DenyRules("deny apply_edits .*requirements\\.txt$");
+        var lookup = new FakeLookup(_ => PackageLookupResult.Absent("PyPI"));
+        var tools  = Registry(new RuleApproval(_root), lookup);
+
+        await tools.ExecuteAsync("apply_edits",
+            Args(new { edits = new[] { new { path, old_content = "pytest\n", new_content = "pytest\nibantools\n" } } }), CancellationToken.None);
+
+        Assert.Empty(lookup.Asked);
+        Assert.Equal("pytest\n", File.ReadAllText(path));
+    }
+
+    [Fact]
+    public async Task UnderTdd_TheGuardThatWrapsTheCard_KeepsThePersonsRules()
+    {
+        // /tdd runs its fix rounds on a sibling registry whose approval is a guard around the card: the guard holds no
+        // rules, the registry still asks the ones it was built with.
+        DenyRules("deny run_command .*");
+        var lookup  = new FakeLookup(_ => PackageLookupResult.Absent("PyPI"));
+        var real    = new RuleApproval(_root);
+        var sibling = Registry(real, lookup).WithApprovalService(new Inferpal.Services.Commands.TestFileWriteGuard(real));
+
+        await sibling.ExecuteAsync("run_command", Args(new { command = "pip install ibantools" }), CancellationToken.None);
+
+        Assert.Empty(lookup.Asked);
+    }
 
     [Fact]
     public async Task AnInventedPackage_IsRefusedBeforeTheApprovalCard_AndNothingIsWritten()
