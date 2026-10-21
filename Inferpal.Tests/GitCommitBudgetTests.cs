@@ -33,8 +33,8 @@ public sealed class GitCommitBudgetTests : IDisposable
     private string HookRuns => Path.Combine(_repo, ".git", "hook-runs");
 
     /// <summary>
-    /// A repository with one commit, a staged change, and a pre-commit hook that sleeps 3 s; <c>false</c> when this
-    /// machine never ran the hook (UNDECIDED: nothing below can be measured — never read as a pass).
+    /// A repository with one commit, a staged change, and a pre-commit hook that sleeps <paramref name="sleepSeconds"/>;
+    /// <c>false</c> when this machine never ran the hook (UNDECIDED: nothing below can be measured — never read as a pass).
     /// </summary>
     /// <remarks>
     /// ⚠ The hook is written BEFORE the first commit, and sleeps only once a flag exists: on the Windows CI runner, a
@@ -42,14 +42,14 @@ public sealed class GitCommitBudgetTests : IDisposable
     /// budget). Each run leaves a mark, so the first commit proves the hook runs here, the measured commit uses a hook
     /// file several git calls old, and a failure says how many times the hook ran.
     /// </remarks>
-    private async Task<bool> SlowHookRepo()
+    private async Task<bool> SlowHookRepo(int sleepSeconds = 3)
     {
         await Git("init -q");
         await Git("config user.email t@example.test");
         await Git("config user.name t");
         await Git("config commit.gpgsign false");
         var hook = Path.Combine(_repo, ".git", "hooks", "pre-commit");
-        File.WriteAllText(hook, "#!/bin/sh\necho ran >> .git/hook-runs\n[ -f .git/slow ] || exit 0\nsleep 3\n");
+        File.WriteAllText(hook, $"#!/bin/sh\necho ran >> .git/hook-runs\n[ -f .git/slow ] || exit 0\nsleep {sleepSeconds}\n");
         if (!OperatingSystem.IsWindows())
             File.SetUnixFileMode(hook, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         File.WriteAllText(Path.Combine(_repo, "a.txt"), "1\n");
@@ -67,7 +67,11 @@ public sealed class GitCommitBudgetTests : IDisposable
     [Fact]
     public async Task AGitStoppedAtItsBudget_SaysSo_NotThatGitIsMissing()
     {
-        if (!await SlowHookRepo()) return;   // UNDECIDED: this machine does not run git hooks — never read as a pass
+        // ⚠ The hook outlives the 1 s budget by far: the budget is a timer, and on a loaded runner (two test series in
+        // parallel) its callback can fire seconds late — a 3 s hook then finished first, and git answered 0. git is
+        // stopped at the budget and the test does not wait for the hook, so the long sleep costs nothing; under 30 s, an
+        // orphaned sleep (Git for Windows' shell is not always in the killed tree) ends on its own.
+        if (!await SlowHookRepo(sleepSeconds: 15)) return;   // UNDECIDED: this machine does not run git hooks — never read as a pass
 
         var clock  = System.Diagnostics.Stopwatch.StartNew();
         var result = await GitProcess.RunAsync("commit -m second", _repo, CancellationToken.None, TimeSpan.FromSeconds(1));
