@@ -84,8 +84,11 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         // tool_search neither names nor loads them.
         _onDemand    = onDemand ?? new OnDemandTools(McpToolsOn, () => WindowInUse?.Invoke() ?? 0, TurnedOffOnDemand);
         _fileHistory = fileHistory ?? new();
-        // Outside a git repository the history lives at the workspace root — one folder, the one restore_file names.
+        // Outside a git repository the history lives at the workspace root — one folder, the one restore_file searches.
         _fileHistory.WorkspaceRoot ??= () => indexService.RootDir;
+        // Read at each snapshot, from the file: a setting saved mid-session — in this editor or the other — decides where
+        // the next backup goes.
+        _fileHistory.OutsideProject ??= () => config.SharedHistoryOutsideProject;
 
         _editor       = editor;
         _indexService = indexService;

@@ -658,6 +658,52 @@
                     <TextBlock Text="{Binding HintAgentMaxIterations}" Style="{StaticResource Hint}"/>
                 </StackPanel>
 
+                <!-- Where the copies of the files the agent changes are kept -->
+                <TextBlock Text="{Binding LabelHistoryStorage}" Style="{StaticResource FieldLabel}"/>
+                <Border HorizontalAlignment="Left" Padding="3" CornerRadius="8" BorderThickness="1" BorderBrush="{Binding NavLineBrush}"
+                        Margin="0,2,0,0" AutomationProperties.Name="{Binding LabelHistoryStorage}">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Command="{Binding SetHistoryStorageCommand}" CommandParameter="project" Cursor="Hand"
+                                AutomationProperties.Name="{Binding LabelHistoryStorageProject}">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="bd" CornerRadius="6" Height="30" Padding="12,0" Background="Transparent">
+                                        <TextBlock x:Name="txt" Text="{Binding LabelHistoryStorageProject}" Foreground="{Binding SubtleForeground}"
+                                                   VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding HistoryStorage}" Value="project">
+                                            <Setter TargetName="bd" Property="Background" Value="{Binding SegmentSelectedBg}"/>
+                                            <Setter TargetName="txt" Property="Foreground" Value="{Binding TextForeground}"/>
+                                            <Setter TargetName="txt" Property="FontWeight" Value="SemiBold"/>
+                                        </DataTrigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                        <Button Command="{Binding SetHistoryStorageCommand}" CommandParameter="user" Cursor="Hand"
+                                AutomationProperties.Name="{Binding LabelHistoryStorageUser}">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="bd" CornerRadius="6" Height="30" Padding="12,0" Background="Transparent">
+                                        <TextBlock x:Name="txt" Text="{Binding LabelHistoryStorageUser}" Foreground="{Binding SubtleForeground}"
+                                                   VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding HistoryStorage}" Value="user">
+                                            <Setter TargetName="bd" Property="Background" Value="{Binding SegmentSelectedBg}"/>
+                                            <Setter TargetName="txt" Property="Foreground" Value="{Binding TextForeground}"/>
+                                            <Setter TargetName="txt" Property="FontWeight" Value="SemiBold"/>
+                                        </DataTrigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </StackPanel>
+                </Border>
+                <TextBlock Text="{Binding HintHistoryStorage}" Style="{StaticResource Hint}" Margin="0,4,0,20" TextWrapping="Wrap"
+                           MaxWidth="680" HorizontalAlignment="Left"/>
+
                 <Border BorderBrush="{Binding NavLineBrush}" BorderThickness="0,1,0,0" Padding="0,14,0,0" Margin="0,0,0,8">
                     <TextBlock Text="{Binding LabelSectionApprovals}" Style="{StaticResource SectionTitle}" Margin="0"/>
                 </Border>

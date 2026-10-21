@@ -52,6 +52,8 @@ internal static class WorkspaceScan
     /// </remarks>
     public static bool IsExcludedPath(string path, string? root)
     {
+        // Inferpal's history kept outside the project is not under a folder named .inferpal: it is excluded by where it is.
+        if (Execution.FileHistoryService.InUserHistoryRoot(path)) return true;
         var below = BelowRoot(path, root);
         foreach (var dir in ExcludedDirNames)
         {
@@ -126,6 +128,8 @@ internal static class WorkspaceScan
     /// </remarks>
     public static bool IsExcludedDirName(string directoryPath)
     {
+        // By where it is, not by name: the history kept outside the project (see IsExcludedPath).
+        if (Execution.FileHistoryService.InUserHistoryRoot(directoryPath)) return true;
         var trimmed = directoryPath.TrimEnd('\\', '/');
         var cut     = trimmed.LastIndexOfAny(['\\', '/']);
         var leaf    = cut < 0 ? trimmed : trimmed[(cut + 1)..];

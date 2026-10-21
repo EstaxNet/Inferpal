@@ -194,6 +194,7 @@ internal sealed class ProjectIndexService : IDisposable
         // The workspace's ignore files apply below it, to everything that reads for the model (ContentExclusions). Both
         // front-ends and every ACP thread set their root here: one declaration per workspace.
         ContentExclusions.Declare(rootDir, () => _config.IgnoreFiles);
+        FileHistoryService.IgnoreExistingHistory(rootDir);
         // ⚠ The watcher is armed HERE too, not only by the indexing pass, because it has a second
         // consumer that has nothing to do with RAG: the C# semantic index is cached per workspace
         // and this watcher is the only thing that invalidates it. Armed from the pass alone, it did
@@ -207,8 +208,13 @@ internal sealed class ProjectIndexService : IDisposable
     /// <summary>
     /// Starts a background indexing pass over all source files under <paramref name="rootDir"/>.
     /// If a previous pass is running it is cancelled before the new one begins.
-    /// Also patches <c>.gitignore</c> to exclude <c>.inferpal/</c> if not already present.
     /// </summary>
+    /// <remarks>
+    /// ⚠ The index lives under the user's application data. The repository's <c>.gitignore</c> is the user's file and is
+    /// never rewritten — the file history ignores itself from inside its own folder, the one place this writes to, and
+    /// only when that folder already exists (<see cref="FileHistoryService.IgnoreExistingHistory"/>): a front-end may
+    /// start a pass without <see cref="SetRoot"/>.
+    /// </remarks>
     public void StartIndexing(string rootDir)
     {
         var previousCts  = _cts;
@@ -221,7 +227,7 @@ internal sealed class ProjectIndexService : IDisposable
         RootDir = rootDir;
         IndexedRoot = rootDir;
         _profileExcludes = ProjectProfile.Load(rootDir).IndexExcludes;
-        PatchGitIgnore(rootDir);
+        FileHistoryService.IgnoreExistingHistory(rootDir);
         // Language servers started for another workspace would otherwise run until the editor closes.
         _lsp.ReleaseSessionsExcept(rootDir);
 
@@ -282,35 +288,6 @@ internal sealed class ProjectIndexService : IDisposable
 
     /// <summary><see cref="ShowSavedAsync"/> is reading the saved index.</summary>
     private volatile bool _loadingSaved;
-
-    /// <summary>
-    /// Ensures <c>.gitignore</c> in <paramref name="rootDir"/> contains entries for
-    /// Inferpal's data directories. Silently no-ops if git is not present or writing fails.
-    /// </summary>
-    private static void PatchGitIgnore(string rootDir)
-    {
-        try
-        {
-            // Only patch when inside a git repository
-            if (!GitProcess.IsWorkTreeRoot(rootDir)) return;
-
-            var gitIgnorePath = Path.Combine(rootDir, ".gitignore");
-
-            // Only the snapshots: the rest of .inferpal/ is meant to be committed (see GitIgnorePatch).
-            // ⚠ This is the user's file, rewritten unasked: its encoding and BOM are kept. Decoded as UTF-8, a
-            // .gitignore saved in a legacy code page lost every accented pattern to "�" — "Données/" no longer
-            // matched, and git stopped ignoring that folder. The block added is ASCII, which every code page holds.
-            var exists   = File.Exists(gitIgnorePath);
-            var existing = exists ? Tools.TextFileEncoding.ReadText(gitIgnorePath) : string.Empty;
-
-            var patched = GitIgnorePatch.Apply(existing);
-            if (patched is null) return;
-
-            File.WriteAllText(gitIgnorePath, patched,
-                exists ? Tools.TextFileEncoding.Detect(gitIgnorePath) : Tools.TextFileEncoding.Utf8NoBom);
-        }
-        catch (Exception ex) { Diagnostics.Swallow("ProjectIndexService.PatchGitIgnore", ex); }
-    }
 
     /// <summary>The flattened corpus and its BM25 index, for one <see cref="_contentVersion"/>.</summary>
     private sealed record SearchSnapshot(int Version, List<RagChunk> Chunks, Bm25Index Lexical);

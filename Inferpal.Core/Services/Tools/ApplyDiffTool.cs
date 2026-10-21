@@ -105,7 +105,7 @@ internal class ApplyDiffTool : ITool
         if (await FileTarget.ChangedSinceApprovalAsync(_overlay, new ApprovedFile(path, fileContent), ct) is { } changedMeanwhile) return changedMeanwhile;
 
         var (saved, snapPath) = await _history.BackUpBeforeChangeAsync(path, ct);
-        if (!saved) return FileHistoryService.BackupFailedMessage(path);
+        if (!saved) return _history.BackupFailedMessage(path);
         var snapNote = string.IsNullOrEmpty(snapPath) ? string.Empty : Strings.HistoryNote(snapPath);
 
         await SafeFileWriter.WritePreservingAsync(path, modified, ct);

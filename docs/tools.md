@@ -14,7 +14,7 @@ The agent completes tasks by calling tools. There are **30 built-in tools**, plu
 | `run_command` | `command?`, `working_directory?`, `background?`, `action?`, `id?` | Run a shell command — PowerShell on Windows, and on Linux/macOS when `pwsh` is on the PATH; bash otherwise (`sh` on a host without bash) ; cwd and `env` overrides persist across calls. **Approval**, configurable timeout. `background=true` starts a detached job and returns its `id`; `action` `poll` / `stop` / `list` reads, ends or lists jobs (`command` is required otherwise) |
 | `apply_diff` | `path`, `old_content`, `new_content`, `occurrence?` | Find-and-replace (exact, then whitespace-tolerant fuzzy fallback). `occurrence`: `unique` (default) / `first` / `all`. When `old_content` matches nothing, the refusal quotes the closest line of the file and where it differs. **Approval** (shows the diff) + snapshot + Smart Fix |
 | `apply_edits` | `edits[]` (`path`, `old_content`, `new_content`, `occurrence?`) | **Atomic** multi-file edit — all edits resolved first; nothing is written unless every edit matches. One approval (combined diff) + snapshot per file + Smart Fix |
-| `restore_file` | `path`, `snapshot?` | Restore a file from `.inferpal/history/` |
+| `restore_file` | `path`, `snapshot?` | Restore a file from the backups Inferpal kept of it (`.inferpal/history/`, or your user folder with `historyStorage: user`) |
 | `delete_file` | `path` | Delete a file. **Approval** + snapshot before deletion |
 | `get_diagnostics` | `path?` | `dotnet build` → MSBuild errors/warnings (90 s timeout) |
 | `get_active_document` | — | Path + content of the file open in the editor; a long one comes back as its first page, naming the `start_line` from which `read_file` reads on |

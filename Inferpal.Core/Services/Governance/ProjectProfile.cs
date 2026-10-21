@@ -99,6 +99,7 @@ internal sealed record ProjectProfile(
     [
         "validators", "permissions", "permissionRules", "customTools", "mcpServers",
         "baseUrl", "apiKey", "provider", "securityAlertsDisabled", "smartFixEnabled", "packageCheckEnabled",
+        "historyStorage",
     ];
 
     /// <summary>Reads and parses <c>.inferpal/project.json</c>; never throws, never returns null.</summary>

@@ -189,7 +189,7 @@ internal sealed class ApplyEditsTool : ITool
         foreach (var path in changed)
         {
             var (saved, _) = await _history.BackUpBeforeChangeAsync(path, ct);   // recorded in the active run → /undo-run
-            if (!saved) return FileHistoryService.BackupFailedMessage(path);
+            if (!saved) return _history.BackupFailedMessage(path);
         }
 
         // Approved and backed up: the writes no longer observe cancellation, so a Stop cannot leave

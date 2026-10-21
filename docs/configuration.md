@@ -19,7 +19,7 @@ counts the unsaved changes, and **Cancel** puts the form back as it was saved.
 | Page | Contains |
 |---|---|
 | **Server and models** | Server address and **Test**, chat model, autocomplete model, code search model, context window; **Suggest the best models** (picks among the installed models from Inferpal's measurements, fills the form, saves nothing); **Loaded now** (the models in memory, what each is used for, its memory, context and when it unloads, with **Unload** and **Unload all**). *Show advanced settings* adds: a model per task (agent, explain/fix/refactor, edit with AI, background tasks, `/bench` routing), sampling and reasoning (the level for a question and for an agent run), your GPU (graphics memory, unloading idle models), connection (server type, API key) |
-| **Agent and approvals** | Plan before acting, check the build after each edit, steps per request; *Ask me before changing files, running commands or going online*, with the number of approval rules; custom instructions, language persona; time limits (folded) |
+| **Agent and approvals** | Plan before acting, check the build after each edit, steps per request, where the backups of changed files are kept (in the project or in your user folder); *Ask me before changing files, running commands or going online*, with the number of approval rules; custom instructions, language persona; time limits (folded) |
 | **Context and memory** | Long conversations (summarizing, turns kept whole, session recap, summary time limit, opening messages kept as is); pinned files |
 | **Code search** | Background indexing, relevant code added to each question, language servers, results per search, minimum similarity |
 | **Autocomplete** | Ghost text and its speed; the change shown before applying it (*Edit with AI*) |
@@ -72,6 +72,7 @@ Every persisted setting, its type, and default value.
 | `chatDensity` | string | `"comfortable"` | `comfortable` or `compact`: how much space the chat leaves around its turns. Compact fits more of the conversation in a narrow panel |
 | `securityAlertsDisabled` | bool | `false` | Auto-approve the calls that would otherwise prompt (the built-in catastrophic-command denylist still applies). Shown inverted in the Settings window: *Ask me before changing files, running commands or going online* |
 | `packageCheckEnabled` | bool | `true` | Look up a package a call adds on its public registry (nuget.org, npm, PyPI) and refuse an invented name before the approval card; anything less certain than "absent" — a company feed included — goes to the card unchecked. Sends the added name, nothing else, and only to a public registry — see [Tools → Packages that do not exist](tools.md#packages-that-do-not-exist) |
+| `historyStorage` | string | `"project"` | Where the copies of the files the agent changes are kept, for `/undo-run` and `/restore`: `project` — `.inferpal/history/` at the repository root (outside git, the workspace root), ignored by git from inside the folder — or `user` — Inferpal's local application data (`%LOCALAPPDATA%\Inferpal\history\` on Windows, the local data folder elsewhere), one folder per repository named after it, and nothing new is written into the project (a history folder an earlier choice left there only gets its own `.gitignore`). Switching keeps the backups already made restorable; nothing is moved. Per machine only: `.inferpal/project.json` cannot set it |
 | `permissionRules` | string | `""` | Allow/deny rules, one per line: `allow\|deny <tool\|*> <regex>` (see [Tools → Permission rules](tools.md)). The narrow rule an approval card offers (*Always: commands that start with `dotnet test`*) is written here |
 | `smartFixEnabled` | bool | `true` | Auto build/typecheck after `write_file`/`apply_diff`/`apply_edits` — .NET / TypeScript / Rust / Go (see workspace overlays) |
 | `inlineDiffPreviewEnabled` | bool | `true` | Inline diff preview for in-place code actions (`/fix` `/refactor` `/doc`, and Visual Studio's *Edit with AI*): per-hunk ✓/✗ accept/reject in the editor (VS adornment; native Refactor Preview in VS Code) instead of an immediate rewrite. Falls back to direct apply when no renderer is available; orthogonal to tool approval |
@@ -177,13 +178,17 @@ They layer on top of the per-machine settings above.
 | `.inferpal/validators.json` | Per-ecosystem Smart Fix commands, keyed by extension: `{ ".ts,.tsx": { "marker": "tsconfig.json", "command": "npx tsc --noEmit" } }`. Extends/overrides the built-in .NET / TS / Rust / Go validators. ⚠ This file is committed, so it arrives with any clone: a command defined here is **always shown for approval before it runs** (asked once per session, and no `allow` rule, nor unticking *Ask me before changing files, running commands or going online*, can auto-approve it). The built-in validators are unaffected. |
 | `.inferpal/project.json` | **Project profile** — how a repository likes to be worked on. `/onboard init` writes a commented example; `/onboard` shows what it asked for and what it got. |
 
-When it indexes a git repository, Inferpal adds only `.inferpal/history/` — its local snapshots of
-the files the agent overwrote — to `.gitignore`, so these overlays (and `rules/`, `checks/`,
-`prompts/`) stay committable. Earlier versions ignored the whole folder; that block is narrowed the
-next time the repository is indexed. A rule you wrote yourself is never changed. The history folder
-also carries its own `.gitignore`, so its snapshots stay out of `git status` whatever the layout — a
-solution below the repository root, or indexing turned off. Snapshot names end in `.bak`, so no test
-runner or compiler mistakes a backup for the file it copies.
+These overlays (and `rules/`, `checks/`, `prompts/`) are meant to be committed. Inferpal never
+writes your `.gitignore`: the only local data it keeps in `.inferpal/` is `history/` — its snapshots
+of the files the agent overwrote — and that folder carries its own `.gitignore`, so its snapshots
+stay out of `git status` whatever the layout (a solution below the repository root, indexing turned
+off). With `historyStorage` set to `user`, the snapshots live in your local application data and the
+project gets no new `history/`. Snapshot names end in `.bak`, so no test runner or compiler
+mistakes a backup for the file it copies. A history folder made by an earlier version gets its own
+`.gitignore` the first time the workspace is opened. Earlier versions also added
+`.inferpal/history/` (or, the oldest, the whole `.inferpal/`) to the repository's `.gitignore`;
+once the folder carries its own, that line is no longer needed and can be removed — with the whole
+folder ignored, the overlays above are not committed.
 
 ### The project profile (`.inferpal/project.json`)
 

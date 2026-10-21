@@ -100,6 +100,12 @@ exists.
   it started, a file larger than 20 MB or stored with Git LFS. Files git ignores (build output,
   `node_modules`, an ignored `.env`), nested repositories and submodules are never recorded, and an
   undo gives back files, never a commit, a branch or the index.
+- **Where the backups live** — `/undo-run`, `/restore` and `restore_file` read the copy Inferpal
+  keeps of a file before each change: in `.inferpal/history/` at the repository root (ignored by
+  git from inside the folder — Inferpal never edits your `.gitignore`), or, with *Backups of
+  changed files* set to **In my user folder** (`historyStorage: user`), in Inferpal's local
+  application data, one folder per repository, with nothing new written into the project. Switching
+  keeps the backups already made restorable.
 - **Run replay** — `/replay [n]` shows a post-mortem timeline of an agent run: every tool
   call with its target and duration, then the files it touched.
 

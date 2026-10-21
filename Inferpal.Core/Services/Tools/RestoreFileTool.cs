@@ -25,10 +25,14 @@ internal class RestoreFileTool : ITool
     /// <inheritdoc/>
     /// <remarks>Each file is backed up before it is written: its writes are in the run already.</remarks>
     public bool NeedsWorkTreeWatch => false;
+    /// <inheritdoc/>
+    /// <remarks>⚠ No folder is named: where the backups are kept is a setting (in the project, or outside it where no
+    /// tool of the model can list them), and a description that names one sends a model looking there — it finds
+    /// nothing and answers that no backup exists. This tool finds them itself, wherever they are.</remarks>
     public string Description =>
-        "Restores a file from a previously saved backup snapshot in .inferpal/history/ (at the git root, or else at " +
-        "the workspace root) — every write takes one and names it in its result. " +
-        "If no snapshot path is provided, uses the most recent backup: you do not need to find it. " +
+        "Restores a file from a backup snapshot Inferpal saved before changing it — every write takes one and names " +
+        "it in its result. If no snapshot path is provided, uses the most recent backup: you do not need to find it, " +
+        "and the backups may be kept outside the workspace, where other tools cannot list them. " +
         "Use this to undo changes made by write_file or apply_diff.";
 
     public object Parameters => new
@@ -57,10 +61,10 @@ internal class RestoreFileTool : ITool
         if (args.Str("snapshot") is { } snapRaw)
         {
             snapPath = PathSanitizer.Sanitize(snapRaw, root);
-            // A snapshot of THIS file in its history folder is acceptable even above the root (the
-            // history lives at the git root, and every write hands the model that path); any other
-            // source file must be inside the workspace.
-            if (!FileHistoryService.IsSnapshotOf(snapPath, path))
+            // A snapshot of THIS file in its history folder is acceptable even outside the root (the
+            // history lives at the git root, or outside the project, and every write hands the model
+            // that path); any other source file must be inside the workspace.
+            if (!_history.IsSnapshotOf(snapPath, path))
                 PathSanitizer.AssertUnderRoot(snapPath, root);
         }
 
@@ -90,7 +94,7 @@ internal class RestoreFileTool : ITool
 
         // Snapshot the current content first so the restore itself is undoable.
         var (saved, preRestore) = await _history.RestoreWithBackupAsync(snapPath, path, ct);
-        if (!saved) return FileHistoryService.BackupFailedMessage(path);
+        if (!saved) return _history.BackupFailedMessage(path);
         // The next restore without an explicit snapshot must step back past this one, not undo this restore.
         if (preRestore.Length > 0) _history.MarkTakenByRestore(preRestore);
 

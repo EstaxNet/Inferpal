@@ -121,7 +121,7 @@ internal class UpdateMemoryTool : ITool
         // empty the project memory — the one re-injected into the system prompt of every later
         // session — with no net, and the turn answered success.
         var (saved, _) = await _history.BackUpBeforeChangeAsync(memPath, ct);
-        if (!saved) return FileHistoryService.BackupFailedMessage(memPath);
+        if (!saved) return _history.BackupFailedMessage(memPath);
 
         Directory.CreateDirectory(ollamaDir);
 

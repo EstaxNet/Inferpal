@@ -88,7 +88,7 @@ internal class WriteFileTool : ITool
         // site doing it — and that shape, a case handled OUTSIDE the funnel, is what left
         // update_memory out of /undo-run's perimeter.
         var (saved, snapPath) = await _history.BackUpBeforeChangeAsync(path, ct);
-        if (!saved) return FileHistoryService.BackupFailedMessage(path);
+        if (!saved) return _history.BackupFailedMessage(path);
         var snapNote = string.IsNullOrEmpty(snapPath) ? string.Empty : Strings.HistoryNote(snapPath);
 
         var dir = Path.GetDirectoryName(path);

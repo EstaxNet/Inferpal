@@ -380,6 +380,10 @@ internal static class Strings
     public static string HintAskBeforeActions => Get(nameof(HintAskBeforeActions));
     public static string LabelPackageCheck => Get(nameof(LabelPackageCheck));
     public static string HintPackageCheck => Get(nameof(HintPackageCheck));
+    public static string LabelHistoryStorage   => Get(nameof(LabelHistoryStorage));
+    public static string HintHistoryStorage    => Get(nameof(HintHistoryStorage));
+    public static string HistoryStorageProject => Get(nameof(HistoryStorageProject));
+    public static string HistoryStorageUser    => Get(nameof(HistoryStorageUser));
     public static string LabelInlineDiffPreview => Get(nameof(LabelInlineDiffPreview));
     public static string HintInlineDiffPreview => Get(nameof(HintInlineDiffPreview));
 

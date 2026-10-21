@@ -7,8 +7,9 @@ namespace Inferpal.Services.Execution;
 /// and restores them on demand via the <c>restore_file</c> tool or <c>/restore</c> slash command.
 /// </summary>
 /// <remarks>
-/// Backups are stored in <c>.inferpal/history/</c> at the git repository root
-/// (falls back to the file's directory when no git root is found).
+/// Backups are stored in <c>.inferpal/history/</c> at the git repository root (or at the workspace root, else in the
+/// file's directory, when no git root is found) — or, with <see cref="OutsideProject"/>, in a folder of the user's own
+/// application data, one per repository, and nothing is written into the project (<see cref="UserHistoryDir"/>).
 /// Snapshot filename format: <c>yyyy-MM-dd_HH-mm-ss-fff_&lt;pathHash8&gt;_&lt;originalFilename&gt;.bak</c>.
 /// The 8-hex-char hash of the <em>full</em> path disambiguates same-named files: on the bare file
 /// name, <c>restore_file</c> on <c>A\Config.cs</c> silently restores the content of a more recently
@@ -96,11 +97,12 @@ internal class FileHistoryService
 
     /// <summary>Makes git ignore <paramref name="historyDir"/> from inside it, whatever the repository looks like.</summary>
     /// <remarks>
-    /// ⚠ A snapshot is a copy of whatever was overwritten, secrets included, and the history sits at the git
-    /// ROOT. The line indexing adds to the WORKSPACE root's <c>.gitignore</c> only exists when that root holds
-    /// the <c>.git</c> and indexing runs: a solution below the repository root, or RAG off, and every snapshot
-    /// is an untracked file — what "Stage All" commits. A rule inside the folder travels with it (<c>*</c>
-    /// ignores the rule itself too). Best-effort: the snapshot is still taken if this cannot be written.
+    /// ⚠ A snapshot is a copy of whatever was overwritten, secrets included, and the history sits at the git ROOT: without
+    /// this rule every snapshot is an untracked file — what "Stage All" commits. It is the only one: the repository's own
+    /// <c>.gitignore</c> is the user's file, and Inferpal never writes it. A rule inside the folder travels with it
+    /// (<c>*</c> ignores the rule itself too), whatever the layout — a solution below the repository root, indexing off.
+    /// Written in a history kept outside the project too: a home folder kept in git (dotfiles) would list those copies.
+    /// Best-effort: the snapshot is still taken if this cannot be written.
     /// </remarks>
     private static void IgnoreInGit(string historyDir)
     {
@@ -115,6 +117,34 @@ internal class FileHistoryService
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             Diagnostics.Swallow("FileHistoryService.IgnoreInGit", ex);
+        }
+    }
+
+    /// <summary>
+    /// Gives the history folder that already exists for <paramref name="workspaceRoot"/> — at its git root, else at the
+    /// root itself — the ignore rule it may not carry yet (<see cref="IgnoreInGit"/>). Called when a workspace opens;
+    /// creates no folder. Best-effort.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The rule is written with a snapshot, and a history whose last snapshot is older than the rule has none: kept out
+    /// of git by a line of the repository's <c>.gitignore</c> alone, its copies — secrets included — are untracked files
+    /// the moment that line is removed, until the agent's next write. Inferpal never writes the repository's file, so the
+    /// workspace's own history is made to protect itself as soon as the workspace opens, whichever setting is chosen: the
+    /// copies already in the project stay there either way. A repository nested below a root that is not one gets its
+    /// rule at its next snapshot; finding every such folder would mean walking the whole workspace at each open.
+    /// </remarks>
+    internal static void IgnoreExistingHistory(string? workspaceRoot)
+    {
+        if (string.IsNullOrWhiteSpace(workspaceRoot)) return;
+        try
+        {
+            var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(workspaceRoot));
+            var dir  = Path.Combine(AnchorOfFolder(root, root), ".inferpal", "history");
+            if (Directory.Exists(dir)) IgnoreInGit(dir);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            Diagnostics.Swallow("FileHistoryService.IgnoreExistingHistory", ex);
         }
     }
 
@@ -156,9 +186,10 @@ internal class FileHistoryService
     {
         try
         {
-            var historyDir = HistoryDirOf(filePath);
+            var (historyDir, owner) = WhereNewSnapshotsGo(filePath);
             Directory.CreateDirectory(historyDir);
             IgnoreInGit(historyDir);
+            if (owner is not null) NameTheOwner(historyDir, owner);
             RenameOlderSnapshots(historyDir);
 
             // UTC + invariant. Local time repeats an hour every autumn, and the name is not just a
@@ -308,9 +339,24 @@ internal class FileHistoryService
     }
 
     /// <summary>The model-facing refusal when <see cref="BackUpBeforeChangeAsync"/> could not save a backup.</summary>
-    internal static string BackupFailedMessage(string filePath) =>
-        $"Error: no backup of {filePath} could be saved (details in /diagnostics), so it was NOT changed — "
-        + "restore_file could not have undone it. Check that the .inferpal/history folder is writable, then retry.";
+    /// <remarks>It names the folder the backup was meant for: where the history lives depends on a setting
+    /// (<see cref="OutsideProject"/>), and a remedy naming the other one sends the reader to a folder nobody writes.</remarks>
+    internal string BackupFailedMessage(string filePath)
+    {
+        const string NotChanged = "so it was NOT changed — restore_file could not have undone it.";
+        string where;
+        try { where = WhereNewSnapshotsGo(filePath).Dir; }
+        catch (IOException) when (OutsideProject?.Invoke() == true)
+        {
+            // No folder to make writable: the remedy is the setting.
+            return $"Error: no backup of {filePath} could be saved, {NotChanged} Inferpal is set to keep its backups in the "
+                + "user's own folder, and this account has no application data folder to keep them in: setting historyStorage "
+                + "back to project (Backups of changed files → In the project, in Inferpal's settings) lets the change go ahead.";
+        }
+        catch (Exception ex) when (ex is IOException or ArgumentException or NotSupportedException) { where = "the file-history folder"; }
+        return $"Error: no backup of {filePath} could be saved (details in /diagnostics), {NotChanged} "
+            + $"Check that {where} is writable, then retry.";
+    }
 
     /// <summary>
     /// Deletes, for each of <paramref name="suffixes"/> (path hash + file name), the oldest snapshots carrying it
@@ -463,22 +509,23 @@ internal class FileHistoryService
 
     /// <summary>
     /// <c>true</c> when <paramref name="snapshotPath"/> is a snapshot of <paramref name="originalPath"/>
-    /// kept in that file's own history folder.
+    /// kept in one of that file's own history folders (<see cref="HistoryDirsOf"/>).
     /// </summary>
     /// <remarks>The history lives at the git root, which can sit above the solution root the workspace
-    /// is confined to — and every write hands the model that very snapshot path. A snapshot of THIS
-    /// file (its path hash is in the name) is safe to restore wherever that root is.</remarks>
-    internal static bool IsSnapshotOf(string snapshotPath, string originalPath)
+    /// is confined to, or outside the project altogether (<see cref="OutsideProject"/>) — and every write hands the
+    /// model that very snapshot path. A snapshot of THIS file (its path hash is in the name) is safe to restore
+    /// wherever that folder is.</remarks>
+    internal bool IsSnapshotOf(string snapshotPath, string originalPath)
     {
         try
         {
             var full = Path.GetFullPath(snapshotPath);
             // ⚠ A path IDENTITY, and the one that gates a sandbox exemption: a `true` here is what
-            // lets `restore_file` accept a source ABOVE the workspace root. Folding case on a volume
+            // lets `restore_file` accept a source outside the workspace root. Folding case on a volume
             // that does not fold makes two different directories one, so a history folder differing
             // only by case would carry the exemption. The shared rule answers "same file?" once.
-            var history = Path.GetFullPath(GetHistoryDir(originalPath));
-            return string.Equals(Path.GetDirectoryName(full), history, PathComparer.Comparison)
+            return HistoryDirsOf(originalPath).Any(history =>
+                       string.Equals(Path.GetDirectoryName(full), Path.GetFullPath(history), PathComparer.Comparison))
                    && MatchesSuffix(full, SnapshotSuffix(originalPath));
         }
         catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
@@ -913,34 +960,158 @@ internal class FileHistoryService
     /// </remarks>
     internal Func<string?>? WorkspaceRoot { get; set; }
 
-    /// <summary>Where a new snapshot of <paramref name="filePath"/> goes.</summary>
-    private string HistoryDirOf(string filePath) => GetHistoryDir(filePath, WorkspaceRoot?.Invoke());
+    /// <summary>
+    /// Whether new snapshots go to the user's own application data instead of the project (<c>historyStorage: user</c>).
+    /// Set by the tool registry, which reads the configuration at each call; <c>null</c> (a bare service) keeps them in
+    /// the project.
+    /// </summary>
+    internal Func<bool>? OutsideProject { get; set; }
 
-    /// <summary>Where snapshots of <paramref name="filePath"/> are looked for: where they go now, then the folder an
-    /// older version put them in (the file's own folder, outside git), so a restore still finds them.</summary>
-    private IEnumerable<string> HistoryDirsToRead(string filePath)
+    /// <summary>The folder the histories kept outside the project live under, one sub-folder per repository; tests point
+    /// it elsewhere.</summary>
+    internal string UserHistoryRoot { get; set; } = DefaultUserHistoryRoot;
+
+    /// <summary><c>Inferpal/history</c> in the user's LOCAL application data.</summary>
+    /// <remarks>⚠ Local, not roaming: a snapshot is a copy of whatever was overwritten, secrets included, and a roaming
+    /// profile would carry every one of them to each machine the person signs in to.</remarks>
+    internal static string DefaultUserHistoryRoot => DefaultRoot.Value;
+
+    private static readonly Lazy<string> DefaultRoot = new(() =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Inferpal", "history"));
+
+    /// <summary>Whether <paramref name="fullPath"/> is in, or is, the folder the histories kept outside the project live
+    /// under (<see cref="DefaultUserHistoryRoot"/>).</summary>
+    /// <remarks>⚠ What keeps those copies unread by the model's tools when a workspace holds the user's application data —
+    /// one opened on the home folder: in the project the history sits under <c>.inferpal</c>, a folder no walk enters, and
+    /// outside it nothing marked it. Asked for every folder a walk meets: the root is read once.</remarks>
+    internal static bool InUserHistoryRoot(string fullPath)
     {
-        var now = HistoryDirOf(filePath);
-        if (Directory.Exists(now)) yield return now;
-        var legacy = GetHistoryDir(filePath);
-        if (!string.Equals(Path.GetFullPath(legacy), Path.GetFullPath(now), PathComparer.Comparison) && Directory.Exists(legacy))
-            yield return legacy;
+        var root = DefaultUserHistoryRoot;
+        if (!Path.IsPathFullyQualified(root)) return false;
+        var path = Path.TrimEndingDirectorySeparator(fullPath);
+        return string.Equals(path, root, PathComparer.Comparison)
+               || path.StartsWith(root + Path.DirectorySeparatorChar, PathComparer.Comparison)
+               || path.StartsWith(root + Path.AltDirectorySeparatorChar, PathComparer.Comparison);
     }
+
+    /// <summary>
+    /// Where a new snapshot of <paramref name="filePath"/> goes, and — when that folder is outside the project — the
+    /// folder its history belongs to (<see cref="NameTheOwner"/>).
+    /// </summary>
+    private (string Dir, string? Owner) WhereNewSnapshotsGo(string filePath)
+    {
+        var anchor = AnchorOf(filePath, WorkspaceRoot?.Invoke());
+        return OutsideProject?.Invoke() == true
+            ? (UserHistoryDir(anchor), anchor)
+            : (Path.Combine(anchor, ".inferpal", "history"), null);
+    }
+
+    /// <summary>
+    /// Every folder a snapshot of <paramref name="filePath"/> can be in, the one new snapshots go to first: the project's,
+    /// the one outside it — either setting may have written —, and the one found without the workspace root (outside git,
+    /// the file's own folder), which may still hold backups.
+    /// </summary>
+    /// <remarks>⚠ Both settings' folders, whichever is chosen now: switching would otherwise leave every backup made
+    /// before out of <c>/restore</c> and <c>restore_file</c>, and nothing is ever moved from one to the other.</remarks>
+    private IEnumerable<string> HistoryDirsOf(string filePath)
+    {
+        var anchor  = AnchorOf(filePath, WorkspaceRoot?.Invoke());
+        var project = Path.Combine(anchor, ".inferpal", "history");
+        string? user;
+        try { user = UserHistoryDir(anchor); }
+        catch (IOException) { user = null; }   // no user folder to read from: the project's still is one
+
+        string?[] dirs = OutsideProject?.Invoke() == true ? [user, project] : [project, user];
+        return dirs.Append(GetHistoryDir(filePath))
+                   .OfType<string>()
+                   .Select(Path.GetFullPath)
+                   .Distinct(PathComparer.Default);
+    }
+
+    /// <summary>The history folders of <paramref name="filePath"/> that exist (<see cref="HistoryDirsOf"/>).</summary>
+    private IEnumerable<string> HistoryDirsToRead(string filePath) => HistoryDirsOf(filePath).Where(Directory.Exists);
 
     /// <summary>The git root's <c>.inferpal/history</c>; outside git, the workspace root's when the file is under
     /// <paramref name="workspaceRoot"/>; else the file's own folder.</summary>
-    internal static string GetHistoryDir(string filePath, string? workspaceRoot = null)
+    internal static string GetHistoryDir(string filePath, string? workspaceRoot = null) =>
+        Path.Combine(AnchorOf(filePath, workspaceRoot), ".inferpal", "history");
+
+    /// <summary>The folder a file's history belongs to: its git work tree; outside git, <paramref name="workspaceRoot"/>
+    /// when the file is under it; else the file's own folder. One history per anchor, wherever it is kept.</summary>
+    private static string AnchorOf(string filePath, string? workspaceRoot)
     {
-        var full     = Path.GetFullPath(filePath);
-        var startDir = Path.GetDirectoryName(full) ?? ".";
-        if (FindGitRoot(startDir) is { } git) return Path.Combine(git, ".inferpal", "history");
+        var full = Path.GetFullPath(filePath);
+        return AnchorOfFolder(Path.GetDirectoryName(full) ?? ".", workspaceRoot);
+    }
+
+    /// <summary>The same rule for a folder: its git work tree; outside git, <paramref name="workspaceRoot"/> when the
+    /// folder is it or under it; else the folder itself. The one place the rule is written.</summary>
+    private static string AnchorOfFolder(string folder, string? workspaceRoot)
+    {
+        if (FindGitRoot(folder) is { } git) return git;
         if (!string.IsNullOrWhiteSpace(workspaceRoot))
         {
             var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(workspaceRoot));
-            if (full.StartsWith(root + Path.DirectorySeparatorChar, PathComparer.Comparison))
-                return Path.Combine(root, ".inferpal", "history");
+            var dir  = Path.TrimEndingDirectorySeparator(folder);
+            if (string.Equals(dir, root, PathComparer.Comparison)
+                || dir.StartsWith(root + Path.DirectorySeparatorChar, PathComparer.Comparison))
+                return root;
         }
-        return Path.Combine(startDir, ".inferpal", "history");
+        return folder;
+    }
+
+    /// <summary>
+    /// The folder, under <see cref="UserHistoryRoot"/>, of the history of <paramref name="anchor"/> kept outside the
+    /// project: named after the anchor's folder so a person can tell whose it is, and told apart by a hash of its path.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ The hash follows the shared rule for "same folder?" (<see cref="PathComparer"/>): folded where the file system
+    /// folds case, never under Linux, where two repositories that differ only by case are two histories — merged, each
+    /// would restore the other's files and prune the other's backups. Visual Studio and VS Code on one repository land
+    /// on the same folder, as they share the project's one — links and junctions resolved first, so a repository reached
+    /// through one is still one history (a <c>subst</c> drive, or a mapped drive and its UNC path, are not resolved).
+    /// ⚠ Throws when there is no absolute folder to put it under (no application data for this account): a relative one
+    /// would resolve against the process's working directory — the project, often — and the setting is the promise that
+    /// nothing is written there. The snapshot then fails, and the write it guards is refused.
+    /// </remarks>
+    internal string UserHistoryDir(string anchor)
+    {
+        if (!Path.IsPathFullyQualified(UserHistoryRoot))
+            throw new IOException($"the history is set to be kept outside the project, and this account has no application "
+                                  + $"data folder to keep it in (\"{UserHistoryRoot}\")");
+        var full  = Path.TrimEndingDirectorySeparator(Tools.PathSanitizer.Resolved(Path.GetFullPath(anchor)));
+        var folds = PathComparer.Comparison != StringComparison.Ordinal;
+        var hash  = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+                        System.Text.Encoding.UTF8.GetBytes(folds ? full.ToUpperInvariant() : full)).AsSpan(0, 6)).ToLowerInvariant();
+        // ⚠ The name folds too: with the hash alone folded, "C:\Dev\App" and "c:\dev\app" — two spellings one editor and
+        // the other hand over for one folder — name two histories.
+        var name  = Path.GetFileName(full);
+        if (folds) name = name.ToLowerInvariant();
+        if (name.Length > 40) name = name[..(char.IsHighSurrogate(name[39]) ? 39 : 40)];   // never half a character
+        return Path.Combine(UserHistoryRoot, name.Length == 0 ? hash : $"{name}-{hash}");
+    }
+
+    /// <summary>The file, in a history kept outside the project, that names the folder it belongs to.</summary>
+    internal const string OwnerFileName = "workspace.txt";
+
+    /// <summary>Writes, once, which folder a history kept outside the project belongs to — for a person cleaning up
+    /// histories of repositories that no longer exist. Best-effort: the snapshot does not depend on it.</summary>
+    /// <remarks>Never taken for a snapshot: every snapshot name starts with a date, and the lookups and the pruning read
+    /// nothing else.</remarks>
+    private static void NameTheOwner(string historyDir, string owner)
+    {
+        var path = Path.Combine(historyDir, OwnerFileName);
+        if (File.Exists(path)) return;
+        try
+        {
+            using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+            stream.Write(System.Text.Encoding.UTF8.GetBytes(owner + "\n"));
+        }
+        catch (IOException) when (File.Exists(path)) { }   // written meanwhile by another snapshot
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Diagnostics.Swallow("FileHistoryService.NameTheOwner", ex);
+        }
     }
 
     private static string? FindGitRoot(string startDir) => GitProcess.WorkTreeOf(startDir);

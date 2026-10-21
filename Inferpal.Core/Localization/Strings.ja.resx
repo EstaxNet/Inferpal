@@ -410,7 +410,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ コードアクションに失敗しました。バックエンド接続とモデルを確認してください。</value></data>
   <data name="CodeActionDocumentChanged" xml:space="preserve"><value>✋ 何も適用されませんでした: モデルの処理中にドキュメントが変更されたか、閉じられました。操作をもう一度実行してください。</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>使用法：`{0}`</value></data>
-  <data name="SlashUsageRestore" xml:space="preserve"><value>使用法：`/restore &lt;パス&gt;` — `.inferpal/history/` から最新のバックアップを復元します</value></data>
+  <data name="SlashUsageRestore" xml:space="preserve"><value>使用法：`/restore &lt;パス&gt;` — Inferpal が保存したこのファイルの最新のバックアップを復元します</value></data>
   <data name="SlashUnknownCommand" xml:space="preserve"><value>不明なコマンド：`{0}`</value></data>
 
     <!-- History search -->
@@ -1684,4 +1684,8 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="InputReceiptNothingSent" xml:space="preserve"><value>何も送信されていません</value></data>
   <data name="InputReceiptStopped" xml:space="preserve"><value>{0} が回答を待っている間に停止しました</value></data>
   <data name="InputReceiptUnanswered" xml:space="preserve"><value>質問には回答されませんでした</value></data>
+  <data name="LabelHistoryStorage" xml:space="preserve"><value>変更したファイルのバックアップ</value></data>
+  <data name="HintHistoryStorage" xml:space="preserve"><value>エージェントがファイルを変更する前に、Inferpal はそのコピーを保存します（/undo-run と /restore 用）。プロジェクト内：リポジトリのルートにある .inferpal/history/。フォルダー内の設定により git には無視されます。ユーザーフォルダー内：Inferpal のローカル アプリケーション データに、リポジトリごとに 1 つのフォルダー。プロジェクトには新たに何も書き込まれません。切り替えても、既に作成されたコピーは復元できます。</value></data>
+  <data name="HistoryStorageProject" xml:space="preserve"><value>プロジェクト内</value></data>
+  <data name="HistoryStorageUser" xml:space="preserve"><value>ユーザーフォルダー内</value></data>
 </root>

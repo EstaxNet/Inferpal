@@ -92,10 +92,11 @@ internal static class ContentExclusions
     /// <summary>What keeps Inferpal's backups unread (<see cref="InHistory"/>).</summary>
     internal static readonly Exclusion History = new(".inferpal/history", 0, "*");
 
+    /// <summary>In a history folder: the project's, or the one kept in the user's own folder.</summary>
     private static bool InHistory(string full)
     {
         var at = full.Replace('\\', '/').IndexOf("/.inferpal/history/", StringComparison.OrdinalIgnoreCase);
-        return at >= 0;
+        return at >= 0 || FileHistoryService.InUserHistoryRoot(full);
     }
 
     /// <summary>The longest declared root holding <paramref name="full"/>, or <c>null</c>.</summary>

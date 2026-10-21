@@ -351,6 +351,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         InitEditors(workspaceRoot);
         InitWidgets(live);
         InitAppearance(config);
+        InitHistoryStorage(config);
         InitReasoning(config);
         _baseUrl              = config.BaseUrl;
         _selectedProvider     = ProviderOptions.FirstOrDefault(p => p.Code == config.Provider).Name
@@ -555,6 +556,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         LabelRunEndSound             = Strings.LabelRunEndSound;
         HintRunEndSound              = Strings.HintRunEndSound;
         ApplyAppearanceLabels();
+        ApplyHistoryStorageLabels();
         ApplyReasoningLabels();
         LabelSmartFixEnabled         = Strings.LabelSmartFixEnabled;
         HintSmartFixEnabled          = Strings.HintSmartFixEnabled;
@@ -1191,6 +1193,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         string modelIdleTimeoutText = string.Empty;
         string mcpServersJson = string.Empty;
         var density = "comfortable";
+        var historyStorage = "project";
         string effortChat = "low", effortAgent = "server";
         bool toolExpanded = false, runEndSound = true, askBefore = true, packageCheck = true, compactionEnabled = true, inlineEnabled = true, ragEnabled = true, ragAutoContextEnabled = true, smartFixEnabled = true, agentModeEnabled = false, lspEnabled = false, modelAutoUnload = true, personaAutoSwitch = true, skillsAutoMode = false, mcpEnabled = false, modelRouterAuto = false, useSampling = true, inlineDiff = true;
         await RunOnVMContextAsync(() =>
@@ -1205,6 +1208,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             toolExpanded         = ToolBubblesExpanded;
             runEndSound          = RunEndSoundEnabled;
             density              = ChatDensity;
+            historyStorage       = HistoryStorage;
             (effortChat, effortAgent) = ReasoningToSave;
             askBefore            = AskBeforeActions;
             packageCheck         = PackageCheckEnabled;
@@ -1328,6 +1332,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         edited.ToolBubblesExpanded      = toolExpanded;
         edited.RunEndSoundEnabled       = runEndSound;
         edited.ChatDensity              = density;
+        edited.HistoryStorage           = historyStorage;
         edited.SecurityAlertsDisabled   = !askBefore;
         edited.PackageCheckEnabled      = packageCheck;
         edited.SmartFixEnabled          = smartFixEnabled;

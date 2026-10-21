@@ -369,7 +369,7 @@ internal sealed class RenameSymbolTool : ITool
         foreach (var (filePath, _, _, _) in hits)
         {
             var (saved, _) = await _history.BackUpBeforeChangeAsync(filePath, ct);
-            if (!saved) return FileHistoryService.BackupFailedMessage(filePath);
+            if (!saved) return _history.BackupFailedMessage(filePath);
         }
 
         // Approved and backed up: a Stop no longer interrupts the writes halfway through the rename.

@@ -102,6 +102,23 @@ internal class InferpalConfig
     [JsonIgnore]
     public bool IsCompactChat => string.Equals(ChatDensity, "compact", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Where the copies of the files the agent changes are kept, for <c>/undo-run</c> and <c>/restore</c>: <c>project</c>
+    /// (the default) — <c>.inferpal/history/</c> at the repository root, ignored by git from inside the folder — or
+    /// <c>user</c>, the user's local application data, one folder per repository, and nothing is written into the
+    /// project. Anything else reads as project. Per machine only: a repository's <c>.inferpal/project.json</c> never sets it.
+    /// </summary>
+    /// <remarks>Kept as written, like every setting (the settings panel round-trips the whole file): the readers interpret
+    /// it (<see cref="HistoryOutsideProject"/>, <see cref="SharedHistoryOutsideProject"/>).</remarks>
+    [JsonPropertyName("historyStorage")]
+    public string HistoryStorage { get; set; } = "project";
+
+    private static bool IsUserFolder(string? value) => string.Equals(value?.Trim(), "user", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>The history is kept outside the project (<see cref="HistoryStorage"/>), in this copy.</summary>
+    [JsonIgnore]
+    public bool HistoryOutsideProject => IsUserFolder(HistoryStorage);
+
     /// <summary>When <c>true</c>, <c>write_file</c> and <c>run_command</c> skip the approval dialog.</summary>
     [JsonPropertyName("securityAlertsDisabled")]
     public bool SecurityAlertsDisabled { get; set; } = false;
@@ -852,6 +869,11 @@ internal class InferpalConfig
 
     /// <summary>Whether security alerts are off NOW: see <see cref="Shared{T}"/>.</summary>
     internal bool SharedSecurityAlertsDisabled => Shared(nameof(SecurityAlertsDisabled), SecurityAlertsDisabled);
+
+    /// <summary>Whether the history is kept outside the project NOW: see <see cref="Shared{T}"/>.</summary>
+    /// <remarks>⚠ Read at each backup: a copy that kept its own value would go on writing <c>.inferpal/history/</c> into
+    /// the project from one editor after the person chose "In my user folder" in the other.</remarks>
+    internal bool SharedHistoryOutsideProject => IsUserFolder(Shared(nameof(HistoryStorage), HistoryStorage));
 
     private sealed record FileSeen(string Path, DateTime Stamp, System.Text.Json.Nodes.JsonObject Snapshot);
     private readonly object _sharedLock = new();

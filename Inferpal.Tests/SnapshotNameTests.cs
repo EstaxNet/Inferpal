@@ -34,7 +34,7 @@ public class SnapshotNameTests
             Assert.Equal(".bak", Path.GetExtension(snap));
             Assert.EndsWith("_sum.test.js" + FileHistoryService.SnapshotExtension, snap);
             Assert.Equal(snap, history.FindMostRecentSnapshot(file));
-            Assert.True(FileHistoryService.IsSnapshotOf(snap, file));   // what restore_file accepts
+            Assert.True(history.IsSnapshotOf(snap, file));   // what restore_file accepts
         }
         finally { try { Directory.Delete(root, recursive: true); } catch { } }
     }

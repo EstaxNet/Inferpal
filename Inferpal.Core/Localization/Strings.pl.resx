@@ -410,7 +410,7 @@ Kopia zapasowa: {0}</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ Akcja kodu nie powiodła się — sprawdź połączenie z backendem i model.</value></data>
   <data name="CodeActionDocumentChanged" xml:space="preserve"><value>✋ Nic nie zostało zastosowane: dokument został zmieniony lub zamknięty, gdy model pracował. Uruchom akcję ponownie.</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>Użycie: `{0}`</value></data>
-  <data name="SlashUsageRestore" xml:space="preserve"><value>Użycie: `/restore &lt;ścieżka&gt;` — przywraca najnowszą kopię zapasową z `.inferpal/history/`</value></data>
+  <data name="SlashUsageRestore" xml:space="preserve"><value>Użycie: `/restore &lt;ścieżka&gt;` — przywraca najnowszą kopię zapasową tego pliku zachowaną przez Inferpal</value></data>
   <data name="SlashUnknownCommand" xml:space="preserve"><value>Nieznane polecenie: `{0}`</value></data>
 
     <!-- History search -->
@@ -1684,4 +1684,8 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="InputReceiptNothingSent" xml:space="preserve"><value>nic nie wysłano</value></data>
   <data name="InputReceiptStopped" xml:space="preserve"><value>Zatrzymano, gdy {0} czekał na odpowiedź</value></data>
   <data name="InputReceiptUnanswered" xml:space="preserve"><value>jego pytanie pozostało bez odpowiedzi</value></data>
+  <data name="LabelHistoryStorage" xml:space="preserve"><value>Kopie zmienianych plików</value></data>
+  <data name="HintHistoryStorage" xml:space="preserve"><value>Zanim agent zmieni plik, Inferpal zachowuje jego kopię — dla /undo-run i /restore. W projekcie: .inferpal/history/ w katalogu głównym repozytorium, ignorowany przez git dzięki plikowi w samym folderze. W moim folderze użytkownika: lokalne dane aplikacji Inferpal, jeden folder na repozytorium, a w projekcie nie jest zapisywane nic nowego. Po zmianie wyboru już zrobione kopie nadal można przywrócić.</value></data>
+  <data name="HistoryStorageProject" xml:space="preserve"><value>W projekcie</value></data>
+  <data name="HistoryStorageUser" xml:space="preserve"><value>W moim folderze użytkownika</value></data>
 </root>

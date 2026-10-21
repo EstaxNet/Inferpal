@@ -203,6 +203,14 @@ internal static class SettingsSchema
         new("high",   "High",     () => Strings.ReasoningEffortHigh),
     ];
 
+    /// <summary>Where the copies of the files the agent changes are kept (<see cref="Config.InferpalConfig.HistoryStorage"/>): two
+    /// options, drawn as a segmented switch. Above <see cref="Tabs"/>, like the lists around it.</summary>
+    public static readonly IReadOnlyList<SettingOption> HistoryStorages =
+    [
+        new("project", "In the project",     () => Strings.HistoryStorageProject),
+        new("user",    "In my user folder",  () => Strings.HistoryStorageUser),
+    ];
+
     /// <summary>How much space the chat leaves around its turns: two options, drawn as a segmented switch.
     /// ⚠ Above <see cref="Tabs"/>: a static initialiser reads the fields declared before it, and one declared after is still
     /// null there, and the switch shows no option.</summary>
@@ -288,6 +296,8 @@ internal static class SettingsSchema
                 new("smartFixEnabled",    SettingKind.Bool, "LabelSmartFixEnabled",    "HintSmartFixEnabled"),
                 new("agentMaxIterations", SettingKind.Int,  "LabelAgentMaxIterations", "HintAgentMaxIterations", Unit: "UnitIterations",
                     Min: 0),
+                new("historyStorage",     SettingKind.Select, "LabelHistoryStorage", "HintHistoryStorage",
+                    Options: HistoryStorages, Editor: "segmented"),
             ]),
             new("SettingsSectionApprovals",
             [

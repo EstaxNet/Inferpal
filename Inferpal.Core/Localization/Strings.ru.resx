@@ -410,7 +410,7 @@
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ Не удалось выполнить действие с кодом — проверьте подключение к бэкенду и модель.</value></data>
   <data name="CodeActionDocumentChanged" xml:space="preserve"><value>✋ Ничего не применено: документ был изменён или закрыт, пока модель работала. Запустите действие ещё раз.</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>Использование: `{0}`</value></data>
-  <data name="SlashUsageRestore" xml:space="preserve"><value>Использование: `/restore &lt;путь&gt;` — восстанавливает последнюю резервную копию из `.inferpal/history/`</value></data>
+  <data name="SlashUsageRestore" xml:space="preserve"><value>Использование: `/restore &lt;путь&gt;` — восстанавливает последнюю резервную копию этого файла, сохранённую Inferpal</value></data>
   <data name="SlashUnknownCommand" xml:space="preserve"><value>Неизвестная команда: `{0}`</value></data>
 
     <!-- History search -->
@@ -1684,4 +1684,8 @@
   <data name="InputReceiptNothingSent" xml:space="preserve"><value>ничего не отправлено</value></data>
   <data name="InputReceiptStopped" xml:space="preserve"><value>Остановлено, пока {0} ждал вашего ответа</value></data>
   <data name="InputReceiptUnanswered" xml:space="preserve"><value>его вопрос остался без ответа</value></data>
+  <data name="LabelHistoryStorage" xml:space="preserve"><value>Копии изменённых файлов</value></data>
+  <data name="HintHistoryStorage" xml:space="preserve"><value>Прежде чем агент изменит файл, Inferpal сохраняет его копию — для /undo-run и /restore. В проекте: .inferpal/history/ в корне репозитория; git игнорирует её благодаря файлу внутри самой папки. В моей папке пользователя: локальные данные Inferpal, по папке на репозиторий, и в проект больше ничего нового не записывается. После смены варианта уже сделанные копии можно по-прежнему восстановить.</value></data>
+  <data name="HistoryStorageProject" xml:space="preserve"><value>В проекте</value></data>
+  <data name="HistoryStorageUser" xml:space="preserve"><value>В моей папке пользователя</value></data>
 </root>

@@ -96,7 +96,7 @@ public class MemoryWithoutANetTests
             // The project memory is untouched — it is what goes back into the system prompt of
             // toutes les sessions suivantes.
             Assert.Equal(Remembered, await File.ReadAllTextAsync(memPath));
-            Assert.Equal(FileHistoryService.BackupFailedMessage(memPath), answer);
+            Assert.Equal(new FileHistoryService().BackupFailedMessage(memPath), answer);
         }
         finally { Directory.Delete(root, recursive: true); }
     }
@@ -133,7 +133,7 @@ public class MemoryWithoutANetTests
             var answer = await tool.ExecuteAsync(Raw("""{"mode":"clear"}"""), CancellationToken.None);
 
             Assert.Equal(string.Empty, await File.ReadAllTextAsync(memPath));
-            Assert.NotEqual(FileHistoryService.BackupFailedMessage(memPath), answer);
+            Assert.NotEqual(new FileHistoryService().BackupFailedMessage(memPath), answer);
             // And the snapshot really is there: otherwise the refusal above would guard a fiction.
             Assert.True(Directory.Exists(historyDir) && Directory.GetFiles(historyDir).Length > 0,
                         "no snapshot written: the reference arm proves nothing.");

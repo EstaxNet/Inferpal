@@ -60,7 +60,7 @@ editor with tools disabled).
 
 | Command | Description |
 |---|---|
-| `/restore <path> [snapshot]` | Restore a file from `.inferpal/history/` (latest snapshot by default) |
+| `/restore <path>` | Restore a file from the most recent backup Inferpal kept of it — in `.inferpal/history/`, or in your user folder with `historyStorage: user` |
 | `/undo-run [list]` | Revert every file changed during the last agent run — restores edited files, deletes files created that run; `list` shows this session's tracked runs |
 | `/replay [n]` | Post-mortem timeline of an agent run: every tool call with its target and duration, then the files it touched (`n` = nth most recent run, default latest) |
 

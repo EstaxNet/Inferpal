@@ -410,7 +410,7 @@ Sicherung: {0}</value></data>
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ Die Codeaktion ist fehlgeschlagen — prüfen Sie die Backend-Verbindung und das Modell.</value></data>
   <data name="CodeActionDocumentChanged" xml:space="preserve"><value>✋ Nichts wurde angewendet: Das Dokument wurde geändert oder geschlossen, während das Modell arbeitete. Führen Sie die Aktion erneut aus.</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>Verwendung: `{0}`</value></data>
-  <data name="SlashUsageRestore" xml:space="preserve"><value>Verwendung: `/restore &lt;Pfad&gt;` — stellt die neueste Sicherung aus `.inferpal/history/` wieder her</value></data>
+  <data name="SlashUsageRestore" xml:space="preserve"><value>Verwendung: `/restore &lt;Pfad&gt;` — stellt die neueste Sicherung wieder her, die Inferpal von dieser Datei behalten hat</value></data>
   <data name="SlashUnknownCommand" xml:space="preserve"><value>Unbekannter Befehl: `{0}`</value></data>
 
     <!-- History search -->
@@ -1684,4 +1684,8 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="InputReceiptNothingSent" xml:space="preserve"><value>nichts gesendet</value></data>
   <data name="InputReceiptStopped" xml:space="preserve"><value>Angehalten, während {0} auf Ihre Antwort wartete</value></data>
   <data name="InputReceiptUnanswered" xml:space="preserve"><value>seine Frage blieb unbeantwortet</value></data>
+  <data name="LabelHistoryStorage" xml:space="preserve"><value>Sicherungen geänderter Dateien</value></data>
+  <data name="HintHistoryStorage" xml:space="preserve"><value>Bevor der Agent eine Datei ändert, behält Inferpal eine Kopie davon, für /undo-run und /restore. Im Projekt: .inferpal/history/ im Stammverzeichnis des Repositorys, von git aus dem Ordner selbst heraus ignoriert. In meinem Benutzerordner: die lokalen Anwendungsdaten von Inferpal, ein Ordner pro Repository, und nichts Neues wird in das Projekt geschrieben. Nach einem Wechsel bleiben die bereits erstellten Kopien wiederherstellbar.</value></data>
+  <data name="HistoryStorageProject" xml:space="preserve"><value>Im Projekt</value></data>
+  <data name="HistoryStorageUser" xml:space="preserve"><value>In meinem Benutzerordner</value></data>
 </root>

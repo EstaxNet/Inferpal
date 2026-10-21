@@ -410,7 +410,7 @@
   <data name="CodeActionFailed" xml:space="preserve"><value>⚠ 代码操作失败。请检查后端连接和模型。</value></data>
   <data name="CodeActionDocumentChanged" xml:space="preserve"><value>✋ 未应用任何内容：模型工作期间文档已更改或关闭。请重新运行该操作。</value></data>
   <data name="SlashUsage" xml:space="preserve"><value>用法：`{0}`</value></data>
-  <data name="SlashUsageRestore" xml:space="preserve"><value>用法：`/restore &lt;路径&gt;` — 从 `.inferpal/history/` 还原最近的备份</value></data>
+  <data name="SlashUsageRestore" xml:space="preserve"><value>用法：`/restore &lt;路径&gt;` — 还原 Inferpal 为此文件保留的最新备份</value></data>
   <data name="SlashUnknownCommand" xml:space="preserve"><value>未知命令：`{0}`</value></data>
 
     <!-- History search -->
@@ -1684,4 +1684,8 @@
   <data name="InputReceiptNothingSent" xml:space="preserve"><value>未发送任何内容</value></data>
   <data name="InputReceiptStopped" xml:space="preserve"><value>在 {0} 等待你回答时已停止</value></data>
   <data name="InputReceiptUnanswered" xml:space="preserve"><value>其问题未获回答</value></data>
+  <data name="LabelHistoryStorage" xml:space="preserve"><value>已更改文件的备份</value></data>
+  <data name="HintHistoryStorage" xml:space="preserve"><value>在代理更改文件之前，Inferpal 会保留一份副本，供 /undo-run 和 /restore 使用。在项目中：仓库根目录下的 .inferpal/history/，由文件夹自身的设置让 git 忽略。在我的用户文件夹中：Inferpal 的本地应用数据，每个仓库一个文件夹，不会再向项目写入任何新内容。切换选项后，已有的副本仍可恢复。</value></data>
+  <data name="HistoryStorageProject" xml:space="preserve"><value>在项目中</value></data>
+  <data name="HistoryStorageUser" xml:space="preserve"><value>在我的用户文件夹中</value></data>
 </root>
