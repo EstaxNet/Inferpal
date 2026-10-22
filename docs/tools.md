@@ -58,12 +58,13 @@ says how many files it skipped, above its result.
 
 ## Approval model
 
-Tools that touch the filesystem, run commands, or reach the network are gated by a 3-way
-prompt:
+Tools that touch the filesystem, run commands, or reach the network are gated by an approval
+card:
 
-> **Allow once** · **Always allow this tool** · **Always: *the narrow rule*** · **Cancel**
+> **Allow once** · **Always this session** · **Always: *the narrow rule*** · **Deny**
 
-- "Always allow" remembers that tool **for the session only** — it is never written to disk.
+- "Always this session" allows that tool **for this session, in this workspace** — it is never written to disk, and
+  opening another folder or solution asks again.
 - **Always: …** — when one narrow rule describes the call, the card offers it beside "Always":
   *commands that start with `dotnet test`*, *writes under `tests/`*. Picking it writes that rule
   to the per-machine **Permission rules** setting (the button's tooltip shows the exact lines), says

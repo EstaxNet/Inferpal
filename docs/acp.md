@@ -268,10 +268,14 @@ editor says so, once:
 - the debugger tools (`/debug`, the debugger capture of `/tdd`);
 - the Context X-Ray (the settings open in your browser instead: `/settings`);
 - the commands that work on the editor or its panels: `/xray`, `/explain`, `/review`, `/fix`, `/refactor`, `/doc`,
-  `/export`, `/branch`, `/agent-step`. To start over, open a new thread instead of `/clear`;
+  `/export`, `/branch`, `/agent-step`, `/resume`, and `/test` (it works on the editor's active file). To start over,
+  open a new thread instead of `/clear`;
 - a note to a running turn (Enter during a turn in Visual Studio and VS Code): the protocol has no way to send a
   message into a prompt that is still running, and a second prompt during a turn is refused. Zed queues a message typed
   during a turn and sends it when the turn ends; other clients may refuse it — stop the turn, then send the correction.
+
+`/fix-build` and `/setup` are Visual Studio's alone: they are in the command list, as in VS Code, and answer that they
+are not available here (the first setup of an ACP client is `Inferpal.Host --acp --setup`).
 
 ## On another machine
 

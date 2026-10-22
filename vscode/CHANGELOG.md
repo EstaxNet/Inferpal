@@ -16,6 +16,10 @@ extension share one engine and one version number.
 - **A slow machine's long first answer is waited for again after the next step of a conversation**: with Ollama, a
   request the server mostly served from its cache was taken as a fast read of the whole conversation, and erased the
   longer wait Inferpal had learned for long requests; the speed is now learned from the part Ollama actually reads.
+- **The documentation no longer says "feature parity"**: the features still only in Visual Studio (Edit with AI, the
+  Build Failed banner, `/fix-build` and a few more) are
+  [listed in the features page](https://github.com/EstaxNet/Inferpal/blob/master/docs/features.md#two-editors-one-engine),
+  and the settings panel is described as the seven pages it has.
 
 ## 1.8.3
 

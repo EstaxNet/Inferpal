@@ -6,15 +6,30 @@ exists.
 ## Two editors, one engine
 
 - The **Visual Studio extension** (primary) and the **VS Code extension** run the same
-  `Inferpal.Core` engine and share the same configuration. Since 1.2.0 the VS Code front-end
-  is at **feature parity**: full markdown rendering, welcome screen, connection + VRAM badge,
-  collapsible tool bubbles (input/output, "Fix with AI" on errors), live agent-plan block,
-  slash-command autocomplete, Shift+↑/↓ prompt history, token counter with a clickable context
-  gauge (opens the X-Ray panel), conversation search, `.md`/`.txt` export, Ctrl+Alt+I
-  keybinding, and a localized webview (10 languages).
-- **Headless slash commands** — ~40 commands are served by the host over JSON-RPC with the
-  same approval/permission pipeline; long commands are cancellable. VS-only: `/fix-build` and
-  `/setup`, coupled to Visual Studio by construction (MSBuild banner, live model-pull bubble).
+  `Inferpal.Core` engine and share the same configuration: the agent, its tools and approvals, search, MCP, ghost
+  text, `/tdd` and `/debug` are the same in both. The VS Code chat has full markdown rendering, welcome screen,
+  connection + VRAM badge, collapsible tool bubbles (input/output, "Fix with AI" on errors), live agent-plan block,
+  slash-command autocomplete, Shift+↑/↓ prompt history, token counter with a clickable context gauge (opens the X-Ray
+  panel), conversation search, `.md`/`.txt` export, Ctrl+Alt+I keybinding, and a localized webview (10 languages).
+- **Not in VS Code yet** — a few editor features are Visual Studio-only for now:
+  - **Edit with AI** (Ctrl+Shift+I, an instruction typed on the selection) — `/refactor <request>` stands in for it;
+  - **Explain** and **Add Tests** in the editor context menu (it has *Inferpal: Fix This Code*, *Refactor This Code*
+    and *Document This Code*) — `/explain` and `/test` from the chat;
+  - `/test` on the **selection**: VS Code sends the whole file, and rewrites an existing test file on disk instead
+    of through an undoable edit (the copy it keeps first comes back with the `/restore` line of its reply);
+  - the **colored diff in a tool bubble** after a write (VS Code shows it on the approval card, before the write — so
+    not once the tool is always allowed);
+  - the **Build Failed banner** (VS Code's welcome card offers **Fix them** for the Problems panel's errors);
+  - the **auto-attach chips** while you type (the per-turn auto-context is there);
+  - the **sound** at the end of a long run;
+  - the **first-run** server and model setup (VS Code picks the best installed chat model when the default one is
+    not on the server and no model is set);
+  - `/fix-build` and `/setup` (they answer that they are not available), and the **Alt+M** shortcut of `/map` (the
+    command itself is there).
+- **Not in Visual Studio yet** — **Review a Commit…** (VS Code's command palette lists the commits to pick from; in
+  Visual Studio, type `/check <commit>`).
+- **Headless slash commands** — nearly all the slash commands are served by the host over JSON-RPC with the
+  same approval/permission pipeline; long commands are cancellable.
 - **Settings panel in VS Code** — an "Inferpal Settings" webview with the same seven pages as the
   Visual Studio window, read from the same description in the Core, backed by the shared config.
   `/settings` opens it from the chat (and the settings window in Visual Studio).
@@ -112,11 +127,13 @@ exists.
 ## Code editing & fixing
 
 - **Code actions** (editor context menu → **Inferpal**) — **Explain**, **Fix**, **Refactor**,
-  **Add Tests**, **Add Docstring**. All use a dedicated model and run without tool calling.
+  **Add Tests**, **Add Docstring** (Visual Studio; VS Code's editor context menu has *Inferpal: Fix This Code*,
+  *Refactor This Code* and *Document This Code*, and the others are the `/explain` and `/test` commands). All use a
+  dedicated model and run without tool calling.
   **Fix**, **Refactor** and **Add Docstring** apply their result **directly in the editor**
   (undoable with Ctrl+Z); **Add Tests** writes into a **separate test file** (created/opened,
   or extended if it already exists); only **Explain** answers in the chat window.
-- **Inline Edit (Edit with AI)** — select code (or place the caret on a line), press
+- **Inline Edit (Edit with AI)** (Visual Studio) — select code (or place the caret on a line), press
   **Ctrl+Shift+I** (or pick **Edit with AI…** from the context menu), type an instruction, and
   the model rewrites the selection **directly in the editor** (re-indented to match the
   original). Uses the Inline Edit model (falls back to Code Actions → chat model).
@@ -142,8 +159,9 @@ exists.
   all the hunks not yet answered; VS Code: the native Refactor Preview).
   Accepted hunks apply as a single undo step. Toggle with `inlineDiffPreviewEnabled`
   (default on).
-- **Inline diff viewer** — an LCS-based diff is shown in the chat bubble after every
-  write/apply (added green, removed red, unchanged collapsed).
+- **Inline diff viewer** (Visual Studio) — an LCS-based diff is shown in the chat bubble after every
+  write/apply (added green, removed red, unchanged collapsed). VS Code shows the colored diff on the approval card,
+  before the write.
 - **`/fix-build`** — compile → AI fixes errors → recompile, repeated until clean (max 5 rounds).
 - **`/tdd [filter]`** — "fix until green", the test-side twin of `/fix-build`: runs the test
   suite (`run_tests` auto-detects dotnet / pytest / npm / cargo / go), hands the failure
@@ -346,8 +364,8 @@ exists.
   Windows Forms designer's code goes to a card that warns ([Tools](tools.md)).
 - **Approval prompts** — `write_file`, `apply_diff`, `apply_edits`, `delete_file`,
   `run_command`, `rename_symbol`, `fetch_url`, `web_search`, custom shell tools, and MCP calls
-  each prompt **Allow once / Always allow this tool / Cancel** (session-scoped, never
-  persisted). Edit prompts show the **actual diff** before you confirm. A command or a write that
+  each prompt **Allow once / Always this session / Deny** ("Always" allows the tool for this session in this
+  workspace, never written to disk). Edit prompts show the **actual diff** before you confirm. A command or a write that
   one narrow rule describes also offers that rule (*commands that start with `dotnet test`*,
   *writes under `tests/`*), written to the per-machine rules when picked; `/permissions suggest`
   names the ones you keep granting.
@@ -403,10 +421,12 @@ exists.
 
 ## Keyboard shortcuts
 
+Alt+B, Alt+O, Alt+M and Ctrl+Shift+I are Visual Studio's; in VS Code, **Ctrl+Alt+I** opens the chat.
+
 | Shortcut | Action |
 |---|---|
 | **Alt+B** / **Alt+O** | Open the Inferpal chat window from anywhere |
-| **Alt+M** | Run `/map` (call graph) for the active file |
+| **Alt+M** | Run `/map`: the project's architecture map |
 | **Ctrl+Shift+I** | Inline Edit (Edit with AI) on the selection |
 | **Enter** | Send the message |
 | **Shift+Enter** | Insert a newline in the prompt |

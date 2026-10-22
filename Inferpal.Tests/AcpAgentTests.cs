@@ -1263,16 +1263,21 @@ public sealed class AcpAgentTests : IDisposable
 
     // ── Commands ───────────────────────────────────────────────────────────────
 
-    [Fact]
-    public async Task ACommandOnlyAnEditorServes_IsSaid_AndNeverSentToTheModel()
+    /// <summary>⚠ <c>/test</c> reads the editor's active document: without an editor it could only answer "open a file in the
+    /// editor", a remedy an ACP client cannot follow.</summary>
+    [Theory]
+    [InlineData("/xray")]
+    [InlineData("/test")]
+    public async Task ACommandOnlyAnEditorServes_IsSaid_AndNeverSentToTheModel(string command)
     {
         await using var h = await StartAsync();
         await h.Client.RequestAsync("initialize", Init());
         var sid = await NewSessionAsync(h);
 
-        Assert.Equal("end_turn", StopReason(await PromptAsync(h, sid, "/xray")));
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, sid, command)));
 
-        Assert.Contains(Strings.AcpCommandNeedsEditor("/xray"), h.Client.Said(sid));
+        Assert.Contains(Strings.AcpCommandNeedsEditor(command), h.Client.Said(sid));
+        Assert.DoesNotContain(Strings.SlashNoActiveDocument, h.Client.Said(sid));
         Assert.Empty(h.Fake.ChatModels);
     }
 
@@ -1391,6 +1396,7 @@ public sealed class AcpAgentTests : IDisposable
         var names = update.GetProperty("availableCommands").EnumerateArray().Select(c => c.GetProperty("name").GetString()).ToList();
         Assert.Contains("help", names);
         Assert.DoesNotContain("xray", names);
+        Assert.DoesNotContain("test", names);
         Assert.DoesNotContain("clear", names);
     }
 

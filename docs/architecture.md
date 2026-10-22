@@ -16,7 +16,7 @@ Two adapters consume it:
 - **Visual Studio** (`Inferpal/` + `Inferpal.InProc/` + `Inferpal.Fim/`) — the primary target,
   described in the rest of this page (`VsEditorSurface`, `VsApprovalService`, Remote UI tool
   window, and everything that must live inside `devenv.exe`).
-- **VS Code** (`vscode/` + `Inferpal.Host/`, at feature parity since 1.2.0) — `Inferpal.Host` is a console
+- **VS Code** (`vscode/` + `Inferpal.Host/`) — `Inferpal.Host` is a console
   process hosting the Core behind **header-framed JSON-RPC on stdio** (`initialize`,
   `chat/send` with streamed notifications, `models/list`, `fim/complete`, `textDocument/did*`
   sync…), with reverse ports `RpcEditorSurface` and `RpcApprovalService` (fail-closed). The

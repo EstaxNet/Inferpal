@@ -31,7 +31,7 @@ editor with tools disabled).
 | Command | Description |
 |---|---|
 | `/context` | Show the active `.inferpal/context.md` |
-| `/xray` | Context X-Ray: interactive panel breaking down everything composing the system prompt (base, custom, pinned, project files, scoped rules) — token bars, exact content per section, per-section on/off toggle for the next turn, copy of the raw prompt; the window fill counts the conversation and the tool definitions each turn carries. Also opens by clicking the context gauge. Headless adapters get the markdown breakdown instead |
+| `/xray` | Context X-Ray: interactive panel breaking down everything composing the system prompt (base, custom, pinned, project files, scoped rules) — token bars, exact content per section, per-section on/off toggle for the next turn, copy of the raw prompt; the window fill counts the conversation and the tool definitions each turn carries. Also opens by clicking the context gauge. The same panel in VS Code; an ACP client has none, and the command is refused there |
 | `/skill [name request]` | List the skills — `SKILL.md` folders the repository wrote for Copilot (`.github/skills`), Claude Code (`.claude/skills`), any agent (`.agents/skills`), Cline or Roo, and your own in `~/.copilot/skills`, `~/.claude/skills`, `~/.agents/skills` — or ask with one: `/skill <name> <request>` joins its instructions and the list of its files to your question. Its files are read with `read_skill_file`; a script runs only through `run_command`, with your approval (`allowed-tools` grants nothing) |
 | `/instructions` | List the instruction files the repository gives coding agents (`AGENTS.md`, `CLAUDE.md`, Copilot's, Cursor's, Cline's, Roo's, Continue's): the tool each is for, when it applies, what the next question sends of it, and why not when it does not. The same rows are on the Context settings page |
 | `/memory` | Show `.inferpal/memory.md` (the agent's persistent memory) |
@@ -71,7 +71,7 @@ editor with tools disabled).
 | `/build [path]` | Run a build and display errors |
 | `/fix-build [path]` | Compile → AI fixes errors → recompile, until clean (max 5 rounds) |
 | `/solution [path]` | Display the solution structure |
-| `/map [path]` | Show the call graph of a file (`analyze_code mode=callgraph`) |
+| `/map [path]` | Without a path, the project's architecture map (namespaces, types, hotspots — `generate_project_map`); with one, the call graph of that file (`analyze_code mode=callgraph`) |
 | `/git [path]` | Show git status, log, branches, diff summary |
 | `/commit` | Generate an AI commit message from `git diff` (pre-fills the prompt). Describes the staged changes, or with nothing staged the tracked changes — untracked files are named as left out, since `/commit-exec` does not add them |
 | `/commit-exec` | Execute the commit proposed by `/commit` (with nothing staged, stages tracked files only: `git add -u`) |
@@ -154,5 +154,5 @@ empty input` — and the model gets it with the action, before the rest.
 | `/fix` | Fix bugs in the active code — **applied directly in the editor** (undoable with Ctrl+Z) |
 | `/review` | Review the active code — read-only, answers in the chat |
 | `/refactor` | Refactor the active code — **applied directly in the editor** (undoable with Ctrl+Z) |
-| `/test` | Generate unit tests into a **separate test file** (created/opened, or extended if it exists) — for C#, in the test project that references the source's project (the source's folder mirrored there); under Maven/Gradle, in `src/test`; for Python, in the folder pytest collects (its `testpaths`, else `tests/`); for a Rust library, in the crate's `tests/` folder; next to the source otherwise. In VS Code the whole file is the input (the host's editor port exposes no selection) and an existing test file is rewritten on disk rather than through an undoable editor edit |
+| `/test` | Generate unit tests into a **separate test file** (created/opened, or extended if it exists) — for C#, in the test project that references the source's project (the source's folder mirrored there); under Maven/Gradle, in `src/test`; for Python, in the folder pytest collects (its `testpaths`, else `tests/`); for a Rust library, in the crate's `tests/` folder; next to the source otherwise. In VS Code the whole file is the input (the host's editor port exposes no selection) and an existing test file is rewritten on disk rather than through an undoable editor edit; an ACP client has no active file, and the command is refused there |
 | `/doc` | Add an XML documentation comment to the active code — **applied directly in the editor** (undoable with Ctrl+Z) |

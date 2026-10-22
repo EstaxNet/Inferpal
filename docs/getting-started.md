@@ -1,7 +1,7 @@
 ﻿# Getting Started
 
 This guide takes you from nothing to a working Inferpal chat in Visual Studio — the last
-sections cover the **VS Code extension** (at feature parity since 1.2.0).
+sections cover the **VS Code extension**.
 
 ## 1. Requirements
 
@@ -94,8 +94,8 @@ See **[Configuration](configuration.md)** for every available setting.
 ## VS Code
 
 The VS Code extension shares the same engine and the same Inferpal configuration as the
-Visual Studio extension — configure once, use in both editors. Since 1.2.0 it is at
-**feature parity** with the Visual Studio front-end.
+Visual Studio extension — configure once, use in both editors. A few editor features are
+Visual Studio-only for now: [the list](features.md#two-editors-one-engine).
 
 1. Install from the
    **[VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode)** —
@@ -116,10 +116,10 @@ Visual Studio extension — configure once, use in both editors. Since 1.2.0 it 
    autocomplete, inline FIM completions, unsaved-buffer awareness and live diagnostics from
    the Problems panel are all wired. Nearly all slash commands work headless through the
    host — see **[Slash Commands](slash-commands.md)** for the few still VS-only.
-3. Configure through the **Inferpal Settings** panel (four tabs — Connection / Behavior /
-   Context / Tools — backed by the configuration shared with Visual Studio). VS Code-side
-   extension settings (`inferpal.*`) cover only `hostPath` (leave empty for the bundled
-   host) and editor-local toggles such as `fim.enabled`.
+3. Configure through the **Inferpal Settings** panel (the same seven pages as Visual Studio's —
+   [Configuration](configuration.md) — backed by the configuration shared with Visual Studio). VS Code-side
+   extension settings (`inferpal.*`) cover `hostPath` (leave empty for the bundled host), this
+   window's models (`model`, `utilityModel`, `modelRouterAuto`), `agentMode`, and `fim.enabled`.
 
 To build it from source, see **[Development → VS Code extension](development.md#vs-code-extension)**.
 

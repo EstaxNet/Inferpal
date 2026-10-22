@@ -102,11 +102,11 @@ first, until the rest fits — a small server stays declared beside a large one.
 
 ## Approval
 
-Every MCP tool call is gated by the same 3-way prompt as the built-in tools:
+Every MCP tool call is gated by the same approval card as the built-in tools:
 
-> **Allow once** · **Always allow this tool** · **Cancel**
+> **Allow once** · **Always this session** · **Deny**
 
-The "always" grant is **scoped to the session and never persisted** — MCP servers run
+The "always" grant is **scoped to the session and the workspace, and never persisted** — MCP servers run
 arbitrary external code, so the choice is deliberately not remembered across sessions. See
 [Tools → Approval model](tools.md#approval-model).
 

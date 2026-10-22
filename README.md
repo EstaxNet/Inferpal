@@ -16,7 +16,7 @@
   <a href="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml"><img src="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/tests-6780%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-6781%20passing-brightgreen" alt="Tests">
   <img src="https://img.shields.io/badge/.NET-8.0-512BD4" alt=".NET 8">
   <img src="https://img.shields.io/badge/Visual%20Studio-2026%20%7C%202022-5C2D91" alt="Visual Studio 2026 | 2022">
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/VS%20Marketplace-install-5C2D91" alt="Visual Studio Marketplace"></a>
@@ -49,7 +49,7 @@ and every command stays behind an approval gate and a workspace sandbox. No API 
 telemetry, no cloud required.
 
 It ships as a **Visual Studio 2026 and 2022 extension** (the primary target) and a
-**VS Code extension** at feature parity since 1.2.0, and runs as an
+**VS Code extension** on the same engine, and runs as an
 **Agent Client Protocol agent** in Zed, the JetBrains IDEs (Rider included), Qt Creator, Neovim and Emacs
 ([setup](docs/acp.md)) — one shared engine (`Inferpal.Core`), every editor.
 
@@ -63,7 +63,7 @@ It ships as a **Visual Studio 2026 and 2022 extension** (the primary target) and
 - **Inline ghost-text completions** — Fill-in-the-Middle as you type (Tab / Esc), with three speeds: Fast, Balanced, Accurate.
 - **Semantic codebase search** — background indexing with hybrid retrieval (cosine + BM25 fused with RRF) and per-turn auto-context.
 - **Smart Fix Protocol** — after every edit, a polyglot build/typecheck (.NET / TypeScript / Rust / Go) feeds compile errors back so the agent fixes them in the same loop.
-- **Code actions & Inline Edit** — Explain / Fix / Refactor / Add Tests / Add Docstring, plus **Ctrl+Shift+I** to rewrite a selection in place.
+- **Code actions & Inline Edit** — Explain / Fix / Refactor / Add Tests / Add Docstring, plus **Ctrl+Shift+I** in Visual Studio to rewrite a selection in place.
 - **Safety by default** — approval-gated writes/commands, a catastrophic-command hard denylist, force-prompt on indirect execution (`iex`, `-EncodedCommand`, …) **and on anything a cloned repository authored** (committed validators, permission overlays), committable permission rules, and a hardened SSRF guard.
 - **Invented packages refused before you are asked** — local models invent package names (`Apache.Parquet`, `ibantools` on PyPI). A package a call adds — `dotnet add package`, `npm install`, `pip install`, `uv add`, or a dependency written into a `.csproj`, `package.json`, `requirements.txt` or `pyproject.toml` — is first looked up on its public registry (nuget.org, npm, PyPI); a name it does not have is refused before the approval card, and the model is told the close names that do exist. Only the added name is sent, and only to a public registry: a company feed or a registry that does not answer leaves the call to the card, unchecked. One setting turns it off.
 - **Files your repository keeps away from AI, kept away** — `.aiignore`, `.cursorignore`, `.geminiignore`, `.aiexclude` and the other tools' ignore files (and Inferpal's own `.inferpalignore`) are read in the gitignore syntax and honoured by everything that reads for the model: tools, `@`-mentions and chips, the index, pinned files, ghost text, code actions and git diffs. Every exclusion is said — the file, the line and the pattern — so a model never concludes a file does not exist, and `/check` and `/commit` say what they did not read.
@@ -82,7 +82,7 @@ It ships as a **Visual Studio 2026 and 2022 extension** (the primary target) and
 - **Multi-model toolkit** — `/bench` scores your installed models per role, `/arena` runs blind A/B duels, and the **Model Router** sends background tasks (titles, commit messages, summaries) to a small utility model — never cold-loading one.
 - **Conversation branching** — `/branch <n>` forks a conversation at any turn: the branch keeps turns 1..*n* and the conversation continues there, while the original is written back to disk first. `/branch` lists the branch points and the family tree, `/branch <name>` switches. Branches are plain session files, so nothing else had to learn about them.
 - **Transparency** — the **Context X-Ray** panel breaks down the exact prompt sent to the model, layer by layer — the tool definitions each turn carries included — with per-layer toggles; `/replay` reconstructs an agent run post-mortem; `/fix` `/refactor` `/doc` show a per-hunk **inline diff preview** before touching your buffer.
-- **VS Code at parity** — the same chat (markdown, tool bubbles, plan display, typed `@`-mentions, slash commands with autocomplete), the same settings, the same approvals and inline FIM completions, backed by a bundled self-contained host (no .NET install needed).
+- **VS Code on the same engine** — the same chat (markdown, tool bubbles, plan display, typed `@`-mentions, slash commands with autocomplete), the same settings, the same approvals and inline FIM completions, backed by a bundled self-contained host (no .NET install needed). A few editor features are Visual Studio-only for now — Edit with AI, the Build Failed banner, `/fix-build` among them: [the list](docs/features.md#two-editors-one-engine).
 - **Zed, JetBrains IDEs, Qt Creator, Neovim and Emacs** — the same engine as an [Agent Client Protocol](https://agentclientprotocol.com) agent: each release carries an archive per system (Windows x64, Linux x64, Apple Silicon) whose executable, run with `--acp`, is started by the editor. The real diff is shown before every change and asked for, a file with unsaved changes in the editor is never written over, the three modes and the model are session options, sessions are saved and reloaded, and the editor's MCP servers are started for the session. Where the editor shows them (Zed 1.25 and later, ACP 1.11), Inferpal's notices and conversation compactions arrive as such, out of the transcript. Its settings are the same seven pages as in Visual Studio and VS Code, opened in your browser — `/settings` in a thread, or a button at first setup — and what you save applies from your next question. Tested in Zed, Rider, Qt Creator, and Visual Studio through Code Wicket, and against the protocol's conformance kit; setup for each editor, and how to run it across machines safely, in [docs/acp.md](docs/acp.md).
 
 > See **[docs/features.md](docs/features.md)** for the full functional tour.

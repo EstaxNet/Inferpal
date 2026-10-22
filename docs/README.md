@@ -8,8 +8,8 @@ Inferpal turns a **local LLM** — served by [Ollama](https://ollama.com),
 [LM Studio](https://lmstudio.ai), or any OpenAI-compatible server — into an **agentic
 developer assistant** with tool calling, inline completions, semantic codebase search, and
 zero required cloud dependency. It ships as a **Visual Studio 2026 and 2022 extension** (the
-primary target) and a **VS Code extension** (at feature parity since 1.2.0), both driven by
-the same `Inferpal.Core` engine.
+primary target) and a **VS Code extension**, both driven by the same `Inferpal.Core` engine (a few editor features
+are Visual Studio-only for now: [the list](features.md#two-editors-one-engine)).
 
 This folder is the full documentation set, split into **functional** guides (how to use it)
 and **technical** references (how it works).
@@ -62,7 +62,7 @@ flowchart LR
 | | |
 |---|---|
 | Visual Studio | **2026**, and **2022 from 17.14** — Community / Professional / Enterprise. One package for both. |
-| VS Code | feature parity since 1.2.0 — VSIX for **Windows x64, Linux x64 and Apple Silicon** since 1.5.0, each with a bundled self-contained backend (`Inferpal.Host`) |
+| VS Code | the same engine ([what is Visual Studio-only for now](features.md#two-editors-one-engine)) — VSIX for **Windows x64, Linux x64 and Apple Silicon** since 1.5.0, each with a bundled self-contained backend (`Inferpal.Host`) |
 | Runtime | .NET 8 (`net8.0-windows`; core engine is plain `net8.0`) |
 | Extension model | VS: hybrid VSIX — `Microsoft.VisualStudio.Extensibility.Sdk` 17.14.x out-of-process, plus `Inferpal.InProc` (**net472**) for everything `devenv.exe` hosts and its `Inferpal.Fim` sidecar · VS Code: TypeScript + JSON-RPC host |
 | Built-in tools | 30 built-in tools (+ MCP servers + user shell tools) |

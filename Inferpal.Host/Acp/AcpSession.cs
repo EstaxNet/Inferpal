@@ -30,10 +30,11 @@ namespace Inferpal.Host.Acp;
 /// </remarks>
 internal sealed class AcpSession : IAsyncDisposable
 {
-    /// <summary>The commands VS Code serves itself, on its editor or its panels: nothing here can serve them.</summary>
+    /// <summary>The commands that need an editor: VS Code serves them itself, on its editor or its panels, and the host
+    /// serves <c>/test</c> on the editor's active file — none of which an ACP client gives the agent.</summary>
     internal static readonly HashSet<string> EditorOnlyCommands = new(StringComparer.OrdinalIgnoreCase)
     {
-        "/xray", "/explain", "/review", "/fix", "/refactor", "/doc", "/export", "/branch", "/agent-step", "/resume",
+        "/xray", "/explain", "/review", "/fix", "/refactor", "/doc", "/export", "/branch", "/agent-step", "/resume", "/test",
     };
 
     /// <summary>The most files a message attaches; the others are named.</summary>
