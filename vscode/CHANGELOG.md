@@ -23,6 +23,9 @@ extension share one engine and one version number.
 - **Runs on .NET 10**: the extension carries the .NET runtime its backend runs on, and .NET 8 stops receiving security
   fixes on November 10, 2026. On a Mac it now needs macOS 12 or later (was 11); Windows and
   Linux are unchanged.
+- **Security — the chat no longer stalls on a link definition left open**: the chat's Markdown renderer (markdown-it)
+  took more than quadratic time on one spread over many lines, over two seconds for 200 KB (GHSA-gfr2-rv44-r23c); it is
+  updated to 14.3.3, about 50 ms on the same text.
 
 ## 1.8.3
 
