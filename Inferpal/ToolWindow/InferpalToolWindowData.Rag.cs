@@ -204,11 +204,11 @@ internal partial class InferpalToolWindowData
         }
 
         // ── 2. Model discovery ────────────────────────────────────────────────
-        var allModels  = await client.ListModelsAsync(ct)
+        var allModels  = await client.ListModelsByKindAsync(ct)
             .ConfigureAwait(false);
 
-        var chatModels = allModels.Where(m => !Services.Inference.ModelCatalog.IsEmbeddingModel(m)).ToList();
-        var embModels  = allModels.Where(m =>  Services.Inference.ModelCatalog.IsEmbeddingModel(m)).ToList();
+        var chatModels = allModels.Chat;
+        var embModels  = allModels.Embedding;
 
         if (chatModels.Count == 0)
         {

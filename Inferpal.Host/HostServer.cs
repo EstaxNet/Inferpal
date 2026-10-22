@@ -1053,10 +1053,18 @@ internal sealed partial class HostServer : IDisposable
     [JsonRpcMethod("models/list", UseSingleObjectParameterDeserialization = true)]
     public async Task<IReadOnlyList<string>> ListModelsAsync(ModelsListParams p, CancellationToken ct)
     {
+        var (client, url) = ListingServer(p);
+        return await client.ListModelsAsync(ct, url);
+    }
+
+    /// <summary>The server <c>models/list</c> asks: the session's, or the draft the form describes (its address, its
+    /// type, its key) — <c>null</c> address for the session's own.</summary>
+    private (IInferenceProvider Client, string? Url) ListingServer(ModelsListParams p)
+    {
         var s = Session();
         if (string.IsNullOrWhiteSpace(p.BaseUrl) && string.IsNullOrWhiteSpace(p.Provider)
                                                  && string.IsNullOrWhiteSpace(p.ApiKey))
-            return await s.Client.ListModelsAsync(ct);
+            return (s.Client, null);
 
         var url   = string.IsNullOrWhiteSpace(p.BaseUrl) ? s.Config.BaseUrl : p.BaseUrl.Trim();
         var draft = new InferpalConfig
@@ -1065,7 +1073,7 @@ internal sealed partial class HostServer : IDisposable
             BaseUrl  = url,
             ApiKey   = p.ApiKey ?? s.Config.ApiKey,
         };
-        return await _providerFactory(draft).ListModelsAsync(ct, url);
+        return (_providerFactory(draft), url);
     }
 
     /// <summary>
@@ -1077,13 +1085,14 @@ internal sealed partial class HostServer : IDisposable
     [JsonRpcMethod("models/listByKind", UseSingleObjectParameterDeserialization = true)]
     public async Task<ModelsByKindResult> ListModelsByKindAsync(ModelsListParams p, CancellationToken ct)
     {
-        var listed = await ListModelsAsync(p, ct);
-        return new ModelsByKindResult(ModelCatalog.ChatModelsOf(listed), ModelCatalog.EmbeddingModelsOf(listed));
+        var (client, url) = ListingServer(p);
+        var listed = await client.ListModelsByKindAsync(ct, url);
+        return new ModelsByKindResult(listed.Chat, listed.Embedding, listed.Listed);
     }
 
     /// <summary>
     /// The default chat model, when it was never chosen and the backend does not have it, replaced by the best installed
-    /// one — saved, and said (<see cref="ModelCatalog.FirstModelToAdopt"/>). VS Code has no first run: without this, a
+    /// one — saved, and said (<see cref="ModelCatalog.FirstModelToAdopt(InferpalConfig, ModelsByKind)"/>). VS Code has no first run: without this, a
     /// fresh install asked every question of a model that is not there.
     /// </summary>
     [JsonRpcMethod("models/adoptDefault")]
@@ -1113,7 +1122,7 @@ internal sealed partial class HostServer : IDisposable
         // A model chosen in another window since this host read the settings is that choice, not a default to replace.
         if (s.Config.FillFromFile(nameof(InferpalConfig.DefaultModel)))
             return new ModelsAdoptResult(s.Config.DefaultModel, null);
-        var listed = await s.Client.ListModelsAsync(ct);
+        var listed = await s.Client.ListModelsByKindAsync(ct);
         if (ModelCatalog.FirstModelToAdopt(s.Config, listed) is not { } adopted)
             return new ModelsAdoptResult(null, null);
 

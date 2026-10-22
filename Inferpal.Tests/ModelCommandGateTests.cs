@@ -39,9 +39,9 @@ public partial class HostServerTests
         var vm = ConventionCoverageTests.CodeOnly(Path.Combine(ConventionCoverageTests.RepoRoot(),
                                                                "Inferpal", "ToolWindow", "InferpalToolWindowData.SlashCommands.cs"));
         var model = vm[vm.IndexOf("case SlashCommandId.Model:", StringComparison.Ordinal)..];
-        Assert.True(model.IndexOf("ModelsCommandHandler.RefusedForChat(parts[1])", StringComparison.Ordinal)
+        Assert.True(model.IndexOf("ModelsCommandHandler.RefusedForChatAsync(_client, parts[1], ct)", StringComparison.Ordinal)
                     < model.IndexOf("_config.DefaultModel = parts[1];", StringComparison.Ordinal));
-        Assert.Contains("ModelsCommandHandler.RefusedForChat(parts[1])", model[..model.IndexOf("_config.DefaultModel = parts[1];", StringComparison.Ordinal)],
+        Assert.Contains("ModelsCommandHandler.RefusedForChatAsync(_client, parts[1], ct)", model[..model.IndexOf("_config.DefaultModel = parts[1];", StringComparison.Ordinal)],
                         StringComparison.Ordinal);
     }
 }

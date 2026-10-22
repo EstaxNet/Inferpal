@@ -392,6 +392,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="SlashModelChanged" xml:space="preserve"><value>モデル → **{0}**</value></data>
   <data name="SlashModelNotListed" xml:space="preserve"><value>⚠ バックエンドは **{0}** を一覧に含めていません。次のメッセージは失敗する可能性があります。`/models` で提供中のモデルを確認できます。</value></data>
   <data name="SlashModelIsEmbedding" xml:space="preserve"><value>⚠ **{0}** は埋め込みモデルです。テキストをベクトルに変換するだけで、質問には答えません。何も変更されていません — `/models` でチャットモデルを確認できます。</value></data>
+  <data name="SlashModelNotForChat" xml:space="preserve"><value>⚠ **{0}** は質問に答えません。サーバーはこれをチャットモデルとして一覧に載せていません。何も変更されていません — モデルの選択にはチャットモデルだけが表示されます。</value></data>
   <data name="SlashModelNotServed" xml:space="preserve"><value>⚠ バックエンドは **{0}** を提供していません。何も変更されていません — `/models` で提供中のモデルを確認できます。</value></data>
   <data name="SlashToolsCurrent" xml:space="preserve"><value>この会話のツール: **{0}**（`/tools on|off`）。</value></data>
   <data name="SlashToolsChanged" xml:space="preserve"><value>ツール → **{0}**</value></data>

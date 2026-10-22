@@ -392,6 +392,7 @@
   <data name="SlashModelChanged" xml:space="preserve"><value>Модель → **{0}**</value></data>
   <data name="SlashModelNotListed" xml:space="preserve"><value>⚠ Бэкенд не перечисляет **{0}** — следующее сообщение может завершиться ошибкой. `/models` показывает доступные модели.</value></data>
   <data name="SlashModelIsEmbedding" xml:space="preserve"><value>⚠ **{0}** — модель эмбеддингов: она превращает текст в векторы и не отвечает на вопросы. Ничего не изменено — `/models` показывает модели чата.</value></data>
+  <data name="SlashModelNotForChat" xml:space="preserve"><value>⚠ **{0}** не отвечает на вопросы: сервер не указывает её как модель чата. Ничего не изменено — в выборе модели предлагаются только модели чата.</value></data>
   <data name="SlashModelNotServed" xml:space="preserve"><value>⚠ Бэкенд не предоставляет **{0}**. Ничего не изменено — `/models` показывает, что он предоставляет.</value></data>
   <data name="SlashToolsCurrent" xml:space="preserve"><value>Инструменты в этой беседе: **{0}** (`/tools on|off`).</value></data>
   <data name="SlashToolsChanged" xml:space="preserve"><value>Инструменты → **{0}**</value></data>

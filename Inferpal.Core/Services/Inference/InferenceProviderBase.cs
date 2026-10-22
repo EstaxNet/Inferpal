@@ -469,6 +469,10 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     /// <inheritdoc/>
     public abstract Task<IReadOnlyList<InstalledModelInfo>> ListInstalledModelsAsync(CancellationToken ct, string? url = null);
 
+    /// <inheritdoc cref="IInferenceProvider.ListModelsByKindAsync"/>
+    public virtual async Task<ModelsByKind> ListModelsByKindAsync(CancellationToken ct, string? url = null) =>
+        ModelsByKind.ByName(await ListModelsAsync(ct, url));
+
     /// <inheritdoc/>
     public abstract Task StreamFimAsync(
         string prefix,

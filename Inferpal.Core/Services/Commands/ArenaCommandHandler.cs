@@ -182,9 +182,9 @@ internal static class ArenaCommandHandler
         var utility = ModelRouter.Resolve(config, ModelRole.Utility);
         if (!ModelCatalog.SameModelName(chat, utility)) return (chat, utility, prompt);
 
-        // ⚠ Never an embedding model: it cannot answer the prompt, and the duel would be lost to an error.
+        // ⚠ Never a model that answers no question (embedding, decision): the duel would be lost to an error.
         var other = installed.FirstOrDefault(m => !ModelCatalog.SameModelName(m.Name, chat)
-                                                  && !ModelCatalog.IsEmbeddingModel(m.Name))?.Name;
+                                                  && ModelCatalog.IsChatModel(m))?.Name;
         return (other is null ? null : chat, other, prompt);
     }
 

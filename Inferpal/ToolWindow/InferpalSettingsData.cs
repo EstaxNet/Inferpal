@@ -2131,7 +2131,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             {
                 Provider = providerCode, BaseUrl = url ?? _config.BaseUrl, ApiKey = apiKey,
             });
-            var models = await client.ListModelsAsync(ct, url);
+            var models = await client.ListModelsByKindAsync(ct, url);
 
             await RunOnVMContextAsync(() =>
             {
@@ -2150,8 +2150,8 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
                 // comes back AFTER the re-add -- it overwrites it. SelectionPreservingList never
                 // removes it.
                 // The chat and task boxes offer the models a question can be asked of; the code-search box, the
-                // embedding models. One classifier for the three editors (ModelCatalog), the held value kept.
-                var chatModels = Services.Inference.ModelCatalog.ChatModelsOf(models);
+                // embedding models. One split for the three editors (ModelsByKind), the held value kept.
+                var chatModels = models.Chat;
                 var current = SelectedModel;
                 SelectionPreservingList.Sync(AvailableModels, chatModels, [current]);
                 if (AvailableModels.Count > 0)
@@ -2166,7 +2166,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
                 // entry: left empty, the best one installed is used at run time (its hint says so). Nothing
                 // is picked on the user's behalf — a value written by opening the window would read as an
                 // unsaved change nobody made.
-                SelectionPreservingList.Sync(AvailableEmbeddingModels, Services.Inference.ModelCatalog.EmbeddingModelsOf(models),
+                SelectionPreservingList.Sync(AvailableEmbeddingModels, models.Embedding,
                                              [RagEmbeddingModel], leadingEmpty: true);
             });
         }

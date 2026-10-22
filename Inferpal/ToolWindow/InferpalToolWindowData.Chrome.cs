@@ -297,23 +297,23 @@ internal partial class InferpalToolWindowData
         });
         if (!open) return;
 
-        IReadOnlyList<string> listed;
+        ModelsByKind listed;
         try
         {
-            listed = await _client.ListModelsAsync(ct);
+            listed = await _client.ListModelsByKindAsync(ct);
         }
         catch (OperationCanceledException) { return; }
         catch (Exception ex)
         {
             Diagnostics.Swallow("Chat.ModelMenu", ex);
-            listed = [];
+            listed = ModelsByKind.None;
         }
         await RunOnVMContextAsync(() =>
         {
             if (!IsModelMenuOpen) return;
             ModelChoices.Clear();
-            // A question goes to the model picked here: an embedding model would answer none.
-            foreach (var name in ModelCatalog.ChatModelsOf(listed))
+            // A question goes to the model picked here: an embedding or decision model would answer none.
+            foreach (var name in listed.Chat)
                 ModelChoices.Add(new ModelChoiceItem(name, current: name == ActiveModelLabel, PickModelAsync));
             if (ModelChoices.Count == 0)
             {

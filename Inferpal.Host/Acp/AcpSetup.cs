@@ -24,20 +24,20 @@ internal static class AcpSetup
     [
         (InferenceProviderFactory.Ollama,           "http://localhost:11434"),
         (InferenceProviderFactory.LmStudio,         "http://localhost:1234"),
-        (InferenceProviderFactory.OpenAiCompatible, string.Empty),
+        (InferenceProviderFactory.OpenAiCompatible, "http://localhost:9931"),   // llama-server's default (its Docker image: 8080)
     ];
 
     /// <param name="probe">Test seam: which backend answers at an address (default: <see cref="ProviderProbe"/>).</param>
-    /// <param name="listModels">Test seam: the models a server lists.</param>
+    /// <param name="listModels">Test seam: the models a server lists, by what each can be picked for.</param>
     /// <param name="save">Test seam: where the settings go (default: <see cref="InferpalConfig.Save"/>).</param>
     public static async Task<int> RunAsync(
         TextReader input, TextWriter output, CancellationToken ct,
         Func<string, string?, CancellationToken, Task<(string? Provider, string? Refusal)>>? probe = null,
-        Func<InferpalConfig, CancellationToken, Task<IReadOnlyList<string>>>? listModels = null,
+        Func<InferpalConfig, CancellationToken, Task<ModelsByKind>>? listModels = null,
         Func<InferpalConfig>? load = null, Action<InferpalConfig>? save = null)
     {
         probe      ??= ProviderProbe.DetectWithRefusalAsync;
-        listModels ??= static (cfg, token) => InferenceProviderFactory.Create(cfg).ListModelsAsync(token);
+        listModels ??= static (cfg, token) => InferenceProviderFactory.Create(cfg).ListModelsByKindAsync(token);
         var config   = (load ?? InferpalConfig.Load)();
         save       ??= static cfg => cfg.Save();
         // This process speaks only in a terminal: the language the settings choose ("Auto": the system's).
@@ -88,10 +88,10 @@ internal static class AcpSetup
         var draft = new InferpalConfig { Provider = found, BaseUrl = url, ApiKey = key };
 
         // ── The model ──────────────────────────────────────────────────────────
-        IReadOnlyList<string> listed;
+        ModelsByKind listed;
         try { listed = await listModels(draft, ct); }
-        catch (Exception ex) when (ex is not OperationCanceledException) { listed = []; output.WriteLine(ex.Message); }
-        var models = listed.Where(m => !ModelCatalog.IsEmbeddingModel(m)).ToList();
+        catch (Exception ex) when (ex is not OperationCanceledException) { listed = ModelsByKind.None; output.WriteLine(ex.Message); }
+        var models = listed.Chat.ToList();
         if (models.Count == 0)
         {
             output.WriteLine(Strings.AcpSetupNoModel(InferenceProviderFactory.DisplayName(found)));

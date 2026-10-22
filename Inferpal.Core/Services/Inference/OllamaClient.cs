@@ -582,7 +582,13 @@ internal class OllamaClient : InferenceProviderBase
         }
     }
 
-    /// <summary>Returns all installed models with their on-disk size (for VRAM footprint estimation).</summary>
+    /// <summary>The listing split by what Ollama publishes each model can do (<c>capabilities</c> of <c>/api/tags</c>), by
+    /// the names for a model it says nothing of.</summary>
+    public override async Task<ModelsByKind> ListModelsByKindAsync(CancellationToken ct, string? url = null) =>
+        ModelsByKind.Of(await ListInstalledModelsAsync(ct, url));
+
+    /// <summary>Returns all installed models with their on-disk size (for VRAM footprint estimation) and what the server
+    /// publishes each one can do.</summary>
     public override async Task<IReadOnlyList<InstalledModelInfo>> ListInstalledModelsAsync(CancellationToken ct, string? url = null)
     {
         try
@@ -591,7 +597,7 @@ internal class OllamaClient : InferenceProviderBase
             cts.CancelAfter(TimeSpan.FromSeconds(10));
             var base_  = (url ?? _config.BaseUrl).TrimEnd('/');
             var result = await _http.GetFromJsonAsync<ModelListResponse>($"{base_}/api/tags", cts.Token);
-            return result?.Models?.Select(m => new InstalledModelInfo(m.Name, m.Size)).ToList() ?? [];
+            return result?.Models?.Select(m => new InstalledModelInfo(m.Name, m.Size, m.Capabilities)).ToList() ?? [];
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {

@@ -83,9 +83,9 @@ internal static class ModelAdvisor
     {
         if (installed.Count == 0) return new([], [], nothingListed);
 
-        var names      = installed.Select(m => m.Name).ToList();
-        var chatModels = names.Where(n => !ModelCatalog.IsEmbeddingModel(n)).ToList();
-        var embedding  = names.Where(ModelCatalog.IsEmbeddingModel).ToList();
+        var byKind     = ModelsByKind.Of(installed);
+        var chatModels = byKind.Chat;
+        var embedding  = byKind.Embedding;
         if (chatModels.Count == 0) return new([], [], Strings.SuggestOnlyEmbedding);
 
         string Current(string key) => current.TryGetValue(key, out var v) ? v?.Trim() ?? "" : "";

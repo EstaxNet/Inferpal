@@ -8,6 +8,9 @@ extension share one engine and one version number.
 - **A pasted path or comment is a question**: a message that starts with `/home/me/app.py` or `// why…` went to the
   command router and was answered "unknown command"; it now goes to the model. A single word after the `/` is still a
   command.
+- **A model that answers no question is no longer offered as a chat model**: with Ollama, the model lists follow what the
+  server says each model can do — a decision model or an embedding model with an unusual name is no longer offered for
+  the chat, and an embedding model is offered for code search whatever its name.
 - **No package lookup for a call your rules refuse**: under a `deny` permission rule, an install or a dependency the model
   wrote no longer sends the package name to nuget.org, npm or PyPI before the rule refuses the call.
 

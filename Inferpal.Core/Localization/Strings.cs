@@ -1146,6 +1146,8 @@ internal static class Strings
     public static string SlashModelNotListed(string model) => Format(Get(nameof(SlashModelNotListed)), model);
     public static string SlashModelIsEmbedding(string model) =>
         Format(Get(nameof(SlashModelIsEmbedding)), model);
+    public static string SlashModelNotForChat(string model) =>
+        Format(Get(nameof(SlashModelNotForChat)), model);
     public static string SlashModelNotServed(string model) =>
         Format(Get(nameof(SlashModelNotServed)), model);
     public static string PromptsShadowedByBuiltIn(string command) => Format(Get(nameof(PromptsShadowedByBuiltIn)), command);

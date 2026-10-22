@@ -15,7 +15,7 @@ public sealed class AcpSetupTests
                                       Func<string, (string?, string?)> probe, IReadOnlyList<string> models) =>
         AcpSetup.RunAsync(new StringReader(typed), output, CancellationToken.None,
                           probe: (url, _, _) => Task.FromResult(probe(url)),
-                          listModels: (_, _) => Task.FromResult(models),
+                          listModels: (_, _) => Task.FromResult(ModelsByKind.ByName(models)),
                           load: () => new InferpalConfig(),
                           save: saved.Add);
 
@@ -51,6 +51,22 @@ public sealed class AcpSetupTests
         var config = Assert.Single(saved);
         Assert.Equal("lmstudio", config.Provider);
         Assert.Equal("http://live:1234", config.BaseUrl);
+    }
+
+    /// <summary>An OpenAI-compatible server is offered llama-server's default address, as Ollama and LM Studio are theirs.</summary>
+    [Fact]
+    public async Task AnOpenAiCompatibleServer_IsOfferedLlamaServersDefaultAddress()
+    {
+        var saved = new List<InferpalConfig>();
+        var probed = new List<string>();
+
+        // OpenAI-compatible, the address offered, no key, the first model.
+        var code = await RunAsync("3\n\n\n\n", new StringWriter(), saved, url => { probed.Add(url); return ("openai-compatible", null); },
+                                  ["qwen3-coder"]);
+
+        Assert.Equal(0, code);
+        Assert.Equal(["http://localhost:9931"], probed);
+        Assert.Equal("http://localhost:9931", Assert.Single(saved).BaseUrl);
     }
 
     [Fact]

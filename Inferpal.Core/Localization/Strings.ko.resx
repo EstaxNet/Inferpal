@@ -392,6 +392,7 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
   <data name="SlashModelChanged" xml:space="preserve"><value>모델 → **{0}**</value></data>
   <data name="SlashModelNotListed" xml:space="preserve"><value>⚠ 백엔드 목록에 **{0}**이(가) 없습니다. 다음 메시지가 실패할 수 있습니다. `/models`에서 제공 중인 모델을 확인하세요.</value></data>
   <data name="SlashModelIsEmbedding" xml:space="preserve"><value>⚠ **{0}**은(는) 임베딩 모델입니다. 텍스트를 벡터로 바꿀 뿐 질문에 답하지 않습니다. 아무것도 변경되지 않았습니다 — `/models`에서 채팅 모델을 확인하세요.</value></data>
+  <data name="SlashModelNotForChat" xml:space="preserve"><value>⚠ **{0}**은(는) 질문에 답하지 않습니다. 서버가 이 모델을 채팅 모델로 나열하지 않습니다. 아무것도 변경되지 않았습니다 — 모델 선택에는 채팅 모델만 표시됩니다.</value></data>
   <data name="SlashModelNotServed" xml:space="preserve"><value>⚠ 백엔드가 **{0}**을(를) 제공하지 않습니다. 아무것도 변경되지 않았습니다 — `/models`에서 제공 중인 모델을 확인하세요.</value></data>
   <data name="SlashToolsCurrent" xml:space="preserve"><value>이 대화의 도구: **{0}** (`/tools on|off`).</value></data>
   <data name="SlashToolsChanged" xml:space="preserve"><value>도구 → **{0}**</value></data>

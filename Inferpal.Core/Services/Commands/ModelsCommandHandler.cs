@@ -82,11 +82,40 @@ internal static class ModelsCommandHandler
 
     /// <summary>
     /// Why <paramref name="model"/> cannot become the chat model, or <c>null</c>. ⚠ Every list offered for the chat leaves
-    /// the embedding models out; <c>/model</c>, which takes a name typed by hand, saved one: "Model changed", then every
-    /// question refused by the server.
+    /// out the models that answer no question; <c>/model</c>, which takes a name typed by hand, saved one: "Model
+    /// changed", then every question refused by the server.
     /// </summary>
-    public static string? RefusedForChat(string model) =>
-        ModelCatalog.IsEmbeddingModel(model) ? Strings.SlashModelIsEmbedding(model) : null;
+    /// <param name="listed">The server's listing; a model it lists is judged by what the listing says it can be picked
+    /// for — chat first, so a model published for both stays a chat model —, any other by its name.</param>
+    public static string? RefusedForChat(string model, ModelsByKind? listed = null)
+    {
+        bool Same(string name) => ModelCatalog.SameModelName(name, model);
+        if (listed is not null && listed.Listed.Any(Same))
+            return listed.Chat.Any(Same)      ? null
+                 : listed.Embedding.Any(Same) ? Strings.SlashModelIsEmbedding(model)
+                 : Strings.SlashModelNotForChat(model);
+        return ModelCatalog.IsEmbeddingModel(model) ? Strings.SlashModelIsEmbedding(model) : null;
+    }
+
+    /// <summary><see cref="RefusedForChat(string, ModelsByKind?)"/> on the server's listing, read now: a name typed by
+    /// hand is judged before anything else in the process may have listed the models.</summary>
+    /// <remarks>Bounded like <see cref="SwitchMessageAsync"/>: a server that does not answer leaves the name to decide.</remarks>
+    public static async Task<string?> RefusedForChatAsync(IInferenceProvider client, string model, CancellationToken ct)
+    {
+        ModelsByKind? listed = null;
+        try
+        {
+            using var bounded = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            bounded.CancelAfter(SwitchListBudget);
+            listed = await client.ListModelsByKindAsync(bounded.Token);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Diagnostics.Swallow("ModelsCommandHandler.RefusedForChat", ex);
+        }
+        return RefusedForChat(model, listed);
+    }
 
     /// <summary>
     /// What <c>/model &lt;name&gt;</c> answers once the name is set: the confirmation, plus a warning when

@@ -251,18 +251,23 @@ internal sealed class AcpSession : IAsyncDisposable
         catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("AcpSession.ReadConfiguredModels", ex); }
     }
 
-    /// <summary>The installed chat models (an embedding model answers no question), read again on demand.</summary>
+    /// <summary>The server's last listing, split by what each model can be picked for; <c>null</c> until one answered.</summary>
+    private ModelsByKind? _listed;
+
+    /// <summary>The installed chat models (a model that answers no question is left out), read again on demand.</summary>
     private async Task RefreshModelsAsync(CancellationToken ct)
     {
         try
         {
-            var listed = await _link.InvokeWithParameterObjectAsync<List<string>>("models/list", new { }, ct);
-            _models = [.. (listed ?? []).Where(m => !ModelCatalog.IsEmbeddingModel(m)).Distinct(StringComparer.Ordinal)];
+            var r = await _link.InvokeWithParameterObjectAsync<ModelsByKindResult>("models/listByKind", new { }, ct);
+            _listed = new ModelsByKind(r.Listed ?? [.. r.Chat, .. r.Embedding], r.Chat, r.Embedding);
+            _models = [.. _listed.Chat.Distinct(StringComparer.Ordinal)];
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             // The server may be down: the model the settings name is still offered, and the turn will say why it fails.
             Diagnostics.Swallow("AcpSession.Models", ex);
+            _listed = null;
             _models = [];
         }
     }
@@ -304,7 +309,8 @@ internal sealed class AcpSession : IAsyncDisposable
     /// refuses, and said why.</summary>
     private async Task<string> PickModelAsync(string typed, string picked)
     {
-        if (Services.Commands.ModelsCommandHandler.RefusedForChat(picked) is { } notForChat) return SayNotice(typed, notForChat);
+        await RefreshModelsAsync(CancellationToken.None);
+        if (Services.Commands.ModelsCommandHandler.RefusedForChat(picked, _listed) is { } notForChat) return SayNotice(typed, notForChat);
         try
         {
             await SetConfigOptionAsync(AcpModes.ModelOption, JsonSerializer.SerializeToElement(picked), CancellationToken.None);

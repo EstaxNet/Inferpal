@@ -209,22 +209,43 @@ internal static class ModelCatalog
         }
     }
 
-    /// <summary>
-    /// Heuristic: the name contains an embedding-family keyword. Drives both the
-    /// settings dropdown filter and the first-run chat/embedding split.
-    /// </summary>
-    public static bool IsEmbeddingModel(string name) =>
+    private static bool NamedLikeAnEmbedding(string name) =>
         EmbeddingKeywords.Any(kw => name.Contains(kw, StringComparison.OrdinalIgnoreCase));
 
-    /// <summary>
-    /// The listed models a question can be asked of — every one but the embedding models. What any list offered for a
-    /// chat or task model is built from, in every front-end.
-    /// </summary>
-    /// <remarks>⚠ An embedding model picked as the chat model answers no question: every turn ends on the server's
-    /// refusal. Offered beside the chat models, nothing in the list told it apart.</remarks>
-    public static List<string> ChatModelsOf(IEnumerable<string> listed) => [.. listed.Where(m => !IsEmbeddingModel(m))];
+    /// <summary>By the name alone: it contains an embedding-family keyword. What decides when the server publishes nothing
+    /// about its models (LM Studio, OpenAI-compatible, an older Ollama), and for a name typed by hand.</summary>
+    public static bool IsEmbeddingModel(string name) => NamedLikeAnEmbedding(name);
 
-    /// <summary>The listed models recognised as embedding models: what the code-search model's list offers.</summary>
+    /// <summary>By the name alone: any name that is not an embedding model's (<see cref="IsEmbeddingModel(string)"/>).</summary>
+    public static bool IsChatModel(string name) => !NamedLikeAnEmbedding(name);
+
+    /// <summary>
+    /// What the server publishes the model can do (Ollama's <c>capabilities</c>), when it publishes anything; else the
+    /// name. ⚠ An empty list says nothing: read as "can do nothing", it would hide a working model from every list.
+    /// </summary>
+    private static bool Can(InstalledModelInfo model, string capability, bool byName) =>
+        model.Capabilities is { Count: > 0 } published ? published.Contains(capability, StringComparer.OrdinalIgnoreCase) : byName;
+
+    /// <summary>An embedding model: published with <c>embedding</c>, else named like one.</summary>
+    public static bool IsEmbeddingModel(InstalledModelInfo model) => Can(model, "embedding", NamedLikeAnEmbedding(model.Name));
+
+    /// <summary>
+    /// A model a question can be asked of: published with <c>completion</c>, else not named like an embedding model.
+    /// </summary>
+    /// <remarks>⚠ Not "not an embedding model": a decision model (Ollama publishes it with <c>decision</c> alone) or an
+    /// embedding model whose name says nothing of it is neither, and picked as the chat model every turn ends on the
+    /// server's refusal.</remarks>
+    public static bool IsChatModel(InstalledModelInfo model) => Can(model, "completion", !NamedLikeAnEmbedding(model.Name));
+
+    /// <summary>
+    /// The listed names a question can be asked of, by name (<see cref="IsChatModel(string)"/>) — for a listing that
+    /// carries nothing else. One that carries what the server publishes goes through <see cref="ModelsByKind.Of"/>.
+    /// </summary>
+    /// <remarks>⚠ A model that answers no question, picked as the chat model, ends every turn on the server's refusal.
+    /// Offered beside the chat models, nothing in the list told it apart.</remarks>
+    public static List<string> ChatModelsOf(IEnumerable<string> listed) => [.. listed.Where(IsChatModel)];
+
+    /// <summary>The listed names recognised as embedding models, by name: what the code-search model's list offers.</summary>
     public static List<string> EmbeddingModelsOf(IEnumerable<string> listed) => [.. listed.Where(IsEmbeddingModel)];
 
     /// <summary>
@@ -237,10 +258,14 @@ internal static class ModelCatalog
     /// as selected, and the first question failed on "model not found, try pulling it first", which sends the user to
     /// download a model the documentation no longer recommends.
     /// </remarks>
-    public static string? FirstModelToAdopt(Config.InferpalConfig config, IReadOnlyList<string> listed)
+    public static string? FirstModelToAdopt(Config.InferpalConfig config, IReadOnlyList<string> listed) =>
+        FirstModelToAdopt(config, ModelsByKind.ByName(listed));
+
+    /// <inheritdoc cref="FirstModelToAdopt(Config.InferpalConfig, IReadOnlyList{string})"/>
+    public static string? FirstModelToAdopt(Config.InferpalConfig config, ModelsByKind listed)
     {
         if (!SameModelName(config.DefaultModel, new Config.InferpalConfig().DefaultModel)) return null;
-        var chat = listed.Where(m => !IsEmbeddingModel(m)).ToList();
+        var chat = listed.Chat;
         if (chat.Count == 0 || chat.Any(m => SameModelName(m, config.DefaultModel))) return null;
         return PickBestChatModel(chat);
     }
@@ -355,4 +380,24 @@ internal static class ModelCatalog
         sb.AppendLine($"\n`/models pull <name>` · `/models delete <name>` · `/models running`");
         return sb.ToString().TrimEnd();
     }
+}
+
+/// <summary>A server's listing split by what each model can be picked for: the one input of every model list.</summary>
+/// <param name="Listed">Every name the server listed, in its order.</param>
+/// <param name="Chat">The models a question can be asked of: the chat, agent and task boxes, the model pickers.</param>
+/// <param name="Embedding">The embedding models: the code-search box.</param>
+internal sealed record ModelsByKind(IReadOnlyList<string> Listed, IReadOnlyList<string> Chat, IReadOnlyList<string> Embedding)
+{
+    /// <summary>Nothing listed: the server did not answer, or holds no model.</summary>
+    public static readonly ModelsByKind None = new([], [], []);
+
+    /// <summary>A listing of names alone, split by the names.</summary>
+    public static ModelsByKind ByName(IReadOnlyList<string> listed) =>
+        new(listed, ModelCatalog.ChatModelsOf(listed), ModelCatalog.EmbeddingModelsOf(listed));
+
+    /// <summary>A listing that carries what the server publishes about each model, split by it.</summary>
+    public static ModelsByKind Of(IReadOnlyList<InstalledModelInfo> installed) =>
+        new([.. installed.Select(m => m.Name)],
+            [.. installed.Where(ModelCatalog.IsChatModel).Select(m => m.Name)],
+            [.. installed.Where(ModelCatalog.IsEmbeddingModel).Select(m => m.Name)]);
 }

@@ -145,9 +145,12 @@ record ToolFunction(
 
 /// <summary>Single model entry from <c>GET /api/tags</c>.</summary>
 /// <param name="Size">On-disk size of the model in bytes (a proxy for its VRAM weight footprint).</param>
+/// <param name="Capabilities">What the model can do (<c>completion</c>, <c>embedding</c>, <c>tools</c>…); absent from an
+/// older Ollama.</param>
 record ModelInfo(
-    [property: JsonPropertyName("name")] string Name,
-    [property: JsonPropertyName("size")] long   Size = 0);
+    [property: JsonPropertyName("name")]         string        Name,
+    [property: JsonPropertyName("size")]         long          Size = 0,
+    [property: JsonPropertyName("capabilities")] List<string>? Capabilities = null);
 
 /// <summary>Response from <c>GET /api/tags</c>.</summary>
 record ModelListResponse(
@@ -155,7 +158,9 @@ record ModelListResponse(
 
 /// <summary>An installed model with its on-disk size — internal projection of <see cref="ModelInfo"/>,
 /// decoupled from the Ollama wire format. Used by the hardware-aware VRAM estimation.</summary>
-record InstalledModelInfo(string Name, long SizeBytes);
+/// <param name="Capabilities">What the server publishes the model can do; <c>null</c> when it publishes nothing (LM Studio,
+/// OpenAI-compatible, an older Ollama), and then the name decides.</param>
+record InstalledModelInfo(string Name, long SizeBytes, IReadOnlyList<string>? Capabilities = null);
 
 /// <summary>Response from <c>POST /api/show</c>. <c>model_info</c> is an open dict whose keys are
 /// prefixed by the model architecture (e.g. <c>llama.block_count</c>); see <see cref="ModelArchInfo"/>.</summary>

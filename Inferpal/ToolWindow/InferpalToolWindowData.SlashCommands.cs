@@ -193,7 +193,7 @@ internal partial class InferpalToolWindowData
 
             case SlashCommandId.Model:
                 if (parts.Length < 2) { await ShowInfoAsync(Strings.SlashModelCurrent(_config.DefaultModel)); break; }
-                if (Services.Commands.ModelsCommandHandler.RefusedForChat(parts[1]) is { } notForChat) { await ShowInfoAsync(notForChat); break; }
+                if (await Services.Commands.ModelsCommandHandler.RefusedForChatAsync(_client, parts[1], ct) is { } notForChat) { await ShowInfoAsync(notForChat); break; }
                 _config.DefaultModel = parts[1];
                 _config.Save();
                 await RunOnVMContextAsync(() => ActiveModelLabel = parts[1]);

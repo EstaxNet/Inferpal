@@ -62,6 +62,11 @@ internal interface IInferenceProvider : IChatTurnClient
     /// <inheritdoc cref="OllamaClient.ListInstalledModelsAsync"/>
     Task<IReadOnlyList<InstalledModelInfo>> ListInstalledModelsAsync(CancellationToken ct, string? url = null);
 
+    /// <summary>The listing split by what each model can be picked for: by the names, unless the server publishes what
+    /// each model can do (<see cref="OllamaClient.ListModelsByKindAsync"/>).</summary>
+    async Task<ModelsByKind> ListModelsByKindAsync(CancellationToken ct, string? url = null) =>
+        ModelsByKind.ByName(await ListModelsAsync(ct, url));
+
     /// <inheritdoc cref="OllamaClient.StreamFimAsync"/>
     Task StreamFimAsync(
         string prefix,

@@ -72,7 +72,7 @@ internal partial class InferpalToolWindowData
 
     /// <summary>
     /// The backend answers: an unfinished first run completes, otherwise a default model nobody chose that the backend
-    /// does not have is replaced by the best installed one, and said (<see cref="ModelCatalog.FirstModelToAdopt"/>).
+    /// does not have is replaced by the best installed one, and said (<see cref="ModelCatalog.FirstModelToAdopt(InferpalConfig, ModelsByKind)"/>).
     /// </summary>
     private async Task EnsureChatModelAsync()
     {
@@ -89,7 +89,7 @@ internal partial class InferpalToolWindowData
                 await RunOnVMContextAsync(() => ActiveModelLabel = _config.DefaultModel).ConfigureAwait(false);
                 return;
             }
-            var listed = await _client.ListModelsAsync(CancellationToken.None).ConfigureAwait(false);
+            var listed = await _client.ListModelsByKindAsync(CancellationToken.None).ConfigureAwait(false);
             if (ModelCatalog.FirstModelToAdopt(_config, listed) is not { } adopted) return;
 
             var configured = _config.DefaultModel;

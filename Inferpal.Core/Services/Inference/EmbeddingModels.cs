@@ -56,9 +56,9 @@ internal static class EmbeddingModels
                                                   CancellationToken ct)
     {
         if (Configured(config) is { } configured) return configured;
-        var models = await client.ListModelsAsync(ct);
-        if (models.Count == 0) return previous;
-        return PreferredOf(models.Where(ModelCatalog.IsEmbeddingModel).ToList());
+        var models = await client.ListModelsByKindAsync(ct);
+        if (models.Listed.Count == 0) return previous;
+        return PreferredOf(models.Embedding);
     }
 
     /// <summary>

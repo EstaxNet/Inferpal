@@ -326,8 +326,11 @@ internal sealed record ConnectionCheckParams(string? BaseUrl = null, string? Api
 internal sealed record ModelsListParams(string? BaseUrl = null, string? Provider = null, string? ApiKey = null);
 
 /// <summary>`models/listByKind` — the listed models, split by what each can be picked for: <paramref name="Chat"/> for
-/// the chat and every task model, <paramref name="Embedding"/> for code search (<see cref="ModelCatalog"/>).</summary>
-internal sealed record ModelsByKindResult(IReadOnlyList<string> Chat, IReadOnlyList<string> Embedding);
+/// the chat and every task model, <paramref name="Embedding"/> for code search (<see cref="ModelsByKind"/>).</summary>
+/// <param name="Listed">Every listed model, those offered for neither included: what tells "not a chat model" from "not
+/// listed" when a name is typed by hand.</param>
+internal sealed record ModelsByKindResult(IReadOnlyList<string> Chat, IReadOnlyList<string> Embedding,
+                                          IReadOnlyList<string>? Listed = null);
 
 // ── Conversation export (the rendering lives in the Core, not in the adapter) ─
 

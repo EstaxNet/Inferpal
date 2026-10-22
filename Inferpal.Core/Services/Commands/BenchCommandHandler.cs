@@ -44,10 +44,10 @@ internal static class BenchCommandHandler
         }
         else
         {
-            // ⚠ Chat models only: an embedding model cannot answer a prompt. Kept, it takes a measured slot for an error
-            // row and pushes a chat model out of the run — and LM Studio may list its loaded embedding model first.
-            var chat = (await client.ListInstalledModelsAsync(ct))
-                .Select(m => m.Name).Where(n => !ModelCatalog.IsEmbeddingModel(n)).ToList();
+            // ⚠ Chat models only: an embedding or decision model cannot answer a prompt. Kept, it takes a measured slot
+            // for an error row and pushes a chat model out of the run — and LM Studio may list its loaded embedding
+            // model first.
+            var chat = ModelsByKind.Of(await client.ListInstalledModelsAsync(ct)).Chat;
             models      = [.. chat.Take(MaxAutoModels)];
             notMeasured = [.. chat.Skip(MaxAutoModels)];
         }

@@ -7,9 +7,10 @@ namespace Inferpal.Tests;
 
 /// <summary>
 /// ⚠ A model picked as the chat, agent or task model is asked questions: an embedding model answers none, and every
-/// turn then ends on the server's refusal. Every list offered for one of those boxes is built from
-/// <see cref="ModelCatalog.ChatModelsOf"/>, the code-search box from <see cref="ModelCatalog.EmbeddingModelsOf"/> —
-/// one classifier for Visual Studio, VS Code and the settings window of an ACP client. The VS Code panel (which the
+/// turn then ends on the server's refusal. Every list offered for one of those boxes is the chat half of a
+/// <see cref="ModelsByKind"/>, the code-search box its embedding half — one split for Visual Studio, VS Code and the
+/// settings window of an ACP client (by name, <see cref="ModelCatalog.ChatModelsOf"/>, when the server publishes
+/// nothing; <c>PublishedModelCapabilitiesTests</c> when it does). The VS Code panel (which the
 /// ACP window reuses) offered every listed model in every box, VS Code's chat picker and Visual Studio's header menu
 /// too. The host side is measured in <c>HostServerTests.ModelsListByKind_*</c>; these rules read the editors' sources
 /// (the extension has no TypeScript test runner).
@@ -82,14 +83,15 @@ public class ChatModelListsTests
     public void TheVisualStudioLists_GoThroughTheCatalog()
     {
         var settings = ConventionCoverageTests.CodeOnly(Path.Combine(WebviewRebuildTests.RepoRoot(), "Inferpal", "ToolWindow", "InferpalSettingsData.cs"));
-        Assert.Contains("var chatModels = Services.Inference.ModelCatalog.ChatModelsOf(models);", settings, StringComparison.Ordinal);
+        Assert.Contains("var models = await client.ListModelsByKindAsync(ct, url);", settings, StringComparison.Ordinal);
+        Assert.Contains("var chatModels = models.Chat;", settings, StringComparison.Ordinal);
         Assert.Contains("SelectionPreservingList.Sync(AvailableModels, chatModels, [current]);", settings, StringComparison.Ordinal);
         Assert.Contains("SelectionPreservingList.Sync(AvailableOptionalModels, chatModels,", settings, StringComparison.Ordinal);
-        Assert.Contains("SelectionPreservingList.Sync(AvailableEmbeddingModels, Services.Inference.ModelCatalog.EmbeddingModelsOf(models),",
-                        settings, StringComparison.Ordinal);
+        Assert.Contains("SelectionPreservingList.Sync(AvailableEmbeddingModels, models.Embedding,", settings, StringComparison.Ordinal);
 
         var chrome = ConventionCoverageTests.CodeOnly(Path.Combine(WebviewRebuildTests.RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowData.Chrome.cs"));
-        Assert.Contains("foreach (var name in ModelCatalog.ChatModelsOf(listed))", chrome, StringComparison.Ordinal);
+        Assert.Contains("listed = await _client.ListModelsByKindAsync(ct);", chrome, StringComparison.Ordinal);
+        Assert.Contains("foreach (var name in listed.Chat)", chrome, StringComparison.Ordinal);
     }
 
     private static int CountOf(string text, string needle)

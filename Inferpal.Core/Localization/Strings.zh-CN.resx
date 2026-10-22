@@ -392,6 +392,7 @@
   <data name="SlashModelChanged" xml:space="preserve"><value>模型 → **{0}**</value></data>
   <data name="SlashModelNotListed" xml:space="preserve"><value>⚠ 后端未列出 **{0}**，下一条消息可能会失败。`/models` 会列出它提供的模型。</value></data>
   <data name="SlashModelIsEmbedding" xml:space="preserve"><value>⚠ **{0}** 是嵌入模型：它把文本转换为向量，不回答问题。未做任何更改 — `/models` 列出聊天模型。</value></data>
+  <data name="SlashModelNotForChat" xml:space="preserve"><value>⚠ **{0}** 不回答问题：服务器未将其列为聊天模型。未做任何更改 — 模型选择器只提供聊天模型。</value></data>
   <data name="SlashModelNotServed" xml:space="preserve"><value>⚠ 后端未提供 **{0}**。未做任何更改 — `/models` 显示它提供的模型。</value></data>
   <data name="SlashToolsCurrent" xml:space="preserve"><value>本对话中的工具：**{0}**（`/tools on|off`）。</value></data>
   <data name="SlashToolsChanged" xml:space="preserve"><value>工具 → **{0}**</value></data>

@@ -35,9 +35,9 @@ capability is missing.
 
 ## Configuring a provider
 
-1. **Settings → Server and models → Server address** — e.g. `http://localhost:11434` (Ollama),
-   `http://localhost:1234` (LM Studio — a trailing `/v1` is accepted), or your `/v1` base URL
-   (OpenAI-compatible).
+1. **Settings → Server and models → Server address** — each server's default: `http://localhost:11434` (Ollama),
+   `http://localhost:1234` (LM Studio — a trailing `/v1` is accepted), `http://localhost:9931` (llama-server;
+   `8080` in older builds and in its Docker image), `http://localhost:8000` (vLLM), or any other `/v1` base URL (OpenAI-compatible).
 2. **Test** — names the server that answers, selects its type and lists its models.
 3. **Server type** and **API key** — under *Show advanced settings → Connection*. The key is only
    needed for OpenAI-compatible endpoints that require auth.
