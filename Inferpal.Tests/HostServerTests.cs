@@ -3028,6 +3028,78 @@ public partial class HostServerTests
         finally { try { File.Delete(file); } catch { } }
     }
 
+    /// <summary>A figure another editor saved after this host read the settings does not survive a server change either:
+    /// the file is read before the unknown card replaces it — a 0 over this copy's 0 is no change to save.</summary>
+    [Fact]
+    public async Task TheMemoryAnotherEditorSaved_DoesNotSurviveAServerChange()
+    {
+        var file = Path.Combine(Path.GetTempPath(), $"inferpal-setup-{Guid.NewGuid():N}.json");
+        try
+        {
+            using var h = CreateHarness(cfg => cfg.BaseUrl = "http://192.168.1.5:11434", settingsFile: file);
+            await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            // A copy that has read or written the file, as the host's always has: what it holds is its baseline (0).
+            h.Server.CurrentSession!.Config.Save();
+            // Visual Studio detects its card and saves it, while this host's copy still says 0.
+            File.WriteAllText(file, """{ "baseUrl": "http://192.168.1.5:11434", "vramBudgetGb": 24 }""");
+
+            await h.Client.InvokeWithParameterObjectAsync<Host.SetupApplyResult>("setup/apply", new
+            {
+                url = "http://192.168.1.9:11434", provider = "ollama", chatModel = "gemma4:12b",
+            });
+
+            var saved = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(file))!;
+            Assert.Equal("http://192.168.1.9:11434", saved["baseUrl"]?.GetValue<string>());     // witness: the file was written
+            Assert.Equal(0, saved["vramBudgetGb"]?.GetValue<double>() ?? 0);
+        }
+        finally { try { File.Delete(file); } catch { } }
+    }
+
+    /// <summary>The graphics memory set for one server never sizes another: the card asks for the other server's, the
+    /// choice sizes the plan, and setting up the other server saves its own figure (or none) — the old one does not
+    /// survive the change.</summary>
+    [Fact]
+    public async Task TheMemorySetForOneServer_NeverSizesAnother()
+    {
+        var file = Path.Combine(Path.GetTempPath(), $"inferpal-setup-{Guid.NewGuid():N}.json");
+        try
+        {
+            using var h = CreateHarness(cfg => { cfg.BaseUrl = "http://192.168.1.5:11434"; cfg.VramBudgetGb = 24; }, settingsFile: file);
+            await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            h.Fake.Installed = [new("nomic-embed-text:latest", 274_000_000)];
+
+            var mine = await h.Client.InvokeWithParameterObjectAsync<Host.SetupPlanDto>(
+                "setup/plan", new { url = "http://192.168.1.5:11434", provider = "ollama" });
+            var other = await h.Client.InvokeWithParameterObjectAsync<Host.SetupPlanDto>(
+                "setup/plan", new { url = "http://192.168.1.9:11434", provider = "ollama" });
+            var chosen = await h.Client.InvokeWithParameterObjectAsync<Host.SetupPlanDto>(
+                "setup/plan", new { url = "http://192.168.1.9:11434", provider = "ollama", cardGb = 12 });
+
+            // The saved figure stands for its own server, which the card does not ask about.
+            Assert.Equal((24.0, 0), (mine.BudgetGb, mine.CardChoices.Count));
+            // Another server: unknown, and the card asks.
+            Assert.Equal((0.0, Strings.SetupCardUnknown), (other.BudgetGb, other.CardQuestion));
+            Assert.Equal([8, 12, 16, 24], other.CardChoices.Select(c => c.Gb));
+            // The choice sizes the plan: only what was measured on a 12 GB card or less is offered.
+            Assert.Equal(12.0, chosen.BudgetGb);
+            Assert.Contains(chosen.Downloads, d => d.Tag == "gemma4:12b");
+            Assert.All(chosen.Downloads, d => Assert.True(d.CardGb <= 12));
+            Assert.Equal(Strings.SetupServerCard, chosen.CardQuestion);          // still asked, to change it
+
+            await h.Client.InvokeWithParameterObjectAsync<Host.SetupApplyResult>("setup/apply", new
+            {
+                url = "http://192.168.1.9:11434", provider = "ollama", chatModel = "gemma4:12b",
+            });
+            Assert.Equal(0, h.Server.CurrentSession!.Config.VramBudgetGb);      // unknown, not the other machine's 24
+            await h.Client.InvokeWithParameterObjectAsync<Host.SetupApplyResult>("setup/apply", new
+            {
+                url = "http://192.168.1.9:11434", provider = "ollama", chatModel = "gemma4:12b", cardGb = 12,
+            });
+            Assert.Equal(12, h.Server.CurrentSession!.Config.VramBudgetGb);
+        }
+        finally { try { File.Delete(file); } catch { } }
+    }
+
     /// <summary>⚠ The saved key goes to the saved address only: a server the card names elsewhere gets none.</summary>
     [Fact]
     public async Task SetupPlan_SendsTheSavedKey_OnlyToTheSavedAddress()
@@ -3039,6 +3111,42 @@ public partial class HostServerTests
         Assert.Equal("k-1", h.ProviderConfigs[^1].ApiKey);
         await h.Client.InvokeWithParameterObjectAsync<Host.SetupPlanDto>("setup/plan", new { url = "http://192.168.1.2:11434", provider = "ollama" });
         Assert.Equal("", h.ProviderConfigs[^1].ApiKey);
+    }
+
+    /// <summary>This machine's address under another name is the same server: its saved key goes with it.</summary>
+    [Fact]
+    public async Task SetupPlan_SendsTheSavedKey_ToThisMachineUnderAnotherName()
+    {
+        using var h = CreateHarness(cfg => { cfg.BaseUrl = "http://127.0.0.1:8000"; cfg.ApiKey = "k-1"; });
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        await h.Client.InvokeWithParameterObjectAsync<Host.SetupPlanDto>("setup/plan", new { url = "http://localhost:8000", provider = "openai-compatible" });
+
+        Assert.Equal("k-1", h.ProviderConfigs[^1].ApiKey);
+    }
+
+    /// <summary>A figure in the file belongs to the file's address: another editor's server, set up since this copy was
+    /// read, does not lend its card to this copy's old address.</summary>
+    [Fact]
+    public async Task TheMemoryInTheFile_SizesOnlyTheAddressSavedWithIt()
+    {
+        var file = Path.Combine(Path.GetTempPath(), $"inferpal-setup-{Guid.NewGuid():N}.json");
+        try
+        {
+            using var h = CreateHarness(cfg => cfg.BaseUrl = "http://192.168.1.5:11434", settingsFile: file);
+            await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            h.Server.CurrentSession!.Config.Save();
+            File.WriteAllText(file, """{ "baseUrl": "http://192.168.1.9:11434", "vramBudgetGb": 24 }""");
+
+            var old = await h.Client.InvokeWithParameterObjectAsync<Host.SetupPlanDto>(
+                "setup/plan", new { url = "http://192.168.1.5:11434", provider = "ollama" });
+            var saved = await h.Client.InvokeWithParameterObjectAsync<Host.SetupPlanDto>(
+                "setup/plan", new { url = "http://192.168.1.9:11434", provider = "ollama" });
+
+            Assert.Equal((0.0, Strings.SetupCardUnknown), (old.BudgetGb, old.CardQuestion));
+            Assert.Equal(24.0, saved.BudgetGb);
+        }
+        finally { try { File.Delete(file); } catch { } }
     }
 
     [Fact]

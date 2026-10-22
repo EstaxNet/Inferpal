@@ -16,7 +16,7 @@
   <a href="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml"><img src="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/tests-6817%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-6826%20passing-brightgreen" alt="Tests">
   <img src="https://img.shields.io/badge/.NET-8%20%7C%2010-512BD4" alt=".NET 8 | 10">
   <img src="https://img.shields.io/badge/Visual%20Studio-2026%20%7C%202022-5C2D91" alt="Visual Studio 2026 | 2022">
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/VS%20Marketplace-install-5C2D91" alt="Visual Studio Marketplace"></a>
@@ -98,7 +98,7 @@ It ships as a **Visual Studio 2026 and 2022 extension** (the primary target) and
 | Model server | [Ollama](https://ollama.com) (default — full hardware-aware features), [LM Studio](https://lmstudio.ai), or any **OpenAI-compatible** server, local or [remote](docs/remote-inference.md) |
 
 > Tool calling is required: the models measured best as the agent are `qwen3.8` and `devstral-small-2` — every
-> model's results in **[Models](docs/models.md)**, with the setup that fits a 12, 16 or 24 GB card
+> model's results in **[Models](docs/models.md)**, with the setup that fits an 8, 12, 16 or 24 GB card
 > ([By graphics card](docs/models.md#by-graphics-card)). Inline completions work best with a model trained for them
 > (Mellum2 or Qwen3.8, measured); semantic search works best with a dedicated embedding model.
 

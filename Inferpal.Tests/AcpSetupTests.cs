@@ -23,6 +23,22 @@ public sealed class AcpSetupTests
                           // Never this machine's real ports: what answers here is the test's to say.
                           scan: (_, _) => Task.FromResult(places ?? []));
 
+    /// <summary>The graphics memory set for one server never sizes another: a server elsewhere is set up with its card
+    /// unknown, not with the old machine's figure.</summary>
+    [Fact]
+    public async Task TheMemorySetForOneServer_IsNotSavedWithAnother()
+    {
+        var saved = new List<InferpalConfig>();
+        var config = new InferpalConfig { Provider = "ollama", BaseUrl = "http://192.168.1.5:11434", VramBudgetGb = 24 };
+
+        // OpenAI-compatible, an address elsewhere, no key, the first model.
+        var code = await RunAsync("3\nhttp://192.168.1.9:8000\n\n\n", new StringWriter(), saved, _ => ("openai-compatible", null),
+                                  ["qwen3-coder"], config: config);
+
+        Assert.Equal(0, code);
+        Assert.Equal(("http://192.168.1.9:8000", 0.0), (saved.Single().BaseUrl, saved.Single().VramBudgetGb));
+    }
+
     /// <summary>The key saved for one server never goes to another: a configured server down, the one the scan found on
     /// this machine is probed and saved without it. And a setup ends the first run.</summary>
     [Fact]

@@ -35,7 +35,9 @@ export type WvSetupAction =
   | { action: 'use'; url: string; provider: string }
   | { action: 'start' }
   | { action: 'chooseOther' }
-  | { action: 'download'; tag: string };
+  | { action: 'download'; tag: string }
+  /** The server's graphics memory, chosen on the card. */
+  | { action: 'card'; gb: number };
 
 /** One rendered transcript entry (the extension host owns the list). */
 export interface WvTranscriptItem {

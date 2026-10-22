@@ -969,6 +969,9 @@ export interface SetupPlan {
   fitText?: string | null;
   itsModels?: string | null;
   noDownload?: string | null;
+  /** The graphics memories to choose from, when the server's was not found (or was chosen here, to change it). */
+  cardChoices: { gb: number; label: string }[];
+  cardQuestion?: string | null;
 }
 
 export interface SetupApplyParams {
@@ -978,6 +981,8 @@ export interface SetupApplyParams {
   completionModel?: string | null;
   searchModel?: string | null;
   apiKey?: string | null;
+  /** The graphics memory chosen on the card, saved with the server. */
+  cardGb?: number | null;
 }
 
 /** `setup/pullProgress` notification. */

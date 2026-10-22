@@ -1731,5 +1731,7 @@
   <data name="SetupPlaceAnswersUnlisted" xml:space="preserve"><value>Отвечает, но не удалось получить список его моделей: {0}</value></data>
   <data name="SetupDownloadSize" xml:space="preserve"><value>{0} ГБ</value></data>
   <data name="SetupNoneFits" xml:space="preserve"><value>Ни одна из рекомендуемых Inferpal моделей не помещается на карту {0} ГБ: скачайте модель чата поменьше в {1} и повторите поиск.</value></data>
+  <data name="SetupServerCard" xml:space="preserve"><value>Видеокарта сервера:</value></data>
+  <data name="SetupCardUnknown" xml:space="preserve"><value>Видеокарта этого сервера неизвестна — выберите её, чтобы увидеть, что поместится:</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>Поиск сервера моделей…</value></data>
 </root>

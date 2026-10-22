@@ -56,8 +56,9 @@ internal sealed partial class HostServer
     {
         var s = Session();
         var server = ServerConfig(s, p);
-        var plan = await FirstRunPlanner.PlanAsync(_providerFactory(server), server, await BudgetForAsync(s, server.BaseUrl, ct), ct);
-        return SetupPlanDto.Of(plan);
+        var (budget, source) = await BudgetForAsync(s, server.BaseUrl, p.CardGb, ct);
+        var plan = await FirstRunPlanner.PlanAsync(_providerFactory(server), server, budget, ct);
+        return SetupPlanDto.Of(plan, source);
     }
 
     /// <summary>
@@ -69,18 +70,26 @@ internal sealed partial class HostServer
     {
         var s = Session();
         var server = ServerConfig(s, new SetupServerParams(p.Url, p.Provider, p.ApiKey));
-        var budget = await BudgetForAsync(s, server.BaseUrl, ct);
+        var (budget, source) = await BudgetForAsync(s, server.BaseUrl, p.CardGb, ct);
 
         await WithTurnSlotAsync("setup/apply", ct, async _ =>
         {
             var mcpBefore = (s.Config.McpEnabled, s.Config.McpServersJson);
+            // ⚠ The budget is the card of the server it was measured or given for: another server takes its own, or none
+            // — a figure from another machine would size the models and the context of this one.
+            if (source != SetupBudgetSource.Configured)
+            {
+                // ⚠ Read from the file first: a figure another editor saved since this copy was read would otherwise
+                // survive, a 0 over this copy's 0 being no change to save.
+                s.Config.FillFromFile(nameof(InferpalConfig.VramBudgetGb));
+                s.Config.VramBudgetGb = budget;
+            }
             s.Config.Provider              = server.Provider;
             s.Config.BaseUrl               = server.BaseUrl;
             s.Config.ApiKey                = server.ApiKey;
             s.Config.DefaultModel          = p.ChatModel.Trim();
             s.Config.InlineCompletionModel = p.CompletionModel?.Trim() ?? "";
             s.Config.RagEmbeddingModel     = p.SearchModel?.Trim() ?? "";
-            if (s.Config.VramBudgetGb <= 0 && budget > 0) s.Config.VramBudgetGb = budget;
             s.Config.IsFirstRun = false;
             s.Config.Save();
             s.FileSettings = (_fileSettings() ?? s.Config).SnapshotNow();
@@ -161,17 +170,30 @@ internal sealed partial class HostServer
     /// <summary>The key typed for that address; else the saved key, if that address is the saved one; else none.</summary>
     private static string KeyFor(HostSession s, SetupServerParams p) =>
         !string.IsNullOrWhiteSpace(p.ApiKey) ? p.ApiKey.Trim()
-        : string.Equals(ProviderProbe.RootOf(p.Url), ProviderProbe.RootOf(s.Config.BaseUrl), StringComparison.OrdinalIgnoreCase)
+        : ServerScan.SameAddress(p.Url, s.Config.BaseUrl)
             ? s.Config.ApiKey ?? ""
             : "";
 
-    /// <summary>The card's memory, for the server the card shows: the budget set, else this machine's card when the
-    /// server runs on it (read, not saved — <c>setup/apply</c> saves it); 0 = unknown.</summary>
-    private static async Task<double> BudgetForAsync(HostSession s, string url, CancellationToken ct)
+    /// <summary>
+    /// The graphics memory of the server the card shows: the card the person chose on it; else the budget set, for the
+    /// address it was set with only; else this machine's card when the server runs on it (read, not saved —
+    /// <c>setup/apply</c> saves it); else unknown (0), and the card asks.
+    /// </summary>
+    private static async Task<(double Gb, SetupBudgetSource Source)> BudgetForAsync(
+        HostSession s, string url, double? chosenGb, CancellationToken ct)
     {
-        if (s.Config.VramBudgetGb > 0 || s.Config.FillFromFile(nameof(InferpalConfig.VramBudgetGb))) return s.Config.VramBudgetGb;
+        if (chosenGb is > 0) return (chosenGb.Value, SetupBudgetSource.Chosen);
+        // This copy's own figure goes with this copy's address; a figure taken from the file, with the file's address —
+        // another editor may have set up another server since this copy was read.
+        if (s.Config.VramBudgetGb > 0 && ServerScan.SameAddress(url, s.Config.BaseUrl))
+            return (s.Config.VramBudgetGb, SetupBudgetSource.Configured);
+        if (s.Config.VramBudgetGb <= 0 && ServerScan.SameAddress(url, s.Config.SharedBaseUrl)
+            && s.Config.FillFromFile(nameof(InferpalConfig.VramBudgetGb)))
+            return (s.Config.VramBudgetGb, SetupBudgetSource.Configured);
         var bytes = await HardwareProbe.TryDetectLocalVramBytesAsync(url, ct);
-        return bytes is > 0 ? Math.Round(bytes.Value / ModelCatalog.BytesPerGb, 1) : 0;
+        return bytes is > 0
+            ? (Math.Round(bytes.Value / ModelCatalog.BytesPerGb, 1), SetupBudgetSource.Detected)
+            : (0, SetupBudgetSource.Unknown);
     }
 }
 
@@ -203,27 +225,44 @@ internal sealed record SetupPlaceDto(
 /// offer (<see cref="ServerScan.Offered"/>), null when none answers.</summary>
 internal sealed record SetupScanResult(List<SetupPlaceDto> Places, string? Offered);
 
-/// <summary>A server the card names: its address, its type, and the key typed for it (null: none typed).</summary>
-internal sealed record SetupServerParams(string Url, string Provider = "", string? ApiKey = null);
+/// <summary>A server the card names: its address, its type, the key typed for it (null: none typed), and the graphics
+/// memory the person chose for it on the card (null: none chosen).</summary>
+internal sealed record SetupServerParams(string Url, string Provider = "", string? ApiKey = null, double? CardGb = null);
+
+/// <summary>Where the card's memory figure comes from: chosen on the card, the budget set for that address, this
+/// machine's card read for a server that runs on it, or unknown (the card asks).</summary>
+internal enum SetupBudgetSource { Chosen, Configured, Detected, Unknown }
 
 /// <summary>A model to download, measured for a card of <c>CardGb</c>. <c>Measured</c>, <c>Button</c>, <c>Downloading</c>
 /// and <c>Size</c>: its line, its button, its progress title and its size, in the editor's language.</summary>
 internal sealed record SetupDownloadDto(
     string Name, string Tag, double DownloadGb, int CardGb, string Measured, string Button, string Downloading, string Size);
 
+/// <summary>A graphics memory the card offers to choose, with its label in the editor's language.</summary>
+internal sealed record SetupCardChoice(int Gb, string Label);
+
 /// <summary>`setup/plan` answer. <c>ChatModel</c> null: no chat model there — <c>Downloads</c> (Ollama) or nothing to
 /// download from here (<c>NoDownload</c> says where to get one), and <c>Listed</c> names what the server has. The
-/// sentences come composed: <c>Lead</c>, <c>Legend</c> (the card's memory), <c>FitText</c>.</summary>
+/// sentences come composed: <c>Lead</c>, <c>Legend</c> (the card's memory), <c>FitText</c>. <c>CardChoices</c>: the
+/// memories to choose from when the figure was not found (unknown) or was chosen (to change it); empty otherwise.</summary>
 internal sealed record SetupPlanDto(
     string? ChatModel, string? CompletionModel, string? SearchModel, int ChatCount,
     double BudgetGb, double NeededGb, bool Fits, List<SetupDownloadDto> Downloads, List<string> Listed,
-    string Lead, string Legend, string? FitText, string? ItsModels, string? NoDownload)
+    string Lead, string Legend, string? FitText, string? ItsModels, string? NoDownload,
+    List<SetupCardChoice> CardChoices, string? CardQuestion)
 {
-    public static SetupPlanDto Of(FirstRunPlan p)
+    /// <summary>The memories offered: the cards the recommendations are measured for.</summary>
+    internal static readonly int[] Cards = [8, 12, 16, 24];
+
+    public static SetupPlanDto Of(FirstRunPlan p, SetupBudgetSource source = SetupBudgetSource.Configured)
     {
         static string Gb(double gb) => gb.ToString("0.#", System.Globalization.CultureInfo.CurrentCulture);
         var name = InferenceProviderFactory.DisplayName(p.Provider);
         var noChat = p.ChatModel is null;
+        // Asked only where the answer changes the card: what fits beside the models there, or what to download. A server
+        // without a chat model that takes no download from here has nothing to size.
+        var asks = source is SetupBudgetSource.Unknown or SetupBudgetSource.Chosen
+                   && (!noChat || p.Downloads.Count > 0 || p.NoneFits);
         return new(
             p.ChatModel, p.CompletionModel, p.SearchModel, p.ChatCount, p.BudgetGb, Math.Round(p.NeededGb, 1), p.Fits,
             [.. p.Downloads.Select(d => new SetupDownloadDto(
@@ -240,15 +279,17 @@ internal sealed record SetupPlanDto(
             noChat && p.Listed.Count > 0 ? Strings.SetupItsModels(string.Join(", ", p.Listed)) : null,
             !noChat || p.Downloads.Count > 0 ? null
                 : p.NoneFits ? Strings.SetupNoneFits(Gb(p.BudgetGb), name)
-                : Strings.SetupNoDownloadHere(name));
+                : Strings.SetupNoDownloadHere(name),
+            asks ? [.. Cards.Select(gb => new SetupCardChoice(gb, Strings.SetupDownloadSize(Gb(gb))))] : [],
+            !asks ? null : source == SetupBudgetSource.Unknown ? Strings.SetupCardUnknown : Strings.SetupServerCard);
     }
 }
 
 /// <summary>`setup/apply` — the server and the models chosen. <c>CompletionModel</c> null: the chat model;
-/// <c>SearchModel</c> null: automatic.</summary>
+/// <c>SearchModel</c> null: automatic; <c>CardGb</c>: the graphics memory chosen on the card, saved with the server.</summary>
 internal sealed record SetupApplyParams(
     string Url, string Provider, string ChatModel, string? CompletionModel = null, string? SearchModel = null,
-    string? ApiKey = null);
+    string? ApiKey = null, double? CardGb = null);
 
 /// <summary>`setup/apply` answer: the server type changed, the editor restarts the host.</summary>
 internal sealed record SetupApplyResult(bool RestartNeeded);

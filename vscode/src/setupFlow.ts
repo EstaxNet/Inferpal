@@ -20,6 +20,8 @@ export class SetupFlow {
   private view: WvSetupView | null = null;
   /** The key typed for the server the card shows (none: the saved one, for the saved address only). */
   private key: string | undefined;
+  /** The graphics memory chosen on the card for the server it shows (none: the host's own figure, or unknown). */
+  private card: number | undefined;
   /**
    * ⚠ Every search and every gesture is a new generation, and a step whose generation is no longer the current one
    * draws nothing: a scan that ends after the person typed an address would draw over their choice — and propose the
@@ -46,6 +48,7 @@ export class SetupFlow {
     const g = ++this.generation;
     this.deps.log(`[setup] start (${reason})`);
     this.key = undefined;
+    this.card = undefined;
     try {
       const strings = await host.setupStrings();
       const checking = await host.setupPlaces();
@@ -59,7 +62,7 @@ export class SetupFlow {
         this.draw({ phase: 'nothing', strings, places: scan.places, others: [] });
         return;
       }
-      await this.propose(g, offered, answering.filter((p) => p !== offered), scan.places, undefined);
+      await this.propose(g, offered, answering.filter((p) => p !== offered), scan.places, undefined, undefined);
     } catch (err) {
       this.fail(g, err);
     }
@@ -81,7 +84,7 @@ export class SetupFlow {
           const place = await host.setupExamine(a.url, a.key);
           if (g !== this.generation) return;
           if (place.outcome === 'answers' && place.provider) {
-            await this.propose(g, place, [], view.places, a.key);
+            await this.propose(g, place, [], view.places, a.key, undefined);
           } else {
             // The typed address joins the list with what it answered.
             const places = [...view.places.filter((p) => p.url !== place.url), place];
@@ -97,7 +100,14 @@ export class SetupFlow {
           const others = view.others.filter((p) => p !== place);
           const shown = view.places.find((p) => p.url === view.server?.url);
           if (shown) others.push(shown);
-          await this.propose(g, place, others, view.places, undefined);
+          await this.propose(g, place, others, view.places, undefined, undefined);
+          return;
+        }
+        case 'card': {
+          // The same server, planned again for the memory chosen: its key goes with it.
+          if (!view.server) return;
+          this.draw({ ...view, busy: true, error: null });
+          await this.propose(g, view.server, view.others, view.places, this.key, a.gb);
           return;
         }
         case 'start':
@@ -108,6 +118,7 @@ export class SetupFlow {
           const result = await host.setupApply({
             url: view.server.url, provider: view.server.provider, chatModel: plan.chatModel,
             completionModel: plan.completionModel ?? null, searchModel: plan.searchModel ?? null, apiKey: this.key,
+            cardGb: this.card ?? null,
           });
           if (g !== this.generation) return;
           this.finish();
@@ -128,7 +139,7 @@ export class SetupFlow {
           }
           const result = await host.setupApply({
             url: server.url, provider: server.provider, chatModel: download.tag, searchModel: view.plan?.searchModel ?? null,
-            apiKey: this.key,
+            apiKey: this.key, cardGb: this.card ?? null,
           });
           if (g !== this.generation) return;
           this.finish();
@@ -148,14 +159,17 @@ export class SetupFlow {
     this.draw({ ...view, pull: { ...view.pull, status: p.status, percent: p.percent ?? view.pull.percent ?? null } });
   }
 
-  /** Proposes `place`, with the key typed for it (none: the saved key, which the host sends to the saved address only). */
-  private async propose(g: number, place: SetupPlace, others: SetupPlace[], places: SetupPlace[],
-                        key: string | undefined): Promise<void> {
+  /** Proposes the server at `place` (its address and type are all the plan needs), with the key typed for it (none: the
+   *  saved key, which the host sends to the saved address only) and the graphics memory chosen for it (none: the
+   *  host's own figure). */
+  private async propose(g: number, place: { url: string; provider?: string | null }, others: SetupPlace[],
+                        places: SetupPlace[], key: string | undefined, card: number | undefined): Promise<void> {
     const host = this.deps.host();
     if (!host || !this.view || !place.provider) return;
-    const plan = await host.setupPlan(place.url, place.provider, key);
+    const plan = await host.setupPlan(place.url, place.provider, key, card);
     if (g !== this.generation) return;
     this.key = key;
+    this.card = card;
     this.draw({
       phase: plan.chatModel ? 'found' : 'noModel', strings: this.view.strings, places,
       server: { url: place.url, provider: place.provider }, plan, others, busy: false, error: null,

@@ -71,8 +71,14 @@ internal static class ServerScan
     /// <summary>The places looked at, in order: the configured address first when it is none of the usual ones.</summary>
     internal static IReadOnlyList<(string Url, string? Expected)> Places(string? configured)
     {
-        var places = DefaultPlaces.Select(p => ($"http://localhost:{p.Port}", (string?)p.Provider)).ToList();
         var mine = ProviderProbe.RootOf(configured);
+        // A usual place the configured address names otherwise (127.0.0.1 for localhost) keeps the person's spelling:
+        // taken, the server stays the address they typed.
+        var places = DefaultPlaces
+            .Select(p => $"http://localhost:{p.Port}" is var url && mine.Length > 0 && SameAddress(url, mine)
+                ? (mine, (string?)p.Provider)
+                : (url, (string?)p.Provider))
+            .ToList();
         if (mine.Length > 0 && !places.Any(p => SameAddress(p.Item1, mine)))
             places.Insert(0, (mine, null));
         return places;
@@ -86,8 +92,9 @@ internal static class ServerScan
     public static bool NothingChosen(InferpalConfig config)
     {
         var factory = new InferpalConfig();
+        // The default address as written: 127.0.0.1 typed in place of localhost is a choice made, not the factory value.
         return config.IsFirstRun && string.IsNullOrEmpty(config.ApiKey)
-            && SameAddress(config.BaseUrl, factory.BaseUrl)
+            && string.Equals(ProviderProbe.RootOf(config.BaseUrl), ProviderProbe.RootOf(factory.BaseUrl), StringComparison.OrdinalIgnoreCase)
             && ModelCatalog.SameModelName(config.DefaultModel, factory.DefaultModel);
     }
 
@@ -158,7 +165,13 @@ internal static class ServerScan
             ?? answering.FirstOrDefault();
     }
 
-    /// <summary>Two addresses of one server: same root, <c>/v1</c> and case aside.</summary>
-    internal static bool SameAddress(string? a, string? b) =>
-        string.Equals(ProviderProbe.RootOf(a), ProviderProbe.RootOf(b), StringComparison.OrdinalIgnoreCase);
+    /// <summary>Two addresses of one server: same root, <c>/v1</c> and case aside — and <c>localhost</c>,
+    /// <c>127.0.0.1</c> and <c>[::1]</c> are one machine, so a port there is one server however it is spelled.</summary>
+    internal static bool SameAddress(string? a, string? b)
+    {
+        string? Loopback(string? url) =>
+            Hardware.HardwareProbe.IsLoopback(url) && Uri.TryCreate(url, UriKind.Absolute, out var u) ? $"{u.Scheme}://loopback:{u.Port}" : null;
+        if (Loopback(a) is { } la && Loopback(b) is { } lb) return la == lb;
+        return string.Equals(ProviderProbe.RootOf(a), ProviderProbe.RootOf(b), StringComparison.OrdinalIgnoreCase);
+    }
 }

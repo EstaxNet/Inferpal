@@ -1731,5 +1731,7 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="SetupPlaceAnswersUnlisted" xml:space="preserve"><value>Antwortet, aber seine Modelle konnten nicht aufgelistet werden: {0}</value></data>
   <data name="SetupDownloadSize" xml:space="preserve"><value>{0} GB</value></data>
   <data name="SetupNoneFits" xml:space="preserve"><value>Keines der von Inferpal empfohlenen Modelle passt auf eine {0}-GB-Karte: Laden Sie ein kleineres Chat-Modell in {1} herunter und suchen Sie dann erneut.</value></data>
+  <data name="SetupServerCard" xml:space="preserve"><value>Grafikkarte des Servers:</value></data>
+  <data name="SetupCardUnknown" xml:space="preserve"><value>Die Grafikkarte dieses Servers ist unbekannt – wählen Sie sie, um zu sehen, was passt:</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>Modellserver wird gesucht…</value></data>
 </root>

@@ -36,16 +36,17 @@ Free and open source (GPL v3). The backend is bundled — no .NET to install.
 
 ## Which model for my GPU
 
-Measured on our test server — one 24 GB card, LM Studio, 32K context — with its free memory cut to about 11 and 15 GB to stand in for the smaller cards. Scores are real coding tasks out of 14 (C#, JavaScript, Python), judged by the project's tests passing; one run each, so a task or two apart means nothing.
+Measured on our test server — one 24 GB card, LM Studio, 32K context — with its free memory cut to about 7, 11 and 15 GB to stand in for the smaller cards. Scores are real coding tasks out of 14 (C#, JavaScript, Python), judged by the project's tests passing; one run each, so a task or two apart means nothing.
 
 | Your card | Agent | Autocomplete beside it |
 |---|---|---|
+| 8 GB | Granite 4.2 8B (14/14, fast) | none measured fits |
 | 12 GB | Gemma 4 12B (12/14, fast) — or Bonsai 27B, a 1-bit Qwen (13/14, about 3× slower) | none measured fits |
 | 16 GB | same as 12 GB | Mellum2 fits only beside a weaker agent |
 | 24 GB | Qwen3.8 27B (14/14), which also autocompletes — or Gemma 4 12B with Mellum2 | see the agent column |
 | More than 24 GB | not tested | — |
 
-**A better machine makes Inferpal better.** The best scores came from the largest models our card could hold (Qwen3.8 27B: 14/14; the small models we measured: 6 and 7) — though size alone does not decide (Gemma 4 26B scored below Gemma 4 12B). More memory also buys a longer context before older turns are summarised, and room for a separate autocomplete model. Larger cards, multi-GPU machines and 70B-class models could not be tested — for lack of budget and infrastructure, not of interest — so nothing is recommended above 24 GB. Every figure: [Models](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md).
+**A better machine makes Inferpal better.** The best scores came from the largest models our card could hold (Qwen3.8 27B: 14/14; most small models we measured: 6 to 8) — though size alone does not decide (Gemma 4 26B scored below Gemma 4 12B, and Granite 4.2 8B scored 14/14 on an 8 GB card). More memory also buys a longer context before older turns are summarised, and room for a separate autocomplete model. Larger cards, multi-GPU machines and 70B-class models could not be tested — for lack of budget and infrastructure, not of interest — so nothing is recommended above 24 GB. Every figure: [Models](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md).
 
 ---
 
@@ -78,7 +79,7 @@ Measured on our test server — one 24 GB card, LM Studio, 32K context — with 
 
 **I have more than 24 GB, several GPUs, or a Mac with lots of memory.** Nothing in Inferpal caps the model size, but we could not test above 24 GB, so we recommend nothing there. Use the room: a larger model, a longer context — raise *Context window* in *Settings → Server and models* (default 8,192 tokens; our battery ran at 32K) — and a separate autocomplete model. `/hardware` shows your budget; `/bench` measures your installed models on your machine.
 
-**My card has less than 12 GB.** We did not measure smaller cards. The lightest model that did well, Bonsai 27B (1-bit, 4.7 GB), scored 13/14, about three times slower than Gemma 4 12B; the small models we measured scored 6 and 7.
+**My card has less than 12 GB.** On 8 GB, Granite 4.2 8B scored 14/14 and fits beside the code-search model (`ollama pull granite4.2:8b`, or the first-run card downloads it). Bonsai 27B and Qwen3.5 4B, despite their small files, did not fit; below 8 GB nothing was measured.
 
 **Can the model run on another machine?** Yes — point the server address at it. See [Remote inference](https://github.com/EstaxNet/Inferpal/blob/master/docs/remote-inference.md).
 

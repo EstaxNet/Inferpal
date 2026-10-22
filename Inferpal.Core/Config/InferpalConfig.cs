@@ -146,10 +146,11 @@ internal class InferpalConfig
     public bool InlineDiffPreviewEnabled { get; set; } = true;
 
     /// <summary>
-    /// Total GPU VRAM budget in gigabytes, used by the hardware-aware features (<c>/hardware</c>,
-    /// first-run trio fit-check). Ollama does not expose total VRAM and the server may be remote,
-    /// so this is set manually (via <c>/hardware &lt;gb&gt;</c>) or auto-seeded only when Ollama runs
-    /// on loopback. <c>0</c> = unknown → fit-checks stay silent.
+    /// Total GPU VRAM budget in gigabytes of the server at <see cref="BaseUrl"/>, used by the hardware-aware features
+    /// (<c>/hardware</c>, first-run trio fit-check). Ollama does not expose total VRAM and the server may be remote,
+    /// so this is set manually (via <c>/hardware &lt;gb&gt;</c> or the card chosen on VS Code's first-run card) or
+    /// auto-seeded only when the server runs on loopback. ⚠ It belongs to its server: a first run or <c>--setup</c> that
+    /// changes the server replaces it with the new one's figure, or <c>0</c>. <c>0</c> = unknown → fit-checks stay silent.
     /// </summary>
     [JsonPropertyName("vramBudgetGb")]
     public double VramBudgetGb { get; set; } = 0;
@@ -867,6 +868,10 @@ internal class InferpalConfig
 
     /// <summary>The permission rules that decide NOW: see <see cref="Shared{T}"/>.</summary>
     internal string SharedPermissionRules => Shared(nameof(PermissionRules), PermissionRules) ?? string.Empty;
+
+    /// <summary>The server address as it stands NOW: see <see cref="Shared{T}"/>. What a figure read from the file
+    /// (the graphics memory) belongs to — this copy's address may be another editor's old one.</summary>
+    internal string SharedBaseUrl => Shared(nameof(BaseUrl), BaseUrl) ?? string.Empty;
 
     /// <summary>Whether security alerts are off NOW: see <see cref="Shared{T}"/>.</summary>
     internal bool SharedSecurityAlertsDisabled => Shared(nameof(SecurityAlertsDisabled), SecurityAlertsDisabled);

@@ -2104,6 +2104,8 @@ internal static class Strings
     public static string SetupPlaceAnswersUnlisted(string cause) => Format(Get(nameof(SetupPlaceAnswersUnlisted)), cause);
     public static string SetupDownloadSize(string gb) => Format(Get(nameof(SetupDownloadSize)), gb);
     public static string SetupNoneFits(string gb, string server) => Format(Get(nameof(SetupNoneFits)), gb, server);
+    public static string SetupServerCard => Get(nameof(SetupServerCard));
+    public static string SetupCardUnknown => Get(nameof(SetupCardUnknown));
     public static string AcpSetupScanning => Get(nameof(AcpSetupScanning));
     public static string AcpSetupNotReached(string url) => Format(Get(nameof(AcpSetupNotReached)), url);
     public static string AcpSetupNoModel(string server) => Format(Get(nameof(AcpSetupNoModel)), server);

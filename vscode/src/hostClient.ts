@@ -553,8 +553,9 @@ export class HostClient {
     return this.connection().sendRequest<SetupPlace>('setup/examine', { url, apiKey });
   }
 
-  setupPlan(url: string, provider: string, apiKey?: string): Promise<SetupPlan> {
-    return this.connection().sendRequest<SetupPlan>('setup/plan', { url, provider, apiKey });
+  /** `cardGb`: the server's graphics memory as chosen on the card (none: the host's own figure, or unknown). */
+  setupPlan(url: string, provider: string, apiKey?: string, cardGb?: number): Promise<SetupPlan> {
+    return this.connection().sendRequest<SetupPlan>('setup/plan', { url, provider, apiKey, cardGb });
   }
 
   setupApply(params: SetupApplyParams): Promise<{ restartNeeded: boolean }> {

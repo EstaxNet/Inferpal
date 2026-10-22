@@ -1735,5 +1735,7 @@ What you save there applies from your next question, in this thread and the othe
   <data name="SetupPlaceAnswersUnlisted" xml:space="preserve"><value>Answers, but its models could not be listed: {0}</value></data>
   <data name="SetupDownloadSize" xml:space="preserve"><value>{0} GB</value></data>
   <data name="SetupNoneFits" xml:space="preserve"><value>None of the models Inferpal recommends fits a {0} GB card: download a smaller chat model in {1}, then look again.</value></data>
+  <data name="SetupServerCard" xml:space="preserve"><value>The server's graphics card:</value></data>
+  <data name="SetupCardUnknown" xml:space="preserve"><value>This server's graphics card is unknown — choose it to see what fits:</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>Looking for a model server…</value></data>
 </root>

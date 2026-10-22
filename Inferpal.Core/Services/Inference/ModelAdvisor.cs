@@ -54,9 +54,10 @@ internal static class ModelAdvisor
     /// fit (with the context, the autocomplete and the embedding model beside it).</summary>
     internal static readonly IReadOnlyList<(string Name, int CardGb)> RecommendedAgents =
     [
-        ("Qwen3.8 27B", 24),
-        ("Gemma 4 12B", 12),
-        ("Bonsai 27B",  12),
+        ("Qwen3.8 27B",    24),
+        ("Gemma 4 12B",    12),
+        ("Bonsai 27B",     12),
+        ("Granite 4.2 8B", 8),
     ];
 
     /// <summary>The recommended agents Ollama's library serves, with the name to pull and the size of the download as its
@@ -64,8 +65,9 @@ internal static class ModelAdvisor
     /// one list of what is recommended. Bonsai 27B is on Hugging Face only, so it is not offered for download.</summary>
     internal static readonly IReadOnlyList<(string Name, string OllamaTag, double DownloadGb)> OllamaDownloads =
     [
-        ("Qwen3.8 27B", "qwen3.8:27b", 17.7),
-        ("Gemma 4 12B", "gemma4:12b",  8.0),
+        ("Qwen3.8 27B",    "qwen3.8:27b",   17.7),
+        ("Gemma 4 12B",    "gemma4:12b",    8.0),
+        ("Granite 4.2 8B", "granite4.2:8b", 5.3),
     ];
 
     /// <summary>The downloads measured to fit a card of <paramref name="vramBudgetGb"/>, largest card first; all of them

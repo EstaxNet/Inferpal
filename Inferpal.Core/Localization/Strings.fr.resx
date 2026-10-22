@@ -1731,5 +1731,7 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="SetupPlaceAnswersUnlisted" xml:space="preserve"><value>Répond, mais ses modèles n'ont pas pu être listés : {0}</value></data>
   <data name="SetupDownloadSize" xml:space="preserve"><value>{0} Go</value></data>
   <data name="SetupNoneFits" xml:space="preserve"><value>Aucun des modèles recommandés par Inferpal ne tient sur une carte de {0} Go : téléchargez un modèle de chat plus petit dans {1}, puis relancez la recherche.</value></data>
+  <data name="SetupServerCard" xml:space="preserve"><value>Carte graphique du serveur :</value></data>
+  <data name="SetupCardUnknown" xml:space="preserve"><value>La carte graphique de ce serveur est inconnue — choisissez-la pour voir ce qui tient :</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>Recherche d'un serveur de modèles…</value></data>
 </root>

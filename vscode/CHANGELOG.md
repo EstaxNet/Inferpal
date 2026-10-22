@@ -9,7 +9,10 @@ extension share one engine and one version number.
   red badge and nothing else. A card now looks where a model server usually listens (Ollama, LM Studio, llama-server,
   vLLM), says what each place answered, and proposes the models that fit your card — **Start with these**. A server on
   another machine is typed on the same card, a key when a server asks for one; Ollama without a chat model gets a
-  recommended one downloaded. `/setup` brings the card back (it answered "not available" before).
+  recommended one downloaded. `/setup` brings the card back (it answered "not available" before). A server on another
+  machine is asked for its graphics card, so the models proposed fit the card they will run on.
+- **A model for 8 GB graphics cards**: Granite 4.2 8B (14 of 14 tasks on Inferpal's battery) fits an 8 GB card beside
+  the code-search model; the first-run card offers it for download.
 - **Inline completions on llama-server and other OpenAI-compatible servers**: the server completes around the cursor
   with the model's own fill-in-the-middle tokens (llama-server's `/infill`, or `/v1/completions` with `suffix`); one
   that refuses is named once in `/diagnostics`.

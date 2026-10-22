@@ -1731,5 +1731,7 @@
   <data name="SetupPlaceAnswersUnlisted" xml:space="preserve"><value>有响应，但无法列出其模型：{0}</value></data>
   <data name="SetupDownloadSize" xml:space="preserve"><value>{0} GB</value></data>
   <data name="SetupNoneFits" xml:space="preserve"><value>Inferpal 推荐的模型都无法放入 {0} GB 的显卡：请在 {1} 中下载一个更小的聊天模型，然后重新查找。</value></data>
+  <data name="SetupServerCard" xml:space="preserve"><value>服务器的显卡：</value></data>
+  <data name="SetupCardUnknown" xml:space="preserve"><value>此服务器的显卡未知——选择它即可查看能装下的模型：</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>正在查找模型服务器…</value></data>
 </root>

@@ -2,7 +2,7 @@
 // state pushed via postMessage and reports user intents back. It must survive being
 // destroyed on hide: everything re-renders from the 'hydrate' message.
 // No literal user-visible English here — strings go through t() (window.__l10n).
-import type { ApprovalCard, InputCard, InputCardField, InputFormAnswer, RunSummary, SetupPlace } from '../protocol';
+import type { ApprovalCard, InputCard, InputCardField, InputFormAnswer, RunSummary, SetupPlace, SetupPlan } from '../protocol';
 import type {
   ExtToWebview,
   WebviewToExt,
@@ -1750,6 +1750,27 @@ function setupAddressForm(s: Record<string, string>, title: string): HTMLElement
   return section;
 }
 
+/** The server's graphics memory to choose, when the host could not find it (or it was chosen here, to change it). */
+function setupCardChooser(plan: SetupPlan): HTMLElement | null {
+  if (plan.cardChoices.length === 0) return null;
+  const row = document.createElement('div');
+  row.className = 'setup-card';
+  row.setAttribute('role', 'group');
+  row.setAttribute('aria-label', plan.cardQuestion ?? '');
+  row.appendChild(setupText('span', 'setup-hint', plan.cardQuestion ?? ''));
+  const choices = document.createElement('div');
+  choices.className = 'setup-row';
+  for (const c of plan.cardChoices) {
+    const b = setupButton(c.label, { action: 'card', gb: c.gb });
+    const chosen = plan.budgetGb === c.gb;
+    b.classList.toggle('chosen', chosen);
+    b.setAttribute('aria-pressed', String(chosen));
+    choices.appendChild(b);
+  }
+  row.appendChild(choices);
+  return row;
+}
+
 function renderSetup(): void {
   // ⚠ The card is drawn anew at each step (the scan ending, each download progress): what is being typed in its fields,
   // and the focus, carry over — or an address half-typed during the search vanishes when the search ends.
@@ -1812,6 +1833,8 @@ function renderSetupView(): void {
     case 'found': {
       if (!plan) break;
       setupEl.append(setupText('h1', 'setup-title', s.foundTitle), setupText('p', 'setup-lead', plan.lead));
+      const foundCard = setupCardChooser(plan);
+      if (foundCard) setupEl.appendChild(foundCard);
       const box = document.createElement('section');
       box.className = 'setup-box';
       const roles = document.createElement('div');
@@ -1847,6 +1870,8 @@ function renderSetupView(): void {
       if (!plan) break;
       setupEl.append(setupText('h1', 'setup-title', s.noModelTitle), setupText('p', 'setup-lead', plan.lead));
       if (plan.itsModels) setupEl.appendChild(setupText('p', 'setup-hint', plan.itsModels));
+      const noModelCard = v.pull ? null : setupCardChooser(plan);
+      if (noModelCard) setupEl.appendChild(noModelCard);
       if (plan.downloads.length > 0 && !v.pull) {
         const box = document.createElement('section');
         box.className = 'setup-box';

@@ -1731,5 +1731,7 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="SetupPlaceAnswersUnlisted" xml:space="preserve"><value>Risponde, ma non è stato possibile elencarne i modelli: {0}</value></data>
   <data name="SetupDownloadSize" xml:space="preserve"><value>{0} GB</value></data>
   <data name="SetupNoneFits" xml:space="preserve"><value>Nessuno dei modelli consigliati da Inferpal entra in una scheda da {0} GB: scarica un modello di chat più piccolo in {1}, poi cerca di nuovo.</value></data>
+  <data name="SetupServerCard" xml:space="preserve"><value>Scheda grafica del server:</value></data>
+  <data name="SetupCardUnknown" xml:space="preserve"><value>La scheda grafica di questo server è sconosciuta: sceglila per vedere cosa ci sta:</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>Ricerca di un server di modelli…</value></data>
 </root>

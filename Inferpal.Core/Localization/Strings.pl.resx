@@ -1731,5 +1731,7 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="SetupPlaceAnswersUnlisted" xml:space="preserve"><value>Odpowiada, ale nie udało się wylistować jego modeli: {0}</value></data>
   <data name="SetupDownloadSize" xml:space="preserve"><value>{0} GB</value></data>
   <data name="SetupNoneFits" xml:space="preserve"><value>Żaden z modeli polecanych przez Inferpal nie mieści się na karcie {0} GB: pobierz mniejszy model czatu w {1}, a potem wyszukaj ponownie.</value></data>
+  <data name="SetupServerCard" xml:space="preserve"><value>Karta graficzna serwera:</value></data>
+  <data name="SetupCardUnknown" xml:space="preserve"><value>Karta graficzna tego serwera jest nieznana — wybierz ją, aby zobaczyć, co się zmieści:</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>Wyszukiwanie serwera modeli…</value></data>
 </root>

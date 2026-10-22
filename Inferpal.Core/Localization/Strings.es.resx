@@ -1731,5 +1731,7 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="SetupPlaceAnswersUnlisted" xml:space="preserve"><value>Responde, pero no se pudieron listar sus modelos: {0}</value></data>
   <data name="SetupDownloadSize" xml:space="preserve"><value>{0} GB</value></data>
   <data name="SetupNoneFits" xml:space="preserve"><value>Ninguno de los modelos que recomienda Inferpal cabe en una tarjeta de {0} GB: descarga un modelo de chat más pequeño en {1} y vuelve a buscar.</value></data>
+  <data name="SetupServerCard" xml:space="preserve"><value>Tarjeta gráfica del servidor:</value></data>
+  <data name="SetupCardUnknown" xml:space="preserve"><value>La tarjeta gráfica de este servidor es desconocida: elígela para ver qué cabe:</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>Buscando un servidor de modelos…</value></data>
 </root>

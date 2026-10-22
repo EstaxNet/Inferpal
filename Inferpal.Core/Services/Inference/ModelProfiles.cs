@@ -131,6 +131,9 @@ internal static class ModelProfiles
         new("muse-glimmer",   "Muse Glimmer",             ["muse-glimmer"],
             AgentFit.Recommended,    3, ToolCallForm.Atem,          ReasoningForm.ChannelEnvelope,     FimForm.None,
             new(Temperature: 1.0, TopP: 0.95, TopK: 64)),
+        // Measured: 8B 14 tasks in 14 and fits an 8 GB card. Its template asks for Qwen's XML calls and opens <think>.
+        new("granite",        "Granite 4.2",              ["granite-4.2", "granite4.2"],
+            AgentFit.Recommended,    5, ToolCallForm.QwenXml,       ReasoningForm.TemplateOpenedThink, FimForm.None),
         // Measured: 12B 12 tasks in 14 (7 GB), 26B A4B 10 in 14 — through the prompted-tools fallback on LM Studio.
         new("gemma4",         "Gemma 4",                  ["gemma-4", "gemma4"],
             AgentFit.Usable,         1, ToolCallForm.GemmaNative,   ReasoningForm.ChannelEnvelope,     FimForm.None,

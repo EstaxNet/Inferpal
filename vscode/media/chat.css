@@ -1832,6 +1832,18 @@ kbd {
   font-weight: 600;
 }
 
+.setup-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.setup-button.chosen {
+  border-color: var(--vscode-focusBorder);
+  background: var(--ip-chip);
+  font-weight: 600;
+}
+
 .setup-button:disabled {
   opacity: 0.5;
   cursor: default;

@@ -129,6 +129,41 @@ public sealed class FirstRunScanTests
         Assert.Null(SetupPlaceDto.Of(place).AlsoAnswering);
     }
 
+    /// <summary>A port of this machine is one server however it is spelled: the budget and the key set for
+    /// <c>127.0.0.1:11434</c> belong to <c>localhost:11434</c>, and the scan does not list it twice.</summary>
+    [Fact]
+    public void ThisMachinesSpellings_AreOneServer()
+    {
+        Assert.True(ServerScan.SameAddress("http://127.0.0.1:11434", "http://localhost:11434/v1"));
+        Assert.True(ServerScan.SameAddress("http://[::1]:1234", "http://LOCALHOST:1234"));
+        Assert.False(ServerScan.SameAddress("http://127.0.0.1:11434", "http://localhost:1234"));
+        Assert.False(ServerScan.SameAddress("http://192.168.1.2:11434", "http://localhost:11434"));
+        Assert.Equal(ServerScan.DefaultPlaces.Count, ServerScan.Places("http://127.0.0.1:11434").Count);
+        // The person's spelling is the one offered, and so the one saved.
+        Assert.Equal("http://127.0.0.1:11434", ServerScan.Places("http://127.0.0.1:11434")[0].Url);
+        // A first run takes nothing over an address typed, even this machine's under another name.
+        Assert.False(ServerScan.NothingChosen(new InferpalConfig { IsFirstRun = true, BaseUrl = "http://127.0.0.1:11434" }));
+    }
+
+    /// <summary>The model recommended for an 8 GB card is chosen before a family measured weaker: the first run and
+    /// Visual Studio pick it from what the server has.</summary>
+    [Fact]
+    public void TheRecommendedSmallAgent_IsChosenBeforeAWeakerOne() =>
+        Assert.Equal("granite4.2:8b", ModelCatalog.PickBestChatModel(["gemma4:e4b", "granite4.2:8b"]));
+
+    /// <summary>The card asks for the server's graphics memory only where the answer changes it: never for a server
+    /// without a chat model that takes no download from here.</summary>
+    [Fact]
+    public void TheCardIsAsked_OnlyWhereItChangesSomething()
+    {
+        var lmStudio = FirstRunPlanner.Plan([], "lmstudio", "http://192.168.1.9:1234", 0, canDownload: true);
+        var ollama = FirstRunPlanner.Plan([], "ollama", "http://192.168.1.9:11434", 0, canDownload: true);
+
+        Assert.Empty(SetupPlanDto.Of(lmStudio, SetupBudgetSource.Unknown).CardChoices);
+        Assert.Null(SetupPlanDto.Of(lmStudio, SetupBudgetSource.Unknown).CardQuestion);   // no question without a choice
+        Assert.Equal([8, 12, 16, 24], SetupPlanDto.Of(ollama, SetupBudgetSource.Unknown).CardChoices.Select(c => c.Gb));
+    }
+
     /// <summary>The server offered is the configured one when it answers — the person's choice — else the first with a
     /// chat model: one choice for VS Code's card, the ACP setup and Visual Studio.</summary>
     [Fact]
@@ -188,10 +223,11 @@ public sealed class FirstRunScanTests
     }
 
     [Theory]
-    [InlineData(24, new[] { "qwen3.8:27b", "gemma4:12b" })]
-    [InlineData(12, new[] { "gemma4:12b" })]
-    [InlineData(0,  new[] { "qwen3.8:27b", "gemma4:12b" })]   // unknown card: every measured download, with its card
-    [InlineData(8,  new string[0])]                            // smaller than every measured setup: nothing to offer
+    [InlineData(24, new[] { "qwen3.8:27b", "gemma4:12b", "granite4.2:8b" })]
+    [InlineData(12, new[] { "gemma4:12b", "granite4.2:8b" })]
+    [InlineData(8,  new[] { "granite4.2:8b" })]
+    [InlineData(0,  new[] { "qwen3.8:27b", "gemma4:12b", "granite4.2:8b" })]   // unknown card: every measured download
+    [InlineData(6,  new string[0])]                                             // smaller than every measured setup
     public void OllamaWithoutAChatModel_OffersTheDownloadsThatFitTheCard(double budgetGb, string[] tags)
     {
         InstalledModelInfo[] installed = [new("nomic-embed-text:latest", 274_000_000)];
@@ -203,7 +239,7 @@ public sealed class FirstRunScanTests
         Assert.Equal(["nomic-embed-text:latest"], plan.Listed);
         // A card too small for every measured download is said as that, never as a server that cannot download.
         Assert.Equal(tags.Length == 0, plan.NoneFits);
-        Assert.Equal(tags.Length == 0 ? Inferpal.Localization.Strings.SetupNoneFits("8", "Ollama") : null,
+        Assert.Equal(tags.Length == 0 ? Inferpal.Localization.Strings.SetupNoneFits("6", "Ollama") : null,
                      SetupPlanDto.Of(plan).NoDownload);
     }
 

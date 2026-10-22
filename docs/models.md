@@ -18,9 +18,10 @@ for each model Inferpal is measured with, what the model does, what Inferpal doe
 > here is that server's, and yours will differ.
 >
 > **More capable hardware makes Inferpal better.** On the battery, the best results came from the largest models the
-> server could run (Qwen3.8 27B: 14 tasks in 14; the small models trail at 6 and 7) — although size alone does not
-> decide (Gemma 4 26B scored below Gemma 4 12B). And more memory is more than a larger model: a longer context before
-> compaction, and a separate autocomplete or utility model beside the agent, which the 12 and 16 GB cards could not hold.
+> server could run (Qwen3.8 27B: 14 tasks in 14; most small models trail at 6 to 8) — although size alone does not
+> decide (Gemma 4 26B scored below Gemma 4 12B, and Granite 4.2 8B scored 14 in 14 on an 8 GB card). And more memory is
+> more than a larger model: a longer context before compaction, and a separate autocomplete or utility model beside the
+> agent, which the 8, 12 and 16 GB cards could not hold.
 
 ## At a glance
 
@@ -30,6 +31,7 @@ for each model Inferpal is measured with, what the model does, what Inferpal doe
 | [Devstral Small 2](#devstral) | ✅ **Agent** — recommended, fastest (13/14) | Reads its `[TOOL_CALLS]` calls when left as text | Temperature **0.15** |
 | [Muse Glimmer](#muse-glimmer) | ✅ **Agent** — recommended (14/14) | Splits its addressed messages (reasoning / answer) and reads its ATEM tool calls | Needs a recent llama.cpp runtime |
 | [Bonsai 27B](#bonsai) (1-bit Qwen) | ✅ **Agent** on small GPUs (13/14, slow) | Same as Qwen3.8 | 4.7 GB for 27B |
+| [Granite 4.2 8B](#granite) (IBM) | ✅ **Agent** on 8 GB cards (14/14, fast) | Reads its XML tool calls when the server leaves them as text | Ollama: `granite4.2:8b` |
 | [GLM 4.7 Flash](#glm47) | Agent — usable with the **Unsloth GGUF** (12/14) | Reads its `<arg_key>` tool calls when left as text | Older GGUFs (lmstudio-community) loop |
 | [Qwen3 Coder 30B](#qwen3-coder) | Agent usable (9/14) | Uses its fill-in-the-middle tokens; reads its XML tool calls | Fast: 3B active parameters |
 | [Qwen3 4B Thinking 2507](#qwen3) | Small machines | Reads its JSON tool calls when left as text | Long reasoning |
@@ -52,13 +54,14 @@ measured: LM Studio does not serve them as embedding models.
 
 What fits in your card's memory **together** — the agent at a 32K context, the autocomplete model, the embedding model
 for the semantic index — measured on Inferpal's test server (24 GB, LM Studio) with the free memory reduced to about
-11 and 15 GB for the smaller cards (1 GB is left for your display). A setup that did not keep its speed with the memory
+7, 11 and 15 GB for the smaller cards (1 GB is left for your display). A setup that did not keep its speed with the memory
 reduced does not fit. The scores are the models' own; the speed on your card will differ. Nothing is recommended above
 24 GB: it could not be verified. The last column is the embedding model whose **memory** was measured beside the others
 (the lightest ones, EmbeddingGemma 300M and Nomic, take less); for search quality, see the paragraph above.
 
 | Card | Agent | Autocomplete | Measured beside it |
 |---|---|---|---|
+| **8 GB** | [Granite 4.2 8B](#granite) (14/14, fast), at an 8K or 32K context — Bonsai 27B and Qwen3.5 4B, despite their small files, do not fit | none measured fits beside the agent | EmbeddingGemma 300M |
 | **12 GB** | [Gemma 4 12B](#gemma4) (12/14, fast) or [Bonsai 27B](#bonsai) (13/14, about 3× slower) | none measured fits beside the agent | Qwen3 Embedding 0.6B |
 | **16 GB** | the same | [Mellum2](#mellum) fits only beside a weak agent (Ling 3.0, 7/14): choose between the two | Qwen3 Embedding 0.6B |
 | **24 GB** | [Qwen3.8 27B](#qwen35) (14/14), which also autocompletes (27/36, 0.5 s) — or [Gemma 4 12B](#gemma4) (12/14) with [Mellum2](#mellum) (29/36, 0.1 s) | see the agent column | Qwen3 Embedding 0.6B |
@@ -212,6 +215,19 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
 - **Sources.** [Meta docs](https://dev.meta.ai/docs/muse-glimmer/prompting) ·
   [Model card](https://huggingface.co/meta-models/Muse-Glimmer-30B)
 
+<a id="granite"></a>
+## Granite 4.2 8B
+
+- **Inferpal.** The agent for an 8 GB card. Its template asks for Qwen's XML tool calls (`<tool_call><function=…>`),
+  read when the server leaves them as text, and opens a `<think>` block, separated from the answer; on LM Studio and
+  Ollama the calls arrived structured.
+- **Measured.** 14 tasks in 14, and the 4 harder scenarios added to the battery since; it fits an 8 GB card beside
+  the embedding model, at an 8K and a 32K context (86 % of its speed with the free memory reduced to 7 GB — it may
+  spill a little). One run, like every figure on this page.
+- **Getting it.** Ollama: `granite4.2:8b` is the file measured (Q4_K_M, 5.3 GB); Inferpal's first-run card offers it
+  from an 8 GB card up.
+- **Sources.** [GGUF files](https://huggingface.co/ibm-granite/granite-4.2-8b-GGUF)
+
 <a id="gemma4"></a>
 ## Gemma 4 (QAT)
 
@@ -339,6 +355,7 @@ memory, a 32K window makes the agent faster; projects larger than the battery's 
 | Devstral Small 2 | 13/14 | 2026-09-28 |
 | Bonsai 27B | 13/14 | 2026-09-28 |
 | GLM 4.7 Flash (Unsloth GGUF) | 12/14 | 2026-09-28 |
+| Granite 4.2 8B | 14/14 — and 4 of the 4 harder scenarios added since | 2026-10-22 |
 | Gemma 4 12B | 12/14 | 2026-09-29 |
 | Laguna XS 2.1 | 12/14 | 2026-09-29 |
 | Gemma 4 26B A4B | 10/14 | 2026-09-29 |
@@ -346,6 +363,7 @@ memory, a 32K window makes the agent faster; projects larger than the battery's 
 | North Mini Code 1.0 | 10/14 — with Inferpal reading Cohere's format (2/14 before) | 2026-09-29 |
 | Qwen3 Coder 30B | 9/14 | 2026-09-28 |
 | gpt-oss 20B | 8/14 | 2026-09-28 |
+| Gemma 4 E4B (QAT) | 8/14 | 2026-10-22 |
 | Ling 3.0 tiny | 7/14 | 2026-09-29 |
 | LFM2.5 8B-A1B | 6/14 | 2026-09-29 |
 | Qwen3 4B Thinking 2507 | 5/8 (C# only) | 2026-09-27 |

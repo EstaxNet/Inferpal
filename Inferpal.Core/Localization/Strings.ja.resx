@@ -1731,5 +1731,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SetupPlaceAnswersUnlisted" xml:space="preserve"><value>応答していますが、モデルを一覧できませんでした: {0}</value></data>
   <data name="SetupDownloadSize" xml:space="preserve"><value>{0} GB</value></data>
   <data name="SetupNoneFits" xml:space="preserve"><value>Inferpal の推奨モデルはどれも {0} GB のカードに収まりません。{1} で小さめのチャットモデルをダウンロードしてから再検索してください。</value></data>
+  <data name="SetupServerCard" xml:space="preserve"><value>サーバーのグラフィックカード:</value></data>
+  <data name="SetupCardUnknown" xml:space="preserve"><value>このサーバーのグラフィックカードは不明です。選ぶと、収まるモデルが表示されます:</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>モデルサーバーを検索しています…</value></data>
 </root>

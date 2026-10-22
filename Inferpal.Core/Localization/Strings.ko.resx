@@ -1731,5 +1731,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="SetupPlaceAnswersUnlisted" xml:space="preserve"><value>응답하지만 모델 목록을 가져오지 못했습니다: {0}</value></data>
   <data name="SetupDownloadSize" xml:space="preserve"><value>{0}GB</value></data>
   <data name="SetupNoneFits" xml:space="preserve"><value>Inferpal이 추천하는 모델 중 {0}GB 카드에 맞는 것이 없습니다. {1}에서 더 작은 채팅 모델을 내려받은 뒤 다시 찾으세요.</value></data>
+  <data name="SetupServerCard" xml:space="preserve"><value>서버의 그래픽 카드:</value></data>
+  <data name="SetupCardUnknown" xml:space="preserve"><value>이 서버의 그래픽 카드를 알 수 없습니다. 선택하면 맞는 모델이 표시됩니다:</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>모델 서버를 찾는 중…</value></data>
 </root>
