@@ -27,10 +27,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Set up .NET 8
+      - name: Set up .NET 8 and 10
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '8.0.x'
+          # .NET 10 builds the host the VS Code and ACP packages ship; .NET 8 runs the Windows test leg.
+          dotnet-version: |
+            8.0.x
+            10.0.x
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
@@ -110,7 +113,7 @@ jobs:
         working-directory: vscode
         run: npm ci
 
-      # §23: one VSIX per platform, same version (Marketplace requirement). The host is
+      # One VSIX per platform, same version (Marketplace requirement). The host is
       # cross-published self-contained from this Windows runner (no AOT/R2R involved);
       # the exec bit lost by zip-on-Windows is re-asserted by the extension at activation.
       - name: Build VS Code VSIX (win32-x64, bundled self-contained host)

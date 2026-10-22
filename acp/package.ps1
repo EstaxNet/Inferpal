@@ -37,7 +37,7 @@ try {
     }
     finally { Pop-Location }
 
-    dotnet publish (Join-Path $root 'Inferpal.Host/Inferpal.Host.csproj') -c Release -r $rid --self-contained true -o $stage -v minimal -nologo
+    dotnet publish (Join-Path $root 'Inferpal.Host/Inferpal.Host.csproj') -c Release -f net10.0 -r $rid --self-contained true -o $stage -v minimal -nologo
     if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed for $rid" }
     Remove-Item (Join-Path $stage '*.pdb') -ErrorAction SilentlyContinue
     foreach ($web in 'settings.css', 'settings-standalone.css', 'settings-standalone.js') {

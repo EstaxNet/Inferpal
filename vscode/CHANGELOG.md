@@ -20,6 +20,9 @@ extension share one engine and one version number.
   Build Failed banner, `/fix-build` and a few more) are
   [listed in the features page](https://github.com/EstaxNet/Inferpal/blob/master/docs/features.md#two-editors-one-engine),
   and the settings panel is described as the seven pages it has.
+- **Runs on .NET 10**: the extension carries the .NET runtime its backend runs on, and .NET 8 stops receiving security
+  fixes on November 10, 2026. On a Mac it now needs macOS 12 or later (was 11); Windows and
+  Linux are unchanged.
 
 ## 1.8.3
 

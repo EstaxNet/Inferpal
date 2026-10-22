@@ -8,7 +8,11 @@
        JSON-RPC — Program.cs reroutes Console.Out to stderr at startup. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <!-- net10.0 is the SHIPPED target: the VS Code and ACP packages carry its runtime, and
+         vscode/package.ps1 and acp/package.ps1 publish it by name. net8.0 exists only for the
+         test suite's Windows leg, which runs on the .NET 8 that Visual Studio's extension host
+         still uses; the editor-agnostic leg runs this executable's net10.0 build. -->
+    <TargetFrameworks>net10.0;net8.0</TargetFrameworks>
     <RootNamespace>Inferpal.Host</RootNamespace>
     <AssemblyName>Inferpal.Host</AssemblyName>
     <!-- Never declare <InvariantGlobalization>false</>: an explicit value makes the SDK emit

@@ -26,7 +26,7 @@ $root = Split-Path $PSScriptRoot -Parent
 
 # 1. Self-contained host for the target platform (host/ is what extension.ts probes first)
 if (Test-Path "$PSScriptRoot\host") { Remove-Item "$PSScriptRoot\host" -Recurse -Force }
-dotnet publish "$root\Inferpal.Host\Inferpal.Host.csproj" -c Release -r $rid --self-contained true -o "$PSScriptRoot\host" -v minimal -nologo
+dotnet publish "$root\Inferpal.Host\Inferpal.Host.csproj" -c Release -f net10.0 -r $rid --self-contained true -o "$PSScriptRoot\host" -v minimal -nologo
 if ($LASTEXITCODE -ne 0) { throw 'dotnet publish failed' }
 Remove-Item "$PSScriptRoot\host\*.pdb" -ErrorAction SilentlyContinue
 

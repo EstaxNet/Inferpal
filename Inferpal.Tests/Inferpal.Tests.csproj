@@ -1,13 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- §23: dual-targeted. net8.0-windows is the full suite (VS assembly + WPF included);
-         net8.0 is the editor-agnostic slice (Core + Host) that the ubuntu/macos CI legs run —
-         the VSIX project cannot build off-Windows, so its tests stay on the Windows TFM. -->
-    <TargetFrameworks>net8.0-windows;net8.0</TargetFrameworks>
+    <!-- Dual-targeted. net8.0-windows is the full suite (VS assembly + WPF included), on the
+         .NET 8 that Visual Studio's extension host runs the adapter and the Core on; net10.0 is
+         the editor-agnostic slice (Core + Host) on the runtime the VS Code and ACP packages
+         carry, and the one the ubuntu/macos CI legs run — the VSIX project cannot build
+         off-Windows, so its tests stay on the Windows TFM. -->
+    <TargetFrameworks>net8.0-windows;net10.0</TargetFrameworks>
     <!-- Off-Windows only the agnostic leg exists at all: keeping the windows TFM in the list
          would drag the VSIX project into restore/evaluation on ubuntu/macos runners. -->
-    <TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('Windows'))">net8.0</TargetFrameworks>
+    <TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('Windows'))">net10.0</TargetFrameworks>
     <UseWPF Condition="'$(TargetFramework)' == 'net8.0-windows'">true</UseWPF>
     <!-- Nullable/ImplicitUsings/LangVersion inherited from the repo-root Directory.Build.props -->
     <IsPackable>false</IsPackable>

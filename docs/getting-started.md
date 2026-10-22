@@ -7,8 +7,8 @@ sections cover the **VS Code extension**.
 
 | Requirement | Details |
 |---|---|
-| Editor | **Visual Studio 2026**, or **Visual Studio 2022 from 17.14** — Community, Professional or Enterprise — or **VS Code** (Windows x64, Linux x64, or Apple Silicon). |
-| .NET SDK | .NET 8 (building from source only) |
+| Editor | **Visual Studio 2026**, or **Visual Studio 2022 from 17.14** — Community, Professional or Enterprise — or **VS Code** (Windows x64, Linux x64, or Apple Silicon on macOS 12 or later). |
+| .NET SDK | .NET 10 (building from source only) |
 | Model server | [Ollama](https://ollama.com) (default — full hardware-aware features), [LM Studio](https://lmstudio.ai), or any **OpenAI-compatible** server (llama.cpp, vLLM, …) |
 
 > [!IMPORTANT]

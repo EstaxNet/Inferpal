@@ -16,8 +16,8 @@
   <a href="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml"><img src="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/tests-6781%20passing-brightgreen" alt="Tests">
-  <img src="https://img.shields.io/badge/.NET-8.0-512BD4" alt=".NET 8">
+  <img src="https://img.shields.io/badge/tests-6782%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/.NET-8%20%7C%2010-512BD4" alt=".NET 8 | 10">
   <img src="https://img.shields.io/badge/Visual%20Studio-2026%20%7C%202022-5C2D91" alt="Visual Studio 2026 | 2022">
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/VS%20Marketplace-install-5C2D91" alt="Visual Studio Marketplace"></a>
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><img src="https://img.shields.io/badge/VS%20Code%20Marketplace-install-007ACC" alt="VS Code Marketplace"></a>
@@ -93,8 +93,8 @@ It ships as a **Visual Studio 2026 and 2022 extension** (the primary target) and
 
 | Requirement | Details |
 |---|---|
-| Editor | **Visual Studio 2026**, or **Visual Studio 2022 from 17.14** — Community / Professional / Enterprise, one package for both — or **VS Code** (Windows x64, Linux x64, or Apple Silicon). |
-| .NET SDK | .NET 8 (building from source only — the VS Code VSIX bundles its own runtime) |
+| Editor | **Visual Studio 2026**, or **Visual Studio 2022 from 17.14** — Community / Professional / Enterprise, one package for both — or **VS Code** (Windows x64, Linux x64, or Apple Silicon on macOS 12 or later). |
+| .NET SDK | .NET 10 (building from source only — the VS Code VSIX bundles its own runtime) |
 | Model server | [Ollama](https://ollama.com) (default — full hardware-aware features), [LM Studio](https://lmstudio.ai), or any **OpenAI-compatible** server, local or [remote](docs/remote-inference.md) |
 
 > Tool calling is required: the models measured best as the agent are `qwen3.8` and `devstral-small-2` — every

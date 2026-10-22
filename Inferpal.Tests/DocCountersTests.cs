@@ -157,7 +157,7 @@ public class DocCountersTests
     [Fact]
     public void Readme_TestsBadge_MatchesThisAssembly()
     {
-        // The cross-platform net8.0 leg deliberately omits the VSIX-dependent test files, so its own count
+        // The cross-platform net10.0 leg deliberately omits the VSIX-dependent test files, so its own count
         // can never match the badge — the badge is owned by the full net8.0-windows suite.
 #if WINDOWS
         var total = 0;

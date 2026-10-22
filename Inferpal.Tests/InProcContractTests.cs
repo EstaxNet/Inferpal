@@ -91,6 +91,23 @@ public class InProcContractTests
                 "The VSIX would still install, and the in-process half would be mute.");
     }
 
+    /// <summary>
+    /// The sidecar runs on the machine's shared framework. Without a roll-forward, the launcher refuses it on a machine
+    /// that has .NET 10 and no .NET 8 ("You must install or update .NET"), and ghost text goes quiet.
+    /// </summary>
+    [Fact]
+    public void TheFimSidecar_StartsOnTheNextMajorRuntime_WhenItsOwnIsAbsent()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "Inferpal.Fim.runtimeconfig.json");
+        using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(path));
+        var options = doc.RootElement.GetProperty("runtimeOptions");
+
+        Assert.Equal("Microsoft.NETCore.App", options.GetProperty("framework").GetProperty("name").GetString());
+        Assert.True(options.TryGetProperty("rollForward", out var rollForward),
+            "Inferpal.Fim.runtimeconfig.json declares no rollForward: the sidecar starts only where .NET 8 is installed.");
+        Assert.Equal("Major", rollForward.GetString());
+    }
+
     // ── 5. Ghost text never inserts a completion whose origin it does not know ───
 
     /// <summary>

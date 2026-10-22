@@ -294,8 +294,8 @@ function resolveHostPath(context: vscode.ExtensionContext): string | undefined {
     path.join(context.extensionUri.fsPath, 'host', exe),
     // F5 dev host: the extension runs from the repo's vscode/ source folder, so the
     // freshly built host lives one level up — works whatever workspace is opened.
-    path.join(context.extensionUri.fsPath, '..', 'Inferpal.Host', 'bin', 'Release', 'net8.0', exe),
-    path.join(context.extensionUri.fsPath, '..', 'Inferpal.Host', 'bin', 'Debug', 'net8.0', exe),
+    path.join(context.extensionUri.fsPath, '..', 'Inferpal.Host', 'bin', 'Release', 'net10.0', exe),
+    path.join(context.extensionUri.fsPath, '..', 'Inferpal.Host', 'bin', 'Debug', 'net10.0', exe),
   ];
   return candidates.find((c) => fs.existsSync(c));
 }

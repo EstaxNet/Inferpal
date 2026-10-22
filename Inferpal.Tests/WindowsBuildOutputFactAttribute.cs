@@ -13,7 +13,7 @@ namespace Inferpal.Tests;
 /// a missing symbolic-link privilege is an <i>accident</i>: the test is supposed to run, so it goes
 /// red and names what it could not measure. Here the artefact cannot exist <i>by design</i> — the
 /// VSIX project only has a <c>net8.0-windows</c> target and the csproj drops it off Windows, which
-/// is exactly what the CI's POSIX leg is for ("editor-agnostic net8.0 slice"). Red would mean "this
+/// is exactly what the CI's POSIX leg is for ("editor-agnostic net10.0 slice"). Red would mean "this
 /// rule is broken" on a leg that was never asked the question.
 /// </para>
 /// <para>
@@ -33,7 +33,7 @@ public sealed class WindowsBuildOutputFactAttribute : FactAttribute
     {
         if (!System.OperatingSystem.IsWindows())
             Skip = "reads an artefact only a Windows build produces (the net472 in-process assembly "
-                 + "or the generated extension.json): this leg builds the editor-agnostic net8.0 "
+                 + "or the generated extension.json): this leg builds the editor-agnostic net10.0 "
                  + "slice, so it is not asked the question. Judged by the Windows leg.";
     }
 }

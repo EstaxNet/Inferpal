@@ -91,7 +91,7 @@ Measured on our test server — one 24 GB card, LM Studio, 32K context — with 
 | | |
 |---|---|
 | VS Code | 1.100 or later, with a folder open in a trusted workspace |
-| Platforms | Windows x64, Linux x64 and Apple Silicon builds — each ships its own backend (all on the [GitHub releases](https://github.com/EstaxNet/Inferpal/releases) page) |
+| Platforms | Windows x64, Linux x64 and Apple Silicon (macOS 12 or later) builds — each ships its own backend (all on the [GitHub releases](https://github.com/EstaxNet/Inferpal/releases) page) |
 | Model server | Ollama, LM Studio or any OpenAI-compatible server, local or on another machine, with a model that calls tools |
 
 ---

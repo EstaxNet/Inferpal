@@ -1,11 +1,11 @@
 # Contributing to Inferpal
 
 Thanks for your interest in improving Inferpal! This is a Visual Studio extension written in
-C# (.NET 8). The full technical reference lives in **[docs/development.md](docs/development.md)**.
+C# (.NET 8, and .NET 10 for the VS Code host). The full technical reference lives in **[docs/development.md](docs/development.md)**.
 
 ## Getting set up
 
-- **.NET 8 SDK**
+- **.NET 10 SDK**, and the **.NET 8 Desktop Runtime** (the test suite's Windows leg runs on it)
 - **Visual Studio 2026** with the extension-development workload (the development scripts target its
   experimental instance). The VSIX itself installs in Visual Studio 2026 and in Visual Studio 2022 from
   17.14 — one package: a change to the in-process half or to the extension's entry point has to hold in both.

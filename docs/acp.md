@@ -19,7 +19,7 @@ It runs against **your** model server — Ollama, LM Studio or any OpenAI-compat
    | macOS (Apple Silicon) | `inferpal-acp-darwin-arm64-<version>.tar.gz` | `Inferpal.Host` |
 
    Check it against `SHA256SUMS.txt` from the same release, then extract it anywhere. Nothing else is needed: the
-   archive carries its own .NET runtime.
+   archive carries its own .NET 10 runtime, which asks for macOS 12 or later, or a Linux with glibc 2.27 or later.
 2. Tell your editor to run that executable with the `--acp` argument (below).
 
 On Linux, a system without `libicu` runs Inferpal in a reduced globalization mode; install `libicu` (or `icu-libs`)

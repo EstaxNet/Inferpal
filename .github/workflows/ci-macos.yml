@@ -59,19 +59,19 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Set up .NET 8
+      - name: Set up .NET 10
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '10.0.x'
 
       # ⚠ Three steps rather than one, each with its own budget. A job killed by `timeout-minutes`
       # uploads NO log at all, so the only thing readable from outside is the per-step status —
       # granular enough to say WHERE it hung, and nothing else is.
-      - name: Restore (net8.0 editor-agnostic slice)
+      - name: Restore (net10.0 editor-agnostic slice)
         timeout-minutes: 10
         run: dotnet restore Inferpal.Tests/Inferpal.Tests.csproj
 
-      - name: Build (net8.0 editor-agnostic slice)
+      - name: Build (net10.0 editor-agnostic slice)
         timeout-minutes: 10
         run: dotnet build Inferpal.Tests/Inferpal.Tests.csproj -c Release --no-restore
 
@@ -80,7 +80,7 @@ jobs:
       # is not inside a test), an in-shell watchdog at 10 min killing the host by name, and the
       # step's own `timeout-minutes` at 12. Measured at 18 and at 25 minutes elapsed, all three past
       # due. What does end the job is the JOB budget above.
-      - name: Test (net8.0 editor-agnostic slice)
+      - name: Test (net10.0 editor-agnostic slice)
         timeout-minutes: 12
         run: |
           set +e

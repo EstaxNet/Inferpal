@@ -63,7 +63,7 @@ flowchart LR
 |---|---|
 | Visual Studio | **2026**, and **2022 from 17.14** — Community / Professional / Enterprise. One package for both. |
 | VS Code | the same engine ([what is Visual Studio-only for now](features.md#two-editors-one-engine)) — VSIX for **Windows x64, Linux x64 and Apple Silicon** since 1.5.0, each with a bundled self-contained backend (`Inferpal.Host`) |
-| Runtime | .NET 8 (`net8.0-windows`; core engine is plain `net8.0`) |
+| Runtime | .NET 8 (`net8.0-windows`; core engine is plain `net8.0`) · the VS Code and ACP host: .NET 10 (`net10.0`), carried by its package |
 | Extension model | VS: hybrid VSIX — `Microsoft.VisualStudio.Extensibility.Sdk` 17.14.x out-of-process, plus `Inferpal.InProc` (**net472**) for everything `devenv.exe` hosts and its `Inferpal.Fim` sidecar · VS Code: TypeScript + JSON-RPC host |
 | Built-in tools | 30 built-in tools (+ MCP servers + user shell tools) |
 | Languages (UI) | 10 |

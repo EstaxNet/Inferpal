@@ -198,7 +198,7 @@ per-instance channels at all.
 
 | Component | Technology |
 |---|---|
-| Language / runtime | C# .NET 8 (`net8.0-windows`) |
+| Language / runtime | C# .NET 8 (`net8.0-windows`); the VS Code and ACP host `net10.0` |
 | Extension SDK | `Microsoft.VisualStudio.Extensibility.Sdk` 17.14.40608 (in-process hosting) |
 | In-process MEF | `Microsoft.VisualStudio.Shell.15.0`, `Microsoft.VisualStudio.Text.UI.Wpf` |
 | Markdown | Markdig 1.2.0 |
