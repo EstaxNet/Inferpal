@@ -1,9 +1,9 @@
 namespace Inferpal.Services.CodeActions;
 
 /// <summary>
-/// Builds a Fill-in-the-Middle prompt by hand for servers that don't apply the model's FIM template
-/// themselves (OpenAI-compatible <c>/v1/completions</c> has no <c>suffix</c> parameter, unlike Ollama's
-/// <c>/api/generate</c>). The special-token format is model-family specific, detected from the model id.
+/// Builds a Fill-in-the-Middle prompt by hand for a server that does not apply the model's FIM template itself: LM
+/// Studio's <c>/v1/completions</c> takes no <c>suffix</c>, and Ollama refuses one for a model whose template has no
+/// insert slot. The special-token format is model-family specific, detected from the model id.
 /// </summary>
 /// <remarks>
 /// Token references: Qwen2.5-Coder / CodeGemma (<c>&lt;|fim_prefix|&gt;…&lt;|fim_suffix|&gt;…&lt;|fim_middle|&gt;</c>),

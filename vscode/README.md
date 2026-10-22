@@ -59,7 +59,7 @@ Measured on our test server — one 24 GB card, LM Studio, 32K context — with 
 - **Semantic code search** — a background index of your code (meaning and exact names together); the most relevant code is added to each question, and the index pauses while you chat.
 - **@Docs** — `/docs add <url>` indexes a documentation site, so answers about a library cite its pages.
 - **Typed mentions** — `@file` `@folder` `@code` `@diff` `@problems` `@debugger` `@clipboard` `@tree` attach exactly what you mean.
-- **Inline completions** — ghost text as you type (needs Ollama or LM Studio); Tab to accept.
+- **Inline completions** — ghost text as you type, with Ollama, LM Studio, llama-server or another server that completes around the cursor; Tab to accept.
 - **Code actions** — Fix, Refactor and Add docstring on a selection, shown in VS Code's Refactor Preview before anything is applied.
 - **MCP servers** — any stdio or Streamable HTTP server, of the 2026-07-28 revision or an earlier one (with OAuth), every call behind an approval.
 - **Project rules and AI checks** — markdown rules scoped to the files you edit, and `/check` to review your git diff for bugs and against your own criteria.
@@ -74,7 +74,7 @@ Measured on our test server — one 24 GB card, LM Studio, 32K context — with 
 
 **Does my code leave my machine?** Not with a model server on your machine. There is no account, no telemetry, no hosted service. The only outbound traffic is what you set up or approve: the model server address you choose, MCP servers you add, a site you index with `/docs add`, and the agent's web searches and page fetches — each of which asks you first.
 
-**Which server should I use?** Ollama gets every feature (per-model memory in the header, model downloads from the chat, idle models unloaded). LM Studio runs everything — chat, agent, autocomplete, semantic search, model loading — without per-model memory figures. Other OpenAI-compatible servers (llama.cpp's `llama-server`, vLLM…) run the chat, the agent and semantic search; inline completions need Ollama or LM Studio.
+**Which server should I use?** Ollama gets every feature (per-model memory in the header, model downloads from the chat, idle models unloaded). LM Studio runs everything — chat, agent, autocomplete, semantic search, model loading — without per-model memory figures. Other OpenAI-compatible servers (llama.cpp's `llama-server`, vLLM…) run the chat, the agent and semantic search, and inline completions where the server completes around the cursor (Ollama's `/v1`, llama-server).
 
 **I have more than 24 GB, several GPUs, or a Mac with lots of memory.** Nothing in Inferpal caps the model size, but we could not test above 24 GB, so we recommend nothing there. Use the room: a larger model, a longer context — raise *Context window* in *Settings → Server and models* (default 8,192 tokens; our battery ran at 32K) — and a separate autocomplete model. `/hardware` shows your budget; `/bench` measures your installed models on your machine.
 

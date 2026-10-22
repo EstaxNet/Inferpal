@@ -202,7 +202,8 @@ exists.
 - **Ghost-text Fill-in-the-Middle** as you type — **Tab** to accept, **Esc** to dismiss.
 - Three speeds, picked as cards in the settings: **Fast** (128 tok / 0.4 / 300 ms) · **Balanced** (256 / 0.2 /
   600 ms) · **Accurate** (512 / 0.1 / 1 000 ms).
-- Suppressed while IntelliSense triggers are active. Supported on Ollama and LM Studio.
+- Suppressed while IntelliSense triggers are active. Supported on Ollama, LM Studio, and OpenAI-compatible servers that
+  complete around the cursor (llama-server, Ollama's `/v1`) — see [Providers](providers.md).
 
 ## Search & knowledge
 

@@ -5,6 +5,9 @@ extension share one engine and one version number.
 
 ## Unreleased
 
+- **Inline completions on llama-server and other OpenAI-compatible servers**: the server completes around the cursor
+  with the model's own fill-in-the-middle tokens (llama-server's `/infill`, or `/v1/completions` with `suffix`); one
+  that refuses is named once in `/diagnostics`.
 - **A pasted path or comment is a question**: a message that starts with `/home/me/app.py` or `// why…` went to the
   command router and was answered "unknown command"; it now goes to the model. A single word after the `/` is still a
   command.

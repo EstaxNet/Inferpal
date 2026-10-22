@@ -102,16 +102,34 @@ record OpenAiUsage(
 record OpenAiPromptTokensDetails(
     [property: JsonPropertyName("cached_tokens")] int? CachedTokens = null);
 
-// ── /v1/completions DTOs (legacy text completion, used for client-side FIM) ──────
+// ── /v1/completions DTOs (legacy text completion, used for inline completion) ──────
 
-/// <summary>Body of POST <c>/v1/completions</c> (no <c>suffix</c>: the FIM prompt is templated client-side).</summary>
+/// <summary>Body of POST <c>/v1/completions</c>.</summary>
+/// <param name="Suffix">The code after the cursor, for a server that applies the model's FIM template itself; <c>null</c>
+/// (not sent) when the prompt is templated here, as for LM Studio.</param>
 record OpenAiCompletionRequest(
     [property: JsonPropertyName("model")]       string Model,
     [property: JsonPropertyName("prompt")]      string Prompt,
     [property: JsonPropertyName("max_tokens")]  int MaxTokens,
     [property: JsonPropertyName("temperature")] double Temperature,
     [property: JsonPropertyName("stream")]      bool Stream = true,
-    [property: JsonPropertyName("stop")]        string[]? Stop = null);
+    [property: JsonPropertyName("stop")]        string[]? Stop = null,
+    [property: JsonPropertyName("suffix")]      string? Suffix = null);
+
+/// <summary>Body of llama-server's <c>POST /infill</c>: the server wraps the two halves in the loaded model's FIM
+/// tokens.</summary>
+record LlamaInfillRequest(
+    [property: JsonPropertyName("model")]        string Model,
+    [property: JsonPropertyName("input_prefix")] string InputPrefix,
+    [property: JsonPropertyName("input_suffix")] string InputSuffix,
+    [property: JsonPropertyName("n_predict")]    int NPredict,
+    [property: JsonPropertyName("temperature")]  double Temperature,
+    [property: JsonPropertyName("stream")]       bool Stream = true,
+    [property: JsonPropertyName("stop")]         string[]? Stop = null);
+
+/// <summary>One SSE chunk of llama-server's <c>/infill</c> stream (text is in <c>content</c>).</summary>
+record LlamaInfillChunk(
+    [property: JsonPropertyName("content")] string? Content = null);
 
 /// <summary>One SSE chunk from the <c>/v1/completions</c> stream (text is in <c>choices[].text</c>).</summary>
 record OpenAiCompletionChunk(

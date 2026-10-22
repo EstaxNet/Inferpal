@@ -77,6 +77,10 @@ internal interface IInferenceProvider : IChatTurnClient
         CancellationToken ct,
         string? model = null);
 
+    /// <summary>The server refused inline completion with this model, and the refusal still holds: a limit of the server,
+    /// never a fact about the model (<c>/bench</c> leaves it unscored).</summary>
+    bool InlineCompletionRefused(string model) => false;
+
     /// <summary>Resets the chat circuit breaker immediately (e.g. on manual Retry).</summary>
     void ResetCircuit();
 
@@ -154,6 +158,7 @@ internal record ProviderCapabilities(
     /// </summary>
     public static readonly ProviderCapabilities LmStudio = new(true, true, true, false) { ModelDeletion = false };
 
-    /// <summary>Generic OpenAI-compatible server (llama.cpp, vLLM, Jan…): chat + embeddings only in v1.</summary>
-    public static readonly ProviderCapabilities OpenAiCompatible = new(false, false, false, false);
+    /// <summary>Generic OpenAI-compatible server (llama.cpp, vLLM, Jan…): chat, embeddings and inline completion — through
+    /// llama-server's <c>/infill</c>, or <c>/v1/completions</c> with <c>suffix</c> where the server accepts it.</summary>
+    public static readonly ProviderCapabilities OpenAiCompatible = new(false, false, true, false);
 }

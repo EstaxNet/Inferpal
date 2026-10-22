@@ -13,10 +13,9 @@ namespace Inferpal.Services.Inference;
 /// <c>/v1/embeddings</c>, and <c>/v1/models</c>.
 /// </summary>
 /// <remarks>
-/// In v1 it advertises <see cref="ProviderCapabilities.OpenAiCompatible"/> (chat + embeddings only):
-/// these servers expose no VRAM/running-model endpoint, no model pull/delete, and no reliable FIM,
-/// so those operations inherit the safe no-op defaults from <see cref="InferenceProviderBase"/> and
-/// the dependent UI is gated off via <see cref="Capabilities"/>.
+/// It advertises <see cref="ProviderCapabilities.OpenAiCompatible"/> (chat, embeddings, inline completion): these
+/// servers expose no VRAM/running-model endpoint and no model pull/delete, so those operations inherit the safe no-op
+/// defaults from <see cref="InferenceProviderBase"/> and the dependent UI is gated off via <see cref="Capabilities"/>.
 /// </remarks>
 internal class OpenAiCompatibleClient : InferenceProviderBase
 {
@@ -194,8 +193,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
     // llama-server: `/props` → default_generation_settings.n_ctx (the slot's window). At the host root, not under /v1.
     private async Task<int?> SlotContextLengthAsync(CancellationToken ct)
     {
-        var root = BaseV1.EndsWith("/v1", StringComparison.OrdinalIgnoreCase) ? BaseV1[..^3] : BaseV1;
-        using var doc = await GetJsonAsync($"{root}/props", ct);
+        using var doc = await GetJsonAsync($"{Root}/props", ct);
         return doc?.RootElement.ValueKind == JsonValueKind.Object
                && doc.RootElement.TryGetProperty("default_generation_settings", out var settings)
                && settings.ValueKind == JsonValueKind.Object
@@ -1046,15 +1044,191 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
 
     // ── FIM ────────────────────────────────────────────────────────────────────
 
+    /// <summary>"server|model" pairs whose server rejected the completion request itself (400, 501), and until when they
+    /// are not asked again. A refusal for want of a key or a model (401, 404) stays with the breaker, since a setting can
+    /// fix it.</summary>
+    internal static readonly System.Collections.Concurrent.ConcurrentDictionary<string, DateTime> FimRefused = new();
+
+    /// <summary>
+    /// How long a rejected "server|model" pair is left alone. ⚠ Bounded, not for the process: a 400 can also belong to
+    /// one request (a window the slot cannot hold), and a server can be upgraded or given another model under the same
+    /// name. Per instance, so a test can shorten it.
+    /// </summary>
+    internal TimeSpan FimRefusalHold { get; set; } = TimeSpan.FromMinutes(10);
+
+    /// <summary>Host roots and whether they answered as llama-server (<c>/props</c>) — definite answers only.</summary>
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _llamaServerRoots = new();
+
     /// <inheritdoc/>
-    /// <remarks>No-op in v1: Fill-in-the-Middle support varies too much across OpenAI-compatible
-    /// servers, so ghost-text completions stay disabled (see <see cref="ProviderCapabilities.Fim"/>).</remarks>
-    public override Task StreamFimAsync(
+    /// <remarks>
+    /// The server applies the model's FIM template, never a template guessed here: llama-server (recognized by its
+    /// <c>/props</c>) through <c>/infill</c>; any other server through <c>/v1/completions</c> with <c>suffix</c>. A
+    /// server that rejects the request (vLLM for most models; Ollama, "does not support insert", for a model without
+    /// FIM; llama-server, 501, for a model without FIM tokens) is said once, and that model is left alone for <see cref="FimRefusalHold"/>. ⚠ A server
+    /// that ignores <c>suffix</c> without a word completes from the code before the cursor only: nothing on the wire
+    /// tells it apart.
+    /// </remarks>
+    public override async Task StreamFimAsync(
         string prefix,
         string suffix,
         int maxTokens,
         double temperature,
         Action<string> onToken,
         CancellationToken ct,
-        string? model = null) => Task.CompletedTask;
+        string? model = null)
+    {
+        var base_ = BaseV1;
+        if (string.IsNullOrWhiteSpace(base_) || IsFimInCooldown()) return;
+
+        // Yield the shared GPU to an in-flight chat/agent request, as the other clients do.
+        if (GpuScheduler.ShouldFimYield()) return;
+
+        var m   = string.IsNullOrEmpty(model) ? _config.DefaultModel : model;
+        var key = base_ + "|" + m;
+        if (InlineCompletionRefused(m)) return;
+
+        bool? llamaServer;
+        try { llamaServer = await IsLlamaServerAsync(ct); }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("OpenAiCompatibleClient.FimProbe", ex);
+            RecordFimFailure();
+            return;
+        }
+        // Not known yet (llama-server loading a model, a key not set): neither route is right, and llama-server refuses
+        // `suffix` outright — this completion is skipped, the next one asks again.
+        if (llamaServer is null) { RecordFimFailure(); return; }
+
+        var stop = FimCompletion.Stops(suffix, ["\n\n\n"]);
+        if (llamaServer == true)
+            await StreamInlineAsync($"{Root}/infill",
+                new LlamaInfillRequest(m, prefix, suffix, maxTokens, temperature, Stream: true, Stop: stop),
+                m, InfillText, onToken, ct, key);
+        else
+            await StreamInlineAsync($"{base_}/completions",
+                new OpenAiCompletionRequest(m, prefix, maxTokens, temperature, Stream: true, Stop: stop, Suffix: suffix),
+                m, CompletionText, onToken, ct, key);
+    }
+
+    /// <inheritdoc/>
+    public override bool InlineCompletionRefused(string model) =>
+        FimRefused.TryGetValue(BaseV1 + "|" + model, out var until) && DateTime.UtcNow < until;
+
+    /// <summary>The host root, under which llama-server serves <c>/props</c> and <c>/infill</c> (not under <c>/v1</c>).</summary>
+    private protected string Root =>
+        BaseV1.EndsWith("/v1", StringComparison.OrdinalIgnoreCase) ? BaseV1[..^3] : BaseV1;
+
+    /// <summary>
+    /// Whether the server is llama-server; <c>null</c> when it does not say. ⚠ Only a definite answer is kept —
+    /// <c>/props</c> served (llama-server or not, from its body) or absent (404): llama-server answers 503 while it loads
+    /// a model and 401 until its key is set, and kept as "not llama-server", either would route every later completion
+    /// to <c>/v1/completions</c>, where llama-server refuses <c>suffix</c>.
+    /// </summary>
+    private async Task<bool?> IsLlamaServerAsync(CancellationToken ct)
+    {
+        var root = Root;
+        if (_llamaServerRoots.TryGetValue(root, out var known)) return known;
+
+        using var probe = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        probe.CancelAfter(LoadedWindowProbeBudget);
+        using var req = new HttpRequestMessage(HttpMethod.Get, $"{root}/props");
+        AddAuth(req);
+        using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, probe.Token);
+        if (resp.StatusCode == System.Net.HttpStatusCode.NotFound) return _llamaServerRoots[root] = false;
+        if (!resp.IsSuccessStatusCode) return null;
+
+        var isLlama = false;
+        try
+        {
+            using var doc = await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(probe.Token), cancellationToken: probe.Token);
+            isLlama = doc.RootElement.ValueKind == JsonValueKind.Object
+                      && doc.RootElement.TryGetProperty("default_generation_settings", out _);
+        }
+        catch (JsonException) { }   // a page that is not JSON: a server with no such endpoint
+        return _llamaServerRoots[root] = isLlama;
+    }
+
+    private protected static string? CompletionText(string payload) =>
+        JsonSerializer.Deserialize<OpenAiCompletionChunk>(payload)?.Choices is { Count: > 0 } ch ? ch[0].Text : null;
+
+    private static string? InfillText(string payload) =>
+        JsonSerializer.Deserialize<LlamaInfillChunk>(payload)?.Content;
+
+    /// <summary>
+    /// Streams one inline-completion request and hands its text to <paramref name="onToken"/>, under the breaker.
+    /// A refusal is said once; with <paramref name="refusedKey"/>, a request the server rejects (400, 501) leaves that key
+    /// alone for <see cref="FimRefusalHold"/>.
+    /// </summary>
+    private protected async Task StreamInlineAsync<T>(string url, T request, string model, Func<string, string?> textOf,
+                                                      Action<string> onToken, CancellationToken ct, string? refusedKey = null)
+    {
+        var deadline = TimeSpan.FromSeconds(60);
+
+        HttpResponseMessage http;
+        try
+        {
+            using var sendCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            sendCts.CancelAfter(deadline);
+            http = await PostForStreamingAsync(url, request, sendCts.Token, AuthHeaders());
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (OperationCanceledException) { RecordFimFailure(); return; }
+        catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal))
+        {
+            NoteFimRefusal(model, ex.Message);
+            if (refusedKey is not null
+                && ex.StatusCode is System.Net.HttpStatusCode.BadRequest or System.Net.HttpStatusCode.UnprocessableEntity
+                                                                     or System.Net.HttpStatusCode.NotImplemented)
+                FimRefused[refusedKey] = DateTime.UtcNow + FimRefusalHold;
+            RecordFimFailure();
+            return;
+        }
+        catch { RecordFimFailure(); return; }
+
+        using var response = http;
+        using var bodyCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        bodyCts.CancelAfter(deadline);
+
+        try
+        {
+            using var stream = await http.Content.ReadAsStreamAsync(bodyCts.Token);
+            using var reader = new System.IO.StreamReader(stream);
+
+            string? line;
+            while ((line = await reader.ReadLineAsync(bodyCts.Token)) is not null)
+            {
+                bodyCts.CancelAfter(deadline);
+                if (string.IsNullOrWhiteSpace(line)) continue;
+
+                // Other non-data lines are SSE comments or keep-alives, but a server that aborts after
+                // the 200 headers can also send a bare JSON error — as the chat loop already knows.
+                var payload = line.StartsWith("data:", StringComparison.Ordinal) ? line.AsSpan(5).Trim().ToString()
+                            : line.TrimStart().StartsWith('{')                   ? line
+                            : null;
+                if (payload is null) continue;
+                if (payload == "[DONE]") break;
+
+                // A failure inside the 200 response (a model that does not do completions) is a
+                // failure: counted as a success, the breaker never opened and every pause in typing
+                // sent the same failing request again.
+                if (TryExtractError(ParseErrorElement(payload)) is { } serverError)
+                {
+                    RecordFimFailure();
+                    NoteFimRefusal(model, serverError);
+                    return;
+                }
+
+                string? text;
+                try   { text = textOf(payload); }
+                catch (JsonException) { continue; }
+                if (!string.IsNullOrEmpty(text)) onToken(text);
+            }
+            // Success is a stream that ended cleanly, not headers that arrived.
+            RecordFimSuccess();
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (OperationCanceledException) { return; }
+        catch { return; }
+    }
 }

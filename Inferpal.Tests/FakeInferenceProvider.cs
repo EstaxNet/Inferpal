@@ -190,6 +190,11 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
         return Task.CompletedTask;
     }
 
+    /// <summary>The server refuses inline completion for every model (<see cref="IInferenceProvider.InlineCompletionRefused"/>).</summary>
+    public bool FimRefused { get; set; }
+
+    public bool InlineCompletionRefused(string model) => FimRefused;
+
     public void ResetCircuit() { }
 
     /// <summary>The VRAM-poll lever: without it no test can see what the service does with a

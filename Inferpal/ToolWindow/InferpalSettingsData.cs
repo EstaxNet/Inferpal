@@ -713,8 +713,8 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     /// <summary>
     /// Toggles capability-gated options to match the <em>currently selected</em> provider in the
     /// dropdown so the UI never surfaces something that backend can't honour: the keep_alive
-    /// auto-unload settings (Ollama only) and the Inline Completions / FIM section (not on generic
-    /// OpenAI servers). The context-window field stays for everyone — it still drives client-side
+    /// auto-unload settings (Ollama only) and the Inline Completions / FIM section (for every server type
+    /// whose capabilities say it completes). The context-window field stays for everyone — it still drives client-side
     /// trimming — but its hint clarifies that only Ollama receives it as <c>num_ctx</c> (other servers
     /// set the context at model load, the root of the earlier LM Studio context mismatch).
     /// </summary>

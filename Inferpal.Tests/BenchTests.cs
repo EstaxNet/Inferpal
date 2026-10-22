@@ -161,13 +161,27 @@ public class BenchTests : IDisposable
     public async Task Runner_NoFimCapability_ScoresOutOfFour()
     {
         var fake = PerfectProvider();
-        fake.Capabilities = ProviderCapabilities.OpenAiCompatible;
+        fake.Capabilities = new ProviderCapabilities(ModelManagement: false, VramMonitoring: false, Fim: false, KeepAlive: false);
 
         var result = await BenchRunner.RunModelAsync(fake, "small", CancellationToken.None);
 
         Assert.Equal(4, result.QualityMax);
         Assert.Null(result.FimPassed);
         Assert.Equal(-1, result.VramBytes);        // no VRAM monitoring either
+    }
+
+    /// <summary>A server that refused inline completion for the model: a limit of the server, left unscored — never a
+    /// miss counted against the model in the score that ranks it.</summary>
+    [Fact]
+    public async Task Runner_AServerThatRefusedFim_LeavesItUnscored()
+    {
+        var fake = PerfectProvider();
+        fake.FimRefused = true;
+
+        var result = await BenchRunner.RunModelAsync(fake, "small", CancellationToken.None);
+
+        Assert.Equal(4, result.QualityMax);
+        Assert.Null(result.FimPassed);
     }
 
     [Fact]

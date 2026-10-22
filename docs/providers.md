@@ -21,12 +21,24 @@ capability is missing.
 |---|:---:|:---:|:---:|
 | Chat + tool calling | ✅ | ✅ | ✅ |
 | Embeddings (semantic search) | ✅ | ✅ | ✅ |
-| Inline completions (FIM) | ✅ | ✅ | ❌ |
+| Inline completions (FIM) | ✅ | ✅ | ✅ (see below) |
 | Model management (`/models` list/pull) | ✅ | ✅ | ❌ |
 | `/models delete` | ✅ | ❌ (delete it in LM Studio) | ❌ |
 | Loaded models (`/models running`, `/hardware`) | ✅ | ✅ | ❌ |
 | Per-model VRAM figure (`/api/ps`) | ✅ | ❌ | ❌ |
 | `keep_alive` (auto-unload) | ✅ | ❌ | ❌ |
+
+**Inline completions on an OpenAI-compatible server.** The server wraps the code before and after the cursor in the
+model's own fill-in-the-middle tokens; on this server type Inferpal never writes them itself. llama-server (recognized by its `/props`) is asked
+through `/infill` — not yet measured on a real llama-server. Any other server is asked through `/v1/completions` with
+`suffix`, which Ollama's `/v1` accepts for a model that has a fill-in-the-middle template (measured on Ollama 0.40.4:
+28 of 36 completions right with `qwen2.5-coder:7b`, against 27 through Ollama's own API). A server that refuses it —
+vLLM for most models, and Ollama for a model without fill-in-the-middle — is named once in `/diagnostics`, and that
+model gets no inline completion for the next ten minutes: pick a code model the server can complete with, or serve it
+with llama-server. A server that ignores `suffix` without a word completes from the code before the cursor only;
+nothing in its answer tells it apart. For LM Studio, choose the LM Studio server type: Inferpal writes the
+fill-in-the-middle tokens of the model families it has measured, and sends the code before the cursor alone for the
+others.
 
 > [!NOTE]
 > Streaming-pull progress in `/models` is an Ollama feature. Live per-model VRAM and the

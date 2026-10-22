@@ -525,7 +525,7 @@ public partial class HostServerTests
         var result = await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
         Assert.False(result.ModelManagement);
-        Assert.False(result.Fim);
+        Assert.True(result.Fim);                    // an OpenAI-compatible server completes inline: the editor offers it
         Assert.NotEqual("0.0.0", result.HostVersion);
     }
 

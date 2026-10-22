@@ -222,6 +222,9 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         }
     }
 
+    /// <inheritdoc cref="IInferenceProvider.InlineCompletionRefused"/>
+    public virtual bool InlineCompletionRefused(string model) => false;
+
     /// <summary>
     /// An inline completion the server refused, said once per model and cause: ghost text has no other place to say why
     /// it never appears.

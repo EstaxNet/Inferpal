@@ -79,9 +79,14 @@ internal static class BenchRunner
                 var sb = new System.Text.StringBuilder();
                 await client.StreamFimAsync(BenchTasks.FimPrefix, BenchTasks.FimSuffix,
                     maxTokens: 16, temperature: 0, token => sb.Append(token), ct, model);
-                fimPassed = BenchTasks.ScoreFim(sb.ToString());
-                attempted++;
-                if (fimPassed == true) passed++;
+                // A server that refused the request (no FIM for this model there) is a limit of the server, not a fact
+                // about the model: left unscored rather than counted as a miss in the score that ranks models.
+                if (!client.InlineCompletionRefused(model))
+                {
+                    fimPassed = BenchTasks.ScoreFim(sb.ToString());
+                    attempted++;
+                    if (fimPassed == true) passed++;
+                }
             }
 
             // VRAM pressure right after the run (best-effort; [] on backends without /api/ps).

@@ -446,7 +446,7 @@ public class OpenAiCompatibleClientTests
         var caps = ProviderCapabilities.OpenAiCompatible;
         Assert.False(caps.ModelManagement);
         Assert.False(caps.VramMonitoring);
-        Assert.False(caps.Fim);
+        Assert.True(caps.Fim);          // the server completes around the cursor (/infill, or suffix): OpenAiCompatibleFimTests
         Assert.False(caps.KeepAlive);
         Assert.True(ProviderCapabilities.Ollama.VramMonitoring);
     }
@@ -466,7 +466,7 @@ public class OpenAiCompatibleClientTests
     [Theory]
     [InlineData("ollama",            true,  true)]   // Ollama: keep_alive + FIM
     [InlineData("lmstudio",          false, true)]   // LM Studio: no keep_alive, has FIM
-    [InlineData("openai-compatible", false, false)]  // generic OpenAI: neither
+    [InlineData("openai-compatible", false, true)]   // generic OpenAI: FIM, no keep_alive
     [InlineData(null,                true,  true)]   // unknown/blank falls back to Ollama
     [InlineData("LMSTUDIO",          false, true)]   // case-insensitive
     public void CapabilitiesFor_MapsProviderCodeToGating(string? code, bool keepAlive, bool fim)
