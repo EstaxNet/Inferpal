@@ -421,6 +421,17 @@ div.with-icon {
   max-width: 100%;
 }
 
+.chip.auto {
+  border-style: dashed;
+  border-color: var(--vscode-textLink-foreground, var(--vscode-editorWidget-border));
+}
+
+.chips-note {
+  flex-basis: 100%;
+  color: var(--ip-muted);
+  font-size: 0.78em;
+}
+
 .chip span {
   overflow: hidden;
   text-overflow: ellipsis;

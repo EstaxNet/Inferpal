@@ -91,10 +91,12 @@ public sealed class SilentGestureTests
     /// that decide first: "New conversation" refuses, through the funnel, to clear a conversation it cannot archive.
     /// <c>refreshRunningWork</c> runs with the status poll and at each turn's end, unasked: it only keeps what a crash would
     /// take with it, and with no host there is nothing to keep.
+    /// <c>draftChanged</c> runs at each keystroke, and nobody waits on it: the chips it may find are a suggestion, and
+    /// with no host there is none — as in Visual Studio with the search off. The message typed says its own refusal.
     /// </remarks>
     private static readonly string[] BackgroundPaths =
         ["onHostReady", "configSaved", "pollBackendStatus", "refreshModelList", "refreshCommandList",
-         "autoSaveLast", "archiveConversation", "refreshRunningWork"];
+         "autoSaveLast", "archiveConversation", "refreshRunningWork", "draftChanged"];
 
     [Fact]
     public void EveryGestureThatNeedsTheHost_SaysWhenItCannotRun()

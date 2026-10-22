@@ -118,6 +118,48 @@ internal static class RagAutoContext
     /// <summary>Most chunks of one file that a Visual Studio auto-attach chip carries.</summary>
     public const int ChipMaxChunks = 3;
 
+    /// <summary>Most files the chips of a draft name.</summary>
+    public const int ChipMaxFiles = 2;
+
+    /// <summary>A chip the composer shows while the person types: a file the search found for the draft, the lines its
+    /// excerpts span (empty when they cover the whole file) and what the chip sends (<see cref="ChipContent(string, IReadOnlyList{RagChunk}, int?)"/>).</summary>
+    internal sealed record TypingChip(string Path, string Lines, string Content);
+
+    /// <summary>
+    /// The chips of a draft — Visual Studio's 🔮 chips, VS Code's dashed ones: the files whose chunks the search ranks
+    /// first for what is typed, each with its best chunks, the same for both editors. Empty when the search is off or
+    /// has nothing indexed, the embedding server is failing, or the draft is short or a command; the search warms the
+    /// shadow a question with the same words then reuses (<see cref="ProjectIndexService.ShadowPreWarmAsync"/>).
+    /// </summary>
+    public static async Task<IReadOnlyList<TypingChip>> WhileTypingAsync(
+        ProjectIndexService index, Config.InferpalConfig config, string draft, CancellationToken ct)
+    {
+        if (!MayChip(index, config, draft)) return [];
+        var trimmed = draft.Trim();
+
+        await index.ShadowPreWarmAsync(trimmed, ct);
+        // The pre-warm swallows its cancellation: a draft typed on since must not get the chips of the one before.
+        ct.ThrowIfCancellationRequested();
+        var (_, results) = index.TryGetShadow(trimmed);
+        if (results is not { Count: > 0 }) return [];
+
+        // A file changed since it was indexed is not offered: its chunks are the code from before, and the turn's own
+        // relevant code leaves them out for that reason (Build, notYetReindexed).
+        var stale = index.NotYetReindexed.ToHashSet(PathComparer.Default);
+        var chips = new List<TypingChip>();
+        foreach (var path in results.Select(r => r.Chunk.FilePath).Where(p => !string.IsNullOrEmpty(p) && !stale.Contains(p))
+                                    .Distinct().Take(ChipMaxFiles))
+        {
+            var chunks = results.Where(r => r.Chunk.FilePath == path).Take(ChipMaxChunks).Select(r => r.Chunk).ToList();
+            // Whether the excerpts cover the file is read from disk: a caller on a UI thread runs this off it.
+            var lines = LineCount(path);
+            var spans = Covers(chunks, lines) ? string.Empty
+                      : string.Join(", ", chunks.OrderBy(c => c.StartLine).Select(c => $"{c.StartLine}–{c.EndLine}"));
+            chips.Add(new TypingChip(path, spans, ChipContent(Path.GetFileName(path), chunks, lines)));
+        }
+        return chips;
+    }
+
     /// <summary>
     /// The content of a Visual Studio auto-attach chip (<c>🔮 File.cs</c>): the file's best chunks, in the order
     /// given, preceded by what they are when they do not cover the whole file.
@@ -141,16 +183,28 @@ internal static class RagAutoContext
     }
 
     /// <summary><see cref="ChipContent(string, IReadOnlyList{RagChunk}, int?)"/>, the line count read from disk.</summary>
-    public static string ChipContent(string path, IReadOnlyList<RagChunk> chunks)
+    public static string ChipContent(string path, IReadOnlyList<RagChunk> chunks) =>
+        ChipContent(Path.GetFileName(path), chunks, LineCount(path));
+
+    /// <summary>The file's line count, read from disk; <c>null</c> when it cannot be read — nothing then proves the
+    /// excerpts cover it.</summary>
+    private static int? LineCount(string path)
     {
-        int? lines;
-        try { lines = Tools.TextFileEncoding.ReadLines(path).Count; }
+        try { return Tools.TextFileEncoding.ReadLines(path).Count; }
         catch (Exception ex)
         {
             Diagnostics.Swallow("RagAutoContext.ChipContent", ex);
-            lines = null;
+            return null;
         }
-        return ChipContent(Path.GetFileName(path), chunks, lines);
+    }
+
+    /// <summary>Whether a draft can have chips at all — the search on, something indexed, the embedding server not
+    /// failing, a draft long enough and not a command: checked before anything is scheduled for a keystroke.</summary>
+    public static bool MayChip(ProjectIndexService index, Config.InferpalConfig config, string draft)
+    {
+        var trimmed = draft.Trim();
+        return config.RagEnabled && index.ChunkCount > 0 && !index.SearchClient.IsEmbeddingCircuitOpen
+            && trimmed.Length >= 12 && !SlashCommandRouter.LooksLikeCommand(trimmed);
     }
 
     /// <summary>Whether the chunks, overlaps allowed, span every line from 1 to <paramref name="totalLines"/>.</summary>

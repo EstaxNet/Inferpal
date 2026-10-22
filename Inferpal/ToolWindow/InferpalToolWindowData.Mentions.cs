@@ -45,15 +45,8 @@ internal partial class InferpalToolWindowData
         foreach (var chip in staleChips) Attachments.Remove(chip);
         if (staleChips.Count > 0) HasAttachments = Attachments.Count > 0;
 
-        // Guard: RAG must be enabled, index ready, embedding circuit healthy
-        if (!_config.RagEnabled
-            || _indexService.ChunkCount == 0
-            || _indexService.SearchClient.IsEmbeddingCircuitOpen)
-            return;
-
-        // Skip slash commands and very short prompts (not worth embedding)
-        var trimmed = prompt.Trim();
-        if (trimmed.Length < 12 || SlashCommandRouter.LooksLikeCommand(trimmed)) return;
+        // Nothing to look for (search off, nothing indexed, a short draft, a command): nothing is scheduled.
+        if (!Services.Rag.RagAutoContext.MayChip(_indexService, _config, prompt)) return;
 
         var cts = _shadowSearchCts = new CancellationTokenSource();
         _ = Task.Run(async () =>
@@ -61,46 +54,36 @@ internal partial class InferpalToolWindowData
             try
             {
                 await Task.Delay(800, cts.Token);          // debounce — wait for pause in typing
-                await _indexService.ShadowPreWarmAsync(trimmed, cts.Token);
-
-                // Auto-attach top RAG results as dismissable cyan chips
-                var (_, results) = _indexService.TryGetShadow(trimmed);
-                if (results?.Count > 0)
-                {
-                    var topPaths = results
-                        .Select(r => r.Chunk.FilePath)
-                        .Where(p => !string.IsNullOrEmpty(p))
-                        .Distinct()
-                        .Take(2)
-                        .ToList();
-                    // Built here, off the UI thread: whether the excerpts cover the file is read from disk.
-                    var contents = topPaths.ToDictionary(p => p, p => Services.Rag.RagAutoContext.ChipContent(p,
-                        results.Where(r => r.Chunk.FilePath == p).Take(Services.Rag.RagAutoContext.ChipMaxChunks)
-                               .Select(r => r.Chunk).ToList()));
-                    Post(() => UpdateAutoRagAttachments(topPaths, contents));
-                }
+                // The search and its chips are the Core's, the same as VS Code's (RagAutoContext.WhileTypingAsync), run
+                // off the UI thread: whether the excerpts cover the file is read from disk.
+                var chips = await Services.Rag.RagAutoContext.WhileTypingAsync(_indexService, _config, prompt, cts.Token);
+                if (chips.Count > 0)
+                    Post(() => UpdateAutoRagAttachments(chips));
             }
             catch (OperationCanceledException) { }         // user kept typing
             catch (Exception ex) { Diagnostics.Swallow("Mentions.Search", ex); }                                      // best-effort
         });
     }
 
-    private void UpdateAutoRagAttachments(
-        List<string> paths,
-        Dictionary<string, string> contents)
+    private void UpdateAutoRagAttachments(IReadOnlyList<Services.Rag.RagAutoContext.TypingChip> chips)
     {
         // Remove existing auto-attach chips
         var toRemove = Attachments.Where(a => a.IsAutoAttach).ToList();
         foreach (var a in toRemove) Attachments.Remove(a);
 
-        foreach (var path in paths)
+        foreach (var chip in chips)
         {
-            // Skip if user already has this file attached manually
+            var path = chip.Path;
+            // Skip if user already has this file attached manually — by its path, a cut chip's label is not its name —,
+            // or removed its chip for this draft
             var fileName = Path.GetFileName(path);
-            if (Attachments.Any(a => !a.IsAutoAttach && a.Label == fileName)) continue;
+            if (Attachments.Any(a => !a.IsAutoAttach
+                                     && (a.Label == fileName || (a.SourcePath ?? a.Origin) is { } held && PathComparer.Default.Equals(held, path))))
+                continue;
+            if (_removedAutoChips.Contains(path)) continue;
 
             // The file's best chunks, said to be excerpts when they are (RagAutoContext.ChipContent).
-            var content = contents[path];
+            var content = chip.Content;
 
             AttachmentItem? item = null;
             item = new AttachmentItem($"🔮 {fileName}", content, () =>
@@ -109,8 +92,9 @@ internal partial class InferpalToolWindowData
                 {
                     Attachments.Remove(item!);
                     HasAttachments = Attachments.Count > 0;
+                    _removedAutoChips.Add(path);
                 });
-            }, isAutoAttach: true, sourcePath: path);   // sourcePath enables auto-context dedup
+            }, isAutoAttach: true, sourcePath: path);   // sourcePath: the relevant code does not send its chunks again
 
             Attachments.Add(item);
         }

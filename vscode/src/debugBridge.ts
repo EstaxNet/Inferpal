@@ -640,7 +640,8 @@ function normalizePath(p: string): string {
   return FOLDS_CASE ? slashed.toLowerCase() : slashed;
 }
 
-function samePath(a: string, b: string): boolean {
+/** "Same file?" as the file system answers it: case folds except on Linux, either slash. */
+export function samePath(a: string, b: string): boolean {
   return normalizePath(a) === normalizePath(b);
 }
 

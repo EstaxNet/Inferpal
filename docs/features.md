@@ -15,9 +15,7 @@ exists.
 - **The editor's gestures, in both** — **Edit with AI** (an instruction on the selection or the caret's line, the
   change shown before it applies), **Explain**, **Add Tests**, **Fix**, **Refactor** and **Document** in the editor's
   menu, `/test` on the **selection** with its tests written by an edit you can undo, and `/map` on **Alt+M**.
-- **Not in VS Code yet** — a few chat features are Visual Studio-only for now:
-  - the **auto-attach chips** while you type (the per-turn auto-context is there);
-  - `/fix-build` (it answers that it is not available).
+- **Not in VS Code yet** — `/fix-build` is Visual Studio's alone (it answers that it is not available).
 - **First run, in both editors** — Inferpal looks for a model server where one usually listens (Ollama, LM Studio,
   llama-server, vLLM) and says what each place answered. VS Code shows it on a card in the chat: the models proposed
   for your card, a server on another machine by its address, a key when a server asks for one, and — on Ollama
@@ -213,7 +211,7 @@ exists.
 
 - **Semantic codebase search** — background indexing with 3-tier chunking (Roslyn → LSP →
   regex) and **hybrid retrieval** (cosine + BM25 lexical fused with RRF, so exact identifiers
-  rank well). Shadow pre-warm and Smart Auto-attach chips (Visual Studio), and **per-turn auto-context** that
+  rank well). Shadow pre-warm and Smart Auto-attach chips (both editors), and **per-turn auto-context** that
   silently injects the most relevant chunks into each code question. See
   **[Search & Indexing](search-and-indexing.md)**.
 - **@Docs** — crawl and index external documentation sites, queried via `search_docs`.

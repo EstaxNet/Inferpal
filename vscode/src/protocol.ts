@@ -307,6 +307,16 @@ export interface SlashCommandResult {
   importCard?: ImportCard | null;
 }
 
+/** `rag/typingChips` — one chip of the draft being typed (Visual Studio's 🔮 chips). */
+export interface TypingChip {
+  /** The file, absolute. */
+  path: string;
+  name: string;
+  /** The lines its excerpts span (`38–61`); empty when they cover the whole file. */
+  lines: string;
+  content: string;
+}
+
 /** `tests/generate`: the source file, the code to test (the selection, or the whole file), what was typed after /test. */
 export interface TestsGenerateParams {
   path: string;

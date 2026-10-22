@@ -76,7 +76,12 @@ public sealed class AutoAttachChipTests : IDisposable
             .Single(f => Path.GetFileName(f) == "InferpalToolWindowData.Mentions.cs"));
 
         Assert.Contains("isAutoAttach: true", code);                                          // WITNESS: the chip is here
-        Assert.Contains("RagAutoContext.ChipContent(", code);
+        // The chips come from the Core's search, whose content is ChipContent's — VS Code's chips come from it too.
+        Assert.Contains("RagAutoContext.WhileTypingAsync(", code);
+        Assert.Contains("var content = chip.Content;", code);
         Assert.DoesNotContain("string.Join(\"\\n\\n...\\n\\n\"", code);
+        var core = ConventionCoverageTests.CodeOnly(Path.Combine(ConversationPersistenceSilenceTests.RepoRoot(),
+                                                                 "Inferpal.Core", "Services", "Rag", "RagAutoContext.cs"));
+        Assert.Contains("chips.Add(new TypingChip(path, spans, ChipContent(Path.GetFileName(path), chunks, lines)));", core);
     }
 }

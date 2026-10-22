@@ -95,6 +95,7 @@ export function webviewStrings(): Record<string, string> {
     welcomeUsagesPrompt: t('Where is {0} used? List its callers and what depends on it.'),
     welcomeProblems: t('{0} error(s) in the Problems panel'),
     welcomeFixThem: t('Fix them'),
+    chipsFoundWhileTyping: t('Found in your code while you type — sent as excerpts. Remove what does not belong.'),
     buildFailed: t('The last build failed — {0} error(s)'),
     buildFailedUncounted: t('The last build failed'),
     buildFailedFrom: t('From the task {0} — the errors are in the Problems panel.'),

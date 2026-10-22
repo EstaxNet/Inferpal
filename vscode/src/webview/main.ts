@@ -891,7 +891,7 @@ function addToolBubble(item: WvTranscriptItem, expanded: boolean): void {
     fix.className = 'bubble-action';
     setIcon(fix, 'tool', t('fixWithAi'), 13);
     fix.addEventListener('click', () => {
-      promptEl.value = t('fixPrompt') + '\n\n```\n' + (item.toolOutput ?? '') + '\n```';
+      setPrompt(t('fixPrompt') + '\n\n```\n' + (item.toolOutput ?? '') + '\n```');
       promptEl.focus();
     });
     step.appendChild(fix);
@@ -2192,7 +2192,7 @@ function selectMentionCategory(c: WvMentionCategory): void {
     const caret = promptEl.selectionStart;
     const value = promptEl.value;
     const before = value.slice(0, caret).replace(TYPING_RE, c.token + ' ');
-    promptEl.value = before + value.slice(caret);
+    setPrompt(before + value.slice(caret));
     promptEl.setSelectionRange(before.length, before.length);
     promptEl.focus();
     detectMention(); // @folder lists everything on an empty query
@@ -2207,7 +2207,7 @@ function stripMentionToken(): void {
   const caret = promptEl.selectionStart;
   const value = promptEl.value;
   const before = value.slice(0, caret).replace(COMMITTED_RE, '').replace(TYPING_RE, '').trimEnd();
-  promptEl.value = before + value.slice(caret);
+  setPrompt(before + value.slice(caret));
   promptEl.setSelectionRange(before.length, before.length);
   promptEl.focus();
   closeMentions();
@@ -2218,7 +2218,7 @@ function insertMention(path: string): void {
   const value = promptEl.value;
   // Quoted when the path holds a space: the extension reads a bare token up to the first space only.
   const written = mentionFor(path);
-  promptEl.value = value.slice(0, mentionStart) + written + ' ' + value.slice(caret);
+  setPrompt(value.slice(0, mentionStart) + written + ' ' + value.slice(caret));
   const pos = mentionStart + written.length + 1;
   promptEl.setSelectionRange(pos, pos);
   promptEl.focus();
@@ -2280,7 +2280,7 @@ function renderMentionResults(category: string, items: WvMentionItem[]): void {
         const value = promptEl.value;
         const rel = item.detail.replace(/\\/g, '/');
         const before = value.slice(0, caret).replace(COMMITTED_RE, mentionFor(rel) + ' ');
-        promptEl.value = before + value.slice(caret);
+        setPrompt(before + value.slice(caret));
         promptEl.setSelectionRange(before.length, before.length);
         promptEl.focus();
         closeMentions();
@@ -2328,7 +2328,7 @@ function renderChips(chips: WvChip[]): void {
   chipsEl.hidden = chips.length === 0;
   chips.forEach((chip, i) => {
     const el = document.createElement('span');
-    el.className = 'chip';
+    el.className = chip.auto ? 'chip auto' : 'chip';
     const name = document.createElement('span');
     setIcon(name, 'file', chip.name, 12);
     const close = document.createElement('button');
@@ -2339,6 +2339,13 @@ function renderChips(chips: WvChip[]): void {
     el.append(name, close);
     chipsEl.appendChild(el);
   });
+  // Chips the search found while the person typed: what they are, and that they can go.
+  if (chips.some((c) => c.auto)) {
+    const note = document.createElement('div');
+    note.className = 'chips-note';
+    note.textContent = t('chipsFoundWhileTyping');
+    chipsEl.appendChild(note);
+  }
 }
 
 const slash = makePopup('slash');
@@ -2397,7 +2404,7 @@ function applySlash(command: string, key?: string): void {
     send();
     return;
   }
-  promptEl.value = command + ' ';
+  setPrompt(command + ' ');
   promptEl.setSelectionRange(promptEl.value.length, promptEl.value.length);
   promptEl.focus();
   closeSlash();
@@ -2441,7 +2448,7 @@ function historyUp(): void {
     historyDraft = promptEl.value;
   }
   historyIndex = Math.min(historyIndex + 1, historyEntries.length - 1);
-  promptEl.value = historyEntries[historyEntries.length - 1 - historyIndex];
+  setPrompt(historyEntries[historyEntries.length - 1 - historyIndex]);
 }
 
 function historyDown(): void {
@@ -2449,7 +2456,7 @@ function historyDown(): void {
     return;
   }
   historyIndex--;
-  promptEl.value = historyIndex >= 0 ? historyEntries[historyEntries.length - 1 - historyIndex] : historyDraft;
+  setPrompt(historyIndex >= 0 ? historyEntries[historyEntries.length - 1 - historyIndex] : historyDraft);
   if (historyIndex < 0) {
     historyDraft = '';
   }
@@ -2484,9 +2491,21 @@ function send(later = false): void {
 }
 
 promptEl.placeholder = t('composerPlaceholder');
+/**
+ * The composer's text set by the panel itself — a recalled question, a picked command or mention, a fix prompt: the
+ * extension is told, as for a keystroke, or the chips found for the previous draft would go with the new one. Not as a
+ * message is sent: its chips leave with it.
+ */
+function setPrompt(text: string): void {
+  promptEl.value = text;
+  post({ type: 'draft', text });
+}
+
 promptEl.addEventListener('input', () => {
   detectMention();
   detectSlash();
+  // The extension looks for the code the draft is about once typing pauses (the chips found while typing).
+  post({ type: 'draft', text: promptEl.value });
   historyIndex = -1; // editing resets history navigation, like the VS guard
 });
 promptEl.addEventListener('blur', () => setTimeout(() => { closeMentions(); closeSlash(); }, 150));
@@ -2774,7 +2793,7 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       }
       break;
     case 'setPrompt':
-      promptEl.value = msg.text;
+      setPrompt(msg.text);
       promptEl.focus();
       promptEl.setSelectionRange(promptEl.value.length, promptEl.value.length);
       break;
@@ -2825,7 +2844,7 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       break;
     case 'restoreDraft':
       // In front of what is typed there: the draft is the user's too.
-      promptEl.value = promptEl.value.trim() ? `${msg.text}\n\n${promptEl.value}` : msg.text;
+      setPrompt(promptEl.value.trim() ? `${msg.text}\n\n${promptEl.value}` : msg.text);
       break;
     case 'turnEnded': {
       stepPausedNow = false;

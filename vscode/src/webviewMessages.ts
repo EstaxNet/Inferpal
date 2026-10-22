@@ -131,6 +131,8 @@ export interface WvBuildBanner {
 /** One context chip in the composer (attachment pending for the next turn). */
 export interface WvChip {
   name: string;
+  /** Found by the search while the person types, not attached by them: drawn apart, said to be excerpts. */
+  auto?: boolean;
 }
 
 export interface WvPlanStep {
@@ -280,6 +282,8 @@ export type WebviewToExt =
   | { type: 'mentionSearch'; category: string; query: string }
   | { type: 'resolveMention'; category: string; value?: string }
   | { type: 'removeChip'; index: number }
+  /** The draft changed: the extension looks for the code it is about once typing pauses. */
+  | { type: 'draft'; text: string }
   | { type: 'pinActive' }
   | { type: 'unpin'; path: string }
   | { type: 'attachActive' }

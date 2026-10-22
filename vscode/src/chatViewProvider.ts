@@ -13,6 +13,7 @@ import { SetupFlow } from './setupFlow';
 import { buildBannerOf, isBuildTask, openTabPaths, panelErrors } from './editorBridge';
 import { capAttachment, CappedText } from './attachmentCap';
 import { renderChatHtml } from './webview/chatWebviewHtml';
+import { samePath } from './debugBridge';
 import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
 import {
   ApprovalCard, CodeActionResult, InputCard, InputFormAnswer, SavedMessage, SlashEffect, TestsGenerateResult, TurnNote,
@@ -60,7 +61,7 @@ export function looksLikeCommand(text: string): boolean {
 
 /** A context chip waiting for the next question: its label, its content, and the file it came from. */
 /** `origin`: the file the chip's text comes from, whole or part — what the workspace's ignore files are asked about. */
-type PendingAttachment = { name: string; content: string; sourcePath?: string; origin?: string };
+type PendingAttachment = { name: string; content: string; sourcePath?: string; origin?: string; auto?: boolean };
 /** A regenerated question's turn, as it was sent: the prompt, whether it was a code action, the relevant-code query. */
 type TurnReplay = { prompt: string; codeAction: boolean; query?: string };
 
@@ -106,6 +107,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private plan: WvPlan | null = null;
   private contextWindow = 0;
   private toolBubblesExpanded = false;
+  /** The search for the draft's chips: waiting for typing to pause, then running — cancelled as the person types on. */
+  private draftTimer: ReturnType<typeof setTimeout> | undefined;
+  private draftSearch: vscode.CancellationTokenSource | undefined;
+  /** The files whose found-while-typing chip the person removed: not found again for this draft — cleared once sent. */
+  private removedAutoChips: string[] = [];
   /** The build task that failed last — its banner is read from the panel as it stands, at every change and every
    *  redraw; null after a build that passed, once closed, or once its errors were sent to the model. */
   private failedBuild: string | null = null;
@@ -1599,9 +1605,16 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           this.gestureFailed('resumeStep', err);
         }
         return;
+      case 'draft':
+        this.draftChanged(msg.text);
+        return;
       case 'removeChip':
         if (msg.index >= 0 && msg.index < this.pendingAttachments.length) {
-          this.pendingAttachments.splice(msg.index, 1);
+          const [removed] = this.pendingAttachments.splice(msg.index, 1);
+          // A chip found while typing that the person removed is not found again for this draft.
+          if (removed.auto && removed.origin) {
+            this.removedAutoChips.push(removed.origin);
+          }
           this.postChips();
         }
         return;
@@ -1726,7 +1739,87 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   private postChips(): void {
-    this.post({ type: 'chips', chips: this.pendingAttachments.map((a) => ({ name: a.name })) });
+    this.post({ type: 'chips', chips: this.chipsShown() });
+  }
+
+  /** The chips as the composer draws them — a redraw too, or it showed the found-while-typing ones as plain ones. */
+  private chipsShown(): { name: string; auto: boolean }[] {
+    return this.pendingAttachments.map((a) => ({ name: a.name, auto: a.auto === true }));
+  }
+
+  /**
+   * The draft changed: its chips — the code the search finds for it, as Visual Studio's 🔮 chips — go at once, and the
+   * search runs again once typing pauses (800 ms, Visual Studio's debounce). Not during a turn: typed then, the text is a
+   * note to the running turn.
+   */
+  private draftChanged(text: string): void {
+    this.cancelDraftSearch();
+    if (this.pendingAttachments.some((a) => a.auto)) {
+      this.pendingAttachments = this.pendingAttachments.filter((a) => !a.auto);
+      this.postChips();
+    }
+    const host = this.getHost();
+    if (!host?.isRunning || this.busy) {
+      return;
+    }
+    this.draftTimer = setTimeout(() => void this.searchDraft(host, text), 800);
+  }
+
+  private cancelDraftSearch(): void {
+    if (this.draftTimer) {
+      clearTimeout(this.draftTimer);
+      this.draftTimer = undefined;
+    }
+    this.draftSearch?.cancel();
+    this.draftSearch?.dispose();
+    this.draftSearch = undefined;
+  }
+
+  /** The draft's chips, from the host; a file already attached by hand is left as it is. */
+  private async searchDraft(host: HostClient, text: string): Promise<void> {
+    this.draftTimer = undefined;
+    const search = new vscode.CancellationTokenSource();
+    this.draftSearch = search;
+    try {
+      const chips = await host.typingChips(text, search.token);
+      if (search.token.isCancellationRequested || this.draftSearch !== search) {
+        return;
+      }
+      for (const chip of chips) {
+        // Already attached by hand, or removed for this draft. "Same file?" as the file system answers it: the editor
+        // writes a lowercase drive letter, the index an uppercase one.
+        const held = (p: string | undefined): boolean => p !== undefined && samePath(p, chip.path);
+        if (this.pendingAttachments.some((a) => held(a.sourcePath) || held(a.origin)) || this.removedAutoChips.some(held)) {
+          continue;
+        }
+        // Capped as every chip is (addChip). Its file counts as attached unless cut: it holds the file's best chunks for
+        // this very search, and the turn's relevant code would otherwise send them again, ahead of another file's.
+        const capped = capAttachment(chip.content, 60_000);
+        // Several folders open: the name carries its folder, or two index.ts read as one.
+        const file = (vscode.workspace.workspaceFolders?.length ?? 0) > 1 ? vscode.workspace.asRelativePath(chip.path) : chip.name;
+        const name = chip.lines ? `${file} ${chip.lines}` : file;
+        this.pendingAttachments.push({
+          name: capped.cut ? ChatViewProvider.cutLabel(name, capped) : name,
+          content: capped.text,
+          sourcePath: capped.cut ? undefined : chip.path,
+          origin: chip.path,
+          auto: true,
+        });
+      }
+      if (chips.length > 0) {
+        this.postChips();
+      }
+    } catch (err) {
+      // Best-effort, as in Visual Studio: no chip, and the turn's own auto-context still runs.
+      if (!search.token.isCancellationRequested) {
+        this.log(`[chat] rag/typingChips failed: ${String(err)}`);
+      }
+    } finally {
+      if (this.draftSearch === search) {
+        this.draftSearch = undefined;
+      }
+      search.dispose();
+    }
   }
 
   /** Materializes an instant/selected mention: clipboard and problems are editor-side (they read
@@ -2280,6 +2373,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    */
   private async send(text: string, typed = false, replay?: TurnReplay): Promise<void> {
     const before = this.turnsEnded;
+    // The draft's chips leave with the draft. A gesture's message (Explain from the menu, Fix with AI, a queued prompt)
+    // is not the draft, which stays in the box: they are not sent with it.
+    if (typed) {
+      this.cancelDraftSearch();
+      this.removedAutoChips = [];
+    } else if (this.pendingAttachments.some((a) => a.auto)) {
+      this.pendingAttachments = this.pendingAttachments.filter((a) => !a.auto);
+      this.postChips();
+    }
     try {
       const prompt = text.trim();
       const host = this.getHost();
@@ -3473,7 +3575,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       toolBubblesExpanded: this.toolBubblesExpanded,
       compact: this.compact,
       mentionCategories: this.mentionCats,
-      chips: this.pendingAttachments.map((a) => ({ name: a.name })),
+      chips: this.chipsShown(),
       pins: this.pins,
       planMode: this.planMode,
       ...this.editorContext(),

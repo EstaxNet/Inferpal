@@ -191,5 +191,6 @@
   "The last build failed": "마지막 빌드 실패",
   "From the task {0} — the errors are in the Problems panel.": "작업 {0}에서 — 오류는 [문제] 패널에 있습니다.",
   "Show the errors": "오류 표시",
-  "From the task {0} — the Problems panel holds none of its errors: its output says why.": "작업 {0}에서 — [문제] 패널에 해당 오류가 없습니다. 이유는 작업 출력에 있습니다."
+  "From the task {0} — the Problems panel holds none of its errors: its output says why.": "작업 {0}에서 — [문제] 패널에 해당 오류가 없습니다. 이유는 작업 출력에 있습니다.",
+  "Found in your code while you type — sent as excerpts. Remove what does not belong.": "입력하는 동안 코드에서 찾았습니다 — 발췌로 전송됩니다. 관련 없는 항목은 제거하세요."
 }

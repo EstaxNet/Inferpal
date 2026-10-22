@@ -353,6 +353,16 @@ internal sealed record ModelsByKindResult(IReadOnlyList<string> Chat, IReadOnlyL
 /// <param name="Notice">A slash command shown as typed: exported, never counted as a turn.</param>
 internal sealed record ChatExportMessage(string Role, string? Name, string Content, string? Timestamp, bool Notice = false);
 
+/// <summary>`rag/typingChips` — the draft the person is typing.</summary>
+internal sealed record TypingChipsParams(string Text);
+
+/// <summary>One chip of a draft (<see cref="Services.Rag.RagAutoContext.TypingChip"/>).</summary>
+/// <param name="Path">The file, absolute: what the turn's relevant code reads to leave out the chunks the chip sends.</param>
+/// <param name="Name">The file's name.</param>
+/// <param name="Lines">The lines its excerpts span (<c>38–61</c>); empty when they cover the whole file.</param>
+/// <param name="Content">What the chip sends: the excerpts, said to be excerpts when they are.</param>
+internal sealed record TypingChipDto(string Path, string Name, string Lines, string Content);
+
 /// <summary>
 /// `chat/export` — the adapter sends what it SHOWS, the Core renders the document.
 /// </summary>

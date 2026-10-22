@@ -191,5 +191,6 @@
   "The last build failed": "前回のビルドが失敗しました",
   "From the task {0} — the errors are in the Problems panel.": "タスク {0} から — エラーは [問題] パネルにあります。",
   "Show the errors": "エラーを表示",
-  "From the task {0} — the Problems panel holds none of its errors: its output says why.": "タスク {0} から — [問題] パネルにはそのエラーがありません。理由はタスクの出力にあります。"
+  "From the task {0} — the Problems panel holds none of its errors: its output says why.": "タスク {0} から — [問題] パネルにはそのエラーがありません。理由はタスクの出力にあります。",
+  "Found in your code while you type — sent as excerpts. Remove what does not belong.": "入力中にコードから見つかりました — 抜粋として送信されます。関係のないものは削除してください。"
 }

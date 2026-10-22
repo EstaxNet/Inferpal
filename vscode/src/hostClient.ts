@@ -74,6 +74,7 @@ import {
   SetupPlan,
   SetupPullProgress,
   SetupReason,
+  TypingChip,
 } from './protocol';
 
 /** Reverse-RPC surface the editor side must provide before `start()`. */
@@ -500,6 +501,12 @@ export class HostClient {
    */
   private static withToken<P>(params: P, token?: CancellationToken): [P] | [P, CancellationToken] {
     return token ? [params, token] : [params];
+  }
+
+  /** The chips of the draft being typed. Not a turn: it never waits on one, and the caller cancels it as the person
+   *  types on. */
+  typingChips(text: string, token?: CancellationToken): Promise<TypingChip[]> {
+    return this.connection().sendRequest<TypingChip[]>('rag/typingChips', ...HostClient.withToken({ text }, token));
   }
 
   /** /test: the tests of the code sent, planned by the host; the editor writes them. Chat-busy, like a code action. */

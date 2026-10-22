@@ -191,5 +191,6 @@
   "The last build failed": "L'ultima build non è riuscita",
   "From the task {0} — the errors are in the Problems panel.": "Dall'attività {0}: gli errori sono nel pannello Problemi.",
   "Show the errors": "Mostra gli errori",
-  "From the task {0} — the Problems panel holds none of its errors: its output says why.": "Dall'attività {0}: il pannello Problemi non contiene nessuno dei suoi errori; il suo output dice perché."
+  "From the task {0} — the Problems panel holds none of its errors: its output says why.": "Dall'attività {0}: il pannello Problemi non contiene nessuno dei suoi errori; il suo output dice perché.",
+  "Found in your code while you type — sent as excerpts. Remove what does not belong.": "Trovato nel tuo codice mentre scrivi: inviato come estratti. Rimuovi ciò che non c'entra."
 }

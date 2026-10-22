@@ -838,6 +838,28 @@ internal sealed partial class HostServer
             .ToList();
     }
 
+    /// <summary>
+    /// The chips of the draft the person is typing — Visual Studio's 🔮 chips, from the same search
+    /// (<see cref="Services.Rag.RagAutoContext.WhileTypingAsync"/>). Not a turn: it holds no slot, and the adapter cancels it when the
+    /// person types on. Best-effort: a search that fails gives no chip, traced.
+    /// </summary>
+    [JsonRpcMethod("rag/typingChips", UseSingleObjectParameterDeserialization = true)]
+    public async Task<List<TypingChipDto>> RagTypingChipsAsync(TypingChipsParams p, CancellationToken ct)
+    {
+        var s = Session();
+        try
+        {
+            var chips = await Services.Rag.RagAutoContext.WhileTypingAsync(s.Index, s.Config, p.Text ?? string.Empty, ct);
+            return chips.Select(c => new TypingChipDto(c.Path, Path.GetFileName(c.Path), c.Lines, c.Content)).ToList();
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("HostServer.TypingChips", ex);
+            return [];
+        }
+    }
+
     /// <summary>Materializes a mention host-side: @tree (project map), @diff (git diff),
     /// @folder (folder context body) and @code (semantic search). Tool-backed categories read their
     /// tool's state, never its text: what found or mapped nothing is a notice, not a chip.</summary>

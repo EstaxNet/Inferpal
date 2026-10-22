@@ -118,6 +118,9 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     private ChatMessageItem?         _questionInHistory;
     private CancellationTokenSource? _mentionCts;
     private CancellationTokenSource? _shadowSearchCts;
+    /// <summary>The files whose 🔮 chip the person removed: not found again for the draft being written — cleared when
+    /// it is sent.</summary>
+    private readonly HashSet<string> _removedAutoChips = new(PathComparer.Default);
     private bool _toolsEnabled = true;
 
     private string           _prompt                = string.Empty;

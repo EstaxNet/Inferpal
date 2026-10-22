@@ -191,5 +191,6 @@
   "The last build failed": "上次构建失败",
   "From the task {0} — the errors are in the Problems panel.": "来自任务 {0} — 错误在“问题”面板中。",
   "Show the errors": "显示错误",
-  "From the task {0} — the Problems panel holds none of its errors: its output says why.": "来自任务 {0} — “问题”面板中没有它的错误：原因见其输出。"
+  "From the task {0} — the Problems panel holds none of its errors: its output says why.": "来自任务 {0} — “问题”面板中没有它的错误：原因见其输出。",
+  "Found in your code while you type — sent as excerpts. Remove what does not belong.": "输入时在你的代码中找到 — 以摘录形式发送。删除不相关的内容。"
 }

@@ -48,10 +48,10 @@ flowchart TD
   unavailable, lexical BM25 alone is used.
 - **Resilience**: an embedding **circuit breaker** opens after repeated failures and recovers
   automatically.
-- **Shadow pre-warm** *(Visual Studio)*: while you type, results are pre-fetched (debounced) so
-  the tool responds instantly. **Smart Auto-attach** *(Visual Studio)* suggests the top-2 relevant
-  files as dismissable chips before you send; a chip holds the file's best passages, and says
-  which lines when that is not the whole file.
+- **Shadow pre-warm**: while you type, results are pre-fetched (debounced) so the tool responds
+  instantly. **Smart Auto-attach** suggests the top-2 relevant files as dismissable chips before
+  you send — in Visual Studio with a 🔮, in VS Code dashed and named with the lines they span; a
+  chip holds the file's best passages, and says which lines when that is not the whole file.
 - **Auto-context** (`ragAutoContextEnabled`, default on): each code-related turn silently
   injects the most relevant chunks for your message into the prompt — budget-capped and
   deduplicated against anything already attached. Reuses the warm shadow result when available,

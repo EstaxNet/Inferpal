@@ -195,6 +195,7 @@ internal partial class InferpalToolWindowData
                     Prompt         = string.Empty;
                     Attachments.Clear();
                     HasAttachments = false;
+                    _removedAutoChips.Clear();
                 }
                 // ⚠ Judged again as the question leaves, as VS Code judges its chips: one added before the ignore file
                 // excluded its file, or resent by Regenerate, is said and not sent.

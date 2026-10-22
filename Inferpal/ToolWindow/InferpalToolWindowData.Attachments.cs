@@ -86,7 +86,9 @@ internal partial class InferpalToolWindowData
             }
             if (results is null || results.Count == 0) return string.Empty;
 
-            // ⚠ A WHOLE file only: past the cut of a cut chip, the code is in the prompt nowhere.
+            // ⚠ A WHOLE file only: past the cut of a cut chip, the code is in the prompt nowhere. A 🔮 chip counts as
+            // its file: it holds the file's best chunks for this very search, and not counted the relevant code sends
+            // those same chunks again, ahead of another file's — what it leaves out is the file's lower-ranked ones.
             var attached = attachments
                 .Where(a => !string.IsNullOrEmpty(a.SourcePath) && !a.IsCut)
                 .Select(a => a.SourcePath!)
