@@ -696,13 +696,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // A read that went through is a sample of the server's speed: the tokens it read anew (what it served from its
         // cache, when it says, is not reading), from sending to the first useful chunk.
         if (firstUseful is { } read)
-        {
-            var counted = promptTokens > 0 ? promptTokens : size.Total;
-            var cached  = Math.Clamp(cachedTokens ?? 0, 0, counted);
-            var fresh   = counted - cached;
-            PrefillRates.Shared.Record(base_, model, (int)Math.Round((double)size.Total * fresh / Math.Max(1, counted)), fresh, read,
-                                       mayIncludeLoad: true);
-        }
+            PrefillRates.Shared.RecordRead(base_, model, size.Total, promptTokens, cachedTokens ?? 0, read, mayIncludeLoad: true);
 
         // What the envelope held back — a marker the end of the stream cut in two — is released now.
         var (lastAnswer, lastThought) = envelope.Flush();

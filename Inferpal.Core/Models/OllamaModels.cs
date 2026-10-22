@@ -84,7 +84,10 @@ record ChatMessageDto(
 /// limit.</param>
 /// <param name="LoadDuration">On the final chunk: the nanoseconds spent loading the model before reading the prompt.</param>
 /// <param name="PromptEvalDuration">On the final chunk: the nanoseconds the server spent reading the prompt — its own
-/// measure, which neither a load nor the time spent writing a tool call (sent only once complete) inflates.</param>
+/// measure, which neither a load nor the time spent writing a tool call (sent only once complete) inflates. It covers
+/// the tokens it evaluated, never those its cache served.</param>
+/// <param name="PromptEvalCachedCount">On the final chunk: the tokens of <c>prompt_eval_count</c> its cache served;
+/// absent from an Ollama whose count is the evaluated tokens alone.</param>
 record ChatResponse(
     [property: JsonPropertyName("done")]               bool Done,
     [property: JsonPropertyName("message")]            ChatMessageDto? Message          = null,
@@ -93,7 +96,8 @@ record ChatResponse(
     [property: JsonPropertyName("load_duration")]      long?           LoadDuration     = null,
     [property: JsonPropertyName("prompt_eval_duration")] long?         PromptEvalDuration = null,
     [property: JsonPropertyName("error")]              JsonElement     Error            = default,
-    [property: JsonPropertyName("done_reason")]        string?         DoneReason       = null);
+    [property: JsonPropertyName("done_reason")]        string?         DoneReason       = null,
+    [property: JsonPropertyName("prompt_eval_cached_count")] int?      PromptEvalCachedCount = null);
 
 /// <summary>A single tool invocation requested by the model.</summary>
 record ToolCallDto(

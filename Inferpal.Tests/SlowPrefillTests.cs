@@ -553,11 +553,53 @@ public sealed class SlowPrefillOpenAiTests : IDisposable
 [Collection(SlowServerCollection.Name)]
 public sealed class SlowPrefillOllamaTests
 {
-    private static string Done(int evaluated, long loadNanoseconds = 0, long readNanoseconds = 0) =>
+    private static string Done(int evaluated, long loadNanoseconds = 0, long readNanoseconds = 0, int? cached = null) =>
         "{\"message\":{\"role\":\"assistant\",\"content\":\"ok\"},\"done\":false}\n"
         + "{\"message\":{\"role\":\"assistant\",\"content\":\"\"},\"done\":true,"
         + $"\"prompt_eval_count\":{evaluated},\"eval_count\":1,\"load_duration\":{loadNanoseconds}"
-        + (readNanoseconds > 0 ? $",\"prompt_eval_duration\":{readNanoseconds}" : "") + "}\n";
+        + (readNanoseconds > 0 ? $",\"prompt_eval_duration\":{readNanoseconds}" : "")
+        + (cached is { } c ? $",\"prompt_eval_cached_count\":{c}" : "") + "}\n";
+
+    /// <summary>
+    /// ⚠ Ollama counts in <c>prompt_eval_count</c> the tokens its cache served (<c>prompt_eval_cached_count</c>), and its
+    /// duration covers only the others: the sample is the part it read anew. Learned at the whole request's size, its
+    /// new part's time says a speed as many times too fast as the cache served, and the tokens to read come out short.
+    /// </summary>
+    [Theory]
+    [InlineData(2_500)]   // mostly served by the cache
+    [InlineData(8_000)]   // under half of it served: no filter on the share sees this one
+    public async Task AReadOllamasCachePartlyServed_IsLearnedAtTheSizeItRead(int evaluated)
+    {
+        var total = RequestSize.Of(LongQuestion, null).Total;
+        Assert.True(total > 10_000, $"the request is {total} tokens");   // witness
+        using var server = new SlowReadServer(headersFirst: false, TimeSpan.FromSeconds(1), "application/x-ndjson",
+                                              Done(total, readNanoseconds: 6_000_000_000, cached: total - evaluated));
+        var client = new OllamaClient(Config(server.BaseUrl, floor: 60));
+
+        var turn = await client.SendChatAsync(_model, new List<ChatMessageDto>(LongQuestion), EmptyToolRegistry.Instance, null,
+                                              CancellationToken.None);
+
+        // One sample: the cold read of the whole request is its new part's speed over the whole size.
+        var expected = 6.0 * total / evaluated;
+        Assert.InRange(PrefillRates.Shared.Estimate(server.BaseUrl, _model, total)!.Value.TotalSeconds, expected - 0.5, expected + 0.5);
+        Assert.Equal(total, PrefillRates.Shared.Tokens(server.BaseUrl, _model, total));
+        Assert.Equal(total + 1, turn.TokensUsed);   // the window holds the cached tokens too
+    }
+
+    /// <summary>Reference arm: the same read with nothing from the cache is learned.</summary>
+    [Fact]
+    public async Task AReadOllamasCacheServedNothingOf_IsLearned()
+    {
+        var total = RequestSize.Of(LongQuestion, null).Total;
+        using var server = new SlowReadServer(headersFirst: false, TimeSpan.FromSeconds(1), "application/x-ndjson",
+                                              Done(total, readNanoseconds: 6_000_000_000, cached: 0));
+        var client = new OllamaClient(Config(server.BaseUrl, floor: 60));
+
+        await client.SendChatAsync(_model, new List<ChatMessageDto>(LongQuestion), EmptyToolRegistry.Instance, null,
+                                   CancellationToken.None);
+
+        Assert.InRange(PrefillRates.Shared.Estimate(server.BaseUrl, _model, total)!.Value.TotalSeconds, 5, 8);
+    }
 
     /// <summary>
     /// ⚠ Ollama's own measure of the read (prompt_eval_duration) is the sample: the time to the first chunk also counts
@@ -653,8 +695,10 @@ public sealed class SlowPrefillOllamaTests
         Assert.NotNull(PrefillRates.Shared.Estimate(server.BaseUrl, _model, 30_000));
     }
 
+    /// <summary>An Ollama that sends no cached count counts the evaluated tokens alone: a count under half the request
+    /// says the cache served the rest, and the read is no cold read.</summary>
     [Fact]
-    public async Task AReadMostlyServedFromTheCache_IsNoColdRead()
+    public async Task AReadMostlyServedFromTheCache_ByAnOllamaThatSendsNoCachedCount_IsNoColdRead()
     {
         var size = RequestSize.Of(LongQuestion, null).Total;
         // Ollama evaluated 3 000 tokens of a request of about 14 000: its cache served the rest.

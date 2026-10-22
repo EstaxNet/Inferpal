@@ -13,6 +13,9 @@ extension share one engine and one version number.
   the chat, and an embedding model is offered for code search whatever its name.
 - **No package lookup for a call your rules refuse**: under a `deny` permission rule, an install or a dependency the model
   wrote no longer sends the package name to nuget.org, npm or PyPI before the rule refuses the call.
+- **A slow machine's long first answer is waited for again after the next step of a conversation**: with Ollama, a
+  request the server mostly served from its cache was taken as a fast read of the whole conversation, and erased the
+  longer wait Inferpal had learned for long requests; the speed is now learned from the part Ollama actually reads.
 
 ## 1.8.3
 

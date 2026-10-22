@@ -104,6 +104,26 @@ internal sealed class PrefillRates
         });
     }
 
+    /// <summary>Keeps a read the server counted <paramref name="counted"/> tokens for, <paramref name="cached"/> of them served
+    /// from its cache: the sample is the part it read anew, and the request's size scaled down to that part.</summary>
+    /// <param name="server">The server's address.</param>
+    /// <param name="model">The model that read.</param>
+    /// <param name="estimated">The request's estimated size.</param>
+    /// <param name="counted">The tokens the server counted for the request, cached ones included; 0 when it did not say.</param>
+    /// <param name="cached">The tokens of <paramref name="counted"/> its cache served.</param>
+    /// <param name="read">The time the server took to read the part it did not have in its cache.</param>
+    /// <param name="mayIncludeLoad">As for <see cref="Record"/>.</param>
+    /// <remarks>⚠ Kept at the whole request's size, a read of its new part says a speed as many times too fast as the
+    /// cache served: the wait of the next cold read shrinks to the configured one, and a bound an expiry left is cleared.
+    /// Scaled, the request's size and the server's count keep their ratio (<see cref="Tokens"/>).</remarks>
+    public void RecordRead(string server, string model, int estimated, int counted, int cached, TimeSpan read,
+                           bool mayIncludeLoad = false)
+    {
+        counted = counted > 0 ? counted : estimated;
+        var fresh = counted - Math.Clamp(cached, 0, Math.Max(0, counted));
+        Record(server, model, (int)Math.Round((double)estimated * fresh / Math.Max(1, counted)), fresh, read, mayIncludeLoad);
+    }
+
     /// <summary>Keeps a request with no first token after <paramref name="waited"/>: the server reads slower than that.
     /// <c>false</c> when nothing was learned, so the next request does not wait longer.</summary>
     /// <remarks>

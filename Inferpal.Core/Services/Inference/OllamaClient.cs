@@ -216,6 +216,7 @@ internal class OllamaClient : InferenceProviderBase
         var reasoningBuilder = new System.Text.StringBuilder();
         List<ToolCallDto>? toolCalls = null;
         int tokensUsed = 0, promptTokens = 0, chunkCount = 0;
+        int? cachedTokens = null;
         long loadNanoseconds = 0, readNanoseconds = 0;
         string? doneReason = null;
         var cut = false;   // the answer stopped at the length limit (done_reason "length")
@@ -336,6 +337,7 @@ internal class OllamaClient : InferenceProviderBase
                 if (chunk.Done)
                 {
                     promptTokens = chunk.PromptEvalCount ?? 0;
+                    cachedTokens = chunk.PromptEvalCachedCount;
                     tokensUsed   = promptTokens + (chunk.EvalCount ?? 0);
                     loadNanoseconds = chunk.LoadDuration ?? 0;
                     readNanoseconds = chunk.PromptEvalDuration ?? 0;
@@ -365,13 +367,18 @@ internal class OllamaClient : InferenceProviderBase
         // A read that went through is a sample of the server's speed: the reading Ollama measured itself
         // (prompt_eval_duration) — from sending to the first useful chunk would count a load, and the time the model spent
         // WRITING a tool call, which Ollama sends only once complete. Without that figure, the first chunk with the load
-        // taken out. ⚠ Ollama counts only the tokens it evaluated, not those its cache served, and says nothing of the
-        // cache: a read that evaluated less than half the request was mostly served from it, and is no cold read at all.
-        if (firstUseful is { } read && (promptTokens == 0 || promptTokens * 2 >= size.Total))
+        // taken out. ⚠ Ollama's count includes the tokens its cache served (prompt_eval_cached_count), and its duration
+        // covers only the others: the sample is the part it read anew (RecordRead). An Ollama that sends no cached count
+        // counts the evaluated tokens alone, and says nothing of the request's whole size: a read that evaluated less than
+        // half the request was mostly served from the cache, and is no cold read at all.
+        if (firstUseful is { } read)
         {
             var load = TimeSpan.FromTicks(loadNanoseconds / 100);
             var measured = readNanoseconds > 0 ? TimeSpan.FromTicks(readNanoseconds / 100) : load < read ? read - load : read;
-            PrefillRates.Shared.Record(base_, model, size.Total, promptTokens > 0 ? promptTokens : size.Total, measured);
+            if (cachedTokens is { } cached)
+                PrefillRates.Shared.RecordRead(base_, model, size.Total, promptTokens, cached, measured);
+            else if (promptTokens == 0 || promptTokens * 2 >= size.Total)
+                PrefillRates.Shared.Record(base_, model, size.Total, promptTokens > 0 ? promptTokens : size.Total, measured);
         }
 
         // What the envelope held back — a marker the end of the stream cut in two — is released now.
