@@ -67,9 +67,10 @@ on; `/check 1a2b3c4` (or a tag, `HEAD~2`) one commit, against its first parent (
 branch). The answer starts by naming what was reviewed, and a branch that brings nothing says so. A check's name
 wins over a branch of the same name; the answer then gives the spelling that reviews the branch (`refs/heads/…`).
 A name a branch and a tag share, or a hash prefix several objects share, is refused naming them rather than
-guessed; so is a commit at the edge of a shallow clone, whose parent was not fetched. In VS Code,
-**Inferpal: Review a Commit…** (Command Palette) picks a recent commit — searchable by its message — or takes a
-branch, a tag or a range typed in the box.
+guessed; so is a commit at the edge of a shallow clone, whose parent was not fetched. **Review a Commit…** picks a
+recent commit — searchable by its message — or takes a branch, a tag or a range typed in the box: in VS Code,
+**Inferpal: Review a Commit…** (Command Palette); in Visual Studio, *Tools › Inferpal › Review a Commit…*, whose list
+holds the 50 most recent commits and searches the last 500.
 
 **Without any check**, `/check` makes the general review — any bug, regression or behaviour change — and the answer
 says it was made without checks; `/checks init` writes one when you want your own criteria on top.

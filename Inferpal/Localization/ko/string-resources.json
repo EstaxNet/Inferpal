@@ -3,6 +3,7 @@
   "InferpalChatCommand": "Inferpal 채팅",
   "InferpalSettingsCommand": "Inferpal 설정...",
   "InferpalMapCommand": "Inferpal 프로젝트 맵",
+  "InferpalReviewCommitCommand": "커밋 검토...",
   "ContextMenuAskInferpal": "Inferpal에게 질문",
   "ContextMenuExplain": "설명",
   "ContextMenuRefactor": "리팩터링",

@@ -943,6 +943,13 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   </data>
   <data name="SlashHintBranch" xml:space="preserve"><value>fork the conversation at a given turn (`/branch [n|name]`)</value></data>
   <data name="BranchNoConversation" xml:space="preserve"><value>Nothing to branch yet — this conversation is empty.</value></data>
+  <data name="ReviewCommitTitle" xml:space="preserve"><value>Review a commit</value></data>
+  <data name="ReviewCommitIntro" xml:space="preserve"><value>Inferpal reviews the change it brought, as /check does.</value></data>
+  <data name="ReviewCommitFilter" xml:space="preserve"><value>Commit, branch or range</value></data>
+  <data name="ReviewCommitFooter" xml:space="preserve"><value>The {0} most recent commits of the current branch; type to search the last {1}, or a branch, tag or range.</value></data>
+  <data name="ReviewCommitNoMatch" xml:space="preserve"><value>No commit among the last {0} matches — type a branch, tag, range or hash to review it.</value></data>
+  <data name="ReviewCommitReview" xml:space="preserve"><value>Review</value></data>
+  <data name="ReviewCommitTyped" xml:space="preserve"><value>Review this branch, tag or range</value></data>
   <data name="BranchHeader" xml:space="preserve"><value>## Branch points — {0} turn(s)</value></data>
   <data name="BranchUsage" xml:space="preserve"><value>→ `/branch &lt;n&gt;` forks at turn *n* · `/branch &lt;name&gt;` switches to a branch</value></data>
   <data name="BranchTreeHeader" xml:space="preserve"><value>### Conversation tree</value></data>

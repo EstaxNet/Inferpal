@@ -935,6 +935,13 @@
   </data>
   <data name="SlashHintBranch" xml:space="preserve"><value>在指定轮次分叉对话（`/branch [n|名称]`）</value></data>
   <data name="BranchNoConversation" xml:space="preserve"><value>没有可分叉的对话。</value></data>
+  <data name="ReviewCommitTitle" xml:space="preserve"><value>评审提交</value></data>
+  <data name="ReviewCommitIntro" xml:space="preserve"><value>Inferpal 像 /check 一样评审它带来的更改。</value></data>
+  <data name="ReviewCommitFilter" xml:space="preserve"><value>提交、分支或范围</value></data>
+  <data name="ReviewCommitFooter" xml:space="preserve"><value>当前分支最近的 {0} 个提交；输入以在最近 {1} 个中搜索，或输入分支、标签或范围。</value></data>
+  <data name="ReviewCommitNoMatch" xml:space="preserve"><value>最近 {0} 个提交中没有匹配项 — 输入分支、标签、范围或哈希以评审。</value></data>
+  <data name="ReviewCommitReview" xml:space="preserve"><value>评审</value></data>
+  <data name="ReviewCommitTyped" xml:space="preserve"><value>评审此分支、标签或范围</value></data>
   <data name="BranchHeader" xml:space="preserve"><value>## 分叉点 — 共 {0} 轮</value></data>
   <data name="BranchUsage" xml:space="preserve"><value>→ `/branch &lt;n&gt;` 在第 *n* 轮分叉 · `/branch &lt;名称&gt;` 切换到某个分支</value></data>
   <data name="BranchTreeHeader" xml:space="preserve"><value>### 对话树</value></data>

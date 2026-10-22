@@ -3,6 +3,7 @@
   "InferpalChatCommand": "Inferpal 聊天",
   "InferpalSettingsCommand": "Inferpal 设置...",
   "InferpalMapCommand": "Inferpal 项目架构图",
+  "InferpalReviewCommitCommand": "评审提交...",
   "ContextMenuAskInferpal": "询问 Inferpal",
   "ContextMenuExplain": "解释",
   "ContextMenuRefactor": "重构",

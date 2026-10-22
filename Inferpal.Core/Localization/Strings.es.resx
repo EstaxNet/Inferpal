@@ -935,6 +935,13 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   </data>
   <data name="SlashHintBranch" xml:space="preserve"><value>bifurca la conversación en un turno dado (`/branch [n|nombre]`)</value></data>
   <data name="BranchNoConversation" xml:space="preserve"><value>Nada que bifurcar — esta conversación está vacía.</value></data>
+  <data name="ReviewCommitTitle" xml:space="preserve"><value>Revisar un commit</value></data>
+  <data name="ReviewCommitIntro" xml:space="preserve"><value>Inferpal revisa el cambio que introdujo, como /check.</value></data>
+  <data name="ReviewCommitFilter" xml:space="preserve"><value>Commit, rama o rango</value></data>
+  <data name="ReviewCommitFooter" xml:space="preserve"><value>Los {0} commits más recientes de la rama actual; escriba para buscar entre los últimos {1}, o una rama, etiqueta o rango.</value></data>
+  <data name="ReviewCommitNoMatch" xml:space="preserve"><value>Ningún commit de los últimos {0} coincide: escriba una rama, etiqueta, rango o hash para revisarlo.</value></data>
+  <data name="ReviewCommitReview" xml:space="preserve"><value>Revisar</value></data>
+  <data name="ReviewCommitTyped" xml:space="preserve"><value>Revisar esta rama, etiqueta o rango</value></data>
   <data name="BranchHeader" xml:space="preserve"><value>## Puntos de bifurcación — {0} turno(s)</value></data>
   <data name="BranchUsage" xml:space="preserve"><value>→ `/branch &lt;n&gt;` bifurca en el turno *n* · `/branch &lt;nombre&gt;` cambia a una rama</value></data>
   <data name="BranchTreeHeader" xml:space="preserve"><value>### Árbol de conversación</value></data>

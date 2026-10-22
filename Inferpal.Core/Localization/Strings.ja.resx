@@ -935,6 +935,13 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   </data>
   <data name="SlashHintBranch" xml:space="preserve"><value>指定したターンで会話を分岐します（`/branch [n|名前]`）</value></data>
   <data name="BranchNoConversation" xml:space="preserve"><value>分岐できる会話がありません。</value></data>
+  <data name="ReviewCommitTitle" xml:space="preserve"><value>コミットをレビュー</value></data>
+  <data name="ReviewCommitIntro" xml:space="preserve"><value>Inferpal は、そのコミットが加えた変更を /check と同じようにレビューします。</value></data>
+  <data name="ReviewCommitFilter" xml:space="preserve"><value>コミット、ブランチ、または範囲</value></data>
+  <data name="ReviewCommitFooter" xml:space="preserve"><value>現在のブランチの最新 {0} 件のコミット。入力すると直近 {1} 件から検索するか、ブランチ、タグ、範囲を指定できます。</value></data>
+  <data name="ReviewCommitNoMatch" xml:space="preserve"><value>直近 {0} 件に一致するコミットはありません。レビューするには、ブランチ、タグ、範囲、またはハッシュを入力してください。</value></data>
+  <data name="ReviewCommitReview" xml:space="preserve"><value>レビュー</value></data>
+  <data name="ReviewCommitTyped" xml:space="preserve"><value>このブランチ、タグ、または範囲をレビュー</value></data>
   <data name="BranchHeader" xml:space="preserve"><value>## 分岐ポイント — {0} ターン</value></data>
   <data name="BranchUsage" xml:space="preserve"><value>→ `/branch &lt;n&gt;` はターン *n* で分岐 · `/branch &lt;名前&gt;` はブランチに切り替え</value></data>
   <data name="BranchTreeHeader" xml:space="preserve"><value>### 会話ツリー</value></data>

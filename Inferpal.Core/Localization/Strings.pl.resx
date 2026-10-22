@@ -935,6 +935,13 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   </data>
   <data name="SlashHintBranch" xml:space="preserve"><value>rozgałęzia rozmowę w wybranej turze (`/branch [n|nazwa]`)</value></data>
   <data name="BranchNoConversation" xml:space="preserve"><value>Nie ma czego rozgałęziać — ta rozmowa jest pusta.</value></data>
+  <data name="ReviewCommitTitle" xml:space="preserve"><value>Przejrzyj commit</value></data>
+  <data name="ReviewCommitIntro" xml:space="preserve"><value>Inferpal przegląda zmianę, którą wprowadził, tak jak /check.</value></data>
+  <data name="ReviewCommitFilter" xml:space="preserve"><value>Commit, gałąź lub zakres</value></data>
+  <data name="ReviewCommitFooter" xml:space="preserve"><value>{0} najnowszych commitów bieżącej gałęzi; wpisz, aby przeszukać ostatnie {1}, albo podaj gałąź, tag lub zakres.</value></data>
+  <data name="ReviewCommitNoMatch" xml:space="preserve"><value>Żaden z ostatnich {0} commitów nie pasuje — wpisz gałąź, tag, zakres lub hash, aby go przejrzeć.</value></data>
+  <data name="ReviewCommitReview" xml:space="preserve"><value>Przejrzyj</value></data>
+  <data name="ReviewCommitTyped" xml:space="preserve"><value>Przejrzyj tę gałąź, tag lub zakres</value></data>
   <data name="BranchHeader" xml:space="preserve"><value>## Punkty rozgałęzienia — tury: {0}</value></data>
   <data name="BranchUsage" xml:space="preserve"><value>→ `/branch &lt;n&gt;` rozgałęzia w turze *n* · `/branch &lt;nazwa&gt;` przełącza na gałąź</value></data>
   <data name="BranchTreeHeader" xml:space="preserve"><value>### Drzewo rozmowy</value></data>

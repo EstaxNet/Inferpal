@@ -1709,6 +1709,15 @@ internal static class Strings
         Format(Get(nameof(BranchCreated)), branch, turn, parent);
     public static string BranchSwitched(string name)         => Format(Get(nameof(BranchSwitched)), name);
 
+    // ── Review a commit (Visual Studio's dialog) ─────────────────────────────
+    public static string ReviewCommitTitle       => Get(nameof(ReviewCommitTitle));
+    public static string ReviewCommitIntro       => Get(nameof(ReviewCommitIntro));
+    public static string ReviewCommitFilter      => Get(nameof(ReviewCommitFilter));
+    public static string ReviewCommitTyped       => Get(nameof(ReviewCommitTyped));
+    public static string ReviewCommitFooter(int shown, int searched) => Format(Get(nameof(ReviewCommitFooter)), shown, searched);
+    public static string ReviewCommitNoMatch(int searched) => Format(Get(nameof(ReviewCommitNoMatch)), searched);
+    public static string ReviewCommitReview      => Get(nameof(ReviewCommitReview));
+
     // ── /task command (background agent tasks) ─────────────────────────────────
     public static string SlashHintTask                       => Get(nameof(SlashHintTask));
     public static string SlashHintDebug                      => Get(nameof(SlashHintDebug));

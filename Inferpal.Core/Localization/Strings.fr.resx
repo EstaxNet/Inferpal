@@ -939,6 +939,13 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   </data>
   <data name="SlashHintBranch" xml:space="preserve"><value>fourche la conversation à un tour donné (`/branch [n|nom]`)</value></data>
   <data name="BranchNoConversation" xml:space="preserve"><value>Rien à fourcher — cette conversation est vide.</value></data>
+  <data name="ReviewCommitTitle" xml:space="preserve"><value>Relire un commit</value></data>
+  <data name="ReviewCommitIntro" xml:space="preserve"><value>Inferpal relit le changement qu'il a apporté, comme /check.</value></data>
+  <data name="ReviewCommitFilter" xml:space="preserve"><value>Commit, branche ou plage</value></data>
+  <data name="ReviewCommitFooter" xml:space="preserve"><value>Les {0} commits les plus récents de la branche courante ; tapez pour chercher parmi les {1} derniers, ou une branche, une étiquette ou une plage.</value></data>
+  <data name="ReviewCommitNoMatch" xml:space="preserve"><value>Aucun des {0} derniers commits ne correspond — tapez une branche, une étiquette, une plage ou une empreinte pour la relire.</value></data>
+  <data name="ReviewCommitReview" xml:space="preserve"><value>Relire</value></data>
+  <data name="ReviewCommitTyped" xml:space="preserve"><value>Relire cette branche, cette étiquette ou cette plage</value></data>
   <data name="BranchHeader" xml:space="preserve"><value>## Points de fourche — {0} tour(s)</value></data>
   <data name="BranchUsage" xml:space="preserve"><value>→ `/branch &lt;n&gt;` fourche au tour *n* · `/branch &lt;nom&gt;` bascule sur une branche</value></data>
   <data name="BranchTreeHeader" xml:space="preserve"><value>### Arbre de conversation</value></data>

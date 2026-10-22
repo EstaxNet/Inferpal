@@ -319,14 +319,20 @@ public class SolutionExtentTests : IDisposable
         var rag = ConventionCoverageTests.CodeOnly(
             Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowData.Rag.cs"));
 
-        // Witness: the reader sees the three derivations.
-        foreach (var site in new[] { "private void PinWorkspaceRoot()", "FindReliableProjectRoot() =>", "FindProjectRoot(IReadOnlyList<string>? openPaths = null) =>" })
+        // Witness: the reader sees the three derivations — the plain root is the context holder's, which the menu
+        // commands read too ("Review a Commit…" reads the repository /check reads).
+        foreach (var site in new[] { "private void PinWorkspaceRoot()", "FindReliableProjectRoot() =>",
+                                     "FindProjectRoot(IReadOnlyList<string>? openPaths = null) => _contextHolder.ProjectRoot(openPaths);" })
             Assert.Contains(site, rag, StringComparison.Ordinal);
+        var holder = ConventionCoverageTests.CodeOnly(
+            Path.Combine(RepoRoot(), "Inferpal", "Services", "VsIntegration", "VsContextHolder.cs"));
+        Assert.Contains("public string ProjectRoot(IReadOnlyList<string>? openPaths = null) =>", holder, StringComparison.Ordinal);
 
         // Through the one reader of the root Visual Studio reports — its solution's extent, or the folder it has open.
-        Assert.True(rag.Split("SolutionExtent.ActiveRoot()").Length - 1 >= 3, "pin, reliable and plain roots");
-        Assert.True(rag.Split("SolutionExtent.RootForDir(").Length - 1 >= 2, "both locator fallbacks");
-        Assert.DoesNotContain("TryReadSolutionPath()", rag, StringComparison.Ordinal);
+        var both = rag + holder;
+        Assert.True(both.Split("SolutionExtent.ActiveRoot()").Length - 1 >= 3, "pin, reliable and plain roots");
+        Assert.True(both.Split("SolutionExtent.RootForDir(").Length - 1 >= 2, "both locator fallbacks");
+        Assert.DoesNotContain("TryReadSolutionPath()", both, StringComparison.Ordinal);
     }
 
     /// <summary>

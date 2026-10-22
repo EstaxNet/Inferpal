@@ -1,0 +1,105 @@
+<DataTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:vs="clr-namespace:Microsoft.VisualStudio.Shell;assembly=Microsoft.VisualStudio.Shell.15.0">
+
+    <DataTemplate.Resources>
+        <BooleanToVisibilityConverter x:Key="b2v" />
+        <Style TargetType="Button" BasedOn="{StaticResource {x:Static vs:VsResourceKeys.ButtonStyleKey}}">
+            <Setter Property="MinWidth" Value="90" />
+            <Setter Property="Margin"   Value="8,0,0,0" />
+            <Setter Property="Padding"  Value="10,3" />
+        </Style>
+        <!-- A line of the list: the whole line is the target, drawn flat; its background says it is the one selected. -->
+        <Style x:Key="RowButton" TargetType="Button">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="3,0,0,0" Padding="8,5" CornerRadius="3">
+                            <ContentPresenter HorizontalAlignment="Stretch" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </DataTemplate.Resources>
+
+    <!-- The search box has the keyboard as the dialog opens: typing searches at once. -->
+    <Grid Width="540" Background="{Binding ThemeWindowBg}" FocusManager.FocusedElement="{Binding ElementName=Search}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- The dialog's caption is its title: the content starts with what it does. -->
+        <TextBlock Grid.Row="1" Text="{Binding Intro}" Foreground="{Binding ThemeSubtleText}" TextWrapping="Wrap" Margin="0,0,0,10" />
+
+        <TextBlock Grid.Row="2" Text="{Binding FilterLabel}" Foreground="{Binding ThemeText}" Margin="0,0,0,4" />
+        <!-- ↓/↑ move the selection from the box itself; Enter reviews it (the default button). -->
+        <TextBox x:Name="Search" Grid.Row="3" Text="{Binding Filter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                 Style="{StaticResource {x:Static vs:VsResourceKeys.TextBoxStyleKey}}"
+                 AutomationProperties.Name="{Binding FilterLabel}" Padding="4,3" Margin="0,0,0,8">
+            <TextBox.InputBindings>
+                <KeyBinding Key="Down" Command="{Binding NextCommand}" />
+                <KeyBinding Key="Up"   Command="{Binding PreviousCommand}" />
+            </TextBox.InputBindings>
+        </TextBox>
+
+        <Border Grid.Row="4" BorderBrush="{Binding ThemeBorder}" BorderThickness="1" CornerRadius="3" Height="300">
+            <Grid>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="2">
+                    <ItemsControl ItemsSource="{Binding Rows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <!-- Not a tab stop: Enter on a focused line would click it rather than review it — the keyboard
+                                     moves the selection from the search box. -->
+                                <Button Style="{StaticResource RowButton}" Command="{Binding SelectCommand}" Focusable="False"
+                                        Background="{Binding Background}" BorderBrush="{Binding Line}"
+                                        AutomationProperties.Name="{Binding Subject}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Column="0" Grid.RowSpan="2" Text="{Binding Hash}"
+                                                   FontFamily="Consolas, Courier New" Margin="0,0,10,0" VerticalAlignment="Top"
+                                                   Foreground="{Binding DataContext.ThemeSubtleText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                                        <TextBlock Grid.Column="1" Grid.Row="0" Text="{Binding Subject}" TextTrimming="CharacterEllipsis"
+                                                   Foreground="{Binding DataContext.ThemeText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                                        <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding Meta}" FontSize="11"
+                                                   Foreground="{Binding DataContext.ThemeSubtleText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                                    </Grid>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+                <!-- Nothing to list: why — git's refusal, no workspace —, or that nothing matches what is typed. -->
+                <TextBlock Text="{Binding Failure}" Foreground="{Binding ThemeSubtleText}" TextWrapping="Wrap" Margin="10"
+                           Visibility="{Binding HasFailure, Converter={StaticResource b2v}}" />
+                <TextBlock Text="{Binding NoMatch}" Foreground="{Binding ThemeSubtleText}" TextWrapping="Wrap" Margin="10"
+                           Visibility="{Binding HasNoMatch, Converter={StaticResource b2v}}" />
+            </Grid>
+        </Border>
+
+        <!-- What the list holds — not when it holds nothing because git refused. -->
+        <TextBlock Grid.Row="5" Text="{Binding Footer}" Foreground="{Binding ThemeSubtleText}" TextWrapping="Wrap"
+                   FontSize="11" Margin="0,6,0,10" Visibility="{Binding HasCommits, Converter={StaticResource b2v}}" />
+
+        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="{Binding BtnReview}" Command="{Binding ReviewCommand}" IsEnabled="{Binding CanReview}" IsDefault="True" />
+            <Button Content="{Binding BtnCancel}" Command="{Binding CancelCommand}" IsCancel="True" />
+        </StackPanel>
+    </Grid>
+</DataTemplate>

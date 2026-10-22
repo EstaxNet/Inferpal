@@ -3,6 +3,7 @@
   "InferpalChatCommand": "Inferpal チャット",
   "InferpalSettingsCommand": "Inferpal 設定...",
   "InferpalMapCommand": "Inferpal プロジェクトマップ",
+  "InferpalReviewCommitCommand": "コミットをレビュー...",
   "ContextMenuAskInferpal": "Inferpal に質問",
   "ContextMenuExplain": "説明",
   "ContextMenuRefactor": "リファクタリング",

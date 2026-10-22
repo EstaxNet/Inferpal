@@ -3,6 +3,7 @@
   "InferpalChatCommand": "Chat de Inferpal",
   "InferpalSettingsCommand": "Configuración de Inferpal...",
   "InferpalMapCommand": "Mapa del proyecto de Inferpal",
+  "InferpalReviewCommitCommand": "Revisar un commit...",
   "ContextMenuAskInferpal": "Preguntar a Inferpal",
   "ContextMenuExplain": "Explicar",
   "ContextMenuRefactor": "Refactorizar",

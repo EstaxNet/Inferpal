@@ -253,4 +253,18 @@ internal class VsContextHolder
         lock (_lock)
             return [.. _openCounts.Keys];
     }
+
+    // Resolution order and walk limits live in ProjectRootLocator (unit-tested); this only supplies the open editor
+    // paths, the authoritative signal, and the CWD.
+    private static readonly Signals.ProjectRootLocator RootLocator = new();
+
+    /// <summary>The root the chat's commands read — <c>/check</c>, <c>/context</c>, <c>/memory</c> — and the menu's: the
+    /// solution or folder open, else the one the open documents sit in. One reader: the menu's "Review a Commit…" refused
+    /// a file opened alone that <c>/check</c> in the chat reviewed.</summary>
+    public string ProjectRoot(IReadOnlyList<string>? openPaths = null) =>
+        SolutionExtent.ActiveRoot()
+        ?? SolutionExtent.RootForDir(RootLocator.Locate(
+            openPaths ?? GetOpenPaths(),
+            activeSolutionDir: null,
+            System.IO.Directory.GetCurrentDirectory()));
 }

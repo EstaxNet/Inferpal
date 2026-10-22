@@ -496,12 +496,7 @@ internal partial class InferpalToolWindowData
     // only supplies the open editor paths, the authoritative signal, and the CWD.
     private static readonly Services.Signals.ProjectRootLocator _rootLocator = new();
 
-    private string FindProjectRoot(IReadOnlyList<string>? openPaths = null) =>
-        SolutionExtent.ActiveRoot()
-        ?? SolutionExtent.RootForDir(_rootLocator.Locate(
-            openPaths ?? _contextHolder.GetOpenPaths(),
-            activeSolutionDir: null,
-            Directory.GetCurrentDirectory()));
+    private string FindProjectRoot(IReadOnlyList<string>? openPaths = null) => _contextHolder.ProjectRoot(openPaths);
 
     #endregion
 }

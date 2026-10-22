@@ -21,8 +21,9 @@ exists.
   for your card, a server on another machine by its address, a key when a server asks for one, and — on Ollama
   without a chat model — a download of a recommended model. Visual Studio takes the server that answers when nothing
   was set up yet, and says so; `/setup` looks again in both.
-- **Not in Visual Studio yet** — **Review a Commit…** (VS Code's command palette lists the commits to pick from; in
-  Visual Studio, type `/check <commit>`).
+- **Review a Commit…, in both** — a commit picked from the recent ones of the current branch (searchable by its
+  message), or a branch, tag or range typed, reviewed by `/check`: VS Code's command palette, Visual Studio's
+  *Tools › Inferpal › Review a Commit…*.
 - **Headless slash commands** — nearly all the slash commands are served by the host over JSON-RPC with the
   same approval/permission pipeline; long commands are cancellable.
 - **Settings panel in VS Code** — an "Inferpal Settings" webview with the same seven pages as the

@@ -935,6 +935,13 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   </data>
   <data name="SlashHintBranch" xml:space="preserve"><value>verzweigt die Unterhaltung an einem Zug (`/branch [n|Name]`)</value></data>
   <data name="BranchNoConversation" xml:space="preserve"><value>Nichts zu verzweigen — diese Unterhaltung ist leer.</value></data>
+  <data name="ReviewCommitTitle" xml:space="preserve"><value>Commit prüfen</value></data>
+  <data name="ReviewCommitIntro" xml:space="preserve"><value>Inferpal prüft die Änderung, die er gebracht hat, wie /check.</value></data>
+  <data name="ReviewCommitFilter" xml:space="preserve"><value>Commit, Branch oder Bereich</value></data>
+  <data name="ReviewCommitFooter" xml:space="preserve"><value>Die {0} neuesten Commits des aktuellen Branchs; tippen Sie, um die letzten {1} zu durchsuchen oder einen Branch, ein Tag oder einen Bereich anzugeben.</value></data>
+  <data name="ReviewCommitNoMatch" xml:space="preserve"><value>Kein Commit unter den letzten {0} passt — geben Sie einen Branch, ein Tag, einen Bereich oder einen Hash ein, um ihn zu prüfen.</value></data>
+  <data name="ReviewCommitReview" xml:space="preserve"><value>Prüfen</value></data>
+  <data name="ReviewCommitTyped" xml:space="preserve"><value>Diesen Branch, dieses Tag oder diesen Bereich prüfen</value></data>
   <data name="BranchHeader" xml:space="preserve"><value>## Verzweigungspunkte — {0} Zug/Züge</value></data>
   <data name="BranchUsage" xml:space="preserve"><value>→ `/branch &lt;n&gt;` verzweigt bei Zug *n* · `/branch &lt;Name&gt;` wechselt zu einem Zweig</value></data>
   <data name="BranchTreeHeader" xml:space="preserve"><value>### Unterhaltungsbaum</value></data>

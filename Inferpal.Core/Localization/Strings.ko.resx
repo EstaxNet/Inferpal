@@ -935,6 +935,13 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   </data>
   <data name="SlashHintBranch" xml:space="preserve"><value>지정한 턴에서 대화를 분기합니다 (`/branch [n|이름]`)</value></data>
   <data name="BranchNoConversation" xml:space="preserve"><value>분기할 대화가 없습니다.</value></data>
+  <data name="ReviewCommitTitle" xml:space="preserve"><value>커밋 검토</value></data>
+  <data name="ReviewCommitIntro" xml:space="preserve"><value>Inferpal이 그 커밋이 가져온 변경을 /check처럼 검토합니다.</value></data>
+  <data name="ReviewCommitFilter" xml:space="preserve"><value>커밋, 브랜치 또는 범위</value></data>
+  <data name="ReviewCommitFooter" xml:space="preserve"><value>현재 브랜치의 최근 커밋 {0}개. 입력하면 최근 {1}개에서 검색하거나 브랜치, 태그, 범위를 지정할 수 있습니다.</value></data>
+  <data name="ReviewCommitNoMatch" xml:space="preserve"><value>최근 {0}개 중 일치하는 커밋이 없습니다. 검토하려면 브랜치, 태그, 범위 또는 해시를 입력하세요.</value></data>
+  <data name="ReviewCommitReview" xml:space="preserve"><value>검토</value></data>
+  <data name="ReviewCommitTyped" xml:space="preserve"><value>이 브랜치, 태그 또는 범위 검토</value></data>
   <data name="BranchHeader" xml:space="preserve"><value>## 분기 지점 — {0}개 턴</value></data>
   <data name="BranchUsage" xml:space="preserve"><value>→ `/branch &lt;n&gt;` 은 턴 *n* 에서 분기 · `/branch &lt;이름&gt;` 은 브랜치로 전환</value></data>
   <data name="BranchTreeHeader" xml:space="preserve"><value>### 대화 트리</value></data>

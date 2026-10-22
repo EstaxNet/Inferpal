@@ -935,6 +935,13 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   </data>
   <data name="SlashHintBranch" xml:space="preserve"><value>biforca la conversazione a un turno (`/branch [n|nome]`)</value></data>
   <data name="BranchNoConversation" xml:space="preserve"><value>Niente da biforcare — questa conversazione è vuota.</value></data>
+  <data name="ReviewCommitTitle" xml:space="preserve"><value>Revisiona un commit</value></data>
+  <data name="ReviewCommitIntro" xml:space="preserve"><value>Inferpal revisiona la modifica che ha introdotto, come /check.</value></data>
+  <data name="ReviewCommitFilter" xml:space="preserve"><value>Commit, branch o intervallo</value></data>
+  <data name="ReviewCommitFooter" xml:space="preserve"><value>I {0} commit più recenti del branch corrente; digita per cercare tra gli ultimi {1}, o un branch, tag o intervallo.</value></data>
+  <data name="ReviewCommitNoMatch" xml:space="preserve"><value>Nessun commit tra gli ultimi {0} corrisponde: digita un branch, tag, intervallo o hash per revisionarlo.</value></data>
+  <data name="ReviewCommitReview" xml:space="preserve"><value>Revisiona</value></data>
+  <data name="ReviewCommitTyped" xml:space="preserve"><value>Revisionare questo branch, tag o intervallo</value></data>
   <data name="BranchHeader" xml:space="preserve"><value>## Punti di biforcazione — {0} turno/i</value></data>
   <data name="BranchUsage" xml:space="preserve"><value>→ `/branch &lt;n&gt;` biforca al turno *n* · `/branch &lt;nome&gt;` passa a un ramo</value></data>
   <data name="BranchTreeHeader" xml:space="preserve"><value>### Albero della conversazione</value></data>
