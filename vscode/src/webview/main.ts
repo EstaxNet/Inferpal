@@ -7,6 +7,7 @@ import type {
   ExtToWebview,
   WebviewToExt,
   WvBackendStatus,
+  WvBuildBanner,
   WvChip,
   WvImportCard,
   WvMentionCategory,
@@ -30,6 +31,16 @@ setXraySink((msg) => post(msg));
 
 const topbarEl = document.getElementById('topbar')!;
 const messagesEl = document.getElementById('messages')!;
+// The banner of a build task that failed, over the conversation (Visual Studio's "Build Failed" banner).
+const buildBannerEl = document.createElement('div');
+buildBannerEl.id = 'build-banner';
+buildBannerEl.hidden = true;
+// Said by a screen reader when it appears or changes: a build fails while the person looks elsewhere.
+buildBannerEl.setAttribute('role', 'status');
+// What it shows now, and the failed build the person closed it for: a redraw already on its way never reopens it.
+let buildBannerShown = '';
+let buildBannerClosed = -1;
+messagesEl.before(buildBannerEl);
 const composerEl = document.getElementById('composer')!;
 const promptEl = document.getElementById('prompt') as HTMLTextAreaElement;
 const toolbarEl = document.getElementById('toolbar')!;
@@ -960,6 +971,79 @@ function renderToolDiff(diff: string): HTMLElement {
   return pre;
 }
 
+/**
+ * The banner of a build task that failed: how many errors the Problems panel holds, the first, the task — Fix them sends
+ * the panel's errors to the model as the welcome banner does, Show the errors opens the panel. Closed, it stays closed
+ * until the next build fails.
+ */
+function renderBuildBanner(banner: WvBuildBanner | null): void {
+  if (banner && banner.seq === buildBannerClosed) {
+    return;
+  }
+  // Redrawn at each change of the Problems panel: unchanged, it is left as it is — the focus on its buttons too.
+  const shown = JSON.stringify(banner);
+  if (shown === buildBannerShown) {
+    return;
+  }
+  buildBannerShown = shown;
+  buildBannerEl.textContent = '';
+  const was = buildBannerEl.hidden;
+  buildBannerEl.hidden = banner === null;
+  if (!banner) {
+    if (!was && !welcomeEl.hidden) {
+      buildWelcome();
+    }
+    return;
+  }
+  const head = document.createElement('div');
+  head.className = 'build-banner-head';
+  const title = document.createElement('strong');
+  title.textContent = banner.errors > 0 ? t('buildFailed', banner.errors) : t('buildFailedUncounted');
+  const close = iconButton('close', t('close'), 14);
+  const dismiss = (): void => {
+    buildBannerClosed = banner.seq;
+    renderBuildBanner(null);
+    post({ type: 'dismissBuildBanner' });
+  };
+  close.addEventListener('click', dismiss);
+  head.append(icon('failed', 14), title, close);
+  buildBannerEl.appendChild(head);
+  if (banner.firstError) {
+    const first = document.createElement('code');
+    first.className = 'build-banner-error';
+    first.textContent = banner.firstError;
+    first.title = banner.firstError;
+    buildBannerEl.appendChild(first);
+  }
+  const from = document.createElement('div');
+  from.className = 'build-banner-from';
+  // No error in the panel (a task without a problem matcher, or errors fixed since): the task's output says why.
+  from.textContent = t(banner.errors > 0 ? 'buildFailedFrom' : 'buildFailedFromNoErrors', banner.task);
+  buildBannerEl.appendChild(from);
+  const actions = document.createElement('div');
+  actions.className = 'build-banner-actions';
+  // Offered only with errors to send: with none in the panel, the click would answer "no problems" and send nothing.
+  // The extension takes the banner down once they are sent — refused (a turn running), it stays.
+  if (banner.errors > 0) {
+    const fix = document.createElement('button');
+    fix.textContent = t('welcomeFixThem');
+    fix.addEventListener('click', () => post({ type: 'fixBuild', text: t('welcomeFixPrompt') }));
+    actions.appendChild(fix);
+  }
+  if (banner.errors > 0) {
+    const show = document.createElement('button');
+    show.className = 'secondary';
+    show.textContent = t('buildShowErrors');
+    show.addEventListener('click', () => post({ type: 'showProblems' }));
+    actions.appendChild(show);
+    buildBannerEl.appendChild(actions);
+  }
+  // The welcome screen's own Problems banner gives way to it: one Fix them, one count.
+  if (!welcomeEl.hidden) {
+    buildWelcome();
+  }
+}
+
 /** The run's line and result bar, once the turn has ended: what it did, the files it changed, the last check. */
 function renderRunSummary(target: TurnView, run: RunSummary | null | undefined): void {
   if (!run) {
@@ -1676,7 +1760,7 @@ function buildWelcome(): void {
     welcomeEl.appendChild(openHint);
   }
 
-  if (problems > 0) {
+  if (problems > 0 && buildBannerEl.hidden) {
     const banner = document.createElement('div');
     banner.className = 'welcome-banner';
     const text = document.createElement('span');
@@ -2678,6 +2762,9 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       break;
     case 'planMode':
       applyPlanMode(msg.enabled);
+      break;
+    case 'buildBanner':
+      renderBuildBanner(msg.banner);
       break;
     case 'editorContext':
       editorFile = msg.file;

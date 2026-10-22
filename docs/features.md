@@ -16,7 +16,6 @@ exists.
   change shown before it applies), **Explain**, **Add Tests**, **Fix**, **Refactor** and **Document** in the editor's
   menu, `/test` on the **selection** with its tests written by an edit you can undo, and `/map` on **Alt+M**.
 - **Not in VS Code yet** — a few chat features are Visual Studio-only for now:
-  - the **Build Failed banner** (VS Code's welcome card offers **Fix them** for the Problems panel's errors);
   - the **auto-attach chips** while you type (the per-turn auto-context is there);
   - `/fix-build` (it answers that it is not available).
 - **First run, in both editors** — Inferpal looks for a model server where one usually listens (Ollama, LM Studio,
@@ -151,7 +150,9 @@ exists.
   to 5 files × 4 000 chars).
 - **Build Failed banner** — when Visual Studio finishes a solution build with errors, a banner
   appears above the input with the first error and a one-click **Fix with AI** / `/fix-build`
-  entry point.
+  entry point. In VS Code, a task of the *build* group that fails draws the banner over the chat: the errors of the
+  Problems panel as it stands (each once), the first one, the task — **Fix them** sends them to the model, **Show the
+  errors** opens the panel; a build that passes takes it down.
 - **Inline diff preview for code actions** — `/fix`, `/refactor` and `/doc` no longer rewrite
   the buffer blind: the change is shown in the editor with per-hunk accept/reject (Visual
   Studio: a red/green adornment with ✓/✗ per hunk, and ✓✓/✗✗ on the first open hunk to decide

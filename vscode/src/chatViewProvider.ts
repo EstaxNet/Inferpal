@@ -10,7 +10,7 @@ import { mentionTokens, resolveMention } from './mentionPaths';
 import { followModelRouterSettings } from './modelRouterSettings';
 import { SettingsPanel } from './settingsPanel';
 import { SetupFlow } from './setupFlow';
-import { openTabPaths, panelDiagnostics } from './editorBridge';
+import { buildBannerOf, isBuildTask, openTabPaths, panelErrors } from './editorBridge';
 import { capAttachment, CappedText } from './attachmentCap';
 import { renderChatHtml } from './webview/chatWebviewHtml';
 import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
@@ -20,6 +20,7 @@ import {
 import {
   WebviewToExt,
   WvBackendStatus,
+  WvBuildBanner,
   WvMentionCategory,
   WvPlan,
   WvSlashCommand,
@@ -105,6 +106,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private plan: WvPlan | null = null;
   private contextWindow = 0;
   private toolBubblesExpanded = false;
+  /** The build task that failed last — its banner is read from the panel as it stands, at every change and every
+   *  redraw; null after a build that passed, once closed, or once its errors were sent to the model. */
+  private failedBuild: string | null = null;
+  /** Counts the build tasks that ended: a banner computed late never replaces a later build's verdict. */
+  private buildSeq = 0;
   /** `runEndSoundEnabled` as last read: what decides for a turn whose request failed — the host decides for the others. */
   private runEndNotice = true;
   /** The conversation drawn compact: Language and appearance › Density, in the host config. */
@@ -165,6 +171,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         await vscode.commands.executeCommand('inferpal.openSettings');
       },
     });
+    this.watchBuilds();
   }
 
   /** The first-run card saved its choice: the chat takes the model, or the host restarts for a server of another type. */
@@ -1346,6 +1353,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         if (this.setupFlow.current) {
           this.post({ type: 'setup', view: this.setupFlow.current });
         }
+        // And the banner of a build that failed, built before the view was.
+        if (this.failedBuild !== null) {
+          this.postBuildBanner();
+        }
         return;
       case 'setupAction':
         await this.setupFlow.onAction(msg);
@@ -1383,17 +1394,37 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         }
         return;
       }
-      case 'fixProblems': {
+      case 'fixProblems':
+      case 'fixBuild': {
         // ⚠ The errors travel as the chip the @problems picker makes: typed in the prompt, "@problems" names no file,
         // nothing expands it, and the request reached the model as text without a single error. No problems left (fixed
-        // since the banner was drawn): the panel says so and nothing is sent.
+        // since the banner was drawn): the panel says so and nothing is sent. During a turn, refused before the chip is
+        // made — it would ride the next question —, and the build banner stays to try again.
+        if (this.busy) {
+          void vscode.window.showWarningMessage(t('A turn is still running — wait for it to finish or stop it, then try again.'));
+          return;
+        }
         const before = this.pendingAttachments.length;
         await this.resolveMention('problems');
         if (this.pendingAttachments.length > before) {
+          if (msg.type === 'fixBuild') {
+            this.failedBuild = null;
+            this.post({ type: 'buildBanner', banner: null });
+          }
           await this.send(msg.text);
         }
         return;
       }
+      case 'showProblems':
+        try {
+          await vscode.commands.executeCommand('workbench.actions.view.problems');
+        } catch (err) {
+          this.gestureFailed('show problems', err);
+        }
+        return;
+      case 'dismissBuildBanner':
+        this.failedBuild = null;
+        return;
       case 'cancel':
         if (this.codeActionPreviewOpen) {
           try {
@@ -3472,11 +3503,42 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     const file = editor && editor.document.uri.scheme === 'file'
       ? editor.document.uri.path.split('/').pop() ?? null
       : null;
-    let problems = 0;
-    for (const [, diagnostics] of panelDiagnostics()) {
-      problems += diagnostics.filter((d) => d.severity === vscode.DiagnosticSeverity.Error).length;
-    }
-    return { editorFile: file, problems };
+    // The errors as the build banner counts them: once each.
+    return { editorFile: file, problems: panelErrors().length };
+  }
+
+  /**
+   * Build tasks that end, as Visual Studio's "Build Failed" banner follows its builds: a failure draws the banner over
+   * the chat, a build that passes takes it down. A task stopped before it exited (no exit code) says nothing either way,
+   * nor does a watch task (`isBackground`): stopped, it ends with a code, and it was not a build that failed.
+   * The banner reads the Problems panel as it stands — again at each change of it (the task's problem matcher may fill it
+   * after the process ends, a fix may empty it) —, never a count frozen when the build failed.
+   */
+  private watchBuilds(): void {
+    this.context.subscriptions.push(vscode.tasks.onDidEndTaskProcess((e) => {
+      const task = e.execution.task;
+      if (e.exitCode === undefined || task.isBackground || !isBuildTask(task)) {
+        return;
+      }
+      const seq = ++this.buildSeq;
+      if (e.exitCode === 0) {
+        this.failedBuild = null;
+        this.post({ type: 'buildBanner', banner: null });
+        return;
+      }
+      setTimeout(() => {
+        if (seq === this.buildSeq) {
+          this.failedBuild = task.name;
+          this.postBuildBanner();
+        }
+      }, 500);
+    }));
+  }
+
+  /** The banner of the build that failed, read from the Problems panel now. */
+  private postBuildBanner(): void {
+    const banner: WvBuildBanner | null = this.failedBuild === null ? null : { seq: this.buildSeq, ...buildBannerOf(this.failedBuild) };
+    this.post({ type: 'buildBanner', banner });
   }
 
   /** Follows the editor for the welcome screen; debounced, the Problems panel changes on every keystroke. */
@@ -3492,6 +3554,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       this.editorContextTimer = setTimeout(() => {
         const c = this.editorContext();
         this.post({ type: 'editorContext', file: c.editorFile, problems: c.problems });
+        if (this.failedBuild !== null) {
+          this.postBuildBanner();
+        }
       }, 400);
     };
     this.context.subscriptions.push(

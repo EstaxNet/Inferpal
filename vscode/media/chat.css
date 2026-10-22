@@ -1693,6 +1693,80 @@ kbd {
   border-radius: 6px;
 }
 
+/* A build task that failed: over the conversation, until it is closed or a build passes. */
+#build-banner {
+  margin: 8px 12px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--vscode-inputValidation-errorBorder, var(--vscode-errorForeground));
+  background: color-mix(in srgb, var(--vscode-errorForeground) 10%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.build-banner-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.build-banner-head strong {
+  flex: 1 1 auto;
+}
+
+.build-banner-head .icon-button {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ip-muted);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.build-banner-head .icon-button:hover {
+  background: var(--vscode-toolbar-hoverBackground, rgba(128, 128, 128, 0.2));
+  color: var(--vscode-foreground);
+}
+
+.build-banner-head > svg {
+  color: var(--vscode-errorForeground, #f44747);
+  flex: none;
+}
+
+.build-banner-error {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.build-banner-from {
+  color: var(--ip-muted);
+  font-size: 12px;
+}
+
+.build-banner-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.build-banner-actions button {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 6px;
+}
+
+.build-banner-actions button.secondary {
+  background: var(--vscode-button-secondaryBackground, transparent);
+  color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+}
+
 .welcome-hints {
   display: flex;
   flex-wrap: wrap;

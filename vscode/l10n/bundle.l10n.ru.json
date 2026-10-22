@@ -186,5 +186,10 @@
   "Inferpal has finished — {0}.": "Inferpal закончил — {0}.",
   "Show the answer": "Показать ответ",
   "Inferpal has finished.": "Inferpal закончил.",
-  "Inferpal stopped on an error.": "Inferpal остановился из-за ошибки."
+  "Inferpal stopped on an error.": "Inferpal остановился из-за ошибки.",
+  "The last build failed — {0} error(s)": "Последняя сборка не удалась — ошибок: {0}",
+  "The last build failed": "Последняя сборка не удалась",
+  "From the task {0} — the errors are in the Problems panel.": "Из задачи {0} — ошибки на панели «Проблемы».",
+  "Show the errors": "Показать ошибки",
+  "From the task {0} — the Problems panel holds none of its errors: its output says why.": "Из задачи {0} — на панели «Проблемы» нет ни одной её ошибки: причину показывает её вывод."
 }

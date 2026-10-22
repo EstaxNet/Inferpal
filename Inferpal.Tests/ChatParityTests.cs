@@ -33,6 +33,60 @@ public class ChatParityTests
         Assert.Contains("let open = expanded || item.hasErrors === true;", webview);
         Assert.Contains("post({ type: 'openApprovalDiff', text: item.toolDiff ?? '' })", webview);
     }
+
+    // ── A build that failed has its banner ────────────────────────────────────
+
+    /// <summary>A build task (its group) that fails draws the banner, a build that passes takes it down, a task stopped
+    /// before it exited says nothing. The banner reads the Problems panel as it stands — at each change, at each redraw —,
+    /// its errors once each, the first written as the model receives it; never a count frozen when the build failed.</summary>
+    [Fact]
+    public void VsCode_FollowsItsBuildTasks_WithALiveBanner()
+    {
+        var provider = VsCodeSource("chatViewProvider.ts");
+        Assert.Contains("vscode.tasks.onDidEndTaskProcess((e) => {", provider);
+        // A watch task stopped ends with a code: it was not a build that failed.
+        Assert.Contains("if (e.exitCode === undefined || task.isBackground || !isBuildTask(task)) {", provider);
+        Assert.Matches(@"if \(e\.exitCode === 0\) \{\s*this\.failedBuild = null;\s*this\.post\(\{ type: 'buildBanner', banner: null \}\);", provider);
+        // Never over a later build's verdict.
+        Assert.Matches(@"if \(seq === this\.buildSeq\) \{\s*this\.failedBuild = task\.name;\s*this\.postBuildBanner\(\);", provider);
+        Assert.Contains("this.failedBuild === null ? null : { seq: this.buildSeq, ...buildBannerOf(this.failedBuild) }", provider);
+        // Redrawn from the panel when it changes, and by a reloaded view.
+        Assert.Equal(2, System.Text.RegularExpressions.Regex.Matches(provider, @"if \(this\.failedBuild !== null\) \{\s*this\.postBuildBanner\(\);").Count);
+        Assert.Contains("await vscode.commands.executeCommand('workbench.actions.view.problems');", provider);
+
+        var bridge = VsCodeSource("editorBridge.ts");
+        Assert.Contains("return task.group?.id === vscode.TaskGroup.Build.id;", bridge);
+        Assert.Contains("if (d.severity === vscode.DiagnosticSeverity.Error && !seen.has(key)) {", bridge);
+        // One error = one place and one code: MSBuild's console appends the project to the matcher's message.
+        Assert.Contains("const key = `${rel}|${d.range.start.line}|${d.range.start.character}|${code !== undefined ? String(code) : d.message}`;", bridge);
+        Assert.Contains("firstError: first ? problemLine(first.rel, first.d) : null", bridge);
+        // The model receives the panel in the same lines.
+        Assert.Contains("(d.severity === vscode.DiagnosticSeverity.Error ? errors : warnings).push(problemLine(rel, d));", bridge);
+        Assert.Contains("problems: panelErrors().length", provider);
+    }
+
+    /// <summary>Fix them is offered only with errors to send, refused during a turn before anything is attached, and the
+    /// banner goes only once the errors are sent; the welcome screen's own banner gives way to it.</summary>
+    [Fact]
+    public void VsCode_BuildBannersFixThem_OnlyWhenItCanSend()
+    {
+        var webview = VsCodeSource("webview", "main.ts");
+        Assert.Matches(@"if \(banner\.errors > 0\) \{\s*const fix = document\.createElement\('button'\);", webview);
+        Assert.Contains("fix.addEventListener('click', () => post({ type: 'fixBuild', text: t('welcomeFixPrompt') }));", webview);
+        Assert.Contains("if (problems > 0 && buildBannerEl.hidden) {", webview);
+        Assert.Contains("post({ type: 'dismissBuildBanner' });", webview);
+        // Closed, it stays closed for that build — a redraw already on its way does not reopen it.
+        Assert.Matches(@"function renderBuildBanner\(banner: WvBuildBanner \| null\): void \{\s*if \(banner && banner\.seq === buildBannerClosed\) \{\s*return;", webview);
+        Assert.Contains("buildBannerClosed = banner.seq;", webview);
+        // No error in the panel: the task's output says why, and nothing offers to send or show what is not there.
+        Assert.Contains("t(banner.errors > 0 ? 'buildFailedFrom' : 'buildFailedFromNoErrors', banner.task)", webview);
+
+        var provider = VsCodeSource("chatViewProvider.ts");
+        var fix = provider[provider.IndexOf("case 'fixBuild': {", StringComparison.Ordinal)..];
+        Assert.True(fix.IndexOf("if (this.busy) {", StringComparison.Ordinal) < fix.IndexOf("await this.resolveMention('problems');", StringComparison.Ordinal),
+                    "the chip is attached before a running turn refuses the request");
+        Assert.Matches(@"if \(msg\.type === 'fixBuild'\) \{\s*this\.failedBuild = null;\s*this\.post\(\{ type: 'buildBanner', banner: null \}\);\s*\}\s*await this\.send\(msg\.text\);", fix);
+    }
 }
 
 public partial class HostServerTests

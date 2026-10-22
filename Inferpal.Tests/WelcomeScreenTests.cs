@@ -66,7 +66,9 @@ public class WelcomeScreenTests
         var provider = WebviewRebuildTests.TsCode("chatViewProvider.ts");
         var at       = provider.IndexOf("case 'fixProblems':", StringComparison.Ordinal);
         Assert.True(at >= 0, "the provider does not answer the banner's message");
-        var handler  = provider[at..provider.IndexOf("case '", at + 10, StringComparison.Ordinal)];
+        // The build banner's Fix them shares the handler (case 'fixBuild'): the body ends at the case after both.
+        var body     = provider.IndexOf("case 'fixBuild': {", at, StringComparison.Ordinal);
+        var handler  = provider[at..provider.IndexOf("case '", (body >= 0 ? body : at) + 10, StringComparison.Ordinal)];
         var attach   = handler.IndexOf("this.resolveMention('problems')", StringComparison.Ordinal);
         Assert.True(attach >= 0 && attach < handler.IndexOf("this.send(", StringComparison.Ordinal),
             "the errors are not attached before the request is sent");
@@ -83,8 +85,10 @@ public class WelcomeScreenTests
                        WebviewRebuildTests.Body(bridge, "export function panelDiagnostics("));
         Assert.Contains("panelDiagnostics()", WebviewRebuildTests.Body(bridge, "async editorDiagnostics("), StringComparison.Ordinal);
 
+        // The count goes through the errors' reader, which reads the panel's — the build banner counts with it too.
+        Assert.Contains("panelDiagnostics()", WebviewRebuildTests.Body(bridge, "export function panelErrors(): { rel: string; d: vscode.Diagnostic }[]"), StringComparison.Ordinal);
         var provider = WebviewRebuildTests.TsCode("chatViewProvider.ts");
-        Assert.Contains("panelDiagnostics()", WebviewRebuildTests.Body(provider, "private editorContext(): { editorFile: string | null; problems: number }"), StringComparison.Ordinal);
+        Assert.Contains("panelErrors()", WebviewRebuildTests.Body(provider, "private editorContext(): { editorFile: string | null; problems: number }"), StringComparison.Ordinal);
 
         // No third reader: the panel is read in exactly one place.
         foreach (var file in new[] { "chatViewProvider.ts", "editorBridge.ts", "extension.ts" })

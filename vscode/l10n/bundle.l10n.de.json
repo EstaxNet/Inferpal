@@ -186,5 +186,10 @@
   "Inferpal has finished — {0}.": "Inferpal ist fertig — {0}.",
   "Show the answer": "Antwort anzeigen",
   "Inferpal has finished.": "Inferpal ist fertig.",
-  "Inferpal stopped on an error.": "Inferpal wurde mit einem Fehler beendet."
+  "Inferpal stopped on an error.": "Inferpal wurde mit einem Fehler beendet.",
+  "The last build failed — {0} error(s)": "Der letzte Build ist fehlgeschlagen — {0} Fehler",
+  "The last build failed": "Der letzte Build ist fehlgeschlagen",
+  "From the task {0} — the errors are in the Problems panel.": "Aus der Aufgabe {0} — die Fehler stehen im Bereich „Probleme“.",
+  "Show the errors": "Fehler anzeigen",
+  "From the task {0} — the Problems panel holds none of its errors: its output says why.": "Aus der Aufgabe {0} — der Bereich „Probleme“ enthält keinen ihrer Fehler: ihre Ausgabe sagt, warum."
 }

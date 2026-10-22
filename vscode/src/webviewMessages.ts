@@ -118,6 +118,16 @@ export interface WvMentionItem {
   value: string;
 }
 
+/** The banner of a build task that failed: the errors of the Problems panel, the first one, the task. */
+export interface WvBuildBanner {
+  /** Which failed build: a banner the person closed is not drawn again for the same one. */
+  seq: number;
+  errors: number;
+  /** `path(line,column): error CODE: message` — the first error by file and line; null when the panel has none. */
+  firstError: string | null;
+  task: string;
+}
+
 /** One context chip in the composer (attachment pending for the next turn). */
 export interface WvChip {
   name: string;
@@ -203,6 +213,8 @@ export type ExtToWebview =
   // transcript keeps it, under no model's name.
   | { type: 'turnEnded'; text: string; error: string | null; cancelled: boolean; tokens: number; promptTokens: number; timestamp: string; endNotice?: string | null; offersContinue?: boolean; contextWindow?: number; run?: RunSummary | null; duration?: string | null; model?: string | null; canRegenerate?: boolean; notice?: boolean }
   | { type: 'editorContext'; file: string | null; problems: number }
+  /** A build task failed (the banner), or passed (null: the banner goes). */
+  | { type: 'buildBanner'; banner: WvBuildBanner | null }
   | { type: 'planMode'; enabled: boolean }
   | { type: 'backendStatus'; status: WvBackendStatus }
   | { type: 'agentMode'; enabled: boolean }
@@ -242,6 +254,12 @@ export type WebviewToExt =
   | { type: 'unqueue'; index: number }
   /** The welcome banner's "Fix them": the Problems panel attached, then `text` sent. */
   | { type: 'fixProblems'; text: string }
+  /** The build banner's "Fix them": as `fixProblems`, and the banner goes once the errors are sent. */
+  | { type: 'fixBuild'; text: string }
+  /** The build banner's "Show the errors": the Problems panel. */
+  | { type: 'showProblems' }
+  /** The build banner closed: it is not drawn again until the next build fails. */
+  | { type: 'dismissBuildBanner' }
   | { type: 'cancel' }
   | { type: 'reset' }
   | { type: 'pickModel'; model: string }

@@ -186,5 +186,10 @@
   "Inferpal has finished — {0}.": "Inferpal が完了しました — {0}。",
   "Show the answer": "回答を表示",
   "Inferpal has finished.": "Inferpal が完了しました。",
-  "Inferpal stopped on an error.": "Inferpal はエラーで停止しました。"
+  "Inferpal stopped on an error.": "Inferpal はエラーで停止しました。",
+  "The last build failed — {0} error(s)": "前回のビルドが失敗しました — エラー {0} 件",
+  "The last build failed": "前回のビルドが失敗しました",
+  "From the task {0} — the errors are in the Problems panel.": "タスク {0} から — エラーは [問題] パネルにあります。",
+  "Show the errors": "エラーを表示",
+  "From the task {0} — the Problems panel holds none of its errors: its output says why.": "タスク {0} から — [問題] パネルにはそのエラーがありません。理由はタスクの出力にあります。"
 }

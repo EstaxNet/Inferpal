@@ -20,6 +20,62 @@ export function panelDiagnostics(): [vscode.Uri, readonly vscode.Diagnostic[]][]
   return vscode.languages.getDiagnostics().filter(([uri]) => uri.scheme === 'file');
 }
 
+/** A build task: the *build* group — what the C# and npm extensions give their build tasks, and what a tasks.json
+ *  marks with `"group": "build"`. A task named "build" outside it is not judged on its name: `build-docs` passing would
+ *  take down the banner of a project that still does not compile. */
+export function isBuildTask(task: vscode.Task): boolean {
+  return task.group?.id === vscode.TaskGroup.Build.id;
+}
+
+/** One problem as a line — `path(line,col): error source CODE: message` —, the form the model receives the panel in
+ *  (`editorDiagnostics`) and the host reads (`GetDiagnosticsTool.PanelReportsErrors`). */
+export function problemLine(rel: string, d: vscode.Diagnostic): string {
+  const isError = d.severity === vscode.DiagnosticSeverity.Error;
+  const code = typeof d.code === 'object' ? d.code.value : d.code ?? '';
+  const src = d.source ? `${d.source} ` : '';
+  return `${rel}(${d.range.start.line + 1},${d.range.start.character + 1}): ${isError ? 'error' : 'warning'} ${src}${code}: ${d.message.replace(/\s+/g, ' ')}`;
+}
+
+/**
+ * The errors of the Problems panel ({@link panelDiagnostics}), once each: a build's problem matcher and the language
+ * server report the same compile error under two owners, and counted twice the banner said "6 errors" for 3. One error
+ * is one place and one code — never one message: MSBuild's console appends the project to each (`… [app.csproj]`), and
+ * the language server's chained messages span lines the matcher cuts; the message decides only without a code.
+ */
+export function panelErrors(): { rel: string; d: vscode.Diagnostic }[] {
+  const seen = new Set<string>();
+  const errors: { rel: string; d: vscode.Diagnostic }[] = [];
+  for (const [uri, diagnostics] of panelDiagnostics()) {
+    const rel = vscode.workspace.asRelativePath(uri);
+    for (const d of diagnostics) {
+      const code = typeof d.code === 'object' ? d.code.value : d.code;
+      const key = `${rel}|${d.range.start.line}|${d.range.start.character}|${code !== undefined ? String(code) : d.message}`;
+      if (d.severity === vscode.DiagnosticSeverity.Error && !seen.has(key)) {
+        seen.add(key);
+        errors.push({ rel, d });
+      }
+    }
+  }
+  return errors;
+}
+
+/**
+ * The banner of a build that failed, as the panel stands NOW: how many errors it holds and the first by file, line and
+ * column — ordinal, so the same panel names the same error —, written as the model receives it.
+ */
+export function buildBannerOf(task: string): { errors: number; firstError: string | null; task: string } {
+  const errors = panelErrors();
+  let first = errors[0];
+  for (const e of errors) {
+    const by = e.rel < first.rel ? -1 : e.rel > first.rel ? 1
+      : e.d.range.start.line - first.d.range.start.line || e.d.range.start.character - first.d.range.start.character;
+    if (by < 0) {
+      first = e;
+    }
+  }
+  return { errors: errors.length, firstError: first ? problemLine(first.rel, first.d) : null, task };
+}
+
 /** The port an address names: written, else its scheme's default. */
 function portOf(uri: vscode.Uri): string {
   const port = /:(\d+)$/.exec(uri.authority)?.[1];
@@ -417,11 +473,7 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
         }
         // ⚠ The host reads `(line,col): error` to decide whether this panel answers instead of a
         // build (GetDiagnosticsTool.PanelReportsErrors): a warnings-only panel still compiles.
-        const isError = d.severity === vscode.DiagnosticSeverity.Error;
-        const code = typeof d.code === 'object' ? d.code.value : d.code ?? '';
-        const src = d.source ? `${d.source} ` : '';
-        (isError ? errors : warnings).push(
-          `${rel}(${d.range.start.line + 1},${d.range.start.character + 1}): ${isError ? 'error' : 'warning'} ${src}${code}: ${d.message.replace(/\s+/g, ' ')}`);
+        (d.severity === vscode.DiagnosticSeverity.Error ? errors : warnings).push(problemLine(rel, d));
       }
     }
     if (errors.length + warnings.length === 0) {

@@ -186,5 +186,10 @@
   "Inferpal has finished — {0}.": "Inferpal 已完成 — {0}。",
   "Show the answer": "显示回答",
   "Inferpal has finished.": "Inferpal 已完成。",
-  "Inferpal stopped on an error.": "Inferpal 因错误而停止。"
+  "Inferpal stopped on an error.": "Inferpal 因错误而停止。",
+  "The last build failed — {0} error(s)": "上次构建失败 — {0} 个错误",
+  "The last build failed": "上次构建失败",
+  "From the task {0} — the errors are in the Problems panel.": "来自任务 {0} — 错误在“问题”面板中。",
+  "Show the errors": "显示错误",
+  "From the task {0} — the Problems panel holds none of its errors: its output says why.": "来自任务 {0} — “问题”面板中没有它的错误：原因见其输出。"
 }
