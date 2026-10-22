@@ -1294,7 +1294,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="SettingsWindowGone" xml:space="preserve"><value>The settings window's server has stopped: nothing more can be saved from this page. Run `Inferpal.Host --settings` again to reopen it.</value></data>
   <data name="SettingsWindowGoneInThread" xml:space="preserve"><value>The settings window's server has stopped: nothing more can be saved from this page. Type `/settings` in a thread to reopen it.</value></data>
   <data name="SettingsWindowNoPicker" xml:space="preserve"><value>A browser cannot give a file's location to Inferpal: type or paste the file's full path.</value></data>
-  <data name="SettingsWindowNoXray" xml:space="preserve"><value>The X-Ray of the prompt is shown in the chat of Visual Studio and VS Code.</value></data>
+  <data name="SettingsWindowNoXray" xml:space="preserve"><value>The X-Ray of the prompt is shown in the chat of Visual Studio and VS Code; in an ACP client, type /xray in the thread.</value></data>
   <data name="SettingsWindowNotFound" xml:space="preserve"><value>Nothing at {0}.</value></data>
   <data name="SettingsWindowFilesMissing" xml:space="preserve"><value>The settings window's files are missing ({0}): this build of Inferpal.Host cannot show it.</value></data>
   <data name="SettingsWindowOpen" xml:space="preserve"><value>Inferpal's settings are open in your browser, for the folder {1}:
@@ -1461,7 +1461,7 @@ What you save there applies from your next question, in this thread and the othe
   <data name="AcpSetupMethodHint" xml:space="preserve"><value>Choose the model server and the model, in a terminal.</value></data>
   <data name="AcpNotSetUp" xml:space="preserve"><value>Inferpal is not set up yet: there are no settings, and no model server answers at {0}. Run the setup to choose a server and a model.</value></data>
   <data name="AcpSessionNotFound" xml:space="preserve"><value>There is no saved session named {0}.</value></data>
-  <data name="AcpLimitsNotice" xml:space="preserve"><value>In this editor, Inferpal has no inline suggestions, debugger tools or X-Ray — those stay in Visual Studio and VS Code. Its settings open in your browser: `/settings`. What works here: {0}</value></data>
+  <data name="AcpLimitsNotice" xml:space="preserve"><value>In this editor, Inferpal has no inline suggestions or debugger tools — those stay in Visual Studio and VS Code. Its settings open in your browser: `/settings`. What works here: {0}</value></data>
   <data name="AcpCommandNeedsEditor" xml:space="preserve"><value>{0} works in Visual Studio and VS Code only: it needs their editor or their panels.</value></data>
   <data name="AcpClearStartNewThread" xml:space="preserve"><value>To start over, open a new thread: this conversation stays saved, and the new one starts empty.</value></data>
   <data name="AcpPasteThis" xml:space="preserve"><value>This editor gives Inferpal no input box to fill: here is the text to paste into your message.</value></data>

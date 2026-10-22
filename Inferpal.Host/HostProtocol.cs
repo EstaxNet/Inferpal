@@ -355,11 +355,14 @@ internal sealed record ChatExportMessage(string Role, string? Name, string Conte
 /// </remarks>
 /// <param name="SessionTokens">The thread's token total, held by the adapter as the VS window does.</param>
 /// <param name="DurationSeconds">Age of the thread; absent = "—", as on the VS side.</param>
+/// <param name="Model">The model that answers the thread, when it is not the configured default (an ACP thread's own
+/// choice); absent = the default model.</param>
 internal sealed record ChatExportParams(
     bool                             AsPlainText,
     IReadOnlyList<ChatExportMessage> Messages,
     int                              SessionTokens   = 0,
-    int?                             DurationSeconds = null);
+    int?                             DurationSeconds = null,
+    string?                          Model           = null);
 
 /// <summary>`command/list` entry — one slash command for the adapter's autocomplete popup
 /// (built-ins with their localized hints, then user templates).</summary>

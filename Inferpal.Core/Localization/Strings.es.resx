@@ -1290,7 +1290,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="SettingsWindowGone" xml:space="preserve"><value>El servidor de la ventana de configuración se ha detenido: ya no se puede guardar nada desde esta página. Ejecute `Inferpal.Host --settings` de nuevo para volver a abrirla.</value></data>
   <data name="SettingsWindowGoneInThread" xml:space="preserve"><value>El servidor de la ventana de configuración se ha detenido: ya no se puede guardar nada desde esta página. Escriba `/settings` en un hilo para volver a abrirla.</value></data>
   <data name="SettingsWindowNoPicker" xml:space="preserve"><value>Un navegador no puede indicar a Inferpal la ubicación de un archivo: escriba o pegue la ruta completa del archivo.</value></data>
-  <data name="SettingsWindowNoXray" xml:space="preserve"><value>La radiografía del prompt se muestra en el chat de Visual Studio y VS Code.</value></data>
+  <data name="SettingsWindowNoXray" xml:space="preserve"><value>La radiografía del prompt se muestra en el chat de Visual Studio y VS Code; en un cliente ACP, escriba /xray en el hilo.</value></data>
   <data name="SettingsWindowNotFound" xml:space="preserve"><value>No hay nada en {0}.</value></data>
   <data name="SettingsWindowFilesMissing" xml:space="preserve"><value>Faltan los archivos de la ventana de configuración ({0}): esta compilación de Inferpal.Host no puede mostrarla.</value></data>
   <data name="SettingsWindowOpen" xml:space="preserve"><value>La configuración de Inferpal está abierta en su navegador, para la carpeta {1}:
@@ -1457,7 +1457,7 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="AcpSetupMethodHint" xml:space="preserve"><value>Elija el servidor de modelos y el modelo, en una terminal.</value></data>
   <data name="AcpNotSetUp" xml:space="preserve"><value>Inferpal aún no está configurado: no hay ajustes y ningún servidor de modelos responde en {0}. Ejecute la configuración para elegir un servidor y un modelo.</value></data>
   <data name="AcpSessionNotFound" xml:space="preserve"><value>No hay ninguna sesión guardada llamada {0}.</value></data>
-  <data name="AcpLimitsNotice" xml:space="preserve"><value>En este editor, Inferpal no tiene sugerencias en línea, herramientas de depuración ni X-Ray: siguen en Visual Studio y VS Code. Su configuración se abre en el navegador: `/settings`. Lo que funciona aquí: {0}</value></data>
+  <data name="AcpLimitsNotice" xml:space="preserve"><value>En este editor, Inferpal no tiene sugerencias en línea ni herramientas de depuración: siguen en Visual Studio y VS Code. Su configuración se abre en el navegador: `/settings`. Lo que funciona aquí: {0}</value></data>
   <data name="AcpCommandNeedsEditor" xml:space="preserve"><value>{0} solo funciona en Visual Studio y VS Code: necesita su editor o sus paneles.</value></data>
   <data name="AcpClearStartNewThread" xml:space="preserve"><value>Para empezar de nuevo, abra un hilo nuevo: esta conversación queda guardada y la nueva empieza vacía.</value></data>
   <data name="AcpPasteThis" xml:space="preserve"><value>Este editor no permite a Inferpal rellenar el cuadro de entrada: aquí está el texto para pegar en su mensaje.</value></data>

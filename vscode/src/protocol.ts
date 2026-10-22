@@ -219,6 +219,8 @@ export interface ChatExportParams {
   messages: ChatExportMessage[];
   sessionTokens?: number;
   durationSeconds?: number;
+  /** The model that answers, when it is not the configured default; VS Code's window model is the host's default. */
+  model?: string;
 }
 
 /** `command/list` entry — one slash command for the autocomplete popup. */

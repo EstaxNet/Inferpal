@@ -1290,7 +1290,7 @@
   <data name="SettingsWindowGone" xml:space="preserve"><value>Сервер окна настроек остановлен: с этой страницы больше ничего нельзя сохранить. Снова запустите `Inferpal.Host --settings`, чтобы открыть его.</value></data>
   <data name="SettingsWindowGoneInThread" xml:space="preserve"><value>Сервер окна настроек остановлен: с этой страницы больше ничего нельзя сохранить. Введите `/settings` в ветке, чтобы открыть его снова.</value></data>
   <data name="SettingsWindowNoPicker" xml:space="preserve"><value>Браузер не может передать Inferpal расположение файла: введите или вставьте полный путь к файлу.</value></data>
-  <data name="SettingsWindowNoXray" xml:space="preserve"><value>Рентген промпта показывается в чате Visual Studio и VS Code.</value></data>
+  <data name="SettingsWindowNoXray" xml:space="preserve"><value>Рентген промпта показывается в чате Visual Studio и VS Code; в клиенте ACP введите /xray в треде.</value></data>
   <data name="SettingsWindowNotFound" xml:space="preserve"><value>По пути {0} ничего нет.</value></data>
   <data name="SettingsWindowFilesMissing" xml:space="preserve"><value>Нет файлов окна настроек ({0}): эта сборка Inferpal.Host не может его показать.</value></data>
   <data name="SettingsWindowOpen" xml:space="preserve"><value>Настройки Inferpal открыты в браузере, для папки {1}:
@@ -1457,7 +1457,7 @@
   <data name="AcpSetupMethodHint" xml:space="preserve"><value>Выберите сервер моделей и модель в терминале.</value></data>
   <data name="AcpNotSetUp" xml:space="preserve"><value>Inferpal ещё не настроен: настроек нет, и по адресу {0} не отвечает ни один сервер моделей. Запустите настройку, чтобы выбрать сервер и модель.</value></data>
   <data name="AcpSessionNotFound" xml:space="preserve"><value>Сохранённой сессии с именем {0} нет.</value></data>
-  <data name="AcpLimitsNotice" xml:space="preserve"><value>В этом редакторе у Inferpal нет встроенных подсказок, инструментов отладчика и X-Ray — они остаются в Visual Studio и VS Code. Настройки открываются в браузере: `/settings`. Что работает здесь: {0}</value></data>
+  <data name="AcpLimitsNotice" xml:space="preserve"><value>В этом редакторе у Inferpal нет встроенных подсказок и инструментов отладчика — они остаются в Visual Studio и VS Code. Настройки открываются в браузере: `/settings`. Что работает здесь: {0}</value></data>
   <data name="AcpCommandNeedsEditor" xml:space="preserve"><value>{0} работает только в Visual Studio и VS Code: команде нужны их редактор или панели.</value></data>
   <data name="AcpClearStartNewThread" xml:space="preserve"><value>Чтобы начать заново, откройте новую ветку: этот разговор остаётся сохранённым, а новый начнётся с чистого листа.</value></data>
   <data name="AcpPasteThis" xml:space="preserve"><value>Этот редактор не даёт Inferpal заполнить поле ввода: вот текст, который можно вставить в ваше сообщение.</value></data>

@@ -1290,7 +1290,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="SettingsWindowGone" xml:space="preserve"><value>Der Server des Einstellungsfensters wurde beendet: Auf dieser Seite kann nichts mehr gespeichert werden. Führen Sie `Inferpal.Host --settings` erneut aus, um es wieder zu öffnen.</value></data>
   <data name="SettingsWindowGoneInThread" xml:space="preserve"><value>Der Server des Einstellungsfensters wurde beendet: Auf dieser Seite kann nichts mehr gespeichert werden. Geben Sie `/settings` in einem Thread ein, um es wieder zu öffnen.</value></data>
   <data name="SettingsWindowNoPicker" xml:space="preserve"><value>Ein Browser kann Inferpal den Speicherort einer Datei nicht mitteilen: Geben Sie den vollständigen Pfad der Datei ein oder fügen Sie ihn ein.</value></data>
-  <data name="SettingsWindowNoXray" xml:space="preserve"><value>Das Röntgenbild des Prompts wird im Chat von Visual Studio und VS Code angezeigt.</value></data>
+  <data name="SettingsWindowNoXray" xml:space="preserve"><value>Das Röntgenbild des Prompts wird im Chat von Visual Studio und VS Code angezeigt; in einem ACP-Client tippen Sie /xray in den Thread.</value></data>
   <data name="SettingsWindowNotFound" xml:space="preserve"><value>Unter {0} ist nichts vorhanden.</value></data>
   <data name="SettingsWindowFilesMissing" xml:space="preserve"><value>Die Dateien des Einstellungsfensters fehlen ({0}): Dieser Build von Inferpal.Host kann es nicht anzeigen.</value></data>
   <data name="SettingsWindowOpen" xml:space="preserve"><value>Die Einstellungen von Inferpal sind in Ihrem Browser geöffnet, für den Ordner {1}:
@@ -1457,7 +1457,7 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="AcpSetupMethodHint" xml:space="preserve"><value>Wählen Sie den Modellserver und das Modell in einem Terminal.</value></data>
   <data name="AcpNotSetUp" xml:space="preserve"><value>Inferpal ist noch nicht eingerichtet: Es gibt keine Einstellungen, und unter {0} antwortet kein Modellserver. Starten Sie die Einrichtung, um einen Server und ein Modell zu wählen.</value></data>
   <data name="AcpSessionNotFound" xml:space="preserve"><value>Es gibt keine gespeicherte Sitzung namens {0}.</value></data>
-  <data name="AcpLimitsNotice" xml:space="preserve"><value>In diesem Editor hat Inferpal keine Inline-Vorschläge, keine Debugger-Werkzeuge und kein X-Ray – diese bleiben in Visual Studio und VS Code. Die Einstellungen öffnen sich in Ihrem Browser: `/settings`. Was hier funktioniert: {0}</value></data>
+  <data name="AcpLimitsNotice" xml:space="preserve"><value>In diesem Editor hat Inferpal keine Inline-Vorschläge und keine Debugger-Werkzeuge – diese bleiben in Visual Studio und VS Code. Die Einstellungen öffnen sich in Ihrem Browser: `/settings`. Was hier funktioniert: {0}</value></data>
   <data name="AcpCommandNeedsEditor" xml:space="preserve"><value>{0} funktioniert nur in Visual Studio und VS Code: Der Befehl braucht deren Editor oder deren Bereiche.</value></data>
   <data name="AcpClearStartNewThread" xml:space="preserve"><value>Um neu anzufangen, öffnen Sie einen neuen Thread: Diese Unterhaltung bleibt gespeichert, und die neue beginnt leer.</value></data>
   <data name="AcpPasteThis" xml:space="preserve"><value>Dieser Editor lässt Inferpal das Eingabefeld nicht füllen: Hier ist der Text, den Sie in Ihre Nachricht einfügen können.</value></data>

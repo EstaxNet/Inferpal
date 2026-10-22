@@ -1054,7 +1054,7 @@ internal sealed partial class HostServer : IDisposable
             ? TimeSpan.FromSeconds(seconds) : (TimeSpan?)null;
 
         return Task.FromResult(ConversationExporter.Build(
-            messages, p.AsPlainText, s.Config.DefaultModel, p.SessionTokens,
+            messages, p.AsPlainText, string.IsNullOrWhiteSpace(p.Model) ? s.Config.DefaultModel : p.Model, p.SessionTokens,
             DateTime.Now.ToString("f", CultureInfo.CurrentCulture),
             ConversationExporter.FormatDuration(duration)));
     }

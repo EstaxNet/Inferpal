@@ -31,10 +31,11 @@ namespace Inferpal.Host.Acp;
 internal sealed class AcpSession : IAsyncDisposable
 {
     /// <summary>The commands that need an editor: VS Code serves them itself, on its editor or its panels, and the host
-    /// serves <c>/test</c> on the editor's active file — none of which an ACP client gives the agent.</summary>
+    /// serves <c>/test</c> on the editor's active file — none of which an ACP client gives the agent. <c>/xray</c> and
+    /// <c>/export</c> are not among them: the host renders both as text.</summary>
     internal static readonly HashSet<string> EditorOnlyCommands = new(StringComparer.OrdinalIgnoreCase)
     {
-        "/xray", "/explain", "/review", "/fix", "/refactor", "/doc", "/export", "/branch", "/agent-step", "/resume", "/test",
+        "/explain", "/review", "/fix", "/refactor", "/doc", "/branch", "/agent-step", "/resume", "/test",
     };
 
     /// <summary>The most files a message attaches; the others are named.</summary>
@@ -69,6 +70,8 @@ internal sealed class AcpSession : IAsyncDisposable
 
     private string _mode = AcpModes.Default;
     private string? _model;
+    /// <summary>The tokens this thread's turns used since it opened, for <c>/export</c>'s stats, as VS Code adds them up.</summary>
+    private int _sessionTokens;
     private string _defaultModel = string.Empty;
     private List<string> _models = [];
     private AcpShownStream _stream = new();
@@ -601,8 +604,8 @@ internal sealed class AcpSession : IAsyncDisposable
             switch (e.Kind)
             {
                 case "sendAsPrompt":     sendAsPrompt = e.Value; break;
-                case "setPrompt":        if (!string.IsNullOrEmpty(e.Value)) notes.Add(Strings.AcpPasteThis + "\n\n```\n" + e.Value + "\n```"); break;
-                case "copyToClipboard":  if (!string.IsNullOrEmpty(e.Value)) notes.Add(Strings.AcpCopyThis + "\n\n```\n" + e.Value + "\n```"); break;
+                case "setPrompt":        if (!string.IsNullOrEmpty(e.Value)) notes.Add(CopyBlock(Strings.AcpPasteThis, e.Value)); break;
+                case "copyToClipboard":  if (!string.IsNullOrEmpty(e.Value)) notes.Add(CopyBlock(Strings.AcpCopyThis, e.Value)); break;
                 case "openFile":         if (!string.IsNullOrEmpty(e.Value)) notes.Add(Strings.AcpOpenThis(e.Value)); break;
                 case "attachChip":
                     if (!string.IsNullOrEmpty(e.Value))
@@ -634,7 +637,9 @@ internal sealed class AcpSession : IAsyncDisposable
                     await ArchiveAndStartOverAsync();
                     break;
                 case "exportRequest":
-                    notes.Add(Strings.AcpCommandNeedsEditor("/export"));
+                    // No file to save it into: the conversation as this thread showed it, rendered by the host as the
+                    // editors' export is, to copy.
+                    notes.Add(await ExportTextAsync());
                     break;
             }
         }
@@ -692,6 +697,7 @@ internal sealed class AcpSession : IAsyncDisposable
             attachedPaths = attachedPaths.Count > 0 ? attachedPaths : null,
         }, CancellationToken.None);
         await DrainLinkAsync();
+        Interlocked.Add(ref _sessionTokens, result.TokensUsed);
 
         if (result.Error is { } error)
         {
@@ -849,6 +855,52 @@ internal sealed class AcpSession : IAsyncDisposable
 
     /// <summary>One save at a time (see <see cref="SaveAsync"/>).</summary>
     private readonly SemaphoreSlim _saving = new(1, 1);
+
+    /// <summary><c>/export</c>: the conversation as this thread showed it, rendered by the host's <c>chat/export</c> —
+    /// the document the editors save — in a block to copy, the client having no file to save it into.</summary>
+    private async Task<string> ExportTextAsync()
+    {
+        List<SavedMessageDto> shown;
+        lock (_gate) shown = [.. _transcript];
+        var messages = new List<ChatExportMessage>();
+        for (var i = 0; i < shown.Count; i++)
+        {
+            var m = shown[i];
+            var notice = m.ToolName == SessionManager.NoticeMarker;
+            // An earlier /export and its answer, which holds the whole conversation: exported again, every export would
+            // carry the one before it. SayNotice records the two together.
+            if (notice && m.Role == "user" && m.Content.TrimStart().StartsWith("/export", StringComparison.OrdinalIgnoreCase))
+            {
+                if (i + 1 < shown.Count && shown[i + 1] is { Role: "assistant" } next && next.ToolName == SessionManager.NoticeMarker) i++;
+                continue;
+            }
+            // A tool turn carries its title where a reply carries the notice marker.
+            messages.Add(new ChatExportMessage(m.Role, m.Role == "tool" ? m.ToolName : null, m.Content, m.Timestamp, notice));
+        }
+        if (!messages.Any(m => !m.Notice)) return Strings.ExportNoMessages;
+
+        string document;
+        try
+        {
+            document = await _link.InvokeWithParameterObjectAsync<string>(
+                "chat/export", new ChatExportParams(AsPlainText: false, messages, Volatile.Read(ref _sessionTokens), Model: CurrentModel),
+                CancellationToken.None);
+        }
+        catch (Exception ex) when (ex is RemoteInvocationException or ConnectionLostException or ObjectDisposedException)
+        {
+            return Strings.ExportFailed(ex.Message);
+        }
+        return CopyBlock(Strings.AcpCopyThis, document, "markdown");
+    }
+
+    /// <summary>Text the user takes by hand, under the sentence that says what to do with it: in a fence longer than any
+    /// run of backticks inside, so a code block in the text never closes it early.</summary>
+    private static string CopyBlock(string lead, string text, string language = "")
+    {
+        var longest = System.Text.RegularExpressions.Regex.Matches(text, "`+").Select(m => m.Length).DefaultIfEmpty(0).Max();
+        var fence = new string('`', Math.Max(3, longest + 1));
+        return $"{lead}\n\n{fence}{language}\n{text}\n{fence}";
+    }
 
     /// <summary>The session, saved under its id — what <c>session/list</c> and <c>session/load</c> find again — as the
     /// transcript holds it now; a failure is said in the thread.</summary>

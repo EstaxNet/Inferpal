@@ -1266,7 +1266,7 @@ public sealed class AcpAgentTests : IDisposable
     /// <summary>⚠ <c>/test</c> reads the editor's active document: without an editor it could only answer "open a file in the
     /// editor", a remedy an ACP client cannot follow.</summary>
     [Theory]
-    [InlineData("/xray")]
+    [InlineData("/explain")]
     [InlineData("/test")]
     public async Task ACommandOnlyAnEditorServes_IsSaid_AndNeverSentToTheModel(string command)
     {
@@ -1296,14 +1296,69 @@ public sealed class AcpAgentTests : IDisposable
             sessionId = sid,
             prompt = new object[]
             {
-                new { type = "text", text = "/xray" },
+                new { type = "text", text = "/review" },
                 new { type = "resource_link", uri = new Uri(file).AbsoluteUri, name = "current.cs" },
             },
         });
 
         Assert.Equal("end_turn", StopReason(r));
-        Assert.Contains(Strings.AcpCommandNeedsEditor("/xray"), h.Client.Said(sid));
+        Assert.Contains(Strings.AcpCommandNeedsEditor("/review"), h.Client.Said(sid));
         Assert.Empty(h.Fake.ChatModels);
+    }
+
+    /// <summary>The host renders <c>/xray</c> as text: an ACP thread shows it, with no panel to open.</summary>
+    [Fact]
+    public async Task Xray_IsShownAsText_InAThread()
+    {
+        await using var h = await StartAsync();
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, sid, "/xray")));
+
+        var said = h.Client.Said(sid);
+        Assert.Contains(Strings.XrayHeader("\0").Split('\0')[0], said, StringComparison.Ordinal);   // the breakdown's heading
+        Assert.DoesNotContain(Strings.AcpCommandNeedsEditor("/xray"), said);
+        Assert.Empty(h.Fake.ChatModels);
+    }
+
+    /// <summary><c>/export</c> in a thread: the conversation as the thread showed it, rendered as the editors' export is,
+    /// in a block to copy — the client has no file to save it into.</summary>
+    [Fact]
+    public async Task Export_GivesTheConversation_ToCopy()
+    {
+        await using var h = await StartAsync(fake: f => f.ChatResult = new ChatTurnResult("EXPORTED-ANSWER", null, 0, 0));
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+        await PromptAsync(h, sid, "EXPORTED-QUESTION");
+
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, sid, "/export")));
+
+        var said = h.Client.Said(sid);
+        var block = said[said.LastIndexOf(Strings.AcpCopyThis, StringComparison.Ordinal)..];
+        Assert.Contains("EXPORTED-QUESTION", block, StringComparison.Ordinal);
+        Assert.Contains("EXPORTED-ANSWER", block, StringComparison.Ordinal);
+        Assert.DoesNotContain(Strings.AcpCommandNeedsEditor("/export"), said);
+
+        // A second export carries the conversation once, never the first export with it.
+        await PromptAsync(h, sid, "/export");
+        var second = h.Client.Said(sid)[said.Length..];
+        Assert.Contains(Strings.AcpCopyThis, second);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(second, "EXPORTED-ANSWER"));
+    }
+
+    /// <summary>A thread with nothing said yet has nothing to export — said, never an empty document.</summary>
+    [Fact]
+    public async Task Export_OfAnEmptyThread_SaysThereIsNothing()
+    {
+        await using var h = await StartAsync();
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, sid, "/export")));
+
+        Assert.Contains(Strings.ExportNoMessages, h.Client.Said(sid));
+        Assert.DoesNotContain(Strings.AcpCopyThis, h.Client.Said(sid));
     }
 
     /// <summary>
@@ -1395,7 +1450,9 @@ public sealed class AcpAgentTests : IDisposable
 
         var names = update.GetProperty("availableCommands").EnumerateArray().Select(c => c.GetProperty("name").GetString()).ToList();
         Assert.Contains("help", names);
-        Assert.DoesNotContain("xray", names);
+        Assert.Contains("xray", names);      // rendered as text in the thread
+        Assert.Contains("export", names);
+        Assert.DoesNotContain("explain", names);
         Assert.DoesNotContain("test", names);
         Assert.DoesNotContain("clear", names);
     }

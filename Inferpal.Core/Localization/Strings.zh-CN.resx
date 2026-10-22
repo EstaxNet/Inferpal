@@ -1290,7 +1290,7 @@
   <data name="SettingsWindowGone" xml:space="preserve"><value>设置窗口的服务器已停止：无法再从此页面保存任何内容。请再次运行 `Inferpal.Host --settings` 重新打开。</value></data>
   <data name="SettingsWindowGoneInThread" xml:space="preserve"><value>设置窗口的服务器已停止：无法再从此页面保存任何内容。请在会话中输入 `/settings` 重新打开。</value></data>
   <data name="SettingsWindowNoPicker" xml:space="preserve"><value>浏览器无法把文件位置提供给 Inferpal：请输入或粘贴文件的完整路径。</value></data>
-  <data name="SettingsWindowNoXray" xml:space="preserve"><value>提示词的 X 光视图显示在 Visual Studio 和 VS Code 的聊天中。</value></data>
+  <data name="SettingsWindowNoXray" xml:space="preserve"><value>提示词的 X 光视图显示在 Visual Studio 和 VS Code 的聊天中；在 ACP 客户端中，请在会话中输入 /xray。</value></data>
   <data name="SettingsWindowNotFound" xml:space="preserve"><value>{0} 处没有任何内容。</value></data>
   <data name="SettingsWindowFilesMissing" xml:space="preserve"><value>缺少设置窗口的文件（{0}）：此版本的 Inferpal.Host 无法显示它。</value></data>
   <data name="SettingsWindowOpen" xml:space="preserve"><value>Inferpal 设置已在浏览器中打开，文件夹为 {1}：
@@ -1457,7 +1457,7 @@
   <data name="AcpSetupMethodHint" xml:space="preserve"><value>在终端中选择模型服务器和模型。</value></data>
   <data name="AcpNotSetUp" xml:space="preserve"><value>Inferpal 尚未设置：没有任何设置，{0} 上也没有模型服务器响应。请运行设置以选择服务器和模型。</value></data>
   <data name="AcpSessionNotFound" xml:space="preserve"><value>没有名为 {0} 的已保存会话。</value></data>
-  <data name="AcpLimitsNotice" xml:space="preserve"><value>在此编辑器中，Inferpal 没有行内建议、调试器工具和 X-Ray——它们仍在 Visual Studio 和 VS Code 中。设置在浏览器中打开：`/settings`。此处可用的功能：{0}</value></data>
+  <data name="AcpLimitsNotice" xml:space="preserve"><value>在此编辑器中，Inferpal 没有行内建议和调试器工具——它们仍在 Visual Studio 和 VS Code 中。设置在浏览器中打开：`/settings`。此处可用的功能：{0}</value></data>
   <data name="AcpCommandNeedsEditor" xml:space="preserve"><value>{0} 仅在 Visual Studio 和 VS Code 中可用：它需要它们的编辑器或面板。</value></data>
   <data name="AcpClearStartNewThread" xml:space="preserve"><value>要重新开始，请打开一个新线程：此对话会保留，新对话从空白开始。</value></data>
   <data name="AcpPasteThis" xml:space="preserve"><value>此编辑器不允许 Inferpal 填写输入框：以下是要粘贴到消息中的文本。</value></data>

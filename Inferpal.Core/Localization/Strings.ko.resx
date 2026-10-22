@@ -1290,7 +1290,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="SettingsWindowGone" xml:space="preserve"><value>설정 창의 서버가 중지되었습니다. 이 페이지에서는 더 이상 저장할 수 없습니다. 다시 열려면 `Inferpal.Host --settings`를 다시 실행하세요.</value></data>
   <data name="SettingsWindowGoneInThread" xml:space="preserve"><value>설정 창의 서버가 중지되었습니다. 이 페이지에서는 더 이상 저장할 수 없습니다. 다시 열려면 스레드에서 `/settings`를 입력하세요.</value></data>
   <data name="SettingsWindowNoPicker" xml:space="preserve"><value>브라우저는 파일 위치를 Inferpal에 전달할 수 없습니다. 파일의 전체 경로를 입력하거나 붙여 넣으세요.</value></data>
-  <data name="SettingsWindowNoXray" xml:space="preserve"><value>프롬프트 X-Ray는 Visual Studio와 VS Code의 채팅에 표시됩니다.</value></data>
+  <data name="SettingsWindowNoXray" xml:space="preserve"><value>프롬프트 X-Ray는 Visual Studio와 VS Code의 채팅에 표시됩니다. ACP 클라이언트에서는 스레드에 /xray를 입력하세요.</value></data>
   <data name="SettingsWindowNotFound" xml:space="preserve"><value>{0}에 아무것도 없습니다.</value></data>
   <data name="SettingsWindowFilesMissing" xml:space="preserve"><value>설정 창 파일이 없습니다({0}). 이 Inferpal.Host 빌드에서는 표시할 수 없습니다.</value></data>
   <data name="SettingsWindowOpen" xml:space="preserve"><value>Inferpal 설정이 브라우저에 열렸습니다(폴더 {1}):
@@ -1457,7 +1457,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="AcpSetupMethodHint" xml:space="preserve"><value>터미널에서 모델 서버와 모델을 고릅니다.</value></data>
   <data name="AcpNotSetUp" xml:space="preserve"><value>Inferpal이 아직 설정되지 않았습니다. 설정이 없고 {0}에서 응답하는 모델 서버도 없습니다. 설정을 실행해 서버와 모델을 고르세요.</value></data>
   <data name="AcpSessionNotFound" xml:space="preserve"><value>{0}(이)라는 저장된 세션이 없습니다.</value></data>
-  <data name="AcpLimitsNotice" xml:space="preserve"><value>이 편집기에서는 Inferpal에 인라인 제안, 디버거 도구, X-Ray가 없습니다. 이 기능들은 Visual Studio와 VS Code에 남습니다. 설정은 브라우저에서 열립니다: `/settings`. 여기서 되는 것: {0}</value></data>
+  <data name="AcpLimitsNotice" xml:space="preserve"><value>이 편집기에서는 Inferpal에 인라인 제안과 디버거 도구가 없습니다. 이 기능들은 Visual Studio와 VS Code에 남습니다. 설정은 브라우저에서 열립니다: `/settings`. 여기서 되는 것: {0}</value></data>
   <data name="AcpCommandNeedsEditor" xml:space="preserve"><value>{0}은(는) Visual Studio와 VS Code에서만 동작합니다. 해당 편집기나 패널이 필요합니다.</value></data>
   <data name="AcpClearStartNewThread" xml:space="preserve"><value>처음부터 다시 하려면 새 스레드를 여세요. 이 대화는 저장된 채로 남고, 새 대화는 비어 있는 상태로 시작합니다.</value></data>
   <data name="AcpPasteThis" xml:space="preserve"><value>이 편집기에서는 Inferpal이 입력란을 채울 수 없습니다. 메시지에 붙여 넣을 텍스트는 다음과 같습니다.</value></data>

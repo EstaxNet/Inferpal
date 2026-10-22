@@ -1290,7 +1290,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="SettingsWindowGone" xml:space="preserve"><value>Serwer okna ustawień został zatrzymany: z tej strony nie można już nic zapisać. Uruchom ponownie `Inferpal.Host --settings`, aby je otworzyć.</value></data>
   <data name="SettingsWindowGoneInThread" xml:space="preserve"><value>Serwer okna ustawień został zatrzymany: z tej strony nie można już nic zapisać. Wpisz `/settings` w wątku, aby je otworzyć.</value></data>
   <data name="SettingsWindowNoPicker" xml:space="preserve"><value>Przeglądarka nie może przekazać Inferpal lokalizacji pliku: wpisz lub wklej pełną ścieżkę pliku.</value></data>
-  <data name="SettingsWindowNoXray" xml:space="preserve"><value>Prześwietlenie promptu jest widoczne na czacie Visual Studio i VS Code.</value></data>
+  <data name="SettingsWindowNoXray" xml:space="preserve"><value>Prześwietlenie promptu jest widoczne na czacie Visual Studio i VS Code; w kliencie ACP wpisz /xray w wątku.</value></data>
   <data name="SettingsWindowNotFound" xml:space="preserve"><value>Pod adresem {0} nic nie ma.</value></data>
   <data name="SettingsWindowFilesMissing" xml:space="preserve"><value>Brakuje plików okna ustawień ({0}): ta kompilacja Inferpal.Host nie może go wyświetlić.</value></data>
   <data name="SettingsWindowOpen" xml:space="preserve"><value>Ustawienia Inferpal są otwarte w przeglądarce, dla folderu {1}:
@@ -1457,7 +1457,7 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="AcpSetupMethodHint" xml:space="preserve"><value>Wybierz serwer modeli i model w terminalu.</value></data>
   <data name="AcpNotSetUp" xml:space="preserve"><value>Inferpal nie jest jeszcze skonfigurowany: nie ma ustawień, a pod adresem {0} nie odpowiada żaden serwer modeli. Uruchom konfigurację, aby wybrać serwer i model.</value></data>
   <data name="AcpSessionNotFound" xml:space="preserve"><value>Nie ma zapisanej sesji o nazwie {0}.</value></data>
-  <data name="AcpLimitsNotice" xml:space="preserve"><value>W tym edytorze Inferpal nie ma podpowiedzi w kodzie, narzędzi debugera ani X-Ray — zostają w Visual Studio i VS Code. Ustawienia otwierają się w przeglądarce: `/settings`. Co tu działa: {0}</value></data>
+  <data name="AcpLimitsNotice" xml:space="preserve"><value>W tym edytorze Inferpal nie ma podpowiedzi w kodzie ani narzędzi debugera — zostają w Visual Studio i VS Code. Ustawienia otwierają się w przeglądarce: `/settings`. Co tu działa: {0}</value></data>
   <data name="AcpCommandNeedsEditor" xml:space="preserve"><value>{0} działa tylko w Visual Studio i VS Code: polecenie potrzebuje ich edytora lub paneli.</value></data>
   <data name="AcpClearStartNewThread" xml:space="preserve"><value>Aby zacząć od nowa, otwórz nowy wątek: ta rozmowa pozostaje zapisana, a nowa zaczyna się pusta.</value></data>
   <data name="AcpPasteThis" xml:space="preserve"><value>Ten edytor nie pozwala Inferpal wypełnić pola wpisywania: oto tekst do wklejenia do wiadomości.</value></data>
