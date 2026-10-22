@@ -688,13 +688,58 @@ internal sealed partial class HostServer
     }
 
     /// <summary>
+    /// `tests/generate` — the tests of the code the editor sends (its selection, or its whole file), planned against the
+    /// test file as the editor holds it, unsaved tests included. Nothing is written here: the editor writes them by an edit
+    /// it can undo — an existing test file replaced in its buffer, a new one created — as Visual Studio does.
+    /// </summary>
+    [JsonRpcMethod("tests/generate", UseSingleObjectParameterDeserialization = true)]
+    public async Task<TestsGenerateResult> TestsGenerateAsync(TestsGenerateParams p, CancellationToken ct)
+    {
+        var s = Session();
+        if (string.IsNullOrWhiteSpace(p.Code)) return new(Strings.SlashNoActiveDocument);
+
+        // Inside the turn slot, like every slash that infers: Stop reaches it, and it never runs beside a chat turn.
+        var cts = AcquireTurn(ct);
+        TestGenerationPlan plan;
+        try
+        {
+            plan = await TestGenerationPlanner.PlanAsync(
+                s.Client, ModelRouter.Resolve(s.Config, ModelRole.CodeActions), p.Path, p.Code, cts.Token,
+                openText: (path, _) => Task.FromResult(s.Overlay.TryGet(path, out var text) ? text : null),
+                request: p.Request);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            return new(Message: null, Cancelled: true);
+        }
+        finally { ReleaseTurn(cts); }
+
+        if (TestsNotWritten(plan) is { } why) return new(why);
+        return new(TestsWritten(plan), plan.TestPath, plan.Content, plan.Extended);
+    }
+
+    /// <summary>Why a plan writes no tests, or <c>null</c> when it writes them — one sentence per outcome for both
+    /// <c>/test</c> paths.</summary>
+    private static string? TestsNotWritten(TestGenerationPlan plan) =>
+        plan.NoChange ? Strings.TestsNoChange
+        // ⚠ Before the generic refusal: "the file exists and I could not read it" is the one outcome where carrying on
+        // overwrites tests, and it names the file to free.
+        : plan.Unreadable ? Strings.TestsFileUnreadable(plan.TestFileName)
+        : plan.Refusal is { } why ? why
+        : !plan.Ok ? Strings.TestsGenerateFailed
+        : null;
+
+    /// <summary>What a plan that writes its tests says once they are written.</summary>
+    private static string TestsWritten(TestGenerationPlan plan) =>
+        plan.Extended ? Strings.TestsExtended(plan.TestFileName) : Strings.TestsGenerated(plan.TestFileName);
+
+    /// <summary>
     /// <c>/test</c> — generate unit tests for the active document into the conventional test file
     /// beside it, then ask the adapter to open it.
     /// </summary>
     /// <remarks>
-    /// Two deliberate differences from VS, both consequences of the port rather than choices:
-    /// <see cref="IEditorSurface"/> exposes no selection, so the whole file is the input; and an
-    /// existing test file is rewritten on disk rather than through an undoable editor edit.
+    /// The path of an editor that hands over no selection and cannot write by an undoable edit (VS Code takes
+    /// <c>tests/generate</c>): the whole file is the input, and an existing test file is rewritten on disk.
     /// ⚠ The model returns the WHOLE file, so a test it drops is gone — and the editor's own history
     /// does not cover a file written behind its back. The replaced version is backed up first, and
     /// the reply names the <c>/restore</c> command that brings it back.
@@ -713,12 +758,7 @@ internal sealed partial class HostServer
         var plan = await TestGenerationPlanner.PlanAsync(
             s.Client, ModelRouter.Resolve(s.Config, ModelRole.CodeActions), doc.Path, doc.Text, ct, request: request);
 
-        if (plan.NoChange)   return new SlashCommandResult(true, Strings.TestsNoChange);
-        // ⚠ Before the generic refusal: "the file exists and I could not read it" is the one
-        // outcome where carrying on overwrites tests, and it names the file to free.
-        if (plan.Unreadable) return new SlashCommandResult(true, Strings.TestsFileUnreadable(plan.TestFileName));
-        if (plan.Refusal is { } why) return new SlashCommandResult(true, why);
-        if (!plan.Ok)        return new SlashCommandResult(true, Strings.TestsGenerateFailed);
+        if (TestsNotWritten(plan) is { } why) return new SlashCommandResult(true, why);
 
         Inferpal.Services.Execution.BackedUpFileWriter.Outcome outcome;
         try
@@ -736,7 +776,7 @@ internal sealed partial class HostServer
         if (!outcome.Written)
             return new SlashCommandResult(true, Strings.FileNotReplacedNoBackup(plan.TestPath));
 
-        var message = plan.Extended ? Strings.TestsExtended(plan.TestFileName) : Strings.TestsGenerated(plan.TestFileName);
+        var message = TestsWritten(plan);
         if (outcome.Snapshot.Length > 0)
             message += "\n\n" + Strings.FilePreviousVersionSaved(plan.TestPath);
         return new SlashCommandResult(true, message, [new SlashEffectDto("openFile", plan.TestPath)]);

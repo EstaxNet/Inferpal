@@ -137,6 +137,22 @@
         "title": "%inferpal.command.docSelection%"
       },
       {
+        "command": "inferpal.editSelection",
+        "title": "%inferpal.command.editSelection%"
+      },
+      {
+        "command": "inferpal.explainSelection",
+        "title": "%inferpal.command.explainSelection%"
+      },
+      {
+        "command": "inferpal.testSelection",
+        "title": "%inferpal.command.testSelection%"
+      },
+      {
+        "command": "inferpal.map",
+        "title": "%inferpal.command.map%"
+      },
+      {
         "command": "inferpal.reviewCommit",
         "title": "%inferpal.command.reviewCommit%"
       }
@@ -189,6 +205,21 @@
           "command": "inferpal.docSelection",
           "when": "editorTextFocus && !editorReadonly",
           "group": "1_modification@102"
+        },
+        {
+          "command": "inferpal.editSelection",
+          "when": "editorTextFocus && !editorReadonly",
+          "group": "1_modification@99"
+        },
+        {
+          "command": "inferpal.explainSelection",
+          "when": "editorTextFocus",
+          "group": "1_modification@103"
+        },
+        {
+          "command": "inferpal.testSelection",
+          "when": "editorTextFocus",
+          "group": "1_modification@104"
         }
       ]
     },
@@ -197,6 +228,19 @@
         "command": "inferpal.chat.focus",
         "key": "ctrl+alt+i",
         "mac": "cmd+alt+i"
+      },
+      {
+        "command": "inferpal.editSelection",
+        "key": "ctrl+shift+i",
+        "linux": "ctrl+shift+alt+i",
+        "mac": "cmd+shift+i",
+        "when": "editorTextFocus && !editorReadonly"
+      },
+      {
+        "command": "inferpal.map",
+        "key": "alt+m",
+        "mac": "ctrl+alt+m",
+        "when": "!terminalFocus"
       }
     ],
     "configuration": {

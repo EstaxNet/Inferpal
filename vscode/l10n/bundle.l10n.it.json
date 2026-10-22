@@ -173,5 +173,14 @@
   "Continue.": "Continua.",
   "Inferpal is waiting for your approval.": "Inferpal attende la tua approvazione.",
   "Pick a commit, or type a branch or A..B, to review": "Scegli un commit, oppure digita un branch o A..B, da revisionare",
-  "Review this branch, tag or range": "Revisionare questo branch, tag o intervallo"
+  "Review this branch, tag or range": "Revisionare questo branch, tag o intervallo",
+  "Open a file in the editor to use Edit with AI.": "Apri un file nell’editor per usare Modifica con IA.",
+  "Edit with AI": "Modifica con IA",
+  "What should change in the selected code, or in the current line?": "Cosa deve cambiare nel codice selezionato o nella riga corrente?",
+  "e.g. use a dictionary instead of the switch": "es. usare un dizionario invece dello switch",
+  "Inferpal is editing the code…": "Inferpal sta modificando il codice…",
+  "The document changed while the model was working — run Edit with AI again.": "Il documento è cambiato mentre il modello lavorava — esegui di nuovo Modifica con IA.",
+  "Inferpal Edit with AI — change {0}": "Inferpal Modifica con IA — modifica {0}",
+  "The test file could not be written — nothing was changed.": "Impossibile scrivere il file di test — non è stato cambiato nulla.",
+  "The test file changed while the model was working — run /test again.": "Il file di test è cambiato mentre il modello lavorava — esegui di nuovo /test."
 }

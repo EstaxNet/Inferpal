@@ -173,5 +173,14 @@
   "Continue.": "続けてください。",
   "Inferpal is waiting for your approval.": "Inferpal があなたの承認を待っています。",
   "Pick a commit, or type a branch or A..B, to review": "レビューするコミットを選ぶか、ブランチまたは A..B を入力してください",
-  "Review this branch, tag or range": "このブランチ、タグ、または範囲をレビュー"
+  "Review this branch, tag or range": "このブランチ、タグ、または範囲をレビュー",
+  "Open a file in the editor to use Edit with AI.": "AI で編集を使うには、エディターでファイルを開いてください。",
+  "Edit with AI": "AI で編集",
+  "What should change in the selected code, or in the current line?": "選択したコード、または現在の行で何を変更しますか?",
+  "e.g. use a dictionary instead of the switch": "例: switch の代わりに辞書を使う",
+  "Inferpal is editing the code…": "Inferpal がコードを編集しています…",
+  "The document changed while the model was working — run Edit with AI again.": "モデルの処理中にドキュメントが変更されました — AI で編集をもう一度実行してください。",
+  "Inferpal Edit with AI — change {0}": "Inferpal AI で編集 — 変更 {0}",
+  "The test file could not be written — nothing was changed.": "テスト ファイルを書き込めませんでした — 何も変更されていません。",
+  "The test file changed while the model was working — run /test again.": "モデルの処理中にテスト ファイルが変更されました — /test をもう一度実行してください。"
 }

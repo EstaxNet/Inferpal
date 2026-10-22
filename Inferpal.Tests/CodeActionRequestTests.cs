@@ -93,7 +93,8 @@ public sealed class CodeActionRequestTests
         Assert.Contains("CodeActionRequest.InTheQuestion(", vm, StringComparison.Ordinal);
 
         var host = ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal.Host", "HostServer.cs"));
-        Assert.Contains("BuildAsync(kind, p.Path, p.Text, cts.Token, p.Request)", host, StringComparison.Ordinal);
+        Assert.Contains("BuildAsync(k, p.Path, p.Text, cts.Token, p.Request)", host, StringComparison.Ordinal);
+        Assert.Contains("InlineEditPrompt.UserMessage(code, p.Request!)", host, StringComparison.Ordinal);   // Edit with AI: the instruction
         Assert.Contains("RunGenerateTestsAsync(s, test.Request, cts.Token)",
                         ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal.Host", "HostSlashCommands.cs")), StringComparison.Ordinal);
 

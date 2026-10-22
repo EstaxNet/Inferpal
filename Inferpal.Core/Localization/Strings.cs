@@ -452,6 +452,7 @@ internal static class Strings
     public static string FixNoChange      => Get(nameof(FixNoChange));
     public static string DocNoChange      => Get(nameof(DocNoChange));
     public static string InlineEditNoChange => Get(nameof(InlineEditNoChange));
+    public static string InlineEditNothingToEdit => Get(nameof(InlineEditNothingToEdit));
     public static string TestsNoChange    => Get(nameof(TestsNoChange));
     /// <summary>Shown when an in-place code action fails (model/network error, empty reply).</summary>
     public static string CodeActionFailed => Get(nameof(CodeActionFailed));
@@ -1139,6 +1140,7 @@ internal static class Strings
     /// <summary>The host's refusal while a turn holds the slot: VS Code shows it verbatim.</summary>
     public static string HostTurnBusy            => Get(nameof(HostTurnBusy));
     public static string HostOperationBusy       => Get(nameof(HostOperationBusy));
+    public static string HostEditBusy            => Get(nameof(HostEditBusy));
 
     // ── Slash commands ─────────────────────────────────────────────────────────
     public static string SlashModelCurrent(string model) => Format(Get(nameof(SlashModelCurrent)), model);

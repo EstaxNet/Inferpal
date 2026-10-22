@@ -30,6 +30,8 @@ import {
   ChatSteerResult,
   CodeActionParams,
   CodeActionResult,
+  TestsGenerateParams,
+  TestsGenerateResult,
   CodeExcerptResult,
   ExclusionsCheckResult,
   ChatExportParams,
@@ -426,7 +428,7 @@ export class HostClient {
     params: { prefix: string; suffix: string; maxTokens?: number; temperature?: number; model?: string; path?: string },
     token?: CancellationToken,
   ): Promise<string> {
-    return this.connection().sendRequest<string>('fim/complete', params, token);
+    return this.connection().sendRequest<string>('fim/complete', ...HostClient.withToken(params, token));
   }
 
   /** Inferpal's inline-completion switch and the debounce of its mode, as saved in its settings. */
@@ -483,11 +485,26 @@ export class HostClient {
     return this.connection().sendRequest<XRayPanel>('xray/toggle', { id, enabled });
   }
 
-  /** In-place code action (fix / refactor / doc): the host runs the model step and returns
+  /** In-place code action (fix / refactor / doc / edit): the host runs the model step and returns
    * per-hunk offset edits; previewing and applying stay editor-side. Flagged as chat-busy
    * so FIM requests skip instead of queueing behind the rewrite on the shared GPU. */
-  codeActionRun(params: CodeActionParams): Promise<CodeActionResult> {
-    return this.whileChatBusy(() => this.connection().sendRequest<CodeActionResult>('codeAction/run', params));
+  codeActionRun(params: CodeActionParams, token?: CancellationToken): Promise<CodeActionResult> {
+    return this.whileChatBusy(() => this.connection().sendRequest<CodeActionResult>('codeAction/run', ...HostClient.withToken(params, token)));
+  }
+
+  /**
+   * A request's arguments, its token last only when there is one.
+   *
+   * ⚠ vscode-jsonrpc drops a trailing argument only when it IS a token: an `undefined` one goes on the wire as a second
+   * parameter, `[params, null]`, which the host's single-object methods refuse — every call without a token would fail.
+   */
+  private static withToken<P>(params: P, token?: CancellationToken): [P] | [P, CancellationToken] {
+    return token ? [params, token] : [params];
+  }
+
+  /** /test: the tests of the code sent, planned by the host; the editor writes them. Chat-busy, like a code action. */
+  testsGenerate(params: TestsGenerateParams): Promise<TestsGenerateResult> {
+    return this.whileChatBusy(() => this.connection().sendRequest<TestsGenerateResult>('tests/generate', params));
   }
 
   /** The code /explain and /review send, sized for the window `model` is really loaded with (the Visual

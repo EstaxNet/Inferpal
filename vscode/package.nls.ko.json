@@ -17,6 +17,10 @@
   "inferpal.command.refactorSelection": "Inferpal: 이 코드 리팩터링",
   "inferpal.command.docSelection": "Inferpal: 이 코드 문서화",
   "inferpal.command.reviewCommit": "Inferpal: 커밋 검토…",
+  "inferpal.command.editSelection": "Inferpal: AI로 편집…",
+  "inferpal.command.explainSelection": "Inferpal: 이 코드 설명",
+  "inferpal.command.testSelection": "Inferpal: 테스트 추가",
+  "inferpal.command.map": "Inferpal: 프로젝트 맵",
   "inferpal.command.exportChat": "Inferpal: 대화 내보내기",
   "inferpal.command.openSettings": "Inferpal: 설정",
   "inferpal.command.openDocs": "Inferpal: 문서(영어)"

@@ -99,9 +99,16 @@ public sealed class TestGenerationUnsavedBufferTests : IDisposable
         var host = ConventionCoverageTests.CodeOnly(Path.Combine(dir!.FullName, "Inferpal.Host", "HostSlashCommands.cs"));
         var vs   = ConventionCoverageTests.CodeOnly(Path.Combine(dir.FullName, "Inferpal", "Commands", "TestGenerationEdit.cs"));
 
-        var refusal = host.IndexOf("TestGenerationPlanner.UnsavedTestFile(", StringComparison.Ordinal);
-        var planned = host.IndexOf("TestGenerationPlanner.PlanAsync(", StringComparison.Ordinal);
-        Assert.True(refusal >= 0 && planned > refusal, "The host refuses an unsaved test file BEFORE asking the model.");
+        // The /test path that writes on disk refuses an unsaved test file before asking the model…
+        var slash   = host.IndexOf("RunGenerateTestsAsync(HostSession", StringComparison.Ordinal);
+        var refusal = host.IndexOf("TestGenerationPlanner.UnsavedTestFile(", slash, StringComparison.Ordinal);
+        var planned = host.IndexOf("TestGenerationPlanner.PlanAsync(", slash, StringComparison.Ordinal);
+        Assert.True(slash >= 0 && refusal > slash && planned > refusal, "The host refuses an unsaved test file BEFORE asking the model.");
+        // …and the one whose editor writes (VS Code) plans from the buffer itself.
+        var generate = host.IndexOf("TestsGenerateAsync(TestsGenerateParams", StringComparison.Ordinal);
+        Assert.True(generate >= 0, "tests/generate is no longer found");
+        Assert.Contains("openText: (path, _) => Task.FromResult(s.Overlay.TryGet(path, out var text) ? text : null)",
+                        host[generate..slash], StringComparison.Ordinal);
         Assert.Contains("openText:", vs, StringComparison.Ordinal);
         Assert.Contains("GetOpenDocumentAsync(", vs, StringComparison.Ordinal);
     }

@@ -386,6 +386,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="ExportFailed" xml:space="preserve"><value>⚠ エクスポート失敗：{0}</value></data>
   <data name="HostTurnBusy" xml:space="preserve"><value>まだ応答を生成中です。停止してから、もう一度お試しください。</value></data>
   <data name="HostOperationBusy" xml:space="preserve"><value>Inferpal は別の処理 (設定の適用、MCP サーバーの再起動) を完了しています。少し待ってからもう一度お試しください。</value></data>
+  <data name="HostEditBusy" xml:space="preserve"><value>Inferpal がコードを編集しています (AI で編集) — 変更が表示されてからもう一度お試しください。</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>使用法：`/model &lt;名前&gt;`  —  現在：**{0}**</value></data>
@@ -405,6 +406,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="FixNoChange" xml:space="preserve"><value>✅ バグや問題は見つかりませんでした。修正は不要です。</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ コードはすでに十分に文書化されています。</value></data>
   <data name="InlineEditNoChange" xml:space="preserve"><value>✅ モデルはコードを変更せずに返しました — 何も適用されていません。</value></data>
+  <data name="InlineEditNothingToEdit" xml:space="preserve"><value>編集する対象がありません。コードを選択するか、コードの行にカーソルを置いてください。</value></data>
   <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** は既に存在しますが読み取れませんでした。上書きは行っていません。ファイルを解放して (ビルドや別のエディターが保持している可能性があります)、コマンドをもう一度実行してください。</value></data>
   <data name="TestsFileUnsaved" xml:space="preserve"><value>⚠ **{0}** に未保存の変更があります。保存してから /test をもう一度実行してください。テストはディスク上のファイルに書き込まれ、そのファイルには未保存の変更が含まれていません。</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ テストすべき有用なものはありません。重要なケースはすべて網羅済みです。</value></data>

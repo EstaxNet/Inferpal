@@ -14,7 +14,9 @@ import { openTabPaths, panelDiagnostics } from './editorBridge';
 import { capAttachment, CappedText } from './attachmentCap';
 import { renderChatHtml } from './webview/chatWebviewHtml';
 import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
-import { ApprovalCard, CodeActionResult, InputCard, InputFormAnswer, SavedMessage, SlashEffect, TurnNote } from './protocol';
+import {
+  ApprovalCard, CodeActionResult, InputCard, InputFormAnswer, SavedMessage, SlashEffect, TestsGenerateResult, TurnNote,
+} from './protocol';
 import {
   WebviewToExt,
   WvBackendStatus,
@@ -2314,6 +2316,20 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // /explain and /review stay read-only and editor-side (VS parity): the active
       // document (or selection) is attached and the answer streams into the chat.
       const first = prompt.split(/\s+/, 1)[0].toLowerCase();
+      // /test: the selection's tests (or the file's), written by an edit the editor can undo — never on disk behind it.
+      if (first === '/test') {
+        question.notice = true;
+        try {
+          await this.runTestGeneration(host, ChatViewProvider.requestOf(prompt));
+        } catch (err) {
+          this.log(`[chat] /test failed: ${String(err)}`);
+          this.finishTurn('', ChatViewProvider.errorText(err), false, 0);
+        } finally {
+          this.busy = false;
+          this.autoSaveLast();
+        }
+        return;
+      }
       if (first === '/explain' || first === '/review') {
         // ⚠ Not in the host's history until the turn reaches it: refused here (no file open, the excerpt failed), it was
         // left an unmarked question, and Regenerate then took back the exchange BEFORE it — the host forgot a question
@@ -3172,28 +3188,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
 
     const preview = await this.inlineDiffPreviewEnabled(host);
-    const edit = new vscode.WorkspaceEdit();
-    for (const e of result.edits) {
-      const range = new vscode.Range(document.positionAt(e.start), document.positionAt(e.end));
-      if (preview) {
-        edit.replace(document.uri, range, e.newText, {
-          needsConfirmation: true,
-          label: t('Inferpal /{0} — change {1}', kind, e.index),
-        });
-      } else {
-        edit.replace(document.uri, range, e.newText);
-      }
-    }
-
-    // With confirmable entries this opens the Refactor Preview and resolves on the user's
-    // decision; false = discarded (or nothing left checked).
-    let applied: boolean;
-    this.codeActionPreviewOpen = preview;
-    try {
-      applied = await vscode.workspace.applyEdit(edit, { isRefactoring: true });
-    } finally {
-      this.codeActionPreviewOpen = false;
-    }
+    const applied = await this.applyRewrite(document, result.edits, preview, (index) => t('Inferpal /{0} — change {1}', kind, index));
     if (!applied) {
       finish('assistant', t('Rewrite discarded — no changes were applied.'));
     } else if (preview) {
@@ -3201,6 +3196,175 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     } else {
       finish('assistant', t('Rewrite applied — undo with Ctrl+Z if needed.'));
     }
+  }
+
+  /** A rewrite's per-hunk edits, in the native Refactor Preview (one confirmable entry per hunk) or applied at once with
+   *  the preview off — one undo step either way. True when applied; false when discarded, or nothing left checked.
+   *  `inTurn`: the rewrite ends a chat turn, so the chat's Stop discards its preview; Edit with AI's, outside the chat,
+   *  is never touched by it. */
+  private async applyRewrite(
+    document: vscode.TextDocument, edits: CodeActionResult['edits'], preview: boolean, label: (index: number) => string,
+    inTurn = true,
+  ): Promise<boolean> {
+    const edit = new vscode.WorkspaceEdit();
+    for (const e of edits) {
+      const range = new vscode.Range(document.positionAt(e.start), document.positionAt(e.end));
+      if (preview) {
+        edit.replace(document.uri, range, e.newText, { needsConfirmation: true, label: label(e.index) });
+      } else {
+        edit.replace(document.uri, range, e.newText);
+      }
+    }
+    // With confirmable entries this opens the Refactor Preview and resolves on the user's decision.
+    if (!inTurn) {
+      return vscode.workspace.applyEdit(edit, { isRefactoring: true });
+    }
+    this.codeActionPreviewOpen = preview;
+    try {
+      return await vscode.workspace.applyEdit(edit, { isRefactoring: true });
+    } finally {
+      this.codeActionPreviewOpen = false;
+    }
+  }
+
+  /**
+   * Edit with AI: an instruction for the selection — or the caret's line — and the edit shown in the native Refactor
+   * Preview, outside the chat, as Visual Studio's command does. The host builds the prompt (the Core's, the one Visual
+   * Studio sends) and picks the inline-edit model; Stop is the notification's Cancel.
+   */
+  async editWithAi(): Promise<void> {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || editor.document.uri.scheme !== 'file') {
+      void vscode.window.showInformationMessage(t('Open a file in the editor to use Edit with AI.'));
+      return;
+    }
+    const host = this.hostForGesture();
+    if (!host) {
+      return;
+    }
+    const instruction = (await vscode.window.showInputBox({
+      title: t('Edit with AI'),
+      prompt: t('What should change in the selected code, or in the current line?'),
+      placeHolder: t('e.g. use a dictionary instead of the switch'),
+      ignoreFocusOut: true,
+    }))?.trim();
+    if (!instruction) {
+      return;   // Escape: the person's own cancel
+    }
+
+    const document = editor.document;
+    const before = document.getText();
+    let result: CodeActionResult;
+    let cancel: vscode.CancellationToken | undefined;
+    try {
+      result = await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: t('Inferpal is editing the code…'), cancellable: true },
+        (_progress, token) => (cancel = token, host.codeActionRun({
+          kind: 'edit',
+          text: before,
+          selStart: document.offsetAt(editor.selection.start),
+          selEnd: document.offsetAt(editor.selection.end),
+          model: this.model || undefined,
+          path: document.uri.fsPath,
+          request: instruction,
+        }, token)));
+    } catch (err) {
+      // The notification's Cancel comes back as the request's cancellation error: the person's own stop, nothing to say.
+      if (!cancel?.isCancellationRequested) {
+        this.gestureFailed('edit with AI', err);
+      }
+      return;
+    }
+
+    if (result.outcome === 'cancelled') {
+      return;
+    }
+    if (result.outcome === 'noChange') {
+      void vscode.window.showInformationMessage(t('Nothing to change — the code already looks good.'));
+      return;
+    }
+    if (result.outcome !== 'edited' || result.edits.length === 0) {
+      const base = t('The code action failed — check the backend connection and the model.');
+      void vscode.window.showWarningMessage(
+        result.outcome === 'refused' ? result.failureDetail ?? base : result.failureDetail ? `${base}\n\n${result.failureDetail}` : base);
+      return;
+    }
+    // The offsets were computed against the text sent: a buffer that moved meanwhile would misplace every hunk.
+    if (document.getText() !== before) {
+      void vscode.window.showWarningMessage(t('The document changed while the model was working — run Edit with AI again.'));
+      return;
+    }
+    const preview = await this.inlineDiffPreviewEnabled(host);
+    if (!(await this.applyRewrite(document, result.edits, preview, (index) => t('Inferpal Edit with AI — change {0}', index), false))) {
+      void vscode.window.showInformationMessage(t('Rewrite discarded — no changes were applied.'));
+    }
+  }
+
+  /**
+   * /test: the tests of the selection — or of the whole file — planned by the host, and written here by an edit the
+   * editor can undo: an existing test file replaced in its buffer (unsaved tests included in what the model extends),
+   * a new one created. Visual Studio writes them the same way.
+   */
+  private async runTestGeneration(host: HostClient, request?: string): Promise<void> {
+    const editor = this.getActiveEditor();
+    if (!editor || editor.document.uri.scheme !== 'file') {
+      this.finishTurn('', t('Open a file in the editor to use /{0}.', 'test'), false, 0);
+      return;
+    }
+    const document = editor.document;
+    // A selection of blanks tests nothing: the file is the input then, as with no selection.
+    const selected = editor.selection.isEmpty ? '' : document.getText(editor.selection);
+    const code = selected.trim() ? selected : document.getText();
+    this.post({ type: 'status', text: t('Running /{0} on {1}…', 'test', vscode.workspace.asRelativePath(document.uri)) });
+    // The open buffers as they are now: a test file edited while the model works is not replaced under the edit.
+    const versions = new Map(vscode.workspace.textDocuments.map((d) => [d.uri.fsPath, d.version] as const));
+
+    let result: TestsGenerateResult;
+    try {
+      result = await host.testsGenerate({ path: document.uri.fsPath, code, request });
+    } catch (err) {
+      this.finishTurn('', ChatViewProvider.errorText(err), false, 0);
+      return;
+    }
+    if (result.cancelled) {
+      this.append({ role: 'error', text: t('Cancelled.'), timestamp: ChatViewProvider.now() });
+      this.finishTurn('', null, true, 0);
+      return;
+    }
+    if (!result.testPath || result.content == null) {
+      this.finishTurn(result.message ?? '', null, false, 0);   // nothing to write: the host says why
+      return;
+    }
+
+    const uri = vscode.Uri.file(result.testPath);
+    const edit = new vscode.WorkspaceEdit();
+    if (result.extended) {
+      const tests = await vscode.workspace.openTextDocument(uri);
+      const seen = versions.get(tests.uri.fsPath);
+      if (seen !== undefined && seen !== tests.version) {
+        this.finishTurn('', t('The test file changed while the model was working — run /test again.'), false, 0);
+        return;
+      }
+      edit.replace(uri, new vscode.Range(tests.positionAt(0), tests.positionAt(tests.getText().length)), result.content);
+    } else {
+      // Planned as a new file: one that appeared meanwhile is not written into.
+      if (await vscode.workspace.fs.stat(uri).then(() => true, () => false)) {
+        this.finishTurn('', t('The test file changed while the model was working — run /test again.'), false, 0);
+        return;
+      }
+      edit.createFile(uri, { ignoreIfExists: true });
+      edit.insert(uri, new vscode.Position(0, 0), result.content);
+    }
+    if (!(await vscode.workspace.applyEdit(edit))) {
+      this.finishTurn('', t('The test file could not be written — nothing was changed.'), false, 0);
+      return;
+    }
+    try {
+      await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(uri), { preview: false });
+    } catch (err) {
+      this.log(`[chat] /test: the test file could not be shown: ${String(err)}`);   // written all the same
+    }
+    this.finishTurn(result.message ?? '', null, false, 0);
   }
 
   /** Host-side config gate of the preview (camelCase JSON); defaults on, like VS. */

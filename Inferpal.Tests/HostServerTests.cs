@@ -2810,7 +2810,7 @@ public partial class HostServerTests
     {
         var run       = WebviewRebuildTests.Body(WebviewRebuildTests.TsCode("chatViewProvider.ts"), "private async runCodeAction(");
         var cancelled = run.IndexOf("result.outcome === 'cancelled'", StringComparison.Ordinal);
-        var apply     = run.IndexOf("vscode.workspace.applyEdit(", StringComparison.Ordinal);
+        var apply     = run.IndexOf("this.applyRewrite(", StringComparison.Ordinal);
         Assert.True(apply > 0, "the apply moved: the rule reads nothing");   // WITNESS
         Assert.True(cancelled > 0 && cancelled < apply, "a stopped code action still reaches the apply");
     }

@@ -301,9 +301,27 @@ export interface SlashCommandResult {
   importCard?: ImportCard | null;
 }
 
+/** `tests/generate`: the source file, the code to test (the selection, or the whole file), what was typed after /test. */
+export interface TestsGenerateParams {
+  path: string;
+  code: string;
+  request?: string;
+}
+
+/** `tests/generate` answer: the sentence to show; with `testPath`, the test file's new content, written by the editor
+ *  (an existing file replaced in its buffer when `extended`, a new one created otherwise). */
+export interface TestsGenerateResult {
+  message?: string | null;
+  testPath?: string | null;
+  content?: string | null;
+  extended?: boolean;
+  cancelled?: boolean;
+}
+
 /** `codeAction/run` — headless in-place code action over the active document. */
 export interface CodeActionParams {
-  kind: 'fix' | 'refactor' | 'doc';
+  /** `edit` = Edit with AI: the instruction is `request`, and the code is the selection or the caret's line. */
+  kind: 'fix' | 'refactor' | 'doc' | 'edit';
   text: string;
   selStart: number;
   selEnd: number;

@@ -17,6 +17,10 @@
   "inferpal.command.refactorSelection": "Inferpal: провести рефакторинг этого кода",
   "inferpal.command.docSelection": "Inferpal: задокументировать этот код",
   "inferpal.command.reviewCommit": "Inferpal: проверить коммит…",
+  "inferpal.command.editSelection": "Inferpal: изменить с помощью ИИ…",
+  "inferpal.command.explainSelection": "Inferpal: объяснить этот код",
+  "inferpal.command.testSelection": "Inferpal: добавить тесты",
+  "inferpal.command.map": "Inferpal: карта проекта",
   "inferpal.command.exportChat": "Inferpal: Экспорт беседы",
   "inferpal.command.openSettings": "Inferpal: Настройки",
   "inferpal.command.openDocs": "Inferpal: Документация (на английском)"

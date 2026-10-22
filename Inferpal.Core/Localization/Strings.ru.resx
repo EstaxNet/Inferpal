@@ -386,6 +386,7 @@
   <data name="ExportFailed" xml:space="preserve"><value>⚠ Ошибка экспорта: {0}</value></data>
   <data name="HostTurnBusy" xml:space="preserve"><value>Ответ ещё генерируется — остановите его и повторите попытку.</value></data>
   <data name="HostOperationBusy" xml:space="preserve"><value>Inferpal завершает другую операцию (применение настроек, перезапуск серверов MCP) — повторите попытку через мгновение.</value></data>
+  <data name="HostEditBusy" xml:space="preserve"><value>Inferpal изменяет код («Изменить с помощью ИИ») — повторите попытку, когда изменение будет показано.</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>Использование: `/model &lt;имя&gt;`  —  текущая: **{0}**</value></data>
@@ -405,6 +406,7 @@
   <data name="FixNoChange" xml:space="preserve"><value>✅ Ошибок или проблем не найдено — исправлять нечего.</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ Код уже достаточно документирован.</value></data>
   <data name="InlineEditNoChange" xml:space="preserve"><value>✅ Модель вернула код без изменений — ничего не применено.</value></data>
+  <data name="InlineEditNothingToEdit" xml:space="preserve"><value>Нечего изменять: выделите код или поставьте курсор на строку кода.</value></data>
   <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** уже существует, но его не удалось прочитать — поверх ничего не записано. Освободите файл (его может удерживать сборка или другой редактор) и выполните команду ещё раз.</value></data>
   <data name="TestsFileUnsaved" xml:space="preserve"><value>⚠ В **{0}** есть несохранённые изменения. Сохраните файл и снова запустите /test: тесты записываются в файл на диске, в котором этих изменений нет.</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ Тестировать нечего — все значимые случаи уже покрыты.</value></data>

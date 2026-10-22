@@ -53,51 +53,21 @@ internal class InlineEditSelectionCommand : Command
         if (view is null) return;
 
         // ── 2. Determine the code block to edit ───────────────────────────────
-        string   originalCode;
-        TextRange editRange;
-        int      editStart, editEnd;
-        var      docText = view.Document.Text.CopyToString();
-
-        var sel = view.Selection;
-        if (!sel.IsEmpty)
+        // The selection, or the caret's line — the rule VS Code's command applies too (InlineEditPrompt.Target).
+        var docText = view.Document.Text.CopyToString();
+        var sel     = view.Selection;
+        var target  = sel.IsEmpty
+            ? Services.CodeActions.InlineEditPrompt.Target(docText, sel.InsertionPosition.Offset, sel.InsertionPosition.Offset)
+            : Services.CodeActions.InlineEditPrompt.Target(docText, sel.Start.Offset, sel.End.Offset);
+        if (target is not { } block)
         {
-            // Expand the selection start back over leading whitespace to the beginning of its
-            // line, so the captured text carries the first line's indentation. Without this, a
-            // selection that begins at the first non-whitespace character (the common case when
-            // selecting a method/block) yields an empty base indent: the reindenter then rebuilds
-            // every continuation line one level too shallow, while the first line still looks
-            // correct because EditAsync inserts it at the caret column.
-            var selStart = sel.Start.Offset;
-            var selEnd   = sel.End.Offset;
-
-            var ls        = selStart > 0 ? docText.LastIndexOf('\n', selStart - 1) : -1;
-            var lineStart = ls < 0 ? 0 : ls + 1;
-            if (IsAllWhitespace(docText, lineStart, selStart))
-                selStart = lineStart;
-
-            originalCode = docText[selStart..selEnd];
-            editRange    = new TextRange(new TextPosition(view.Document, selStart), sel.End);
-            (editStart, editEnd) = (selStart, selEnd);
+            // A blank line and no selection: nothing to edit, and a command that does nothing says why.
+            await ShowInfoAsync(Strings.InlineEditNothingToEdit, ct);
+            return;
         }
-        else
-        {
-            var caretOff = sel.InsertionPosition.Offset;
-
-            var ls        = caretOff > 0 ? docText.LastIndexOf('\n', caretOff - 1) : -1;
-            var lineStart = ls < 0 ? 0 : ls + 1;
-
-            var le      = docText.IndexOf('\n', caretOff);
-            var rawEnd  = le < 0 ? docText.Length : le;
-            var lineEnd = rawEnd > lineStart && docText[rawEnd - 1] == '\r' ? rawEnd - 1 : rawEnd;
-
-            originalCode = docText[lineStart..lineEnd];
-            editRange    = new TextRange(
-                new TextPosition(view.Document, lineStart),
-                new TextPosition(view.Document, lineEnd));
-            (editStart, editEnd) = (lineStart, lineEnd);
-        }
-
-        if (string.IsNullOrWhiteSpace(originalCode)) return;
+        var (editStart, editEnd) = block;
+        var originalCode = docText[editStart..editEnd];
+        var editRange    = new TextRange(new TextPosition(view.Document, editStart), new TextPosition(view.Document, editEnd));
         // Excluded by the workspace's ignore files: the code never reaches the model, and the reason is said.
         if (Services.Governance.ContentExclusions.NoticeFor(view.Document.Uri.LocalPath, null) is { } excluded)
         {
@@ -242,33 +212,13 @@ internal class InlineEditSelectionCommand : Command
         catch (Exception ex) { Diagnostics.Swallow("InlineEdit.Notify", ex); }
     }
 
-    /// <summary>True if <c>text[start..end]</c> contains only whitespace (or is empty).</summary>
-    private static bool IsAllWhitespace(string text, int start, int end)
-    {
-        for (var i = start; i < end; i++)
-            if (!char.IsWhiteSpace(text[i])) return false;
-        return true;
-    }
-
     private string ResolveModel() => ModelRouter.Resolve(_config, ModelRole.InlineEdit);
 
-    private static List<ChatMessageDto> BuildMessages(string originalCode, string instruction)
-    {
-        const string System =
-            "You are an expert code editor. The user provides a code block and an instruction. " +
-            "Reply with ONLY the edited code — no explanation, no markdown fences, no ```.\n" +
-            "CRITICAL: reproduce EXACTLY the same leading whitespace on EVERY line as the original. " +
-            "ALL lines — including opening and closing braces — must keep their original indentation level. " +
-            "Do NOT reset any line to column 0 if it was indented in the original. " +
-            "Do not add or remove blank lines at the start or end.";
-
-        var user = $"Code to edit:\n{originalCode}\n\nInstruction: {instruction}";
-
-        return
-        [
-            new ChatMessageDto("system", System),
-            new ChatMessageDto("user",   user),
-        ];
-    }
+    /// <summary>The prompt VS Code's "Edit with AI" sends too (<see cref="Services.CodeActions.InlineEditPrompt"/>).</summary>
+    private static List<ChatMessageDto> BuildMessages(string originalCode, string instruction) =>
+    [
+        new ChatMessageDto("system", Services.CodeActions.InlineEditPrompt.System),
+        new ChatMessageDto("user",   Services.CodeActions.InlineEditPrompt.UserMessage(originalCode, instruction)),
+    ];
 
 }

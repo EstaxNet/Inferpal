@@ -35,9 +35,17 @@ public sealed class CodeActionPreviewStopTests
     [Fact]
     public void ThePreviewFlag_CoversTheWait_AndIsClearedOnEveryExit()
     {
-        var body = ConversationPersistenceSilenceTests.TsMethodBody(Provider(), "private async runCodeAction(");
+        // The preview is opened in one place, for the code actions and Edit with AI alike.
+        Assert.Contains("this.applyRewrite(", ConversationPersistenceSilenceTests.TsMethodBody(Provider(), "private async runCodeAction("),
+                        StringComparison.Ordinal);
+        Assert.Contains("this.applyRewrite(", ConversationPersistenceSilenceTests.TsMethodBody(Provider(), "async editWithAi("),
+                        StringComparison.Ordinal);
+        var body = ConversationPersistenceSilenceTests.TsMethodBody(Provider(), "private async applyRewrite(");
 
-        var wait = body.IndexOf("vscode.workspace.applyEdit(edit", StringComparison.Ordinal);
+        // The chat turn's preview — the one Stop discards; Edit with AI's, outside the chat, applies before the flag.
+        var flagged = body.IndexOf("this.codeActionPreviewOpen = preview", StringComparison.Ordinal);
+        Assert.True(flagged >= 0, "the preview flag is never set: this test would have measured nothing.");
+        var wait = body.IndexOf("vscode.workspace.applyEdit(edit", flagged, StringComparison.Ordinal);
         Assert.True(wait >= 0, "the preview's applyEdit was not found: this test would have measured nothing.");
         var set = body.LastIndexOf("this.codeActionPreviewOpen = preview", wait, StringComparison.Ordinal);
         Assert.True(set >= 0, "the flag is not set before the preview opens.");

@@ -17,6 +17,10 @@
   "inferpal.command.refactorSelection": "Inferpal : refactoriser ce code",
   "inferpal.command.docSelection": "Inferpal : documenter ce code",
   "inferpal.command.reviewCommit": "Inferpal : relire un commit…",
+  "inferpal.command.editSelection": "Inferpal : modifier avec l'IA…",
+  "inferpal.command.explainSelection": "Inferpal : expliquer ce code",
+  "inferpal.command.testSelection": "Inferpal : ajouter des tests",
+  "inferpal.command.map": "Inferpal : carte du projet",
   "inferpal.command.exportChat": "Inferpal : Exporter la conversation",
   "inferpal.command.openSettings": "Inferpal : Paramètres",
   "inferpal.command.openDocs": "Inferpal : Documentation (en anglais)"

@@ -969,29 +969,44 @@ internal sealed partial class HostServer : IDisposable
         // degraded to a default — but the PAIR itself comes from the Core funnel, enrichment
         // included. Picking it here is what had let /doc drift: the VS window appended the
         // document's semantic block and this did not.
+        // "edit" = Edit with AI: a free instruction on the selection or the caret's line, the prompt of Visual Studio's
+        // command (InlineEditPrompt) and the inline-edit model.
+        var edit = p.Kind == "edit";
         var kind = p.Kind switch
         {
             "fix"      => SlashCodeActionKind.Fix,
             "refactor" => SlashCodeActionKind.Refactor,
             "doc"      => SlashCodeActionKind.Doc,
+            "edit"     => (SlashCodeActionKind?)null,
             _          => throw new ArgumentException($"Unknown code action kind '{p.Kind}'."),
         };
+        if (edit && string.IsNullOrWhiteSpace(p.Request))
+            throw new ArgumentException("An edit carries its instruction.");
+        var block = edit ? InlineEditPrompt.Target(p.Text, p.SelStart, p.SelEnd) : (p.SelStart, p.SelEnd);
+        if (block is not { } target)
+            return new CodeActionResultDto("refused", [], FailureDetail: Strings.InlineEditNothingToEdit);
+        var (selStart, selEnd) = target;
         // Excluded by the workspace's ignore files: the document never reaches the model, and the reason is the answer.
         if (Services.Governance.ContentExclusions.NoticeFor(p.Path, s.RootDir) is { } excluded)
             return new CodeActionResultDto("refused", [], FailureDetail: excluded);
         // ⚠ Inside the turn slot, like /test: outside it, Stop (chat/cancel cancels the slot) reached nothing — the chat
         // stayed busy, and minutes later the rewrite was offered, or applied straight to the file with the preview off.
-        var cts = AcquireTurn(ct);
+        // Edit with AI runs outside the chat: a question typed meanwhile is told what holds the slot, not "a turn".
+        var cts = AcquireTurn(ct, edit ? Strings.HostEditBusy : null);
         CodeActionRun run;
         try
         {
-            var (system, instruction) = await InPlaceCodeActionPrompts.BuildAsync(kind, p.Path, p.Text, cts.Token, p.Request);
+            var (system, instruction) = kind is { } k
+                ? await InPlaceCodeActionPrompts.BuildAsync(k, p.Path, p.Text, cts.Token, p.Request)
+                : (InlineEditPrompt.System, p.Request!);
 
-            // The pick is the CHAT model: a configured code-actions model wins over it, as in Visual Studio.
-            var model = ModelRouter.Resolve(s.Config, ModelRole.CodeActions, p.Model);
+            // The pick is the CHAT model: a configured code-actions (or inline-edit) model wins over it, as in Visual Studio.
+            var model = ModelRouter.Resolve(s.Config, edit ? ModelRole.InlineEdit : ModelRole.CodeActions, p.Model);
             run = await CodeActionPipeline.RunAsync(
                 s.Client, model, system, instruction,
-                p.Text, p.SelStart, p.SelEnd, selectionEmpty: p.SelStart == p.SelEnd, cts.Token);
+                p.Text, selStart, selEnd, selectionEmpty: selStart == selEnd, cts.Token,
+                // Edit with AI words its message as Visual Studio's command does: the code, then the instruction.
+                userMessage: edit ? code => InlineEditPrompt.UserMessage(code, p.Request!) : null);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
@@ -1717,19 +1732,25 @@ internal sealed partial class HostServer : IDisposable
 
     /// <summary>Claims the single-turn slot (chat turn or long slash command); throws when one
     /// is already running. The returned CTS is cancelled by `chat/cancel` and `shutdown`.</summary>
-    private CancellationTokenSource AcquireTurn(CancellationToken ct)
+    /// <param name="busyText">What a request refused meanwhile is told holds the slot, when it is not a chat turn the
+    /// chat shows (Edit with AI runs outside it).</param>
+    private CancellationTokenSource AcquireTurn(CancellationToken ct, string? busyText = null)
     {
         lock (_gate)
         {
             if (_chatCts is not null)
                 throw new InvalidOperationException(BusyText());
             _slotHeldByTurn = true;
+            _slotBusyText = busyText;
             return _chatCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         }
     }
 
+    /// <summary>What a request refused while the slot is held is told; set with the slot.</summary>
+    private string? _slotBusyText;
+
     /// <summary>Why the slot is refused, by what holds it. Called under <see cref="_gate"/>.</summary>
-    private string BusyText() => _slotHeldByTurn ? Strings.HostTurnBusy : Strings.HostOperationBusy;
+    private string BusyText() => _slotBusyText ?? (_slotHeldByTurn ? Strings.HostTurnBusy : Strings.HostOperationBusy);
 
     private void ReleaseTurn(CancellationTokenSource cts)
     {
@@ -1770,6 +1791,7 @@ internal sealed partial class HostServer : IDisposable
                 throw new InvalidOperationException(BusyText());
             }
             _slotHeldByTurn = false;
+            _slotBusyText = null;
             return _chatCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         }
     }

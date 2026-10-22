@@ -11,19 +11,16 @@ exists.
   connection + VRAM badge, collapsible tool bubbles (input/output, "Fix with AI" on errors), live agent-plan block,
   slash-command autocomplete, Shift+↑/↓ prompt history, token counter with a clickable context gauge (opens the X-Ray
   panel), conversation search, `.md`/`.txt` export, Ctrl+Alt+I keybinding, and a localized webview (10 languages).
-- **Not in VS Code yet** — a few editor features are Visual Studio-only for now:
-  - **Edit with AI** (Ctrl+Shift+I, an instruction typed on the selection) — `/refactor <request>` stands in for it;
-  - **Explain** and **Add Tests** in the editor context menu (it has *Inferpal: Fix This Code*, *Refactor This Code*
-    and *Document This Code*) — `/explain` and `/test` from the chat;
-  - `/test` on the **selection**: VS Code sends the whole file, and rewrites an existing test file on disk instead
-    of through an undoable edit (the copy it keeps first comes back with the `/restore` line of its reply);
+- **The editor's gestures, in both** — **Edit with AI** (an instruction on the selection or the caret's line, the
+  change shown before it applies), **Explain**, **Add Tests**, **Fix**, **Refactor** and **Document** in the editor's
+  menu, `/test` on the **selection** with its tests written by an edit you can undo, and `/map` on **Alt+M**.
+- **Not in VS Code yet** — a few chat features are Visual Studio-only for now:
   - the **colored diff in a tool bubble** after a write (VS Code shows it on the approval card, before the write — so
     not once the tool is always allowed);
   - the **Build Failed banner** (VS Code's welcome card offers **Fix them** for the Problems panel's errors);
   - the **auto-attach chips** while you type (the per-turn auto-context is there);
   - the **sound** at the end of a long run;
-  - `/fix-build` (it answers that it is not available), and the **Alt+M** shortcut of `/map` (the command itself is
-    there).
+  - `/fix-build` (it answers that it is not available).
 - **First run, in both editors** — Inferpal looks for a model server where one usually listens (Ollama, LM Studio,
   llama-server, vLLM) and says what each place answered. VS Code shows it on a card in the chat: the models proposed
   for your card, a server on another machine by its address, a key when a server asks for one, and — on Ollama
@@ -136,10 +133,11 @@ exists.
   **Fix**, **Refactor** and **Add Docstring** apply their result **directly in the editor**
   (undoable with Ctrl+Z); **Add Tests** writes into a **separate test file** (created/opened,
   or extended if it already exists); only **Explain** answers in the chat window.
-- **Inline Edit (Edit with AI)** (Visual Studio) — select code (or place the caret on a line), press
+- **Inline Edit (Edit with AI)** — select code (or place the caret on a line), press
   **Ctrl+Shift+I** (or pick **Edit with AI…** from the context menu), type an instruction, and
   the model rewrites the selection **directly in the editor** (re-indented to match the
-  original). Uses the Inline Edit model (falls back to Code Actions → chat model).
+  original), shown first when *Show the change before applying it* is on — in VS Code, in its Refactor Preview. Uses
+  the Inline Edit model (falls back to Code Actions → chat model); the same prompt in both editors.
 - **Atomic multi-file edits** — `apply_diff` matches `old_content` exactly, then falls back to
   a **whitespace-tolerant** match (indentation / trailing spaces / line endings) and supports
   `occurrence` = `unique` / `first` / `all`. `apply_edits` applies many edits across several
@@ -430,7 +428,10 @@ exists.
 
 ## Keyboard shortcuts
 
-Alt+B, Alt+O, Alt+M and Ctrl+Shift+I are Visual Studio's; in VS Code, **Ctrl+Alt+I** opens the chat.
+Alt+B and Alt+O are Visual Studio's; in VS Code, **Ctrl+Alt+I** opens the chat. Alt+M and Ctrl+Shift+I work in both. In
+VS Code, Edit with AI is **Ctrl+Shift+Alt+I** on Linux (Ctrl+Shift+I formats the document there) and **Cmd+Shift+I** on
+macOS, and the map **Ctrl+Alt+M** on macOS (Option+M types µ); with the editor focused, Ctrl/Cmd+Shift+I is Inferpal's,
+not the developer tools' or another assistant's — every key can be changed in VS Code's Keyboard Shortcuts.
 
 | Shortcut | Action |
 |---|---|

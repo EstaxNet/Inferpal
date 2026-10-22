@@ -173,5 +173,14 @@
   "Continue.": "Продолжай.",
   "Inferpal is waiting for your approval.": "Inferpal ждёт вашего подтверждения.",
   "Pick a commit, or type a branch or A..B, to review": "Выберите коммит или введите ветку или A..B для проверки",
-  "Review this branch, tag or range": "Проверить эту ветку, тег или диапазон"
+  "Review this branch, tag or range": "Проверить эту ветку, тег или диапазон",
+  "Open a file in the editor to use Edit with AI.": "Откройте файл в редакторе, чтобы использовать «Изменить с помощью ИИ».",
+  "Edit with AI": "Изменить с помощью ИИ",
+  "What should change in the selected code, or in the current line?": "Что нужно изменить в выделенном коде или в текущей строке?",
+  "e.g. use a dictionary instead of the switch": "например, использовать словарь вместо switch",
+  "Inferpal is editing the code…": "Inferpal изменяет код…",
+  "The document changed while the model was working — run Edit with AI again.": "Документ изменился, пока модель работала — снова запустите «Изменить с помощью ИИ».",
+  "Inferpal Edit with AI — change {0}": "Inferpal «Изменить с помощью ИИ» — изменение {0}",
+  "The test file could not be written — nothing was changed.": "Не удалось записать файл тестов — ничего не изменено.",
+  "The test file changed while the model was working — run /test again.": "Файл тестов изменился, пока модель работала — снова запустите /test."
 }

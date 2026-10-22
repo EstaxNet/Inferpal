@@ -386,6 +386,7 @@ Backup: {0}</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>⚠ Esportazione fallita: {0}</value></data>
   <data name="HostTurnBusy" xml:space="preserve"><value>Una risposta è ancora in corso: interrompila e riprova.</value></data>
   <data name="HostOperationBusy" xml:space="preserve"><value>Inferpal sta completando un'altra operazione (applicazione delle impostazioni, riavvio dei server MCP): riprova tra un istante.</value></data>
+  <data name="HostEditBusy" xml:space="preserve"><value>Inferpal sta modificando il codice (Modifica con IA) — riprova quando la modifica è mostrata.</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>Uso: `/model &lt;nome&gt;`  —  attuale: **{0}**</value></data>
@@ -405,6 +406,7 @@ Backup: {0}</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ Nessun bug o problema rilevato: niente da correggere.</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ Il codice è già documentato a sufficienza.</value></data>
   <data name="InlineEditNoChange" xml:space="preserve"><value>✅ Il modello ha restituito il codice invariato: non è stato applicato nulla.</value></data>
+  <data name="InlineEditNothingToEdit" xml:space="preserve"><value>Niente da modificare: seleziona il codice o posiziona il cursore su una riga di codice.</value></data>
   <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** esiste già ma non è stato possibile leggerlo: non è stato scritto nulla sopra. Libera il file (potrebbe trattenerlo una build o un altro editor) ed esegui di nuovo il comando.</value></data>
   <data name="TestsFileUnsaved" xml:space="preserve"><value>⚠ **{0}** ha modifiche non salvate. Salvalo, poi esegui di nuovo /test: i test vengono scritti nel file su disco, che non le contiene.</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ Niente di utile da testare: tutti i casi rilevanti sono già coperti.</value></data>

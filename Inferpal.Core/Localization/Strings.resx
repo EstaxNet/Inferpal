@@ -387,6 +387,7 @@ Backup: {0}</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>⚠ Export failed: {0}</value></data>
   <data name="HostTurnBusy" xml:space="preserve"><value>A reply is still being generated — stop it, then try again.</value></data>
   <data name="HostOperationBusy" xml:space="preserve"><value>Inferpal is finishing another operation (applying settings, restarting MCP servers) — try again in a moment.</value></data>
+  <data name="HostEditBusy" xml:space="preserve"><value>Inferpal is editing code (Edit with AI) — try again once the change is shown.</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>Usage: `/model &lt;name&gt;`  —  current: **{0}**</value></data>
@@ -406,6 +407,7 @@ Backup: {0}</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ No bug or issue found — nothing to fix.</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ The code is already adequately documented.</value></data>
   <data name="InlineEditNoChange" xml:space="preserve"><value>✅ The model returned the code unchanged — nothing was applied.</value></data>
+  <data name="InlineEditNothingToEdit" xml:space="preserve"><value>Nothing to edit: select the code, or place the cursor on a line of code.</value></data>
   <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** already exists but could not be read — nothing was written over it. Free the file (a build or another editor may be holding it) and run the command again.</value></data>
   <data name="TestsFileUnsaved" xml:space="preserve"><value>⚠ **{0}** has unsaved changes. Save it, then run /test again: the tests are written to the file on disk, which does not have them.</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ Nothing useful to test — every meaningful case is already covered.</value></data>

@@ -386,6 +386,7 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
   <data name="ExportFailed" xml:space="preserve"><value>⚠ 내보내기 실패: {0}</value></data>
   <data name="HostTurnBusy" xml:space="preserve"><value>아직 응답을 생성하는 중입니다. 중지한 다음 다시 시도하세요.</value></data>
   <data name="HostOperationBusy" xml:space="preserve"><value>Inferpal이 다른 작업(설정 적용, MCP 서버 다시 시작)을 마무리하고 있습니다. 잠시 후 다시 시도하세요.</value></data>
+  <data name="HostEditBusy" xml:space="preserve"><value>Inferpal이 코드를 편집하는 중입니다(AI로 편집) — 변경 내용이 표시된 후 다시 시도하세요.</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>사용법: `/model &lt;이름&gt;`  —  현재: **{0}**</value></data>
@@ -405,6 +406,7 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
   <data name="FixNoChange" xml:space="preserve"><value>✅ 버그나 문제를 찾지 못했습니다 — 수정할 것이 없습니다.</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ 코드가 이미 충분히 문서화되어 있습니다.</value></data>
   <data name="InlineEditNoChange" xml:space="preserve"><value>✅ 모델이 코드를 변경하지 않고 반환했습니다 — 아무것도 적용되지 않았습니다.</value></data>
+  <data name="InlineEditNothingToEdit" xml:space="preserve"><value>편집할 내용이 없습니다. 코드를 선택하거나 코드 줄에 커서를 두세요.</value></data>
   <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** 파일이 이미 있지만 읽을 수 없었습니다. 덮어쓰지 않았습니다. 파일을 해제한 뒤(빌드나 다른 편집기가 잡고 있을 수 있습니다) 명령을 다시 실행하세요.</value></data>
   <data name="TestsFileUnsaved" xml:space="preserve"><value>⚠ **{0}**에 저장되지 않은 변경 사항이 있습니다. 저장한 다음 /test를 다시 실행하세요. 테스트는 해당 변경 사항이 없는 디스크의 파일에 기록됩니다.</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ 테스트할 만한 것이 없습니다 — 의미 있는 모든 경우가 이미 다뤄졌습니다.</value></data>

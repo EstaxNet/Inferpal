@@ -81,6 +81,8 @@ internal static class CodeActionPipeline
     /// <summary>
     /// Runs the model step of an in-place action and returns the rewrite without applying it.
     /// </summary>
+    /// <param name="userMessage">The user message from the code to edit, when the action words it its own way (Edit with
+    /// AI: the code, then the instruction); <c>null</c> = the instruction, then the code.</param>
     public static async Task<CodeActionRun> RunAsync(
         IInferenceProvider client,
         string             model,
@@ -90,7 +92,8 @@ internal static class CodeActionPipeline
         int                selStart,
         int                selEnd,
         bool               selectionEmpty,
-        CancellationToken  ct)
+        CancellationToken  ct,
+        Func<string, string>? userMessage = null)
     {
         var (originalCode, start, end, hasSelection) =
             ResolveTarget(docText, selStart, selEnd, selectionEmpty);
@@ -101,7 +104,7 @@ internal static class CodeActionPipeline
         var messages = new List<ChatMessageDto>
         {
             new("system", systemPrompt),
-            new("user",   $"{instruction}\n\n{originalCode}"),
+            new("user",   userMessage?.Invoke(originalCode) ?? $"{instruction}\n\n{originalCode}"),
         };
 
         ChatTurnResult result;

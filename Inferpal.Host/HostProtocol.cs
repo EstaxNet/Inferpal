@@ -448,9 +448,19 @@ internal sealed record PinParams(string Path);
 /// <summary>The pinned files after the call, and what the host had to say (the cap reached, a failed save).</summary>
 internal sealed record PinsResult(List<string> Pins, string? Notice = null);
 
+/// <summary>`tests/generate`: the source file, the code to test (the selection, or the whole file), what the user typed
+/// after <c>/test</c>.</summary>
+internal sealed record TestsGenerateParams(string Path, string Code, string? Request = null);
+
+/// <summary>`tests/generate` answer: the sentence to show, and — when tests were written — the test file, its new
+/// content, and whether it extends an existing file (replaced in its buffer) or creates one.</summary>
+internal sealed record TestsGenerateResult(
+    string? Message, string? TestPath = null, string? Content = null, bool Extended = false, bool Cancelled = false);
+
 /// <summary>`codeAction/run` — headless in-place code action (<paramref name="Kind"/> =
-/// <c>fix</c> | <c>refactor</c> | <c>doc</c>) over the adapter's document text and selection
-/// offsets. The host only runs the model step; applying (and previewing) stays editor-side.</summary>
+/// <c>fix</c> | <c>refactor</c> | <c>doc</c> | <c>edit</c>, Edit with AI, whose instruction is the request) over the
+/// adapter's document text and selection offsets. The host only runs the model step; applying (and previewing) stays
+/// editor-side.</summary>
 internal sealed record CodeActionParams(
     string  Kind,
     string  Text,

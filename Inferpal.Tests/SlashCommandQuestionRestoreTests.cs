@@ -62,12 +62,13 @@ public class SlashCommandQuestionRestoreTests
             File.ReadAllText(Path.Combine(root!.FullName, "vscode", "src", "chatViewProvider.ts")));
 
         Assert.Contains("const question: WvTranscriptItem = { role: 'user', text: prompt, timestamp };", code);
-        // A code action, a command the host served, a command the host refused: the three paths that never reach the
-        // model — plus /explain and /review, marked until their turn reaches the host and unmarked then
+        // A code action, /test, a command the host served, a command the host refused: the four paths that never reach
+        // the model — plus /explain and /review, marked until their turn reaches the host and unmarked then
         // (ExplainRefusedQuestionTests). A template sent as a prompt is a turn: its question stays one.
-        Assert.Equal(4, Regex.Matches(code, @"question\.notice = true;").Count);
+        Assert.Equal(5, Regex.Matches(code, @"question\.notice = true;").Count);
         Assert.Single(Regex.Matches(code, @"question\.notice = false;"));
         Assert.Matches(@"question\.notice = true;\n\s*try \{\n\s*await this\.runCodeAction\(", code.Replace("\r\n", "\n"));
+        Assert.Matches(@"question\.notice = true;\n\s*try \{\n\s*await this\.runTestGeneration\(", code.Replace("\r\n", "\n"));
 
         var sessions = SettingsSchemaDriftTests.NeutralizeTypeScriptComments(
             File.ReadAllText(Path.Combine(root.FullName, "vscode", "src", "chatSessions.ts")));

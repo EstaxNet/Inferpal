@@ -386,6 +386,7 @@
   <data name="ExportFailed" xml:space="preserve"><value>⚠ 导出失败：{0}</value></data>
   <data name="HostTurnBusy" xml:space="preserve"><value>仍在生成回复——请先停止，然后重试。</value></data>
   <data name="HostOperationBusy" xml:space="preserve"><value>Inferpal 正在完成另一项操作（应用设置、重新启动 MCP 服务器）——请稍后重试。</value></data>
+  <data name="HostEditBusy" xml:space="preserve"><value>Inferpal 正在编辑代码(使用 AI 编辑)— 请在显示更改后重试。</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>用法：`/model &lt;名称&gt;` — 当前：**{0}**</value></data>
@@ -405,6 +406,7 @@
   <data name="FixNoChange" xml:space="preserve"><value>✅ 未发现错误或问题，无需修复。</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ 代码已有足够的文档说明。</value></data>
   <data name="InlineEditNoChange" xml:space="preserve"><value>✅ 模型原样返回了代码——未应用任何更改。</value></data>
+  <data name="InlineEditNothingToEdit" xml:space="preserve"><value>没有可编辑的内容:请选中代码,或将光标放在一行代码上。</value></data>
   <data name="TestsFileUnreadable" xml:space="preserve"><value>⚠ **{0}** 已存在但无法读取 —— 未覆盖任何内容。请释放该文件（可能被生成过程或其他编辑器占用），然后重新运行命令。</value></data>
   <data name="TestsFileUnsaved" xml:space="preserve"><value>⚠ **{0}** 有未保存的更改。请先保存，然后重新运行 /test：测试会写入磁盘上的文件，而该文件不包含这些更改。</value></data>
   <data name="TestsNoChange" xml:space="preserve"><value>✅ 没有需要测试的内容，所有重要情况都已覆盖。</value></data>

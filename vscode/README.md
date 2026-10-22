@@ -61,7 +61,7 @@ Measured on our test server — one 24 GB card, LM Studio, 32K context — with 
 - **@Docs** — `/docs add <url>` indexes a documentation site, so answers about a library cite its pages.
 - **Typed mentions** — `@file` `@folder` `@code` `@diff` `@problems` `@debugger` `@clipboard` `@tree` attach exactly what you mean.
 - **Inline completions** — ghost text as you type, with Ollama, LM Studio, llama-server or another server that completes around the cursor; Tab to accept.
-- **Code actions** — Fix, Refactor and Add docstring on a selection, shown in VS Code's Refactor Preview before anything is applied.
+- **Code actions** — **Edit with AI** (Ctrl+Shift+I: an instruction on the selection), Fix, Refactor and Add docstring, shown in VS Code's Refactor Preview before anything is applied; Explain and Add Tests from the same menu, the tests written by an edit you can undo; `/map` on Alt+M.
 - **MCP servers** — any stdio or Streamable HTTP server, of the 2026-07-28 revision or an earlier one (with OAuth), every call behind an approval.
 - **Project rules and AI checks** — markdown rules scoped to the files you edit, and `/check` to review your git diff for bugs and against your own criteria.
 - **Background tasks** — `/task` investigates in the background while you keep working; with `/task propose`, the edits it suggests wait for your review.

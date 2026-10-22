@@ -81,6 +81,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('inferpal.fixSelection', () => chatView.runSlashCommand('/fix')),
     vscode.commands.registerCommand('inferpal.refactorSelection', () => chatView.runSlashCommand('/refactor')),
     vscode.commands.registerCommand('inferpal.docSelection', () => chatView.runSlashCommand('/doc')),
+    vscode.commands.registerCommand('inferpal.explainSelection', () => chatView.runSlashCommand('/explain')),
+    vscode.commands.registerCommand('inferpal.testSelection', () => chatView.runSlashCommand('/test')),
+    vscode.commands.registerCommand('inferpal.map', () => chatView.runSlashCommand('/map')),
+    // Edit with AI: an instruction, then the edit previewed — outside the chat, as in Visual Studio.
+    vscode.commands.registerCommand('inferpal.editSelection', () => chatView.editWithAi()),
     // A commit picked, or a branch or range typed: reviewed by /check, like typing it.
     vscode.commands.registerCommand('inferpal.reviewCommit', () =>
       reviewCommit((text) => chatView.runSlashCommand(text))),

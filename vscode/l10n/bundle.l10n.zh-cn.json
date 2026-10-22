@@ -173,5 +173,14 @@
   "Continue.": "请继续。",
   "Inferpal is waiting for your approval.": "Inferpal 正在等待您的批准。",
   "Pick a commit, or type a branch or A..B, to review": "选择一个提交，或输入分支或 A..B 进行评审",
-  "Review this branch, tag or range": "评审此分支、标签或范围"
+  "Review this branch, tag or range": "评审此分支、标签或范围",
+  "Open a file in the editor to use Edit with AI.": "请在编辑器中打开一个文件以使用“使用 AI 编辑”。",
+  "Edit with AI": "使用 AI 编辑",
+  "What should change in the selected code, or in the current line?": "选中的代码或当前行中需要更改什么?",
+  "e.g. use a dictionary instead of the switch": "例如:用字典代替 switch",
+  "Inferpal is editing the code…": "Inferpal 正在编辑代码…",
+  "The document changed while the model was working — run Edit with AI again.": "模型工作时文档已更改 — 请重新运行“使用 AI 编辑”。",
+  "Inferpal Edit with AI — change {0}": "Inferpal 使用 AI 编辑 — 更改 {0}",
+  "The test file could not be written — nothing was changed.": "无法写入测试文件 — 未做任何更改。",
+  "The test file changed while the model was working — run /test again.": "模型工作时测试文件已更改 — 请重新运行 /test。"
 }
