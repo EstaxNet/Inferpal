@@ -78,6 +78,8 @@ export interface ChatSteerResult {
 }
 
 export interface ChatSendResult {
+  /** The turn was long and the setting, read in the file now, says to announce its end (`ChatTurnPolicy.AnnouncesEnd`). */
+  announceEnd?: boolean;
   text: string;
   cancelled: boolean;
   tokensUsed: number;
@@ -115,6 +117,8 @@ export interface ToolNotice {
   input: string;
   output: string;
   hasErrors: boolean;
+  /** The change a writing call made, in the approval card's lines (`+ - …` prefixes); absent when it wrote nothing. */
+  diff?: string | null;
 }
 
 export interface PlanNotice {

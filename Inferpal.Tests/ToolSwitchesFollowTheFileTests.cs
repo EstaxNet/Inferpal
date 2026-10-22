@@ -122,6 +122,22 @@ public sealed class ToolSwitchesFollowTheFileTests : IDisposable
         Assert.True(Offers(tools, "run_command"));
     }
 
+    /// <summary>The end of a long run, announced after the same time in both editors, by the setting as the file holds it
+    /// now: turned off in one editor, the other stops announcing at its next turn's end.</summary>
+    [Fact]
+    public void TheEndOfALongRun_TurnedOffInTheOtherEditor_IsNotAnnouncedHere()
+    {
+        new InferpalConfig().Save();
+        var config  = InferpalConfig.Load();
+        var longRun = TimeSpan.FromSeconds(Services.Agent.ChatTurnPolicy.LongRunSeconds + 1);
+        Assert.True(Services.Agent.ChatTurnPolicy.AnnouncesEnd(config, longRun));                 // witness: announced
+        Assert.False(Services.Agent.ChatTurnPolicy.AnnouncesEnd(config, TimeSpan.FromSeconds(Services.Agent.ChatTurnPolicy.LongRunSeconds)));
+
+        WriteAsTheOtherWindow(c => c.RunEndSoundEnabled = false);
+
+        Assert.False(Services.Agent.ChatTurnPolicy.AnnouncesEnd(config, longRun));
+    }
+
     [Fact]
     public async Task ThePackageCheck_SwitchedOffInTheOtherEditor_AsksNothingHere()
     {

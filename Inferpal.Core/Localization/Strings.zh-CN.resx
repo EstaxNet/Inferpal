@@ -110,8 +110,8 @@
   <data name="HintCommandTimeout" xml:space="preserve"><value>单次工具调用最多可用的时间。若构建耗时更长，请调大。</value></data>
   <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>展开显示每个步骤</value></data>
   <data name="HintToolBubblesExpanded" xml:space="preserve"><value>关闭时每个步骤一行；点击即可查看输入和输出。失败的步骤始终会展开。</value></data>
-  <data name="LabelRunEndSound" xml:space="preserve"><value>长时间运行结束时播放声音</value></data>
-  <data name="HintRunEndSound" xml:space="preserve"><value>当回答耗时超过 30 秒时播放 Windows 通知音，让你在等待时可以去做别的事。</value></data>
+  <data name="LabelRunEndSound" xml:space="preserve"><value>长时间运行结束时提醒</value></data>
+  <data name="HintRunEndSound" xml:space="preserve"><value>当回答耗时超过 30 秒时，编辑器会提示它已完成——播放声音，或在聊天不可见时显示通知——让你在等待时可以去做别的事。</value></data>
   <data name="LabelDensity" xml:space="preserve"><value>密度</value></data>
   <data name="HintDensity" xml:space="preserve"><value>紧凑模式可在窄面板中显示更多对话内容。</value></data>
   <data name="DensityComfortable" xml:space="preserve"><value>宽松</value></data>

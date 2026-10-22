@@ -227,6 +227,52 @@ div.with-icon {
   font-size: 0.9em;
 }
 
+/* A writing step's change: the approval card's lines, kept once the file is written. */
+.tool-diff {
+  max-height: 260px;
+  overflow: auto;
+  margin: 0 0 4px;
+  padding: 4px 0;
+  border-radius: 4px;
+  background: var(--vscode-textCodeBlock-background);
+  font-size: 0.9em;
+  white-space: pre;
+}
+
+.tool-diff span {
+  display: block;
+  padding: 0 8px;
+}
+
+.tool-diff .diff-add {
+  color: var(--vscode-gitDecoration-addedResourceForeground, #4caf50);
+  background: var(--vscode-diffEditor-insertedLineBackground, rgba(76, 175, 80, 0.12));
+}
+
+.tool-diff .diff-del {
+  color: var(--vscode-gitDecoration-deletedResourceForeground, #f44336);
+  background: var(--vscode-diffEditor-removedLineBackground, rgba(244, 67, 54, 0.12));
+}
+
+.tool-diff .diff-skip {
+  color: var(--ip-muted);
+}
+
+.step-diffstat {
+  flex: none;
+  display: inline-flex;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.step-diffstat .diff-add {
+  color: var(--vscode-gitDecoration-addedResourceForeground, #4caf50);
+}
+
+.step-diffstat .diff-del {
+  color: var(--vscode-gitDecoration-deletedResourceForeground, #f44336);
+}
+
 /* ── Plan block ─────────────────────────────────────────────────────────────── */
 .plan-goal {
   font-weight: 600;

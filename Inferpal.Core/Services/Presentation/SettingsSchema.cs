@@ -52,8 +52,6 @@ internal sealed record SettingOption(string Value, string Text, Func<string>? Lo
 /// <param name="Columns">Resource names of the column headers of a <c>nameValue</c> table (name, then value).</param>
 /// <param name="Min">Smallest value a numeric box accepts.</param>
 /// <param name="Max">Largest value a numeric box accepts.</param>
-/// <param name="Only">The one editor the setting acts in (<see cref="SettingsSchema.VisualStudioOnly"/>); <c>null</c> = both.
-/// The other editor's panel does not show it: a box that changes nothing there would be a promise.</param>
 /// <param name="EmbeddingModels">A model box that offers the embedding models (<see cref="Inference.ModelCatalog.EmbeddingModelsOf"/>);
 /// every other model box offers the models a question can be asked of (<see cref="Inference.ModelCatalog.ChatModelsOf"/>).</param>
 /// <param name="ShowWhen">The field shows only while another field has a value — <c>key=value</c>: a server's address
@@ -84,7 +82,6 @@ internal sealed record SettingField(
     IReadOnlyList<string>? Columns = null,
     int?    Min = null,
     int?    Max = null,
-    string? Only = null,
     bool    EmbeddingModels = false,
     string? ShowWhen = null,
     string? Server = null)
@@ -212,9 +209,6 @@ internal static class SettingsSchema
 
     /// <summary>The gate of the sections a page's "Show advanced settings" box reveals.</summary>
     public const string AdvancedGate = "advanced";
-
-    /// <summary><see cref="SettingField.Only"/> of a setting only Visual Studio acts on.</summary>
-    public const string VisualStudioOnly = "vs";
 
     /// <summary>How much a model reasons, per role: the values <see cref="ReasoningEffortSetting.Parse"/> reads.</summary>
     public static readonly IReadOnlyList<SettingOption> ReasoningEfforts =
@@ -485,10 +479,9 @@ internal static class SettingsSchema
             new("SettingsSectionAgentRuns",
             [
                 new("toolBubblesExpanded", SettingKind.Bool, "LabelToolBubblesExpanded", "HintToolBubblesExpanded"),
-                // Here, beside how a run is shown: the sound is how its end is announced. Visual Studio only — VS Code
-                // plays none, so its panel has nothing to turn off.
-                new("runEndSoundEnabled",  SettingKind.Bool, "LabelRunEndSound",         "HintRunEndSound",
-                    Only: VisualStudioOnly),
+                // Here, beside how a run is shown: how its end is announced — Visual Studio's sound, VS Code's
+                // notification.
+                new("runEndSoundEnabled",  SettingKind.Bool, "LabelRunEndSound",         "HintRunEndSound"),
             ]),
         ]),
     ];

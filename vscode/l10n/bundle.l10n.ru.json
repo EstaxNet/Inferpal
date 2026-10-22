@@ -182,5 +182,9 @@
   "The document changed while the model was working — run Edit with AI again.": "Документ изменился, пока модель работала — снова запустите «Изменить с помощью ИИ».",
   "Inferpal Edit with AI — change {0}": "Inferpal «Изменить с помощью ИИ» — изменение {0}",
   "The test file could not be written — nothing was changed.": "Не удалось записать файл тестов — ничего не изменено.",
-  "The test file changed while the model was working — run /test again.": "Файл тестов изменился, пока модель работала — снова запустите /test."
+  "The test file changed while the model was working — run /test again.": "Файл тестов изменился, пока модель работала — снова запустите /test.",
+  "Inferpal has finished — {0}.": "Inferpal закончил — {0}.",
+  "Show the answer": "Показать ответ",
+  "Inferpal has finished.": "Inferpal закончил.",
+  "Inferpal stopped on an error.": "Inferpal остановился из-за ошибки."
 }

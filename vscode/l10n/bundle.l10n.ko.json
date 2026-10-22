@@ -182,5 +182,9 @@
   "The document changed while the model was working — run Edit with AI again.": "모델이 작업하는 동안 문서가 변경되었습니다 — AI로 편집을 다시 실행하세요.",
   "Inferpal Edit with AI — change {0}": "Inferpal AI로 편집 — 변경 {0}",
   "The test file could not be written — nothing was changed.": "테스트 파일을 쓸 수 없습니다 — 아무것도 변경되지 않았습니다.",
-  "The test file changed while the model was working — run /test again.": "모델이 작업하는 동안 테스트 파일이 변경되었습니다 — /test를 다시 실행하세요."
+  "The test file changed while the model was working — run /test again.": "모델이 작업하는 동안 테스트 파일이 변경되었습니다 — /test를 다시 실행하세요.",
+  "Inferpal has finished — {0}.": "Inferpal이 완료되었습니다 — {0}.",
+  "Show the answer": "답변 보기",
+  "Inferpal has finished.": "Inferpal이 완료되었습니다.",
+  "Inferpal stopped on an error.": "Inferpal이 오류로 중지되었습니다."
 }

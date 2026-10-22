@@ -8,18 +8,16 @@ exists.
 - The **Visual Studio extension** (primary) and the **VS Code extension** run the same
   `Inferpal.Core` engine and share the same configuration: the agent, its tools and approvals, search, MCP, ghost
   text, `/tdd` and `/debug` are the same in both. The VS Code chat has full markdown rendering, welcome screen,
-  connection + VRAM badge, collapsible tool bubbles (input/output, "Fix with AI" on errors), live agent-plan block,
+  connection + VRAM badge, collapsible tool bubbles (input/output, the colored change a write made, "Fix with AI" on
+  errors), live agent-plan block,
   slash-command autocomplete, Shift+↑/↓ prompt history, token counter with a clickable context gauge (opens the X-Ray
   panel), conversation search, `.md`/`.txt` export, Ctrl+Alt+I keybinding, and a localized webview (10 languages).
 - **The editor's gestures, in both** — **Edit with AI** (an instruction on the selection or the caret's line, the
   change shown before it applies), **Explain**, **Add Tests**, **Fix**, **Refactor** and **Document** in the editor's
   menu, `/test` on the **selection** with its tests written by an edit you can undo, and `/map` on **Alt+M**.
 - **Not in VS Code yet** — a few chat features are Visual Studio-only for now:
-  - the **colored diff in a tool bubble** after a write (VS Code shows it on the approval card, before the write — so
-    not once the tool is always allowed);
   - the **Build Failed banner** (VS Code's welcome card offers **Fix them** for the Problems panel's errors);
   - the **auto-attach chips** while you type (the per-turn auto-context is there);
-  - the **sound** at the end of a long run;
   - `/fix-build` (it answers that it is not available).
 - **First run, in both editors** — Inferpal looks for a model server where one usually listens (Ollama, LM Studio,
   llama-server, vLLM) and says what each place answered. VS Code shows it on a card in the chat: the models proposed
@@ -160,9 +158,8 @@ exists.
   all the hunks not yet answered; VS Code: the native Refactor Preview).
   Accepted hunks apply as a single undo step. Toggle with `inlineDiffPreviewEnabled`
   (default on).
-- **Inline diff viewer** (Visual Studio) — an LCS-based diff is shown in the chat bubble after every
-  write/apply (added green, removed red, unchanged collapsed). VS Code shows the colored diff on the approval card,
-  before the write.
+- **Inline diff viewer** — an LCS-based diff is shown after every write/apply (added green, removed red, unchanged
+  collapsed): in the tool bubble in Visual Studio, in the step in VS Code with its `+/−` count and **Open diff**.
 - **`/fix-build`** — compile → AI fixes errors → recompile, repeated until clean (max 5 rounds).
 - **`/tdd [filter]`** — "fix until green", the test-side twin of `/fix-build`: runs the test
   suite (`run_tests` auto-detects dotnet / pytest / npm / cargo / go), hands the failure
@@ -304,7 +301,7 @@ exists.
   `/branch` lists the branch points and the family tree, `/branch <name>` switches branch.
   A branch is a plain session file with a `parent` + `fork_turn` link — nothing else in the
   store, the history rebuild or the picker had to learn about branching.
-- **Sound notification** — an audible ping when a run finishes after more than 30 seconds (Visual Studio; turned off in Settings › Language and appearance › Agent runs).
+- **The end of a long run, announced** — when an answer took more than 30 seconds, Visual Studio plays an audible ping and VS Code shows a notification while you are not looking at its chat — done, or stopped on an error (**Show the answer** brings it back); turned off in Settings › Language and appearance › Agent runs, for both.
 - **Code snippet library** — ⭐ saves any code block; `/snippets` manages it across sessions.
 - **Session & prompt templates** — `/template` loads a preconfigured context; user prompt
   templates support `{args}`.

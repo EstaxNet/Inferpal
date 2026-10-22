@@ -107,8 +107,8 @@
   <data name="HintCommandTimeout" xml:space="preserve"><value>Максимальная длительность одного вызова инструмента. Увеличьте, если сборки идут дольше.</value></data>
   <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>Показывать каждый шаг раскрытым</value></data>
   <data name="HintToolBubblesExpanded" xml:space="preserve"><value>Выключено: одна строка на шаг; нажмите, чтобы увидеть входные и выходные данные. Неудачный шаг всегда раскрывается.</value></data>
-  <data name="LabelRunEndSound" xml:space="preserve"><value>Воспроизводить звук по окончании долгого запуска</value></data>
-  <data name="HintRunEndSound" xml:space="preserve"><value>Звук уведомления Windows, когда ответ занял больше 30 секунд, — чтобы тем временем работать в другом месте.</value></data>
+  <data name="LabelRunEndSound" xml:space="preserve"><value>Сообщать об окончании долгого запуска</value></data>
+  <data name="HintRunEndSound" xml:space="preserve"><value>Когда ответ занял больше 30 секунд, редактор сообщает о его окончании — звуком или уведомлением, пока чат не на виду, — чтобы тем временем работать в другом месте.</value></data>
   <data name="LabelDensity" xml:space="preserve"><value>Плотность</value></data>
   <data name="HintDensity" xml:space="preserve"><value>Компактный режим показывает больше разговора в узкой панели.</value></data>
   <data name="DensityComfortable" xml:space="preserve"><value>Свободный</value></data>

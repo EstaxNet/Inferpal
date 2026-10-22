@@ -111,8 +111,8 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="HintCommandTimeout" xml:space="preserve"><value>The longest one tool call may take. Raise it if your builds take longer.</value></data>
   <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>Show each step open</value></data>
   <data name="HintToolBubblesExpanded" xml:space="preserve"><value>Off: one line per step; click one to see what went in and came out. A step that failed always opens.</value></data>
-  <data name="LabelRunEndSound" xml:space="preserve"><value>Play a sound when a long run ends</value></data>
-  <data name="HintRunEndSound" xml:space="preserve"><value>The Windows notification sound, when an answer took more than 30 seconds — so you can work elsewhere meanwhile.</value></data>
+  <data name="LabelRunEndSound" xml:space="preserve"><value>Announce the end of a long run</value></data>
+  <data name="HintRunEndSound" xml:space="preserve"><value>When an answer took more than 30 seconds, the editor says it is done — a sound, or a notification while the chat is out of sight — so you can work elsewhere meanwhile.</value></data>
   <data name="LabelDensity" xml:space="preserve"><value>Density</value></data>
   <data name="HintDensity" xml:space="preserve"><value>Compact fits more of the conversation in a narrow panel.</value></data>
   <data name="DensityComfortable" xml:space="preserve"><value>Comfortable</value></data>

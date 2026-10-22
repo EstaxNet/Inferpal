@@ -182,5 +182,9 @@
   "The document changed while the model was working — run Edit with AI again.": "模型工作时文档已更改 — 请重新运行“使用 AI 编辑”。",
   "Inferpal Edit with AI — change {0}": "Inferpal 使用 AI 编辑 — 更改 {0}",
   "The test file could not be written — nothing was changed.": "无法写入测试文件 — 未做任何更改。",
-  "The test file changed while the model was working — run /test again.": "模型工作时测试文件已更改 — 请重新运行 /test。"
+  "The test file changed while the model was working — run /test again.": "模型工作时测试文件已更改 — 请重新运行 /test。",
+  "Inferpal has finished — {0}.": "Inferpal 已完成 — {0}。",
+  "Show the answer": "显示回答",
+  "Inferpal has finished.": "Inferpal 已完成。",
+  "Inferpal stopped on an error.": "Inferpal 因错误而停止。"
 }

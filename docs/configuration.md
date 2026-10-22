@@ -76,7 +76,7 @@ Every persisted setting, its type, and default value.
 |---|---|---|---|
 | `commandTimeoutSeconds` | int | `120` | `run_command` timeout (seconds) |
 | `toolBubblesExpanded` | bool | `false` | Show each step of an agent run open (its arguments and output). Off: one line per step, opened on a click; a step that failed always opens. Either way, a run's steps show while it works and fold into one line when it ends |
-| `runEndSoundEnabled` | bool | `true` | Visual Studio: play the Windows notification sound when a turn ends after more than 30 seconds, so a long run can work while you are elsewhere. VS Code plays none |
+| `runEndSoundEnabled` | bool | `true` | Announce a turn that ends after more than 30 seconds, so a long run can work while you are elsewhere: Visual Studio plays the Windows notification sound, VS Code shows a notification while you are not looking at its chat |
 | `chatDensity` | string | `"comfortable"` | `comfortable` or `compact`: how much space the chat leaves around its turns. Compact fits more of the conversation in a narrow panel |
 | `securityAlertsDisabled` | bool | `false` | Auto-approve the calls that would otherwise prompt (the built-in catastrophic-command denylist still applies). Shown inverted in the Settings window: *Ask me before changing files, running commands or going online* |
 | `packageCheckEnabled` | bool | `true` | Look up a package a call adds on its public registry (nuget.org, npm, PyPI) and refuse an invented name before the approval card; anything less certain than "absent" — a company feed included — goes to the card unchecked. Sends the added name, nothing else, and only to a public registry — see [Tools → Packages that do not exist](tools.md#packages-that-do-not-exist) |

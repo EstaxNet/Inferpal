@@ -89,8 +89,9 @@ internal class InferpalConfig
     [JsonPropertyName("toolBubblesExpanded")]
     public bool ToolBubblesExpanded { get; set; } = false;
 
-    /// <summary>When <c>true</c>, Visual Studio plays the Windows notification sound when a turn ends after more than
-    /// 30 seconds, so a long run can be left to work while you are elsewhere. VS Code plays none.</summary>
+    /// <summary>When <c>true</c>, the end of a turn that took more than 30 seconds is announced, so a long run can be left
+    /// to work while you are elsewhere: Visual Studio plays the Windows notification sound, VS Code shows a notification
+    /// while its chat is out of sight.</summary>
     [JsonPropertyName("runEndSoundEnabled")]
     public bool RunEndSoundEnabled { get; set; } = true;
 
@@ -920,6 +921,10 @@ internal class InferpalConfig
     /// <remarks>⚠ It decides whether a tool is offered and runs: a copy that kept its own value went on offering, and
     /// running, a tool the person turned off in the other editor — under an <c>allow</c> rule, with no card at all.</remarks>
     internal string SharedDisabledTools => Shared(nameof(DisabledTools), DisabledTools) ?? string.Empty;
+
+    /// <summary>Whether the end of a long run is announced NOW: see <see cref="Shared{T}"/>. Turned off in one editor, it
+    /// is off in the other at the next turn's end, as Visual Studio's live configuration already was.</summary>
+    internal bool SharedRunEndSoundEnabled => Shared(nameof(RunEndSoundEnabled), RunEndSoundEnabled);
 
     /// <summary>Whether a package a call adds is checked NOW: see <see cref="Shared{T}"/>.</summary>
     internal bool SharedPackageCheckEnabled => Shared(nameof(PackageCheckEnabled), PackageCheckEnabled);

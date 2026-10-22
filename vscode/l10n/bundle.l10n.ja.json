@@ -182,5 +182,9 @@
   "The document changed while the model was working — run Edit with AI again.": "モデルの処理中にドキュメントが変更されました — AI で編集をもう一度実行してください。",
   "Inferpal Edit with AI — change {0}": "Inferpal AI で編集 — 変更 {0}",
   "The test file could not be written — nothing was changed.": "テスト ファイルを書き込めませんでした — 何も変更されていません。",
-  "The test file changed while the model was working — run /test again.": "モデルの処理中にテスト ファイルが変更されました — /test をもう一度実行してください。"
+  "The test file changed while the model was working — run /test again.": "モデルの処理中にテスト ファイルが変更されました — /test をもう一度実行してください。",
+  "Inferpal has finished — {0}.": "Inferpal が完了しました — {0}。",
+  "Show the answer": "回答を表示",
+  "Inferpal has finished.": "Inferpal が完了しました。",
+  "Inferpal stopped on an error.": "Inferpal はエラーで停止しました。"
 }

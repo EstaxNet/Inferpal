@@ -311,6 +311,7 @@ internal sealed partial class HostServer : IDisposable
         {
             NextTurnTokens = NextTurnTokens(s),
             Duration = Services.Presentation.RunSummary.Duration(clock.Elapsed),
+            AnnounceEnd = Services.Agent.ChatTurnPolicy.AnnouncesEnd(s.Config, clock.Elapsed),
             AppliedNotes = notes.Applied.Count > 0 ? [.. notes.Applied.Select(n => new TurnNoteDto(n.Id, n.Text, n.AfterCalls))] : null,
             UnappliedNotes = notes.Unapplied.Count > 0 ? [.. notes.Unapplied.Select(n => new TurnNoteDto(n.Id, n.Text))] : null,
         };
@@ -502,7 +503,7 @@ internal sealed partial class HostServer : IDisposable
                                         steps = plan.Steps.Select(st => st.Description).ToArray(),
                                     }),
                     onStepUpdate:   (i, status) => Notify("chat/stepUpdate", new { index = i, status = $"{status}" }),
-                    onToolExecuted: te => Notify("chat/tool", new ToolNotice(te.Name, te.Input, te.Output, te.HasErrors)),
+                    onToolExecuted: te => Notify("chat/tool", ToolNotice.Of(te)),
                     onStreamReset:  () => { streamed.Clear(); Notify("chat/streamReset", new { }); },
                     ct:             cts.Token,
                     onThinking:     OnThinking,
@@ -563,7 +564,7 @@ internal sealed partial class HostServer : IDisposable
                     onToken:        OnToken,
                     ct:             cts.Token,
                     complexity:     ChatTurnPolicy.TurnComplexity(codeAction: false),
-                    onToolExecuted: te => Notify("chat/tool", new ToolNotice(te.Name, te.Input, te.Output, te.HasErrors)),
+                    onToolExecuted: te => Notify("chat/tool", ToolNotice.Of(te)),
                     onThinking:     OnThinking,
                     effort:         ChatTurnPolicy.TurnEffort(s.Config, codeAction: false),
                     steering:       steering);

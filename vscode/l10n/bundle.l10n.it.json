@@ -182,5 +182,9 @@
   "The document changed while the model was working — run Edit with AI again.": "Il documento è cambiato mentre il modello lavorava — esegui di nuovo Modifica con IA.",
   "Inferpal Edit with AI — change {0}": "Inferpal Modifica con IA — modifica {0}",
   "The test file could not be written — nothing was changed.": "Impossibile scrivere il file di test — non è stato cambiato nulla.",
-  "The test file changed while the model was working — run /test again.": "Il file di test è cambiato mentre il modello lavorava — esegui di nuovo /test."
+  "The test file changed while the model was working — run /test again.": "Il file di test è cambiato mentre il modello lavorava — esegui di nuovo /test.",
+  "Inferpal has finished — {0}.": "Inferpal ha finito — {0}.",
+  "Show the answer": "Mostra la risposta",
+  "Inferpal has finished.": "Inferpal ha finito.",
+  "Inferpal stopped on an error.": "Inferpal si è fermato per un errore."
 }

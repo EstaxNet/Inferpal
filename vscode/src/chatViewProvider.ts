@@ -41,6 +41,9 @@ const STATUS_POLL_MS = 30_000;
 /** How long an approval card waits unanswered before a window without the focus says so — the Core's
  *  `ApprovalCard.AttentionDelay`, the number Visual Studio flashes its taskbar at. */
 const APPROVAL_ATTENTION_MS = 15_000;
+/** How long an answer runs before its end is announced — the Core's `ChatTurnPolicy.LongRunSeconds`. The host decides
+ *  for a turn it answered (`announceEnd`); this is for one whose request failed, when the host may be gone. */
+const LONG_RUN_SECONDS = 30;
 
 /** Written as a command: a `/`, then a name that starts with a letter or a digit and has no `/` or `\` — the Core's
  *  `SlashCommandRouter.LooksLikeCommand`. A pasted path (`/home/me/main.py crashes`) or a comment (`// why`, a block
@@ -102,6 +105,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private plan: WvPlan | null = null;
   private contextWindow = 0;
   private toolBubblesExpanded = false;
+  /** `runEndSoundEnabled` as last read: what decides for a turn whose request failed — the host decides for the others. */
+  private runEndNotice = true;
   /** The conversation drawn compact: Language and appearance › Density, in the host config. */
   private compact = false;
   private promptTokens = 0;
@@ -527,6 +532,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           text: tool.name,
           toolInput: tool.input,
           toolOutput: tool.output,
+          toolDiff: tool.diff ?? undefined,
           hasErrors: tool.hasErrors,
           timestamp: ChatViewProvider.now(),
         };
@@ -537,6 +543,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           input: tool.input,
           output: tool.output,
           hasErrors: tool.hasErrors,
+          diff: item.toolDiff,
           timestamp: item.timestamp!,
           expanded: this.toolBubblesExpanded,
         });
@@ -614,12 +621,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     try {
       const cfg = JSON.parse(await host.configGet()) as {
         contextWindowSize?: number; toolBubblesExpanded?: boolean; defaultModel?: string; agentModeEnabled?: boolean;
-        chatDensity?: string;
+        chatDensity?: string; runEndSoundEnabled?: boolean;
       };
       // The window the host measures against (the loaded one when smaller), not the setting: read from the
       // configuration, the ring fell back to the configured window after every save.
       this.contextWindow = await host.contextWindow().catch(() => cfg.contextWindowSize ?? 0);
       this.toolBubblesExpanded = cfg.toolBubblesExpanded === true;
+      this.runEndNotice = cfg.runEndSoundEnabled !== false;
       this.compact = cfg.chatDensity === 'compact';
       this.sharedEcho = { defaultModel: cfg.defaultModel, agentModeEnabled: cfg.agentModeEnabled };
     } catch (err) {
@@ -722,12 +730,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     try {
       const cfg = JSON.parse(await host.configGet()) as {
         contextWindowSize?: number; toolBubblesExpanded?: boolean; defaultModel?: string; agentModeEnabled?: boolean;
-        chatDensity?: string;
+        chatDensity?: string; runEndSoundEnabled?: boolean;
       };
       // The window the host measures against (the loaded one when smaller), not the setting: read from the
       // configuration, the ring fell back to the configured window after every save.
       this.contextWindow = await host.contextWindow().catch(() => cfg.contextWindowSize ?? 0);
       this.toolBubblesExpanded = cfg.toolBubblesExpanded === true;
+      this.runEndNotice = cfg.runEndSoundEnabled !== false;
       // The open conversation follows a new density at once.
       this.compact = cfg.chatDensity === 'compact';
       this.post({ type: 'density', compact: this.compact });
@@ -2037,6 +2046,30 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
 
+  /**
+   * The end of a long run, said by a notification while its chat is out of sight — the window in the background or the
+   * view hidden — as Visual Studio plays its sound (`runEndSoundEnabled`, the same setting). A failure says so; a turn the
+   * person stopped is not announced — they are here. Show the answer brings the chat back, the view's command
+   * recreating a view that was closed meanwhile.
+   */
+  private announceRunEnd(due: boolean, outcome: 'normal' | 'stopped' | 'failed', what: string): void {
+    if (!due || outcome === 'stopped') {
+      return;
+    }
+    if (vscode.window.state.focused && this.view?.visible) {
+      return;
+    }
+    const show = t('Show the answer');
+    const shown = outcome === 'failed'
+      ? vscode.window.showWarningMessage(t('Inferpal stopped on an error.'), show)
+      : vscode.window.showInformationMessage(what ? t('Inferpal has finished — {0}.', what) : t('Inferpal has finished.'), show);
+    void shown.then((picked) => {
+      if (picked === show) {
+        void vscode.commands.executeCommand('inferpal.chat.focus');
+      }
+    });
+  }
+
   /** A turn ended: how, for {@link afterTurn}. Called where each way out of a turn tells the webview it ended. */
   private turnEnded(outcome: 'normal' | 'stopped' | 'failed'): void {
     this.turnOutcome = outcome;
@@ -2634,6 +2667,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * code action, answered by the code-actions model without tools. `query`: what the auto-context searches for —
    * the prompt as written by default, never with the attached files appended. */
   private async chatTurn(prompt: string, host: HostClient, codeAction = false, query?: string): Promise<void> {
+    // When the request left: a long turn's end is announced (announceRunEnd); 0 = it never left.
+    let startedAt = 0;
     try {
       const agentMode = vscode.workspace.getConfiguration('inferpal').get<boolean>('agentMode', false);
       const mentions = await this.expandMentions(prompt, host);
@@ -2685,6 +2720,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         this.endStoppedBeforeTheHost();
         return;
       }
+      startedAt = Date.now();
       const result = await host.chatSend({
         prompt: expanded,
         model: this.model || undefined,
@@ -2764,6 +2800,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       const normal = !result.error && !result.cancelled;
       this.settleNotes(result.appliedNotes, normal);
       this.turnEnded(result.error ? 'failed' : result.cancelled ? 'stopped' : 'normal');
+      this.announceRunEnd(result.announceEnd === true, result.error ? 'failed' : result.cancelled ? 'stopped' : 'normal',
+                          [result.duration, result.run?.detail].filter((part) => !!part).join(' · '));
       void this.pollBackendStatus(); // the turn may have loaded a model — refresh the VRAM badge
     } catch (err) {
       // The request itself failed. Host gone (crashed or restarted): no one waits for these cards any more. Refused by a
@@ -2794,6 +2832,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // No result: no note can be said read. Those drawn waiting go back to the input box.
       this.settleNotes(undefined, false);
       this.turnEnded('failed');
+      // The host may be gone: the setting as last read decides.
+      this.announceRunEnd(startedAt > 0 && this.runEndNotice && Date.now() - startedAt > LONG_RUN_SECONDS * 1000, 'failed', '');
     } finally {
       this.busy = false;
       // The webview removes the pause banner on stepResumed only: a turn cancelled while paused

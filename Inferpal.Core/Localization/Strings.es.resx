@@ -110,8 +110,8 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
   <data name="HintCommandTimeout" xml:space="preserve"><value>Lo máximo que puede durar una llamada a herramienta. Auméntelo si sus compilaciones tardan más.</value></data>
   <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>Mostrar cada paso abierto</value></data>
   <data name="HintToolBubblesExpanded" xml:space="preserve"><value>Desactivado: una línea por paso; haga clic para ver qué entró y qué salió. Un paso que ha fallado siempre se abre.</value></data>
-  <data name="LabelRunEndSound" xml:space="preserve"><value>Reproducir un sonido al terminar una ejecución larga</value></data>
-  <data name="HintRunEndSound" xml:space="preserve"><value>El sonido de notificación de Windows, cuando una respuesta tardó más de 30 segundos, para que pueda trabajar en otra cosa mientras tanto.</value></data>
+  <data name="LabelRunEndSound" xml:space="preserve"><value>Avisar al terminar una ejecución larga</value></data>
+  <data name="HintRunEndSound" xml:space="preserve"><value>Cuando una respuesta tardó más de 30 segundos, el editor avisa de que ha terminado —con un sonido o con una notificación mientras el chat no está a la vista—, para que pueda trabajar en otra cosa mientras tanto.</value></data>
   <data name="LabelDensity" xml:space="preserve"><value>Densidad</value></data>
   <data name="HintDensity" xml:space="preserve"><value>Compacto muestra más de la conversación en un panel estrecho.</value></data>
   <data name="DensityComfortable" xml:space="preserve"><value>Cómodo</value></data>

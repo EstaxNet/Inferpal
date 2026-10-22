@@ -133,6 +133,8 @@ internal sealed record TurnNoteDto(string Id, string Text, int AfterCalls = 0);
 /// adapter sends them as the next message after a turn that ended normally, and gives them back otherwise.</param>
 /// <param name="OffersContinue">The end notice offers Continue (<see cref="Services.Agent.ChatTurnPolicy.OffersContinue"/>):
 /// the turn stopped at the iteration limit or its answer at the length limit — never after a loop or a repetition.</param>
+/// <param name="AnnounceEnd">The turn was long and the setting, as it stands in the file now, says to announce its end
+/// (<see cref="Services.Agent.ChatTurnPolicy.AnnouncesEnd"/>): the adapter does, when its chat is out of sight.</param>
 internal sealed record ChatSendResult(
     string  Text,
     bool    Cancelled,
@@ -149,7 +151,8 @@ internal sealed record ChatSendResult(
     string? Ended = null,
     List<TurnNoteDto>? AppliedNotes = null,
     List<TurnNoteDto>? UnappliedNotes = null,
-    bool    OffersContinue = false);
+    bool    OffersContinue = false,
+    bool    AnnounceEnd = false);
 
 /// <summary>One agent run as the chat shows it (<see cref="Services.Presentation.RunSummaryModel"/>).</summary>
 /// <param name="Check"><c>none</c>, <c>buildPassed</c>, <c>buildFailed</c>, <c>testsPassed</c> or <c>testsFailed</c>.</param>
@@ -164,7 +167,14 @@ internal sealed record RunSummaryDto(
 }
 
 /// <summary>`chat/tool` notification — one executed tool call (uncapped output, like the VS bubble).</summary>
-internal sealed record ToolNotice(string Name, string Input, string Output, bool HasErrors);
+/// <param name="Diff">The change a writing call made, in the lines the approval card showed (<c>+ - …</c> prefixes,
+/// context collapsed) — what Visual Studio draws in its tool bubble; null when the call wrote nothing.</param>
+internal sealed record ToolNotice(string Name, string Input, string Output, bool HasErrors, string? Diff = null)
+{
+    /// <summary>The notice of an executed call, its diff rendered as the approval card renders it, every line kept.</summary>
+    public static ToolNotice Of(ToolExecution te) => new(te.Name, te.Input, te.Output, te.HasErrors,
+        te.Diff is { } d ? Services.CodeActions.DiffComputer.ComputeText(d.OldText, d.NewText, maxLines: int.MaxValue) : null);
+}
 
 /// <summary>`chat/compaction` — the conversation was made to fit before a question (<see cref="InitializeParams.CompactionEvents"/>).</summary>
 /// <param name="Failed">The summary was asked for and could not be written: the turns were dropped instead. A truncation

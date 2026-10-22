@@ -107,8 +107,8 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <data name="HintCommandTimeout" xml:space="preserve"><value>Die längste Dauer eines Werkzeugaufrufs. Erhöhen, wenn Ihre Builds länger brauchen.</value></data>
   <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>Jeden Schritt geöffnet anzeigen</value></data>
   <data name="HintToolBubblesExpanded" xml:space="preserve"><value>Aus: eine Zeile pro Schritt; ein Klick zeigt, was hinein- und herauskam. Ein fehlgeschlagener Schritt öffnet sich immer.</value></data>
-  <data name="LabelRunEndSound" xml:space="preserve"><value>Ton abspielen, wenn ein langer Lauf endet</value></data>
-  <data name="HintRunEndSound" xml:space="preserve"><value>Der Windows-Benachrichtigungston, wenn eine Antwort länger als 30 Sekunden gedauert hat — so können Sie inzwischen woanders arbeiten.</value></data>
+  <data name="LabelRunEndSound" xml:space="preserve"><value>Ende eines langen Laufs melden</value></data>
+  <data name="HintRunEndSound" xml:space="preserve"><value>Wenn eine Antwort länger als 30 Sekunden gedauert hat, meldet der Editor das Ende — mit einem Ton oder einer Benachrichtigung, solange der Chat nicht zu sehen ist —, damit Sie inzwischen woanders arbeiten können.</value></data>
   <data name="LabelDensity" xml:space="preserve"><value>Dichte</value></data>
   <data name="HintDensity" xml:space="preserve"><value>Kompakt zeigt in einem schmalen Bereich mehr vom Gespräch.</value></data>
   <data name="DensityComfortable" xml:space="preserve"><value>Komfortabel</value></data>

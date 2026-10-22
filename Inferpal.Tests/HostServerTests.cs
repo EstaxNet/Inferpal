@@ -29,7 +29,7 @@ public partial class HostServerTests
 
     private sealed record TokenNote(string Text);
     private sealed record ThinkingNote(string? Text);
-    private sealed record ToolNote(string Name, string Input, string Output, bool HasErrors);
+    private sealed record ToolNote(string Name, string Input, string Output, bool HasErrors, string? Diff = null);
     private sealed record ApprovalNote(string Message);
 
     private sealed class ClientTarget

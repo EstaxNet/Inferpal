@@ -34,6 +34,15 @@ internal enum FinalAnswerKind
 /// </summary>
 internal static class ChatTurnPolicy
 {
+    /// <summary>How long an answer runs before its end is announced (<c>runEndSoundEnabled</c>): Visual Studio plays the
+    /// Windows notification sound, VS Code shows a notification while its chat is out of sight.</summary>
+    public const int LongRunSeconds = 30;
+
+    /// <summary>Whether a turn that took <paramref name="elapsed"/> is announced when it ends: a long one, while the
+    /// setting — as it stands in the file now — says so. One decision for both editors.</summary>
+    public static bool AnnouncesEnd(InferpalConfig config, TimeSpan elapsed) =>
+        elapsed.TotalSeconds > LongRunSeconds && config.SharedRunEndSoundEnabled;
+
     /// <summary>
     /// The time budget of a chat turn: the "quick" one for a code action sent through the chat (explain, review), the
     /// "normal" one for a question — with tools or without. One decision for both front-ends.

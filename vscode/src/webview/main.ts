@@ -867,6 +867,11 @@ function addToolBubble(item: WvTranscriptItem, expanded: boolean): void {
   subject.className = 'step-subject';
   subject.textContent = stepSubject(item.toolInput);
   line.append(icon(item.hasErrors ? 'failed' : 'check', 13), name, subject);
+  // A change too large to show comes as one line that says so: no count, no button that would open only that line.
+  const changed = item.toolDiff !== undefined && item.toolDiff.split('\n').some((l) => diffLineKind(l) !== 'other');
+  if (changed) {
+    line.appendChild(diffStat(item.toolDiff!));
+  }
   step.appendChild(line);
 
   if (item.hasErrors) {
@@ -883,7 +888,17 @@ function addToolBubble(item: WvTranscriptItem, expanded: boolean): void {
 
   const body = document.createElement('div');
   body.className = 'tool-body';
-  if (item.toolInput) {
+  if (item.toolDiff) {
+    // What the call wrote, in the lines the approval card showed: the change says more than the call's arguments.
+    body.appendChild(renderToolDiff(item.toolDiff));
+    if (changed) {
+      const openDiff = document.createElement('button');
+      openDiff.className = 'linkbtn';
+      openDiff.textContent = t('approvalOpenDiff');
+      openDiff.addEventListener('click', () => post({ type: 'openApprovalDiff', text: item.toolDiff ?? '' }));
+      body.appendChild(openDiff);
+    }
+  } else if (item.toolInput) {
     const inp = document.createElement('pre');
     inp.className = 'tool-input';
     inp.textContent = item.toolInput;
@@ -895,7 +910,8 @@ function addToolBubble(item: WvTranscriptItem, expanded: boolean): void {
     out.textContent = item.toolOutput;
     body.appendChild(out);
   }
-  // Errors always start expanded — the red output is the point of the step.
+  // Errors always start expanded — the red output is the point of the step. A change does not: its +/− count is on the
+  // line, and the setting that keeps steps folded is kept, as in Visual Studio.
   let open = expanded || item.hasErrors === true;
   body.hidden = !open;
   line.addEventListener('click', () => {
@@ -908,6 +924,40 @@ function addToolBubble(item: WvTranscriptItem, expanded: boolean): void {
     (target.run as HTMLElement & { openRun?: () => void }).openRun?.();
   }
   scrollToBottom();
+}
+
+/** A diff line's kind, by its prefix (`DiffComputer`): every line carries one character before its text. */
+function diffLineKind(line: string): 'add' | 'del' | 'other' {
+  return line.startsWith('+') ? 'add' : line.startsWith('-') ? 'del' : 'other';
+}
+
+/** The `+3 −2` of a step's change. */
+function diffStat(diff: string): HTMLElement {
+  const lines = diff.split('\n');
+  const stat = document.createElement('span');
+  stat.className = 'step-diffstat';
+  const added = document.createElement('span');
+  added.className = 'diff-add';
+  added.textContent = '+' + lines.filter((l) => diffLineKind(l) === 'add').length;
+  const removed = document.createElement('span');
+  removed.className = 'diff-del';
+  removed.textContent = '\u2212' + lines.filter((l) => diffLineKind(l) === 'del').length;
+  stat.append(added, removed);
+  return stat;
+}
+
+/** A step's change, coloured line by line — added green, removed red, the collapsed context muted. */
+function renderToolDiff(diff: string): HTMLElement {
+  const pre = document.createElement('pre');
+  pre.className = 'tool-diff';
+  for (const line of diff.split('\n')) {
+    const span = document.createElement('span');
+    span.textContent = line + '\n';
+    const kind = diffLineKind(line);
+    span.className = kind === 'add' ? 'diff-add' : kind === 'del' ? 'diff-del' : line.startsWith('\u2026') ? 'diff-skip' : '';
+    pre.appendChild(span);
+  }
+  return pre;
 }
 
 /** The run's line and result bar, once the turn has ended: what it did, the files it changed, the last check. */
@@ -2572,6 +2622,7 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
           text: msg.name,
           toolInput: msg.input,
           toolOutput: msg.output,
+          toolDiff: msg.diff,
           hasErrors: msg.hasErrors,
           timestamp: msg.timestamp,
         },

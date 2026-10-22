@@ -107,8 +107,8 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
   <data name="HintCommandTimeout" xml:space="preserve"><value>Najdłuższy czas jednego wywołania narzędzia. Zwiększ, jeśli kompilacje trwają dłużej.</value></data>
   <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>Pokazuj każdy krok rozwinięty</value></data>
   <data name="HintToolBubblesExpanded" xml:space="preserve"><value>Wyłączone: jeden wiersz na krok; kliknij, by zobaczyć wejście i wyjście. Krok, który się nie powiódł, zawsze się otwiera.</value></data>
-  <data name="LabelRunEndSound" xml:space="preserve"><value>Odtwórz dźwięk po zakończeniu długiego uruchomienia</value></data>
-  <data name="HintRunEndSound" xml:space="preserve"><value>Dźwięk powiadomienia Windows, gdy odpowiedź trwała dłużej niż 30 sekund — aby w tym czasie pracować gdzie indziej.</value></data>
+  <data name="LabelRunEndSound" xml:space="preserve"><value>Sygnalizuj koniec długiego uruchomienia</value></data>
+  <data name="HintRunEndSound" xml:space="preserve"><value>Gdy odpowiedź trwała dłużej niż 30 sekund, edytor sygnalizuje jej koniec — dźwiękiem lub powiadomieniem, gdy czat nie jest widoczny — aby w tym czasie pracować gdzie indziej.</value></data>
   <data name="LabelDensity" xml:space="preserve"><value>Gęstość</value></data>
   <data name="HintDensity" xml:space="preserve"><value>Kompaktowy mieści więcej rozmowy w wąskim panelu.</value></data>
   <data name="DensityComfortable" xml:space="preserve"><value>Wygodny</value></data>

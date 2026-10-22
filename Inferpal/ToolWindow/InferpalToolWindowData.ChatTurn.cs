@@ -829,7 +829,7 @@ internal partial class InferpalToolWindowData
 
             // Beep when a long agent run completes, so the user can work elsewhere — unless turned off in the settings
             // (read now: the settings window changes this live configuration).
-            if (_config.RunEndSoundEnabled && (DateTime.UtcNow - sendStart).TotalSeconds > 30)
+            if (Services.Agent.ChatTurnPolicy.AnnouncesEnd(_config, DateTime.UtcNow - sendStart))
                 NotifyAgentComplete();
         }
     }

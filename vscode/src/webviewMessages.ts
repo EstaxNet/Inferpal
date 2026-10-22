@@ -47,6 +47,8 @@ export interface WvTranscriptItem {
   text: string;
   toolInput?: string;
   toolOutput?: string;
+  /** A writing call's change, in the approval card's lines (`ToolNotice.diff`). */
+  toolDiff?: string;
   hasErrors?: boolean;
   /** Pre-formatted local time (HH:MM), stamped when the entry was pushed. */
   timestamp?: string;
@@ -184,7 +186,7 @@ export type ExtToWebview =
   | { type: 'thinking'; text?: string | null }
   | { type: 'status'; text: string }
   | { type: 'assistant'; text: string; timestamp: string; notice?: boolean }
-  | { type: 'tool'; name: string; input: string; output: string; hasErrors: boolean; timestamp: string; expanded: boolean }
+  | { type: 'tool'; name: string; input: string; output: string; hasErrors: boolean; diff?: string; timestamp: string; expanded: boolean }
   | { type: 'plan'; plan: WvPlan }
   | { type: 'approval'; id: number; message: string; card?: ApprovalCard | null }
   | { type: 'approvalDismiss'; id: number }
