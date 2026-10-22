@@ -57,7 +57,7 @@ Every part left out is listed under the card with its reason — nothing is drop
 ## After the import
 
 - The commands are in this machine's prompts folder (`%AppData%\Inferpal\prompts` on Windows,
-  `~/.config/Inferpal/prompts` elsewhere): type `/` to see them, `/prompts` to list where each comes from.
+  `~/.config/Inferpal/prompts` on Linux, `~/Library/Application Support/Inferpal/prompts` on macOS): type `/` to see them, `/prompts` to list where each comes from.
 - A new model server takes effect when Inferpal restarts.
 - `/permissions` shows the rules in force; `/docs reindex` indexes the imported documentation sites.
 - To undo, put the copy of `config.json` back (its path is in the answer), and delete the command files you do not want.

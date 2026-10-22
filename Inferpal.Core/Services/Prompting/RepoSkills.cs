@@ -88,7 +88,7 @@ internal static class RepoSkills
     /// <summary>The catalog of <paramref name="workspace"/> and of the user, for the families turned on.</summary>
     public static SkillCatalog Load(string? workspace, IReadOnlySet<RepoInstructionFamily> families, string? home = null)
     {
-        home ??= Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        home ??= UserFolders.Of(Environment.SpecialFolder.UserProfile);
         var key = workspace + "|" + home + "|" + string.Join(",", families.Order());
         lock (_gate)
         {

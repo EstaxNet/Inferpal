@@ -264,7 +264,7 @@ internal static class RepoInstructionReader
                 try
                 {
                     var expanded = candidate.StartsWith("~/", StringComparison.Ordinal)
-                        ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), candidate[2..])
+                        ? Path.Combine(UserFolders.Of(Environment.SpecialFolder.UserProfile), candidate[2..])
                         : candidate;
                     full = Path.GetFullPath(Path.IsPathRooted(expanded) ? expanded : Path.Combine(folder, expanded));
                 }

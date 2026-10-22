@@ -21,7 +21,7 @@ internal sealed record ImportContext(InferpalConfig Current, string Home, string
 {
     /// <summary>The context of an editor: this user's home, the commands beside these settings, its workspace.</summary>
     public static ImportContext For(InferpalConfig config, string? workspaceRoot) =>
-        new(config, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), config.MachinePromptsFolder,
+        new(config, UserFolders.Of(Environment.SpecialFolder.UserProfile), config.MachinePromptsFolder,
             WorkspaceRoot: string.IsNullOrEmpty(workspaceRoot) ? null : workspaceRoot);
 }
 

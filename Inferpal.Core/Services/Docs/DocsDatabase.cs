@@ -20,7 +20,7 @@ namespace Inferpal.Services.Docs;
 internal sealed class DocsDatabase
 {
     private static readonly string BaseDir = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        UserFolders.Of(Environment.SpecialFolder.ApplicationData),
         "Inferpal", "docs");
 
     private readonly string _dbPath;

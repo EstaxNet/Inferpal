@@ -121,7 +121,7 @@ internal sealed record SolutionExtent(
             var contents = Parsed(full);
             if (contents.Unreadable is not null) return new(Bare(dir), Bare(dir), [], SolutionExtentLimit.None);
             var extent = Decide(dir, contents.Projects, GitProcess.WorkTreeOf(dir),
-                                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), HoldsLayers);
+                                UserFolders.Of(Environment.SpecialFolder.UserProfile), HoldsLayers);
             // The note below is keyed by the path and caused by the file's state: readable again, it may be said again.
             Diagnostics.Forget("SolutionExtent.Of", full);
             return extent;
@@ -208,7 +208,7 @@ internal sealed record SolutionExtent(
     private static string? OpenFolderRoot()
     {
         if (ActiveSolutionSignal.TryReadOpenFolder() is not { } folder) return null;
-        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var home = UserFolders.Of(Environment.SpecialFolder.UserProfile);
         if (Path.GetDirectoryName(folder) is not null && (string.IsNullOrEmpty(home) || !IsUnder(Bare(home), Bare(folder))))
             return folder;
         Diagnostics.RecordOnce(OutsideContext,

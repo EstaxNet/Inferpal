@@ -86,7 +86,7 @@ editor with tools disabled).
 | `/docs list \| remove <id> \| reindex [id]` | Manage indexed documentation sources |
 | `/snippets` | `list` / `copy <n>` / `delete <n>` / `clear` saved code snippets |
 | `/template [id]` | Load a session template (code-review / bug-hunt / architecture / refactoring / tests); a conversation started in a template is reloaded in it |
-| `/prompts [init]` | List the custom commands — `.inferpal/prompts/*.md`, this machine's own prompts folder (beside Inferpal's settings: `%AppData%\Inferpal\prompts` on Windows, `~/.config/Inferpal/prompts` elsewhere — where `/import` writes) and the commands the repository wrote for Copilot (`.github/prompts/*.prompt.md`), Claude Code (`.claude/commands/**/*.md`) and Continue (`.continue/prompts/`) — with where each comes from, which one a clash hides, and the variables Inferpal leaves as written; or scaffold an example |
+| `/prompts [init]` | List the custom commands — `.inferpal/prompts/*.md`, this machine's own prompts folder (beside Inferpal's settings: `%AppData%\Inferpal\prompts` on Windows, `~/.config/Inferpal/prompts` on Linux, `~/Library/Application Support/Inferpal/prompts` on macOS — where `/import` writes) and the commands the repository wrote for Copilot (`.github/prompts/*.prompt.md`), Claude Code (`.claude/commands/**/*.md`) and Continue (`.continue/prompts/`) — with where each comes from, which one a clash hides, and the variables Inferpal leaves as written; or scaffold an example |
 
 ## Models & hardware
 

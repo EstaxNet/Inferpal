@@ -43,8 +43,7 @@ internal static class InProcConfig
     internal static string? PathOverride;
 
     internal static string ConfigPath => PathOverride ?? Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "Inferpal", "config.json");
+        UserFolders.Of(Environment.SpecialFolder.ApplicationData), "Inferpal", "config.json");
 
     private static readonly object _gate = new object();
     private static Snapshot _cached = new Snapshot { Stamp = -1 };

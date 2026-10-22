@@ -977,7 +977,7 @@ internal class FileHistoryService
     internal static string DefaultUserHistoryRoot => DefaultRoot.Value;
 
     private static readonly Lazy<string> DefaultRoot = new(() =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Inferpal", "history"));
+        Path.Combine(UserFolders.Of(Environment.SpecialFolder.LocalApplicationData), "Inferpal", "history"));
 
     /// <summary>Whether <paramref name="fullPath"/> is in, or is, the folder the histories kept outside the project live
     /// under (<see cref="DefaultUserHistoryRoot"/>).</summary>

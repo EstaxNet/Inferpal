@@ -115,7 +115,7 @@ internal static class RepoMcpFiles
     {
         root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root));
         environment ??= Environment.GetEnvironmentVariable;
-        home ??= Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        home ??= UserFolders.Of(Environment.SpecialFolder.UserProfile);
         string Expand(string value) => RepoMcpServers.Expand(value, root, home, environment, inputs: null, missing: null);
 
         try

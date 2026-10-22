@@ -257,7 +257,7 @@ internal static class DiagnosticsCommandHandler
         if (!string.IsNullOrEmpty(workspaceRoot))
             detail = detail.Replace(workspaceRoot, "<workspace>", StringComparison.OrdinalIgnoreCase);
 
-        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var home = UserFolders.Of(Environment.SpecialFolder.UserProfile);
         if (!string.IsNullOrEmpty(home))
             detail = detail.Replace(home, "~", StringComparison.OrdinalIgnoreCase);
 

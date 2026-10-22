@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Inferpal.Localization;
+using Inferpal.Services;
 
 namespace Inferpal.Config;
 
@@ -16,7 +17,7 @@ namespace Inferpal.Config;
 internal class InferpalConfig
 {
     private static readonly string ConfigPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        UserFolders.Of(Environment.SpecialFolder.ApplicationData),
         "Inferpal", "config.json");
 
     /// <summary>

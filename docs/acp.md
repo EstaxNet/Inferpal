@@ -202,7 +202,7 @@ have not played, read in their code and documentation:
 ## Set it up
 
 Inferpal uses the settings Visual Studio and VS Code already share (`%AppData%\Inferpal\config.json` on Windows,
-`~/.config/Inferpal/config.json` elsewhere): if you use Inferpal in one of them, there is nothing to do.
+`~/.config/Inferpal/config.json` on Linux, `~/Library/Application Support/Inferpal/config.json` on macOS): if you use Inferpal in one of them, there is nothing to do.
 
 Otherwise, the first session asks you to set Inferpal up. A client that can run a command in a terminal (Zed does)
 offers two buttons:

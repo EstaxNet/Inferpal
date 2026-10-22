@@ -360,13 +360,13 @@ internal sealed class PackageManagerLookup : IPackageLookup
     private static IEnumerable<string> PythonConfigFiles(string directory, string root, Func<string, string?> environment)
     {
         string? Env(string v) => environment(v) is { Length: > 0 } s ? s : null;
-        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var home = UserFolders.Of(Environment.SpecialFolder.UserProfile);
         if (Env("PIP_CONFIG_FILE") is { } pipConfig) yield return pipConfig;
         if (Env("UV_CONFIG_FILE") is { } uvConfig) yield return uvConfig;
         if (OperatingSystem.IsWindows())
         {
-            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            var programData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+            var appData = UserFolders.Of(Environment.SpecialFolder.ApplicationData);
+            var programData = UserFolders.Of(Environment.SpecialFolder.CommonApplicationData);
             yield return Path.Combine(appData, "pip", "pip.ini");
             yield return Path.Combine(home, "pip", "pip.ini");
             yield return Path.Combine(programData, "pip", "pip.ini");

@@ -89,7 +89,7 @@ internal sealed class McpTokenStore
 
     /// <summary>Default location: <c>%AppData%/Inferpal/mcp-oauth.dat</c>, alongside the config file.</summary>
     public static string DefaultPath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Inferpal", "mcp-oauth.dat");
+        UserFolders.Of(Environment.SpecialFolder.ApplicationData), "Inferpal", "mcp-oauth.dat");
 
     public McpOAuthState? Get(string serverName)
     {

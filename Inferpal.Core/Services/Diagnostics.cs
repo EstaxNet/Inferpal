@@ -30,7 +30,7 @@ internal static class Diagnostics
     internal static string? LogPathOverride { get; set; }
 
     private static string LogPath => LogPathOverride ?? Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        UserFolders.Of(Environment.SpecialFolder.ApplicationData),
         "Inferpal", "diagnostics.log");
 
     /// <summary>Records a swallowed exception with a short context label. Never throws.</summary>

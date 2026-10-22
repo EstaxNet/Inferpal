@@ -20,7 +20,7 @@ namespace Inferpal.Services.Persistence;
 internal class ConversationStore
 {
     private static readonly string _defaultDir = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        UserFolders.Of(Environment.SpecialFolder.ApplicationData),
         "Inferpal", "sessions");
 
     /// <summary>

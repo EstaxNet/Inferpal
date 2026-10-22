@@ -23,6 +23,13 @@ extension share one engine and one version number.
 - **Runs on .NET 10**: the extension carries the .NET runtime its backend runs on, and .NET 8 stops receiving security
   fixes on November 10, 2026. On a Mac it now needs macOS 12 or later (was 11); Windows and
   Linux are unchanged.
+- **Security — your settings and data stay in your profile**: on a Linux account without a `~/.config` folder (a new WSL
+  distribution, an SSH remote, a container), settings, conversations, indexes and MCP sign-in tokens were kept in an
+  `Inferpal` folder at the root of the open repository, and an `Inferpal/config.json` a cloned repository carried was
+  read as your own settings. They now live in `~/.config/Inferpal`; Windows and macOS were not affected. If git lists an
+  untracked `Inferpal` folder in one of your repositories, it holds what those sessions wrote, your saved commands and
+  snippets included: move everything in it to `~/.config/Inferpal/`, then delete it. One that came with a cloned
+  repository is not yours: do not move it.
 - **Security — the chat no longer stalls on a link definition left open**: the chat's Markdown renderer (markdown-it)
   took more than quadratic time on one spread over many lines, over two seconds for 200 KB (GHSA-gfr2-rv44-r23c); it is
   updated to 14.3.3, about 50 ms on the same text.

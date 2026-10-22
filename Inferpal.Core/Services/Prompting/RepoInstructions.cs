@@ -252,7 +252,7 @@ internal sealed record RepoInstructionDiscovery(
         if (!Directory.Exists(workspace)) return None;
 
         var root = SearchRootFor(workspace, GitProcess.WorkTreeOf(workspace),
-                                 Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+                                 UserFolders.Of(Environment.SpecialFolder.UserProfile));
         var sources = new List<RepoInstructionSource>();
         var unseen  = new List<RepoInstructionUnseen>();
 

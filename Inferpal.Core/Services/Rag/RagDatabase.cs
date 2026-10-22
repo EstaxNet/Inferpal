@@ -26,7 +26,7 @@ internal sealed class RagDatabase
     // ── Storage paths ─────────────────────────────────────────────────────────
 
     private static readonly string DefaultBaseDir = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        UserFolders.Of(Environment.SpecialFolder.ApplicationData),
         "Inferpal", "rag");
 
     // Redirectable for tests (mirrors TestReproScaffold.BaseDir): the index lifecycle tests

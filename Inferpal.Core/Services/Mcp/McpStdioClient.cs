@@ -105,7 +105,7 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
             // unless their entry names one ("cwd", "~" for the home folder: the system does not expand it).
             if (!string.IsNullOrEmpty(_config.WorkingDirectory))
                 psi.WorkingDirectory = _config.WorkingDirectory is ['~', ..] home
-                    ? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + home[1..]
+                    ? UserFolders.Of(Environment.SpecialFolder.UserProfile) + home[1..]
                     : _config.WorkingDirectory;
 
             _process = new Process { StartInfo = psi, EnableRaisingEvents = true };

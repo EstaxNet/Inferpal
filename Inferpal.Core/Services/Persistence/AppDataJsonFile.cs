@@ -79,7 +79,7 @@ internal sealed class AppDataJsonFile<T>
         _accept             = accept;
         // Fully qualified: the Path property below shadows System.IO.Path inside this type.
         _defaultPath = System.IO.Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Inferpal", fileName);
+            UserFolders.Of(Environment.SpecialFolder.ApplicationData), "Inferpal", fileName);
         _diagnosticName = diagnosticName;
     }
 

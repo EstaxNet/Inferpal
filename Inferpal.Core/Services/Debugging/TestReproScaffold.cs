@@ -26,7 +26,7 @@ internal static class TestReproScaffold
 {
     /// <summary>Overridable for tests: where the scaffold tree lives.</summary>
     internal static Func<string> BaseDir = () =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Inferpal", "testrepro");
+        Path.Combine(UserFolders.Of(Environment.SpecialFolder.ApplicationData), "Inferpal", "testrepro");
 
     internal const string ProjectFile = """
         <Project Sdk="Microsoft.NET.Sdk">

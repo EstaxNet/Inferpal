@@ -122,7 +122,7 @@ internal static class RepoMcpServers
             var full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(workspace));
             if (!Directory.Exists(full)) return RepoMcpScan.None;
             root = RepoInstructionDiscovery.SearchRootFor(full, GitProcess.WorkTreeOf(full),
-                                                          home ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+                                                          home ?? UserFolders.Of(Environment.SpecialFolder.UserProfile));
         }
         catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException) { return RepoMcpScan.None; }
 
@@ -297,7 +297,7 @@ internal static class RepoMcpServers
         Func<string, string?>? environment = null)
     {
         environment ??= Environment.GetEnvironmentVariable;
-        home ??= Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        home ??= UserFolders.Of(Environment.SpecialFolder.UserProfile);
         var missing = new List<string>();
         string Expand(string value) => RepoMcpServers.Expand(value, root, home, environment, inputs, missing);
 

@@ -93,7 +93,7 @@ internal static class RepoCommandFiles
             var full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(workspace));
             if (!Directory.Exists(full)) return RepoCommandScan.None;
             root = RepoInstructionDiscovery.SearchRootFor(full, GitProcess.WorkTreeOf(full),
-                                                          Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+                                                          UserFolders.Of(Environment.SpecialFolder.UserProfile));
         }
         catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException) { return RepoCommandScan.None; }
 

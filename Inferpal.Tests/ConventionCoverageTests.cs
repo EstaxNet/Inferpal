@@ -2679,4 +2679,42 @@ public class ConventionCoverageTests
             + "and what it stood for is missing. Write the fact itself, in the present tense. Sites:"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
+
+    // ── 37. A per-user folder is a path even before it exists ─────────────────
+
+    [Fact]
+    public void EveryPerUserFolder_IsAskedForEvenBeforeItExists()
+    {
+        // Without an option, GetFolderPath answers "" for a folder that does not exist (on Linux, ~/.config is absent on a
+        // fresh account or in a container): every path built on it resolved against the current directory, the
+        // workspace root of the VS Code host — the user's data written into their repository, and a config.json the
+        // repository carries read as the user's own. The Core and the in-process half (which compiles it in) ask through UserFolders.Of.
+        // ⚠ The subject is the NAME, not a call shape: a method group (`.Select(Environment.GetFolderPath)`) or an argument
+        // with parentheses of its own would slip past a pattern over the argument list.
+        var offenders     = new List<string>();
+        var helperAsks    = false;
+        var throughHelper = 0;
+
+        foreach (var file in new[] { "Inferpal.Core", "Inferpal", "Inferpal.Host", "Inferpal.Fim", "Inferpal.InProc" }
+                                 .SelectMany(ProjectSources))
+        {
+            var code = CodeOnly(file);
+            throughHelper += Regex.Matches(code, @"\bUserFolders\.Of\(").Count;
+            if (!Regex.IsMatch(code, @"\bGetFolderPath\b")) continue;
+            if (Path.GetFileName(file) == "UserFolders.cs")
+                helperAsks = code.Contains("SpecialFolderOption.DoNotVerify", StringComparison.Ordinal);
+            else
+                offenders.Add(Rel(file));
+        }
+
+        // Witness: the lookups really go through the helper (25 today), otherwise "no offender" means that nothing was read.
+        Assert.True(throughHelper >= 12, $"Only {throughHelper} UserFolders.Of call(s) read: the scan measures nothing any more.");
+        Assert.True(helperAsks,
+            "UserFolders.Of no longer passes Environment.SpecialFolderOption.DoNotVerify: a folder that does not exist yet "
+            + "answers \"\", and every path built on it lands in the current directory.");
+        Assert.True(offenders.Count == 0,
+            "These files look up a per-user folder themselves, which answers \"\" when the folder does not exist yet: every "
+            + "path built on it lands in the current directory. Ask through UserFolders.Of. Files:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
 }
