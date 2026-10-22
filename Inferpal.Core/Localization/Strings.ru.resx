@@ -1358,6 +1358,7 @@
   <data name="SuggestFimChatCompletes" xml:space="preserve"><value>Автодополнение: модель чата, которая тоже хорошо дополняет код.</value></data>
   <data name="SuggestFimSameAsChat" xml:space="preserve"><value>Автодополнение: модель чата (лучшая по измерениям модель автодополнения — Mellum2, если её установить).</value></data>
   <data name="SuggestOverrides" xml:space="preserve"><value>Оставлено как есть, в расширенных настройках: {0}.</value></data>
+  <data name="SuggestRoleOwnServer" xml:space="preserve"><value>{0} работает на отдельном сервере: его модель выбирается среди моделей этого сервера и остаётся как есть.</value></data>
   <data name="LoadedModelsUnknown" xml:space="preserve"><value>Этот сервер не сообщает, какие модели загружены.</value></data>
   <data name="LoadedModelsNone" xml:space="preserve"><value>Сейчас ни одна модель не загружена.</value></data>
   <data name="LoadedModelsUnreachable" xml:space="preserve"><value>Сервер не ответил: загруженные модели неизвестны.</value></data>
@@ -1733,5 +1734,20 @@
   <data name="SetupNoneFits" xml:space="preserve"><value>Ни одна из рекомендуемых Inferpal моделей не помещается на карту {0} ГБ: скачайте модель чата поменьше в {1} и повторите поиск.</value></data>
   <data name="SetupServerCard" xml:space="preserve"><value>Видеокарта сервера:</value></data>
   <data name="SetupCardUnknown" xml:space="preserve"><value>Видеокарта этого сервера неизвестна — выберите её, чтобы увидеть, что поместится:</value></data>
+  <data name="LabelRunsOn" xml:space="preserve"><value>Работает на</value></data>
+  <data name="HintInlineCompletionRunsOn" xml:space="preserve"><value>Другой сервер — например, этой машины — и призрачный текст больше не ждёт ответа чата на сервере выше.</value></data>
+  <data name="HintRagEmbeddingRunsOn" xml:space="preserve"><value>Индексация вашего кода может остаться на этой машине: на сервер выше уходят только вопросы.</value></data>
+  <data name="SettingsRunsOnChat" xml:space="preserve"><value>Сервер выше</value></data>
+  <data name="SettingsRunsOnOther" xml:space="preserve"><value>Другой сервер</value></data>
+  <data name="SettingsRunsOnAutocomplete" xml:space="preserve"><value>Сервер автодополнения</value></data>
+  <data name="LabelRoleServerUrl" xml:space="preserve"><value>Его адрес</value></data>
+  <data name="HintRoleServerUrl" xml:space="preserve"><value>Его кнопка «Проверить» определяет, какой сервер там отвечает.</value></data>
+  <data name="LabelRoleModel" xml:space="preserve"><value>Модель</value></data>
+  <data name="LabelCompletionProvider" xml:space="preserve"><value>Тип сервера автодополнения</value></data>
+  <data name="LabelCompletionApiKey" xml:space="preserve"><value>Ключ API автодополнения</value></data>
+  <data name="LabelSearchProvider" xml:space="preserve"><value>Тип сервера поиска по коду</value></data>
+  <data name="LabelSearchApiKey" xml:space="preserve"><value>Ключ API поиска по коду</value></data>
+  <data name="HintRoleProvider" xml:space="preserve"><value>Ollama, LM Studio или совместимый с OpenAI: его заполняет кнопка «Проверить» рядом с адресом.</value></data>
+  <data name="SettingsNoModelChosen" xml:space="preserve"><value>Не выбрана: без призрачного текста</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>Поиск сервера моделей…</value></data>
 </root>

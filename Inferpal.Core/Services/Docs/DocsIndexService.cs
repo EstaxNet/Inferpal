@@ -18,7 +18,13 @@ namespace Inferpal.Services.Docs;
 /// </remarks>
 internal sealed class DocsIndexService
 {
-    private readonly IInferenceProvider _client;
+    /// <summary>The client of code search, asked at each use: the embedding server can change in the settings.</summary>
+    private readonly Func<IInferenceProvider> _clientOf;
+    private IInferenceProvider _client => _clientOf();
+    /// <summary>The client this index embeds with — its queries must be embedded by the same server (the embedding
+    /// server's, <see cref="RoleClients"/>).</summary>
+    internal IInferenceProvider SearchClient => _client;
+
     private readonly InferpalConfig _config;
 
     private readonly SemaphoreSlim _chunkLock = new(1, 1);
@@ -31,9 +37,11 @@ internal sealed class DocsIndexService
     private List<DocChunk> _chunks = [];
     private List<(DocSite Site, int PageCount, int ChunkCount)> _sites = [];
 
-    public DocsIndexService(IInferenceProvider client, InferpalConfig config)
+    /// <param name="searchClient">The client of code search, when it is not <paramref name="client"/>: the embedding
+    /// server's (<see cref="RoleClients"/>).</param>
+    public DocsIndexService(IInferenceProvider client, InferpalConfig config, Func<IInferenceProvider>? searchClient = null)
     {
-        _client = client;
+        _clientOf = searchClient ?? (() => client);
         _config = config;
     }
 
@@ -387,8 +395,8 @@ internal sealed class DocsIndexService
                 // close. Skipping only the calls leaves it able to narrow it and never widen it.
                 if (embModel is null || _client.IsEmbeddingCircuitOpen) continue; // keyword fallback still works
 
-                // Yield the shared Ollama GPU to any in-flight chat/agent request.
-                await GpuScheduler.WaitForChatIdleAsync(ct);
+                // Yield the machine's graphics card to any in-flight chat/agent request — not a server elsewhere.
+                if (_client.SharesGpuWithChat) await GpuScheduler.WaitForChatIdleAsync(ct);
                 var emb = await _client.GetEmbeddingAsync(chunks[i].Content, embModel, ct);
                 chunks[i].Embedding = emb;
 

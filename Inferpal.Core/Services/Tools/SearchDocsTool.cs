@@ -15,15 +15,22 @@ namespace Inferpal.Services.Tools;
 /// </summary>
 internal sealed class SearchDocsTool : ITool
 {
-    private readonly DocsIndexService  _docs;
-    private readonly IInferenceProvider _client;
-    private readonly InferpalConfig _config;
+    private readonly DocsIndexService         _docs;
+    private readonly Func<IInferenceProvider> _clientOf;
+    private readonly InferpalConfig           _config;
+
+    /// <summary>The client that embeds the query: the one the docs index embeds with, so its server's.</summary>
+    private IInferenceProvider _client => _clientOf();
 
     public SearchDocsTool(DocsIndexService docs, IInferenceProvider client, InferpalConfig config)
+        : this(docs, () => client, config) { }
+
+    /// <param name="client">The query's client, asked at each search: the index's (<see cref="DocsIndexService.SearchClient"/>).</param>
+    public SearchDocsTool(DocsIndexService docs, Func<IInferenceProvider> client, InferpalConfig config)
     {
-        _docs   = docs;
-        _client = client;
-        _config = config;
+        _docs     = docs;
+        _clientOf = client;
+        _config   = config;
     }
 
     public string Name => "search_docs";

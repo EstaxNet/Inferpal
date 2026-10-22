@@ -195,7 +195,9 @@ internal sealed record ExclusionsCheckParams(List<string> Paths);
 internal sealed record ExclusionsCheckResult(List<string?> Notices, List<string?> ForModel);
 
 /// <summary>`fim/settings` — whether inline completion is on, and the debounce of its mode.</summary>
-internal sealed record FimSettingsResult(bool Enabled, int DebounceMs);
+/// <param name="YieldsToChat">The completion server is on the chat's machine, so it steps aside while a chat answers;
+/// on another machine it keeps completing.</param>
+internal sealed record FimSettingsResult(bool Enabled, int DebounceMs, bool YieldsToChat = true);
 
 /// <summary>`textDocument/didOpen|didChange|didClose` + `editor/didChangeActiveDocument`.</summary>
 /// <param name="Dirty">Whether the buffer has unsaved changes; absent means it does.</param>
@@ -600,6 +602,9 @@ internal sealed record SettingsOptionDto(string Value, string Text, string? Desc
 /// chat").</param>
 /// <param name="Columns">Resource names of a nameValue table's column headers.</param>
 /// <param name="Min">Bounds of a numeric box: a value outside them is named and not saved, as in the VS window.</param>
+/// <param name="EmbeddingModels">A model box that lists the embedding models, not the chat models.</param>
+/// <param name="ShowWhen">The field shows only while another field has a value (<c>key=value</c>).</param>
+/// <param name="Server">The role whose server the field belongs to: its Test button and its model list use that server.</param>
 internal sealed record SettingsFieldDto(
     string Key, string Kind, string Label, string? Hint, string? Unit, string? Button,
     List<SettingsOptionDto>? Options,
@@ -612,7 +617,10 @@ internal sealed record SettingsFieldDto(
     string? EmptyChoice = null,
     List<string>? Columns = null,
     int? Min = null,
-    int? Max = null);
+    int? Max = null,
+    bool EmbeddingModels = false,
+    string? ShowWhen = null,
+    string? Server = null);
 
 /// <summary>A group of fields under a title (empty = no heading).</summary>
 internal sealed record SettingsSectionDto(

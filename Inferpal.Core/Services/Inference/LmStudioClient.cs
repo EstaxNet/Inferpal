@@ -25,7 +25,7 @@ namespace Inferpal.Services.Inference;
 /// </remarks>
 internal sealed class LmStudioClient : OpenAiCompatibleClient
 {
-    public LmStudioClient(InferpalConfig config) : base(config) { }
+    public LmStudioClient(InferpalConfig config, ServerRole role = ServerRole.Chat) : base(config, role) { }
 
     /// <inheritdoc/>
     // VRAM monitoring is "true" in the sense of loaded-model awareness (state), though byte sizes
@@ -42,13 +42,13 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     /// </summary>
     /// <remarks>
     /// ⚠ The <c>url</c> parameter of <c>ListModelsAsync</c> / <c>ListInstalledModelsAsync</c> is
-    /// honoured here as in the two other providers (<c>url ?? _config.BaseUrl</c>). Ignored, the
+    /// honoured here as in the two other providers (<c>url ?? ServerUrl</c>). Ignored, the
     /// native probe queries the CONFIGURED server while the OpenAI-compatible fallback queries the
     /// one it was handed — one server's models presented as another's.
     /// </remarks>
     private string HostRootFor(string? url)
     {
-        var b = (url ?? _config.BaseUrl ?? string.Empty).Trim().TrimEnd('/');
+        var b = (url ?? ServerUrl ?? string.Empty).Trim().TrimEnd('/');
         if (b.EndsWith("/v1", StringComparison.OrdinalIgnoreCase))
             b = b[..^3].TrimEnd('/');
         return b;
@@ -493,9 +493,10 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
         // Yield the shared GPU to an in-flight chat/agent request: a delayed, now-stale ghost-text
         // suggestion is worse than none. FIM resumes once the chat turn ends. In-process lease
         // first (exact, no I/O), cross-process marker second (other editors, one GPU).
-        if (GpuScheduler.ShouldFimYield()) return;
+        if (FimYieldsToChat) return;
 
-        var m    = string.IsNullOrEmpty(model) ? _config.DefaultModel : model;
+        var m    = FimModelFor(model);
+        if (m is null) return;
         var spec = FimTemplate.Build(m, prefix, suffix);
         var request = new OpenAiCompletionRequest(m, spec.Prompt, maxTokens, temperature, Stream: true, Stop: FimCompletion.Stops(suffix, spec.Stop));
 

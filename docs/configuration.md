@@ -55,12 +55,20 @@ Every persisted setting, its type, and default value.
 | `apiKey` | string | `""` | API key for OpenAI-compatible servers (Bearer). ⚠ Stored **in clear text** in this file, unlike MCP OAuth tokens, which are encrypted (`mcp-oauth.dat`, DPAPI or the editor's keychain). The file sits under your user profile with the usual ACLs, but anything that can read your `%AppData%` can read this key |
 | `defaultModel` | string | `"llama3.1"` | Main chat model. Left at this default when the server does not have it, the best installed chat model is used instead, saved here, and a notice says so; a model you chose is never replaced |
 | `codeActionsModel` | string | `""` | Model for Explain, Review, Fix, Refactor and Doc, in both editors (empty = the chat model) |
-| `inlineCompletionModel` | string | `""` | Dedicated FIM model (empty = `defaultModel`) |
+| `inlineCompletionModel` | string | `""` | Dedicated FIM model (empty = `defaultModel` — on the chat's server only: on a server of its own, choose one) |
+| `inlineCompletionRunsOn` | string | `"chat"` | Where completions run: `chat` (the server of `baseUrl`) or `other` (the server of `inlineCompletionBaseUrl`) — ghost text on this machine while the chat runs on a team server |
+| `inlineCompletionBaseUrl` | string | `""` | The completion server's address, when `inlineCompletionRunsOn` is `other` |
+| `inlineCompletionProvider` | string | `""` | That server's backend (`ollama`, `lmstudio`, `openai-compatible`), found by its **Test** button; empty = `provider` |
+| `inlineCompletionApiKey` | string | `""` | That server's key — sent to `inlineCompletionBaseUrl` only |
 | `inlineEditModel` | string | `""` | Inline Edit model (fallback: `codeActionsModel` → `defaultModel`) |
 | `agentModel` | string | `""` | AgentOrchestrator model (empty = `defaultModel`) |
 | `utilityModel` | string | `""` | Model for background utility tasks — session titles, `/commit` message proposals, compaction summaries (empty = `defaultModel`, unless that model is not loaded and the agent or code-actions model is: the loaded one answers, so a title never loads a model). Optional: the compaction summary replaces the turns it covers, and small models keep fewer of its facts — see [Models](models.md#by-graphics-card). Resolution is centralized in `ModelRouter` |
 | `modelRouterAuto` | bool | `false` | Model Router auto mode: when no `utilityModel` is set, utility tasks use the model `/bench` recommended for the utility role — but only if it is already warm in VRAM (a cold model is never loaded for a title or commit message; falls back to the chat model). An explicit `utilityModel` always wins |
 | `ragEmbeddingModel` | string | `""` | Embedding model — optional. Empty = the best embedding model installed (EmbeddingGemma first); none installed = keyword search only |
+| `ragEmbeddingRunsOn` | string | `"chat"` | Where code search embeds: `chat` (the server of `baseUrl`), `autocomplete` (the completion's server) or `other` (the server of `ragEmbeddingBaseUrl`) — the project is indexed on this machine, only the questions go to the team server |
+| `ragEmbeddingBaseUrl` | string | `""` | The embedding server's address, when `ragEmbeddingRunsOn` is `other` |
+| `ragEmbeddingProvider` | string | `""` | That server's backend, found by its **Test** button; empty = `provider` |
+| `ragEmbeddingApiKey` | string | `""` | That server's key — sent to `ragEmbeddingBaseUrl` only |
 
 ### Behavior & safety
 

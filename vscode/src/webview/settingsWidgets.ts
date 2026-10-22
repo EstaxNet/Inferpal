@@ -43,7 +43,9 @@ export function createWidget(name: string, page: string, host: WidgetHost): Live
     case 'projectFiles':    return projectFiles(host);
     case 'repoInstructions': return repoInstructions(host);
     case 'toolList':        return toolList(host);
-    case 'fimModel':        return modelLine(host, ['inlineCompletionModel', 'defaultModel']);
+    // On a server of its own, the chat's model is not there to fall back on.
+    case 'fimModel':        return modelLine(host, ['inlineCompletionModel', 'defaultModel'],
+      () => host.formValue('inlineCompletionRunsOn') === 'other' && host.formValue('inlineCompletionBaseUrl').trim() !== '');
     case 'editModel':       return modelLine(host, ['inlineEditModel', 'codeActionsModel', 'defaultModel']);
     case 'themeCards':      return themeCards(host);
     case 'suggestModels':   return suggestModels(host);
@@ -103,9 +105,10 @@ function themeCards(host: WidgetHost): LiveWidget {
 
 // ── Server and models page: the best installed models, and what is loaded ────
 
-/** The model fields the suggestion reads: the three it may fill, and the advanced ones it only names. */
+/** The fields the suggestion reads: the three models it may fill, the advanced ones it only names, and where
+ *  autocomplete and code search run - a role on a server of its own keeps its model. */
 const SUGGESTION_KEYS = ['defaultModel', 'inlineCompletionModel', 'ragEmbeddingModel',
-  'agentModel', 'codeActionsModel', 'inlineEditModel', 'utilityModel'];
+  'agentModel', 'codeActionsModel', 'inlineEditModel', 'utilityModel', 'inlineCompletionRunsOn', 'ragEmbeddingRunsOn'];
 
 /** "Suggest the best models": the host picks among the installed models and says why; the picks land in the form as
  *  unsaved changes — Save stays the user's. */
@@ -610,13 +613,17 @@ function repoInstructions(host: WidgetHost): LiveWidget {
 // ── Autocomplete page: the model a feature uses, set on the Server page ──────
 
 /** "Model: X." from the FORM — the first non-empty of the keys, the way the router resolves the role. */
-function modelLine(host: WidgetHost, keys: string[]): LiveWidget {
+/** The model a page's feature uses: the first key set. `ownServer`: the feature runs on a server of its own now, where
+ *  only its own key counts — empty there is no model at all. */
+function modelLine(host: WidgetHost, keys: string[], ownServer?: () => boolean): LiveWidget {
   const line = el('p', 'hint modelline');
   const text = el('span');
   line.append(text, serverLink(host, host.res('SettingsChangeInServer'), keys[0]));
   const draw = (): void => {
-    const model = keys.map((k) => host.formValue(k).trim()).find((v) => v.length > 0) ?? '';
-    text.textContent = model ? fill(host.res('SettingsModelUsed'), model) + ' ' : '';
+    const own = ownServer?.() === true;
+    const model = (own ? keys.slice(0, 1) : keys).map((k) => host.formValue(k).trim()).find((v) => v.length > 0) ?? '';
+    text.textContent = model ? fill(host.res('SettingsModelUsed'), model) + ' '
+      : own ? host.res('SettingsNoModelChosen') + ' ' : '';
   };
   draw();
   return { el: line, onFormChanged: draw };

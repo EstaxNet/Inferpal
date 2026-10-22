@@ -1362,6 +1362,7 @@ What you save there applies from your next question, in this thread and the othe
   <data name="SuggestFimChatCompletes" xml:space="preserve"><value>Autocomplete: the chat model, which also autocompletes well.</value></data>
   <data name="SuggestFimSameAsChat" xml:space="preserve"><value>Autocomplete: the chat model (Mellum2 is the autocomplete model measured best, if you install it).</value></data>
   <data name="SuggestOverrides" xml:space="preserve"><value>Left as they are, in the advanced settings: {0}.</value></data>
+  <data name="SuggestRoleOwnServer" xml:space="preserve"><value>{0} runs on a server of its own: its model is chosen among that server's, and is left as it is.</value></data>
   <data name="LoadedModelsUnknown" xml:space="preserve"><value>This server does not say which models are loaded.</value></data>
   <data name="LoadedModelsNone" xml:space="preserve"><value>No model is loaded right now.</value></data>
   <data name="LoadedModelsUnreachable" xml:space="preserve"><value>The server did not answer: the loaded models are unknown.</value></data>
@@ -1737,5 +1738,20 @@ What you save there applies from your next question, in this thread and the othe
   <data name="SetupNoneFits" xml:space="preserve"><value>None of the models Inferpal recommends fits a {0} GB card: download a smaller chat model in {1}, then look again.</value></data>
   <data name="SetupServerCard" xml:space="preserve"><value>The server's graphics card:</value></data>
   <data name="SetupCardUnknown" xml:space="preserve"><value>This server's graphics card is unknown — choose it to see what fits:</value></data>
+  <data name="LabelRunsOn" xml:space="preserve"><value>Runs on</value></data>
+  <data name="HintInlineCompletionRunsOn" xml:space="preserve"><value>Another server — this machine's, say — and ghost text no longer waits for a chat answer on the server above.</value></data>
+  <data name="HintRagEmbeddingRunsOn" xml:space="preserve"><value>Indexing your code can stay on this machine: only the questions go to the server above.</value></data>
+  <data name="SettingsRunsOnChat" xml:space="preserve"><value>The server above</value></data>
+  <data name="SettingsRunsOnOther" xml:space="preserve"><value>Another server</value></data>
+  <data name="SettingsRunsOnAutocomplete" xml:space="preserve"><value>The autocomplete server</value></data>
+  <data name="LabelRoleServerUrl" xml:space="preserve"><value>Its address</value></data>
+  <data name="HintRoleServerUrl" xml:space="preserve"><value>Its Test button finds which kind of server answers there.</value></data>
+  <data name="LabelRoleModel" xml:space="preserve"><value>Model</value></data>
+  <data name="LabelCompletionProvider" xml:space="preserve"><value>Autocomplete server type</value></data>
+  <data name="LabelCompletionApiKey" xml:space="preserve"><value>Autocomplete API key</value></data>
+  <data name="LabelSearchProvider" xml:space="preserve"><value>Code search server type</value></data>
+  <data name="LabelSearchApiKey" xml:space="preserve"><value>Code search API key</value></data>
+  <data name="HintRoleProvider" xml:space="preserve"><value>Ollama, LM Studio or OpenAI-compatible: the Test button beside its address fills it in.</value></data>
+  <data name="SettingsNoModelChosen" xml:space="preserve"><value>None chosen: no ghost text</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>Looking for a model server…</value></data>
 </root>

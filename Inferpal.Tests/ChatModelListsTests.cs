@@ -44,7 +44,9 @@ public class ChatModelListsTests
     {
         var settings = WebviewRebuildTests.TsCode("webview/settings.ts");
         var popup = WebviewRebuildTests.Body(settings, "function renderModelPopup(");
-        Assert.Contains("const listed = modelPopupTarget?.dataset.list === 'embedding' ? embeddingModels : models;", popup,
+        Assert.Contains("const lists = role ? roleModels.get(role) : { chat: models, embedding: embeddingModels };", popup,
+                        StringComparison.Ordinal);
+        Assert.Contains("const listed = modelPopupTarget?.dataset.list === 'embedding' ? embedding : lists?.chat ?? [];", popup,
                         StringComparison.Ordinal);
         Assert.Contains("? ['', ...listed] : listed;", popup, StringComparison.Ordinal);
         Assert.Contains("if (field.embeddingModels) {\n          box.dataset.list = 'embedding';", settings.Replace("\r\n", "\n"),
@@ -56,6 +58,39 @@ public class ChatModelListsTests
         Assert.Contains("models: models.chat,", bridge, StringComparison.Ordinal);
         Assert.Contains("embeddingModels: models.embedding,", bridge, StringComparison.Ordinal);
         Assert.Contains("models: listed.chat, embeddingModels: listed.embedding", bridge, StringComparison.Ordinal);
+    }
+
+    /// <summary>A role on a server of its own lists THAT server's models, asked with its address, kind and key — never the
+    /// chat's key — and the answer lands on that role's boxes alone.</summary>
+    [Fact]
+    public void ARolesModelBox_ListsItsOwnServersModels()
+    {
+        var settings = WebviewRebuildTests.TsCode("webview/settings.ts");
+        var ask = WebviewRebuildTests.Body(settings, "function requestRoleModels(");
+        Assert.Contains("vscode.postMessage({ type: 'refreshModels', server: role, ...roleServerFields(role) });", ask,
+                        StringComparison.Ordinal);
+        // The role's fields, its key among them — the chat's key is the form's 'apiKey'.
+        Assert.Contains("apiKey:   (inputs.get(role + 'ApiKey')   as HTMLInputElement | undefined)?.value,", settings,
+                        StringComparison.Ordinal);
+        Assert.Contains("roleModels.set(msg.server, { chat: msg.models ?? [], embedding: msg.embeddingModels ?? [] });", settings,
+                        StringComparison.Ordinal);
+
+        var bridge = WebviewRebuildTests.TsCode("settingsBridge.ts");
+        Assert.Contains("models: listed.chat, embeddingModels: listed.embedding, server: msg.server", bridge, StringComparison.Ordinal);
+    }
+
+    /// <summary>⚠ The panel picks the list by the field's flag, so the flag must cross the RPC: without it the code-search
+    /// box of VS Code lists the chat models, the schema and the panel being right. Read on the schema the host serves, the
+    /// one link the source reads above do not see.</summary>
+    [Fact]
+    public void TheSchemaServedToVsCode_CarriesWhichBoxListsTheEmbeddingModels_AndWhoseServerItIs()
+    {
+        var server = new Inferpal.Host.HostServer(_ => new FakeInferenceProvider(), () => new Inferpal.Config.InferpalConfig());
+        var fields = server.SettingsSchemaModel().Tabs.SelectMany(t => t.Sections).SelectMany(s => s.Fields).ToList();
+
+        Assert.Equal(["ragEmbeddingModel"], fields.Where(f => f.EmbeddingModels).Select(f => f.Key));
+        Assert.Equal("ragEmbedding", fields.Single(f => f.Key == "ragEmbeddingModel").Server);
+        Assert.Equal("inlineCompletionRunsOn=other", fields.Single(f => f.Key == "inlineCompletionBaseUrl").ShowWhen);
     }
 
     /// <summary>No VS Code surface offers the raw listing: <c>models/list</c> is read by the client wrapper alone.</summary>

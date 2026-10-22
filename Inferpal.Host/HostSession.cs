@@ -18,6 +18,8 @@ internal sealed class HostSession : IDisposable
 {
     public required InferpalConfig       Config       { get; init; }
     public required IInferenceProvider   Client       { get; init; }
+    /// <summary>The client of each role — completions and code search may run on a server of their own.</summary>
+    public required RoleClients          Roles        { get; init; }
     public required OpenDocumentOverlay  Overlay      { get; init; }
     public required RpcEditorSurface     Editor       { get; init; }
     public required ToolRegistry         Tools        { get; init; }

@@ -255,8 +255,10 @@ internal partial class InferpalToolWindowData
         _config.DefaultModel = best;
         await RunOnVMContextAsync(() => ActiveModelLabel = best);
 
-        // Auto-pick an embedding model only when nothing is configured yet: the default model's family if installed.
-        if (string.IsNullOrEmpty(_config.RagEmbeddingModel) && embModels.Count > 0)
+        // Auto-pick an embedding model only when nothing is configured yet: the default model's family if installed. Not
+        // for code search on a server of its own: these are the chat server's models.
+        if (string.IsNullOrEmpty(_config.RagEmbeddingModel) && embModels.Count > 0
+            && Services.Inference.RoleServers.OnChatServer(_config, Services.Inference.ServerRole.Search))
             _config.RagEmbeddingModel = Services.Inference.EmbeddingModels.PreferredOf(embModels)!;
 
         _config.IsFirstRun = false;

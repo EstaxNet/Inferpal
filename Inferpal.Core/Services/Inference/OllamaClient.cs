@@ -23,7 +23,7 @@ namespace Inferpal.Services.Inference;
 /// </remarks>
 internal class OllamaClient : InferenceProviderBase
 {
-    public OllamaClient(InferpalConfig config) : base(config) { }
+    public OllamaClient(InferpalConfig config, ServerRole role = ServerRole.Chat) : base(config, role) { }
 
     /// <inheritdoc/>
     public override ProviderCapabilities Capabilities => ProviderCapabilities.Ollama;
@@ -102,7 +102,7 @@ internal class OllamaClient : InferenceProviderBase
         string model, List<ChatMessageDto> messages, IToolRegistry tools, Action<string>? onToken, CancellationToken ct,
         TaskComplexity complexity, string? toolChoice, Action<string>? onThinking, Action<string?>? onWaiting)
     {
-        var base_ = _config.BaseUrl.TrimEnd('/');
+        var base_ = ServerUrl.TrimEnd('/');
         if (string.IsNullOrWhiteSpace(base_))
             throw new AgentHttpException(Strings.MsgNoUrl, isTimeout: false);
         if (IsInCooldown())
@@ -471,7 +471,7 @@ internal class OllamaClient : InferenceProviderBase
     /// <param name="model">Embedding model name (e.g. <c>"nomic-embed-text"</c>).</param>
     public override async Task<float[]?> GetEmbeddingAsync(string text, string model, CancellationToken ct)
     {
-        var base_ = _config.BaseUrl.TrimEnd('/');
+        var base_ = ServerUrl.TrimEnd('/');
         // Use the dedicated embedding circuit breaker (independent of chat breaker).
         if (string.IsNullOrWhiteSpace(base_) || IsEmbeddingInCooldown()) return null;
 
@@ -533,7 +533,7 @@ internal class OllamaClient : InferenceProviderBase
     {
         try
         {
-            var base_ = _config.BaseUrl.TrimEnd('/');
+            var base_ = ServerUrl.TrimEnd('/');
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(5));
             var result = await _http.GetFromJsonAsync<RunningModelsResponse>(
@@ -553,7 +553,7 @@ internal class OllamaClient : InferenceProviderBase
     {
         try
         {
-            var base_ = _config.BaseUrl.TrimEnd('/');
+            var base_ = ServerUrl.TrimEnd('/');
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(10));
             // keep_alive=0 tells Ollama to evict the model immediately after this no-op request.
@@ -578,7 +578,7 @@ internal class OllamaClient : InferenceProviderBase
             // caller's token fired — if it had one.
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(10));
-            var base_  = (url ?? _config.BaseUrl).TrimEnd('/');
+            var base_  = (url ?? ServerUrl).TrimEnd('/');
             var result = await _http.GetFromJsonAsync<ModelListResponse>($"{base_}/api/tags", cts.Token);
             return result?.Models?.Select(m => m.Name).ToList() ?? [];
         }
@@ -602,7 +602,7 @@ internal class OllamaClient : InferenceProviderBase
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(10));
-            var base_  = (url ?? _config.BaseUrl).TrimEnd('/');
+            var base_  = (url ?? ServerUrl).TrimEnd('/');
             var result = await _http.GetFromJsonAsync<ModelListResponse>($"{base_}/api/tags", cts.Token);
             return result?.Models?.Select(m => new InstalledModelInfo(m.Name, m.Size, m.Capabilities)).ToList() ?? [];
         }
@@ -621,7 +621,7 @@ internal class OllamaClient : InferenceProviderBase
     {
         try
         {
-            var base_ = _config.BaseUrl.TrimEnd('/');
+            var base_ = ServerUrl.TrimEnd('/');
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(8));
             using var resp = await _http.PostAsJsonAsync($"{base_}/api/show", new { model }, _jsonOpts, cts.Token);
@@ -637,7 +637,7 @@ internal class OllamaClient : InferenceProviderBase
     {
         try
         {
-            var base_ = _config.BaseUrl.TrimEnd('/');
+            var base_ = ServerUrl.TrimEnd('/');
             var body  = new { name = model, stream = true };
             // Headers-read so download progress streams live instead of arriving all at
             // once when the pull completes (see PostForStreamingAsync).
@@ -702,7 +702,7 @@ internal class OllamaClient : InferenceProviderBase
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(30));   // a delete is bounded work; infinite client timeout is not
             ct = cts.Token;
-            var base_ = _config.BaseUrl.TrimEnd('/');
+            var base_ = ServerUrl.TrimEnd('/');
             using var req = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Delete, $"{base_}/api/delete")
             {
                 Content = System.Net.Http.Json.JsonContent.Create(new { name = model }, options: _jsonOpts)
@@ -731,15 +731,16 @@ internal class OllamaClient : InferenceProviderBase
         CancellationToken ct,
         string?        model = null)
     {
-        var base_ = _config.BaseUrl.TrimEnd('/');
+        var base_ = ServerUrl.TrimEnd('/');
         if (string.IsNullOrWhiteSpace(base_) || IsFimInCooldown()) return;
 
         // Yield the shared GPU to an in-flight chat/agent request: a delayed, now-stale ghost-text
         // suggestion is worse than none. FIM resumes once the chat turn ends. In-process lease
         // first (exact, no I/O), cross-process marker second (other editors, one GPU).
-        if (GpuScheduler.ShouldFimYield()) return;
+        if (FimYieldsToChat) return;
 
-        var m      = string.IsNullOrEmpty(model) ? _config.DefaultModel : model;
+        var m      = FimModelFor(model);
+        if (m is null) return;
         var rawKey = base_ + "|" + m;
         GenerateRequest request;
         if (RawFimModels.ContainsKey(rawKey))

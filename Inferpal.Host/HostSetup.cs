@@ -88,8 +88,11 @@ internal sealed partial class HostServer
             s.Config.BaseUrl               = server.BaseUrl;
             s.Config.ApiKey                = server.ApiKey;
             s.Config.DefaultModel          = p.ChatModel.Trim();
-            s.Config.InlineCompletionModel = p.CompletionModel?.Trim() ?? "";
-            s.Config.RagEmbeddingModel     = p.SearchModel?.Trim() ?? "";
+            // A role on a server of its own keeps its model: the models proposed are this server's, not that one's.
+            if (RoleServers.OnChatServer(s.Config, ServerRole.Completion))
+                s.Config.InlineCompletionModel = p.CompletionModel?.Trim() ?? "";
+            if (RoleServers.OnChatServer(s.Config, ServerRole.Search))
+                s.Config.RagEmbeddingModel = p.SearchModel?.Trim() ?? "";
             s.Config.IsFirstRun = false;
             s.Config.Save();
             s.FileSettings = (_fileSettings() ?? s.Config).SnapshotNow();

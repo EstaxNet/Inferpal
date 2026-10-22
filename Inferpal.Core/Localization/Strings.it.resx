@@ -1358,6 +1358,7 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="SuggestFimChatCompletes" xml:space="preserve"><value>Completamento automatico: il modello di chat, che completa bene anch'esso.</value></data>
   <data name="SuggestFimSameAsChat" xml:space="preserve"><value>Completamento automatico: il modello di chat (Mellum2 è il modello di completamento misurato come migliore, se lo installi).</value></data>
   <data name="SuggestOverrides" xml:space="preserve"><value>Lasciati invariati, nelle impostazioni avanzate: {0}.</value></data>
+  <data name="SuggestRoleOwnServer" xml:space="preserve"><value>{0} gira su un server proprio: il suo modello si sceglie tra quelli di quel server e resta com'è.</value></data>
   <data name="LoadedModelsUnknown" xml:space="preserve"><value>Questo server non indica quali modelli sono caricati.</value></data>
   <data name="LoadedModelsNone" xml:space="preserve"><value>Al momento non è caricato alcun modello.</value></data>
   <data name="LoadedModelsUnreachable" xml:space="preserve"><value>Il server non ha risposto: i modelli caricati sono sconosciuti.</value></data>
@@ -1733,5 +1734,20 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="SetupNoneFits" xml:space="preserve"><value>Nessuno dei modelli consigliati da Inferpal entra in una scheda da {0} GB: scarica un modello di chat più piccolo in {1}, poi cerca di nuovo.</value></data>
   <data name="SetupServerCard" xml:space="preserve"><value>Scheda grafica del server:</value></data>
   <data name="SetupCardUnknown" xml:space="preserve"><value>La scheda grafica di questo server è sconosciuta: sceglila per vedere cosa ci sta:</value></data>
+  <data name="LabelRunsOn" xml:space="preserve"><value>Gira su</value></data>
+  <data name="HintInlineCompletionRunsOn" xml:space="preserve"><value>Un altro server — quello di questa macchina, per esempio — e il testo fantasma non aspetta più una risposta della chat sul server sopra.</value></data>
+  <data name="HintRagEmbeddingRunsOn" xml:space="preserve"><value>L'indicizzazione del tuo codice può restare su questa macchina: solo le domande vanno al server sopra.</value></data>
+  <data name="SettingsRunsOnChat" xml:space="preserve"><value>Il server sopra</value></data>
+  <data name="SettingsRunsOnOther" xml:space="preserve"><value>Un altro server</value></data>
+  <data name="SettingsRunsOnAutocomplete" xml:space="preserve"><value>Il server di completamento automatico</value></data>
+  <data name="LabelRoleServerUrl" xml:space="preserve"><value>Il suo indirizzo</value></data>
+  <data name="HintRoleServerUrl" xml:space="preserve"><value>Il suo pulsante Testa individua quale tipo di server risponde lì.</value></data>
+  <data name="LabelRoleModel" xml:space="preserve"><value>Modello</value></data>
+  <data name="LabelCompletionProvider" xml:space="preserve"><value>Tipo di server del completamento automatico</value></data>
+  <data name="LabelCompletionApiKey" xml:space="preserve"><value>Chiave API del completamento automatico</value></data>
+  <data name="LabelSearchProvider" xml:space="preserve"><value>Tipo di server della ricerca nel codice</value></data>
+  <data name="LabelSearchApiKey" xml:space="preserve"><value>Chiave API della ricerca nel codice</value></data>
+  <data name="HintRoleProvider" xml:space="preserve"><value>Ollama, LM Studio o compatibile con OpenAI: lo compila il pulsante Testa accanto al suo indirizzo.</value></data>
+  <data name="SettingsNoModelChosen" xml:space="preserve"><value>Nessuno scelto: niente testo fantasma</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>Ricerca di un server di modelli…</value></data>
 </root>

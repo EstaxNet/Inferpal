@@ -31,9 +31,13 @@ internal static class InferenceProviderFactory
         };
     }
 
-    public static IInferenceProvider Create(InferpalConfig config)
+    public static IInferenceProvider Create(InferpalConfig config) => Create(config, ServerRole.Chat);
+
+    /// <summary>A client for <paramref name="role"/>: of its server's backend, talking to its server's address with its
+    /// server's key, read live from <paramref name="config"/> (<see cref="RoleServers"/>).</summary>
+    public static IInferenceProvider Create(InferpalConfig config, ServerRole role)
     {
-        var code = Canonical(config.Provider).Trim().ToLowerInvariant();
+        var code = Canonical(RoleServers.Of(config, role).Provider).Trim().ToLowerInvariant();
 
         // ⚠ Falling back to Ollama is the right behaviour — a config with no `provider` predates
         // multi-backend support — but it was COMPLETELY silent, including for a hand-written or
@@ -49,9 +53,9 @@ internal static class InferenceProviderFactory
 
         return code switch
         {
-            LmStudio         => new LmStudioClient(config),
-            OpenAiCompatible => new OpenAiCompatibleClient(config),
-            _                => new OllamaClient(config),
+            LmStudio         => new LmStudioClient(config, role),
+            OpenAiCompatible => new OpenAiCompatibleClient(config, role),
+            _                => new OllamaClient(config, role),
         };
     }
 

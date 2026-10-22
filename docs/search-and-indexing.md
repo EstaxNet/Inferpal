@@ -77,6 +77,11 @@ flowchart TD
 `ragTopK`, `ragSimilarityThreshold`, `lspEnabled` — see
 [Configuration](configuration.md#rag--semantic-index).
 
+The embeddings can run on another server than the chat's — `ragEmbeddingRunsOn`: the autocomplete server, or one of its
+own (*Code search › Runs on* on the *Server and models* page in VS Code). Indexing your code then stays on this machine
+while the chat answers on a team server; both the index and the questions against it are embedded there, with that
+server's key, and an index on another machine than the chat's does not pause while a chat answers.
+
 ## External documentation (@Docs)
 
 Index an external documentation site so the agent answers library/framework questions from

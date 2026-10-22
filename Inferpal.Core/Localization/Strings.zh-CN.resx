@@ -1358,6 +1358,7 @@
   <data name="SuggestFimChatCompletes" xml:space="preserve"><value>自动补全：使用聊天模型，它的补全效果也很好。</value></data>
   <data name="SuggestFimSameAsChat" xml:space="preserve"><value>自动补全：使用聊天模型（测量结果最好的补全模型是 Mellum2，可安装使用）。</value></data>
   <data name="SuggestOverrides" xml:space="preserve"><value>高级设置中的保持不变：{0}。</value></data>
+  <data name="SuggestRoleOwnServer" xml:space="preserve"><value>{0}在自己的服务器上运行:其模型从该服务器的模型中选择,保持不变。</value></data>
   <data name="LoadedModelsUnknown" xml:space="preserve"><value>此服务器不报告已加载哪些模型。</value></data>
   <data name="LoadedModelsNone" xml:space="preserve"><value>当前没有已加载的模型。</value></data>
   <data name="LoadedModelsUnreachable" xml:space="preserve"><value>服务器没有响应：已加载的模型未知。</value></data>
@@ -1733,5 +1734,20 @@
   <data name="SetupNoneFits" xml:space="preserve"><value>Inferpal 推荐的模型都无法放入 {0} GB 的显卡：请在 {1} 中下载一个更小的聊天模型，然后重新查找。</value></data>
   <data name="SetupServerCard" xml:space="preserve"><value>服务器的显卡：</value></data>
   <data name="SetupCardUnknown" xml:space="preserve"><value>此服务器的显卡未知——选择它即可查看能装下的模型：</value></data>
+  <data name="LabelRunsOn" xml:space="preserve"><value>运行于</value></data>
+  <data name="HintInlineCompletionRunsOn" xml:space="preserve"><value>换成另一台服务器(例如本机的),幽灵文本就不再等待上方服务器上的聊天回答。</value></data>
+  <data name="HintRagEmbeddingRunsOn" xml:space="preserve"><value>代码索引可以留在本机:只有问题会发往上方的服务器。</value></data>
+  <data name="SettingsRunsOnChat" xml:space="preserve"><value>上方的服务器</value></data>
+  <data name="SettingsRunsOnOther" xml:space="preserve"><value>另一台服务器</value></data>
+  <data name="SettingsRunsOnAutocomplete" xml:space="preserve"><value>自动补全的服务器</value></data>
+  <data name="LabelRoleServerUrl" xml:space="preserve"><value>其地址</value></data>
+  <data name="HintRoleServerUrl" xml:space="preserve"><value>它的“测试”按钮会查出那里应答的是哪种服务器。</value></data>
+  <data name="LabelRoleModel" xml:space="preserve"><value>模型</value></data>
+  <data name="LabelCompletionProvider" xml:space="preserve"><value>自动补全服务器类型</value></data>
+  <data name="LabelCompletionApiKey" xml:space="preserve"><value>自动补全的 API 密钥</value></data>
+  <data name="LabelSearchProvider" xml:space="preserve"><value>代码搜索服务器类型</value></data>
+  <data name="LabelSearchApiKey" xml:space="preserve"><value>代码搜索的 API 密钥</value></data>
+  <data name="HintRoleProvider" xml:space="preserve"><value>Ollama、LM Studio 或 OpenAI 兼容:其地址旁的“测试”按钮会自动填写。</value></data>
+  <data name="SettingsNoModelChosen" xml:space="preserve"><value>未选择:无幽灵文本</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>正在查找模型服务器…</value></data>
 </root>

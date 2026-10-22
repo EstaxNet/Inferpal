@@ -1358,6 +1358,7 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="SuggestFimChatCompletes" xml:space="preserve"><value>Autovervollständigung: das Chat-Modell, das auch gut vervollständigt.</value></data>
   <data name="SuggestFimSameAsChat" xml:space="preserve"><value>Autovervollständigung: das Chat-Modell (Mellum2 ist das am besten gemessene Vervollständigungsmodell, falls Sie es installieren).</value></data>
   <data name="SuggestOverrides" xml:space="preserve"><value>Unverändert gelassen, in den erweiterten Einstellungen: {0}.</value></data>
+  <data name="SuggestRoleOwnServer" xml:space="preserve"><value>{0} läuft auf einem eigenen Server: Sein Modell wird unter den Modellen dieses Servers gewählt und bleibt, wie es ist.</value></data>
   <data name="LoadedModelsUnknown" xml:space="preserve"><value>Dieser Server gibt nicht an, welche Modelle geladen sind.</value></data>
   <data name="LoadedModelsNone" xml:space="preserve"><value>Derzeit ist kein Modell geladen.</value></data>
   <data name="LoadedModelsUnreachable" xml:space="preserve"><value>Der Server hat nicht geantwortet: die geladenen Modelle sind unbekannt.</value></data>
@@ -1733,5 +1734,20 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="SetupNoneFits" xml:space="preserve"><value>Keines der von Inferpal empfohlenen Modelle passt auf eine {0}-GB-Karte: Laden Sie ein kleineres Chat-Modell in {1} herunter und suchen Sie dann erneut.</value></data>
   <data name="SetupServerCard" xml:space="preserve"><value>Grafikkarte des Servers:</value></data>
   <data name="SetupCardUnknown" xml:space="preserve"><value>Die Grafikkarte dieses Servers ist unbekannt – wählen Sie sie, um zu sehen, was passt:</value></data>
+  <data name="LabelRunsOn" xml:space="preserve"><value>Läuft auf</value></data>
+  <data name="HintInlineCompletionRunsOn" xml:space="preserve"><value>Ein anderer Server – etwa der dieses Rechners – und der Geistertext wartet nicht mehr auf eine Chat-Antwort des Servers oben.</value></data>
+  <data name="HintRagEmbeddingRunsOn" xml:space="preserve"><value>Die Indizierung Ihres Codes kann auf diesem Rechner bleiben: Nur die Fragen gehen an den Server oben.</value></data>
+  <data name="SettingsRunsOnChat" xml:space="preserve"><value>Der Server oben</value></data>
+  <data name="SettingsRunsOnOther" xml:space="preserve"><value>Ein anderer Server</value></data>
+  <data name="SettingsRunsOnAutocomplete" xml:space="preserve"><value>Der Autovervollständigungs-Server</value></data>
+  <data name="LabelRoleServerUrl" xml:space="preserve"><value>Seine Adresse</value></data>
+  <data name="HintRoleServerUrl" xml:space="preserve"><value>Seine Schaltfläche „Testen“ ermittelt, welche Art von Server dort antwortet.</value></data>
+  <data name="LabelRoleModel" xml:space="preserve"><value>Modell</value></data>
+  <data name="LabelCompletionProvider" xml:space="preserve"><value>Servertyp der Autovervollständigung</value></data>
+  <data name="LabelCompletionApiKey" xml:space="preserve"><value>API-Schlüssel der Autovervollständigung</value></data>
+  <data name="LabelSearchProvider" xml:space="preserve"><value>Servertyp der Codesuche</value></data>
+  <data name="LabelSearchApiKey" xml:space="preserve"><value>API-Schlüssel der Codesuche</value></data>
+  <data name="HintRoleProvider" xml:space="preserve"><value>Ollama, LM Studio oder OpenAI-kompatibel: Die Schaltfläche „Testen“ neben seiner Adresse füllt ihn aus.</value></data>
+  <data name="SettingsNoModelChosen" xml:space="preserve"><value>Keines gewählt: kein Geistertext</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>Modellserver wird gesucht…</value></data>
 </root>

@@ -1358,6 +1358,7 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="SuggestFimChatCompletes" xml:space="preserve"><value>Autocompletado: el modelo de chat, que también autocompleta bien.</value></data>
   <data name="SuggestFimSameAsChat" xml:space="preserve"><value>Autocompletado: el modelo de chat (Mellum2 es el modelo de autocompletado mejor medido, si lo instala).</value></data>
   <data name="SuggestOverrides" xml:space="preserve"><value>Sin cambios, en la configuración avanzada: {0}.</value></data>
+  <data name="SuggestRoleOwnServer" xml:space="preserve"><value>{0} se ejecuta en un servidor propio: su modelo se elige entre los de ese servidor y se deja como está.</value></data>
   <data name="LoadedModelsUnknown" xml:space="preserve"><value>Este servidor no indica qué modelos están cargados.</value></data>
   <data name="LoadedModelsNone" xml:space="preserve"><value>Ahora mismo no hay ningún modelo cargado.</value></data>
   <data name="LoadedModelsUnreachable" xml:space="preserve"><value>El servidor no respondió: se desconocen los modelos cargados.</value></data>
@@ -1733,5 +1734,20 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="SetupNoneFits" xml:space="preserve"><value>Ninguno de los modelos que recomienda Inferpal cabe en una tarjeta de {0} GB: descarga un modelo de chat más pequeño en {1} y vuelve a buscar.</value></data>
   <data name="SetupServerCard" xml:space="preserve"><value>Tarjeta gráfica del servidor:</value></data>
   <data name="SetupCardUnknown" xml:space="preserve"><value>La tarjeta gráfica de este servidor es desconocida: elígela para ver qué cabe:</value></data>
+  <data name="LabelRunsOn" xml:space="preserve"><value>Se ejecuta en</value></data>
+  <data name="HintInlineCompletionRunsOn" xml:space="preserve"><value>Otro servidor —el de esta máquina, por ejemplo— y el texto fantasma ya no espera una respuesta del chat en el servidor de arriba.</value></data>
+  <data name="HintRagEmbeddingRunsOn" xml:space="preserve"><value>La indexación de tu código puede quedarse en esta máquina: solo las preguntas van al servidor de arriba.</value></data>
+  <data name="SettingsRunsOnChat" xml:space="preserve"><value>El servidor de arriba</value></data>
+  <data name="SettingsRunsOnOther" xml:space="preserve"><value>Otro servidor</value></data>
+  <data name="SettingsRunsOnAutocomplete" xml:space="preserve"><value>El servidor de autocompletado</value></data>
+  <data name="LabelRoleServerUrl" xml:space="preserve"><value>Su dirección</value></data>
+  <data name="HintRoleServerUrl" xml:space="preserve"><value>Su botón Probar averigua qué tipo de servidor responde allí.</value></data>
+  <data name="LabelRoleModel" xml:space="preserve"><value>Modelo</value></data>
+  <data name="LabelCompletionProvider" xml:space="preserve"><value>Tipo de servidor del autocompletado</value></data>
+  <data name="LabelCompletionApiKey" xml:space="preserve"><value>Clave de API del autocompletado</value></data>
+  <data name="LabelSearchProvider" xml:space="preserve"><value>Tipo de servidor de la búsqueda de código</value></data>
+  <data name="LabelSearchApiKey" xml:space="preserve"><value>Clave de API de la búsqueda de código</value></data>
+  <data name="HintRoleProvider" xml:space="preserve"><value>Ollama, LM Studio o compatible con OpenAI: el botón Probar junto a su dirección lo rellena.</value></data>
+  <data name="SettingsNoModelChosen" xml:space="preserve"><value>Ninguno elegido: sin texto fantasma</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>Buscando un servidor de modelos…</value></data>
 </root>

@@ -31,7 +31,8 @@ for (var i = 0; i < args.Length - 1; i++)
 // changes, which is safer than a hot reload (switching backend in flight would leave an HttpClient
 // and a loaded model behind).
 var config = InferpalConfig.Load();
-var client = InferenceProviderFactory.Create(config);
+// The completion's server: the chat's, or one of its own (ghost text on this machine while the chat answers elsewhere).
+var client = InferenceProviderFactory.Create(config, ServerRole.Completion);
 
 using var lifetime = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; lifetime.Cancel(); };

@@ -1988,6 +1988,8 @@ internal static class Strings
     public static string SuggestFimSameAsChat => Get(nameof(SuggestFimSameAsChat));
     public static string SuggestOverrides(string a) =>
         Format(Get(nameof(SuggestOverrides)), a);
+    public static string SuggestRoleOwnServer(string a) =>
+        Format(Get(nameof(SuggestRoleOwnServer)), a);
     public static string LoadedModelsUnknown => Get(nameof(LoadedModelsUnknown));
     public static string LoadedModelsNone => Get(nameof(LoadedModelsNone));
     public static string LoadedModelsUnreachable => Get(nameof(LoadedModelsUnreachable));
@@ -2106,6 +2108,21 @@ internal static class Strings
     public static string SetupNoneFits(string gb, string server) => Format(Get(nameof(SetupNoneFits)), gb, server);
     public static string SetupServerCard => Get(nameof(SetupServerCard));
     public static string SetupCardUnknown => Get(nameof(SetupCardUnknown));
+    public static string LabelRunsOn => Get(nameof(LabelRunsOn));
+    public static string HintInlineCompletionRunsOn => Get(nameof(HintInlineCompletionRunsOn));
+    public static string HintRagEmbeddingRunsOn => Get(nameof(HintRagEmbeddingRunsOn));
+    public static string SettingsRunsOnChat => Get(nameof(SettingsRunsOnChat));
+    public static string SettingsRunsOnOther => Get(nameof(SettingsRunsOnOther));
+    public static string SettingsRunsOnAutocomplete => Get(nameof(SettingsRunsOnAutocomplete));
+    public static string LabelRoleServerUrl => Get(nameof(LabelRoleServerUrl));
+    public static string HintRoleServerUrl => Get(nameof(HintRoleServerUrl));
+    public static string LabelRoleModel => Get(nameof(LabelRoleModel));
+    public static string LabelCompletionProvider => Get(nameof(LabelCompletionProvider));
+    public static string LabelCompletionApiKey => Get(nameof(LabelCompletionApiKey));
+    public static string LabelSearchProvider => Get(nameof(LabelSearchProvider));
+    public static string LabelSearchApiKey => Get(nameof(LabelSearchApiKey));
+    public static string HintRoleProvider => Get(nameof(HintRoleProvider));
+    public static string SettingsNoModelChosen => Get(nameof(SettingsNoModelChosen));
     public static string AcpSetupScanning => Get(nameof(AcpSetupScanning));
     public static string AcpSetupNotReached(string url) => Format(Get(nameof(AcpSetupNotReached)), url);
     public static string AcpSetupNoModel(string server) => Format(Get(nameof(AcpSetupNoModel)), server);

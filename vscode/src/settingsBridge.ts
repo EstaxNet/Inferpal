@@ -74,6 +74,9 @@ export interface SettingsInbound {
     | 'pinSizes' | 'openFile' | 'openXray' | 'loadedModels' | 'unloadModels' | 'suggestModels';
   /** unloadModels: the models to unload; absent = every loaded one. */
   names?: string[];
+  /** testConnection / refreshModels: the role whose server is probed or listed (inlineCompletion, ragEmbedding);
+   *  absent = the chat's. Given back with the answer, so it lands on that role's fields. */
+  server?: string;
   /** suggestModels: the card's memory as typed, and the form's model fields by configuration key. */
   vramBudgetGb?: string;
   current?: Record<string, string>;
@@ -187,7 +190,7 @@ export class SettingsBridge {
           // ⚠ On its own, `ok: false` reads as "Backend unreachable" — the wrong cause when it is
           // the HOST that is gone, and it sends the user to check a server that is answering. The
           // result clears the probe, the message names what actually failed.
-          this.shell.post({ type: 'testResult', ok: false, provider: null });
+          this.shell.post({ type: 'testResult', ok: false, provider: null, server: msg.server });
           this.shell.post({ type: 'error', message: this.shell.unavailableMessage() });
           return;
         }
@@ -196,12 +199,13 @@ export class SettingsBridge {
           // answered, exactly like the Visual Studio Test button (which reads BaseUrl from its own
           // form, auto-selects the detected provider, then refreshes models from that URL).
           const result = await host.connectionCheck(msg.baseUrl, msg.apiKey);
-          this.shell.post({ type: 'testResult', ok: result.ok, provider: result.provider, refused: result.refused ?? null });
+          this.shell.post({ type: 'testResult', ok: result.ok, provider: result.provider, refused: result.refused ?? null,
+                            server: msg.server });
         } catch (err) {
           // Same reading, one level down: an unreachable backend does not throw — it answers
           // `ok: false` through the success path. A throw here is the host, and saying "Backend
           // unreachable" about it points at the one thing that is not broken.
-          this.shell.post({ type: 'testResult', ok: false, provider: null });
+          this.shell.post({ type: 'testResult', ok: false, provider: null, server: msg.server });
           this.shell.post({ type: 'error', message: this.shell.errorText(err) });
         }
         return;
@@ -218,7 +222,7 @@ export class SettingsBridge {
           const listed = await host.modelsListByKind({
             baseUrl: msg.baseUrl, provider: msg.provider, apiKey: msg.apiKey,
           });
-          this.shell.post({ type: 'models', models: listed.chat, embeddingModels: listed.embedding });
+          this.shell.post({ type: 'models', models: listed.chat, embeddingModels: listed.embedding, server: msg.server });
         } catch (err) {
           // ⚠ The other branch of the same ↻ button: a refresh that fails leaves the list exactly
           // as it was, which reads as "the backend serves these and no more". The log keeps the

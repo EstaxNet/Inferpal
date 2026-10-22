@@ -299,9 +299,27 @@ internal class InferpalConfig
     [JsonPropertyName("inlineCompletionEnabled")]
     public bool InlineCompletionEnabled { get; set; } = true;
 
-    /// <summary>Model for Fill-in-the-Middle completions. Empty string = use <see cref="DefaultModel"/>.</summary>
+    /// <summary>Model for Fill-in-the-Middle completions. Empty string = use <see cref="DefaultModel"/> — on the chat's
+    /// server only: on another server (<see cref="InlineCompletionRunsOn"/>) the chat's model is not there to fall back on.</summary>
     [JsonPropertyName("inlineCompletionModel")]
     public string InlineCompletionModel { get; set; } = string.Empty;
+
+    /// <summary>Where completions run: <c>chat</c> (the server of <see cref="BaseUrl"/>) or <c>other</c> (the server of
+    /// <see cref="InlineCompletionBaseUrl"/>) — ghost text on this machine while the chat runs on a team server.</summary>
+    [JsonPropertyName("inlineCompletionRunsOn")]
+    public string InlineCompletionRunsOn { get; set; } = "chat";
+
+    /// <summary>The completion server's address, when <see cref="InlineCompletionRunsOn"/> is <c>other</c>.</summary>
+    [JsonPropertyName("inlineCompletionBaseUrl")]
+    public string InlineCompletionBaseUrl { get; set; } = string.Empty;
+
+    /// <summary>The completion server's backend (the codes of <see cref="Provider"/>), found by its Test button.</summary>
+    [JsonPropertyName("inlineCompletionProvider")]
+    public string InlineCompletionProvider { get; set; } = string.Empty;
+
+    /// <summary>The completion server's key. ⚠ It goes to <see cref="InlineCompletionBaseUrl"/> only.</summary>
+    [JsonPropertyName("inlineCompletionApiKey")]
+    public string InlineCompletionApiKey { get; set; } = string.Empty;
 
     /// <summary>Model for Explain/Fix/Refactor code actions. Empty string = use <see cref="DefaultModel"/>.</summary>
     [JsonPropertyName("codeActionsModel")]
@@ -373,6 +391,23 @@ internal class InferpalConfig
     /// </summary>
     [JsonPropertyName("ragEmbeddingModel")]
     public string RagEmbeddingModel { get; set; } = string.Empty;
+
+    /// <summary>Where code-search embeddings run: <c>chat</c> (the server of <see cref="BaseUrl"/>), <c>autocomplete</c>
+    /// (the completion's server) or <c>other</c> (the server of <see cref="RagEmbeddingBaseUrl"/>).</summary>
+    [JsonPropertyName("ragEmbeddingRunsOn")]
+    public string RagEmbeddingRunsOn { get; set; } = "chat";
+
+    /// <summary>The embedding server's address, when <see cref="RagEmbeddingRunsOn"/> is <c>other</c>.</summary>
+    [JsonPropertyName("ragEmbeddingBaseUrl")]
+    public string RagEmbeddingBaseUrl { get; set; } = string.Empty;
+
+    /// <summary>The embedding server's backend (the codes of <see cref="Provider"/>), found by its Test button.</summary>
+    [JsonPropertyName("ragEmbeddingProvider")]
+    public string RagEmbeddingProvider { get; set; } = string.Empty;
+
+    /// <summary>The embedding server's key. ⚠ It goes to <see cref="RagEmbeddingBaseUrl"/> only.</summary>
+    [JsonPropertyName("ragEmbeddingApiKey")]
+    public string RagEmbeddingApiKey { get; set; } = string.Empty;
 
     /// <summary>
     /// Maximum number of chunks returned by a single <c>search_codebase</c> call (default 5, max 10).

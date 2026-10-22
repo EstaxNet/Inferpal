@@ -26,6 +26,25 @@ public class ModelAdvisorTests
 
     private static ModelSuggestionField Field(ModelSuggestion s, string key) => s.Fields.Single(f => f.Key == key);
 
+    /// <summary>The models listed are the chat server's: a role on a server of its own keeps its model — "Same as chat"
+    /// would leave it with none, the chat's model not being there — and the suggestion says why.</summary>
+    [Fact]
+    public void ARoleOnAServerOfItsOwn_KeepsItsModel_AndTheSuggestionSaysWhy()
+    {
+        var installed = new[] { M("qwen3.8:27b", 17), M("mellum2:12b", 7), M("embeddinggemma:300m", 0.6) };
+        var own = Suggest(installed, 24, new() { ["inlineCompletionRunsOn"] = "other", ["ragEmbeddingRunsOn"] = "autocomplete",
+                                                  ["inlineCompletionModel"] = "codestral:22b" });
+
+        Assert.Equal(["defaultModel"], own.Fields.Select(f => f.Key));
+        Assert.Contains(Strings.SuggestRoleOwnServer(Strings.SettingsPageAutocomplete), own.Notes);
+        Assert.Contains(Strings.SuggestRoleOwnServer(Strings.SettingsPageSearch), own.Notes);
+
+        // Reference arm: on the chat's server, both are suggested as before.
+        var here = Suggest(installed, 24, new() { ["inlineCompletionRunsOn"] = "chat", ["ragEmbeddingRunsOn"] = "chat" });
+        Assert.Equal(["defaultModel", "inlineCompletionModel", "ragEmbeddingModel"], here.Fields.Select(f => f.Key));
+        Assert.DoesNotContain(here.Notes, n => n == Strings.SuggestRoleOwnServer(Strings.SettingsPageAutocomplete));
+    }
+
     [Fact]
     public void TheChatModel_IsTheMeasuredAgent_NotTheFirstListed()
     {

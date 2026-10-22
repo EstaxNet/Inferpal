@@ -135,8 +135,9 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         // facade to keep the per-request tool list small (the three strategies live inside it).
         Register(new AnalyzeCodeTool(() => indexService.RootDir));
         Register(new RenameSymbolTool(approval, history, () => indexService.RootDir, overlay));
-        Register(new SemanticSearchTool(indexService, client, config));
-        Register(new SearchDocsTool(docsIndex, client, config));
+        // A query is embedded by the server its index was: the embedding server's, when code search runs elsewhere.
+        Register(new SemanticSearchTool(indexService, () => indexService.SearchClient, config));
+        Register(new SearchDocsTool(docsIndex, () => docsIndex.SearchClient, config));
         Register(new GenerateProjectMapTool(mapService));
         Register(new ReadSkillFileTool(SkillsRoot, config));
 

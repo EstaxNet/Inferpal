@@ -1358,6 +1358,7 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="SuggestFimChatCompletes" xml:space="preserve"><value>Autouzupełnianie: model czatu, który też dobrze uzupełnia kod.</value></data>
   <data name="SuggestFimSameAsChat" xml:space="preserve"><value>Autouzupełnianie: model czatu (najlepiej zmierzonym modelem autouzupełniania jest Mellum2, jeśli go zainstalujesz).</value></data>
   <data name="SuggestOverrides" xml:space="preserve"><value>Pozostawione bez zmian, w ustawieniach zaawansowanych: {0}.</value></data>
+  <data name="SuggestRoleOwnServer" xml:space="preserve"><value>{0} działa na własnym serwerze: jego model wybiera się spośród modeli tego serwera, zostaje bez zmian.</value></data>
   <data name="LoadedModelsUnknown" xml:space="preserve"><value>Ten serwer nie podaje, które modele są załadowane.</value></data>
   <data name="LoadedModelsNone" xml:space="preserve"><value>Obecnie żaden model nie jest załadowany.</value></data>
   <data name="LoadedModelsUnreachable" xml:space="preserve"><value>Serwer nie odpowiedział: załadowane modele są nieznane.</value></data>
@@ -1733,5 +1734,20 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="SetupNoneFits" xml:space="preserve"><value>Żaden z modeli polecanych przez Inferpal nie mieści się na karcie {0} GB: pobierz mniejszy model czatu w {1}, a potem wyszukaj ponownie.</value></data>
   <data name="SetupServerCard" xml:space="preserve"><value>Karta graficzna serwera:</value></data>
   <data name="SetupCardUnknown" xml:space="preserve"><value>Karta graficzna tego serwera jest nieznana — wybierz ją, aby zobaczyć, co się zmieści:</value></data>
+  <data name="LabelRunsOn" xml:space="preserve"><value>Działa na</value></data>
+  <data name="HintInlineCompletionRunsOn" xml:space="preserve"><value>Inny serwer — na przykład tej maszyny — i tekst-widmo nie czeka już na odpowiedź czatu na serwerze powyżej.</value></data>
+  <data name="HintRagEmbeddingRunsOn" xml:space="preserve"><value>Indeksowanie twojego kodu może zostać na tej maszynie: do serwera powyżej trafiają tylko pytania.</value></data>
+  <data name="SettingsRunsOnChat" xml:space="preserve"><value>Serwer powyżej</value></data>
+  <data name="SettingsRunsOnOther" xml:space="preserve"><value>Inny serwer</value></data>
+  <data name="SettingsRunsOnAutocomplete" xml:space="preserve"><value>Serwer autouzupełniania</value></data>
+  <data name="LabelRoleServerUrl" xml:space="preserve"><value>Jego adres</value></data>
+  <data name="HintRoleServerUrl" xml:space="preserve"><value>Jego przycisk Testuj ustala, jaki rodzaj serwera tam odpowiada.</value></data>
+  <data name="LabelRoleModel" xml:space="preserve"><value>Model</value></data>
+  <data name="LabelCompletionProvider" xml:space="preserve"><value>Typ serwera autouzupełniania</value></data>
+  <data name="LabelCompletionApiKey" xml:space="preserve"><value>Klucz API autouzupełniania</value></data>
+  <data name="LabelSearchProvider" xml:space="preserve"><value>Typ serwera wyszukiwania kodu</value></data>
+  <data name="LabelSearchApiKey" xml:space="preserve"><value>Klucz API wyszukiwania kodu</value></data>
+  <data name="HintRoleProvider" xml:space="preserve"><value>Ollama, LM Studio lub zgodny z OpenAI: wypełnia go przycisk Testuj obok jego adresu.</value></data>
+  <data name="SettingsNoModelChosen" xml:space="preserve"><value>Nie wybrano: brak tekstu-widma</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>Wyszukiwanie serwera modeli…</value></data>
 </root>

@@ -168,8 +168,27 @@ internal static class ModelAdvisor
             .ToList();
         if (routed.Count > 0) notes.Add(Strings.SuggestOverrides(string.Join(", ", routed)));
 
+        // ── A role on a server of its own: the models listed here are not there, so its model is left as it is ──
+        bool OwnServer(string role) => Current(role + "RunsOn") switch
+        {
+            RoleServers.OnOther        => true,
+            RoleServers.OnAutocomplete => OwnServer("inlineCompletion"),
+            _                          => false,
+        };
+        foreach (var (role, key, name) in new[]
+                 {
+                     ("inlineCompletion", "inlineCompletionModel", Strings.SettingsPageAutocomplete),
+                     ("ragEmbedding",     "ragEmbeddingModel",     Strings.SettingsPageSearch),
+                 })
+        {
+            if (!OwnServer(role)) continue;
+            fields.RemoveAll(f => f.Key == key);
+            if (key == "ragEmbeddingModel") notes.Remove(Strings.SuggestEmbeddingReindex);   // nothing changes to reindex
+            notes.Add(Strings.SuggestRoleOwnServer(name));
+        }
+
         // The form's order: chat, autocomplete, code search.
-        return new([.. Keys.Select(k => fields.First(f => f.Key == k))], notes);
+        return new([.. Keys.SelectMany(k => fields.Where(f => f.Key == k))], notes);
     }
 
     /// <summary>The recommended agents measured on a card of <paramref name="vramBudgetGb"/>; all of them, with their card,

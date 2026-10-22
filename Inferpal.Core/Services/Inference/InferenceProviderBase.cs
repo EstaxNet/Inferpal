@@ -57,7 +57,19 @@ internal abstract class InferenceProviderBase : IInferenceProvider
 
     protected readonly InferpalConfig _config;
 
-    protected InferenceProviderBase(InferpalConfig config) => _config = config;
+    /// <summary>What this client serves, and so which server it talks to (<see cref="RoleServers"/>).</summary>
+    protected readonly ServerRole _role;
+
+    protected InferenceProviderBase(InferpalConfig config, ServerRole role = ServerRole.Chat) => (_config, _role) = (config, role);
+
+    /// <summary>The address of this client's server, read live: the chat's, or its role's own.</summary>
+    private protected string ServerUrl => RoleServers.Of(_config, _role).BaseUrl ?? string.Empty;
+
+    /// <summary>The key of this client's server — ⚠ never another server's.</summary>
+    private protected string ServerKey => RoleServers.Of(_config, _role).ApiKey;
+
+    /// <inheritdoc/>
+    public bool SharesGpuWithChat => RoleServers.SharesMachineWithChat(_config, _role);
 
     /// <summary>The names a call written as text may carry: the tools a request offers, and those waiting on demand
     /// (<see cref="IToolRegistry.CallableNames"/>).</summary>
@@ -68,7 +80,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     public abstract ProviderCapabilities Capabilities { get; }
 
     /// <inheritdoc/>
-    public string ServerAddress => _config.BaseUrl ?? string.Empty;
+    public string ServerAddress => ServerUrl;
 
     // ── Chat circuit breaker ───────────────────────────────────────────────────
     // 5 consecutive failures → 5-minute cooldown; all calls short-circuit until
@@ -232,6 +244,26 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     protected static void NoteFimRefusal(string model, string serverError) =>
         Diagnostics.RecordOnce("Fim",
             $"Inline completion with \"{model}\" was refused by the server: {serverError}", model + "|" + serverError);
+
+    /// <summary>
+    /// The model an inline completion asks for (<see cref="RoleServers.CompletionModel"/>); null on another server with no
+    /// completion model chosen — nothing is asked, and why is said once: the chat's model is not on that server.
+    /// </summary>
+    private protected string? FimModelFor(string? model)
+    {
+        var m = RoleServers.CompletionModel(_config, model);
+        if (m is null)
+            // The address as the support bundle shows a server's: a LAN name identifies the user's network.
+            Diagnostics.RecordOnce("Fim",
+                $"Inline completions run on their own server ({Commands.DiagnosticsCommandHandler.RedactEndpoint(ServerUrl)}), " +
+                "and no completion model is chosen for it: choose one in the settings (the chat's model is not on that server).",
+                "no-model|" + ServerUrl);
+        return m;
+    }
+
+    /// <summary>A completion steps aside while a chat answers on this machine's graphics card — never for a chat on
+    /// another machine (<see cref="SharesGpuWithChat"/>).</summary>
+    private protected bool FimYieldsToChat => SharesGpuWithChat && GpuScheduler.ShouldFimYield();
 
     /// <summary>
     /// <c>true</c> when the embedding circuit breaker is open (cooldown in effect).
@@ -548,7 +580,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         ReasoningEffort effort = ReasoningEffort.Server,
         RunSteering? steering = null)
     {
-        var base_ = _config.BaseUrl.TrimEnd('/');
+        var base_ = ServerUrl.TrimEnd('/');
         if (string.IsNullOrWhiteSpace(base_))
             return new AgentResult(Strings.MsgNoUrl, [], history, Failed: true);
 

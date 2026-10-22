@@ -34,6 +34,11 @@ internal sealed class LoopbackHttpServer : IDisposable
     /// <summary>The request bodies received, in order (ASCII-decoded: enough to read JSON field names).</summary>
     public IReadOnlyList<string> Bodies { get { lock (_bodies) return _bodies.ToList(); } }
 
+    private readonly List<string> _authorizations = [];
+
+    /// <summary>The <c>Authorization</c> header of each request that carried one: which key reached this server.</summary>
+    public IReadOnlyList<string> Authorizations { get { lock (_authorizations) return _authorizations.ToList(); } }
+
     public string BaseUrl => $"http://127.0.0.1:{((IPEndPoint)_listener.LocalEndpoint).Port}";
 
     /// <param name="body">The body answered for a path; <c>null</c> answers 404.</param>
@@ -74,6 +79,8 @@ internal sealed class LoopbackHttpServer : IDisposable
                             if (header.StartsWith("Transfer-Encoding:", StringComparison.OrdinalIgnoreCase)
                                 && header.Contains("chunked", StringComparison.OrdinalIgnoreCase))
                                 chunked = true;
+                            if (header.StartsWith("Authorization:", StringComparison.OrdinalIgnoreCase))
+                                lock (_authorizations) _authorizations.Add(header["Authorization:".Length..].Trim());
                         }
                         // ⚠ Consume the request body before answering: closing a socket with unread
                         // data sends a reset, and the client reads "connection closed by the remote

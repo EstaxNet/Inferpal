@@ -34,6 +34,7 @@ internal sealed partial class HostServer : IDisposable
     internal const string EditorName = "Visual Studio Code";
 
     private readonly Func<InferpalConfig, IInferenceProvider> _providerFactory;
+    private readonly Func<InferpalConfig, ServerRole, IInferenceProvider> _roleProviderFactory;
     private readonly Func<InferpalConfig> _configFactory;
     private readonly Func<InferpalConfig?> _fileSettings;
     private readonly TaskCompletionSource _shutdown = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -56,16 +57,20 @@ internal sealed partial class HostServer : IDisposable
     // did not exist.
     private bool _slotHeldByTurn;
 
-    /// <param name="providerFactory">Test seam; defaults to <see cref="InferenceProviderFactory.Create"/>.</param>
+    /// <param name="providerFactory">Test seam; defaults to <see cref="InferenceProviderFactory.Create(InferpalConfig)"/>.</param>
     /// <param name="configFactory">Test seam; defaults to <see cref="InferpalConfig.LoadOwnCopy"/> so tests
     /// never read (or risk writing) the developer's real per-machine config.</param>
     /// <param name="fileSettings">The settings file as it is now, for <c>config/reload</c>; <c>null</c> when it cannot be
     /// read (test seam; defaults to <see cref="InferpalConfig.LoadOwnCopyToFollow"/>).</param>
+    /// <param name="roleProviderFactory">Test seam: the client of a role on a server of its own (completions, code search);
+    /// defaults to <see cref="InferenceProviderFactory.Create(InferpalConfig, ServerRole)"/>.</param>
     public HostServer(Func<InferpalConfig, IInferenceProvider>? providerFactory = null,
                       Func<InferpalConfig>? configFactory = null,
-                      Func<InferpalConfig?>? fileSettings = null)
+                      Func<InferpalConfig?>? fileSettings = null,
+                      Func<InferpalConfig, ServerRole, IInferenceProvider>? roleProviderFactory = null)
     {
         _providerFactory = providerFactory ?? InferenceProviderFactory.Create;
+        _roleProviderFactory = roleProviderFactory ?? InferenceProviderFactory.Create;
         // A copy of its own: several hosts can live in one process (an ACP agent's threads), and what one session
         // changes in memory — a model for its thread — is not the others'.
         _configFactory   = configFactory   ?? InferpalConfig.LoadOwnCopy;
@@ -114,7 +119,9 @@ internal sealed partial class HostServer : IDisposable
         approval.Notice  = text => Notify("host/notice", new { text, severity = "info" });
         approval.Warning = text => Notify("host/notice", new { text, severity = "warning" });
         var lsp      = new LspSemanticProvider();
-        var index    = new ProjectIndexService(client, config, lsp);
+        // Completions and code search on a server of their own when the settings say so; the chat's client otherwise.
+        var roles    = new RoleClients(client, config, _roleProviderFactory);
+        var index    = new ProjectIndexService(client, config, lsp, () => roles.For(ServerRole.Search));
         // Off Windows the default DPAPI protection is unavailable, so the token store fails loud
         // by design and MCP OAuth is unusable; route it through the editor's own secret store
         // (VS Code SecretStorage → OS keychain) instead. Windows keeps DPAPI: no round-trip, and
@@ -139,7 +146,7 @@ internal sealed partial class HostServer : IDisposable
         if (p.OpenExternal)
             mcp.OpenSignInPage = (url, redirect, ct) =>
                 rpc.InvokeWithParameterObjectAsync<string?>("env/openExternal", new { url, redirect }, ct);
-        var docs     = new DocsIndexService(client, config);
+        var docs     = new DocsIndexService(client, config, () => roles.For(ServerRole.Search));
         // A crawl's verdict reaches the conversation as a lasting notice: as progress (chat/step) it was shown only during
         // a turn, and /docs add, the settings page, /import answer before the crawl ends.
         // A result, not news: the only place /docs add says what it indexed — never a notice a client may let be dismissed.
@@ -166,6 +173,7 @@ internal sealed partial class HostServer : IDisposable
         {
             Config       = config,
             Client       = client,
+            Roles        = roles,
             Overlay      = overlay,
             Editor       = editor,
             Tools        = tools,
@@ -217,7 +225,8 @@ internal sealed partial class HostServer : IDisposable
             DefaultModel:    config.DefaultModel,
             ModelManagement: caps.ModelManagement,
             VramMonitoring:  caps.VramMonitoring,
-            Fim:             caps.Fim,
+            // What the COMPLETION's server can do: ghost text runs there, which may not be the chat's.
+            Fim:             roles.For(ServerRole.Completion).Capabilities.Fim,
             KeepAlive:       caps.KeepAlive);
     }
 
@@ -1238,8 +1247,9 @@ internal sealed partial class HostServer : IDisposable
                    : string.IsNullOrWhiteSpace(config.InlineCompletionModel) ? null : config.InlineCompletionModel;
 
         var sb = new StringBuilder();
-        await s.Client.StreamFimAsync(p.Prefix, p.Suffix, p.MaxTokens ?? preset.MaxTokens,
-                                      p.Temperature ?? preset.Temperature, t => sb.Append(t), ct, model);
+        // The completion's server: the chat's, or its own (ghost text here while the chat answers on a team server).
+        await s.Roles.For(ServerRole.Completion).StreamFimAsync(p.Prefix, p.Suffix, p.MaxTokens ?? preset.MaxTokens,
+                                                                p.Temperature ?? preset.Temperature, t => sb.Append(t), ct, model);
         // Without what already follows the caret: models repeat it, and accepted it is doubled.
         return Services.CodeActions.FimCompletion.Finish(sb.ToString(), p.Suffix);
     }
@@ -1270,10 +1280,11 @@ internal sealed partial class HostServer : IDisposable
     [JsonRpcMethod("fim/settings")]
     public FimSettingsResult FimSettings()
     {
-        var config = Session().Config;
+        var s = Session();
         return new FimSettingsResult(
-            config.InlineCompletionEnabled,
-            Services.CodeActions.FimContextBuilder.GetSettings(config.InlineCompletionMode).DebounceMs);
+            s.Config.InlineCompletionEnabled,
+            Services.CodeActions.FimContextBuilder.GetSettings(s.Config.InlineCompletionMode).DebounceMs,
+            s.Roles.For(ServerRole.Completion).SharesGpuWithChat);
     }
 
     // ── Config ─────────────────────────────────────────────────────────────────
@@ -1770,7 +1781,7 @@ internal sealed partial class HostServer : IDisposable
         HostSession s, string userText, List<string>? attachedPaths, CancellationToken ct)
     {
         if (!RagAutoContext.IsEnabled(s.Config))                       return string.Empty;
-        if (s.Index.ChunkCount == 0 || s.Client.IsEmbeddingCircuitOpen) return string.Empty;
+        if (s.Index.ChunkCount == 0 || s.Index.SearchClient.IsEmbeddingCircuitOpen) return string.Empty;
 
         var trimmed = userText.Trim();
         if (trimmed.Length < 12 || SlashCommandRouter.LooksLikeCommand(trimmed)) return string.Empty;   // same gate as VS
@@ -1782,7 +1793,7 @@ internal sealed partial class HostServer : IDisposable
             {
                 // The model the index's vectors came from; none (no embedding model) = no auto-context, as in VS.
                 if (s.Index.QueryEmbeddingModel is not { } model) return string.Empty;
-                var embedding = await EmbeddingModels.EmbedCodeQueryAsync(s.Client, model, trimmed, ct);
+                var embedding = await EmbeddingModels.EmbedCodeQueryAsync(s.Index.SearchClient, model, trimmed, ct);
                 if (embedding is null) return string.Empty;
                 results = await s.Index.SearchAsync(embedding, trimmed, RagAutoContext.DefaultMaxChunks, ct);
             }

@@ -30,6 +30,13 @@ internal interface IInferenceProvider : IChatTurnClient
     /// </remarks>
     string ServerAddress { get; }
 
+    /// <summary>
+    /// This client's server runs on the chat's machine, so on its graphics card: completions skip and indexing waits while
+    /// a chat answers there (<see cref="Hardware.GpuScheduler"/>). False for a role on another machine (<see cref="RoleServers"/>),
+    /// whose card a chat elsewhere does not use.
+    /// </summary>
+    bool SharesGpuWithChat => true;
+
     /// <inheritdoc cref="InferenceProviderBase.RunAgentAsync"/>
     Task<AgentResult> RunAgentAsync(
         string model,

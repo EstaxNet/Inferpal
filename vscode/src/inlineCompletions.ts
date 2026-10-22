@@ -51,7 +51,7 @@ export class FimProvider implements vscode.InlineCompletionItemProvider {
       return undefined;
     }
     const host = this.getHost();
-    if (!host?.isRunning || !host.info?.fim || host.isChatBusy) {
+    if (!host?.isRunning || !host.info?.fim) {
       return undefined;
     }
     if (document.uri.scheme !== 'file') {
@@ -67,6 +67,11 @@ export class FimProvider implements vscode.InlineCompletionItemProvider {
     // Debounce inside the provider (VS Code calls it on every keystroke), with the mode's delay.
     await delay(settings.debounceMs);
     if (token.isCancellationRequested) {
+      return undefined;
+    }
+    // A chat answering on the completion server's machine holds its card: no request then. A completion server on
+    // another machine keeps completing.
+    if (host.isChatBusy && settings.yieldsToChat !== false) {
       return undefined;
     }
 

@@ -42,6 +42,8 @@ export interface InitializeResult {
 export interface FimSettingsResult {
   enabled: boolean;
   debounceMs: number;
+  /** The completion server is on the chat's machine: it steps aside while a chat answers. Absent = it does. */
+  yieldsToChat?: boolean;
 }
 
 export interface ChatSendParams {
@@ -619,6 +621,11 @@ export interface SettingsField {
   emptyChoice?: string | null;
   /** A model box that offers the embedding models; every other one offers the chat models. */
   embeddingModels?: boolean;
+  /** The field shows only while another field has a value: `key=value`. Hidden, it keeps its value. */
+  showWhen?: string | null;
+  /** The role whose server the field belongs to (inlineCompletion, ragEmbedding): its Test button and its model list
+   *  use that server, never the chat's. */
+  server?: string | null;
   /** Resource names of a nameValue table's column headers. */
   columns?: string[] | null;
   /** Bounds of a numeric box (declared once in the Core schema): a value outside them is named, never saved. */

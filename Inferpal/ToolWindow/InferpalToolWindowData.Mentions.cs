@@ -48,7 +48,7 @@ internal partial class InferpalToolWindowData
         // Guard: RAG must be enabled, index ready, embedding circuit healthy
         if (!_config.RagEnabled
             || _indexService.ChunkCount == 0
-            || _client.IsEmbeddingCircuitOpen)
+            || _indexService.SearchClient.IsEmbeddingCircuitOpen)
             return;
 
         // Skip slash commands and very short prompts (not worth embedding)

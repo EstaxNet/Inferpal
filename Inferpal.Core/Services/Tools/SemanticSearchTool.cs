@@ -13,18 +13,24 @@ namespace Inferpal.Services.Tools;
 /// </summary>
 internal sealed class SemanticSearchTool : ITool
 {
-    private readonly ProjectIndexService _index;
-    private readonly IInferenceProvider  _client;
-    private readonly InferpalConfig   _config;
+    private readonly ProjectIndexService      _index;
+    private readonly Func<IInferenceProvider> _clientOf;
+    private readonly InferpalConfig           _config;
+
+    /// <summary>The client that embeds the query: the one the index embeds with, so its server's.</summary>
+    private IInferenceProvider _client => _clientOf();
 
     public SemanticSearchTool(
         ProjectIndexService index,
         IInferenceProvider  client,
-        InferpalConfig   config)
+        InferpalConfig   config) : this(index, () => client, config) { }
+
+    /// <param name="client">The query's client, asked at each search: the index's (<see cref="ProjectIndexService.SearchClient"/>).</param>
+    public SemanticSearchTool(ProjectIndexService index, Func<IInferenceProvider> client, InferpalConfig config)
     {
-        _index  = index;
-        _client = client;
-        _config = config;
+        _index    = index;
+        _clientOf = client;
+        _config   = config;
     }
 
     public string Name => "search_codebase";

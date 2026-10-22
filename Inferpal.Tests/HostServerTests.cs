@@ -194,7 +194,8 @@ public partial class HostServerTests
         }
     }
 
-    private static Harness CreateHarness(Action<InferpalConfig>? configure = null, string? settingsFile = null)
+    private static Harness CreateHarness(Action<InferpalConfig>? configure = null, string? settingsFile = null,
+                                         Func<InferpalConfig, ServerRole, IInferenceProvider>? roleFactory = null)
     {
         var (clientStream, serverStream) = FullDuplexStream.CreatePair();
 
@@ -207,7 +208,7 @@ public partial class HostServerTests
             var cfg = new InferpalConfig { RagEnabled = false, SavePathForTests = settingsFile };
             configure?.Invoke(cfg);
             return cfg;
-        });
+        }, roleProviderFactory: roleFactory);
         var serverRpc = HostRpc.Create(serverStream, serverStream, server);
         server.Attach(serverRpc);
         serverRpc.StartListening();
@@ -3028,6 +3029,35 @@ public partial class HostServerTests
         finally { try { File.Delete(file); } catch { } }
     }
 
+    /// <summary>The setup lists the chat's server: a role on a server of its own keeps its model, which that list does not
+    /// hold.</summary>
+    [Fact]
+    public async Task SetupApply_LeavesTheModelOfARoleOnAServerOfItsOwn()
+    {
+        var file = Path.Combine(Path.GetTempPath(), $"inferpal-setup-{Guid.NewGuid():N}.json");
+        try
+        {
+            using var h = CreateHarness(cfg =>
+            {
+                cfg.InlineCompletionRunsOn = "other";
+                cfg.InlineCompletionBaseUrl = "http://localhost:11434";
+                cfg.InlineCompletionModel = "qwen2.5-coder:7b";
+            }, settingsFile: file);
+            await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            await h.Client.InvokeWithParameterObjectAsync<Host.SetupApplyResult>("setup/apply", new
+            {
+                url = "http://192.168.1.2:11434", provider = "ollama", chatModel = "qwen3.8:27b",
+                searchModel = "nomic-embed-text:latest",
+            });
+
+            var c = h.Server.CurrentSession!.Config;
+            Assert.Equal("qwen2.5-coder:7b", c.InlineCompletionModel);
+            Assert.Equal("nomic-embed-text:latest", c.RagEmbeddingModel);   // reference arm: on the chat's server, written
+        }
+        finally { try { File.Delete(file); } catch { } }
+    }
+
     /// <summary>A figure another editor saved after this host read the settings does not survive a server change either:
     /// the file is read before the unknown card replaces it — a 0 over this copy's 0 is no change to save.</summary>
     [Fact]
@@ -3111,6 +3141,34 @@ public partial class HostServerTests
         Assert.Equal("k-1", h.ProviderConfigs[^1].ApiKey);
         await h.Client.InvokeWithParameterObjectAsync<Host.SetupPlanDto>("setup/plan", new { url = "http://192.168.1.2:11434", provider = "ollama" });
         Assert.Equal("", h.ProviderConfigs[^1].ApiKey);
+    }
+
+    /// <summary>A completion on a server of its own goes to that server's client — never the chat's — and what the editor
+    /// is told about completions is what THAT server can do.</summary>
+    [Fact]
+    public async Task Completions_OnAServerOfTheirOwn_GoToIt_AndItsCapabilitiesAreTheOnesSaid()
+    {
+        var own = new FakeInferenceProvider { Capabilities = ProviderCapabilities.Ollama, SharesGpuWithChat = false };
+        var asked = new List<ServerRole>();
+        using var h = CreateHarness(cfg =>
+        {
+            cfg.InlineCompletionRunsOn = "other";
+            cfg.InlineCompletionBaseUrl = "http://localhost:11434";
+            cfg.InlineCompletionModel = "qwen2.5-coder:7b";
+            cfg.BaseUrl = "http://192.0.2.10:8000";
+        }, roleFactory: (_, role) => { asked.Add(role); return own; });
+        h.Fake.Capabilities = ProviderCapabilities.Ollama with { Fim = false };
+
+        var init = await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        await h.Client.InvokeWithParameterObjectAsync<string>("fim/complete", new { prefix = "return ", suffix = ";" });
+
+        Assert.True(init.Fim);                                       // the completion server's, not the chat's (false)
+        Assert.Equal("qwen2.5-coder:7b", own.LastFim?.Model);
+        // On another machine than the chat's: the editor keeps asking while a chat answers.
+        var fim = await h.Client.InvokeAsync<Host.FimSettingsResult>("fim/settings");
+        Assert.False(fim.YieldsToChat);
+        Assert.Null(h.Fake.LastFim);                                 // the chat's server never asked
+        Assert.Contains(ServerRole.Completion, asked);
     }
 
     /// <summary>This machine's address under another name is the same server: its saved key goes with it.</summary>

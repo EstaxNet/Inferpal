@@ -272,6 +272,26 @@ public class DiagnosticsCommandHandlerTests : IDisposable
         Assert.Contains("set (redacted)", result.CopyToClipboard!);
     }
 
+    /// <summary>A role on a server of its own is named — "ghost text does nothing" cannot be read without it — with its
+    /// address redacted like the chat's and its key never shown.</summary>
+    [Fact]
+    public void Export_NamesARolesOwnServer_WithoutItsKeyOrItsRemoteName()
+    {
+        var config = new Inferpal.Config.InferpalConfig
+        {
+            BaseUrl = "http://localhost:11434",
+            InlineCompletionRunsOn = "other", InlineCompletionBaseUrl = "http://gpu.team.example:8080",
+            InlineCompletionProvider = "openai-compatible", InlineCompletionApiKey = "k-9",
+        };
+
+        var bundle = DiagnosticsCommandHandler.Handle(Cmd("export"), Ctx(config)).CopyToClipboard!;
+
+        Assert.Contains("**Autocomplete server**: openai-compatible", bundle);
+        Assert.DoesNotContain("gpu.team.example", bundle);
+        Assert.DoesNotContain("k-9", bundle);
+        Assert.DoesNotContain("Code search server", bundle);   // on the chat's server: nothing to name
+    }
+
     [Fact]
     public void Export_RedactsRemoteEndpoints_KeepsLoopback()
     {

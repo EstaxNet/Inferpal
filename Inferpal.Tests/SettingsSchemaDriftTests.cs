@@ -267,6 +267,27 @@ public class SettingsSchemaDriftTests
         Assert.True(empty.Count == 0, "Select fields with no options:\n  " + string.Join("\n  ", empty));
     }
 
+    /// <summary>A field shown only on another's value names a list of the form and one of its options — a condition on
+    /// a key or a value that does not exist would hide the field for good. And a field that belongs to a role's server
+    /// names a role the form lets the user place (its <c>…RunsOn</c> list).</summary>
+    [Fact]
+    public void ConditionalFields_FollowAListOfTheForm_AndRoleFieldsARoleItPlaces()
+    {
+        var byKey = SettingsSchema.AllFields.ToDictionary(f => f.Key, StringComparer.Ordinal);
+        var conditional = SettingsSchema.AllFields.Where(f => f.ShowWhen is not null).ToList();
+        Assert.True(conditional.Count >= 6, $"only {conditional.Count} conditional fields read");   // WITNESS
+
+        foreach (var field in conditional)
+        {
+            var (key, value) = (field.ShowWhen!.Split('=')[0], field.ShowWhen.Split('=')[1]);
+            Assert.True(byKey.TryGetValue(key, out var on) && on.Kind == SettingKind.Select,
+                $"{field.Key} is shown on '{key}', which is not a list of the form");
+            Assert.Contains(on!.Options!, o => o.Value == value);
+        }
+        foreach (var field in SettingsSchema.AllFields.Where(f => f.Server is not null))
+            Assert.True(byKey.ContainsKey(field.Server + "RunsOn"), $"{field.Key} belongs to '{field.Server}', which the form does not place");
+    }
+
     /// <summary>
     /// A model field in the VS Code panel offers <b>every</b> model, whatever it already contains —
     /// like the Visual Studio window's combo box.
@@ -368,6 +389,17 @@ public class SettingsSchemaDriftTests
         Assert.Matches(new Regex(@"fimSettings\(\)"), source);
         Assert.Matches(new Regex(@"if \(!settings\?\.enabled\)[\s\S]{0,200}?delay\(settings\.debounceMs\)"), source);
         Assert.DoesNotContain("DEBOUNCE_MS", source, StringComparison.Ordinal);
+    }
+
+    /// <summary>The provider steps aside for a chat only when the host says the completion server shares the chat's card
+    /// (<c>fim/settings</c> → <c>yieldsToChat</c>): on another machine, ghost text keeps coming while a chat answers.</summary>
+    [Fact]
+    public void VsCodeInlineCompletions_StepAsideForAChat_OnlyOnTheChatsMachine()
+    {
+        var source = TsCode("inlineCompletions.ts");
+        Assert.Contains("provideInlineCompletionItems", source, StringComparison.Ordinal);   // WITNESS
+        Assert.Contains("if (host.isChatBusy && settings.yieldsToChat !== false) {", source, StringComparison.Ordinal);
+        Assert.Equal(1, Regex.Matches(source, @"isChatBusy").Count);
     }
 
     /// <summary>

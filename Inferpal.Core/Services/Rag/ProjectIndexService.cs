@@ -21,7 +21,13 @@ namespace Inferpal.Services.Rag;
 /// </remarks>
 internal sealed class ProjectIndexService : IDisposable
 {
-    private readonly IInferenceProvider    _client;
+    /// <summary>The client of code search, asked at each use: the embedding server can change in the settings.</summary>
+    private readonly Func<IInferenceProvider> _clientOf;
+    private IInferenceProvider _client => _clientOf();
+    /// <summary>The client this index embeds with — its queries must be embedded by the same server (the embedding
+    /// server's, <see cref="RoleClients"/>).</summary>
+    internal IInferenceProvider SearchClient => _client;
+
     private readonly InferpalConfig     _config;
     private readonly LspSemanticProvider   _lsp;
 
@@ -173,9 +179,12 @@ internal sealed class ProjectIndexService : IDisposable
 
     // ── Construction ──────────────────────────────────────────────────────────
 
-    public ProjectIndexService(IInferenceProvider client, InferpalConfig config, LspSemanticProvider lsp)
+    /// <param name="searchClient">The client of code search, when it is not <paramref name="client"/>: the embedding
+    /// server's (<see cref="RoleClients"/>).</param>
+    public ProjectIndexService(IInferenceProvider client, InferpalConfig config, LspSemanticProvider lsp,
+                               Func<IInferenceProvider>? searchClient = null)
     {
-        _client = client;
+        _clientOf = searchClient ?? (() => client);
         _config = config;
         _lsp    = lsp;
     }
@@ -586,8 +595,8 @@ internal sealed class ProjectIndexService : IDisposable
                         // without embeddings; keyword fallback still works.
                         if (_config.RagEnabled && embModel is not null && !_client.IsEmbeddingCircuitOpen)
                         {
-                            // Yield the shared Ollama backend to any in-flight interactive request.
-                            await GpuScheduler.WaitForChatIdleAsync(ct);
+                            // Yield the machine's graphics card to any in-flight interactive request — not a server elsewhere.
+                            if (_client.SharesGpuWithChat) await GpuScheduler.WaitForChatIdleAsync(ct);
                             var emb = await EmbeddingModels.EmbedCodeDocumentAsync(_client, embModel, chunk.Content, ct);
                             chunk.Embedding = emb; // null if model unavailable
                             embedded |= emb is { Length: > 0 };
@@ -1230,8 +1239,8 @@ internal sealed class ProjectIndexService : IDisposable
                     // chunk: with the circuit open (or RAG turned off, the watcher still armed) the
                     // unchanged chunks of a saved file lost their vector, in memory and in SQLite.
                     if (!_config.RagEnabled || embModel is null || _client.IsEmbeddingCircuitOpen) continue;
-                    // Yield the shared Ollama backend to any in-flight interactive request.
-                    await GpuScheduler.WaitForChatIdleAsync(ct);
+                    // Yield the machine's graphics card to any in-flight interactive request — not a server elsewhere.
+                    if (_client.SharesGpuWithChat) await GpuScheduler.WaitForChatIdleAsync(ct);
                     chunk.Embedding = await EmbeddingModels.EmbedCodeDocumentAsync(_client, embModel, chunk.Content, ct);
                 }
 

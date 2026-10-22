@@ -56,6 +56,11 @@ internal sealed record SettingOption(string Value, string Text, Func<string>? Lo
 /// The other editor's panel does not show it: a box that changes nothing there would be a promise.</param>
 /// <param name="EmbeddingModels">A model box that offers the embedding models (<see cref="Inference.ModelCatalog.EmbeddingModelsOf"/>);
 /// every other model box offers the models a question can be asked of (<see cref="Inference.ModelCatalog.ChatModelsOf"/>).</param>
+/// <param name="ShowWhen">The field shows only while another field has a value — <c>key=value</c>: a server's address
+/// only once "Another server" is chosen. Hidden, it keeps its value and is saved as it is.</param>
+/// <param name="Server">The role whose server the field belongs to (<c>inlineCompletion</c>, <c>ragEmbedding</c>): its
+/// Test button probes that role's address with that role's key, and a model box lists that server's models — never the
+/// chat's (<see cref="Inference.RoleServers"/>).</param>
 /// <remarks>
 /// ⚠ The bounds are declared HERE, once, and both panels read them: each panel used to hold its own — the Visual
 /// Studio window clamped in silence (50 results saved as 20, the box still showing 50, "1 unsaved change" for ever),
@@ -80,7 +85,9 @@ internal sealed record SettingField(
     int?    Min = null,
     int?    Max = null,
     string? Only = null,
-    bool    EmbeddingModels = false)
+    bool    EmbeddingModels = false,
+    string? ShowWhen = null,
+    string? Server = null)
 {
     /// <summary>Is <paramref name="value"/> within the box's bounds?</summary>
     public bool Accepts(int value) => (Min is null || value >= Min) && (Max is null || value <= Max);
@@ -158,6 +165,21 @@ internal static class SettingsSchema
         new("ollama",            "Ollama"),
         new("lmstudio",          "LM Studio"),
         new("openai-compatible", "OpenAI-compatible (generic)"),
+    ];
+
+    /// <summary>Where completions run (<see cref="Inference.RoleServers"/>).</summary>
+    public static readonly IReadOnlyList<SettingOption> CompletionPlaces =
+    [
+        new(Inference.RoleServers.OnChat,  "The server above", () => Strings.SettingsRunsOnChat),
+        new(Inference.RoleServers.OnOther, "Another server",   () => Strings.SettingsRunsOnOther),
+    ];
+
+    /// <summary>Where code-search embeddings run (<see cref="Inference.RoleServers"/>).</summary>
+    public static readonly IReadOnlyList<SettingOption> SearchPlaces =
+    [
+        new(Inference.RoleServers.OnChat,         "The server above",        () => Strings.SettingsRunsOnChat),
+        new(Inference.RoleServers.OnAutocomplete, "The autocomplete server", () => Strings.SettingsRunsOnAutocomplete),
+        new(Inference.RoleServers.OnOther,        "Another server",          () => Strings.SettingsRunsOnOther),
     ];
 
     // ⚠ Above Tabs: static initializers run in textual order. Declared below it, the list is still
@@ -239,14 +261,31 @@ internal static class SettingsSchema
             new("",
             [
                 new("defaultModel",          SettingKind.Model, "LabelChatModel",             "HintChatModel",             Button: "refreshModels"),
-                new("inlineCompletionModel", SettingKind.Model, "LabelInlineCompletionModel", "HintInlineCompletionModel",
-                    EmptyChoice: "SettingsSameAsChat"),
-                new("ragEmbeddingModel",     SettingKind.Model, "LabelRagEmbeddingModel",     "HintRagEmbeddingModel",
-                    EmptyChoice: "SettingsAutomaticBest", EmbeddingModels: true),
                 new("contextWindowSize",     SettingKind.Int,   "LabelContextWindowSize",     "HintContextWindowSize",     Unit: "UnitTokens",
                     HintNotOllama: "HintContextWindowSizeClientTrim", Min: 0),
             ],
             Grid: true, Widget: "suggestModels"),
+            // Completions and code search may run on a server of their own (RoleServers): ghost text and the index on this
+            // machine while the chat answers on a team server.
+            new("SettingsPageAutocomplete",
+            [
+                new("inlineCompletionRunsOn",   SettingKind.Select,   "LabelRunsOn",                "HintInlineCompletionRunsOn",
+                    Options: CompletionPlaces),
+                new("inlineCompletionModel",    SettingKind.Model,    "LabelRoleModel",             "HintInlineCompletionModel",
+                    EmptyChoice: "SettingsSameAsChat", Server: "inlineCompletion"),
+                new("inlineCompletionBaseUrl",  SettingKind.Text,     "LabelRoleServerUrl",         "HintRoleServerUrl", Button: "test",
+                    ShowWhen: "inlineCompletionRunsOn=other", Server: "inlineCompletion"),
+            ],
+            Grid: true),
+            new("SettingsPageSearch",
+            [
+                new("ragEmbeddingRunsOn",   SettingKind.Select,   "LabelRunsOn",            "HintRagEmbeddingRunsOn", Options: SearchPlaces),
+                new("ragEmbeddingModel",    SettingKind.Model,    "LabelRoleModel",         "HintRagEmbeddingModel",
+                    EmptyChoice: "SettingsAutomaticBest", EmbeddingModels: true, Server: "ragEmbedding"),
+                new("ragEmbeddingBaseUrl",  SettingKind.Text,     "LabelRoleServerUrl",     "HintRoleServerUrl", Button: "test",
+                    ShowWhen: "ragEmbeddingRunsOn=other", Server: "ragEmbedding"),
+            ],
+            Grid: true),
             new("SettingsSectionLoadedModels", [], Note: "NoteLoadedModels", Widget: "loadedModels"),
             new("SettingsSectionModelPerTask",
             [
@@ -283,6 +322,15 @@ internal static class SettingsSchema
             [
                 new("provider", SettingKind.Select,   "LabelProvider", "HintProvider", Options: Providers),
                 new("apiKey",   SettingKind.Password, "LabelApiKey",   "HintApiKey"),
+                // A role's own server, beside the chat's: its Test button fills the kind in, the key is its alone.
+                new("inlineCompletionProvider", SettingKind.Select,   "LabelCompletionProvider", "HintRoleProvider", Options: Providers,
+                    ShowWhen: "inlineCompletionRunsOn=other", Server: "inlineCompletion"),
+                new("inlineCompletionApiKey",   SettingKind.Password, "LabelCompletionApiKey",   "HintApiKey",
+                    ShowWhen: "inlineCompletionRunsOn=other", Server: "inlineCompletion"),
+                new("ragEmbeddingProvider",     SettingKind.Select,   "LabelSearchProvider",     "HintRoleProvider", Options: Providers,
+                    ShowWhen: "ragEmbeddingRunsOn=other", Server: "ragEmbedding"),
+                new("ragEmbeddingApiKey",       SettingKind.Password, "LabelSearchApiKey",       "HintApiKey",
+                    ShowWhen: "ragEmbeddingRunsOn=other", Server: "ragEmbedding"),
             ],
             Gate: AdvancedGate, Grid: true),
         ],

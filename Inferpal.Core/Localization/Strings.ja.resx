@@ -1358,6 +1358,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SuggestFimChatCompletes" xml:space="preserve"><value>自動補完: チャットモデル（補完も得意です）。</value></data>
   <data name="SuggestFimSameAsChat" xml:space="preserve"><value>自動補完: チャットモデル（測定で最良の補完モデルは Mellum2 です。インストールすれば使えます）。</value></data>
   <data name="SuggestOverrides" xml:space="preserve"><value>詳細設定のものはそのままです: {0}。</value></data>
+  <data name="SuggestRoleOwnServer" xml:space="preserve"><value>{0} は専用のサーバーで動作します。そのモデルはそのサーバーのモデルから選ぶため、変更しません。</value></data>
   <data name="LoadedModelsUnknown" xml:space="preserve"><value>このサーバーは読み込み済みのモデルを報告しません。</value></data>
   <data name="LoadedModelsNone" xml:space="preserve"><value>現在読み込まれているモデルはありません。</value></data>
   <data name="LoadedModelsUnreachable" xml:space="preserve"><value>サーバーが応答しませんでした。読み込み済みのモデルは不明です。</value></data>
@@ -1733,5 +1734,20 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SetupNoneFits" xml:space="preserve"><value>Inferpal の推奨モデルはどれも {0} GB のカードに収まりません。{1} で小さめのチャットモデルをダウンロードしてから再検索してください。</value></data>
   <data name="SetupServerCard" xml:space="preserve"><value>サーバーのグラフィックカード:</value></data>
   <data name="SetupCardUnknown" xml:space="preserve"><value>このサーバーのグラフィックカードは不明です。選ぶと、収まるモデルが表示されます:</value></data>
+  <data name="LabelRunsOn" xml:space="preserve"><value>実行先</value></data>
+  <data name="HintInlineCompletionRunsOn" xml:space="preserve"><value>別のサーバー(たとえばこのマシンのもの)にすると、ゴースト テキストは上のサーバーのチャット応答を待たなくなります。</value></data>
+  <data name="HintRagEmbeddingRunsOn" xml:space="preserve"><value>コードのインデックス作成はこのマシンに残せます。上のサーバーに送られるのは質問だけです。</value></data>
+  <data name="SettingsRunsOnChat" xml:space="preserve"><value>上のサーバー</value></data>
+  <data name="SettingsRunsOnOther" xml:space="preserve"><value>別のサーバー</value></data>
+  <data name="SettingsRunsOnAutocomplete" xml:space="preserve"><value>オートコンプリートのサーバー</value></data>
+  <data name="LabelRoleServerUrl" xml:space="preserve"><value>そのアドレス</value></data>
+  <data name="HintRoleServerUrl" xml:space="preserve"><value>テストボタンで、そこで応答するサーバーの種類がわかります。</value></data>
+  <data name="LabelRoleModel" xml:space="preserve"><value>モデル</value></data>
+  <data name="LabelCompletionProvider" xml:space="preserve"><value>オートコンプリートのサーバーの種類</value></data>
+  <data name="LabelCompletionApiKey" xml:space="preserve"><value>オートコンプリートの API キー</value></data>
+  <data name="LabelSearchProvider" xml:space="preserve"><value>コード検索のサーバーの種類</value></data>
+  <data name="LabelSearchApiKey" xml:space="preserve"><value>コード検索の API キー</value></data>
+  <data name="HintRoleProvider" xml:space="preserve"><value>Ollama、LM Studio、または OpenAI 互換。アドレスの横のテストボタンで入力されます。</value></data>
+  <data name="SettingsNoModelChosen" xml:space="preserve"><value>未選択: ゴースト テキストなし</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>モデルサーバーを検索しています…</value></data>
 </root>

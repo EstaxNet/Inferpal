@@ -50,7 +50,11 @@ internal sealed partial class HostServer
         f.EmptyChoice,
         f.Columns?.ToList(),
         f.Min,
-        f.Max);
+        f.Max,
+        // ⚠ Carried, or the code-search box lists the CHAT models: the panel picks the list by this flag.
+        f.EmbeddingModels,
+        f.ShowWhen,
+        f.Server);
 
     private static readonly Config.InferpalConfig _factoryDefaults = new();
 
@@ -130,7 +134,7 @@ internal sealed partial class HostServer
     private static readonly string[] EditorStrings =
     [
         // Server and models: the suggestion and the loaded models (the sentences themselves come with the facts)
-        "BtnSuggestModels", "HintSuggestModels", "BtnUnloadModel", "BtnUnloadAll", "BtnRefreshLoaded",
+        "BtnSuggestModels", "HintSuggestModels", "BtnUnloadModel", "BtnUnloadAll", "BtnRefreshLoaded", "SettingsNoModelChosen",
         "SettingsEditAsJson", "SettingsEditAsText", "SettingsEditAsList",
         "HintRowEdit", "HintRowDelete", "RowEditTitle", "ListLineNotRead",
         // MCP server cards and their form

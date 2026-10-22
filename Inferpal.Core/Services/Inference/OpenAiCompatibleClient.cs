@@ -19,7 +19,7 @@ namespace Inferpal.Services.Inference;
 /// </remarks>
 internal class OpenAiCompatibleClient : InferenceProviderBase
 {
-    public OpenAiCompatibleClient(InferpalConfig config) : base(config) { }
+    public OpenAiCompatibleClient(InferpalConfig config, ServerRole role = ServerRole.Chat) : base(config, role) { }
 
     /// <inheritdoc/>
     public override ProviderCapabilities Capabilities => ProviderCapabilities.OpenAiCompatible;
@@ -34,12 +34,12 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         return b.EndsWith("/v1", StringComparison.OrdinalIgnoreCase) ? b : b + "/v1";
     }
 
-    private protected string BaseV1 => V1(_config.BaseUrl);
+    private protected string BaseV1 => V1(ServerUrl);
 
     /// <summary>Bearer auth headers for generic OpenAI-compatible servers; empty for LM Studio (no key).</summary>
     private protected IReadOnlyDictionary<string, string>? AuthHeaders()
     {
-        var key = _config.ApiKey?.Trim();
+        var key = ServerKey?.Trim();
         return string.IsNullOrEmpty(key)
             ? null
             : new Dictionary<string, string> { ["Authorization"] = $"Bearer {key}" };
@@ -1003,7 +1003,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
     {
         try
         {
-            var result = await GetModelsAsync(V1(url ?? _config.BaseUrl), ct);
+            var result = await GetModelsAsync(V1(url ?? ServerUrl), ct);
             return result?.Data?.Select(m => m.Id).ToList() ?? [];
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
@@ -1019,7 +1019,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         try
         {
             // OpenAI-compatible /v1/models exposes no on-disk size — report 0 (VRAM estimation degrades).
-            var result = await GetModelsAsync(V1(url ?? _config.BaseUrl), ct);
+            var result = await GetModelsAsync(V1(url ?? ServerUrl), ct);
             return result?.Data?.Select(m => new InstalledModelInfo(m.Id, 0)).ToList() ?? [];
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
@@ -1081,9 +1081,10 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         if (string.IsNullOrWhiteSpace(base_) || IsFimInCooldown()) return;
 
         // Yield the shared GPU to an in-flight chat/agent request, as the other clients do.
-        if (GpuScheduler.ShouldFimYield()) return;
+        if (FimYieldsToChat) return;
 
-        var m   = string.IsNullOrEmpty(model) ? _config.DefaultModel : model;
+        var m   = FimModelFor(model);
+        if (m is null) return;
         var key = base_ + "|" + m;
         if (InlineCompletionRefused(m)) return;
 

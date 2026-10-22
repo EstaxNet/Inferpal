@@ -67,7 +67,7 @@ internal partial class InferpalToolWindowData
         string userText, IReadOnlyList<AttachmentItem> attachments, CancellationToken ct)
     {
         if (!RagAutoContext.IsEnabled(_config))                               return string.Empty;
-        if (_indexService.ChunkCount == 0 || _client.IsEmbeddingCircuitOpen) return string.Empty;
+        if (_indexService.ChunkCount == 0 || _indexService.SearchClient.IsEmbeddingCircuitOpen) return string.Empty;
 
         var trimmed = userText.Trim();
         if (trimmed.Length < 12 || Services.SlashCommandRouter.LooksLikeCommand(trimmed)) return string.Empty;   // same gate as the shadow
@@ -80,7 +80,7 @@ internal partial class InferpalToolWindowData
             {
                 // The model the index's vectors came from; none (no embedding model) = no auto-context, as before.
                 if (_indexService.QueryEmbeddingModel is not { } model) return string.Empty;
-                var embedding = await Services.Inference.EmbeddingModels.EmbedCodeQueryAsync(_client, model, trimmed, ct);
+                var embedding = await Services.Inference.EmbeddingModels.EmbedCodeQueryAsync(_indexService.SearchClient, model, trimmed, ct);
                 if (embedding is null) return string.Empty;
                 results = await _indexService.SearchAsync(embedding, trimmed, RagAutoContext.DefaultMaxChunks, ct);
             }

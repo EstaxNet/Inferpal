@@ -125,7 +125,11 @@ public class InferpalExtension : Extension
         services.AddSingleton<VsContextHolder>();
         services.AddSingleton<Services.Editor.IEditorSurface, VsEditorSurface>();
         services.AddSingleton<IApprovalService, VsApprovalService>();
-        services.AddSingleton<ProjectIndexService>();
+        // Completions and code search may run on a server of their own (the settings' "runs on"); the chat's client otherwise.
+        services.AddSingleton(sp => new RoleClients(sp.GetRequiredService<IInferenceProvider>(), sp.GetRequiredService<InferpalConfig>()));
+        services.AddSingleton(sp => new ProjectIndexService(
+            sp.GetRequiredService<IInferenceProvider>(), sp.GetRequiredService<InferpalConfig>(), sp.GetRequiredService<LspSemanticProvider>(),
+            () => sp.GetRequiredService<RoleClients>().For(ServerRole.Search)));
         services.AddSingleton<ProjectMapService>();
         services.AddSingleton<LspSemanticProvider>();
         // The repository's MCP servers start in the workspace the index pins, once the user agrees; a value one asks
@@ -134,7 +138,9 @@ public class InferpalExtension : Extension
             sp.GetRequiredService<InferpalConfig>(), sp.GetRequiredService<IApprovalService>(), clientFactory: null,
             workspaceRoot: () => sp.GetRequiredService<ProjectIndexService>().RootDir,
             askInput: (server, input, ct) => VsMcpInput.AskAsync(sp.GetRequiredService<VisualStudioExtensibility>(), server, input, ct)));
-        services.AddSingleton<DocsIndexService>();
+        services.AddSingleton(sp => new DocsIndexService(
+            sp.GetRequiredService<IInferenceProvider>(), sp.GetRequiredService<InferpalConfig>(),
+            () => sp.GetRequiredService<RoleClients>().For(ServerRole.Search)));
         // Registering it makes the two debug tools appear in the registry; the session itself
         // answers "unavailable" until an in-process driver advertises itself, so a devenv whose
         // package failed to load degrades to no debugger rather than to a hang.

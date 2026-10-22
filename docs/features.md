@@ -207,6 +207,10 @@ exists.
   600 ms) · **Accurate** (512 / 0.1 / 1 000 ms).
 - Suppressed while IntelliSense triggers are active. Supported on Ollama, LM Studio, and OpenAI-compatible servers that
   complete around the cursor (llama-server, Ollama's `/v1`) — see [Providers](providers.md).
+- **On a server of their own** — the chat on a team server, ghost text on this machine: *Runs on › Another server* on
+  the *Server and models* page (VS Code), or `inlineCompletionRunsOn` in `config.json`. That server gets its own key,
+  never the chat's, and its own model — the chat's is not there to fall back on. Ghost text on another machine than
+  the chat's no longer waits for a chat answer to finish.
 
 ## Search & knowledge
 

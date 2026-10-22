@@ -57,7 +57,8 @@ const fieldsByKey = new Map<string, Field>();
 let statusEl: HTMLElement | null = null;
 let unsavedEl: HTMLElement | null = null;
 let saveBtn: HTMLButtonElement | null = null;
-let testStatusEl: HTMLElement | null = null;
+/** The status line of each Test button, by the role whose server it probes ('' = the chat's). */
+const testStatusEls = new Map<string, HTMLElement>();
 let currentPage = '';
 /** Per page: whether its "Show advanced settings" box is checked. */
 const foldOpen = new Map<string, boolean>();
@@ -76,6 +77,7 @@ const widgets: { page: string; widget: LiveWidget }[] = [];
 function render(): void {
   app.textContent = '';
   inputs.clear();
+  testStatusEls.clear();
   fieldsByKey.clear();
   navButtons.clear();
   pageEls.clear();
@@ -512,6 +514,44 @@ function closeModelPopup(): void {
   modelHighlight = -1;
 }
 
+/** The models of each role's own server, by role, once listed. */
+const roleModels = new Map<string, { chat: string[]; embedding: string[] }>();
+
+/** The role whose own server serves `server`'s field, as the FORM says now; null when it runs on the chat's server.
+ *  Code search on "the autocomplete server" is served by the completion's own server, if it has one. */
+function roleServerOf(server: string | undefined): string | null {
+  if (!server) {
+    return null;
+  }
+  const runsOn = (inputs.get(server + 'RunsOn') as HTMLSelectElement | undefined)?.value ?? 'chat';
+  if (runsOn === 'autocomplete') {
+    return roleServerOf('inlineCompletion');
+  }
+  // Without an address, "another server" is still the chat's (RoleServers.Of).
+  const address = (inputs.get(server + 'BaseUrl') as HTMLInputElement | undefined)?.value.trim() ?? '';
+  return runsOn === 'other' && address !== '' ? server : null;
+}
+
+/** The fields of a role's server as typed: its address, its kind and its key go together, never with the chat's. */
+function roleServerFields(role: string): { baseUrl?: string; provider?: string; apiKey?: string } {
+  return {
+    baseUrl:  (inputs.get(role + 'BaseUrl')  as HTMLInputElement | undefined)?.value,
+    provider: (inputs.get(role + 'Provider') as HTMLSelectElement | undefined)?.value || undefined,
+    apiKey:   (inputs.get(role + 'ApiKey')   as HTMLInputElement | undefined)?.value,
+  };
+}
+
+/** The roles whose list was asked for and has not come back: one request each, however often the popup redraws. */
+const roleModelsAsked = new Set<string>();
+
+function requestRoleModels(role: string): void {
+  if (roleModelsAsked.has(role)) {
+    return;
+  }
+  roleModelsAsked.add(role);
+  vscode.postMessage({ type: 'refreshModels', server: role, ...roleServerFields(role) });
+}
+
 function openModelPopup(box: HTMLInputElement): void {
   if (!modelPopup) {
     return;
@@ -533,8 +573,22 @@ function renderModelPopup(): void {
   modelPopup.textContent = '';
   // An optional model is cleared by picking the empty entry: on a read-only field, that is the only
   // gesture that can.
-  // ⚠ The list the box is for: an embedding model offered as the chat or agent model answers no question.
-  const listed = modelPopupTarget?.dataset.list === 'embedding' ? embeddingModels : models;
+  // ⚠ The list the box is for: an embedding model offered as the chat or agent model answers no question. And the
+  // server it is for: a role on a server of its own lists THAT server's models (asked for when first opened).
+  const role = roleServerOf(modelPopupTarget?.dataset.server);
+  const lists = role ? roleModels.get(role) : { chat: models, embedding: embeddingModels };
+  if (role && !lists) {
+    requestRoleModels(role);
+    // Asked, not yet answered: "no model listed" would blame a server that has not been heard from.
+    const pending = document.createElement('div');
+    pending.className = 'modelrow empty';
+    pending.textContent = '…';
+    modelPopup.appendChild(pending);
+    modelChoices = [];
+    return;
+  }
+  const embedding = lists?.embedding ?? [];
+  const listed = modelPopupTarget?.dataset.list === 'embedding' ? embedding : lists?.chat ?? [];
   modelChoices = modelPopupTarget?.dataset.optional === 'true' ? ['', ...listed] : listed;
   if (modelHighlight < 0 || modelHighlight >= modelChoices.length) {
     // The starting row is the current value: Enter without an arrow key keeps it.
@@ -543,7 +597,7 @@ function renderModelPopup(): void {
 
   // A code-search box on a server that lists chat models but no embedding model keeps its empty entry alone, as in the
   // Visual Studio window: the sentence below would blame a server that answered.
-  if (listed.length === 0 && (listed !== embeddingModels || models.length === 0)) {
+  if (listed.length === 0 && (listed !== embedding || (lists?.chat.length ?? 0) === 0)) {
     // No model at all (unreachable backend, or a refused token): an empty, silent popup would read
     // as a backend serving nothing. An optional model's empty entry is still offered.
     const empty = document.createElement('div');
@@ -700,6 +754,17 @@ function renderField(field: Field): HTMLElement {
         if (field.embeddingModels) {
           box.dataset.list = 'embedding';
         }
+        if (field.server) {
+          box.dataset.server = field.server;
+        }
+        if (field.server && field.emptyChoice === 'SettingsSameAsChat') {
+          // On a server of its own, the chat's model is not there to fall back on: empty is no model at all.
+          const sameAsChat = box.dataset.empty;
+          liveWidgets.push(() => {
+            box.dataset.empty = roleServerOf(field.server ?? '') ? res('SettingsNoModelChosen') : sameAsChat;
+            box.placeholder = box.dataset.empty ?? '';
+          });
+        }
         box.addEventListener('mousedown', (e) => {
           e.preventDefault();
           box.focus();
@@ -813,16 +878,24 @@ function renderField(field: Field): HTMLElement {
       const btn = document.createElement('button');
       btn.className = 'sidebtn';
       btn.textContent = res('BtnTest');
+      const server = field.server ?? '';
       btn.addEventListener('click', () => {
-        setTestStatus('…');
+        setTestStatus('…', undefined, server);
         // The key in the form travels with the URL: probing a new server with the SAVED key read
-        // "unreachable" on a server that only refused the old (or missing) key.
-        vscode.postMessage({
-          type: 'testConnection',
+        // "unreachable" on a server that only refused the old (or missing) key. A role's server is probed with ITS
+        // address and ITS key — the chat's key never goes to it.
+        const fields = server ? roleServerFields(server) : {
           baseUrl: (inputs.get('baseUrl') as HTMLInputElement).value,
           apiKey:  (inputs.get('apiKey')  as HTMLInputElement | undefined)?.value,
-        });
+        };
+        vscode.postMessage({ type: 'testConnection', baseUrl: fields.baseUrl, apiKey: fields.apiKey, server: server || undefined });
       });
+      if (server) {
+        // No address yet: the host would probe the chat's server and name it as this one.
+        liveWidgets.push(() => {
+          btn.disabled = (input as HTMLInputElement).value.trim() === '';
+        });
+      }
       line.append(btn);
     } else if (field.button === 'refreshModels') {
       const btn = document.createElement('button');
@@ -843,9 +916,10 @@ function renderField(field: Field): HTMLElement {
     }
     row.append(line);
     if (field.button === 'test') {
-      testStatusEl = document.createElement('span');
-      testStatusEl.className = 'teststatus';
-      row.append(testStatusEl);
+      const status = document.createElement('span');
+      status.className = 'teststatus';
+      testStatusEls.set(field.server ?? '', status);
+      row.append(status);
     }
   } else {
     row.append(input);
@@ -853,7 +927,24 @@ function renderField(field: Field): HTMLElement {
   if (hint) {
     row.append(hint);
   }
+  if (field.server && field.kind !== 'model') {
+    // A new address, kind or key is another server: its models are listed again when next asked for.
+    input.addEventListener('change', () => forgetRoleModels(field.server ?? ''));
+  }
+  if (field.showWhen) {
+    // Shown while the field it depends on has its value; hidden, it keeps its value and is saved as it is.
+    const [key, wanted] = field.showWhen.split('=');
+    const follow = (): void => {
+      row.hidden = (inputs.get(key) as HTMLSelectElement | undefined)?.value !== wanted;
+    };
+    liveWidgets.push(follow);
+  }
   return row;
+}
+
+function forgetRoleModels(role: string): void {
+  roleModels.delete(role);
+  roleModelsAsked.delete(role);
 }
 
 /** What the structured editors use of the panel: the strings, the host, and the text box they write. */
@@ -902,10 +993,12 @@ function withTextView(field: Field, editor: StructuredEditor, area: HTMLTextArea
   return wrap;
 }
 
-function setTestStatus(text: string, ok?: boolean): void {
-  if (testStatusEl) {
-    testStatusEl.textContent = text;
-    testStatusEl.className = 'teststatus' + (ok === undefined ? '' : ok ? ' ok' : ' ko');
+/** The status line under a Test button: the chat server's (''), or a role's own server's. */
+function setTestStatus(text: string, ok?: boolean, server = ''): void {
+  const status = testStatusEls.get(server);
+  if (status) {
+    status.textContent = text;
+    status.className = 'teststatus' + (ok === undefined ? '' : ok ? ' ok' : ' ko');
   }
 }
 
@@ -1076,7 +1169,7 @@ window.addEventListener('message', (event: MessageEvent) => {
   const msg = event.data as {
     type: string; configJson?: string; models?: string[]; embeddingModels?: string[]; strings?: Record<string, string>;
     schema?: Schema; message?: string; ok?: boolean; rulesIgnored?: number; provider?: string | null;
-    refused?: string | null; op?: string;
+    refused?: string | null; op?: string; server?: string;
   };
   // The live blocks and the structured editors take the answers to their own requests (cards, rules table, index…).
   // Every widget sees a message before an editor may consume it: the agent page's rules card counts the table the
@@ -1097,6 +1190,8 @@ window.addEventListener('message', (event: MessageEvent) => {
       }
       models = msg.models ?? [];
       embeddingModels = msg.embeddingModels ?? [];
+      roleModels.clear();
+      roleModelsAsked.clear();
       R = msg.strings ?? {};
       // The form comes from the host (Core schema). An empty one means the RPC failed: say so
       // rather than rendering a blank page that looks like a working, empty settings window.
@@ -1109,8 +1204,14 @@ window.addEventListener('message', (event: MessageEvent) => {
       render();
       break;
     case 'models': {
-      models = msg.models ?? [];
-      embeddingModels = msg.embeddingModels ?? [];
+      if (msg.server) {
+        // A role's own server: its list, never the chat's.
+        roleModels.set(msg.server, { chat: msg.models ?? [], embedding: msg.embeddingModels ?? [] });
+        roleModelsAsked.delete(msg.server);
+      } else {
+        models = msg.models ?? [];
+        embeddingModels = msg.embeddingModels ?? [];
+      }
       // An open popup must reflect the list just re-read: otherwise the refresh button would have
       // no visible effect until the next time it is opened.
       if (modelPopupTarget) {
@@ -1123,9 +1224,14 @@ window.addEventListener('message', (event: MessageEvent) => {
       // answering as another provider than the one in the dropdown leaves the user guessing which
       // to pick - and the probe has just named it.
       const detected = msg.provider ?? null;
+      const server = msg.server ?? '';
       let named: string | null = null;
+      if (server) {
+        // The server answering there is the one its model list comes from.
+        forgetRoleModels(server);
+      }
       if (detected) {
-        const select = inputs.get('provider') as HTMLSelectElement | undefined;
+        const select = inputs.get(server ? server + 'Provider' : 'provider') as HTMLSelectElement | undefined;
         if (select) {
           const option = [...select.options].find((o) => o.value === detected);
           if (option) {
@@ -1138,7 +1244,7 @@ window.addEventListener('message', (event: MessageEvent) => {
       // A server that refused the probe (a wrong API key) is up: the very thing this button checks.
       setTestStatus(
         msg.ok ? (named ? `${t('Connected')} — ${named}` : t('Connected')) : (msg.refused ?? t('Backend unreachable')),
-        msg.ok);
+        msg.ok, server);
       break;
     }
     case 'saveDone':
@@ -1157,6 +1263,8 @@ window.addEventListener('message', (event: MessageEvent) => {
       }
       break;
     case 'error':
+      // A role's listing that failed is asked again the next time its box opens.
+      roleModelsAsked.clear();
       // A refused Save leaves the saved state as it was: the edits are still unsaved, and say so.
       if (msg.op === 'save' && savedBeforeSave) {
         config = savedBeforeSave;

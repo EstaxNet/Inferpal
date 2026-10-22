@@ -153,6 +153,14 @@ internal static class DiagnosticsCommandHandler
         sb.Append("- **Provider**: ").Append(c.Provider)
           .Append(" — ").Append(RedactEndpoint(c.BaseUrl)).Append('\n');
         sb.Append("- **API key**: ").Append(string.IsNullOrEmpty(c.ApiKey) ? "not set" : "set (redacted)").Append('\n');
+        // A role on a server of its own: "ghost text does nothing" is unreadable without knowing it does not run above.
+        foreach (var (name, role) in new[] { ("Autocomplete", ServerRole.Completion), ("Code search", ServerRole.Search) })
+        {
+            if (RoleServers.OnChatServer(c, role)) continue;
+            var (provider, url, key) = RoleServers.Of(c, role);
+            sb.Append("- **").Append(name).Append(" server**: ").Append(provider).Append(" — ").Append(RedactEndpoint(url))
+              .Append(", API key ").Append(string.IsNullOrEmpty(key) ? "not set" : "set (redacted)").Append('\n');
+        }
         if (!string.IsNullOrEmpty(ctx.BackendStatus))
             sb.Append("- **Backend**: ").Append(SanitizePaths(ctx.BackendStatus, ctx.WorkspaceRoot)).Append('\n');
 

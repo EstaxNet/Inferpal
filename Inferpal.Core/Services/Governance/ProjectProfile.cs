@@ -100,6 +100,9 @@ internal sealed record ProjectProfile(
         "validators", "permissions", "permissionRules", "customTools", "mcpServers",
         "baseUrl", "apiKey", "provider", "securityAlertsDisabled", "smartFixEnabled", "packageCheckEnabled",
         "historyStorage",
+        // A role's own server redirects the code and the questions it sends there.
+        "inlineCompletionRunsOn", "inlineCompletionBaseUrl", "inlineCompletionProvider", "inlineCompletionApiKey",
+        "ragEmbeddingRunsOn", "ragEmbeddingBaseUrl", "ragEmbeddingProvider", "ragEmbeddingApiKey",
     ];
 
     /// <summary>Reads and parses <c>.inferpal/project.json</c>; never throws, never returns null.</summary>
