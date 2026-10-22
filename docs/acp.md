@@ -211,7 +211,8 @@ offers two buttons:
   server and its models, the agent and its approvals, context and memory, code search, MCP servers, language), with
   its **Test** button, the models loaded right now and the model suggestions. Save, close the page, and the session
   starts.
-- **Set up Inferpal** — the short version, in the terminal: the model server, its address and a model.
+- **Set up Inferpal** — the short version, in the terminal: it looks first where a model server usually listens on
+  that machine and says what each place answered, offers the one that answers, then asks for its address and a model.
 
 Both run in any terminal too, for the folder you name (the current one by default):
 
@@ -274,8 +275,8 @@ editor says so, once:
   message into a prompt that is still running, and a second prompt during a turn is refused. Zed queues a message typed
   during a turn and sends it when the turn ends; other clients may refuse it — stop the turn, then send the correction.
 
-`/fix-build` and `/setup` are Visual Studio's alone: they are in the command list, as in VS Code, and answer that they
-are not available here (the first setup of an ACP client is `Inferpal.Host --acp --setup`).
+`/fix-build` is Visual Studio's alone, and `/setup` draws a card in the editor's chat: both are in the command list and
+answer that they are not available here (the first setup of an ACP client is `Inferpal.Host --acp --setup`).
 
 ## On another machine
 

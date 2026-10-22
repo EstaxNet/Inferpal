@@ -35,13 +35,38 @@ internal static class ProviderProbe
     public static async Task<(string? Provider, string? Refusal)> DetectWithRefusalAsync(
         string? baseUrl, string? apiKey, CancellationToken ct)
     {
+        var answer = await ExamineAsync(baseUrl, apiKey, ct).ConfigureAwait(false);
+        return (answer.Provider, answer.Refusal);
+    }
+
+    /// <summary>What a base URL answered: the backend it signs, else whether anything answered at all, and why not.</summary>
+    /// <param name="Provider">The backend detected; <c>null</c> when none signs.</param>
+    /// <param name="Answered">An HTTP answer came back from any probe: something listens there, model server or not.</param>
+    /// <param name="Refusal">The refusal a server answered with, when nothing was detected (401/403 first).</param>
+    /// <param name="NeedsKey">That refusal is a 401 or a 403: a server that wants a key.</param>
+    internal sealed record ProbeAnswer(string? Provider, bool Answered, string? Refusal, bool NeedsKey);
+
+    /// <summary>
+    /// <see cref="DetectWithRefusalAsync"/>, keeping apart what it folds: ⚠ "nothing listens" and "something answers, but
+    /// not a model server" are both <c>(null, null)</c> there — folded, the first run sends people to start a server where
+    /// a web page already answers, or to fix a page where nothing runs.
+    /// </summary>
+    /// <param name="askOnce">Give up after the first path when it got no HTTP answer at all. For a port where a server
+    /// is only guessed: one that drops its packets (a firewall, WSL's mirrored network) costs one timeout instead of four.
+    /// ⚠ Never for an address the person gave: over a slow link the first request can time out where the next ones
+    /// answer.</param>
+    internal static async Task<ProbeAnswer> ExamineAsync(string? baseUrl, string? apiKey, CancellationToken ct,
+                                                         bool askOnce = false)
+    {
         var root = RootOf(baseUrl);
-        if (string.IsNullOrEmpty(root)) return (null, null);
+        if (string.IsNullOrEmpty(root)) return new(null, false, null, false);
 
         string? firstRefusal = null, authRefusal = null;
+        var answered = false;
         async Task<bool> Probe(string url, string property)
         {
             var (ok, status, reason) = await ProbeAsync(url, apiKey, property, ct).ConfigureAwait(false);
+            answered |= status is not null;
             if (status is { } s && (int)s is >= 400 and < 500)
             {
                 var line = $"HTTP {(int)s} ({reason})";
@@ -56,6 +81,7 @@ internal static class ProviderProbe
         // property so a reverse proxy that returns 200 (with an HTML index or a catch-all page) for
         // every path can't be mistaken for a backend — a bare status code is not enough.
         var ollamaOk = await Probe($"{root}/api/tags", "models").ConfigureAwait(false);
+        if (askOnce && !answered) return new(null, false, null, false);
         // v1 (0.4.0+) wraps the list in "models"; the legacy v0 endpoint uses "data".
         var lmStudioOk = !ollamaOk &&
             (await Probe($"{root}/api/v1/models", "models").ConfigureAwait(false)
@@ -64,7 +90,9 @@ internal static class ProviderProbe
             await Probe($"{root}/v1/models", "data").ConfigureAwait(false);
 
         var provider = Classify(ollamaOk, lmStudioOk, openAiOk);
-        return (provider, provider is not null ? null : authRefusal ?? firstRefusal);
+        return provider is not null
+            ? new(provider, true, null, false)
+            : new(null, answered, authRefusal ?? firstRefusal, authRefusal is not null);
     }
 
     /// <summary>Pure decision from which signature endpoints responded (testable, no network).</summary>

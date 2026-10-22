@@ -84,6 +84,12 @@ public partial class HostServerTests
         [JsonRpcMethod("chat/noteApplied")]
         public void ChatNoteApplied(string id, int afterCalls) => NotesApplied.Enqueue((id, afterCalls));
 
+        /// <summary>Every <c>setup/pullProgress</c> received: the status line and its percentage.</summary>
+        public readonly System.Collections.Concurrent.ConcurrentQueue<(string Status, int? Percent)> PullProgress = new();
+
+        [JsonRpcMethod("setup/pullProgress")]
+        public void SetupPullProgress(string tag, string status, int? percent) => PullProgress.Enqueue((status, percent));
+
         // Opt-in: stand in for an approval card the user never answers, so only the host's
         // $/cancelRequest can end the wait. Off by default; the other approval tests answer
         // immediately as before.
@@ -2997,6 +3003,61 @@ public partial class HostServerTests
     }
 
     [Fact]
+    public async Task SetupApply_SavesTheServerAndTheModels_AndEndsTheFirstRun()
+    {
+        var file = Path.Combine(Path.GetTempPath(), $"inferpal-setup-{Guid.NewGuid():N}.json");
+        try
+        {
+            using var h = CreateHarness(cfg => cfg.ApiKey = "k-0", settingsFile: file);
+            await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            Assert.True(h.Server.CurrentSession!.Config.IsFirstRun);                                    // witness
+
+            await h.Client.InvokeWithParameterObjectAsync<Host.SetupApplyResult>("setup/apply", new
+            {
+                url = "http://192.168.1.2:11434/v1", provider = "ollama", chatModel = "qwen3.8:27b",
+                searchModel = "nomic-embed-text:latest",
+            });
+
+            var c = h.Server.CurrentSession!.Config;
+            Assert.Equal(("ollama", "http://192.168.1.2:11434", "qwen3.8:27b", "", "nomic-embed-text:latest"),
+                         (c.Provider, c.BaseUrl, c.DefaultModel, c.InlineCompletionModel, c.RagEmbeddingModel));
+            Assert.False(c.IsFirstRun);
+            Assert.Equal("", c.ApiKey);                        // the old key belongs to the old server
+            Assert.Contains("qwen3.8:27b", File.ReadAllText(file));
+        }
+        finally { try { File.Delete(file); } catch { } }
+    }
+
+    /// <summary>⚠ The saved key goes to the saved address only: a server the card names elsewhere gets none.</summary>
+    [Fact]
+    public async Task SetupPlan_SendsTheSavedKey_OnlyToTheSavedAddress()
+    {
+        using var h = CreateHarness(cfg => { cfg.BaseUrl = "http://localhost:8000"; cfg.ApiKey = "k-1"; });
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        await h.Client.InvokeWithParameterObjectAsync<Host.SetupPlanDto>("setup/plan", new { url = "http://localhost:8000/v1", provider = "openai-compatible" });
+        Assert.Equal("k-1", h.ProviderConfigs[^1].ApiKey);
+        await h.Client.InvokeWithParameterObjectAsync<Host.SetupPlanDto>("setup/plan", new { url = "http://192.168.1.2:11434", provider = "ollama" });
+        Assert.Equal("", h.ProviderConfigs[^1].ApiKey);
+    }
+
+    [Fact]
+    public async Task SetupPull_ReportsItsProgress_ThenItsOutcome()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.PullStatuses = ["pulling manifest", "pulling 2b5d1e (37%)"];
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<Host.SetupPullResult>(
+            "setup/pull", new { tag = "qwen3.8:27b", url = "http://localhost:11434", provider = "ollama" });
+
+        Assert.True(result.Ok);
+        Assert.Equal(["qwen3.8:27b"], h.Fake.Pulled);
+        for (var i = 0; i < 100 && h.Target.PullProgress.Count < 2; i++) await Task.Delay(20);
+        Assert.Equal([("pulling manifest", (int?)null), ("pulling 2b5d1e (37%)", 37)], h.Target.PullProgress.ToArray());
+    }
+
+    [Fact]
     public async Task AdoptDefault_LeavesAChosenModelAlone()
     {
         using var h = CreateHarness(cfg => cfg.DefaultModel = "my-finetune");
@@ -3287,18 +3348,56 @@ public partial class HostServerTests
         Assert.Equal("exportRequest", Assert.Single(result.Effects!).Kind);
     }
 
+    /// <summary>`/setup` in an editor opens the first-run card; without one (an ACP client), a deterministic message —
+    /// never sent to the model as a raw "/setup".</summary>
     [Fact]
-    public async Task Slash_Setup_ReturnsHeadlessUnavailableNotFallthrough()
+    public async Task Slash_Setup_OpensTheFirstRunCard_InAnEditor_AndSaysWhyWithoutOne()
     {
         using var h = CreateHarness();
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
-
-        var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+        var inEditor = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
             "command/slash", new { text = "/setup" });
 
-        // Handled with a deterministic message — never sent to the model as a raw "/setup".
-        Assert.True(result.Handled);
-        Assert.False(string.IsNullOrWhiteSpace(result.Markdown));
+        using var headless = CreateHarness();
+        await headless.Client.InvokeWithParameterObjectAsync<InitializeResult>(
+            "initialize", new { rootDir = headless.RootDir, editorSurface = false }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var withoutEditor = await headless.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/setup" });
+
+        Assert.True(inEditor.Handled);
+        Assert.Equal("openSetup", Assert.Single(inEditor.Effects!).Kind);
+        Assert.True(withoutEditor.Handled);
+        Assert.Equal(Strings.SlashHeadlessUnavailable, withoutEditor.Markdown);
+    }
+
+    /// <summary>The first-run card shows for a server without a chat model, or a server that does not answer before
+    /// anything was chosen — never for a set-up person whose server is down: the first-run flag stays set for anyone set
+    /// up outside Visual Studio's first run, and the card would take their chat over at every start.</summary>
+    [Fact]
+    public async Task SetupNeeded_NamesWhyTheCardShows_AndNeverForAPersonAlreadySetUp()
+    {
+        static void Blank(InferpalConfig cfg)
+        {
+            var factory = new InferpalConfig();
+            (cfg.IsFirstRun, cfg.BaseUrl, cfg.ApiKey, cfg.DefaultModel) = (true, factory.BaseUrl, "", factory.DefaultModel);
+        }
+        using var blank = CreateHarness(Blank);
+        await blank.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        blank.Fake.ModelNames = ["nomic-embed-text"];
+        var noChat = await blank.Client.InvokeAsync<string?>("setup/needed");
+        blank.Fake.ModelNames = ["devstral"];
+        var ready = await blank.Client.InvokeAsync<string?>("setup/needed");
+        blank.Fake.ConnectionOk = false;
+        var unreachable = await blank.Client.InvokeAsync<string?>("setup/needed");
+
+        using var setUp = CreateHarness(cfg => { Blank(cfg); cfg.DefaultModel = "devstral"; });
+        await setUp.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        setUp.Fake.ConnectionOk = false;
+
+        Assert.Equal("noChatModel", noChat);
+        Assert.Null(ready);
+        Assert.Equal("unreachable", unreachable);
+        Assert.Null(await setUp.Client.InvokeAsync<string?>("setup/needed"));
     }
 
     [Fact]

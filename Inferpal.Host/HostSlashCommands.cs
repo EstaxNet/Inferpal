@@ -592,6 +592,10 @@ internal sealed partial class HostServer
                 case SlashCommandId.Settings:
                     return new SlashCommandResult(true, null, [new SlashEffectDto("openSettings")]);
 
+                // The first-run card is the editor's to draw (VS Code); a client without one (ACP) has its own setup.
+                case SlashCommandId.Setup when s.Editor.HasEditor:
+                    return new SlashCommandResult(true, null, [new SlashEffectDto("openSetup")]);
+
                 // Not portable yet (VS-only UX or planned for a later phase): a deterministic
                 // localized answer beats falling through to the model with a raw "/command".
                 case SlashCommandId.FixBuild:

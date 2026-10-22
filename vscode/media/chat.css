@@ -1658,3 +1658,221 @@ kbd {
 .welcome-hints kbd + kbd {
   margin-left: 3px;
 }
+
+/* ── First run: the card that finds a server and proposes models ───────────── */
+#setup {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 4px;
+}
+
+#setup[hidden] {
+  display: none;
+}
+
+.setup-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.setup-lead {
+  margin: -8px 0 0;
+  color: var(--ip-muted);
+}
+
+.setup-hint {
+  margin: 0;
+  color: var(--ip-muted);
+  font-size: 12px;
+}
+
+.setup-label {
+  color: var(--ip-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.setup-url {
+  font-family: var(--vscode-editor-font-family);
+  font-size: 12px;
+  color: var(--ip-muted);
+}
+
+.setup-places {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.setup-place {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--ip-line);
+}
+
+.setup-place.answers .icon {
+  color: var(--vscode-testing-iconPassed, #4cc27a);
+}
+
+.setup-place.checking .icon {
+  color: var(--vscode-textLink-foreground);
+}
+
+.setup-place:not(.answers):not(.checking) .icon {
+  color: var(--ip-muted);
+}
+
+.setup-place-name {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.setup-place-status {
+  color: var(--ip-muted);
+  font-size: 12px;
+  text-align: right;
+}
+
+.setup-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--ip-line);
+  background: var(--ip-surface);
+}
+
+.setup-roles {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  margin: 0;
+}
+
+.setup-role {
+  color: var(--ip-muted);
+}
+
+.setup-model {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.setup-fit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ip-muted);
+  font-size: 12px;
+}
+
+.setup-fit .icon {
+  color: var(--vscode-testing-iconPassed, #4cc27a);
+}
+
+.setup-fit.tight .icon {
+  color: var(--vscode-editorWarning-foreground);
+}
+
+.setup-row,
+.setup-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.setup-address {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.setup-address input,
+.setup-key input {
+  flex: 1 1 160px;
+  min-width: 0;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid var(--vscode-input-border, var(--ip-line));
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+}
+
+.setup-key {
+  flex-basis: 100%;
+}
+
+.setup-button {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid var(--ip-line);
+  background: transparent;
+  color: var(--vscode-foreground);
+  align-self: flex-start;
+}
+
+.setup-button.primary {
+  border-color: transparent;
+  background: var(--ip-accent);
+  color: var(--ip-accent-fg);
+  font-weight: 600;
+}
+
+.setup-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.setup-other,
+.setup-download {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.setup-other {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--ip-line);
+}
+
+.setup-other > span {
+  flex: 1 1 auto;
+}
+
+.setup-other .icon {
+  color: var(--vscode-testing-iconPassed, #4cc27a);
+}
+
+.setup-size {
+  color: var(--ip-muted);
+  font-size: 12px;
+}
+
+.setup-bar {
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--vscode-editorWidget-border, rgba(128, 128, 128, 0.2));
+}
+
+.setup-bar > div {
+  height: 100%;
+  width: 0;
+  background: var(--vscode-progressBar-background, #7c4dff);
+}

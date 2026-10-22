@@ -1689,4 +1689,47 @@
   <data name="HintHistoryStorage" xml:space="preserve"><value>在代理更改文件之前，Inferpal 会保留一份副本，供 /undo-run 和 /restore 使用。在项目中：仓库根目录下的 .inferpal/history/，由文件夹自身的设置让 git 忽略。在我的用户文件夹中：Inferpal 的本地应用数据，每个仓库一个文件夹，不会再向项目写入任何新内容。切换选项后，已有的副本仍可恢复。</value></data>
   <data name="HistoryStorageProject" xml:space="preserve"><value>在项目中</value></data>
   <data name="HistoryStorageUser" xml:space="preserve"><value>在我的用户文件夹中</value></data>
+  <data name="SetupPlaceAnswers" xml:space="preserve"><value>{0:N0} 个聊天模型</value></data>
+  <data name="SetupPlaceNothingListening" xml:space="preserve"><value>无服务监听</value></data>
+  <data name="SetupPlaceNotAModelServer" xml:space="preserve"><value>有响应，但不是模型服务器</value></data>
+  <data name="SetupPlaceNeedsKey" xml:space="preserve"><value>已拒绝：需要密钥</value></data>
+  <data name="SetupLookingTitle" xml:space="preserve"><value>正在查找您的模型服务器</value></data>
+  <data name="SetupLookingLead" xml:space="preserve"><value>Inferpal 使用在本机或您网络中运行的模型来回答。正在查找服务器——不会向其他任何地方发送数据。</value></data>
+  <data name="SetupChecking" xml:space="preserve"><value>正在检查…</value></data>
+  <data name="SetupTypeAddress" xml:space="preserve"><value>服务器在另一台机器上？输入其地址</value></data>
+  <data name="SetupFoundTitle" xml:space="preserve"><value>已找到服务器</value></data>
+  <data name="SetupFoundLead" xml:space="preserve"><value>{0} 在 {1} 上响应，共 {2:N0} 个模型。</value></data>
+  <data name="SetupForThisCard" xml:space="preserve"><value>适合 {0} GB 显存</value></data>
+  <data name="SetupProposed" xml:space="preserve"><value>为此服务器推荐</value></data>
+  <data name="SetupSameModel" xml:space="preserve"><value>同一模型</value></data>
+  <data name="SetupNoSearchModel" xml:space="preserve"><value>无 — 搜索使用关键词</value></data>
+  <data name="SetupFits" xml:space="preserve"><value>可以同时容纳，剩余 {0} GB。</value></data>
+  <data name="SetupDoesNotFit" xml:space="preserve"><value>大约需要 {0} GB；此显卡有 {1} GB。</value></data>
+  <data name="SetupStart" xml:space="preserve"><value>使用这些开始</value></data>
+  <data name="SetupChooseOther" xml:space="preserve"><value>选择其他模型</value></data>
+  <data name="SetupAlsoAnswering" xml:space="preserve"><value>同样在响应：{1} 上的 {0}，共 {2:N0} 个模型</value></data>
+  <data name="SetupUseInstead" xml:space="preserve"><value>改用此服务器</value></data>
+  <data name="SetupNothingTitle" xml:space="preserve"><value>此处未找到模型服务器</value></data>
+  <data name="SetupNothingLead" xml:space="preserve"><value>各地址的响应：</value></data>
+  <data name="SetupOtherMachine" xml:space="preserve"><value>另一台机器上的服务器</value></data>
+  <data name="SetupConnect" xml:space="preserve"><value>连接</value></data>
+  <data name="SetupServerKinds" xml:space="preserve"><value>Ollama、LM Studio、llama-server、vLLM 或任何 OpenAI 兼容服务器。</value></data>
+  <data name="SetupNoServerYet" xml:space="preserve"><value>还没有服务器？</value></data>
+  <data name="SetupInstallHint" xml:space="preserve"><value>安装其中之一，然后重新查找——Inferpal 每次启动时也会查找：</value></data>
+  <data name="SetupLookAgain" xml:space="preserve"><value>重新查找</value></data>
+  <data name="SetupEnterKey" xml:space="preserve"><value>输入密钥</value></data>
+  <data name="SetupNoModelTitle" xml:space="preserve"><value>您的服务器还没有聊天模型</value></data>
+  <data name="SetupNoModelLead" xml:space="preserve"><value>{0} 在 {1} 上响应，但没有能回答问题的模型。</value></data>
+  <data name="SetupItsModels" xml:space="preserve"><value>其模型：{0}</value></data>
+  <data name="SetupDownloadLegend" xml:space="preserve"><value>下载一个 — 适合 {0} GB 显存</value></data>
+  <data name="SetupDownloadLegendUnknown" xml:space="preserve"><value>下载一个</value></data>
+  <data name="SetupMeasuredCard" xml:space="preserve"><value>在 {0} GB 显卡上测得</value></data>
+  <data name="SetupDownload" xml:space="preserve"><value>下载 {0}</value></data>
+  <data name="SetupDownloading" xml:space="preserve"><value>正在下载 {0}</value></data>
+  <data name="SetupDownloadGoesOn" xml:space="preserve"><value>可以关闭此面板；下载会继续，完成后 Inferpal 将使用此模型开始。</value></data>
+  <data name="SetupNoDownloadHere" xml:space="preserve"><value>请在 {0} 中下载一个聊天模型，然后重新查找。</value></data>
+  <data name="SetupPlaceAnswersUnlisted" xml:space="preserve"><value>有响应，但无法列出其模型：{0}</value></data>
+  <data name="SetupDownloadSize" xml:space="preserve"><value>{0} GB</value></data>
+  <data name="SetupNoneFits" xml:space="preserve"><value>Inferpal 推荐的模型都无法放入 {0} GB 的显卡：请在 {1} 中下载一个更小的聊天模型，然后重新查找。</value></data>
+  <data name="AcpSetupScanning" xml:space="preserve"><value>正在查找模型服务器…</value></data>
 </root>

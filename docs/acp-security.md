@@ -62,8 +62,8 @@ encryption. Give your client `ssh` as the agent's command, and the agent's own c
   it as **its own** machine does. Both must name the folder the same way: the agent refuses a folder it does not have,
   and a path written the other system's way — a Windows client's `C:\…` when it runs on Linux or macOS, a Linux or
   macOS client's `/home/…` when it runs on Windows — and says which.
-- Set Inferpal up **on that machine**, in a terminal there: `Inferpal.Host --acp --setup` asks for the model server,
-  its address and a model. The settings window (`Inferpal.Host --settings`, your client's settings button, `/settings`
+- Set Inferpal up **on that machine**, in a terminal there: `Inferpal.Host --acp --setup` looks for a model server
+  there, then asks for its address and a model. The settings window (`Inferpal.Host --settings`, your client's settings button, `/settings`
   in a thread) and the sign-in page of an MCP server open in **that machine's** browser, not yours.
 
 Measured with a script driving the agent through the official ACP client library, on Windows, and the agent on Linux

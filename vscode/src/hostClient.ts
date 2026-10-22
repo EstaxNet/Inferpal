@@ -67,6 +67,11 @@ import {
   InputFormAnswer,
   InputReceiptNote,
   ModelsByKind,
+  SetupApplyParams,
+  SetupPlace,
+  SetupPlan,
+  SetupPullProgress,
+  SetupReason,
 } from './protocol';
 
 /** Reverse-RPC surface the editor side must provide before `start()`. */
@@ -118,6 +123,8 @@ export interface ChatEvents {
   onNotice?(text: string): void;
   /** An input card was answered (or its turn stopped): the line it leaves where it was. */
   onInputReceipt?(receipt: InputReceiptNote): void;
+  /** A model the first-run card downloads made progress (`setup/pullProgress`). */
+  onSetupPullProgress?(progress: SetupPullProgress): void;
 }
 
 export interface HostClientOptions {
@@ -355,6 +362,7 @@ export class HostClient {
     conn.onNotification('task/finished', (n: TextNote) => this.events.onTaskFinished?.(n.text));
     conn.onNotification('host/notice', (n: TextNote) => this.events.onNotice?.(n.text));
     conn.onNotification('chat/inputReceipt', (n: InputReceiptNote) => this.events.onInputReceipt?.(n));
+    conn.onNotification('setup/pullProgress', (n: SetupPullProgress) => this.events.onSetupPullProgress?.(n));
 
     conn.onError((err) => this.options.log?.(`[rpc] error: ${String(err)}`));
     conn.listen();
@@ -518,6 +526,44 @@ export class HostClient {
 
   modelsAdoptDefault(): Promise<ModelsAdoptResult> {
     return this.connection().sendRequest<ModelsAdoptResult>('models/adoptDefault');
+  }
+
+  // ── First run: the same search and proposal as the ACP setup and Visual Studio (`setup/*`) ──
+
+  setupNeeded(): Promise<SetupReason | null> {
+    return this.connection().sendRequest<SetupReason | null>('setup/needed');
+  }
+
+  setupStrings(): Promise<Record<string, string>> {
+    return this.connection().sendRequest<Record<string, string>>('setup/strings');
+  }
+
+  /** Where the scan will look, each place "checking" — drawn while `setupScan` runs. */
+  setupPlaces(): Promise<SetupPlace[]> {
+    return this.connection().sendRequest<SetupPlace[]>('setup/places');
+  }
+
+  /** `offered`: the address of the server to offer — the configured one when it answers (the host decides). */
+  setupScan(): Promise<{ places: SetupPlace[]; offered?: string | null }> {
+    return this.connection().sendRequest<{ places: SetupPlace[]; offered?: string | null }>('setup/scan');
+  }
+
+  /** The address the person typed, with the key they gave for it (none: no key is sent). */
+  setupExamine(url: string, apiKey?: string): Promise<SetupPlace> {
+    return this.connection().sendRequest<SetupPlace>('setup/examine', { url, apiKey });
+  }
+
+  setupPlan(url: string, provider: string, apiKey?: string): Promise<SetupPlan> {
+    return this.connection().sendRequest<SetupPlan>('setup/plan', { url, provider, apiKey });
+  }
+
+  setupApply(params: SetupApplyParams): Promise<{ restartNeeded: boolean }> {
+    return this.connection().sendRequest<{ restartNeeded: boolean }>('setup/apply', params);
+  }
+
+  /** Downloads a model to the server the card shows; progress arrives through `onSetupPullProgress`. */
+  setupPull(tag: string, url: string, provider: string, apiKey?: string): Promise<{ ok: boolean; error?: string | null }> {
+    return this.connection().sendRequest<{ ok: boolean; error?: string | null }>('setup/pull', { tag, url, provider, apiKey });
   }
 
   /** Renders the export document - the same one the Visual Studio window produces, because it is

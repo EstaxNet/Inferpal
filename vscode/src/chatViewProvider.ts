@@ -9,6 +9,7 @@ import { hostErrorText, hostUnavailableMessage, isConnectionLost, promptOpenFold
 import { mentionTokens, resolveMention } from './mentionPaths';
 import { followModelRouterSettings } from './modelRouterSettings';
 import { SettingsPanel } from './settingsPanel';
+import { SetupFlow } from './setupFlow';
 import { openTabPaths, panelDiagnostics } from './editorBridge';
 import { capAttachment, CappedText } from './attachmentCap';
 import { renderChatHtml } from './webview/chatWebviewHtml';
@@ -138,13 +139,47 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private pins: string[] = [];
   private mentionCats: WvMentionCategory[] = [];
 
+  /** The first-run card: looking for a server, proposing models, downloading one. */
+  private readonly setupFlow: SetupFlow;
+
   constructor(
     private readonly context: vscode.ExtensionContext,
     private readonly getHost: () => HostClient | undefined,
     private readonly getActiveEditor: () => vscode.TextEditor | undefined,
     private readonly getDiagnostics: () => Promise<string | null>,
     private readonly log: (line: string) => void,
-  ) {}
+  ) {
+    this.setupFlow = new SetupFlow({
+      host: () => this.getHost(),
+      show: (view) => this.post({ type: 'setup', view }),
+      log: (line) => this.log(line),
+      applied: (model, restartNeeded) => this.setupApplied(model, restartNeeded),
+      openSettings: async () => {
+        await vscode.commands.executeCommand('inferpal.openSettings');
+      },
+    });
+  }
+
+  /** The first-run card saved its choice: the chat takes the model, or the host restarts for a server of another type. */
+  private async setupApplied(model: string, restartNeeded: boolean): Promise<void> {
+    // ⚠ This window's model setting wins over the shared one at the next activation (and at a restart): left as it was,
+    // it brought the old model back over the one just chosen. configSaved writes it for the same reason.
+    try {
+      await vscode.workspace.getConfiguration('inferpal').update('model', model, vscode.ConfigurationTarget.Workspace);
+    } catch (err) {
+      this.gestureFailed('model setting', err);
+    }
+    if (restartNeeded) {
+      await vscode.commands.executeCommand('inferpal.restartHost');
+      return;
+    }
+    this.model = model;
+    this.sharedEcho.defaultModel = model;
+    // A model just downloaded joins the picker.
+    await this.refreshModelList();
+    this.hydrate();
+    await this.pollBackendStatus();
+  }
 
   dispose(): void {
     if (this.statusTimer) {
@@ -483,6 +518,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         this.append({ role: 'input', text: receipt.saved, timestamp: ChatViewProvider.now() });
         this.post({ type: 'inputReceipt', id: receipt.id, saved: receipt.saved });
       },
+      onSetupPullProgress: (progress) => this.setupFlow.onPullProgress(progress),
       onTool: (tool) => {
         const item: WvTranscriptItem = {
           role: 'tool',
@@ -543,7 +579,16 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       this.log(`[chat] models/list failed: ${String(err)}`);
       this.models = this.model ? [this.model] : [];
     }
+    // The code's default model, absent from the server, is replaced first and said: the chat answers without a click.
     await this.adoptDefaultModel(host);
+    // Then the first-run card, when nothing was chosen yet and the server does not answer, or it has no chat model.
+    const setupReason = await host.setupNeeded().catch((err: unknown) => {
+      this.log(`[chat] setup/needed failed: ${String(err)}`);
+      return null;
+    });
+    if (setupReason) {
+      void this.setupFlow.start(setupReason);
+    }
 
     // Slash autocomplete data + UI-relevant config bits (best-effort, defaults on failure).
     try {
@@ -1286,6 +1331,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         // The webview is fresh, so the notice above is worth saying again if it breaks anew.
         this.saidOnce.delete('webviewError');
         this.hydrate();
+        // A reloaded webview draws the first-run card again where it was.
+        if (this.setupFlow.current) {
+          this.post({ type: 'setup', view: this.setupFlow.current });
+        }
+        return;
+      case 'setupAction':
+        await this.setupFlow.onAction(msg);
         return;
       case 'send':
         await this.send(msg.text, msg.typed === true);
@@ -2455,6 +2507,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
               notes.push(t('Inferpal could not save this setting: {0}', ChatViewProvider.errorText(err)));
             }
           }
+          break;
+        case 'openSetup':
+          // `/setup`: the first-run card, looking again.
+          void this.setupFlow.start('command');
           break;
         case 'openSettings':
           // `/settings`: the settings panel, as the command palette opens it.

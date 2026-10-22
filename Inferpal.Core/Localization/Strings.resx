@@ -1693,4 +1693,47 @@ What you save there applies from your next question, in this thread and the othe
   <data name="HintHistoryStorage" xml:space="preserve"><value>Before the agent changes a file, Inferpal keeps a copy of it, for /undo-run and /restore. In the project: .inferpal/history/ at the repository root, ignored by git from inside the folder. In my user folder: Inferpal's local application data, one folder per repository, and nothing new is written into the project. Switching keeps the copies already made restorable.</value></data>
   <data name="HistoryStorageProject" xml:space="preserve"><value>In the project</value></data>
   <data name="HistoryStorageUser" xml:space="preserve"><value>In my user folder</value></data>
+  <data name="SetupPlaceAnswers" xml:space="preserve"><value>{0:N0} {0:chat model|chat models}</value></data>
+  <data name="SetupPlaceNothingListening" xml:space="preserve"><value>Nothing is listening</value></data>
+  <data name="SetupPlaceNotAModelServer" xml:space="preserve"><value>Answers, but it is not a model server</value></data>
+  <data name="SetupPlaceNeedsKey" xml:space="preserve"><value>Refused: it needs a key</value></data>
+  <data name="SetupLookingTitle" xml:space="preserve"><value>Let's find your model server</value></data>
+  <data name="SetupLookingLead" xml:space="preserve"><value>Inferpal answers with models that run on this machine or on your network. Looking for a server now — nothing is sent anywhere else.</value></data>
+  <data name="SetupChecking" xml:space="preserve"><value>Checking…</value></data>
+  <data name="SetupTypeAddress" xml:space="preserve"><value>Is your server on another machine? Type its address</value></data>
+  <data name="SetupFoundTitle" xml:space="preserve"><value>Found your server</value></data>
+  <data name="SetupFoundLead" xml:space="preserve"><value>{0} answers at {1} with {2:N0} {2:model|models}.</value></data>
+  <data name="SetupForThisCard" xml:space="preserve"><value>For {0} GB of graphics memory</value></data>
+  <data name="SetupProposed" xml:space="preserve"><value>Proposed for this server</value></data>
+  <data name="SetupSameModel" xml:space="preserve"><value>Same model</value></data>
+  <data name="SetupNoSearchModel" xml:space="preserve"><value>None — search uses keywords</value></data>
+  <data name="SetupFits" xml:space="preserve"><value>Fits together, with {0} GB to spare.</value></data>
+  <data name="SetupDoesNotFit" xml:space="preserve"><value>Needs about {0} GB; this card has {1} GB.</value></data>
+  <data name="SetupStart" xml:space="preserve"><value>Start with these</value></data>
+  <data name="SetupChooseOther" xml:space="preserve"><value>Choose other models</value></data>
+  <data name="SetupAlsoAnswering" xml:space="preserve"><value>Also answering: {0} at {1}, {2:N0} {2:model|models}</value></data>
+  <data name="SetupUseInstead" xml:space="preserve"><value>Use it instead</value></data>
+  <data name="SetupNothingTitle" xml:space="preserve"><value>No model server found here</value></data>
+  <data name="SetupNothingLead" xml:space="preserve"><value>What each place answered:</value></data>
+  <data name="SetupOtherMachine" xml:space="preserve"><value>Server on another machine</value></data>
+  <data name="SetupConnect" xml:space="preserve"><value>Connect</value></data>
+  <data name="SetupServerKinds" xml:space="preserve"><value>Ollama, LM Studio, llama-server, vLLM or any OpenAI-compatible server.</value></data>
+  <data name="SetupNoServerYet" xml:space="preserve"><value>No server yet?</value></data>
+  <data name="SetupInstallHint" xml:space="preserve"><value>Install one of these, then look again — Inferpal also looks each time it starts:</value></data>
+  <data name="SetupLookAgain" xml:space="preserve"><value>Look again</value></data>
+  <data name="SetupEnterKey" xml:space="preserve"><value>Enter key</value></data>
+  <data name="SetupNoModelTitle" xml:space="preserve"><value>Your server has no chat model yet</value></data>
+  <data name="SetupNoModelLead" xml:space="preserve"><value>{0} answers at {1}, but none of its models answers questions.</value></data>
+  <data name="SetupItsModels" xml:space="preserve"><value>Its models: {0}</value></data>
+  <data name="SetupDownloadLegend" xml:space="preserve"><value>Download one — for {0} GB of graphics memory</value></data>
+  <data name="SetupDownloadLegendUnknown" xml:space="preserve"><value>Download one</value></data>
+  <data name="SetupMeasuredCard" xml:space="preserve"><value>Measured on a {0} GB card</value></data>
+  <data name="SetupDownload" xml:space="preserve"><value>Download {0}</value></data>
+  <data name="SetupDownloading" xml:space="preserve"><value>Downloading {0}</value></data>
+  <data name="SetupDownloadGoesOn" xml:space="preserve"><value>You can close this panel; the download goes on, and Inferpal starts with this model when it ends.</value></data>
+  <data name="SetupNoDownloadHere" xml:space="preserve"><value>Download a chat model in {0}, then look again.</value></data>
+  <data name="SetupPlaceAnswersUnlisted" xml:space="preserve"><value>Answers, but its models could not be listed: {0}</value></data>
+  <data name="SetupDownloadSize" xml:space="preserve"><value>{0} GB</value></data>
+  <data name="SetupNoneFits" xml:space="preserve"><value>None of the models Inferpal recommends fits a {0} GB card: download a smaller chat model in {1}, then look again.</value></data>
+  <data name="AcpSetupScanning" xml:space="preserve"><value>Looking for a model server…</value></data>
 </root>

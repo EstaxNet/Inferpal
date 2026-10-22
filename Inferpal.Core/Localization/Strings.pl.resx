@@ -1689,4 +1689,47 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="HintHistoryStorage" xml:space="preserve"><value>Zanim agent zmieni plik, Inferpal zachowuje jego kopię — dla /undo-run i /restore. W projekcie: .inferpal/history/ w katalogu głównym repozytorium, ignorowany przez git dzięki plikowi w samym folderze. W moim folderze użytkownika: lokalne dane aplikacji Inferpal, jeden folder na repozytorium, a w projekcie nie jest zapisywane nic nowego. Po zmianie wyboru już zrobione kopie nadal można przywrócić.</value></data>
   <data name="HistoryStorageProject" xml:space="preserve"><value>W projekcie</value></data>
   <data name="HistoryStorageUser" xml:space="preserve"><value>W moim folderze użytkownika</value></data>
+  <data name="SetupPlaceAnswers" xml:space="preserve"><value>{0:N0} {0:model czatu|modele czatu|modeli czatu}</value></data>
+  <data name="SetupPlaceNothingListening" xml:space="preserve"><value>Nic nie nasłuchuje</value></data>
+  <data name="SetupPlaceNotAModelServer" xml:space="preserve"><value>Odpowiada, ale to nie jest serwer modeli</value></data>
+  <data name="SetupPlaceNeedsKey" xml:space="preserve"><value>Odmowa: wymaga klucza</value></data>
+  <data name="SetupLookingTitle" xml:space="preserve"><value>Znajdźmy Twój serwer modeli</value></data>
+  <data name="SetupLookingLead" xml:space="preserve"><value>Inferpal odpowiada przy użyciu modeli działających na tym komputerze lub w Twojej sieci. Trwa wyszukiwanie serwera — nic nie jest wysyłane nigdzie indziej.</value></data>
+  <data name="SetupChecking" xml:space="preserve"><value>Sprawdzanie…</value></data>
+  <data name="SetupTypeAddress" xml:space="preserve"><value>Serwer jest na innym komputerze? Wpisz jego adres</value></data>
+  <data name="SetupFoundTitle" xml:space="preserve"><value>Znaleziono serwer</value></data>
+  <data name="SetupFoundLead" xml:space="preserve"><value>{0} odpowiada pod adresem {1}: {2:N0} {2:model|modele|modeli}.</value></data>
+  <data name="SetupForThisCard" xml:space="preserve"><value>Dla {0} GB pamięci graficznej</value></data>
+  <data name="SetupProposed" xml:space="preserve"><value>Propozycja dla tego serwera</value></data>
+  <data name="SetupSameModel" xml:space="preserve"><value>Ten sam model</value></data>
+  <data name="SetupNoSearchModel" xml:space="preserve"><value>Brak — wyszukiwanie po słowach kluczowych</value></data>
+  <data name="SetupFits" xml:space="preserve"><value>Mieszczą się razem, z zapasem {0} GB.</value></data>
+  <data name="SetupDoesNotFit" xml:space="preserve"><value>Wymaga około {0} GB; ta karta ma {1} GB.</value></data>
+  <data name="SetupStart" xml:space="preserve"><value>Zacznij z tymi</value></data>
+  <data name="SetupChooseOther" xml:space="preserve"><value>Wybierz inne modele</value></data>
+  <data name="SetupAlsoAnswering" xml:space="preserve"><value>Odpowiada też: {0} pod adresem {1}, {2:N0} {2:model|modele|modeli}</value></data>
+  <data name="SetupUseInstead" xml:space="preserve"><value>Użyj zamiast tego</value></data>
+  <data name="SetupNothingTitle" xml:space="preserve"><value>Nie znaleziono tu serwera modeli</value></data>
+  <data name="SetupNothingLead" xml:space="preserve"><value>Co odpowiedział każdy adres:</value></data>
+  <data name="SetupOtherMachine" xml:space="preserve"><value>Serwer na innym komputerze</value></data>
+  <data name="SetupConnect" xml:space="preserve"><value>Połącz</value></data>
+  <data name="SetupServerKinds" xml:space="preserve"><value>Ollama, LM Studio, llama-server, vLLM lub dowolny serwer zgodny z OpenAI.</value></data>
+  <data name="SetupNoServerYet" xml:space="preserve"><value>Nie masz jeszcze serwera?</value></data>
+  <data name="SetupInstallHint" xml:space="preserve"><value>Zainstaluj jeden z nich i wyszukaj ponownie — Inferpal szuka też przy każdym uruchomieniu:</value></data>
+  <data name="SetupLookAgain" xml:space="preserve"><value>Szukaj ponownie</value></data>
+  <data name="SetupEnterKey" xml:space="preserve"><value>Wpisz klucz</value></data>
+  <data name="SetupNoModelTitle" xml:space="preserve"><value>Twój serwer nie ma jeszcze modelu czatu</value></data>
+  <data name="SetupNoModelLead" xml:space="preserve"><value>{0} odpowiada pod adresem {1}, ale żaden z jego modeli nie odpowiada na pytania.</value></data>
+  <data name="SetupItsModels" xml:space="preserve"><value>Jego modele: {0}</value></data>
+  <data name="SetupDownloadLegend" xml:space="preserve"><value>Pobierz jeden — dla {0} GB pamięci graficznej</value></data>
+  <data name="SetupDownloadLegendUnknown" xml:space="preserve"><value>Pobierz jeden</value></data>
+  <data name="SetupMeasuredCard" xml:space="preserve"><value>Zmierzono na karcie {0} GB</value></data>
+  <data name="SetupDownload" xml:space="preserve"><value>Pobierz {0}</value></data>
+  <data name="SetupDownloading" xml:space="preserve"><value>Pobieranie {0}</value></data>
+  <data name="SetupDownloadGoesOn" xml:space="preserve"><value>Możesz zamknąć ten panel; pobieranie trwa dalej, a po jego zakończeniu Inferpal zacznie pracę z tym modelem.</value></data>
+  <data name="SetupNoDownloadHere" xml:space="preserve"><value>Pobierz model czatu w {0} i wyszukaj ponownie.</value></data>
+  <data name="SetupPlaceAnswersUnlisted" xml:space="preserve"><value>Odpowiada, ale nie udało się wylistować jego modeli: {0}</value></data>
+  <data name="SetupDownloadSize" xml:space="preserve"><value>{0} GB</value></data>
+  <data name="SetupNoneFits" xml:space="preserve"><value>Żaden z modeli polecanych przez Inferpal nie mieści się na karcie {0} GB: pobierz mniejszy model czatu w {1}, a potem wyszukaj ponownie.</value></data>
+  <data name="AcpSetupScanning" xml:space="preserve"><value>Wyszukiwanie serwera modeli…</value></data>
 </root>

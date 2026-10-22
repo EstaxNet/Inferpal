@@ -22,10 +22,13 @@ exists.
   - the **Build Failed banner** (VS Code's welcome card offers **Fix them** for the Problems panel's errors);
   - the **auto-attach chips** while you type (the per-turn auto-context is there);
   - the **sound** at the end of a long run;
-  - the **first-run** server and model setup (VS Code picks the best installed chat model when the default one is
-    not on the server and no model is set);
-  - `/fix-build` and `/setup` (they answer that they are not available), and the **Alt+M** shortcut of `/map` (the
-    command itself is there).
+  - `/fix-build` (it answers that it is not available), and the **Alt+M** shortcut of `/map` (the command itself is
+    there).
+- **First run, in both editors** — Inferpal looks for a model server where one usually listens (Ollama, LM Studio,
+  llama-server, vLLM) and says what each place answered. VS Code shows it on a card in the chat: the models proposed
+  for your card, a server on another machine by its address, a key when a server asks for one, and — on Ollama
+  without a chat model — a download of a recommended model. Visual Studio takes the server that answers when nothing
+  was set up yet, and says so; `/setup` looks again in both.
 - **Not in Visual Studio yet** — **Review a Commit…** (VS Code's command palette lists the commits to pick from; in
   Visual Studio, type `/check <commit>`).
 - **Headless slash commands** — nearly all the slash commands are served by the host over JSON-RPC with the

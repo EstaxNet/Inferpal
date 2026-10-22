@@ -246,8 +246,12 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     public Task<bool> PullModelAsync(string model, Action<string> onStatus, CancellationToken ct)
     {
         Pulled.Add(model);
+        foreach (var status in PullStatuses) onStatus(status);
         return Task.FromResult(OnPull(model));
     }
+
+    /// <summary>The progress lines a pull reports, in order, before it ends.</summary>
+    public string[] PullStatuses { get; set; } = [];
 
     public Task<bool> DeleteModelAsync(string model, CancellationToken ct)
     {

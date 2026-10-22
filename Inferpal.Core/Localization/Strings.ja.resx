@@ -1689,4 +1689,47 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="HintHistoryStorage" xml:space="preserve"><value>エージェントがファイルを変更する前に、Inferpal はそのコピーを保存します（/undo-run と /restore 用）。プロジェクト内：リポジトリのルートにある .inferpal/history/。フォルダー内の設定により git には無視されます。ユーザーフォルダー内：Inferpal のローカル アプリケーション データに、リポジトリごとに 1 つのフォルダー。プロジェクトには新たに何も書き込まれません。切り替えても、既に作成されたコピーは復元できます。</value></data>
   <data name="HistoryStorageProject" xml:space="preserve"><value>プロジェクト内</value></data>
   <data name="HistoryStorageUser" xml:space="preserve"><value>ユーザーフォルダー内</value></data>
+  <data name="SetupPlaceAnswers" xml:space="preserve"><value>チャットモデル {0:N0} 個</value></data>
+  <data name="SetupPlaceNothingListening" xml:space="preserve"><value>応答なし</value></data>
+  <data name="SetupPlaceNotAModelServer" xml:space="preserve"><value>応答はありますが、モデルサーバーではありません</value></data>
+  <data name="SetupPlaceNeedsKey" xml:space="preserve"><value>拒否されました：キーが必要です</value></data>
+  <data name="SetupLookingTitle" xml:space="preserve"><value>モデルサーバーを探しています</value></data>
+  <data name="SetupLookingLead" xml:space="preserve"><value>Inferpal はこのマシンまたはネットワーク上で動作するモデルで回答します。サーバーを検索しています。ほかの場所には何も送信されません。</value></data>
+  <data name="SetupChecking" xml:space="preserve"><value>確認中…</value></data>
+  <data name="SetupTypeAddress" xml:space="preserve"><value>サーバーが別のマシンにありますか？アドレスを入力してください</value></data>
+  <data name="SetupFoundTitle" xml:space="preserve"><value>サーバーが見つかりました</value></data>
+  <data name="SetupFoundLead" xml:space="preserve"><value>{0} が {1} で応答しています（モデル {2:N0} 個）。</value></data>
+  <data name="SetupForThisCard" xml:space="preserve"><value>グラフィックメモリ {0} GB 向け</value></data>
+  <data name="SetupProposed" xml:space="preserve"><value>このサーバー向けの提案</value></data>
+  <data name="SetupSameModel" xml:space="preserve"><value>同じモデル</value></data>
+  <data name="SetupNoSearchModel" xml:space="preserve"><value>なし — キーワードで検索します</value></data>
+  <data name="SetupFits" xml:space="preserve"><value>一緒に収まります（余裕 {0} GB）。</value></data>
+  <data name="SetupDoesNotFit" xml:space="preserve"><value>約 {0} GB 必要です。このカードは {1} GB です。</value></data>
+  <data name="SetupStart" xml:space="preserve"><value>これで開始</value></data>
+  <data name="SetupChooseOther" xml:space="preserve"><value>別のモデルを選ぶ</value></data>
+  <data name="SetupAlsoAnswering" xml:space="preserve"><value>ほかにも応答: {1} の {0}（モデル {2:N0} 個）</value></data>
+  <data name="SetupUseInstead" xml:space="preserve"><value>こちらを使う</value></data>
+  <data name="SetupNothingTitle" xml:space="preserve"><value>ここにはモデルサーバーが見つかりません</value></data>
+  <data name="SetupNothingLead" xml:space="preserve"><value>各アドレスの応答：</value></data>
+  <data name="SetupOtherMachine" xml:space="preserve"><value>別のマシン上のサーバー</value></data>
+  <data name="SetupConnect" xml:space="preserve"><value>接続</value></data>
+  <data name="SetupServerKinds" xml:space="preserve"><value>Ollama、LM Studio、llama-server、vLLM、または OpenAI 互換サーバー。</value></data>
+  <data name="SetupNoServerYet" xml:space="preserve"><value>まだサーバーがありませんか？</value></data>
+  <data name="SetupInstallHint" xml:space="preserve"><value>いずれかをインストールしてから再検索してください。Inferpal は起動するたびにも検索します：</value></data>
+  <data name="SetupLookAgain" xml:space="preserve"><value>再検索</value></data>
+  <data name="SetupEnterKey" xml:space="preserve"><value>キーを入力</value></data>
+  <data name="SetupNoModelTitle" xml:space="preserve"><value>サーバーにはまだチャットモデルがありません</value></data>
+  <data name="SetupNoModelLead" xml:space="preserve"><value>{0} は {1} で応答していますが、質問に答えられるモデルがありません。</value></data>
+  <data name="SetupItsModels" xml:space="preserve"><value>モデル: {0}</value></data>
+  <data name="SetupDownloadLegend" xml:space="preserve"><value>ダウンロードする — グラフィックメモリ {0} GB 向け</value></data>
+  <data name="SetupDownloadLegendUnknown" xml:space="preserve"><value>ダウンロードする</value></data>
+  <data name="SetupMeasuredCard" xml:space="preserve"><value>{0} GB のカードで計測</value></data>
+  <data name="SetupDownload" xml:space="preserve"><value>{0} をダウンロード</value></data>
+  <data name="SetupDownloading" xml:space="preserve"><value>{0} をダウンロード中</value></data>
+  <data name="SetupDownloadGoesOn" xml:space="preserve"><value>このパネルを閉じてもダウンロードは続き、完了すると Inferpal はこのモデルで開始します。</value></data>
+  <data name="SetupNoDownloadHere" xml:space="preserve"><value>{0} でチャットモデルをダウンロードしてから再検索してください。</value></data>
+  <data name="SetupPlaceAnswersUnlisted" xml:space="preserve"><value>応答していますが、モデルを一覧できませんでした: {0}</value></data>
+  <data name="SetupDownloadSize" xml:space="preserve"><value>{0} GB</value></data>
+  <data name="SetupNoneFits" xml:space="preserve"><value>Inferpal の推奨モデルはどれも {0} GB のカードに収まりません。{1} で小さめのチャットモデルをダウンロードしてから再検索してください。</value></data>
+  <data name="AcpSetupScanning" xml:space="preserve"><value>モデルサーバーを検索しています…</value></data>
 </root>

@@ -59,6 +59,26 @@ internal static class ModelAdvisor
         ("Bonsai 27B",  12),
     ];
 
+    /// <summary>The recommended agents Ollama's library serves, with the name to pull and the size of the download as its
+    /// registry gives it. ⚠ Only names of <see cref="RecommendedAgents"/>:
+    /// one list of what is recommended. Bonsai 27B is on Hugging Face only, so it is not offered for download.</summary>
+    internal static readonly IReadOnlyList<(string Name, string OllamaTag, double DownloadGb)> OllamaDownloads =
+    [
+        ("Qwen3.8 27B", "qwen3.8:27b", 17.7),
+        ("Gemma 4 12B", "gemma4:12b",  8.0),
+    ];
+
+    /// <summary>The downloads measured to fit a card of <paramref name="vramBudgetGb"/>, largest card first; all of them
+    /// when the card is unknown.</summary>
+    internal static IReadOnlyList<ModelDownload> DownloadsFor(double vramBudgetGb) =>
+    [
+        .. OllamaDownloads
+            .Select(d => new ModelDownload(d.Name, d.OllamaTag, d.DownloadGb,
+                                           RecommendedAgents.First(a => a.Name == d.Name).CardGb))
+            .Where(d => vramBudgetGb <= 0 || d.CardGb <= vramBudgetGb + 0.5)
+            .OrderByDescending(d => d.CardGb),
+    ];
+
     /// <summary>Asks <paramref name="client"/> what it has installed, then suggests — both editors' one call.</summary>
     /// <param name="client">A client for the server the FORM names (the user may not have saved a new address yet).</param>
     /// <param name="server">That server's settings: an empty list is said for what it is (stopped, refused, empty).</param>

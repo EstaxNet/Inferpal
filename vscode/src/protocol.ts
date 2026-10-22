@@ -250,7 +250,7 @@ export interface MentionResolveResult {
 
 /** One editor-side effect a handled slash command asks the adapter to apply.
  * Kinds: setPrompt | sendAsPrompt | attachChip (name = chip label) | copyToClipboard |
- * clearTranscript | stateChange (name = key) | openFile | exportRequest | configSaved | openSettings.
+ * clearTranscript | stateChange (name = key) | openFile | exportRequest | configSaved | openSettings | openSetup.
  * Unknown kinds must be ignored (forward compatibility). */
 export interface SlashEffect {
   kind: string;
@@ -919,4 +919,70 @@ export interface PinsResult {
 export interface ConfigUpdateResult {
   /** Permission rules the product could not read — the field is saved, these lines are inert. */
   permissionRulesIgnored: number;
+}
+
+// ── First run (`setup/*`): the search for a server, the proposal, the download ───────────────────
+
+/** Why the first-run card is shown (`setup/needed`); null when it is not. */
+export type SetupReason = 'unreachable' | 'noChatModel';
+
+/** One place the first run looked at, with its name and what it answered, in the editor's language. */
+export interface SetupPlace {
+  url: string;
+  expected?: string | null;
+  outcome: 'answers' | 'nothingListening' | 'notAModelServer' | 'needsKey' | 'checking';
+  provider?: string | null;
+  detail?: string | null;
+  chatModels: number;
+  searchModels: number;
+  name: string;
+  status: string;
+  alsoAnswering?: string | null;
+}
+
+/** A model the card offers to download, with its line, its button and its progress title. */
+export interface SetupDownload {
+  name: string;
+  tag: string;
+  downloadGb: number;
+  cardGb: number;
+  measured: string;
+  button: string;
+  downloading: string;
+  /** The download's size, in the editor's language. */
+  size: string;
+}
+
+/** `setup/plan`: what is proposed for a server (chatModel null: it has none — downloads, or where to get one). */
+export interface SetupPlan {
+  chatModel?: string | null;
+  completionModel?: string | null;
+  searchModel?: string | null;
+  chatCount: number;
+  budgetGb: number;
+  neededGb: number;
+  fits: boolean;
+  downloads: SetupDownload[];
+  listed: string[];
+  lead: string;
+  legend: string;
+  fitText?: string | null;
+  itsModels?: string | null;
+  noDownload?: string | null;
+}
+
+export interface SetupApplyParams {
+  url: string;
+  provider: string;
+  chatModel: string;
+  completionModel?: string | null;
+  searchModel?: string | null;
+  apiKey?: string | null;
+}
+
+/** `setup/pullProgress` notification. */
+export interface SetupPullProgress {
+  tag: string;
+  status: string;
+  percent?: number | null;
 }

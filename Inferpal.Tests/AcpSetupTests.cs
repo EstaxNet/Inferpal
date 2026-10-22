@@ -12,12 +12,56 @@ namespace Inferpal.Tests;
 public sealed class AcpSetupTests
 {
     private static Task<int> RunAsync(string typed, StringWriter output, List<InferpalConfig> saved,
-                                      Func<string, (string?, string?)> probe, IReadOnlyList<string> models) =>
+                                      Func<string, (string?, string?)> probe, IReadOnlyList<string> models,
+                                      IReadOnlyList<ServerPlace>? places = null, InferpalConfig? config = null,
+                                      List<string?>? keysProbed = null) =>
         AcpSetup.RunAsync(new StringReader(typed), output, CancellationToken.None,
-                          probe: (url, _, _) => Task.FromResult(probe(url)),
+                          probe: (url, key, _) => { keysProbed?.Add(key); return Task.FromResult(probe(url)); },
                           listModels: (_, _) => Task.FromResult(ModelsByKind.ByName(models)),
-                          load: () => new InferpalConfig(),
-                          save: saved.Add);
+                          load: () => config ?? new InferpalConfig(),
+                          save: saved.Add,
+                          // Never this machine's real ports: what answers here is the test's to say.
+                          scan: (_, _) => Task.FromResult(places ?? []));
+
+    /// <summary>The key saved for one server never goes to another: a configured server down, the one the scan found on
+    /// this machine is probed and saved without it. And a setup ends the first run.</summary>
+    [Fact]
+    public async Task TheSavedKey_StaysWithItsServer_WhenAnotherIsChosen()
+    {
+        var saved = new List<InferpalConfig>();
+        var keys = new List<string?>();
+        var config = new InferpalConfig { Provider = "openai-compatible", BaseUrl = "http://remote:8000", ApiKey = "k-1" };
+        ServerPlace[] places = [new("http://localhost:1234", "lmstudio", ServerPlaceOutcome.Answers, "lmstudio", null, ChatModels: 1)];
+
+        // Every default taken: LM Studio, found on this machine, and its first model.
+        var code = await RunAsync("\n\n\n", new StringWriter(), saved, _ => ("lmstudio", null), ["devstral"], places, config, keys);
+
+        Assert.Equal(0, code);
+        Assert.Equal([null], keys);
+        Assert.Equal(("http://localhost:1234", ""), (saved.Single().BaseUrl, saved.Single().ApiKey));
+        Assert.False(saved.Single().IsFirstRun);
+    }
+
+    /// <summary>The setup looks first: what each place answered is said, and the server that answers is offered first,
+    /// at the address it answered at.</summary>
+    [Fact]
+    public async Task TheServerFoundOnTheMachine_IsOfferedFirst_AtTheAddressItAnswered()
+    {
+        var saved = new List<InferpalConfig>();
+        var output = new StringWriter();
+        ServerPlace[] places =
+        [
+            new("http://localhost:11434", "ollama", ServerPlaceOutcome.NothingListening, null, null),
+            new("http://localhost:8000", "openai-compatible", ServerPlaceOutcome.Answers, "openai-compatible", null, ChatModels: 2),
+        ];
+
+        // Every default taken: the server, its address, no key, the first model.
+        var code = await RunAsync("\n\n\n\n", output, saved, _ => ("openai-compatible", null), ["qwen3-coder"], places);
+
+        Assert.Equal(0, code);
+        Assert.Contains($"Ollama · http://localhost:11434 — {Localization.Strings.SetupPlaceNothingListening}", output.ToString());
+        Assert.Equal(("openai-compatible", "http://localhost:8000"), (saved.Single().Provider, saved.Single().BaseUrl));
+    }
 
     [Fact]
     public async Task AServerThatAnswers_AndAModelPicked_AreSaved()

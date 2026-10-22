@@ -80,6 +80,11 @@ anywhere.
 
 ## 5. Configure and connect
 
+The first time the window opens, Inferpal looks for a model server: the address set, else where one usually listens
+on this computer (Ollama, LM Studio, llama-server, vLLM). When nothing was set up yet (no address, key or model
+chosen), it takes the server that answers and picks a model, and says so in the chat. `/setup` looks again, and says what each place answered when none
+does. To choose by hand:
+
 1. Open **Inferpal Settings**.
 2. Under **Connection**, pick the **provider** (Ollama / LM Studio / OpenAI-compatible), set
    the **Server URL** (Ollama default: `http://localhost:11434`) and an **API key** if the
@@ -110,8 +115,10 @@ Visual Studio-only for now: [the list](features.md#two-editors-one-engine).
    `inferpal-vscode-darwin-arm64-<version>.vsix` (Apple Silicon) —
    `code --install-extension inferpal-vscode-<platform>-<version>.vsix`
    (or Extensions view → `…` → *Install from VSIX…*).
-2. Open the **Inferpal** view in the Activity Bar (or press **Ctrl+Alt+I**) and start
-   chatting: streaming replies with full markdown, the agentic loop with approvals and a
+2. Open the **Inferpal** view in the Activity Bar (or press **Ctrl+Alt+I**). The first time, a card looks for a
+   model server on this computer and proposes the models that fit your card (**Start with these**); a server on
+   another machine is typed on the same card, and Ollama without a chat model gets a recommended one downloaded.
+   `/setup` brings the card back. Then start chatting: streaming replies with full markdown, the agentic loop with approvals and a
    live plan block, collapsible tool bubbles, typed `@`-mentions, slash-command
    autocomplete, inline FIM completions, unsaved-buffer awareness and live diagnostics from
    the Problems panel are all wired. Nearly all slash commands work headless through the

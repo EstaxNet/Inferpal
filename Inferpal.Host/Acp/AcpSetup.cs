@@ -30,14 +30,18 @@ internal static class AcpSetup
     /// <param name="probe">Test seam: which backend answers at an address (default: <see cref="ProviderProbe"/>).</param>
     /// <param name="listModels">Test seam: the models a server lists, by what each can be picked for.</param>
     /// <param name="save">Test seam: where the settings go (default: <see cref="InferpalConfig.Save"/>).</param>
+    /// <param name="scan">Test seam: where a model server answers (default: <see cref="ServerScan"/>, this machine's
+    /// usual ports and the configured address).</param>
     public static async Task<int> RunAsync(
         TextReader input, TextWriter output, CancellationToken ct,
         Func<string, string?, CancellationToken, Task<(string? Provider, string? Refusal)>>? probe = null,
         Func<InferpalConfig, CancellationToken, Task<ModelsByKind>>? listModels = null,
-        Func<InferpalConfig>? load = null, Action<InferpalConfig>? save = null)
+        Func<InferpalConfig>? load = null, Action<InferpalConfig>? save = null,
+        Func<InferpalConfig, CancellationToken, Task<IReadOnlyList<ServerPlace>>>? scan = null)
     {
         probe      ??= ProviderProbe.DetectWithRefusalAsync;
         listModels ??= static (cfg, token) => InferenceProviderFactory.Create(cfg).ListModelsByKindAsync(token);
+        scan       ??= static (cfg, token) => ServerScan.ScanAsync(cfg.BaseUrl, cfg.ApiKey, InferenceProviderFactory.Create, token);
         var config   = (load ?? InferpalConfig.Load)();
         save       ??= static cfg => cfg.Save();
         // This process speaks only in a terminal: the language the settings choose ("Auto": the system's).
@@ -46,8 +50,16 @@ internal static class AcpSetup
         output.WriteLine(Strings.AcpSetupTitle);
         output.WriteLine();
 
+        // ── Where a server answers: the first that does is offered first ──────────
+        output.WriteLine(Strings.AcpSetupScanning);
+        var places = await scan(config, ct);
+        foreach (var place in places) output.WriteLine("  " + place.Line);
+        output.WriteLine();
+        var answering = ServerScan.Offered(places, config.BaseUrl);
+
         // ── The server ─────────────────────────────────────────────────────────
-        var current = Array.FindIndex(Servers, s => s.Code == InferenceProviderFactory.Canonical(config.Provider));
+        var offered = InferenceProviderFactory.Canonical(answering?.Provider ?? config.Provider);
+        var current = Array.FindIndex(Servers, s => s.Code == offered);
         if (current < 0) current = 0;
         for (var i = 0; i < Servers.Length; i++)
             output.WriteLine($"  {i + 1}. {InferenceProviderFactory.DisplayName(Servers[i].Code)}");
@@ -57,13 +69,18 @@ internal static class AcpSetup
 
         string? found = null;
         string url = string.Empty, key = config.ApiKey;
-        var suggested = server.Code == InferenceProviderFactory.Canonical(config.Provider) ? config.BaseUrl : server.Url;
+        var suggested = answering is not null && server.Code == InferenceProviderFactory.Canonical(answering.Provider) ? answering.Url
+                      : server.Code == InferenceProviderFactory.Canonical(config.Provider) ? config.BaseUrl
+                      : server.Url;
         while (found is null)
         {
             var typed = await AskAsync(input, output, Strings.AcpSetupAddressQuestion(suggested), ct);
             if (typed is null) return Stopped(output);
             url = typed.Length == 0 ? suggested : typed.Trim();
             if (url.Length == 0) continue;
+            // ⚠ The saved key belongs to the saved address: probed and saved with another, it reached a server it was
+            // never given to.
+            key = ServerScan.SameAddress(url, config.BaseUrl) ? config.ApiKey : "";
             if (server.Code == InferenceProviderFactory.OpenAiCompatible)
             {
                 var typedKey = await AskAsync(input, output, Strings.AcpSetupKeyQuestion, ct);
@@ -109,6 +126,8 @@ internal static class AcpSetup
         config.BaseUrl      = url;
         config.ApiKey       = key;
         config.DefaultModel = models[picked.Value];
+        // Set up: no first run of an editor looks for another server over this choice.
+        config.IsFirstRun   = false;
         save(config);
         output.WriteLine();
         output.WriteLine(Strings.AcpSetupSaved(InferpalConfig.SettingsFilePath));

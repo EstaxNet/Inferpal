@@ -10,9 +10,9 @@ editor with tools disabled).
 > [!NOTE]
 > **VS Code:** nearly all commands below also work in the VS Code extension, served headless
 > by the host process (same approval and permission pipeline; long commands such as `/tdd`,
-> `/bench`, `/models pull` and `/docs` are cancellable). Still VS-only: `/fix-build` and
-> `/setup`, both coupled to Visual Studio by construction (the MSBuild banner, the live
-> model-pull bubble) — they answer "not available in this editor yet".
+> `/bench`, `/models pull` and `/docs` are cancellable). Still VS-only: `/fix-build`, coupled
+> to Visual Studio's build by construction — it answers "not available in this editor yet".
+> `/setup` opens VS Code's first-run card.
 
 ## Conversation
 
@@ -103,7 +103,7 @@ editor with tools disabled).
 | `/task stop <id>` · `/task clear` | Cancel a task · forget the finished ones |
 | `/task propose <objective>` | Same, but the task may **express** file changes: the editing tools are available to it and every edit is recorded instead of applied. The report comes back with a numbered diff per proposed change and nothing touched. Still no commands and no network |
 | `/task apply <id> <n>` | Apply **one** proposal, through the usual approval prompt — so `/undo-run` covers it like any other write. There is deliberately no form that applies them all: approving a batch sight-unseen is what the read-only default exists to avoid. A file changed since the task ran is refused as stale rather than overwritten |
-| `/setup` | Re-run first-run discovery: auto-detect the backend and auto-select chat + embedding models |
+| `/setup` | Look for a model server again (the configured address, then where one usually listens) and set it up with models that fit — in VS Code a card, where another address can be typed |
 
 ## Governance
 

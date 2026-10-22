@@ -5,6 +5,11 @@ extension share one engine and one version number.
 
 ## Unreleased
 
+- **A first run that finds your model server**: on a blank profile, or a server without a chat model, the chat showed a
+  red badge and nothing else. A card now looks where a model server usually listens (Ollama, LM Studio, llama-server,
+  vLLM), says what each place answered, and proposes the models that fit your card — **Start with these**. A server on
+  another machine is typed on the same card, a key when a server asks for one; Ollama without a chat model gets a
+  recommended one downloaded. `/setup` brings the card back (it answered "not available" before).
 - **Inline completions on llama-server and other OpenAI-compatible servers**: the server completes around the cursor
   with the model's own fill-in-the-middle tokens (llama-server's `/infill`, or `/v1/completions` with `suffix`); one
   that refuses is named once in `/diagnostics`.

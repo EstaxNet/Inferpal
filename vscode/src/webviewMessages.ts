@@ -1,7 +1,41 @@
 // Typed postMessage protocol between the extension host (chatViewProvider.ts) and the
 // chat webview (src/webview/main.ts). Both sides are bundled from this repo, so the
 // types are shared instead of mirrored. No 'vscode' import — the webview bundle uses it.
-import type { ApprovalCard, ImportCard, InputCard, InputFormAnswer, RunSummary, SavedMessage, XRayPanel } from './protocol';
+import type {
+  ApprovalCard, ImportCard, InputCard, InputFormAnswer, RunSummary, SavedMessage, SetupPlace, SetupPlan, XRayPanel,
+} from './protocol';
+
+/**
+ * The first-run card, ready to draw: the extension runs the steps (`setupFlow.ts`), the webview only renders what it is
+ * sent. `searching`: the places being looked at; `found`: a server answers, with its proposal; `nothing`: what each place
+ * answered, and an address to type; `noModel`: a server without a chat model, with what to download.
+ */
+export interface WvSetupView {
+  phase: 'searching' | 'found' | 'nothing' | 'noModel';
+  /** The card's fixed labels, from the host (`setup/strings`). */
+  strings: Record<string, string>;
+  places: SetupPlace[];
+  /** The server the card shows (found, noModel). */
+  server?: { url: string; provider: string } | null;
+  plan?: SetupPlan | null;
+  /** Other servers that answer too (found). */
+  others: SetupPlace[];
+  /** A download in progress. */
+  pull?: { title: string; status: string; percent?: number | null } | null;
+  /** An action is running: the card's buttons wait. */
+  busy?: boolean;
+  /** What failed, said on the card. */
+  error?: string | null;
+}
+
+/** A gesture on the first-run card. */
+export type WvSetupAction =
+  | { action: 'lookAgain' }
+  | { action: 'connect'; url: string; key?: string }
+  | { action: 'use'; url: string; provider: string }
+  | { action: 'start' }
+  | { action: 'chooseOther' }
+  | { action: 'download'; tag: string };
 
 /** One rendered transcript entry (the extension host owns the list). */
 export interface WvTranscriptItem {
@@ -188,7 +222,9 @@ export type ExtToWebview =
    *  setting changed outside the picker. */
   | { type: 'models'; models: string[]; model?: string }
   /** The slash commands, re-read when a command starts being typed. */
-  | { type: 'commands'; commands: WvSlashCommand[] };
+  | { type: 'commands'; commands: WvSlashCommand[] }
+  /** The first-run card, or null to take it away. */
+  | { type: 'setup'; view: WvSetupView | null };
 
 export type WebviewToExt =
   | { type: 'ready' }
@@ -236,4 +272,6 @@ export type WebviewToExt =
   /** A file of a run's result bar. */
   | { type: 'openFile'; path: string }
   /** An `/import` card's Apply: the numbers of the boxes left ticked (none is a choice too). */
-  | { type: 'importApply'; id: string; numbers: number[] };
+  | { type: 'importApply'; id: string; numbers: number[] }
+  /** A gesture on the first-run card. */
+  | ({ type: 'setupAction' } & WvSetupAction);

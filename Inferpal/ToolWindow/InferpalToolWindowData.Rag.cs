@@ -189,18 +189,43 @@ internal partial class InferpalToolWindowData
         var reachable = detected is not null
             || await client.CheckConnectionAsync(url, ct).ConfigureAwait(false);
 
-        // ⚠ Neither this branch nor the next one ENDS the first run: no model has been chosen, and spent here it left
-        // the code's default — a model the backend may not have — for every question to come. It completes when the
-        // connection comes back (heartbeat) or at the next start.
+        // Where else a server answers: a first run that chose nothing yet takes it (ServerScan.ToAdopt, said in the
+        // bubble); otherwise each place's answer goes with the remedy.
+        string? foundNote = null;
         if (!reachable)
         {
-            if (automatic) return;
-            // A server that refused the check (a wrong API key) is running: "start it" is the wrong remedy.
-            await present(client.ConnectionRefusal is { } refusal
-                ? Strings.MsgBackendRefused(url, refusal)
-                : Strings.MsgFirstRunBackendDown(
-                    url, Services.Inference.InferenceProviderFactory.DisplayName(_config.Provider))).ConfigureAwait(false);
-            return;
+            var places = await Services.Inference.ServerScan.ScanAsync(
+                url, _config.ApiKey, Services.Inference.InferenceProviderFactory.Create, ct).ConfigureAwait(false);
+            // What another window chose since this one read the settings is a choice: nothing is adopted over it.
+            _config.FillFromFile(nameof(InferpalConfig.DefaultModel));
+            _config.FillFromFile(nameof(InferpalConfig.BaseUrl));
+            _config.FillFromFile(nameof(InferpalConfig.ApiKey));
+            if (Services.Inference.ServerScan.ToAdopt(_config, places) is not { } found)
+            {
+                // ⚠ Neither this branch nor the next one ENDS the first run: no model has been chosen, and spent here it
+                // left the code's default — a model the backend may not have — for every question to come. It completes
+                // when the connection comes back (heartbeat) or at the next start.
+                if (automatic) return;
+                // A server that refused the check (a wrong API key) is running: "start it" is the wrong remedy.
+                await present((client.ConnectionRefusal is { } refusal
+                    ? Strings.MsgBackendRefused(url, refusal)
+                    : Strings.MsgFirstRunBackendDown(
+                        url, Services.Inference.InferenceProviderFactory.DisplayName(_config.Provider)))
+                    + "\n\n" + Strings.SetupNothingLead + "\n" + string.Join("\n", places.Select(p => "- " + p.Line)))
+                    .ConfigureAwait(false);
+                return;
+            }
+
+            _config.Provider = found.Provider ?? _config.Provider;
+            _config.BaseUrl  = url = found.Url;
+            _config.Save();
+            client    = Services.Inference.InferenceProviderFactory.Create(_config);
+            reachable = true;
+            foundNote = $"**{Strings.SetupFoundTitle}** — " + (found.ListFailure is null
+                ? Strings.SetupFoundLead(found.Name, found.Url, found.ChatModels + found.SearchModels)
+                : found.Line) + "\n\n";
+            if (Services.Inference.InferenceProviderFactory.PendingSwitch(_client, _config.Provider) is { } adoptedSwitch)
+                await present(BackendSwitchPendingText(adoptedSwitch)).ConfigureAwait(false);
         }
 
         // ── 2. Model discovery ────────────────────────────────────────────────
@@ -213,7 +238,7 @@ internal partial class InferpalToolWindowData
         if (chatModels.Count == 0)
         {
             // The backend DETECTED above, not "Ollama": an LM Studio with nothing downloaded lands here too.
-            await present(Strings.MsgFirstRunNoModels(
+            await present(foundNote + Strings.MsgFirstRunNoModels(
                 Services.Inference.InferenceProviderFactory.DisplayName(_config.Provider),
                 client.Capabilities.ModelManagement)).ConfigureAwait(false);
             return;
@@ -248,7 +273,7 @@ internal partial class InferpalToolWindowData
 
         // The count agrees with its noun in the language (Strings.Format): an English "3 models" landed in every
         // translated sentence — "3 models disponible(s)", "3 models 個のモデル".
-        var text = Strings.MsgFirstRunWelcome(chatModels.Count, best);
+        var text = foundNote + Strings.MsgFirstRunWelcome(chatModels.Count, best);
         if (vramWarning is not null) text += "\n\n" + vramWarning;
         await present(text).ConfigureAwait(false);
     }

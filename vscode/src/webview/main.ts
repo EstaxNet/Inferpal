@@ -2,7 +2,7 @@
 // state pushed via postMessage and reports user intents back. It must survive being
 // destroyed on hide: everything re-renders from the 'hydrate' message.
 // No literal user-visible English here — strings go through t() (window.__l10n).
-import type { ApprovalCard, InputCard, InputCardField, InputFormAnswer, RunSummary } from '../protocol';
+import type { ApprovalCard, InputCard, InputCardField, InputFormAnswer, RunSummary, SetupPlace } from '../protocol';
 import type {
   ExtToWebview,
   WebviewToExt,
@@ -12,6 +12,8 @@ import type {
   WvMentionCategory,
   WvMentionItem,
   WvPlan,
+  WvSetupAction,
+  WvSetupView,
   WvSlashCommand,
   WvTranscriptItem,
 } from '../webviewMessages';
@@ -1654,9 +1656,249 @@ function buildWelcome(): void {
 }
 
 function showWelcomeIfEmpty(): void {
-  welcomeEl.hidden = !transcriptEmpty;
+  welcomeEl.hidden = !transcriptEmpty || setupView !== null;
   if (!welcomeEl.hidden) {
     buildWelcome();
+  }
+}
+
+// ── First run: the card that finds a server and proposes models (the extension runs the steps, setupFlow.ts) ──
+const setupEl = document.createElement('div');
+setupEl.id = 'setup';
+setupEl.hidden = true;
+messagesEl.insertBefore(setupEl, welcomeEl);
+let setupView: WvSetupView | null = null;
+
+function setupButton(label: string, action: WvSetupAction, primary = false): HTMLButtonElement {
+  const b = document.createElement('button');
+  b.className = primary ? 'setup-button primary' : 'setup-button';
+  b.textContent = label;
+  b.disabled = setupView?.busy === true;
+  b.addEventListener('click', () => post({ type: 'setupAction', ...action }));
+  return b;
+}
+
+function setupText(tag: 'h1' | 'p' | 'div' | 'span', cls: string, text: string): HTMLElement {
+  const el = document.createElement(tag);
+  el.className = cls;
+  el.textContent = text;
+  return el;
+}
+
+/** One place and what it answered; a place that asks for a key gets a field for it. */
+function setupPlaceRow(place: SetupPlace, s: Record<string, string>): HTMLElement {
+  const li = document.createElement('li');
+  li.className = 'setup-place ' + place.outcome;
+  li.appendChild(icon(place.outcome === 'checking' ? 'running' : place.outcome === 'answers' ? 'check' : 'pending', 14));
+  const name = document.createElement('span');
+  name.className = 'setup-place-name';
+  name.append(setupText('span', '', place.name), setupText('span', 'setup-url', place.url));
+  li.append(name, setupText('span', 'setup-place-status', place.status));
+  if (place.outcome === 'needsKey') {
+    li.appendChild(setupKeyForm(place.url, s));
+  }
+  return li;
+}
+
+/** An address and a key, sent to that address only. */
+function setupKeyForm(url: string, s: Record<string, string>): HTMLElement {
+  const form = document.createElement('form');
+  form.className = 'setup-key';
+  const key = document.createElement('input');
+  key.type = 'password';
+  key.dataset.keep = 'key:' + url;
+  key.placeholder = s.apiKey;
+  key.setAttribute('aria-label', `${s.apiKey} — ${url}`);
+  const go = document.createElement('button');
+  go.type = 'submit';
+  go.className = 'setup-button';
+  go.textContent = s.enterKey;
+  go.disabled = setupView?.busy === true;
+  form.append(key, go);
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (key.value.trim()) post({ type: 'setupAction', action: 'connect', url, key: key.value.trim() });
+  });
+  return form;
+}
+
+/** The address of a server on another machine, under `title`. */
+function setupAddressForm(s: Record<string, string>, title: string): HTMLElement {
+  const section = document.createElement('section');
+  section.className = 'setup-box';
+  const form = document.createElement('form');
+  form.className = 'setup-address';
+  const label = setupText('span', 'setup-label', title);
+  const row = document.createElement('div');
+  row.className = 'setup-row';
+  const input = document.createElement('input');
+  input.dataset.keep = 'address';
+  input.placeholder = 'http://192.168.1.20:11434';
+  input.setAttribute('aria-label', s.otherMachine);
+  const go = document.createElement('button');
+  go.type = 'submit';
+  go.className = 'setup-button primary';
+  go.textContent = s.connect;
+  go.disabled = setupView?.busy === true;
+  row.append(input, go);
+  form.append(label, row, setupText('span', 'setup-hint', s.serverKinds));
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (input.value.trim()) post({ type: 'setupAction', action: 'connect', url: input.value.trim() });
+  });
+  section.appendChild(form);
+  return section;
+}
+
+function renderSetup(): void {
+  // ⚠ The card is drawn anew at each step (the scan ending, each download progress): what is being typed in its fields,
+  // and the focus, carry over — or an address half-typed during the search vanishes when the search ends.
+  const typed = new Map<string, string>();
+  for (const field of setupEl.querySelectorAll<HTMLInputElement>('input[data-keep]')) {
+    typed.set(field.dataset.keep!, field.value);
+  }
+  const focused = (document.activeElement as HTMLElement | null)?.dataset?.keep;
+  renderSetupView();
+  for (const field of setupEl.querySelectorAll<HTMLInputElement>('input[data-keep]')) {
+    const value = typed.get(field.dataset.keep!);
+    if (value) field.value = value;
+    if (field.dataset.keep === focused) field.focus();
+  }
+}
+
+function renderSetupView(): void {
+  const v = setupView;
+  setupEl.textContent = '';
+  setupEl.hidden = v === null;
+  if (!v) {
+    showWelcomeIfEmpty();
+    return;
+  }
+  welcomeEl.hidden = true;
+  const s = v.strings;
+  const plan = v.plan;
+
+  switch (v.phase) {
+    case 'searching': {
+      setupEl.append(setupText('h1', 'setup-title', s.lookingTitle), setupText('p', 'setup-lead', s.lookingLead));
+      const list = document.createElement('ul');
+      list.className = 'setup-places';
+      for (const p of v.places) list.appendChild(setupPlaceRow(p, s));
+      setupEl.appendChild(list);
+      break;
+    }
+    case 'nothing': {
+      setupEl.append(setupText('h1', 'setup-title', s.nothingTitle), setupText('p', 'setup-lead', s.nothingLead));
+      const list = document.createElement('ul');
+      list.className = 'setup-places';
+      for (const p of v.places) list.appendChild(setupPlaceRow(p, s));
+      setupEl.append(list, setupAddressForm(s, s.otherMachine));
+      const install = document.createElement('section');
+      install.className = 'setup-box';
+      // The servers the sentence names: two that install with a model library and need no command line.
+      const links = document.createElement('div');
+      links.className = 'setup-row';
+      for (const [name, url] of [['Ollama', 'https://ollama.com'], ['LM Studio', 'https://lmstudio.ai']]) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.textContent = name;
+        links.appendChild(a);
+      }
+      install.append(setupText('span', 'setup-label', s.noServerYet), setupText('p', 'setup-hint', s.installHint), links,
+        setupButton(s.lookAgain, { action: 'lookAgain' }));
+      setupEl.appendChild(install);
+      break;
+    }
+    case 'found': {
+      if (!plan) break;
+      setupEl.append(setupText('h1', 'setup-title', s.foundTitle), setupText('p', 'setup-lead', plan.lead));
+      const box = document.createElement('section');
+      box.className = 'setup-box';
+      const roles = document.createElement('div');
+      roles.className = 'setup-roles';
+      const role = (label: string, value: string): void => {
+        roles.append(setupText('span', 'setup-role', label), setupText('span', 'setup-model', value));
+      };
+      role(s.chat, plan.chatModel ?? '');
+      role(s.completion, !plan.completionModel || plan.completionModel === plan.chatModel ? s.sameModel : plan.completionModel);
+      role(s.search, plan.searchModel || s.noSearchModel);
+      box.append(setupText('span', 'setup-label', plan.legend), roles);
+      if (plan.fitText) {
+        const fit = document.createElement('div');
+        fit.className = 'setup-fit' + (plan.fits ? '' : ' tight');
+        fit.append(icon(plan.fits ? 'check' : 'warning', 14), document.createTextNode(plan.fitText));
+        box.appendChild(fit);
+      }
+      const actions = document.createElement('div');
+      actions.className = 'setup-row';
+      actions.append(setupButton(s.start, { action: 'start' }, true), setupButton(s.chooseOther, { action: 'chooseOther' }));
+      box.appendChild(actions);
+      setupEl.appendChild(box);
+      for (const other of v.others) {
+        const line = document.createElement('div');
+        line.className = 'setup-other';
+        line.append(icon('check', 14), setupText('span', '', other.alsoAnswering ?? other.name),
+          setupButton(s.useInstead, { action: 'use', url: other.url, provider: other.provider ?? '' }));
+        setupEl.appendChild(line);
+      }
+      break;
+    }
+    case 'noModel': {
+      if (!plan) break;
+      setupEl.append(setupText('h1', 'setup-title', s.noModelTitle), setupText('p', 'setup-lead', plan.lead));
+      if (plan.itsModels) setupEl.appendChild(setupText('p', 'setup-hint', plan.itsModels));
+      if (plan.downloads.length > 0 && !v.pull) {
+        const box = document.createElement('section');
+        box.className = 'setup-box';
+        box.appendChild(setupText('span', 'setup-label', plan.legend));
+        for (const d of plan.downloads) {
+          const row = document.createElement('div');
+          row.className = 'setup-download';
+          const text = document.createElement('span');
+          text.className = 'setup-place-name';
+          text.append(setupText('span', 'setup-model', d.name), setupText('span', 'setup-hint', d.measured));
+          row.append(text, setupText('span', 'setup-size', d.size), setupButton(d.button, { action: 'download', tag: d.tag }, true));
+          box.appendChild(row);
+        }
+        setupEl.appendChild(box);
+      } else if (plan.noDownload) {
+        setupEl.appendChild(setupText('p', 'setup-hint', plan.noDownload));
+      }
+      if (v.pull) {
+        const box = document.createElement('section');
+        box.className = 'setup-box';
+        box.setAttribute('aria-live', 'polite');
+        const bar = document.createElement('div');
+        bar.className = 'setup-bar';
+        bar.setAttribute('role', 'progressbar');
+        bar.setAttribute('aria-valuemin', '0');
+        bar.setAttribute('aria-valuemax', '100');
+        bar.setAttribute('aria-label', v.pull.title);
+        const fill = document.createElement('div');
+        if (typeof v.pull.percent === 'number') {
+          bar.setAttribute('aria-valuenow', String(v.pull.percent));
+          fill.style.width = `${v.pull.percent}%`;
+        }
+        bar.appendChild(fill);
+        box.append(setupText('span', 'setup-label', v.pull.title), bar, setupText('span', 'setup-hint', v.pull.status),
+          setupText('span', 'setup-hint', s.downloadGoesOn));
+        setupEl.appendChild(box);
+      }
+      setupEl.appendChild(setupButton(s.lookAgain, { action: 'lookAgain' }));
+      break;
+    }
+  }
+
+  // While looking, an address can be typed already: the server may be on another machine.
+  if (v.phase === 'searching') {
+    setupEl.appendChild(setupAddressForm(s, s.typeAddress));
+  }
+  if (v.error) {
+    const err = document.createElement('div');
+    err.className = 'welcome-banner';
+    err.setAttribute('role', 'alert');
+    err.append(icon('warning', 14), setupText('span', '', v.error));
+    setupEl.appendChild(err);
   }
 }
 
@@ -2152,7 +2394,7 @@ function renderTranscript(transcript: WvTranscriptItem[], running = false): void
   // previous one was scrolled to.
   following = true;
   messagesEl.textContent = '';
-  messagesEl.appendChild(welcomeEl);
+  messagesEl.append(setupEl, welcomeEl);
   streamEl = null;
   turn = null;
   transcriptEmpty = true;
@@ -2205,6 +2447,11 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
     case 'commands': {
       slashCommands = msg.commands ?? slashCommands;
       detectSlash();
+      break;
+    }
+    case 'setup': {
+      setupView = msg.view;
+      renderSetup();
       break;
     }
     case 'models': {

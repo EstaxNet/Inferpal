@@ -29,7 +29,7 @@ Free and open source (GPL v3). The backend is bundled — no .NET to install.
 
 1. **Run a model server** — [Ollama](https://ollama.com) or [LM Studio](https://lmstudio.ai), both free — on this computer or a machine you own, with a model that calls tools, sized to your card ([table below](#which-model-for-my-gpu)). Ollama on a 24 GB card: `ollama pull qwen3.8` (the 27B).
 2. **Open your project folder** — Inferpal starts with a folder open, in a trusted workspace.
-3. **Open Inferpal** — its icon in the activity bar, or **Ctrl+Alt+I** (**Cmd+Alt+I** on macOS). It finds Ollama at its default address and, the first time, picks the best tool-calling model you have installed. For LM Studio or another server, enter its address in *Settings → Server and models* and click **Test**.
+3. **Open Inferpal** — its icon in the activity bar, or **Ctrl+Alt+I** (**Cmd+Alt+I** on macOS). The first time, it looks for a model server on this computer (Ollama, LM Studio, llama-server, vLLM) and proposes the models that fit your card: **Start with these**. A server on another machine: type its address on the same card. Ollama without a chat model: the card downloads a recommended one. `/setup` brings the card back.
 4. **Ask** — "add argument validation to this method and cover it with tests", or `/tdd` on a failing suite.
 
 ---
