@@ -424,6 +424,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         BuildPinnedRows();
         BuildSlashRows();
         BuildToolRows();
+        InitRoleServers(config);   // after the chat's server and the models: the roles resolve against them
 
         SaveCommand           = new AsyncCommand(SaveAsync);
         TestConnectionCommand = new AsyncCommand(TestConnectionAsync);
@@ -478,6 +479,9 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             if (e.PropertyName is nameof(SelectedModel) or nameof(InlineCompletionModel) or nameof(InlineEditModel)
                                    or nameof(CodeActionsModel))
                 UpdateModelLines();
+            // A role's server is "the chat's" by its address, and a role whose kind is not set speaks the chat's: moving the
+            // chat's server moves what the roles resolve to.
+            if (e.PropertyName is nameof(BaseUrl) or nameof(SelectedProvider) or nameof(ApiKey)) UpdateRoleServerState();
         };
         _ = RefreshModelsAsync(null, CancellationToken.None);
         // The Server page opens first, without SelectPage: its "Loaded now" block reads the server here.
@@ -705,6 +709,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         BtnSave                  = Strings.BtnSave;
         ApplyPageLabels();
         ApplyWidgetLabels();
+        ApplyRoleServerLabels();   // after the widgets': the empty completion model reads EmptySameAsChat
         TooltipRefreshModels     = Strings.TooltipRefreshModels;
 
         ApplyProviderCapabilities();   // gate capability-specific options + pick the right num_ctx hint
@@ -1194,6 +1199,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         string mcpServersJson = string.Empty;
         var density = "comfortable";
         var historyStorage = "project";
+        RoleServerForm roleServers = null!;
         string effortChat = "low", effortAgent = "server";
         bool toolExpanded = false, runEndSound = true, askBefore = true, packageCheck = true, compactionEnabled = true, inlineEnabled = true, ragEnabled = true, ragAutoContextEnabled = true, smartFixEnabled = true, agentModeEnabled = false, lspEnabled = false, modelAutoUnload = true, personaAutoSwitch = true, skillsAutoMode = false, mcpEnabled = false, modelRouterAuto = false, useSampling = true, inlineDiff = true;
         await RunOnVMContextAsync(() =>
@@ -1260,6 +1266,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             mcpServersJson         = McpServersJson;
             modelAutoUnload        = ModelAutoUnloadEnabled;
             modelIdleTimeoutText   = ModelIdleTimeoutText.Trim();
+            roleServers            = CaptureRoleServers();
         });
         // Same resolution as the other duration boxes: an emptied sub-field counts 0, and only all
         // three emptied means "back to the default" (an emptied minutes box alone is 0, not 30).
@@ -1408,6 +1415,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         edited.ModelAutoUnloadEnabled    = modelAutoUnload;
         edited.ModelIdleTimeoutMinutes   = ReadInt(modelIdleTimeoutText, "modelIdleTimeoutMinutes", () => Strings.LabelModelIdleTimeout,
                                                     edited.ModelIdleTimeoutMinutes, c => c.ModelIdleTimeoutMinutes);
+        RoleServerSettings.Write(roleServers, edited, Note);
         _config.ApplyChangesFrom(edited, _opened);
         _config.Save();
         _opened = edited.SnapshotNow();
@@ -2159,16 +2167,16 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
 
                 // [""] + models: the empty entry means "same as the chat model".
                 SelectionPreservingList.Sync(AvailableOptionalModels, chatModels,
-                    [CodeActionsModel, InlineCompletionModel, InlineEditModel, AgentModel, UtilityModel],
+                    [CodeActionsModel, InlineEditModel, AgentModel, UtilityModel],
                     leadingEmpty: true);
 
-                // Only the models recognised as embedding models, plus the configured one, after an empty
-                // entry: left empty, the best one installed is used at run time (its hint says so). Nothing
-                // is picked on the user's behalf — a value written by opening the window would read as an
-                // unsaved change nobody made.
-                SelectionPreservingList.Sync(AvailableEmbeddingModels, models.Embedding,
-                                             [RagEmbeddingModel], leadingEmpty: true);
+                // The completion and code-search boxes list THEIR server's models: this listing when they run on the
+                // chat's server, their own server's otherwise.
+                _chatListing = models;
+                SyncRoleModelLists();
             });
+            // Each role's own server too, again: a model pulled there since is listed like one pulled here.
+            await ListRoleModelsAsync(force: true, ct);
         }
         // ⚠ The context names ITS OWN method, not a neighbour: this catch belongs to the model-list
         // refresh, and it announced itself as "Settings.Save". In /diagnostics, a failed refresh

@@ -127,6 +127,26 @@ public sealed class ServerPerRoleTests : IDisposable
         return false;
     }
 
+    /// <summary>This machine under its network address or its name is still this machine: a completion there shares the
+    /// card with a chat on localhost and steps aside for it. Another machine does not.</summary>
+    [Fact]
+    public void ThisMachineUnderItsNetworkAddressOrName_IsTheChatsMachine()
+    {
+        var own = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+            .Where(n => n.OperationalStatus == System.Net.NetworkInformation.OperationalStatus.Up)
+            .SelectMany(n => n.GetIPProperties().UnicastAddresses.Select(a => a.Address))
+            .FirstOrDefault(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork && !System.Net.IPAddress.IsLoopback(a));
+
+        // The host name, as a URL carries it: unparsable, it would be "unknown" and the check vacuous (unknown counts as
+        // the same machine).
+        var host = System.Net.Dns.GetHostName();
+        Assert.True(Uri.TryCreate($"http://{host}:11434", UriKind.Absolute, out _), $"{host} does not make a URL");   // WITNESS
+        Assert.True(RoleServers.SameMachine($"http://{host}:11434", "http://localhost:8080"));
+        if (own is not null)
+            Assert.True(RoleServers.SameMachine($"http://{own}:11434", "http://127.0.0.1:8080"), $"{own} is this machine's");
+        Assert.False(RoleServers.SameMachine("http://192.0.2.10:11434", "http://localhost:8080"));   // reference arm
+    }
+
     /// <summary>On a server of its own, a completion with no model chosen asks nothing — the chat's model is not there —
     /// and says why once.</summary>
     [Fact]
@@ -160,6 +180,93 @@ public sealed class ServerPerRoleTests : IDisposable
 
         settings.RagEmbeddingRunsOn = "chat";
         Assert.Same(chat, roles.For(ServerRole.Search));                 // moved back: the chat's client again, at once
+    }
+
+    /// <summary>A role's client lists ITS server's models, with its key: what a role's model box offers comes from the
+    /// server the role runs on, never from the chat's.</summary>
+    [Fact]
+    public async Task ARolesClient_ListsItsOwnServersModels()
+    {
+        const string models = """{"data":[{"id":"coder-7b"},{"id":"embed-small"}]}""";
+        using var chat = CompletionServer();
+        using var fim = new LoopbackHttpServer(p => p.StartsWith("/v1/models", StringComparison.Ordinal) ? models : null);
+
+        var listed = await InferenceProviderFactory.Create(Settings(chat.BaseUrl, fim.BaseUrl), ServerRole.Completion)
+            .ListModelsByKindAsync(CancellationToken.None);
+
+        Assert.Contains("coder-7b", listed.Listed);
+        Assert.Empty(chat.Paths);
+        Assert.NotEmpty(fim.Authorizations);
+        Assert.All(fim.Authorizations, a => Assert.Equal("Bearer k-fim", a));
+    }
+
+    /// <summary>The Visual Studio window writes what it shows: each role's place by its index (the places are
+    /// translated), its address and key as typed, its kind when one is selected; a place it cannot read keeps what is
+    /// saved and is named.</summary>
+    [Fact]
+    public void TheVisualStudioWindow_SavesEachRolesServer_AndNamesAPlaceItCannotRead()
+    {
+        var edited = new InferpalConfig { RagEmbeddingRunsOn = "autocomplete", InlineCompletionProvider = "ollama" };
+        var named = new List<string>();
+        var form = new Inferpal.Services.Presentation.RoleServerForm(
+            // The entry's text in the language the list was drawn in before a change: only its index reads it.
+            CompletionPlace: 1, CompletionPlaceName: "Inny serwer (stara etykieta)", CompletionUrl: "http://localhost:8080",
+            CompletionKind: "OpenAI-compatible (generic)", CompletionKey: "k-1",
+            SearchPlace: -1, SearchPlaceName: "Unreadable", SearchUrl: "", SearchKind: null, SearchKey: "");
+
+        Inferpal.Services.Presentation.RoleServerSettings.Write(form, edited, (text, ok, label) =>
+        {
+            if (!ok && !string.IsNullOrWhiteSpace(text)) named.Add(label());
+        });
+
+        Assert.Equal(("other", "http://localhost:8080", "openai-compatible", "k-1"),
+            (edited.InlineCompletionRunsOn, edited.InlineCompletionBaseUrl, edited.InlineCompletionProvider, edited.InlineCompletionApiKey));
+        Assert.Equal("autocomplete", edited.RagEmbeddingRunsOn);                 // unreadable: kept
+        Assert.Equal("", edited.RagEmbeddingProvider);                           // no kind selected: not set
+        Assert.Single(named);
+    }
+
+    /// <summary>The place lists are translated: relabelled, a list keeps the entry its selection held — and a selection
+    /// the box lost (null) takes back what is SAVED, never the first entry, which would move the role to the chat's
+    /// server at the next Save.</summary>
+    [Fact]
+    public void ARelabelledPlaceList_KeepsThePlace_EvenWhenTheBoxLostItsSelection()
+    {
+        var options = Inferpal.Services.Presentation.RoleServerSettings.CompletionPlaces;
+        var list = new List<string> { "old: above", "old: another" };
+
+        Assert.Equal(options[1].Name, Inferpal.Services.Presentation.RoleServerSettings.Relabel(list, options, "old: another", "chat"));
+        Assert.Equal(options[1].Name, list[1]);                                         // relabelled in place
+        Assert.Equal(options[1].Name, Inferpal.Services.Presentation.RoleServerSettings.Relabel(list, options, null, "other"));
+        Assert.Equal(options[0].Name, Inferpal.Services.Presentation.RoleServerSettings.Relabel(list, options, null, "chat"));   // reference arm
+
+        // What a saved place means: its code whatever its case; a value no option names is the chat's server.
+        Assert.Equal("other", Inferpal.Services.Presentation.RoleServerSettings.PlaceMeaning(options, "Other"));
+        Assert.Equal("chat", Inferpal.Services.Presentation.RoleServerSettings.PlaceMeaning(options, ""));
+    }
+
+    /// <summary>The Visual Studio window shows every field of the roles on the Server page, tests each role's server
+    /// with its own button, and counts each field among its unsaved changes.</summary>
+    [Fact]
+    public void TheVisualStudioWindow_ShowsAndCountsEveryRoleField()
+    {
+        var root = ConversationPersistenceSilenceTests.RepoRoot();
+        var xaml = File.ReadAllText(Path.Combine(root, "Inferpal", "ToolWindow", "InferpalSettingsContent.xaml"));
+        var start = xaml.IndexOf("PageServerVisible", StringComparison.Ordinal);
+        var end = xaml.IndexOf("PageAgentVisible", StringComparison.Ordinal);
+        Assert.True(start > 0 && end > start, "the Server page is no longer found in the window");   // WITNESS
+        var page = xaml[start..end];
+        var pages = ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal", "ToolWindow", "InferpalSettingsData.Pages.cs"));
+
+        foreach (var property in new[] { "CompletionRunsOn", "CompletionBaseUrl", "CompletionProvider", "CompletionApiKey",
+                                         "SearchRunsOn", "SearchBaseUrl", "SearchProvider", "SearchApiKey" })
+        {
+            Assert.Contains("{Binding " + property, page, StringComparison.Ordinal);
+            Assert.Contains("nameof(" + property + ")", pages, StringComparison.Ordinal);
+        }
+        Assert.Contains("{Binding TestCompletionServerCommand}", page, StringComparison.Ordinal);
+        Assert.Contains("{Binding TestSearchServerCommand}", page, StringComparison.Ordinal);
+        Assert.Contains("fields.Concat(RoleServerChanges(saved))", pages, StringComparison.Ordinal);
     }
 
     /// <summary>What the settings leave to a fallback is said: "another server" with no address runs on the chat's, a

@@ -273,9 +273,14 @@ internal partial class InferpalSettingsData
     private void UpdateModelLines()
     {
         static string First(params string?[] values) => values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v)) ?? string.Empty;
-        var fim  = First(InlineCompletionModel, SelectedModel);
+        // On a server of its own, the chat's model is not there to fall back on: empty is no model at all.
+        var ownServer = TestCompletionServerCommand is not null
+                     && !Services.Inference.RoleServers.OnChatServer(RoleDraft(), Services.Inference.ServerRole.Completion);
+        var fim  = ownServer ? First(InlineCompletionModel) : First(InlineCompletionModel, SelectedModel);
         var edit = First(InlineEditModel, CodeActionsModel, SelectedModel);
-        FimModelLine  = fim.Length  > 0 ? Strings.SettingsModelUsed(fim)  : string.Empty;
+        FimModelLine  = fim.Length  > 0 ? Strings.SettingsModelUsed(fim)
+                      : ownServer       ? Strings.SettingsNoModelChosen
+                      :                   string.Empty;
         EditModelLine = edit.Length > 0 ? Strings.SettingsModelUsed(edit) : string.Empty;
     }
 

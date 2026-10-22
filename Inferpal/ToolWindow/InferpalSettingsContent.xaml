@@ -259,22 +259,6 @@
                         </Grid>
                         <TextBlock Text="{Binding HintChatModel}" Style="{StaticResource Hint}"/>
                     </StackPanel>
-                    <StackPanel Margin="0,0,16,16" Visibility="{Binding ShowInlineCompletions, Converter={StaticResource b2v}}">
-                        <TextBlock Text="{Binding LabelInlineCompletionModel}" Style="{StaticResource FieldLabel}"/>
-                        <ComboBox ItemsSource="{Binding AvailableOptionalModels}"
-                                  SelectedItem="{Binding InlineCompletionModel, Mode=TwoWay}" IsEditable="False"
-                                  ItemTemplate="{StaticResource OptionalModelItem}" Tag="{Binding EmptySameAsChat}"
-                                  AutomationProperties.Name="{Binding LabelInlineCompletionModel}"/>
-                        <TextBlock Text="{Binding HintInlineCompletionModel}" Style="{StaticResource Hint}"/>
-                    </StackPanel>
-                    <StackPanel Margin="0,0,16,16">
-                        <TextBlock Text="{Binding LabelRagEmbeddingModel}" Style="{StaticResource FieldLabel}"/>
-                        <ComboBox ItemsSource="{Binding AvailableEmbeddingModels}"
-                                  SelectedItem="{Binding RagEmbeddingModel, Mode=TwoWay}" IsEditable="False"
-                                  ItemTemplate="{StaticResource OptionalModelItem}" Tag="{Binding EmptyAutomatic}"
-                                  AutomationProperties.Name="{Binding LabelRagEmbeddingModel}"/>
-                        <TextBlock Text="{Binding HintRagEmbeddingModel}" Style="{StaticResource Hint}"/>
-                    </StackPanel>
                     <StackPanel Margin="0,0,16,16">
                         <TextBlock Text="{Binding LabelContextWindowSize}" Style="{StaticResource FieldLabel}"/>
                         <StackPanel Orientation="Horizontal">
@@ -315,6 +299,118 @@
                                    Foreground="{Binding TextForeground}"/>
                     </StackPanel>
                 </StackPanel>
+
+                <!-- Autocomplete and code search: each on the server above, or on a server of its own with its address
+                     and Test button; their kind and key sit in the advanced Connection section. -->
+                <StackPanel Visibility="{Binding ShowInlineCompletions, Converter={StaticResource b2v}}">
+                    <TextBlock Text="{Binding LabelSectionAutocomplete}" Style="{StaticResource SectionTitle}" Margin="0,0,0,8"/>
+                    <Grid Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,16,16">
+                            <TextBlock Text="{Binding LabelRunsOn}" Style="{StaticResource FieldLabel}"/>
+                            <ComboBox ItemsSource="{Binding AvailableCompletionPlaces}"
+                                      SelectedItem="{Binding CompletionRunsOn, Mode=TwoWay}" IsEditable="False"
+                                      AutomationProperties.Name="{Binding AutomationCompletionRunsOn}"/>
+                            <TextBlock Text="{Binding HintCompletionRunsOn}" Style="{StaticResource Hint}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,16,16">
+                            <TextBlock Text="{Binding LabelRoleModel}" Style="{StaticResource FieldLabel}"/>
+                            <ComboBox ItemsSource="{Binding AvailableCompletionModels}"
+                                      SelectedItem="{Binding InlineCompletionModel, Mode=TwoWay}" IsEditable="False"
+                                      ItemTemplate="{StaticResource OptionalModelItem}" Tag="{Binding CompletionEmptyChoice}"
+                                      AutomationProperties.Name="{Binding LabelInlineCompletionModel}"/>
+                            <TextBlock Text="{Binding HintInlineCompletionModel}" Style="{StaticResource Hint}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,16,16"
+                                    Visibility="{Binding CompletionElsewhere, Converter={StaticResource b2v}}">
+                            <TextBlock Text="{Binding LabelRoleServerUrl}" Style="{StaticResource FieldLabel}"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0" FontFamily="Cascadia Mono, Consolas" VerticalContentAlignment="Center"
+                                         Text="{Binding CompletionBaseUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         AutomationProperties.Name="{Binding AutomationCompletionUrl}"/>
+                                <Button Grid.Column="1" Content="{Binding BtnTest}" Command="{Binding TestCompletionServerCommand}"
+                                        AutomationProperties.Name="{Binding AutomationCompletionTest}" Padding="12,4" Margin="8,0,0,0"/>
+                            </Grid>
+                            <TextBlock Text="{Binding CompletionStatus}" Foreground="{Binding TextForeground}" TextWrapping="Wrap" Margin="0,5,0,0">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Text, RelativeSource={RelativeSource Self}}" Value="">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Text="{Binding HintRoleServerUrl}" Style="{StaticResource Hint}"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+
+                <TextBlock Text="{Binding LabelSectionSearch}" Style="{StaticResource SectionTitle}" Margin="0,0,0,8"/>
+                <Grid Margin="0,0,0,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,16,16">
+                        <TextBlock Text="{Binding LabelRunsOn}" Style="{StaticResource FieldLabel}"/>
+                        <ComboBox ItemsSource="{Binding AvailableSearchPlaces}"
+                                  SelectedItem="{Binding SearchRunsOn, Mode=TwoWay}" IsEditable="False"
+                                  AutomationProperties.Name="{Binding AutomationSearchRunsOn}"/>
+                        <TextBlock Text="{Binding HintSearchRunsOn}" Style="{StaticResource Hint}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,16,16">
+                        <TextBlock Text="{Binding LabelRoleModel}" Style="{StaticResource FieldLabel}"/>
+                        <ComboBox ItemsSource="{Binding AvailableEmbeddingModels}"
+                                  SelectedItem="{Binding RagEmbeddingModel, Mode=TwoWay}" IsEditable="False"
+                                  ItemTemplate="{StaticResource OptionalModelItem}" Tag="{Binding EmptyAutomatic}"
+                                  AutomationProperties.Name="{Binding LabelRagEmbeddingModel}"/>
+                        <TextBlock Text="{Binding HintRagEmbeddingModel}" Style="{StaticResource Hint}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,16,16"
+                                Visibility="{Binding SearchElsewhere, Converter={StaticResource b2v}}">
+                        <TextBlock Text="{Binding LabelRoleServerUrl}" Style="{StaticResource FieldLabel}"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0" FontFamily="Cascadia Mono, Consolas" VerticalContentAlignment="Center"
+                                     Text="{Binding SearchBaseUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     AutomationProperties.Name="{Binding AutomationSearchUrl}"/>
+                            <Button Grid.Column="1" Content="{Binding BtnTest}" Command="{Binding TestSearchServerCommand}"
+                                    AutomationProperties.Name="{Binding AutomationSearchTest}" Padding="12,4" Margin="8,0,0,0"/>
+                        </Grid>
+                        <TextBlock Text="{Binding SearchStatus}" Foreground="{Binding TextForeground}" TextWrapping="Wrap" Margin="0,5,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Text, RelativeSource={RelativeSource Self}}" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Text="{Binding HintRoleServerUrl}" Style="{StaticResource Hint}"/>
+                    </StackPanel>
+                </Grid>
 
                 <!-- Loaded now: what the server holds in memory, what each model is used for, and the unload buttons. -->
                 <TextBlock Text="{Binding LabelLoadedModels}" Style="{StaticResource SectionTitle}" Margin="0,0,0,6"/>
@@ -627,6 +723,31 @@
                             <TextBlock Text="{Binding LabelApiKey}" Style="{StaticResource FieldLabel}"/>
                             <TextBox Text="{Binding ApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                      AutomationProperties.Name="{Binding LabelApiKey}"/>
+                            <TextBlock Text="{Binding HintApiKey}" Style="{StaticResource Hint}"/>
+                        </StackPanel>
+                        <!-- A role's own server: its kind (its Test button fills it in) and its key, never the chat's. -->
+                        <StackPanel Margin="0,0,16,16" Visibility="{Binding CompletionElsewhere, Converter={StaticResource b2v}}">
+                            <TextBlock Text="{Binding LabelCompletionProvider}" Style="{StaticResource FieldLabel}"/>
+                            <ComboBox ItemsSource="{Binding AvailableProviders}" SelectedItem="{Binding CompletionProvider, Mode=TwoWay}"
+                                      IsEditable="False" AutomationProperties.Name="{Binding LabelCompletionProvider}"/>
+                            <TextBlock Text="{Binding HintRoleProvider}" Style="{StaticResource Hint}"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,16,16" Visibility="{Binding CompletionElsewhere, Converter={StaticResource b2v}}">
+                            <TextBlock Text="{Binding LabelCompletionApiKey}" Style="{StaticResource FieldLabel}"/>
+                            <TextBox Text="{Binding CompletionApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     AutomationProperties.Name="{Binding LabelCompletionApiKey}"/>
+                            <TextBlock Text="{Binding HintApiKey}" Style="{StaticResource Hint}"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,16,16" Visibility="{Binding SearchElsewhere, Converter={StaticResource b2v}}">
+                            <TextBlock Text="{Binding LabelSearchProvider}" Style="{StaticResource FieldLabel}"/>
+                            <ComboBox ItemsSource="{Binding AvailableProviders}" SelectedItem="{Binding SearchProvider, Mode=TwoWay}"
+                                      IsEditable="False" AutomationProperties.Name="{Binding LabelSearchProvider}"/>
+                            <TextBlock Text="{Binding HintRoleProvider}" Style="{StaticResource Hint}"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,16,16" Visibility="{Binding SearchElsewhere, Converter={StaticResource b2v}}">
+                            <TextBlock Text="{Binding LabelSearchApiKey}" Style="{StaticResource FieldLabel}"/>
+                            <TextBox Text="{Binding SearchApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     AutomationProperties.Name="{Binding LabelSearchApiKey}"/>
                             <TextBlock Text="{Binding HintApiKey}" Style="{StaticResource Hint}"/>
                         </StackPanel>
                     </UniformGrid>

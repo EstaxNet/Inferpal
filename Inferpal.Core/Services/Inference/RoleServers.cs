@@ -83,15 +83,66 @@ internal static class RoleServers
                 "role-no-kind|" + role + "|" + url);
     }
 
-    private static bool SameMachine(string? a, string? b)
+    /// <summary>Do <paramref name="a"/> and <paramref name="b"/> run on one machine? This machine is one host whatever
+    /// it is called — localhost, its name, or one of its own network addresses.</summary>
+    internal static bool SameMachine(string? a, string? b)
     {
         string? Host(string? url)
         {
             if (Hardware.HardwareProbe.IsLoopback(url)) return "localhost";
-            return Uri.TryCreate(ProviderProbe.RootOf(url), UriKind.Absolute, out var u) ? u.Host.ToLowerInvariant() : null;
+            if (!Uri.TryCreate(ProviderProbe.RootOf(url), UriKind.Absolute, out var u)) return null;
+            var host = u.Host.ToLowerInvariant();
+            return ThisMachine().Contains(host) ? "localhost" : host;
         }
         var (ha, hb) = (Host(a), Host(b));
         return ha is null || hb is null || ha == hb;
+    }
+
+    /// <summary>This machine's names and addresses as last read; replaced whole, never changed in place, so a thread that
+    /// reads it while another refreshes it sees one reading or the other.</summary>
+    private sealed record MachineNames(DateTime At, IReadOnlySet<string> Names);
+
+    private static MachineNames _thisMachine = new(DateTime.MinValue, new HashSet<string>());
+
+    /// <summary>This machine's names (its host name, its domain name, its Windows name) and its own addresses, read from
+    /// the machine itself — no lookup on the network — and kept a minute: a completion asks on every pause in typing, and
+    /// these change only when the network does.</summary>
+    /// <remarks>⚠ <see cref="Environment.MachineName"/> alone is the NetBIOS name, upper case and cut at 15 characters:
+    /// a URL written with the real host name (<c>dams-workstation-01</c>, <c>pc.lan</c>) would not be recognised.</remarks>
+    private static IReadOnlySet<string> ThisMachine()
+    {
+        var known = _thisMachine;
+        if (DateTime.UtcNow - known.At < TimeSpan.FromMinutes(1)) return known.Names;
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        // Best effort: a machine whose names cannot be read is judged by localhost alone, never by an exception on the
+        // completion's path.
+        void Read(string what, Action read)
+        {
+            try { read(); }
+            catch (Exception ex) { Diagnostics.Swallow("RoleServers.ThisMachine." + what, ex); }
+        }
+        Read("MachineName", () => names.Add(Environment.MachineName.ToLowerInvariant()));
+        Read("HostName", () =>
+        {
+            var host = System.Net.Dns.GetHostName().ToLowerInvariant();
+            names.Add(host);
+            var domain = System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().DomainName;
+            if (!string.IsNullOrWhiteSpace(domain)) names.Add($"{host}.{domain.Trim('.')}".ToLowerInvariant());
+        });
+        Read("Addresses", () =>
+        {
+            foreach (var nic in System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces())
+                foreach (var address in nic.GetIPProperties().UnicastAddresses)
+                {
+                    // An IPv6 address is written in brackets in a URL, and Uri.Host keeps them (without the scope).
+                    var ip = address.Address;
+                    names.Add(ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6
+                        ? $"[{new System.Net.IPAddress(ip.GetAddressBytes())}]".ToLowerInvariant()
+                        : ip.ToString());
+                }
+        });
+        _thisMachine = new MachineNames(DateTime.UtcNow, names);
+        return names;
     }
 
     private static bool Is(string? value, string expected) => string.Equals(value?.Trim(), expected, StringComparison.OrdinalIgnoreCase);

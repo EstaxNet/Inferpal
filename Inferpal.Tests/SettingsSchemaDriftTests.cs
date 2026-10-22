@@ -665,14 +665,18 @@ public class SettingsSchemaDriftTests
     public void VsSettings_ModelListsNeverDropTheValueTheirDropdownsHold()
     {
         // The repository's C# reader, ConventionCoverageTests': a COMMENTED-OUT call does not count.
+        // The main file, and the roles' (their boxes list their own server's models).
         var source = ConventionCoverageTests.CodeOnly(
-            Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalSettingsData.cs"));
+            Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalSettingsData.cs"))
+            + ConventionCoverageTests.CodeOnly(
+            Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalSettingsData.RoleServers.cs"));
 
         (string List, string[] Held)[] lists =
         [
-            ("AvailableModels",          ["current"]),
-            ("AvailableOptionalModels",  ["CodeActionsModel", "InlineCompletionModel", "InlineEditModel", "AgentModel", "UtilityModel"]),
-            ("AvailableEmbeddingModels", ["RagEmbeddingModel"]),
+            ("AvailableModels",           ["current"]),
+            ("AvailableOptionalModels",   ["CodeActionsModel", "InlineEditModel", "AgentModel", "UtilityModel"]),
+            ("AvailableCompletionModels", ["InlineCompletionModel"]),
+            ("AvailableEmbeddingModels",  ["RagEmbeddingModel"]),
         ];
 
         foreach (var (list, held) in lists)

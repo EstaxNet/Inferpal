@@ -25,7 +25,9 @@ public class UnsavedCountTests
     {
         var pages = ConventionCoverageTests.CodeOnly(Path.Combine(ConversationPersistenceSilenceTests.RepoRoot(),
                                                                    "Inferpal", "ToolWindow", "InferpalSettingsData.Pages.cs"));
-        Assert.Contains("fields.Count(f => !SettingsFallback.SameAsSaved(f.Form, f.Saved))", pages, StringComparison.Ordinal);
+        // The form's fields and the roles' servers, all through the one rule.
+        Assert.Contains("fields.Concat(RoleServerChanges(saved)).Count(f => !SettingsFallback.SameAsSaved(f.Form, f.Saved))", pages,
+                        StringComparison.Ordinal);
         Assert.Contains("(CustomSystemPrompt ?? string.Empty, saved.CustomSystemPrompt)", pages, StringComparison.Ordinal);   // witness
     }
 }

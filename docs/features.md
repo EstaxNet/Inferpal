@@ -208,9 +208,10 @@ exists.
 - Suppressed while IntelliSense triggers are active. Supported on Ollama, LM Studio, and OpenAI-compatible servers that
   complete around the cursor (llama-server, Ollama's `/v1`) — see [Providers](providers.md).
 - **On a server of their own** — the chat on a team server, ghost text on this machine: *Runs on › Another server* on
-  the *Server and models* page (VS Code), or `inlineCompletionRunsOn` in `config.json`. That server gets its own key,
-  never the chat's, and its own model — the chat's is not there to fall back on. Ghost text on another machine than
-  the chat's no longer waits for a chat answer to finish.
+  the *Server and models* page (its kind and key under *Connection*, with the advanced settings), or
+  `inlineCompletionRunsOn` in `config.json`. That server gets its own key, never the chat's, and its own model — the
+  chat's is not there to fall back on. Ghost text on another machine than the chat's no longer waits for a chat answer
+  to finish; on the chat's machine — under any of its names or addresses — it still does, the card being one.
 
 ## Search & knowledge
 

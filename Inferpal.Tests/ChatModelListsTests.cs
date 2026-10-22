@@ -122,7 +122,11 @@ public class ChatModelListsTests
         Assert.Contains("var chatModels = models.Chat;", settings, StringComparison.Ordinal);
         Assert.Contains("SelectionPreservingList.Sync(AvailableModels, chatModels, [current]);", settings, StringComparison.Ordinal);
         Assert.Contains("SelectionPreservingList.Sync(AvailableOptionalModels, chatModels,", settings, StringComparison.Ordinal);
-        Assert.Contains("SelectionPreservingList.Sync(AvailableEmbeddingModels, models.Embedding,", settings, StringComparison.Ordinal);
+        // The completion and code-search boxes: their server's listing — the chat's one on the chat's server.
+        var roles = ConventionCoverageTests.CodeOnly(Path.Combine(WebviewRebuildTests.RepoRoot(), "Inferpal", "ToolWindow", "InferpalSettingsData.RoleServers.cs"));
+        Assert.Contains("_chatListing = models;", settings, StringComparison.Ordinal);
+        Assert.Contains("SelectionPreservingList.Sync(AvailableCompletionModels, Listing(ServerRole.Completion).Chat,", roles, StringComparison.Ordinal);
+        Assert.Contains("SelectionPreservingList.Sync(AvailableEmbeddingModels, Listing(ServerRole.Search).Embedding,", roles, StringComparison.Ordinal);
 
         var chrome = ConventionCoverageTests.CodeOnly(Path.Combine(WebviewRebuildTests.RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowData.Chrome.cs"));
         Assert.Contains("listed = await _client.ListModelsByKindAsync(ct);", chrome, StringComparison.Ordinal);

@@ -307,6 +307,8 @@ internal partial class InferpalSettingsData
         nameof(RagTopKText), nameof(RagSimilarityThresholdText), nameof(InlineCompletionEnabled), nameof(SelectedInlineMode),
         nameof(InlineDiffPreviewEnabled), nameof(McpEnabled), nameof(PermissionRules), nameof(SelectedLanguage),
         nameof(ToolBubblesExpanded), nameof(RunEndSoundEnabled), nameof(ChatDensity), nameof(HistoryStorage),
+        nameof(CompletionRunsOn), nameof(CompletionBaseUrl), nameof(CompletionProvider), nameof(CompletionApiKey),
+        nameof(SearchRunsOn), nameof(SearchBaseUrl), nameof(SearchProvider), nameof(SearchApiKey),
     };
 
     /// <summary>Recounts the fields that differ from the configuration the form was opened (or last saved)
@@ -389,7 +391,7 @@ internal partial class InferpalSettingsData
             (ChatDensity, saved.IsCompactChat ? "compact" : "comfortable"),
             (HistoryStorage, ShownHistoryStorage(saved)),
         ];
-        return fields.Count(f => !SettingsFallback.SameAsSaved(f.Form, f.Saved));
+        return fields.Concat(RoleServerChanges(saved)).Count(f => !SettingsFallback.SameAsSaved(f.Form, f.Saved));
     }
 
     // ── Cancel ─────────────────────────────────────────────────────────────────
@@ -449,6 +451,8 @@ internal partial class InferpalSettingsData
         RunEndSoundEnabled = c.RunEndSoundEnabled;
         ChatDensity = c.IsCompactChat ? "compact" : "comfortable";
         HistoryStorage = ShownHistoryStorage(c);
+        LoadRoleServerFields(c);
+        _ = ListRoleModelsAsync(force: false, CancellationToken.None);   // a server put back that was never listed
         ShowAdvanced = ModelRoleSettings.OpensAdvanced(c);
 
         SaveStatus = string.Empty;

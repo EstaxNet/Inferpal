@@ -85,6 +85,7 @@ internal partial class InferpalSettingsData
                 apiKey       = ApiKey?.Trim() ?? string.Empty;
                 url          = string.IsNullOrWhiteSpace(BaseUrl) ? _config.BaseUrl : BaseUrl.Trim();
                 budgetText   = VramBudgetText.Trim();
+                var roles    = RoleDraft();
                 current      = new()
                 {
                     ["defaultModel"]          = SelectedModel ?? "",
@@ -94,9 +95,10 @@ internal partial class InferpalSettingsData
                     ["codeActionsModel"]      = CodeActionsModel ?? "",
                     ["inlineEditModel"]       = InlineEditModel ?? "",
                     ["utilityModel"]          = UtilityModel ?? "",
-                    // Where autocomplete and code search run: a role on a server of its own keeps its model.
-                    ["inlineCompletionRunsOn"] = _config.InlineCompletionRunsOn,
-                    ["ragEmbeddingRunsOn"]     = _config.RagEmbeddingRunsOn,
+                    // Where autocomplete and code search run, as the form shows it: a role on a server of its own keeps
+                    // its model.
+                    ["inlineCompletionRunsOn"] = roles.InlineCompletionRunsOn,
+                    ["ragEmbeddingRunsOn"]     = roles.RagEmbeddingRunsOn,
                 };
             });
             var server = new InferpalConfig { Provider = providerCode, BaseUrl = url, ApiKey = apiKey };
