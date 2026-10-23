@@ -546,6 +546,11 @@ export class HostClient {
     return this.connection().sendRequest<GestureQuestion>('debug/analyze', { model });
   }
 
+  /** The explorer's "Explain": a file as the editor has it, or a folder as `@folder` attaches it. */
+  explorerExplain(path: string, model?: string): Promise<GestureQuestion> {
+    return this.connection().sendRequest<GestureQuestion>('explorer/explain', { path, model });
+  }
+
   /** Models of the backend the caller is LOOKING AT. Without overrides this is the saved
    *  configuration; the settings panel passes what its form currently holds, because a refresh that
    *  lists the previous URL's models is a control that answers about something else. */

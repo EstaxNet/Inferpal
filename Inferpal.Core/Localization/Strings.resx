@@ -98,6 +98,15 @@ This cannot be undone.</value></data>
   <data name="AnalyzeStopChip" xml:space="preserve"><value>Debugger stop</value></data>
   <data name="AnalyzeStopNotPaused" xml:space="preserve"><value>The debugger is not paused: stop at a breakpoint or an exception, then ask again.</value></data>
   <data name="AnalyzeStopNoInProc" xml:space="preserve"><value>The debugger's state could not be read: Inferpal's in-process part is not loaded in this Visual Studio — /diagnostics says why.</value></data>
+  <data name="CheckPathOutside" xml:space="preserve"><value>'{0}' is not in this git repository: `/check &lt;path&gt;` reviews a file or a folder in it.</value></data>
+  <data name="CheckRevisionAlsoPath" xml:space="preserve"><value>`{0}` is also a file or a folder here: `/check ./{0}` reviews its uncommitted changes.</value></data>
+  <data name="CheckPathStagedLabel" xml:space="preserve"><value>Reviewed: the staged changes under `{0}` (the unstaged ones are reviewed once nothing there is staged).</value></data>
+  <data name="AttachBinaryFile" xml:space="preserve"><value>{0} is a binary file: it has no text to read.</value></data>
+  <data name="CheckPathNoDiff" xml:space="preserve"><value>No uncommitted change under `{0}`: nothing to review.</value></data>
+  <data name="CheckPathLabel" xml:space="preserve"><value>Reviewed: the uncommitted changes under `{0}`.</value></data>
+  <data name="ExplainFileQuestion" xml:space="preserve"><value>Explain {0}: what it does, how it works, and how it fits in the project.</value></data>
+  <data name="ExplainFolderQuestion" xml:space="preserve"><value>Explain {0}: what its parts do and how they fit together.</value></data>
+  <data name="ExplorerNoSelection" xml:space="preserve"><value>Select a file, a folder or a project in Solution Explorer, then choose the command again.</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>Explain the code from `{0}` with these four sections:
@@ -533,7 +542,7 @@ Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</val
   <data name="ChecksListHeader" xml:space="preserve"><value>**Review checks** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>Nothing to review — the working tree is clean.</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>Reviewing the diff…</value></data>
-  <data name="CheckUnknownName" xml:space="preserve"><value>No check and no git revision named '{0}'. The checks: {1}. `/check &lt;base&gt;..HEAD` reviews a branch, `/check &lt;commit&gt;` a commit.</value></data>
+  <data name="CheckUnknownName" xml:space="preserve"><value>No check and no git revision named '{0}'. The checks: {1}. `/check &lt;base&gt;..HEAD` reviews a branch, `/check &lt;commit&gt;` a commit. `/check &lt;path&gt;` reviews the changes under a file or a folder.</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>No anchored finding — the review turned up nothing on this diff.</value></data>
   <data name="CheckNoFindingsNarrowed" xml:space="preserve"><value>No anchored finding — the check turned up nothing on this diff.</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ No review: **{0}** spent its whole reply reasoning and wrote no finding. This says nothing about the diff — it is not a clean result. A larger context, or a model that does not reason first, avoids it.</value></data>
@@ -748,7 +757,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="SlashHintTemplate" xml:space="preserve"><value>start a session from a preset template — /template &lt;id&gt;</value></data>
   <data name="TemplateUnknown" xml:space="preserve"><value>Unknown template `{0}`. Type `/template` to see the list.</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>attach full git diff as context chip — /diff [path]</value></data>
-  <data name="SlashHintCheck" xml:space="preserve"><value>AI-review the current git diff, a branch or a commit, plus your .inferpal/checks — /check [name|init|&lt;revision&gt;|A..B]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>AI-review the current git diff, a branch or a commit, plus your .inferpal/checks — /check [name|init|&lt;revision&gt;|A..B|&lt;path&gt;]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>list project rules in .inferpal/rules — /rules [init]</value></data>
   <data name="SlashHintChecks" xml:space="preserve"><value>list review checks in .inferpal/checks — /checks [init]</value></data>
   <data name="SlashHintSnippets" xml:space="preserve"><value>list saved code snippets — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>
@@ -1642,7 +1651,7 @@ What you save there applies from your next question, in this thread and the othe
   <data name="CheckNameAlsoRevision" xml:space="preserve"><value>`{0}` is also a git revision; this review used the check of that name. `/check {1}` reviews the revision.</value></data>
   <data name="CheckShallowBoundary" xml:space="preserve"><value>`{0}` has no parent in this shallow clone: its parent was not fetched, so the commit cannot be compared with it. `git fetch --deepen=1` fetches it.</value></data>
   <data name="CheckCommitDiffTruncated" xml:space="preserve"><value>⚠ Only the first {0} characters of this commit's diff were reviewed, out of {1}. What follows is about that part: the rest of the commit was not read.</value></data>
-  <data name="CheckUnknownRevision" xml:space="preserve"><value>No git revision and no check named '{0}' (`/checks` lists the checks; `/checks init` writes one). `/check &lt;base&gt;..HEAD` reviews a branch, `/check &lt;commit&gt;` a commit.</value></data>
+  <data name="CheckUnknownRevision" xml:space="preserve"><value>No git revision and no check named '{0}' (`/checks` lists the checks; `/checks init` writes one). `/check &lt;base&gt;..HEAD` reviews a branch, `/check &lt;commit&gt;` a commit. `/check &lt;path&gt;` reviews the changes under a file or a folder.</value></data>
   <data name="CheckWithoutChecks" xml:space="preserve"><value>No review check applied: this is the general review. `/checks init` writes an example check, to add your own criteria.</value></data>
   <data name="CheckRangeDiffTruncated" xml:space="preserve"><value>⚠ Only the first {0} characters of the diff were reviewed, out of {1}. What follows is about that part, not about the whole change — review its commits one at a time (`/check &lt;commit&gt;`) or a shorter range.</value></data>
   <data name="CheckSeveralBases" xml:space="preserve"><value>The two sides have {0} {0:common base|common bases} (a criss-cross merge): the diff starts at `{1}` and may show changes the other side already has.</value></data>

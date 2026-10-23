@@ -321,6 +321,16 @@ internal static class MentionController
     public static string? FileRefusal(string filePath, string? root) => Governance.ContentExclusions.NoticeFor(filePath, root);
 
     /// <summary>
+    /// Why a file attaches no text because it is binary (an image, an assembly, a key), or <c>null</c> — never its bytes
+    /// decoded as text, which spend the window on garbage the model reads as code.
+    /// </summary>
+    public static string? BinaryRefusal(string filePath)
+    {
+        try { return Tools.TextFileEncoding.IsBinaryFile(filePath) ? Strings.AttachBinaryFile(Path.GetFileName(filePath)) : null; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return null; }
+    }
+
+    /// <summary>
     /// Why <c>@code</c> attaches nothing — the notice shown in place of a chip — or <c>null</c> when there is an index to
     /// search. An empty index answers "not available": under a 🔮 chip that sentence passes for the code found.
     /// </summary>
@@ -361,7 +371,10 @@ internal static class MentionController
     /// </remarks>
     /// <param name="overlay">The editor's unsaved buffers (VS Code), read instead of the disk for the files they hold —
     /// as read_file shows them; null when the editor mirrors none.</param>
-    public static string BuildFolderContext(string folderPath, CancellationToken ct, Editor.OpenDocumentOverlay? overlay = null)
+    /// <param name="maxChars">The bodies' budget; smaller than the default for a reader whose window is (a code action) —
+    /// given here, never cut after, or the notes below the bodies, which say what is missing, are what goes.</param>
+    public static string BuildFolderContext(string folderPath, CancellationToken ct, Editor.OpenDocumentOverlay? overlay = null,
+                                            int maxChars = MaxTotalChars)
     {
         var sb = new StringBuilder();
         sb.Append("Folder: ").AppendLine(folderPath).AppendLine();
@@ -396,9 +409,9 @@ internal static class MentionController
             catch { unreadable++; continue; }
 
             var header = $"\n----- {Path.GetRelativePath(folderPath, f)} -----\n";
-            if (sb.Length + header.Length + body.Length > MaxTotalChars)
+            if (sb.Length + header.Length + body.Length > maxChars)
             {
-                var budget = MaxTotalChars - sb.Length - header.Length;
+                var budget = maxChars - sb.Length - header.Length;
                 if (budget < 200) { budgetStop = true; break; }
                 body = body[..Math.Min(body.Length, budget)] + "\n…(truncated)";
             }
@@ -414,7 +427,7 @@ internal static class MentionController
         if (files.Count > MaxFiles)
             notes.Add($"(bodies: the first {MaxFiles} of {files.Count} listed files — the rest are named above but NOT included)");
         if (budgetStop)
-            notes.Add($"(stopped at the {MaxTotalChars:N0}-character budget: {attempted - included - unreadable} more listed file(s) not included)");
+            notes.Add($"(stopped at the {maxChars:N0}-character budget: {attempted - included - unreadable} more listed file(s) not included)");
         if (unreadable > 0)
             notes.Add($"({unreadable} file(s) could not be read and are not included)");
         if (limits.FileCapHit)

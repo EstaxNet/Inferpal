@@ -94,6 +94,15 @@
   <data name="AnalyzeStopChip" xml:space="preserve"><value>デバッガーの停止</value></data>
   <data name="AnalyzeStopNotPaused" xml:space="preserve"><value>デバッガーが一時停止していません。ブレークポイントか例外で停止してから、もう一度求めてください。</value></data>
   <data name="AnalyzeStopNoInProc" xml:space="preserve"><value>デバッガーの状態を読み取れませんでした: この Visual Studio に Inferpal のインプロセス部分が読み込まれていません — 理由は /diagnostics に表示されます。</value></data>
+  <data name="CheckPathOutside" xml:space="preserve"><value>'{0}' はこの git リポジトリ内にありません。`/check &lt;パス&gt;` はリポジトリ内のファイルかフォルダーをレビューします。</value></data>
+  <data name="CheckRevisionAlsoPath" xml:space="preserve"><value>`{0}` はここではファイルかフォルダーでもあります。`/check ./{0}` でそのコミットされていない変更をレビューします。</value></data>
+  <data name="CheckPathStagedLabel" xml:space="preserve"><value>レビュー対象: `{0}` の下のステージ済みの変更 (そこに何もステージされていなければ、それ以外の変更)。</value></data>
+  <data name="AttachBinaryFile" xml:space="preserve"><value>{0} はバイナリ ファイルです。読み取るテキストがありません。</value></data>
+  <data name="CheckPathNoDiff" xml:space="preserve"><value>`{0}` の下にコミットされていない変更はありません。レビューするものはありません。</value></data>
+  <data name="CheckPathLabel" xml:space="preserve"><value>レビュー対象: `{0}` の下のコミットされていない変更。</value></data>
+  <data name="ExplainFileQuestion" xml:space="preserve"><value>{0} を説明してください: 何をするのか、どう動くのか、プロジェクトでの位置づけ。</value></data>
+  <data name="ExplainFolderQuestion" xml:space="preserve"><value>{0} を説明してください: 各部分が何をし、どう組み合わさっているか。</value></data>
+  <data name="ExplorerNoSelection" xml:space="preserve"><value>ソリューション エクスプローラーでファイル、フォルダー、またはプロジェクトを選んでから、もう一度コマンドを選んでください。</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>`{0}` のコードを次の4つのセクションで説明してください：
@@ -532,7 +541,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="ChecksListHeader" xml:space="preserve"><value>**レビューチェック** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>レビュー対象がありません — 作業ツリーはクリーンです。</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>差分をレビュー中…</value></data>
-  <data name="CheckUnknownName" xml:space="preserve"><value>「{0}」という名前のチェックも git リビジョンもありません。チェック: {1}。`/check &lt;base&gt;..HEAD` でブランチ、`/check &lt;commit&gt;` でコミットをレビューします。</value></data>
+  <data name="CheckUnknownName" xml:space="preserve"><value>「{0}」という名前のチェックも git リビジョンもありません。チェック: {1}。`/check &lt;base&gt;..HEAD` でブランチ、`/check &lt;commit&gt;` でコミットをレビューします。 `/check &lt;パス&gt;` はファイルかフォルダーの下の変更をレビューします。</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>差分に紐づく指摘はありません — レビューでは何も検出されませんでした。</value></data>
   <data name="CheckNoFindingsNarrowed" xml:space="preserve"><value>差分に紐づく指摘はありません — このチェックでは何も検出されませんでした。</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ レビューなし: **{0}** は回答全体を推論に費やし、指摘を書きませんでした。これは差分について何も示しておらず、問題なしという結果ではありません。より大きなコンテキストか、先に推論しないモデルで回避できます。</value></data>
@@ -740,7 +749,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SlashHintTemplate" xml:space="preserve"><value>プリセットテンプレートからセッションを開始 — /template &lt;id&gt;</value></data>
   <data name="TemplateUnknown" xml:space="preserve"><value>不明なテンプレート `{0}` です。`/template` と入力すると一覧を表示します。</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>git diff 全体をコンテキストチップとして添付 — /diff [パス]</value></data>
-  <data name="SlashHintCheck" xml:space="preserve"><value>現在の git diff、ブランチ、コミットを AI レビュー（.inferpal/checks も適用） — /check [名前|init|&lt;リビジョン&gt;|A..B]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>現在の git diff、ブランチ、コミットを AI レビュー（.inferpal/checks も適用） — /check [名前|init|&lt;リビジョン&gt;|A..B|&lt;パス&gt;]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>.inferpal/rules 内のプロジェクトルールを一覧表示 — /rules [init]</value></data>
   <data name="SlashHintChecks" xml:space="preserve"><value>.inferpal/checks 内のレビューチェックを一覧表示 — /checks [init]</value></data>
   <data name="SlashHintSnippets" xml:space="preserve"><value>保存されたコードスニペットを一覧表示 — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>
@@ -1638,7 +1647,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="CheckNameAlsoRevision" xml:space="preserve"><value>`{0}` は git のリビジョンでもあります。このレビューでは同名のチェックを使いました。`/check {1}` でリビジョンをレビューします。</value></data>
   <data name="CheckShallowBoundary" xml:space="preserve"><value>`{0}` には、このシャロークローン内に親コミットがありません。親が取得されていないため、比較できません。`git fetch --deepen=1` で取得できます。</value></data>
   <data name="CheckCommitDiffTruncated" xml:space="preserve"><value>⚠ このコミットの差分 {1} 文字のうち、先頭 {0} 文字だけがレビューされました。以下はその部分についてであり、コミットの残りは読まれていません。</value></data>
-  <data name="CheckUnknownRevision" xml:space="preserve"><value>「{0}」という名前の git リビジョンもチェックもありません（`/checks` でチェックの一覧、`/checks init` で作成）。`/check &lt;base&gt;..HEAD` でブランチ、`/check &lt;commit&gt;` でコミットをレビューします。</value></data>
+  <data name="CheckUnknownRevision" xml:space="preserve"><value>「{0}」という名前の git リビジョンもチェックもありません（`/checks` でチェックの一覧、`/checks init` で作成）。`/check &lt;base&gt;..HEAD` でブランチ、`/check &lt;commit&gt;` でコミットをレビューします。 `/check &lt;パス&gt;` はファイルかフォルダーの下の変更をレビューします。</value></data>
   <data name="CheckWithoutChecks" xml:space="preserve"><value>適用されたチェックはありません。これは一般的なレビューです。`/checks init` でサンプルのチェックを作成し、独自の基準を追加できます。</value></data>
   <data name="CheckRangeDiffTruncated" xml:space="preserve"><value>⚠ 差分全体 {1} 文字のうち、先頭 {0} 文字だけがレビューされました。以下はその部分についてであり、変更全体についてではありません。コミットを 1 つずつ（`/check &lt;commit&gt;`）、または短い範囲でレビューしてください。</value></data>
   <data name="CheckSeveralBases" xml:space="preserve"><value>両側に共通の基点が {0} 個あります（クリスクロスマージ）。差分は `{1}` から始まり、もう一方にすでにある変更が含まれることがあります。</value></data>

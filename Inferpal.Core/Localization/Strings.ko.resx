@@ -94,6 +94,15 @@
   <data name="AnalyzeStopChip" xml:space="preserve"><value>디버거 중지</value></data>
   <data name="AnalyzeStopNotPaused" xml:space="preserve"><value>디버거가 일시 중지되지 않았습니다. 중단점이나 예외에서 멈춘 뒤 다시 요청하세요.</value></data>
   <data name="AnalyzeStopNoInProc" xml:space="preserve"><value>디버거 상태를 읽지 못했습니다: 이 Visual Studio에 Inferpal의 in-process 부분이 로드되지 않았습니다 — 이유는 /diagnostics에서 확인하세요.</value></data>
+  <data name="CheckPathOutside" xml:space="preserve"><value>'{0}'은(는) 이 git 저장소에 없습니다. `/check &lt;경로&gt;`는 저장소 안의 파일이나 폴더를 검토합니다.</value></data>
+  <data name="CheckRevisionAlsoPath" xml:space="preserve"><value>`{0}`은(는) 여기서 파일이나 폴더이기도 합니다. `/check ./{0}`로 커밋되지 않은 변경을 검토하세요.</value></data>
+  <data name="CheckPathStagedLabel" xml:space="preserve"><value>검토 대상: `{0}` 아래의 스테이징된 변경(그곳에 스테이징된 것이 없으면 나머지 변경).</value></data>
+  <data name="AttachBinaryFile" xml:space="preserve"><value>{0}은(는) 이진 파일입니다. 읽을 텍스트가 없습니다.</value></data>
+  <data name="CheckPathNoDiff" xml:space="preserve"><value>`{0}` 아래에 커밋되지 않은 변경이 없습니다. 검토할 것이 없습니다.</value></data>
+  <data name="CheckPathLabel" xml:space="preserve"><value>검토 대상: `{0}` 아래의 커밋되지 않은 변경.</value></data>
+  <data name="ExplainFileQuestion" xml:space="preserve"><value>{0}을(를) 설명해 주세요: 무엇을 하는지, 어떻게 동작하는지, 프로젝트에서 어떤 역할인지.</value></data>
+  <data name="ExplainFolderQuestion" xml:space="preserve"><value>{0}을(를) 설명해 주세요: 각 부분이 무엇을 하고 어떻게 맞물리는지.</value></data>
+  <data name="ExplorerNoSelection" xml:space="preserve"><value>솔루션 탐색기에서 파일, 폴더 또는 프로젝트를 선택한 뒤 명령을 다시 선택하세요.</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>`{0}`의 코드를 다음 네 섹션으로 설명해 주세요:
@@ -532,7 +541,7 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
   <data name="ChecksListHeader" xml:space="preserve"><value>**리뷰 체크** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>검토할 내용이 없습니다 — 작업 트리가 깨끗합니다.</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>diff 검토 중…</value></data>
-  <data name="CheckUnknownName" xml:space="preserve"><value>'{0}'(이)라는 체크도 git 리비전도 없습니다. 체크: {1}. `/check &lt;base&gt;..HEAD`는 브랜치를, `/check &lt;commit&gt;`은 커밋을 검토합니다.</value></data>
+  <data name="CheckUnknownName" xml:space="preserve"><value>'{0}'(이)라는 체크도 git 리비전도 없습니다. 체크: {1}. `/check &lt;base&gt;..HEAD`는 브랜치를, `/check &lt;commit&gt;`은 커밋을 검토합니다. `/check &lt;경로&gt;`는 파일이나 폴더 아래의 변경을 검토합니다.</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>diff에 연결된 지적이 없습니다 — 검토에서 아무것도 발견되지 않았습니다.</value></data>
   <data name="CheckNoFindingsNarrowed" xml:space="preserve"><value>diff에 연결된 지적이 없습니다 — 이 체크에서 아무것도 발견되지 않았습니다.</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ 리뷰 없음: **{0}** 모델이 응답 전체를 추론에 쓰고 지적을 작성하지 않았습니다. 이것은 diff에 대해 아무것도 말해 주지 않으며 문제없음 결과가 아닙니다. 더 큰 컨텍스트나 먼저 추론하지 않는 모델로 피할 수 있습니다.</value></data>
@@ -740,7 +749,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="SlashHintTemplate" xml:space="preserve"><value>사전 설정 템플릿에서 세션 시작 — /template &lt;id&gt;</value></data>
   <data name="TemplateUnknown" xml:space="preserve"><value>알 수 없는 템플릿 `{0}`입니다. 목록을 보려면 `/template`을 입력하세요.</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>전체 git diff를 컨텍스트 칩으로 첨부 — /diff [경로]</value></data>
-  <data name="SlashHintCheck" xml:space="preserve"><value>현재 git diff, 브랜치 또는 커밋을 AI 검토(.inferpal/checks도 적용) — /check [이름|init|&lt;리비전&gt;|A..B]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>현재 git diff, 브랜치 또는 커밋을 AI 검토(.inferpal/checks도 적용) — /check [이름|init|&lt;리비전&gt;|A..B|&lt;경로&gt;]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>.inferpal/rules의 프로젝트 규칙 나열 — /rules [init]</value></data>
   <data name="SlashHintChecks" xml:space="preserve"><value>.inferpal/checks의 리뷰 검사 나열 — /checks [init]</value></data>
   <data name="SlashHintSnippets" xml:space="preserve"><value>저장된 코드 스니펫 나열 — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>
@@ -1638,7 +1647,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="CheckNameAlsoRevision" xml:space="preserve"><value>`{0}`는 git 리비전이기도 합니다. 이번 검토는 같은 이름의 체크를 사용했습니다. `/check {1}`로 리비전을 검토합니다.</value></data>
   <data name="CheckShallowBoundary" xml:space="preserve"><value>`{0}`에는 이 얕은 복제본 안에 부모 커밋이 없습니다. 부모를 가져오지 않아 비교할 수 없습니다. `git fetch --deepen=1`로 가져올 수 있습니다.</value></data>
   <data name="CheckCommitDiffTruncated" xml:space="preserve"><value>⚠ 이 커밋의 diff {1}자 중 처음 {0}자만 검토했습니다. 아래 내용은 그 부분에 대한 것이며, 커밋의 나머지는 읽지 않았습니다.</value></data>
-  <data name="CheckUnknownRevision" xml:space="preserve"><value>'{0}'(이)라는 git 리비전도 체크도 없습니다(`/checks`로 체크 목록, `/checks init`으로 생성). `/check &lt;base&gt;..HEAD`는 브랜치를, `/check &lt;commit&gt;`은 커밋을 검토합니다.</value></data>
+  <data name="CheckUnknownRevision" xml:space="preserve"><value>'{0}'(이)라는 git 리비전도 체크도 없습니다(`/checks`로 체크 목록, `/checks init`으로 생성). `/check &lt;base&gt;..HEAD`는 브랜치를, `/check &lt;commit&gt;`은 커밋을 검토합니다. `/check &lt;경로&gt;`는 파일이나 폴더 아래의 변경을 검토합니다.</value></data>
   <data name="CheckWithoutChecks" xml:space="preserve"><value>적용된 체크가 없습니다. 이번 검토는 일반 검토입니다. `/checks init`으로 예시 체크를 만들어 기준을 추가할 수 있습니다.</value></data>
   <data name="CheckRangeDiffTruncated" xml:space="preserve"><value>⚠ diff {1}자 중 처음 {0}자만 검토했습니다. 아래 내용은 그 부분에 대한 것이며 변경 전체에 대한 것이 아닙니다. 커밋을 하나씩(`/check &lt;commit&gt;`) 또는 더 짧은 범위로 검토하세요.</value></data>
   <data name="CheckSeveralBases" xml:space="preserve"><value>양쪽에 공통 기준점이 {0}개 있습니다(교차 병합). diff는 `{1}`에서 시작하며, 다른 쪽에 이미 있는 변경이 보일 수 있습니다.</value></data>

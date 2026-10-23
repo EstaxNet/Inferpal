@@ -50,12 +50,14 @@ internal static class CheckCommandHandler
         // Checks that cannot be read are named on every answer that depends on them: dropped silently, the
         // diff would be reviewed against fewer checks than the user wrote.
         var checks = ChecksService.Load(Path.Combine(projectRoot, ".inferpal", "checks"), out var unreadable);
-        // A check's name that is also a revision: every answer says how to review the revision.
+        // A check's name that is also a revision, a revision that is also a path: every answer says how to review the other.
         string? alsoRevision = null;
+        string? alsoPath = null;
         string Named(string message)
         {
             if (RulesChecksPromptsCommandHandler.Unreadable(unreadable) is { } note) message += "\n\n" + note;
-            return alsoRevision is null ? message : message + "\n\n" + alsoRevision;
+            if (alsoRevision is not null) message += "\n\n" + alsoRevision;
+            return alsoPath is null ? message : message + "\n\n" + alsoPath;
         }
 
         // ⚠ No check is not a reason to refuse: the review is the general one the system prompt asks for, the checks
@@ -64,6 +66,7 @@ internal static class CheckCommandHandler
         // to review the revision. Anything else is read as a revision; neither is refused naming both.
         var narrowed = false;
         CheckTarget? target = null;
+        string? scope = null;
         if (arg is { Length: > 0 })
         {
             var one = checks.FirstOrDefault(c => c.Name.Equals(arg, StringComparison.OrdinalIgnoreCase));
@@ -83,11 +86,24 @@ internal static class CheckCommandHandler
             else
             {
                 var (resolved, nothing) = await CheckTarget.ResolveAsync(arg, git, ct);
+                var path = PathScope(arg, projectRoot);
+                // ⚠ A revision wins over a path of the same name (a branch "docs", a folder "cafe" that is a hash prefix):
+                // the answer names the spelling that reviews the path, never only the other meaning.
+                if ((resolved is not null || nothing is not null) && path is not null)
+                    alsoPath = Strings.CheckRevisionAlsoPath(arg.Trim('"'));
                 if (nothing is not null) return new(Named(nothing));
-                if (resolved is null)
+                if (resolved is not null) target = resolved;
+                else if (path is not null)
+                {
+                    // A file or a folder: the change under it — what the Explorer's "Review Changes" sends. Bounded by the
+                    // repository, as the whole-change review is, not by the workspace.
+                    if (!Tools.PathSanitizer.IsUnderRoot(path, GitProcess.WorkTreeOf(projectRoot) ?? projectRoot))
+                        return new(Named(Strings.CheckPathOutside(arg.Trim('"'))));
+                    scope = path;
+                }
+                else
                     return new(Named(checks.Count == 0 ? Strings.CheckUnknownRevision(arg)
                                                        : Strings.CheckUnknownName(arg, CheckNames(checks))));
-                target = resolved;
             }
         }
 
@@ -97,6 +113,7 @@ internal static class CheckCommandHandler
         var workTree = GitProcess.WorkTreeOf(projectRoot);
         string diff;
         List<string> notReviewed = [];
+        var stagedOnly = false;
         if (target is not null)
         {
             var run = await git(target.DiffArgs, ct);
@@ -114,24 +131,31 @@ internal static class CheckCommandHandler
             // is clean", which is a claim about the user's repository — and a git that refused would
             // instead have its `fatal:` line reviewed against the user's checks, since RunAsync appends
             // stderr to the output.
-            var stagedRun = await git("diff --staged", ct);
-            if (GitProcess.FailureNote("diff --staged", stagedRun) is { } stagedFailed)
+            // A path scopes every command to it, new files included.
+            var spec       = scope is null ? string.Empty : " -- " + Pathspec(scope, projectRoot);
+            var stagedArgs = "diff --staged" + spec;
+            var stagedRun  = await git(stagedArgs, ct);
+            if (GitProcess.FailureNote(stagedArgs, stagedRun) is { } stagedFailed)
                 return new(Named(stagedFailed));
             // Staged or not is decided on what git staged, excluded files included: the change under review stays the one
             // /commit describes.
             var staged = Governance.ContentExclusions.WithoutExcludedFiles(stagedRun.Output, workTree, excluded);
             if (string.IsNullOrWhiteSpace(stagedRun.Output))
             {
-                var unstagedRun = await git("diff", ct);
-                if (GitProcess.FailureNote("diff", unstagedRun) is { } unstagedFailed)
+                var unstagedArgs = "diff" + spec;
+                var unstagedRun  = await git(unstagedArgs, ct);
+                if (GitProcess.FailureNote(unstagedArgs, unstagedRun) is { } unstagedFailed)
                     return new(Named(unstagedFailed));
-                var statusRun = await git("status --short", ct);
-                if (GitProcess.FailureNote("status --short", statusRun) is { } statusFailed)
+                var statusArgs = "status --short" + spec;
+                var statusRun  = await git(statusArgs, ct);
+                if (GitProcess.FailureNote(statusArgs, statusRun) is { } statusFailed)
                     return new(Named(statusFailed));
                 var unstaged = Governance.ContentExclusions.WithoutExcludedFiles(unstagedRun.Output, workTree, excluded);
                 var status   = statusRun.Output;
                 if (string.IsNullOrWhiteSpace(unstaged) && string.IsNullOrWhiteSpace(status))
-                    return new(Named(excluded.Count > 0 ? excluded.ForPerson() : Strings.CheckNoDiff));
+                    return new(Named(excluded.Count > 0 ? excluded.ForPerson()
+                                   : scope is not null ? Strings.CheckPathNoDiff(ShownScope(scope, projectRoot))
+                                   : Strings.CheckNoDiff));
                 diff = GitCommitPolicy.BuildUnstagedContext(status, unstaged);
 
                 // ⚠ A NEW file is part of the change under review, and `git diff` never shows one: reviewed from the
@@ -140,7 +164,8 @@ internal static class CheckCommandHandler
                 var (_, untracked) = GitCommitPolicy.SplitUntracked(status);
                 if (untracked.Count > 0)
                 {
-                    var (newFiles, notRead) = await NewFilesAsync(projectRoot, git, untracked, diff.Length, excluded, ct);
+                    var (newFiles, notRead) = await NewFilesAsync(projectRoot, git, untracked, diff.Length, excluded, ct,
+                                                                  scope is null ? null : Pathspec(scope, projectRoot));
                     diff       += Governance.ContentExclusions.WithoutExcludedFiles(newFiles, workTree, excluded);
                     notReviewed = notRead;
                 }
@@ -153,6 +178,7 @@ internal static class CheckCommandHandler
             else
             {
                 diff = GitCommitPolicy.BuildStagedContext(staged);
+                stagedOnly = true;
             }
         }
         if (excluded.Count > 0) diff = excluded.Note() + "\n\n" + diff;
@@ -215,8 +241,49 @@ internal static class CheckCommandHandler
         // Above the findings too: a verdict read as one against the person's checks is the wrong verdict.
         if (checks.Count == 0) rendered = Strings.CheckWithoutChecks + "\n\n" + rendered;
         if (target is not null) rendered = target.Label + "\n\n" + rendered;
+        // A verdict on a folder read as one on the whole change is the wrong verdict — and on its staged part, as one on all
+        // its changes.
+        if (scope is not null)
+            rendered = (stagedOnly ? Strings.CheckPathStagedLabel(ShownScope(scope, projectRoot))
+                                   : Strings.CheckPathLabel(ShownScope(scope, projectRoot))) + "\n\n" + rendered;
         return new(Named(rendered));
     }
+
+    /// <summary>
+    /// <paramref name="arg"/> as a file or a folder that exists — absolute, or relative to <paramref name="projectRoot"/>;
+    /// quotes around it dropped — or <c>null</c>.
+    /// </summary>
+    internal static string? PathScope(string arg, string projectRoot)
+    {
+        var text = arg.Trim().Trim('"');
+        if (text.Length == 0) return null;
+        try
+        {
+            // Fully qualified, never merely rooted: "C:src" or "\src" would resolve against the process's directory.
+            var full = Path.TrimEndingDirectorySeparator(
+                Path.GetFullPath(Path.IsPathFullyQualified(text) ? text : Path.Combine(projectRoot, text)));
+            return File.Exists(full) || Directory.Exists(full) ? full : null;
+        }
+        catch (Exception ex) when (ex is ArgumentException or IOException or NotSupportedException) { return null; }
+    }
+
+    /// <summary>The git pathspec of <paramref name="scope"/>: relative to the folder git runs in, forward slashes, quoted.</summary>
+    /// <remarks>
+    /// ⚠ Never the absolute path in a quoted command-line argument: a folder ending in a separator writes <c>\"</c>, which
+    /// escapes the closing quote — git then matched nothing, exited 0, and the answer was "no uncommitted change" on a
+    /// folder that had changes. ⚠ And case-insensitive where the file system is (<c>:(icase)</c>): git's pathspecs are
+    /// not, so a folder typed or listed in another case than the disk's also matched nothing.
+    /// </remarks>
+    internal static string Pathspec(string scope, string projectRoot)
+    {
+        var relative = Path.GetRelativePath(projectRoot, scope).Replace('\\', '/');
+        var magic    = PathComparer.Comparison == StringComparison.OrdinalIgnoreCase ? ":(icase)" : string.Empty;
+        return $"\"{magic}{relative}\"";
+    }
+
+    /// <summary>The scope as the answer names it: relative to the root, with forward slashes.</summary>
+    private static string ShownScope(string scope, string projectRoot) =>
+        Governance.ContentExclusions.Shown(scope, projectRoot);
 
     /// <summary>The checks a refusal names, so a mistyped name is corrected without another command.</summary>
     private static string CheckNames(IReadOnlyList<ReviewCheck> checks) =>
@@ -243,14 +310,15 @@ internal static class CheckCommandHandler
     /// take none of the review's room.</param>
     private static async Task<(string Diff, List<string> NotRead)> NewFilesAsync(
         string projectRoot, GitRunner git, IReadOnlyList<string> untracked, int used,
-        Governance.ContentExclusions.Tally excluded, CancellationToken ct)
+        Governance.ContentExclusions.Tally excluded, CancellationToken ct, string? pathspec = null)
     {
         var notRead = new List<string>();
         // One path per file: the status collapses a new folder into "?? folder/".
         // ⚠ The WHOLE repository (":/"), paths from its top (--full-name): `git status` lists every new file of the
         // repository, `ls-files` only the folder it runs in — a solution in src/ or a monorepo opened on one package
         // left a new file beside it ("?? ../deploy.yml") neither read nor named, under "the review turned up nothing".
-        var (listing, exit) = await git(NewFilesListing, ct);
+        // A review scoped to a path lists that path's only: the repository's others are not the change under review.
+        var (listing, exit) = await git(pathspec is null ? NewFilesListing : NewFilesListing[..^2] + pathspec, ct);
         if (exit != 0)
         {
             notRead.AddRange(untracked);

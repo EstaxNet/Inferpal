@@ -94,6 +94,15 @@ Diese Aktion kann nicht rückgängig gemacht werden.</value></data>
   <data name="AnalyzeStopChip" xml:space="preserve"><value>Debugger-Halt</value></data>
   <data name="AnalyzeStopNotPaused" xml:space="preserve"><value>Der Debugger ist nicht angehalten: Halten Sie an einem Haltepunkt oder einer Ausnahme an und fragen Sie dann erneut.</value></data>
   <data name="AnalyzeStopNoInProc" xml:space="preserve"><value>Der Zustand des Debuggers konnte nicht gelesen werden: Der In-Process-Teil von Inferpal ist in diesem Visual Studio nicht geladen – /diagnostics nennt den Grund.</value></data>
+  <data name="CheckPathOutside" xml:space="preserve"><value>„{0}“ liegt nicht in diesem git-Repository: `/check &lt;Pfad&gt;` prüft eine Datei oder einen Ordner darin.</value></data>
+  <data name="CheckRevisionAlsoPath" xml:space="preserve"><value>`{0}` ist hier auch eine Datei oder ein Ordner: `/check ./{0}` prüft deren nicht committete Änderungen.</value></data>
+  <data name="CheckPathStagedLabel" xml:space="preserve"><value>Geprüft: die gestagten Änderungen unter `{0}` (die übrigen, sobald dort nichts gestagt ist).</value></data>
+  <data name="AttachBinaryFile" xml:space="preserve"><value>{0} ist eine Binärdatei: Sie hat keinen Text zum Lesen.</value></data>
+  <data name="CheckPathNoDiff" xml:space="preserve"><value>Keine nicht committete Änderung unter `{0}`: nichts zu prüfen.</value></data>
+  <data name="CheckPathLabel" xml:space="preserve"><value>Geprüft: die nicht committeten Änderungen unter `{0}`.</value></data>
+  <data name="ExplainFileQuestion" xml:space="preserve"><value>Erkläre {0}: was es tut, wie es funktioniert und wie es ins Projekt passt.</value></data>
+  <data name="ExplainFolderQuestion" xml:space="preserve"><value>Erkläre {0}: was seine Teile tun und wie sie zusammenspielen.</value></data>
+  <data name="ExplorerNoSelection" xml:space="preserve"><value>Wählen Sie im Projektmappen-Explorer eine Datei, einen Ordner oder ein Projekt aus und wählen Sie dann erneut den Befehl.</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>Erkläre den Code aus `{0}` in vier Abschnitten:
@@ -532,7 +541,7 @@ Klicken Sie auf **Mit KI reparieren**, um die automatische Korrektur in einer Sc
   <data name="ChecksListHeader" xml:space="preserve"><value>**Review-Checks** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>Nichts zu prüfen – der Arbeitsbaum ist sauber.</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>Diff wird geprüft…</value></data>
-  <data name="CheckUnknownName" xml:space="preserve"><value>Kein Check und keine git-Revision namens „{0}". Die Checks: {1}. `/check &lt;base&gt;..HEAD` prüft einen Branch, `/check &lt;commit&gt;` einen Commit.</value></data>
+  <data name="CheckUnknownName" xml:space="preserve"><value>Kein Check und keine git-Revision namens „{0}". Die Checks: {1}. `/check &lt;base&gt;..HEAD` prüft einen Branch, `/check &lt;commit&gt;` einen Commit. `/check &lt;Pfad&gt;` prüft die Änderungen unter einer Datei oder einem Ordner.</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>Kein verankerter Befund — die Prüfung hat in diesem Diff nichts gefunden.</value></data>
   <data name="CheckNoFindingsNarrowed" xml:space="preserve"><value>Kein verankerter Befund — der Check hat in diesem Diff nichts gefunden.</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ Kein Review: **{0}** hat die ganze Antwort mit Nachdenken verbracht und keinen Befund geschrieben. Das sagt nichts über den Diff aus – es ist kein sauberes Ergebnis. Ein größerer Kontext oder ein Modell, das nicht zuerst nachdenkt, vermeidet das.</value></data>
@@ -740,7 +749,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="SlashHintTemplate" xml:space="preserve"><value>Sitzung aus einer Vorlage starten — /template &lt;id&gt;</value></data>
   <data name="TemplateUnknown" xml:space="preserve"><value>Unbekannte Vorlage `{0}`. Geben Sie `/template` ein, um die Liste zu sehen.</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>vollständigen git-Diff als Kontext-Chip anhängen — /diff [Pfad]</value></data>
-  <data name="SlashHintCheck" xml:space="preserve"><value>aktuellen git-Diff, einen Branch oder einen Commit per KI prüfen, zusätzlich gegen .inferpal/checks — /check [Name|init|&lt;Revision&gt;|A..B]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>aktuellen git-Diff, einen Branch oder einen Commit per KI prüfen, zusätzlich gegen .inferpal/checks — /check [Name|init|&lt;Revision&gt;|A..B|&lt;Pfad&gt;]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>Projektregeln in .inferpal/rules auflisten — /rules [init]</value></data>
   <data name="SlashHintChecks" xml:space="preserve"><value>Prüfungen in .inferpal/checks auflisten — /checks [init]</value></data>
   <data name="SlashHintSnippets" xml:space="preserve"><value>gespeicherte Code-Snippets auflisten — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>
@@ -1638,7 +1647,7 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="CheckNameAlsoRevision" xml:space="preserve"><value>`{0}` ist auch eine git-Revision; diese Prüfung hat den gleichnamigen Check verwendet. `/check {1}` prüft die Revision.</value></data>
   <data name="CheckShallowBoundary" xml:space="preserve"><value>`{0}` hat in diesem flachen Klon keinen Eltern-Commit: er wurde nicht abgerufen, daher kann der Commit nicht mit ihm verglichen werden. `git fetch --deepen=1` ruft ihn ab.</value></data>
   <data name="CheckCommitDiffTruncated" xml:space="preserve"><value>⚠ Nur die ersten {0} Zeichen des Diffs dieses Commits wurden geprüft, von {1}. Das Folgende betrifft diesen Teil: Der Rest des Commits wurde nicht gelesen.</value></data>
-  <data name="CheckUnknownRevision" xml:space="preserve"><value>Keine git-Revision und kein Check namens „{0}" (`/checks` listet die Checks auf; `/checks init` legt einen an). `/check &lt;base&gt;..HEAD` prüft einen Branch, `/check &lt;commit&gt;` einen Commit.</value></data>
+  <data name="CheckUnknownRevision" xml:space="preserve"><value>Keine git-Revision und kein Check namens „{0}" (`/checks` listet die Checks auf; `/checks init` legt einen an). `/check &lt;base&gt;..HEAD` prüft einen Branch, `/check &lt;commit&gt;` einen Commit. `/check &lt;Pfad&gt;` prüft die Änderungen unter einer Datei oder einem Ordner.</value></data>
   <data name="CheckWithoutChecks" xml:space="preserve"><value>Kein Check wurde angewendet: Dies ist die allgemeine Prüfung. `/checks init` legt einen Beispiel-Check an, um eigene Kriterien hinzuzufügen.</value></data>
   <data name="CheckRangeDiffTruncated" xml:space="preserve"><value>⚠ Nur die ersten {0} Zeichen des Diffs wurden geprüft, von {1}. Das Folgende betrifft diesen Teil, nicht die ganze Änderung — prüfe ihre Commits einzeln (`/check &lt;commit&gt;`) oder einen kürzeren Bereich.</value></data>
   <data name="CheckSeveralBases" xml:space="preserve"><value>Die beiden Seiten haben {0} {0:gemeinsame Basis|gemeinsame Basen} (Kreuz-Merge): Der Diff beginnt bei `{1}` und kann Änderungen zeigen, die die andere Seite schon hat.</value></data>

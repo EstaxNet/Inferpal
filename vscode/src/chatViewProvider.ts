@@ -3291,6 +3291,39 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     return this.askWithChip((host) => host.debugAnalyze(this.model || undefined), 'analyze the debugger stop', true);
   }
 
+  /** The explorer's "Explain" on a file or a folder: the Core's question, as a code action — without tools. */
+  explainItem(uri: vscode.Uri): Promise<void> {
+    return this.askWithChip((host) => host.explorerExplain(uri.fsPath, this.model || undefined), 'explain', true);
+  }
+
+  /** The explorer's "Review Changes": `/check` on that file or folder, as if typed. */
+  reviewItem(uri: vscode.Uri): Promise<void> {
+    return this.runSlashCommand(`/check "${uri.fsPath}"`);
+  }
+
+  /**
+   * The explorer's "Attach to Chat": the chip `@folder` or the attach button makes, in the composer, nothing sent. A
+   * folder goes through the host (its refusals); a file is the editor's text, judged against the ignore files when sent.
+   */
+  async attachItem(uri: vscode.Uri): Promise<void> {
+    try {
+      await vscode.commands.executeCommand('inferpal.chat.focus');
+    } catch {
+      // view can't be revealed (rare) — the chip still lands, shown on next open
+    }
+    try {
+      if ((await vscode.workspace.fs.stat(uri)).type & vscode.FileType.Directory) {
+        await this.resolveMention('folder', uri.fsPath);
+        return;
+      }
+      const doc = await vscode.workspace.openTextDocument(uri);
+      this.addChip('📄 ' + vscode.workspace.asRelativePath(uri), doc.getText(), uri.fsPath, uri.fsPath);
+    } catch (err) {
+      // A binary or unreadable file: the user picked it, and no chip appearing reads as a broken menu.
+      this.gestureFailed('attach to chat', err);
+    }
+  }
+
   /**
    * A gesture's question built by the host, its attachment as a chip. Refused during a turn, like the build banner's Fix
    * them: the chip would ride the next question.

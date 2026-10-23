@@ -163,9 +163,47 @@
       {
         "command": "inferpal.analyzeStop",
         "title": "%inferpal.command.analyzeStop%"
+      },
+      {
+        "command": "inferpal.explainItem",
+        "title": "%inferpal.command.explainItem%"
+      },
+      {
+        "command": "inferpal.reviewItem",
+        "title": "%inferpal.command.reviewItem%"
+      },
+      {
+        "command": "inferpal.attachItem",
+        "title": "%inferpal.command.attachItem%"
+      }
+    ],
+    "submenus": [
+      {
+        "id": "inferpal.explorer",
+        "label": "%inferpal.submenu.explorer%"
       }
     ],
     "menus": {
+      "explorer/context": [
+        {
+          "submenu": "inferpal.explorer",
+          "group": "z_inferpal@1"
+        }
+      ],
+      "inferpal.explorer": [
+        {
+          "command": "inferpal.explainItem",
+          "group": "1_inferpal@1"
+        },
+        {
+          "command": "inferpal.reviewItem",
+          "group": "1_inferpal@2"
+        },
+        {
+          "command": "inferpal.attachItem",
+          "group": "1_inferpal@3"
+        }
+      ],
       "debug/callstack/context": [
         {
           "command": "inferpal.analyzeStop",
@@ -184,6 +222,18 @@
         {
           "command": "inferpal.analyzeStop",
           "when": "inDebugMode"
+        },
+        {
+          "command": "inferpal.explainItem",
+          "when": "false"
+        },
+        {
+          "command": "inferpal.reviewItem",
+          "when": "false"
+        },
+        {
+          "command": "inferpal.attachItem",
+          "when": "false"
         }
       ],
       "view/title": [

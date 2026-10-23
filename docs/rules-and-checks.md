@@ -60,6 +60,12 @@ reported. With no check in the repository, `/check` makes the general review and
 Commands: `/check` reviews the change with all checks; `/check <name>` reviews it against that one
 check **only** (the narrow review you ask for); `/check init` scaffolds an example.
 
+**A file or a folder.** `/check <path>` reviews the uncommitted changes under that file or folder of the repository
+(new files included) — what **Review Changes** sends from Visual Studio's Solution Explorer (where a project is its
+folder) and VS Code's file explorer. The answer names the path above the findings, and says when what it reviewed is
+the staged part; nothing changed under it is said. A check's name, then a revision, keep their meaning when the same
+word is also a path, and the answer then names the spelling that reviews the path (`/check ./docs`).
+
 **A branch, a range, a commit.** `/check main..HEAD` reviews a branch before its pull request: the commits
 `HEAD` has and `main` has not, diffed from where the two parted — what a pull request shows, never the changes
 `main` received since (`A...B` is the same). `/check feature` reviews what `feature` brings to the branch you are

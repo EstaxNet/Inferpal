@@ -100,6 +100,9 @@ internal partial class InferpalToolWindowData
         // After the load is known: a pending prompt's turn waits for it (RunPendingTurnAsync).
         _contextHolder.PendingPromptAvailable += OnPendingPromptAvailable;
         ConsumePendingPrompt();
+        // The Explorer's "Attach to Chat", asked before this window existed or while it is open.
+        _contextHolder.PendingAttachAvailable += (_, _) => ConsumePendingAttach();
+        ConsumePendingAttach();
 
         _ = StartHeartbeatAsync();
         _ = StartRagIndexingAsync();

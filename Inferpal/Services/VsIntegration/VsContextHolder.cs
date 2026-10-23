@@ -166,6 +166,22 @@ internal class VsContextHolder
     public PendingPrompt? ConsumePending() =>
         System.Threading.Interlocked.Exchange(ref _pending, null);
 
+    // ── Pending attachment (Solution Explorer → chat composer) ────────────
+
+    private string? _attachRequest;
+    public event EventHandler? PendingAttachAvailable;
+
+    /// <summary>A file or a folder to attach to the composer, as <c>@file</c> or <c>@folder</c> would — nothing sent.
+    /// Kept until the chat window takes it: it may not exist yet.</summary>
+    public void SetPendingAttach(string path)
+    {
+        System.Threading.Interlocked.Exchange(ref _attachRequest, path);
+        PendingAttachAvailable?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Takes the pending attachment's path; null when there is none.</summary>
+    public string? ConsumePendingAttach() => System.Threading.Interlocked.Exchange(ref _attachRequest, null);
+
     public void RegisterOpen(string path)
     {
         if (string.IsNullOrEmpty(path)) return;

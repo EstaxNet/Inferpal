@@ -72,6 +72,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
     // The call stack's and the variables' menus, and the palette: the whole stop — which line was chosen is not read.
     vscode.commands.registerCommand('inferpal.analyzeStop', () => chatView.analyzeStop()),
+    // The file explorer's Inferpal submenu: the item clicked.
+    vscode.commands.registerCommand('inferpal.explainItem', (uri?: vscode.Uri) => uri && chatView.explainItem(uri)),
+    vscode.commands.registerCommand('inferpal.reviewItem', (uri?: vscode.Uri) => uri && chatView.reviewItem(uri)),
+    vscode.commands.registerCommand('inferpal.attachItem', (uri?: vscode.Uri) => uri && chatView.attachItem(uri)),
   );
 
   context.subscriptions.push(

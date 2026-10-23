@@ -222,6 +222,9 @@ internal sealed record ProblemsFixParams(IReadOnlyList<Services.CodeActions.Prob
 /// the code action asks.</summary>
 internal sealed record DebugAnalyzeParams(string? Model = null);
 
+/// <summary>`explorer/explain` — the item clicked in the file explorer (absolute), and the model the chat picked.</summary>
+internal sealed record ExplorerExplainParams(string Path, string? Model = null);
+
 /// <summary>`problems/fix` and `debug/analyze` — what goes to the chat: a question and its attachment.</summary>
 /// <param name="Question">The question, in the interface language.</param>
 /// <param name="Chip">The attachment's label.</param>

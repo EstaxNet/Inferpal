@@ -1349,6 +1349,20 @@ internal sealed partial class HostServer : IDisposable
         return new GestureQuestion(a.Question, a.Chip, a.Content, a.Refusal);
     }
 
+    /// <summary>
+    /// "Explain" on an item of VS Code's file explorer: a file as the editor has it, or a folder as <c>@folder</c>
+    /// attaches it — or the refusal those mentions give. Sent by the extension as a code action, without tools.
+    /// </summary>
+    [JsonRpcMethod("explorer/explain", UseSingleObjectParameterDeserialization = true)]
+    public async Task<GestureQuestion> ExplorerExplainAsync(ExplorerExplainParams p, CancellationToken ct)
+    {
+        var s = Session();
+        var window = await Services.Agent.ContextManager.EffectiveWindowAsync(
+            s.Config, s.Client, TurnModel(s, codeAction: true, agentMode: false, p.Model, overridesRoles: false), ct);
+        var a = await ExplorerExplain.ForAsync(p.Path, s.RootDir, s.Overlay, CodeExcerpt.BudgetFor(window), ct);
+        return new GestureQuestion(a.Question, a.Chip, a.Content, a.Refusal);
+    }
+
     // ── Config ─────────────────────────────────────────────────────────────────
 
     [JsonRpcMethod("config/get")]

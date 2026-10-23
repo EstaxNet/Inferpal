@@ -97,6 +97,15 @@
   <data name="AnalyzeStopChip" xml:space="preserve"><value>调试器停止</value></data>
   <data name="AnalyzeStopNotPaused" xml:space="preserve"><value>调试器未暂停：请先在断点或异常处停止，然后再次请求。</value></data>
   <data name="AnalyzeStopNoInProc" xml:space="preserve"><value>无法读取调试器状态：此 Visual Studio 中未加载 Inferpal 的进程内部分 — 原因见 /diagnostics。</value></data>
+  <data name="CheckPathOutside" xml:space="preserve"><value>“{0}”不在此 git 仓库中：`/check &lt;路径&gt;` 审查仓库内的文件或文件夹。</value></data>
+  <data name="CheckRevisionAlsoPath" xml:space="preserve"><value>`{0}` 在这里也是一个文件或文件夹：`/check ./{0}` 审查它未提交的更改。</value></data>
+  <data name="CheckPathStagedLabel" xml:space="preserve"><value>已审查：`{0}` 下已暂存的更改（那里没有暂存内容时，审查其余更改）。</value></data>
+  <data name="AttachBinaryFile" xml:space="preserve"><value>{0} 是二进制文件：没有可读取的文本。</value></data>
+  <data name="CheckPathNoDiff" xml:space="preserve"><value>`{0}` 下没有未提交的更改：无需审查。</value></data>
+  <data name="CheckPathLabel" xml:space="preserve"><value>已审查：`{0}` 下未提交的更改。</value></data>
+  <data name="ExplainFileQuestion" xml:space="preserve"><value>请解释 {0}：它做什么、如何工作，以及在项目中的作用。</value></data>
+  <data name="ExplainFolderQuestion" xml:space="preserve"><value>请解释 {0}：它的各个部分做什么、如何组合在一起。</value></data>
+  <data name="ExplorerNoSelection" xml:space="preserve"><value>请在解决方案资源管理器中选择一个文件、文件夹或项目，然后再次选择该命令。</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>请用以下四个部分解释 `{0}` 中的代码：
@@ -532,7 +541,7 @@
   <data name="ChecksListHeader" xml:space="preserve"><value>**评审检查项** (`.inferpal/checks`):</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>无内容可评审 — 工作区是干净的。</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>正在评审差异…</value></data>
-  <data name="CheckUnknownName" xml:space="preserve"><value>没有名为「{0}」的检查项或 git 修订版本。检查项：{1}。`/check &lt;base&gt;..HEAD` 评审一个分支，`/check &lt;commit&gt;` 评审一个提交。</value></data>
+  <data name="CheckUnknownName" xml:space="preserve"><value>没有名为「{0}」的检查项或 git 修订版本。检查项：{1}。`/check &lt;base&gt;..HEAD` 评审一个分支，`/check &lt;commit&gt;` 评审一个提交。 `/check &lt;路径&gt;` 审查某个文件或文件夹下的更改。</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>没有可定位的问题 — 评审在此 diff 中未发现任何内容。</value></data>
   <data name="CheckNoFindingsNarrowed" xml:space="preserve"><value>没有可定位的问题 — 该检查项在此 diff 中未发现任何内容。</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ 没有审查结果：**{0}** 把整个回复都用于推理，没有写出任何问题。这并不说明 diff 没有问题 — 这不是干净的结果。更大的上下文，或不先推理的模型，可以避免。</value></data>
@@ -740,7 +749,7 @@
   <data name="SlashHintTemplate" xml:space="preserve"><value>从预设模板开始会话 — /template &lt;id&gt;</value></data>
   <data name="TemplateUnknown" xml:space="preserve"><value>未知模板 `{0}`。输入 `/template` 查看列表。</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>将完整 git diff 作为上下文标签附加 — /diff [路径]</value></data>
-  <data name="SlashHintCheck" xml:space="preserve"><value>对当前 git diff、分支或提交进行 AI 评审（并依据 .inferpal/checks） — /check [名称|init|&lt;修订版本&gt;|A..B]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>对当前 git diff、分支或提交进行 AI 评审（并依据 .inferpal/checks） — /check [名称|init|&lt;修订版本&gt;|A..B|&lt;路径&gt;]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>列出 .inferpal/rules 中的项目规则 — /rules [init]</value></data>
   <data name="SlashHintChecks" xml:space="preserve"><value>列出 .inferpal/checks 中的审查检查 — /checks [init]</value></data>
   <data name="SlashHintSnippets" xml:space="preserve"><value>列出已保存的代码片段 — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>
@@ -1638,7 +1647,7 @@
   <data name="CheckNameAlsoRevision" xml:space="preserve"><value>`{0}` 也是一个 git 修订版本；本次评审使用了同名的检查项。`/check {1}` 可评审该修订版本。</value></data>
   <data name="CheckShallowBoundary" xml:space="preserve"><value>`{0}` 在此浅克隆中没有父提交：父提交未被获取，因此无法与之比较。`git fetch --deepen=1` 可获取它。</value></data>
   <data name="CheckCommitDiffTruncated" xml:space="preserve"><value>⚠ 在此提交 {1} 个字符的 diff 中，只评审了前 {0} 个字符。以下内容只针对这部分：该提交的其余部分未被读取。</value></data>
-  <data name="CheckUnknownRevision" xml:space="preserve"><value>没有名为「{0}」的 git 修订版本或检查项（`/checks` 列出检查项；`/checks init` 可创建一个）。`/check &lt;base&gt;..HEAD` 评审一个分支，`/check &lt;commit&gt;` 评审一个提交。</value></data>
+  <data name="CheckUnknownRevision" xml:space="preserve"><value>没有名为「{0}」的 git 修订版本或检查项（`/checks` 列出检查项；`/checks init` 可创建一个）。`/check &lt;base&gt;..HEAD` 评审一个分支，`/check &lt;commit&gt;` 评审一个提交。 `/check &lt;路径&gt;` 审查某个文件或文件夹下的更改。</value></data>
   <data name="CheckWithoutChecks" xml:space="preserve"><value>没有应用任何检查项：这是一次通用评审。`/checks init` 可创建示例检查项，以添加你自己的标准。</value></data>
   <data name="CheckRangeDiffTruncated" xml:space="preserve"><value>⚠ 在 {1} 个字符的 diff 中，只评审了前 {0} 个字符。以下内容只针对这部分，而非整个变更——请逐个评审其提交（`/check &lt;commit&gt;`），或评审更短的范围。</value></data>
   <data name="CheckSeveralBases" xml:space="preserve"><value>两侧有 {0} 个共同基点（交叉合并）：diff 从 `{1}` 开始，可能显示另一侧已有的变更。</value></data>

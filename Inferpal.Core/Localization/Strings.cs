@@ -439,6 +439,19 @@ internal static class Strings
     public static string AnalyzeStopChip      => Get(nameof(AnalyzeStopChip));
     public static string AnalyzeStopNotPaused => Get(nameof(AnalyzeStopNotPaused));
     public static string AnalyzeStopNoInProc  => Get(nameof(AnalyzeStopNoInProc));
+    /// <summary><c>/check &lt;path&gt;</c> — {0}=the path as typed, or as the answer names it.</summary>
+    public static string CheckPathOutside(string path) => Format(Get(nameof(CheckPathOutside)), path);
+    public static string CheckPathNoDiff(string path)  => Format(Get(nameof(CheckPathNoDiff)), path);
+    public static string CheckPathLabel(string path)   => Format(Get(nameof(CheckPathLabel)), path);
+    public static string CheckPathStagedLabel(string path) => Format(Get(nameof(CheckPathStagedLabel)), path);
+    /// <summary>A revision that is also a path here — {0}=the word typed.</summary>
+    public static string CheckRevisionAlsoPath(string word) => Format(Get(nameof(CheckRevisionAlsoPath)), word);
+    /// <summary>A binary file asked to be read as text — {0}=its name.</summary>
+    public static string AttachBinaryFile(string name) => Format(Get(nameof(AttachBinaryFile)), name);
+    /// <summary>The Explorer's "Explain" — {0}=the file's or the folder's name.</summary>
+    public static string ExplainFileQuestion(string name)   => Format(Get(nameof(ExplainFileQuestion)), name);
+    public static string ExplainFolderQuestion(string name) => Format(Get(nameof(ExplainFolderQuestion)), name);
+    public static string ExplorerNoSelection => Get(nameof(ExplorerNoSelection));
 
     // ── Editor context menu prompts ────────────────────────────────────────────
     // Legacy two-arg overloads kept for reference; all active call sites use the

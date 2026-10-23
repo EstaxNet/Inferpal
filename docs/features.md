@@ -203,6 +203,12 @@ exists.
   that does not compile is refused instead of freezing the IDE on a modal. Visual Studio drives
   its own debugger in-process; VS Code goes through a DAP bridge — same command, either editor.
   `/debug` alone reports the current break state; `/debug stop` ends the session.
+- **Inferpal in the Explorer** — right-click a project, a folder or a file in Visual Studio's Solution Explorer (*Ask
+  Inferpal*) or VS Code's file explorer (*Inferpal*): **Explain** asks about it without tools — a file as the editor has
+  it, a folder as `@folder` attaches it, sized for the code-actions model's window; **Review Changes** runs `/check` on
+  it (the uncommitted changes under it); **Attach to Chat** puts the `@file` / `@folder` chip in the message box,
+  nothing sent. In Visual Studio a project or a solution stands for its folder; in VS Code a `.csproj` is the file
+  itself. A file the ignore files exclude, a binary file, or a node with no file behind it, is said.
 - **Analyze with Inferpal, at a debugger stop** — stopped at a breakpoint or an exception, choose **Analyze with
   Inferpal** in Visual Studio's Debug menu or in the context menu of the Call Stack, Locals, Autos or Watch window; in
   VS Code, in the context menu of the call stack or the variables, or *Inferpal: Analyze the Debugger Stop* in the

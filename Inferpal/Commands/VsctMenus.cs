@@ -12,6 +12,9 @@ internal static class VsctMenus
     internal const uint CodeWindowContext = 0x040D;   // IDM_VS_CTXT_CODEWIN — the text editor
     internal const uint ErrorListContext  = 0x0405;   // IDM_VS_CTXT_ERRORLIST
     internal const uint DebugMenu         = 0x0089;   // IDM_VS_MENU_DEBUG
+    internal const uint ProjectContext    = 0x0402;   // IDM_VS_CTXT_PROJNODE — Solution Explorer: a project
+    internal const uint ItemContext       = 0x0430;   // IDM_VS_CTXT_ITEMNODE — a file
+    internal const uint FolderContext     = 0x0431;   // IDM_VS_CTXT_FOLDERNODE — a folder
 
     /// <summary><c>guidVSDebugGroup</c>: the debugger's windows.</summary>
     internal static readonly Guid VsDebugGroup = new("c9dd4a58-47fb-11d2-83e7-00c04f9902c1");

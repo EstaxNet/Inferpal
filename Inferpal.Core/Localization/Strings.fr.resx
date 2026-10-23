@@ -97,6 +97,15 @@ Cette action est irréversible.</value></data>
   <data name="AnalyzeStopChip" xml:space="preserve"><value>Arrêt du débogueur</value></data>
   <data name="AnalyzeStopNotPaused" xml:space="preserve"><value>Le débogueur n'est pas en pause : arrêtez-vous sur un point d'arrêt ou une exception, puis redemandez.</value></data>
   <data name="AnalyzeStopNoInProc" xml:space="preserve"><value>L'état du débogueur n'a pas pu être lu : la partie in-process d'Inferpal n'est pas chargée dans ce Visual Studio — /diagnostics dit pourquoi.</value></data>
+  <data name="CheckPathOutside" xml:space="preserve"><value>« {0} » n'est pas dans ce dépôt git : `/check &lt;chemin&gt;` relit un fichier ou un dossier qui en fait partie.</value></data>
+  <data name="CheckRevisionAlsoPath" xml:space="preserve"><value>`{0}` est aussi un fichier ou un dossier ici : `/check ./{0}` relit ses changements non commités.</value></data>
+  <data name="CheckPathStagedLabel" xml:space="preserve"><value>Relu : les changements indexés sous `{0}` (les autres le sont quand rien n'y est indexé).</value></data>
+  <data name="AttachBinaryFile" xml:space="preserve"><value>{0} est un fichier binaire : il n'a pas de texte à lire.</value></data>
+  <data name="CheckPathNoDiff" xml:space="preserve"><value>Aucun changement non commité sous `{0}` : rien à relire.</value></data>
+  <data name="CheckPathLabel" xml:space="preserve"><value>Relu : les changements non commités sous `{0}`.</value></data>
+  <data name="ExplainFileQuestion" xml:space="preserve"><value>Explique {0} : ce qu'il fait, comment, et sa place dans le projet.</value></data>
+  <data name="ExplainFolderQuestion" xml:space="preserve"><value>Explique {0} : ce que font ses parties et comment elles s'articulent.</value></data>
+  <data name="ExplorerNoSelection" xml:space="preserve"><value>Choisissez un fichier, un dossier ou un projet dans l'Explorateur de solutions, puis de nouveau la commande.</value></data>
 
   <!-- Prompts menus contextuels éditeur — {0}=nomFichier, {1}=bloc de code -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>Explique le code de `{0}` avec ces quatre sections :
@@ -532,7 +541,7 @@ Cliquez sur **Corriger avec l'IA** pour lancer la correction automatique en bouc
   <data name="ChecksListHeader" xml:space="preserve"><value>**Checks de revue** (`.inferpal/checks`) :</value></data>
   <data name="CheckNoDiff" xml:space="preserve"><value>Rien à relire — l'arbre de travail est propre.</value></data>
   <data name="CheckReviewingLabel" xml:space="preserve"><value>Revue du diff en cours…</value></data>
-  <data name="CheckUnknownName" xml:space="preserve"><value>Aucun check ni aucune révision git nommés « {0} ». Les checks : {1}. `/check &lt;base&gt;..HEAD` relit une branche, `/check &lt;commit&gt;` un commit.</value></data>
+  <data name="CheckUnknownName" xml:space="preserve"><value>Aucun check ni aucune révision git nommés « {0} ». Les checks : {1}. `/check &lt;base&gt;..HEAD` relit une branche, `/check &lt;commit&gt;` un commit. `/check &lt;chemin&gt;` relit les changements sous un fichier ou un dossier.</value></data>
   <data name="CheckNoFindings" xml:space="preserve"><value>Aucun constat ancré — la relecture n'a rien relevé sur ce diff.</value></data>
   <data name="CheckNoFindingsNarrowed" xml:space="preserve"><value>Aucun constat ancré — le check n'a rien relevé sur ce diff.</value></data>
   <data name="CheckReviewOnlyReasoning" xml:space="preserve"><value>⚠ Pas de relecture : **{0}** a passé toute sa réponse à raisonner sans écrire de constat. Cela ne dit rien du diff — ce n'est pas un résultat propre. Un contexte plus grand, ou un modèle qui ne raisonne pas d'abord, l'évite.</value></data>
@@ -744,7 +753,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="SlashHintTemplate" xml:space="preserve"><value>démarrer une session depuis un modèle prédéfini — /template &lt;id&gt;</value></data>
   <data name="TemplateUnknown" xml:space="preserve"><value>Modèle inconnu : `{0}`. Tapez `/template` pour voir la liste.</value></data>
   <data name="SlashHintDiff" xml:space="preserve"><value>joindre le diff git complet comme chip de contexte — /diff [chemin]</value></data>
-  <data name="SlashHintCheck" xml:space="preserve"><value>faire relire par l'IA le diff git actuel, une branche ou un commit, avec vos .inferpal/checks en plus — /check [nom|init|&lt;révision&gt;|A..B]</value></data>
+  <data name="SlashHintCheck" xml:space="preserve"><value>faire relire par l'IA le diff git actuel, une branche ou un commit, avec vos .inferpal/checks en plus — /check [nom|init|&lt;révision&gt;|A..B|&lt;chemin&gt;]</value></data>
   <data name="SlashHintRules" xml:space="preserve"><value>lister les règles du projet dans .inferpal/rules — /rules [init]</value></data>
   <data name="SlashHintChecks" xml:space="preserve"><value>lister les contrôles de revue dans .inferpal/checks — /checks [init]</value></data>
   <data name="SlashHintSnippets" xml:space="preserve"><value>lister les extraits de code enregistrés — /snippets [copy &lt;n&gt; | delete &lt;n&gt; | clear]</value></data>
@@ -1638,7 +1647,7 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="CheckNameAlsoRevision" xml:space="preserve"><value>`{0}` est aussi une révision git ; cette relecture a pris le check de ce nom. `/check {1}` relit la révision.</value></data>
   <data name="CheckShallowBoundary" xml:space="preserve"><value>`{0}` n'a pas de parent dans ce clone superficiel : son parent n'a pas été récupéré, le commit ne peut donc pas lui être comparé. `git fetch --deepen=1` le récupère.</value></data>
   <data name="CheckCommitDiffTruncated" xml:space="preserve"><value>⚠ Seuls les {0} premiers caractères du diff de ce commit ont été relus, sur {1}. Ce qui suit porte sur cette partie : le reste du commit n'a pas été lu.</value></data>
-  <data name="CheckUnknownRevision" xml:space="preserve"><value>Aucune révision git ni aucun check nommés « {0} » (`/checks` liste les checks ; `/checks init` en écrit un). `/check &lt;base&gt;..HEAD` relit une branche, `/check &lt;commit&gt;` un commit.</value></data>
+  <data name="CheckUnknownRevision" xml:space="preserve"><value>Aucune révision git ni aucun check nommés « {0} » (`/checks` liste les checks ; `/checks init` en écrit un). `/check &lt;base&gt;..HEAD` relit une branche, `/check &lt;commit&gt;` un commit. `/check &lt;chemin&gt;` relit les changements sous un fichier ou un dossier.</value></data>
   <data name="CheckWithoutChecks" xml:space="preserve"><value>Aucun check ne s'est appliqué : c'est la relecture générale. `/checks init` écrit un check d'exemple, pour ajouter vos propres critères.</value></data>
   <data name="CheckRangeDiffTruncated" xml:space="preserve"><value>⚠ Seuls les {0} premiers caractères du diff ont été relus, sur {1}. Ce qui suit porte sur cette partie, pas sur tout le changement — relisez ses commits un par un (`/check &lt;commit&gt;`) ou une plage plus courte.</value></data>
   <data name="CheckSeveralBases" xml:space="preserve"><value>Les deux côtés ont {0} {0:base commune|bases communes} (fusion croisée) : le diff part de `{1}` et peut montrer des changements que l'autre côté a déjà.</value></data>

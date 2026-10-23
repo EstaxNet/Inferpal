@@ -374,7 +374,9 @@ internal partial class InferpalToolWindowData
         catch (Exception ex) { Diagnostics.Swallow("Docs.Load", ex); }
     }
 
-    private async Task SelectFolderMentionAsync(string folderPath, CancellationToken ct)
+    /// <param name="typed"><c>false</c> for a chip asked from elsewhere (the Explorer): the draft holds no mention token
+    /// to take off.</param>
+    private async Task SelectFolderMentionAsync(string folderPath, CancellationToken ct, bool typed = true)
     {
         try
         {
@@ -391,7 +393,7 @@ internal partial class InferpalToolWindowData
             var label   = "📁 " + Path.GetFileName(folderPath);
             await RunOnVMContextAsync(() =>
             {
-                StripMentionToken();
+                if (typed) StripMentionToken();
                 AddAttachment(label, content);
             });
         }
@@ -433,14 +435,26 @@ internal partial class InferpalToolWindowData
         }
     }
 
-    private async Task SelectFileMentionAsync(string filePath, CancellationToken ct)
+    /// <summary>The Explorer's "Attach to Chat": the chip <c>@folder</c> or <c>@file</c> makes, with their refusals, in the
+    /// composer — nothing sent.</summary>
+    private void ConsumePendingAttach()
+    {
+        if (_contextHolder.ConsumePendingAttach() is not { } path) return;
+        _ = Directory.Exists(path)
+            ? SelectFolderMentionAsync(path, CancellationToken.None, typed: false)
+            : SelectFileMentionAsync(path, CancellationToken.None, typed: false);
+    }
+
+    /// <param name="typed"><c>false</c> for a chip asked from elsewhere (the Explorer): the draft holds no mention token
+    /// to take off.</param>
+    private async Task SelectFileMentionAsync(string filePath, CancellationToken ct, bool typed = true)
     {
         try
         {
-            // Excluded by the workspace's ignore files: a notice that names the rule, never a chip.
-            if (MentionController.FileRefusal(filePath, _indexService.RootDir) is { } excluded)
+            // Excluded by the workspace's ignore files: a notice that names the rule, never a chip; a binary file: no text.
+            if ((MentionController.FileRefusal(filePath, _indexService.RootDir) ?? MentionController.BinaryRefusal(filePath)) is { } refused)
             {
-                await NotifyMentionAsync(excluded);
+                await NotifyMentionAsync(refused);
                 return;
             }
             // The unsaved buffer, as read_file shows it: the file as the user sees it in the editor.
@@ -455,7 +469,7 @@ internal partial class InferpalToolWindowData
             await RunOnVMContextAsync(() =>
             {
                 // Setting Prompt triggers TriggerMentionSearch → clears suggestions automatically.
-                StripMentionToken();
+                if (typed) StripMentionToken();
                 AddAttachment(label, content, sourcePath: filePath);
             });
         }

@@ -4099,6 +4099,30 @@ public partial class HostServerTests
         Assert.Empty(none.Content);
     }
 
+    /// <summary>VS Code's explorer "Explain": the host builds the question from the file — and from a folder what
+    /// <c>@folder</c> attaches.</summary>
+    [Fact]
+    public async Task ExplorerExplain_ExplainsAFile_AndAFolder()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var folder = Path.Combine(h.RootDir, "Billing");
+        Directory.CreateDirectory(folder);
+        var file = Path.Combine(folder, "Invoice.cs");
+        File.WriteAllText(file, "class Invoice { decimal Total() => 42m; }\n");
+
+        var ofFile   = await h.Client.InvokeWithParameterObjectAsync<GestureQuestion>("explorer/explain", new { path = file })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var ofFolder = await h.Client.InvokeWithParameterObjectAsync<GestureQuestion>("explorer/explain", new { path = folder })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Equal(Strings.ExplainFileQuestion("Invoice.cs"), ofFile.Question);
+        Assert.Contains("decimal Total() => 42m;", ofFile.Content);
+        Assert.Equal(Strings.ExplainFolderQuestion("Billing"), ofFolder.Question);
+        Assert.Contains("Invoice.cs", ofFolder.Content);
+        Assert.Null(ofFolder.Refusal);
+    }
+
     [Fact]
     public async Task DebuggerMention_WithNothingPaused_SaysSo_InsteadOfSilence()
     {

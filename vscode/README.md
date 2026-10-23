@@ -58,6 +58,7 @@ Measured on our test server — one 24 GB card, LM Studio, 32K context — with 
 - **`/tdd`** — fix until green: run the tests, patch, run again, up to five rounds; on the first red round a failing .NET test is re-run under the debugger (no `launch.json` needed) and its real state goes into the fix.
 - **`/debug`** — the agent sets breakpoints, starts the program once you approve, and reads the call stack, locals and expressions it needs.
 - **Analyze with Inferpal** — stopped in the debugger, right-click the call stack or the variables: the stop and the code around your frames are explained, without running anything.
+- **Inferpal in the explorer** — right-click a file or a folder: Explain it, Review its uncommitted changes (`/check <path>`), or Attach it to the chat.
 - **Semantic code search** — a background index of your code (meaning and exact names together); the most relevant code is added to each question, and the index pauses while you chat.
 - **@Docs** — `/docs add <url>` indexes a documentation site, so answers about a library cite its pages.
 - **Typed mentions** — `@file` `@folder` `@code` `@diff` `@problems` `@debugger` `@clipboard` `@tree` attach exactly what you mean.
