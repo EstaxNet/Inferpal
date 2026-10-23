@@ -55,11 +55,18 @@ internal static class RoleServers
 
     /// <summary>The model a role on another server completes with: its own, never the chat's, which that server may not
     /// have; null when none is chosen.</summary>
+    /// <remarks>⚠ An OpenAI-compatible server — llama-server, vLLM — completes only with a model chosen for completions:
+    /// there the chat model is often a large one on a server a team shares, and falling back to it, every pause in anyone's
+    /// typing asked it — completions switched on by themselves for everyone already chatting on such a server.</remarks>
     public static string? CompletionModel(InferpalConfig c, string? asked) =>
         !string.IsNullOrWhiteSpace(asked) ? asked
         : !string.IsNullOrWhiteSpace(c.InlineCompletionModel) ? c.InlineCompletionModel
-        : OnChatServer(c, ServerRole.Completion) ? c.DefaultModel
+        : OnChatServer(c, ServerRole.Completion) && !NeedsAChosenCompletionModel(c) ? c.DefaultModel
         : null;
+
+    /// <summary>The completion server is OpenAI-compatible: it completes with a model chosen for it, never the chat's.</summary>
+    public static bool NeedsAChosenCompletionModel(InferpalConfig c) =>
+        InferenceProviderFactory.Canonical(Of(c, ServerRole.Completion).Provider) == InferenceProviderFactory.OpenAiCompatible;
 
     /// <summary>Says once what <paramref name="role"/>'s settings leave to a fallback: "another server" with no address
     /// runs on the chat's, and a server of its own whose kind is not set is spoken to as the chat's kind.</summary>

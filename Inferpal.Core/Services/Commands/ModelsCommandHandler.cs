@@ -78,7 +78,9 @@ internal static class ModelsCommandHandler
         IInferenceProvider client, Config.InferpalConfig config, string nothingInstalled, CancellationToken ct) =>
         ModelCatalog.EmptyListMeansAsync(client, config, nothingInstalled, ct);
 
-    private static readonly TimeSpan SwitchListBudget = TimeSpan.FromSeconds(3);
+    /// <summary>How long a model switch waits for the server's list before judging on what it has: a server that does not
+    /// answer must not hold the switch for the client's whole timeout.</summary>
+    internal static readonly TimeSpan SwitchListBudget = TimeSpan.FromSeconds(3);
 
     /// <summary>
     /// Why <paramref name="model"/> cannot become the chat model, or <c>null</c>. ⚠ Every list offered for the chat leaves

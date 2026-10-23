@@ -84,14 +84,18 @@ internal sealed partial class HostServer
                 s.Config.FillFromFile(nameof(InferpalConfig.VramBudgetGb));
                 s.Config.VramBudgetGb = budget;
             }
+            var sameServer = ServerScan.SameAddress(s.Config.BaseUrl, server.BaseUrl);
             s.Config.Provider              = server.Provider;
             s.Config.BaseUrl               = server.BaseUrl;
             s.Config.ApiKey                = server.ApiKey;
             s.Config.DefaultModel          = p.ChatModel.Trim();
-            // A role on a server of its own keeps its model: the models proposed are this server's, not that one's.
-            if (RoleServers.OnChatServer(s.Config, ServerRole.Completion))
+            // A role on a server of its own keeps its model: the models proposed are this server's, not that one's. On
+            // the chat's server, a model the card leaves out keeps the one chosen while the server stays — /setup run
+            // again to download a chat model wiped the completion and search models picked before, and the index was
+            // embedded again; on another server, the old choice may not be there, and the card's choice is taken.
+            if (RoleServers.OnChatServer(s.Config, ServerRole.Completion) && (!sameServer || !string.IsNullOrWhiteSpace(p.CompletionModel)))
                 s.Config.InlineCompletionModel = p.CompletionModel?.Trim() ?? "";
-            if (RoleServers.OnChatServer(s.Config, ServerRole.Search))
+            if (RoleServers.OnChatServer(s.Config, ServerRole.Search) && (!sameServer || !string.IsNullOrWhiteSpace(p.SearchModel)))
                 s.Config.RagEmbeddingModel = p.SearchModel?.Trim() ?? "";
             s.Config.IsFirstRun = false;
             s.Config.Save();
@@ -172,10 +176,13 @@ internal sealed partial class HostServer
 
     /// <summary>The key typed for that address; else the saved key, if that address is the saved one; else none.</summary>
     private static string KeyFor(HostSession s, SetupServerParams p) =>
-        !string.IsNullOrWhiteSpace(p.ApiKey) ? p.ApiKey.Trim()
-        : ServerScan.SameAddress(p.Url, s.Config.BaseUrl)
-            ? s.Config.ApiKey ?? ""
-            : "";
+        !string.IsNullOrWhiteSpace(p.ApiKey) ? p.ApiKey.Trim() : SavedKeyFor(s, p.Url);
+
+    /// <summary>The saved key for <paramref name="url"/>: the chat server's, if that is the chat server; else none.</summary>
+    /// <remarks>⚠ A key belongs to its server: a form or a role's Test that sends no key probes another address, and the
+    /// chat server's key went with it.</remarks>
+    internal static string SavedKeyFor(HostSession s, string? url) =>
+        ServerScan.SameAddress(url, s.Config.BaseUrl) ? s.Config.ApiKey ?? "" : "";
 
     /// <summary>
     /// The graphics memory of the server the card shows: the card the person chose on it; else the budget set, for the

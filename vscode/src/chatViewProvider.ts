@@ -3622,12 +3622,17 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       if (e.exitCode === undefined || task.isBackground || !isBuildTask(task)) {
         return;
       }
-      const seq = ++this.buildSeq;
+      // A build that passes takes down the banner of ITS failure: another build task passing (build-docs) says nothing
+      // of the project that still does not compile.
       if (e.exitCode === 0) {
-        this.failedBuild = null;
-        this.post({ type: 'buildBanner', banner: null });
+        if (this.failedBuild === task.name) {
+          ++this.buildSeq;
+          this.failedBuild = null;
+          this.post({ type: 'buildBanner', banner: null });
+        }
         return;
       }
+      const seq = ++this.buildSeq;
       setTimeout(() => {
         if (seq === this.buildSeq) {
           this.failedBuild = task.name;

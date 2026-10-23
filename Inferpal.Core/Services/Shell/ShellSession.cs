@@ -69,12 +69,13 @@ internal sealed class ShellSession
     /// </summary>
     internal (string Directory, string? Vanished) StartDirectory(string? workDirOverride)
     {
-        string dir;
-        lock (_lock) { DropIfRootMoved(); dir = workDirOverride ?? _cwd ?? _root(); }
-        if (System.IO.Directory.Exists(dir)) return (dir, null);
-        // ⚠ No folder to fall back on: started bare, the command runs in the host's own folder, and its card names none.
+        // ⚠ No workspace, no command — an explicit folder included: "." resolves against no root, lands in the host's
+        // own folder, and that folder exists. Checked first, before the card asks anything.
         var root = _root();
         if (string.IsNullOrEmpty(root)) throw new Tools.NoWorkspaceRootException();
+        string dir;
+        lock (_lock) { DropIfRootMoved(); dir = workDirOverride ?? _cwd ?? root; }
+        if (System.IO.Directory.Exists(dir)) return (dir, null);
         return (root, dir);
     }
 

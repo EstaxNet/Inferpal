@@ -157,6 +157,32 @@ public sealed class ConfigCompatibilityTests : IDisposable
                     + (DefaultChangedSince.Keys.Except(changed).Any() ? "; declared but unchanged: " + string.Join(", ", DefaultChangedSince.Keys.Except(changed)) : ""));
     }
 
+    /// <summary>
+    /// A behaviour no key holds: completions became possible on an OpenAI-compatible server. A configuration of the last
+    /// version chatting on one — completions on by default, no completion model — gets none it did not have: the chat
+    /// model there is often a large one on a shared server. A completion model chosen turns them on.
+    /// </summary>
+    [Fact]
+    public void AnOpenAiCompatibleServer_GetsNoCompletionsItDidNotHave()
+    {
+        var file = Parse(Fixture("-factory"));
+        file["provider"] = "openai-compatible";
+        file["baseUrl"]  = "http://192.168.1.20:8080";
+        file["defaultModel"] = "qwen3-coder-30b";
+        File.WriteAllText(_path, file.ToJsonString(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+        var config = InferpalConfig.Load();
+        Assert.True(config.InlineCompletionEnabled);                                                       // witness
+
+        Assert.Null(RoleServers.CompletionModel(config, null));
+
+        config.InlineCompletionModel = "qwen2.5-coder:1.5b";
+        Assert.Equal("qwen2.5-coder:1.5b", RoleServers.CompletionModel(config, null));
+        // Reference arm: Ollama completed with the chat model in the last version, and still does.
+        config.InlineCompletionModel = "";
+        config.Provider = "ollama";
+        Assert.Equal("qwen3-coder-30b", RoleServers.CompletionModel(config, null));
+    }
+
     /// <summary>What the last version's settings did, they still do: completions and code search on the chat's server
     /// with its key, the end of a long run announced or not as the user chose.</summary>
     [Fact]

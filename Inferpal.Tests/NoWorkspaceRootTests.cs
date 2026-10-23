@@ -132,6 +132,12 @@ public class NoWorkspaceRootTests : IDisposable
         await Assert.ThrowsAsync<NoWorkspaceRootException>(() =>
             new UserShellTool("probe", "echo hi", approval, new Inferpal.Config.InferpalConfig(), () => "")
                 .ExecuteAsync(Args(new { }), CancellationToken.None));
+        // A folder named by the model too: "." resolves against no root and lands in the host's folder, which exists;
+        // an absolute one exists too — neither is a workspace.
+        await Assert.ThrowsAsync<NoWorkspaceRootException>(() =>
+            tool.ExecuteAsync(Args(new { command = "echo hi", working_directory = "." }), CancellationToken.None));
+        await Assert.ThrowsAsync<NoWorkspaceRootException>(() =>
+            tool.ExecuteAsync(Args(new { command = "echo hi", working_directory = Path.GetTempPath() }), CancellationToken.None));
 
         Assert.Equal(0, approval.Asked);
     }

@@ -1096,7 +1096,7 @@ internal sealed partial class HostServer : IDisposable
         {
             Provider = string.IsNullOrWhiteSpace(p.Provider) ? s.Config.Provider : p.Provider.Trim(),
             BaseUrl  = url,
-            ApiKey   = p.ApiKey ?? s.Config.ApiKey,
+            ApiKey   = p.ApiKey ?? SavedKeyFor(s, url),
         };
         return (_providerFactory(draft), url);
     }
@@ -1180,7 +1180,7 @@ internal sealed partial class HostServer : IDisposable
 
         // The key in the FORM, like the URL: probing a new server with the saved key answered
         // "unreachable" for a server that only refused that key. Null (not sent) keeps the saved one.
-        var (detected, refusal) = await ProviderProbe.DetectWithRefusalAsync(url, p.ApiKey ?? s.Config.ApiKey, ct);
+        var (detected, refusal) = await ProviderProbe.DetectWithRefusalAsync(url, p.ApiKey ?? SavedKeyFor(s, url), ct);
         return new ConnectionCheckResult(detected is not null, detected,
                                          refusal is null ? null : Strings.StatusRefused(refusal));
     }

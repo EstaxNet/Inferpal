@@ -313,7 +313,13 @@ internal sealed class AcpSession : IAsyncDisposable
     /// refuses, and said why.</summary>
     private async Task<string> PickModelAsync(string typed, string picked)
     {
-        await RefreshModelsAsync(CancellationToken.None);
+        // The list read again, within the editors' budget: a server that does not answer held the pick for the client's
+        // whole timeout. Out of time, the pick is judged on the lists the thread has.
+        using (var budget = new CancellationTokenSource(Services.Commands.ModelsCommandHandler.SwitchListBudget))
+        {
+            try { await RefreshModelsAsync(budget.Token); }
+            catch (OperationCanceledException) { }
+        }
         if (Services.Commands.ModelsCommandHandler.RefusedForChat(picked, _listed) is { } notForChat) return SayNotice(typed, notForChat);
         try
         {

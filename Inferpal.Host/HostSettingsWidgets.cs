@@ -136,11 +136,12 @@ internal sealed partial class HostServer
     public async Task<ModelSuggestion> SettingsSuggestModels(SettingsSuggestParams p, CancellationToken ct)
     {
         var s = Session();
+        var url = string.IsNullOrWhiteSpace(p.BaseUrl) ? s.Config.BaseUrl : p.BaseUrl.Trim();
         var draft = new InferpalConfig
         {
             Provider = string.IsNullOrWhiteSpace(p.Provider) ? s.Config.Provider : p.Provider.Trim(),
-            BaseUrl  = string.IsNullOrWhiteSpace(p.BaseUrl) ? s.Config.BaseUrl : p.BaseUrl.Trim(),
-            ApiKey   = p.ApiKey ?? s.Config.ApiKey,
+            BaseUrl  = url,
+            ApiKey   = p.ApiKey ?? SavedKeyFor(s, url),
         };
         var budget = double.TryParse(p.VramBudgetGb, System.Globalization.NumberStyles.Float,
                                      System.Globalization.CultureInfo.InvariantCulture, out var gb) && gb > 0

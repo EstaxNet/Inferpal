@@ -46,7 +46,8 @@ public class ChatParityTests
         Assert.Contains("vscode.tasks.onDidEndTaskProcess((e) => {", provider);
         // A watch task stopped ends with a code: it was not a build that failed.
         Assert.Contains("if (e.exitCode === undefined || task.isBackground || !isBuildTask(task)) {", provider);
-        Assert.Matches(@"if \(e\.exitCode === 0\) \{\s*this\.failedBuild = null;\s*this\.post\(\{ type: 'buildBanner', banner: null \}\);", provider);
+        // A build that passes takes down ITS failure's banner — another build task passing says nothing of the project.
+        Assert.Matches(@"if \(e\.exitCode === 0\) \{\s*if \(this\.failedBuild === task\.name\) \{\s*\+\+this\.buildSeq;\s*this\.failedBuild = null;\s*this\.post\(\{ type: 'buildBanner', banner: null \}\);", provider);
         // Never over a later build's verdict.
         Assert.Matches(@"if \(seq === this\.buildSeq\) \{\s*this\.failedBuild = task\.name;\s*this\.postBuildBanner\(\);", provider);
         Assert.Contains("this.failedBuild === null ? null : { seq: this.buildSeq, ...buildBannerOf(this.failedBuild) }", provider);

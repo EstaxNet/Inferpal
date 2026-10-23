@@ -3003,6 +3003,44 @@ public partial class HostServerTests
         Assert.Equal("my-finetune", h.Server.CurrentSession!.Config.DefaultModel);
     }
 
+    /// <summary>
+    /// /setup run again on the same server — to download a chat model — keeps the completion and search models chosen
+    /// before: a card that names none left them empty, and the index was embedded again. Another server takes the card's
+    /// choice: the old models may not be there.
+    /// </summary>
+    [Fact]
+    public async Task SetupApply_OnTheSameServer_KeepsTheRoleModelsTheCardLeavesOut()
+    {
+        var file = Path.Combine(Path.GetTempPath(), $"inferpal-setup-{Guid.NewGuid():N}.json");
+        try
+        {
+            using var h = CreateHarness(cfg =>
+            {
+                cfg.Provider = "ollama";
+                cfg.BaseUrl = "http://192.168.1.2:11434";
+                cfg.InlineCompletionModel = "qwen2.5-coder:1.5b";
+                cfg.RagEmbeddingModel = "nomic-embed-text:latest";
+            }, settingsFile: file);
+            await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            await h.Client.InvokeWithParameterObjectAsync<Host.SetupApplyResult>("setup/apply", new
+            {
+                url = "http://192.168.1.2:11434", provider = "ollama", chatModel = "granite4.2:8b",
+            });
+            var c = h.Server.CurrentSession!.Config;
+            Assert.Equal("granite4.2:8b", c.DefaultModel);                                                     // witness
+            Assert.Equal(("qwen2.5-coder:1.5b", "nomic-embed-text:latest"), (c.InlineCompletionModel, c.RagEmbeddingModel));
+
+            // Reference arm: another server takes the card's choice — none named, the chat model and automatic.
+            await h.Client.InvokeWithParameterObjectAsync<Host.SetupApplyResult>("setup/apply", new
+            {
+                url = "http://192.168.1.20:11434", provider = "ollama", chatModel = "granite4.2:8b",
+            });
+            Assert.Equal(("", ""), (c.InlineCompletionModel, c.RagEmbeddingModel));
+        }
+        finally { try { File.Delete(file); } catch { } }
+    }
+
     [Fact]
     public async Task SetupApply_SavesTheServerAndTheModels_AndEndsTheFirstRun()
     {

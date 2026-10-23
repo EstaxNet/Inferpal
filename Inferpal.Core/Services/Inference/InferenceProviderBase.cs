@@ -254,9 +254,11 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         var m = RoleServers.CompletionModel(_config, model);
         if (m is null)
             // The address as the support bundle shows a server's: a LAN name identifies the user's network.
-            Diagnostics.RecordOnce("Fim",
-                $"Inline completions run on their own server ({Commands.DiagnosticsCommandHandler.RedactEndpoint(ServerUrl)}), " +
-                "and no completion model is chosen for it: choose one in the settings (the chat's model is not on that server).",
+            Diagnostics.RecordOnce("Fim", RoleServers.OnChatServer(_config, ServerRole.Completion)
+                ? $"Inline completions on an OpenAI-compatible server ({Commands.DiagnosticsCommandHandler.RedactEndpoint(ServerUrl)}) " +
+                  "use a completion model chosen for them, and none is: choose one in the settings (the chat's model would answer every pause in typing)."
+                : $"Inline completions run on their own server ({Commands.DiagnosticsCommandHandler.RedactEndpoint(ServerUrl)}), " +
+                  "and no completion model is chosen for it: choose one in the settings (the chat's model is not on that server).",
                 "no-model|" + ServerUrl);
         return m;
     }

@@ -28,7 +28,9 @@ capability is missing.
 | Per-model VRAM figure (`/api/ps`) | ✅ | ❌ | ❌ |
 | `keep_alive` (auto-unload) | ✅ | ❌ | ❌ |
 
-**Inline completions on an OpenAI-compatible server.** The server wraps the code before and after the cursor in the
+**Inline completions on an OpenAI-compatible server** run with the completion model you choose (Settings ›
+Autocomplete), never the chat model: on such a server it is often a large one a team shares, and every pause in typing
+would ask it. The server wraps the code before and after the cursor in the
 model's own fill-in-the-middle tokens; on this server type Inferpal never writes them itself. llama-server (recognized by its `/props`) is asked
 through `/infill` — not yet measured on a real llama-server. Any other server is asked through `/v1/completions` with
 `suffix`, which Ollama's `/v1` accepts for a model that has a fill-in-the-middle template (measured on Ollama 0.40.4:

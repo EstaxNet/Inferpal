@@ -3,8 +3,29 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
-## Unreleased
+## 1.8.4
 
+A first run that finds your model server, the editor's gestures (Edit with AI, Explain, Add Tests), the change each
+step wrote, a banner when a build fails, your code found while you type, and the end of a long run announced.
+
+- **The editor's gestures**: **Edit with AI** — an instruction on the selection or the caret's line, the change shown
+  in the Refactor Preview before it applies, the same prompt and model as in Visual Studio — in the editor's context
+  menu and the command palette. It takes no key of its own (Ctrl+Shift+I is the developer tools' in VS Code): bind the
+  one you want in Keyboard Shortcuts. **Explain** and **Add Tests** join Fix, Refactor and Document in the context
+  menu, and `/map` has **Alt+M** (Ctrl+Alt+M on macOS).
+- **`/test` takes the selection**, and its tests are written by an edit you can undo — an open test file replaced in
+  its editor, a new one created —, refused if the test file changed while the model worked.
+- **What a step wrote**: a step that changed a file shows the change in color, with its `+3 −2` and **Open diff**.
+- **A build that failed**: a build task that fails draws a banner over the chat — how many errors the Problems panel
+  holds, the first one — with **Fix them** and **Show the errors**; a build that passes takes it down.
+- **Your code, found while you type**: once you pause, the files the search ranks first for your draft appear as
+  dashed chips under it, named with the lines they span, and go with the message as excerpts; remove the ones that do
+  not belong.
+- **The end of a long run, announced**: when an answer took more than 30 seconds and you are not looking at the chat, a
+  notification says it is done, or that it stopped on an error; **Show the answer** brings the chat back. Settings ›
+  Language and appearance › *Announce the end of a long run* turns it off, in Visual Studio too.
+- **Autocomplete and code search on a server of their own**: each can run on another server than the chat (*Runs on*,
+  with its address, key and **Test** button) — ghost text on your machine while the chat answers on a team server.
 - **A first run that finds your model server**: on a blank profile, or a server without a chat model, the chat showed a
   red badge and nothing else. A card now looks where a model server usually listens (Ollama, LM Studio, llama-server,
   vLLM), says what each place answered, and proposes the models that fit your card — **Start with these**. A server on
@@ -14,8 +35,9 @@ extension share one engine and one version number.
 - **A model for 8 GB graphics cards**: Granite 4.2 8B (14 of 14 tasks on Inferpal's battery) fits an 8 GB card beside
   the code-search model; the first-run card offers it for download.
 - **Inline completions on llama-server and other OpenAI-compatible servers**: the server completes around the cursor
-  with the model's own fill-in-the-middle tokens (llama-server's `/infill`, or `/v1/completions` with `suffix`); one
-  that refuses is named once in `/diagnostics`.
+  with the model's own fill-in-the-middle tokens (llama-server's `/infill`, or `/v1/completions` with `suffix`), with a
+  completion model you choose in the settings — never the chat model, often a large one on a shared server; one that
+  refuses is named once in `/diagnostics`.
 - **A pasted path or comment is a question**: a message that starts with `/home/me/app.py` or `// why…` went to the
   command router and was answered "unknown command"; it now goes to the model. A single word after the `/` is still a
   command.
@@ -27,10 +49,10 @@ extension share one engine and one version number.
 - **A slow machine's long first answer is waited for again after the next step of a conversation**: with Ollama, a
   request the server mostly served from its cache was taken as a fast read of the whole conversation, and erased the
   longer wait Inferpal had learned for long requests; the speed is now learned from the part Ollama actually reads.
-- **The documentation no longer says "feature parity"**: the features still only in Visual Studio (Edit with AI, the
-  Build Failed banner, `/fix-build` and a few more) are
-  [listed in the features page](https://github.com/EstaxNet/Inferpal/blob/master/docs/features.md#two-editors-one-engine),
-  and the settings panel is described as the seven pages it has.
+- **What each editor has is written down**: everything the two editors did differently is now in both, but
+  `/fix-build`, Visual Studio's alone —
+  [the features page](https://github.com/EstaxNet/Inferpal/blob/master/docs/features.md#two-editors-one-engine) says
+  so —, and the settings panel is described as the seven pages it has.
 - **Runs on .NET 10**: the extension carries the .NET runtime its backend runs on, and .NET 8 stops receiving security
   fixes on November 10, 2026. On a Mac it now needs macOS 12 or later (was 11); Windows and
   Linux are unchanged.
