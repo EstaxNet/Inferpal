@@ -192,5 +192,7 @@
   "From the task {0} — the errors are in the Problems panel.": "Tâche {0} — les erreurs sont dans le panneau Problèmes.",
   "Show the errors": "Afficher les erreurs",
   "From the task {0} — the Problems panel holds none of its errors: its output says why.": "Tâche {0} — le panneau Problèmes ne contient aucune de ses erreurs : sa sortie dit pourquoi.",
-  "Found in your code while you type — sent as excerpts. Remove what does not belong.": "Trouvé dans votre code pendant la frappe — envoyé en extraits. Retirez ce qui n'a rien à faire là."
+  "Found in your code while you type — sent as excerpts. Remove what does not belong.": "Trouvé dans votre code pendant la frappe — envoyé en extraits. Retirez ce qui n'a rien à faire là.",
+  "Inferpal: inline completion is turned off in VS Code's settings (inferpal.fim.enabled).": "Inferpal : la complétion est désactivée dans les réglages de VS Code (inferpal.fim.enabled).",
+  "Inferpal: the suggestion does not continue the item selected in the list — close the list (Esc) and ask again.": "Inferpal : la suggestion ne prolonge pas l’élément choisi dans la liste — fermez la liste (Échap) et redemandez."
 }

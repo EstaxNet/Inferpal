@@ -4,7 +4,7 @@ using System.Text.Json;
 namespace Inferpal.GhostText;
 
 /// <summary>
-/// The three inline-completion settings, read straight from <c>%AppData%/Inferpal/config.json</c>.
+/// The four inline-completion settings, read straight from <c>%AppData%/Inferpal/config.json</c>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -12,10 +12,10 @@ namespace Inferpal.GhostText;
 /// (net8, DPAPI, ~90 properties) cannot be loaded there. Yet the only thing ghost text needs to
 /// know before it opens its mouth is whether it is enabled — and that question comes up on
 /// <b>every keystroke</b>. Sending it all the way to the sidecar would be absurd: we read the same
-/// file, three properties, cached and invalidated by the write timestamp.
+/// file, four properties, cached and invalidated by the write timestamp.
 /// </para>
 /// <para>
-/// ⚠ The three keys are the JSON names <c>config.json</c> is written with — <c>InferpalConfig</c>'s
+/// ⚠ The four keys are the JSON names <c>config.json</c> is written with — <c>InferpalConfig</c>'s
 /// <c>[JsonPropertyName]</c>, camelCase — and the lookup is case-sensitive. Copied with the C# property names
 /// instead, they never matched: ghost text ignored its on/off switch, its model and its mode, without a message.
 /// Locked by <c>InProcConfigKeyTests</c>, which compares them with the attributes, not with the property names.
@@ -26,13 +26,21 @@ internal static class InProcConfig
     internal const string KeyEnabled = "inlineCompletionEnabled";
     internal const string KeyMode    = "inlineCompletionMode";
     internal const string KeyModel   = "inlineCompletionModel";
+    internal const string KeyTrigger = "inlineCompletionTrigger";
+
+    /// <summary>The value of <see cref="KeyTrigger"/> under which only the key asks (<c>AskedCompletion.OnDemand</c>).</summary>
+    internal const string OnDemandValue = "onDemand";
 
     /// <summary>Defaults, identical to those of <c>InferpalConfig</c>.</summary>
     internal sealed class Snapshot
     {
-        internal bool    Enabled { get; set; } = true;
-        internal string  Mode    { get; set; } = "Default";
-        internal string? Model   { get; set; }
+        internal bool    Enabled  { get; set; } = true;
+        internal string  Mode     { get; set; } = "Default";
+        internal string? Model    { get; set; }
+        internal bool    OnDemand { get; set; }
+
+        /// <summary>Whether a pause in typing asks for a suggestion: on, and not only on demand.</summary>
+        internal bool AsksOnPause => Enabled && !OnDemand;
 
         /// <summary>Write timestamp of the file that was read; used both to decide on a re-read
         /// AND to recycle the sidecar when the backend changed under its feet.</summary>
@@ -98,10 +106,11 @@ internal static class InProcConfig
             // comes back through here.
             return new Snapshot
             {
-                Enabled = _cached.Enabled,
-                Mode    = _cached.Mode,
-                Model   = _cached.Model,
-                Stamp   = stamp,
+                Enabled  = _cached.Enabled,
+                Mode     = _cached.Mode,
+                Model    = _cached.Model,
+                OnDemand = _cached.OnDemand,
+                Stamp    = stamp,
             };
         }
         return snap;
@@ -127,6 +136,9 @@ internal static class InProcConfig
             var value = model.GetString();
             snap.Model = string.IsNullOrEmpty(value) ? null : value;
         }
+
+        if (root.TryGetProperty(KeyTrigger, out var trigger) && trigger.ValueKind == JsonValueKind.String)
+            snap.OnDemand = string.Equals(trigger.GetString()?.Trim(), OnDemandValue, StringComparison.OrdinalIgnoreCase);
         return snap;
     }
 }

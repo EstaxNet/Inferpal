@@ -44,6 +44,14 @@ export interface FimSettingsResult {
   debounceMs: number;
   /** The completion server is on the chat's machine: it steps aside while a chat answers. Absent = it does. */
   yieldsToChat?: boolean;
+  /** Only the key asks (`inlineCompletionTrigger`): a pause in typing asks for nothing. Absent = it does not. */
+  onDemand?: boolean;
+}
+
+/** `fim/ask` — a completion asked for by its key: the suggestion, or the sentence the status bar shows instead. */
+export interface FimAskResult {
+  text: string | null;
+  notice: string | null;
 }
 
 export interface ChatSendParams {

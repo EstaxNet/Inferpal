@@ -49,6 +49,39 @@ internal sealed class GhostTextController
 
         // How GhostTextCommandHandler, a MEF part with no reference to us, finds this view's controller.
         view.Properties[typeof(GhostTextController)] = this;
+        CompletionAskWatcher.Add(this);
+    }
+
+    /// <summary>Whether this view is the one being typed in. UI thread.</summary>
+    internal bool HasFocus => _view.HasAggregateFocus;
+
+    /// <summary>
+    /// The key of inline completion (Alt+'): takes the suggestion shown; otherwise says why none is asked, or asks for
+    /// one now, without the pause. UI thread.
+    /// </summary>
+    /// <remarks>Taking the suggestion is what makes it a second accept key: where an open list — IntelliSense,
+    /// ReSharper's — holds Tab, this one still reaches the suggestion.</remarks>
+    internal void Ask(CompletionAsk ask)
+    {
+        if (_adornment.PendingCompletion is { } shown)
+        {
+            AcceptCompletion(shown);
+            return;
+        }
+        if (ask.Refusal is { } refusal)
+        {
+            CompletionAskWatcher.Say(refusal);
+            return;
+        }
+        // A read-only view takes no suggestion — as in VS Code, whose binding stays out of read-only editors.
+        if (_view.TextBuffer.IsReadOnly(_view.Caret.Position.BufferPosition.Position)) return;
+        lock (_gate)
+        {
+            _debounce?.Dispose();
+            _debounce = null;
+        }
+        // Off the UI thread, as the pause's timer runs it: the first request may start the sidecar process.
+        _ = Task.Run(() => TriggerAsync(ask));
     }
 
     // ── Text change → debounce ────────────────────────────────────────────────
@@ -60,8 +93,9 @@ internal sealed class GhostTextController
 
         // Read the settings BEFORE acquiring the lock: the read may touch the disk, and must not
         // happen while holding _gate (avoids lock contention / potential deadlock).
+        // On demand, a pause asks for nothing: only the key does (Ask).
         var config   = InProcConfig.Current();
-        var settings = config.Enabled
+        var settings = config.AsksOnPause
             ? FimContextBuilder.GetSettings(config.Mode)
             : null;
 
@@ -91,7 +125,8 @@ internal sealed class GhostTextController
 
     // ── FIM request ───────────────────────────────────────────────────────────
 
-    private async Task TriggerAsync()
+    /// <param name="asked">The key's request, when the person asked: an empty answer is then said, not kept quiet.</param>
+    private async Task TriggerAsync(CompletionAsk? asked = null)
     {
         CancellationToken token;
         CancellationTokenSource? prev;
@@ -109,7 +144,7 @@ internal sealed class GhostTextController
         try
         {
             // Read editor state on the dispatcher thread.
-            var ctx = await _dispatcher.InvokeAsync(() => ReadContext(token));
+            var ctx = await _dispatcher.InvokeAsync(() => ReadContext(token, asked is not null));
             if (ctx is null || token.IsCancellationRequested) return;
 
             var (prefix, suffix, anchor, snapshot, path) = ctx.Value;
@@ -123,7 +158,7 @@ internal sealed class GhostTextController
             // asked of the sidecar, which IS the Core. It returns the whole completion - streaming
             // token by token brought nothing here, the adornment only shows a complete text before
             // Tab can accept it anyway.
-            var completion = await FimSidecar.CompleteAsync(
+            var answer = await FimSidecar.CompleteAsync(
                 prefix:      prefix,
                 suffix:      suffix,
                 maxTokens:   settings.MaxTokens,
@@ -136,7 +171,14 @@ internal sealed class GhostTextController
             // ⚠ Nothing to show is not an empty suggestion: a pending "" is not null, so the next Tab was ACCEPTED —
             // swallowed, inserting nothing, instead of indenting. A backend without FIM answers "" after every pause,
             // and so does a completion that only repeated the text after the caret.
-            if (completion is null || string.IsNullOrWhiteSpace(completion) || token.IsCancellationRequested) return;
+            if (token.IsCancellationRequested) return;
+            var completion = answer.Text;
+            if (completion is null || string.IsNullOrWhiteSpace(completion))
+            {
+                // A server that failed is named as such: "nothing here" would blame the caret.
+                if (asked is not null) CompletionAskWatcher.Say(answer.Failed ? asked.Failed : asked.Nothing);
+                return;
+            }
 
             // Fire-and-forget UI dispatch — result intentionally discarded (VSTHRD110: _ =).
             _ = _dispatcher.InvokeAsync(() =>
@@ -145,6 +187,8 @@ internal sealed class GhostTextController
                 // Discard if the buffer changed since we triggered.
                 if (!ReferenceEquals(_view.TextBuffer.CurrentSnapshot, snapshot)) return;
                 _adornment.Show(completion, anchor);
+                // Asked for while the list is open: Tab goes to the list, and the key is what takes the suggestion.
+                if (asked is not null && CompletionActive()) CompletionAskWatcher.Say(asked.ListHint);
             });
         }
         catch (OperationCanceledException) { }
@@ -158,8 +202,9 @@ internal sealed class GhostTextController
     private const int PrefixLines = 64;
     private const int SuffixLines = 16;
 
+    /// <param name="asked">The person pressed the key: an open completion list does not hold the request back.</param>
     private (string prefix, string suffix, SnapshotPoint anchor, ITextSnapshot snapshot, string? path)?
-        ReadContext(CancellationToken token)
+        ReadContext(CancellationToken token, bool asked)
     {
         if (token.IsCancellationRequested) return null;
 
@@ -183,8 +228,8 @@ internal sealed class GhostTextController
         var lastLine  = snapshot.GetLineFromLineNumber(
             Math.Min(snapshot.LineCount - 1, caretLine.LineNumber + SuffixLines));
 
-        // Not while the completion list is open: Tab belongs to it.
-        if (!GhostTextTrigger.Asks(cursor > 0 ? snapshot[cursor - 1] : null, _completion is not null, CompletionActive()))
+        // Not while the completion list is open: Tab belongs to it. Unless the person asked.
+        if (!asked && !GhostTextTrigger.Asks(cursor > 0 ? snapshot[cursor - 1] : null, _completion is not null, CompletionActive()))
             return null;
 
         var (start, end) = FimContextBuilder.Window(firstLine.Start.Position, cursor, lastLine.End.Position);
@@ -300,6 +345,7 @@ internal sealed class GhostTextController
         _view.Closed                      -= OnViewClosed;
         _view.VisualElement.PreviewKeyDown -= OnPreviewKeyDown;
         _view.Properties.RemoveProperty(typeof(GhostTextController));
+        CompletionAskWatcher.Remove(this);
 
         lock (_gate)
         {

@@ -1184,6 +1184,19 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="FimModeFastDesc" xml:space="preserve"><value>짧은 제안, 300 ms 후.</value></data>
   <data name="FimModeDefaultDesc" xml:space="preserve"><value>더 긴 제안, 600 ms 후.</value></data>
   <data name="FimModeHighAccuracyDesc" xml:space="preserve"><value>블록 전체, 1 s 후.</value></data>
+  <data name="LabelInlineCompletionTrigger" xml:space="preserve"><value>제안 표시 시점</value></data>
+  <data name="FimTriggerAuto" xml:space="preserve"><value>입력하는 동안</value></data>
+  <data name="FimTriggerAutoDesc" xml:space="preserve"><value>입력이 잠시 멈추면.</value></data>
+  <data name="FimTriggerOnDemand" xml:space="preserve"><value>요청할 때만</value></data>
+  <data name="FimTriggerOnDemandDesc" xml:space="preserve"><value>Alt+'를 누를 때만 (US 키보드, Mac에서는 Ctrl+Option+'). 그 외에는 아무것도 보내지 않습니다.</value></data>
+  <data name="CompletionAskedOff" xml:space="preserve"><value>Inferpal: 인라인 완성이 꺼져 있습니다 — Inferpal 설정의 {0} 페이지.</value></data>
+  <data name="CompletionAskedChatBusy" xml:space="preserve"><value>Inferpal: 완성 서버가 있는 컴퓨터에서 모델이 채팅이나 작업에 답하는 중입니다 — 끝난 뒤 다시 요청하세요.</value></data>
+  <data name="CompletionAskedNoModel" xml:space="preserve"><value>Inferpal: 이 서버에서 완성에 쓸 모델이 선택되지 않았습니다 — Inferpal 설정의 {0} 페이지.</value></data>
+  <data name="CompletionAskedNothing" xml:space="preserve"><value>Inferpal: 이 위치에서 모델이 제안한 것이 없습니다.</value></data>
+  <data name="CompletionAskedServerFailed" xml:space="preserve"><value>Inferpal: 완성 서버가 응답하지 않았거나 요청을 거부했습니다 — 서버가 실행 중이고 완성 모델이 있는지 확인하세요.</value></data>
+  <data name="CompletionAskedNoEditor" xml:space="preserve"><value>Inferpal: 코드 편집기에 커서를 둔 뒤 키를 다시 누르세요.</value></data>
+  <data name="CompletionAskedListHint" xml:space="preserve"><value>Inferpal: Tab은 열린 목록으로 갑니다. 요청한 키로 제안을 수락하세요.</value></data>
+  <data name="CompletionAskedExcluded" xml:space="preserve"><value>Inferpal: {0}</value></data>
   <data name="SettingsModelUsed" xml:space="preserve"><value>모델: {0}.</value></data>
   <data name="SettingsChangeInServer" xml:space="preserve"><value>서버 및 모델에서 변경</value></data>
   <data name="SlashColCommand" xml:space="preserve"><value>명령</value></data>

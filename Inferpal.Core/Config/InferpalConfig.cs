@@ -300,6 +300,11 @@ internal class InferpalConfig
     [JsonPropertyName("inlineCompletionEnabled")]
     public bool InlineCompletionEnabled { get; set; } = true;
 
+    /// <summary>When a completion is asked for: <c>auto</c> after a pause in typing, <c>onDemand</c> only by the key
+    /// (Alt+', <c>AskedCompletion</c>) — nothing is sent otherwise.</summary>
+    [JsonPropertyName("inlineCompletionTrigger")]
+    public string InlineCompletionTrigger { get; set; } = "auto";
+
     /// <summary>Model for Fill-in-the-Middle completions. Empty string = use <see cref="DefaultModel"/> — on the chat's
     /// server only: on another server (<see cref="InlineCompletionRunsOn"/>) the chat's model is not there to fall back on.</summary>
     [JsonPropertyName("inlineCompletionModel")]
@@ -760,6 +765,8 @@ internal class InferpalConfig
         cfg.Provider = Services.Inference.InferenceProviderFactory.Canonical(cfg.Provider);
         cfg.InlineCompletionMode = OptionCode(Services.Presentation.SettingsSchema.FimModes, cfg.InlineCompletionMode)
                                    ?? cfg.InlineCompletionMode;
+        cfg.InlineCompletionTrigger = OptionCode(Services.Presentation.SettingsSchema.FimTriggers, cfg.InlineCompletionTrigger)
+                                      ?? cfg.InlineCompletionTrigger;
 
         // "fr-FR" names "fr": trailing subtags are dropped until an offered language matches.
         var languages = Services.Presentation.SettingsSchema.Languages;

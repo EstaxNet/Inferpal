@@ -200,6 +200,17 @@ exists.
 - **Ghost-text Fill-in-the-Middle** as you type — **Tab** to accept, **Esc** to dismiss.
 - Three speeds, picked as cards in the settings: **Fast** (128 tok / 0.4 / 300 ms) · **Balanced** (256 / 0.2 /
   600 ms) · **Accurate** (512 / 0.1 / 1 000 ms).
+- **Alt+'** (the key left of Enter on a US keyboard; **Ctrl+Option+'** in VS Code on macOS) asks for a suggestion at
+  the caret, without waiting for a pause, or takes the one shown — a second accept key where an open list
+  (IntelliSense, ReSharper's) holds Tab. A key that brings nothing says why in the status bar: completion turned off,
+  the file excluded from AI tools, no model chosen for an OpenAI-compatible server, a chat or a task answering on the
+  same machine (it keeps the graphics card), the completion server not answering or refusing, or no suggestion from
+  the model. The key is free in Visual Studio, ReSharper's Visual Studio scheme and VS Code. It is a key position,
+  not a character: on another layout it is the key in that place (*²* on a French keyboard), and the menus show it.
+  Change it in *Tools › Options › Keyboard* (*Suggest or Accept a Completion*) or in VS Code's Keyboard Shortcuts
+  (*Trigger Inline Suggestion*).
+- **When I ask** (*Autocomplete* page, or `inlineCompletionTrigger: "onDemand"`): only the key asks — nothing is sent
+  after a pause in typing, so on a small card the chat never shares it with the completion.
 - Suppressed while IntelliSense triggers are active. Supported on Ollama, LM Studio, and OpenAI-compatible servers that
   complete around the cursor (llama-server, Ollama's `/v1`) — see [Providers](providers.md).
 - **On a server of their own** — the chat on a team server, ghost text on this machine: *Runs on › Another server* on
@@ -438,3 +449,4 @@ context menu and the command palette, and VS Code's Keyboard Shortcuts binds it 
 | **Enter** | Send the message |
 | **Shift+Enter** | Insert a newline in the prompt |
 | **Tab** / **Esc** | Accept / dismiss a ghost-text completion |
+| **Alt+'** | Ask for a ghost-text completion at the caret, or take the one shown (**Ctrl+Option+'** in VS Code on macOS) |

@@ -36,16 +36,20 @@ internal sealed class FimRpcLoop
     private readonly Stream _input;
     private readonly Stream _output;
     private readonly Func<FimRequest, CancellationToken, Task<string>> _complete;
+    private readonly Func<bool> _serverFailing;
 
     private readonly object _gate = new();
     private readonly Dictionary<int, CancellationTokenSource> _inflight = [];
 
+    /// <param name="serverFailing">Whether the server's last completion failed (<c>IInferenceProvider.FimFailing</c>):
+    /// an empty answer then carries <c>"failing": true</c>, so the key's request says the server, not the model.</param>
     internal FimRpcLoop(Stream input, Stream output,
-                        Func<FimRequest, CancellationToken, Task<string>> complete)
+                        Func<FimRequest, CancellationToken, Task<string>> complete, Func<bool>? serverFailing = null)
     {
-        _input    = input;
-        _output   = output;
-        _complete = complete;
+        _input         = input;
+        _output        = output;
+        _complete      = complete;
+        _serverFailing = serverFailing ?? (() => false);
     }
 
     internal async Task RunAsync(CancellationToken ct)
@@ -111,7 +115,7 @@ internal sealed class FimRpcLoop
             {
                 lock (_gate) { if (_inflight.Remove(id)) cts.Dispose(); }
             }
-            WriteResult(id, text);
+            WriteResult(id, text, failing: text.Length == 0 && _serverFailing());
         }, CancellationToken.None);
     }
 
@@ -124,12 +128,12 @@ internal sealed class FimRpcLoop
 
     // ── Cadrage ───────────────────────────────────────────────────────────────
 
-    private void WriteResult(int id, string text)
+    private void WriteResult(int id, string text, bool failing = false)
     {
         try
         {
             var json = "{\"jsonrpc\":\"2.0\",\"id\":" + id + ",\"result\":"
-                       + JsonSerializer.Serialize(text) + "}";
+                       + JsonSerializer.Serialize(text) + (failing ? ",\"failing\":true" : "") + "}";
             var body   = Encoding.UTF8.GetBytes(json);
             var header = Encoding.ASCII.GetBytes($"Content-Length: {body.Length}\r\n\r\n");
             lock (_output)

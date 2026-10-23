@@ -304,7 +304,7 @@ internal partial class InferpalSettingsData
         nameof(CompactionEnabled), nameof(ContextWindowKeepTurnsText), nameof(OodaTurnThresholdText),
         nameof(CompactionTimeoutHoursText), nameof(CompactionTimeoutMinutesText), nameof(CompactionTimeoutSecondsText),
         nameof(KvCacheAnchorMessagesText), nameof(RagEnabled), nameof(RagAutoContextEnabled), nameof(LspEnabled),
-        nameof(RagTopKText), nameof(RagSimilarityThresholdText), nameof(InlineCompletionEnabled), nameof(SelectedInlineMode),
+        nameof(RagTopKText), nameof(RagSimilarityThresholdText), nameof(InlineCompletionEnabled), nameof(SelectedInlineMode), nameof(InlineCompletionOnDemand),
         nameof(InlineDiffPreviewEnabled), nameof(McpEnabled), nameof(PermissionRules), nameof(SelectedLanguage),
         nameof(ToolBubblesExpanded), nameof(RunEndSoundEnabled), nameof(ChatDensity), nameof(HistoryStorage),
         nameof(CompletionRunsOn), nameof(CompletionBaseUrl), nameof(CompletionProvider), nameof(CompletionApiKey),
@@ -382,6 +382,7 @@ internal partial class InferpalSettingsData
             (RagSimilarityThresholdText.Trim(), saved.RagSimilarityThreshold.ToString("F2", CultureInfo.InvariantCulture)),
             (InlineCompletionEnabled.ToString(), saved.InlineCompletionEnabled.ToString()),
             (modeCode, saved.InlineCompletionMode),
+            (InlineCompletionOnDemand.ToString(), AskedCompletion.IsOnDemand(saved.InlineCompletionTrigger).ToString()),
             (InlineDiffPreviewEnabled.ToString(), saved.InlineDiffPreviewEnabled.ToString()),
             (McpEnabled.ToString(), saved.McpEnabled.ToString()),
             ((PermissionRules ?? string.Empty).Trim(), saved.PermissionRules.Trim()),
@@ -444,6 +445,7 @@ internal partial class InferpalSettingsData
         RagTopKText = N(c.RagTopK);
         RagSimilarityThresholdText = c.RagSimilarityThreshold.ToString("F2", CultureInfo.InvariantCulture);
         InlineCompletionEnabled = c.InlineCompletionEnabled;
+        InlineCompletionOnDemand = AskedCompletion.IsOnDemand(c.InlineCompletionTrigger);
         InlineDiffPreviewEnabled = c.InlineDiffPreviewEnabled;
         McpEnabled = c.McpEnabled;
         PermissionRules = c.PermissionRules;

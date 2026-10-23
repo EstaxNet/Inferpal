@@ -222,11 +222,26 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     private int  _fimConsecutiveFailures = 0;
     private long _fimCooldownUntilTicks  = 0; // UTC ticks; 0 = no cooldown
 
+    private volatile bool _fimLastFailed;
+
     protected bool IsFimInCooldown()  => DateTime.UtcNow.Ticks < Interlocked.Read(ref _fimCooldownUntilTicks);
-    protected void RecordFimSuccess() => Interlocked.Exchange(ref _fimConsecutiveFailures, 0);
+
+    protected void RecordFimSuccess()
+    {
+        _fimLastFailed = false;
+        Interlocked.Exchange(ref _fimConsecutiveFailures, 0);
+    }
+
+    /// <summary>A completion not asked because the server refuses it for a while: failed, without counting toward the
+    /// breaker.</summary>
+    protected void RecordFimRefused() => _fimLastFailed = true;
+
+    /// <inheritdoc cref="IInferenceProvider.FimFailing"/>
+    public bool FimFailing => _fimLastFailed || IsFimInCooldown();
 
     protected void RecordFimFailure()
     {
+        _fimLastFailed = true;
         if (Interlocked.Increment(ref _fimConsecutiveFailures) >= MaxConsecutiveFailures)
         {
             Interlocked.Exchange(ref _fimCooldownUntilTicks, (DateTime.UtcNow + CooldownDuration).Ticks);

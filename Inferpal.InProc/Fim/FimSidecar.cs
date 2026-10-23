@@ -7,6 +7,16 @@ using System.Text.Json;
 
 namespace Inferpal.GhostText;
 
+/// <summary>A completion, or why there is none to show.</summary>
+/// <param name="Text">The completion; <c>null</c> when there is nothing to show.</param>
+/// <param name="Failed">Nothing because something failed — the server (unreachable, refused, paused after failures) or
+/// the sidecar (not started, gone, past its budget) — not because the model had nothing: what the key of inline
+/// completion says differs.</param>
+internal readonly record struct FimAnswer(string? Text, bool Failed)
+{
+    internal static FimAnswer Failure => new(null, Failed: true);
+}
+
 /// <summary>
 /// The bridge between ghost text (in-process, net472) and inference (the Core, net8): a child
 /// <c>Inferpal.Fim</c> process started on the first completion, kept alive, and queried over
@@ -66,6 +76,9 @@ internal static class FimSidecar
     // Same, for the sidecar that is ALIVE and simply never answers.
     private static readonly string NoAnswer = new string('\0', 2);
 
+    // Same, for an empty answer the sidecar marked "failing": the server did not answer or refused.
+    private static readonly string ServerFailed = new string('\0', 3);
+
     /// <summary>
     /// How long a completion may take before the wait is abandoned.
     /// </summary>
@@ -104,11 +117,12 @@ internal static class FimSidecar
     internal static int LaunchCount;
 
     /// <summary>
-    /// Requests a completion. Returns <c>null</c> when there is nothing to show — sidecar
-    /// unavailable, cancellation, backend without FIM, or an empty answer. Never throws.
+    /// Requests a completion. Its text is <c>null</c> when there is nothing to show — sidecar
+    /// unavailable, cancellation, backend without FIM, or an empty answer — and <see cref="FimAnswer.Failed"/>
+    /// says whether that is a failure rather than the model's nothing. Never throws.
     /// </summary>
     /// <param name="path">The document's file, for the sidecar to judge against the workspace's ignore files.</param>
-    internal static async Task<string?> CompleteAsync(
+    internal static async Task<FimAnswer> CompleteAsync(
         string prefix, string suffix, int maxTokens, double temperature, string? model,
         long configStamp, CancellationToken ct, string? path = null)
     {
@@ -118,11 +132,11 @@ internal static class FimSidecar
 
         lock (_gate)
         {
-            if (!EnsureStarted(configStamp)) return null;
+            if (!EnsureStarted(configStamp)) return FimAnswer.Failure;
             stdin = _stdin;
             id    = ++_nextId;
         }
-        if (stdin is null) return null;
+        if (stdin is null) return FimAnswer.Failure;
 
         _pending[id] = tcs;
         try
@@ -151,8 +165,8 @@ internal static class FimSidecar
             // Cancelled (null), the pipe closed under the request (DeadPipe — ReadLoop has said
             // why), or the budget expired (NoAnswer — Expire has said why): none is an answer, and
             // none may be recorded as one.
-            if (raw is null || ReferenceEquals(raw, DeadPipe) || ReferenceEquals(raw, NoAnswer))
-                return null;
+            if (raw is null) return default;
+            if (ReferenceEquals(raw, DeadPipe) || ReferenceEquals(raw, NoAnswer)) return FimAnswer.Failure;
 
             // ⚠ The door is recorded on an ANSWER, not on a start: a process that starts and then
             // dies on the first request is not a working sidecar. Recording it clears the reason,
@@ -160,7 +174,7 @@ internal static class FimSidecar
             // the heartbeat is a file.
             if (Interlocked.Exchange(ref _answered, 1) == 0)
                 Services.Signals.InProcAliveSignal.Record(Services.Signals.InProcAliveSignal.ComponentFim);
-            return NullIfEmpty(raw);
+            return ReferenceEquals(raw, ServerFailed) ? FimAnswer.Failure : new FimAnswer(NullIfEmpty(raw), Failed: false);
         }
         catch (Exception ex)
         {
@@ -175,7 +189,7 @@ internal static class FimSidecar
                     RecycleLocked();
                 }
             }
-            return null;
+            return FimAnswer.Failure;
         }
         finally { _pending.TryRemove(id, out _); }
     }
@@ -441,7 +455,8 @@ internal static class FimSidecar
 
             if (root.TryGetProperty("result", out var result) && result.ValueKind == JsonValueKind.String)
             {
-                tcs.TrySetResult(result.GetString());
+                var failing = root.TryGetProperty("failing", out var f) && f.ValueKind == JsonValueKind.True;
+                tcs.TrySetResult(failing ? ServerFailed : result.GetString());
                 return;
             }
 

@@ -21,6 +21,7 @@ public class InProcConfigKeyTests
     [InlineData(nameof(InferpalConfig.InlineCompletionEnabled), InProcConfig.KeyEnabled)]
     [InlineData(nameof(InferpalConfig.InlineCompletionMode),    InProcConfig.KeyMode)]
     [InlineData(nameof(InferpalConfig.InlineCompletionModel),   InProcConfig.KeyModel)]
+    [InlineData(nameof(InferpalConfig.InlineCompletionTrigger), InProcConfig.KeyTrigger)]
     public void TheInProcReader_LooksUpTheKeyTheConfigIsWrittenWith(string property, string key)
     {
         var written = typeof(InferpalConfig).GetProperty(property)!
@@ -54,5 +55,27 @@ public class InProcConfigKeyTests
         Assert.True(read.Enabled);
         Assert.Equal("Default", read.Mode);
         Assert.Null(read.Model);
+        Assert.False(read.OnDemand);
+        Assert.True(read.AsksOnPause);
     }
+
+    /// <summary>"When I ask": Visual Studio's ghost text stops asking after a pause, as the settings saved it — the value
+    /// the Core writes, in any case a hand may have written it.</summary>
+    [Theory]
+    [InlineData(AskedCompletion.OnDemand, true)]
+    [InlineData("OnDemand", true)]
+    [InlineData(AskedCompletion.Auto, false)]
+    [InlineData("manual", false)]
+    public void OnDemand_StopsThePauseFromAsking(string trigger, bool onDemand)
+    {
+        var read = InProcConfig.Parse(JsonSerializer.Serialize(new InferpalConfig { InlineCompletionTrigger = trigger }));
+
+        Assert.Equal(onDemand, read.OnDemand);
+        Assert.Equal(!onDemand, read.AsksOnPause);
+        Assert.Equal(AskedCompletion.OnDemand, InProcConfig.OnDemandValue);   // one value, read by both sides
+    }
+
+    [Fact]
+    public void Off_AsksOnNoPause_WhateverTheTrigger() =>
+        Assert.False(InProcConfig.Parse("{\"inlineCompletionEnabled\":false,\"inlineCompletionTrigger\":\"auto\"}").AsksOnPause);
 }

@@ -137,6 +137,33 @@ public class FimRpcLoopTests
         await running;
     }
 
+    /// <summary>An empty answer from a server that failed says so (<c>"failing"</c>): the key of inline completion names
+    /// the server, not the model. A completion, or an empty answer from a working server, carries no mark.</summary>
+    [Theory]
+    [InlineData("", true, true)]
+    [InlineData("", false, false)]
+    [InlineData("x + 1", true, false)]
+    public async Task AnEmptyAnswer_SaysWhetherTheServerFailed(string completion, bool serverFailing, bool marked)
+    {
+        var (client, server) = FullDuplexStream.CreatePair();
+        var loop = new FimRpcLoop(server, server, (_, _) => Task.FromResult(completion), () => serverFailing);
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var running = loop.RunAsync(cts.Token);
+        await SendAsync(client, """{"jsonrpc":"2.0","id":3,"method":"fim/complete","params":{"prefix":"a","suffix":"b"}}""");
+
+        var length = await ReadHeadersAsync(client).WaitAsync(TimeSpan.FromSeconds(10));
+        var body = new byte[length];
+        for (var read = 0; read < length;) read += await client.ReadAsync(body.AsMemory(read, length - read));
+        using var doc = JsonDocument.Parse(Encoding.UTF8.GetString(body));
+
+        Assert.Equal(completion, doc.RootElement.GetProperty("result").GetString());   // witness: the answer itself
+        Assert.Equal(marked, doc.RootElement.TryGetProperty("failing", out var f) && f.GetBoolean());
+
+        client.Dispose();
+        await running;
+    }
+
     [Fact]
     public async Task ClosedInput_EndsTheLoop()
     {

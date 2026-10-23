@@ -1184,6 +1184,19 @@
   <data name="FimModeFastDesc" xml:space="preserve"><value>简短的建议，300 ms 后。</value></data>
   <data name="FimModeDefaultDesc" xml:space="preserve"><value>较长的建议，600 ms 后。</value></data>
   <data name="FimModeHighAccuracyDesc" xml:space="preserve"><value>整块代码，1 s 后。</value></data>
+  <data name="LabelInlineCompletionTrigger" xml:space="preserve"><value>建议出现时机</value></data>
+  <data name="FimTriggerAuto" xml:space="preserve"><value>输入时</value></data>
+  <data name="FimTriggerAutoDesc" xml:space="preserve"><value>输入停顿后。</value></data>
+  <data name="FimTriggerOnDemand" xml:space="preserve"><value>我请求时</value></data>
+  <data name="FimTriggerOnDemandDesc" xml:space="preserve"><value>仅在按 Alt+' 时（美式键盘；Mac 上为 Ctrl+Option+'）。其他时候不发送任何内容。</value></data>
+  <data name="CompletionAskedOff" xml:space="preserve"><value>Inferpal：内联补全已关闭 — Inferpal 设置的“{0}”页面。</value></data>
+  <data name="CompletionAskedChatBusy" xml:space="preserve"><value>Inferpal：补全服务器所在的机器上，模型正在回答聊天或任务 — 请在完成后再请求。</value></data>
+  <data name="CompletionAskedNoModel" xml:space="preserve"><value>Inferpal：此服务器上未选择用于补全的模型 — Inferpal 设置的“{0}”页面。</value></data>
+  <data name="CompletionAskedNothing" xml:space="preserve"><value>Inferpal：模型在此处没有建议。</value></data>
+  <data name="CompletionAskedServerFailed" xml:space="preserve"><value>Inferpal：补全服务器没有响应或拒绝了请求 — 请检查它是否在运行并且有补全模型。</value></data>
+  <data name="CompletionAskedNoEditor" xml:space="preserve"><value>Inferpal：请将光标放在代码编辑器中，然后再按一次该键。</value></data>
+  <data name="CompletionAskedListHint" xml:space="preserve"><value>Inferpal：Tab 会交给打开的列表；请求时按的键可接受建议。</value></data>
+  <data name="CompletionAskedExcluded" xml:space="preserve"><value>Inferpal：{0}</value></data>
   <data name="SettingsModelUsed" xml:space="preserve"><value>模型：{0}。</value></data>
   <data name="SettingsChangeInServer" xml:space="preserve"><value>在“服务器与模型”中更改</value></data>
   <data name="SlashColCommand" xml:space="preserve"><value>命令</value></data>

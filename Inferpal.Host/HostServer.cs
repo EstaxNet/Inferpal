@@ -19,7 +19,7 @@ namespace Inferpal.Host;
 /// <summary>
 /// JSON-RPC target exposing the Core to an editor adapter over stdio. Editor→host requests:
 /// `initialize`, `chat/send` (streamed via `chat/*` notifications), `chat/cancel`, `chat/reset`,
-/// `command/slash`, `codeAction/run`, `models/list`, `connection/check`, `config/get|update`, `fim/complete`,
+/// `command/slash`, `codeAction/run`, `models/list`, `connection/check`, `config/get|update`, `fim/complete|ask`,
 /// `index/start|status`, `shutdown`; editor→host notifications: `textDocument/didOpen|didChange|didClose` (dirty-buffer
 /// overlay) and `editor/didChangeActiveDocument`. Host→editor requests are issued by
 /// <see cref="RpcEditorSurface"/> and <see cref="RpcApprovalService"/>.
@@ -1300,7 +1300,23 @@ internal sealed partial class HostServer : IDisposable
         return new FimSettingsResult(
             s.Config.InlineCompletionEnabled,
             Services.CodeActions.FimContextBuilder.GetSettings(s.Config.InlineCompletionMode).DebounceMs,
-            s.Roles.For(ServerRole.Completion).SharesGpuWithChat);
+            s.Roles.For(ServerRole.Completion).SharesGpuWithChat,
+            Services.CodeActions.AskedCompletion.IsOnDemand(s.Config.InlineCompletionTrigger));
+    }
+
+    /// <summary>
+    /// A completion asked for by its key (Alt+'): the Core says whether it goes (<c>AskedCompletion.Refusal</c>), and an
+    /// empty answer is said too — the adapter shows the sentence, it never decides it.
+    /// </summary>
+    [JsonRpcMethod("fim/ask", UseSingleObjectParameterDeserialization = true)]
+    public async Task<FimAskResult> FimAskAsync(FimParams p, CancellationToken ct)
+    {
+        if (Services.CodeActions.AskedCompletion.Refusal(Session().Config, p.Path) is { } refusal)
+            return new FimAskResult(null, refusal);
+        var text = await FimCompleteAsync(p, ct);
+        return string.IsNullOrWhiteSpace(text)
+            ? new FimAskResult(null, Services.CodeActions.AskedCompletion.Empty(Session().Roles.For(ServerRole.Completion).FimFailing))
+            : new FimAskResult(text, null);
     }
 
     // ── Config ─────────────────────────────────────────────────────────────────

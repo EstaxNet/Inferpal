@@ -91,6 +91,7 @@ Every persisted setting, its type, and default value.
 |---|---|---|---|
 | `inlineCompletionEnabled` | bool | `true` | Enable ghost-text completions |
 | `inlineCompletionMode` | string | `"Default"` | FIM speed: `Fast` / `Default` (shown *Balanced*) / `HighAccuracy` (shown *Accurate*) |
+| `inlineCompletionTrigger` | string | `"auto"` | When a suggestion is asked for: `auto` (shown *As I type*, after a pause in typing) / `onDemand` (shown *When I ask*: only Alt+', nothing sent otherwise) |
 
 ### RAG / semantic index
 

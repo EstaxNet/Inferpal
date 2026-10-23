@@ -128,6 +128,29 @@ internal partial class InferpalSettingsData
         get => _inlineModeAccurate;
         set { if (SetProperty(ref _inlineModeAccurate, value) && value) PickInlineMode(2); }
     }
+
+    // ── Autocomplete: when a suggestion is asked for (two cards over one value) ──
+    private bool _inlineCompletionOnDemand;
+    private string _labelInlineCompletionTrigger = "", _fimTriggerAutoName = "", _fimTriggerAutoDesc = "",
+                   _fimTriggerOnDemandName = "", _fimTriggerOnDemandDesc = "";
+    /// <summary>"When I ask": only the key asks for a suggestion (<c>inlineCompletionTrigger</c>).</summary>
+    [DataMember] public bool InlineCompletionOnDemand
+    {
+        get => _inlineCompletionOnDemand;
+        set { if (SetProperty(ref _inlineCompletionOnDemand, value)) RaiseNotifyPropertyChangedEvent(nameof(InlineCompletionAsYouType)); }
+    }
+    /// <summary>The other card: checked, it unchecks "When I ask"; unchecked by its group, it changes nothing.</summary>
+    [DataMember] public bool InlineCompletionAsYouType
+    {
+        get => !_inlineCompletionOnDemand;
+        set { if (value) InlineCompletionOnDemand = false; }
+    }
+    [DataMember] public string LabelInlineCompletionTrigger { get => _labelInlineCompletionTrigger; set => SetProperty(ref _labelInlineCompletionTrigger, value); }
+    [DataMember] public string FimTriggerAutoName     { get => _fimTriggerAutoName;     set => SetProperty(ref _fimTriggerAutoName,     value); }
+    [DataMember] public string FimTriggerAutoDesc     { get => _fimTriggerAutoDesc;     set => SetProperty(ref _fimTriggerAutoDesc,     value); }
+    [DataMember] public string FimTriggerOnDemandName { get => _fimTriggerOnDemandName; set => SetProperty(ref _fimTriggerOnDemandName, value); }
+    [DataMember] public string FimTriggerOnDemandDesc { get => _fimTriggerOnDemandDesc; set => SetProperty(ref _fimTriggerOnDemandDesc, value); }
+
     [DataMember] public string FimModelLine  { get => _fimModelLine;  set => SetProperty(ref _fimModelLine,  value); }
     [DataMember] public string EditModelLine { get => _editModelLine; set => SetProperty(ref _editModelLine, value); }
     [DataMember] public AsyncCommand ChangeFimModelCommand  { get; private set; } = null!;
@@ -243,6 +266,10 @@ internal partial class InferpalSettingsData
         (FimFastName, FimFastDesc)         = (modes[0].Display, modes[0].Description);
         (FimDefaultName, FimDefaultDesc)   = (modes[1].Display, modes[1].Description);
         (FimAccurateName, FimAccurateDesc) = (modes[2].Display, modes[2].Description);
+        var triggers = SettingsSchema.FimTriggers;
+        LabelInlineCompletionTrigger                     = Strings.LabelInlineCompletionTrigger;
+        (FimTriggerAutoName, FimTriggerAutoDesc)         = (triggers[0].Display, triggers[0].Description);
+        (FimTriggerOnDemandName, FimTriggerOnDemandDesc) = (triggers[1].Display, triggers[1].Description);
         OversizeToggleLabel = ShowOversizeFiles ? Strings.IndexCardHideThem : Strings.IndexCardShowThem;
         ApplyToolListLabels();
         SyncInlineModeCards();

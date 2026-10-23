@@ -46,7 +46,7 @@ public sealed class FimSidecarLifecycleTests : IDisposable
     private static async Task<string?> AskAsync(long stamp)
     {
         using var belt = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        return await FimSidecar.CompleteAsync("int x = ", ";", 8, 0.2, null, stamp, belt.Token);
+        return (await FimSidecar.CompleteAsync("int x = ", ";", 8, 0.2, null, stamp, belt.Token)).Text;
     }
 
     [Fact]

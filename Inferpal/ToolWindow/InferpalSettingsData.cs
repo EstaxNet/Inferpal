@@ -400,6 +400,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             .FirstOrDefault(m => m.Code == config.InlineCompletionMode).Name
             is { Length: > 0 } mn ? mn : InlineModeOptions[1].Name;
         _inlineCompletionEnabled = config.InlineCompletionEnabled;
+        _inlineCompletionOnDemand = AskedCompletion.IsOnDemand(config.InlineCompletionTrigger);
         _inlineCompletionModel   = config.InlineCompletionModel;
         _codeActionsModel        = config.CodeActionsModel;
         _inlineEditModel         = config.InlineEditModel;
@@ -1201,7 +1202,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         var historyStorage = "project";
         RoleServerForm roleServers = null!;
         string effortChat = "low", effortAgent = "server";
-        bool toolExpanded = false, runEndSound = true, askBefore = true, packageCheck = true, compactionEnabled = true, inlineEnabled = true, ragEnabled = true, ragAutoContextEnabled = true, smartFixEnabled = true, agentModeEnabled = false, lspEnabled = false, modelAutoUnload = true, personaAutoSwitch = true, skillsAutoMode = false, mcpEnabled = false, modelRouterAuto = false, useSampling = true, inlineDiff = true;
+        bool toolExpanded = false, runEndSound = true, askBefore = true, packageCheck = true, compactionEnabled = true, inlineEnabled = true, inlineOnDemand = false, ragEnabled = true, ragAutoContextEnabled = true, smartFixEnabled = true, agentModeEnabled = false, lspEnabled = false, modelAutoUnload = true, personaAutoSwitch = true, skillsAutoMode = false, mcpEnabled = false, modelRouterAuto = false, useSampling = true, inlineDiff = true;
         await RunOnVMContextAsync(() =>
         {
             url                  = BaseUrl.Trim();
@@ -1247,6 +1248,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             selectedInlineModeName  = SelectedInlineMode;
             selectedInlineModeIndex = SelectedInlineMode is null ? -1 : AvailableInlineModes.IndexOf(SelectedInlineMode);
             inlineEnabled          = InlineCompletionEnabled;
+            inlineOnDemand         = InlineCompletionOnDemand;
             inlineModel            = InlineCompletionModel;
             codeActionsModel       = CodeActionsModel;
             inlineEditModel        = InlineEditModel;
@@ -1385,6 +1387,9 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
                                                     edited.KvCacheAnchorMessages, c => c.KvCacheAnchorMessages);
         edited.InlineCompletionMode      = inlineModeCode;
         edited.InlineCompletionEnabled   = inlineEnabled;
+        // Written only when the cards changed it: a value they do not name (written by hand) is not replaced by "auto".
+        if (inlineOnDemand != AskedCompletion.IsOnDemand(edited.InlineCompletionTrigger))
+            edited.InlineCompletionTrigger = inlineOnDemand ? AskedCompletion.OnDemand : AskedCompletion.Auto;
         // The advanced fold never takes part: what it hides is saved like the rest.
         edited.InlineCompletionModel = Kept(inlineModel,      edited.InlineCompletionModel, () => Strings.LabelInlineCompletionModel);
         edited.CodeActionsModel      = Kept(codeActionsModel, edited.CodeActionsModel,      () => Strings.LabelCodeActionsModel);

@@ -344,6 +344,82 @@ public partial class HostServerTests
         Assert.Equal(FimContextBuilder.GetSettings("Fast").DebounceMs, settings.DebounceMs);
         // Witness: the delay of the chosen mode is not the default mode's.
         Assert.NotEqual(FimContextBuilder.GetSettings("Default").DebounceMs, settings.DebounceMs);
+        Assert.False(settings.OnDemand);
+    }
+
+    /// <summary>Only the key asks: VS Code's provider stops asking after a pause.</summary>
+    [Fact]
+    public async Task FimSettings_SayWhenOnlyTheKeyAsks()
+    {
+        using var h = CreateHarness(cfg => cfg.InlineCompletionTrigger = AskedCompletion.OnDemand);
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var settings = await h.Client.InvokeAsync<FimSettingsResult>("fim/settings")
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.True(settings.OnDemand);
+        Assert.True(settings.Enabled);
+    }
+
+    /// <summary>The key's request comes back with the suggestion, finished like a pause's (what follows the caret dropped).</summary>
+    [Fact]
+    public async Task FimAsk_ReturnsTheSuggestion()
+    {
+        using var h = CreateHarness(_ => { });
+        h.Fake.OnFim = (_, _) => "x + y);";
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<FimAskResult>("fim/ask", new { prefix = "Add(", suffix = ");" })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Equal(("x + y", (string?)null), (result.Text, result.Notice));
+    }
+
+    /// <summary>A key that brings nothing says so — a pause that brings nothing stays quiet (<c>fim/complete</c>).</summary>
+    [Fact]
+    public async Task FimAsk_WithNothingBack_SaysSo()
+    {
+        using var h = CreateHarness(_ => { });
+        h.Fake.OnFim = (_, _) => "";
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<FimAskResult>("fim/ask", new { prefix = "a", suffix = "b" })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Null(result.Text);
+        Assert.Equal(AskedCompletion.Nothing, result.Notice);
+    }
+
+    /// <summary>Nothing back from a server that failed (down, refused, paused): the server is named, not the caret.</summary>
+    [Fact]
+    public async Task FimAsk_FromAServerThatFailed_NamesTheServer()
+    {
+        using var h = CreateHarness(_ => { });
+        h.Fake.OnFim = (_, _) => "";
+        h.Fake.FimFailing = true;
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<FimAskResult>("fim/ask", new { prefix = "a", suffix = "b" })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Equal(AskedCompletion.ServerFailed, result.Notice);
+        Assert.NotEqual(AskedCompletion.Nothing, AskedCompletion.ServerFailed);
+    }
+
+    /// <summary>Refused by the Core (here: switched off): the backend is not called, and the cause is the notice.</summary>
+    [Fact]
+    public async Task FimAsk_Refused_NeverReachesTheBackend_AndSaysWhy()
+    {
+        using var h = CreateHarness(cfg => cfg.InlineCompletionEnabled = false);
+        h.Fake.OnFim = (_, _) => "should not appear";
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<FimAskResult>("fim/ask", new { prefix = "a", suffix = "b" })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Null(result.Text);
+        Assert.Equal(Strings.CompletionAskedOff(Strings.SettingsPageAutocomplete), result.Notice);
+        Assert.Null(h.Fake.LastFim);
     }
 
     // ── active file → system prompt ────────────────────────────────────────────

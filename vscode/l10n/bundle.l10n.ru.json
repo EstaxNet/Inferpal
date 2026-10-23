@@ -192,5 +192,7 @@
   "From the task {0} — the errors are in the Problems panel.": "Из задачи {0} — ошибки на панели «Проблемы».",
   "Show the errors": "Показать ошибки",
   "From the task {0} — the Problems panel holds none of its errors: its output says why.": "Из задачи {0} — на панели «Проблемы» нет ни одной её ошибки: причину показывает её вывод.",
-  "Found in your code while you type — sent as excerpts. Remove what does not belong.": "Найдено в вашем коде во время набора — отправляется фрагментами. Уберите то, что не относится к делу."
+  "Found in your code while you type — sent as excerpts. Remove what does not belong.": "Найдено в вашем коде во время набора — отправляется фрагментами. Уберите то, что не относится к делу.",
+  "Inferpal: inline completion is turned off in VS Code's settings (inferpal.fim.enabled).": "Inferpal: автодополнение выключено в настройках VS Code (inferpal.fim.enabled).",
+  "Inferpal: the suggestion does not continue the item selected in the list — close the list (Esc) and ask again.": "Inferpal: подсказка не продолжает элемент, выбранный в списке, — закройте список (Esc) и запросите снова."
 }

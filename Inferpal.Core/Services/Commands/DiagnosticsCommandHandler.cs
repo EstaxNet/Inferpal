@@ -183,7 +183,10 @@ internal static class DiagnosticsCommandHandler
 
         sb.Append("- **Toggles**: ")
           .Append(Toggle("RAG", c.RagEnabled)).Append(Toggle("RAG auto-context", c.RagAutoContextEnabled))
-          .Append(Toggle("FIM", c.InlineCompletionEnabled)).Append(Toggle("inline diff preview", c.InlineDiffPreviewEnabled))
+          .Append(Toggle("FIM", c.InlineCompletionEnabled))
+          // "Ghost text never appears" is the report it answers: only the key asks, on demand.
+          .Append(c.InlineCompletionEnabled && AskedCompletion.IsOnDemand(c.InlineCompletionTrigger) ? " (on demand)" : "")
+          .Append(Toggle("inline diff preview", c.InlineDiffPreviewEnabled))
           .Append(Toggle("MCP", c.McpEnabled)).Append(Toggle("LSP", c.LspEnabled))
           .Append(Toggle("router auto", c.ModelRouterAuto)).Append(Toggle("smart fix", c.SmartFixEnabled))
           .Append(Toggle("compaction", c.CompactionEnabled))

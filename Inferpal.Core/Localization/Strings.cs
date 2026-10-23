@@ -536,6 +536,21 @@ internal static class Strings
     public static string FimModeFastDesc                     => Get(nameof(FimModeFastDesc));
     public static string FimModeDefaultDesc                  => Get(nameof(FimModeDefaultDesc));
     public static string FimModeHighAccuracyDesc             => Get(nameof(FimModeHighAccuracyDesc));
+    // When a suggestion is asked for (SettingsSchema.FimTriggers), and what a suggestion asked for by its key says in the
+    // status bar instead of showing nothing (AskedCompletion).
+    public static string LabelInlineCompletionTrigger        => Get(nameof(LabelInlineCompletionTrigger));
+    public static string FimTriggerAuto                      => Get(nameof(FimTriggerAuto));
+    public static string FimTriggerAutoDesc                  => Get(nameof(FimTriggerAutoDesc));
+    public static string FimTriggerOnDemand                  => Get(nameof(FimTriggerOnDemand));
+    public static string FimTriggerOnDemandDesc              => Get(nameof(FimTriggerOnDemandDesc));
+    public static string CompletionAskedOff(string page)     => Format(Get(nameof(CompletionAskedOff)), page);
+    public static string CompletionAskedChatBusy             => Get(nameof(CompletionAskedChatBusy));
+    public static string CompletionAskedNoModel(string page) => Format(Get(nameof(CompletionAskedNoModel)), page);
+    public static string CompletionAskedNothing              => Get(nameof(CompletionAskedNothing));
+    public static string CompletionAskedServerFailed         => Get(nameof(CompletionAskedServerFailed));
+    public static string CompletionAskedNoEditor             => Get(nameof(CompletionAskedNoEditor));
+    public static string CompletionAskedListHint             => Get(nameof(CompletionAskedListHint));
+    public static string CompletionAskedExcluded(string why) => Format(Get(nameof(CompletionAskedExcluded)), why);
     public static string LabelInlineCompletionEnabled        => Get(nameof(LabelInlineCompletionEnabled));
     public static string HintInlineCompletionEnabled         => Get(nameof(HintInlineCompletionEnabled));
     public static string LabelInlineCompletionModel          => Get(nameof(LabelInlineCompletionModel));

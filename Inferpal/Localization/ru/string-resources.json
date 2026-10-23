@@ -4,6 +4,7 @@
   "InferpalSettingsCommand": "Настройки Inferpal...",
   "InferpalMapCommand": "Карта проекта Inferpal",
   "InferpalReviewCommitCommand": "Проверить коммит...",
+  "InferpalAskCompletionCommand": "Предложить или принять дополнение",
   "ContextMenuAskInferpal": "Спросить Inferpal",
   "ContextMenuExplain": "Объяснить",
   "ContextMenuRefactor": "Рефакторинг",

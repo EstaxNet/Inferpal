@@ -18,6 +18,7 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     public string ServerAddress { get; set; } = "http://localhost:1234";
     /// <summary>False = a server on another machine than the chat's: background work there does not wait for a chat.</summary>
     public bool SharesGpuWithChat { get; set; } = true;
+    public bool FimFailing { get; set; }
     public List<string>             ModelNames { get; set; } = [];
     public List<RunningModelInfo>   Running    { get; set; } = [];
     public List<InstalledModelInfo> Installed  { get; set; } = [];

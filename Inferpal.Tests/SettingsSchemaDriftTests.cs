@@ -387,7 +387,7 @@ public class SettingsSchemaDriftTests
         Assert.Contains("provideInlineCompletionItems", source, StringComparison.Ordinal);
 
         Assert.Matches(new Regex(@"fimSettings\(\)"), source);
-        Assert.Matches(new Regex(@"if \(!settings\?\.enabled\)[\s\S]{0,200}?delay\(settings\.debounceMs\)"), source);
+        Assert.Matches(new Regex(@"if \(!settings\?\.enabled \|\| settings\.onDemand\)[\s\S]{0,200}?delay\(settings\.debounceMs\)"), source);
         Assert.DoesNotContain("DEBOUNCE_MS", source, StringComparison.Ordinal);
     }
 
@@ -1260,7 +1260,11 @@ public class SettingsSchemaDriftTests
                    .ToHashSet(StringComparer.Ordinal)
             : [];
 
-        var known = declared.Concat(registered).Concat(viewFocus).ToHashSet(StringComparer.Ordinal);
+        // VS Code's own commands a keybinding of ours points at, by name — never a prefix, which would let a misspelt
+        // one through: Alt+' asks for and takes an inline suggestion (CompletionOnDemandFrontEndTests).
+        string[] hostCommands = ["editor.action.inlineSuggest.trigger", "editor.action.inlineSuggest.commit"];
+
+        var known = declared.Concat(registered).Concat(viewFocus).Concat(hostCommands).ToHashSet(StringComparer.Ordinal);
 
         var pointedAt = Strings("keybindings", "command")
             .Concat(manifest.TryGetProperty("menus", out var menus)

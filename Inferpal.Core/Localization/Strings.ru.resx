@@ -1184,6 +1184,19 @@
   <data name="FimModeFastDesc" xml:space="preserve"><value>Короткие подсказки, через 300 ms.</value></data>
   <data name="FimModeDefaultDesc" xml:space="preserve"><value>Подсказки длиннее, через 600 ms.</value></data>
   <data name="FimModeHighAccuracyDesc" xml:space="preserve"><value>Целые блоки, через 1 s.</value></data>
+  <data name="LabelInlineCompletionTrigger" xml:space="preserve"><value>Подсказки появляются</value></data>
+  <data name="FimTriggerAuto" xml:space="preserve"><value>Во время ввода</value></data>
+  <data name="FimTriggerAutoDesc" xml:space="preserve"><value>После паузы в наборе.</value></data>
+  <data name="FimTriggerOnDemand" xml:space="preserve"><value>По запросу</value></data>
+  <data name="FimTriggerOnDemandDesc" xml:space="preserve"><value>Только по Alt+' (американская раскладка; Ctrl+Option+' на Mac). Иначе ничего не отправляется.</value></data>
+  <data name="CompletionAskedOff" xml:space="preserve"><value>Inferpal: автодополнение выключено — настройки Inferpal, страница «{0}».</value></data>
+  <data name="CompletionAskedChatBusy" xml:space="preserve"><value>Inferpal: модель отвечает в чате или выполняет задачу на машине сервера автодополнения — запросите снова, когда она закончит.</value></data>
+  <data name="CompletionAskedNoModel" xml:space="preserve"><value>Inferpal: для автодополнения на этом сервере не выбрана модель — настройки Inferpal, страница «{0}».</value></data>
+  <data name="CompletionAskedNothing" xml:space="preserve"><value>Inferpal: у модели здесь нет подсказки.</value></data>
+  <data name="CompletionAskedServerFailed" xml:space="preserve"><value>Inferpal: сервер автодополнения не ответил или отклонил запрос — проверьте, что он запущен и на нём есть модель автодополнения.</value></data>
+  <data name="CompletionAskedNoEditor" xml:space="preserve"><value>Inferpal: поставьте курсор в редактор кода и нажмите клавишу ещё раз.</value></data>
+  <data name="CompletionAskedListHint" xml:space="preserve"><value>Inferpal: Tab уходит в открытый список; клавиша запроса принимает подсказку.</value></data>
+  <data name="CompletionAskedExcluded" xml:space="preserve"><value>Inferpal: {0}</value></data>
   <data name="SettingsModelUsed" xml:space="preserve"><value>Модель: {0}.</value></data>
   <data name="SettingsChangeInServer" xml:space="preserve"><value>Изменить в разделе «Сервер и модели»</value></data>
   <data name="SlashColCommand" xml:space="preserve"><value>Команда</value></data>

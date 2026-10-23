@@ -60,7 +60,7 @@ Measured on our test server — one 24 GB card, LM Studio, 32K context — with 
 - **Semantic code search** — a background index of your code (meaning and exact names together); the most relevant code is added to each question, and the index pauses while you chat.
 - **@Docs** — `/docs add <url>` indexes a documentation site, so answers about a library cite its pages.
 - **Typed mentions** — `@file` `@folder` `@code` `@diff` `@problems` `@debugger` `@clipboard` `@tree` attach exactly what you mean.
-- **Inline completions** — ghost text as you type, with Ollama, LM Studio, llama-server or another server that completes around the cursor; Tab to accept.
+- **Inline completions** — ghost text as you type, with Ollama, LM Studio, llama-server or another server that completes around the cursor; Tab to accept. **Alt+'** (Ctrl+Option+' on macOS) asks for one at the caret, or takes the one shown; *When I ask* in the settings sends nothing until you press it.
 - **Code actions** — **Edit with AI** (the context menu or the palette: an instruction on the selection), Fix, Refactor and Add docstring, shown in VS Code's Refactor Preview before anything is applied; Explain and Add Tests from the same menu, the tests written by an edit you can undo; `/map` on Alt+M.
 - **MCP servers** — any stdio or Streamable HTTP server, of the 2026-07-28 revision or an earlier one (with OAuth), every call behind an approval.
 - **Project rules and AI checks** — markdown rules scoped to the files you edit, and `/check` to review your git diff for bugs and against your own criteria.

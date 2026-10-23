@@ -192,5 +192,7 @@
   "From the task {0} — the errors are in the Problems panel.": "来自任务 {0} — 错误在“问题”面板中。",
   "Show the errors": "显示错误",
   "From the task {0} — the Problems panel holds none of its errors: its output says why.": "来自任务 {0} — “问题”面板中没有它的错误：原因见其输出。",
-  "Found in your code while you type — sent as excerpts. Remove what does not belong.": "输入时在你的代码中找到 — 以摘录形式发送。删除不相关的内容。"
+  "Found in your code while you type — sent as excerpts. Remove what does not belong.": "输入时在你的代码中找到 — 以摘录形式发送。删除不相关的内容。",
+  "Inferpal: inline completion is turned off in VS Code's settings (inferpal.fim.enabled).": "Inferpal：VS Code 设置中已关闭内联补全 (inferpal.fim.enabled)。",
+  "Inferpal: the suggestion does not continue the item selected in the list — close the list (Esc) and ask again.": "Inferpal：建议没有延续列表中选中的项 — 请关闭列表 (Esc) 后再请求。"
 }

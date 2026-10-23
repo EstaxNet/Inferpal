@@ -37,24 +37,15 @@ var client = InferenceProviderFactory.Create(config, ServerRole.Completion);
 using var lifetime = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; lifetime.Cancel(); };
 
-string? declaredFor = null;   // the solution whose workspace the ignore files were declared for
+var exclusions = new Inferpal.Services.Governance.OpenWorkspaceExclusions(() => config.IgnoreFiles);
 var loop = new FimRpcLoop(stdin, stdout, async (request, ct) =>
 {
     // A backend without FIM is not an error: it is "nothing to suggest".
     if (!client.Capabilities.Fim) return string.Empty;
     // ⚠ A completion sends the document around the caret: a file the workspace's ignore files exclude is never completed.
-    // The root is the open solution's extent, or the folder Visual Studio has open, as the chat window decides it.
-    // Declared when what is open changes, not at each pause in typing: the extent reads the solution and the
-    // repository, and a declaration reads the ignore files again.
     if (request.Path is { Length: > 0 } path)
     {
-        var open = ActiveSolutionSignal.TryReadSolutionPath() ?? ActiveSolutionSignal.TryReadOpenFolder();
-        if (!string.Equals(open, declaredFor, StringComparison.Ordinal))
-        {
-            declaredFor = open;
-            if (SolutionExtent.ActiveRoot() is { } root)
-                Inferpal.Services.Governance.ContentExclusions.Declare(root, () => config.IgnoreFiles);
-        }
+        exclusions.Follow();
         if (Inferpal.Services.Governance.ContentExclusions.Of(path) is not null) return string.Empty;
     }
 
@@ -69,6 +60,6 @@ var loop = new FimRpcLoop(stdin, stdout, async (request, ct) =>
         model:       request.Model);
     // Without what already follows the caret: models repeat it, and accepted it is doubled.
     return FimCompletion.Finish(sb.ToString(), request.Suffix);
-});
+}, () => client.FimFailing);
 
 await loop.RunAsync(lifetime.Token);

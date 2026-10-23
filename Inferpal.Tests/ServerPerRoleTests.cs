@@ -43,6 +43,22 @@ public sealed class ServerPerRoleTests : IDisposable
         return text.ToString();
     }
 
+    /// <summary>A completion server that does not answer leaves its client failing — what the key of inline completion
+    /// names instead of "the model had nothing" (<see cref="AskedCompletion.Empty"/>); one that answers does not.</summary>
+    [Fact]
+    public async Task AServerThatDoesNotAnswer_LeavesItsClientFailing_OneThatAnswersDoesNot()
+    {
+        using var fim = CompletionServer();
+        var answers = InferenceProviderFactory.Create(Settings("http://127.0.0.1:1", fim.BaseUrl), ServerRole.Completion);
+        var down    = InferenceProviderFactory.Create(Settings("http://127.0.0.1:1", "http://127.0.0.1:1"), ServerRole.Completion);
+
+        Assert.Equal("a + b", await CompleteAsync(answers));   // witness: the same request, to a server that answers
+        Assert.Equal("", await CompleteAsync(down));
+
+        Assert.False(answers.FimFailing);
+        Assert.True(down.FimFailing);
+    }
+
     /// <summary>A completion goes to the completion's server with that server's key — the chat's server sees nothing,
     /// and the chat's key goes nowhere but to the chat's.</summary>
     [Fact]

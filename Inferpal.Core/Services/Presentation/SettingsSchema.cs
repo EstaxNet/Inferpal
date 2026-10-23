@@ -154,6 +154,14 @@ internal static class SettingsSchema
         new("HighAccuracy", "Accurate", () => Strings.FimModeHighAccuracy, () => Strings.FimModeHighAccuracyDesc),
     ];
 
+    /// <summary>When a completion is asked for (<see cref="CodeActions.AskedCompletion"/>). Public like
+    /// <see cref="FimModes"/>: the Visual Studio window draws the same two cards.</summary>
+    public static readonly IReadOnlyList<SettingOption> FimTriggers =
+    [
+        new(CodeActions.AskedCompletion.Auto,     "As I type",  () => Strings.FimTriggerAuto,     () => Strings.FimTriggerAutoDesc),
+        new(CodeActions.AskedCompletion.OnDemand, "When I ask", () => Strings.FimTriggerOnDemand, () => Strings.FimTriggerOnDemandDesc),
+    ];
+
     /// <summary>Backend names - never translated. Public for the same reason as
     /// <see cref="FimModes"/>: the VS window copy had already DRIFTED (it said
     /// "OpenAI-compatible (generic)", the schema "OpenAI-compatible") and nobody had seen it.</summary>
@@ -427,6 +435,7 @@ internal static class SettingsSchema
             [
                 new("inlineCompletionEnabled", SettingKind.Bool,   "LabelInlineCompletionEnabled", "HintInlineCompletionEnabled"),
                 new("inlineCompletionMode",    SettingKind.Select, "LabelInlineCompletionMode",    Options: FimModes, Editor: "cards"),
+                new("inlineCompletionTrigger", SettingKind.Select, "LabelInlineCompletionTrigger", Options: FimTriggers, Editor: "cards"),
             ],
             Widget: "fimModel"),
             new("SettingsSectionEditWithAi",

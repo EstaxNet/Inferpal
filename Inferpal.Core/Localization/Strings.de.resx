@@ -1184,6 +1184,19 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="FimModeFastDesc" xml:space="preserve"><value>Kurze Vorschläge, nach 300 ms.</value></data>
   <data name="FimModeDefaultDesc" xml:space="preserve"><value>Längere Vorschläge, nach 600 ms.</value></data>
   <data name="FimModeHighAccuracyDesc" xml:space="preserve"><value>Ganze Blöcke, nach 1 s.</value></data>
+  <data name="LabelInlineCompletionTrigger" xml:space="preserve"><value>Vorschläge kommen</value></data>
+  <data name="FimTriggerAuto" xml:space="preserve"><value>Beim Tippen</value></data>
+  <data name="FimTriggerAutoDesc" xml:space="preserve"><value>Nach einer Tipppause.</value></data>
+  <data name="FimTriggerOnDemand" xml:space="preserve"><value>Auf Anfrage</value></data>
+  <data name="FimTriggerOnDemandDesc" xml:space="preserve"><value>Nur mit Alt+' (US-Tastatur; Ctrl+Option+' auf dem Mac). Sonst wird nichts gesendet.</value></data>
+  <data name="CompletionAskedOff" xml:space="preserve"><value>Inferpal: Die Inline-Vervollständigung ist ausgeschaltet – Inferpal-Einstellungen, Seite {0}.</value></data>
+  <data name="CompletionAskedChatBusy" xml:space="preserve"><value>Inferpal: Das Modell beantwortet auf dem Rechner des Vervollständigungsservers einen Chat oder eine Aufgabe – fragen Sie erneut, wenn es fertig ist.</value></data>
+  <data name="CompletionAskedNoModel" xml:space="preserve"><value>Inferpal: Für die Vervollständigung auf diesem Server ist kein Modell gewählt – Inferpal-Einstellungen, Seite {0}.</value></data>
+  <data name="CompletionAskedNothing" xml:space="preserve"><value>Inferpal: Das Modell hatte hier keinen Vorschlag.</value></data>
+  <data name="CompletionAskedServerFailed" xml:space="preserve"><value>Inferpal: Der Vervollständigungsserver hat nicht geantwortet oder die Anfrage abgelehnt – prüfen Sie, ob er läuft und das Vervollständigungsmodell hat.</value></data>
+  <data name="CompletionAskedNoEditor" xml:space="preserve"><value>Inferpal: Setzen Sie den Cursor in einen Code-Editor und drücken Sie die Taste erneut.</value></data>
+  <data name="CompletionAskedListHint" xml:space="preserve"><value>Inferpal: Tab geht an die offene Liste; die Taste, die angefragt hat, übernimmt den Vorschlag.</value></data>
+  <data name="CompletionAskedExcluded" xml:space="preserve"><value>Inferpal: {0}</value></data>
   <data name="SettingsModelUsed" xml:space="preserve"><value>Modell: {0}.</value></data>
   <data name="SettingsChangeInServer" xml:space="preserve"><value>In Server und Modelle ändern</value></data>
   <data name="SlashColCommand" xml:space="preserve"><value>Befehl</value></data>

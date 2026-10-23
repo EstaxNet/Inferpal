@@ -38,6 +38,7 @@ import {
   ConnectionCheckResult,
   DocumentParams,
   EditResultDto,
+  FimAskResult,
   FimSettingsResult,
   IndexStatusResult,
   InitializeParams,
@@ -430,6 +431,14 @@ export class HostClient {
     token?: CancellationToken,
   ): Promise<string> {
     return this.connection().sendRequest<string>('fim/complete', ...HostClient.withToken(params, token));
+  }
+
+  /** A completion asked for by its key: the host decides whether it goes and says why when nothing comes. */
+  fimAsk(
+    params: { prefix: string; suffix: string; path?: string },
+    token?: CancellationToken,
+  ): Promise<FimAskResult> {
+    return this.connection().sendRequest<FimAskResult>('fim/ask', ...HostClient.withToken(params, token));
   }
 
   /** Inferpal's inline-completion switch and the debounce of its mode, as saved in its settings. */

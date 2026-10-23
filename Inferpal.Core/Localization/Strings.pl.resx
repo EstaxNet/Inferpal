@@ -1184,6 +1184,19 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="FimModeFastDesc" xml:space="preserve"><value>Krótkie podpowiedzi, po 300 ms.</value></data>
   <data name="FimModeDefaultDesc" xml:space="preserve"><value>Dłuższe podpowiedzi, po 600 ms.</value></data>
   <data name="FimModeHighAccuracyDesc" xml:space="preserve"><value>Całe bloki, po 1 s.</value></data>
+  <data name="LabelInlineCompletionTrigger" xml:space="preserve"><value>Podpowiedzi pojawiają się</value></data>
+  <data name="FimTriggerAuto" xml:space="preserve"><value>Podczas pisania</value></data>
+  <data name="FimTriggerAutoDesc" xml:space="preserve"><value>Po przerwie w pisaniu.</value></data>
+  <data name="FimTriggerOnDemand" xml:space="preserve"><value>Na żądanie</value></data>
+  <data name="FimTriggerOnDemandDesc" xml:space="preserve"><value>Tylko po Alt+' (klawiatura amerykańska; Ctrl+Option+' na Macu). Poza tym nic nie jest wysyłane.</value></data>
+  <data name="CompletionAskedOff" xml:space="preserve"><value>Inferpal: uzupełnianie jest wyłączone — ustawienia Inferpal, strona {0}.</value></data>
+  <data name="CompletionAskedChatBusy" xml:space="preserve"><value>Inferpal: model odpowiada na czacie lub wykonuje zadanie na maszynie serwera uzupełniania — poproś ponownie, gdy skończy.</value></data>
+  <data name="CompletionAskedNoModel" xml:space="preserve"><value>Inferpal: na tym serwerze nie wybrano modelu do uzupełniania — ustawienia Inferpal, strona {0}.</value></data>
+  <data name="CompletionAskedNothing" xml:space="preserve"><value>Inferpal: model nie miał tu żadnej podpowiedzi.</value></data>
+  <data name="CompletionAskedServerFailed" xml:space="preserve"><value>Inferpal: serwer uzupełniania nie odpowiedział lub odrzucił żądanie — sprawdź, czy działa i czy ma model do uzupełniania.</value></data>
+  <data name="CompletionAskedNoEditor" xml:space="preserve"><value>Inferpal: ustaw kursor w edytorze kodu i naciśnij klawisz ponownie.</value></data>
+  <data name="CompletionAskedListHint" xml:space="preserve"><value>Inferpal: Tab trafia do otwartej listy; klawisz, który poprosił, przyjmuje podpowiedź.</value></data>
+  <data name="CompletionAskedExcluded" xml:space="preserve"><value>Inferpal: {0}</value></data>
   <data name="SettingsModelUsed" xml:space="preserve"><value>Model: {0}.</value></data>
   <data name="SettingsChangeInServer" xml:space="preserve"><value>Zmień w: Serwer i modele</value></data>
   <data name="SlashColCommand" xml:space="preserve"><value>Polecenie</value></data>

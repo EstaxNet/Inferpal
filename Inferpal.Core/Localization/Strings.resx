@@ -1188,6 +1188,19 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="FimModeFastDesc" xml:space="preserve"><value>Short suggestions, after 300 ms.</value></data>
   <data name="FimModeDefaultDesc" xml:space="preserve"><value>Longer suggestions, after 600 ms.</value></data>
   <data name="FimModeHighAccuracyDesc" xml:space="preserve"><value>Whole blocks, after 1 s.</value></data>
+  <data name="LabelInlineCompletionTrigger" xml:space="preserve"><value>Suggestions come</value></data>
+  <data name="FimTriggerAuto" xml:space="preserve"><value>As I type</value></data>
+  <data name="FimTriggerAutoDesc" xml:space="preserve"><value>After a pause in typing.</value></data>
+  <data name="FimTriggerOnDemand" xml:space="preserve"><value>When I ask</value></data>
+  <data name="FimTriggerOnDemandDesc" xml:space="preserve"><value>Only with Alt+' (US keyboard; Ctrl+Option+' on a Mac). Nothing is sent otherwise.</value></data>
+  <data name="CompletionAskedOff" xml:space="preserve"><value>Inferpal: inline completion is turned off — Inferpal settings, {0} page.</value></data>
+  <data name="CompletionAskedChatBusy" xml:space="preserve"><value>Inferpal: the model is answering a chat or a task on the completion server's machine — ask again once it has finished.</value></data>
+  <data name="CompletionAskedNoModel" xml:space="preserve"><value>Inferpal: no model is chosen for completions on this server — Inferpal settings, {0} page.</value></data>
+  <data name="CompletionAskedNothing" xml:space="preserve"><value>Inferpal: the model had no suggestion here.</value></data>
+  <data name="CompletionAskedServerFailed" xml:space="preserve"><value>Inferpal: the completion server did not answer, or refused the request — check that it is running and has the completion model.</value></data>
+  <data name="CompletionAskedNoEditor" xml:space="preserve"><value>Inferpal: put the cursor in a code editor, then press the key again.</value></data>
+  <data name="CompletionAskedListHint" xml:space="preserve"><value>Inferpal: Tab goes to the open list; the key that asked takes the suggestion.</value></data>
+  <data name="CompletionAskedExcluded" xml:space="preserve"><value>Inferpal: {0}</value></data>
   <data name="SettingsModelUsed" xml:space="preserve"><value>Model: {0}.</value></data>
   <data name="SettingsChangeInServer" xml:space="preserve"><value>Change it in Server and models</value></data>
   <data name="SlashColCommand" xml:space="preserve"><value>Command</value></data>

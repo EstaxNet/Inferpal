@@ -1184,6 +1184,19 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="FimModeFastDesc" xml:space="preserve"><value>Suggestions courtes, après 300 ms.</value></data>
   <data name="FimModeDefaultDesc" xml:space="preserve"><value>Suggestions plus longues, après 600 ms.</value></data>
   <data name="FimModeHighAccuracyDesc" xml:space="preserve"><value>Des blocs entiers, après 1 s.</value></data>
+  <data name="LabelInlineCompletionTrigger" xml:space="preserve"><value>Les suggestions viennent</value></data>
+  <data name="FimTriggerAuto" xml:space="preserve"><value>Pendant la frappe</value></data>
+  <data name="FimTriggerAutoDesc" xml:space="preserve"><value>Après une pause dans la frappe.</value></data>
+  <data name="FimTriggerOnDemand" xml:space="preserve"><value>Quand je les demande</value></data>
+  <data name="FimTriggerOnDemandDesc" xml:space="preserve"><value>Seulement avec Alt+' (clavier américain ; Ctrl+Option+' sur Mac). Rien n'est envoyé sinon.</value></data>
+  <data name="CompletionAskedOff" xml:space="preserve"><value>Inferpal : la complétion est désactivée — réglages d'Inferpal, page {0}.</value></data>
+  <data name="CompletionAskedChatBusy" xml:space="preserve"><value>Inferpal : le modèle répond à un chat ou à une tâche sur la machine du serveur de complétion — redemandez quand il a fini.</value></data>
+  <data name="CompletionAskedNoModel" xml:space="preserve"><value>Inferpal : aucun modèle n'est choisi pour la complétion sur ce serveur — réglages d'Inferpal, page {0}.</value></data>
+  <data name="CompletionAskedNothing" xml:space="preserve"><value>Inferpal : le modèle n'a rien proposé ici.</value></data>
+  <data name="CompletionAskedServerFailed" xml:space="preserve"><value>Inferpal : le serveur de complétion n'a pas répondu, ou a refusé la demande — vérifiez qu'il tourne et qu'il a le modèle de complétion.</value></data>
+  <data name="CompletionAskedNoEditor" xml:space="preserve"><value>Inferpal : placez le curseur dans un éditeur de code, puis appuyez de nouveau sur la touche.</value></data>
+  <data name="CompletionAskedListHint" xml:space="preserve"><value>Inferpal : Tab va à la liste ouverte ; la touche qui a demandé prend la suggestion.</value></data>
+  <data name="CompletionAskedExcluded" xml:space="preserve"><value>Inferpal : {0}</value></data>
   <data name="SettingsModelUsed" xml:space="preserve"><value>Modèle : {0}.</value></data>
   <data name="SettingsChangeInServer" xml:space="preserve"><value>Le changer dans Serveur et modèles</value></data>
   <data name="SlashColCommand" xml:space="preserve"><value>Commande</value></data>

@@ -1184,6 +1184,19 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="FimModeFastDesc" xml:space="preserve"><value>Suggerimenti brevi, dopo 300 ms.</value></data>
   <data name="FimModeDefaultDesc" xml:space="preserve"><value>Suggerimenti più lunghi, dopo 600 ms.</value></data>
   <data name="FimModeHighAccuracyDesc" xml:space="preserve"><value>Blocchi interi, dopo 1 s.</value></data>
+  <data name="LabelInlineCompletionTrigger" xml:space="preserve"><value>I suggerimenti arrivano</value></data>
+  <data name="FimTriggerAuto" xml:space="preserve"><value>Mentre scrivo</value></data>
+  <data name="FimTriggerAutoDesc" xml:space="preserve"><value>Dopo una pausa nella digitazione.</value></data>
+  <data name="FimTriggerOnDemand" xml:space="preserve"><value>Quando li chiedo</value></data>
+  <data name="FimTriggerOnDemandDesc" xml:space="preserve"><value>Solo con Alt+' (tastiera americana; Ctrl+Option+' su Mac). Altrimenti non viene inviato nulla.</value></data>
+  <data name="CompletionAskedOff" xml:space="preserve"><value>Inferpal: il completamento è disattivato — impostazioni di Inferpal, pagina {0}.</value></data>
+  <data name="CompletionAskedChatBusy" xml:space="preserve"><value>Inferpal: il modello sta rispondendo a una chat o a un'attività sulla macchina del server di completamento — richiedete quando ha finito.</value></data>
+  <data name="CompletionAskedNoModel" xml:space="preserve"><value>Inferpal: nessun modello è scelto per il completamento su questo server — impostazioni di Inferpal, pagina {0}.</value></data>
+  <data name="CompletionAskedNothing" xml:space="preserve"><value>Inferpal: il modello non aveva suggerimenti qui.</value></data>
+  <data name="CompletionAskedServerFailed" xml:space="preserve"><value>Inferpal: il server di completamento non ha risposto o ha rifiutato la richiesta — verificate che sia avviato e che abbia il modello di completamento.</value></data>
+  <data name="CompletionAskedNoEditor" xml:space="preserve"><value>Inferpal: mettete il cursore in un editor di codice, poi premete di nuovo il tasto.</value></data>
+  <data name="CompletionAskedListHint" xml:space="preserve"><value>Inferpal: Tab va all'elenco aperto; il tasto che ha chiesto prende il suggerimento.</value></data>
+  <data name="CompletionAskedExcluded" xml:space="preserve"><value>Inferpal: {0}</value></data>
   <data name="SettingsModelUsed" xml:space="preserve"><value>Modello: {0}.</value></data>
   <data name="SettingsChangeInServer" xml:space="preserve"><value>Cambialo in Server e modelli</value></data>
   <data name="SlashColCommand" xml:space="preserve"><value>Comando</value></data>

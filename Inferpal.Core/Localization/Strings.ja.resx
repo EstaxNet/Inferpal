@@ -1184,6 +1184,19 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="FimModeFastDesc" xml:space="preserve"><value>短い提案、300 ms 後。</value></data>
   <data name="FimModeDefaultDesc" xml:space="preserve"><value>長めの提案、600 ms 後。</value></data>
   <data name="FimModeHighAccuracyDesc" xml:space="preserve"><value>ブロック全体、1 s 後。</value></data>
+  <data name="LabelInlineCompletionTrigger" xml:space="preserve"><value>候補の表示</value></data>
+  <data name="FimTriggerAuto" xml:space="preserve"><value>入力中に</value></data>
+  <data name="FimTriggerAutoDesc" xml:space="preserve"><value>入力が止まったときに。</value></data>
+  <data name="FimTriggerOnDemand" xml:space="preserve"><value>求めたときだけ</value></data>
+  <data name="FimTriggerOnDemandDesc" xml:space="preserve"><value>Alt+' を押したときだけ (US キーボード。Mac では Ctrl+Option+')。それ以外は何も送信しません。</value></data>
+  <data name="CompletionAskedOff" xml:space="preserve"><value>Inferpal: インライン補完はオフです — Inferpal の設定の「{0}」ページ。</value></data>
+  <data name="CompletionAskedChatBusy" xml:space="preserve"><value>Inferpal: 補完サーバーのマシンでモデルがチャットまたはタスクに回答中です — 終わってからもう一度求めてください。</value></data>
+  <data name="CompletionAskedNoModel" xml:space="preserve"><value>Inferpal: このサーバーでは補完用のモデルが選ばれていません — Inferpal の設定の「{0}」ページ。</value></data>
+  <data name="CompletionAskedNothing" xml:space="preserve"><value>Inferpal: この位置ではモデルから候補がありませんでした。</value></data>
+  <data name="CompletionAskedServerFailed" xml:space="preserve"><value>Inferpal: 補完サーバーが応答しなかったか、要求を拒否しました — サーバーが起動していて補完用のモデルがあるか確認してください。</value></data>
+  <data name="CompletionAskedNoEditor" xml:space="preserve"><value>Inferpal: コードエディターにカーソルを置いてから、もう一度キーを押してください。</value></data>
+  <data name="CompletionAskedListHint" xml:space="preserve"><value>Inferpal: Tab は開いている一覧に渡ります。求めたキーで候補を確定できます。</value></data>
+  <data name="CompletionAskedExcluded" xml:space="preserve"><value>Inferpal: {0}</value></data>
   <data name="SettingsModelUsed" xml:space="preserve"><value>モデル: {0}。</value></data>
   <data name="SettingsChangeInServer" xml:space="preserve"><value>サーバーとモデルで変更</value></data>
   <data name="SlashColCommand" xml:space="preserve"><value>コマンド</value></data>

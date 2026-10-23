@@ -234,6 +234,18 @@
         "key": "alt+m",
         "mac": "ctrl+alt+m",
         "when": "!terminalFocus"
+      },
+      {
+        "command": "editor.action.inlineSuggest.trigger",
+        "key": "alt+'",
+        "mac": "ctrl+alt+'",
+        "when": "editorTextFocus && !editorReadonly && !inlineSuggestionVisible"
+      },
+      {
+        "command": "editor.action.inlineSuggest.commit",
+        "key": "alt+'",
+        "mac": "ctrl+alt+'",
+        "when": "editorTextFocus && inlineSuggestionVisible"
       }
     ],
     "configuration": {

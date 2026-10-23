@@ -40,6 +40,7 @@ public sealed class ConfigCompatibilityTests : IDisposable
         ["ragEmbeddingBaseUrl"]      = ("\"\"", "read only when code search runs on another server"),
         ["ragEmbeddingProvider"]     = ("\"\"", "read only when code search runs on another server"),
         ["ragEmbeddingApiKey"]       = ("\"\"", "read only when code search runs on another server"),
+        ["inlineCompletionTrigger"]  = ("\"auto\"", "a suggestion after each pause in typing, as before"),
     };
 
     /// <summary>

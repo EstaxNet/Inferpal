@@ -207,7 +207,13 @@ internal sealed record ExclusionsCheckResult(List<string?> Notices, List<string?
 /// <summary>`fim/settings` — whether inline completion is on, and the debounce of its mode.</summary>
 /// <param name="YieldsToChat">The completion server is on the chat's machine, so it steps aside while a chat answers;
 /// on another machine it keeps completing.</param>
-internal sealed record FimSettingsResult(bool Enabled, int DebounceMs, bool YieldsToChat = true);
+/// <param name="OnDemand">Only the key asks (<c>inlineCompletionTrigger</c>): a pause in typing asks for nothing.</param>
+internal sealed record FimSettingsResult(bool Enabled, int DebounceMs, bool YieldsToChat = true, bool OnDemand = false);
+
+/// <summary>`fim/ask` — a completion asked for by its key: the suggestion, or what the status bar says instead.</summary>
+/// <param name="Text">The suggestion; <c>null</c> when there is none.</param>
+/// <param name="Notice">Why there is none — not sent, or nothing came back; <c>null</c> with a suggestion.</param>
+internal sealed record FimAskResult(string? Text, string? Notice);
 
 /// <summary>`textDocument/didOpen|didChange|didClose` + `editor/didChangeActiveDocument`.</summary>
 /// <param name="Dirty">Whether the buffer has unsaved changes; absent means it does.</param>

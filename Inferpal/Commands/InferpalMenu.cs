@@ -14,6 +14,7 @@ internal static class InferpalMenu
             MenuChild.Command<OpenInferpalWindowCommand>(),
             MenuChild.Command<OpenSettingsCommand>(),
             MenuChild.Command<ReviewCommitCommand>(),
+            MenuChild.Command<AskCompletionCommand>(),
         ],
     };
 

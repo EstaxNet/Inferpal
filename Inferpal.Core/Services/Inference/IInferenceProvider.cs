@@ -37,6 +37,12 @@ internal interface IInferenceProvider : IChatTurnClient
     /// </summary>
     bool SharesGpuWithChat => true;
 
+    /// <summary>
+    /// The last inline completion asked of this server failed — unreachable, timed out, refused — or completions are
+    /// paused after repeated failures: an empty completion is then the server's, not the model's (<c>AskedCompletion</c>).
+    /// </summary>
+    bool FimFailing => false;
+
     /// <inheritdoc cref="InferenceProviderBase.RunAgentAsync"/>
     Task<AgentResult> RunAgentAsync(
         string model,

@@ -4,6 +4,7 @@
   "InferpalSettingsCommand": "Inferpal-Einstellungen...",
   "InferpalMapCommand": "Inferpal-Projektkarte",
   "InferpalReviewCommitCommand": "Commit prüfen...",
+  "InferpalAskCompletionCommand": "Vervollständigung vorschlagen oder übernehmen",
   "ContextMenuAskInferpal": "Inferpal fragen",
   "ContextMenuExplain": "Erklären",
   "ContextMenuRefactor": "Refaktorieren",

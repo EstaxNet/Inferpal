@@ -1086,7 +1086,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         var m   = FimModelFor(model);
         if (m is null) return;
         var key = base_ + "|" + m;
-        if (InlineCompletionRefused(m)) return;
+        if (InlineCompletionRefused(m)) { RecordFimRefused(); return; }
 
         bool? llamaServer;
         try { llamaServer = await IsLlamaServerAsync(ct); }
