@@ -25,6 +25,7 @@
   "inferpal.submenu.explorer": "Inferpal",
   "inferpal.command.fixTest": "Добиться прохождения теста",
   "inferpal.command.explainTestFailure": "Объяснить сбой",
+  "inferpal.command.proposeCommitMessage": "Inferpal: предложить сообщение коммита",
   "inferpal.command.editSelection": "Inferpal: изменить с помощью ИИ…",
   "inferpal.command.explainSelection": "Inferpal: объяснить этот код",
   "inferpal.command.testSelection": "Inferpal: добавить тесты",

@@ -77,6 +77,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('inferpal.explainItem', (uri?: vscode.Uri) => uri && chatView.explainItem(uri)),
     vscode.commands.registerCommand('inferpal.reviewItem', (uri?: vscode.Uri) => uri && chatView.reviewItem(uri)),
     vscode.commands.registerCommand('inferpal.attachItem', (uri?: vscode.Uri) => uri && chatView.attachItem(uri)),
+    // Source Control passes the repository (scm/title, scm/sourceControl); the palette passes nothing.
+    vscode.commands.registerCommand('inferpal.proposeCommitMessage',
+      (sourceControl?: { rootUri?: vscode.Uri }) => chatView.proposeCommitMessage(sourceControl)),
     vscode.commands.registerCommand('inferpal.fixTest', (...items: vscode.TestItem[]) => {
       const item = oneTest(items);
       return item && chatView.fixTest(item);

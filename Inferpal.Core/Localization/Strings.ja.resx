@@ -411,6 +411,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="HostTurnBusy" xml:space="preserve"><value>まだ応答を生成中です。停止してから、もう一度お試しください。</value></data>
   <data name="HostOperationBusy" xml:space="preserve"><value>Inferpal は別の処理 (設定の適用、MCP サーバーの再起動) を完了しています。少し待ってからもう一度お試しください。</value></data>
   <data name="HostEditBusy" xml:space="preserve"><value>Inferpal がコードを編集しています (AI で編集) — 変更が表示されてからもう一度お試しください。</value></data>
+  <data name="HostCommitBusy" xml:space="preserve"><value>Inferpal がコミット メッセージを作成しています。コミット ボックスに入ったらもう一度お試しください。</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>使用法：`/model &lt;名前&gt;`  —  現在：**{0}**</value></data>
@@ -519,7 +520,10 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ ステージング済みのファイルがありません — ステージングされていない変更を分析します。</value></data>
   <data name="CommitUntrackedLeftOut" xml:space="preserve"><value>⚠ 追跡されていない {0} 個のファイルはこのコミットに含まれません — /commit-exec は追跡中のファイルのみをステージします: {1}。含めるには先に `git add` してから、もう一度 /commit を実行してください。</value></data>
   <data name="CommitOnlyUntracked" xml:space="preserve"><value>⚠ 変更されたのは追跡されていないファイルのみです（{0}）— /commit-exec は追跡中のファイルのみをステージするため、このコミットは空になります。先に `git add` してから、もう一度 /commit を実行してください。</value></data>
-  <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ 下のメッセージは、差分全体 {1} 文字のうち先頭 {0} 文字から作成されました。見ていない部分は説明できません。全体を覆うメッセージが必要な場合は、より小さい変更をステージしてください。</value></data>
+  <data name="CommitBoxUntrackedNotDescribed" xml:space="preserve"><value>⚠ このメッセージで説明されていない追跡外のファイル: {0} 個 ({1})。説明に含めるには、ステージしてからもう一度提案させてください。</value></data>
+  <data name="CommitBoxOnlyUntracked" xml:space="preserve"><value>⚠ 変更されたのは追跡外のファイルのみです ({0})。ステージされるまで説明するものがありません。ステージしてからもう一度提案させてください。</value></data>
+  <data name="CommitRepositoryOutside" xml:space="preserve"><value>{0} は Inferpal のワークスペースの外にあります。その除外ファイルは読み込まれないため、何も送信されません。このワークスペースのリポジトリから提案させてください。</value></data>
+  <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ 提案されたメッセージは、差分全体 {1} 文字のうち先頭 {0} 文字から作成されました。見ていない部分は説明できません。全体を覆うメッセージが必要な場合は、より小さい変更をステージしてください。</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 コミットメッセージ</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>メッセージが下に事前入力されています — 必要に応じて編集し、**Enter** でコミット。</value></data>
   <data name="RulesNone" xml:space="preserve"><value>プロジェクトルールがありません。`.inferpal/rules/*.md` を作成するか `/rules init` を実行してください。</value></data>

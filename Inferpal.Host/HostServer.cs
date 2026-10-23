@@ -1380,6 +1380,34 @@ internal sealed partial class HostServer : IDisposable
         return new GestureQuestion(a.Question, a.Chip, a.Content, a.Refusal);
     }
 
+    /// <summary>
+    /// VS Code's "Propose a Commit Message": <c>/commit</c>'s proposal for the repository the Source Control view names,
+    /// for the extension to put in that repository's commit message box — nothing is committed; the notices are the
+    /// commit box's own (no <c>/commit-exec</c> there).
+    /// </summary>
+    [JsonRpcMethod("git/proposeCommitMessage", UseSingleObjectParameterDeserialization = true)]
+    public async Task<CommitMessageProposal> GitProposeCommitMessageAsync(ProposeCommitMessageParams p, CancellationToken ct)
+    {
+        var s = Session();
+        // ⚠ A repository of the window's folders — under one, or holding it, as /commit reads the workspace's — and no
+        // other: ignore files are declared at those folders only, so another place's excluded files would reach the model.
+        string[] folders = [s.RootDir, .. s.FoldersOutOfReach];
+        if (!folders.Any(f => Services.Tools.PathSanitizer.IsUnderRoot(p.Root, f) || Services.Tools.PathSanitizer.IsUnderRoot(f, p.Root)))
+            return new CommitMessageProposal(Strings.CommitRepositoryOutside(p.Root), null, null);
+        // Inside the turn slot, as /commit typed in the chat: one model at a time on the GPU, and Stop reaches it.
+        var cts = AcquireTurn(ct, Strings.HostCommitBusy);
+        try
+        {
+            var proposal = await Services.Commands.CommitCommandHandler.ProposeAsync(
+                s.Client, s.Config, GitProcess.For(p.Root), onToken: null, cts.Token, forCommitBox: true);
+            return proposal.Proposal is { } message
+                ? new CommitMessageProposal(null, proposal.Notice, message)
+                : new CommitMessageProposal(proposal.Message ?? proposal.Notice,
+                                            proposal.Message is null ? null : proposal.Notice, null);
+        }
+        finally { ReleaseTurn(cts); }
+    }
+
     // ── Config ─────────────────────────────────────────────────────────────────
 
     [JsonRpcMethod("config/get")]

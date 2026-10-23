@@ -198,5 +198,11 @@
   "Fix with Inferpal": "Исправить с помощью Inferpal",
   "No problem at the cursor.": "В позиции курсора проблем нет.",
   "Running {0}…": "Выполняется {0}…",
-  "One test at a time: {0} is the one used.": "По одному тесту: используется {0}."
+  "One test at a time: {0} is the one used.": "По одному тесту: используется {0}.",
+  "Several Git repositories are open: choose one in the Source Control view, then propose from its menu.": "Открыто несколько репозиториев Git: выберите один в представлении «Система управления версиями» и запросите предложение из его меню.",
+  "No Git repository found: open a folder under Git, with the Git extension enabled.": "Репозиторий Git не найден: откройте папку под Git с включённым расширением Git.",
+  "Writing a commit message…": "Пишется сообщение коммита…",
+  "The commit message box already holds a message. Replace it with the proposal?": "В поле сообщения коммита уже есть сообщение. Заменить его предложением?",
+  "The Git extension has no open repository at {0}: refresh the Source Control view, then try again.": "У расширения Git нет открытого репозитория в {0}: обновите представление «Система управления версиями» и повторите попытку.",
+  "The commit message box was emptied while the message was written — committed meanwhile? Propose again.": "Поле сообщения коммита очистилось, пока писалось сообщение, — коммит уже сделан? Запросите предложение снова."
 }

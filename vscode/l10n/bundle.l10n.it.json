@@ -198,5 +198,11 @@
   "Fix with Inferpal": "Correggi con Inferpal",
   "No problem at the cursor.": "Nessun problema al cursore.",
   "Running {0}…": "Esecuzione di {0}…",
-  "One test at a time: {0} is the one used.": "Un test alla volta: viene usato {0}."
+  "One test at a time: {0} is the one used.": "Un test alla volta: viene usato {0}.",
+  "Several Git repositories are open: choose one in the Source Control view, then propose from its menu.": "Sono aperti più repository Git: scegline uno nella vista Controllo del codice sorgente, poi chiedi la proposta dal suo menu.",
+  "No Git repository found: open a folder under Git, with the Git extension enabled.": "Nessun repository Git trovato: apri una cartella sotto Git, con l'estensione Git abilitata.",
+  "Writing a commit message…": "Scrittura di un messaggio di commit…",
+  "The commit message box already holds a message. Replace it with the proposal?": "La casella del messaggio di commit contiene già un messaggio. Sostituirlo con la proposta?",
+  "The Git extension has no open repository at {0}: refresh the Source Control view, then try again.": "L'estensione Git non ha alcun repository aperto in {0}: aggiorna la vista Controllo del codice sorgente, poi riprova.",
+  "The commit message box was emptied while the message was written — committed meanwhile? Propose again.": "La casella del messaggio di commit è stata svuotata mentre il messaggio veniva scritto: commit fatto nel frattempo? Chiedi di nuovo una proposta."
 }

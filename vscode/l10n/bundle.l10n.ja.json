@@ -198,5 +198,11 @@
   "Fix with Inferpal": "Inferpal で修正",
   "No problem at the cursor.": "カーソル位置に問題はありません。",
   "Running {0}…": "{0} を実行中…",
-  "One test at a time: {0} is the one used.": "テストは一度に 1 つです: {0} を使用します。"
+  "One test at a time: {0} is the one used.": "テストは一度に 1 つです: {0} を使用します。",
+  "Several Git repositories are open: choose one in the Source Control view, then propose from its menu.": "複数の Git リポジトリが開いています。ソース管理ビューで 1 つを選び、そのメニューから提案してください。",
+  "No Git repository found: open a folder under Git, with the Git extension enabled.": "Git リポジトリが見つかりません。Git 拡張機能を有効にして、Git 管理下のフォルダーを開いてください。",
+  "Writing a commit message…": "コミット メッセージを作成しています…",
+  "The commit message box already holds a message. Replace it with the proposal?": "コミット メッセージ ボックスには既にメッセージがあります。提案で置き換えますか?",
+  "The Git extension has no open repository at {0}: refresh the Source Control view, then try again.": "Git 拡張機能には {0} で開いているリポジトリがありません。ソース管理ビューを更新してから、もう一度お試しください。",
+  "The commit message box was emptied while the message was written — committed meanwhile? Propose again.": "メッセージの作成中にコミット メッセージ ボックスが空になりました。その間にコミットしましたか? もう一度提案させてください。"
 }

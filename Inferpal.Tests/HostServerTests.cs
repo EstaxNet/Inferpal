@@ -4145,6 +4145,127 @@ public partial class HostServerTests
     }
 
     [Fact]
+    public async Task GitProposeCommitMessage_ProposesForTheRepositoryNamed_WithTheCommitBoxsNotices()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var repo = Path.Combine(h.RootDir, "repo");
+        Directory.CreateDirectory(repo);
+        async Task Git(string args) =>
+            Assert.Equal(0, (await Services.GitProcess.RunAsync(args, repo, CancellationToken.None)).ExitCode);
+        await Git("init -q -b main");
+        await Git("config user.email t@example.test");
+        await Git("config user.name t");
+        var clean = await h.Client.InvokeWithParameterObjectAsync<CommitMessageProposal>("git/proposeCommitMessage", new { root = repo })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        File.WriteAllText(Path.Combine(repo, "A.cs"), "class A { }\n");
+        await Git("add -A");
+        await Git("-c commit.gpgsign=false commit -q -m base");
+        File.WriteAllText(Path.Combine(repo, "A.cs"), "class A { int X; }\n");
+        File.WriteAllText(Path.Combine(repo, "New.cs"), "class New { }\n");
+        h.Fake.ChatResult = new ChatTurnResult("feat: give A an X", [], 0, 0);
+
+        var changed = await h.Client.InvokeWithParameterObjectAsync<CommitMessageProposal>("git/proposeCommitMessage", new { root = repo })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Equal((Strings.CommitNothingToCommit, (string?)null), (clean.Refusal, clean.Message));
+        Assert.Equal("feat: give A an X", changed.Message);
+        Assert.Null(changed.Refusal);
+        Assert.Contains(Strings.CommitBoxUntrackedNotDescribed(1, "New.cs"), changed.Notice);
+    }
+
+    /// <summary>A git repository with a change to A.cs and an untracked New.cs, at <paramref name="repo"/>.</summary>
+    private static async Task ChangedRepositoryAsync(string repo)
+    {
+        Directory.CreateDirectory(repo);
+        async Task Git(string args) =>
+            Assert.Equal(0, (await Services.GitProcess.RunAsync(args, repo, CancellationToken.None)).ExitCode);
+        await Git("init -q -b main");
+        await Git("config user.email t@example.test");
+        await Git("config user.name t");
+        File.WriteAllText(Path.Combine(repo, "A.cs"), "class A { }\n");
+        await Git("add -A");
+        await Git("-c commit.gpgsign=false commit -q -m base");
+        File.WriteAllText(Path.Combine(repo, "A.cs"), "class A { int X; }\n");
+        File.WriteAllText(Path.Combine(repo, "New.cs"), "class New { }\n");
+    }
+
+    [Fact]
+    public async Task GitProposeCommitMessage_TakesTheRepositoryHoldingTheWorkspace_NeverOneElsewhere()
+    {
+        using var h = CreateHarness();
+        await ChangedRepositoryAsync(h.RootDir);
+        var workspace = Path.Combine(h.RootDir, "app");   // the workspace is a folder of the repository
+        Directory.CreateDirectory(workspace);
+        await h.InitializeAsync(rootDir: workspace).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var elsewhere = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"elsewhere-{Guid.NewGuid():N}");
+        await ChangedRepositoryAsync(elsewhere);
+        h.Fake.ChatResult = new ChatTurnResult("feat: give A an X", [], 0, 0);
+        try
+        {
+            var holding = await h.Client.InvokeWithParameterObjectAsync<CommitMessageProposal>(
+                "git/proposeCommitMessage", new { root = h.RootDir }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            var runs    = h.Fake.AgentRuns.Count;
+            var other   = await h.Client.InvokeWithParameterObjectAsync<CommitMessageProposal>(
+                "git/proposeCommitMessage", new { root = elsewhere }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            // Added to the window, the folder is declared with its ignore files: its repository is the window's too.
+            await h.Client.InvokeWithParameterObjectAsync("workspace/folders", new { otherFolders = new[] { elsewhere } })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            var added   = await h.Client.InvokeWithParameterObjectAsync<CommitMessageProposal>(
+                "git/proposeCommitMessage", new { root = elsewhere }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            Assert.Equal("feat: give A an X", holding.Message);
+            Assert.Equal(Strings.CommitRepositoryOutside(elsewhere), other.Refusal);
+            Assert.Equal(runs + 1, h.Fake.AgentRuns.Count);   // the refused one never reached the model
+            Assert.Equal("feat: give A an X", added.Message);
+        }
+        finally
+        {
+            try
+            {
+                foreach (var f in Directory.EnumerateFiles(elsewhere, "*", SearchOption.AllDirectories))
+                    File.SetAttributes(f, FileAttributes.Normal);
+                Directory.Delete(elsewhere, true);
+            }
+            catch { /* best-effort cleanup */ }
+        }
+    }
+
+    /// <summary>The proposal holds the turn slot, as /commit typed in the chat: a question meanwhile is told what holds
+    /// it, and a failed run keeps the notices gathered on the way.</summary>
+    [Fact]
+    public async Task GitProposeCommitMessage_HoldsTheTurnSlot_AndAFailureKeepsItsNotice()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var repo = Path.Combine(h.RootDir, "repo");
+        await ChangedRepositoryAsync(repo);
+        var started = new TaskCompletionSource();
+        var release = new TaskCompletionSource();
+        h.Fake.OnAgentRun = async (history, _, _, _) =>
+        {
+            started.TrySetResult();
+            await release.Task;
+            return new AgentResult("the backend refused the request", [], history, Failed: true);
+        };
+        var proposing = h.Client.InvokeWithParameterObjectAsync<CommitMessageProposal>(
+            "git/proposeCommitMessage", new { root = repo });
+        await started.Task.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var refused = await Assert.ThrowsAsync<StreamJsonRpc.RemoteInvocationException>(() =>
+            h.Client.InvokeWithParameterObjectAsync<Host.ChatSendResult>("chat/send", new { prompt = "hello", agentMode = false })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs)));
+        release.SetResult();
+        var failed = await proposing.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Equal(Strings.HostCommitBusy, refused.Message);
+        Assert.Equal("the backend refused the request", failed.Refusal);
+        Assert.Contains(Strings.CommitBoxUntrackedNotDescribed(1, "New.cs"), failed.Notice);
+        Assert.Null(failed.Message);
+    }
+
+    [Fact]
     public async Task DebuggerMention_WithNothingPaused_SaysSo_InsteadOfSilence()
     {
         // Nothing to attach is not nothing to say. `mention/resolve` had no way to tell an empty

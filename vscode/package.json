@@ -183,6 +183,11 @@
       {
         "command": "inferpal.explainTestFailure",
         "title": "%inferpal.command.explainTestFailure%"
+      },
+      {
+        "command": "inferpal.proposeCommitMessage",
+        "title": "%inferpal.command.proposeCommitMessage%",
+        "icon": "$(sparkle)"
       }
     ],
     "submenus": [
@@ -210,6 +215,20 @@
         {
           "command": "inferpal.attachItem",
           "group": "1_inferpal@3"
+        }
+      ],
+      "scm/title": [
+        {
+          "command": "inferpal.proposeCommitMessage",
+          "when": "scmProvider == git",
+          "group": "navigation@9"
+        }
+      ],
+      "scm/sourceControl": [
+        {
+          "command": "inferpal.proposeCommitMessage",
+          "when": "scmProvider == git",
+          "group": "z_inferpal@1"
         }
       ],
       "testing/item/context": [
@@ -267,6 +286,10 @@
         {
           "command": "inferpal.explainTestFailure",
           "when": "false"
+        },
+        {
+          "command": "inferpal.proposeCommitMessage",
+          "when": "gitOpenRepositoryCount != 0"
         }
       ],
       "view/title": [

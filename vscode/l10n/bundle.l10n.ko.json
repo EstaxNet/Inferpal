@@ -198,5 +198,11 @@
   "Fix with Inferpal": "Inferpal로 수정",
   "No problem at the cursor.": "커서 위치에 문제가 없습니다.",
   "Running {0}…": "{0} 실행 중…",
-  "One test at a time: {0} is the one used.": "한 번에 테스트 하나: {0}을(를) 사용합니다."
+  "One test at a time: {0} is the one used.": "한 번에 테스트 하나: {0}을(를) 사용합니다.",
+  "Several Git repositories are open: choose one in the Source Control view, then propose from its menu.": "Git 리포지토리가 여러 개 열려 있습니다. 소스 제어 보기에서 하나를 선택한 다음 해당 메뉴에서 제안하세요.",
+  "No Git repository found: open a folder under Git, with the Git extension enabled.": "Git 리포지토리를 찾을 수 없습니다. Git 확장을 사용하도록 설정하고 Git 아래의 폴더를 여세요.",
+  "Writing a commit message…": "커밋 메시지를 작성하는 중…",
+  "The commit message box already holds a message. Replace it with the proposal?": "커밋 메시지 상자에 이미 메시지가 있습니다. 제안으로 바꾸시겠습니까?",
+  "The Git extension has no open repository at {0}: refresh the Source Control view, then try again.": "Git 확장에 {0}에서 열린 리포지토리가 없습니다. 소스 제어 보기를 새로 고친 후 다시 시도하세요.",
+  "The commit message box was emptied while the message was written — committed meanwhile? Propose again.": "메시지를 작성하는 동안 커밋 메시지 상자가 비워졌습니다. 그사이에 커밋했나요? 다시 제안을 요청하세요."
 }

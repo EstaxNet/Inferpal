@@ -25,6 +25,7 @@
   "inferpal.submenu.explorer": "Inferpal",
   "inferpal.command.fixTest": "Faire passer ce test",
   "inferpal.command.explainTestFailure": "Expliquer l'échec",
+  "inferpal.command.proposeCommitMessage": "Inferpal : proposer un message de commit",
   "inferpal.command.editSelection": "Inferpal : modifier avec l'IA…",
   "inferpal.command.explainSelection": "Inferpal : expliquer ce code",
   "inferpal.command.testSelection": "Inferpal : ajouter des tests",

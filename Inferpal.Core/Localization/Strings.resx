@@ -412,6 +412,7 @@ Backup: {0}</value></data>
   <data name="HostTurnBusy" xml:space="preserve"><value>A reply is still being generated — stop it, then try again.</value></data>
   <data name="HostOperationBusy" xml:space="preserve"><value>Inferpal is finishing another operation (applying settings, restarting MCP servers) — try again in a moment.</value></data>
   <data name="HostEditBusy" xml:space="preserve"><value>Inferpal is editing code (Edit with AI) — try again once the change is shown.</value></data>
+  <data name="HostCommitBusy" xml:space="preserve"><value>Inferpal is writing a commit message — try again once it is in the commit box.</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>Usage: `/model &lt;name&gt;`  —  current: **{0}**</value></data>
@@ -520,7 +521,10 @@ Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</val
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ Nothing staged — analysing unstaged changes.</value></data>
   <data name="CommitUntrackedLeftOut" xml:space="preserve"><value>⚠ {0} untracked file(s) will NOT be in this commit — /commit-exec stages tracked files only: {1}. `git add` them first to include them, then /commit again.</value></data>
   <data name="CommitOnlyUntracked" xml:space="preserve"><value>⚠ Only untracked files changed ({0}) — /commit-exec stages tracked files only, so this commit would hold nothing. `git add` them first, then /commit again.</value></data>
-  <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ The message below was written from the first {0} characters of the diff, out of {1}. It cannot describe what it never saw — stage a smaller change for a message that covers all of it.</value></data>
+  <data name="CommitBoxUntrackedNotDescribed" xml:space="preserve"><value>⚠ Not described in this message: {0} {0:untracked file|untracked files} ({1}). Stage them, then propose again to have them described.</value></data>
+  <data name="CommitBoxOnlyUntracked" xml:space="preserve"><value>⚠ Only untracked files changed ({0}): nothing to describe until they are staged. Stage them, then propose again.</value></data>
+  <data name="CommitRepositoryOutside" xml:space="preserve"><value>{0} is outside the workspace Inferpal works in: its ignore files are not the ones read, so nothing of it is sent. Propose from a repository of this workspace.</value></data>
+  <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ The proposed message was written from the first {0} characters of the diff, out of {1}. It cannot describe what it never saw — stage a smaller change for a message that covers all of it.</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 commit message</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>Message pre-filled below — edit if needed, then press **Enter** to commit.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>No project rules. Create `.inferpal/rules/*.md` or run `/rules init`.</value></data>

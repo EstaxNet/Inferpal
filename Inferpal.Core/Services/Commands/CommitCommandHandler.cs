@@ -36,9 +36,11 @@ internal static class CommitCommandHandler
 
     /// <summary><c>/commit</c> — describe the current change, without committing anything.</summary>
     /// <param name="onToken">Streamed tokens of the proposal; null = no streaming.</param>
+    /// <param name="forCommitBox">The proposal goes to VS Code's commit message box, committed with the editor's own
+    /// button: the notices that name <c>/commit-exec</c> say what holds there instead.</param>
     public static async Task<CommitProposal> ProposeAsync(
         IInferenceProvider client, InferpalConfig config, GitRunner git,
-        Action<string>? onToken, CancellationToken ct)
+        Action<string>? onToken, CancellationToken ct, bool forCommitBox = false)
     {
         // ⚠ git that REFUSED is not git that found nothing — and the confusion is not silent here,
         // it is loud: RunAsync appends stderr to the output, so `fatal: detected dubious ownership`
@@ -69,7 +71,8 @@ internal static class CommitCommandHandler
             // Describe exactly what /commit-exec will commit: `git add -u`, tracked files only.
             var (tracked, untracked) = GitCommitPolicy.SplitUntracked(status);
             if (string.IsNullOrWhiteSpace(tracked))
-                return new(Strings.CommitOnlyUntracked(GitCommitPolicy.NameList(untracked)), null, null);
+                return new(forCommitBox ? Strings.CommitBoxOnlyUntracked(GitCommitPolicy.NameList(untracked))
+                                        : Strings.CommitOnlyUntracked(GitCommitPolicy.NameList(untracked)), null, null);
 
             var unstagedRun = await git("diff", ct);
             if (GitProcess.FailureNote("diff", unstagedRun) is { } unstagedFailed)
@@ -78,7 +81,9 @@ internal static class CommitCommandHandler
                 tracked, Governance.ContentExclusions.WithoutExcludedFiles(unstagedRun.Output, workTree, excluded));
             notice       = Strings.CommitNothingStaged;
             if (untracked.Count > 0)
-                notice += "\n\n" + Strings.CommitUntrackedLeftOut(untracked.Count, GitCommitPolicy.NameList(untracked));
+                notice += "\n\n" + (forCommitBox
+                    ? Strings.CommitBoxUntrackedNotDescribed(untracked.Count, GitCommitPolicy.NameList(untracked))
+                    : Strings.CommitUntrackedLeftOut(untracked.Count, GitCommitPolicy.NameList(untracked)));
         }
         else if (string.IsNullOrWhiteSpace(staged))
         {

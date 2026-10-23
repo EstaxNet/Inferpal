@@ -411,6 +411,7 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
   <data name="HostTurnBusy" xml:space="preserve"><value>아직 응답을 생성하는 중입니다. 중지한 다음 다시 시도하세요.</value></data>
   <data name="HostOperationBusy" xml:space="preserve"><value>Inferpal이 다른 작업(설정 적용, MCP 서버 다시 시작)을 마무리하고 있습니다. 잠시 후 다시 시도하세요.</value></data>
   <data name="HostEditBusy" xml:space="preserve"><value>Inferpal이 코드를 편집하는 중입니다(AI로 편집) — 변경 내용이 표시된 후 다시 시도하세요.</value></data>
+  <data name="HostCommitBusy" xml:space="preserve"><value>Inferpal이 커밋 메시지를 작성하는 중입니다. 커밋 상자에 들어간 후 다시 시도하세요.</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>사용법: `/model &lt;이름&gt;`  —  현재: **{0}**</value></data>
@@ -519,7 +520,10 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ 스테이징된 항목 없음 — 스테이징되지 않은 변경 사항 분석 중.</value></data>
   <data name="CommitUntrackedLeftOut" xml:space="preserve"><value>⚠ 추적되지 않는 파일 {0}개는 이 커밋에 포함되지 않습니다 — /commit-exec는 추적 중인 파일만 스테이징합니다: {1}. 포함하려면 먼저 `git add`한 다음 /commit을 다시 실행하세요.</value></data>
   <data name="CommitOnlyUntracked" xml:space="preserve"><value>⚠ 추적되지 않는 파일만 변경되었습니다({0}) — /commit-exec는 추적 중인 파일만 스테이징하므로 이 커밋은 비어 있게 됩니다. 먼저 `git add`한 다음 /commit을 다시 실행하세요.</value></data>
-  <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ 아래 메시지는 전체 {1}자 중 앞쪽 {0}자만으로 작성되었습니다. 보지 못한 부분은 설명할 수 없습니다. 전체를 담은 메시지가 필요하면 더 작은 변경을 스테이징하세요.</value></data>
+  <data name="CommitBoxUntrackedNotDescribed" xml:space="preserve"><value>⚠ 이 메시지에 설명되지 않은 추적되지 않는 파일 {0}개 ({1}). 설명되게 하려면 스테이징한 다음 다시 제안을 요청하세요.</value></data>
+  <data name="CommitBoxOnlyUntracked" xml:space="preserve"><value>⚠ 추적되지 않는 파일만 변경되었습니다 ({0}). 스테이징하기 전에는 설명할 내용이 없습니다. 스테이징한 다음 다시 제안을 요청하세요.</value></data>
+  <data name="CommitRepositoryOutside" xml:space="preserve"><value>{0}은(는) Inferpal 작업 영역 밖에 있습니다. 해당 제외 파일은 읽히지 않으므로 아무것도 보내지 않습니다. 이 작업 영역의 리포지토리에서 제안을 요청하세요.</value></data>
+  <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ 제안된 메시지는 전체 {1}자 중 앞쪽 {0}자만으로 작성되었습니다. 보지 못한 부분은 설명할 수 없습니다. 전체를 담은 메시지가 필요하면 더 작은 변경을 스테이징하세요.</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 커밋 메시지</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>아래에 메시지가 미리 채워져 있습니다 — 필요하면 편집한 후 **Enter**를 눌러 커밋하세요.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>프로젝트 규칙이 없습니다. `.inferpal/rules/*.md`를 만들거나 `/rules init`를 실행하세요.</value></data>

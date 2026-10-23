@@ -77,6 +77,15 @@ export interface GestureQuestion {
   refusal?: string | null;
 }
 
+/** `git/proposeCommitMessage`: the message for the commit box, or why there is none. */
+export interface CommitMessageProposal {
+  /** Why nothing is proposed — nothing to commit, git refused, the model failed. */
+  refusal?: string | null;
+  /** Said beside the proposal: nothing staged, untracked files not described, the diff or the reply cut. */
+  notice?: string | null;
+  message?: string | null;
+}
+
 export interface ChatSendParams {
   prompt: string;
   model?: string;

@@ -41,6 +41,7 @@ import {
   FimAskResult,
   FimSettingsResult,
   ProblemEntry,
+  CommitMessageProposal,
   GestureQuestion,
   IndexStatusResult,
   InitializeParams,
@@ -544,6 +545,11 @@ export class HostClient {
   /** "Analyze with Inferpal" on a debugger stop: the stop and the code around its frames, or why there is none. */
   debugAnalyze(model?: string): Promise<GestureQuestion> {
     return this.connection().sendRequest<GestureQuestion>('debug/analyze', { model });
+  }
+
+  /** `/commit`'s proposal for the repository at `root`, for its commit message box. Nothing is committed. */
+  proposeCommitMessage(root: string, token?: CancellationToken): Promise<CommitMessageProposal> {
+    return this.connection().sendRequest<CommitMessageProposal>('git/proposeCommitMessage', ...HostClient.withToken({ root }, token));
   }
 
   /** The explorer's "Explain": a file as the editor has it, or a folder as `@folder` attaches it. */

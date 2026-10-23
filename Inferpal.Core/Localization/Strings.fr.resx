@@ -411,6 +411,7 @@ Sauvegarde : {0}</value></data>
   <data name="HostTurnBusy" xml:space="preserve"><value>Une réponse est encore en cours — arrêtez-la, puis réessayez.</value></data>
   <data name="HostOperationBusy" xml:space="preserve"><value>Inferpal termine une autre opération (application des réglages, redémarrage des serveurs MCP) — réessayez dans un instant.</value></data>
   <data name="HostEditBusy" xml:space="preserve"><value>Inferpal modifie du code (Modifier avec l'IA) — réessayez une fois le changement affiché.</value></data>
+  <data name="HostCommitBusy" xml:space="preserve"><value>Inferpal rédige un message de commit — réessayez une fois qu'il est dans la zone de commit.</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>Utilisation : `/model &lt;nom&gt;`  —  actuel : **{0}**</value></data>
@@ -519,7 +520,10 @@ Cliquez sur **Corriger avec l'IA** pour lancer la correction automatique en bouc
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ Rien en staging — analyse des modifications non stagées.</value></data>
   <data name="CommitUntrackedLeftOut" xml:space="preserve"><value>⚠ {0} fichier(s) non suivi(s) ne seront PAS dans ce commit — /commit-exec n'indexe que les fichiers suivis : {1}. Faites-en un `git add` d'abord pour les inclure, puis relancez /commit.</value></data>
   <data name="CommitOnlyUntracked" xml:space="preserve"><value>⚠ Seuls des fichiers non suivis ont changé ({0}) — /commit-exec n'indexe que les fichiers suivis, ce commit ne contiendrait donc rien. Faites-en un `git add` d'abord, puis relancez /commit.</value></data>
-  <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ Le message ci-dessous a été écrit à partir des {0} premiers caractères du diff, sur {1}. Il ne peut pas décrire ce qu'il n'a pas vu — indexez un changement plus petit pour un message qui couvre tout.</value></data>
+  <data name="CommitBoxUntrackedNotDescribed" xml:space="preserve"><value>⚠ Non décrits dans ce message : {0} {0:fichier non suivi|fichiers non suivis} ({1}). Indexez-les, puis proposez de nouveau pour qu'ils soient décrits.</value></data>
+  <data name="CommitBoxOnlyUntracked" xml:space="preserve"><value>⚠ Seuls des fichiers non suivis ont changé ({0}) : rien à décrire tant qu'ils ne sont pas indexés. Indexez-les, puis proposez de nouveau.</value></data>
+  <data name="CommitRepositoryOutside" xml:space="preserve"><value>{0} est hors de l'espace de travail d'Inferpal : ses fichiers d'exclusion ne sont pas ceux qui sont lus, donc rien n'en est envoyé. Proposez depuis un dépôt de cet espace de travail.</value></data>
+  <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ Le message proposé a été écrit à partir des {0} premiers caractères du diff, sur {1}. Il ne peut pas décrire ce qu'il n'a pas vu — indexez un changement plus petit pour un message qui couvre tout.</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 message de commit</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>Message pré-rempli ci-dessous — modifie si besoin, puis **Entrée** pour committer.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>Aucune règle de projet. Crée `.inferpal/rules/*.md` ou lance `/rules init`.</value></data>

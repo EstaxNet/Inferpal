@@ -121,6 +121,33 @@ public class CommitCommandHandlerTests
         Assert.Equal(Strings.CommitNothingStaged, result.Notice);
     }
 
+    /// <summary>
+    /// VS Code's commit message box is committed with the editor's own button: the notices that name <c>/commit-exec</c>
+    /// would send the person to a command that is not the one they use — the box has its own.
+    /// </summary>
+    [Fact]
+    public async Task Propose_ForTheCommitBox_SaysWhatHoldsThere_NeverCommitExec()
+    {
+        var git = new FakeGit();
+        git.Answers["status --short"] = " M B.cs\n?? New.cs";
+        git.Answers["diff"]           = "diff --git a/B.cs b/B.cs\n+changed";
+        var onlyNew = new FakeGit();
+        onlyNew.Answers["status --short"] = "?? New.cs";
+
+        var box     = await CommitCommandHandler.ProposeAsync(
+            Proposing("fix: B"), new InferpalConfig(), git.Runner, null, CancellationToken.None, forCommitBox: true);
+        var refused = await CommitCommandHandler.ProposeAsync(
+            Proposing("never asked"), new InferpalConfig(), onlyNew.Runner, null, CancellationToken.None, forCommitBox: true);
+        var chat    = await CommitCommandHandler.ProposeAsync(
+            Proposing("fix: B"), new InferpalConfig(), git.Runner, null, CancellationToken.None);   // reference arm
+
+        Assert.Equal("fix: B", box.Proposal);
+        Assert.Contains(Strings.CommitBoxUntrackedNotDescribed(1, "New.cs"), box.Notice);
+        Assert.Equal(Strings.CommitBoxOnlyUntracked("New.cs"), refused.Message);
+        Assert.DoesNotContain("/commit-exec", box.Notice + refused.Message);
+        Assert.Contains(Strings.CommitUntrackedLeftOut(1, "New.cs"), chat.Notice);
+    }
+
     [Fact]
     public async Task Propose_CommitsNothing()
     {

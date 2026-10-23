@@ -411,6 +411,7 @@
   <data name="HostTurnBusy" xml:space="preserve"><value>仍在生成回复——请先停止，然后重试。</value></data>
   <data name="HostOperationBusy" xml:space="preserve"><value>Inferpal 正在完成另一项操作（应用设置、重新启动 MCP 服务器）——请稍后重试。</value></data>
   <data name="HostEditBusy" xml:space="preserve"><value>Inferpal 正在编辑代码(使用 AI 编辑)— 请在显示更改后重试。</value></data>
+  <data name="HostCommitBusy" xml:space="preserve"><value>Inferpal 正在编写提交消息 —— 待它出现在提交框中后再试。</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>用法：`/model &lt;名称&gt;` — 当前：**{0}**</value></data>
@@ -519,7 +520,10 @@
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ 没有已暂存的文件 — 正在分析未暂存的修改。</value></data>
   <data name="CommitUntrackedLeftOut" xml:space="preserve"><value>⚠ {0} 个未跟踪的文件不会包含在此提交中——/commit-exec 只暂存已跟踪的文件：{1}。如需包含，请先执行 `git add`，然后再次运行 /commit。</value></data>
   <data name="CommitOnlyUntracked" xml:space="preserve"><value>⚠ 只有未跟踪的文件发生了变化（{0}）——/commit-exec 只暂存已跟踪的文件，因此此提交将为空。请先执行 `git add`，然后再次运行 /commit。</value></data>
-  <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ 下面的信息是根据差异前 {0} 个字符（共 {1} 个）写成的，无法描述它没看到的部分 —— 若需覆盖全部，请暂存更小的变更。</value></data>
+  <data name="CommitBoxUntrackedNotDescribed" xml:space="preserve"><value>⚠ 此消息未描述 {0} 个未跟踪的文件（{1}）。如需描述，请先暂存它们，然后再次请求建议。</value></data>
+  <data name="CommitBoxOnlyUntracked" xml:space="preserve"><value>⚠ 只有未跟踪的文件发生了变更（{0}）：在暂存之前没有可描述的内容。请先暂存它们，然后再次请求建议。</value></data>
+  <data name="CommitRepositoryOutside" xml:space="preserve"><value>{0} 位于 Inferpal 的工作区之外：读取的不是它的排除文件，因此不会发送其中任何内容。请从此工作区的存储库中请求建议。</value></data>
+  <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ 建议的信息是根据差异前 {0} 个字符（共 {1} 个）写成的，无法描述它没看到的部分 —— 若需覆盖全部，请暂存更小的变更。</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 提交信息</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>信息已预填到输入框 — 如需修改请编辑，然后按 **Enter** 确认提交。</value></data>
   <data name="RulesNone" xml:space="preserve"><value>没有项目规则。请创建 `.inferpal/rules/*.md` 或运行 `/rules init`。</value></data>

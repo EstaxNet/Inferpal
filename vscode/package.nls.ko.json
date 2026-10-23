@@ -25,6 +25,7 @@
   "inferpal.submenu.explorer": "Inferpal",
   "inferpal.command.fixTest": "이 테스트 통과시키기",
   "inferpal.command.explainTestFailure": "실패 설명",
+  "inferpal.command.proposeCommitMessage": "Inferpal: 커밋 메시지 제안",
   "inferpal.command.editSelection": "Inferpal: AI로 편집…",
   "inferpal.command.explainSelection": "Inferpal: 이 코드 설명",
   "inferpal.command.testSelection": "Inferpal: 테스트 추가",

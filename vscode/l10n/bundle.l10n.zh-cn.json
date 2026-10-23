@@ -198,5 +198,11 @@
   "Fix with Inferpal": "使用 Inferpal 修复",
   "No problem at the cursor.": "光标处没有问题。",
   "Running {0}…": "正在运行 {0}…",
-  "One test at a time: {0} is the one used.": "一次一个测试：使用 {0}。"
+  "One test at a time: {0} is the one used.": "一次一个测试：使用 {0}。",
+  "Several Git repositories are open: choose one in the Source Control view, then propose from its menu.": "打开了多个 Git 存储库：请在“源代码管理”视图中选择一个，然后从其菜单中请求建议。",
+  "No Git repository found: open a folder under Git, with the Git extension enabled.": "未找到 Git 存储库：请在启用 Git 扩展的情况下打开受 Git 管理的文件夹。",
+  "Writing a commit message…": "正在编写提交消息…",
+  "The commit message box already holds a message. Replace it with the proposal?": "提交消息框中已有消息。要用建议替换它吗?",
+  "The Git extension has no open repository at {0}: refresh the Source Control view, then try again.": "Git 扩展在 {0} 处没有打开的存储库：请刷新“源代码管理”视图，然后重试。",
+  "The commit message box was emptied while the message was written — committed meanwhile? Propose again.": "编写消息时提交消息框被清空了 —— 期间已提交？请再次请求建议。"
 }

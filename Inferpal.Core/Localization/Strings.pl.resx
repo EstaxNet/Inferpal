@@ -411,6 +411,7 @@ Kopia zapasowa: {0}</value></data>
   <data name="HostTurnBusy" xml:space="preserve"><value>Odpowiedź jest nadal generowana — zatrzymaj ją i spróbuj ponownie.</value></data>
   <data name="HostOperationBusy" xml:space="preserve"><value>Inferpal kończy inną operację (stosowanie ustawień, ponowne uruchamianie serwerów MCP) — spróbuj ponownie za chwilę.</value></data>
   <data name="HostEditBusy" xml:space="preserve"><value>Inferpal edytuje kod (Edytuj z AI) — spróbuj ponownie, gdy zmiana zostanie pokazana.</value></data>
+  <data name="HostCommitBusy" xml:space="preserve"><value>Inferpal pisze komunikat commita — spróbuj ponownie, gdy znajdzie się w polu commita.</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>Użycie: `/model &lt;nazwa&gt;`  —  aktualny: **{0}**</value></data>
@@ -519,7 +520,10 @@ Kliknij **Napraw z AI**, aby automatycznie naprawić w pętli, lub wpisz `/fix-b
   <data name="CommitNothingStaged" xml:space="preserve"><value>ℹ Nic w staging — analiza niewystawionych zmian.</value></data>
   <data name="CommitUntrackedLeftOut" xml:space="preserve"><value>⚠ {0} nieśledzonych plików NIE trafi do tego commita — /commit-exec dodaje tylko śledzone pliki: {1}. Najpierw wykonaj `git add`, aby je dołączyć, a potem ponownie /commit.</value></data>
   <data name="CommitOnlyUntracked" xml:space="preserve"><value>⚠ Zmieniły się tylko nieśledzone pliki ({0}) — /commit-exec dodaje tylko śledzone pliki, więc ten commit byłby pusty. Najpierw wykonaj `git add`, a potem ponownie /commit.</value></data>
-  <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ Poniższy komunikat powstał z pierwszych {0} znaków diffa, na {1}. Nie może opisać tego, czego nie widział — dodaj do indeksu mniejszą zmianę, aby komunikat obejmował całość.</value></data>
+  <data name="CommitBoxUntrackedNotDescribed" xml:space="preserve"><value>⚠ Nieopisane w tym komunikacie: {0} {0:nieśledzony plik|nieśledzone pliki|nieśledzonych plików} ({1}). Dodaj je do indeksu i poproś o propozycję ponownie, aby zostały opisane.</value></data>
+  <data name="CommitBoxOnlyUntracked" xml:space="preserve"><value>⚠ Zmieniły się tylko nieśledzone pliki ({0}): nie ma czego opisać, dopóki nie trafią do indeksu. Dodaj je do indeksu i poproś o propozycję ponownie.</value></data>
+  <data name="CommitRepositoryOutside" xml:space="preserve"><value>{0} jest poza obszarem roboczym Inferpal: jego pliki wykluczeń nie są tymi, które są czytane, więc nic z niego nie jest wysyłane. Poproś o propozycję z repozytorium tego obszaru roboczego.</value></data>
+  <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ Proponowany komunikat powstał z pierwszych {0} znaków diffa, na {1}. Nie może opisać tego, czego nie widział — dodaj do indeksu mniejszą zmianę, aby komunikat obejmował całość.</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 wiadomość commit</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>Wiadomość wstępnie wypełniona poniżej — edytuj jeśli potrzeba, następnie naciśnij **Enter**, aby zacommitować.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>Brak reguł projektu. Utwórz `.inferpal/rules/*.md` lub uruchom `/rules init`.</value></data>

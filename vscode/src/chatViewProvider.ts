@@ -13,12 +13,13 @@ import { SetupFlow } from './setupFlow';
 import { buildBannerOf, isBuildTask, openTabPaths, panelErrors } from './editorBridge';
 import { capAttachment, CappedText } from './attachmentCap';
 import { failureText, testFilter } from './testGestures';
+import { gitApi, repositoryFor } from './gitGestures';
 import { renderChatHtml } from './webview/chatWebviewHtml';
 import { samePath } from './debugBridge';
 import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
 import {
-  ApprovalCard, CodeActionResult, InputCard, InputFormAnswer, ProblemEntry, GestureQuestion, SavedMessage, SlashEffect,
-  TestsGenerateResult, TurnNote,
+  ApprovalCard, CodeActionResult, InputCard, InputFormAnswer, ProblemEntry, GestureQuestion, CommitMessageProposal,
+  SavedMessage, SlashEffect, TestsGenerateResult, TurnNote,
 } from './protocol';
 import {
   WebviewToExt,
@@ -3320,16 +3321,100 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     };
     return this.askWithChip((host) => message
       ? host.testsExplain(params)
-      : Promise.resolve(vscode.window.withProgress(
-        { location: vscode.ProgressLocation.Notification, title: t('Running {0}…', item.label), cancellable: true },
-        (_progress, token) => host.testsExplain(params, token).catch((err: unknown) => {
-          // Cancelled by the person: the run is stopped on the host, and there is nothing to say.
+      : ChatViewProvider.whileShown(t('Running {0}…', item.label), (token) => host.testsExplain(params, token)),
+    'explain the test failure', true);
+  }
+
+  /**
+   * A host call behind a cancellable notification. Cancelled by the person: `undefined`, whether the host stopped or had
+   * already answered — a reply that crosses the cancellation is never acted on.
+   */
+  private static whileShown<T>(title: string, call: (token: vscode.CancellationToken) => Promise<T>): Promise<T | undefined> {
+    return Promise.resolve(vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title, cancellable: true },
+      (_progress, token) => call(token).then(
+        (result) => (token.isCancellationRequested ? undefined : result),
+        (err: unknown) => {
           if (token.isCancellationRequested) {
             return undefined;
           }
           throw err;
-        }))),
-    'explain the test failure', true);
+        })));
+  }
+
+  /**
+   * Source Control's "Propose a Commit Message": `/commit`'s proposal, written by the host for that repository, put in
+   * its commit message box — nothing is committed, the button stays the person's. A message already typed is replaced
+   * only with their agreement, asked once the proposal is there (they may have typed meanwhile).
+   */
+  async proposeCommitMessage(sourceControl?: { rootUri?: vscode.Uri }): Promise<void> {
+    const api = await gitApi().catch((err: unknown) => {
+      this.log(`[chat] Git extension unavailable: ${String(err)}`);
+      return undefined;
+    });
+    const repo = api && repositoryFor(api, sourceControl?.rootUri);
+    if (repo === 'several') {
+      void vscode.window.showWarningMessage(
+        t('Several Git repositories are open: choose one in the Source Control view, then propose from its menu.'));
+      return;
+    }
+    if (repo === 'unknown') {
+      void vscode.window.showWarningMessage(
+        t('The Git extension has no open repository at {0}: refresh the Source Control view, then try again.',
+          sourceControl?.rootUri?.fsPath ?? ''));
+      return;
+    }
+    if (!repo) {
+      void vscode.window.showWarningMessage(t('No Git repository found: open a folder under Git, with the Git extension enabled.'));
+      return;
+    }
+    const host = this.hostForGesture();
+    if (!host) {
+      return;
+    }
+    // The box as it was at the click: emptied by the time the proposal arrives, it was most likely committed — the
+    // proposal would then describe changes already in history.
+    const before = repo.inputBox.value;
+    let proposal: CommitMessageProposal | undefined;
+    try {
+      proposal = await ChatViewProvider.whileShown(t('Writing a commit message…'),
+        (token) => host.proposeCommitMessage(repo.rootUri.fsPath, token));
+    } catch (err) {
+      this.gestureFailed('propose a commit message', err);
+      return;
+    }
+    if (!proposal) {
+      return;
+    }
+    if (!proposal.message) {
+      // The refusal, and what the host noted on the way (a diff cut, files left out): both said.
+      void vscode.window.showWarningMessage([proposal.refusal, proposal.notice].filter(Boolean).join('\n\n'));
+      return;
+    }
+    const typed = repo.inputBox.value.trim();
+    if (!typed && before.trim()) {
+      void vscode.window.showWarningMessage(
+        t('The commit message box was emptied while the message was written — committed meanwhile? Propose again.'));
+      return;
+    }
+    if (typed && typed !== proposal.message.trim()) {
+      // Modal, the proposal shown: nothing is typed into the box while the question is open, and the choice is made
+      // knowing what would replace the message.
+      const replace = t('Replace');
+      const answer = await vscode.window.showWarningMessage(
+        t('The commit message box already holds a message. Replace it with the proposal?'),
+        { modal: true, detail: proposal.message }, replace);
+      if (answer !== replace) {
+        return;
+      }
+    }
+    repo.inputBox.value = proposal.message;
+    if (proposal.notice) {
+      // A cut diff or reply, files left undescribed: a warning; "nothing staged" alone is information.
+      void (proposal.notice.includes('⚠')
+        ? vscode.window.showWarningMessage(proposal.notice)
+        : vscode.window.showInformationMessage(proposal.notice));
+    }
   }
 
   /** The explorer's "Review Changes": `/check` on that file or folder, as if typed. */

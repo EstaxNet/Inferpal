@@ -235,6 +235,16 @@ internal sealed record ExplorerExplainParams(string Path, string? Model = null);
 internal sealed record TestsExplainParams(string Label, string Filter, string? Failure = null, string? File = null, int Line = 0,
                                           string? FailureFile = null, int FailureLine = 0, string? Model = null);
 
+/// <summary>`git/proposeCommitMessage` — the repository whose commit message box the proposal goes to.</summary>
+/// <param name="Root">Its root folder, as the editor's Git extension names it.</param>
+internal sealed record ProposeCommitMessageParams(string Root);
+
+/// <summary>`git/proposeCommitMessage`'s answer.</summary>
+/// <param name="Refusal">Why nothing is proposed — nothing to commit, git refused, the model failed; <c>null</c> otherwise.</param>
+/// <param name="Notice">Said beside the proposal: nothing staged, untracked files not described, the diff or the reply cut.</param>
+/// <param name="Message">The proposed commit message.</param>
+internal sealed record CommitMessageProposal(string? Refusal, string? Notice, string? Message);
+
 /// <summary>`problems/fix` and `debug/analyze` — what goes to the chat: a question and its attachment.</summary>
 /// <param name="Question">The question, in the interface language.</param>
 /// <param name="Chip">The attachment's label.</param>

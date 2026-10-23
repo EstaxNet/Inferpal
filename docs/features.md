@@ -217,6 +217,15 @@ exists.
   be about others. A test that passes, a run where nothing ran or that was stopped at its budget, is said; a running
   test can be cancelled. Visual Studio's Test Explorer gives no extension the test you clicked: there, type
   `/tdd <name>`.
+- **A commit message in Source Control (VS Code)** — **Propose a Commit Message** (the ✨ in the Source Control view's
+  title when one repository is shown, a repository's menu, or the palette) writes `/commit`'s proposal for that
+  repository into its commit message box: what is staged, or the tracked files' changes when nothing is. Nothing is
+  committed — the Commit button stays yours — and a message you already typed is replaced only if you say so, the
+  proposal shown; a box emptied while the message was written (committed meanwhile?) is left alone. From the palette,
+  the repository is the active file's, else the only one open; several and no active file: said. Untracked files left
+  undescribed, a diff or a reply cut, nothing to commit: said. The repository is one of the window's folders, or holds
+  one — the ignore files read are theirs. Visual Studio's Git window lets no extension write its message: there,
+  `/commit` proposes it in the chat.
 - **Analyze with Inferpal, at a debugger stop** — stopped at a breakpoint or an exception, choose **Analyze with
   Inferpal** in Visual Studio's Debug menu or in the context menu of the Call Stack, Locals, Autos or Watch window; in
   VS Code, in the context menu of the call stack or the variables, or *Inferpal: Analyze the Debugger Stop* in the

@@ -271,6 +271,10 @@ editor says so, once:
 - the commands that work on the editor or its panels: `/explain`, `/review`, `/fix`, `/refactor`, `/doc`, `/branch`,
   `/agent-step`, `/resume`, and `/test` (it works on the editor's active file). To start over, open a new thread
   instead of `/clear`;
+- the gestures in the editor's own windows — **Fix with Inferpal** (Error List, Problems), **Analyze with Inferpal**
+  (at a debugger stop), the Explorer's *Ask Inferpal* menu, the Test view's two actions and **Propose a Commit
+  Message**: those windows are the client's, and the protocol gives an agent no menu in them. Their typed forms work:
+  `/check <path>`, `/tdd <name>`, `/commit`;
 - a note to a running turn (Enter during a turn in Visual Studio and VS Code): the protocol has no way to send a
   message into a prompt that is still running, and a second prompt during a turn is refused. Zed queues a message typed
   during a turn and sends it when the turn ends; other clients may refuse it — stop the turn, then send the correction.

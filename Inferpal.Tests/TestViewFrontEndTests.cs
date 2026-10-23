@@ -48,9 +48,13 @@ public sealed class TestViewFrontEndTests
         Assert.Contains("message.expectedOutput", gestures, StringComparison.Ordinal);
         Assert.Contains("message.actualOutput", gestures, StringComparison.Ordinal);
 
-        // A run takes the test's time: the person can cancel it, and the cancellation reaches the host's run.
-        Assert.Contains("cancellable: true", explain, StringComparison.Ordinal);
-        Assert.Contains("host.testsExplain(params, token)", explain, StringComparison.Ordinal);
+        // A run takes the test's time: the person can cancel it, the cancellation reaches the host's run, and a reply
+        // that crosses it is never acted on.
+        Assert.Contains("ChatViewProvider.whileShown(t('Running {0}…', item.label), (token) => host.testsExplain(params, token))",
+                        explain, StringComparison.Ordinal);
+        var whileShown = ConversationPersistenceSilenceTests.TsMethodBody(provider, "private static whileShown<T>(");
+        Assert.Contains("cancellable: true", whileShown, StringComparison.Ordinal);
+        Assert.Contains("(result) => (token.isCancellationRequested ? undefined : result)", whileShown, StringComparison.Ordinal);
 
         // The message menu passes { test, message }; the item menu, every selected test — one is taken, and named.
         var extension = File.ReadAllText(Path.Combine(Root, "vscode", "src", "extension.ts"));

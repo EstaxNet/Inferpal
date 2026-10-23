@@ -1191,6 +1191,7 @@ internal static class Strings
     public static string HostTurnBusy            => Get(nameof(HostTurnBusy));
     public static string HostOperationBusy       => Get(nameof(HostOperationBusy));
     public static string HostEditBusy            => Get(nameof(HostEditBusy));
+    public static string HostCommitBusy          => Get(nameof(HostCommitBusy));
 
     // ── Slash commands ─────────────────────────────────────────────────────────
     public static string SlashModelCurrent(string model) => Format(Get(nameof(SlashModelCurrent)), model);
@@ -1356,6 +1357,14 @@ internal static class Strings
         Format(Get(nameof(CommitUntrackedLeftOut)), count, names);
     public static string CommitOnlyUntracked(string names) =>
         Format(Get(nameof(CommitOnlyUntracked)), names);
+    /// <summary>VS Code's commit message box: the person commits with the editor's button, not <c>/commit-exec</c>.</summary>
+    public static string CommitBoxUntrackedNotDescribed(int count, string names) =>
+        Format(Get(nameof(CommitBoxUntrackedNotDescribed)), count, names);
+    public static string CommitBoxOnlyUntracked(string names) =>
+        Format(Get(nameof(CommitBoxOnlyUntracked)), names);
+    /// <summary>A repository neither under the workspace nor holding it: its ignore files are not the ones read.</summary>
+    public static string CommitRepositoryOutside(string root) =>
+        Format(Get(nameof(CommitRepositoryOutside)), root);
     /// <summary>The proposal describes only what fit in the prompt — said before the message.</summary>
     public static string CommitDiffTruncated(int kept, int total) =>
         Format(Get(nameof(CommitDiffTruncated)), kept, total);

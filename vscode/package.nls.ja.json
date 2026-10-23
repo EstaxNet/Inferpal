@@ -25,6 +25,7 @@
   "inferpal.submenu.explorer": "Inferpal",
   "inferpal.command.fixTest": "このテストを成功させる",
   "inferpal.command.explainTestFailure": "失敗を説明",
+  "inferpal.command.proposeCommitMessage": "Inferpal: コミット メッセージを提案",
   "inferpal.command.editSelection": "Inferpal: AIで編集…",
   "inferpal.command.explainSelection": "Inferpal: このコードを説明",
   "inferpal.command.testSelection": "Inferpal: テストを追加",
