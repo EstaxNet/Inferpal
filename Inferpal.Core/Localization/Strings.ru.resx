@@ -525,6 +525,17 @@
   <data name="CommitRepositoryOutside" xml:space="preserve"><value>{0} находится вне рабочей области Inferpal: его файлы исключений не читаются, поэтому из него ничего не отправляется. Запросите предложение из репозитория этой рабочей области.</value></data>
   <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ Предложенное сообщение написано по первым {0} символам диффа из {1}. Оно не может описать то, чего не видело, — добавьте в индекс изменение поменьше.</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 сообщение коммита</value></data>
+  <data name="PrProposingLabel" xml:space="preserve"><value>📝 описание pull request</value></data>
+  <data name="PrDescribedRange" xml:space="preserve"><value>Описано: `{0}`, {1} {1:коммит|коммита|коммитов}.</value></data>
+  <data name="PrRangeEmpty" xml:space="preserve"><value>`{0}` не содержит коммитов: описывать нечего. `/pr-description &lt;base&gt;` описывает ветку относительно другой базы.</value></data>
+  <data name="PrNoCommonBase" xml:space="preserve"><value>`{0}`: у двух историй нет общего коммита, поэтому у ветки нет точки отсчёта. `/pr-description &lt;base&gt;` указывает другую базу.</value></data>
+  <data name="PrNoBase" xml:space="preserve"><value>Базовая ветка не найдена (нет ветки по умолчанию у удалённого репозитория, нет локальной `main` или `master`): введите `/pr-description &lt;base&gt;`.</value></data>
+  <data name="PrUnknownBase" xml:space="preserve"><value>`{0}` здесь не обозначает ни ветку, ни коммит. `/pr-description &lt;base&gt;` принимает ветку, тег или коммит.</value></data>
+  <data name="PrDiffTruncated" xml:space="preserve"><value>⚠ Описание написано по первым {0} символам диффа из {1}. Оно не может описать то, чего не видело, — перечитайте его перед использованием.</value></data>
+  <data name="PrDescriptionCut" xml:space="preserve"><value>⚠ Ответ модели остановился на пределе длины: описание может быть неполным. Перечитайте его перед использованием.</value></data>
+  <data name="PrSubjectsCut" xml:space="preserve"><value>⚠ В ветке {1} {1:коммит|коммита|коммитов}: прочитаны только заголовки первых {0} (дифф охватывает их все).</value></data>
+  <data name="PrDiffEmpty" xml:space="preserve"><value>`{0}` в итоге не меняет ни одного файла (его коммиты отменяют друг друга или затрагивают только исключённые файлы): описывать нечего.</value></data>
+  <data name="SlashHintPr" xml:space="preserve"><value>предложить описание pull request для этой ветки — /pr-description [base]</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>Сообщение заполнено ниже — при необходимости отредактируйте, затем нажмите **Enter** для коммита.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>Нет правил проекта. Создайте `.inferpal/rules/*.md` или выполните `/rules init`.</value></data>
   <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ Не удалось прочитать файлов: {0} — они НЕ применяются: {1}. Причина — в /diagnostics.</value></data>

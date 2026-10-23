@@ -416,17 +416,5 @@ internal static class OnboardCommandHandler
     }
 
     /// <summary>Unwraps a whole answer wrapped in one fenced block — models like to do that with files.</summary>
-    internal static string StripCodeFence(string text)
-    {
-        var trimmed = text.Trim();
-        if (!trimmed.StartsWith("```", StringComparison.Ordinal)) return text;
-
-        var firstBreak = trimmed.IndexOf('\n');
-        if (firstBreak < 0) return text;
-
-        var lastFence = trimmed.LastIndexOf("```", StringComparison.Ordinal);
-        if (lastFence <= firstBreak) return text;
-
-        return trimmed[(firstBreak + 1)..lastFence];
-    }
+    internal static string StripCodeFence(string text) => MarkdownParser.WithoutEnclosingFence(text);
 }

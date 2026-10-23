@@ -12,8 +12,19 @@ namespace Inferpal.Services.Commands;
 /// <param name="Shown">The change as the person reads it in the answer (<c>main...HEAD</c>, a short hash).</param>
 /// <param name="Label">The lines above the findings that say what was reviewed.</param>
 /// <param name="IsCommit">One commit, not a range: a diff cut at the cap cannot be reviewed in smaller pieces.</param>
-internal sealed record CheckTarget(string DiffArgs, string Shown, string Label, bool IsCommit)
+/// <param name="Commits">A range's commits as <c>git log</c> reads them, by object names resolved here (<c>a..b</c>) —
+/// never the name the person typed, which a fetch could move between two calls; <c>null</c> for one commit.</param>
+internal sealed record CheckTarget(string DiffArgs, string Shown, string Label, bool IsCommit, string? Commits = null)
 {
+    /// <summary>What a range is called by the command that reads it — <c>/check</c> reviews it, <c>/pr</c> describes it.</summary>
+    /// <param name="Label">The line above the answer: the range as shown, and its commit count.</param>
+    /// <param name="Empty">A range that holds no commit.</param>
+    /// <param name="NoBase">Two histories with no commit in common.</param>
+    internal sealed record RangeWords(Func<string, int, string> Label, Func<string, string> Empty, Func<string, string> NoBase);
+
+    private static readonly RangeWords CheckWords =
+        new(Strings.CheckReviewedRange, Strings.CheckRangeEmpty, Strings.CheckNoCommonBase);
+
     /// <summary>A revision as git writes one: never a leading <c>-</c> (an option), never a space or a quote (a second
     /// argument). The text is the person's and goes into a git command line: without this, <c>--output=file</c> makes
     /// <c>git diff</c> write a file.</summary>
@@ -55,8 +66,11 @@ internal sealed record CheckTarget(string DiffArgs, string Shown, string Label, 
     /// <para>⚠ A name two refs share (a branch and a tag), or a hash prefix several objects share, is refused naming
     /// them: git would pick one silently, and the review would be about another change than the one asked for.</para>
     /// </remarks>
-    public static async Task<(CheckTarget? Target, string? Nothing)> ResolveAsync(string text, GitRunner git, CancellationToken ct)
+    /// <param name="words">What a range is called; <c>null</c>: <c>/check</c>'s.</param>
+    public static async Task<(CheckTarget? Target, string? Nothing)> ResolveAsync(string text, GitRunner git, CancellationToken ct,
+        RangeWords? words = null)
     {
+        words ??= CheckWords;
         if (!IsRevisionText(text)) return (null, null);
         if (Sides(text) is { } sides)
         {
@@ -67,8 +81,8 @@ internal sealed record CheckTarget(string DiffArgs, string Shown, string Label, 
             var (toSha, toNothing) = await CommitOrWhyAsync(to, git, ct);
             if (toSha is null) return (null, toNothing);
             var shown = $"{from}...{to}";
-            var range = await BetweenAsync(fromSha, toSha, shown, n => Strings.CheckReviewedRange(shown, n), git, ct);
-            return range.Empty ? (null, Strings.CheckRangeEmpty(shown)) : (range.Target, range.Nothing);
+            var range = await BetweenAsync(fromSha, toSha, shown, n => words.Label(shown, n), words.NoBase, git, ct);
+            return range.Empty ? (null, words.Empty(shown)) : (range.Target, range.Nothing);
         }
 
         var (sha, nothing) = await CommitOrWhyAsync(text, git, ct);
@@ -79,9 +93,10 @@ internal sealed record CheckTarget(string DiffArgs, string Shown, string Label, 
         if (nameFailed is not null) return (null, nameFailed);
         if (IsBranch(text, fullName))
         {
-            var branch = await BetweenAsync("HEAD", sha, $"HEAD...{text}", n => Strings.CheckReviewedBranch(text, n), git, ct);
+            var branch = await BetweenAsync("HEAD", sha, $"HEAD...{text}", n => Strings.CheckReviewedBranch(text, n),
+                                            words.NoBase, git, ct);
             return branch.Empty
-                ? (null, Strings.CheckBranchAddsNothing(text, await BaseAsync(fullName!, git, ct)))
+                ? (null, Strings.CheckBranchAddsNothing(text, await DefaultBaseAsync(fullName!, git, ct) ?? "<base>"))
                 : (branch.Target, branch.Nothing);
         }
 
@@ -147,7 +162,8 @@ internal sealed record CheckTarget(string DiffArgs, string Shown, string Label, 
     /// the commits it holds; <c>Empty</c> when it holds none.
     /// </summary>
     private static async Task<(CheckTarget? Target, string? Nothing, bool Empty)> BetweenAsync(
-        string from, string to, string shown, Func<int, string> label, GitRunner git, CancellationToken ct)
+        string from, string to, string shown, Func<int, string> label, Func<string, string> noBase, GitRunner git,
+        CancellationToken ct)
     {
         var (count, countFailed) = await CountAsync($"{from}..{to}", git, ct);
         if (countFailed is not null) return (null, countFailed, false);
@@ -156,7 +172,7 @@ internal sealed record CheckTarget(string DiffArgs, string Shown, string Label, 
         var command = $"merge-base --all {from} {to}";
         var run = await git(command, ct);
         // 1 and nothing: two histories without a commit in common, so no base to start the change from.
-        if (run.ExitCode == 1 && string.IsNullOrWhiteSpace(run.Output)) return (null, Strings.CheckNoCommonBase(shown), false);
+        if (run.ExitCode == 1 && string.IsNullOrWhiteSpace(run.Output)) return (null, noBase(shown), false);
         if (GitProcess.FailureNote(command, run) is { } failed) return (null, failed, false);
         var bases = run.Output.Split('\n').Select(l => l.Trim()).Where(l => ObjectName.IsMatch(l)).ToList();
         if (bases.Count == 0)
@@ -166,7 +182,7 @@ internal sealed record CheckTarget(string DiffArgs, string Shown, string Label, 
         // already has: said, never left to a warning only git's stderr carried.
         var text = label(count);
         if (bases.Count > 1) text += "\n\n" + Strings.CheckSeveralBases(bases.Count, bases[0][..8]);
-        return (new CheckTarget($"diff {bases[0]} {to} --", shown, text, false), null, false);
+        return (new CheckTarget($"diff {bases[0]} {to} --", shown, text, false, $"{from}..{to}"), null, false);
     }
 
     /// <summary>The commit <paramref name="revision"/> names, or why it names none: a git that could not answer, a
@@ -255,21 +271,27 @@ internal sealed record CheckTarget(string DiffArgs, string Shown, string Label, 
     }
 
     /// <summary>
-    /// The branch to review <paramref name="branchFullName"/> against when it brings nothing to HEAD: the remote's
-    /// default branch, else a local <c>main</c> or <c>master</c> that is not this one; <c>&lt;base&gt;</c> when none is
-    /// found. Only a suggestion, so a git that could not answer leaves the placeholder.
+    /// The branch <paramref name="branchFullName"/> is compared with when none is named: the remote's default branch,
+    /// else a local <c>main</c> or <c>master</c> that is not this one; <c>null</c> when none is found — a git that could
+    /// not answer finds none too, the caller then naming the base to type.
     /// </summary>
-    private static async Task<string> BaseAsync(string branchFullName, GitRunner git, CancellationToken ct)
+    /// <param name="branchFullName">The branch itself (<c>refs/heads/x</c>), never its own base; <c>null</c> when HEAD
+    /// is on no branch.</param>
+    internal static async Task<string?> DefaultBaseAsync(string? branchFullName, GitRunner git, CancellationToken ct)
     {
         var remote = await git("symbolic-ref --quiet --short refs/remotes/origin/HEAD", ct);
+        // ⚠ Not the branch's own copy on the remote (on main, origin/main is no base: it is main itself), and not a
+        // default branch pruned since (the symbolic ref outlives the branch it points to).
         if (remote.ExitCode == 0 && GitProcess.FirstLine(remote.Output) is { Length: > 0 } remoteHead
-            && "refs/remotes/" + remoteHead != branchFullName && Revision.IsMatch(remoteHead))
+            && "refs/remotes/" + remoteHead != branchFullName && Revision.IsMatch(remoteHead)
+            && "refs/heads/" + remoteHead[(remoteHead.IndexOf('/') + 1)..] != branchFullName
+            && (await git($"rev-parse --verify --quiet refs/remotes/{remoteHead}", ct)).ExitCode == 0)
             return remoteHead;
         foreach (var name in (string[])["main", "master"])
         {
             if ("refs/heads/" + name == branchFullName) continue;
             if ((await git($"rev-parse --verify --quiet refs/heads/{name}", ct)).ExitCode == 0) return name;
         }
-        return "<base>";
+        return null;
     }
 }

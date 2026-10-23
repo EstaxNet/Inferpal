@@ -242,6 +242,7 @@ internal partial class InferpalToolWindowData
             // /check, /onboard, /bench, /arena and /models call the model for a long time: they take
             // the turn, so Stop cancels them and no chat turn starts underneath them.
             case SlashCommandId.Check:      await RunOwnedCommandAsync(tok => HandleCheckCommandAsync(parts, tok), ct);   break;
+            case SlashCommandId.Pr:         await RunOwnedCommandAsync(tok => HandlePrCommandAsync(parts, tok), ct);      break;
             case SlashCommandId.Plan:       await HandlePlanCommandAsync(parts, ct);     break;
             case SlashCommandId.Onboard:    await RunOwnedCommandAsync(tok => HandleOnboardCommandAsync(parts, tok), ct); break;
             case SlashCommandId.Import:     await HandleImportCommandAsync(parts);       break;

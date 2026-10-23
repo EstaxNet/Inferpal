@@ -462,6 +462,17 @@ internal partial class InferpalToolWindowData
             await ShowInfoAsync(msg);
     }
 
+    /// <summary><c>/pr-description [base]</c> — a pull request's description for this branch, shown in a block to copy. Same handler
+    /// as the host.</summary>
+    private async Task HandlePrCommandAsync(string[] parts, CancellationToken ct)
+    {
+        var root    = FindProjectRoot();
+        var message = await Services.Commands.PrCommandHandler.HandleAsync(
+            _client, _config, parts, Services.GitProcess.For(root), p => Post(() => CurrentStep = p), ct);
+        Post(() => CurrentStep = string.Empty);
+        await ShowInfoAsync(message);
+    }
+
     /// <summary>
     /// <c>/plan</c> — read-only plan mode, and the persistent plans of <c>.inferpal/plans/</c>
     ///. Same handler as the host: the list of sub-commands exists once.

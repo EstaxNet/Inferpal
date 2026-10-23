@@ -75,6 +75,7 @@ editor with tools disabled).
 | `/git [path]` | Show git status, log, branches, diff summary |
 | `/commit` | Generate an AI commit message from `git diff` (pre-fills the prompt). Describes the staged changes, or with nothing staged the tracked changes — untracked files are named as left out, since `/commit-exec` does not add them |
 | `/commit-exec` | Execute the commit proposed by `/commit` (with nothing staged, stages tracked files only: `git add -u`) |
+| `/pr-description [base]` | Propose a pull request's title and description for the current branch: what it brings since it left `base` (by default the remote's default branch, else `main` or `master`), written from its commits and its diff, in a block to copy. Nothing is pushed or created; a cut diff, excluded files and a cut reply are said |
 
 ## Knowledge & indexing
 

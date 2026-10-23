@@ -28,7 +28,11 @@ namespace Inferpal.Tests;
 /// ⚠ The property, not a list of readers: a file holding a token nobody else holds, excluded by <c>.aiignore</c>, and
 /// every reading path asked about it — the token never comes out, and each refusal names the file and the line. The
 /// reference arm runs the same paths WITHOUT the ignore file: the token comes out of each, or the test measures nothing.
+/// <para>⚠ Alone (<see cref="ContentExclusionSerialCollection"/>): Inferpal's backups are unread while ANY declared root
+/// excludes something, so the reference arm's backup read measures the whole process — run beside another class that
+/// declares a root with an ignore file, it was refused for a reason this test does not set.</para>
 /// </remarks>
+[Collection(ContentExclusionSerialCollection.Name)]
 public sealed class ContentExclusionTests : IDisposable
 {
     private const string Marker = "MARKER_7f3a9c51";
@@ -115,6 +119,12 @@ public sealed class ContentExclusionTests : IDisposable
             var refBackup = Path.Combine(_root, ".inferpal", "history", "20261018_000000_1a2b3c4d_keys.txt.bak");
             Directory.CreateDirectory(Path.GetDirectoryName(refBackup)!);
             File.WriteAllText(refBackup, Marker);
+            // The rules of a root deleted by a class that ran before are re-read on their next recheck: until then the
+            // process still "excludes something", and the backup read would measure that, not this arm.
+            var settled = Stopwatch.StartNew();
+            while (ContentExclusions.AnyRules() && settled.Elapsed < TimeSpan.FromSeconds(30)) await Task.Delay(100);
+            Assert.False(ContentExclusions.AnyRules(),
+                "UNDECIDED, not green: another declared root still has rules, so the reference backup read cannot be measured.");
             Assert.Contains(Marker, await tools.ExecuteAsync("read_file", Args(new { path = refBackup }), default));
             return;
         }

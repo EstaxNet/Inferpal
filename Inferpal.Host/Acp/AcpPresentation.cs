@@ -145,18 +145,8 @@ internal static class AcpToolCalls
     /// before a dot is an escape (<c>ws\.inferpal</c> shows <c>ws.inferpal</c>) and <c>--</c> turns into a dash. A code
     /// block is drawn as written. Its fence is longer than any run of backticks in the output, which cannot close it.
     /// </remarks>
-    public static string Block(string output, int max = 20_000)
-    {
-        var shown = Shown(output, max).TrimEnd('\r', '\n');
-        int longest = 0, run = 0;
-        foreach (var c in shown)
-        {
-            run = c == '`' ? run + 1 : 0;
-            if (run > longest) longest = run;
-        }
-        var fence = new string('`', Math.Max(3, longest + 1));
-        return $"{fence}\n{shown}\n{fence}";
-    }
+    public static string Block(string output, int max = 20_000) =>
+        MarkdownParser.Fence(Shown(output, max).TrimEnd('\r', '\n'));
 
     /// <summary>The tool a drawn title names (<c>"read_file · alpha.txt"</c> → <c>read_file</c>) — a bare name as is.</summary>
     public static string ToolOf(string title)

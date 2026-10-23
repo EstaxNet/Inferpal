@@ -525,6 +525,17 @@ Fai clic su **Correggi con l'IA** per correggere automaticamente in loop, o digi
   <data name="CommitRepositoryOutside" xml:space="preserve"><value>{0} è fuori dall'area di lavoro di Inferpal: i suoi file di esclusione non sono quelli letti, quindi non ne viene inviato nulla. Chiedi la proposta da un repository di questa area di lavoro.</value></data>
   <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ Il messaggio proposto è stato scritto dai primi {0} caratteri del diff, su {1}. Non può descrivere ciò che non ha visto — metti in stage una modifica più piccola per un messaggio che copra tutto.</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 messaggio di commit</value></data>
+  <data name="PrProposingLabel" xml:space="preserve"><value>📝 descrizione della pull request</value></data>
+  <data name="PrDescribedRange" xml:space="preserve"><value>Descritto: `{0}`, {1} {1:commit|commit}.</value></data>
+  <data name="PrRangeEmpty" xml:space="preserve"><value>`{0}` non contiene alcun commit: niente da descrivere. `/pr-description &lt;base&gt;` descrive il branch rispetto a un'altra base.</value></data>
+  <data name="PrNoCommonBase" xml:space="preserve"><value>`{0}`: le due cronologie non hanno alcun commit in comune, quindi il branch non ha un punto di partenza. `/pr-description &lt;base&gt;` indica un'altra base.</value></data>
+  <data name="PrNoBase" xml:space="preserve"><value>Nessun branch di base trovato (nessun branch predefinito del remoto, nessun `main` o `master` locale): digita `/pr-description &lt;base&gt;`.</value></data>
+  <data name="PrUnknownBase" xml:space="preserve"><value>`{0}` qui non indica né un branch né un commit. `/pr-description &lt;base&gt;` accetta un branch, un tag o un commit.</value></data>
+  <data name="PrDiffTruncated" xml:space="preserve"><value>⚠ La descrizione è stata scritta dai primi {0} caratteri del diff, su {1}. Non può descrivere ciò che non ha visto — rileggila prima di usarla.</value></data>
+  <data name="PrDescriptionCut" xml:space="preserve"><value>⚠ La risposta del modello si è fermata al limite di lunghezza: la descrizione potrebbe essere incompleta. Rileggila prima di usarla.</value></data>
+  <data name="PrSubjectsCut" xml:space="preserve"><value>⚠ Il branch ha {1} {1:commit|commit}: sono stati letti solo gli oggetti dei primi {0} (il diff li copre tutti).</value></data>
+  <data name="PrDiffEmpty" xml:space="preserve"><value>`{0}` alla fine non cambia alcun file (i suoi commit si annullano, o toccano solo file esclusi): niente da descrivere.</value></data>
+  <data name="SlashHintPr" xml:space="preserve"><value>proponi una descrizione di pull request per questo branch — /pr-description [base]</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>Messaggio precompilato sotto — modifica se necessario, poi premi **Invio** per committare.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>Nessuna regola di progetto. Crea `.inferpal/rules/*.md` o esegui `/rules init`.</value></data>
   <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ {0} file non sono stati letti e quindi NON sono applicati: {1}. La causa è in /diagnostics.</value></data>
@@ -1660,7 +1671,7 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="CheckSeveralBases" xml:space="preserve"><value>I due lati hanno {0} {0:base comune|basi comuni} (merge incrociato): il diff parte da `{1}` e può mostrare modifiche che l'altro lato ha già.</value></data>
   <data name="CheckNoCommonBase" xml:space="preserve"><value>`{0}`: le due cronologie non hanno alcun commit in comune, quindi la modifica non ha un punto di partenza. `/check &lt;commit&gt;` revisiona un commit.</value></data>
   <data name="CheckAmbiguousHash" xml:space="preserve"><value>`{0}` è l'inizio del nome di {1} {1:oggetto|oggetti}: scrivi più caratteri dell'hash.</value></data>
-  <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` indica più riferimenti: {1}. Scrivi quello da revisionare così come è elencato qui.</value></data>
+  <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` indica più riferimenti: {1}. Scrivi quello che intendi così come è elencato qui.</value></data>
   <data name="ToolListSent" xml:space="preserve"><value>{0} {0:strumento inviato|strumenti inviati}, ~{1} token</value></data>
   <data name="ToolListTurnedOff" xml:space="preserve"><value>{0} {0:disattivato|disattivati}</value></data>
   <data name="ToolListOnDemand" xml:space="preserve"><value>{0} su richiesta</value></data>

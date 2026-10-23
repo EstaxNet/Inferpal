@@ -398,6 +398,8 @@ public class OnboardCommandHandlerTests : IDisposable
     [InlineData("```\n# Title\n```",          "# Title")]
     [InlineData("# Title",                    "# Title")]
     [InlineData("Some ```inline``` fence",    "Some ```inline``` fence")]
+    [InlineData("```\ncode\n```\nThen prose", "```\ncode\n```\nThen prose")]   // a block, then more: not wrapped
+    [InlineData("~~~md\n# Title\n~~~",        "# Title")]
     public void StripCodeFence_UnwrapsOnlyAWholeWrappedAnswer(string answer, string expected)
     {
         Assert.Equal(expected, OnboardCommandHandler.StripCodeFence(answer).Trim());

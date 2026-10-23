@@ -148,6 +148,23 @@ public class CommitCommandHandlerTests
         Assert.Contains(Strings.CommitUntrackedLeftOut(1, "New.cs"), chat.Notice);
     }
 
+    /// <summary>A reply stopped for repeating itself is a loop, never a message to pre-fill one Enter away from history.</summary>
+    [Fact]
+    public async Task Propose_AReplyStoppedForRepeating_IsNeverProposed()
+    {
+        var git = new FakeGit();
+        git.Answers["diff --staged"] = "diff --git a/A.cs b/A.cs\n+added";
+        var client = new FakeInferenceProvider
+        {
+            AgentRunResult = new AgentResult("fix: fix: fix: fix:", [], [], AnswerCut: true, AnswerRepeating: true),
+        };
+
+        var result = await CommitCommandHandler.ProposeAsync(client, new InferpalConfig(), git.Runner, null, CancellationToken.None);
+
+        Assert.Null(result.Proposal);
+        Assert.Equal(Strings.AnswerStoppedRepeating, result.Message);
+    }
+
     [Fact]
     public async Task Propose_CommitsNothing()
     {

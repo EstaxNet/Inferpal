@@ -1369,6 +1369,21 @@ internal static class Strings
     public static string CommitDiffTruncated(int kept, int total) =>
         Format(Get(nameof(CommitDiffTruncated)), kept, total);
     public static string CommitProposingLabel   => Get(nameof(CommitProposingLabel));
+
+    // ── /pr-description ────────────────────────────────────────────────────────────────────
+    public static string PrProposingLabel       => Get(nameof(PrProposingLabel));
+    /// <summary>The range described, above the proposal — {0}=<c>base...HEAD</c>, {1}=its commits.</summary>
+    public static string PrDescribedRange(string range, int commits) => Format(Get(nameof(PrDescribedRange)), range, commits);
+    public static string PrRangeEmpty(string range)    => Format(Get(nameof(PrRangeEmpty)), range);
+    public static string PrNoCommonBase(string range)  => Format(Get(nameof(PrNoCommonBase)), range);
+    public static string PrNoBase                      => Get(nameof(PrNoBase));
+    public static string PrUnknownBase(string name)    => Format(Get(nameof(PrUnknownBase)), name);
+    /// <summary>The description was written from the part of the diff that fit — said above it.</summary>
+    public static string PrDiffTruncated(int kept, int total) => Format(Get(nameof(PrDiffTruncated)), kept, total);
+    public static string PrDescriptionCut              => Get(nameof(PrDescriptionCut));
+    /// <summary>Only the first {0} of the branch's {1} commit subjects were read.</summary>
+    public static string PrSubjectsCut(int read, int total)   => Format(Get(nameof(PrSubjectsCut)), read, total);
+    public static string PrDiffEmpty(string range)     => Format(Get(nameof(PrDiffEmpty)), range);
     public static string CommitConfirmHint      => Get(nameof(CommitConfirmHint));
 
     // ── Rules & Checks (.inferpal/rules, .inferpal/checks) ────────────────
@@ -1512,6 +1527,7 @@ internal static class Strings
     public static string SlashHintSearch    => Get(nameof(SlashHintSearch));
     public static string SlashHintSearchCode => Get(nameof(SlashHintSearchCode));
     public static string SlashHintCommit    => Get(nameof(SlashHintCommit));
+    public static string SlashHintPr        => Get(nameof(SlashHintPr));
     public static string SlashHintGit       => Get(nameof(SlashHintGit));
     public static string SlashHintMap       => Get(nameof(SlashHintMap));
     public static string SlashHintSolution  => Get(nameof(SlashHintSolution));

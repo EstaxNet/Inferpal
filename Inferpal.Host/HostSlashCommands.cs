@@ -486,6 +486,15 @@ internal sealed partial class HostServer
                     return new SlashCommandResult(true, result.Message);
                 }
 
+                case SlashCommandId.Pr:
+                {
+                    // Same handler as the VM: the range, the notices and the block to copy are identical everywhere.
+                    var message = await PrCommandHandler.HandleAsync(
+                        s.Client, s.Config, parts, GitProcess.For(s.RootDir),
+                        onProgress: progress => Notify("chat/step", new { text = progress }), cts.Token);
+                    return new SlashCommandResult(true, message);
+                }
+
                 case SlashCommandId.Import:
                 {
                     // The Core previews or applies; the host saves what it changed and hands the card to the editor

@@ -901,12 +901,8 @@ internal sealed class AcpSession : IAsyncDisposable
 
     /// <summary>Text the user takes by hand, under the sentence that says what to do with it: in a fence longer than any
     /// run of backticks inside, so a code block in the text never closes it early.</summary>
-    private static string CopyBlock(string lead, string text, string language = "")
-    {
-        var longest = System.Text.RegularExpressions.Regex.Matches(text, "`+").Select(m => m.Length).DefaultIfEmpty(0).Max();
-        var fence = new string('`', Math.Max(3, longest + 1));
-        return $"{lead}\n\n{fence}{language}\n{text}\n{fence}";
-    }
+    private static string CopyBlock(string lead, string text, string language = "") =>
+        $"{lead}\n\n{MarkdownParser.Fence(text, language)}";
 
     /// <summary>The session, saved under its id — what <c>session/list</c> and <c>session/load</c> find again — as the
     /// transcript holds it now; a failure is said in the thread.</summary>

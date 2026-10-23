@@ -226,6 +226,12 @@ exists.
   undescribed, a diff or a reply cut, nothing to commit: said. The repository is one of the window's folders, or holds
   one — the ignore files read are theirs. Visual Studio's Git window lets no extension write its message: there,
   `/commit` proposes it in the chat.
+- **A pull request description (`/pr-description`)** — `/pr-description [base]` writes a pull request's title and description for the
+  current branch: what it brings since it left `base` (by default the remote's default branch, else `main` or
+  `master`), from its commits' subjects and its diff, by the utility model. The range described is named above it, the
+  proposal sits in a block to copy as it is; nothing is pushed or created. A diff past the cap, files the ignore files
+  exclude, a reply cut at its limit: said above the proposal. A branch with nothing beyond its base, an unknown base,
+  two histories with no common commit: said. Both editors, and ACP.
 - **Analyze with Inferpal, at a debugger stop** — stopped at a breakpoint or an exception, choose **Analyze with
   Inferpal** in Visual Studio's Debug menu or in the context menu of the Call Stack, Locals, Autos or Watch window; in
   VS Code, in the context menu of the call stack or the variables, or *Inferpal: Analyze the Debugger Stop* in the
@@ -388,7 +394,7 @@ exists.
   GPU) and shows both answers blind-labelled A/B; `/arena a|b|tie` records the vote and
   reveals the models, `/arena stats` shows the cumulative local standings.
 - **Model Router** — a dedicated **utility model** role (`utilityModel`) handles session
-  titles, `/commit` message proposals and compaction summaries instead of the chat model.
+  titles, `/commit` message proposals, `/pr-description` proposals and compaction summaries instead of the chat model.
   With none set, they go to the chat model — or, when it is not loaded and the agent or
   code-actions model is, to that one: a session title never loads a model of its own.
   Opt-in **auto mode** (`modelRouterAuto`): with no utility model set, background tasks use
@@ -441,9 +447,9 @@ exists.
   the gitignore syntax (negations, anchors, `**`, folders). What they exclude is never read nor
   changed by a tool, never attached (`@file`, `@folder`, chips, ACP attachments), indexed, pinned,
   completed by ghost text, sent by a code action (`/explain`, `/review`, `/fix`, `/refactor`, `/doc`,
-  `/test`, Edit with AI) or shown in a git diff (`get_git_status`, `@diff`, `/check`, `/commit`) —
+  `/test`, Edit with AI) or shown in a git diff (`get_git_status`, `@diff`, `/check`, `/commit`, `/pr-description`) —
   and **every exclusion is said**: a refused call names the file, the line and the pattern, a walk
-  says how many files it skipped, and `/check` and `/commit` say which files the model did not read.
+  says how many files it skipped, and `/check`, `/commit` and `/pr-description` say which files the model did not read.
   `ignoreFiles` chooses which files are read (empty = none). Not covered, by nature: what a command
   reads by itself (`run_command` can `cat` a file — the approval card shows the command), what an MCP
   server reads on its own, an ignore file in a subfolder, and the files written for the agent itself

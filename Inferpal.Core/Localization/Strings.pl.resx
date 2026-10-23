@@ -525,6 +525,17 @@ Kliknij **Napraw z AI**, aby automatycznie naprawić w pętli, lub wpisz `/fix-b
   <data name="CommitRepositoryOutside" xml:space="preserve"><value>{0} jest poza obszarem roboczym Inferpal: jego pliki wykluczeń nie są tymi, które są czytane, więc nic z niego nie jest wysyłane. Poproś o propozycję z repozytorium tego obszaru roboczego.</value></data>
   <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ Proponowany komunikat powstał z pierwszych {0} znaków diffa, na {1}. Nie może opisać tego, czego nie widział — dodaj do indeksu mniejszą zmianę, aby komunikat obejmował całość.</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 wiadomość commit</value></data>
+  <data name="PrProposingLabel" xml:space="preserve"><value>📝 opis pull requestu</value></data>
+  <data name="PrDescribedRange" xml:space="preserve"><value>Opisano: `{0}`, {1} {1:commit|commity|commitów}.</value></data>
+  <data name="PrRangeEmpty" xml:space="preserve"><value>`{0}` nie zawiera żadnego commita: nie ma czego opisać. `/pr-description &lt;base&gt;` opisuje gałąź względem innej bazy.</value></data>
+  <data name="PrNoCommonBase" xml:space="preserve"><value>`{0}`: obie historie nie mają wspólnego commita, więc gałąź nie ma punktu wyjścia. `/pr-description &lt;base&gt;` wskazuje inną bazę.</value></data>
+  <data name="PrNoBase" xml:space="preserve"><value>Nie znaleziono gałęzi bazowej (brak domyślnej gałęzi zdalnego repozytorium i lokalnej `main` lub `master`): wpisz `/pr-description &lt;base&gt;`.</value></data>
+  <data name="PrUnknownBase" xml:space="preserve"><value>`{0}` nie wskazuje tu ani gałęzi, ani commita. `/pr-description &lt;base&gt;` przyjmuje gałąź, tag lub commit.</value></data>
+  <data name="PrDiffTruncated" xml:space="preserve"><value>⚠ Opis powstał z pierwszych {0} znaków diffa, na {1}. Nie może opisać tego, czego nie widział — przeczytaj go przed użyciem.</value></data>
+  <data name="PrDescriptionCut" xml:space="preserve"><value>⚠ Odpowiedź modelu zatrzymała się na limicie długości: opis może być niepełny. Przeczytaj go przed użyciem.</value></data>
+  <data name="PrSubjectsCut" xml:space="preserve"><value>⚠ Gałąź ma {1} {1:commit|commity|commitów}: przeczytano tylko tematy pierwszych {0} (diff obejmuje wszystkie).</value></data>
+  <data name="PrDiffEmpty" xml:space="preserve"><value>`{0}` ostatecznie nie zmienia żadnego pliku (jego commity się znoszą albo dotyczą tylko wykluczonych plików): nie ma czego opisać.</value></data>
+  <data name="SlashHintPr" xml:space="preserve"><value>zaproponuj opis pull requestu dla tej gałęzi — /pr-description [base]</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>Wiadomość wstępnie wypełniona poniżej — edytuj jeśli potrzeba, następnie naciśnij **Enter**, aby zacommitować.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>Brak reguł projektu. Utwórz `.inferpal/rules/*.md` lub uruchom `/rules init`.</value></data>
   <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ Nie udało się odczytać {0} plik(ów), więc NIE są stosowane: {1}. Przyczyna jest w /diagnostics.</value></data>
@@ -1660,7 +1671,7 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="CheckSeveralBases" xml:space="preserve"><value>Obie strony mają {0} {0:wspólną bazę|wspólne bazy|wspólnych baz} (scalanie krzyżowe): diff zaczyna się od `{1}` i może pokazywać zmiany, które druga strona już ma.</value></data>
   <data name="CheckNoCommonBase" xml:space="preserve"><value>`{0}`: obie historie nie mają wspólnego commita, więc zmiana nie ma punktu początkowego. `/check &lt;commit&gt;` przegląda jeden commit.</value></data>
   <data name="CheckAmbiguousHash" xml:space="preserve"><value>`{0}` to początek nazwy {1} {1:obiektu|obiektów|obiektów}: wpisz dłuższy fragment hasha.</value></data>
-  <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` wskazuje kilka referencji: {1}. Wpisz tę do przejrzenia tak, jak jest tu podana.</value></data>
+  <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` wskazuje kilka referencji: {1}. Wpisz tę, o którą chodzi, tak, jak jest tu podana.</value></data>
   <data name="ToolListSent" xml:space="preserve"><value>Wysyłane: {0} {0:narzędzie|narzędzia|narzędzi}, ~{1} tokenów</value></data>
   <data name="ToolListTurnedOff" xml:space="preserve"><value>Wyłączone: {0}</value></data>
   <data name="ToolListOnDemand" xml:space="preserve"><value>Na żądanie: {0}</value></data>

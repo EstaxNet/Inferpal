@@ -526,6 +526,17 @@ Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</val
   <data name="CommitRepositoryOutside" xml:space="preserve"><value>{0} is outside the workspace Inferpal works in: its ignore files are not the ones read, so nothing of it is sent. Propose from a repository of this workspace.</value></data>
   <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ The proposed message was written from the first {0} characters of the diff, out of {1}. It cannot describe what it never saw — stage a smaller change for a message that covers all of it.</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 commit message</value></data>
+  <data name="PrProposingLabel" xml:space="preserve"><value>📝 pull request description</value></data>
+  <data name="PrDescribedRange" xml:space="preserve"><value>Described: `{0}`, {1} {1:commit|commits}.</value></data>
+  <data name="PrRangeEmpty" xml:space="preserve"><value>`{0}` holds no commit: nothing to describe. `/pr-description &lt;base&gt;` describes the branch against another base.</value></data>
+  <data name="PrNoCommonBase" xml:space="preserve"><value>`{0}`: the two histories have no commit in common, so the branch has no point to start from. `/pr-description &lt;base&gt;` names another base.</value></data>
+  <data name="PrNoBase" xml:space="preserve"><value>No base branch found (no remote default branch, no local `main` or `master`): type `/pr-description &lt;base&gt;`.</value></data>
+  <data name="PrUnknownBase" xml:space="preserve"><value>`{0}` names no branch or commit here. `/pr-description &lt;base&gt;` takes a branch, a tag or a commit.</value></data>
+  <data name="PrDiffTruncated" xml:space="preserve"><value>⚠ The description was written from the first {0} characters of the diff, out of {1}. It cannot describe what it never saw — read it before you use it.</value></data>
+  <data name="PrDescriptionCut" xml:space="preserve"><value>⚠ The model's reply stopped at its length limit: the description may be incomplete. Read it before you use it.</value></data>
+  <data name="PrSubjectsCut" xml:space="preserve"><value>⚠ The branch has {1} {1:commit|commits}: only the subjects of the first {0} were read (the diff covers them all).</value></data>
+  <data name="PrDiffEmpty" xml:space="preserve"><value>`{0}` changes no file in the end (its commits cancel out, or touch only excluded files): nothing to describe.</value></data>
+  <data name="SlashHintPr" xml:space="preserve"><value>propose a pull request description for this branch — /pr-description [base]</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>Message pre-filled below — edit if needed, then press **Enter** to commit.</value></data>
   <data name="RulesNone" xml:space="preserve"><value>No project rules. Create `.inferpal/rules/*.md` or run `/rules init`.</value></data>
   <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ {0} file(s) could not be read and are therefore NOT applied: {1}. See /diagnostics for the reason.</value></data>
@@ -1664,7 +1675,7 @@ What you save there applies from your next question, in this thread and the othe
   <data name="CheckSeveralBases" xml:space="preserve"><value>The two sides have {0} {0:common base|common bases} (a criss-cross merge): the diff starts at `{1}` and may show changes the other side already has.</value></data>
   <data name="CheckNoCommonBase" xml:space="preserve"><value>`{0}`: the two histories have no commit in common, so the change has no point to start from. `/check &lt;commit&gt;` reviews one commit.</value></data>
   <data name="CheckAmbiguousHash" xml:space="preserve"><value>`{0}` begins the names of {1} {1:object|objects}: write more of the hash.</value></data>
-  <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` names several refs: {1}. Write the one to review as it is listed here.</value></data>
+  <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` names several refs: {1}. Write the one you mean as it is listed here.</value></data>
   <data name="ToolListSent" xml:space="preserve"><value>{0} {0:tool|tools} sent, ~{1} tokens</value></data>
   <data name="ToolListTurnedOff" xml:space="preserve"><value>{0} turned off</value></data>
   <data name="ToolListOnDemand" xml:space="preserve"><value>{0} on demand</value></data>

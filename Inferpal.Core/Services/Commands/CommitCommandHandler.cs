@@ -129,6 +129,8 @@ internal static class CommitCommandHandler
             // ⚠ Nor is the model's reasoning, promoted to the reply when it wrote none: pre-filled, the draft ("We need a
             // commit message for…") would be one Enter away from history.
             if (result.AnswerIsReasoning) return new(Strings.MsgOnlyReasoningFrom(model), notice, null);
+            // ⚠ Nor is a reply stopped for repeating itself: its loop, pre-filled, would be one Enter from history.
+            if (result.AnswerRepeating) return new(Strings.AnswerStoppedRepeating, notice, null);
 
             // ⚠ A reply that stopped at the length limit is pre-filled into `/commit-exec` all the same — a
             // subject cut mid-word reads as a terse one, and sent as is it becomes history. The notice is

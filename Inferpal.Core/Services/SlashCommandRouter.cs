@@ -87,7 +87,7 @@ internal enum SlashCodeActionKind { Explain, Fix, Review, Refactor, Test, Doc }
 internal enum SlashCommandId
 {
     Clear, TestBuildBanner, Model, Tools, Export, Context, Memory, Index,
-    Commit, CommitExec, FixBuild, History, PHistory, Models, AgentStep, Resume,
+    Commit, CommitExec, Pr, FixBuild, History, PHistory, Models, AgentStep, Resume,
     Note, Notes, Snippets, Template, Docs, Check, Rules, Checks, Plan, Prompts,
     Hardware, Setup, Diagnostics, UndoRun, Replay, Xray, Bench, Arena, Tdd, Branch, Task,
     Onboard, Debug, Permissions, Instructions, Skill, Import, Settings,
@@ -172,6 +172,7 @@ internal static class SlashCommandRouter
         ("/search-web",  Strings.SlashHintSearch, SlashCategory.Web),
 
         ("/commit",   Strings.SlashHintCommit,   SlashCategory.Git),
+        ("/pr-description", Strings.SlashHintPr, SlashCategory.Git),
         ("/git",      Strings.SlashHintGit,      SlashCategory.Git),
 
         ("/build",     Strings.SlashHintBuild,    SlashCategory.Build),
@@ -361,6 +362,7 @@ internal static class SlashCommandRouter
             case "/memory":            return new SlashDelegatedAction(SlashCommandId.Memory,          parts);
             case "/index":             return new SlashDelegatedAction(SlashCommandId.Index,           parts);
             case "/commit":            return new SlashDelegatedAction(SlashCommandId.Commit,          parts);
+            case "/pr-description":    return new SlashDelegatedAction(SlashCommandId.Pr,              parts);
             case "/commit-exec":       return new SlashDelegatedAction(SlashCommandId.CommitExec,      parts);
             case "/fix-build":         return new SlashDelegatedAction(SlashCommandId.FixBuild,        parts);
             case "/history":           return new SlashDelegatedAction(SlashCommandId.History,         parts);

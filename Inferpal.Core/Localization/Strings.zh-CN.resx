@@ -525,6 +525,17 @@
   <data name="CommitRepositoryOutside" xml:space="preserve"><value>{0} 位于 Inferpal 的工作区之外：读取的不是它的排除文件，因此不会发送其中任何内容。请从此工作区的存储库中请求建议。</value></data>
   <data name="CommitDiffTruncated" xml:space="preserve"><value>⚠ 建议的信息是根据差异前 {0} 个字符（共 {1} 个）写成的，无法描述它没看到的部分 —— 若需覆盖全部，请暂存更小的变更。</value></data>
   <data name="CommitProposingLabel" xml:space="preserve"><value>💬 提交信息</value></data>
+  <data name="PrProposingLabel" xml:space="preserve"><value>📝 拉取请求说明</value></data>
+  <data name="PrDescribedRange" xml:space="preserve"><value>已描述：`{0}`，{1} 个提交。</value></data>
+  <data name="PrRangeEmpty" xml:space="preserve"><value>`{0}` 不含任何提交：没有可描述的内容。`/pr-description &lt;base&gt;` 会针对另一个基准描述该分支。</value></data>
+  <data name="PrNoCommonBase" xml:space="preserve"><value>`{0}`：两段历史没有共同的提交，因此该分支没有起点。`/pr-description &lt;base&gt;` 可指定另一个基准。</value></data>
+  <data name="PrNoBase" xml:space="preserve"><value>未找到基准分支（没有远程默认分支，也没有本地 `main` 或 `master`）：请输入 `/pr-description &lt;base&gt;`。</value></data>
+  <data name="PrUnknownBase" xml:space="preserve"><value>`{0}` 在此既不指向分支也不指向提交。`/pr-description &lt;base&gt;` 接受分支、标签或提交。</value></data>
+  <data name="PrDiffTruncated" xml:space="preserve"><value>⚠ 该说明是根据差异前 {0} 个字符（共 {1} 个）写成的，无法描述它没看到的部分 —— 使用前请先阅读。</value></data>
+  <data name="PrDescriptionCut" xml:space="preserve"><value>⚠ 模型的回复在长度上限处停止：说明可能不完整。使用前请先阅读。</value></data>
+  <data name="PrSubjectsCut" xml:space="preserve"><value>⚠ 该分支有 {1} 个提交：只读取了前 {0} 个的标题（差异涵盖全部提交）。</value></data>
+  <data name="PrDiffEmpty" xml:space="preserve"><value>`{0}` 最终没有更改任何文件（其提交相互抵消，或只涉及被排除的文件）：没有可描述的内容。</value></data>
+  <data name="SlashHintPr" xml:space="preserve"><value>为此分支建议拉取请求说明 —— /pr-description [base]</value></data>
   <data name="CommitConfirmHint" xml:space="preserve"><value>信息已预填到输入框 — 如需修改请编辑，然后按 **Enter** 确认提交。</value></data>
   <data name="RulesNone" xml:space="preserve"><value>没有项目规则。请创建 `.inferpal/rules/*.md` 或运行 `/rules init`。</value></data>
   <data name="GovernanceFilesUnreadable" xml:space="preserve"><value>⚠ 有 {0} 个文件无法读取，因此并未生效：{1}。原因见 /diagnostics。</value></data>
@@ -1660,7 +1671,7 @@
   <data name="CheckSeveralBases" xml:space="preserve"><value>两侧有 {0} 个共同基点（交叉合并）：diff 从 `{1}` 开始，可能显示另一侧已有的变更。</value></data>
   <data name="CheckNoCommonBase" xml:space="preserve"><value>`{0}`：两段历史没有共同的提交，因此变更没有起点。`/check &lt;commit&gt;` 评审单个提交。</value></data>
   <data name="CheckAmbiguousHash" xml:space="preserve"><value>以 `{0}` 开头的对象有 {1} 个：请写出更长的哈希。</value></data>
-  <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` 指向多个引用：{1}。请按此处列出的写法写出要评审的那一个。</value></data>
+  <data name="CheckAmbiguousRef" xml:space="preserve"><value>`{0}` 指向多个引用：{1}。请按此处列出的写法写出你要的那一个。</value></data>
   <data name="ToolListSent" xml:space="preserve"><value>发送 {0} 个工具，约 {1} 个 token</value></data>
   <data name="ToolListTurnedOff" xml:space="preserve"><value>已关闭 {0} 个</value></data>
   <data name="ToolListOnDemand" xml:space="preserve"><value>按需 {0} 个</value></data>

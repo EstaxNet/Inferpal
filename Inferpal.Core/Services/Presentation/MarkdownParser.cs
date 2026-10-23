@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Text.RegularExpressions;
 using Markdig;
 using Markdig.Extensions.Tables;
 using Markdig.Syntax;
@@ -105,6 +106,33 @@ internal static class MarkdownParser
         }
         return kept.ToString().Trim();
     }
+
+    /// <summary>
+    /// <paramref name="text"/> in a code block to copy as it is: the fence is longer than any run of backticks inside, so
+    /// a code block in the text never closes it early.
+    /// </summary>
+    public static string Fence(string text, string language = "")
+    {
+        int longest = 0, run = 0;
+        foreach (var c in text)
+        {
+            run = c == '`' ? run + 1 : 0;
+            if (run > longest) longest = run;
+        }
+        var fence = new string('`', Math.Max(3, longest + 1));
+        return $"{fence}{language}\n{text}\n{fence}";
+    }
+
+    /// <summary>
+    /// A reply the model wrapped WHOLE in one fenced block, without that block — models like to do that with a file or a
+    /// description; anything else is returned as it came. The closing fence must end the reply: a reply that opens with a
+    /// block and goes on after it is not wrapped.
+    /// </summary>
+    public static string WithoutEnclosingFence(string text) =>
+        EnclosingFence.Match(text.Trim()) is { Success: true } m ? m.Groups["body"].Value : text;
+
+    private static readonly Regex EnclosingFence =
+        new(@"^(?<fence>`{3,}|~{3,})[^\n]*\n(?<body>[\s\S]*?)\r?\n\k<fence>[ \t]*$", RegexOptions.None, RegexBudget.Default);
 
     /// <summary>
     /// A reply that is turned into an ARTIFACT — an edit, a file, findings — without the reasoning a model put IN
