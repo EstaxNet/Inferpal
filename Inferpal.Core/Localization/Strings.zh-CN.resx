@@ -106,6 +106,9 @@
   <data name="ExplainFileQuestion" xml:space="preserve"><value>请解释 {0}：它做什么、如何工作，以及在项目中的作用。</value></data>
   <data name="ExplainFolderQuestion" xml:space="preserve"><value>请解释 {0}：它的各个部分做什么、如何组合在一起。</value></data>
   <data name="ExplorerNoSelection" xml:space="preserve"><value>请在解决方案资源管理器中选择一个文件、文件夹或项目，然后再次选择该命令。</value></data>
+  <data name="ExplainTestFailureQuestion" xml:space="preserve"><value>请解释测试 {0} 失败的原因，以及要改什么才能让它通过。</value></data>
+  <data name="TestPasses" xml:space="preserve"><value>{0} 已通过：没有需要解释的失败。</value></data>
+  <data name="TestFailureChip" xml:space="preserve"><value>{0} 的失败</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>请用以下四个部分解释 `{0}` 中的代码：

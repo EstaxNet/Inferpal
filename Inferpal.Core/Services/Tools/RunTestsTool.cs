@@ -1384,22 +1384,26 @@ internal class RunTestsTool : ITool
             : message;
     }
 
+    /// <summary>
+    /// The runner a path names by itself — a solution or a project, a C# or a Python file — or <c>null</c>: any other
+    /// file's runner is found from its folder's markers.
+    /// </summary>
+    internal static string? RunnerOfPath(string path)
+    {
+        // SolutionFiles recognises BOTH formats: a `path` pointing at a .slnx otherwise
+        // picked the wrong runner.
+        if (SolutionFiles.IsSolution(path) || path.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase))
+            return "dotnet";
+        // A test file names its language, whatever folder it sits in: tests/test_x.py has no pytest marker
+        // beside it, and "No test runner detected" reads as "there are no tests".
+        if (path.EndsWith(".py", StringComparison.OrdinalIgnoreCase)) return "pytest";
+        if (path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase)) return "dotnet";
+        return null;
+    }
+
     private static string DetectRunner(string workDir, string? explicitPath, string? root)
     {
-        if (explicitPath is not null)
-        {
-            // SolutionFiles recognises BOTH formats: a `path` pointing at a .slnx otherwise
-            // picked the wrong runner.
-            if (SolutionFiles.IsSolution(explicitPath) ||
-                explicitPath.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase))
-                return "dotnet";
-            // A test file names its language, whatever folder it sits in: tests/test_x.py has no pytest marker
-            // beside it, and "No test runner detected" reads as "there are no tests".
-            if (explicitPath.EndsWith(".py", StringComparison.OrdinalIgnoreCase))
-                return "pytest";
-            if (explicitPath.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
-                return "dotnet";
-        }
+        if (explicitPath is not null && RunnerOfPath(explicitPath) is { } named) return named;
 
         // WorkspaceScan: lazy (GetFiles materialized the whole tree before .Any()) and excluded
         // dirs skipped — a vendored .sln under node_modules must not flip the runner to dotnet.

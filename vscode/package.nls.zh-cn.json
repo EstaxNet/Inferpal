@@ -23,6 +23,8 @@
   "inferpal.command.reviewItem": "审查更改",
   "inferpal.command.attachItem": "附加到聊天",
   "inferpal.submenu.explorer": "Inferpal",
+  "inferpal.command.fixTest": "让此测试通过",
+  "inferpal.command.explainTestFailure": "解释失败",
   "inferpal.command.editSelection": "Inferpal：使用 AI 编辑…",
   "inferpal.command.explainSelection": "Inferpal：解释此代码",
   "inferpal.command.testSelection": "Inferpal：添加测试",

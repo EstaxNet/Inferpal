@@ -106,6 +106,9 @@ Esta acción no se puede deshacer.</value></data>
   <data name="ExplainFileQuestion" xml:space="preserve"><value>Explica {0}: qué hace, cómo funciona y cómo encaja en el proyecto.</value></data>
   <data name="ExplainFolderQuestion" xml:space="preserve"><value>Explica {0}: qué hacen sus partes y cómo encajan.</value></data>
   <data name="ExplorerNoSelection" xml:space="preserve"><value>Seleccione un archivo, una carpeta o un proyecto en el Explorador de soluciones y vuelva a elegir el comando.</value></data>
+  <data name="ExplainTestFailureQuestion" xml:space="preserve"><value>Explica por qué falla la prueba {0} y qué cambiar para que pase.</value></data>
+  <data name="TestPasses" xml:space="preserve"><value>{0} pasa: no hay ningún fallo que explicar.</value></data>
+  <data name="TestFailureChip" xml:space="preserve"><value>Fallo de {0}</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>Explica el código de `{0}` con estas cuatro secciones:

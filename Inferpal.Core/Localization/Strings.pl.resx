@@ -103,6 +103,9 @@ Tej operacji nie można cofnąć.</value></data>
   <data name="ExplainFileQuestion" xml:space="preserve"><value>Wyjaśnij {0}: co robi, jak działa i jak pasuje do projektu.</value></data>
   <data name="ExplainFolderQuestion" xml:space="preserve"><value>Wyjaśnij {0}: co robią jego części i jak się ze sobą łączą.</value></data>
   <data name="ExplorerNoSelection" xml:space="preserve"><value>Zaznacz plik, folder lub projekt w Eksploratorze rozwiązań, a następnie ponownie wybierz polecenie.</value></data>
+  <data name="ExplainTestFailureQuestion" xml:space="preserve"><value>Wyjaśnij, dlaczego test {0} nie przechodzi i co zmienić, żeby przeszedł.</value></data>
+  <data name="TestPasses" xml:space="preserve"><value>{0} przechodzi: nie ma błędu do wyjaśnienia.</value></data>
+  <data name="TestFailureChip" xml:space="preserve"><value>Błąd {0}</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>Wyjaśnij kod z `{0}` w czterech sekcjach:

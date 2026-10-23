@@ -209,6 +209,14 @@ exists.
   it (the uncommitted changes under it); **Attach to Chat** puts the `@file` / `@folder` chip in the message box,
   nothing sent. In Visual Studio a project or a solution stands for its folder; in VS Code a `.csproj` is the file
   itself. A file the ignore files exclude, a binary file, or a node with no file behind it, is said.
+- **Inferpal in the Test view (VS Code)** — right-click a test: **Make This Test Pass** runs `/tdd` with the test's name
+  (a theory's parameters left out); **Explain the Failure** runs the test — from its file for a C# or Python test, else
+  from the workspace — and asks why it fails, with the code around it, without tools; on the failure message under the
+  test, it asks about that message and the failing line without running anything. The name is a filter, matched by each
+  runner its own way: tests whose name contains it run too, and a report that never names the clicked test is said to
+  be about others. A test that passes, a run where nothing ran or that was stopped at its budget, is said; a running
+  test can be cancelled. Visual Studio's Test Explorer gives no extension the test you clicked: there, type
+  `/tdd <name>`.
 - **Analyze with Inferpal, at a debugger stop** — stopped at a breakpoint or an exception, choose **Analyze with
   Inferpal** in Visual Studio's Debug menu or in the context menu of the Call Stack, Locals, Autos or Watch window; in
   VS Code, in the context menu of the call stack or the variables, or *Inferpal: Analyze the Debugger Stop* in the

@@ -196,5 +196,7 @@
   "Inferpal: inline completion is turned off in VS Code's settings (inferpal.fim.enabled).": "Inferpal：VS Code 设置中已关闭内联补全 (inferpal.fim.enabled)。",
   "Inferpal: the suggestion does not continue the item selected in the list — close the list (Esc) and ask again.": "Inferpal：建议没有延续列表中选中的项 — 请关闭列表 (Esc) 后再请求。",
   "Fix with Inferpal": "使用 Inferpal 修复",
-  "No problem at the cursor.": "光标处没有问题。"
+  "No problem at the cursor.": "光标处没有问题。",
+  "Running {0}…": "正在运行 {0}…",
+  "One test at a time: {0} is the one used.": "一次一个测试：使用 {0}。"
 }

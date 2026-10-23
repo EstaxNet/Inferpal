@@ -12,6 +12,7 @@ import { SettingsPanel } from './settingsPanel';
 import { SetupFlow } from './setupFlow';
 import { buildBannerOf, isBuildTask, openTabPaths, panelErrors } from './editorBridge';
 import { capAttachment, CappedText } from './attachmentCap';
+import { failureText, testFilter } from './testGestures';
 import { renderChatHtml } from './webview/chatWebviewHtml';
 import { samePath } from './debugBridge';
 import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
@@ -3296,6 +3297,41 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     return this.askWithChip((host) => host.explorerExplain(uri.fsPath, this.model || undefined), 'explain', true);
   }
 
+  /** The Test view's "Make This Test Pass": `/tdd` with the test's filter, as if typed. */
+  fixTest(item: vscode.TestItem): Promise<void> {
+    return this.runSlashCommand(`/tdd ${testFilter(item)}`);
+  }
+
+  /**
+   * The Test view's "Explain the Failure": with the failure message the view shows, or — from the test itself — the host
+   * runs it, which takes the test's time: said while it runs, and the person can cancel it. A code action, without tools.
+   */
+  explainTestFailure(item: vscode.TestItem, message?: vscode.TestMessage): Promise<void> {
+    const params = {
+      label: item.label,
+      filter: testFilter(item),
+      failure: message ? failureText(message) : undefined,
+      file: item.uri?.scheme === 'file' ? item.uri.fsPath : undefined,
+      line: item.range ? item.range.start.line + 1 : undefined,
+      // Where the failure points: the failing line, often past the window around the test's first line.
+      failureFile: message?.location?.uri.scheme === 'file' ? message.location.uri.fsPath : undefined,
+      failureLine: message?.location ? message.location.range.start.line + 1 : undefined,
+      model: this.model || undefined,
+    };
+    return this.askWithChip((host) => message
+      ? host.testsExplain(params)
+      : Promise.resolve(vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: t('Running {0}…', item.label), cancellable: true },
+        (_progress, token) => host.testsExplain(params, token).catch((err: unknown) => {
+          // Cancelled by the person: the run is stopped on the host, and there is nothing to say.
+          if (token.isCancellationRequested) {
+            return undefined;
+          }
+          throw err;
+        }))),
+    'explain the test failure', true);
+  }
+
   /** The explorer's "Review Changes": `/check` on that file or folder, as if typed. */
   reviewItem(uri: vscode.Uri): Promise<void> {
     return this.runSlashCommand(`/check "${uri.fsPath}"`);
@@ -3326,9 +3362,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   /**
    * A gesture's question built by the host, its attachment as a chip. Refused during a turn, like the build banner's Fix
-   * them: the chip would ride the next question.
+   * them: the chip would ride the next question. A build that gives nothing was cancelled by the person: nothing is said.
    */
-  private async askWithChip(build: (host: HostClient) => Promise<GestureQuestion>, what: string,
+  private async askWithChip(build: (host: HostClient) => Promise<GestureQuestion | undefined>, what: string,
     codeAction: boolean): Promise<void> {
     try {
       await vscode.commands.executeCommand('inferpal.chat.focus');
@@ -3343,11 +3379,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     if (!host) {
       return;
     }
-    let ask: GestureQuestion;
+    let ask: GestureQuestion | undefined;
     try {
       ask = await build(host);
     } catch (err) {
       this.gestureFailed(what, err);
+      return;
+    }
+    if (!ask) {
       return;
     }
     if (ask.refusal) {

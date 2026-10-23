@@ -103,6 +103,9 @@
   <data name="ExplainFileQuestion" xml:space="preserve"><value>{0}을(를) 설명해 주세요: 무엇을 하는지, 어떻게 동작하는지, 프로젝트에서 어떤 역할인지.</value></data>
   <data name="ExplainFolderQuestion" xml:space="preserve"><value>{0}을(를) 설명해 주세요: 각 부분이 무엇을 하고 어떻게 맞물리는지.</value></data>
   <data name="ExplorerNoSelection" xml:space="preserve"><value>솔루션 탐색기에서 파일, 폴더 또는 프로젝트를 선택한 뒤 명령을 다시 선택하세요.</value></data>
+  <data name="ExplainTestFailureQuestion" xml:space="preserve"><value>테스트 {0}이(가) 실패하는 이유와 통과하도록 바꿀 점을 설명해 주세요.</value></data>
+  <data name="TestPasses" xml:space="preserve"><value>{0}은(는) 통과합니다. 설명할 실패가 없습니다.</value></data>
+  <data name="TestFailureChip" xml:space="preserve"><value>{0} 실패</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>`{0}`의 코드를 다음 네 섹션으로 설명해 주세요:

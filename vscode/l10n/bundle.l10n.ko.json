@@ -196,5 +196,7 @@
   "Inferpal: inline completion is turned off in VS Code's settings (inferpal.fim.enabled).": "Inferpal: VS Code 설정에서 인라인 완성이 꺼져 있습니다 (inferpal.fim.enabled).",
   "Inferpal: the suggestion does not continue the item selected in the list — close the list (Esc) and ask again.": "Inferpal: 제안이 목록에서 선택한 항목을 이어 가지 않습니다 — 목록을 닫고(Esc) 다시 요청하세요.",
   "Fix with Inferpal": "Inferpal로 수정",
-  "No problem at the cursor.": "커서 위치에 문제가 없습니다."
+  "No problem at the cursor.": "커서 위치에 문제가 없습니다.",
+  "Running {0}…": "{0} 실행 중…",
+  "One test at a time: {0} is the one used.": "한 번에 테스트 하나: {0}을(를) 사용합니다."
 }

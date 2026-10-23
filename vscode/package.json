@@ -175,6 +175,14 @@
       {
         "command": "inferpal.attachItem",
         "title": "%inferpal.command.attachItem%"
+      },
+      {
+        "command": "inferpal.fixTest",
+        "title": "%inferpal.command.fixTest%"
+      },
+      {
+        "command": "inferpal.explainTestFailure",
+        "title": "%inferpal.command.explainTestFailure%"
       }
     ],
     "submenus": [
@@ -202,6 +210,23 @@
         {
           "command": "inferpal.attachItem",
           "group": "1_inferpal@3"
+        }
+      ],
+      "testing/item/context": [
+        {
+          "command": "inferpal.fixTest",
+          "group": "z_inferpal@1"
+        },
+        {
+          "command": "inferpal.explainTestFailure",
+          "when": "testResultState != passed",
+          "group": "z_inferpal@2"
+        }
+      ],
+      "testing/message/context": [
+        {
+          "command": "inferpal.explainTestFailure",
+          "group": "z_inferpal@1"
         }
       ],
       "debug/callstack/context": [
@@ -233,6 +258,14 @@
         },
         {
           "command": "inferpal.attachItem",
+          "when": "false"
+        },
+        {
+          "command": "inferpal.fixTest",
+          "when": "false"
+        },
+        {
+          "command": "inferpal.explainTestFailure",
           "when": "false"
         }
       ],

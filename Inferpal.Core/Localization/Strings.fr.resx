@@ -106,6 +106,9 @@ Cette action est irréversible.</value></data>
   <data name="ExplainFileQuestion" xml:space="preserve"><value>Explique {0} : ce qu'il fait, comment, et sa place dans le projet.</value></data>
   <data name="ExplainFolderQuestion" xml:space="preserve"><value>Explique {0} : ce que font ses parties et comment elles s'articulent.</value></data>
   <data name="ExplorerNoSelection" xml:space="preserve"><value>Choisissez un fichier, un dossier ou un projet dans l'Explorateur de solutions, puis de nouveau la commande.</value></data>
+  <data name="ExplainTestFailureQuestion" xml:space="preserve"><value>Explique pourquoi le test {0} échoue, et ce qu'il faut changer pour qu'il passe.</value></data>
+  <data name="TestPasses" xml:space="preserve"><value>{0} passe : il n'y a pas d'échec à expliquer.</value></data>
+  <data name="TestFailureChip" xml:space="preserve"><value>Échec de {0}</value></data>
 
   <!-- Prompts menus contextuels éditeur — {0}=nomFichier, {1}=bloc de code -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>Explique le code de `{0}` avec ces quatre sections :

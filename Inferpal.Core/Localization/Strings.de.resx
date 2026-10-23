@@ -103,6 +103,9 @@ Diese Aktion kann nicht rückgängig gemacht werden.</value></data>
   <data name="ExplainFileQuestion" xml:space="preserve"><value>Erkläre {0}: was es tut, wie es funktioniert und wie es ins Projekt passt.</value></data>
   <data name="ExplainFolderQuestion" xml:space="preserve"><value>Erkläre {0}: was seine Teile tun und wie sie zusammenspielen.</value></data>
   <data name="ExplorerNoSelection" xml:space="preserve"><value>Wählen Sie im Projektmappen-Explorer eine Datei, einen Ordner oder ein Projekt aus und wählen Sie dann erneut den Befehl.</value></data>
+  <data name="ExplainTestFailureQuestion" xml:space="preserve"><value>Erkläre, warum der Test {0} fehlschlägt und was zu ändern ist, damit er besteht.</value></data>
+  <data name="TestPasses" xml:space="preserve"><value>{0} besteht: Es gibt keinen Fehler zu erklären.</value></data>
+  <data name="TestFailureChip" xml:space="preserve"><value>Fehler von {0}</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>Erkläre den Code aus `{0}` in vier Abschnitten:

@@ -225,6 +225,16 @@ internal sealed record DebugAnalyzeParams(string? Model = null);
 /// <summary>`explorer/explain` — the item clicked in the file explorer (absolute), and the model the chat picked.</summary>
 internal sealed record ExplorerExplainParams(string Path, string? Model = null);
 
+/// <summary>`tests/explain` — a test of VS Code's Test view.</summary>
+/// <param name="Label">The test's name as the view shows it.</param>
+/// <param name="Filter">The <c>run_tests</c> filter that runs it (the name without its parameters).</param>
+/// <param name="Failure">The failure message the editor holds; <c>null</c>: the host runs the test.</param>
+/// <param name="File">The test's file, when the editor knows it; <paramref name="Line"/> its 1-based line, 0 otherwise.</param>
+/// <param name="FailureFile">Where the failure message points, when it does; <paramref name="FailureLine"/> its line.</param>
+/// <param name="Model">The model the chat picked.</param>
+internal sealed record TestsExplainParams(string Label, string Filter, string? Failure = null, string? File = null, int Line = 0,
+                                          string? FailureFile = null, int FailureLine = 0, string? Model = null);
+
 /// <summary>`problems/fix` and `debug/analyze` — what goes to the chat: a question and its attachment.</summary>
 /// <param name="Question">The question, in the interface language.</param>
 /// <param name="Chip">The attachment's label.</param>

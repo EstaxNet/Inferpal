@@ -196,5 +196,7 @@
   "Inferpal: inline completion is turned off in VS Code's settings (inferpal.fim.enabled).": "Inferpal: VS Code の設定でインライン補完がオフになっています (inferpal.fim.enabled)。",
   "Inferpal: the suggestion does not continue the item selected in the list — close the list (Esc) and ask again.": "Inferpal: 候補が一覧で選ばれている項目の続きになっていません — 一覧を閉じて (Esc) もう一度求めてください。",
   "Fix with Inferpal": "Inferpal で修正",
-  "No problem at the cursor.": "カーソル位置に問題はありません。"
+  "No problem at the cursor.": "カーソル位置に問題はありません。",
+  "Running {0}…": "{0} を実行中…",
+  "One test at a time: {0} is the one used.": "テストは一度に 1 つです: {0} を使用します。"
 }

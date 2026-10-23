@@ -103,6 +103,9 @@
   <data name="ExplainFileQuestion" xml:space="preserve"><value>{0} を説明してください: 何をするのか、どう動くのか、プロジェクトでの位置づけ。</value></data>
   <data name="ExplainFolderQuestion" xml:space="preserve"><value>{0} を説明してください: 各部分が何をし、どう組み合わさっているか。</value></data>
   <data name="ExplorerNoSelection" xml:space="preserve"><value>ソリューション エクスプローラーでファイル、フォルダー、またはプロジェクトを選んでから、もう一度コマンドを選んでください。</value></data>
+  <data name="ExplainTestFailureQuestion" xml:space="preserve"><value>テスト {0} が失敗する理由と、成功させるために変えるべき点を説明してください。</value></data>
+  <data name="TestPasses" xml:space="preserve"><value>{0} は成功しています。説明する失敗はありません。</value></data>
+  <data name="TestFailureChip" xml:space="preserve"><value>{0} の失敗</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>`{0}` のコードを次の4つのセクションで説明してください：

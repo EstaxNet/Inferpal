@@ -107,6 +107,9 @@ This cannot be undone.</value></data>
   <data name="ExplainFileQuestion" xml:space="preserve"><value>Explain {0}: what it does, how it works, and how it fits in the project.</value></data>
   <data name="ExplainFolderQuestion" xml:space="preserve"><value>Explain {0}: what its parts do and how they fit together.</value></data>
   <data name="ExplorerNoSelection" xml:space="preserve"><value>Select a file, a folder or a project in Solution Explorer, then choose the command again.</value></data>
+  <data name="ExplainTestFailureQuestion" xml:space="preserve"><value>Explain why the test {0} fails, and what to change to make it pass.</value></data>
+  <data name="TestPasses" xml:space="preserve"><value>{0} passes: there is no failure to explain.</value></data>
+  <data name="TestFailureChip" xml:space="preserve"><value>Failure of {0}</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>Explain the code from `{0}` with these four sections:

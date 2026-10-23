@@ -4124,6 +4124,27 @@ public partial class HostServerTests
     }
 
     [Fact]
+    public async Task TestsExplain_ExplainsTheMessageGiven_AndRunsTheTestWhenThereIsNone()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var withMessage = await h.Client.InvokeWithParameterObjectAsync<GestureQuestion>("tests/explain",
+                new { label = "Total_SumsTheLines", filter = "Total_SumsTheLines", failure = "Expected: 42\nActual: 41" })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        // No message: the host runs the test — in an empty workspace no runner is found, said rather than asked.
+        var withoutOne  = await h.Client.InvokeWithParameterObjectAsync<GestureQuestion>("tests/explain",
+                new { label = "Total_SumsTheLines", filter = "Total_SumsTheLines" })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Equal(Strings.ExplainTestFailureQuestion("Total_SumsTheLines"), withMessage.Question);
+        Assert.Contains("Actual: 41", withMessage.Content);
+        Assert.Null(withMessage.Refusal);
+        Assert.StartsWith("No test runner detected", withoutOne.Refusal);   // the runner's own word, in a few lines
+        Assert.Empty(withoutOne.Question);
+    }
+
+    [Fact]
     public async Task DebuggerMention_WithNothingPaused_SaysSo_InsteadOfSilence()
     {
         // Nothing to attach is not nothing to say. `mention/resolve` had no way to tell an empty

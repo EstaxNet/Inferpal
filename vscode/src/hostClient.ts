@@ -551,6 +551,14 @@ export class HostClient {
     return this.connection().sendRequest<GestureQuestion>('explorer/explain', { path, model });
   }
 
+  /** The Test view's "Explain the Failure": the message given, or the host runs the test (`failure` absent). */
+  testsExplain(params: {
+    label: string; filter: string; failure?: string; file?: string; line?: number; failureFile?: string; failureLine?: number;
+    model?: string;
+  }, token?: CancellationToken): Promise<GestureQuestion> {
+    return this.connection().sendRequest<GestureQuestion>('tests/explain', ...HostClient.withToken(params, token));
+  }
+
   /** Models of the backend the caller is LOOKING AT. Without overrides this is the saved
    *  configuration; the settings panel passes what its form currently holds, because a refresh that
    *  lists the previous URL's models is a control that answers about something else. */

@@ -1363,6 +1363,23 @@ internal sealed partial class HostServer : IDisposable
         return new GestureQuestion(a.Question, a.Chip, a.Content, a.Refusal);
     }
 
+    /// <summary>
+    /// "Explain the Failure" on a test of VS Code's Test view: the failure message the editor holds, or the report of the
+    /// test run again here (<c>run_tests</c> with its filter, as <c>/tdd</c>), and the code around the test — or why there
+    /// is nothing to explain (it passes, nothing ran). Sent by the extension as a code action, without tools.
+    /// </summary>
+    [JsonRpcMethod("tests/explain", UseSingleObjectParameterDeserialization = true)]
+    public async Task<GestureQuestion> TestsExplainAsync(TestsExplainParams p, CancellationToken ct)
+    {
+        var s = Session();
+        var window = await Services.Agent.ContextManager.EffectiveWindowAsync(
+            s.Config, s.Client, TurnModel(s, codeAction: true, agentMode: false, p.Model, overridesRoles: false), ct);
+        var a = await TestFailureExplain.ForAsync(p.Label, p.Filter, p.Failure, (p.File, p.Line), (p.FailureFile, p.FailureLine),
+            token => TestFailureExplain.RunTestAsync(s.Tools, p.Filter, p.File, s.RootDir, token),
+            s.RootDir, s.Overlay, CodeExcerpt.BudgetFor(window), ct);
+        return new GestureQuestion(a.Question, a.Chip, a.Content, a.Refusal);
+    }
+
     // ── Config ─────────────────────────────────────────────────────────────────
 
     [JsonRpcMethod("config/get")]

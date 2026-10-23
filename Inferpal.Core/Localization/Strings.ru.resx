@@ -103,6 +103,9 @@
   <data name="ExplainFileQuestion" xml:space="preserve"><value>Объясни {0}: что он делает, как работает и как вписывается в проект.</value></data>
   <data name="ExplainFolderQuestion" xml:space="preserve"><value>Объясни {0}: что делают его части и как они связаны.</value></data>
   <data name="ExplorerNoSelection" xml:space="preserve"><value>Выберите файл, папку или проект в обозревателе решений, затем снова выберите команду.</value></data>
+  <data name="ExplainTestFailureQuestion" xml:space="preserve"><value>Объясни, почему тест {0} не проходит, и что изменить, чтобы он прошёл.</value></data>
+  <data name="TestPasses" xml:space="preserve"><value>{0} проходит: объяснять нечего.</value></data>
+  <data name="TestFailureChip" xml:space="preserve"><value>Сбой {0}</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>Объясни код из `{0}` по четырём разделам:

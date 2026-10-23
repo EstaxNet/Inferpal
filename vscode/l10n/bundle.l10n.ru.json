@@ -196,5 +196,7 @@
   "Inferpal: inline completion is turned off in VS Code's settings (inferpal.fim.enabled).": "Inferpal: автодополнение выключено в настройках VS Code (inferpal.fim.enabled).",
   "Inferpal: the suggestion does not continue the item selected in the list — close the list (Esc) and ask again.": "Inferpal: подсказка не продолжает элемент, выбранный в списке, — закройте список (Esc) и запросите снова.",
   "Fix with Inferpal": "Исправить с помощью Inferpal",
-  "No problem at the cursor.": "В позиции курсора проблем нет."
+  "No problem at the cursor.": "В позиции курсора проблем нет.",
+  "Running {0}…": "Выполняется {0}…",
+  "One test at a time: {0} is the one used.": "По одному тесту: используется {0}."
 }

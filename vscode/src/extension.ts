@@ -15,6 +15,7 @@ import { reviewCommit } from './reviewCommit';
 import { followModelRouterSettings, initModelRouterSync, syncModelRouterSettings } from './modelRouterSettings';
 import { docsUrl } from './docsLinks';
 import { setLanguage, t } from './i18n';
+import { oneTest } from './testGestures';
 
 let host: HostClient | undefined;
 let bridge: EditorBridge | undefined;
@@ -76,6 +77,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('inferpal.explainItem', (uri?: vscode.Uri) => uri && chatView.explainItem(uri)),
     vscode.commands.registerCommand('inferpal.reviewItem', (uri?: vscode.Uri) => uri && chatView.reviewItem(uri)),
     vscode.commands.registerCommand('inferpal.attachItem', (uri?: vscode.Uri) => uri && chatView.attachItem(uri)),
+    vscode.commands.registerCommand('inferpal.fixTest', (...items: vscode.TestItem[]) => {
+      const item = oneTest(items);
+      return item && chatView.fixTest(item);
+    }),
+    // The Test view passes the selected tests (testing/item/context), or a failure message with its test
+    // (testing/message/context).
+    vscode.commands.registerCommand('inferpal.explainTestFailure',
+      (arg?: vscode.TestItem | { test?: vscode.TestItem; message: vscode.TestMessage }, ...others: vscode.TestItem[]) => {
+        if (arg && 'message' in arg) {
+          return arg.test && chatView.explainTestFailure(arg.test, arg.message);
+        }
+        const item = oneTest([arg, ...others]);
+        return item && chatView.explainTestFailure(item);
+      }),
   );
 
   context.subscriptions.push(

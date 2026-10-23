@@ -103,6 +103,9 @@ Questa azione non può essere annullata.</value></data>
   <data name="ExplainFileQuestion" xml:space="preserve"><value>Spiega {0}: cosa fa, come funziona e come si inserisce nel progetto.</value></data>
   <data name="ExplainFolderQuestion" xml:space="preserve"><value>Spiega {0}: cosa fanno le sue parti e come si combinano.</value></data>
   <data name="ExplorerNoSelection" xml:space="preserve"><value>Selezionate un file, una cartella o un progetto in Esplora soluzioni, poi scegliete di nuovo il comando.</value></data>
+  <data name="ExplainTestFailureQuestion" xml:space="preserve"><value>Spiega perché il test {0} fallisce e cosa cambiare perché passi.</value></data>
+  <data name="TestPasses" xml:space="preserve"><value>{0} passa: non c'è nessun errore da spiegare.</value></data>
+  <data name="TestFailureChip" xml:space="preserve"><value>Errore di {0}</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>Spiega il codice da `{0}` con queste quattro sezioni:

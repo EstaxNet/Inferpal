@@ -83,8 +83,7 @@ internal static class TddCommandHandler
             catch (Exception ex) { return new(Strings.MsgError(ex.Message)); }
 
             // No runner / unusable report → surface the tool's own explanation, don't loop on it.
-            if (!LooksLikeTestReport(output)) return new(output.Trim());
-
+            //
             // ⚠ THREE states, not two. `run_tests` distinguishes "green", "failing" and "nothing
             // ran" — a filter that matched nothing, a runner that exited 0 without a parsable
             // summary — and this loop folded the third into the second: five agent rounds of
@@ -92,15 +91,14 @@ internal static class TddCommandHandler
             // Stopping on ANY round is deliberate: the dishonest way for a fix loop to go green is
             // to make the failing test stop existing, and that shows up here as round 2 suddenly
             // matching nothing.
-            if (NothingRan(output)) return new(Strings.TddNothingRan + "\n\n" + output.Trim());
-
+            //
             // ⚠ FOUR states. The budget is the one that can hand back a GREEN summary: on a
             // solution whose first project finishes and whose second hangs, the killed run still
             // carries that first project's pass. Read as a verdict it ends the loop with
             // "suite green" on a run where half the tests never started — and read as a red one it
             // would be five rounds of patches against tests that did not fail. Neither: stop, and
             // say which budget ran out. Same place to look as NothingRan, not the same place to fix.
-            if (StoppedAtBudget(output)) return new(Strings.TddStoppedAtBudget + "\n\n" + output.Trim());
+            if (NotAVerdict(output) is { } notAVerdict) return new(notAVerdict);
 
             bool green = TestsPassed(output);
             onTestReport?.Invoke(output, green);
@@ -198,6 +196,17 @@ internal static class TddCommandHandler
         return System.Text.RegularExpressions.Regex.IsMatch(verdictLine, @"\b\d+ passed\b")
             && !System.Text.RegularExpressions.Regex.IsMatch(verdictLine, @"\b\d+ (failed|error)");
     }
+
+    /// <summary>
+    /// What to say instead of a verdict — no runner, nothing ran, a run killed at its budget — or <c>null</c> when the
+    /// report is green or red. The one reader for every caller that decides on a run's report (<c>/tdd</c>, the Test
+    /// view's "Explain the Failure"): a copy misses the next state added here.
+    /// </summary>
+    internal static string? NotAVerdict(string output) =>
+        !LooksLikeTestReport(output) ? output.Trim()
+        : NothingRan(output)         ? Strings.TddNothingRan + "\n\n" + output.Trim()
+        : StoppedAtBudget(output)    ? Strings.TddStoppedAtBudget + "\n\n" + output.Trim()
+        : null;
 
     /// <summary>
     /// Red iff the report SAYS it failed: <see cref="Tools.RunTestsTool"/>'s "✗ …" verdict (failing tests, a build that

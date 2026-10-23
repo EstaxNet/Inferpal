@@ -23,6 +23,8 @@
   "inferpal.command.reviewItem": "Revisar cambios",
   "inferpal.command.attachItem": "Adjuntar al chat",
   "inferpal.submenu.explorer": "Inferpal",
+  "inferpal.command.fixTest": "Hacer pasar esta prueba",
+  "inferpal.command.explainTestFailure": "Explicar el fallo",
   "inferpal.command.editSelection": "Inferpal: editar con IA…",
   "inferpal.command.explainSelection": "Inferpal: explicar este código",
   "inferpal.command.testSelection": "Inferpal: agregar pruebas",

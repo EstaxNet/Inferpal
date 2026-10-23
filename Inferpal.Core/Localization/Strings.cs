@@ -452,6 +452,10 @@ internal static class Strings
     public static string ExplainFileQuestion(string name)   => Format(Get(nameof(ExplainFileQuestion)), name);
     public static string ExplainFolderQuestion(string name) => Format(Get(nameof(ExplainFolderQuestion)), name);
     public static string ExplorerNoSelection => Get(nameof(ExplorerNoSelection));
+    /// <summary>VS Code's Test view "Explain the Failure" — {0}=the test's name.</summary>
+    public static string ExplainTestFailureQuestion(string test) => Format(Get(nameof(ExplainTestFailureQuestion)), test);
+    public static string TestPasses(string test)      => Format(Get(nameof(TestPasses)), test);
+    public static string TestFailureChip(string test) => Format(Get(nameof(TestFailureChip)), test);
 
     // ── Editor context menu prompts ────────────────────────────────────────────
     // Legacy two-arg overloads kept for reference; all active call sites use the
