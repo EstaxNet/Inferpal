@@ -230,13 +230,6 @@
         "mac": "cmd+alt+i"
       },
       {
-        "command": "inferpal.editSelection",
-        "key": "ctrl+shift+i",
-        "linux": "ctrl+shift+alt+i",
-        "mac": "cmd+shift+i",
-        "when": "editorTextFocus && !editorReadonly"
-      },
-      {
         "command": "inferpal.map",
         "key": "alt+m",
         "mac": "ctrl+alt+m",

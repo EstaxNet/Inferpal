@@ -62,7 +62,9 @@ public class EditorGesturesParityTests
             Assert.Contains(command, commands);
         foreach (var command in new[] { "inferpal.editSelection", "inferpal.explainSelection", "inferpal.testSelection" })
             Assert.Contains(command, menu);
-        Assert.Equal("ctrl+shift+i", keys["inferpal.editSelection"]);   // Visual Studio's keys
+        // No key of its own in VS Code: Ctrl/Cmd+Shift+I is already the developer tools' and another assistant's chat
+        // there — Edit with AI is in the editor's menu and the palette, and anyone binds the key they want.
+        Assert.False(keys.ContainsKey("inferpal.editSelection"), "Edit with AI takes a key VS Code's users already have");
         Assert.Equal("alt+m", keys["inferpal.map"]);
 
         var extension = WebviewRebuildTests.TsCode("extension.ts");

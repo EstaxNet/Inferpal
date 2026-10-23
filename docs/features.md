@@ -425,10 +425,10 @@ exists.
 
 ## Keyboard shortcuts
 
-Alt+B and Alt+O are Visual Studio's; in VS Code, **Ctrl+Alt+I** opens the chat. Alt+M and Ctrl+Shift+I work in both. In
-VS Code, Edit with AI is **Ctrl+Shift+Alt+I** on Linux (Ctrl+Shift+I formats the document there) and **Cmd+Shift+I** on
-macOS, and the map **Ctrl+Alt+M** on macOS (Option+M types µ); with the editor focused, Ctrl/Cmd+Shift+I is Inferpal's,
-not the developer tools' or another assistant's — every key can be changed in VS Code's Keyboard Shortcuts.
+Alt+B and Alt+O are Visual Studio's; in VS Code, **Ctrl+Alt+I** opens the chat. Alt+M works in both (**Ctrl+Alt+M** on
+macOS, where Option+M types µ). **Ctrl+Shift+I** is Visual Studio's: in VS Code that key already belongs to the
+developer tools and to other assistants' chats, so Edit with AI has no key of its own there — it is in the editor's
+context menu and the command palette, and VS Code's Keyboard Shortcuts binds it to the key you want.
 
 | Shortcut | Action |
 |---|---|
