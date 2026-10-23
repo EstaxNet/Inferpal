@@ -115,7 +115,7 @@ internal static class DebuggerStateSignal
     /// Maps the tracker's snapshot onto the port's shape. Frame ids are positional: EnvDTE
     /// numbers stack frames from the top, and nothing on this path selects a frame by id.
     /// </summary>
-    private static DebugStopState ToStopState(DebuggerSnapshot snap) =>
+    internal static DebugStopState ToStopState(DebuggerSnapshot snap) =>
         new(snap.Reason,
             ThreadId: 0,
             Frames: [.. snap.Frames.Select((f, i) => new DebugFrame(i, f.Function, f.File, f.Line))],

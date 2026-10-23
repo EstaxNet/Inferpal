@@ -6,6 +6,7 @@
   "InferpalReviewCommitCommand": "Commit prüfen...",
   "InferpalAskCompletionCommand": "Vervollständigung vorschlagen oder übernehmen",
   "InferpalFixErrorListCommand": "Mit Inferpal beheben",
+  "InferpalAnalyzeStopCommand": "Mit Inferpal analysieren",
   "ContextMenuAskInferpal": "Inferpal fragen",
   "ContextMenuExplain": "Erklären",
   "ContextMenuRefactor": "Refaktorieren",

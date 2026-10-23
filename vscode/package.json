@@ -159,9 +159,33 @@
       {
         "command": "inferpal.fixProblems",
         "title": "%inferpal.command.fixProblems%"
+      },
+      {
+        "command": "inferpal.analyzeStop",
+        "title": "%inferpal.command.analyzeStop%"
       }
     ],
     "menus": {
+      "debug/callstack/context": [
+        {
+          "command": "inferpal.analyzeStop",
+          "when": "debugState == 'stopped'",
+          "group": "z_inferpal@1"
+        }
+      ],
+      "debug/variables/context": [
+        {
+          "command": "inferpal.analyzeStop",
+          "when": "debugState == 'stopped'",
+          "group": "z_inferpal@1"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "inferpal.analyzeStop",
+          "when": "inDebugMode"
+        }
+      ],
       "view/title": [
         {
           "command": "inferpal.resetChat",

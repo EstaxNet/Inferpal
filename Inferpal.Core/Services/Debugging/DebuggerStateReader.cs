@@ -33,15 +33,15 @@ internal static class DebuggerStateReader
     /// <param name="session">The editor's debugger port; <c>null</c> when this front-end has none.</param>
     /// <param name="rootDir">Workspace root, used to keep the stack to the user's own frames.</param>
     internal static async Task<string?> TryReadAsync(
-        IDebugSession? session, string? rootDir, CancellationToken ct)
+        IDebugSession? session, string? rootDir, CancellationToken ct) =>
+        // ⚠ rootDir for BOTH channels, or the two answer the same question with two different stacks.
+        await TryReadStateAsync(session, ct) is { } state ? DebugStateFormatter.Format(state, rootDir) : null;
+
+    /// <summary>The paused debugger as the port shapes it — the pushed snapshot first — or <c>null</c> when nothing is
+    /// paused: what a caller that also needs the frames' files reads, through the same two channels.</summary>
+    internal static async Task<DebugStopState?> TryReadStateAsync(IDebugSession? session, CancellationToken ct)
     {
-        // ⚠ rootDir on BOTH branches, or the two channels answer the same question with two
-        // different stacks.
-        if (DebuggerStateSignal.TryRead() is { } pushed) return DebuggerStateSignal.Format(pushed, rootDir);
-
-        if (session is { IsAvailable: true } live && await live.GetStateAsync(ct) is { } state)
-            return DebugStateFormatter.Format(state, rootDir);
-
-        return null;
+        if (DebuggerStateSignal.TryRead() is { } pushed) return DebuggerStateSignal.ToStopState(pushed);
+        return session is { IsAvailable: true } live ? await live.GetStateAsync(ct) : null;
     }
 }

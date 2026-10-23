@@ -371,7 +371,7 @@ public partial class HostServerTests
         var file = Path.Combine(h.RootDir, "app.ts");
         File.WriteAllText(file, "const a = 1;\nconst b = missing;\n");
 
-        var result = await h.Client.InvokeWithParameterObjectAsync<ProblemsFixResult>("problems/fix", new
+        var result = await h.Client.InvokeWithParameterObjectAsync<GestureQuestion>("problems/fix", new
         {
             problems = new[] { new { file, line = 2, column = 11, severity = "error", code = "2304", text = "Cannot find name 'missing'.", source = "ts" } },
         }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
@@ -383,7 +383,7 @@ public partial class HostServerTests
         Assert.Null(result.Refusal);
 
         // A problem only in a file outside the workspace: its edit would be refused — said, nothing to send.
-        var outside = await h.Client.InvokeWithParameterObjectAsync<ProblemsFixResult>("problems/fix", new
+        var outside = await h.Client.InvokeWithParameterObjectAsync<GestureQuestion>("problems/fix", new
         {
             problems = new[] { new { file = Path.Combine(Path.GetTempPath(), "elsewhere.ts"), line = 1, column = 1, severity = "error", text = "x" } },
         }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
@@ -4064,6 +4064,39 @@ public partial class HostServerTests
         Assert.Contains("total", result.Content);
         Assert.Null(result.Notice);
         Assert.Contains("state", h.Target.DebugCalls);   // it really crossed the wire
+    }
+
+    /// <summary>VS Code's "Analyze with Inferpal" gets the stop through the adapter's own debugger, with the code around
+    /// the frame — and, nothing paused, the sentence instead of a question.</summary>
+    [Fact]
+    public async Task DebugAnalyze_SendsTheStopAndItsCode_OrSaysNothingIsPaused()
+    {
+        using var h = CreateHarness();
+        var file = Path.Combine(h.RootDir, "Program.cs");
+        File.WriteAllText(file, "class Program\n{\n    static int Compute() => 1 / zero;\n}\n");
+        h.Target.PausedState = new
+        {
+            reason   = "exception",
+            threadId = 0,
+            frames   = new[] { new { id = 3, function = "Program.Compute", file, line = 3 } },
+            locals   = new[] { new { name = "zero", type = "int", value = "0" } },
+        };
+        await h.InitializeAsync(debug: true).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var asked = await h.Client.InvokeWithParameterObjectAsync<GestureQuestion>("debug/analyze", new { model = (string?)null })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Null(asked.Refusal);
+        Assert.Equal(Strings.AnalyzeStopQuestion, asked.Question);
+        Assert.Contains("Program.Compute", asked.Content);
+        Assert.Contains("static int Compute() => 1 / zero;", asked.Content);
+        Assert.Contains("state", h.Target.DebugCalls);   // it really crossed the wire
+
+        h.Target.PausedState = null;
+        var none = await h.Client.InvokeWithParameterObjectAsync<GestureQuestion>("debug/analyze", new { model = (string?)null })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.Equal(Strings.AnalyzeStopNotPaused, none.Refusal);
+        Assert.Empty(none.Content);
     }
 
     [Fact]

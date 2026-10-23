@@ -6,6 +6,7 @@
   "InferpalReviewCommitCommand": "评审提交...",
   "InferpalAskCompletionCommand": "建议或接受补全",
   "InferpalFixErrorListCommand": "使用 Inferpal 修复",
+  "InferpalAnalyzeStopCommand": "使用 Inferpal 分析",
   "ContextMenuAskInferpal": "询问 Inferpal",
   "ContextMenuExplain": "解释",
   "ContextMenuRefactor": "重构",

@@ -18,6 +18,7 @@
   "inferpal.command.docSelection": "Inferpal: documentar este código",
   "inferpal.command.reviewCommit": "Inferpal: revisar un commit…",
   "inferpal.command.fixProblems": "Inferpal: corregir los problemas en el cursor",
+  "inferpal.command.analyzeStop": "Inferpal: analizar la parada del depurador",
   "inferpal.command.editSelection": "Inferpal: editar con IA…",
   "inferpal.command.explainSelection": "Inferpal: explicar este código",
   "inferpal.command.testSelection": "Inferpal: agregar pruebas",

@@ -41,7 +41,7 @@ import {
   FimAskResult,
   FimSettingsResult,
   ProblemEntry,
-  ProblemsFixResult,
+  GestureQuestion,
   IndexStatusResult,
   InitializeParams,
   InitializeResult,
@@ -537,8 +537,13 @@ export class HostClient {
   }
 
   /** "Fix with Inferpal" on diagnostics: the Core builds the question and its attachment, as for Visual Studio. */
-  problemsFix(problems: ProblemEntry[]): Promise<ProblemsFixResult> {
-    return this.connection().sendRequest<ProblemsFixResult>('problems/fix', { problems });
+  problemsFix(problems: ProblemEntry[]): Promise<GestureQuestion> {
+    return this.connection().sendRequest<GestureQuestion>('problems/fix', { problems });
+  }
+
+  /** "Analyze with Inferpal" on a debugger stop: the stop and the code around its frames, or why there is none. */
+  debugAnalyze(model?: string): Promise<GestureQuestion> {
+    return this.connection().sendRequest<GestureQuestion>('debug/analyze', { model });
   }
 
   /** Models of the backend the caller is LOOKING AT. Without overrides this is the saved

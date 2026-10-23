@@ -90,6 +90,10 @@ Diese Aktion kann nicht rückgängig gemacht werden.</value></data>
   <data name="FixProblemsNoInProc" xml:space="preserve"><value>Die Auswahl der Fehlerliste konnte nicht gelesen werden: Der In-Process-Teil von Inferpal ist in diesem Visual Studio nicht geladen – /diagnostics nennt den Grund.</value></data>
   <data name="FixProblemsNoAnswer" xml:space="preserve"><value>Visual Studio hat die Auswahl der Fehlerliste nicht rechtzeitig geliefert. Versuchen Sie es erneut.</value></data>
   <data name="FixProblemsUnreadable" xml:space="preserve"><value>Die Auswahl der Fehlerliste konnte nicht gelesen werden ({0}).</value></data>
+  <data name="AnalyzeStopQuestion" xml:space="preserve"><value>Warum hat das Programm hier angehalten? Erkläre anhand der Aufrufliste, der Variablen und des Codes um jeden Frame die Ursache und wie sie zu beheben ist.</value></data>
+  <data name="AnalyzeStopChip" xml:space="preserve"><value>Debugger-Halt</value></data>
+  <data name="AnalyzeStopNotPaused" xml:space="preserve"><value>Der Debugger ist nicht angehalten: Halten Sie an einem Haltepunkt oder einer Ausnahme an und fragen Sie dann erneut.</value></data>
+  <data name="AnalyzeStopNoInProc" xml:space="preserve"><value>Der Zustand des Debuggers konnte nicht gelesen werden: Der In-Process-Teil von Inferpal ist in diesem Visual Studio nicht geladen – /diagnostics nennt den Grund.</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>Erkläre den Code aus `{0}` in vier Abschnitten:

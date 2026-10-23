@@ -67,12 +67,13 @@ export interface ProblemEntry {
   source?: string | null;
 }
 
-/** `problems/fix` — the question, the attachment's label, and the attachment (the problems and the code around them). */
-export interface ProblemsFixResult {
+/** `problems/fix`, `debug/analyze` — the question a gesture sends, the attachment's label, and the attachment (the
+ *  problems or the debugger's stop, and the code around them). */
+export interface GestureQuestion {
   question: string;
   chip: string;
   content: string;
-  /** Why nothing is sent — no problem in a file the agent can edit; absent otherwise. */
+  /** Why nothing is sent — no problem in a file the agent can edit, nothing paused; absent otherwise. */
   refusal?: string | null;
 }
 

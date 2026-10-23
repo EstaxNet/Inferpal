@@ -218,12 +218,17 @@ internal sealed record FimAskResult(string? Text, string? Notice);
 /// <summary>`problems/fix` — the diagnostics a quick fix was asked on.</summary>
 internal sealed record ProblemsFixParams(IReadOnlyList<Services.CodeActions.ProblemEntry> Problems);
 
-/// <summary>`problems/fix` — what goes to the chat.</summary>
+/// <summary>`debug/analyze` — the model the extension's chat picked: the attachment is sized for the window of the model
+/// the code action asks.</summary>
+internal sealed record DebugAnalyzeParams(string? Model = null);
+
+/// <summary>`problems/fix` and `debug/analyze` — what goes to the chat: a question and its attachment.</summary>
 /// <param name="Question">The question, in the interface language.</param>
 /// <param name="Chip">The attachment's label.</param>
 /// <param name="Content">The attachment: each problem as a build prints it, and the code around it.</param>
-/// <param name="Refusal">Why nothing is sent — no problem in a file the agent can edit; <c>null</c> otherwise.</param>
-internal sealed record ProblemsFixResult(string Question, string Chip, string Content, string? Refusal = null);
+/// <param name="Refusal">Why nothing is sent — no problem in a file the agent can edit, nothing paused; <c>null</c>
+/// otherwise.</param>
+internal sealed record GestureQuestion(string Question, string Chip, string Content, string? Refusal = null);
 
 /// <summary>`textDocument/didOpen|didChange|didClose` + `editor/didChangeActiveDocument`.</summary>
 /// <param name="Dirty">Whether the buffer has unsaved changes; absent means it does.</param>

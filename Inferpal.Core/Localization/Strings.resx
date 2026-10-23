@@ -94,6 +94,10 @@ This cannot be undone.</value></data>
   <data name="FixProblemsNoInProc" xml:space="preserve"><value>The Error List's selection could not be read: Inferpal's in-process part is not loaded in this Visual Studio — /diagnostics says why.</value></data>
   <data name="FixProblemsNoAnswer" xml:space="preserve"><value>Visual Studio did not give the Error List's selection in time. Try again.</value></data>
   <data name="FixProblemsUnreadable" xml:space="preserve"><value>The Error List's selection could not be read ({0}).</value></data>
+  <data name="AnalyzeStopQuestion" xml:space="preserve"><value>Why did the program stop here? From the call stack, the variables and the code around each frame, explain the cause and how to fix it.</value></data>
+  <data name="AnalyzeStopChip" xml:space="preserve"><value>Debugger stop</value></data>
+  <data name="AnalyzeStopNotPaused" xml:space="preserve"><value>The debugger is not paused: stop at a breakpoint or an exception, then ask again.</value></data>
+  <data name="AnalyzeStopNoInProc" xml:space="preserve"><value>The debugger's state could not be read: Inferpal's in-process part is not loaded in this Visual Studio — /diagnostics says why.</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>Explain the code from `{0}` with these four sections:

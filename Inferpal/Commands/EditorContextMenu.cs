@@ -5,10 +5,6 @@ namespace Inferpal.Commands;
 
 internal static class EditorContextMenu
 {
-    // guidSHLMainMenu / IDM_VS_CTXT_CODEWIN — text editor right-click menu
-    private static readonly Guid ShlMainMenuGuid = new("d309f791-903f-11d0-9efc-00a0c911004f");
-    private const uint IdmVsCtxtCodewin = 0x040D;
-
     [VisualStudioContribution]
     internal static MenuConfiguration AskInferpalSubmenu { get; } = new("%ContextMenuAskInferpal%")
     {
@@ -29,7 +25,7 @@ internal static class EditorContextMenu
     // CommandPlacement.VsctParent would require a group ID as target — not a menu ID.
     [VisualStudioContribution]
     internal static CommandGroupConfiguration AskInferpalContextGroup { get; } =
-        new(GroupPlacement.VsctParent(ShlMainMenuGuid, IdmVsCtxtCodewin, 0))
+        new(GroupPlacement.VsctParent(VsctMenus.ShlMainMenu, VsctMenus.CodeWindowContext, 0))
         {
             Children = [GroupChild.Menu(AskInferpalSubmenu)],
         };

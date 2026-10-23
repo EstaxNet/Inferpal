@@ -6,6 +6,7 @@
   "InferpalReviewCommitCommand": "Проверить коммит...",
   "InferpalAskCompletionCommand": "Предложить или принять дополнение",
   "InferpalFixErrorListCommand": "Исправить с помощью Inferpal",
+  "InferpalAnalyzeStopCommand": "Анализ с помощью Inferpal",
   "ContextMenuAskInferpal": "Спросить Inferpal",
   "ContextMenuExplain": "Объяснить",
   "ContextMenuRefactor": "Рефакторинг",

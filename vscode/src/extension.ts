@@ -70,6 +70,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const at = uri;
       return chatView.fixProblems(diagnostics.map((d) => problemEntry(at, d)));
     }),
+    // The call stack's and the variables' menus, and the palette: the whole stop — which line was chosen is not read.
+    vscode.commands.registerCommand('inferpal.analyzeStop', () => chatView.analyzeStop()),
   );
 
   context.subscriptions.push(

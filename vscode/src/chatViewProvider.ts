@@ -16,7 +16,7 @@ import { renderChatHtml } from './webview/chatWebviewHtml';
 import { samePath } from './debugBridge';
 import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
 import {
-  ApprovalCard, CodeActionResult, InputCard, InputFormAnswer, ProblemEntry, ProblemsFixResult, SavedMessage, SlashEffect,
+  ApprovalCard, CodeActionResult, InputCard, InputFormAnswer, ProblemEntry, GestureQuestion, SavedMessage, SlashEffect,
   TestsGenerateResult, TurnNote,
 } from './protocol';
 import {
@@ -3276,10 +3276,27 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   /**
    * "Fix with Inferpal" from a quick fix: the Core's question, with the diagnostics and the code around each as its chip
-   * — what Visual Studio's Error List sends. Refused during a turn, like the build banner's Fix them: the chip would ride
-   * the next question.
+   * — what Visual Studio's Error List sends — answered with the chat's tools: fixing is editing, under approvals.
    */
-  async fixProblems(problems: ProblemEntry[]): Promise<void> {
+  fixProblems(problems: ProblemEntry[]): Promise<void> {
+    return this.askWithChip((host) => host.problemsFix(problems), 'fix problems', false);
+  }
+
+  /**
+   * "Analyze with Inferpal" on a debugger stop: the Core's question, with the stop and the code around its frames as its
+   * chip — what Visual Studio's Debug menu sends — answered as a code action, without tools: nothing runs.
+   */
+  analyzeStop(): Promise<void> {
+    // The model picked here: the stop is sized for the window of the model the code action asks.
+    return this.askWithChip((host) => host.debugAnalyze(this.model || undefined), 'analyze the debugger stop', true);
+  }
+
+  /**
+   * A gesture's question built by the host, its attachment as a chip. Refused during a turn, like the build banner's Fix
+   * them: the chip would ride the next question.
+   */
+  private async askWithChip(build: (host: HostClient) => Promise<GestureQuestion>, what: string,
+    codeAction: boolean): Promise<void> {
     try {
       await vscode.commands.executeCommand('inferpal.chat.focus');
     } catch {
@@ -3293,15 +3310,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     if (!host) {
       return;
     }
-    let fix: ProblemsFixResult;
+    let ask: GestureQuestion;
     try {
-      fix = await host.problemsFix(problems);
+      ask = await build(host);
     } catch (err) {
-      this.gestureFailed('fix problems', err);
+      this.gestureFailed(what, err);
       return;
     }
-    if (fix.refusal) {
-      void vscode.window.showWarningMessage(fix.refusal);
+    if (ask.refusal) {
+      void vscode.window.showWarningMessage(ask.refusal);
       return;
     }
     // A turn may have started while the host built the attachment: the chip would ride it, or the next question.
@@ -3309,12 +3326,20 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       void vscode.window.showWarningMessage(t('A turn is still running — wait for it to finish or stop it, then try again.'));
       return;
     }
-    this.addChip(fix.chip, fix.content);
-    const chip = this.pendingAttachments[this.pendingAttachments.length - 1];
-    await this.send(fix.question);
-    // Refused (the backend down, a turn begun meanwhile): the chip goes with the question, never with the next one.
-    if (this.pendingAttachments.includes(chip)) {
-      this.pendingAttachments = this.pendingAttachments.filter((a) => a !== chip);
+    // The gesture's chip alone goes with its question: the draft's chips are the draft's, set aside and given back, as
+    // Visual Studio keeps them. Found-while-typing chips go, as with any gesture's message.
+    const draft = this.pendingAttachments.filter((a) => !a.auto);
+    this.pendingAttachments = [];
+    this.addChip(ask.chip, ask.content);
+    const chip = this.pendingAttachments[0];
+    try {
+      // A code action goes through the turn a regenerated one replays (its prompt, its flag): the code-actions model,
+      // without tools.
+      await (codeAction ? this.send(ask.question, false, { prompt: ask.question, codeAction: true, query: ask.question })
+        : this.send(ask.question));
+    } finally {
+      // Refused (the backend down, a turn begun meanwhile): the chip goes with the question, never with the next one.
+      this.pendingAttachments = [...draft, ...this.pendingAttachments.filter((a) => a !== chip)];
       this.postChips();
     }
   }

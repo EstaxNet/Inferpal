@@ -20,9 +20,10 @@ public sealed class ProblemsFixFrontEndTests
         var command = ConventionCoverageTests.CodeOnly(Path.Combine(Root, "Inferpal", "Commands", "FixErrorListCommand.cs"));
 
         // guidSHLMainMenu / IDM_VS_CTXT_ERRORLIST (vsshlids.h).
-        Assert.Contains("new(\"d309f791-903f-11d0-9efc-00a0c911004f\")", command, StringComparison.Ordinal);
-        Assert.Contains("IdmVsCtxtErrorList = 0x0405", command, StringComparison.Ordinal);
-        Assert.Contains("GroupPlacement.VsctParent(ShlMainMenuGuid, IdmVsCtxtErrorList", command, StringComparison.Ordinal);
+        var menus = ConventionCoverageTests.CodeOnly(Path.Combine(Root, "Inferpal", "Commands", "VsctMenus.cs"));
+        Assert.Contains("ShlMainMenu = new(\"d309f791-903f-11d0-9efc-00a0c911004f\")", menus, StringComparison.Ordinal);
+        Assert.Matches(@"ErrorListContext\s*=\s*0x0405;", menus);
+        Assert.Contains("GroupPlacement.VsctParent(VsctMenus.ShlMainMenu, VsctMenus.ErrorListContext", command, StringComparison.Ordinal);
         // Asked, refused with its cause, the ignore files declared before the attachment reads a file, then sent with the
         // chat's tools (a model override would make it a tool-less code action).
         Assert.Matches(@"ErrorListSelectionSignal\.AskAsync\([\s\S]*?ProblemsFix\.Refusal\(answer[\s\S]*?ShowPromptAsync\(refusal"
@@ -67,22 +68,30 @@ public sealed class ProblemsFixFrontEndTests
     [Fact]
     public void VsCode_AsksTheHost_ThenSendsItsQuestionWithTheChip_NeverDuringATurn()
     {
-        var body = ConversationPersistenceSilenceTests.TsMethodBody(
-            Path.Combine(Root, "vscode", "src", "chatViewProvider.ts"), "async fixProblems(");
+        var provider = Path.Combine(Root, "vscode", "src", "chatViewProvider.ts");
+        // The quick fix asks the host for its question, answered with the chat's tools (fixing is editing).
+        Assert.Contains("this.askWithChip((host) => host.problemsFix(problems), 'fix problems', false)",
+                        ConversationPersistenceSilenceTests.TsMethodBody(provider, "fixProblems(problems: ProblemEntry[])"),
+                        StringComparison.Ordinal);
+        var body = ConversationPersistenceSilenceTests.TsMethodBody(provider, "private async askWithChip(");
 
         var busy   = body.IndexOf("if (this.busy)", StringComparison.Ordinal);
-        var asks   = body.IndexOf("host.problemsFix(problems)", StringComparison.Ordinal);
+        var asks   = body.IndexOf("ask = await build(host)", StringComparison.Ordinal);
         var again  = body.IndexOf("if (this.busy)", asks, StringComparison.Ordinal);
-        var chip   = body.IndexOf("this.addChip(fix.chip, fix.content)", StringComparison.Ordinal);
-        var send   = body.IndexOf("await this.send(fix.question)", StringComparison.Ordinal);
-        var unsent = body.IndexOf("if (this.pendingAttachments.includes(chip))", StringComparison.Ordinal);
-        // Refused before and after the host's answer (a turn begun meanwhile), and a chip the question did not take is
-        // taken back: left in the composer, it rode the next question.
-        Assert.True(busy >= 0 && asks > busy && again > asks && chip > again && send > chip && unsent > send, body);
+        var chip   = body.IndexOf("this.addChip(ask.chip, ask.content)", StringComparison.Ordinal);
+        var aside  = body.IndexOf("const draft = this.pendingAttachments.filter((a) => !a.auto);", StringComparison.Ordinal);
+        var send   = body.IndexOf("this.send(ask.question", StringComparison.Ordinal);
+        var back   = body.IndexOf("this.pendingAttachments = [...draft, ...this.pendingAttachments.filter((a) => a !== chip)];",
+                                  StringComparison.Ordinal);
+        // Refused before and after the host's answer (a turn begun meanwhile); the draft's chips set aside, so the
+        // gesture's chip goes alone; and given back after — with a gesture's chip the question did not take taken back:
+        // left in the composer, it rode the next question.
+        Assert.True(busy >= 0 && asks > busy && again > asks && aside > again && chip > aside && send > chip && back > send, body);
+        Assert.Contains("} finally {", body[send..back], StringComparison.Ordinal);
         Assert.Contains("this.hostForGesture()", body, StringComparison.Ordinal);
         Assert.Contains("this.gestureFailed(", body, StringComparison.Ordinal);
-        // The host's refusal (no problem the agent can edit) is said, and nothing is sent.
-        Assert.Matches(@"if \(fix\.refusal\) \{\s*void vscode\.window\.showWarningMessage\(fix\.refusal\);\s*return;", body);
-        Assert.InRange(body.IndexOf("if (fix.refusal)", StringComparison.Ordinal), asks, chip);
+        // The host's refusal (no problem the agent can edit, nothing paused) is said, and nothing is sent.
+        Assert.Matches(@"if \(ask\.refusal\) \{\s*void vscode\.window\.showWarningMessage\(ask\.refusal\);\s*return;", body);
+        Assert.InRange(body.IndexOf("if (ask.refusal)", StringComparison.Ordinal), asks, chip);
     }
 }

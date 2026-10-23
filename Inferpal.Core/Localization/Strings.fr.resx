@@ -93,6 +93,10 @@ Cette action est irréversible.</value></data>
   <data name="FixProblemsNoInProc" xml:space="preserve"><value>La sélection de la liste d'erreurs n'a pas pu être lue : la partie in-process d'Inferpal n'est pas chargée dans ce Visual Studio — /diagnostics dit pourquoi.</value></data>
   <data name="FixProblemsNoAnswer" xml:space="preserve"><value>Visual Studio n'a pas donné la sélection de la liste d'erreurs à temps. Réessayez.</value></data>
   <data name="FixProblemsUnreadable" xml:space="preserve"><value>La sélection de la liste d'erreurs n'a pas pu être lue ({0}).</value></data>
+  <data name="AnalyzeStopQuestion" xml:space="preserve"><value>Pourquoi le programme s'est-il arrêté ici ? À partir de la pile des appels, des variables et du code autour de chaque frame, explique la cause et comment la corriger.</value></data>
+  <data name="AnalyzeStopChip" xml:space="preserve"><value>Arrêt du débogueur</value></data>
+  <data name="AnalyzeStopNotPaused" xml:space="preserve"><value>Le débogueur n'est pas en pause : arrêtez-vous sur un point d'arrêt ou une exception, puis redemandez.</value></data>
+  <data name="AnalyzeStopNoInProc" xml:space="preserve"><value>L'état du débogueur n'a pas pu être lu : la partie in-process d'Inferpal n'est pas chargée dans ce Visual Studio — /diagnostics dit pourquoi.</value></data>
 
   <!-- Prompts menus contextuels éditeur — {0}=nomFichier, {1}=bloc de code -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>Explique le code de `{0}` avec ces quatre sections :

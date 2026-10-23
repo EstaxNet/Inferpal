@@ -90,6 +90,10 @@ Tej operacji nie można cofnąć.</value></data>
   <data name="FixProblemsNoInProc" xml:space="preserve"><value>Nie udało się odczytać zaznaczenia Listy błędów: część in-process Inferpal nie jest załadowana w tym Visual Studio — /diagnostics podaje przyczynę.</value></data>
   <data name="FixProblemsNoAnswer" xml:space="preserve"><value>Visual Studio nie przekazało na czas zaznaczenia Listy błędów. Spróbuj ponownie.</value></data>
   <data name="FixProblemsUnreadable" xml:space="preserve"><value>Nie udało się odczytać zaznaczenia Listy błędów ({0}).</value></data>
+  <data name="AnalyzeStopQuestion" xml:space="preserve"><value>Dlaczego program zatrzymał się tutaj? Na podstawie stosu wywołań, zmiennych i kodu wokół każdej ramki wyjaśnij przyczynę i jak ją naprawić.</value></data>
+  <data name="AnalyzeStopChip" xml:space="preserve"><value>Zatrzymanie debugera</value></data>
+  <data name="AnalyzeStopNotPaused" xml:space="preserve"><value>Debuger nie jest wstrzymany: zatrzymaj się na punkcie przerwania lub wyjątku, a następnie poproś ponownie.</value></data>
+  <data name="AnalyzeStopNoInProc" xml:space="preserve"><value>Nie udało się odczytać stanu debugera: część in-process Inferpal nie jest załadowana w tym Visual Studio — /diagnostics podaje przyczynę.</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>Wyjaśnij kod z `{0}` w czterech sekcjach:

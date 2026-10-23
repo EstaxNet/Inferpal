@@ -90,6 +90,10 @@ Questa azione non può essere annullata.</value></data>
   <data name="FixProblemsNoInProc" xml:space="preserve"><value>Non è stato possibile leggere la selezione dell'Elenco errori: la parte in-process di Inferpal non è caricata in questo Visual Studio — /diagnostics dice perché.</value></data>
   <data name="FixProblemsNoAnswer" xml:space="preserve"><value>Visual Studio non ha fornito in tempo la selezione dell'Elenco errori. Riprovate.</value></data>
   <data name="FixProblemsUnreadable" xml:space="preserve"><value>Non è stato possibile leggere la selezione dell'Elenco errori ({0}).</value></data>
+  <data name="AnalyzeStopQuestion" xml:space="preserve"><value>Perché il programma si è fermato qui? Dallo stack di chiamate, dalle variabili e dal codice attorno a ogni frame, spiega la causa e come correggerla.</value></data>
+  <data name="AnalyzeStopChip" xml:space="preserve"><value>Arresto del debugger</value></data>
+  <data name="AnalyzeStopNotPaused" xml:space="preserve"><value>Il debugger non è in pausa: fermatevi su un punto di interruzione o un'eccezione, poi richiedete.</value></data>
+  <data name="AnalyzeStopNoInProc" xml:space="preserve"><value>Non è stato possibile leggere lo stato del debugger: la parte in-process di Inferpal non è caricata in questo Visual Studio — /diagnostics dice perché.</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>Spiega il codice da `{0}` con queste quattro sezioni:

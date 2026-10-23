@@ -93,6 +93,10 @@
   <data name="FixProblemsNoInProc" xml:space="preserve"><value>无法读取错误列表的选择：此 Visual Studio 中未加载 Inferpal 的进程内部分 — 原因见 /diagnostics。</value></data>
   <data name="FixProblemsNoAnswer" xml:space="preserve"><value>Visual Studio 未及时提供错误列表的选择。请重试。</value></data>
   <data name="FixProblemsUnreadable" xml:space="preserve"><value>无法读取错误列表的选择（{0}）。</value></data>
+  <data name="AnalyzeStopQuestion" xml:space="preserve"><value>程序为什么停在这里？请根据调用堆栈、变量以及每个帧周围的代码，解释原因以及如何修复。</value></data>
+  <data name="AnalyzeStopChip" xml:space="preserve"><value>调试器停止</value></data>
+  <data name="AnalyzeStopNotPaused" xml:space="preserve"><value>调试器未暂停：请先在断点或异常处停止，然后再次请求。</value></data>
+  <data name="AnalyzeStopNoInProc" xml:space="preserve"><value>无法读取调试器状态：此 Visual Studio 中未加载 Inferpal 的进程内部分 — 原因见 /diagnostics。</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>请用以下四个部分解释 `{0}` 中的代码：

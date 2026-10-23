@@ -1324,12 +1324,29 @@ internal sealed partial class HostServer : IDisposable
     /// and the code around each, built by the Core as for Visual Studio's Error List.
     /// </summary>
     [JsonRpcMethod("problems/fix", UseSingleObjectParameterDeserialization = true)]
-    public async Task<ProblemsFixResult> ProblemsFixPromptAsync(ProblemsFixParams p, CancellationToken ct)
+    public async Task<GestureQuestion> ProblemsFixPromptAsync(ProblemsFixParams p, CancellationToken ct)
     {
         if (Services.CodeActions.ProblemsFix.NothingEditable(p.Problems, Session().RootDir) is { } outOfReach)
-            return new ProblemsFixResult(string.Empty, string.Empty, string.Empty, outOfReach);
+            return new GestureQuestion(string.Empty, string.Empty, string.Empty, outOfReach);
         var (question, chip, content) = await Services.CodeActions.ProblemsFix.ForAsync(p.Problems, Session().Overlay, ct);
-        return new ProblemsFixResult(question, chip, content);
+        return new GestureQuestion(question, chip, content);
+    }
+
+    /// <summary>
+    /// "Analyze with Inferpal" on a debugger stop in VS Code: the question and its attachment — the stop as
+    /// <c>@debugger</c> renders it and the code around each frame — or why there is none (nothing paused). Sent by the
+    /// extension as a code action, without tools: nothing runs.
+    /// </summary>
+    [JsonRpcMethod("debug/analyze", UseSingleObjectParameterDeserialization = true)]
+    public async Task<GestureQuestion> DebugAnalyzeAsync(DebugAnalyzeParams p, CancellationToken ct)
+    {
+        var s = Session();
+        // Sized for the window of the model chat/send asks for this code action: the same call, or the attachment is
+        // sized for one model and read by another.
+        var window = await Services.Agent.ContextManager.EffectiveWindowAsync(
+            s.Config, s.Client, TurnModel(s, codeAction: true, agentMode: false, p.Model, overridesRoles: false), ct);
+        var a = await Services.Debugging.DebugStopAnalysis.ForAsync(s.Debug, s.RootDir, s.Overlay, CodeExcerpt.BudgetFor(window), ct);
+        return new GestureQuestion(a.Question, a.Chip, a.Content, a.Refusal);
     }
 
     // ── Config ─────────────────────────────────────────────────────────────────

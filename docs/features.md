@@ -203,6 +203,15 @@ exists.
   that does not compile is refused instead of freezing the IDE on a modal. Visual Studio drives
   its own debugger in-process; VS Code goes through a DAP bridge — same command, either editor.
   `/debug` alone reports the current break state; `/debug stop` ends the session.
+- **Analyze with Inferpal, at a debugger stop** — stopped at a breakpoint or an exception, choose **Analyze with
+  Inferpal** in Visual Studio's Debug menu or in the context menu of the Call Stack, Locals, Autos or Watch window; in
+  VS Code, in the context menu of the call stack or the variables, or *Inferpal: Analyze the Debugger Stop* in the
+  palette. The model gets the stop as `@debugger` shows it — the reason, the exception, your frames, the locals — and
+  the code around each of your frames in the workspace (a file outside it is counted, never read), sized for the window
+  the code-actions model loaded, and explains the cause. It answers **without tools**: nothing is continued, stepped or
+  evaluated. The whole stop is sent, not the row you right-clicked. Nothing paused, or a debugger that does not answer,
+  is said, and nothing is sent. During a turn, Visual Studio sends it when the turn ends — the stop as it was when you
+  clicked; VS Code asks you to wait.
 
 ## Inline completions
 

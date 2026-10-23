@@ -34,19 +34,14 @@ internal static class ProblemsFix
             ?? Strings.FixProblemsOutside;
     }
 
-    /// <summary>
-    /// What goes to the chat, the files read as the editor has them: an unsaved buffer's text, else the disk's.
-    /// </summary>
-    /// <remarks>⚠ A problem an editor reports in a buffer that is not saved points at the BUFFER's lines: read from disk,
-    /// the code around it is another code, or none.</remarks>
+    /// <summary>What goes to the chat, the files read as the editor has them
+    /// (<see cref="FixPromptBuilder.AsTheEditorHasIt"/>).</summary>
     internal static async Task<(string Question, string Chip, string Content)> ForAsync(
         IReadOnlyList<ProblemEntry> problems, Editor.OpenDocumentOverlay? overlay, CancellationToken ct)
     {
         if (overlay is not null)
             await overlay.RefreshAsync(ct, problems.Select(p => p.File).OfType<string>().Distinct().ToList());
-        return For(problems, path => overlay is not null && overlay.TryGetUnsaved(path, out var buffered)
-            ? buffered
-            : FixPromptBuilder.ReadFromDisk(path));
+        return For(problems, FixPromptBuilder.AsTheEditorHasIt(overlay));
     }
 
     /// <summary>What goes to the chat: the question, the attachment's label, and the attachment — each problem as a build

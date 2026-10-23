@@ -90,6 +90,10 @@
   <data name="FixProblemsNoInProc" xml:space="preserve"><value>오류 목록의 선택을 읽지 못했습니다: 이 Visual Studio에 Inferpal의 in-process 부분이 로드되지 않았습니다 — 이유는 /diagnostics에서 확인하세요.</value></data>
   <data name="FixProblemsNoAnswer" xml:space="preserve"><value>Visual Studio가 오류 목록의 선택을 제때 넘겨주지 않았습니다. 다시 시도하세요.</value></data>
   <data name="FixProblemsUnreadable" xml:space="preserve"><value>오류 목록의 선택을 읽지 못했습니다({0}).</value></data>
+  <data name="AnalyzeStopQuestion" xml:space="preserve"><value>프로그램이 왜 여기서 멈췄나요? 호출 스택, 변수, 각 프레임 주변의 코드를 바탕으로 원인과 해결 방법을 설명해 주세요.</value></data>
+  <data name="AnalyzeStopChip" xml:space="preserve"><value>디버거 중지</value></data>
+  <data name="AnalyzeStopNotPaused" xml:space="preserve"><value>디버거가 일시 중지되지 않았습니다. 중단점이나 예외에서 멈춘 뒤 다시 요청하세요.</value></data>
+  <data name="AnalyzeStopNoInProc" xml:space="preserve"><value>디버거 상태를 읽지 못했습니다: 이 Visual Studio에 Inferpal의 in-process 부분이 로드되지 않았습니다 — 이유는 /diagnostics에서 확인하세요.</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>`{0}`의 코드를 다음 네 섹션으로 설명해 주세요:

@@ -16,14 +16,8 @@ namespace Inferpal.Commands;
 [VisualStudioContribution]
 internal class FixErrorListCommand : Command
 {
-    // guidSHLMainMenu / IDM_VS_CTXT_ERRORLIST — the Error List's right-click menu.
-    private static readonly Guid ShlMainMenuGuid = new("d309f791-903f-11d0-9efc-00a0c911004f");
-    private const uint IdmVsCtxtErrorList = 0x0405;
-
     /// <summary>The in-process half reads the list on the UI thread, which is free once the menu has closed.</summary>
     private static readonly TimeSpan AnswerBudget = TimeSpan.FromSeconds(5);
-
-    private static readonly Services.Governance.OpenWorkspaceExclusions Exclusions = new(() => InferpalConfig.Load().IgnoreFiles);
 
     private readonly VsContextHolder _contextHolder;
     private readonly Services.Editor.OpenDocumentOverlay _overlay;
@@ -44,7 +38,7 @@ internal class FixErrorListCommand : Command
     // GroupPlacement.VsctParent parents a group to a VSCT menu; CommandPlacement.VsctParent would need a group ID.
     [VisualStudioContribution]
     internal static CommandGroupConfiguration ErrorListContextGroup { get; } =
-        new(GroupPlacement.VsctParent(ShlMainMenuGuid, IdmVsCtxtErrorList, 0))
+        new(GroupPlacement.VsctParent(VsctMenus.ShlMainMenu, VsctMenus.ErrorListContext, 0))
         {
             Children = [GroupChild.Command<FixErrorListCommand>()],
         };
@@ -61,9 +55,7 @@ internal class FixErrorListCommand : Command
             return;
         }
 
-        // The chat window declares the workspace's ignore files; it may never have been opened in this session, and an
-        // excluded file must not be read into the attachment.
-        Exclusions.Follow();
+        WorkspaceExclusions.Follow();
         if (ProblemsFix.NothingEditable(answer!.Problems, SolutionExtent.ActiveRoot()) is { } outOfReach)
         {
             await Extensibility.Shell().ShowPromptAsync(outOfReach, PromptOptions.OK, ct);

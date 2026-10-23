@@ -71,9 +71,16 @@ internal static class FixPromptBuilder
     public static string Build(string rawErrors, Func<string, string?> tryReadFile)
     {
         var sb = new StringBuilder(Strings.PromptFixErrors(rawErrors));
-        AppendAffectedFiles(sb, ExtractErrorSites(rawErrors), tryReadFile);
+        AppendAffectedFiles(sb, ExtractErrorSites(rawErrors), tryReadFile, DiagnosticSites);
         return sb.ToString();
     }
+
+    /// <summary>A file as the editor has it: an unsaved buffer's text (<paramref name="overlay"/>, refreshed by the
+    /// caller), else the disk's (<see cref="ReadFromDisk"/>).</summary>
+    /// <remarks>⚠ What an editor reports in a buffer that is not saved — a problem, a debugger frame — points at the
+    /// BUFFER's lines: read from disk, the code around it is another code, or none.</remarks>
+    internal static Func<string, string?> AsTheEditorHasIt(Editor.OpenDocumentOverlay? overlay) =>
+        path => overlay is not null && overlay.TryGetUnsaved(path, out var buffered) ? buffered : ReadFromDisk(path);
 
     /// <summary>
     /// The attachment of a "fix these problems" question: each problem as a build prints it, then the "Affected files"
@@ -111,7 +118,7 @@ internal static class FixPromptBuilder
             sb.AppendLine(line);
             if (!string.IsNullOrEmpty(p.File)) AddSite(sites, p.File, p.Line);
         }
-        AppendAffectedFiles(sb, sites, tryReadFile);
+        AppendAffectedFiles(sb, sites, tryReadFile, DiagnosticSites);
         return sb.ToString().TrimEnd();
     }
 
@@ -133,11 +140,38 @@ internal static class FixPromptBuilder
         return $"{where}{p.Severity}{code}: {p.Text}{source}";
     }
 
+    /// <summary>How a section of code around places names them, for the model.</summary>
+    /// <param name="Heading">The section's heading.</param>
+    /// <param name="Noun">What a place is ("diagnostic", "frame"), in the notes on what is left out.</param>
+    /// <param name="Reader">The tool the model reads the rest with; <c>null</c> when it has none (a question answered
+    /// without tools): a note never names a remedy the reader cannot use.</param>
+    /// <param name="WholeWhenItFits">A file that fits is shown whole; <c>false</c>: always as windows under the lines
+    /// they span — for places named by their line alone, which a whole file shows without numbers.</param>
+    internal sealed record SiteWords(string Heading, string Noun, string? Reader, bool WholeWhenItFits = true);
+
+    private static readonly SiteWords DiagnosticSites = new("Affected files:", "diagnostic", "read_file");
+
+    /// <summary>
+    /// The code at <paramref name="sites"/> (a path and a 1-based line each): each file whole when it fits, otherwise its
+    /// windows — what is left out, named above what is shown. Empty when no site can be shown or named. The same
+    /// section as a build's errors get, for any other places: the debugger's frames.
+    /// </summary>
+    internal static string CodeAround(IEnumerable<(string Path, int Line)> sites, Func<string, string?> tryReadFile,
+                                      SiteWords words)
+    {
+        var grouped = new List<(string Path, List<int> Lines)>();
+        foreach (var (path, line) in sites) AddSite(grouped, path, line);
+        var sb = new StringBuilder();
+        AppendAffectedFiles(sb, grouped, tryReadFile, words);
+        return sb.ToString().Trim();
+    }
+
     /// <summary>The "Affected files" section: each file whole when it fits, otherwise its windows — what is left out,
     /// named above what is shown.</summary>
     private static void AppendAffectedFiles(StringBuilder sb, List<(string Path, List<int> Lines)> sites,
-                                            Func<string, string?> tryReadFile)
+                                            Func<string, string?> tryReadFile, SiteWords words)
     {
+        var remedy = words.Reader is null ? string.Empty : $" — {words.Reader} gives them";
         var files    = new StringBuilder();
         var unread   = new List<string>();
         var excluded = new Governance.ContentExclusions.Tally();
@@ -149,7 +183,7 @@ internal static class FixPromptBuilder
             if (content is null) { unread.Add(path); continue; }
 
             files.AppendLine($"\n### {path}");
-            if (content.Length <= MaxFileChars)
+            if (content.Length <= MaxFileChars && words.WholeWhenItFits)
             {
                 files.AppendLine("```");
                 files.AppendLine(content);
@@ -157,19 +191,19 @@ internal static class FixPromptBuilder
             }
             else
             {
-                AppendWindows(files, content, lines);
+                AppendWindows(files, content, lines, words, remedy);
             }
         }
         var notShown = sites.Skip(MaxFiles).Select(s => s.Path).ToList();
         if (files.Length == 0 && unread.Count == 0 && notShown.Count == 0 && excluded.Count == 0) return;
 
-        sb.AppendLine("\n\nAffected files:");
+        sb.AppendLine($"\n\n{words.Heading}");
         if (excluded.Count > 0)
             sb.AppendLine($"({excluded.Count} file(s) excluded from AI tools by {excluded.Rules()}, not shown — they exist, "
                         + "and their content is not read)");
         if (notShown.Count > 0)
-            sb.AppendLine($"({notShown.Count} more file(s) with diagnostics past the first {MaxFiles}, not shown here: "
-                        + $"{Named(notShown)} — read_file gives them)");
+            sb.AppendLine($"({notShown.Count} more file(s) with {words.Noun}s past the first {MaxFiles}, not shown here: "
+                        + $"{Named(notShown)}{remedy})");
         if (unread.Count > 0)
             sb.AppendLine($"(could not be read, not shown: {Named(unread)})");
         sb.Append(files);
@@ -191,7 +225,8 @@ internal static class FixPromptBuilder
     /// follow the diagnostics; the head keeps the usings a missing-type error is fixed in. The line ranges
     /// sit OUTSIDE the code blocks, so a model that copies a block into an edit copies code only.
     /// </remarks>
-    private static void AppendWindows(StringBuilder sb, string content, IReadOnlyList<int> errorLines)
+    private static void AppendWindows(StringBuilder sb, string content, IReadOnlyList<int> errorLines, SiteWords words,
+                                      string remedy)
     {
         var lines = content.Split('\n');
         var total = content.EndsWith('\n') ? lines.Length - 1 : lines.Length;
@@ -209,8 +244,8 @@ internal static class FixPromptBuilder
                 windows.Add(w);
         }
 
-        sb.AppendLine($"({total} lines — shown: the top of the file and the lines around each diagnostic; "
-                    + "read_file gives any other range)");
+        sb.AppendLine($"({total} lines — shown: the top of the file and the lines around each {words.Noun}"
+                    + (words.Reader is null ? ")" : $"; {words.Reader} gives any other range)"));
 
         var used = 0;
         var left = new List<int>();
@@ -234,8 +269,8 @@ internal static class FixPromptBuilder
         }
 
         if (left.Count > 0)
-            sb.AppendLine($"(diagnostic line(s) {string.Join(", ", left.Distinct().Order())} not shown: "
-                        + $"past the {MaxFileChars}-character budget — read_file gives them)");
+            sb.AppendLine($"({words.Noun} line(s) {string.Join(", ", left.Distinct().Order())} not shown: "
+                        + $"past the {MaxFileChars}-character budget{remedy})");
     }
 
     /// <summary>

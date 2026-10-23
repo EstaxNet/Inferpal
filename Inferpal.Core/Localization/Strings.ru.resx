@@ -90,6 +90,10 @@
   <data name="FixProblemsNoInProc" xml:space="preserve"><value>Не удалось прочитать выделение в списке ошибок: внутрипроцессная часть Inferpal не загружена в этом Visual Studio — /diagnostics скажет почему.</value></data>
   <data name="FixProblemsNoAnswer" xml:space="preserve"><value>Visual Studio не передал выделение списка ошибок вовремя. Повторите попытку.</value></data>
   <data name="FixProblemsUnreadable" xml:space="preserve"><value>Не удалось прочитать выделение в списке ошибок ({0}).</value></data>
+  <data name="AnalyzeStopQuestion" xml:space="preserve"><value>Почему программа остановилась здесь? По стеку вызовов, переменным и коду вокруг каждого кадра объясни причину и как её исправить.</value></data>
+  <data name="AnalyzeStopChip" xml:space="preserve"><value>Остановка отладчика</value></data>
+  <data name="AnalyzeStopNotPaused" xml:space="preserve"><value>Отладчик не приостановлен: остановитесь на точке останова или исключении, затем запросите снова.</value></data>
+  <data name="AnalyzeStopNoInProc" xml:space="preserve"><value>Не удалось прочитать состояние отладчика: внутрипроцессная часть Inferpal не загружена в этом Visual Studio — /diagnostics скажет почему.</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>Объясни код из `{0}` по четырём разделам:

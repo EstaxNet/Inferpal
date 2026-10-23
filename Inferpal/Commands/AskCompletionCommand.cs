@@ -40,11 +40,8 @@ internal class AskCompletionCommand : Command
             path = null;
         }
         var config = InferpalConfig.Load();
-        // The chat window declares the workspace's ignore files; it may never have been opened in this session.
-        Exclusions.Follow();
+        WorkspaceExclusions.Follow();
         CompletionAskSignal.Write(AskedCompletion.Refusal(config, path), AskedCompletion.Nothing, AskedCompletion.ServerFailed,
                                   Strings.CompletionAskedListHint, Strings.CompletionAskedNoEditor);
     }
-
-    private static readonly Services.Governance.OpenWorkspaceExclusions Exclusions = new(() => InferpalConfig.Load().IgnoreFiles);
 }

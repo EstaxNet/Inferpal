@@ -434,6 +434,11 @@ internal static class Strings
     public static string FixProblemsNoAnswer    => Get(nameof(FixProblemsNoAnswer));
     /// <summary>{0}=why, as the in-process part says it (English).</summary>
     public static string FixProblemsUnreadable(string why) => Format(Get(nameof(FixProblemsUnreadable)), why);
+    /// <summary>The question of "Analyze with Inferpal" on a debugger stop.</summary>
+    public static string AnalyzeStopQuestion  => Get(nameof(AnalyzeStopQuestion));
+    public static string AnalyzeStopChip      => Get(nameof(AnalyzeStopChip));
+    public static string AnalyzeStopNotPaused => Get(nameof(AnalyzeStopNotPaused));
+    public static string AnalyzeStopNoInProc  => Get(nameof(AnalyzeStopNoInProc));
 
     // ── Editor context menu prompts ────────────────────────────────────────────
     // Legacy two-arg overloads kept for reference; all active call sites use the
