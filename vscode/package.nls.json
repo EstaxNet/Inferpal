@@ -17,6 +17,7 @@
   "inferpal.command.refactorSelection": "Inferpal: Refactor This Code",
   "inferpal.command.docSelection": "Inferpal: Document This Code",
   "inferpal.command.reviewCommit": "Inferpal: Review a Commit…",
+  "inferpal.command.fixProblems": "Inferpal: Fix the Problems at the Cursor",
   "inferpal.command.editSelection": "Inferpal: Edit with AI…",
   "inferpal.command.explainSelection": "Inferpal: Explain This Code",
   "inferpal.command.testSelection": "Inferpal: Add Tests",

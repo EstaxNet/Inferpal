@@ -16,7 +16,8 @@ import { renderChatHtml } from './webview/chatWebviewHtml';
 import { samePath } from './debugBridge';
 import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
 import {
-  ApprovalCard, CodeActionResult, InputCard, InputFormAnswer, SavedMessage, SlashEffect, TestsGenerateResult, TurnNote,
+  ApprovalCard, CodeActionResult, InputCard, InputFormAnswer, ProblemEntry, ProblemsFixResult, SavedMessage, SlashEffect,
+  TestsGenerateResult, TurnNote,
 } from './protocol';
 import {
   WebviewToExt,
@@ -3271,6 +3272,51 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // selection when it RUNS, and queued it would rewrite whatever is selected once the turn ends. Visual Studio queues
     // its context-menu actions because it takes their code at the click.
     await this.send(text);
+  }
+
+  /**
+   * "Fix with Inferpal" from a quick fix: the Core's question, with the diagnostics and the code around each as its chip
+   * — what Visual Studio's Error List sends. Refused during a turn, like the build banner's Fix them: the chip would ride
+   * the next question.
+   */
+  async fixProblems(problems: ProblemEntry[]): Promise<void> {
+    try {
+      await vscode.commands.executeCommand('inferpal.chat.focus');
+    } catch {
+      // view can't be revealed (rare) — the question still goes, bubbles land on next open
+    }
+    if (this.busy) {
+      void vscode.window.showWarningMessage(t('A turn is still running — wait for it to finish or stop it, then try again.'));
+      return;
+    }
+    const host = this.hostForGesture();
+    if (!host) {
+      return;
+    }
+    let fix: ProblemsFixResult;
+    try {
+      fix = await host.problemsFix(problems);
+    } catch (err) {
+      this.gestureFailed('fix problems', err);
+      return;
+    }
+    if (fix.refusal) {
+      void vscode.window.showWarningMessage(fix.refusal);
+      return;
+    }
+    // A turn may have started while the host built the attachment: the chip would ride it, or the next question.
+    if (this.busy) {
+      void vscode.window.showWarningMessage(t('A turn is still running — wait for it to finish or stop it, then try again.'));
+      return;
+    }
+    this.addChip(fix.chip, fix.content);
+    const chip = this.pendingAttachments[this.pendingAttachments.length - 1];
+    await this.send(fix.question);
+    // Refused (the backend down, a turn begun meanwhile): the chip goes with the question, never with the next one.
+    if (this.pendingAttachments.includes(chip)) {
+      this.pendingAttachments = this.pendingAttachments.filter((a) => a !== chip);
+      this.postChips();
+    }
   }
 
   /**

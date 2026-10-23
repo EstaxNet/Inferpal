@@ -421,6 +421,19 @@ internal static class Strings
 
     public static string PromptFixErrors(string errors) =>
         Format(Get(nameof(PromptFixErrors)), errors);
+    /// <summary>The question of a "Fix with Inferpal" on chosen problems: "this" for one, "these" for more — never by a
+    /// plural rule, which reads 21 as one in Russian.</summary>
+    public static string FixProblemsQuestion(int count) =>
+        count == 1 ? FixProblemQuestion : Get(nameof(FixProblemsQuestion));
+    private static string FixProblemQuestion   => Get(nameof(FixProblemQuestion));
+    public static string FixProblemsOutside    => Get(nameof(FixProblemsOutside));
+    /// <summary>The attachment's label: the problems and the code around them — {0}=how many.</summary>
+    public static string FixProblemsChip(int count) => Format(Get(nameof(FixProblemsChip)), count);
+    public static string FixProblemsNoSelection => Get(nameof(FixProblemsNoSelection));
+    public static string FixProblemsNoInProc    => Get(nameof(FixProblemsNoInProc));
+    public static string FixProblemsNoAnswer    => Get(nameof(FixProblemsNoAnswer));
+    /// <summary>{0}=why, as the in-process part says it (English).</summary>
+    public static string FixProblemsUnreadable(string why) => Format(Get(nameof(FixProblemsUnreadable)), why);
 
     // ── Editor context menu prompts ────────────────────────────────────────────
     // Legacy two-arg overloads kept for reference; all active call sites use the

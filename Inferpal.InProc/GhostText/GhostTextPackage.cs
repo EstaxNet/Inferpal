@@ -73,6 +73,9 @@ internal sealed class GhostTextPackage : AsyncPackage
         // tree), so only this in-process side can call BringIntoView/ScrollToEnd on it.
         try { ChatAutoScroller.Initialize(); } catch { /* non-critical */ }
 
+        // The Error List's "Fix with Inferpal" asks this side for the lines chosen in the list.
+        ErrorListSelectionWatcher.Start();
+
         if (buildMgr is null || solution is null) return;
         try
         {
@@ -160,7 +163,11 @@ internal sealed class GhostTextPackage : AsyncPackage
         }
         // The sidecar dies with devenv anyway (its stdin closes), but a package disposed while devenv
         // lives on must not leave it running.
-        if (disposing) FimSidecar.Shutdown();
+        if (disposing)
+        {
+            FimSidecar.Shutdown();
+            ErrorListSelectionWatcher.Stop();
+        }
         base.Dispose(disposing);
     }
 }

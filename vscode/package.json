@@ -155,6 +155,10 @@
       {
         "command": "inferpal.reviewCommit",
         "title": "%inferpal.command.reviewCommit%"
+      },
+      {
+        "command": "inferpal.fixProblems",
+        "title": "%inferpal.command.fixProblems%"
       }
     ],
     "menus": {

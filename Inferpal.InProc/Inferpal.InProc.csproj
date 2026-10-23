@@ -118,6 +118,8 @@
     <Compile Include="..\Inferpal.Core\Services\Signals\DebugCommandSignal.cs"       Link="Shared\Signals\DebugCommandSignal.cs" />
     <Compile Include="..\Inferpal.Core\Services\Signals\InlineDiffPreviewSignal.cs"  Link="Shared\Signals\InlineDiffPreviewSignal.cs" />
     <Compile Include="..\Inferpal.Core\Services\Signals\CompletionAskSignal.cs"      Link="Shared\Signals\CompletionAskSignal.cs" />
+    <Compile Include="..\Inferpal.Core\Services\Signals\ErrorListSelectionSignal.cs" Link="Shared\Signals\ErrorListSelectionSignal.cs" />
+    <Compile Include="..\Inferpal.Core\Services\CodeActions\ProblemEntry.cs"        Link="Shared\CodeActions\ProblemEntry.cs" />
     <Compile Include="..\Inferpal.Core\Services\Signals\LastKnownSolutionFile.cs"    Link="Shared\Signals\LastKnownSolutionFile.cs" />
     <Compile Include="..\Inferpal.Core\Services\CodeActions\InlineDiffPlanner.cs"    Link="Shared\CodeActions\InlineDiffPlanner.cs" />
     <Compile Include="..\Inferpal.Core\Services\CodeActions\FimContextBuilder.cs"    Link="Shared\CodeActions\FimContextBuilder.cs" />

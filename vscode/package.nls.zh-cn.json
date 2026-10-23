@@ -17,6 +17,7 @@
   "inferpal.command.refactorSelection": "Inferpal：重构此代码",
   "inferpal.command.docSelection": "Inferpal：为此代码添加文档",
   "inferpal.command.reviewCommit": "Inferpal：评审一个提交…",
+  "inferpal.command.fixProblems": "Inferpal：修复光标处的问题",
   "inferpal.command.editSelection": "Inferpal：使用 AI 编辑…",
   "inferpal.command.explainSelection": "Inferpal：解释此代码",
   "inferpal.command.testSelection": "Inferpal：添加测试",

@@ -82,6 +82,14 @@ Diese Aktion kann nicht rückgängig gemacht werden.</value></data>
   <data name="PromptFixErrors" xml:space="preserve"><value>Behebe die folgenden Build-Fehler:
 
 {0}</value></data>
+  <data name="FixProblemsQuestion" xml:space="preserve"><value>Behebe diese Probleme.</value></data>
+  <data name="FixProblemQuestion" xml:space="preserve"><value>Behebe dieses Problem.</value></data>
+  <data name="FixProblemsOutside" xml:space="preserve"><value>Diese Probleme liegen in Dateien außerhalb des Arbeitsbereichs von Inferpal: Seine Werkzeuge können sie nicht bearbeiten.</value></data>
+  <data name="FixProblemsChip" xml:space="preserve"><value>{0} {0:Problem|Probleme}</value></data>
+  <data name="FixProblemsNoSelection" xml:space="preserve"><value>Wählen Sie eine oder mehrere Zeilen in der Fehlerliste aus und wählen Sie dann erneut „Mit Inferpal beheben“.</value></data>
+  <data name="FixProblemsNoInProc" xml:space="preserve"><value>Die Auswahl der Fehlerliste konnte nicht gelesen werden: Der In-Process-Teil von Inferpal ist in diesem Visual Studio nicht geladen – /diagnostics nennt den Grund.</value></data>
+  <data name="FixProblemsNoAnswer" xml:space="preserve"><value>Visual Studio hat die Auswahl der Fehlerliste nicht rechtzeitig geliefert. Versuchen Sie es erneut.</value></data>
+  <data name="FixProblemsUnreadable" xml:space="preserve"><value>Die Auswahl der Fehlerliste konnte nicht gelesen werden ({0}).</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>Erkläre den Code aus `{0}` in vier Abschnitten:

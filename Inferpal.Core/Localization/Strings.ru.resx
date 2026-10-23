@@ -82,6 +82,14 @@
   <data name="PromptFixErrors" xml:space="preserve"><value>Исправь следующие ошибки сборки:
 
 {0}</value></data>
+  <data name="FixProblemsQuestion" xml:space="preserve"><value>Исправь эти проблемы.</value></data>
+  <data name="FixProblemQuestion" xml:space="preserve"><value>Исправь эту проблему.</value></data>
+  <data name="FixProblemsOutside" xml:space="preserve"><value>Эти проблемы находятся в файлах вне рабочей области Inferpal: его инструменты не могут их изменить.</value></data>
+  <data name="FixProblemsChip" xml:space="preserve"><value>{0} {0:проблема|проблемы|проблем}</value></data>
+  <data name="FixProblemsNoSelection" xml:space="preserve"><value>Выберите одну или несколько строк в списке ошибок, затем снова выберите «Исправить с помощью Inferpal».</value></data>
+  <data name="FixProblemsNoInProc" xml:space="preserve"><value>Не удалось прочитать выделение в списке ошибок: внутрипроцессная часть Inferpal не загружена в этом Visual Studio — /diagnostics скажет почему.</value></data>
+  <data name="FixProblemsNoAnswer" xml:space="preserve"><value>Visual Studio не передал выделение списка ошибок вовремя. Повторите попытку.</value></data>
+  <data name="FixProblemsUnreadable" xml:space="preserve"><value>Не удалось прочитать выделение в списке ошибок ({0}).</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>Объясни код из `{0}` по четырём разделам:

@@ -82,6 +82,14 @@
   <data name="PromptFixErrors" xml:space="preserve"><value>次のビルドエラーを修正してください：
 
 {0}</value></data>
+  <data name="FixProblemsQuestion" xml:space="preserve"><value>これらの問題を修正してください。</value></data>
+  <data name="FixProblemQuestion" xml:space="preserve"><value>この問題を修正してください。</value></data>
+  <data name="FixProblemsOutside" xml:space="preserve"><value>これらの問題は Inferpal のワークスペース外のファイルにあります。ツールでは編集できません。</value></data>
+  <data name="FixProblemsChip" xml:space="preserve"><value>{0} 件の問題</value></data>
+  <data name="FixProblemsNoSelection" xml:space="preserve"><value>エラー一覧で 1 行以上を選択してから、もう一度 [Inferpal で修正] を選んでください。</value></data>
+  <data name="FixProblemsNoInProc" xml:space="preserve"><value>エラー一覧の選択を読み取れませんでした: この Visual Studio に Inferpal のインプロセス部分が読み込まれていません — 理由は /diagnostics に表示されます。</value></data>
+  <data name="FixProblemsNoAnswer" xml:space="preserve"><value>Visual Studio がエラー一覧の選択を時間内に返しませんでした。もう一度お試しください。</value></data>
+  <data name="FixProblemsUnreadable" xml:space="preserve"><value>エラー一覧の選択を読み取れませんでした ({0})。</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>`{0}` のコードを次の4つのセクションで説明してください：

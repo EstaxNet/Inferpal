@@ -40,6 +40,8 @@ import {
   EditResultDto,
   FimAskResult,
   FimSettingsResult,
+  ProblemEntry,
+  ProblemsFixResult,
   IndexStatusResult,
   InitializeParams,
   InitializeResult,
@@ -532,6 +534,11 @@ export class HostClient {
   /** Which of these files the workspace's ignore files exclude — asked before their content is sent (chips, `@path`). */
   exclusionsCheck(paths: string[]): Promise<ExclusionsCheckResult> {
     return this.connection().sendRequest<ExclusionsCheckResult>('exclusions/check', { paths });
+  }
+
+  /** "Fix with Inferpal" on diagnostics: the Core builds the question and its attachment, as for Visual Studio. */
+  problemsFix(problems: ProblemEntry[]): Promise<ProblemsFixResult> {
+    return this.connection().sendRequest<ProblemsFixResult>('problems/fix', { problems });
   }
 
   /** Models of the backend the caller is LOOKING AT. Without overrides this is the saved

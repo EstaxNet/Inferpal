@@ -194,5 +194,7 @@
   "From the task {0} — the Problems panel holds none of its errors: its output says why.": "Dall'attività {0}: il pannello Problemi non contiene nessuno dei suoi errori; il suo output dice perché.",
   "Found in your code while you type — sent as excerpts. Remove what does not belong.": "Trovato nel tuo codice mentre scrivi: inviato come estratti. Rimuovi ciò che non c'entra.",
   "Inferpal: inline completion is turned off in VS Code's settings (inferpal.fim.enabled).": "Inferpal: il completamento è disattivato nelle impostazioni di VS Code (inferpal.fim.enabled).",
-  "Inferpal: the suggestion does not continue the item selected in the list — close the list (Esc) and ask again.": "Inferpal: il suggerimento non prosegue l’elemento scelto nell’elenco — chiudete l’elenco (Esc) e richiedete."
+  "Inferpal: the suggestion does not continue the item selected in the list — close the list (Esc) and ask again.": "Inferpal: il suggerimento non prosegue l’elemento scelto nell’elenco — chiudete l’elenco (Esc) e richiedete.",
+  "Fix with Inferpal": "Correggi con Inferpal",
+  "No problem at the cursor.": "Nessun problema al cursore."
 }

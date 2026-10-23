@@ -85,6 +85,14 @@ Esta acción no se puede deshacer.</value></data>
   <data name="PromptFixErrors" xml:space="preserve"><value>Corrige los siguientes errores de compilación:
 
 {0}</value></data>
+  <data name="FixProblemsQuestion" xml:space="preserve"><value>Corrige estos problemas.</value></data>
+  <data name="FixProblemQuestion" xml:space="preserve"><value>Corrige este problema.</value></data>
+  <data name="FixProblemsOutside" xml:space="preserve"><value>Estos problemas están en archivos fuera del área de trabajo de Inferpal: sus herramientas no pueden modificarlos.</value></data>
+  <data name="FixProblemsChip" xml:space="preserve"><value>{0} {0:problema|problemas}</value></data>
+  <data name="FixProblemsNoSelection" xml:space="preserve"><value>Seleccione una o varias líneas de la Lista de errores y vuelva a elegir Corregir con Inferpal.</value></data>
+  <data name="FixProblemsNoInProc" xml:space="preserve"><value>No se pudo leer la selección de la Lista de errores: la parte en proceso de Inferpal no está cargada en este Visual Studio — /diagnostics indica el motivo.</value></data>
+  <data name="FixProblemsNoAnswer" xml:space="preserve"><value>Visual Studio no entregó a tiempo la selección de la Lista de errores. Vuelva a intentarlo.</value></data>
+  <data name="FixProblemsUnreadable" xml:space="preserve"><value>No se pudo leer la selección de la Lista de errores ({0}).</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>Explica el código de `{0}` con estas cuatro secciones:

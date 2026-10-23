@@ -152,6 +152,15 @@ exists.
   entry point. In VS Code, a task of the *build* group that fails draws the banner over the chat: the errors of the
   Problems panel as it stands (each once), the first one, the task — **Fix them** sends them to the model, **Show the
   errors** opens the panel; a build that passes takes it down.
+- **Fix with Inferpal, from the problem list** — select lines in Visual Studio's **Error List** (errors, warnings — the
+  NuGet vulnerability warnings NU1901 to NU1904 among them — or messages) and choose **Fix with Inferpal** in its
+  context menu; in VS Code, **Fix with Inferpal** is among the quick fixes of every diagnostic in the workspace (the
+  editor's light bulb and the Problems panel), and *Inferpal: Fix the Problems at the Cursor* in the palette. The agent
+  gets those problems, as a build prints them, with the code around each — read from the editor when the file has
+  unsaved changes (the same windows as **Fix with AI**, up to 100 problems, errors first; a file excluded from AI tools
+  is named, never read) — and fixes them with its tools, under the usual approvals. Nothing selected, a list Visual
+  Studio did not give, or problems only in files the agent cannot edit (outside the workspace, or excluded) are said,
+  and nothing is sent. During a turn, Visual Studio sends it when the turn ends; VS Code asks you to wait.
 - **Inline diff preview for code actions** — `/fix`, `/refactor` and `/doc` no longer rewrite
   the buffer blind: the change is shown in the editor with per-hunk accept/reject (Visual
   Studio: a red/green adornment with ✓/✗ per hunk, and ✓✓/✗✗ on the first open hunk to decide

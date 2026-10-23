@@ -6,10 +6,11 @@ import * as vscode from 'vscode';
 import { ChatViewProvider } from './chatViewProvider';
 import { SettingsPanel } from './settingsPanel';
 import { DebugBridge } from './debugBridge';
-import { EditorBridge } from './editorBridge';
+import { EditorBridge, panelDiagnostics } from './editorBridge';
 import { HostClient } from './hostClient';
 import { hostErrorText, otherWorkspaceFolders, promptOpenFolder, workspaceRoot } from './hostStatus';
 import { FimProvider } from './inlineCompletions';
+import { FixProblemsProvider, problemEntry } from './problemsFix';
 import { reviewCommit } from './reviewCommit';
 import { followModelRouterSettings, initModelRouterSync, syncModelRouterSettings } from './modelRouterSettings';
 import { docsUrl } from './docsLinks';
@@ -52,6 +53,23 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       { pattern: '**' },
       new FimProvider(() => host, log),
     ),
+    // Files only: the fix reads the code around each diagnostic from the file, and edits it there.
+    vscode.languages.registerCodeActionsProvider({ scheme: 'file' }, new FixProblemsProvider(), FixProblemsProvider.metadata),
+    vscode.commands.registerCommand('inferpal.fixProblems', (uri?: vscode.Uri, diagnostics?: vscode.Diagnostic[]) => {
+      // Run from a key or another extension, without the quick fix's arguments: the problems at the cursor.
+      if (!uri || !Array.isArray(diagnostics)) {
+        const editor = vscode.window.activeTextEditor;
+        uri = editor?.document.uri;
+        const file = panelDiagnostics().find(([u]) => u.toString() === editor?.document.uri.toString());
+        diagnostics = editor && file ? file[1].filter((d) => d.range.contains(editor.selection.active)) : [];
+      }
+      if (!uri || diagnostics.length === 0) {
+        void vscode.window.showInformationMessage(t('No problem at the cursor.'));
+        return;
+      }
+      const at = uri;
+      return chatView.fixProblems(diagnostics.map((d) => problemEntry(at, d)));
+    }),
   );
 
   context.subscriptions.push(

@@ -85,6 +85,14 @@
   <data name="PromptFixErrors" xml:space="preserve"><value>请修复以下构建错误：
 
 {0}</value></data>
+  <data name="FixProblemsQuestion" xml:space="preserve"><value>请修复这些问题。</value></data>
+  <data name="FixProblemQuestion" xml:space="preserve"><value>请修复这个问题。</value></data>
+  <data name="FixProblemsOutside" xml:space="preserve"><value>这些问题位于 Inferpal 工作区之外的文件中：其工具无法编辑它们。</value></data>
+  <data name="FixProblemsChip" xml:space="preserve"><value>{0} 个问题</value></data>
+  <data name="FixProblemsNoSelection" xml:space="preserve"><value>请在错误列表中选择一行或多行，然后再次选择“使用 Inferpal 修复”。</value></data>
+  <data name="FixProblemsNoInProc" xml:space="preserve"><value>无法读取错误列表的选择：此 Visual Studio 中未加载 Inferpal 的进程内部分 — 原因见 /diagnostics。</value></data>
+  <data name="FixProblemsNoAnswer" xml:space="preserve"><value>Visual Studio 未及时提供错误列表的选择。请重试。</value></data>
+  <data name="FixProblemsUnreadable" xml:space="preserve"><value>无法读取错误列表的选择（{0}）。</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>请用以下四个部分解释 `{0}` 中的代码：

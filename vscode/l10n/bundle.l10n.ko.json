@@ -194,5 +194,7 @@
   "From the task {0} — the Problems panel holds none of its errors: its output says why.": "작업 {0}에서 — [문제] 패널에 해당 오류가 없습니다. 이유는 작업 출력에 있습니다.",
   "Found in your code while you type — sent as excerpts. Remove what does not belong.": "입력하는 동안 코드에서 찾았습니다 — 발췌로 전송됩니다. 관련 없는 항목은 제거하세요.",
   "Inferpal: inline completion is turned off in VS Code's settings (inferpal.fim.enabled).": "Inferpal: VS Code 설정에서 인라인 완성이 꺼져 있습니다 (inferpal.fim.enabled).",
-  "Inferpal: the suggestion does not continue the item selected in the list — close the list (Esc) and ask again.": "Inferpal: 제안이 목록에서 선택한 항목을 이어 가지 않습니다 — 목록을 닫고(Esc) 다시 요청하세요."
+  "Inferpal: the suggestion does not continue the item selected in the list — close the list (Esc) and ask again.": "Inferpal: 제안이 목록에서 선택한 항목을 이어 가지 않습니다 — 목록을 닫고(Esc) 다시 요청하세요.",
+  "Fix with Inferpal": "Inferpal로 수정",
+  "No problem at the cursor.": "커서 위치에 문제가 없습니다."
 }

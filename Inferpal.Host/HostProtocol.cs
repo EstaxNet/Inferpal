@@ -215,6 +215,16 @@ internal sealed record FimSettingsResult(bool Enabled, int DebounceMs, bool Yiel
 /// <param name="Notice">Why there is none — not sent, or nothing came back; <c>null</c> with a suggestion.</param>
 internal sealed record FimAskResult(string? Text, string? Notice);
 
+/// <summary>`problems/fix` — the diagnostics a quick fix was asked on.</summary>
+internal sealed record ProblemsFixParams(IReadOnlyList<Services.CodeActions.ProblemEntry> Problems);
+
+/// <summary>`problems/fix` — what goes to the chat.</summary>
+/// <param name="Question">The question, in the interface language.</param>
+/// <param name="Chip">The attachment's label.</param>
+/// <param name="Content">The attachment: each problem as a build prints it, and the code around it.</param>
+/// <param name="Refusal">Why nothing is sent — no problem in a file the agent can edit; <c>null</c> otherwise.</param>
+internal sealed record ProblemsFixResult(string Question, string Chip, string Content, string? Refusal = null);
+
 /// <summary>`textDocument/didOpen|didChange|didClose` + `editor/didChangeActiveDocument`.</summary>
 /// <param name="Dirty">Whether the buffer has unsaved changes; absent means it does.</param>
 internal sealed record DocumentParams(string Path, string? Text = null, bool? Dirty = null);

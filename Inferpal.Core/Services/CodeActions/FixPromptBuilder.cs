@@ -24,6 +24,13 @@ internal static class FixPromptBuilder
     /// <summary>Per-file content cap — keeps the prompt within a small model's budget.</summary>
     private const int MaxFileChars = 4000;
 
+    /// <summary>Problems listed from an editor's selection; the rest is counted above them.</summary>
+    internal const int MaxProblems = 100;
+
+    /// <summary>Characters the listed problems take at most. With the files' own caps, the attachment stays under what an
+    /// attachment sends (<see cref="Agent.AttachmentCap.MaxChars"/>), so neither editor cuts it again.</summary>
+    internal const int MaxProblemChars = 30_000;
+
     /// <summary>Lines kept from the top of a file that does not fit: its usings and namespace.</summary>
     private const int HeadLines = 12;
 
@@ -63,9 +70,74 @@ internal static class FixPromptBuilder
     /// </remarks>
     public static string Build(string rawErrors, Func<string, string?> tryReadFile)
     {
-        var sb    = new StringBuilder(Strings.PromptFixErrors(rawErrors));
-        var sites = ExtractErrorSites(rawErrors);
+        var sb = new StringBuilder(Strings.PromptFixErrors(rawErrors));
+        AppendAffectedFiles(sb, ExtractErrorSites(rawErrors), tryReadFile);
+        return sb.ToString();
+    }
 
+    /// <summary>
+    /// The attachment of a "fix these problems" question: each problem as a build prints it, then the "Affected files"
+    /// section of <see cref="Build(string, Func{string, string?})"/> — the lines around each problem, the same caps, the
+    /// same files left out and named.
+    /// </summary>
+    /// <remarks>The sites come from the entries, never parsed back out of the lines: a problem in a <c>.ts</c>, a
+    /// <c>.xaml</c> or a project file keeps its code, where the build-output parser reads C# files only.</remarks>
+    internal static string ForProblems(IReadOnlyList<ProblemEntry> problems, Func<string, string?> tryReadFile)
+    {
+        // ⚠ Errors first, then the caps: a whole list selected (Ctrl+A) is hundreds of warnings with the errors among them.
+        var ranked = problems.OrderBy(p => p.Severity switch { "error" => 0, "warning" => 1, _ => 2 }).ToList();
+        var lines  = new List<string>();
+        var used   = 0;
+        foreach (var p in ranked)
+        {
+            if (lines.Count == MaxProblems) break;
+            var line = CompilerLine(p);
+            if (used + line.Length > MaxProblemChars)
+            {
+                if (lines.Count > 0) break;
+                line = SafeTruncate.Truncate(line, MaxProblemChars) + $"…(cut at {MaxProblemChars} of {line.Length} characters)";
+            }
+            lines.Add(line);
+            used += line.Length + 1;
+        }
+
+        var sb = new StringBuilder();
+        if (lines.Count < ranked.Count)
+            sb.AppendLine($"({ranked.Count - lines.Count} more problem(s) selected, not listed: the first {lines.Count}, "
+                        + "errors first, are)");
+        var sites = new List<(string Path, List<int> Lines)>();
+        foreach (var (p, line) in ranked.Zip(lines))
+        {
+            sb.AppendLine(line);
+            if (!string.IsNullOrEmpty(p.File)) AddSite(sites, p.File, p.Line);
+        }
+        AppendAffectedFiles(sb, sites, tryReadFile);
+        return sb.ToString().TrimEnd();
+    }
+
+    private static void AddSite(List<(string Path, List<int> Lines)> sites, string path, int line)
+    {
+        var at = sites.FindIndex(s => string.Equals(s.Path, path, PathComparer.Comparison));
+        if (at >= 0) sites[at].Lines.Add(line);
+        else sites.Add((path, [line]));
+    }
+
+    /// <summary><c>File.cs(12,5): error CS0103: text</c> — a problem written as a build prints it.</summary>
+    internal static string CompilerLine(ProblemEntry p)
+    {
+        var where = string.IsNullOrEmpty(p.File) ? string.Empty
+                  : p.Line > 0 ? $"{p.File}({p.Line}{(p.Column > 0 ? $",{p.Column}" : string.Empty)}): "
+                  : $"{p.File} : ";
+        var code   = string.IsNullOrEmpty(p.Code) ? string.Empty : $" {p.Code}";
+        var source = string.IsNullOrEmpty(p.Source) ? string.Empty : $" ({p.Source})";
+        return $"{where}{p.Severity}{code}: {p.Text}{source}";
+    }
+
+    /// <summary>The "Affected files" section: each file whole when it fits, otherwise its windows — what is left out,
+    /// named above what is shown.</summary>
+    private static void AppendAffectedFiles(StringBuilder sb, List<(string Path, List<int> Lines)> sites,
+                                            Func<string, string?> tryReadFile)
+    {
         var files    = new StringBuilder();
         var unread   = new List<string>();
         var excluded = new Governance.ContentExclusions.Tally();
@@ -89,7 +161,7 @@ internal static class FixPromptBuilder
             }
         }
         var notShown = sites.Skip(MaxFiles).Select(s => s.Path).ToList();
-        if (files.Length == 0 && unread.Count == 0 && notShown.Count == 0 && excluded.Count == 0) return sb.ToString();
+        if (files.Length == 0 && unread.Count == 0 && notShown.Count == 0 && excluded.Count == 0) return;
 
         sb.AppendLine("\n\nAffected files:");
         if (excluded.Count > 0)
@@ -101,7 +173,6 @@ internal static class FixPromptBuilder
         if (unread.Count > 0)
             sb.AppendLine($"(could not be read, not shown: {Named(unread)})");
         sb.Append(files);
-        return sb.ToString();
     }
 
     /// <summary>Paths for a note: the first ten, and how many more — a note does not become the list it qualifies.</summary>
@@ -183,11 +254,7 @@ internal static class FixPromptBuilder
         var sites = new List<(string Path, List<int> Lines)>();
         foreach (Match m in SiteRx.Matches(diagnosticOutput))
         {
-            var path = m.Groups[1].Value.Trim();
-            var line = int.TryParse(m.Groups[2].ValueSpan, out var n) ? n : 0;
-            var at   = sites.FindIndex(s => string.Equals(s.Path, path, PathComparer.Comparison));
-            if (at >= 0) { sites[at].Lines.Add(line); continue; }
-            sites.Add((path, [line]));
+            AddSite(sites, m.Groups[1].Value.Trim(), int.TryParse(m.Groups[2].ValueSpan, out var n) ? n : 0);
         }
         return sites;
     }

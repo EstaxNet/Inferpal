@@ -54,6 +54,28 @@ export interface FimAskResult {
   notice: string | null;
 }
 
+/** One diagnostic a quick fix was asked on (`ProblemEntry` in the Core). */
+export interface ProblemEntry {
+  /** Absolute; null when the diagnostic names no file. */
+  file: string | null;
+  /** 1-based; 0 when unknown. */
+  line: number;
+  column: number;
+  severity: 'error' | 'warning' | 'info';
+  code: string | null;
+  text: string;
+  source?: string | null;
+}
+
+/** `problems/fix` — the question, the attachment's label, and the attachment (the problems and the code around them). */
+export interface ProblemsFixResult {
+  question: string;
+  chip: string;
+  content: string;
+  /** Why nothing is sent — no problem in a file the agent can edit; absent otherwise. */
+  refusal?: string | null;
+}
+
 export interface ChatSendParams {
   prompt: string;
   model?: string;

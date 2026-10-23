@@ -82,6 +82,14 @@ Questa azione non può essere annullata.</value></data>
   <data name="PromptFixErrors" xml:space="preserve"><value>Correggi i seguenti errori di build:
 
 {0}</value></data>
+  <data name="FixProblemsQuestion" xml:space="preserve"><value>Correggi questi problemi.</value></data>
+  <data name="FixProblemQuestion" xml:space="preserve"><value>Correggi questo problema.</value></data>
+  <data name="FixProblemsOutside" xml:space="preserve"><value>Questi problemi sono in file fuori dall'area di lavoro di Inferpal: i suoi strumenti non possono modificarli.</value></data>
+  <data name="FixProblemsChip" xml:space="preserve"><value>{0} {0:problema|problemi}</value></data>
+  <data name="FixProblemsNoSelection" xml:space="preserve"><value>Selezionate una o più righe dell'Elenco errori, poi scegliete di nuovo Correggi con Inferpal.</value></data>
+  <data name="FixProblemsNoInProc" xml:space="preserve"><value>Non è stato possibile leggere la selezione dell'Elenco errori: la parte in-process di Inferpal non è caricata in questo Visual Studio — /diagnostics dice perché.</value></data>
+  <data name="FixProblemsNoAnswer" xml:space="preserve"><value>Visual Studio non ha fornito in tempo la selezione dell'Elenco errori. Riprovate.</value></data>
+  <data name="FixProblemsUnreadable" xml:space="preserve"><value>Non è stato possibile leggere la selezione dell'Elenco errori ({0}).</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>Spiega il codice da `{0}` con queste quattro sezioni:

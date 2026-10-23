@@ -86,6 +86,14 @@ This cannot be undone.</value></data>
   <data name="PromptFixErrors" xml:space="preserve"><value>Fix the following build errors:
 
 {0}</value></data>
+  <data name="FixProblemsQuestion" xml:space="preserve"><value>Fix these problems.</value></data>
+  <data name="FixProblemQuestion" xml:space="preserve"><value>Fix this problem.</value></data>
+  <data name="FixProblemsOutside" xml:space="preserve"><value>These problems are in files outside the workspace Inferpal works in: its tools cannot edit them.</value></data>
+  <data name="FixProblemsChip" xml:space="preserve"><value>{0} {0:problem|problems}</value></data>
+  <data name="FixProblemsNoSelection" xml:space="preserve"><value>Select one or more lines in the Error List, then choose Fix with Inferpal again.</value></data>
+  <data name="FixProblemsNoInProc" xml:space="preserve"><value>The Error List's selection could not be read: Inferpal's in-process part is not loaded in this Visual Studio — /diagnostics says why.</value></data>
+  <data name="FixProblemsNoAnswer" xml:space="preserve"><value>Visual Studio did not give the Error List's selection in time. Try again.</value></data>
+  <data name="FixProblemsUnreadable" xml:space="preserve"><value>The Error List's selection could not be read ({0}).</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>Explain the code from `{0}` with these four sections:

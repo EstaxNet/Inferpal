@@ -361,10 +361,43 @@ public partial class HostServerTests
         Assert.True(settings.Enabled);
     }
 
+    /// <summary>VS Code's quick fix gets what Visual Studio's Error List sends: the question, and the problems with the
+    /// code around each — built by the Core, never by the extension.</summary>
+    [Fact]
+    public async Task ProblemsFix_SendsTheProblems_AndTheCodeAroundThem()
+    {
+        using var h = CreateHarness(_ => { });
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var file = Path.Combine(h.RootDir, "app.ts");
+        File.WriteAllText(file, "const a = 1;\nconst b = missing;\n");
+
+        var result = await h.Client.InvokeWithParameterObjectAsync<ProblemsFixResult>("problems/fix", new
+        {
+            problems = new[] { new { file, line = 2, column = 11, severity = "error", code = "2304", text = "Cannot find name 'missing'.", source = "ts" } },
+        }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Equal(Strings.FixProblemsQuestion(1), result.Question);
+        Assert.Equal(Strings.FixProblemsChip(1), result.Chip);
+        Assert.Contains($"{file}(2,11): error 2304: Cannot find name 'missing'. (ts)", result.Content);
+        Assert.Contains("const b = missing;", result.Content);
+        Assert.Null(result.Refusal);
+
+        // A problem only in a file outside the workspace: its edit would be refused — said, nothing to send.
+        var outside = await h.Client.InvokeWithParameterObjectAsync<ProblemsFixResult>("problems/fix", new
+        {
+            problems = new[] { new { file = Path.Combine(Path.GetTempPath(), "elsewhere.ts"), line = 1, column = 1, severity = "error", text = "x" } },
+        }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.Equal(Strings.FixProblemsOutside, outside.Refusal);
+        Assert.Empty(outside.Content);
+    }
+
     /// <summary>The key's request comes back with the suggestion, finished like a pause's (what follows the caret dropped).</summary>
+    /// <remarks>⚠ <c>fim/ask</c> steps aside while a chat holds the GPU anywhere on the machine (<c>ChatBusySignal</c>):
+    /// the signals are a folder of their own here, or a chat in the developer's own editor makes the key refuse.</remarks>
     [Fact]
     public async Task FimAsk_ReturnsTheSuggestion()
     {
+        using var signals = new SignalScratchDir();
         using var h = CreateHarness(_ => { });
         h.Fake.OnFim = (_, _) => "x + y);";
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
@@ -379,6 +412,7 @@ public partial class HostServerTests
     [Fact]
     public async Task FimAsk_WithNothingBack_SaysSo()
     {
+        using var signals = new SignalScratchDir();   // a chat elsewhere on the machine would make the key refuse
         using var h = CreateHarness(_ => { });
         h.Fake.OnFim = (_, _) => "";
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
@@ -394,6 +428,7 @@ public partial class HostServerTests
     [Fact]
     public async Task FimAsk_FromAServerThatFailed_NamesTheServer()
     {
+        using var signals = new SignalScratchDir();   // a chat elsewhere on the machine would make the key refuse
         using var h = CreateHarness(_ => { });
         h.Fake.OnFim = (_, _) => "";
         h.Fake.FimFailing = true;

@@ -85,6 +85,14 @@ Cette action est irréversible.</value></data>
   <data name="PromptFixErrors" xml:space="preserve"><value>Corrige les erreurs de build suivantes :
 
 {0}</value></data>
+  <data name="FixProblemsQuestion" xml:space="preserve"><value>Corrige ces problèmes.</value></data>
+  <data name="FixProblemQuestion" xml:space="preserve"><value>Corrige ce problème.</value></data>
+  <data name="FixProblemsOutside" xml:space="preserve"><value>Ces problèmes sont dans des fichiers hors de l'espace de travail d'Inferpal : ses outils ne peuvent pas les modifier.</value></data>
+  <data name="FixProblemsChip" xml:space="preserve"><value>{0} {0:problème|problèmes}</value></data>
+  <data name="FixProblemsNoSelection" xml:space="preserve"><value>Choisissez une ou plusieurs lignes de la liste d'erreurs, puis de nouveau Corriger avec Inferpal.</value></data>
+  <data name="FixProblemsNoInProc" xml:space="preserve"><value>La sélection de la liste d'erreurs n'a pas pu être lue : la partie in-process d'Inferpal n'est pas chargée dans ce Visual Studio — /diagnostics dit pourquoi.</value></data>
+  <data name="FixProblemsNoAnswer" xml:space="preserve"><value>Visual Studio n'a pas donné la sélection de la liste d'erreurs à temps. Réessayez.</value></data>
+  <data name="FixProblemsUnreadable" xml:space="preserve"><value>La sélection de la liste d'erreurs n'a pas pu être lue ({0}).</value></data>
 
   <!-- Prompts menus contextuels éditeur — {0}=nomFichier, {1}=bloc de code -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>Explique le code de `{0}` avec ces quatre sections :

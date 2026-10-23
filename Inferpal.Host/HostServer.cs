@@ -1319,6 +1319,19 @@ internal sealed partial class HostServer : IDisposable
             : new FimAskResult(text, null);
     }
 
+    /// <summary>
+    /// "Fix with Inferpal" on diagnostics chosen in VS Code (a quick fix): the question and its attachment — the problems
+    /// and the code around each, built by the Core as for Visual Studio's Error List.
+    /// </summary>
+    [JsonRpcMethod("problems/fix", UseSingleObjectParameterDeserialization = true)]
+    public async Task<ProblemsFixResult> ProblemsFixPromptAsync(ProblemsFixParams p, CancellationToken ct)
+    {
+        if (Services.CodeActions.ProblemsFix.NothingEditable(p.Problems, Session().RootDir) is { } outOfReach)
+            return new ProblemsFixResult(string.Empty, string.Empty, string.Empty, outOfReach);
+        var (question, chip, content) = await Services.CodeActions.ProblemsFix.ForAsync(p.Problems, Session().Overlay, ct);
+        return new ProblemsFixResult(question, chip, content);
+    }
+
     // ── Config ─────────────────────────────────────────────────────────────────
 
     [JsonRpcMethod("config/get")]

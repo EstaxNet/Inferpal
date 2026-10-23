@@ -5,6 +5,7 @@
   "InferpalMapCommand": "Carte du projet Inferpal",
   "InferpalReviewCommitCommand": "Relire un commit...",
   "InferpalAskCompletionCommand": "Suggérer ou accepter une complétion",
+  "InferpalFixErrorListCommand": "Corriger avec Inferpal",
   "ContextMenuAskInferpal": "Demander à Inferpal",
   "ContextMenuExplain": "Expliquer",
   "ContextMenuRefactor": "Refactoriser",

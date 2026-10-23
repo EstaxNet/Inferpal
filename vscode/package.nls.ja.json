@@ -17,6 +17,7 @@
   "inferpal.command.refactorSelection": "Inferpal: このコードをリファクタリング",
   "inferpal.command.docSelection": "Inferpal: このコードにドキュメントを追加",
   "inferpal.command.reviewCommit": "Inferpal: コミットをレビュー…",
+  "inferpal.command.fixProblems": "Inferpal: カーソル位置の問題を修正",
   "inferpal.command.editSelection": "Inferpal: AIで編集…",
   "inferpal.command.explainSelection": "Inferpal: このコードを説明",
   "inferpal.command.testSelection": "Inferpal: テストを追加",

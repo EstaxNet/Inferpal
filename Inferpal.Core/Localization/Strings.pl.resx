@@ -82,6 +82,14 @@ Tej operacji nie można cofnąć.</value></data>
   <data name="PromptFixErrors" xml:space="preserve"><value>Napraw następujące błędy kompilacji:
 
 {0}</value></data>
+  <data name="FixProblemsQuestion" xml:space="preserve"><value>Napraw te problemy.</value></data>
+  <data name="FixProblemQuestion" xml:space="preserve"><value>Napraw ten problem.</value></data>
+  <data name="FixProblemsOutside" xml:space="preserve"><value>Te problemy są w plikach poza obszarem roboczym Inferpal: jego narzędzia nie mogą ich edytować.</value></data>
+  <data name="FixProblemsChip" xml:space="preserve"><value>{0} {0:problem|problemy|problemów}</value></data>
+  <data name="FixProblemsNoSelection" xml:space="preserve"><value>Zaznacz jeden lub więcej wierszy na Liście błędów, a następnie ponownie wybierz Napraw z Inferpal.</value></data>
+  <data name="FixProblemsNoInProc" xml:space="preserve"><value>Nie udało się odczytać zaznaczenia Listy błędów: część in-process Inferpal nie jest załadowana w tym Visual Studio — /diagnostics podaje przyczynę.</value></data>
+  <data name="FixProblemsNoAnswer" xml:space="preserve"><value>Visual Studio nie przekazało na czas zaznaczenia Listy błędów. Spróbuj ponownie.</value></data>
+  <data name="FixProblemsUnreadable" xml:space="preserve"><value>Nie udało się odczytać zaznaczenia Listy błędów ({0}).</value></data>
 
   <!-- Editor context menu prompts — {0}=fileName, {1}=code block -->
   <data name="PromptExplainSelection" xml:space="preserve"><value>Wyjaśnij kod z `{0}` w czterech sekcjach:
