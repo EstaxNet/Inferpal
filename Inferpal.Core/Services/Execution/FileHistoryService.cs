@@ -763,6 +763,10 @@ internal class FileHistoryService
         }
         if (ended is null) return;
         Seal(ended);   // what each file holds now: a file that differs later was changed after the run
+        lock (_runLock)
+            // Every file given back while it ran (/test coverage sets its tests aside mid-run): nothing of it is left, and
+            // left "not undone" it would be the run /undo-run takes — answering "undone" while restoring nothing.
+            if (ended.Changes.Count > 0 && ended.Changes.All(c => ended.IsGivenBack(c.OriginalPath))) ended.MarkUndone();
         Persist(ended, open: false);
     }
 
@@ -1143,10 +1147,16 @@ internal class FileHistoryService
             if (run.IsGivenBack(change.OriginalPath)) return FileUndoOutcome.AlreadyUndone;
         if (ChangedSinceRun(run, change.OriginalPath, TouchedLater(run))) return FileUndoOutcome.ChangedSince;
         var result = await UndoChangesAsync(run, [change], ct);
+        bool open;
         lock (_runLock)
+        {
+            // ⚠ Not while the run still records (/test coverage sets a test aside mid-run): marked undone, the files it
+            // writes next would be refused by /undo-run as already given back.
+            open = ReferenceEquals(run, _currentRun);
             // Every file given back one by one is the whole run undone: an earlier run's undo is no longer held back.
-            if (run.Changes.All(c => run.IsGivenBack(c.OriginalPath))) run.MarkUndone();
-        Persist(run, open: false);
+            if (!open && run.Changes.All(c => run.IsGivenBack(c.OriginalPath))) run.MarkUndone();
+        }
+        Persist(run, open);
         return result.Failed.Count > 0 ? FileUndoOutcome.Failed
              : result.Restored.Count > 0 ? FileUndoOutcome.Restored
              : result.Deleted.Count > 0 ? FileUndoOutcome.Deleted
@@ -1778,6 +1788,9 @@ internal sealed class HistoryRun
     {
         if (!_firstByPath.ContainsKey(originalPath))
             _firstByPath[originalPath] = new RunChange(originalPath, snapshot, snapshotFailed);
+        // ⚠ Given back mid-run, then written again by the same run: it holds the run's version, which /undo-run must
+        // give back too — still marked given back, it would be skipped.
+        else NoteRedone(originalPath);
     }
 
     public void RecordToolCall(string tool, string? subject, long durationMs, bool error)

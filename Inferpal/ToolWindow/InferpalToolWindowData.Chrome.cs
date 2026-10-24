@@ -768,7 +768,7 @@ internal partial class InferpalToolWindowData
     private async Task RewindAsync(ChatMessageItem question, bool conversationOnly)
     {
         ChatMessageItem? CardOf() => Messages.FirstOrDefault(m => m.Role == "rewind" && ReferenceEquals(m.RewindFor, question));
-        Task Say(string status) => RunOnVMContextAsync(() => CardOf()?.RewindSays(status));
+        Task SayAsync(string status) => RunOnVMContextAsync(() => CardOf()?.RewindSays(status));
         // Claimed like a send: a question sent while the files go back would be cut away by the fork, unsaved.
         var claim = 0;
         var undone = false;
@@ -790,16 +790,16 @@ internal partial class InferpalToolWindowData
                 root        = _conversationRoot.For(_indexService.RootDir);
                 expected    = CardOf()?.RewindRunIds ?? [];
             });
-            if (claim == 0) { await Say(Strings.UndoRunWhileBusy); return; }
+            if (claim == 0) { await SayAsync(Strings.UndoRunWhileBusy); return; }
             turn = index < 0 ? 0 : Services.Execution.Rewind.TurnAt(snapshot, index);
-            if (turn == 0) { await Say(Strings.RewindQuestionGone); return; }
+            if (turn == 0) { await SayAsync(Strings.RewindQuestionGone); return; }
             Services.Execution.RewindOutcome? outcome = null;
             if (!conversationOnly)
             {
                 PinWorkspaceRoot();
                 outcome = await UndoOutsideAnyRunAsync(() =>
                     Services.Execution.Rewind.ApplyAsync(_tools.History, snapshot, turn, expected));
-                if (outcome is null) { await Say(Strings.RewindQuestionGone); return; }
+                if (outcome is null) { await SayAsync(Strings.RewindQuestionGone); return; }
                 if (outcome.Plan.Refusal == Services.Execution.RewindRefusal.Stale)
                 {
                     // The card showed other runs: drawn again from what follows the question now, and said.
@@ -813,14 +813,14 @@ internal partial class InferpalToolWindowData
                     await RunOnVMContextAsync(() => ShowRewindCard(question, refused, null));
                     return;
                 }
-                if (outcome.Failed.Count > 0) { await Say(Strings.RewindStopped(Path.GetFileName(outcome.Failed[0]))); return; }
+                if (outcome.Failed.Count > 0) { await SayAsync(Strings.RewindStopped(Path.GetFileName(outcome.Failed[0]))); return; }
                 undone = true;
             }
             var saved    = Services.Execution.Rewind.QuestionAt(snapshot, turn)!;
             var sessions = await _store.ListWithPreviewAsync(CancellationToken.None);
             if (await ForkAsync(snapshot, turn - 1, currentName, root, sessions, CancellationToken.None) is null)
             {
-                await Say(Strings.RewindQuestionGone);
+                await SayAsync(Strings.RewindQuestionGone);
                 return;
             }
             await ShowInfoAsync(Services.Presentation.RewindCard.Done(outcome, turn, saved));
@@ -832,7 +832,7 @@ internal partial class InferpalToolWindowData
         {
             Diagnostics.Swallow("InferpalToolWindowData.Rewind", ex);
             // The files moved: said, never "nothing changed".
-            await Say(undone ? Strings.RewindConversationNotCut(turn, Diagnostics.RootMessage(ex))
+            await SayAsync(undone ? Strings.RewindConversationNotCut(turn, Diagnostics.RootMessage(ex))
                              : Strings.MsgError(Diagnostics.RootMessage(ex)));
         }
         finally

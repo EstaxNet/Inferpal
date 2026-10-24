@@ -253,6 +253,12 @@ internal partial class InferpalToolWindowData
             case SlashCommandId.Bench:       await RunOwnedCommandAsync(tok => HandleBenchCommandAsync(parts, tok), ct);   break;
             case SlashCommandId.Arena:       await RunOwnedCommandAsync(tok => HandleArenaCommandAsync(parts, tok), ct);   break;
             case SlashCommandId.Tdd:         await HandleTddCommandAsync(parts, ct);      break;
+            case SlashCommandId.TestCoverage:
+                await RunOwnedCommandAsync(async tok => await ShowInfoAsync(
+                    await Services.Commands.TestCoverageCommandHandler.HandleAsync(
+                        _client, _config, _tools, _tools.History, parts, _indexService.RootDir,
+                        onProgress: p => Post(() => CurrentStep = p), tok)), ct);
+                break;
             case SlashCommandId.Task:        await HandleTaskCommandAsync(parts);         break;
             case SlashCommandId.Debug:       await HandleDebugCommandAsync(parts, ct);    break;
             case SlashCommandId.Replay:      await ShowInfoAsync(Services.Commands.ReplayCommandHandler.Handle(_tools.History.Runs, parts, FindProjectRoot(), _tools.History.ForgottenRuns)); break;

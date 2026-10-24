@@ -401,6 +401,11 @@ internal sealed partial class HostServer
                             : string.Join("\n\n---\n\n", fixes.Append(result.Message)));
                 }
 
+                case SlashCommandId.TestCoverage:
+                    return new SlashCommandResult(true, await TestCoverageCommandHandler.HandleAsync(
+                        s.Client, s.Config, s.Tools, s.Tools.History, parts, s.RootDir,
+                        onProgress: msg => Notify("chat/step", new { text = msg }), cts.Token));
+
                 case SlashCommandId.Task:
                 {
                     // Detached run: deliberately NOT bound to this turn's token — the task keeps

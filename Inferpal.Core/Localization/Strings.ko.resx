@@ -726,7 +726,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="SlashHintFix" xml:space="preserve"><value>활성 파일에 대한 수정 제안</value></data>
   <data name="SlashHintReview" xml:space="preserve"><value>구조화된 코드 리뷰</value></data>
   <data name="SlashHintRefactor" xml:space="preserve"><value>리팩터링 제안</value></data>
-  <data name="SlashHintTest" xml:space="preserve"><value>단위 테스트 생성</value></data>
+  <data name="SlashHintTest" xml:space="preserve"><value>단위 테스트 생성 — /test coverage [폴더]: 어떤 테스트도 닿지 않는 코드의 테스트, 통과하고 커버할 때만 유지</value></data>
   <data name="SlashHintDoc" xml:space="preserve"><value>XML 문서 주석 생성</value></data>
   <data name="SlashHintClear" xml:space="preserve"><value>대화 지우기</value></data>
   <data name="SlashHintModel" xml:space="preserve"><value>모델 전환</value></data>
@@ -1872,4 +1872,45 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="RewindConversationNotCut" xml:space="preserve"><value>파일은 질문 {0} 이전 상태로 돌아왔지만 대화를 자를 수 없었습니다: {1}</value></data>
   <data name="RewindPlanChanged" xml:space="preserve"><value>카드를 표시한 뒤 이 질문 이후의 실행이 바뀌었습니다: 돌아가기 전에 다시 확인하세요.</value></data>
   <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>함께 보낸 내용({0})은 다시 첨부되지 않습니다.</value></data>
+  <data name="CoverageDetecting" xml:space="preserve"><value>프로젝트의 테스트와 커버리지 도구를 찾는 중…</value></data>
+  <data name="CoverageMeasuringBefore" xml:space="preserve"><value>{0}(으)로 실행 전 커버리지를 측정하는 중…</value></data>
+  <data name="CoverageMeasuringAfter" xml:space="preserve"><value>실행 후 커버리지를 측정하는 중…</value></data>
+  <data name="CoverageTargetProgress" xml:space="preserve"><value>대상 {0}/{1}: {2}…</value></data>
+  <data name="CoverageNoSuchFolder" xml:space="preserve"><value>작업 영역에 폴더나 파일 {0}이(가) 없습니다.</value></data>
+  <data name="CoverageRunnerUnsupported" xml:space="preserve"><value>/test coverage는 .NET, pytest, Node(vitest, jest, node --test) 테스트를 측정합니다. 이 프로젝트의 테스트({0})는 아직 지원하지 않습니다.</value></data>
+  <data name="CoverageNoTestProject" xml:space="preserve"><value>이 작업 영역에 테스트 프로젝트(Microsoft.NET.Test.Sdk를 참조하는 .csproj)가 없습니다: 커버리지를 측정할 수 없습니다.</value></data>
+  <data name="CoverageToolMissing" xml:space="preserve"><value>필요한 커버리지 도구 {0}이(가) 프로젝트에 없으며, Inferpal은 스스로 설치하지 않습니다. 추가하려면: `{1}`</value></data>
+  <data name="CoverageNodeModulesMissing" xml:space="preserve"><value>프로젝트의 패키지가 설치되어 있지 않습니다: 먼저 `{0}`을(를) 실행하세요.</value></data>
+  <data name="CoverageNoReport" xml:space="preserve"><value>커버리지 측정({0})이 보고서를 쓰지 않았습니다. 출력의 처음과 끝:</value></data>
+  <data name="CoverageNothingToCover" xml:space="preserve"><value>추가할 것이 없습니다: 커버되지 않은 줄이 2줄 이상인 메서드가 없습니다(줄 커버리지 {0} %).</value></data>
+  <data name="CoverageHeader" xml:space="preserve"><value>{1}의 **테스트 커버리지** ({0}(으)로 측정)</value></data>
+  <data name="CoverageWorkspace" xml:space="preserve"><value>작업 영역</value></data>
+  <data name="CoverageSummary" xml:space="preserve"><value>커버리지: {0} % → {1} % ({2}포인트) — {4}줄 중 {3}줄.</value></data>
+  <data name="CoverageFilesHeader" xml:space="preserve"><value>향상된 파일:</value></data>
+  <data name="CoverageFileRow" xml:space="preserve"><value>- `{0}`: {1} % → {2} %</value></data>
+  <data name="CoverageKeptHeader" xml:space="preserve"><value>유지: {0}개 — 각각 세 번 통과하고 아무것도 커버하지 않던 줄을 커버합니다:</value></data>
+  <data name="CoverageKeptRow" xml:space="preserve"><value>- `{0}` — {1}: +{2}줄</value></data>
+  <data name="CoverageSetAsideHeader" xml:space="preserve"><value>유지하지 않은 대상: {0}개 — 이를 위해 작성된 파일은 제거하고 사본은 보관합니다(/undo-run review):</value></data>
+  <data name="CoverageSetAsideRow" xml:space="preserve"><value>- {0}: {1}</value></data>
+  <data name="CoverageWhyNoPass" xml:space="preserve"><value>세 번 통과하지 않음</value></data>
+  <data name="CoverageWhyNoAssertion" xml:space="preserve"><value>아무것도 검증하지 않음</value></data>
+  <data name="CoverageWhySkips" xml:space="preserve"><value>테스트를 건너뛰거나 실패를 기대함</value></data>
+  <data name="CoverageWhyNothingNew" xml:space="preserve"><value>이미 커버된 줄 외에는 커버하지 않음</value></data>
+  <data name="CoverageWhyNotMeasured" xml:space="preserve"><value>자체 커버리지를 읽을 수 없음</value></data>
+  <data name="CoverageWhyModelSilent" xml:space="preserve"><value>모델이 8분 안에 응답하지 않음</value></data>
+  <data name="CoverageWhyNoFile" xml:space="preserve"><value>모델이 파일을 쓰지 않음</value></data>
+  <data name="CoverageWhyDeclined" xml:space="preserve"><value>쓰기가 거부됨 — 명령이 거기서 멈춤</value></data>
+  <data name="CoverageWhyNotATestPath" xml:space="preserve"><value>테스트를 둘 곳이 새 테스트 파일이 아님</value></data>
+  <data name="CoverageLeft" xml:space="preserve"><value>커버되지 않은 줄이 있는 메서드가 {0}개 더 있습니다: /test coverage를 다시 실행하세요.</value></data>
+  <data name="CoverageExcluded" xml:space="preserve"><value>AI 도구에서 제외된 파일 {0}개는 제외했습니다.</value></data>
+  <data name="CoverageSuiteRed" xml:space="preserve"><value>⚠ 이 명령 전에 이미 스위트가 통과하지 않았습니다: 있는 그대로 측정했으며, 그 실패는 이 명령 때문이 아닙니다.</value></data>
+  <data name="CoverageAfterFailed" xml:space="preserve"><value>실행 후 커버리지를 측정할 수 없습니다: 유지한 테스트는 남아 있으며 /undo-run으로 되돌릴 수 있습니다.</value></data>
+  <data name="CoverageWhyModelCut" xml:space="preserve"><value>파일이 모델의 길이 한도에서 잘림</value></data>
+  <data name="CoverageWhyModelFailed" xml:space="preserve"><value>모델 요청이 실패함({0}) — 명령이 거기서 멈춤</value></data>
+  <data name="CoverageStopped" xml:space="preserve"><value>⏹ 대상 {1}개 중 {0}개 후 중지됨: 그때까지 유지한 테스트는 남아 있으며(/undo-run으로 되돌림), 확인 중이던 파일은 제거했고, 실행 후 커버리지는 측정하지 않았습니다.</value></data>
+  <data name="CoverageWhyNotWritten" xml:space="preserve"><value>쓸 수 없음({0}) — 명령이 거기서 멈춤</value></data>
+  <data name="CoverageWhyFailed" xml:space="preserve"><value>확인이 실패함({0})</value></data>
+  <data name="CoverageStillThere" xml:space="preserve"><value>⚠ 제거되지 않음: 아직 작업 영역에 있음(/undo-run review에 표시됨)</value></data>
+  <data name="CoverageNoSourceInScope" xml:space="preserve"><value>{0}에는 측정이 닿는 소스 파일이 없습니다 — 테스트, 생성된 파일, 서드파티 파일은 대상이 아닙니다. 테스트할 코드의 폴더를 지정하거나, 작업 영역 전체라면 아무것도 지정하지 마세요.</value></data>
+  <data name="CoverageSuiteBrokenAfter" xml:space="preserve"><value>⚠ 스위트가 전에는 통과했지만 후에는 실패합니다: 유지한 테스트가 단독으로는 통과하지만 다른 테스트와 함께 깨집니다. /undo-run으로 유지한 테스트를 되돌릴 수 있습니다.</value></data>
 </root>

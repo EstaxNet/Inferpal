@@ -734,7 +734,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="SlashHintFix" xml:space="preserve"><value>suggest fixes for active file</value></data>
   <data name="SlashHintReview" xml:space="preserve"><value>structured code review</value></data>
   <data name="SlashHintRefactor" xml:space="preserve"><value>refactor suggestions</value></data>
-  <data name="SlashHintTest" xml:space="preserve"><value>generate unit tests</value></data>
+  <data name="SlashHintTest" xml:space="preserve"><value>generate unit tests — /test coverage [folder]: tests for the code no test reaches, kept only if they pass and cover it</value></data>
   <data name="SlashHintDoc" xml:space="preserve"><value>generate XML documentation comments</value></data>
   <data name="SlashHintClear" xml:space="preserve"><value>clear the conversation</value></data>
   <data name="SlashHintModel" xml:space="preserve"><value>switch model</value></data>
@@ -1876,4 +1876,45 @@ What you save there applies from your next question, in this thread and the othe
   <data name="RewindConversationNotCut" xml:space="preserve"><value>The files are back as they were before question {0}, but the conversation could not be cut: {1}</value></data>
   <data name="RewindPlanChanged" xml:space="preserve"><value>The runs after this question changed since the card was drawn: check it again before going back.</value></data>
   <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>What went with it ({0}) is not attached again.</value></data>
+  <data name="CoverageDetecting" xml:space="preserve"><value>Looking for the project's tests and coverage tool…</value></data>
+  <data name="CoverageMeasuringBefore" xml:space="preserve"><value>Measuring the coverage before, with {0}…</value></data>
+  <data name="CoverageMeasuringAfter" xml:space="preserve"><value>Measuring the coverage after…</value></data>
+  <data name="CoverageTargetProgress" xml:space="preserve"><value>Target {0}/{1}: {2}…</value></data>
+  <data name="CoverageNoSuchFolder" xml:space="preserve"><value>No folder or file {0} in the workspace.</value></data>
+  <data name="CoverageRunnerUnsupported" xml:space="preserve"><value>/test coverage measures .NET, pytest and Node (vitest, jest, node --test) tests; this project's ({0}) are not supported yet.</value></data>
+  <data name="CoverageNoTestProject" xml:space="preserve"><value>No test project in this workspace (a .csproj that references Microsoft.NET.Test.Sdk): nothing to measure the coverage with.</value></data>
+  <data name="CoverageToolMissing" xml:space="preserve"><value>The coverage tool this needs, {0}, is not in the project, and Inferpal never installs one by itself. To add it: `{1}`</value></data>
+  <data name="CoverageNodeModulesMissing" xml:space="preserve"><value>The project's packages are not installed: run `{0}` first.</value></data>
+  <data name="CoverageNoReport" xml:space="preserve"><value>The coverage measure ({0}) wrote no report. Its output, beginning and end:</value></data>
+  <data name="CoverageNothingToCover" xml:space="preserve"><value>Nothing to add: no method here misses 2 lines or more ({0} % of the lines covered).</value></data>
+  <data name="CoverageHeader" xml:space="preserve"><value>**Test coverage** of {1}, measured by {0}</value></data>
+  <data name="CoverageWorkspace" xml:space="preserve"><value>the workspace</value></data>
+  <data name="CoverageSummary" xml:space="preserve"><value>Coverage: {0} % → {1} % ({2} points) — {3} of {4} lines.</value></data>
+  <data name="CoverageFilesHeader" xml:space="preserve"><value>Files that gained:</value></data>
+  <data name="CoverageFileRow" xml:space="preserve"><value>- `{0}`: {1} % → {2} %</value></data>
+  <data name="CoverageKeptHeader" xml:space="preserve"><value>Kept: {0} {0:test|tests} — each passes three times and covers lines nothing covered:</value></data>
+  <data name="CoverageKeptRow" xml:space="preserve"><value>- `{0}` — {1}: +{2} {2:line|lines}</value></data>
+  <data name="CoverageSetAsideHeader" xml:space="preserve"><value>Not kept: {0} {0:target|targets} — any file written for them is removed, its copy kept (/undo-run review):</value></data>
+  <data name="CoverageSetAsideRow" xml:space="preserve"><value>- {0}: {1}</value></data>
+  <data name="CoverageWhyNoPass" xml:space="preserve"><value>does not pass three times</value></data>
+  <data name="CoverageWhyNoAssertion" xml:space="preserve"><value>asserts nothing</value></data>
+  <data name="CoverageWhySkips" xml:space="preserve"><value>skips a test or expects one to fail</value></data>
+  <data name="CoverageWhyNothingNew" xml:space="preserve"><value>covers no line that was not covered already</value></data>
+  <data name="CoverageWhyNotMeasured" xml:space="preserve"><value>its own coverage could not be read</value></data>
+  <data name="CoverageWhyModelSilent" xml:space="preserve"><value>the model did not answer within 8 minutes</value></data>
+  <data name="CoverageWhyNoFile" xml:space="preserve"><value>the model wrote no file</value></data>
+  <data name="CoverageWhyDeclined" xml:space="preserve"><value>writing it was declined — the command stopped there</value></data>
+  <data name="CoverageWhyNotATestPath" xml:space="preserve"><value>the place for its test is not a new test file</value></data>
+  <data name="CoverageLeft" xml:space="preserve"><value>{0} {0:more method|more methods} with uncovered lines: run /test coverage again for them.</value></data>
+  <data name="CoverageExcluded" xml:space="preserve"><value>{0} {0:file|files} excluded from AI tools left out.</value></data>
+  <data name="CoverageSuiteRed" xml:space="preserve"><value>⚠ The suite was not green before this command: it was measured as it is, and its failures are not this command's.</value></data>
+  <data name="CoverageAfterFailed" xml:space="preserve"><value>The coverage after could not be measured: the tests kept stay, and /undo-run gives them back.</value></data>
+  <data name="CoverageWhyModelCut" xml:space="preserve"><value>its file was cut at the model's length limit</value></data>
+  <data name="CoverageWhyModelFailed" xml:space="preserve"><value>the request to the model failed ({0}) — the command stopped there</value></data>
+  <data name="CoverageStopped" xml:space="preserve"><value>⏹ Stopped after {0} of {1} {1:target|targets}: the tests kept so far stay (/undo-run gives them back), the file being checked was removed, and the coverage after was not measured.</value></data>
+  <data name="CoverageWhyNotWritten" xml:space="preserve"><value>it could not be written ({0}) — the command stopped there</value></data>
+  <data name="CoverageWhyFailed" xml:space="preserve"><value>its check failed ({0})</value></data>
+  <data name="CoverageStillThere" xml:space="preserve"><value>⚠ not removed: still in the workspace (/undo-run review lists it)</value></data>
+  <data name="CoverageNoSourceInScope" xml:space="preserve"><value>{0} holds no source file the measure reaches — tests, generated and third-party files are no targets. Name a folder of the code under test, or nothing for the whole workspace.</value></data>
+  <data name="CoverageSuiteBrokenAfter" xml:space="preserve"><value>⚠ The suite passed before and fails after: a kept test passes alone but breaks with the others. /undo-run gives the kept tests back.</value></data>
 </root>

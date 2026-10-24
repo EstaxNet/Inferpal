@@ -2580,7 +2580,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // document (or selection) is attached and the answer streams into the chat.
       const first = prompt.split(/\s+/, 1)[0].toLowerCase();
       // /test: the selection's tests (or the file's), written by an edit the editor can undo — never on disk behind it.
-      if (first === '/test') {
+      // /test coverage is the host's command (new files, under the approval cards), served like any other slash.
+      if (first === '/test' && !ChatViewProvider.isTestCoverage(prompt)) {
         question.notice = true;
         try {
           await this.runTestGeneration(host, ChatViewProvider.requestOf(prompt));
@@ -3609,6 +3610,21 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private static requestOf(prompt: string): string | undefined {
     const rest = prompt.trim().replace(/^\S+\s*/, '').trim();
     return rest.length > 0 ? rest : undefined;
+  }
+
+  /**
+   * `/test coverage`, alone or before ONE path (quoted when it holds spaces): the host's command, not the active file's
+   * tests. The same rule as the Core router's `IsCoverage` — `/test coverage of the error paths` stays a request to `/test`.
+   */
+  static isTestCoverage(prompt: string): boolean {
+    const rest = ChatViewProvider.requestOf(prompt) ?? '';
+    if (!rest.toLowerCase().startsWith('coverage')) return false;
+    const after = rest.slice('coverage'.length);
+    if (after.length === 0) return true;
+    if (!/^\s/.test(after)) return false;
+    const path = after.trim();
+    return (path.length > 1 && path.startsWith('"') && path.endsWith('"') && path.indexOf('"', 1) === path.length - 1)
+      || !/\s/.test(path);
   }
 
   /** The in-place action a prompt requests, or undefined (first token match, VS parity). */

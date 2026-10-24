@@ -49,4 +49,23 @@ internal static class TestGenerationPrompts
 
     /// <summary>Instruction line placed before the source code when creating a new test file.</summary>
     public const string Instruction = "Generate unit tests for this code:";
+
+    /// <summary>
+    /// System prompt of <c>/test coverage</c>: one new test file for one target, aimed at its uncovered lines.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ "From its SOURCE file": an example test that imports the package's built bundle taught the model to test the
+    /// bundle, and its tests passed while covering nothing of the source that was measured. The example is for style.
+    /// </remarks>
+    public const string CoverageSystem =
+        "You write ONE new unit-test file that covers code no test reaches yet. Reply with ONLY the complete content of " +
+        "that new file, in a single code block.\n" +
+        "- Test only the target you are given, aiming at the lines marked NOT COVERED.\n" +
+        "- Use the project's test framework. The code under test must run from its SOURCE file (its path is given), " +
+        "never from a built, bundled or packaged copy of it; the example test file shows the style only.\n" +
+        "- Every test must assert something observable. Never skip a test, never mark one as expected to fail.\n" +
+        "- Never modify, redefine, mock out or re-implement the code under test; only call it.";
+
+    /// <summary>What <c>/test coverage</c> asks when the new file failed: the failure's end, and the whole file again.</summary>
+    public const string CoverageRepair = "Reply with ONLY the corrected complete file, in a single code block.";
 }

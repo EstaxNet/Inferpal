@@ -205,6 +205,15 @@ exists.
   back to the text-only loop, and a failed capture says so in the run. Rewriting a *test* file
   during the loop always asks, whatever your permission rules say — "make it green" has an
   obvious shortcut, and this is the one place it must not be taken silently.
+- **`/test coverage [folder]`** — tests for the code no test reaches. The coverage is measured
+  with the tool the project already has (.NET: `coverlet.collector` or `dotnet-coverage`; Python:
+  `coverage.py`; Node: vitest, jest, or `node --test` with `c8`) — a missing tool is named with
+  the command that adds it, never installed. The methods with the most uncovered lines are chosen
+  by the measure, not by the model, ten per run; for each, the model writes one **new** test file
+  (never an existing file, never the code under test), through the usual approval. A file is kept
+  only if it passes three times, asserts something, skips nothing and covers lines nothing
+  covered — the others are removed, their copy kept. The report gives the coverage before →
+  after, per file, and why each file was set aside; `/undo-run` gives the whole command back.
 - **`/task <objective>`** — a background agent run, detached from the conversation: submitting
   returns at once and you keep working while it investigates. Tasks run one at a time and wait
   for the chat to be idle before taking the GPU, so interactive work is never blocked. A notice

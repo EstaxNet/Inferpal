@@ -726,7 +726,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SlashHintFix" xml:space="preserve"><value>アクティブなファイルの修正を提案</value></data>
   <data name="SlashHintReview" xml:space="preserve"><value>構造化されたコードレビュー</value></data>
   <data name="SlashHintRefactor" xml:space="preserve"><value>リファクタリングの提案</value></data>
-  <data name="SlashHintTest" xml:space="preserve"><value>単体テストを生成</value></data>
+  <data name="SlashHintTest" xml:space="preserve"><value>単体テストを生成 — /test coverage [フォルダー]: どのテストも通らないコードのテストを作り、成功してカバーするものだけ保持</value></data>
   <data name="SlashHintDoc" xml:space="preserve"><value>XML ドキュメントコメントを生成</value></data>
   <data name="SlashHintClear" xml:space="preserve"><value>会話をクリア</value></data>
   <data name="SlashHintModel" xml:space="preserve"><value>モデルを切り替え</value></data>
@@ -1872,4 +1872,45 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="RewindConversationNotCut" xml:space="preserve"><value>ファイルは質問 {0} の前の状態に戻りましたが、会話を切り詰められませんでした: {1}</value></data>
   <data name="RewindPlanChanged" xml:space="preserve"><value>カードの表示後に、この質問の後の実行が変わりました: 戻る前にもう一度確認してください。</value></data>
   <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>一緒に送った内容 ({0}) は再添付されません。</value></data>
+  <data name="CoverageDetecting" xml:space="preserve"><value>プロジェクトのテストとカバレッジツールを探しています…</value></data>
+  <data name="CoverageMeasuringBefore" xml:space="preserve"><value>{0} で実行前のカバレッジを計測しています…</value></data>
+  <data name="CoverageMeasuringAfter" xml:space="preserve"><value>実行後のカバレッジを計測しています…</value></data>
+  <data name="CoverageTargetProgress" xml:space="preserve"><value>対象 {0}/{1}: {2}…</value></data>
+  <data name="CoverageNoSuchFolder" xml:space="preserve"><value>ワークスペースにフォルダーまたはファイル {0} がありません。</value></data>
+  <data name="CoverageRunnerUnsupported" xml:space="preserve"><value>/test coverage は .NET、pytest、Node (vitest、jest、node --test) のテストを計測します。このプロジェクトのテスト ({0}) はまだ対応していません。</value></data>
+  <data name="CoverageNoTestProject" xml:space="preserve"><value>このワークスペースにテストプロジェクト (Microsoft.NET.Test.Sdk を参照する .csproj) がありません: カバレッジを計測する手段がありません。</value></data>
+  <data name="CoverageToolMissing" xml:space="preserve"><value>必要なカバレッジツール {0} がプロジェクトにありません。Inferpal が自分でインストールすることはありません。追加するには: `{1}`</value></data>
+  <data name="CoverageNodeModulesMissing" xml:space="preserve"><value>プロジェクトのパッケージがインストールされていません: 先に `{0}` を実行してください。</value></data>
+  <data name="CoverageNoReport" xml:space="preserve"><value>カバレッジ計測 ({0}) はレポートを書きませんでした。出力の先頭と末尾:</value></data>
+  <data name="CoverageNothingToCover" xml:space="preserve"><value>追加するものはありません: 未カバー行が 2 行以上のメソッドはありません (行のカバー率 {0} %)。</value></data>
+  <data name="CoverageHeader" xml:space="preserve"><value>{1} の**テストカバレッジ** ({0} で計測)</value></data>
+  <data name="CoverageWorkspace" xml:space="preserve"><value>ワークスペース</value></data>
+  <data name="CoverageSummary" xml:space="preserve"><value>カバレッジ: {0} % → {1} % ({2} ポイント) — {4} 行中 {3} 行。</value></data>
+  <data name="CoverageFilesHeader" xml:space="preserve"><value>向上したファイル:</value></data>
+  <data name="CoverageFileRow" xml:space="preserve"><value>- `{0}`: {1} % → {2} %</value></data>
+  <data name="CoverageKeptHeader" xml:space="preserve"><value>保持: {0} 件 — それぞれ 3 回成功し、未カバーだった行をカバーします:</value></data>
+  <data name="CoverageKeptRow" xml:space="preserve"><value>- `{0}` — {1}: +{2} 行</value></data>
+  <data name="CoverageSetAsideHeader" xml:space="preserve"><value>保持しなかった対象: {0} 件 — そのために書き込んだファイルは削除し、コピーは保存します (/undo-run review):</value></data>
+  <data name="CoverageSetAsideRow" xml:space="preserve"><value>- {0}: {1}</value></data>
+  <data name="CoverageWhyNoPass" xml:space="preserve"><value>3 回成功しない</value></data>
+  <data name="CoverageWhyNoAssertion" xml:space="preserve"><value>何も検証していない</value></data>
+  <data name="CoverageWhySkips" xml:space="preserve"><value>テストをスキップするか失敗を期待している</value></data>
+  <data name="CoverageWhyNothingNew" xml:space="preserve"><value>まだカバーされていない行をカバーしていない</value></data>
+  <data name="CoverageWhyNotMeasured" xml:space="preserve"><value>このテスト自体のカバレッジを読めなかった</value></data>
+  <data name="CoverageWhyModelSilent" xml:space="preserve"><value>モデルが 8 分以内に応答しなかった</value></data>
+  <data name="CoverageWhyNoFile" xml:space="preserve"><value>モデルがファイルを書かなかった</value></data>
+  <data name="CoverageWhyDeclined" xml:space="preserve"><value>書き込みが拒否された — コマンドはそこで停止しました</value></data>
+  <data name="CoverageWhyNotATestPath" xml:space="preserve"><value>テストの置き場所が新しいテストファイルではない</value></data>
+  <data name="CoverageLeft" xml:space="preserve"><value>未カバー行のあるメソッドがあと {0} 件あります: もう一度 /test coverage を実行してください。</value></data>
+  <data name="CoverageExcluded" xml:space="preserve"><value>AI ツールから除外されたファイル {0} 件は対象外にしました。</value></data>
+  <data name="CoverageSuiteRed" xml:space="preserve"><value>⚠ このコマンドの前からスイートは成功していませんでした: そのまま計測しており、その失敗はこのコマンドによるものではありません。</value></data>
+  <data name="CoverageAfterFailed" xml:space="preserve"><value>実行後のカバレッジを計測できませんでした: 保持したテストは残り、/undo-run で取り除けます。</value></data>
+  <data name="CoverageWhyModelCut" xml:space="preserve"><value>ファイルがモデルの長さ上限で途切れた</value></data>
+  <data name="CoverageWhyModelFailed" xml:space="preserve"><value>モデルへの要求が失敗した ({0}) — コマンドはそこで停止しました</value></data>
+  <data name="CoverageStopped" xml:space="preserve"><value>⏹ {1} 件中 {0} 件の対象で停止しました: それまでに保持したテストは残り (/undo-run で取り除けます)、検証中のファイルは削除し、実行後のカバレッジは計測していません。</value></data>
+  <data name="CoverageWhyNotWritten" xml:space="preserve"><value>書き込めませんでした ({0}) — コマンドはそこで停止しました</value></data>
+  <data name="CoverageWhyFailed" xml:space="preserve"><value>検証に失敗しました ({0})</value></data>
+  <data name="CoverageStillThere" xml:space="preserve"><value>⚠ 削除されていません: まだワークスペースにあります (/undo-run review に表示されます)</value></data>
+  <data name="CoverageNoSourceInScope" xml:space="preserve"><value>{0} には計測対象のソースファイルがありません — テスト、生成されたファイル、サードパーティのファイルは対象外です。テスト対象コードのフォルダーを指定するか、ワークスペース全体なら何も指定しないでください。</value></data>
+  <data name="CoverageSuiteBrokenAfter" xml:space="preserve"><value>⚠ スイートは実行前は成功し、実行後は失敗します: 保持したテストが単独では成功しても他と一緒だと壊れます。/undo-run で保持したテストを取り除けます。</value></data>
 </root>

@@ -90,7 +90,7 @@ internal enum SlashCommandId
     Commit, CommitExec, Pr, FixBuild, History, PHistory, Models, AgentStep, Resume,
     Note, Notes, Snippets, Template, Docs, Check, Rules, Checks, Plan, Prompts,
     Hardware, Setup, Diagnostics, UndoRun, Replay, Xray, Bench, Arena, Tdd, Branch, Task,
-    Onboard, Debug, Permissions, Instructions, Skill, Import, Settings,
+    Onboard, Debug, Permissions, Instructions, Skill, Import, Settings, TestCoverage,
 }
 
 /// <summary>A command the user or the repository wrote: <c>/name</c> → a prompt, from the config
@@ -310,6 +310,22 @@ internal static class SlashCommandRouter
     private static string? RequestOf(string prompt) => RestOf(prompt) is { Length: > 0 } rest ? rest : null;
 
     /// <summary>
+    /// <c>/test coverage</c>, alone or before ONE folder (quoted when it holds spaces) — never a request that begins with
+    /// the word: <c>/test coverage of the error paths</c> is a request to <c>/test</c>.
+    /// </summary>
+    private static bool IsCoverage(string prompt)
+    {
+        var rest = RestOf(prompt);
+        if (!rest.StartsWith("coverage", StringComparison.OrdinalIgnoreCase)) return false;
+        var folder = rest["coverage".Length..];
+        if (folder.Length == 0) return true;
+        if (!char.IsWhiteSpace(folder[0])) return false;   // coverage-related, coverages…
+        folder = folder.Trim();
+        return folder.Length > 1 && folder[0] == '"' && folder[^1] == '"' && folder.IndexOf('"', 1) == folder.Length - 1
+            || !folder.Any(char.IsWhiteSpace);
+    }
+
+    /// <summary>
     /// Renders `/help` from <see cref="Catalog"/>. Generated rather than written: a hand-maintained
     /// help text drifts silently, and in ten languages at once, while claiming to list everything.
     /// </summary>
@@ -404,6 +420,7 @@ internal static class SlashCommandRouter
             case "/fix":               return new SlashCodeAction(SlashCodeActionKind.Fix, RequestOf(prompt));
             case "/review":            return new SlashCodeAction(SlashCodeActionKind.Review, RequestOf(prompt));
             case "/refactor":          return new SlashCodeAction(SlashCodeActionKind.Refactor, RequestOf(prompt));
+            case "/test" when IsCoverage(prompt): return new SlashDelegatedAction(SlashCommandId.TestCoverage, parts);
             case "/test":              return new SlashCodeAction(SlashCodeActionKind.Test, RequestOf(prompt));
             case "/doc":               return new SlashCodeAction(SlashCodeActionKind.Doc, RequestOf(prompt));
 

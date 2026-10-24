@@ -726,7 +726,7 @@
   <data name="SlashHintFix" xml:space="preserve"><value>为活动文件建议修复</value></data>
   <data name="SlashHintReview" xml:space="preserve"><value>结构化代码审查</value></data>
   <data name="SlashHintRefactor" xml:space="preserve"><value>重构建议</value></data>
-  <data name="SlashHintTest" xml:space="preserve"><value>生成单元测试</value></data>
+  <data name="SlashHintTest" xml:space="preserve"><value>生成单元测试 — /test coverage [文件夹]：为没有任何测试覆盖的代码编写测试，仅保留通过且有覆盖的测试</value></data>
   <data name="SlashHintDoc" xml:space="preserve"><value>生成 XML 文档注释</value></data>
   <data name="SlashHintClear" xml:space="preserve"><value>清除对话</value></data>
   <data name="SlashHintModel" xml:space="preserve"><value>切换模型</value></data>
@@ -1872,4 +1872,45 @@
   <data name="RewindConversationNotCut" xml:space="preserve"><value>文件已恢复到问题 {0} 之前的状态，但无法截断对话：{1}</value></data>
   <data name="RewindPlanChanged" xml:space="preserve"><value>自卡片显示以来，这个问题之后的运行发生了变化：返回前请再检查一次。</value></data>
   <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>随它一起发送的内容（{0}）不会再次附上。</value></data>
+  <data name="CoverageDetecting" xml:space="preserve"><value>正在查找项目的测试和覆盖率工具…</value></data>
+  <data name="CoverageMeasuringBefore" xml:space="preserve"><value>正在用 {0} 测量之前的覆盖率…</value></data>
+  <data name="CoverageMeasuringAfter" xml:space="preserve"><value>正在测量之后的覆盖率…</value></data>
+  <data name="CoverageTargetProgress" xml:space="preserve"><value>目标 {0}/{1}：{2}…</value></data>
+  <data name="CoverageNoSuchFolder" xml:space="preserve"><value>工作区中没有文件夹或文件 {0}。</value></data>
+  <data name="CoverageRunnerUnsupported" xml:space="preserve"><value>/test coverage 测量 .NET、pytest 和 Node（vitest、jest、node --test）的测试；此项目的测试（{0}）暂不支持。</value></data>
+  <data name="CoverageNoTestProject" xml:space="preserve"><value>此工作区中没有测试项目（引用 Microsoft.NET.Test.Sdk 的 .csproj）：无法测量覆盖率。</value></data>
+  <data name="CoverageToolMissing" xml:space="preserve"><value>所需的覆盖率工具 {0} 不在项目中，Inferpal 从不自行安装。添加方法：`{1}`</value></data>
+  <data name="CoverageNodeModulesMissing" xml:space="preserve"><value>项目的包未安装：请先运行 `{0}`。</value></data>
+  <data name="CoverageNoReport" xml:space="preserve"><value>覆盖率测量（{0}）没有写出报告。其输出的开头和结尾：</value></data>
+  <data name="CoverageNothingToCover" xml:space="preserve"><value>没有可添加的：这里没有方法缺少 2 行或更多（行覆盖率 {0} %）。</value></data>
+  <data name="CoverageHeader" xml:space="preserve"><value>{1} 的**测试覆盖率**，由 {0} 测量</value></data>
+  <data name="CoverageWorkspace" xml:space="preserve"><value>工作区</value></data>
+  <data name="CoverageSummary" xml:space="preserve"><value>覆盖率：{0} % → {1} %（{2} 个百分点）— {4} 行中的 {3} 行。</value></data>
+  <data name="CoverageFilesHeader" xml:space="preserve"><value>有提升的文件：</value></data>
+  <data name="CoverageFileRow" xml:space="preserve"><value>- `{0}`：{1} % → {2} %</value></data>
+  <data name="CoverageKeptHeader" xml:space="preserve"><value>保留：{0} 个测试 — 每个都通过三次，并覆盖了原本无人覆盖的行：</value></data>
+  <data name="CoverageKeptRow" xml:space="preserve"><value>- `{0}` — {1}：+{2} 行</value></data>
+  <data name="CoverageSetAsideHeader" xml:space="preserve"><value>未保留：{0} 个目标 — 为其写入的任何文件都会移除，副本保留（/undo-run review）：</value></data>
+  <data name="CoverageSetAsideRow" xml:space="preserve"><value>- {0}：{1}</value></data>
+  <data name="CoverageWhyNoPass" xml:space="preserve"><value>没有通过三次</value></data>
+  <data name="CoverageWhyNoAssertion" xml:space="preserve"><value>没有任何断言</value></data>
+  <data name="CoverageWhySkips" xml:space="preserve"><value>跳过了测试或预期其失败</value></data>
+  <data name="CoverageWhyNothingNew" xml:space="preserve"><value>没有覆盖任何尚未覆盖的行</value></data>
+  <data name="CoverageWhyNotMeasured" xml:space="preserve"><value>无法读取它自身的覆盖率</value></data>
+  <data name="CoverageWhyModelSilent" xml:space="preserve"><value>模型在 8 分钟内没有回答</value></data>
+  <data name="CoverageWhyNoFile" xml:space="preserve"><value>模型没有写出文件</value></data>
+  <data name="CoverageWhyDeclined" xml:space="preserve"><value>写入被拒绝 — 命令在此停止</value></data>
+  <data name="CoverageWhyNotATestPath" xml:space="preserve"><value>其测试的位置不是新的测试文件</value></data>
+  <data name="CoverageLeft" xml:space="preserve"><value>还有 {0} 个方法有未覆盖的行：请再次运行 /test coverage。</value></data>
+  <data name="CoverageExcluded" xml:space="preserve"><value>已跳过 {0} 个从 AI 工具中排除的文件。</value></data>
+  <data name="CoverageSuiteRed" xml:space="preserve"><value>⚠ 在此命令之前测试套件就未全部通过：已按原样测量，其失败并非此命令造成。</value></data>
+  <data name="CoverageAfterFailed" xml:space="preserve"><value>无法测量之后的覆盖率：保留的测试仍在，/undo-run 可将其移除。</value></data>
+  <data name="CoverageWhyModelCut" xml:space="preserve"><value>其文件在模型的长度上限处被截断</value></data>
+  <data name="CoverageWhyModelFailed" xml:space="preserve"><value>对模型的请求失败（{0}）— 命令在此停止</value></data>
+  <data name="CoverageStopped" xml:space="preserve"><value>⏹ 在 {1} 个目标中的第 {0} 个之后停止：此前保留的测试仍在（/undo-run 可将其移除），正在检查的文件已移除，之后的覆盖率未测量。</value></data>
+  <data name="CoverageWhyNotWritten" xml:space="preserve"><value>无法写入（{0}）— 命令在此停止</value></data>
+  <data name="CoverageWhyFailed" xml:space="preserve"><value>其检查失败（{0}）</value></data>
+  <data name="CoverageStillThere" xml:space="preserve"><value>⚠ 未移除：仍在工作区中（/undo-run review 会列出它）</value></data>
+  <data name="CoverageNoSourceInScope" xml:space="preserve"><value>{0} 中没有测量所覆盖的源文件——测试、生成的文件和第三方文件不是目标。请指定被测代码的文件夹，或不指定以覆盖整个工作区。</value></data>
+  <data name="CoverageSuiteBrokenAfter" xml:space="preserve"><value>⚠ 测试套件之前通过、之后失败：某个保留的测试单独运行能通过，与其他测试一起就会出错。/undo-run 可移除保留的测试。</value></data>
 </root>

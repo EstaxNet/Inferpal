@@ -724,7 +724,7 @@
   <data name="SlashHintFix" xml:space="preserve"><value>предложить исправления для активного файла</value></data>
   <data name="SlashHintReview" xml:space="preserve"><value>структурированный обзор кода</value></data>
   <data name="SlashHintRefactor" xml:space="preserve"><value>предложения по рефакторингу</value></data>
-  <data name="SlashHintTest" xml:space="preserve"><value>сгенерировать модульные тесты</value></data>
+  <data name="SlashHintTest" xml:space="preserve"><value>сгенерировать модульные тесты — /test coverage [папка]: тесты для кода, до которого не доходит ни один тест; остаются, только если проходят и покрывают его</value></data>
   <data name="SlashHintDoc" xml:space="preserve"><value>сгенерировать XML-комментарии документации</value></data>
   <data name="SlashHintClear" xml:space="preserve"><value>очистить беседу</value></data>
   <data name="SlashHintModel" xml:space="preserve"><value>сменить модель</value></data>
@@ -1872,4 +1872,45 @@
   <data name="RewindConversationNotCut" xml:space="preserve"><value>Файлы вернулись к состоянию до вопроса {0}, но разговор не удалось обрезать: {1}</value></data>
   <data name="RewindPlanChanged" xml:space="preserve"><value>Запуски после этого вопроса изменились с момента показа карточки: проверьте её ещё раз, прежде чем вернуться.</value></data>
   <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>То, что шло вместе с ним ({0}), не прикрепляется заново.</value></data>
+  <data name="CoverageDetecting" xml:space="preserve"><value>Поиск тестов проекта и его инструмента покрытия…</value></data>
+  <data name="CoverageMeasuringBefore" xml:space="preserve"><value>Измерение покрытия до, с помощью {0}…</value></data>
+  <data name="CoverageMeasuringAfter" xml:space="preserve"><value>Измерение покрытия после…</value></data>
+  <data name="CoverageTargetProgress" xml:space="preserve"><value>Цель {0}/{1}: {2}…</value></data>
+  <data name="CoverageNoSuchFolder" xml:space="preserve"><value>В рабочей области нет папки или файла {0}.</value></data>
+  <data name="CoverageRunnerUnsupported" xml:space="preserve"><value>/test coverage измеряет тесты .NET, pytest и Node (vitest, jest, node --test); тесты этого проекта ({0}) пока не поддерживаются.</value></data>
+  <data name="CoverageNoTestProject" xml:space="preserve"><value>В этой рабочей области нет тестового проекта (.csproj со ссылкой на Microsoft.NET.Test.Sdk): нечем измерить покрытие.</value></data>
+  <data name="CoverageToolMissing" xml:space="preserve"><value>Нужного инструмента покрытия, {0}, нет в проекте, а Inferpal никогда не устанавливает его сам. Чтобы добавить: `{1}`</value></data>
+  <data name="CoverageNodeModulesMissing" xml:space="preserve"><value>Пакеты проекта не установлены: сначала выполните `{0}`.</value></data>
+  <data name="CoverageNoReport" xml:space="preserve"><value>Измерение покрытия ({0}) не записало отчёт. Его вывод, начало и конец:</value></data>
+  <data name="CoverageNothingToCover" xml:space="preserve"><value>Нечего добавить: ни в одном методе здесь не непокрыто 2 строки или больше (покрытие строк: {0} %).</value></data>
+  <data name="CoverageHeader" xml:space="preserve"><value>**Покрытие тестами** для {1}, измерено с помощью {0}</value></data>
+  <data name="CoverageWorkspace" xml:space="preserve"><value>рабочей области</value></data>
+  <data name="CoverageSummary" xml:space="preserve"><value>Покрытие: {0} % → {1} % ({2} п.) — строк: {3} из {4}.</value></data>
+  <data name="CoverageFilesHeader" xml:space="preserve"><value>Файлы, которые выиграли:</value></data>
+  <data name="CoverageFileRow" xml:space="preserve"><value>- `{0}`: {1} % → {2} %</value></data>
+  <data name="CoverageKeptHeader" xml:space="preserve"><value>Оставлено тестов: {0} — каждый проходит три раза и покрывает строки, которые ничто не покрывало:</value></data>
+  <data name="CoverageKeptRow" xml:space="preserve"><value>- `{0}` — {1}: +{2} (строк)</value></data>
+  <data name="CoverageSetAsideHeader" xml:space="preserve"><value>Не оставлено целей: {0} — любой записанный для них файл удаляется, его копия сохраняется (/undo-run review):</value></data>
+  <data name="CoverageSetAsideRow" xml:space="preserve"><value>- {0}: {1}</value></data>
+  <data name="CoverageWhyNoPass" xml:space="preserve"><value>не проходит три раза</value></data>
+  <data name="CoverageWhyNoAssertion" xml:space="preserve"><value>ничего не проверяет</value></data>
+  <data name="CoverageWhySkips" xml:space="preserve"><value>пропускает тест или ожидает его провала</value></data>
+  <data name="CoverageWhyNothingNew" xml:space="preserve"><value>не покрывает ни одной строки, которая не была бы уже покрыта</value></data>
+  <data name="CoverageWhyNotMeasured" xml:space="preserve"><value>не удалось прочитать его собственное покрытие</value></data>
+  <data name="CoverageWhyModelSilent" xml:space="preserve"><value>модель не ответила за 8 минут</value></data>
+  <data name="CoverageWhyNoFile" xml:space="preserve"><value>модель не написала ни одного файла</value></data>
+  <data name="CoverageWhyDeclined" xml:space="preserve"><value>запись отклонена — команда остановилась здесь</value></data>
+  <data name="CoverageWhyNotATestPath" xml:space="preserve"><value>место для его теста — не новый файл тестов</value></data>
+  <data name="CoverageLeft" xml:space="preserve"><value>Ещё методов с непокрытыми строками: {0}. Запустите /test coverage снова.</value></data>
+  <data name="CoverageExcluded" xml:space="preserve"><value>Пропущено файлов, исключённых из инструментов ИИ: {0}.</value></data>
+  <data name="CoverageSuiteRed" xml:space="preserve"><value>⚠ Набор тестов не был зелёным до этой команды: он измерен как есть, и его сбои не от этой команды.</value></data>
+  <data name="CoverageAfterFailed" xml:space="preserve"><value>Не удалось измерить покрытие после: оставленные тесты остаются, /undo-run их убирает.</value></data>
+  <data name="CoverageWhyModelCut" xml:space="preserve"><value>его файл обрезан на пределе длины модели</value></data>
+  <data name="CoverageWhyModelFailed" xml:space="preserve"><value>запрос к модели не удался ({0}) — команда остановилась здесь</value></data>
+  <data name="CoverageStopped" xml:space="preserve"><value>⏹ Остановлено (цели: {0} из {1}): оставленные до этого тесты остаются (/undo-run их убирает), проверяемый файл удалён, покрытие после не измерено.</value></data>
+  <data name="CoverageWhyNotWritten" xml:space="preserve"><value>его не удалось записать ({0}) — команда остановилась здесь</value></data>
+  <data name="CoverageWhyFailed" xml:space="preserve"><value>его проверка не удалась ({0})</value></data>
+  <data name="CoverageStillThere" xml:space="preserve"><value>⚠ не удалён: всё ещё в рабочей области (/undo-run review его покажет)</value></data>
+  <data name="CoverageNoSourceInScope" xml:space="preserve"><value>{0} не содержит исходных файлов, до которых доходит измерение: тесты, сгенерированные и сторонние файлы не являются целями. Укажите папку тестируемого кода или ничего для всей рабочей области.</value></data>
+  <data name="CoverageSuiteBrokenAfter" xml:space="preserve"><value>⚠ Набор тестов проходил до и падает после: оставленный тест проходит один, но ломается вместе с остальными. /undo-run убирает оставленные тесты.</value></data>
 </root>

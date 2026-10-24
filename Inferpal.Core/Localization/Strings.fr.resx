@@ -730,7 +730,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="SlashHintFix" xml:space="preserve"><value>proposer des corrections pour le fichier actif</value></data>
   <data name="SlashHintReview" xml:space="preserve"><value>revue de code structurée</value></data>
   <data name="SlashHintRefactor" xml:space="preserve"><value>suggestions de refactorisation</value></data>
-  <data name="SlashHintTest" xml:space="preserve"><value>générer des tests unitaires</value></data>
+  <data name="SlashHintTest" xml:space="preserve"><value>générer des tests unitaires — /test coverage [dossier] : des tests pour le code qu'aucun test n'atteint, gardés seulement s'ils passent et le couvrent</value></data>
   <data name="SlashHintDoc" xml:space="preserve"><value>générer des commentaires de documentation XML</value></data>
   <data name="SlashHintClear" xml:space="preserve"><value>effacer la conversation</value></data>
   <data name="SlashHintModel" xml:space="preserve"><value>changer de modèle</value></data>
@@ -1872,4 +1872,45 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="RewindConversationNotCut" xml:space="preserve"><value>Les fichiers sont revenus tels qu'ils étaient avant la question {0}, mais la conversation n'a pas pu être coupée : {1}</value></data>
   <data name="RewindPlanChanged" xml:space="preserve"><value>Les runs qui suivent cette question ont changé depuis l'affichage de la carte : vérifiez-la de nouveau avant de revenir.</value></data>
   <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>Ce qui l'accompagnait ({0}) n'est pas joint de nouveau.</value></data>
+  <data name="CoverageDetecting" xml:space="preserve"><value>Recherche des tests du projet et de son outil de couverture…</value></data>
+  <data name="CoverageMeasuringBefore" xml:space="preserve"><value>Mesure de la couverture avant, avec {0}…</value></data>
+  <data name="CoverageMeasuringAfter" xml:space="preserve"><value>Mesure de la couverture après…</value></data>
+  <data name="CoverageTargetProgress" xml:space="preserve"><value>Cible {0}/{1} : {2}…</value></data>
+  <data name="CoverageNoSuchFolder" xml:space="preserve"><value>Aucun dossier ni fichier {0} dans l'espace de travail.</value></data>
+  <data name="CoverageRunnerUnsupported" xml:space="preserve"><value>/test coverage mesure les tests .NET, pytest et Node (vitest, jest, node --test) ; ceux de ce projet ({0}) ne sont pas encore pris en charge.</value></data>
+  <data name="CoverageNoTestProject" xml:space="preserve"><value>Aucun projet de tests dans cet espace de travail (un .csproj qui référence Microsoft.NET.Test.Sdk) : rien pour mesurer la couverture.</value></data>
+  <data name="CoverageToolMissing" xml:space="preserve"><value>L'outil de couverture nécessaire, {0}, n'est pas dans le projet, et Inferpal n'en installe jamais de lui-même. Pour l'ajouter : `{1}`</value></data>
+  <data name="CoverageNodeModulesMissing" xml:space="preserve"><value>Les paquets du projet ne sont pas installés : lancez d'abord `{0}`.</value></data>
+  <data name="CoverageNoReport" xml:space="preserve"><value>La mesure de couverture ({0}) n'a écrit aucun rapport. Sa sortie, début et fin :</value></data>
+  <data name="CoverageNothingToCover" xml:space="preserve"><value>Rien à ajouter : aucune méthode ici ne manque de 2 lignes ou plus ({0} % des lignes couvertes).</value></data>
+  <data name="CoverageHeader" xml:space="preserve"><value>**Couverture de tests** de {1}, mesurée par {0}</value></data>
+  <data name="CoverageWorkspace" xml:space="preserve"><value>l'espace de travail</value></data>
+  <data name="CoverageSummary" xml:space="preserve"><value>Couverture : {0} % → {1} % ({2} points) — {3} lignes sur {4}.</value></data>
+  <data name="CoverageFilesHeader" xml:space="preserve"><value>Fichiers qui ont gagné :</value></data>
+  <data name="CoverageFileRow" xml:space="preserve"><value>- `{0}` : {1} % → {2} %</value></data>
+  <data name="CoverageKeptHeader" xml:space="preserve"><value>Gardés : {0} {0:test|tests} — chacun passe trois fois et couvre des lignes que rien ne couvrait :</value></data>
+  <data name="CoverageKeptRow" xml:space="preserve"><value>- `{0}` — {1} : +{2} {2:ligne|lignes}</value></data>
+  <data name="CoverageSetAsideHeader" xml:space="preserve"><value>Non gardées : {0} {0:cible|cibles} — tout fichier écrit pour elles est retiré, sa copie gardée (/undo-run review) :</value></data>
+  <data name="CoverageSetAsideRow" xml:space="preserve"><value>- {0} : {1}</value></data>
+  <data name="CoverageWhyNoPass" xml:space="preserve"><value>ne passe pas trois fois</value></data>
+  <data name="CoverageWhyNoAssertion" xml:space="preserve"><value>ne vérifie rien</value></data>
+  <data name="CoverageWhySkips" xml:space="preserve"><value>saute un test ou en attend l'échec</value></data>
+  <data name="CoverageWhyNothingNew" xml:space="preserve"><value>ne couvre aucune ligne qui ne l'était déjà</value></data>
+  <data name="CoverageWhyNotMeasured" xml:space="preserve"><value>sa propre couverture n'a pas pu être lue</value></data>
+  <data name="CoverageWhyModelSilent" xml:space="preserve"><value>le modèle n'a pas répondu en 8 minutes</value></data>
+  <data name="CoverageWhyNoFile" xml:space="preserve"><value>le modèle n'a écrit aucun fichier</value></data>
+  <data name="CoverageWhyDeclined" xml:space="preserve"><value>son écriture a été refusée — la commande s'est arrêtée là</value></data>
+  <data name="CoverageWhyNotATestPath" xml:space="preserve"><value>la place de son test n'est pas un nouveau fichier de tests</value></data>
+  <data name="CoverageLeft" xml:space="preserve"><value>{0} {0:autre méthode|autres méthodes} avec des lignes non couvertes : relancez /test coverage pour {0:elle|elles}.</value></data>
+  <data name="CoverageExcluded" xml:space="preserve"><value>{0} {0:fichier exclu|fichiers exclus} des outils d'IA {0:laissé|laissés} de côté.</value></data>
+  <data name="CoverageSuiteRed" xml:space="preserve"><value>⚠ La suite n'était pas verte avant cette commande : elle a été mesurée telle quelle, et ses échecs ne viennent pas de cette commande.</value></data>
+  <data name="CoverageAfterFailed" xml:space="preserve"><value>La couverture après n'a pas pu être mesurée : les tests gardés restent, et /undo-run les retire.</value></data>
+  <data name="CoverageWhyModelCut" xml:space="preserve"><value>son fichier a été coupé à la limite de longueur du modèle</value></data>
+  <data name="CoverageWhyModelFailed" xml:space="preserve"><value>la requête au modèle a échoué ({0}) — la commande s'est arrêtée là</value></data>
+  <data name="CoverageStopped" xml:space="preserve"><value>⏹ Arrêté après {0} {1:cible|cibles} sur {1} : les tests gardés jusque-là restent (/undo-run les retire), le fichier en cours de vérification a été retiré, et la couverture après n'a pas été mesurée.</value></data>
+  <data name="CoverageWhyNotWritten" xml:space="preserve"><value>il n'a pas pu être écrit ({0}) — la commande s'est arrêtée là</value></data>
+  <data name="CoverageWhyFailed" xml:space="preserve"><value>sa vérification a échoué ({0})</value></data>
+  <data name="CoverageStillThere" xml:space="preserve"><value>⚠ non retiré : toujours dans l'espace de travail (/undo-run review le liste)</value></data>
+  <data name="CoverageNoSourceInScope" xml:space="preserve"><value>{0} ne contient aucun fichier source que la mesure atteint — les tests, les fichiers générés et tiers ne sont pas des cibles. Nommez un dossier du code testé, ou rien pour tout l'espace de travail.</value></data>
+  <data name="CoverageSuiteBrokenAfter" xml:space="preserve"><value>⚠ La suite passait avant et échoue après : un test gardé passe seul mais casse avec les autres. /undo-run retire les tests gardés.</value></data>
 </root>

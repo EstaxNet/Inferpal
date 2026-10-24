@@ -1401,7 +1401,7 @@ internal class RunTestsTool : ITool
         return null;
     }
 
-    private static string DetectRunner(string workDir, string? explicitPath, string? root)
+    internal static string DetectRunner(string workDir, string? explicitPath, string? root)
     {
         if (explicitPath is not null && RunnerOfPath(explicitPath) is { } named) return named;
 
