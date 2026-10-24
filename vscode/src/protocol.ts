@@ -503,6 +503,47 @@ export interface RunSummary {
   runId: string;
 }
 
+/** One diff line of a run's review: `+`, `-`, ` ` or `…` (a cut, its text saying how much). */
+export interface RunReviewLine {
+  prefix: string;
+  text: string;
+}
+
+/** One file of a run's review card (`RunReviewDto` in the host). */
+export interface RunReviewFile {
+  path: string;
+  name: string;
+  added: number;
+  removed: number;
+  created: boolean;
+  gone: boolean;
+  state: 'pending' | 'kept' | 'undone' | 'changedSince' | 'noCopy';
+  stateLabel: string;
+  canRedo: boolean;
+  diff: RunReviewLine[];
+}
+
+/** `run/review`: each file a run changed against the state before it, its words in the person's language. */
+export interface RunReview {
+  runId: string;
+  title: string;
+  subtitle: string;
+  note: string;
+  changedWhy: string;
+  files: RunReviewFile[];
+  keep: string;
+  undo: string;
+  delete: string;
+  redo: string;
+  new: string;
+}
+
+/** `run/file`: the sentence to show, and the card as it stands after (null: the run is no longer kept). */
+export interface RunFileResult {
+  message: string;
+  review: RunReview | null;
+}
+
 export interface SavedMessage {
   role: string;
   content: string;

@@ -1813,4 +1813,34 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="HintRoleProvider" xml:space="preserve"><value>Ollama, LM Studio o compatibile con OpenAI: lo compila il pulsante Testa accanto al suo indirizzo.</value></data>
   <data name="SettingsNoModelChosen" xml:space="preserve"><value>Nessuno scelto: niente testo fantasma</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>Ricerca di un server di modelli…</value></data>
+  <data name="UndoRunLeftChanged" xml:space="preserve"><value>Lasciati come sono — modificati dopo il run, annullare perderebbe quella modifica: {0}</value></data>
+  <data name="UndoRunLeftKept" xml:space="preserve"><value>Lasciati come sono — li hai tenuti: {0}</value></data>
+  <data name="RunFileRestored" xml:space="preserve"><value>{0} è tornato com'era prima del run. Il contenuto precedente viene prima salvato.</value></data>
+  <data name="RunFileDeleted" xml:space="preserve"><value>{0} è eliminato — il run lo aveva creato. Il suo contenuto viene prima salvato.</value></data>
+  <data name="RunFileRedone" xml:space="preserve"><value>{0} ha di nuovo la versione del run.</value></data>
+  <data name="RunFileKept" xml:space="preserve"><value>{0} è tenuto: Annulla run lo lascia com'è.</value></data>
+  <data name="RunFileChangedSince" xml:space="preserve"><value>Non annullato: {0} è stato modificato dopo il run, e annullarlo perderebbe quella modifica.</value></data>
+  <data name="RunFileAlreadyUndone" xml:space="preserve"><value>{0} è già annullato.</value></data>
+  <data name="RunFileNothingToRedo" xml:space="preserve"><value>Niente da ripristinare per {0}: nessun annullamento è stato salvato.</value></data>
+  <data name="RunFileNotInRun" xml:space="preserve"><value>{0} non è un file modificato da questo run.</value></data>
+  <data name="RunFileFailed" xml:space="preserve"><value>Impossibile modificare {0}: /diagnostics ne indica la causa.</value></data>
+  <data name="RunReviewHeader" xml:space="preserve"><value>Modifiche di questo run — {0} {0:file|file}, rispetto allo stato prima delle {1}:</value></data>
+  <data name="RunReviewHowTo" xml:space="preserve"><value>Annullare un solo file: `/undo-run #{0} &lt;file&gt;`.</value></data>
+  <data name="RunReviewMoreLines" xml:space="preserve"><value>{0} {0:riga|righe} in più</value></data>
+  <data name="RunReviewButton" xml:space="preserve"><value>Rivedi le modifiche</value></data>
+  <data name="RunReviewTitle" xml:space="preserve"><value>Modifiche di questo run</value></data>
+  <data name="RunReviewSubtitle" xml:space="preserve"><value>{0} {0:file|file} · rispetto allo stato prima delle {1}</value></data>
+  <data name="RunFileKeep" xml:space="preserve"><value>Tieni</value></data>
+  <data name="RunFileUndo" xml:space="preserve"><value>Annulla</value></data>
+  <data name="RunFileDelete" xml:space="preserve"><value>Elimina</value></data>
+  <data name="RunFileRedo" xml:space="preserve"><value>Ripristina</value></data>
+  <data name="RunFileNew" xml:space="preserve"><value>nuovo</value></data>
+  <data name="RunFileChangedLabel" xml:space="preserve"><value>modificato dopo il run</value></data>
+  <data name="RunFileUndoneLabel" xml:space="preserve"><value>annullato</value></data>
+  <data name="RunFileKeptLabel" xml:space="preserve"><value>tenuto</value></data>
+  <data name="RunReviewNote" xml:space="preserve"><value>Annulla riporta un file com'era prima di questo run. Ciò che viene sostituito è salvato prima, quindi anche un annullamento si può annullare.</value></data>
+  <data name="RunFileChangedWhy" xml:space="preserve"><value>Non annullato: questo file è stato modificato dopo il run. Annullarlo riporterebbe lo stato precedente al run e perderebbe quella modifica.</value></data>
+  <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>Non ripristinato: {0} è stato modificato dopo l'annullamento, e ripristinarlo perderebbe quella modifica.</value></data>
+  <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>annullato, poi modificato — Ripristina perderebbe quella modifica</value></data>
+  <data name="RunFileNoCopyLabel" xml:space="preserve"><value>nessuna copia di prima del run — non si può annullare</value></data>
 </root>

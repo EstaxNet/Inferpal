@@ -1813,4 +1813,34 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="HintRoleProvider" xml:space="preserve"><value>Ollama, LM Studio o compatible con OpenAI: el botón Probar junto a su dirección lo rellena.</value></data>
   <data name="SettingsNoModelChosen" xml:space="preserve"><value>Ninguno elegido: sin texto fantasma</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>Buscando un servidor de modelos…</value></data>
+  <data name="UndoRunLeftChanged" xml:space="preserve"><value>Se dejan como están — modificados después del run, deshacer perdería ese cambio: {0}</value></data>
+  <data name="UndoRunLeftKept" xml:space="preserve"><value>Se dejan como están — los conservaste: {0}</value></data>
+  <data name="RunFileRestored" xml:space="preserve"><value>{0} vuelve a estar como antes del run. Lo que contenía se guarda primero.</value></data>
+  <data name="RunFileDeleted" xml:space="preserve"><value>{0} se ha eliminado — el run lo había creado. Lo que contenía se guarda primero.</value></data>
+  <data name="RunFileRedone" xml:space="preserve"><value>{0} vuelve a tener la versión del run.</value></data>
+  <data name="RunFileKept" xml:space="preserve"><value>{0} se conserva: Deshacer run lo deja como está.</value></data>
+  <data name="RunFileChangedSince" xml:space="preserve"><value>No deshecho: {0} se modificó después del run, y deshacerlo perdería ese cambio.</value></data>
+  <data name="RunFileAlreadyUndone" xml:space="preserve"><value>{0} ya está deshecho.</value></data>
+  <data name="RunFileNothingToRedo" xml:space="preserve"><value>Nada que rehacer para {0}: no se guardó ninguna reversión.</value></data>
+  <data name="RunFileNotInRun" xml:space="preserve"><value>{0} no es un archivo que este run haya cambiado.</value></data>
+  <data name="RunFileFailed" xml:space="preserve"><value>No se pudo cambiar {0}: /diagnostics indica la causa.</value></data>
+  <data name="RunReviewHeader" xml:space="preserve"><value>Cambios de este run — {0} {0:archivo|archivos}, comparados con el estado anterior a las {1}:</value></data>
+  <data name="RunReviewHowTo" xml:space="preserve"><value>Deshacer un solo archivo: `/undo-run #{0} &lt;archivo&gt;`.</value></data>
+  <data name="RunReviewMoreLines" xml:space="preserve"><value>{0} {0:línea|líneas} más</value></data>
+  <data name="RunReviewButton" xml:space="preserve"><value>Revisar cambios</value></data>
+  <data name="RunReviewTitle" xml:space="preserve"><value>Cambios de este run</value></data>
+  <data name="RunReviewSubtitle" xml:space="preserve"><value>{0} {0:archivo|archivos} · comparados con el estado anterior a las {1}</value></data>
+  <data name="RunFileKeep" xml:space="preserve"><value>Conservar</value></data>
+  <data name="RunFileUndo" xml:space="preserve"><value>Deshacer</value></data>
+  <data name="RunFileDelete" xml:space="preserve"><value>Eliminar</value></data>
+  <data name="RunFileRedo" xml:space="preserve"><value>Rehacer</value></data>
+  <data name="RunFileNew" xml:space="preserve"><value>nuevo</value></data>
+  <data name="RunFileChangedLabel" xml:space="preserve"><value>cambiado desde el run</value></data>
+  <data name="RunFileUndoneLabel" xml:space="preserve"><value>deshecho</value></data>
+  <data name="RunFileKeptLabel" xml:space="preserve"><value>conservado</value></data>
+  <data name="RunReviewNote" xml:space="preserve"><value>Deshacer devuelve un archivo a como estaba antes de este run. Lo que se reemplaza se guarda primero, así que un deshacer también se puede deshacer.</value></data>
+  <data name="RunFileChangedWhy" xml:space="preserve"><value>No deshecho: este archivo se modificó después del run. Deshacerlo devolvería el estado anterior al run y perdería ese cambio.</value></data>
+  <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>No rehecho: {0} se modificó después de deshacer, y rehacerlo perdería ese cambio.</value></data>
+  <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>deshecho y luego modificado — Rehacer perdería ese cambio</value></data>
+  <data name="RunFileNoCopyLabel" xml:space="preserve"><value>sin copia de antes del run — no se puede deshacer</value></data>
 </root>

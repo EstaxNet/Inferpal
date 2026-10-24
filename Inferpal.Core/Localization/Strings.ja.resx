@@ -1813,4 +1813,34 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="HintRoleProvider" xml:space="preserve"><value>Ollama、LM Studio、または OpenAI 互換。アドレスの横のテストボタンで入力されます。</value></data>
   <data name="SettingsNoModelChosen" xml:space="preserve"><value>未選択: ゴースト テキストなし</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>モデルサーバーを検索しています…</value></data>
+  <data name="UndoRunLeftChanged" xml:space="preserve"><value>そのままにしました — 実行後に変更されたため、元に戻すとその変更が失われます: {0}</value></data>
+  <data name="UndoRunLeftKept" xml:space="preserve"><value>そのままにしました — 保持を選んだファイルです: {0}</value></data>
+  <data name="RunFileRestored" xml:space="preserve"><value>{0} を実行前の状態に戻しました。それまでの内容は先に保存されています。</value></data>
+  <data name="RunFileDeleted" xml:space="preserve"><value>{0} を削除しました — この実行で作成されたファイルです。内容は先に保存されています。</value></data>
+  <data name="RunFileRedone" xml:space="preserve"><value>{0} を再び実行後の内容にしました。</value></data>
+  <data name="RunFileKept" xml:space="preserve"><value>{0} を保持します: 実行の取り消しでも変更されません。</value></data>
+  <data name="RunFileChangedSince" xml:space="preserve"><value>元に戻していません: {0} は実行後に変更されており、元に戻すとその変更が失われます。</value></data>
+  <data name="RunFileAlreadyUndone" xml:space="preserve"><value>{0} はすでに元に戻されています。</value></data>
+  <data name="RunFileNothingToRedo" xml:space="preserve"><value>{0} にはやり直せる内容がありません: 元に戻した内容が保存されていません。</value></data>
+  <data name="RunFileNotInRun" xml:space="preserve"><value>{0} はこの実行で変更されたファイルではありません。</value></data>
+  <data name="RunFileFailed" xml:space="preserve"><value>{0} を変更できませんでした: /diagnostics で原因を確認できます。</value></data>
+  <data name="RunReviewHeader" xml:space="preserve"><value>この実行の変更 — {0} 件のファイル、{1} より前の状態と比較:</value></data>
+  <data name="RunReviewHowTo" xml:space="preserve"><value>1 つのファイルだけを元に戻す: `/undo-run #{0} &lt;ファイル&gt;`。</value></data>
+  <data name="RunReviewMoreLines" xml:space="preserve"><value>ほかに {0} 行</value></data>
+  <data name="RunReviewButton" xml:space="preserve"><value>変更を確認</value></data>
+  <data name="RunReviewTitle" xml:space="preserve"><value>この実行の変更</value></data>
+  <data name="RunReviewSubtitle" xml:space="preserve"><value>{0} 件のファイル · {1} より前の状態と比較</value></data>
+  <data name="RunFileKeep" xml:space="preserve"><value>保持</value></data>
+  <data name="RunFileUndo" xml:space="preserve"><value>元に戻す</value></data>
+  <data name="RunFileDelete" xml:space="preserve"><value>削除</value></data>
+  <data name="RunFileRedo" xml:space="preserve"><value>やり直し</value></data>
+  <data name="RunFileNew" xml:space="preserve"><value>新規</value></data>
+  <data name="RunFileChangedLabel" xml:space="preserve"><value>実行後に変更あり</value></data>
+  <data name="RunFileUndoneLabel" xml:space="preserve"><value>元に戻しました</value></data>
+  <data name="RunFileKeptLabel" xml:space="preserve"><value>保持</value></data>
+  <data name="RunReviewNote" xml:space="preserve"><value>元に戻すと、ファイルはこの実行の前の状態になります。置き換える内容は先に保存されるので、元に戻す操作自体も取り消せます。</value></data>
+  <data name="RunFileChangedWhy" xml:space="preserve"><value>元に戻していません: このファイルは実行後に変更されています。元に戻すと実行前の状態になり、その変更が失われます。</value></data>
+  <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>やり直していません: {0} は元に戻した後に変更されており、やり直すとその変更が失われます。</value></data>
+  <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>元に戻した後に変更あり — やり直すとその変更が失われます</value></data>
+  <data name="RunFileNoCopyLabel" xml:space="preserve"><value>実行前のコピーがありません — 元に戻せません</value></data>
 </root>

@@ -47,15 +47,18 @@ public sealed class UndoRunRetryTests : IDisposable
         var cart  = Path.Combine(_root, "Cart.cs");
         var order = Path.Combine(_root, "Order.cs");
         var history = await RunThatWritesBothAsync(cart, order);
-        File.Delete(order);
-        Directory.CreateDirectory(order);                                   // the undo cannot write there
+        // A failure that leaves the file as the run left it (a file changed since the run is not a failure: it is left
+        // as it is, and said): its copy from before the run is out of reach.
+        var copy  = history.Runs[0].Changes.Single(c => string.Equals(c.OriginalPath, order, StringComparison.OrdinalIgnoreCase)).SnapshotPath!;
+        var bytes = File.ReadAllBytes(copy);
+        File.Delete(copy);
 
         var first = await UndoAsync(history);
         Assert.Equal("cart before\n", File.ReadAllText(cart));              // witness: the other file came back
         Assert.Contains(Strings.UndoRunRetryFailed, first, StringComparison.Ordinal);
 
         File.WriteAllText(cart, "cart fixed by hand\n");                    // edited since the undo
-        Directory.Delete(order);                                            // the cause is gone
+        File.WriteAllBytes(copy, bytes);                                    // the cause is gone
 
         var second = await UndoAsync(history);
         Assert.NotEqual(Strings.UndoRunAlreadyUndone, second);

@@ -129,7 +129,7 @@ internal static class RunSummary
             return new RunFileLine(path, System.IO.Path.GetFileName(path), added, removed, created, !exists);
         })];
 
-    private static string Read(string path)
+    internal static string Read(string path)
     {
         try { return Tools.TextFileEncoding.ReadText(path); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return string.Empty; }

@@ -384,16 +384,14 @@ internal class FileHistoryService
             HashSet<string> own;
             lock (_runLock)
             {
-                held = new HashSet<string>(
-                    _runs.Append(_currentRun).OfType<HistoryRun>()
-                         .SelectMany(r => r.Changes).Select(c => c.SnapshotPath).OfType<string>(),
-                    PathComparer.Default);
+                held = new HashSet<string>(_runs.Append(_currentRun).OfType<HistoryRun>().SelectMany(HeldCopies),
+                                           PathComparer.Default);
                 own = _runs.Select(r => r.Id).ToHashSet();
             }
             // ⚠ The runs kept on disk hold their copies too: pruned on the live processes' runs alone, the pre-run backup
             // of a run made before a restart goes with its file's twentieth snapshot, and its undo fails.
             if (RunKey() is { } key)
-                held.UnionWith(DiskRuns(own, key).SelectMany(r => r.Changes).Select(c => c.SnapshotPath).OfType<string>());
+                held.UnionWith(DiskRuns(own, key).SelectMany(HeldCopies));
             // ⚠ The history folder is the workspace's, shared by Visual Studio and VS Code, and the runs live in each
             // process's memory. Pruned on this process's runs alone, a pre-run backup another editor's run still holds
             // was deleted by this one's twentieth snapshot of the file, and that editor's /undo-run could no longer put
@@ -434,6 +432,10 @@ internal class FileHistoryService
         }
         catch { /* best-effort retention — never break the write path */ }
     }
+
+    /// <summary>The copies a run needs: its pre-run backups, and what its undos replaced (what a redo puts back).</summary>
+    private static IEnumerable<string> HeldCopies(HistoryRun run) =>
+        run.Changes.Select(c => c.SnapshotPath).OfType<string>().Concat(run.RedoSources.Values);
 
     /// <summary>Prunes, once per history folder, the old snapshots of the files a batch backed up.</summary>
     /// <remarks>⚠ One snapshot at a time, each pruning lists the folder and rewrites the list of held snapshots: a checkout
@@ -759,7 +761,9 @@ internal class FileHistoryService
             ended = _currentRun;
             _currentRun = null;
         }
-        if (ended is not null) Persist(ended, open: false);
+        if (ended is null) return;
+        Seal(ended);   // what each file holds now: a file that differs later was changed after the run
+        Persist(ended, open: false);
     }
 
     // ── Runs kept on disk (RunManifest) ──────────────────────────────────────────
@@ -1105,19 +1109,193 @@ internal class FileHistoryService
     }
 
     /// <summary>
-    /// Reverts every file changed during <paramref name="run"/> to its pre-run state: restores the
-    /// first snapshot taken that run, or deletes files that were created during it.
+    /// Reverts every file changed during <paramref name="run"/> to its pre-run state: restores the first snapshot taken
+    /// that run, or deletes files that were created during it — save the files the person kept, and those changed since
+    /// the run ended, which the undo would overwrite: both are left as they are, and named in the result.
     /// </summary>
     internal async Task<RunUndoResult> UndoRunAsync(HistoryRun run, CancellationToken ct)
+    {
+        // A retry after a failure: the files given back by an earlier undo are not touched again.
+        List<RunChange> pending;
+        List<string> kept;
+        lock (_runLock)
+        {
+            pending = run.Changes.Where(c => !run.IsGivenBack(c.OriginalPath) && !run.IsKept(c.OriginalPath)).ToList();
+            // Kept, then undone by hand from the review: given back, so not "left as it is".
+            kept    = run.Changes.Select(c => c.OriginalPath).Where(p => run.IsKept(p) && !run.IsGivenBack(p)).ToList();
+        }
+        var later = TouchedLater(run);
+        var changedSince = pending.Where(c => ChangedSinceRun(run, c.OriginalPath, later)).Select(c => c.OriginalPath).ToList();
+        pending.RemoveAll(c => changedSince.Contains(c.OriginalPath, PathComparer.Default));
+
+        var result = await UndoChangesAsync(run, pending, ct);
+        lock (_runLock)
+            if (result.Failed.Count == 0) run.MarkUndone();
+        Persist(run, open: false);   // undone stays undone after a restart, and a retry gives back only what failed
+        return result with { ChangedSince = changedSince, Kept = kept };
+    }
+
+    /// <summary>Puts <paramref name="path"/> back as it was before <paramref name="run"/>: one file of the run's review.</summary>
+    internal async Task<FileUndoOutcome> UndoFileAsync(HistoryRun run, string path, CancellationToken ct)
+    {
+        if (ChangeOf(run, path) is not { } change) return FileUndoOutcome.NotInRun;
+        lock (_runLock)
+            if (run.IsGivenBack(change.OriginalPath)) return FileUndoOutcome.AlreadyUndone;
+        if (ChangedSinceRun(run, change.OriginalPath, TouchedLater(run))) return FileUndoOutcome.ChangedSince;
+        var result = await UndoChangesAsync(run, [change], ct);
+        lock (_runLock)
+            // Every file given back one by one is the whole run undone: an earlier run's undo is no longer held back.
+            if (run.Changes.All(c => run.IsGivenBack(c.OriginalPath))) run.MarkUndone();
+        Persist(run, open: false);
+        return result.Failed.Count > 0 ? FileUndoOutcome.Failed
+             : result.Restored.Count > 0 ? FileUndoOutcome.Restored
+             : result.Deleted.Count > 0 ? FileUndoOutcome.Deleted
+             : FileUndoOutcome.AlreadyUndone;   // created by the run and already gone: nothing was saved, nothing to redo
+    }
+
+    /// <summary>
+    /// Gives <paramref name="path"/> back the version an undo replaced (<see cref="HistoryRun.RedoSourceOf"/>): an undo,
+    /// undone. What the file holds then is saved first, as for any write without an approval card.
+    /// </summary>
+    internal async Task<FileUndoOutcome> RedoFileAsync(HistoryRun run, string path, CancellationToken ct)
+    {
+        if (ChangeOf(run, path) is not { } change) return FileUndoOutcome.NotInRun;
+        string? copy;
+        lock (_runLock) copy = run.IsGivenBack(change.OriginalPath) ? run.RedoSourceOf(change.OriginalPath) : null;
+        if (copy is null) return FileUndoOutcome.NothingToRedo;
+        // ⚠ The redo writes the run's version over what the undo left: changed since, that change would be lost.
+        if (!AsTheUndoLeft(change)) return FileUndoOutcome.ChangedSinceUndo;
+        var pruneLater = new List<(string Dir, string Suffix)>();
+        try
+        {
+            if (!File.Exists(copy))
+            {
+                Diagnostics.Record("FileHistoryService.RedoFile", $"the copy to redo from is gone: {copy}");
+                return FileUndoOutcome.Failed;
+            }
+            var bytes = await File.ReadAllBytesAsync(copy, ct);
+            if (File.Exists(change.OriginalPath) && await SnapshotAsync(change.OriginalPath, ct, pruneLater) is not { Length: > 0 })
+                return FileUndoOutcome.Failed;   // no backup, no overwrite
+            if (Path.GetDirectoryName(change.OriginalPath) is { Length: > 0 } folder) Directory.CreateDirectory(folder);
+            // Backed up: a stop asked now must not leave the file half written.
+            await File.WriteAllBytesAsync(change.OriginalPath, bytes, CancellationToken.None);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Diagnostics.Swallow("FileHistoryService.RedoFile", ex);
+            return FileUndoOutcome.Failed;
+        }
+        finally
+        {
+            PruneBatch(pruneLater);
+        }
+        lock (_runLock)
+        {
+            run.NoteRedone(change.OriginalPath);
+            run.ReopenUndo();
+        }
+        Persist(run, open: false);
+        return FileUndoOutcome.Redone;
+    }
+
+    /// <summary>The person keeps <paramref name="path"/> as the run left it: Undo run leaves it alone.</summary>
+    internal FileUndoOutcome KeepFile(HistoryRun run, string path)
+    {
+        if (ChangeOf(run, path) is not { } change) return FileUndoOutcome.NotInRun;
+        lock (_runLock) run.NoteKept(change.OriginalPath);
+        Persist(run, open: false);
+        return FileUndoOutcome.Kept;
+    }
+
+    private RunChange? ChangeOf(HistoryRun run, string path)
+    {
+        lock (_runLock) return run.Changes.FirstOrDefault(c => PathComparer.Default.Equals(c.OriginalPath, path));
+    }
+
+    /// <summary>
+    /// Whether <paramref name="path"/> holds something else than when <paramref name="run"/> ended — changed since by the
+    /// person, or by a later run (<paramref name="touchedLater"/>, from <see cref="TouchedLater"/>).
+    /// </summary>
+    /// <remarks>⚠ A run whose end was never noted (cut short) has no hash to compare: a later run that changed the file
+    /// still holds its undo back, or the state before this run would overwrite what that run wrote.</remarks>
+    internal bool ChangedSinceRun(HistoryRun run, string path, IReadOnlySet<string> touchedLater)
+    {
+        if (touchedLater.Contains(path)) return true;
+        string? after;
+        lock (_runLock) after = run.AfterOf(path);
+        if (after is null || ContentHash(path) is not { } now || now == after) return false;
+        // Already back as it was before the run (a created file deleted by hand): giving it back loses nothing.
+        return ChangeOf(run, path) is not { } change || !AsTheUndoLeft(change);
+    }
+
+    /// <summary>The files the runs after <paramref name="run"/> changed and have not given back.</summary>
+    internal IReadOnlySet<string> TouchedLater(HistoryRun run)
+    {
+        var later = new HashSet<string>(PathComparer.Default);
+        foreach (var other in Runs.Where(r => string.CompareOrdinal(r.Id, run.Id) > 0))
+            lock (_runLock)
+                foreach (var change in other.Changes)
+                    if (!other.IsGivenBack(change.OriginalPath)) later.Add(change.OriginalPath);
+        return later;
+    }
+
+    /// <summary>Whether a file holds its state from before the run — what an undo leaves: the copy taken then, or no
+    /// file for one the run created.</summary>
+    internal static bool AsTheUndoLeft(RunChange change) => change.SnapshotPath is { } before
+        ? ContentHash(change.OriginalPath) is { Length: > 0 } now && now == ContentHash(before)
+        : !change.SnapshotFailed && !File.Exists(change.OriginalPath);
+
+    /// <summary>The SHA-256 of <paramref name="path"/>'s bytes, "" for no file, <c>null</c> when it cannot be read.</summary>
+    internal static string? ContentHash(string path)
+    {
+        try
+        {
+            if (!File.Exists(path)) return string.Empty;
+            using var stream = File.OpenRead(path);
+            return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(stream));
+        }
+        // Called where nothing may throw (the end of a turn): any path the system refuses is "cannot be read".
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>What a review of <paramref name="run"/> reads, taken at once under the lock its marks are written under.</summary>
+    internal RunMarks MarksOf(HistoryRun run)
+    {
+        lock (_runLock)
+            return new RunMarks(
+                [.. run.Changes],
+                run.Changes.Select(c => c.OriginalPath).Where(run.IsGivenBack).ToHashSet(PathComparer.Default),
+                run.Changes.Select(c => c.OriginalPath).Where(run.IsKept).ToHashSet(PathComparer.Default),
+                run.Changes.Where(c => run.RedoSourceOf(c.OriginalPath) is { } copy && File.Exists(copy))
+                           .Select(c => c.OriginalPath).ToHashSet(PathComparer.Default));
+    }
+
+    /// <summary>Notes what each file of <paramref name="run"/> holds as it ends (<see cref="HistoryRun.AfterOf"/>).</summary>
+    private void Seal(HistoryRun run)
+    {
+        List<string> paths;
+        lock (_runLock) paths = run.Changes.Select(c => c.OriginalPath).ToList();
+        var hashes = paths.Select(p => (Path: p, Hash: ContentHash(p))).ToList();
+        lock (_runLock)
+            foreach (var (path, hash) in hashes)
+                if (hash is not null) run.NoteAfter(path, hash);
+    }
+
+    /// <summary>
+    /// What both undos share: each change given back — restored from its first snapshot, or deleted when the run created
+    /// it —, what it replaces saved first and kept for a redo.
+    /// </summary>
+    private async Task<RunUndoResult> UndoChangesAsync(HistoryRun run, List<RunChange> pending, CancellationToken ct)
     {
         var restored = new List<string>();
         var deleted  = new List<string>();
         var failed   = new List<string>();
         var savedFirst = 0;
-
-        // A retry after a failure: the files given back by an earlier undo are not touched again.
-        List<RunChange> pending;
-        lock (_runLock) pending = run.Changes.Where(c => !run.IsGivenBack(c.OriginalPath)).ToList();
+        var redo = new Dictionary<string, string>(PathComparer.Default);
 
         var pruneLater = new List<(string Dir, string Suffix)>();
         try
@@ -1137,7 +1315,9 @@ internal class FileHistoryService
                     else if (change.SnapshotPath is null)
                     {
                         // ⚠ No backup, no deletion: the file may hold work done since the run, and nothing could bring it back.
-                        if (File.Exists(change.OriginalPath) && await SnapshotAsync(change.OriginalPath, ct, pruneLater) is not { Length: > 0 })
+                        string? saved = null;
+                        if (File.Exists(change.OriginalPath)
+                            && (saved = await SnapshotAsync(change.OriginalPath, ct, pruneLater)) is not { Length: > 0 })
                         {
                             failed.Add(change.OriginalPath);
                             continue;
@@ -1154,6 +1334,7 @@ internal class FileHistoryService
                             savedFirst++;
                             File.Delete(change.OriginalPath);
                             deleted.Add(change.OriginalPath);
+                            redo[change.OriginalPath] = saved!;
                         }
                     }
                     else if (File.Exists(change.SnapshotPath))
@@ -1162,16 +1343,18 @@ internal class FileHistoryService
                         var bytes = await File.ReadAllBytesAsync(change.SnapshotPath, ct);
                         if (File.Exists(change.OriginalPath))
                         {
-                            if (await SnapshotAsync(change.OriginalPath, ct, pruneLater) is not { Length: > 0 })
+                            if (await SnapshotAsync(change.OriginalPath, ct, pruneLater) is not { Length: > 0 } saved)
                             {
                                 failed.Add(change.OriginalPath);   // no backup, no overwrite
                                 continue;
                             }
                             savedFirst++;
+                            redo[change.OriginalPath] = saved;
                         }
                         // A command deletes a folder with its files (`rm -rf`): giving a file back gives its folder back.
                         if (Path.GetDirectoryName(change.OriginalPath) is { Length: > 0 } folder) Directory.CreateDirectory(folder);
-                        await File.WriteAllBytesAsync(change.OriginalPath, bytes, ct);
+                        // Backed up: a stop asked now must not leave the file half written.
+                        await File.WriteAllBytesAsync(change.OriginalPath, bytes, CancellationToken.None);
                         restored.Add(change.OriginalPath);
                     }
                     else
@@ -1193,9 +1376,8 @@ internal class FileHistoryService
             // Given back: restored, deleted, or a created file already gone — everything that did not fail.
             foreach (var change in pending.Where(c => !failed.Contains(c.OriginalPath, PathComparer.Default)))
                 run.NoteGivenBack(change.OriginalPath);
-            if (failed.Count == 0) run.MarkUndone();
+            foreach (var (path, copy) in redo) run.NoteRedoSource(path, copy);
         }
-        Persist(run, open: false);   // undone stays undone after a restart, and a retry gives back only what failed
         return new RunUndoResult(restored, deleted, failed, savedFirst);
     }
 
@@ -1381,8 +1563,21 @@ internal sealed record ToolCallRecord(int Seq, string Tool, string? Subject, lon
 
 /// <summary>Outcome of <see cref="FileHistoryService.UndoRunAsync"/>.</summary>
 /// <param name="SavedFirst">Files whose current state was snapshotted before being reverted.</param>
+/// <param name="ChangedSince">Files left as they are: changed after the run ended, so the undo would lose that change.</param>
+/// <param name="Kept">Files left as they are: the person kept them.</param>
 internal sealed record RunUndoResult(List<string> Restored, List<string> Deleted, List<string> Failed,
-                                     int SavedFirst = 0);
+                                     int SavedFirst = 0, List<string>? ChangedSince = null, List<string>? Kept = null);
+
+/// <summary>What became of one file of a run's review (<see cref="FileHistoryService.UndoFileAsync"/> and the others).</summary>
+internal enum FileUndoOutcome
+{
+    Restored, Deleted, Redone, Kept, ChangedSince, ChangedSinceUndo, AlreadyUndone, NothingToRedo, NotInRun, Failed,
+}
+
+/// <summary>A run's files and marks as one review reads them (<see cref="FileHistoryService.MarksOf"/>).</summary>
+/// <param name="Redoable">Files given back whose copy to redo from is still on disk.</param>
+internal sealed record RunMarks(
+    IReadOnlyList<RunChange> Changes, IReadOnlySet<string> GivenBack, IReadOnlySet<string> Kept, IReadOnlySet<string> Redoable);
 
 /// <summary>The lines of one file the model has seen, as merged ranges.</summary>
 internal sealed class LinesSeen(int total)
@@ -1468,18 +1663,74 @@ internal sealed class HistoryRun
     /// a second click on the still-visible Undo button — undoes it AGAIN: it overwrites whatever has been edited since with
     /// the pre-run state, and answers "last run undone".
     /// </summary>
-    public bool Undone { get; private set; }
+    public bool Undone => _undoneGeneration % 2 == 1;
 
-    public void MarkUndone() => Undone = true;
+    // ⚠ The undo marks are generations that only grow — odd: undone, even: not, or again after a redo —, so the editors
+    // that share a run merge them by keeping the larger (RunManifest.MergeMarks): a flag that a redo clears could not be
+    // merged without the other editor's older "undone" putting it back.
+    private int _undoneGeneration;
 
-    // Files an undo has given back. ⚠ A run is undone only once all of them are: marked undone after a failure (a file
-    // held by another program, say), the run answered "already undone" to the retry — the failed files never came back.
-    // And a retry tries those only: never again a file given back, which may have been edited since.
-    private readonly HashSet<string> _givenBack = new(PathComparer.Default);
+    public int UndoneGeneration => _undoneGeneration;
 
-    public bool IsGivenBack(string path) => _givenBack.Contains(path);
+    public void MarkUndone() { if (!Undone) _undoneGeneration++; }
 
-    public void NoteGivenBack(string path) => _givenBack.Add(path);
+    /// <summary>A file of the run redone: the run is no longer wholly undone.</summary>
+    public void ReopenUndo() { if (Undone) _undoneGeneration++; }
+
+    public void MergeUndoneGeneration(int generation) => _undoneGeneration = Math.Max(_undoneGeneration, generation);
+
+    // Files an undo has given back, by generation. ⚠ A run is undone only once all of them are: marked undone after a
+    // failure (a file held by another program, say), the run answered "already undone" to the retry — the failed files
+    // never came back. And a retry tries those only: never again a file given back, which may have been edited since.
+    private readonly Dictionary<string, int> _fileGenerations = new(PathComparer.Default);
+
+    public bool IsGivenBack(string path) => _fileGenerations.TryGetValue(path, out var g) && g % 2 == 1;
+
+    public void NoteGivenBack(string path) { if (!IsGivenBack(path)) _fileGenerations[path] = Generation(path) + 1; }
+
+    /// <summary>A file given back, then given the run's version again.</summary>
+    public void NoteRedone(string path) { if (IsGivenBack(path)) _fileGenerations[path] = Generation(path) + 1; }
+
+    private int Generation(string path) => _fileGenerations.TryGetValue(path, out var g) ? g : 0;
+
+    public IReadOnlyDictionary<string, int> FileGenerations => _fileGenerations;
+
+    /// <summary>Keeps the larger generation of <paramref name="path"/>; <c>true</c> when the other was newer.</summary>
+    public bool MergeFileGeneration(string path, int generation)
+    {
+        if (generation <= Generation(path)) return false;
+        _fileGenerations[path] = generation;
+        return true;
+    }
+
+    // What each file held when the run ended (FileHistoryService.ContentHash, "" for none): a file whose content differs
+    // now was changed after the run — by the person, by another run —, and putting back the state before the run would
+    // lose that change.
+    private readonly Dictionary<string, string> _after = new(PathComparer.Default);
+
+    public string? AfterOf(string path) => _after.TryGetValue(path, out var hash) ? hash : null;
+
+    public void NoteAfter(string path, string hash) => _after[path] = hash;
+
+    public IReadOnlyDictionary<string, string> AfterHashes => _after;
+
+    // Files the person kept: Undo run leaves them as they are.
+    private readonly HashSet<string> _kept = new(PathComparer.Default);
+
+    public bool IsKept(string path) => _kept.Contains(path);
+
+    public void NoteKept(string path) => _kept.Add(path);
+
+    public IReadOnlyCollection<string> Kept => _kept;
+
+    // The copy an undo took of the version it replaced: what a redo puts back.
+    private readonly Dictionary<string, string> _redoSources = new(PathComparer.Default);
+
+    public string? RedoSourceOf(string path) => _redoSources.TryGetValue(path, out var copy) ? copy : null;
+
+    public void NoteRedoSource(string path, string copy) => _redoSources[path] = copy;
+
+    public IReadOnlyDictionary<string, string> RedoSources => _redoSources;
 
     // Of a file read in part (a page, a range): the lines seen so far, promoted to _read once they cover the file.
     private readonly Dictionary<string, LinesSeen> _partial = new(PathComparer.Default);

@@ -67,6 +67,8 @@ import {
   ThinkingNote,
   ToolNotice,
   XRayPanel,
+  RunReview,
+  RunFileResult,
   ConfigUpdateResult,
   InputRequest,
   InputCard,
@@ -491,6 +493,16 @@ export class HostClient {
   /** Context X-Ray panel model (interactive /xray V2). */
   xrayPanel(): Promise<XRayPanel> {
     return this.connection().sendRequest<XRayPanel>('xray/panel');
+  }
+
+  /** The result bar's "Review changes": a run's files against the state before it; null when the run is gone. */
+  runReview(runId: string): Promise<RunReview | null> {
+    return this.connection().sendRequest<RunReview | null>('run/review', { runId });
+  }
+
+  /** One file of a run undone, redone or kept; refused (thrown) while a turn holds the host. */
+  runFile(runId: string, path: string, action: 'undo' | 'redo' | 'keep'): Promise<RunFileResult> {
+    return this.connection().sendRequest<RunFileResult>('run/file', { runId, path, action });
   }
 
   /** Switches one prompt section on/off for the next turns; returns the refreshed panel. */

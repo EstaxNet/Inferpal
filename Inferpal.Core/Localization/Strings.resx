@@ -1817,4 +1817,34 @@ What you save there applies from your next question, in this thread and the othe
   <data name="HintRoleProvider" xml:space="preserve"><value>Ollama, LM Studio or OpenAI-compatible: the Test button beside its address fills it in.</value></data>
   <data name="SettingsNoModelChosen" xml:space="preserve"><value>None chosen: no ghost text</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>Looking for a model server…</value></data>
+  <data name="UndoRunLeftChanged" xml:space="preserve"><value>Left as they are — changed after the run, an undo would lose that change: {0}</value></data>
+  <data name="UndoRunLeftKept" xml:space="preserve"><value>Left as they are — you kept them: {0}</value></data>
+  <data name="RunFileRestored" xml:space="preserve"><value>{0} is back as it was before the run. What it held is saved first.</value></data>
+  <data name="RunFileDeleted" xml:space="preserve"><value>{0} is deleted — the run had created it. What it held is saved first.</value></data>
+  <data name="RunFileRedone" xml:space="preserve"><value>{0} has the run's version again.</value></data>
+  <data name="RunFileKept" xml:space="preserve"><value>{0} is kept: Undo run leaves it as it is.</value></data>
+  <data name="RunFileChangedSince" xml:space="preserve"><value>Not undone: {0} was changed after the run, and undoing it would lose that change.</value></data>
+  <data name="RunFileAlreadyUndone" xml:space="preserve"><value>{0} is already undone.</value></data>
+  <data name="RunFileNothingToRedo" xml:space="preserve"><value>Nothing to redo for {0}: no undo of it was saved.</value></data>
+  <data name="RunFileNotInRun" xml:space="preserve"><value>{0} is not a file this run changed.</value></data>
+  <data name="RunFileFailed" xml:space="preserve"><value>{0} could not be changed: /diagnostics names the cause.</value></data>
+  <data name="RunReviewHeader" xml:space="preserve"><value>Changes of this run — {0} {0:file|files}, against the state before {1}:</value></data>
+  <data name="RunReviewHowTo" xml:space="preserve"><value>Undo one file: `/undo-run #{0} &lt;file&gt;`.</value></data>
+  <data name="RunReviewMoreLines" xml:space="preserve"><value>{0} more {0:line|lines}</value></data>
+  <data name="RunReviewButton" xml:space="preserve"><value>Review changes</value></data>
+  <data name="RunReviewTitle" xml:space="preserve"><value>Changes of this run</value></data>
+  <data name="RunReviewSubtitle" xml:space="preserve"><value>{0} {0:file|files} · against the state before {1}</value></data>
+  <data name="RunFileKeep" xml:space="preserve"><value>Keep</value></data>
+  <data name="RunFileUndo" xml:space="preserve"><value>Undo</value></data>
+  <data name="RunFileDelete" xml:space="preserve"><value>Delete</value></data>
+  <data name="RunFileRedo" xml:space="preserve"><value>Redo</value></data>
+  <data name="RunFileNew" xml:space="preserve"><value>new</value></data>
+  <data name="RunFileChangedLabel" xml:space="preserve"><value>changed since the run</value></data>
+  <data name="RunFileUndoneLabel" xml:space="preserve"><value>undone</value></data>
+  <data name="RunFileKeptLabel" xml:space="preserve"><value>kept</value></data>
+  <data name="RunReviewNote" xml:space="preserve"><value>Undo puts a file back as it was before this run. What it replaces is saved first, so an undo can itself be undone.</value></data>
+  <data name="RunFileChangedWhy" xml:space="preserve"><value>Not undone: this file was changed after the run. Undoing it would put back the state before the run and lose that change.</value></data>
+  <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>Not redone: {0} was changed after the undo, and redoing it would lose that change.</value></data>
+  <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>undone, then changed — Redo would lose that change</value></data>
+  <data name="RunFileNoCopyLabel" xml:space="preserve"><value>no copy from before the run — it cannot be undone</value></data>
 </root>

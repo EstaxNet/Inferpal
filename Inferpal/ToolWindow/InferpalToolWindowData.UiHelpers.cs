@@ -306,6 +306,7 @@ internal partial class InferpalToolWindowData
         // Diff viewer: green-background additions / red-background deletions per the active theme.
         DiffLine.ApplyTheme(item.DiffLines, p);
         DiffLine.ApplyTheme(item.CardLines, p);
+        foreach (var f in item.ReviewFiles) DiffLine.ApplyTheme(f.Lines, p);
     }
 
     private void UpdateMessageBubbles()

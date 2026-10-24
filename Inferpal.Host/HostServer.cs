@@ -6,6 +6,7 @@ using Inferpal.Config;
 using Inferpal.Localization;
 using Inferpal.Models;
 using Inferpal.Services;
+using Inferpal.Services.Commands;
 using Inferpal.Services.Docs;
 using Inferpal.Services.Lsp;
 using Inferpal.Services.Mcp;
@@ -1391,6 +1392,39 @@ internal sealed partial class HostServer : IDisposable
             return new GestureQuestion(a.Question, a.Chip, a.Content, a.Refusal);
         }
         finally { if (cts is not null) ReleaseTurn(cts); }
+    }
+
+    /// <summary>The result bar's "Review changes": each file of the run against the state before it; read-only.</summary>
+    [JsonRpcMethod("run/review", UseSingleObjectParameterDeserialization = true)]
+    public RunReviewDto? RunReview(RunReviewParams p)
+    {
+        var s = Session();
+        if (s.Tools.History.Runs.FirstOrDefault(r => r.Id == p.RunId && r.FileCount > 0) is not { } run) return null;
+        return RunReviewDto.Of(Services.Presentation.RunReview.Build(s.Tools.History, run));
+    }
+
+    /// <summary>
+    /// One file of a run's review undone, redone or kept — in the turn slot, as <c>/undo-run</c>: a write without an
+    /// approval card never runs beside a turn that writes the same files.
+    /// </summary>
+    [JsonRpcMethod("run/file", UseSingleObjectParameterDeserialization = true)]
+    public Task<RunFileResult> RunFileAsync(RunFileParams p, CancellationToken ct)
+    {
+        var s = Session();
+        // ⚠ An action this host does not know is refused: read as an undo, a "Keep" would overwrite the file.
+        var action = p.Action switch
+        {
+            "undo" => UndoRunCommandHandler.RunFileAction.Undo,
+            "redo" => UndoRunCommandHandler.RunFileAction.Redo,
+            "keep" => UndoRunCommandHandler.RunFileAction.Keep,
+            _      => throw new ArgumentException($"Unknown run/file action '{p.Action}'."),
+        };
+        return WithTurnSlotAsync("run/file", ct, async token =>
+        {
+            var (message, review) = await UndoRunCommandHandler.FileActionAsync(
+                s.Tools.History, p.RunId, p.Path, action, s.RootDir, busy: false, token);
+            return new RunFileResult(message, review is null ? null : RunReviewDto.Of(review));
+        });
     }
 
     /// <summary>

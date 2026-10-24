@@ -1813,4 +1813,34 @@
   <data name="HintRoleProvider" xml:space="preserve"><value>Ollama, LM Studio или совместимый с OpenAI: его заполняет кнопка «Проверить» рядом с адресом.</value></data>
   <data name="SettingsNoModelChosen" xml:space="preserve"><value>Не выбрана: без призрачного текста</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>Поиск сервера моделей…</value></data>
+  <data name="UndoRunLeftChanged" xml:space="preserve"><value>Оставлены как есть — изменены после запуска, отмена потеряла бы эти изменения: {0}</value></data>
+  <data name="UndoRunLeftKept" xml:space="preserve"><value>Оставлены как есть — вы их сохранили: {0}</value></data>
+  <data name="RunFileRestored" xml:space="preserve"><value>{0} возвращён к состоянию до запуска. Прежнее содержимое сначала сохраняется.</value></data>
+  <data name="RunFileDeleted" xml:space="preserve"><value>{0} удалён — его создал запуск. Содержимое сначала сохраняется.</value></data>
+  <data name="RunFileRedone" xml:space="preserve"><value>У {0} снова версия запуска.</value></data>
+  <data name="RunFileKept" xml:space="preserve"><value>{0} сохранён: отмена запуска оставит его как есть.</value></data>
+  <data name="RunFileChangedSince" xml:space="preserve"><value>Не отменено: {0} изменён после запуска, и отмена потеряла бы это изменение.</value></data>
+  <data name="RunFileAlreadyUndone" xml:space="preserve"><value>{0} уже отменён.</value></data>
+  <data name="RunFileNothingToRedo" xml:space="preserve"><value>Для {0} нечего повторять: отмена не сохранялась.</value></data>
+  <data name="RunFileNotInRun" xml:space="preserve"><value>{0} — не файл, изменённый этим запуском.</value></data>
+  <data name="RunFileFailed" xml:space="preserve"><value>Не удалось изменить {0}: причина — в /diagnostics.</value></data>
+  <data name="RunReviewHeader" xml:space="preserve"><value>Изменения этого запуска — файлов: {0}, по сравнению с состоянием до {1}:</value></data>
+  <data name="RunReviewHowTo" xml:space="preserve"><value>Отменить один файл: `/undo-run #{0} &lt;файл&gt;`.</value></data>
+  <data name="RunReviewMoreLines" xml:space="preserve"><value>ещё строк: {0}</value></data>
+  <data name="RunReviewButton" xml:space="preserve"><value>Просмотреть изменения</value></data>
+  <data name="RunReviewTitle" xml:space="preserve"><value>Изменения этого запуска</value></data>
+  <data name="RunReviewSubtitle" xml:space="preserve"><value>файлов: {0} · по сравнению с состоянием до {1}</value></data>
+  <data name="RunFileKeep" xml:space="preserve"><value>Сохранить</value></data>
+  <data name="RunFileUndo" xml:space="preserve"><value>Отменить</value></data>
+  <data name="RunFileDelete" xml:space="preserve"><value>Удалить</value></data>
+  <data name="RunFileRedo" xml:space="preserve"><value>Повторить</value></data>
+  <data name="RunFileNew" xml:space="preserve"><value>новый</value></data>
+  <data name="RunFileChangedLabel" xml:space="preserve"><value>изменён после запуска</value></data>
+  <data name="RunFileUndoneLabel" xml:space="preserve"><value>отменён</value></data>
+  <data name="RunFileKeptLabel" xml:space="preserve"><value>сохранён</value></data>
+  <data name="RunReviewNote" xml:space="preserve"><value>Отмена возвращает файл к состоянию до этого запуска. Заменяемое содержимое сначала сохраняется, поэтому саму отмену тоже можно отменить.</value></data>
+  <data name="RunFileChangedWhy" xml:space="preserve"><value>Не отменено: этот файл изменён после запуска. Отмена вернула бы состояние до запуска и потеряла бы это изменение.</value></data>
+  <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>Не повторено: {0} изменён после отмены, и повтор потерял бы это изменение.</value></data>
+  <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>отменён, затем изменён — «Повторить» потеряло бы это изменение</value></data>
+  <data name="RunFileNoCopyLabel" xml:space="preserve"><value>нет копии до запуска — отменить нельзя</value></data>
 </root>

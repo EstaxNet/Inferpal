@@ -110,12 +110,12 @@ internal static class SessionManager
 
     /// <summary>
     /// The roles a chat list draws that belong to the screen, never to the conversation: the scroll anchors, the live
-    /// status, a turn's header line ("model · 21 s"), its run line, its result bar, its approval cards and its input
-    /// cards. Each is rebuilt from the saved turns or has no meaning once the turn has ended; an input card leaves its
+    /// status, a turn's header line ("model · 21 s"), its run line, its result bar and review card, its approval cards and
+    /// its input cards. Each is rebuilt from the saved turns or has no meaning once the turn has ended; an input card leaves its
     /// receipt (<see cref="Presentation.InputCard.ReceiptRole"/>), which is saved.
     /// </summary>
     public static readonly IReadOnlySet<string> ScreenOnlyRoles =
-        new HashSet<string>(StringComparer.Ordinal) { "anchor", "status", "turn", "run", "result", "approval", Presentation.InputCard.CardRole };
+        new HashSet<string>(StringComparer.Ordinal) { "anchor", "status", "turn", "run", "result", "review", "approval", Presentation.InputCard.CardRole };
 
     /// <summary>
     /// Maps the chat list to persistable messages: drops what only the screen holds (<see cref="ScreenOnlyRoles"/>),

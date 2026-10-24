@@ -79,6 +79,13 @@ exists.
   fold into one line (`3 steps · read 1 file · edited 1 · build passed`, a ✗ when its last check
   failed). Under the answer, a **result bar** lists the files it changed with their lines added and
   removed, the last build or test check, and **Undo run** (`/undo-run`), offered on the latest run.
+- **Review a run file by file** *(both editors)* — the result bar's **Review changes** opens a
+  card under it: each file the run changed, its diff against the state before the run, and
+  **Keep** or **Undo** (**Delete** for a file the run created) on its own. An undone file offers
+  **Redo**: what an undo replaces is saved first. A file changed after the run says so and is
+  not undone — undoing it would put back the state before the run and lose that change. Where
+  there is no card (an agent thread), `/undo-run review` lists the files and where each stands,
+  and `/undo-run #<run> <file>` undoes one.
 - **Approvals in the conversation** *(both editors)* — during a turn, an approval is a card under
   the steps: what will happen, to what, the first lines of the change, then **Allow once**
   (Enter), **Always this session** and **Deny** (Esc); *Open diff* shows the whole change. When a
@@ -101,7 +108,8 @@ exists.
   next question. It is not offered after a loop or an answer that repeated itself, where
   continuing would do the same again.
 - **Undo a whole run** — `/undo-run` reverts every file changed during the last agent run
-  (restores edited files, deletes files created that run); `/undo-run list` shows the
+  (restores edited files, deletes files created that run) — save the files changed after the run
+  and those you kept, left as they are and named; `/undo-run list` shows the
   workspace's tracked runs. **Runs outlive a restart**: each run that changed files is kept beside
   the backups (`runs/` in the history folder), so `/undo-run` and the **Undo run** of a reopened
   conversation still work after Visual Studio, VS Code or an agent thread restarts — and a later

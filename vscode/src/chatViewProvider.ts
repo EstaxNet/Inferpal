@@ -1525,6 +1525,40 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         }
         return;
       }
+      case 'runReview': {
+        const host = this.hostForGesture();
+        if (!host) {
+          return;
+        }
+        try {
+          this.post({ type: 'runReview', runId: msg.runId, review: await host.runReview(msg.runId) });
+        } catch (err) {
+          this.gestureFailed('run review', err);
+        }
+        return;
+      }
+      case 'runFile': {
+        // The card disabled its actions on the click: every way out answers it, or it would stay disabled.
+        const host = this.hostForGesture();
+        if (!host) {
+          this.post({ type: 'runReview', runId: msg.runId, message: hostUnavailableMessage() });
+          return;
+        }
+        try {
+          const result = await host.runFile(msg.runId, msg.path, msg.action);
+          this.post({ type: 'runReview', runId: msg.runId, review: result.review, message: result.message });
+        } catch (err) {
+          // Refused while a turn runs, or failed: the card is drawn again as it stands, under the reason.
+          this.log(`[chat] run file failed: ${String(err)}`);
+          const reason = ChatViewProvider.errorText(err);
+          try {
+            this.post({ type: 'runReview', runId: msg.runId, review: await host.runReview(msg.runId), message: reason });
+          } catch {
+            this.post({ type: 'runReview', runId: msg.runId, message: reason });
+          }
+        }
+        return;
+      }
       case 'copyText':
         try {
           await vscode.env.clipboard.writeText(msg.text);

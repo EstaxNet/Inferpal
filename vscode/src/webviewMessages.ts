@@ -2,7 +2,8 @@
 // chat webview (src/webview/main.ts). Both sides are bundled from this repo, so the
 // types are shared instead of mirrored. No 'vscode' import — the webview bundle uses it.
 import type {
-  ApprovalCard, ImportCard, InputCard, InputFormAnswer, RunSummary, SavedMessage, SetupPlace, SetupPlan, XRayPanel,
+  ApprovalCard, ImportCard, InputCard, InputFormAnswer, RunReview, RunSummary, SavedMessage, SetupPlace, SetupPlan,
+  XRayPanel,
 } from './protocol';
 
 /**
@@ -210,6 +211,9 @@ export type ExtToWebview =
   | { type: 'inputReceipt'; id: string; saved: string }
   | { type: 'mentionSuggestions'; items: string[]; query: string }
   | { type: 'xrayPanel'; panel: XRayPanel }
+  /** A run's review card, or the card refreshed after a file's action; null: the run is no longer kept; absent: an
+   * action failed with no card to draw — the card shown takes its actions back, under the message. */
+  | { type: 'runReview'; runId: string; review?: RunReview | null; message?: string }
   | { type: 'streamReset' }
   // notice: the turn's text is a notice no answer of the model (a slash command, a code action's outcome) — drawn as the
   // transcript keeps it, under no model's name.
@@ -270,6 +274,10 @@ export type WebviewToExt =
   | { type: 'mentionQuery'; query: string }
   | { type: 'openApprovalDiff'; text: string }
   | { type: 'xrayToggle'; id: string; enabled: boolean }
+  /** The result bar's "Review changes". */
+  | { type: 'runReview'; runId: string }
+  /** One file of a run's review undone, redone or kept. */
+  | { type: 'runFile'; runId: string; path: string; action: 'undo' | 'redo' | 'keep' }
   | { type: 'copyText'; text: string }
   | { type: 'regenerate' }
   | { type: 'continue' }

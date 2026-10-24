@@ -37,6 +37,7 @@ internal static class RunManifest
         [property: JsonPropertyName("reason")] string? Reason,
         [property: JsonPropertyName("file")] string? File);
 
+    // "undone" and "givenBack" are the marks of the first runs written: read as generation 1, never written again.
     private sealed record Dto(
         [property: JsonPropertyName("id")] string? Id,
         [property: JsonPropertyName("started")] DateTime Started,
@@ -44,9 +45,14 @@ internal static class RunManifest
         [property: JsonPropertyName("pid")] int Pid,
         [property: JsonPropertyName("watched")] int Watched,
         [property: JsonPropertyName("changes")] List<ChangeDto>? Changes,
-        [property: JsonPropertyName("undone")] bool Undone,
-        [property: JsonPropertyName("givenBack")] List<string>? GivenBack,
-        [property: JsonPropertyName("uncovered")] List<NoteDto>? Uncovered);
+        [property: JsonPropertyName("undoneGeneration")] int UndoneGeneration,
+        [property: JsonPropertyName("generations")] Dictionary<string, int>? Generations,
+        [property: JsonPropertyName("after")] Dictionary<string, string>? After,
+        [property: JsonPropertyName("kept")] List<string>? Kept,
+        [property: JsonPropertyName("redo")] Dictionary<string, string>? Redo,
+        [property: JsonPropertyName("uncovered")] List<NoteDto>? Uncovered,
+        [property: JsonPropertyName("undone"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] bool Undone = false,
+        [property: JsonPropertyName("givenBack"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] List<string>? GivenBack = null);
 
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
 
@@ -94,8 +100,11 @@ internal static class RunManifest
         var json = JsonSerializer.Serialize(new Dto(
             run.Id, run.StartedAt.ToUniversalTime(), open, pid ?? Environment.ProcessId, run.WatchedCalls,
             run.Changes.Select(c => new ChangeDto(c.OriginalPath, c.SnapshotPath, c.SnapshotFailed)).ToList(),
-            run.Undone,
-            run.Changes.Select(c => c.OriginalPath).Where(run.IsGivenBack).ToList(),
+            run.UndoneGeneration,
+            run.FileGenerations.ToDictionary(p => p.Key, p => p.Value),
+            run.AfterHashes.ToDictionary(p => p.Key, p => p.Value),
+            run.Kept.ToList(),
+            run.RedoSources.ToDictionary(p => p.Key, p => p.Value),
             run.Uncovered.Select(u => new NoteDto(u.Call, u.Note.Reason.ToString(), u.Note.File)).ToList()), Options);
         return Header + Sign(json, key) + "\n" + json;
     }
@@ -142,10 +151,20 @@ internal static class RunManifest
                 refusal = $"names a file or a copy outside this workspace's history: {change.Path}";
                 return null;
             }
+        // A redo writes its copy over the file, without an approval card either: the same checks.
+        foreach (var (path, copy) in dto.Redo ?? [])
+            if (!dto.Changes.Any(c => PathComparer.Default.Equals(c.Path, path))
+                || !System.IO.Path.IsPathFullyQualified(copy) || !accepts(path, copy))
+            {
+                refusal = $"names a copy to redo outside this workspace's history: {path}";
+                return null;
+            }
 
         var run = new HistoryRun(dto.Id, dto.Started.ToLocalTime());
         foreach (var change in dto.Changes) run.RecordFirst(change.Path!, change.Snapshot, change.Failed);
         run.RestoreWatchedCalls(dto.Watched);
+        foreach (var (path, hash) in dto.After ?? []) run.NoteAfter(path, hash);
+        foreach (var path in dto.Kept ?? []) run.NoteKept(path);
         foreach (var note in dto.Uncovered ?? [])
             if (note.Call is not null && Enum.TryParse<UncoveredReason>(note.Reason, out var reason))
                 run.NoteUncovered(note.Call, new UncoveredNote(reason, note.File));
@@ -165,7 +184,14 @@ internal static class RunManifest
 
     private static void MergeMarks(HistoryRun run, Dto dto)
     {
-        foreach (var path in dto.GivenBack ?? []) run.NoteGivenBack(path);
-        if (dto.Undone) run.MarkUndone();
+        foreach (var path in dto.GivenBack ?? []) run.MergeFileGeneration(path, 1);
+        foreach (var (path, generation) in dto.Generations ?? [])
+            // The newer state of a file brings its copy to redo with it.
+            if (run.MergeFileGeneration(path, generation) && dto.Redo?.GetValueOrDefault(path) is { } copy)
+                run.NoteRedoSource(path, copy);
+        foreach (var (path, copy) in dto.Redo ?? [])
+            if (run.RedoSourceOf(path) is null) run.NoteRedoSource(path, copy);
+        foreach (var path in dto.Kept ?? []) run.NoteKept(path);
+        run.MergeUndoneGeneration(Math.Max(dto.UndoneGeneration, dto.Undone ? 1 : 0));
     }
 }

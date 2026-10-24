@@ -79,6 +79,7 @@ export function webviewStrings(): Record<string, string> {
     turnWorking: t('working · step {0}'),
     turnWaiting: t('waiting for you'),
     runUndo: t('Undo run'),
+    runReview: t('Review changes'),
     approvalOpenDiff: t('Open diff'),
     stepsOne: t('1 step'),
     stepsMany: t('{0} steps'),

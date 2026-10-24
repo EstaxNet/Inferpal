@@ -37,14 +37,21 @@ internal static class UndoRunCommandHandler
             return list.ToString().TrimEnd();
         }
 
+        if (parts.Length >= 2 && parts[1].Equals("review", StringComparison.OrdinalIgnoreCase))
+            return Review(history, runs, parts.Length >= 3 && parts[2].StartsWith('#') ? parts[2][1..] : null, root);
+
         // ⚠ A result bar's Undo names its own run (`#<id>`): the most recent run that changed files may be another one by
         // now — /fix-build, /tdd, /task apply open runs without a bar of their own — and undoing it in this bar's name
         // reverted the wrong files. Named, only that run is undone, and only while no later run changed files after it:
         // its snapshots predate the later run's writes, which the undo would overwrite.
-        var named = parts.Length == 2 && parts[1].StartsWith('#') ? parts[1][1..] : null;
+        var named = parts.Length >= 2 && parts[1].StartsWith('#') ? parts[1][1..] : null;
+        // `/undo-run #<id> <file>`: that one file of that run, as the review card's Undo.
+        if (named is not null && parts.Length >= 3)
+            return (await FileActionAsync(history, named, string.Join(' ', parts[2..]).Trim('"'), RunFileAction.Undo, root,
+                                          busy: false, ct)).Message;
         // Only a bare `/undo-run` (or a bar's) reverts. An argument it does not know — a typo of `list`, or a number
         // read as picking a run from the listing — must not revert the most recent run instead.
-        if (parts.Length >= 2 && named is null) return Strings.SlashUsage("/undo-run [list]");
+        if (parts.Length >= 2 && named is null) return Strings.SlashUsage("/undo-run [list|review]");
 
         HistoryRun? run;
         if (named is not null)
@@ -83,9 +90,73 @@ internal static class UndoRunCommandHandler
         foreach (var f in result.Failed)   sb.AppendLine($"  ⚠ {Relativise(f, root)}");
         // The run stays to undo while a file failed: said, or the retry that brings it back is never tried.
         if (result.Failed.Count > 0) sb.AppendLine(Strings.UndoRunRetryFailed);
+        if (result.ChangedSince is { Count: > 0 } changed)
+            sb.AppendLine(Strings.UndoRunLeftChanged(string.Join(", ", changed.Select(f => Relativise(f, root)))));
+        if (result.Kept is { Count: > 0 } kept)
+            sb.AppendLine(Strings.UndoRunLeftKept(string.Join(", ", kept.Select(f => Relativise(f, root)))));
         if (run.CutShort) sb.AppendLine(Strings.UndoRunCutShort);
         sb.Append(NotCovered(said, root));
         return sb.ToString().TrimEnd();
+    }
+
+    /// <summary>What one action of a run's review does to a file.</summary>
+    internal enum RunFileAction { Undo, Redo, Keep }
+
+    /// <summary>
+    /// One file of a run's review undone, redone or kept: the sentence both editors show, and the review as it stands
+    /// after — <c>null</c> when the run is no longer kept.
+    /// </summary>
+    /// <param name="path">The file, full or under <paramref name="root"/>.</param>
+    /// <param name="busy">A turn is running in this editor: nothing is changed under it.</param>
+    public static async Task<(string Message, Presentation.RunReviewModel? Review)> FileActionAsync(
+        FileHistoryService history, string runId, string path, RunFileAction action, string? root, bool busy,
+        CancellationToken ct)
+    {
+        if (history.Runs.FirstOrDefault(r => r.Id == runId && r.FileCount > 0) is not { } run) return (Strings.UndoRunNone, null);
+        // Still recorded into here or by the other editor: changed now, the agent writes on top.
+        if (busy || run.OpenElsewhere) return (Strings.UndoRunWhileBusy, Presentation.RunReview.Build(history, run));
+        var full = Path.IsPathFullyQualified(path) || string.IsNullOrEmpty(root) ? path : Path.GetFullPath(Path.Combine(root, path));
+        var outcome = action switch
+        {
+            RunFileAction.Undo => await history.UndoFileAsync(run, full, ct),
+            RunFileAction.Redo => await history.RedoFileAsync(run, full, ct),
+            _                  => history.KeepFile(run, full),
+        };
+        var name = Relativise(full, root);
+        var message = outcome switch
+        {
+            FileUndoOutcome.Restored      => Strings.RunFileRestored(name),
+            FileUndoOutcome.Deleted       => Strings.RunFileDeleted(name),
+            FileUndoOutcome.Redone        => Strings.RunFileRedone(name),
+            FileUndoOutcome.Kept          => Strings.RunFileKept(name),
+            FileUndoOutcome.ChangedSince  => Strings.RunFileChangedSince(name),
+            FileUndoOutcome.ChangedSinceUndo => Strings.RunFileChangedSinceUndo(name),
+            FileUndoOutcome.AlreadyUndone => Strings.RunFileAlreadyUndone(name),
+            FileUndoOutcome.NothingToRedo => Strings.RunFileNothingToRedo(name),
+            FileUndoOutcome.NotInRun      => Strings.RunFileNotInRun(name),
+            _                             => Strings.RunFileFailed(name),
+        };
+        return (message, Presentation.RunReview.Build(history, run));
+    }
+
+    /// <summary><c>/undo-run review [#id]</c>: the review card as text — where there is no card (an ACP client).</summary>
+    private static string Review(FileHistoryService history, IReadOnlyList<HistoryRun> runs, string? id, string? root)
+    {
+        if ((id is null ? runs.FirstOrDefault(r => r.FileCount > 0) : runs.FirstOrDefault(r => r.Id == id && r.FileCount > 0))
+            is not { } run)
+            return Strings.UndoRunNone;
+        var review = Presentation.RunReview.Build(history, run);
+        var sb = new StringBuilder();
+        sb.AppendLine(Strings.RunReviewHeader(review.Files.Count, review.Started));
+        foreach (var file in review.Files)
+        {
+            sb.Append("  - ").Append(Relativise(file.Path, root)).Append($" +{file.Added} −{file.Removed}");
+            if (file.Created) sb.Append(" · ").Append(Strings.RunFileNew);
+            if (Presentation.RunReview.StateLabel(file) is { Length: > 0 } state) sb.Append(" · ").Append(state);
+            sb.AppendLine();
+        }
+        sb.Append(Strings.RunReviewHowTo(run.Id));
+        return sb.ToString();
     }
 
     /// <summary>The lines a run's undo shows that are not shown elsewhere.</summary>

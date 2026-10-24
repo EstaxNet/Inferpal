@@ -2,7 +2,7 @@
 // state pushed via postMessage and reports user intents back. It must survive being
 // destroyed on hide: everything re-renders from the 'hydrate' message.
 // No literal user-visible English here — strings go through t() (window.__l10n).
-import type { ApprovalCard, InputCard, InputCardField, InputFormAnswer, RunSummary, SetupPlace, SetupPlan } from '../protocol';
+import type { ApprovalCard, InputCard, InputCardField, InputFormAnswer, RunReview, RunSummary, SetupPlace, SetupPlan } from '../protocol';
 import type {
   ExtToWebview,
   WebviewToExt,
@@ -1101,6 +1101,14 @@ function renderRunSummary(target: TurnView, run: RunSummary | null | undefined):
     bar.appendChild(check);
   }
   if (run.runId) {
+    const runId = run.runId;
+    bar.dataset.runId = runId;
+    // Any run's files can be reviewed: a file changed since by a later run is refused its undo, and says so.
+    const review = document.createElement('button');
+    review.className = 'review';
+    setIcon(review, 'list', t('runReview'), 13);
+    review.addEventListener('click', () => post({ type: 'runReview', runId }));
+    bar.appendChild(review);
     // Undo reverts the most recent run that changed files (/undo-run): only that run's bar offers it.
     for (const old of messagesEl.querySelectorAll('.result .undo')) {
       old.remove();
@@ -1109,11 +1117,148 @@ function renderRunSummary(target: TurnView, run: RunSummary | null | undefined):
     undo.className = 'undo';
     setIcon(undo, 'regenerate', t('runUndo'), 13);
     // Its own run, named: the most recent run that changed files may be another one by now (a /tdd, a /task apply).
-    const runId = run.runId;
     undo.addEventListener('click', () => post({ type: 'send', text: `/undo-run #${runId}` }));
     bar.appendChild(undo);
   }
   target.el.appendChild(bar);
+}
+
+/**
+ * A run's review card, under its result bar: each file against the state before the run, its diff folded, and Keep,
+ * Undo (Delete for a file the run created) or Redo. Drawn again from each answer, the files left open stay open.
+ */
+function renderRunReview(runId: string, review: RunReview | null | undefined, message?: string): void {
+  const bar = [...messagesEl.querySelectorAll<HTMLElement>('.result')].find((b) => b.dataset.runId === runId);
+  if (!bar) {
+    return;
+  }
+  const old = bar.nextElementSibling?.classList.contains('run-review') ? (bar.nextElementSibling as HTMLElement) : null;
+  if (review === undefined) {
+    // Nothing to draw it from: the card shown takes its actions back, and says why.
+    old?.querySelectorAll<HTMLButtonElement>('button.run-review-action').forEach((b) => (b.disabled = false));
+    const said = old?.querySelector<HTMLElement>('.run-review-status');
+    if (said && message) {
+      said.textContent = message;
+      said.hidden = false;
+    }
+    return;
+  }
+  const open = new Set([...(old?.querySelectorAll<HTMLElement>('.run-review-file.open') ?? [])].map((f) => f.dataset.path));
+  const card = document.createElement('div');
+  card.className = 'approval run-review';
+  const head = document.createElement('div');
+  head.className = 'approval-head';
+  const title = document.createElement('span');
+  title.className = 'approval-title';
+  const subject = document.createElement('span');
+  subject.className = 'approval-subject';
+  const close = iconButton('close', t('close'));
+  close.addEventListener('click', () => card.remove());
+  head.append(title, subject, close);
+  card.appendChild(head);
+  const status = document.createElement('div');
+  status.className = 'run-review-status';
+  status.setAttribute('role', 'status');
+  status.textContent = message ?? '';
+  status.hidden = !message;
+  if (!review) {
+    // The run is no longer kept (its copies were pruned): only the sentence remains.
+    card.append(status);
+    (old ?? bar).after(card);
+    old?.remove();
+    return;
+  }
+  title.textContent = review.title;
+  subject.textContent = review.subtitle;
+  const disableAll = () => card.querySelectorAll('button.run-review-action').forEach((b) => ((b as HTMLButtonElement).disabled = true));
+  for (const f of review.files) {
+    const row = document.createElement('div');
+    row.className = 'run-review-file ' + f.state;
+    row.dataset.path = f.path;
+    const line = document.createElement('div');
+    line.className = 'run-review-line';
+    const toggle = document.createElement('button');
+    toggle.className = 'run-review-toggle';
+    toggle.title = f.path;
+    const chevron = document.createElement('span');
+    chevron.className = 'run-review-chevron';
+    const name = document.createElement('span');
+    name.className = 'run-review-name';
+    name.textContent = f.name;
+    toggle.append(chevron, name);
+    const plus = document.createElement('span');
+    plus.className = 'plus';
+    plus.textContent = `+${f.added}`;
+    const minus = document.createElement('span');
+    minus.className = 'minus';
+    minus.textContent = `−${f.removed}`;
+    line.append(toggle, plus, minus);
+    if (f.created) {
+      const tag = document.createElement('span');
+      tag.className = 'run-review-tag';
+      tag.textContent = review.new;
+      line.appendChild(tag);
+    }
+    if (f.stateLabel) {
+      const state = document.createElement('span');
+      state.className = 'run-review-state';
+      state.textContent = f.stateLabel;
+      line.appendChild(state);
+    }
+    const actions = document.createElement('span');
+    actions.className = 'run-review-actions';
+    const action = (label: string, what: 'undo' | 'redo' | 'keep', primary = false) => {
+      const b = document.createElement('button');
+      b.className = 'run-review-action' + (primary ? ' primary' : '');
+      b.textContent = label;
+      b.addEventListener('click', () => {
+        disableAll();
+        post({ type: 'runFile', runId, path: f.path, action: what });
+      });
+      actions.appendChild(b);
+    };
+    if (f.state === 'pending') {
+      action(review.keep, 'keep');
+    }
+    if (f.state === 'pending' || f.state === 'kept') {
+      action(f.created ? review.delete : review.undo, 'undo', true);
+    }
+    if (f.state === 'undone' && f.canRedo) {
+      action(review.redo, 'redo');
+    }
+    line.appendChild(actions);
+    row.appendChild(line);
+    if (f.state === 'changedSince') {
+      const why = document.createElement('div');
+      why.className = 'run-review-why';
+      why.textContent = review.changedWhy;
+      row.appendChild(why);
+    }
+    const diff = document.createElement('pre');
+    diff.className = 'approval-preview';
+    for (const l of f.diff) {
+      const span = document.createElement('span');
+      span.className = 'pl' + (l.prefix === '+' ? ' add' : l.prefix === '-' ? ' del' : l.prefix === '…' ? ' gap' : '');
+      span.textContent = `${l.prefix} ${l.text}`;
+      diff.appendChild(span);
+    }
+    const show = (shown: boolean) => {
+      diff.hidden = !shown;
+      row.classList.toggle('open', shown);
+      setIcon(chevron, shown ? 'chevronDown' : 'chevronRight', undefined, 13);
+      toggle.setAttribute('aria-expanded', String(shown));
+    };
+    show(open.has(f.path));
+    toggle.addEventListener('click', () => show(diff.hidden));
+    row.appendChild(diff);
+    card.appendChild(row);
+  }
+  const note = document.createElement('div');
+  note.className = 'run-review-note';
+  note.textContent = review.note;
+  card.append(status, note);
+  (old ?? bar).after(card);
+  old?.remove();
 }
 
 function ensureStreamBubble(): HTMLElement {
@@ -2757,6 +2902,9 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       break;
     case 'xrayPanel':
       renderXray(msg.panel);
+      break;
+    case 'runReview':
+      renderRunReview(msg.runId, msg.review, msg.message);
       break;
     case 'streamReset':
       // The host drops what the act streamed — its narration is not the answer, and it is not in the saved thread.

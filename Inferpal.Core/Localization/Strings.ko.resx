@@ -1813,4 +1813,34 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="HintRoleProvider" xml:space="preserve"><value>Ollama, LM Studio 또는 OpenAI 호환. 주소 옆의 테스트 버튼이 채웁니다.</value></data>
   <data name="SettingsNoModelChosen" xml:space="preserve"><value>선택 안 함: 고스트 텍스트 없음</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>모델 서버를 찾는 중…</value></data>
+  <data name="UndoRunLeftChanged" xml:space="preserve"><value>그대로 두었습니다 — 실행 후에 변경되어, 되돌리면 그 변경이 사라집니다: {0}</value></data>
+  <data name="UndoRunLeftKept" xml:space="preserve"><value>그대로 두었습니다 — 유지하기로 한 파일입니다: {0}</value></data>
+  <data name="RunFileRestored" xml:space="preserve"><value>{0}을(를) 실행 전 상태로 되돌렸습니다. 이전 내용은 먼저 저장됩니다.</value></data>
+  <data name="RunFileDeleted" xml:space="preserve"><value>{0}을(를) 삭제했습니다 — 이 실행이 만든 파일입니다. 내용은 먼저 저장됩니다.</value></data>
+  <data name="RunFileRedone" xml:space="preserve"><value>{0}에 실행 후 버전을 다시 적용했습니다.</value></data>
+  <data name="RunFileKept" xml:space="preserve"><value>{0}을(를) 유지합니다: 실행 취소가 이 파일을 바꾸지 않습니다.</value></data>
+  <data name="RunFileChangedSince" xml:space="preserve"><value>되돌리지 않았습니다: {0}은(는) 실행 후에 변경되어, 되돌리면 그 변경이 사라집니다.</value></data>
+  <data name="RunFileAlreadyUndone" xml:space="preserve"><value>{0}은(는) 이미 되돌렸습니다.</value></data>
+  <data name="RunFileNothingToRedo" xml:space="preserve"><value>{0}에 다시 실행할 내용이 없습니다: 저장된 되돌리기가 없습니다.</value></data>
+  <data name="RunFileNotInRun" xml:space="preserve"><value>{0}은(는) 이 실행이 변경한 파일이 아닙니다.</value></data>
+  <data name="RunFileFailed" xml:space="preserve"><value>{0}을(를) 변경할 수 없습니다: /diagnostics에서 원인을 확인하세요.</value></data>
+  <data name="RunReviewHeader" xml:space="preserve"><value>이 실행의 변경 — 파일 {0}개, {1} 이전 상태와 비교:</value></data>
+  <data name="RunReviewHowTo" xml:space="preserve"><value>파일 하나만 되돌리기: `/undo-run #{0} &lt;파일&gt;`.</value></data>
+  <data name="RunReviewMoreLines" xml:space="preserve"><value>{0}줄 더</value></data>
+  <data name="RunReviewButton" xml:space="preserve"><value>변경 검토</value></data>
+  <data name="RunReviewTitle" xml:space="preserve"><value>이 실행의 변경</value></data>
+  <data name="RunReviewSubtitle" xml:space="preserve"><value>파일 {0}개 · {1} 이전 상태와 비교</value></data>
+  <data name="RunFileKeep" xml:space="preserve"><value>유지</value></data>
+  <data name="RunFileUndo" xml:space="preserve"><value>되돌리기</value></data>
+  <data name="RunFileDelete" xml:space="preserve"><value>삭제</value></data>
+  <data name="RunFileRedo" xml:space="preserve"><value>다시 실행</value></data>
+  <data name="RunFileNew" xml:space="preserve"><value>새 파일</value></data>
+  <data name="RunFileChangedLabel" xml:space="preserve"><value>실행 후 변경됨</value></data>
+  <data name="RunFileUndoneLabel" xml:space="preserve"><value>되돌림</value></data>
+  <data name="RunFileKeptLabel" xml:space="preserve"><value>유지됨</value></data>
+  <data name="RunReviewNote" xml:space="preserve"><value>되돌리기는 파일을 이 실행 이전 상태로 돌려놓습니다. 대체되는 내용은 먼저 저장되므로 되돌리기 자체도 취소할 수 있습니다.</value></data>
+  <data name="RunFileChangedWhy" xml:space="preserve"><value>되돌리지 않았습니다: 이 파일은 실행 후에 변경되었습니다. 되돌리면 실행 이전 상태가 되어 그 변경이 사라집니다.</value></data>
+  <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>다시 실행하지 않았습니다: {0}은(는) 되돌린 후에 변경되어, 다시 실행하면 그 변경이 사라집니다.</value></data>
+  <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>되돌린 후 변경됨 — 다시 실행하면 그 변경이 사라집니다</value></data>
+  <data name="RunFileNoCopyLabel" xml:space="preserve"><value>실행 전 사본 없음 — 되돌릴 수 없습니다</value></data>
 </root>

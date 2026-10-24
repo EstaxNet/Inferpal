@@ -1813,4 +1813,34 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="HintRoleProvider" xml:space="preserve"><value>Ollama, LM Studio oder OpenAI-kompatibel: Die Schaltfläche „Testen“ neben seiner Adresse füllt ihn aus.</value></data>
   <data name="SettingsNoModelChosen" xml:space="preserve"><value>Keines gewählt: kein Geistertext</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>Modellserver wird gesucht…</value></data>
+  <data name="UndoRunLeftChanged" xml:space="preserve"><value>Unverändert gelassen — nach dem Lauf geändert, ein Rückgängigmachen würde diese Änderung verlieren: {0}</value></data>
+  <data name="UndoRunLeftKept" xml:space="preserve"><value>Unverändert gelassen — Sie haben sie behalten: {0}</value></data>
+  <data name="RunFileRestored" xml:space="preserve"><value>{0} ist wieder wie vor dem Lauf. Der vorherige Inhalt wird zuerst gesichert.</value></data>
+  <data name="RunFileDeleted" xml:space="preserve"><value>{0} ist gelöscht — der Lauf hatte die Datei erstellt. Ihr Inhalt wird zuerst gesichert.</value></data>
+  <data name="RunFileRedone" xml:space="preserve"><value>{0} hat wieder die Version des Laufs.</value></data>
+  <data name="RunFileKept" xml:space="preserve"><value>{0} wird behalten: Lauf rückgängig machen lässt die Datei unverändert.</value></data>
+  <data name="RunFileChangedSince" xml:space="preserve"><value>Nicht rückgängig gemacht: {0} wurde nach dem Lauf geändert, und das Rückgängigmachen würde diese Änderung verlieren.</value></data>
+  <data name="RunFileAlreadyUndone" xml:space="preserve"><value>{0} ist bereits rückgängig gemacht.</value></data>
+  <data name="RunFileNothingToRedo" xml:space="preserve"><value>Nichts zu wiederholen für {0}: Kein Rückgängigmachen davon wurde gesichert.</value></data>
+  <data name="RunFileNotInRun" xml:space="preserve"><value>{0} ist keine Datei, die dieser Lauf geändert hat.</value></data>
+  <data name="RunFileFailed" xml:space="preserve"><value>{0} konnte nicht geändert werden: /diagnostics nennt die Ursache.</value></data>
+  <data name="RunReviewHeader" xml:space="preserve"><value>Änderungen dieses Laufs — {0} {0:Datei|Dateien}, verglichen mit dem Stand vor {1}:</value></data>
+  <data name="RunReviewHowTo" xml:space="preserve"><value>Eine einzelne Datei rückgängig machen: `/undo-run #{0} &lt;Datei&gt;`.</value></data>
+  <data name="RunReviewMoreLines" xml:space="preserve"><value>{0} {0:weitere Zeile|weitere Zeilen}</value></data>
+  <data name="RunReviewButton" xml:space="preserve"><value>Änderungen prüfen</value></data>
+  <data name="RunReviewTitle" xml:space="preserve"><value>Änderungen dieses Laufs</value></data>
+  <data name="RunReviewSubtitle" xml:space="preserve"><value>{0} {0:Datei|Dateien} · verglichen mit dem Stand vor {1}</value></data>
+  <data name="RunFileKeep" xml:space="preserve"><value>Behalten</value></data>
+  <data name="RunFileUndo" xml:space="preserve"><value>Rückgängig</value></data>
+  <data name="RunFileDelete" xml:space="preserve"><value>Löschen</value></data>
+  <data name="RunFileRedo" xml:space="preserve"><value>Wiederholen</value></data>
+  <data name="RunFileNew" xml:space="preserve"><value>neu</value></data>
+  <data name="RunFileChangedLabel" xml:space="preserve"><value>seit dem Lauf geändert</value></data>
+  <data name="RunFileUndoneLabel" xml:space="preserve"><value>rückgängig gemacht</value></data>
+  <data name="RunFileKeptLabel" xml:space="preserve"><value>behalten</value></data>
+  <data name="RunReviewNote" xml:space="preserve"><value>Rückgängig stellt eine Datei so wieder her, wie sie vor diesem Lauf war. Was ersetzt wird, wird zuerst gesichert — ein Rückgängigmachen lässt sich selbst rückgängig machen.</value></data>
+  <data name="RunFileChangedWhy" xml:space="preserve"><value>Nicht rückgängig gemacht: Diese Datei wurde nach dem Lauf geändert. Das Rückgängigmachen würde den Stand vor dem Lauf wiederherstellen und diese Änderung verlieren.</value></data>
+  <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>Nicht wiederholt: {0} wurde nach dem Rückgängigmachen geändert, und Wiederholen würde diese Änderung verlieren.</value></data>
+  <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>rückgängig gemacht, dann geändert — Wiederholen würde diese Änderung verlieren</value></data>
+  <data name="RunFileNoCopyLabel" xml:space="preserve"><value>keine Kopie von vor dem Lauf — nicht rückgängig zu machen</value></data>
 </root>

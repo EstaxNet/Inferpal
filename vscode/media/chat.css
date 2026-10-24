@@ -1071,6 +1071,117 @@ kbd {
   color: var(--vscode-foreground);
 }
 
+.result .review {
+  margin-left: auto;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid var(--ip-line);
+  background: transparent;
+  color: var(--vscode-foreground);
+}
+
+.result .review + .undo {
+  margin-left: 0;
+}
+
+/* A run's review: each file against the state before the run, undone, redone or kept on its own. */
+/* Above .approval, which comes later: nothing waits on this card. */
+.approval.run-review {
+  margin-top: 8px;
+  border-color: var(--ip-line);
+}
+
+/* Its close button is quiet, not the approval card's call to act. */
+.run-review .approval-head .icon-button {
+  background: transparent;
+  color: var(--ip-muted);
+}
+
+.run-review-file {
+  border-bottom: 1px solid var(--ip-line);
+}
+
+.run-review-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 7px 12px;
+}
+
+.run-review-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--vscode-foreground);
+}
+
+.run-review-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.run-review-line .plus  { color: var(--ip-add); }
+.run-review-line .minus { color: var(--ip-muted); }
+
+.run-review-tag,
+.run-review-state {
+  font-size: 11px;
+  color: var(--ip-muted);
+}
+
+.run-review-file.changedSince .run-review-state,
+.run-review-file.noCopy .run-review-state {
+  color: var(--vscode-editorWarning-foreground, #cca700);
+}
+
+.run-review-actions {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.run-review-action {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid var(--ip-line);
+  background: transparent;
+  color: var(--vscode-foreground);
+}
+
+.run-review-action.primary {
+  border-color: transparent;
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+.run-review-action:disabled {
+  opacity: 0.5;
+}
+
+.run-review-why {
+  padding: 0 12px 7px;
+  font-size: 12px;
+  color: var(--ip-muted);
+}
+
+.run-review-status,
+.run-review-note {
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
+.run-review-note {
+  color: var(--ip-muted);
+}
+
 /* ── Approval, in the conversation ──────────────────────────────────────────── */
 .approval {
   border-radius: 10px;

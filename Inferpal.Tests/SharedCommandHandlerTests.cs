@@ -110,7 +110,7 @@ public class SharedCommandHandlerTests
             var message = await UndoRunCommandHandler.HandleAsync(
                 history, ["/undo-run", argument], dir.FullName, CancellationToken.None);
 
-            Assert.Equal(Strings.SlashUsage("/undo-run [list]"), message);
+            Assert.Equal(Strings.SlashUsage("/undo-run [list|review]"), message);
             Assert.Equal("after", await File.ReadAllTextAsync(file));
         }
         finally { dir.Delete(recursive: true); }

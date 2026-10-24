@@ -166,6 +166,43 @@ internal sealed record RunSummaryDto(
         char.ToLowerInvariant(m.Check.ToString()[0]) + m.Check.ToString()[1..], m.CheckText, m.RunId);
 }
 
+/// <summary>`run/review` — the review card of a run (<see cref="Services.Presentation.RunReviewModel"/>).</summary>
+internal sealed record RunReviewParams(string RunId);
+
+/// <summary>`run/file` — one file of a run undone (<c>undo</c>), redone (<c>redo</c>) or kept (<c>keep</c>).</summary>
+internal sealed record RunFileParams(string RunId, string Path, string Action);
+
+/// <summary>One file of a run's review card.</summary>
+/// <param name="State"><c>pending</c>, <c>kept</c>, <c>undone</c>, <c>changedSince</c> or <c>noCopy</c>.</param>
+/// <param name="StateLabel">What the card says of that state (<see cref="Services.Presentation.RunReview.StateLabel"/>);
+/// empty for a pending file.</param>
+/// <param name="Diff">The file before the run against now, <c>+ - " " …</c> prefixes, cut and said past its cap.</param>
+internal sealed record RunReviewFileDto(
+    string Path, string Name, int Added, int Removed, bool Created, bool Gone, string State, string StateLabel, bool CanRedo,
+    List<RunReviewLineDto> Diff);
+
+internal sealed record RunReviewLineDto(string Prefix, string Text);
+
+/// <summary>A run's review card, its words already in the person's language.</summary>
+internal sealed record RunReviewDto(
+    string RunId, string Title, string Subtitle, string Note, string ChangedWhy, List<RunReviewFileDto> Files,
+    string Keep, string Undo, string Delete, string Redo, string New)
+{
+    public static RunReviewDto Of(Services.Presentation.RunReviewModel m) => new(
+        m.RunId, Localization.Strings.RunReviewTitle, Localization.Strings.RunReviewSubtitle(m.Files.Count, m.Started),
+        Localization.Strings.RunReviewNote, Localization.Strings.RunFileChangedWhy,
+        [.. m.Files.Select(f => new RunReviewFileDto(
+            f.Path, f.Name, f.Added, f.Removed, f.Created, f.Gone,
+            char.ToLowerInvariant(f.State.ToString()[0]) + f.State.ToString()[1..],
+            Services.Presentation.RunReview.StateLabel(f),
+            f.CanRedo, [.. f.Diff.Select(l => new RunReviewLineDto(l.Prefix, l.Text))]))],
+        Localization.Strings.RunFileKeep, Localization.Strings.RunFileUndo, Localization.Strings.RunFileDelete,
+        Localization.Strings.RunFileRedo, Localization.Strings.RunFileNew);
+}
+
+/// <summary>What `run/file` answers: the sentence to show, and the card as it stands after (null: the run is gone).</summary>
+internal sealed record RunFileResult(string Message, RunReviewDto? Review);
+
 /// <summary>`chat/tool` notification — one executed tool call (uncapped output, like the VS bubble).</summary>
 /// <param name="Diff">The change a writing call made, in the lines the approval card showed (<c>+ - …</c> prefixes,
 /// context collapsed) — what Visual Studio draws in its tool bubble; null when the call wrote nothing.</param>

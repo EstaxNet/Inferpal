@@ -1813,4 +1813,34 @@
   <data name="HintRoleProvider" xml:space="preserve"><value>Ollama、LM Studio 或 OpenAI 兼容:其地址旁的“测试”按钮会自动填写。</value></data>
   <data name="SettingsNoModelChosen" xml:space="preserve"><value>未选择:无幽灵文本</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>正在查找模型服务器…</value></data>
+  <data name="UndoRunLeftChanged" xml:space="preserve"><value>保持原样 — 运行后已被修改，撤销会丢失这些修改：{0}</value></data>
+  <data name="UndoRunLeftKept" xml:space="preserve"><value>保持原样 — 你选择保留它们：{0}</value></data>
+  <data name="RunFileRestored" xml:space="preserve"><value>{0} 已恢复到运行前的状态。之前的内容会先保存。</value></data>
+  <data name="RunFileDeleted" xml:space="preserve"><value>{0} 已删除 — 它是本次运行创建的。其内容会先保存。</value></data>
+  <data name="RunFileRedone" xml:space="preserve"><value>{0} 已重新应用本次运行的版本。</value></data>
+  <data name="RunFileKept" xml:space="preserve"><value>已保留 {0}：撤销运行不会改动它。</value></data>
+  <data name="RunFileChangedSince" xml:space="preserve"><value>未撤销：{0} 在运行后被修改过，撤销会丢失这些修改。</value></data>
+  <data name="RunFileAlreadyUndone" xml:space="preserve"><value>{0} 已撤销。</value></data>
+  <data name="RunFileNothingToRedo" xml:space="preserve"><value>{0} 没有可重做的内容：未保存任何撤销。</value></data>
+  <data name="RunFileNotInRun" xml:space="preserve"><value>{0} 不是本次运行修改过的文件。</value></data>
+  <data name="RunFileFailed" xml:space="preserve"><value>无法修改 {0}：原因见 /diagnostics。</value></data>
+  <data name="RunReviewHeader" xml:space="preserve"><value>本次运行的修改 — {0} 个文件，与 {1} 之前的状态比较：</value></data>
+  <data name="RunReviewHowTo" xml:space="preserve"><value>只撤销一个文件：`/undo-run #{0} &lt;文件&gt;`。</value></data>
+  <data name="RunReviewMoreLines" xml:space="preserve"><value>还有 {0} 行</value></data>
+  <data name="RunReviewButton" xml:space="preserve"><value>查看修改</value></data>
+  <data name="RunReviewTitle" xml:space="preserve"><value>本次运行的修改</value></data>
+  <data name="RunReviewSubtitle" xml:space="preserve"><value>{0} 个文件 · 与 {1} 之前的状态比较</value></data>
+  <data name="RunFileKeep" xml:space="preserve"><value>保留</value></data>
+  <data name="RunFileUndo" xml:space="preserve"><value>撤销</value></data>
+  <data name="RunFileDelete" xml:space="preserve"><value>删除</value></data>
+  <data name="RunFileRedo" xml:space="preserve"><value>重做</value></data>
+  <data name="RunFileNew" xml:space="preserve"><value>新建</value></data>
+  <data name="RunFileChangedLabel" xml:space="preserve"><value>运行后已修改</value></data>
+  <data name="RunFileUndoneLabel" xml:space="preserve"><value>已撤销</value></data>
+  <data name="RunFileKeptLabel" xml:space="preserve"><value>已保留</value></data>
+  <data name="RunReviewNote" xml:space="preserve"><value>撤销会把文件恢复到本次运行之前的状态。被替换的内容会先保存，因此撤销本身也可以撤销。</value></data>
+  <data name="RunFileChangedWhy" xml:space="preserve"><value>未撤销：此文件在运行后被修改过。撤销会恢复运行前的状态并丢失这些修改。</value></data>
+  <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>未重做：{0} 在撤销后被修改过，重做会丢失这些修改。</value></data>
+  <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>已撤销，之后又被修改 — 重做会丢失这些修改</value></data>
+  <data name="RunFileNoCopyLabel" xml:space="preserve"><value>没有运行前的副本 — 无法撤销</value></data>
 </root>

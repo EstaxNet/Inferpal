@@ -1094,18 +1094,164 @@
                                                    Foreground="{Binding ThemeSubtleText}"/>
                                     </StackPanel>
                                 </WrapPanel>
-                                <Button Grid.Column="1" Style="{StaticResource LineBtn}" Margin="8,0,0,0" VerticalAlignment="Center"
-                                        BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
-                                        Command="{Binding UndoCommand}" AutomationProperties.Name="{Binding BtnUndo}"
-                                        Visibility="{Binding CanUndo, Converter={StaticResource b2v}}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE7A7;" FontSize="12" VerticalAlignment="Center"
-                                                   Foreground="{Binding ThemeText}"/>
-                                        <TextBlock Text="{Binding BtnUndo}" FontSize="13" Margin="6,0,0,0" VerticalAlignment="Center"
-                                                   Foreground="{Binding ThemeText}"/>
-                                    </StackPanel>
-                                </Button>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Style="{StaticResource LineBtn}" Margin="8,0,0,0" VerticalAlignment="Center"
+                                            BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                            Command="{Binding ReviewCommand}" AutomationProperties.Name="{Binding BtnReview}"
+                                            Visibility="{Binding CanReview, Converter={StaticResource b2v}}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8FD;" FontSize="12" VerticalAlignment="Center"
+                                                       Foreground="{Binding ThemeText}"/>
+                                            <TextBlock Text="{Binding BtnReview}" FontSize="13" Margin="6,0,0,0" VerticalAlignment="Center"
+                                                       Foreground="{Binding ThemeText}"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Style="{StaticResource LineBtn}" Margin="8,0,0,0" VerticalAlignment="Center"
+                                            BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                            Command="{Binding UndoCommand}" AutomationProperties.Name="{Binding BtnUndo}"
+                                            Visibility="{Binding CanUndo, Converter={StaticResource b2v}}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE7A7;" FontSize="12" VerticalAlignment="Center"
+                                                       Foreground="{Binding ThemeText}"/>
+                                            <TextBlock Text="{Binding BtnUndo}" FontSize="13" Margin="6,0,0,0" VerticalAlignment="Center"
+                                                       Foreground="{Binding ThemeText}"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
                             </Grid>
+                        </Border>
+
+                        <!-- ── A run's review card: each file against the state before the run; Keep, Undo, Redo ── -->
+                        <Border CornerRadius="10" BorderThickness="1" Margin="0,8,0,0"
+                                Background="{Binding DataContext.ThemeSurface, ElementName=root}"
+                                BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Role}" Value="review">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel>
+                                <DockPanel Margin="12,10" LastChildFill="True">
+                                    <Button DockPanel.Dock="Right" Template="{StaticResource Flat6}" Background="Transparent" BorderThickness="0"
+                                            Padding="4,1" Margin="8,0,0,0" Cursor="Hand" VerticalAlignment="Center"
+                                            Command="{Binding CloseReviewCommand}" AutomationProperties.Name="{Binding BtnCloseReview}" ToolTip="{Binding BtnCloseReview}">
+                                        <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE711;" FontSize="11" Foreground="{Binding ThemeSubtleText}"/>
+                                    </Button>
+                                    <TextBlock DockPanel.Dock="Left" Text="{Binding CardTitle}" FontSize="13" FontWeight="SemiBold"
+                                               VerticalAlignment="Center" Foreground="{Binding ThemeText}"/>
+                                    <TextBlock Text="{Binding CardSubject}" FontSize="13" Margin="8,0,0,0" VerticalAlignment="Center"
+                                               TextWrapping="Wrap" Foreground="{Binding ThemeSubtleText}"/>
+                                </DockPanel>
+                                <ItemsControl ItemsSource="{Binding ReviewFiles}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderThickness="0,1,0,0" BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}">
+                                                <StackPanel>
+                                                    <DockPanel Margin="12,7" LastChildFill="True">
+                                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"
+                                                                    IsEnabled="{Binding CanAct}">
+                                                            <Button Style="{StaticResource LineBtn}" Margin="6,0,0,0"
+                                                                    BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                                                    Command="{Binding KeepCommand}" AutomationProperties.Name="{Binding BtnKeep}"
+                                                                    Visibility="{Binding HasKeep, Converter={StaticResource b2v}}">
+                                                                <TextBlock Text="{Binding BtnKeep}" FontSize="13"
+                                                                           Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
+                                                            </Button>
+                                                            <Button Template="{StaticResource Flat6}" Height="28" Padding="10,0" Margin="6,0,0,0"
+                                                                    BorderThickness="0" Cursor="Hand"
+                                                                    Background="{Binding DataContext.ThemeAccent, ElementName=root}"
+                                                                    Command="{Binding UndoCommand}" AutomationProperties.Name="{Binding BtnUndo}"
+                                                                    Visibility="{Binding HasUndo, Converter={StaticResource b2v}}">
+                                                                <TextBlock Text="{Binding BtnUndo}" FontSize="13" VerticalAlignment="Center"
+                                                                           Foreground="{Binding DataContext.ThemeOnAccent, ElementName=root}"/>
+                                                            </Button>
+                                                            <Button Style="{StaticResource LineBtn}" Margin="6,0,0,0"
+                                                                    BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                                                    Command="{Binding RedoCommand}" AutomationProperties.Name="{Binding BtnRedo}"
+                                                                    Visibility="{Binding HasRedo, Converter={StaticResource b2v}}">
+                                                                <TextBlock Text="{Binding BtnRedo}" FontSize="13"
+                                                                           Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
+                                                            </Button>
+                                                        </StackPanel>
+                                                        <Button Template="{StaticResource Flat6}" Background="Transparent" BorderThickness="0"
+                                                                Padding="0" Cursor="Hand" HorizontalAlignment="Left" VerticalAlignment="Center"
+                                                                Command="{Binding ToggleCommand}" ToolTip="{Binding Path}"
+                                                                AutomationProperties.Name="{Binding Name}">
+                                                            <WrapPanel>
+                                                                <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center"
+                                                                           Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}">
+                                                                    <TextBlock.Style>
+                                                                        <Style TargetType="TextBlock">
+                                                                            <Setter Property="Text" Value="&#xE76C;"/>
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                                                                                    <Setter Property="Text" Value="&#xE70D;"/>
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </TextBlock.Style>
+                                                                </TextBlock>
+                                                                <TextBlock Text="{Binding Name}" FontSize="13" Margin="6,0,0,0" VerticalAlignment="Center"
+                                                                           Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
+                                                                <TextBlock Text="{Binding Added}" FontSize="13" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                                           Foreground="{Binding DataContext.ThemeOk, ElementName=root}"/>
+                                                                <TextBlock Text="{Binding Removed}" FontSize="13" Margin="4,0,0,0" VerticalAlignment="Center"
+                                                                           Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"/>
+                                                                <TextBlock Text="{Binding NewLabel}" FontSize="11" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                                           Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"/>
+                                                                <TextBlock Text="{Binding StateLabel}" FontSize="11" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                                    <TextBlock.Style>
+                                                                        <Style TargetType="TextBlock">
+                                                                            <Setter Property="Foreground" Value="{Binding DataContext.ThemeSubtleText, ElementName=root}"/>
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsChangedSince}" Value="True">
+                                                                                    <Setter Property="Foreground" Value="{Binding DataContext.ThemeErrorText, ElementName=root}"/>
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </TextBlock.Style>
+                                                                </TextBlock>
+                                                            </WrapPanel>
+                                                        </Button>
+                                                    </DockPanel>
+                                                    <TextBlock Text="{Binding ChangedWhy}" FontSize="12" Margin="12,0,12,7" TextWrapping="Wrap"
+                                                               Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"
+                                                               Visibility="{Binding IsChangedSince, Converter={StaticResource b2v}}"/>
+                                                    <Border Padding="0,6" Background="{Binding DataContext.ThemeCodeBg, ElementName=root}"
+                                                            Visibility="{Binding IsExpanded, Converter={StaticResource b2v}}">
+                                                        <ItemsControl ItemsSource="{Binding Lines}" FontFamily="Cascadia Mono, Consolas" FontSize="12">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <Grid Background="{Binding Background}">
+                                                                        <Grid.ColumnDefinitions>
+                                                                            <ColumnDefinition Width="Auto"/>
+                                                                            <ColumnDefinition Width="*"/>
+                                                                        </Grid.ColumnDefinitions>
+                                                                        <TextBlock Grid.Column="0" Text="{Binding Prefix}" Foreground="{Binding Foreground}"
+                                                                                   Margin="12,1,8,1"/>
+                                                                        <TextBlock Grid.Column="1" Text="{Binding Text}" TextWrapping="Wrap" Margin="0,1,12,1"
+                                                                                   Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
+                                                                    </Grid>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </Border>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock Text="{Binding ReviewStatus}" FontSize="12" Margin="12,8,12,0" TextWrapping="Wrap"
+                                           Foreground="{Binding ThemeText}"
+                                           Visibility="{Binding HasReviewStatus, Converter={StaticResource b2v}}"/>
+                                <TextBlock Text="{Binding ReviewNote}" FontSize="12" Margin="12,8,12,10" TextWrapping="Wrap"
+                                           Foreground="{Binding ThemeSubtleText}"/>
+                            </StackPanel>
                         </Border>
 
                         <!-- ── An approval card: what will happen, to what, the start of the change; three answers ── -->

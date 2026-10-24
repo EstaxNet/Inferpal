@@ -1813,4 +1813,34 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="HintRoleProvider" xml:space="preserve"><value>Ollama, LM Studio ou compatible OpenAI : le bouton Tester à côté de son adresse le remplit.</value></data>
   <data name="SettingsNoModelChosen" xml:space="preserve"><value>Aucun choisi : pas de texte fantôme</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>Recherche d'un serveur de modèles…</value></data>
+  <data name="UndoRunLeftChanged" xml:space="preserve"><value>Laissés tels quels — modifiés après le run, un retour perdrait ces modifications : {0}</value></data>
+  <data name="UndoRunLeftKept" xml:space="preserve"><value>Laissés tels quels — vous les avez gardés : {0}</value></data>
+  <data name="RunFileRestored" xml:space="preserve"><value>{0} est revenu tel qu'il était avant le run. Ce qu'il contenait est d'abord sauvegardé.</value></data>
+  <data name="RunFileDeleted" xml:space="preserve"><value>{0} est supprimé — le run l'avait créé. Ce qu'il contenait est d'abord sauvegardé.</value></data>
+  <data name="RunFileRedone" xml:space="preserve"><value>{0} a de nouveau la version du run.</value></data>
+  <data name="RunFileKept" xml:space="preserve"><value>{0} est gardé : Annuler le run le laisse tel quel.</value></data>
+  <data name="RunFileChangedSince" xml:space="preserve"><value>Non annulé : {0} a été modifié après le run, et l'annuler perdrait cette modification.</value></data>
+  <data name="RunFileAlreadyUndone" xml:space="preserve"><value>{0} est déjà annulé.</value></data>
+  <data name="RunFileNothingToRedo" xml:space="preserve"><value>Rien à rétablir pour {0} : aucune annulation n'en a été sauvegardée.</value></data>
+  <data name="RunFileNotInRun" xml:space="preserve"><value>{0} n'est pas un fichier modifié par ce run.</value></data>
+  <data name="RunFileFailed" xml:space="preserve"><value>{0} n'a pas pu être modifié : /diagnostics en donne la cause.</value></data>
+  <data name="RunReviewHeader" xml:space="preserve"><value>Modifications de ce run — {0} {0:fichier|fichiers}, comparés à l'état d'avant {1} :</value></data>
+  <data name="RunReviewHowTo" xml:space="preserve"><value>Annuler un seul fichier : `/undo-run #{0} &lt;fichier&gt;`.</value></data>
+  <data name="RunReviewMoreLines" xml:space="preserve"><value>{0} {0:ligne|lignes} de plus</value></data>
+  <data name="RunReviewButton" xml:space="preserve"><value>Relire les modifications</value></data>
+  <data name="RunReviewTitle" xml:space="preserve"><value>Modifications de ce run</value></data>
+  <data name="RunReviewSubtitle" xml:space="preserve"><value>{0} {0:fichier|fichiers} · comparés à l'état d'avant {1}</value></data>
+  <data name="RunFileKeep" xml:space="preserve"><value>Garder</value></data>
+  <data name="RunFileUndo" xml:space="preserve"><value>Annuler</value></data>
+  <data name="RunFileDelete" xml:space="preserve"><value>Supprimer</value></data>
+  <data name="RunFileRedo" xml:space="preserve"><value>Rétablir</value></data>
+  <data name="RunFileNew" xml:space="preserve"><value>nouveau</value></data>
+  <data name="RunFileChangedLabel" xml:space="preserve"><value>modifié depuis le run</value></data>
+  <data name="RunFileUndoneLabel" xml:space="preserve"><value>annulé</value></data>
+  <data name="RunFileKeptLabel" xml:space="preserve"><value>gardé</value></data>
+  <data name="RunReviewNote" xml:space="preserve"><value>Annuler remet un fichier tel qu'il était avant ce run. Ce qui est remplacé est d'abord sauvegardé : une annulation s'annule elle-même.</value></data>
+  <data name="RunFileChangedWhy" xml:space="preserve"><value>Non annulé : ce fichier a été modifié après le run. L'annuler remettrait l'état d'avant le run et perdrait cette modification.</value></data>
+  <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>Non rétabli : {0} a été modifié après l'annulation, et le rétablir perdrait cette modification.</value></data>
+  <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>annulé, puis modifié — Rétablir perdrait cette modification</value></data>
+  <data name="RunFileNoCopyLabel" xml:space="preserve"><value>aucune copie d'avant le run — impossible à annuler</value></data>
 </root>

@@ -1813,4 +1813,34 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="HintRoleProvider" xml:space="preserve"><value>Ollama, LM Studio lub zgodny z OpenAI: wypełnia go przycisk Testuj obok jego adresu.</value></data>
   <data name="SettingsNoModelChosen" xml:space="preserve"><value>Nie wybrano: brak tekstu-widma</value></data>
   <data name="AcpSetupScanning" xml:space="preserve"><value>Wyszukiwanie serwera modeli…</value></data>
+  <data name="UndoRunLeftChanged" xml:space="preserve"><value>Pozostawione bez zmian — zmienione po uruchomieniu, cofnięcie utraciłoby tę zmianę: {0}</value></data>
+  <data name="UndoRunLeftKept" xml:space="preserve"><value>Pozostawione bez zmian — zachowano je: {0}</value></data>
+  <data name="RunFileRestored" xml:space="preserve"><value>{0} wrócił do stanu sprzed uruchomienia. Poprzednia zawartość jest najpierw zapisywana.</value></data>
+  <data name="RunFileDeleted" xml:space="preserve"><value>{0} usunięty — uruchomienie go utworzyło. Jego zawartość jest najpierw zapisywana.</value></data>
+  <data name="RunFileRedone" xml:space="preserve"><value>{0} znów ma wersję z uruchomienia.</value></data>
+  <data name="RunFileKept" xml:space="preserve"><value>{0} zachowany: Cofnij uruchomienie pozostawi go bez zmian.</value></data>
+  <data name="RunFileChangedSince" xml:space="preserve"><value>Nie cofnięto: {0} zmieniono po uruchomieniu, a cofnięcie utraciłoby tę zmianę.</value></data>
+  <data name="RunFileAlreadyUndone" xml:space="preserve"><value>{0} jest już cofnięty.</value></data>
+  <data name="RunFileNothingToRedo" xml:space="preserve"><value>Nic do ponowienia dla {0}: nie zapisano żadnego cofnięcia.</value></data>
+  <data name="RunFileNotInRun" xml:space="preserve"><value>{0} nie jest plikiem zmienionym przez to uruchomienie.</value></data>
+  <data name="RunFileFailed" xml:space="preserve"><value>Nie udało się zmienić {0}: /diagnostics podaje przyczynę.</value></data>
+  <data name="RunReviewHeader" xml:space="preserve"><value>Zmiany tego uruchomienia — {0} {0:plik|pliki|plików}, w porównaniu ze stanem sprzed {1}:</value></data>
+  <data name="RunReviewHowTo" xml:space="preserve"><value>Cofnij jeden plik: `/undo-run #{0} &lt;plik&gt;`.</value></data>
+  <data name="RunReviewMoreLines" xml:space="preserve"><value>jeszcze {0} {0:wiersz|wiersze|wierszy}</value></data>
+  <data name="RunReviewButton" xml:space="preserve"><value>Przejrzyj zmiany</value></data>
+  <data name="RunReviewTitle" xml:space="preserve"><value>Zmiany tego uruchomienia</value></data>
+  <data name="RunReviewSubtitle" xml:space="preserve"><value>{0} {0:plik|pliki|plików} · w porównaniu ze stanem sprzed {1}</value></data>
+  <data name="RunFileKeep" xml:space="preserve"><value>Zachowaj</value></data>
+  <data name="RunFileUndo" xml:space="preserve"><value>Cofnij</value></data>
+  <data name="RunFileDelete" xml:space="preserve"><value>Usuń</value></data>
+  <data name="RunFileRedo" xml:space="preserve"><value>Ponów</value></data>
+  <data name="RunFileNew" xml:space="preserve"><value>nowy</value></data>
+  <data name="RunFileChangedLabel" xml:space="preserve"><value>zmieniony po uruchomieniu</value></data>
+  <data name="RunFileUndoneLabel" xml:space="preserve"><value>cofnięty</value></data>
+  <data name="RunFileKeptLabel" xml:space="preserve"><value>zachowany</value></data>
+  <data name="RunReviewNote" xml:space="preserve"><value>Cofnij przywraca plik do stanu sprzed tego uruchomienia. To, co zostaje zastąpione, jest najpierw zapisywane, więc samo cofnięcie też można cofnąć.</value></data>
+  <data name="RunFileChangedWhy" xml:space="preserve"><value>Nie cofnięto: ten plik zmieniono po uruchomieniu. Cofnięcie przywróciłoby stan sprzed uruchomienia i utraciło tę zmianę.</value></data>
+  <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>Nie ponowiono: {0} zmieniono po cofnięciu, a ponowienie utraciłoby tę zmianę.</value></data>
+  <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>cofnięty, potem zmieniony — Ponów utraciłoby tę zmianę</value></data>
+  <data name="RunFileNoCopyLabel" xml:space="preserve"><value>brak kopii sprzed uruchomienia — nie można cofnąć</value></data>
 </root>

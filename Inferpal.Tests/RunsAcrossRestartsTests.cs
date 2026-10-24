@@ -233,8 +233,9 @@ public sealed class RunsAcrossRestartsTests : IDisposable
         var (edited, _) = await RunInAnEarlierProcess();
         var manifest = Assert.Single(RunFiles());
         var text = await System.IO.File.ReadAllTextAsync(manifest);
-        Assert.Contains("\"undone\": false", text, StringComparison.Ordinal);   // WITNESS: the edit has something to change
-        await System.IO.File.WriteAllTextAsync(manifest, text.Replace("\"undone\": false", "\"undone\": true", StringComparison.Ordinal));
+        Assert.Contains("\"undoneGeneration\": 0", text, StringComparison.Ordinal);   // WITNESS: the edit has something to change
+        await System.IO.File.WriteAllTextAsync(manifest,
+            text.Replace("\"undoneGeneration\": 0", "\"undoneGeneration\": 1", StringComparison.Ordinal));
 
         var answer = await Undo(Service());
 
@@ -299,6 +300,7 @@ public sealed class RunsAcrossRestartsTests : IDisposable
         foreach (var list in held) System.IO.File.Delete(list);
         var after = new FileHistoryService { WorkspaceRoot = () => _dir, UserHistoryRoot = _user, UtcNow = () => t = t.AddSeconds(1) };
         for (var i = 0; i < 25; i++) await Edit(after, file, $"later {i}");   // outside any run
+        await Edit(after, file, "run");   // back as the run left it: not changed since, so the undo gives it back
 
         await Undo(after);
 

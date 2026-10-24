@@ -619,6 +619,7 @@ internal partial class InferpalToolWindowData
     private void InsertResultBar(Services.Presentation.RunSummaryModel summary)
     {
         Action? undo = null;
+        Action? review = null;
         if (summary.RunId.Length > 0)
         {
             // /undo-run reverts the most recent run that changed files: only that run's bar offers it.
@@ -626,8 +627,82 @@ internal partial class InferpalToolWindowData
                 older.CanUndo = false;
             var runId = summary.RunId;
             undo = () => _ = UndoFromResultBarAsync(runId);
+            // Any run's files can be reviewed: a file changed since by a later run is refused its undo, and says so.
+            review = () => _ = ReviewRunAsync(runId, null, null);
         }
-        InsertThemed(ChatMessageItem.ResultMsg(summary, undo, path => _ = OpenInEditorAsync(path)));
+        InsertThemed(ChatMessageItem.ResultMsg(summary, undo, review, path => _ = OpenInEditorAsync(path)));
+    }
+
+    /// <summary>
+    /// A run's review card, drawn or drawn again under its result bar — after a file's Keep, Undo or Redo when
+    /// <paramref name="path"/> is set. Like the bar's Undo, nothing is changed while a turn runs: its run still writes.
+    /// </summary>
+    private async Task ReviewRunAsync(string runId, string? path, Services.Commands.UndoRunCommandHandler.RunFileAction? action)
+    {
+        try
+        {
+            Services.Presentation.RunReviewModel? review;
+            string? status = null;
+            if (path is not null && action is { } act)
+            {
+                var busy = false;
+                await RunOnVMContextAsync(() => busy = IsLoading || _sendStarting);
+                PinWorkspaceRoot();
+                (status, review) = await UndoOutsideAnyRunAsync(() => Services.Commands.UndoRunCommandHandler.FileActionAsync(
+                    _tools.History, runId, path, act, FindProjectRoot(), busy, CancellationToken.None));
+            }
+            else
+            {
+                var run = _tools.History.Runs.FirstOrDefault(r => r.Id == runId && r.FileCount > 0);
+                review = run is null ? null : Services.Presentation.RunReview.Build(_tools.History, run);
+                if (run is null) status = Strings.UndoRunNone;
+            }
+            await RunOnVMContextAsync(() =>
+            {
+                var card = Messages.FirstOrDefault(m => m.Role == "review" && m.RunId == runId);
+                if (card is null)
+                {
+                    var bar = Messages.FirstOrDefault(m => m.Role == "result" && m.RunId == runId);
+                    if (bar is null) return;
+                    card = ChatMessageItem.ReviewMsg(runId,
+                        onClose: () => _ = RunOnVMContextAsync(() =>
+                        {
+                            if (Messages.FirstOrDefault(m => m.Role == "review" && m.RunId == runId) is { } shown) Messages.Remove(shown);
+                        }),
+                        act: (file, what) => _ = ReviewRunAsync(runId, file, what));
+                    card.ShowReview(review, status);
+                    ApplyItemTheme(card);
+                    Messages.Insert(Messages.IndexOf(bar) + 1, card);
+                    return;
+                }
+                card.ShowReview(review, status);
+                ApplyItemTheme(card);
+            });
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("InferpalToolWindowData.ReviewRun", ex);
+            // No answer to draw the card from: its actions come back, and the failure is said.
+            await RunOnVMContextAsync(() =>
+                Messages.FirstOrDefault(m => m.Role == "review" && m.RunId == runId)?.EnableReviewActions(true));
+            await ShowInfoAsync(Strings.RunFileFailed(path ?? runId));
+        }
+    }
+
+    /// <summary>One undo at a time — the bar's, a typed one, a review card's — and in no run: two at once on one file
+    /// would save the first's result as the version to redo, and a turn starting meanwhile would count the undo's own
+    /// backups as its edits (its result bar, its Undo).</summary>
+    private readonly SemaphoreSlim _undoGate = new(1, 1);
+
+    private async Task<T> UndoOutsideAnyRunAsync<T>(Func<Task<T>> undo)
+    {
+        await _undoGate.WaitAsync();
+        try
+        {
+            using var _ = _tools.History.OutsideRun();
+            return await undo();
+        }
+        finally { _undoGate.Release(); }
     }
 
     /// <summary>A result bar's Undo: <c>/undo-run #&lt;its run&gt;</c>, run straight — never through the prompt box. Named: the
