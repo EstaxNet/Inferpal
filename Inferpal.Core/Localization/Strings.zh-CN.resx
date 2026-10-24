@@ -1843,4 +1843,33 @@
   <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>未重做：{0} 在撤销后被修改过，重做会丢失这些修改。</value></data>
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>已撤销，之后又被修改 — 重做会丢失这些修改</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>没有运行前的副本 — 无法撤销</value></data>
+  <data name="RewindButton" xml:space="preserve"><value>回到这里</value></data>
+  <data name="RewindButtonTip" xml:space="preserve"><value>回到这里 — 对话及其文件</value></data>
+  <data name="RewindTitle" xml:space="preserve"><value>回到“{0}”？</value></data>
+  <data name="RewindLead" xml:space="preserve"><value>对话将从这个问题按你原来的提问重新开始。之后的 {0} 次运行将被撤销：</value></data>
+  <data name="RewindLeadNoRun" xml:space="preserve"><value>对话将从这个问题按你原来的提问重新开始。之后记录的运行都没有修改过文件。</value></data>
+  <data name="RewindPutBack" xml:space="preserve"><value>恢复</value></data>
+  <data name="RewindDeleted" xml:space="preserve"><value>由运行创建，删除</value></data>
+  <data name="RewindKept" xml:space="preserve"><value>已保留 — 保持原样</value></data>
+  <data name="RewindNote" xml:space="preserve"><value>每个文件的当前版本会先保存。当前的对话会留在你的会话中 (/branch)。</value></data>
+  <data name="RewindGo" xml:space="preserve"><value>回去</value></data>
+  <data name="RewindCancel" xml:space="preserve"><value>取消</value></data>
+  <data name="RewindRefusedChangedTitle" xml:space="preserve"><value>未返回：这些运行之后有文件被修改</value></data>
+  <data name="RewindRefusedTitle" xml:space="preserve"><value>未返回</value></data>
+  <data name="RewindRefusedChanged" xml:space="preserve"><value>{0} 在 {1} 被修改，晚于这个问题之后的运行。撤销它们会覆盖这次修改，因此没有撤销任何内容，对话也保持原样。</value></data>
+  <data name="RewindRefusedGone" xml:space="preserve"><value>{0} 在这个问题之后的运行之后被删除。撤销它们会让文件覆盖这次修改重新出现，因此没有撤销任何内容，对话也保持原样。</value></data>
+  <data name="RewindRefusedNotKept" xml:space="preserve"><value>这个问题之后的某次运行已不再保留（只保留工作区最近的 {0} 次）。没有撤销任何内容，对话也保持原样。</value></data>
+  <data name="RewindRefusedNoCopy" xml:space="preserve"><value>这些运行之前的 {0} 副本已不存在。没有撤销任何内容，对话也保持原样。</value></data>
+  <data name="RewindConversationOnly" xml:space="preserve"><value>只在对话中回去</value></data>
+  <data name="RewindConversationOnlyHint" xml:space="preserve"><value>文件保持现状；这些运行仍可逐个查看。</value></data>
+  <data name="RewindReviewRuns" xml:space="preserve"><value>查看这些运行的修改</value></data>
+  <data name="RewindReviewRunsHint" xml:space="preserve"><value>撤销你选择的文件 — 之后修改过的文件绝不会被覆盖。</value></data>
+  <data name="RewindDone" xml:space="preserve"><value>已回到问题 {0}：恢复 {1} 个文件，删除 {2} 个。问题已放回输入框。</value></data>
+  <data name="RewindDoneConversationOnly" xml:space="preserve"><value>已只在对话中回到问题 {0} — 文件保持原样。问题已放回输入框。</value></data>
+  <data name="RewindStopped" xml:space="preserve"><value>返回在 {0} 处停止：无法撤销。已撤销的运行保持撤销，对话也保持原样。</value></data>
+  <data name="RewindRefusedBetween" xml:space="preserve"><value>{0} 在这个问题之后的几次运行之间被修改过 — 手动修改，或由另一个对话的运行修改。撤销它们会覆盖这次修改，因此没有撤销任何内容，对话也保持原样。</value></data>
+  <data name="RewindQuestionGone" xml:space="preserve"><value>这个问题已不在对话中原来的位置：什么也没做。</value></data>
+  <data name="RewindConversationNotCut" xml:space="preserve"><value>文件已恢复到问题 {0} 之前的状态，但无法截断对话：{1}</value></data>
+  <data name="RewindPlanChanged" xml:space="preserve"><value>自卡片显示以来，这个问题之后的运行发生了变化：返回前请再检查一次。</value></data>
+  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>随它一起发送的内容（{0}）不会再次附上。</value></data>
 </root>

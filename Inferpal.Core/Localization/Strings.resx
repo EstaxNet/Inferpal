@@ -1847,4 +1847,33 @@ What you save there applies from your next question, in this thread and the othe
   <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>Not redone: {0} was changed after the undo, and redoing it would lose that change.</value></data>
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>undone, then changed — Redo would lose that change</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>no copy from before the run — it cannot be undone</value></data>
+  <data name="RewindButton" xml:space="preserve"><value>Go back here</value></data>
+  <data name="RewindButtonTip" xml:space="preserve"><value>Go back here — the conversation and its files</value></data>
+  <data name="RewindTitle" xml:space="preserve"><value>Go back to “{0}”?</value></data>
+  <data name="RewindLead" xml:space="preserve"><value>The conversation resumes from this question, as you asked it. The {0} {0:run|runs} that followed it {0:is|are} undone:</value></data>
+  <data name="RewindLeadNoRun" xml:space="preserve"><value>The conversation resumes from this question, as you asked it. No run recorded after it changed a file.</value></data>
+  <data name="RewindPutBack" xml:space="preserve"><value>put back</value></data>
+  <data name="RewindDeleted" xml:space="preserve"><value>created by a run, deleted</value></data>
+  <data name="RewindKept" xml:space="preserve"><value>kept — left as it is</value></data>
+  <data name="RewindNote" xml:space="preserve"><value>Each file's current version is saved first. The conversation as it is now stays in your sessions (/branch).</value></data>
+  <data name="RewindGo" xml:space="preserve"><value>Go back</value></data>
+  <data name="RewindCancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="RewindRefusedChangedTitle" xml:space="preserve"><value>Not gone back: a file changed after these runs</value></data>
+  <data name="RewindRefusedTitle" xml:space="preserve"><value>Not gone back</value></data>
+  <data name="RewindRefusedChanged" xml:space="preserve"><value>{0} was changed at {1}, after the runs that followed this question. Undoing them would overwrite that change, so nothing was undone and the conversation is where it was.</value></data>
+  <data name="RewindRefusedGone" xml:space="preserve"><value>{0} was deleted after the runs that followed this question. Undoing them would bring it back over that change, so nothing was undone and the conversation is where it was.</value></data>
+  <data name="RewindRefusedNotKept" xml:space="preserve"><value>A run that followed this question is no longer kept (only the workspace's last {0} are). Nothing was undone and the conversation is where it was.</value></data>
+  <data name="RewindRefusedNoCopy" xml:space="preserve"><value>The copy of {0} from before these runs is gone. Nothing was undone and the conversation is where it was.</value></data>
+  <data name="RewindConversationOnly" xml:space="preserve"><value>Go back in the conversation only</value></data>
+  <data name="RewindConversationOnlyHint" xml:space="preserve"><value>The files stay as they are now; the runs can still be reviewed one by one.</value></data>
+  <data name="RewindReviewRuns" xml:space="preserve"><value>Review the changes of these runs</value></data>
+  <data name="RewindReviewRunsHint" xml:space="preserve"><value>Undo the files you choose — a file changed since is never overwritten.</value></data>
+  <data name="RewindDone" xml:space="preserve"><value>Back to question {0}: {1} {1:file|files} put back, {2} deleted. The question is in the message box.</value></data>
+  <data name="RewindDoneConversationOnly" xml:space="preserve"><value>Back to question {0}, in the conversation only — the files are as they were. The question is in the message box.</value></data>
+  <data name="RewindStopped" xml:space="preserve"><value>Going back stopped at {0}: it could not be undone. The runs already undone stay undone, and the conversation is where it was.</value></data>
+  <data name="RewindRefusedBetween" xml:space="preserve"><value>{0} was changed between the runs that followed this question — by hand, or by a run of another conversation. Undoing them would overwrite that change, so nothing was undone and the conversation is where it was.</value></data>
+  <data name="RewindQuestionGone" xml:space="preserve"><value>This question is no longer where it was in the conversation: nothing was done.</value></data>
+  <data name="RewindConversationNotCut" xml:space="preserve"><value>The files are back as they were before question {0}, but the conversation could not be cut: {1}</value></data>
+  <data name="RewindPlanChanged" xml:space="preserve"><value>The runs after this question changed since the card was drawn: check it again before going back.</value></data>
+  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>What went with it ({0}) is not attached again.</value></data>
 </root>

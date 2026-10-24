@@ -29,7 +29,7 @@ public sealed class FailedTurnPartialAnswerTests
         Assert.Contains("KeepAsNotice(streamingMsg);", failed[..failed.IndexOf("else switch", StringComparison.Ordinal)], StringComparison.Ordinal);
         // The request that threw.
         Assert.Contains("streamingMsg = FinalizeStreamingBubble(streamingMsg);\n                KeepAsNotice(streamingMsg);\n"
-                        + "                var errItem = ChatMessageItem.NoticeMsg(Strings.MsgError(msg));",
+                        + "                var errItem = ChatMessageItem.NoticeMsg(Strings.MsgError(msg))",
                         turn.Replace("\r", "", StringComparison.Ordinal), StringComparison.Ordinal);
 
         var keep = VsCode("InferpalToolWindowData.ToolInvocation.cs");

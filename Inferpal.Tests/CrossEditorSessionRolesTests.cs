@@ -58,10 +58,11 @@ public sealed class CrossEditorSessionRolesTests
         Assert.Contains("notice._foreign  = new SavedMessage(role, content,", item, StringComparison.Ordinal);
         Assert.Contains("_foreign is { } f ? (f.Role, f.Content,", item, StringComparison.Ordinal);
 
-        // Every save of the window writes what a bubble was read as: the three snapshot sites.
+        // Every save of the window writes what a bubble was read as: the three snapshot sites, and going back to a
+        // question (its snapshot is the parent session it saves).
         var vm = Directory.EnumerateFiles(Path.Combine(Root(), "Inferpal", "ToolWindow"), "InferpalToolWindowData*.cs")
                           .Select(ConventionCoverageTests.CodeOnly).ToList();
-        Assert.Equal(3, vm.Sum(code => Regex.Matches(code, @"SessionManager\.BuildSnapshot\(\s*Messages\.Select\(m => m\.Saved\)\)").Count));
+        Assert.Equal(4, vm.Sum(code => Regex.Matches(code, @"SessionManager\.BuildSnapshot\(\s*Messages\.Select\(m => m\.Saved\)\)").Count));
         Assert.DoesNotContain(vm, code => code.Contains("(m.Role, m.Content, m.ToolName, m.Timestamp)", StringComparison.Ordinal));
     }
 

@@ -86,6 +86,13 @@ exists.
   not undone — undoing it would put back the state before the run and lose that change. Where
   there is no card (an agent thread), `/undo-run review` lists the files and where each stands,
   and `/undo-run #<run> <file>` undoes one.
+- **Go back to a question, with its files** *(both editors)* — **Go back here**, under a question
+  you asked, opens a card: the runs that followed it are undone (each file put back, or deleted if
+  a run created it — its current version saved first), the conversation resumes from that
+  question — the whole one stays in your sessions (`/branch`) — and the question comes back in the
+  message box. A file changed after those runs, by hand or by another conversation's run, refuses
+  the whole going back and says which and when: nothing is undone, and the card offers to go back
+  in the conversation only, or to review those runs file by file.
 - **Approvals in the conversation** *(both editors)* — during a turn, an approval is a card under
   the steps: what will happen, to what, the first lines of the change, then **Allow once**
   (Enter), **Always this session** and **Deny** (Esc); *Open diff* shows the whole change. When a

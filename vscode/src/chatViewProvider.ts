@@ -958,6 +958,50 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     return [...this.hiddenEntries, ...(this.droppedEntries > 0 ? this.transcript.slice(1) : this.transcript)];
   }
 
+  /** The whole conversation's index of the `ordinal`-th question bubble of the view (notices included, notes not);
+   *  -1 when there is none. One saved message per transcript entry, so it is the saved messages' index too. */
+  private questionIndex(ordinal: number): number {
+    let seen = -1;
+    for (let i = 0; i < this.transcript.length; i++) {
+      const item = this.transcript[i];
+      if (item.role === 'user' && !item.note && ++seen === ordinal) {
+        return this.hiddenEntries.length + (this.droppedEntries > 0 ? i - 1 : i);
+      }
+    }
+    return -1;
+  }
+
+  /**
+   * Goes back to a question: the host undoes the runs that followed it (all or none) and cuts the conversation
+   * before it; the question comes back in the message box. Every way out answers the card, which disabled its
+   * buttons on the click.
+   */
+  private async rewind(ordinal: number, question: string, conversationOnly: boolean, expectedRuns: string[]): Promise<void> {
+    const host = this.getHost();
+    const index = this.questionIndex(ordinal);
+    if (!host?.isRunning || index < 0) {
+      this.post({ type: 'rewindCard', ordinal, message: hostUnavailableMessage() });
+      return;
+    }
+    try {
+      const result = await host.rewind(index, this.snapshot(), question, conversationOnly, expectedRuns);
+      if (!result?.branch) {
+        this.post({ type: 'rewindCard', ordinal, ...(result?.card ? { card: result.card } : {}), message: result?.message ?? undefined });
+        return;
+      }
+      this.applySession(result.branch.messages, result.branch.nextTurnTokens ?? 0);
+      if (result.message) {
+        this.append({ role: 'assistant', text: result.message, timestamp: ChatViewProvider.now(), notice: true });
+        this.hydrate();
+      }
+      this.post({ type: 'putBackQuestion', text: result.question ?? '' });
+    } catch (err) {
+      // Refused while a turn runs, or the request failed: the host said nothing back, and the card says why.
+      this.log(`[chat] rewind failed: ${String(err)}`);
+      this.post({ type: 'rewindCard', ordinal, message: ChatViewProvider.errorText(err) });
+    }
+  }
+
   /** Empties the conversation: the view, its hidden part and the marker's count, together. */
   private clearTranscript(): void {
     this.transcript.length = 0;
@@ -1559,6 +1603,22 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         }
         return;
       }
+      case 'rewindPlan': {
+        const host = this.hostForGesture();
+        const index = this.questionIndex(msg.ordinal);
+        if (!host || index < 0) {
+          return;
+        }
+        try {
+          this.post({ type: 'rewindCard', ordinal: msg.ordinal, card: await host.rewindPlan(index, this.snapshot(), msg.question) });
+        } catch (err) {
+          this.gestureFailed('rewind plan', err);
+        }
+        return;
+      }
+      case 'rewind':
+        await this.rewind(msg.ordinal, msg.question, msg.conversationOnly, msg.expectedRuns);
+        return;
       case 'copyText':
         try {
           await vscode.env.clipboard.writeText(msg.text);
@@ -2937,6 +2997,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // The answer STAYS: this is added after it. Without it, a run cut short at its iteration
       // limit returned fluent text, indistinguishable from a task carried to its end - the fact
       // lived in OrchestratorResult and was read by nobody, on either side.
+      // The turn's run, whatever way it ended, goes with its last message: going back to the question finds it.
+      const turnRun = result.run?.runId || result.runId;
+      const lastItem = this.transcript[this.transcript.length - 1];
+      if (turnRun && lastItem && !lastItem.run?.runId && !lastItem.runId) {
+        lastItem.runId = turnRun;
+      }
       if (!result.error && result.endNotice) {
         this.append({
           role: 'assistant', text: result.endNotice, timestamp: ChatViewProvider.now(), notice: true,

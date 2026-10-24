@@ -129,6 +129,8 @@
   "waiting for you": "ждёт вас",
   "Undo run": "Отменить запуск",
   "Review changes": "Просмотреть изменения",
+  "Go back here": "Вернуться сюда",
+  "Go back here — the conversation and its files": "Вернуться сюда — к разговору и его файлам",
   "What should we work on?": "Над чем работаем?",
   "{0} on {1}. Your code stays on this machine.": "{0} на {1}. Ваш код остаётся на этом компьютере.",
   "Your code stays on this machine.": "Ваш код остаётся на этом компьютере.",

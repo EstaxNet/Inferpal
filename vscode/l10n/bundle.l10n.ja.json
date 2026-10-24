@@ -129,6 +129,8 @@
   "waiting for you": "あなたの操作待ち",
   "Undo run": "実行を元に戻す",
   "Review changes": "変更を確認",
+  "Go back here": "ここに戻る",
+  "Go back here — the conversation and its files": "ここに戻る — 会話とファイル",
   "What should we work on?": "何に取り組みますか?",
   "{0} on {1}. Your code stays on this machine.": "{1} 上の {0}。コードはこのマシンから出ません。",
   "Your code stays on this machine.": "コードはこのマシンから出ません。",

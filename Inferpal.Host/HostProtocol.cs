@@ -135,6 +135,8 @@ internal sealed record TurnNoteDto(string Id, string Text, int AfterCalls = 0);
 /// the turn stopped at the iteration limit or its answer at the length limit — never after a loop or a repetition.</param>
 /// <param name="AnnounceEnd">The turn was long and the setting, as it stands in the file now, says to announce its end
 /// (<see cref="Services.Agent.ChatTurnPolicy.AnnouncesEnd"/>): the adapter does, when its chat is out of sight.</param>
+/// <param name="RunId">The run of changes the turn made, whatever way it ended (<see cref="RunSummaryDto.RunId"/> says it
+/// only for a turn that finished): saved with the turn's last message, it is what going back to the question undoes.</param>
 internal sealed record ChatSendResult(
     string  Text,
     bool    Cancelled,
@@ -152,7 +154,8 @@ internal sealed record ChatSendResult(
     List<TurnNoteDto>? AppliedNotes = null,
     List<TurnNoteDto>? UnappliedNotes = null,
     bool    OffersContinue = false,
-    bool    AnnounceEnd = false);
+    bool    AnnounceEnd = false,
+    string? RunId = null);
 
 /// <summary>One agent run as the chat shows it (<see cref="Services.Presentation.RunSummaryModel"/>).</summary>
 /// <param name="Check"><c>none</c>, <c>buildPassed</c>, <c>buildFailed</c>, <c>testsPassed</c> or <c>testsFailed</c>.</param>
@@ -639,7 +642,9 @@ internal sealed record XRayToggleParams(string Id, bool Enabled);
 // ── Sessions (persisted in %AppData%/Inferpal/sessions/, shared with the VS extension) ──
 
 /// <summary>One display message of a saved session (wire mirror of <c>SavedMessage</c>).</summary>
-internal sealed record SavedMessageDto(string Role, string Content, string? ToolName = null, string? Timestamp = null);
+/// <param name="Run">The run of changes its turn made, when it closes one (<c>SavedMessage.Run</c>).</param>
+internal sealed record SavedMessageDto(string Role, string Content, string? ToolName = null, string? Timestamp = null,
+                                       string? Run = null);
 
 /// <summary>`session/save` — persists the adapter's transcript under <paramref name="Name"/>.</summary>
 internal sealed record SessionSaveParams(string Name, List<SavedMessageDto> Messages, bool Archive = false);
@@ -684,6 +689,39 @@ internal sealed record SessionBranchParams(int Turn, List<SavedMessageDto> Messa
 /// localized confirmation bubble — the adapter has no access to the shared .resx.</summary>
 internal sealed record SessionBranchResult(
     string Name, string Parent, int ForkTurn, List<SavedMessageDto> Messages, string Message, int NextTurnTokens = 0);
+
+/// <summary>`chat/rewindPlan` and `chat/rewind` — going back to the question at <paramref name="MessageIndex"/> of the
+/// adapter's transcript (its saved form, one message per item).</summary>
+/// <param name="ConversationOnly">`chat/rewind`: cut the conversation and leave every file as it is.</param>
+/// <param name="Question">The question the person clicked, as saved: a transcript whose index points elsewhere is refused.</param>
+/// <param name="ExpectedRuns">`chat/rewind`: the runs the card showed (<see cref="RewindCardDto.RunIds"/>); others now
+/// follow the question, and the card is drawn again instead of undoing what it did not show.</param>
+internal sealed record RewindParams(int MessageIndex, List<SavedMessageDto> Messages, bool ConversationOnly = false,
+                                    string? Question = null, List<string>? ExpectedRuns = null);
+
+internal sealed record RewindLineDto(string Path, string Name, string Kind, string Label);
+
+/// <summary>A question's "Go back here" card (<see cref="Services.Presentation.RewindCardModel"/>), its words in the
+/// person's language.</summary>
+internal sealed record RewindCardDto(
+    int MessageIndex, string Question, string Title, string Body, List<RewindLineDto> Files, string Note, bool Refused,
+    List<string> RunIds, string Go, string Cancel, string ConversationOnly, string ConversationOnlyHint, string ReviewRuns,
+    string ReviewRunsHint)
+{
+    public static RewindCardDto Of(Services.Presentation.RewindCardModel m, int messageIndex) => new(
+        messageIndex, m.Question, m.Title, m.Body,
+        [.. m.Files.Select(f => new RewindLineDto(f.Path, f.Name,
+            char.ToLowerInvariant(f.Kind.ToString()[0]) + f.Kind.ToString()[1..], f.Label))],
+        m.Note, m.Refused, [.. m.RunIds], Localization.Strings.RewindGo, Localization.Strings.RewindCancel,
+        Localization.Strings.RewindConversationOnly, Localization.Strings.RewindConversationOnlyHint,
+        Localization.Strings.RewindReviewRuns, Localization.Strings.RewindReviewRunsHint);
+}
+
+/// <summary>`chat/rewind` answer: refused (<paramref name="Card"/> says why, nothing changed), stopped half-way
+/// (<paramref name="Message"/> only), or back at the question — <paramref name="Branch"/> is the conversation cut before
+/// it and <paramref name="Question"/> goes back in the message box.</summary>
+internal sealed record RewindResult(RewindCardDto? Card = null, SessionBranchResult? Branch = null, string? Question = null,
+                                    string? Message = null);
 
 /// <summary>`session/branchCommand` — <c>/branch [args]</c> decided on the adapter's displayed transcript.</summary>
 internal sealed record SessionBranchCommandParams(string? Args, List<SavedMessageDto>? Messages);

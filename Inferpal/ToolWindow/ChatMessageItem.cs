@@ -160,6 +160,80 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     [DataMember] public ObservableCollection<ReviewFileItem> ReviewFiles { get; } = [];
     [DataMember] public AsyncCommand CloseReviewCommand { get; }
 
+    // ── A question's way back: its "Go back here", and the card ("rewind") it opens under it ──
+    private Action<ChatMessageItem>? _onRewindHere;
+    /// <summary>A question the model was asked — never a slash command's echo or a note — can be gone back to.</summary>
+    [DataMember] public bool CanRewind => Role == "user" && !IsNote
+        && Services.Persistence.SessionManager.IsQuestion(new SavedMessage(Role, Content, ToolName.Length > 0 ? ToolName : null));
+    [DataMember] public AsyncCommand RewindHereCommand { get; }
+
+    /// <summary>What a question's "Go back here" does; set when the item is shown (<c>ApplyItemTheme</c>).</summary>
+    internal void HookRewind(Action<ChatMessageItem> rewindHere) => _onRewindHere = rewindHere;
+
+    /// <summary>The runs the card shows: what Go back expects to undo, and what Review opens.</summary>
+    internal IReadOnlyList<string> RewindRunIds { get; private set; } = [];
+
+    /// <summary>The question a "rewind" card is under.</summary>
+    internal ChatMessageItem? RewindFor { get; private set; }
+    private Action? _onRewindGo, _onRewindCancel, _onRewindConversationOnly, _onRewindReview;
+    private string _rewindTitle = string.Empty, _rewindBody = string.Empty, _rewindNote = string.Empty, _rewindStatus = string.Empty;
+    private bool _isRewindRefused, _canRewindAct = true, _hasRewindReview;
+    [DataMember] public string RewindTitle  { get => _rewindTitle;  private set => SetProperty(ref _rewindTitle,  value); }
+    [DataMember] public string RewindBody   { get => _rewindBody;   private set => SetProperty(ref _rewindBody,   value); }
+    [DataMember] public string RewindNote   { get => _rewindNote;   private set => SetProperty(ref _rewindNote,   value); }
+    [DataMember] public string RewindStatus { get => _rewindStatus; private set { SetProperty(ref _rewindStatus, value); RaiseNotifyPropertyChangedEvent(nameof(HasRewindStatus)); } }
+    [DataMember] public bool   HasRewindStatus => _rewindStatus.Length > 0;
+    /// <summary>Nothing can be undone: the card offers the conversation only, or the runs' reviews, and no Go back.</summary>
+    [DataMember] public bool   IsRewindRefused { get => _isRewindRefused; private set => SetProperty(ref _isRewindRefused, value); }
+    /// <summary>False from a click until the answer: one going back at a time.</summary>
+    [DataMember] public bool   CanRewindAct    { get => _canRewindAct;    internal set => SetProperty(ref _canRewindAct,    value); }
+    [DataMember] public bool   HasRewindReview { get => _hasRewindReview; private set => SetProperty(ref _hasRewindReview, value); }
+    [DataMember] public ObservableCollection<RewindFileItem> RewindFiles { get; } = [];
+    [DataMember] public string BtnRewindGo { get; private set; } = string.Empty;
+    [DataMember] public string BtnRewindCancel { get; private set; } = string.Empty;
+    [DataMember] public string BtnRewindConversationOnly { get; private set; } = string.Empty;
+    [DataMember] public string RewindConversationOnlyHint { get; private set; } = string.Empty;
+    [DataMember] public string BtnRewindReview { get; private set; } = string.Empty;
+    [DataMember] public string RewindReviewHint { get; private set; } = string.Empty;
+    [DataMember] public AsyncCommand RewindGoCommand { get; }
+    [DataMember] public AsyncCommand RewindCancelCommand { get; }
+    [DataMember] public AsyncCommand RewindConversationOnlyCommand { get; }
+    [DataMember] public AsyncCommand RewindReviewCommand { get; }
+
+    /// <summary>A question's "Go back here" card, under <paramref name="question"/>.</summary>
+    internal static ChatMessageItem RewindMsg(ChatMessageItem question, Action go, Action cancel, Action conversationOnly,
+                                              Action review) =>
+        new()
+        {
+            Role = "rewind", RewindFor = question, _onRewindGo = go, _onRewindCancel = cancel,
+            _onRewindConversationOnly = conversationOnly, _onRewindReview = review,
+            BtnRewindGo = Strings.RewindGo, BtnRewindCancel = Strings.RewindCancel,
+            BtnRewindConversationOnly = Strings.RewindConversationOnly, RewindConversationOnlyHint = Strings.RewindConversationOnlyHint,
+            BtnRewindReview = Strings.RewindReviewRuns, RewindReviewHint = Strings.RewindReviewRunsHint,
+        };
+
+    /// <summary>Draws <paramref name="card"/> in this card, its actions back; <paramref name="status"/> under it.</summary>
+    internal void ShowRewind(Services.Presentation.RewindCardModel card, string? status)
+    {
+        RewindTitle     = card.Title;
+        RewindBody      = card.Body;
+        RewindNote      = card.Note;
+        IsRewindRefused = card.Refused;
+        HasRewindReview = card.Refused && card.RunIds.Count > 0;
+        RewindRunIds    = card.RunIds;
+        RewindFiles.Clear();
+        foreach (var f in card.Files) RewindFiles.Add(new RewindFileItem(f));
+        RewindStatus    = status ?? string.Empty;
+        CanRewindAct    = true;
+    }
+
+    /// <summary>The card as it was, its actions back, under <paramref name="status"/>: what failed, or why nothing ran.</summary>
+    internal void RewindSays(string status)
+    {
+        RewindStatus = status;
+        CanRewindAct = true;
+    }
+
     // ── An approval card ("approval"): what will happen, to what, the start of the change, three answers ──
     private TaskCompletionSource<ApprovalDecision>? _decision;
     private Action? _onOpenDiff;
@@ -365,6 +439,19 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
         UndoCommand         = new AsyncCommand((_, _) => { _onUndo?.Invoke(); return Task.CompletedTask; });
         ReviewCommand       = new AsyncCommand((_, _) => { _onReview?.Invoke(); return Task.CompletedTask; });
         CloseReviewCommand  = new AsyncCommand((_, _) => { _onCloseReview?.Invoke(); return Task.CompletedTask; });
+        RewindHereCommand   = new AsyncCommand((_, _) => { if (CanRewind) _onRewindHere?.Invoke(this); return Task.CompletedTask; });
+        // One going back at a time: the card is drawn again from the answer (ShowRewind, RewindSays).
+        AsyncCommand RewindAction(Func<Action?> act) => new((_, _) =>
+        {
+            if (!CanRewindAct || act() is not { } run) return Task.CompletedTask;
+            CanRewindAct = false;
+            run();
+            return Task.CompletedTask;
+        });
+        RewindGoCommand               = RewindAction(() => _onRewindGo);
+        RewindConversationOnlyCommand = RewindAction(() => _onRewindConversationOnly);
+        RewindCancelCommand = new AsyncCommand((_, _) => { _onRewindCancel?.Invoke(); return Task.CompletedTask; });
+        RewindReviewCommand = new AsyncCommand((_, _) => { _onRewindReview?.Invoke(); return Task.CompletedTask; });
         AllowOnceCommand    = new AsyncCommand((_, _) => { Answer(ApprovalDecision.Once);   return Task.CompletedTask; });
         AlwaysAllowCommand  = new AsyncCommand((_, _) => { Answer(ApprovalDecision.Always); return Task.CompletedTask; });
         AlwaysRuleCommand   = new AsyncCommand((_, _) => { if (HasRule) Answer(ApprovalDecision.Rule); return Task.CompletedTask; });
@@ -775,11 +862,18 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
 
     /// <summary>What a session save writes for this bubble: the message as it was read, when it came from a role this
     /// editor does not draw — shown as a notice, never rewritten as one.</summary>
-    internal (string Role, string Content, string ToolName, string Timestamp) Saved =>
-        _foreign is { } f ? (f.Role, f.Content, f.ToolName ?? string.Empty, f.Timestamp ?? string.Empty)
+    internal (string Role, string Content, string ToolName, string Timestamp, string Run) Saved =>
+        _foreign is { } f ? (f.Role, f.Content, f.ToolName ?? string.Empty, f.Timestamp ?? string.Empty, f.Run ?? RunId)
         // A note the model has not read is a notice: saved as a note, a reload folded it into a question it never went with.
-        : IsNote && !NoteRead ? (Role, Content, Services.Persistence.SessionManager.NoticeMarker, Timestamp)
-        : (Role, Content, ToolName, Timestamp);
+        : IsNote && !NoteRead ? (Role, Content, Services.Persistence.SessionManager.NoticeMarker, Timestamp, string.Empty)
+        : (Role, Content, ToolName, Timestamp, RunId);
+
+    /// <summary>A restored message keeps the run its turn made (<see cref="SavedMessage.Run"/>): saved again, it says it.</summary>
+    internal ChatMessageItem WithRun(string? run)
+    {
+        RunId = run ?? string.Empty;
+        return this;
+    }
 
     internal static ChatMessageItem FromSaved(string role, string content, string toolName, bool toolBubblesExpanded = false, string timestamp = "")
     {
@@ -924,6 +1018,24 @@ internal sealed class ResultFileItem
     [DataMember] public string Removed { get; }
     public bool CanOpen { get; }
     [DataMember] public AsyncCommand OpenCommand { get; }
+}
+
+/// <summary>One file of a question's "Go back here" card: what going back does to it.</summary>
+[DataContract]
+internal sealed class RewindFileItem
+{
+    public RewindFileItem(Services.Presentation.RewindCardLine line)
+    {
+        Name      = line.Name;
+        Path      = line.Path;
+        Label     = line.Label;
+        IsDeleted = line.Kind == Services.Execution.RewindFileKind.Deleted;
+    }
+
+    [DataMember] public string Name      { get; }
+    [DataMember] public string Path      { get; }
+    [DataMember] public string Label     { get; }
+    [DataMember] public bool   IsDeleted { get; }
 }
 
 /// <summary>One file of a run's review card: its diff folded, and the actions its state allows.</summary>

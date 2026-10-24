@@ -1843,4 +1843,33 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>Nie ponowiono: {0} zmieniono po cofnięciu, a ponowienie utraciłoby tę zmianę.</value></data>
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>cofnięty, potem zmieniony — Ponów utraciłoby tę zmianę</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>brak kopii sprzed uruchomienia — nie można cofnąć</value></data>
+  <data name="RewindButton" xml:space="preserve"><value>Wróć tutaj</value></data>
+  <data name="RewindButtonTip" xml:space="preserve"><value>Wróć tutaj — rozmowa i jej pliki</value></data>
+  <data name="RewindTitle" xml:space="preserve"><value>Wrócić do „{0}”?</value></data>
+  <data name="RewindLead" xml:space="preserve"><value>Rozmowa wznowi się od tego pytania, tak jak je zadano. Uruchomienia po nim zostaną cofnięte ({0}):</value></data>
+  <data name="RewindLeadNoRun" xml:space="preserve"><value>Rozmowa wznowi się od tego pytania, tak jak je zadano. Żadne zapisane późniejsze uruchomienie nie zmieniło pliku.</value></data>
+  <data name="RewindPutBack" xml:space="preserve"><value>przywrócony</value></data>
+  <data name="RewindDeleted" xml:space="preserve"><value>utworzony przez uruchomienie, usunięty</value></data>
+  <data name="RewindKept" xml:space="preserve"><value>zachowany — bez zmian</value></data>
+  <data name="RewindNote" xml:space="preserve"><value>Obecna wersja każdego pliku jest najpierw zapisywana. Rozmowa w obecnej postaci zostaje w twoich sesjach (/branch).</value></data>
+  <data name="RewindGo" xml:space="preserve"><value>Wróć</value></data>
+  <data name="RewindCancel" xml:space="preserve"><value>Anuluj</value></data>
+  <data name="RewindRefusedChangedTitle" xml:space="preserve"><value>Nie wrócono: plik zmienił się po tych uruchomieniach</value></data>
+  <data name="RewindRefusedTitle" xml:space="preserve"><value>Nie wrócono</value></data>
+  <data name="RewindRefusedChanged" xml:space="preserve"><value>{0} zmieniono o {1}, po uruchomieniach, które nastąpiły po tym pytaniu. Cofnięcie ich nadpisałoby tę zmianę, więc niczego nie cofnięto, a rozmowa jest tam, gdzie była.</value></data>
+  <data name="RewindRefusedGone" xml:space="preserve"><value>{0} usunięto po uruchomieniach, które nastąpiły po tym pytaniu. Cofnięcie ich przywróciłoby plik ponad tę zmianę, więc niczego nie cofnięto, a rozmowa jest tam, gdzie była.</value></data>
+  <data name="RewindRefusedNotKept" xml:space="preserve"><value>Uruchomienie po tym pytaniu nie jest już przechowywane (tylko ostatnie w obszarze roboczym: {0}). Niczego nie cofnięto, a rozmowa jest tam, gdzie była.</value></data>
+  <data name="RewindRefusedNoCopy" xml:space="preserve"><value>Kopia {0} sprzed tych uruchomień zniknęła. Niczego nie cofnięto, a rozmowa jest tam, gdzie była.</value></data>
+  <data name="RewindConversationOnly" xml:space="preserve"><value>Wróć tylko w rozmowie</value></data>
+  <data name="RewindConversationOnlyHint" xml:space="preserve"><value>Pliki zostają w obecnej postaci; uruchomienia nadal można przejrzeć po kolei.</value></data>
+  <data name="RewindReviewRuns" xml:space="preserve"><value>Przejrzyj zmiany tych uruchomień</value></data>
+  <data name="RewindReviewRunsHint" xml:space="preserve"><value>Cofnij wybrane pliki — plik zmieniony od tego czasu nigdy nie zostanie nadpisany.</value></data>
+  <data name="RewindDone" xml:space="preserve"><value>Powrót do pytania {0}: przywrócono plików: {1}, usunięto: {2}. Pytanie jest w polu wiadomości.</value></data>
+  <data name="RewindDoneConversationOnly" xml:space="preserve"><value>Powrót do pytania {0}, tylko w rozmowie — pliki są bez zmian. Pytanie jest w polu wiadomości.</value></data>
+  <data name="RewindStopped" xml:space="preserve"><value>Powrót zatrzymał się na {0}: nie udało się go cofnąć. Już cofnięte uruchomienia pozostają cofnięte, a rozmowa jest tam, gdzie była.</value></data>
+  <data name="RewindRefusedBetween" xml:space="preserve"><value>{0} zmieniono między uruchomieniami, które nastąpiły po tym pytaniu — ręcznie lub przez uruchomienie innej rozmowy. Cofnięcie ich nadpisałoby tę zmianę, więc niczego nie cofnięto, a rozmowa jest tam, gdzie była.</value></data>
+  <data name="RewindQuestionGone" xml:space="preserve"><value>Tego pytania nie ma już w tym miejscu rozmowy: niczego nie zrobiono.</value></data>
+  <data name="RewindConversationNotCut" xml:space="preserve"><value>Pliki wróciły do stanu sprzed pytania {0}, ale nie udało się przyciąć rozmowy: {1}</value></data>
+  <data name="RewindPlanChanged" xml:space="preserve"><value>Uruchomienia po tym pytaniu zmieniły się od wyświetlenia karty: sprawdź ją ponownie przed powrotem.</value></data>
+  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>To, co mu towarzyszyło ({0}), nie zostaje ponownie dołączone.</value></data>
 </root>

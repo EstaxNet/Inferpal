@@ -1843,4 +1843,33 @@
   <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>Не повторено: {0} изменён после отмены, и повтор потерял бы это изменение.</value></data>
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>отменён, затем изменён — «Повторить» потеряло бы это изменение</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>нет копии до запуска — отменить нельзя</value></data>
+  <data name="RewindButton" xml:space="preserve"><value>Вернуться сюда</value></data>
+  <data name="RewindButtonTip" xml:space="preserve"><value>Вернуться сюда — к разговору и его файлам</value></data>
+  <data name="RewindTitle" xml:space="preserve"><value>Вернуться к «{0}»?</value></data>
+  <data name="RewindLead" xml:space="preserve"><value>Разговор продолжится с этого вопроса, как вы его задали. Запуски после него будут отменены ({0}):</value></data>
+  <data name="RewindLeadNoRun" xml:space="preserve"><value>Разговор продолжится с этого вопроса, как вы его задали. Ни один записанный после него запуск не менял файлы.</value></data>
+  <data name="RewindPutBack" xml:space="preserve"><value>возвращён</value></data>
+  <data name="RewindDeleted" xml:space="preserve"><value>создан запуском, удалён</value></data>
+  <data name="RewindKept" xml:space="preserve"><value>сохранён — без изменений</value></data>
+  <data name="RewindNote" xml:space="preserve"><value>Текущая версия каждого файла сначала сохраняется. Разговор в нынешнем виде остаётся в ваших сессиях (/branch).</value></data>
+  <data name="RewindGo" xml:space="preserve"><value>Вернуться</value></data>
+  <data name="RewindCancel" xml:space="preserve"><value>Отмена</value></data>
+  <data name="RewindRefusedChangedTitle" xml:space="preserve"><value>Возврата нет: файл изменился после этих запусков</value></data>
+  <data name="RewindRefusedTitle" xml:space="preserve"><value>Возврата нет</value></data>
+  <data name="RewindRefusedChanged" xml:space="preserve"><value>{0} изменён в {1}, после запусков, последовавших за этим вопросом. Их отмена перезаписала бы это изменение, поэтому ничего не отменено, и разговор там, где был.</value></data>
+  <data name="RewindRefusedGone" xml:space="preserve"><value>{0} удалён после запусков, последовавших за этим вопросом. Их отмена вернула бы файл поверх этого изменения, поэтому ничего не отменено, и разговор там, где был.</value></data>
+  <data name="RewindRefusedNotKept" xml:space="preserve"><value>Запуск после этого вопроса больше не хранится (хранятся только последние в рабочей области: {0}). Ничего не отменено, и разговор там, где был.</value></data>
+  <data name="RewindRefusedNoCopy" xml:space="preserve"><value>Копии {0} до этих запусков больше нет. Ничего не отменено, и разговор там, где был.</value></data>
+  <data name="RewindConversationOnly" xml:space="preserve"><value>Вернуться только в разговоре</value></data>
+  <data name="RewindConversationOnlyHint" xml:space="preserve"><value>Файлы остаются как есть; запуски по-прежнему можно просмотреть по одному.</value></data>
+  <data name="RewindReviewRuns" xml:space="preserve"><value>Просмотреть изменения этих запусков</value></data>
+  <data name="RewindReviewRunsHint" xml:space="preserve"><value>Отмените выбранные файлы — файл, изменённый после, никогда не перезаписывается.</value></data>
+  <data name="RewindDone" xml:space="preserve"><value>Возврат к вопросу {0}: возвращено файлов: {1}, удалено: {2}. Вопрос — в поле сообщения.</value></data>
+  <data name="RewindDoneConversationOnly" xml:space="preserve"><value>Возврат к вопросу {0}, только в разговоре — файлы остались как были. Вопрос — в поле сообщения.</value></data>
+  <data name="RewindStopped" xml:space="preserve"><value>Возврат остановился на {0}: его не удалось отменить. Уже отменённые запуски остаются отменёнными, а разговор там, где был.</value></data>
+  <data name="RewindRefusedBetween" xml:space="preserve"><value>{0} изменён между запусками, последовавшими за этим вопросом, — вручную или запуском другого разговора. Их отмена перезаписала бы это изменение, поэтому ничего не отменено, и разговор там, где был.</value></data>
+  <data name="RewindQuestionGone" xml:space="preserve"><value>Этого вопроса больше нет на прежнем месте в разговоре: ничего не сделано.</value></data>
+  <data name="RewindConversationNotCut" xml:space="preserve"><value>Файлы вернулись к состоянию до вопроса {0}, но разговор не удалось обрезать: {1}</value></data>
+  <data name="RewindPlanChanged" xml:space="preserve"><value>Запуски после этого вопроса изменились с момента показа карточки: проверьте её ещё раз, прежде чем вернуться.</value></data>
+  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>То, что шло вместе с ним ({0}), не прикрепляется заново.</value></data>
 </root>

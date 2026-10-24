@@ -350,6 +350,8 @@ internal partial class InferpalToolWindowData
         // Background RAG indexing yields to this turn automatically: RunAgentAsync and
         // AgentOrchestrator.RunAsync each hold a GpuScheduler chat lease for their whole duration
         // (covers every chat entrypoint), so the chat model is never starved by the embedding workload.
+        // The turn's run, whatever way the turn ends: its last line carries it (going back to the question undoes it).
+        string? turnRunId = null;
         try
         {
             // Agent mode (Plan→Act→Observe) is active only when the user switch is on AND tools are
@@ -434,7 +436,6 @@ internal partial class InferpalToolWindowData
 
             // Decorators when tools are enabled: plan mode filters to read-only tools
             // first, then step mode wraps whatever remains.
-            string? turnRunId = null;
             if (ReferenceEquals(effectiveTools, _tools))
             {
                 // Start a change-tracking run so this turn's file writes can be reverted via /undo-run.
@@ -659,7 +660,7 @@ internal partial class InferpalToolWindowData
                 {
                     _turnFailed = true;
                     KeepAsNotice(streamingMsg);
-                    var failedMsg = ChatMessageItem.NoticeMsg(agentFinalResponse);
+                    var failedMsg = ChatMessageItem.NoticeMsg(agentFinalResponse).WithRun(ChangedRun(turnRunId));
                     ApplyItemTheme(failedMsg);
                     Messages.Insert(Messages.Count - 2, failedMsg);
                     lastAssistant = failedMsg;   // still regenerable: that is the retry
@@ -777,7 +778,7 @@ internal partial class InferpalToolWindowData
                     _history.Add(ChatTurnPolicy.StoppedAnswer(streamingMsg?.Content));
                     _lastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(_history);
                 }
-                var cancelItem = ChatMessageItem.NoticeMsg(Strings.MsgCancelled);
+                var cancelItem = ChatMessageItem.NoticeMsg(Strings.MsgCancelled).WithRun(ChangedRun(turnRunId));
                 ApplyItemTheme(cancelItem);
                 Messages.Insert(Messages.Count - 2, cancelItem);
                 ScrollToBottom();
@@ -793,7 +794,7 @@ internal partial class InferpalToolWindowData
                 RemoveStatusBubble();
                 streamingMsg = FinalizeStreamingBubble(streamingMsg);
                 KeepAsNotice(streamingMsg);
-                var errItem = ChatMessageItem.NoticeMsg(Strings.MsgError(msg));
+                var errItem = ChatMessageItem.NoticeMsg(Strings.MsgError(msg)).WithRun(ChangedRun(turnRunId));
                 ApplyItemTheme(errItem);
                 Messages.Insert(Messages.Count - 2, errItem);
                 ScrollToBottom();

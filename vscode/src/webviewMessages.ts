@@ -2,7 +2,8 @@
 // chat webview (src/webview/main.ts). Both sides are bundled from this repo, so the
 // types are shared instead of mirrored. No 'vscode' import — the webview bundle uses it.
 import type {
-  ApprovalCard, ImportCard, InputCard, InputFormAnswer, RunReview, RunSummary, SavedMessage, SetupPlace, SetupPlan,
+  ApprovalCard, ImportCard, InputCard, InputFormAnswer, RewindCard, RunReview, RunSummary, SavedMessage, SetupPlace,
+  SetupPlan,
   XRayPanel,
 } from './protocol';
 
@@ -61,6 +62,8 @@ export interface WvTranscriptItem {
   model?: string;
   duration?: string;
   run?: RunSummary | null;
+  /** The run of changes the turn made, read back from a saved session (which keeps the id, not the summary). */
+  runId?: string;
   /** A saved message of a role this window does not draw (Visual Studio's plan card): shown as a notice, written
    *  back exactly as it was read. */
   savedAs?: SavedMessage;
@@ -226,6 +229,10 @@ export type ExtToWebview =
   | { type: 'agentMode'; enabled: boolean }
   | { type: 'density'; compact: boolean }
   | { type: 'setPrompt'; text: string }
+  /** The question gone back to: in the message box, above what was typed there. */
+  | { type: 'putBackQuestion'; text: string }
+  /** The card under the `ordinal`-th question: a plan, a refusal, or (`card` absent) its actions back under `message`. */
+  | { type: 'rewindCard'; ordinal: number; card?: RewindCard | null; message?: string }
   /** `category` and `query` name the request answered: only the latest one is shown. */
   | { type: 'mentionResults'; category: string; query: string; items: WvMentionItem[] }
   | { type: 'chips'; chips: WvChip[] }
@@ -274,6 +281,9 @@ export type WebviewToExt =
   | { type: 'mentionQuery'; query: string }
   | { type: 'openApprovalDiff'; text: string }
   | { type: 'xrayToggle'; id: string; enabled: boolean }
+  /** A question's "Go back here" (the `ordinal`-th question bubble of the view, notices included). */
+  | { type: 'rewindPlan'; ordinal: number; question: string }
+  | { type: 'rewind'; ordinal: number; question: string; conversationOnly: boolean; expectedRuns: string[] }
   /** The result bar's "Review changes". */
   | { type: 'runReview'; runId: string }
   /** One file of a run's review undone, redone or kept. */

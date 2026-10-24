@@ -1843,4 +1843,33 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>やり直していません: {0} は元に戻した後に変更されており、やり直すとその変更が失われます。</value></data>
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>元に戻した後に変更あり — やり直すとその変更が失われます</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>実行前のコピーがありません — 元に戻せません</value></data>
+  <data name="RewindButton" xml:space="preserve"><value>ここに戻る</value></data>
+  <data name="RewindButtonTip" xml:space="preserve"><value>ここに戻る — 会話とファイル</value></data>
+  <data name="RewindTitle" xml:space="preserve"><value>「{0}」に戻りますか？</value></data>
+  <data name="RewindLead" xml:space="preserve"><value>会話はこの質問から、あなたが尋ねたとおりに再開します。この質問の後の {0} 件の実行を取り消します:</value></data>
+  <data name="RewindLeadNoRun" xml:space="preserve"><value>会話はこの質問から、あなたが尋ねたとおりに再開します。この後に記録された実行でファイルを変更したものはありません。</value></data>
+  <data name="RewindPutBack" xml:space="preserve"><value>元に戻す</value></data>
+  <data name="RewindDeleted" xml:space="preserve"><value>実行で作成 — 削除</value></data>
+  <data name="RewindKept" xml:space="preserve"><value>保持 — そのまま</value></data>
+  <data name="RewindNote" xml:space="preserve"><value>各ファイルの現在の内容は先に保存されます。今の会話はセッションに残ります (/branch)。</value></data>
+  <data name="RewindGo" xml:space="preserve"><value>戻る</value></data>
+  <data name="RewindCancel" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="RewindRefusedChangedTitle" xml:space="preserve"><value>戻りませんでした: これらの実行の後にファイルが変更されています</value></data>
+  <data name="RewindRefusedTitle" xml:space="preserve"><value>戻りませんでした</value></data>
+  <data name="RewindRefusedChanged" xml:space="preserve"><value>{0} は {1} に、この質問の後の実行より後で変更されています。取り消すとその変更が上書きされるため、何も取り消さず、会話もそのままです。</value></data>
+  <data name="RewindRefusedGone" xml:space="preserve"><value>{0} はこの質問の後の実行より後で削除されています。取り消すとその変更の上にファイルが戻るため、何も取り消さず、会話もそのままです。</value></data>
+  <data name="RewindRefusedNotKept" xml:space="preserve"><value>この質問の後の実行がもう保持されていません (ワークスペースの最新 {0} 件のみ保持)。何も取り消さず、会話もそのままです。</value></data>
+  <data name="RewindRefusedNoCopy" xml:space="preserve"><value>これらの実行の前の {0} のコピーがありません。何も取り消さず、会話もそのままです。</value></data>
+  <data name="RewindConversationOnly" xml:space="preserve"><value>会話だけ戻る</value></data>
+  <data name="RewindConversationOnlyHint" xml:space="preserve"><value>ファイルは今のままです。実行は引き続き 1 件ずつ確認できます。</value></data>
+  <data name="RewindReviewRuns" xml:space="preserve"><value>これらの実行の変更を確認</value></data>
+  <data name="RewindReviewRunsHint" xml:space="preserve"><value>選んだファイルを元に戻せます — その後に変更されたファイルは上書きされません。</value></data>
+  <data name="RewindDone" xml:space="preserve"><value>質問 {0} に戻りました: {1} 件のファイルを元に戻し、{2} 件を削除しました。質問はメッセージ欄にあります。</value></data>
+  <data name="RewindDoneConversationOnly" xml:space="preserve"><value>質問 {0} に会話だけ戻りました — ファイルはそのままです。質問はメッセージ欄にあります。</value></data>
+  <data name="RewindStopped" xml:space="preserve"><value>{0} で戻る処理が止まりました: 元に戻せませんでした。取り消し済みの実行はそのままで、会話も元の位置のままです。</value></data>
+  <data name="RewindRefusedBetween" xml:space="preserve"><value>{0} はこの質問の後の実行の間に変更されています — 手動、または別の会話の実行によって。取り消すとその変更が上書きされるため、何も取り消さず、会話もそのままです。</value></data>
+  <data name="RewindQuestionGone" xml:space="preserve"><value>この質問は会話の元の位置にもうありません: 何もしていません。</value></data>
+  <data name="RewindConversationNotCut" xml:space="preserve"><value>ファイルは質問 {0} の前の状態に戻りましたが、会話を切り詰められませんでした: {1}</value></data>
+  <data name="RewindPlanChanged" xml:space="preserve"><value>カードの表示後に、この質問の後の実行が変わりました: 戻る前にもう一度確認してください。</value></data>
+  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>一緒に送った内容 ({0}) は再添付されません。</value></data>
 </root>

@@ -416,6 +416,34 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
+                            <!-- Go back here: under a question the model was asked, on hover (and to the keyboard) -->
+                            <Button HorizontalAlignment="Right" Margin="0,6,0,0" Template="{StaticResource Flat6}"
+                                    Background="Transparent" BorderThickness="1" Padding="8,2" Cursor="Hand"
+                                    BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                    Command="{Binding RewindHereCommand}"
+                                    ToolTip="{Binding DataContext.RewindHereTip, ElementName=root}"
+                                    AutomationProperties.Name="{Binding DataContext.RewindHereTip, ElementName=root}"
+                                    Visibility="{Binding CanRewind, Converter={StaticResource b2v}}">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Opacity" Value="0"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsMouseOver, ElementName=itemRoot}" Value="True">
+                                                <Setter Property="Opacity" Value="1"/>
+                                            </DataTrigger>
+                                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                                <Setter Property="Opacity" Value="1"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE7A7;" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{Binding ThemeSubtleText}"/>
+                                    <TextBlock Text="{Binding DataContext.RewindHereLabel, ElementName=root}" FontSize="12" Margin="6,0,0,0"
+                                               VerticalAlignment="Center" Foreground="{Binding ThemeSubtleText}"/>
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
 
                         <!-- ── The turn's header line: the model, then what it is doing, then how long it took ── -->
@@ -1251,6 +1279,133 @@
                                            Visibility="{Binding HasReviewStatus, Converter={StaticResource b2v}}"/>
                                 <TextBlock Text="{Binding ReviewNote}" FontSize="12" Margin="12,8,12,10" TextWrapping="Wrap"
                                            Foreground="{Binding ThemeSubtleText}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ── A question's way back: the files going back changes, or why it cannot; then its choices ── -->
+                        <Border CornerRadius="10" BorderThickness="1" Margin="48,0,0,0" Padding="12"
+                                Background="{Binding DataContext.ThemeSurface, ElementName=root}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Setter Property="BorderBrush" Value="{Binding DataContext.ThemeAccentLine, ElementName=root}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Role}" Value="rewind">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsRewindRefused}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{Binding DataContext.ThemeErrorLine, ElementName=root}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE7BA;" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center"
+                                               Foreground="{Binding DataContext.ThemeErrorText, ElementName=root}"
+                                               Visibility="{Binding IsRewindRefused, Converter={StaticResource b2v}}"/>
+                                    <TextBlock Text="{Binding RewindTitle}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap"
+                                               Foreground="{Binding ThemeText}"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding RewindBody}" FontSize="13" Margin="0,8,0,0" TextWrapping="Wrap">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{Binding ThemeSubtleText}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsRewindRefused}" Value="True">
+                                                    <Setter Property="Foreground" Value="{Binding ThemeText}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <ItemsControl ItemsSource="{Binding RewindFiles}" Margin="0,8,0,0" FontFamily="Cascadia Mono, Consolas" FontSize="12">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Margin="0,2" ToolTip="{Binding Path}">
+                                                <TextBlock Text="{Binding Name}" Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
+                                                <TextBlock Text="{Binding Label}" Margin="8,0,0,0">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="{Binding DataContext.ThemeSubtleText, ElementName=root}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsDeleted}" Value="True">
+                                                                    <Setter Property="Foreground" Value="{Binding DataContext.ThemeErrorText, ElementName=root}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock Text="{Binding RewindNote}" FontSize="12" Margin="0,8,0,0" TextWrapping="Wrap"
+                                           Foreground="{Binding ThemeSubtleText}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding RewindNote}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Text="{Binding RewindStatus}" FontSize="12" Margin="0,8,0,0" TextWrapping="Wrap"
+                                           Foreground="{Binding ThemeText}"
+                                           Visibility="{Binding HasRewindStatus, Converter={StaticResource b2v}}"/>
+                                <!-- Refused: the conversation only, or the runs' reviews -->
+                                <StackPanel Margin="0,8,0,0" IsEnabled="{Binding CanRewindAct}"
+                                            Visibility="{Binding IsRewindRefused, Converter={StaticResource b2v}}">
+                                    <Button Template="{StaticResource Flat6}" Background="Transparent" BorderThickness="1" Padding="10,8"
+                                            Margin="0,0,0,6" Cursor="Hand" HorizontalContentAlignment="Left"
+                                            BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                            Command="{Binding RewindConversationOnlyCommand}"
+                                            AutomationProperties.Name="{Binding BtnRewindConversationOnly}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding BtnRewindConversationOnly}" FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="{Binding ThemeText}"/>
+                                            <TextBlock Text="{Binding RewindConversationOnlyHint}" FontSize="12" TextWrapping="Wrap"
+                                                       Foreground="{Binding ThemeSubtleText}"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Template="{StaticResource Flat6}" Background="Transparent" BorderThickness="1" Padding="10,8"
+                                            Cursor="Hand" HorizontalContentAlignment="Left"
+                                            BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                            Command="{Binding RewindReviewCommand}" AutomationProperties.Name="{Binding BtnRewindReview}"
+                                            Visibility="{Binding HasRewindReview, Converter={StaticResource b2v}}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding BtnRewindReview}" FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="{Binding ThemeText}"/>
+                                            <TextBlock Text="{Binding RewindReviewHint}" FontSize="12" TextWrapping="Wrap"
+                                                       Foreground="{Binding ThemeSubtleText}"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                                    <Button Style="{StaticResource LineBtn}" Margin="0"
+                                            BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                            Command="{Binding RewindCancelCommand}" AutomationProperties.Name="{Binding BtnRewindCancel}">
+                                        <TextBlock Text="{Binding BtnRewindCancel}" FontSize="13" Foreground="{Binding ThemeText}"/>
+                                    </Button>
+                                    <Button Template="{StaticResource Flat6}" Height="30" Padding="12,0" Margin="8,0,0,0" BorderThickness="0"
+                                            Cursor="Hand" IsEnabled="{Binding CanRewindAct}"
+                                            Background="{Binding DataContext.ThemeAccent, ElementName=root}"
+                                            Command="{Binding RewindGoCommand}" AutomationProperties.Name="{Binding BtnRewindGo}">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsRewindRefused}" Value="True">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                        <TextBlock Text="{Binding BtnRewindGo}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
+                                                   Foreground="{Binding DataContext.ThemeOnAccent, ElementName=root}"/>
+                                    </Button>
+                                </StackPanel>
                             </StackPanel>
                         </Border>
 

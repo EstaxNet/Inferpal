@@ -615,7 +615,7 @@ internal class FileHistoryService
     // Held in memory while the process lives, and each run that changed or missed something is also kept on disk beside
     // the workspace's snapshots (RunManifest): /undo-run and a result bar's Undo outlive a restart of the editor.
 
-    private const int MaxRetainedRuns = 15;
+    internal const int MaxRetainedRuns = 15;
     private readonly List<HistoryRun> _runs = [];   // chronological; newest last
     private HistoryRun? _currentRun;
     private readonly object _runLock = new();

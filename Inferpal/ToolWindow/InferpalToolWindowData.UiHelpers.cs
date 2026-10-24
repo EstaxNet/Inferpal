@@ -307,6 +307,8 @@ internal partial class InferpalToolWindowData
         DiffLine.ApplyTheme(item.DiffLines, p);
         DiffLine.ApplyTheme(item.CardLines, p);
         foreach (var f in item.ReviewFiles) DiffLine.ApplyTheme(f.Lines, p);
+        // Every item shown passes here: a question's "Go back here" is wired with its colours.
+        item.HookRewind(question => _ = RewindPlanAsync(question));
     }
 
     private void UpdateMessageBubbles()

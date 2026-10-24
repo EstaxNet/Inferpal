@@ -1843,4 +1843,33 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>No rehecho: {0} se modificó después de deshacer, y rehacerlo perdería ese cambio.</value></data>
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>deshecho y luego modificado — Rehacer perdería ese cambio</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>sin copia de antes del run — no se puede deshacer</value></data>
+  <data name="RewindButton" xml:space="preserve"><value>Volver aquí</value></data>
+  <data name="RewindButtonTip" xml:space="preserve"><value>Volver aquí — la conversación y sus archivos</value></data>
+  <data name="RewindTitle" xml:space="preserve"><value>¿Volver a «{0}»?</value></data>
+  <data name="RewindLead" xml:space="preserve"><value>La conversación se retoma desde esta pregunta, tal como la hiciste. Se deshacen los runs que la siguieron ({0}):</value></data>
+  <data name="RewindLeadNoRun" xml:space="preserve"><value>La conversación se retoma desde esta pregunta, tal como la hiciste. Ningún run registrado después cambió un archivo.</value></data>
+  <data name="RewindPutBack" xml:space="preserve"><value>restaurado</value></data>
+  <data name="RewindDeleted" xml:space="preserve"><value>creado por un run, eliminado</value></data>
+  <data name="RewindKept" xml:space="preserve"><value>conservado — se deja como está</value></data>
+  <data name="RewindNote" xml:space="preserve"><value>La versión actual de cada archivo se guarda primero. La conversación tal como está ahora queda en tus sesiones (/branch).</value></data>
+  <data name="RewindGo" xml:space="preserve"><value>Volver</value></data>
+  <data name="RewindCancel" xml:space="preserve"><value>Cancelar</value></data>
+  <data name="RewindRefusedChangedTitle" xml:space="preserve"><value>No se volvió: un archivo cambió después de estos runs</value></data>
+  <data name="RewindRefusedTitle" xml:space="preserve"><value>No se volvió</value></data>
+  <data name="RewindRefusedChanged" xml:space="preserve"><value>{0} se modificó a las {1}, después de los runs que siguieron a esta pregunta. Deshacerlos sobrescribiría ese cambio, así que no se deshizo nada y la conversación está donde estaba.</value></data>
+  <data name="RewindRefusedGone" xml:space="preserve"><value>{0} se eliminó después de los runs que siguieron a esta pregunta. Deshacerlos lo devolvería por encima de ese cambio, así que no se deshizo nada y la conversación está donde estaba.</value></data>
+  <data name="RewindRefusedNotKept" xml:space="preserve"><value>Un run que siguió a esta pregunta ya no se conserva (solo los {0} últimos del espacio de trabajo). No se deshizo nada y la conversación está donde estaba.</value></data>
+  <data name="RewindRefusedNoCopy" xml:space="preserve"><value>La copia de {0} de antes de estos runs ya no existe. No se deshizo nada y la conversación está donde estaba.</value></data>
+  <data name="RewindConversationOnly" xml:space="preserve"><value>Volver solo en la conversación</value></data>
+  <data name="RewindConversationOnlyHint" xml:space="preserve"><value>Los archivos quedan como están ahora; los runs se pueden seguir revisando uno a uno.</value></data>
+  <data name="RewindReviewRuns" xml:space="preserve"><value>Revisar los cambios de estos runs</value></data>
+  <data name="RewindReviewRunsHint" xml:space="preserve"><value>Deshaz los archivos que elijas — un archivo modificado desde entonces nunca se sobrescribe.</value></data>
+  <data name="RewindDone" xml:space="preserve"><value>De vuelta en la pregunta {0}: {1} {1:archivo restaurado|archivos restaurados}, {2} {2:eliminado|eliminados}. La pregunta está en el cuadro de mensaje.</value></data>
+  <data name="RewindDoneConversationOnly" xml:space="preserve"><value>De vuelta en la pregunta {0}, solo en la conversación — los archivos están como estaban. La pregunta está en el cuadro de mensaje.</value></data>
+  <data name="RewindStopped" xml:space="preserve"><value>La vuelta se detuvo en {0}: no se pudo deshacer. Los runs ya deshechos siguen deshechos y la conversación está donde estaba.</value></data>
+  <data name="RewindRefusedBetween" xml:space="preserve"><value>{0} se modificó entre los runs que siguieron a esta pregunta — a mano o por un run de otra conversación. Deshacerlos sobrescribiría ese cambio, así que no se deshizo nada y la conversación está donde estaba.</value></data>
+  <data name="RewindQuestionGone" xml:space="preserve"><value>Esta pregunta ya no está en su lugar en la conversación: no se hizo nada.</value></data>
+  <data name="RewindConversationNotCut" xml:space="preserve"><value>Los archivos volvieron a como estaban antes de la pregunta {0}, pero no se pudo cortar la conversación: {1}</value></data>
+  <data name="RewindPlanChanged" xml:space="preserve"><value>Los runs posteriores a esta pregunta cambiaron desde que se mostró la tarjeta: revísala de nuevo antes de volver.</value></data>
+  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>Lo que la acompañaba ({0}) no se adjunta de nuevo.</value></data>
 </root>

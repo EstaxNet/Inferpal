@@ -2,7 +2,9 @@
 // state pushed via postMessage and reports user intents back. It must survive being
 // destroyed on hide: everything re-renders from the 'hydrate' message.
 // No literal user-visible English here — strings go through t() (window.__l10n).
-import type { ApprovalCard, InputCard, InputCardField, InputFormAnswer, RunReview, RunSummary, SetupPlace, SetupPlan } from '../protocol';
+import type {
+  ApprovalCard, InputCard, InputCardField, InputFormAnswer, RewindCard, RunReview, RunSummary, SetupPlace, SetupPlan,
+} from '../protocol';
 import type {
   ExtToWebview,
   WebviewToExt,
@@ -589,6 +591,16 @@ function addUser(item: WvTranscriptItem): void {
   // A question is shown and copied whole (it may quote a reasoning tag); only an answer's hidden reasoning stays out.
   bubble.append(body, metaRow(item, item.role === 'assistant' ? stripThinkTags(item.text) : undefined));
   row.appendChild(bubble);
+  // A question the model was asked can be gone back to, with its files; a slash command's echo cannot.
+  if (!item.notice) {
+    const back = document.createElement('button');
+    back.className = 'rewind-here';
+    back.title = t('rewindHereTip');
+    setIcon(back, 'regenerate', t('rewindHere'), 12);
+    back.addEventListener('click', () => post({ type: 'rewindPlan', ordinal: questionOrdinal(row), question: item.text }));
+    row.dataset.question = item.text;
+    row.appendChild(back);
+  }
   if (names.length > 0) {
     const chips = document.createElement('div');
     chips.className = 'user-chips';
@@ -602,6 +614,135 @@ function addUser(item: WvTranscriptItem): void {
   }
   messagesEl.appendChild(row);
   scrollToBottom();
+}
+
+/** The question a row shows, as saved: the extension and the host check it is still the one at that place. */
+function questionOf(row: Element): string {
+  return (row as HTMLElement).dataset.question ?? '';
+}
+
+/** The refused "Go back here" card that asked for a run's review: where its card goes when the run's bar is not on
+ *  screen. */
+const reviewAnchors = new Map<string, HTMLElement>();
+
+/** The position of a question's row among the view's question rows — the extension's count too. */
+function questionOrdinal(row: Element): number {
+  return [...messagesEl.querySelectorAll('.user-row')].indexOf(row);
+}
+
+/**
+ * A question's "Go back here" card, under it: the files going back would put back or delete, or why it cannot —
+ * and then the conversation only, or the runs' review cards. `card` absent: the shown card takes its actions back.
+ */
+function renderRewindCard(ordinal: number, card: RewindCard | null | undefined, message?: string): void {
+  const row = messagesEl.querySelectorAll('.user-row')[ordinal];
+  if (!row) {
+    return;
+  }
+  const old = row.nextElementSibling?.classList.contains('rewind-card') ? (row.nextElementSibling as HTMLElement) : null;
+  if (card === undefined) {
+    old?.querySelectorAll<HTMLButtonElement>('button').forEach((b) => (b.disabled = false));
+    const said = old?.querySelector<HTMLElement>('.rewind-status');
+    if (said && message) {
+      said.textContent = message;
+      said.hidden = false;
+    }
+    return;
+  }
+  old?.remove();
+  if (!card) {
+    return;
+  }
+  const el = document.createElement('section');
+  el.className = 'approval rewind-card' + (card.refused ? ' refused' : '');
+  el.setAttribute('role', card.refused ? 'alertdialog' : 'dialog');
+  el.setAttribute('aria-label', card.title);
+  const title = document.createElement('div');
+  title.className = 'rewind-title';
+  if (card.refused) {
+    title.append(icon('warning', 14));
+  }
+  title.append(document.createTextNode(card.title));
+  const body = document.createElement('p');
+  body.className = 'rewind-body';
+  body.textContent = card.body;
+  el.append(title, body);
+  const disableAll = () => el.querySelectorAll<HTMLButtonElement>('button').forEach((b) => (b.disabled = true));
+  if (card.files.length > 0) {
+    const list = document.createElement('ul');
+    list.className = 'rewind-files';
+    for (const f of card.files) {
+      const li = document.createElement('li');
+      li.className = f.kind;
+      li.title = f.path;
+      const name = document.createElement('span');
+      name.className = 'rewind-name';
+      name.textContent = f.name;
+      const label = document.createElement('span');
+      label.className = 'rewind-label';
+      label.textContent = f.label;
+      li.append(name, label);
+      list.appendChild(li);
+    }
+    el.appendChild(list);
+  }
+  if (card.note) {
+    const note = document.createElement('p');
+    note.className = 'rewind-note';
+    note.textContent = card.note;
+    el.appendChild(note);
+  }
+  const status = document.createElement('div');
+  status.className = 'rewind-status';
+  status.setAttribute('role', 'status');
+  status.textContent = message ?? '';
+  status.hidden = !message;
+  el.appendChild(status);
+  if (card.refused) {
+    const choice = (label: string, hint: string, act: () => void) => {
+      const b = document.createElement('button');
+      b.className = 'rewind-choice';
+      const strong = document.createElement('span');
+      strong.className = 'rewind-choice-title';
+      strong.textContent = label;
+      const small = document.createElement('span');
+      small.className = 'rewind-choice-hint';
+      small.textContent = hint;
+      b.append(strong, small);
+      b.addEventListener('click', act);
+      el.appendChild(b);
+    };
+    choice(card.conversationOnly, card.conversationOnlyHint, () => {
+      disableAll();
+      post({ type: 'rewind', ordinal, question: questionOf(row), conversationOnly: true, expectedRuns: card.runIds });
+    });
+    if (card.runIds.length > 0) {
+      choice(card.reviewRuns, card.reviewRunsHint, () => {
+        for (const runId of card.runIds) {
+          reviewAnchors.set(runId, el);
+          post({ type: 'runReview', runId });
+        }
+      });
+    }
+  }
+  const actions = document.createElement('div');
+  actions.className = 'approval-actions rewind-actions';
+  const cancel = document.createElement('button');
+  cancel.textContent = card.cancel;
+  cancel.addEventListener('click', () => el.remove());
+  actions.appendChild(cancel);
+  if (!card.refused) {
+    const go = document.createElement('button');
+    go.className = 'primary';
+    go.textContent = card.go;
+    go.addEventListener('click', () => {
+      disableAll();
+      post({ type: 'rewind', ordinal, question: questionOf(row), conversationOnly: false, expectedRuns: card.runIds });
+    });
+    actions.appendChild(go);
+  }
+  el.appendChild(actions);
+  row.after(el);
 }
 
 /** An answer, a notice or an error, in the current turn. */
@@ -1129,10 +1270,14 @@ function renderRunSummary(target: TurnView, run: RunSummary | null | undefined):
  */
 function renderRunReview(runId: string, review: RunReview | null | undefined, message?: string): void {
   const bar = [...messagesEl.querySelectorAll<HTMLElement>('.result')].find((b) => b.dataset.runId === runId);
-  if (!bar) {
+  const old = [...messagesEl.querySelectorAll<HTMLElement>('.run-review')].find((c) => c.dataset.runId === runId) ?? null;
+  // A run whose bar is not on screen (a reloaded conversation): its card goes under the refused "Go back here" that
+  // asked for it.
+  const asked = reviewAnchors.get(runId);
+  const anchor = bar ?? (asked?.isConnected ? asked : null);
+  if (!anchor) {
     return;
   }
-  const old = bar.nextElementSibling?.classList.contains('run-review') ? (bar.nextElementSibling as HTMLElement) : null;
   if (review === undefined) {
     // Nothing to draw it from: the card shown takes its actions back, and says why.
     old?.querySelectorAll<HTMLButtonElement>('button.run-review-action').forEach((b) => (b.disabled = false));
@@ -1146,6 +1291,7 @@ function renderRunReview(runId: string, review: RunReview | null | undefined, me
   const open = new Set([...(old?.querySelectorAll<HTMLElement>('.run-review-file.open') ?? [])].map((f) => f.dataset.path));
   const card = document.createElement('div');
   card.className = 'approval run-review';
+  card.dataset.runId = runId;
   const head = document.createElement('div');
   head.className = 'approval-head';
   const title = document.createElement('span');
@@ -1164,7 +1310,7 @@ function renderRunReview(runId: string, review: RunReview | null | undefined, me
   if (!review) {
     // The run is no longer kept (its copies were pruned): only the sentence remains.
     card.append(status);
-    (old ?? bar).after(card);
+    (old ?? anchor).after(card);
     old?.remove();
     return;
   }
@@ -1257,7 +1403,7 @@ function renderRunReview(runId: string, review: RunReview | null | undefined, me
   note.className = 'run-review-note';
   note.textContent = review.note;
   card.append(status, note);
-  (old ?? bar).after(card);
+  (old ?? anchor).after(card);
   old?.remove();
 }
 
@@ -2902,6 +3048,14 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       break;
     case 'xrayPanel':
       renderXray(msg.panel);
+      break;
+    case 'putBackQuestion':
+      // Above a draft typed meanwhile, never over it.
+      setPrompt(promptEl.value.trim() ? `${msg.text}\n\n${promptEl.value}` : msg.text);
+      promptEl.focus();
+      break;
+    case 'rewindCard':
+      renderRewindCard(msg.ordinal, msg.card, msg.message);
       break;
     case 'runReview':
       renderRunReview(msg.runId, msg.review, msg.message);

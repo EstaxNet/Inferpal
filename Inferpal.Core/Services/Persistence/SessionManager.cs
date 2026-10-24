@@ -115,7 +115,7 @@ internal static class SessionManager
     /// receipt (<see cref="Presentation.InputCard.ReceiptRole"/>), which is saved.
     /// </summary>
     public static readonly IReadOnlySet<string> ScreenOnlyRoles =
-        new HashSet<string>(StringComparer.Ordinal) { "anchor", "status", "turn", "run", "result", "review", "approval", Presentation.InputCard.CardRole };
+        new HashSet<string>(StringComparer.Ordinal) { "anchor", "status", "turn", "run", "result", "review", "rewind", "approval", Presentation.InputCard.CardRole };
 
     /// <summary>
     /// Maps the chat list to persistable messages: drops what only the screen holds (<see cref="ScreenOnlyRoles"/>),
@@ -123,13 +123,31 @@ internal static class SessionManager
     /// </summary>
     public static List<SavedMessage> BuildSnapshot(
         IEnumerable<(string Role, string Content, string ToolName, string Timestamp)> messages) =>
-        messages
-            .Where(m => !ScreenOnlyRoles.Contains(m.Role))
-            .Select(m => new SavedMessage(
+        BuildSnapshot(messages.Select(m => (m.Role, m.Content, m.ToolName, m.Timestamp, string.Empty)));
+
+    /// <inheritdoc cref="BuildSnapshot(IEnumerable{ValueTuple{string, string, string, string}})"/>
+    /// <remarks>⚠ A result bar is the screen's, but the run it names belongs to its turn: the message before it carries
+    /// it (<see cref="SavedMessage.Run"/>), or going back to a question could not tell which runs followed it.</remarks>
+    public static List<SavedMessage> BuildSnapshot(
+        IEnumerable<(string Role, string Content, string ToolName, string Timestamp, string Run)> messages)
+    {
+        var saved = new List<SavedMessage>();
+        foreach (var m in messages)
+        {
+            if (m.Role == "result")
+            {
+                if (m.Run.Length > 0 && saved.Count > 0 && saved[^1].Run is null) saved[^1] = saved[^1] with { Run = m.Run };
+                continue;
+            }
+            if (ScreenOnlyRoles.Contains(m.Role)) continue;
+            saved.Add(new SavedMessage(
                 m.Role, m.Content,
                 string.IsNullOrEmpty(m.ToolName)  ? null : m.ToolName,
-                string.IsNullOrEmpty(m.Timestamp) ? null : m.Timestamp))
-            .ToList();
+                string.IsNullOrEmpty(m.Timestamp) ? null : m.Timestamp,
+                string.IsNullOrEmpty(m.Run)       ? null : m.Run));
+        }
+        return saved;
+    }
 
     /// <summary>
     /// Rebuilds the API history for a restored session: fresh system prompt, then the questions and the answers —

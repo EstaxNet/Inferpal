@@ -740,6 +740,10 @@ internal sealed class AcpSession : IAsyncDisposable
             Say("\n\n" + result.EndNotice);
             RecordAnswer(result.EndNotice, notice: true);
         }
+        // The run the turn made goes with its last message, as in both editors: going back to a question finds it there.
+        if ((result.Run is { RunId.Length: > 0 } run ? run.RunId : result.RunId) is { Length: > 0 } runId)
+            lock (_gate)
+                if (_transcript.Count > 0 && _transcript[^1].Run is null) _transcript[^1] = _transcript[^1] with { Run = runId };
         if (!result.Cancelled && _agent.TakeLimitsNotice() is { } limits) Notice("info", limits, "\n\n---\n" + limits);
         if (result.ContextWindow > 0)
             Update(new { sessionUpdate = "usage_update", used = Math.Max(0, result.NextTurnTokens), size = result.ContextWindow });

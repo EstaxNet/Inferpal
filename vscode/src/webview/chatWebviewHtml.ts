@@ -80,6 +80,8 @@ export function webviewStrings(): Record<string, string> {
     turnWaiting: t('waiting for you'),
     runUndo: t('Undo run'),
     runReview: t('Review changes'),
+    rewindHere: t('Go back here'),
+    rewindHereTip: t('Go back here — the conversation and its files'),
     approvalOpenDiff: t('Open diff'),
     stepsOne: t('1 step'),
     stepsMany: t('{0} steps'),

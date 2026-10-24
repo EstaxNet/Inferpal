@@ -350,6 +350,8 @@ internal sealed partial class HostServer : IDisposable
     {
         var s   = Session();
         var cts = AcquireTurn(ct);
+        // The turn's run, whatever way the turn ends: saved with its last message (ChatSendResult.RunId).
+        string? turnRunId = null;
         // A turn with steps reads the notes typed while it runs — those typed during the context build too, read before
         // its first step. Decided now: neither depends on the build.
         var steering = !p.CodeAction && (TurnIsAgent(s, p.CodeAction, p.AgentMode) || s.ToolsEnabled)
@@ -494,6 +496,7 @@ internal sealed partial class HostServer : IDisposable
 
                 // Group this run's file snapshots so the adapter can offer /undo-run semantics.
                 var runId = s.Tools.History.BeginRun();
+                turnRunId = runId;
                 var result = await s.Orchestrator.RunAsync(
                     model, s.History, effectiveTools,
                     onStep:         step => Notify("chat/step", new { text = step }),
@@ -516,7 +519,8 @@ internal sealed partial class HostServer : IDisposable
                 {
                     s.History = durable;
                     return new ChatSendResult(streamed.ToString(), false, result.TokensUsed, result.PromptTokens,
-                                              result.FinalResponse, ContextWindow: ctxDecision.Window);
+                                              result.FinalResponse, ContextWindow: ctxDecision.Window,
+                                              RunId: ChangedRun(s, turnRunId));
                 }
                 // How the run ended, when not because the model had finished — iteration limit, repeat,
                 // an answer cut at the length limit, or edits that changed nothing. One policy for both front-ends.
@@ -559,6 +563,7 @@ internal sealed partial class HostServer : IDisposable
                 // Same durable history as the agent path: the question and the answer the user saw.
                 var durable = new List<ChatMessageDto>(s.History);
                 var runId = s.Tools.History.BeginRun();
+                turnRunId = runId;
                 var run = await s.Client.RunAgentAsync(
                     model, s.History, chatTools,
                     onStep:         step => Notify("chat/step", new { text = step }),
@@ -644,7 +649,7 @@ internal sealed partial class HostServer : IDisposable
                 s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
             }
             return new ChatSendResult(ChatTurnPolicy.IsVisiblyEmpty(partial) ? string.Empty : partial, true, 0, 0,
-                                      QuestionKept: questionKept);
+                                      QuestionKept: questionKept, RunId: ChangedRun(s, turnRunId));
         }
         catch (Exception ex)
         {
@@ -655,7 +660,7 @@ internal sealed partial class HostServer : IDisposable
             // through the History setter. Left as it was — or 0 after a compaction earlier in this turn — the measure
             // described the conversation before this question.
             s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
-            return new ChatSendResult(streamed.ToString(), false, 0, 0, ex.Message);
+            return new ChatSendResult(streamed.ToString(), false, 0, 0, ex.Message, RunId: ChangedRun(s, turnRunId));
         }
         finally
         {
@@ -1660,7 +1665,8 @@ internal sealed partial class HostServer : IDisposable
     private static SavedMessage ToSaved(SavedMessageDto m) => new(
         m.Role, m.Content,
         string.IsNullOrEmpty(m.ToolName)  ? null : m.ToolName,
-        string.IsNullOrEmpty(m.Timestamp) ? null : m.Timestamp);
+        string.IsNullOrEmpty(m.Timestamp) ? null : m.Timestamp,
+        string.IsNullOrEmpty(m.Run)       ? null : m.Run);
 
     [JsonRpcMethod("session/list")]
     public async Task<SessionListResult> SessionListAsync(CancellationToken ct) =>
@@ -1708,7 +1714,7 @@ internal sealed partial class HostServer : IDisposable
             s.CurrentSessionName = p.Name == "last_session" ? data.CurrentName : p.Name;
             return new SessionLoadResult(
                 p.Name,
-                data.Messages.Select(m => new SavedMessageDto(m.Role, m.Content, m.ToolName, m.Timestamp)).ToList(),
+                data.Messages.Select(m => new SavedMessageDto(m.Role, m.Content, m.ToolName, m.Timestamp, m.Run)).ToList(),
                 NextTurnTokens(s));
         });
 
@@ -1735,32 +1741,104 @@ internal sealed partial class HostServer : IDisposable
     public Task<SessionBranchResult?> SessionBranchAsync(SessionBranchParams p, CancellationToken ct) =>
         // Slot held across the awaits — same TOCTOU as session/load.
         WithTurnSlotAsync<SessionBranchResult?>("session/branch", ct, async token =>
-        {
-            var s        = Session();
-            var messages = p.Messages.Select(ToSaved).ToList();
-            var sessions = await s.Store.ListWithPreviewAsync(token);
+            await BranchAsync(Session(), p.Messages.Select(ToSaved).ToList(), p.Turn, token));
 
-            var plan = BranchManager.Plan(messages, p.Turn, s.CurrentSessionName, sessions, DateTime.Now);
-            if (plan is null) return null;
+    /// <summary>Forks the conversation at <paramref name="turn"/> (0: before its first question) and makes the branch the
+    /// host's history; null when there is no such turn. Called in the turn slot.</summary>
+    private async Task<SessionBranchResult?> BranchAsync(HostSession s, List<SavedMessage> messages, int turn, CancellationToken token)
+    {
+        var sessions = await s.Store.ListWithPreviewAsync(token);
 
-            // The parent is rewritten with the conversation as it stands now (it may have moved on
-            // since it was loaded), keeping its own parent link when it is itself a branch.
-            await s.Store.SaveAsync(plan.ParentName, plan.ParentMessages, token, workspaceRoot: s.RootDir,
-                                    parent: plan.ParentParent, forkTurn: plan.ParentForkTurn, templateSuffix: s.TemplateSuffix);
+        var plan = BranchManager.Plan(messages, turn, s.CurrentSessionName, sessions, DateTime.Now);
+        if (plan is null) return null;
 
-            // The branch is the same conversation, cut: it keeps the mode its turns were held in.
+        // The parent is rewritten with the conversation as it stands now (it may have moved on
+        // since it was loaded), keeping its own parent link when it is itself a branch.
+        await s.Store.SaveAsync(plan.ParentName, plan.ParentMessages, token, workspaceRoot: s.RootDir,
+                                parent: plan.ParentParent, forkTurn: plan.ParentForkTurn, templateSuffix: s.TemplateSuffix);
+
+        // The branch is the same conversation, cut: it keeps the mode its turns were held in. Cut before every question
+        // (going back to the first one), it is a new conversation: no empty session is written for it.
+        var keepsAQuestion = plan.BranchMessages.Any(SessionManager.IsQuestion);
+        if (keepsAQuestion)
             await s.Store.SaveAsync(plan.BranchName, plan.BranchMessages, token, workspaceRoot: s.RootDir,
                                     parent: plan.ParentName, forkTurn: plan.ForkTurn, templateSuffix: s.TemplateSuffix);
 
-            ForgetConversationState(s);
-            s.History            = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), plan.BranchMessages);
-            s.CurrentSessionName = plan.BranchName;
+        ForgetConversationState(s);
+        s.History            = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), plan.BranchMessages);
+        s.CurrentSessionName = keepsAQuestion ? plan.BranchName : null;
 
-            return new SessionBranchResult(
-                plan.BranchName, plan.ParentName, plan.ForkTurn,
-                plan.BranchMessages.Select(m => new SavedMessageDto(m.Role, m.Content, m.ToolName, m.Timestamp)).ToList(),
-                Strings.BranchCreated(plan.BranchName, plan.ForkTurn, plan.ParentName),
-                NextTurnTokens(s));
+        return new SessionBranchResult(
+            plan.BranchName, plan.ParentName, plan.ForkTurn,
+            plan.BranchMessages.Select(m => new SavedMessageDto(m.Role, m.Content, m.ToolName, m.Timestamp, m.Run)).ToList(),
+            Strings.BranchCreated(plan.BranchName, plan.ForkTurn, plan.ParentName),
+            NextTurnTokens(s));
+    }
+
+    /// <summary><paramref name="id"/> when that run changed files; null otherwise.</summary>
+    private static string? ChangedRun(HostSession s, string? id) =>
+        id is not null && s.Tools.History.Runs.Any(r => r.Id == id && r.FileCount > 0) ? id : null;
+
+    /// <summary>A question's "Go back here": what going back would do to the files, or why it cannot. Read-only.</summary>
+    [JsonRpcMethod("chat/rewindPlan", UseSingleObjectParameterDeserialization = true)]
+    public RewindCardDto? RewindPlan(RewindParams p)
+    {
+        var s        = Session();
+        var messages = p.Messages.Select(ToSaved).ToList();
+        var turn     = QuestionTurn(messages, p);
+        return turn == 0 || Rewind.Plan(s.Tools.History, messages, turn) is not { } plan
+            ? null
+            : RewindCardDto.Of(Services.Presentation.RewindCard.Build(plan), p.MessageIndex);
+    }
+
+    /// <summary>The turn of the question <paramref name="p"/> points at; 0 when it is not a question, or not the one the
+    /// person clicked (<see cref="RewindParams.Question"/>: a view that moved under the card).</summary>
+    private static int QuestionTurn(List<SavedMessage> messages, RewindParams p)
+    {
+        var turn = Rewind.TurnAt(messages, p.MessageIndex);
+        return turn > 0 && (p.Question is null || messages[p.MessageIndex].Content == p.Question) ? turn : 0;
+    }
+
+    /// <summary>
+    /// Goes back to the question at <see cref="RewindParams.MessageIndex"/>: the runs that followed it undone (unless
+    /// <see cref="RewindParams.ConversationOnly"/>), then the conversation cut before it, the whole one kept as a session.
+    /// In the turn slot: the undo writes without an approval card, and the history it replaces must not be in a turn.
+    /// </summary>
+    [JsonRpcMethod("chat/rewind", UseSingleObjectParameterDeserialization = true)]
+    public Task<RewindResult?> RewindAsync(RewindParams p, CancellationToken ct) =>
+        WithTurnSlotAsync<RewindResult?>("chat/rewind", ct, async token =>
+        {
+            var s        = Session();
+            var messages = p.Messages.Select(ToSaved).ToList();
+            var turn     = QuestionTurn(messages, p);
+            if (turn == 0) return new RewindResult(Message: Strings.RewindQuestionGone);
+            RewindOutcome? outcome = null;
+            if (!p.ConversationOnly)
+            {
+                outcome = await Rewind.ApplyAsync(s.Tools.History, messages, turn, p.ExpectedRuns);
+                if (outcome is null) return new RewindResult(Message: Strings.RewindQuestionGone);
+                if (outcome.Plan.Refusal == RewindRefusal.Stale)
+                    // The card showed other runs: drawn again from what follows the question now, and said.
+                    return new RewindResult(Card: RewindCardDto.Of(Services.Presentation.RewindCard.Build(
+                        Rewind.Plan(s.Tools.History, messages, turn)!), p.MessageIndex), Message: Strings.RewindPlanChanged);
+                if (outcome.Plan.Refusal != RewindRefusal.None)
+                    return new RewindResult(Card: RewindCardDto.Of(Services.Presentation.RewindCard.Build(outcome.Plan), p.MessageIndex));
+                if (outcome.Failed.Count > 0)
+                    return new RewindResult(Message: Strings.RewindStopped(Path.GetFileName(outcome.Failed[0])));
+            }
+            var saved = Rewind.QuestionAt(messages, turn)!;
+            try
+            {
+                var branch = await BranchAsync(s, messages, turn - 1, token);
+                return new RewindResult(Branch: branch, Question: Services.Presentation.RewindCard.Typed(saved).Text,
+                                        Message: Services.Presentation.RewindCard.Done(outcome, turn, saved));
+            }
+            catch (Exception ex) when (outcome is not null && ex is not OperationCanceledException)
+            {
+                // The files moved: said, never "nothing changed".
+                Diagnostics.Swallow("HostServer.Rewind", ex);
+                return new RewindResult(Message: Strings.RewindConversationNotCut(turn, Diagnostics.RootMessage(ex)));
+            }
         });
 
     /// <summary>

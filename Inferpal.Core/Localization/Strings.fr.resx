@@ -1843,4 +1843,33 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>Non rétabli : {0} a été modifié après l'annulation, et le rétablir perdrait cette modification.</value></data>
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>annulé, puis modifié — Rétablir perdrait cette modification</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>aucune copie d'avant le run — impossible à annuler</value></data>
+  <data name="RewindButton" xml:space="preserve"><value>Revenir ici</value></data>
+  <data name="RewindButtonTip" xml:space="preserve"><value>Revenir ici — la conversation et ses fichiers</value></data>
+  <data name="RewindTitle" xml:space="preserve"><value>Revenir à « {0} » ?</value></data>
+  <data name="RewindLead" xml:space="preserve"><value>La conversation reprend à cette question, telle que vous l'avez posée. Les runs qui l'ont suivie sont annulés ({0}) :</value></data>
+  <data name="RewindLeadNoRun" xml:space="preserve"><value>La conversation reprend à cette question, telle que vous l'avez posée. Aucun run enregistré après elle n'a changé de fichier.</value></data>
+  <data name="RewindPutBack" xml:space="preserve"><value>remis</value></data>
+  <data name="RewindDeleted" xml:space="preserve"><value>créé par un run, supprimé</value></data>
+  <data name="RewindKept" xml:space="preserve"><value>gardé — laissé tel quel</value></data>
+  <data name="RewindNote" xml:space="preserve"><value>La version actuelle de chaque fichier est d'abord sauvegardée. La conversation telle qu'elle est maintenant reste dans vos sessions (/branch).</value></data>
+  <data name="RewindGo" xml:space="preserve"><value>Revenir</value></data>
+  <data name="RewindCancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="RewindRefusedChangedTitle" xml:space="preserve"><value>Pas de retour : un fichier a changé après ces runs</value></data>
+  <data name="RewindRefusedTitle" xml:space="preserve"><value>Pas de retour</value></data>
+  <data name="RewindRefusedChanged" xml:space="preserve"><value>{0} a été modifié à {1}, après les runs qui ont suivi cette question. Les annuler écraserait cette modification : rien n'a été annulé et la conversation est là où elle était.</value></data>
+  <data name="RewindRefusedGone" xml:space="preserve"><value>{0} a été supprimé après les runs qui ont suivi cette question. Les annuler le ferait revenir par-dessus cette suppression : rien n'a été annulé et la conversation est là où elle était.</value></data>
+  <data name="RewindRefusedNotKept" xml:space="preserve"><value>Un run qui a suivi cette question n'est plus gardé (seuls les {0} derniers de l'espace de travail le sont). Rien n'a été annulé et la conversation est là où elle était.</value></data>
+  <data name="RewindRefusedNoCopy" xml:space="preserve"><value>La copie de {0} d'avant ces runs a disparu. Rien n'a été annulé et la conversation est là où elle était.</value></data>
+  <data name="RewindConversationOnly" xml:space="preserve"><value>Revenir dans la conversation seulement</value></data>
+  <data name="RewindConversationOnlyHint" xml:space="preserve"><value>Les fichiers restent tels qu'ils sont ; les runs peuvent toujours être relus un par un.</value></data>
+  <data name="RewindReviewRuns" xml:space="preserve"><value>Relire les modifications de ces runs</value></data>
+  <data name="RewindReviewRunsHint" xml:space="preserve"><value>Annulez les fichiers de votre choix — un fichier modifié depuis n'est jamais écrasé.</value></data>
+  <data name="RewindDone" xml:space="preserve"><value>Retour à la question {0} : {1} {1:fichier remis|fichiers remis}, {2} {2:supprimé|supprimés}. La question est dans la zone de saisie.</value></data>
+  <data name="RewindDoneConversationOnly" xml:space="preserve"><value>Retour à la question {0}, dans la conversation seulement — les fichiers sont restés tels quels. La question est dans la zone de saisie.</value></data>
+  <data name="RewindStopped" xml:space="preserve"><value>Le retour s'est arrêté à {0} : impossible de l'annuler. Les runs déjà annulés le restent, et la conversation est là où elle était.</value></data>
+  <data name="RewindRefusedBetween" xml:space="preserve"><value>{0} a été modifié entre les runs qui ont suivi cette question — à la main, ou par un run d'une autre conversation. Les annuler écraserait cette modification : rien n'a été annulé et la conversation est là où elle était.</value></data>
+  <data name="RewindQuestionGone" xml:space="preserve"><value>Cette question n'est plus à sa place dans la conversation : rien n'a été fait.</value></data>
+  <data name="RewindConversationNotCut" xml:space="preserve"><value>Les fichiers sont revenus tels qu'ils étaient avant la question {0}, mais la conversation n'a pas pu être coupée : {1}</value></data>
+  <data name="RewindPlanChanged" xml:space="preserve"><value>Les runs qui suivent cette question ont changé depuis l'affichage de la carte : vérifiez-la de nouveau avant de revenir.</value></data>
+  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>Ce qui l'accompagnait ({0}) n'est pas joint de nouveau.</value></data>
 </root>

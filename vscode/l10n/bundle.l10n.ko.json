@@ -129,6 +129,8 @@
   "waiting for you": "응답 대기 중",
   "Undo run": "실행 되돌리기",
   "Review changes": "변경 검토",
+  "Go back here": "여기로 돌아가기",
+  "Go back here — the conversation and its files": "여기로 돌아가기 — 대화와 파일",
   "What should we work on?": "무엇을 작업할까요?",
   "{0} on {1}. Your code stays on this machine.": "{1}의 {0}. 코드는 이 컴퓨터를 벗어나지 않습니다.",
   "Your code stays on this machine.": "코드는 이 컴퓨터를 벗어나지 않습니다.",

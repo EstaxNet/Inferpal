@@ -637,7 +637,10 @@ internal partial class InferpalToolWindowData
     /// A run's review card, drawn or drawn again under its result bar — after a file's Keep, Undo or Redo when
     /// <paramref name="path"/> is set. Like the bar's Undo, nothing is changed while a turn runs: its run still writes.
     /// </summary>
-    private async Task ReviewRunAsync(string runId, string? path, Services.Commands.UndoRunCommandHandler.RunFileAction? action)
+    /// <param name="under">Where the card goes when the run's bar is not on screen (a reloaded conversation): the refused
+    /// "Go back here" card that asked for it.</param>
+    private async Task ReviewRunAsync(string runId, string? path, Services.Commands.UndoRunCommandHandler.RunFileAction? action,
+                                      ChatMessageItem? under = null)
     {
         try
         {
@@ -662,14 +665,15 @@ internal partial class InferpalToolWindowData
                 var card = Messages.FirstOrDefault(m => m.Role == "review" && m.RunId == runId);
                 if (card is null)
                 {
-                    var bar = Messages.FirstOrDefault(m => m.Role == "result" && m.RunId == runId);
+                    var bar = Messages.FirstOrDefault(m => m.Role == "result" && m.RunId == runId)
+                              ?? (under is not null && Messages.Contains(under) ? under : null);
                     if (bar is null) return;
                     card = ChatMessageItem.ReviewMsg(runId,
                         onClose: () => _ = RunOnVMContextAsync(() =>
                         {
                             if (Messages.FirstOrDefault(m => m.Role == "review" && m.RunId == runId) is { } shown) Messages.Remove(shown);
                         }),
-                        act: (file, what) => _ = ReviewRunAsync(runId, file, what));
+                        act: (file, what) => _ = ReviewRunAsync(runId, file, what, under));
                     card.ShowReview(review, status);
                     ApplyItemTheme(card);
                     Messages.Insert(Messages.IndexOf(bar) + 1, card);
@@ -686,6 +690,154 @@ internal partial class InferpalToolWindowData
             await RunOnVMContextAsync(() =>
                 Messages.FirstOrDefault(m => m.Role == "review" && m.RunId == runId)?.EnableReviewActions(true));
             await ShowInfoAsync(Strings.RunFileFailed(path ?? runId));
+        }
+    }
+
+    /// <summary><paramref name="id"/> when that run changed files; null otherwise.</summary>
+    private string? ChangedRun(string? id) =>
+        id is not null && _tools.History.Runs.Any(r => r.Id == id && r.FileCount > 0) ? id : null;
+
+    /// <summary>The saved conversation, and the index in it of <paramref name="question"/> (-1 when it is not there). VM
+    /// context.</summary>
+    private (List<SavedMessage> Snapshot, int Index) SnapshotWithIndexOf(ChatMessageItem question)
+    {
+        var index = 0;
+        var found = -1;
+        foreach (var m in Messages)
+        {
+            if (ReferenceEquals(m, question)) { found = index; break; }
+            if (m.Role != "result" && !SessionManager.ScreenOnlyRoles.Contains(m.Role)) index++;
+        }
+        return (SessionManager.BuildSnapshot(Messages.Select(m => m.Saved)), found);
+    }
+
+    /// <summary>A question's "Go back here": its card under it — what going back would do to the files, or why it cannot.</summary>
+    private async Task RewindPlanAsync(ChatMessageItem question)
+    {
+        try
+        {
+            List<SavedMessage> snapshot = [];
+            var index = -1;
+            await RunOnVMContextAsync(() => (snapshot, index) = SnapshotWithIndexOf(question));
+            var turn = index < 0 ? 0 : Services.Execution.Rewind.TurnAt(snapshot, index);
+            if (turn == 0 || Services.Execution.Rewind.Plan(_tools.History, snapshot, turn) is not { } plan) return;
+            var card = Services.Presentation.RewindCard.Build(plan);
+            await RunOnVMContextAsync(() => ShowRewindCard(question, card, null));
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("InferpalToolWindowData.RewindPlan", ex);
+        }
+    }
+
+    /// <summary>Draws (or draws again) the "rewind" card under <paramref name="question"/>. VM context.</summary>
+    private void ShowRewindCard(ChatMessageItem question, Services.Presentation.RewindCardModel card, string? status)
+    {
+        var shown = Messages.FirstOrDefault(m => m.Role == "rewind" && ReferenceEquals(m.RewindFor, question));
+        if (shown is null)
+        {
+            var at = Messages.IndexOf(question);
+            if (at < 0) return;
+            shown = ChatMessageItem.RewindMsg(question,
+                go:               () => _ = RewindAsync(question, conversationOnly: false),
+                cancel:           () => _ = RunOnVMContextAsync(() =>
+                {
+                    if (Messages.FirstOrDefault(m => m.Role == "rewind" && ReferenceEquals(m.RewindFor, question)) is { } open)
+                        Messages.Remove(open);
+                }),
+                conversationOnly: () => _ = RewindAsync(question, conversationOnly: true),
+                // The runs the card shows now — it is drawn again from each answer — their cards under it.
+                review:           () => _ = RunOnVMContextAsync(() =>
+                {
+                    if (Messages.FirstOrDefault(m => m.Role == "rewind" && ReferenceEquals(m.RewindFor, question)) is not { } open) return;
+                    foreach (var runId in open.RewindRunIds) _ = ReviewRunAsync(runId, null, null, under: open);
+                }));
+            shown.ShowRewind(card, status);
+            ApplyItemTheme(shown);
+            Messages.Insert(at + 1, shown);
+            return;
+        }
+        shown.ShowRewind(card, status);
+    }
+
+    /// <summary>
+    /// Goes back to <paramref name="question"/>: the runs that followed it undone — all or none, unless
+    /// <paramref name="conversationOnly"/> — then the conversation cut before it, the whole one kept as a session, and the
+    /// question back in the message box. Like the bar's Undo, nothing is changed while a turn runs.
+    /// </summary>
+    private async Task RewindAsync(ChatMessageItem question, bool conversationOnly)
+    {
+        ChatMessageItem? CardOf() => Messages.FirstOrDefault(m => m.Role == "rewind" && ReferenceEquals(m.RewindFor, question));
+        Task Say(string status) => RunOnVMContextAsync(() => CardOf()?.RewindSays(status));
+        // Claimed like a send: a question sent while the files go back would be cut away by the fork, unsaved.
+        var claim = 0;
+        var undone = false;
+        var turn = 0;
+        try
+        {
+            List<SavedMessage> snapshot = [];
+            var index = -1;
+            var currentName = string.Empty;
+            string? root = null;
+            IReadOnlyList<string> expected = [];
+            await RunOnVMContextAsync(() =>
+            {
+                if (IsLoading || _sendStarting) return;
+                _sendStarting = true;
+                claim = ++_sendClaim;
+                (snapshot, index) = SnapshotWithIndexOf(question);
+                currentName = _currentSessionName;
+                root        = _conversationRoot.For(_indexService.RootDir);
+                expected    = CardOf()?.RewindRunIds ?? [];
+            });
+            if (claim == 0) { await Say(Strings.UndoRunWhileBusy); return; }
+            turn = index < 0 ? 0 : Services.Execution.Rewind.TurnAt(snapshot, index);
+            if (turn == 0) { await Say(Strings.RewindQuestionGone); return; }
+            Services.Execution.RewindOutcome? outcome = null;
+            if (!conversationOnly)
+            {
+                PinWorkspaceRoot();
+                outcome = await UndoOutsideAnyRunAsync(() =>
+                    Services.Execution.Rewind.ApplyAsync(_tools.History, snapshot, turn, expected));
+                if (outcome is null) { await Say(Strings.RewindQuestionGone); return; }
+                if (outcome.Plan.Refusal == Services.Execution.RewindRefusal.Stale)
+                {
+                    // The card showed other runs: drawn again from what follows the question now, and said.
+                    var fresh = Services.Presentation.RewindCard.Build(Services.Execution.Rewind.Plan(_tools.History, snapshot, turn)!);
+                    await RunOnVMContextAsync(() => ShowRewindCard(question, fresh, Strings.RewindPlanChanged));
+                    return;
+                }
+                if (outcome.Plan.Refusal != Services.Execution.RewindRefusal.None)
+                {
+                    var refused = Services.Presentation.RewindCard.Build(outcome.Plan);
+                    await RunOnVMContextAsync(() => ShowRewindCard(question, refused, null));
+                    return;
+                }
+                if (outcome.Failed.Count > 0) { await Say(Strings.RewindStopped(Path.GetFileName(outcome.Failed[0]))); return; }
+                undone = true;
+            }
+            var saved    = Services.Execution.Rewind.QuestionAt(snapshot, turn)!;
+            var sessions = await _store.ListWithPreviewAsync(CancellationToken.None);
+            if (await ForkAsync(snapshot, turn - 1, currentName, root, sessions, CancellationToken.None) is null)
+            {
+                await Say(Strings.RewindQuestionGone);
+                return;
+            }
+            await ShowInfoAsync(Services.Presentation.RewindCard.Done(outcome, turn, saved));
+            var asked = Services.Presentation.RewindCard.Typed(saved).Text;
+            // Above a draft typed meanwhile, never over it.
+            await RunOnVMContextAsync(() => Prompt = string.IsNullOrWhiteSpace(Prompt) ? asked : asked + "\n\n" + Prompt);
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("InferpalToolWindowData.Rewind", ex);
+            // The files moved: said, never "nothing changed".
+            await Say(undone ? Strings.RewindConversationNotCut(turn, Diagnostics.RootMessage(ex))
+                             : Strings.MsgError(Diagnostics.RootMessage(ex)));
+        }
+        finally
+        {
+            if (claim != 0) await RunOnVMContextAsync(() => { if (_sendClaim == claim) _sendStarting = false; });
         }
     }
 

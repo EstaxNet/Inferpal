@@ -122,6 +122,8 @@ internal partial class InferpalToolWindowData
         BtnCancel            = Strings.BtnCancel;
         BtnSend              = Strings.BtnSend;
         TooltipCopy          = Strings.TooltipCopy;
+        RewindHereLabel      = Strings.RewindButton;
+        RewindHereTip        = Strings.RewindButtonTip;
         TooltipSessionPicker = Strings.TooltipSessionPicker;
         TooltipLoadSession       = Strings.TooltipLoadSession;
         TooltipDeleteSession     = Strings.TooltipDeleteSession;
@@ -189,6 +191,8 @@ internal partial class InferpalToolWindowData
     [DataMember] public string BtnCancel            { get => _btnCancel;            set => SetProperty(ref _btnCancel,            value); }
     [DataMember] public string BtnSend              { get => _btnSend;              set => SetProperty(ref _btnSend,              value); }
     [DataMember] public string TooltipCopy             { get => _tooltipCopy;             set => SetProperty(ref _tooltipCopy,             value); }
+    [DataMember] public string RewindHereLabel         { get => _rewindHereLabel;         set => SetProperty(ref _rewindHereLabel,         value); }
+    [DataMember] public string RewindHereTip           { get => _rewindHereTip;           set => SetProperty(ref _rewindHereTip,           value); }
     [DataMember] public string TooltipSessionPicker    { get => _tooltipSessionPicker;    set => SetProperty(ref _tooltipSessionPicker,    value); }
     [DataMember] public string TooltipLoadSession      { get => _tooltipLoadSession;      set => SetProperty(ref _tooltipLoadSession,      value); }
     [DataMember] public string TooltipDeleteSession    { get => _tooltipDeleteSession;    set => SetProperty(ref _tooltipDeleteSession,    value); }

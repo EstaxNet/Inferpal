@@ -129,6 +129,8 @@
   "waiting for you": "等待你的操作",
   "Undo run": "撤销本次运行",
   "Review changes": "查看修改",
+  "Go back here": "回到这里",
+  "Go back here — the conversation and its files": "回到这里 — 对话及其文件",
   "What should we work on?": "我们来做点什么？",
   "{0} on {1}. Your code stays on this machine.": "{1} 上的 {0}。你的代码始终留在本机。",
   "Your code stays on this machine.": "你的代码始终留在本机。",

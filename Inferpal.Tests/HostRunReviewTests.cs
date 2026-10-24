@@ -68,7 +68,7 @@ public partial class HostServerTests
     {
         var provider = WebviewRebuildTests.TsCode("chatViewProvider.ts");
         var start = provider.IndexOf("case 'runFile': {", StringComparison.Ordinal);
-        var body = provider[start..provider.IndexOf("case 'copyText':", start, StringComparison.Ordinal)];
+        var body = provider[start..provider.IndexOf("      case '", start + 1, StringComparison.Ordinal)];   // up to the next case
         Assert.Equal(4, System.Text.RegularExpressions.Regex.Matches(body, @"this\.post\(\{ type: 'runReview', runId: msg\.runId").Count);
         Assert.Equal(4, System.Text.RegularExpressions.Regex.Matches(body, @"\breturn;|\} catch").Count);   // WITNESS: four ways out
 

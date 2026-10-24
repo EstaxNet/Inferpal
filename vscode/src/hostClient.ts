@@ -55,6 +55,8 @@ import {
   SavedMessage,
   SessionBranchCommandResult,
   SessionBranchResult,
+  RewindCard,
+  RewindResult,
   SettingsSchema,
   SessionLoadResult,
   SessionArchiveResult,
@@ -859,6 +861,20 @@ export class HostClient {
 
   sessionDelete(name: string): Promise<boolean> {
     return this.connection().sendRequest<boolean>('session/delete', { name });
+  }
+
+  /** A question's "Go back here": what going back would do to the files, or why it cannot. `question` is the clicked
+   *  question as saved: an index that points elsewhere is refused. */
+  rewindPlan(messageIndex: number, messages: SavedMessage[], question: string): Promise<RewindCard | null> {
+    return this.connection().sendRequest<RewindCard | null>('chat/rewindPlan', { messageIndex, messages, question });
+  }
+
+  /** Goes back to the question: its following runs undone (unless `conversationOnly`) — refused if they are not the
+   *  `expectedRuns` the card showed — and the conversation cut. */
+  rewind(messageIndex: number, messages: SavedMessage[], question: string, conversationOnly: boolean,
+         expectedRuns: string[]): Promise<RewindResult | null> {
+    return this.connection().sendRequest<RewindResult | null>('chat/rewind',
+      { messageIndex, messages, question, conversationOnly, expectedRuns });
   }
 
   /**

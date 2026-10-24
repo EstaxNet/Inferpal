@@ -119,8 +119,19 @@ internal partial class InferpalToolWindowData
         }
 
         // ── Fork at a turn ────────────────────────────────────────────────────
-        var plan = BranchManager.Plan(snapshot, result.ForkTurn!.Value, currentName, sessions, DateTime.Now);
+        var plan = await ForkAsync(snapshot, result.ForkTurn!.Value, currentName, root, sessions, ct);
         if (plan is null) { await ShowInfoAsync(Strings.BranchNoConversation); return; }
+        await ShowInfoAsync(Strings.BranchCreated(plan.BranchName, plan.ForkTurn, plan.ParentName));
+    }
+
+    /// <summary>Forks the conversation at <paramref name="turn"/> (0: before its first question) and shows the branch;
+    /// null when there is no such turn.</summary>
+    private async Task<BranchPlan?> ForkAsync(List<SavedMessage> snapshot, int turn, string currentName, string? root,
+                                             SessionScan<SessionSummary> sessions, CancellationToken ct)
+    {
+        await SettleCurrentTurnAsync();
+        var plan = BranchManager.Plan(snapshot, turn, currentName, sessions, DateTime.Now);
+        if (plan is null) return null;
 
         // The parent goes to disk first — with the conversation as it stands now, which may have
         // moved on since it was loaded: forking must never be what loses the discarded half.
@@ -128,16 +139,19 @@ internal partial class InferpalToolWindowData
         await _store.SaveAsync(plan.ParentName, plan.ParentMessages, ct, root,
                                parent: plan.ParentParent, forkTurn: plan.ParentForkTurn, templateSuffix: templateSuffix);
 
-        await _store.SaveAsync(plan.BranchName, plan.BranchMessages, ct, root,
-                               parent: plan.ParentName, forkTurn: plan.ForkTurn, templateSuffix: templateSuffix);
+        // Cut before every question (going back to the first one), it is a new conversation: no empty session is written.
+        var keepsAQuestion = plan.BranchMessages.Any(SessionManager.IsQuestion);
+        if (keepsAQuestion)
+            await _store.SaveAsync(plan.BranchName, plan.BranchMessages, ct, root,
+                                   parent: plan.ParentName, forkTurn: plan.ForkTurn, templateSuffix: templateSuffix);
 
         await RunOnVMContextAsync(() =>
         {
-            RestoreConversation(plan.BranchMessages, plan.BranchName, templateSuffix);
+            RestoreConversation(plan.BranchMessages, keepsAQuestion ? plan.BranchName : string.Empty, templateSuffix);
             RefreshSessionsList();
             ScrollToBottom();
         });
-        await ShowInfoAsync(Strings.BranchCreated(plan.BranchName, plan.ForkTurn, plan.ParentName));
+        return plan;
     }
 
     // Logic shared with the Host (HistoryCommandHandler) — the view-model only adds the bubble.

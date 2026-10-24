@@ -129,6 +129,8 @@
   "waiting for you": "vi aspetta",
   "Undo run": "Annulla l'esecuzione",
   "Review changes": "Rivedi le modifiche",
+  "Go back here": "Torna qui",
+  "Go back here — the conversation and its files": "Torna qui — la conversazione e i suoi file",
   "What should we work on?": "Su cosa lavoriamo?",
   "{0} on {1}. Your code stays on this machine.": "{0} su {1}. Il vostro codice resta su questa macchina.",
   "Your code stays on this machine.": "Il vostro codice resta su questa macchina.",

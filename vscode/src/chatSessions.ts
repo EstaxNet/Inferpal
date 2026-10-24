@@ -23,9 +23,15 @@ export function toSavedMessages(transcript: readonly WvTranscriptItem[]): SavedM
           : item.notice || item.note
             // The Core's SessionManager.NoticeMarker: the restore leaves a notice on screen, out of the model's history.
             // A note no step has read yet is one too: the model never read it with its question.
-            ? { role: item.role, content: item.text, toolName: NOTICE_MARKER, timestamp: item.timestamp }
-            : { role: item.role, content: item.text, timestamp: item.timestamp },
+            ? { role: item.role, content: item.text, toolName: NOTICE_MARKER, timestamp: item.timestamp, ...runOf(item) }
+            : { role: item.role, content: item.text, timestamp: item.timestamp, ...runOf(item) },
   );
+}
+
+/** The run a turn made goes with the message that closes it: going back to a question finds the runs that followed. */
+function runOf(item: WvTranscriptItem): { run?: string } {
+  const run = item.run?.runId || item.runId;
+  return run ? { run } : {};
 }
 
 /** Mirror of SessionManager.NoticeMarker (Core): the toolName a saved notice carries. */
@@ -57,6 +63,7 @@ export function toTranscript(messages: readonly SavedMessage[]): WvTranscriptIte
         timestamp: m.timestamp ?? undefined,
         // Kept across a reload, or the next save would turn the notice back into an answer (or a question).
         ...(m.toolName === NOTICE_MARKER ? { notice: true } : {}),
+        ...(m.run ? { runId: m.run } : {}),
       });
     } else if (m.role !== 'status') {
       // ⚠ Both editors write the same session files. A role only the other draws (Visual Studio's plan card) was

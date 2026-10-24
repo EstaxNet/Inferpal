@@ -83,14 +83,15 @@ internal static class BranchManager
     }
 
     /// <summary>
-    /// Transcript of turns 1..<paramref name="turn"/> (inclusive). Returns null when the turn
-    /// number doesn't exist — the caller turns that into a usage message.
+    /// Transcript of turns 1..<paramref name="turn"/> (inclusive); turn 0 keeps what came before the first question
+    /// (going back to question 1). Returns null when the turn number doesn't exist — the caller turns that into a
+    /// usage message (<c>/branch</c> accepts 1 and up).
     /// </summary>
     public static List<SavedMessage>? TruncateAtTurn(IReadOnlyList<SavedMessage> messages, int turn)
     {
         var turns = SplitTurns(messages);
-        if (turn < 1 || turn > turns.Count) return null;
-        return messages.Take(turns[turn - 1].EndExclusive).ToList();
+        if (turn < 0 || turn > turns.Count || turns.Count == 0) return null;
+        return messages.Take(turn == 0 ? turns[0].EndExclusive - turns[0].MessageCount : turns[turn - 1].EndExclusive).ToList();
     }
 
     // ── Naming ────────────────────────────────────────────────────────────────

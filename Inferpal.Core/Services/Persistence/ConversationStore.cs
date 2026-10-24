@@ -425,11 +425,15 @@ internal record SessionData(
     // a load that drops the mode shows a mode no answer follows — a restart of VS Code's host reloads every time.
     [property: JsonPropertyName("template_suffix")] string? TemplateSuffix = null);
 
+/// <param name="Run">The run of agent changes the turn this message closes made (<c>HistoryRun.Id</c>); absent when it
+/// changed no file, and from the sessions written before it existed. The only link from a question to the runs that
+/// followed it: a time shown in the chat has no date, and the workspace's runs include the other editor's.</param>
 internal record SavedMessage(
     [property: JsonPropertyName("role")]      string  Role,
     [property: JsonPropertyName("content")]   string  Content,
     [property: JsonPropertyName("toolName")]  string? ToolName  = null,
-    [property: JsonPropertyName("timestamp")] string? Timestamp = null);
+    [property: JsonPropertyName("timestamp")] string? Timestamp = null,
+    [property: JsonPropertyName("run")]       string? Run       = null);
 
 /// <summary>Lightweight session descriptor returned by <see cref="ConversationStore.ListWithPreviewAsync"/>;
 /// <paramref name="MessageCount"/> counts its questions and answers (<see cref="SessionManager.ConversationMessageCount"/>).

@@ -370,7 +370,8 @@ internal partial class InferpalToolWindowData
 
         foreach (var m in messages)
         {
-            var item = ChatMessageItem.FromSaved(m.Role, m.Content, m.ToolName ?? string.Empty, _config.ToolBubblesExpanded, m.Timestamp ?? string.Empty);
+            var item = ChatMessageItem.FromSaved(m.Role, m.Content, m.ToolName ?? string.Empty, _config.ToolBubblesExpanded, m.Timestamp ?? string.Empty)
+                                      .WithRun(m.Run);
             ApplyItemTheme(item);
             Messages.Add(item);
         }

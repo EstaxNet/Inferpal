@@ -139,6 +139,8 @@ export interface ChatSendResult {
   nextTurnTokens?: number;
   /** The turn's run — its steps, the files it changed, its last check; absent when no tool ran. */
   run?: RunSummary | null;
+  /** The run of changes the turn made, whatever way it ended: saved with its last message. */
+  runId?: string | null;
   /** How long the turn took ("21 s"), localized by the host. */
   duration?: string | null;
   /** The model that answered. */
@@ -549,6 +551,43 @@ export interface SavedMessage {
   content: string;
   toolName?: string | null;
   timestamp?: string | null;
+  /** The run of changes the turn this message closes made (the Core's SavedMessage.Run). */
+  run?: string | null;
+}
+
+/** One file of a question's "Go back here" card. */
+export interface RewindLine {
+  path: string;
+  name: string;
+  kind: 'putBack' | 'deleted' | 'kept';
+  label: string;
+}
+
+/** A question's "Go back here" card (`RewindCardDto` in the host), its words in the person's language. */
+export interface RewindCard {
+  messageIndex: number;
+  question: string;
+  title: string;
+  body: string;
+  files: RewindLine[];
+  note: string;
+  /** Nothing can be undone: the card offers the conversation only, or the runs' reviews. */
+  refused: boolean;
+  runIds: string[];
+  go: string;
+  cancel: string;
+  conversationOnly: string;
+  conversationOnlyHint: string;
+  reviewRuns: string;
+  reviewRunsHint: string;
+}
+
+/** `chat/rewind`: refused (`card`), stopped half-way (`message` only), or back at the question (`branch`). */
+export interface RewindResult {
+  card?: RewindCard | null;
+  branch?: SessionBranchResult | null;
+  question?: string | null;
+  message?: string | null;
 }
 
 export interface SessionSummary {

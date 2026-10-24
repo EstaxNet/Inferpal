@@ -72,12 +72,17 @@ public class BranchTests
         Assert.Equal("greeting", kept[0].Content);
     }
 
+    // Turn 0 is what came before the first question (going back to question 1): RewindTests. /branch accepts 1 and up.
     [Theory]
-    [InlineData(0)]
     [InlineData(-1)]
     [InlineData(4)]
     public void TruncateAtTurn_OutOfRange_ReturnsNull(int turn)
         => Assert.Null(BranchManager.TruncateAtTurn(Conversation(), turn));
+
+    [Fact]
+    public void Branch_ZeroIsStillRefusedAsATurn()
+        => Assert.Equal(Inferpal.Localization.Strings.BranchInvalidTurn(3), BranchCommandHandler.Handle(
+               ["/branch", "0"], Conversation(), null, []).Message);
 
     // ── Naming ─────────────────────────────────────────────────────────────────
 

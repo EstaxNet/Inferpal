@@ -1843,4 +1843,33 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>Nicht wiederholt: {0} wurde nach dem Rückgängigmachen geändert, und Wiederholen würde diese Änderung verlieren.</value></data>
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>rückgängig gemacht, dann geändert — Wiederholen würde diese Änderung verlieren</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>keine Kopie von vor dem Lauf — nicht rückgängig zu machen</value></data>
+  <data name="RewindButton" xml:space="preserve"><value>Hierher zurück</value></data>
+  <data name="RewindButtonTip" xml:space="preserve"><value>Hierher zurück — die Unterhaltung und ihre Dateien</value></data>
+  <data name="RewindTitle" xml:space="preserve"><value>Zurück zu „{0}“?</value></data>
+  <data name="RewindLead" xml:space="preserve"><value>Die Unterhaltung geht bei dieser Frage weiter, so wie Sie sie gestellt haben. Die Läufe danach werden rückgängig gemacht ({0}):</value></data>
+  <data name="RewindLeadNoRun" xml:space="preserve"><value>Die Unterhaltung geht bei dieser Frage weiter, so wie Sie sie gestellt haben. Kein aufgezeichneter Lauf danach hat eine Datei geändert.</value></data>
+  <data name="RewindPutBack" xml:space="preserve"><value>wiederhergestellt</value></data>
+  <data name="RewindDeleted" xml:space="preserve"><value>von einem Lauf erstellt, gelöscht</value></data>
+  <data name="RewindKept" xml:space="preserve"><value>behalten — bleibt unverändert</value></data>
+  <data name="RewindNote" xml:space="preserve"><value>Die aktuelle Version jeder Datei wird zuerst gesichert. Die Unterhaltung, wie sie jetzt ist, bleibt in Ihren Sitzungen (/branch).</value></data>
+  <data name="RewindGo" xml:space="preserve"><value>Zurück</value></data>
+  <data name="RewindCancel" xml:space="preserve"><value>Abbrechen</value></data>
+  <data name="RewindRefusedChangedTitle" xml:space="preserve"><value>Nicht zurückgegangen: Eine Datei hat sich nach diesen Läufen geändert</value></data>
+  <data name="RewindRefusedTitle" xml:space="preserve"><value>Nicht zurückgegangen</value></data>
+  <data name="RewindRefusedChanged" xml:space="preserve"><value>{0} wurde um {1} geändert, nach den Läufen, die auf diese Frage folgten. Sie rückgängig zu machen würde diese Änderung überschreiben — nichts wurde rückgängig gemacht, und die Unterhaltung ist, wo sie war.</value></data>
+  <data name="RewindRefusedGone" xml:space="preserve"><value>{0} wurde nach den Läufen gelöscht, die auf diese Frage folgten. Sie rückgängig zu machen würde die Datei über diese Änderung hinweg zurückbringen — nichts wurde rückgängig gemacht, und die Unterhaltung ist, wo sie war.</value></data>
+  <data name="RewindRefusedNotKept" xml:space="preserve"><value>Ein Lauf nach dieser Frage wird nicht mehr aufbewahrt (nur die letzten {0} des Arbeitsbereichs). Nichts wurde rückgängig gemacht, und die Unterhaltung ist, wo sie war.</value></data>
+  <data name="RewindRefusedNoCopy" xml:space="preserve"><value>Die Kopie von {0} vor diesen Läufen ist nicht mehr vorhanden. Nichts wurde rückgängig gemacht, und die Unterhaltung ist, wo sie war.</value></data>
+  <data name="RewindConversationOnly" xml:space="preserve"><value>Nur in der Unterhaltung zurückgehen</value></data>
+  <data name="RewindConversationOnlyHint" xml:space="preserve"><value>Die Dateien bleiben, wie sie jetzt sind; die Läufe lassen sich weiterhin einzeln prüfen.</value></data>
+  <data name="RewindReviewRuns" xml:space="preserve"><value>Änderungen dieser Läufe prüfen</value></data>
+  <data name="RewindReviewRunsHint" xml:space="preserve"><value>Machen Sie die Dateien Ihrer Wahl rückgängig — eine seitdem geänderte Datei wird nie überschrieben.</value></data>
+  <data name="RewindDone" xml:space="preserve"><value>Zurück bei Frage {0}: {1} {1:Datei|Dateien} wiederhergestellt, {2} gelöscht. Die Frage steht im Eingabefeld.</value></data>
+  <data name="RewindDoneConversationOnly" xml:space="preserve"><value>Zurück bei Frage {0}, nur in der Unterhaltung — die Dateien sind unverändert. Die Frage steht im Eingabefeld.</value></data>
+  <data name="RewindStopped" xml:space="preserve"><value>Das Zurückgehen hielt bei {0} an: Sie konnte nicht rückgängig gemacht werden. Die bereits rückgängig gemachten Läufe bleiben es, und die Unterhaltung ist, wo sie war.</value></data>
+  <data name="RewindRefusedBetween" xml:space="preserve"><value>{0} wurde zwischen den Läufen geändert, die auf diese Frage folgten — von Hand oder durch einen Lauf einer anderen Unterhaltung. Sie rückgängig zu machen würde diese Änderung überschreiben — nichts wurde rückgängig gemacht, und die Unterhaltung ist, wo sie war.</value></data>
+  <data name="RewindQuestionGone" xml:space="preserve"><value>Diese Frage steht nicht mehr an ihrer Stelle in der Unterhaltung: Es wurde nichts getan.</value></data>
+  <data name="RewindConversationNotCut" xml:space="preserve"><value>Die Dateien sind wieder wie vor Frage {0}, aber die Unterhaltung konnte nicht gekürzt werden: {1}</value></data>
+  <data name="RewindPlanChanged" xml:space="preserve"><value>Die Läufe nach dieser Frage haben sich seit dem Anzeigen der Karte geändert: Prüfen Sie sie erneut, bevor Sie zurückgehen.</value></data>
+  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>Was dazugehörte ({0}), wird nicht erneut angehängt.</value></data>
 </root>

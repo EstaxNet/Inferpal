@@ -1182,6 +1182,118 @@ kbd {
   color: var(--ip-muted);
 }
 
+/* A question's way back: shown on hover (and to the keyboard), its card under the question. */
+.user-row .rewind-here {
+  align-self: flex-end;
+  margin-top: 4px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid var(--ip-line);
+  background: transparent;
+  color: var(--ip-muted);
+  font-size: 12px;
+  opacity: 0;
+}
+
+.user-row:hover .rewind-here,
+.user-row .rewind-here:focus-visible {
+  opacity: 1;
+}
+
+.approval.rewind-card {
+  margin: 8px 0;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.approval.rewind-card.refused {
+  border-color: var(--vscode-editorWarning-foreground, #cca700);
+}
+
+.rewind-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.rewind-card.refused .rewind-title .icon {
+  color: var(--vscode-editorWarning-foreground, #cca700);
+}
+
+.rewind-body,
+.rewind-note {
+  margin: 0;
+}
+
+.rewind-body {
+  color: var(--ip-muted);
+}
+
+.rewind-card.refused .rewind-body {
+  color: var(--vscode-foreground);
+}
+
+.rewind-note,
+.rewind-status {
+  font-size: 12px;
+  color: var(--ip-muted);
+}
+
+.rewind-files {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 12px;
+}
+
+.rewind-files li {
+  display: flex;
+  gap: 8px;
+}
+
+.rewind-files .rewind-label {
+  color: var(--ip-muted);
+}
+
+.rewind-files li.deleted .rewind-label {
+  color: var(--vscode-gitDecoration-deletedResourceForeground, #f44336);
+}
+
+.rewind-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--ip-line);
+  background: transparent;
+  color: var(--vscode-foreground);
+  text-align: left;
+}
+
+.rewind-choice-title {
+  font-weight: 600;
+}
+
+.rewind-choice-hint {
+  font-size: 12px;
+  color: var(--ip-muted);
+}
+
+.rewind-actions {
+  justify-content: flex-end;
+  padding: 0;
+}
+
 /* ── Approval, in the conversation ──────────────────────────────────────────── */
 .approval {
   border-radius: 10px;

@@ -232,6 +232,8 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     private string _btnCancel               = string.Empty;
     private string _btnSend                 = string.Empty;
     private string _tooltipCopy             = string.Empty;
+    private string _rewindHereLabel         = string.Empty;
+    private string _rewindHereTip           = string.Empty;
     private string _tooltipSessionPicker    = string.Empty;
     private string _tooltipLoadSession      = string.Empty;
     private string _tooltipDeleteSession    = string.Empty;
