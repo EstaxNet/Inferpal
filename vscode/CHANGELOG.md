@@ -24,7 +24,8 @@ completion that comes when you ask for it.
 - **`/pr-description`**: a pull request's title and description for your branch, from its commits and its diff, in a
   block to copy. Nothing is pushed.
 - **Fixed**: `/commit` no longer pre-fills a reply that had looped on itself; `/onboard context` keeps the prose after a
-  code block; `@folder` on a folder of many files no longer outgrows the model's window.
+  code block; `@folder` on a folder of many files no longer outgrows the model's window; `/commit` and `/check` keep
+  excluded files out in a workspace opened through a link.
 
 ## 1.8.4
 

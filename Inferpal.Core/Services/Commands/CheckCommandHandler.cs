@@ -112,7 +112,8 @@ internal static class CheckCommandHandler
         // ⚠ The lines of a file the workspace's ignore files exclude are its content: its sections leave the diff, and the
         // review says it did not read them — never a clean verdict on what it never saw.
         var excluded = new Governance.ContentExclusions.Tally();
-        var workTree = GitProcess.WorkTreeOf(projectRoot);
+        // Found from the workspace in its own spelling; git's, links resolved, when the workspace is a link into the tree.
+        var workTree = GitProcess.WorkTreeOf(projectRoot) ?? await Governance.ContentExclusions.DiffWorkTreeAsync(git, ct);
         string diff;
         List<string> notReviewed = [];
         var stagedOnly = false;

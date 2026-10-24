@@ -310,6 +310,73 @@ public sealed class ContentExclusionTests : IDisposable
         Assert.Contains(".aiignore", commit.Notice);
     }
 
+    /// <summary>A workspace opened through a link (a junction, a linked home folder, macOS's <c>/var</c>) — to the whole
+    /// repository, or to a folder of it: git names its paths with the links resolved, the workspace keeps the spelling it
+    /// was opened by, and the excluded file is still recognised in the diff /check and /commit give the model.</summary>
+    [Theory]
+    [InlineData("")]
+    [InlineData("src")]
+    public async Task AWorkspaceOpenedThroughALink_KeepsItsExcludedFilesOutOfTheDiff(string linkedFolder)
+    {
+        Workspace(excluded: true);
+        File.WriteAllText(Path.Combine(_root, "src", ".aiignore"), "Hidden.cs\n");   // the linked folder's own rules
+        Directory.CreateDirectory(Path.Combine(_root, ".git"));
+        ContentExclusions.ForgetForTests(_root);   // only the linked spelling is declared, as the editor opened it
+        var outside = Directory.CreateTempSubdirectory("inferpal-exclude-link").FullName;
+        var linked  = Path.Combine(outside, "ws");
+        try
+        {
+            // Creating a link needs Developer Mode or elevation on Windows: without it, nothing to measure.
+            try { Directory.CreateSymbolicLink(linked, Path.Combine(_root, linkedFolder)); }
+            catch (Exception) { return; }
+            ContentExclusions.Declare(linked, () => ContentExclusions.DefaultFiles);
+            var (file, other) = linkedFolder.Length == 0 ? ("secret/vault.cs", "src/App.cs") : ("src/Hidden.cs", "src/App.cs");
+            var diff = string.Join("\n",
+                $"diff --git a/{file} b/{file}",
+                $"--- a/{file}",
+                $"+++ b/{file}",
+                "@@ -1,1 +1,1 @@",
+                $"+    public const string Value = \"{Marker}\";",
+                $"diff --git a/{other} b/{other}",
+                $"--- a/{other}",
+                $"+++ b/{other}",
+                "@@ -1,1 +1,1 @@",
+                "+    public int Six() => 6;",
+                "");
+            GitRunner git = (args, _) => Task.FromResult(args switch
+            {
+                "diff --staged"             => (diff, 0),
+                "rev-parse --show-toplevel" => (_root + "\n", 0),   // the link resolved, as git names it
+                _                           => (string.Empty, 0),
+            });
+            var sent   = new List<string>();
+            var client = new FakeInferenceProvider
+            {
+                OnChatRequest = (_, history, _, _) =>
+                {
+                    sent.AddRange(history.Select(m => m.Content ?? string.Empty));
+                    return Task.FromResult(new ChatTurnResult("No finding.", null, 0, 0));
+                },
+                AgentRunResult = new AgentResult("feat: add Six", [], []),
+            };
+
+            var check   = await CheckCommandHandler.HandleAsync(client, new InferpalConfig(), linked, ["/check"], git, null, default);
+            var commit  = await CommitCommandHandler.ProposeAsync(client, new InferpalConfig(), git, null, default);
+            var toModel = string.Join("\n", sent.Concat(client.AgentRuns.SelectMany(r => r.History).Select(m => m.Content ?? "")));
+
+            Assert.Contains("Six", toModel);   // WITNESS: the visible change reached the model both times
+            Assert.DoesNotContain(Marker, toModel);
+            Assert.Contains(".aiignore", check.Message);
+            Assert.Contains(".aiignore", commit.Notice);
+        }
+        finally
+        {
+            ContentExclusions.ForgetForTests(linked);
+            try { Directory.Delete(linked); } catch { }   // the link itself, never what it points to
+            try { Directory.Delete(outside, recursive: true); } catch { }
+        }
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]

@@ -249,6 +249,25 @@ internal static class ContentExclusions
         AnyRules() && await git("rev-parse --show-toplevel", ct) is { ExitCode: 0 } top ? top.Output.Trim() : null;
 
     /// <summary>
+    /// What excludes <paramref name="full"/> once the links are resolved on both sides, judged in the spelling of each
+    /// declared root that holds it then. ⚠ git names a work tree with its links resolved (macOS's <c>/var</c> is
+    /// <c>/private/var</c>, a junction, a linked home folder) while a root keeps the spelling the workspace was opened by:
+    /// compared as written, a diff's path is under no root, and what the ignore files exclude reaches the model.
+    /// </summary>
+    /// <param name="full">A path that no root holds as written.</param>
+    /// <param name="roots">The roots with their links resolved: computed on the first call, then reused.</param>
+    private static Exclusion? OfThroughLinks(string full, ref List<(string Root, string Resolved)>? roots)
+    {
+        // A root of the file system resolves to an empty string and holds everything: never one to re-spell into.
+        roots ??= Roots.Keys.Select(r => (r, Tools.PathSanitizer.Resolved(r))).Where(r => r.Item2.Length > 0).ToList();
+        var resolved = Tools.PathSanitizer.Resolved(full);
+        foreach (var (root, resolvedRoot) in roots)
+            if (Under(resolvedRoot, resolved) && Of(Path.Join(root, Path.GetRelativePath(resolvedRoot, resolved))) is { } why)
+                return why;
+        return null;
+    }
+
+    /// <summary>
     /// <paramref name="diff"/> — git's unified diff, paths relative to <paramref name="workTree"/> — without the sections
     /// of the files the workspace's ignore files exclude, each dropped file counted in <paramref name="dropped"/>.
     /// </summary>
@@ -266,6 +285,7 @@ internal static class ContentExclusions
 
         var kept = new System.Text.StringBuilder(diff.Length);
         kept.Append(diff, 0, starts[0]);
+        List<(string Root, string Resolved)>? resolvedRoots = null;
         for (var i = 0; i < starts.Count; i++)
         {
             var end     = i + 1 < starts.Count ? starts[i + 1] : diff.Length;
@@ -277,7 +297,7 @@ internal static class ContentExclusions
                 string full;
                 try { full = Path.GetFullPath(Path.Combine(workTree, path)); }
                 catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException) { continue; }
-                if (Of(full) is { } found) { (why, excludedPath) = (found, full); break; }
+                if ((Of(full) ?? OfThroughLinks(full, ref resolvedRoots)) is { } found) { (why, excludedPath) = (found, full); break; }
             }
             if (why is not null) dropped.Add(excludedPath!, why);
             else kept.Append(section);
