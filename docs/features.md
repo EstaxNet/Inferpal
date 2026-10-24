@@ -1,42 +1,83 @@
 ﻿# Features
 
-A functional tour of what Inferpal does. Each area links to a deeper reference where one
-exists.
+**A local model, turned into an agent that works inside your editor.** This page shows what it does, with real
+screens, the diagrams behind it, and something to try in each section. Everything works in **Visual Studio** and
+**VS Code** unless a line says otherwise, and the full detail of each area waits in its *In detail* block.
 
-## Two editors, one engine
+<p align="center">
+  <img src="assets/demo-vscode.gif" alt="Inferpal in VS Code: asked to add argument validation to a C# method and cover it with xUnit tests, the agent plans, edits the method, creates the test file and runs the tests behind approval cards, and ends on its answer and a result bar with Undo run, on a local model" width="820">
+  <br><sub>A real run on a local model, sped up.</sub>
+</p>
 
-- The **Visual Studio extension** (primary) and the **VS Code extension** run the same
-  `Inferpal.Core` engine and share the same configuration: the agent, its tools and approvals, search, MCP, ghost
-  text, `/tdd` and `/debug` are the same in both. The VS Code chat has full markdown rendering, welcome screen,
-  connection + VRAM badge, collapsible tool bubbles (input/output, the colored change a write made, "Fix with AI" on
-  errors), live agent-plan block,
-  slash-command autocomplete, Shift+↑/↓ prompt history, token counter with a clickable context gauge (opens the X-Ray
-  panel), conversation search, `.md`/`.txt` export, Ctrl+Alt+I keybinding, and a localized webview (10 languages).
-- **The editor's gestures, in both** — **Edit with AI** (an instruction on the selection or the caret's line, the
-  change shown before it applies), **Explain**, **Add Tests**, **Fix**, **Refactor** and **Document** in the editor's
-  menu, `/test` on the **selection** with its tests written by an edit you can undo, and `/map` on **Alt+M**.
-- **Not in VS Code yet** — `/fix-build` is Visual Studio's alone (it answers that it is not available).
-- **First run, in both editors** — Inferpal looks for a model server where one usually listens (Ollama, LM Studio,
-  llama-server, vLLM) and says what each place answered. VS Code shows it on a card in the chat: the models proposed
-  for your card, a server on another machine by its address, a key when a server asks for one, and — on Ollama
-  without a chat model — a download of a recommended model. Visual Studio takes the server that answers when nothing
-  was set up yet, and says so; `/setup` looks again in both.
-- **Review a Commit…, in both** — a commit picked from the recent ones of the current branch (searchable by its
-  message), or a branch, tag or range typed, reviewed by `/check`: VS Code's command palette, Visual Studio's
-  *Tools › Inferpal › Review a Commit…*.
-- **Headless slash commands** — nearly all the slash commands are served by the host over JSON-RPC with the
-  same approval/permission pipeline; long commands are cancellable.
-- **Settings panel in VS Code** — an "Inferpal Settings" webview with the same seven pages as the
-  Visual Studio window, read from the same description in the Core, backed by the shared config.
-  `/settings` opens it from the chat (and the settings window in Visual Studio).
-- **Zed, JetBrains IDEs, Neovim, Emacs** — the same host, run with `--acp`, is an
-  [Agent Client Protocol](acp.md) agent: modes and model as thread options, the real diff before every change,
-  sessions saved and reloaded. Its settings are the same seven pages, in the browser: `/settings` in a thread, a button
-  at first setup, or `Inferpal.Host --settings`; saved, they apply to the open threads from their next question.
-- **Typed @-mentions, `/plan` and `/agent-step` modes, and per-turn RAG auto-context** all
-  work in VS Code too.
+| [The agent at work](#the-agent-at-work) | [Undo, review, go back](#undo-review-go-back) | [Fix it where you are](#fix-it-where-you-are) | [Tests and the debugger](#tests-and-the-debugger) |
+|---|---|---|---|
+| Plans, reads, edits, builds and tests — and every change asks first | Every file backed up; a whole run undone in one click | Right-click an error, a selection, a file or a debugger stop | `/tdd` reads the debugger, `/test coverage` writes the missing tests |
 
-## Agent & tools
+| [Work in the background](#work-in-the-background) | [Ghost text](#ghost-text-as-you-type) | [Search & knowledge](#search--knowledge) | [What the model reads](#what-the-model-reads) |
+|---|---|---|---|
+| `/task` investigates while you keep coding | Fill-in-the-middle as you type, three speeds | Meaning + keywords, `@`-mentions, `@Docs`, MCP | Your repository's `AGENTS.md`, `CLAUDE.md`, rules — and you can see it all |
+
+| [Conversation](#conversation-experience) | [Models & hardware](#models--hardware) | [Safety](#safety) | [Two editors, one engine](#two-editors-one-engine) |
+|---|---|---|---|
+| Branches, search, export, a welcome screen that knows your file | A model per task, `/bench`, `/arena`, what sits in your VRAM | Approvals, deny rules, ignore files, invented packages refused | The same agent in Visual Studio, VS Code, Zed, JetBrains, Neovim… |
+
+---
+
+## The agent at work
+
+Ask in plain words. In **Agent** mode the model writes a plan, then works through it with its tools — reading,
+searching, editing, building, testing — and shows every step as it goes. You can correct it mid-run without
+stopping it.
+
+```mermaid
+flowchart LR
+    Q(["Your question"]) --> P["Plan<br/>numbered steps"]
+    P --> A["Act<br/>read · search · edit · run"]
+    A --> O["Observe<br/>results · build errors"]
+    O -- "next step" --> A
+    O -- "plan done" --> R(["Answer +<br/>result bar"])
+    N["Your note<br/>(Enter, while it works)"] -.-> A
+```
+
+<table>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="assets/features/agent-approval-dark.png">
+        <img src="assets/features/agent-approval-light.png" alt="An approval card in the chat: Create a file Tests/CounterResetTests.cs, the new lines in green, then Allow once (Enter), Always this session and Deny (Esc); below, the message box reads: Enter: a note for the running turn, Ctrl+Enter: send it after the turn" width="400">
+      </picture>
+      <br><sub>Every write waits on a card with the real diff. Enter allows, Esc denies.</sub>
+    </td>
+    <td align="center" valign="top" width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="assets/features/run-result-dark.png">
+        <img src="assets/features/run-result-light.png" alt="A finished run: 3 steps, edited 1, build passed, folded into one line; the answer; then a result bar with Counter.razor +4 −0, build passed, Review changes and Undo run" width="400">
+      </picture>
+      <br><sub>A finished run folds into one line and ends on its result bar.</sub>
+    </td>
+  </tr>
+</table>
+
+**Try it**
+
+```text
+Add a Reset button to the counter page and check that it builds
+```
+
+While it works, type *"use the existing CounterService, not a new one"* and press **Enter**: the run reads it before
+its next step. **Ctrl+Enter** queues a message for after the turn instead.
+
+- **Three modes** — **Chat** (tools, no plan), **Agent** (plan, act, observe) and **Plan** (`/plan`: read-only, it
+  proposes and changes nothing). `/plan save` turns a plan into a committable `.inferpal/plans/` file.
+- **30 built-in tools**, plus your own shell commands and any [MCP](mcp.md) server — [the reference](tools.md).
+  Independent read-only calls run in parallel; `/tools off <tool>` takes one away from the model.
+- **Step by step** — `/agent-step` pauses before each tool call; **▶ Resume** goes on.
+- **Long runs you can leave** — the machine stays awake while the model works, a card left unanswered flashes the
+  taskbar or raises a notification, and a run stopped at its limit ends with **Continue**.
+- **Post-mortem** — `/replay` shows every tool call of a run, with its target and duration.
+
+<details>
+<summary><b>In detail: the agent loop, steering, plans, approvals</b></summary>
 
 - **Agentic loop** — the model autonomously chains tool calls (read/write files, run
   commands, search the web, diagnose builds, run tests, search the codebase) for up to
@@ -79,20 +120,6 @@ exists.
   fold into one line (`3 steps · read 1 file · edited 1 · build passed`, a ✗ when its last check
   failed). Under the answer, a **result bar** lists the files it changed with their lines added and
   removed, the last build or test check, and **Undo run** (`/undo-run`), offered on the latest run.
-- **Review a run file by file** *(both editors)* — the result bar's **Review changes** opens a
-  card under it: each file the run changed, its diff against the state before the run, and
-  **Keep** or **Undo** (**Delete** for a file the run created) on its own. An undone file offers
-  **Redo**: what an undo replaces is saved first. A file changed after the run says so and is
-  not undone — undoing it would put back the state before the run and lose that change. Where
-  there is no card (an agent thread), `/undo-run review` lists the files and where each stands,
-  and `/undo-run #<run> <file>` undoes one.
-- **Go back to a question, with its files** *(both editors)* — **Go back here**, under a question
-  you asked, opens a card: the runs that followed it are undone (each file put back, or deleted if
-  a run created it — its current version saved first), the conversation resumes from that
-  question — the whole one stays in your sessions (`/branch`) — and the question comes back in the
-  message box. A file changed after those runs, by hand or by another conversation's run, refuses
-  the whole going back and says which and when: nothing is undone, and the card offers to go back
-  in the conversation only, or to review those runs file by file.
 - **Approvals in the conversation** *(both editors)* — during a turn, an approval is a card under
   the steps: what will happen, to what, the first lines of the change, then **Allow once**
   (Enter), **Always this session** and **Deny** (Esc); *Open diff* shows the whole change. When a
@@ -114,6 +141,75 @@ exists.
   the length limit, ends with a notice and a **Continue** button: it sends "Continue." as your
   next question. It is not offered after a loop or an answer that repeated itself, where
   continuing would do the same again.
+- **Run replay** — `/replay [n]` shows a post-mortem timeline of an agent run: every tool
+  call with its target and duration, then the files it touched.
+
+</details>
+
+## Undo, review, go back
+
+Before the agent changes a file, Inferpal keeps a copy of it. So a run can be undone whole, file by file, or together
+with the conversation that led to it — and even what a command or a test run changed is put back.
+
+```mermaid
+%%{init: {"sequence": {"mirrorActors": false}}}%%
+sequenceDiagram
+    actor You
+    participant I as Inferpal
+    participant F as Counter.razor
+    I->>You: card with the real diff
+    You->>I: Enter (allow)
+    I->>I: keep a copy of the file
+    I->>F: write the change
+    Note over I,F: the run records every file it touched
+    You->>I: Undo run · Review changes · Go back here
+    I->>F: put the copy back (its current version saved first)
+```
+
+<table>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="assets/features/review-run-dark.png">
+        <img src="assets/features/review-run-light.png" alt="Changes of this run: 3 files against the state before 14:02. Counter.razor +4 −0 with Keep and Undo and its diff; CounterResetTests.cs marked changed since the run and not undone; NavMenu.razor undone, with Redo" width="400">
+      </picture>
+      <br><sub><b>Review changes</b>: keep or undo each file, redo an undo.</sub>
+    </td>
+    <td align="center" valign="top" width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="assets/features/go-back-dark.png">
+        <img src="assets/features/go-back-light.png" alt="Go back to 'Add a retry with exponential backoff to it'? The conversation resumes from this question; the 2 runs that followed are undone: PaymentClient.cs and Program.cs put back, RetryPolicy.cs created by a run, deleted. Cancel or Go back" width="400">
+      </picture>
+      <br><sub><b>Go back here</b>, under a question: its files and the conversation, together.</sub>
+    </td>
+  </tr>
+</table>
+
+**Try it** — after a run, `/undo-run` (or **Undo run**); `/undo-run list` shows the runs you can still undo.
+
+- **Survives a restart** — runs are kept beside the backups, so **Undo run** still works in a reopened conversation,
+  in either editor.
+- **A file you changed since is never lost** — it is named and left alone, never silently rolled back.
+- **Nothing written into your repository behind your back** — backups live in `.inferpal/history/` (which ignores
+  itself in git) or, if you prefer, in your user folder. Inferpal never edits your `.gitignore`.
+
+<details>
+<summary><b>In detail: undo, review, go back, backups</b></summary>
+
+- **Review a run file by file** *(both editors)* — the result bar's **Review changes** opens a
+  card under it: each file the run changed, its diff against the state before the run, and
+  **Keep** or **Undo** (**Delete** for a file the run created) on its own. An undone file offers
+  **Redo**: what an undo replaces is saved first. A file changed after the run says so and is
+  not undone — undoing it would put back the state before the run and lose that change. Where
+  there is no card (an agent thread), `/undo-run review` lists the files and where each stands,
+  and `/undo-run #<run> <file>` undoes one.
+- **Go back to a question, with its files** *(both editors)* — **Go back here**, under a question
+  you asked, opens a card: the runs that followed it are undone (each file put back, or deleted if
+  a run created it — its current version saved first), the conversation resumes from that
+  question — the whole one stays in your sessions (`/branch`) — and the question comes back in the
+  message box. A file changed after those runs, by hand or by another conversation's run, refuses
+  the whole going back and says which and when: nothing is undone, and the card offers to go back
+  in the conversation only, or to review those runs file by file.
 - **Undo a whole run** — `/undo-run` reverts every file changed during the last agent run
   (restores edited files, deletes files created that run) — save the files changed after the run
   and those you kept, left as they are and named; `/undo-run list` shows the
@@ -140,10 +236,47 @@ exists.
   changed files* set to **In my user folder** (`historyStorage: user`), in Inferpal's local
   application data, one folder per repository, with nothing new written into the project. Switching
   keeps the backups already made restorable.
-- **Run replay** — `/replay [n]` shows a post-mortem timeline of an agent run: every tool
-  call with its target and duration, then the files it touched.
 
-## Code editing & fixing
+</details>
+
+## Fix it where you are
+
+You don't have to copy an error into the chat. Inferpal sits in the menus you already use, and sends the code around
+the problem with it.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/features/build-banner-dark.png">
+    <img src="assets/features/build-banner-light.png" alt="A banner over the chat: The last build failed, 3 errors; the first one, Cart/CartService.cs(42,17): error CS0103; Fix them and Show the errors" width="440">
+  </picture>
+  <br><sub>A failed build puts its errors one click away.</sub>
+</p>
+
+| Where you are | Visual Studio | VS Code |
+|---|---|---|
+| **Build errors** | Error List → *Fix with Inferpal*; *Fix with AI* on the failed-build banner; `/fix-build` | Problems or light bulb → *Fix with Inferpal*; the banner of a failed build task |
+| **A selection** | *Edit with AI…* (**Ctrl+Shift+I**): red and green in the editor, accepted part by part | *Edit with AI*, shown in Refactor Preview first |
+| **The editor's menu** | Explain · Fix · Refactor · Add Tests · Add Docstring | Fix · Refactor · Document; `/explain` and `/test` |
+| **A file or a project** | Solution Explorer → *Explain* · *Review Changes* · *Attach to Chat* | Explorer → the same three |
+| **The debugger, stopped** | *Analyze with Inferpal* (Debug menu, Call Stack, Locals, Autos, Watch) | *Analyze with Inferpal* (call stack, variables) |
+| **Committing** | `/commit` drafts the message | Source Control → *Propose a Commit Message* |
+| **A pull request** | `/pr-description` | `/pr-description` |
+
+**Try it** — select a method, press **Ctrl+Shift+I** in Visual Studio and type:
+
+```text
+use a switch expression and keep the same behavior
+```
+
+The change appears in the editor in red and green; keep or drop each part.
+
+- **It checks its own edits** — after each write, a quick build or typecheck (.NET, TypeScript, Rust, Go, or your own
+  validator in `.inferpal/validators.json`) feeds the errors straight back to the agent.
+- **Edits land whole or not at all** — `apply_edits` changes several files at once only if every edit applies.
+- **Nothing is run from a debugger stop** — *Analyze with Inferpal* reads the stack and the locals, and explains.
+
+<details>
+<summary><b>In detail: code actions, Edit with AI, Smart Fix, the menus</b></summary>
 
 - **Code actions** (editor context menu → **Inferpal**) — **Explain**, **Fix**, **Refactor**,
   **Add Tests**, **Add Docstring** (Visual Studio; VS Code's editor context menu has *Inferpal: Fix This Code*,
@@ -152,6 +285,9 @@ exists.
   **Fix**, **Refactor** and **Add Docstring** apply their result **directly in the editor**
   (undoable with Ctrl+Z); **Add Tests** writes into a **separate test file** (created/opened,
   or extended if it already exists); only **Explain** answers in the chat window.
+- **The editor's gestures, in both** — **Edit with AI** (an instruction on the selection or the caret's line, the
+  change shown before it applies), **Explain**, **Add Tests**, **Fix**, **Refactor** and **Document** in the editor's
+  menu, `/test` on the **selection** with its tests written by an edit you can undo, and `/map` on **Alt+M**.
 - **Inline Edit (Edit with AI)** — select code (or place the caret on a line), press
   **Ctrl+Shift+I** (or pick **Edit with AI…** from the context menu), type an instruction, and
   the model rewrites the selection **directly in the editor** (re-indented to match the
@@ -192,6 +328,82 @@ exists.
   (default on).
 - **Inline diff viewer** — an LCS-based diff is shown after every write/apply (added green, removed red, unchanged
   collapsed): in the tool bubble in Visual Studio, in the step in VS Code with its `+/−` count and **Open diff**.
+- **Inferpal in the Explorer** — right-click a project, a folder or a file in Visual Studio's Solution Explorer (*Ask
+  Inferpal*) or VS Code's file explorer (*Inferpal*): **Explain** asks about it without tools — a file as the editor has
+  it, a folder as `@folder` attaches it, sized for the code-actions model's window; **Review Changes** runs `/check` on
+  it (the uncommitted changes under it); **Attach to Chat** puts the `@file` / `@folder` chip in the message box,
+  nothing sent. In Visual Studio a project or a solution stands for its folder; in VS Code a `.csproj` is the file
+  itself. A file the ignore files exclude, a binary file, or a node with no file behind it, is said.
+- **A commit message in Source Control (VS Code)** — **Propose a Commit Message** (the ✨ in the Source Control view's
+  title when one repository is shown, a repository's menu, or the palette) writes `/commit`'s proposal for that
+  repository into its commit message box: what is staged, or the tracked files' changes when nothing is. Nothing is
+  committed — the Commit button stays yours — and a message you already typed is replaced only if you say so, the
+  proposal shown; a box emptied while the message was written (committed meanwhile?) is left alone. From the palette,
+  the repository is the active file's, else the only one open; several and no active file: said. Untracked files left
+  undescribed, a diff or a reply cut, nothing to commit: said. The repository is one of the window's folders, or holds
+  one — the ignore files read are theirs. Visual Studio's Git window lets no extension write its message: there,
+  `/commit` proposes it in the chat.
+- **A pull request description (`/pr-description`)** — `/pr-description [base]` writes a pull request's title and description for the
+  current branch: what it brings since it left `base` (by default the remote's default branch, else `main` or
+  `master`), from its commits' subjects and its diff, by the utility model. The range described is named above it, the
+  proposal sits in a block to copy as it is; nothing is pushed or created. A diff past the cap, files the ignore files
+  exclude, a reply cut at its limit: said above the proposal. A branch with nothing beyond its base, an unknown base,
+  two histories with no common commit: said. Both editors, and ACP.
+- **Review a Commit…, in both** — a commit picked from the recent ones of the current branch (searchable by its
+  message), or a branch, tag or range typed, reviewed by `/check`: VS Code's command palette, Visual Studio's
+  *Tools › Inferpal › Review a Commit…*.
+- **Analyze with Inferpal, at a debugger stop** — stopped at a breakpoint or an exception, choose **Analyze with
+  Inferpal** in Visual Studio's Debug menu or in the context menu of the Call Stack, Locals, Autos or Watch window; in
+  VS Code, in the context menu of the call stack or the variables, or *Inferpal: Analyze the Debugger Stop* in the
+  palette. The model gets the stop as `@debugger` shows it — the reason, the exception, your frames, the locals — and
+  the code around each of your frames in the workspace (a file outside it is counted, never read), sized for the window
+  the code-actions model loaded, and explains the cause. It answers **without tools**: nothing is continued, stepped or
+  evaluated. The whole stop is sent, not the row you right-clicked. Nothing paused, or a debugger that does not answer,
+  is said, and nothing is sent. During a turn, Visual Studio sends it when the turn ends — the stop as it was when you
+  clicked; VS Code asks you to wait.
+
+</details>
+
+## Tests and the debugger
+
+A failing test is the best spec there is. `/tdd` runs your suite, patches the code, and runs it again until it is
+green — and on the first red round it **looks at the failure under the debugger** instead of guessing from the log.
+
+<p align="center">
+  <img src="assets/demo-tdd-vscode.gif" alt="/tdd in VS Code on a local Qwen3.8 27B: the failing test is run again under the debugger, the fix is shown as a diff and approved, and the suite turns green after two rounds" width="820">
+</p>
+
+```mermaid
+flowchart LR
+    T["Run the tests<br/>dotnet · pytest · npm<br/>cargo · go"] --> G{"Green?"}
+    G -- yes --> D(["Done"])
+    G -- "no, up to<br/>5 rounds" --> F{"First red round,<br/>a .NET test?"}
+    F -- yes --> DBG["Under the debugger:<br/>the real exception,<br/>stack and locals<br/>(asked once)"]
+    DBG --> FIX
+    F -- no --> FIX["The agent<br/>patches the code<br/>(each write asks)"]
+    FIX --> T
+```
+
+**Try it**
+
+| Type | What happens |
+|---|---|
+| `/tdd` | Fix until the whole suite is green |
+| `/tdd SlidingWindowTests` | Only the tests whose name matches |
+| `/test coverage src/Billing` | Tests for the code no test reaches, under that folder |
+| `/debug why does Total ignore the discount?` | The agent settles it in a real debug session |
+
+- **Measured** — 12 failing C# tests handed to `/tdd` with a local 27B model: **12 fixed** with the debugger's view,
+  10 without.
+- **No shortcut through the tests** — rewriting a *test* file during `/tdd` always asks, whatever your rules say.
+- **`/test coverage`** measures with the tool your project already has, writes one new test file per uncovered
+  method, and keeps it only if it passes three times and covers something new.
+- **`/debug`** lets the agent set breakpoints, step and read locals in a real debug session — after you approve the
+  launch.
+
+<details>
+<summary><b>In detail: /tdd, /test coverage, /debug, /fix-build, the Test view</b></summary>
+
 - **`/fix-build`** — compile → AI fixes errors → recompile, repeated until clean (max 5 rounds).
 - **`/tdd [filter]`** — "fix until green", the test-side twin of `/fix-build`: runs the test
   suite (`run_tests` auto-detects dotnet / pytest / npm / cargo / go), hands the failure
@@ -214,6 +426,56 @@ exists.
   only if it passes three times, asserts something, skips nothing and covers lines nothing
   covered — the others are removed, their copy kept. The report gives the coverage before →
   after, per file, and why each file was set aside; `/undo-run` gives the whole command back.
+- **`/debug [hypothesis]`** — settle a question about runtime behaviour by observing it: the
+  agent starts a **real debug session** (after asking you first), sets breakpoints, steps, and
+  reads locals and the call stack through two read-only tools (`debug_control`,
+  `debug_inspect`). Before launching, the target is built through the automation, so a solution
+  that does not compile is refused instead of freezing the IDE on a modal. Visual Studio drives
+  its own debugger in-process; VS Code goes through a DAP bridge — same command, either editor.
+  `/debug` alone reports the current break state; `/debug stop` ends the session.
+- **Inferpal in the Test view (VS Code)** — right-click a test: **Make This Test Pass** runs `/tdd` with the test's name
+  (a theory's parameters left out); **Explain the Failure** runs the test — from its file for a C# or Python test, else
+  from the workspace — and asks why it fails, with the code around it, without tools; on the failure message under the
+  test, it asks about that message and the failing line without running anything. The name is a filter, matched by each
+  runner its own way: tests whose name contains it run too, and a report that never names the clicked test is said to
+  be about others. A test that passes, a run where nothing ran or that was stopped at its budget, is said; a running
+  test can be cancelled. Visual Studio's Test Explorer gives no extension the test you clicked: there, type
+  `/tdd <name>`.
+
+</details>
+
+## Work in the background
+
+`/task` hands an investigation to a background run and gives you the chat back at once. It only reads, so it never
+interrupts you with a question; with `propose`, it writes down the changes it *would* make, for you to apply later.
+
+```mermaid
+%%{init: {"sequence": {"mirrorActors": false}}}%%
+sequenceDiagram
+    actor You
+    participant T as Background task (read-only)
+    participant C as Chat
+    You->>T: /task propose move the retry logic into RetryPolicy
+    Note over You: you keep coding
+    T->>T: explores · records each write it would make
+    T-->>C: notice: the report is ready
+    You->>C: /task apply t3 1
+    C->>You: the usual card, with the real diff
+```
+
+**Try it**
+
+```text
+/task find every place that reads the cart total without the discount
+```
+
+- **One at a time, behind you** — tasks wait for the chat to be idle before taking the graphics card.
+- **Consent at apply time** — `/task apply <id> <n>` replays one proposal through the normal card; a file changed
+  since is refused, never overwritten.
+
+<details>
+<summary><b>In detail: /task and /task propose</b></summary>
+
 - **`/task <objective>`** — a background agent run, detached from the conversation: submitting
   returns at once and you keep working while it investigates. Tasks run one at a time and wait
   for the chat to be idle before taking the GPU, so interactive work is never blocked. A notice
@@ -228,53 +490,32 @@ exists.
   There is one proposal per file: edits to different parts of a file are combined into it, and
   when two edits touch the same lines the later one replaces the earlier — the task is told so.
   Consent still happens at apply time, one write at a time — never in advance.
-- **`/debug [hypothesis]`** — settle a question about runtime behaviour by observing it: the
-  agent starts a **real debug session** (after asking you first), sets breakpoints, steps, and
-  reads locals and the call stack through two read-only tools (`debug_control`,
-  `debug_inspect`). Before launching, the target is built through the automation, so a solution
-  that does not compile is refused instead of freezing the IDE on a modal. Visual Studio drives
-  its own debugger in-process; VS Code goes through a DAP bridge — same command, either editor.
-  `/debug` alone reports the current break state; `/debug stop` ends the session.
-- **Inferpal in the Explorer** — right-click a project, a folder or a file in Visual Studio's Solution Explorer (*Ask
-  Inferpal*) or VS Code's file explorer (*Inferpal*): **Explain** asks about it without tools — a file as the editor has
-  it, a folder as `@folder` attaches it, sized for the code-actions model's window; **Review Changes** runs `/check` on
-  it (the uncommitted changes under it); **Attach to Chat** puts the `@file` / `@folder` chip in the message box,
-  nothing sent. In Visual Studio a project or a solution stands for its folder; in VS Code a `.csproj` is the file
-  itself. A file the ignore files exclude, a binary file, or a node with no file behind it, is said.
-- **Inferpal in the Test view (VS Code)** — right-click a test: **Make This Test Pass** runs `/tdd` with the test's name
-  (a theory's parameters left out); **Explain the Failure** runs the test — from its file for a C# or Python test, else
-  from the workspace — and asks why it fails, with the code around it, without tools; on the failure message under the
-  test, it asks about that message and the failing line without running anything. The name is a filter, matched by each
-  runner its own way: tests whose name contains it run too, and a report that never names the clicked test is said to
-  be about others. A test that passes, a run where nothing ran or that was stopped at its budget, is said; a running
-  test can be cancelled. Visual Studio's Test Explorer gives no extension the test you clicked: there, type
-  `/tdd <name>`.
-- **A commit message in Source Control (VS Code)** — **Propose a Commit Message** (the ✨ in the Source Control view's
-  title when one repository is shown, a repository's menu, or the palette) writes `/commit`'s proposal for that
-  repository into its commit message box: what is staged, or the tracked files' changes when nothing is. Nothing is
-  committed — the Commit button stays yours — and a message you already typed is replaced only if you say so, the
-  proposal shown; a box emptied while the message was written (committed meanwhile?) is left alone. From the palette,
-  the repository is the active file's, else the only one open; several and no active file: said. Untracked files left
-  undescribed, a diff or a reply cut, nothing to commit: said. The repository is one of the window's folders, or holds
-  one — the ignore files read are theirs. Visual Studio's Git window lets no extension write its message: there,
-  `/commit` proposes it in the chat.
-- **A pull request description (`/pr-description`)** — `/pr-description [base]` writes a pull request's title and description for the
-  current branch: what it brings since it left `base` (by default the remote's default branch, else `main` or
-  `master`), from its commits' subjects and its diff, by the utility model. The range described is named above it, the
-  proposal sits in a block to copy as it is; nothing is pushed or created. A diff past the cap, files the ignore files
-  exclude, a reply cut at its limit: said above the proposal. A branch with nothing beyond its base, an unknown base,
-  two histories with no common commit: said. Both editors, and ACP.
-- **Analyze with Inferpal, at a debugger stop** — stopped at a breakpoint or an exception, choose **Analyze with
-  Inferpal** in Visual Studio's Debug menu or in the context menu of the Call Stack, Locals, Autos or Watch window; in
-  VS Code, in the context menu of the call stack or the variables, or *Inferpal: Analyze the Debugger Stop* in the
-  palette. The model gets the stop as `@debugger` shows it — the reason, the exception, your frames, the locals — and
-  the code around each of your frames in the workspace (a file outside it is counted, never read), sized for the window
-  the code-actions model loaded, and explains the cause. It answers **without tools**: nothing is continued, stepped or
-  evaluated. The whole stop is sent, not the row you right-clicked. Nothing paused, or a debugger that does not answer,
-  is said, and nothing is sent. During a turn, Visual Studio sends it when the turn ends — the stop as it was when you
-  clicked; VS Code asks you to wait.
 
-## Inline completions
+</details>
+
+## Ghost text as you type
+
+Fill-in-the-middle completions in the editor: the model sees the code before **and after** the caret. **Tab**
+accepts, **Esc** dismisses.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/features/settings-autocomplete-dark.png">
+    <img src="assets/features/settings-autocomplete-light.png" alt="The Autocomplete settings page: a ghost-text example completing return lines.Sum(l => l.Price * l.Quantity); three speed cards, Fast, Balanced and Accurate; Suggestions come As I type or When I ask; and Edit with AI's Show the change before applying it" width="760">
+  </picture>
+</p>
+
+| Speed | Suggests | After a pause of |
+|---|---|---|
+| **Fast** | short suggestions (128 tokens) | 300 ms |
+| **Balanced** | longer suggestions (256 tokens) | 600 ms |
+| **Accurate** | whole blocks (512 tokens) | 1 s |
+
+**Try it** — type a method signature and its opening brace, pause, then **Tab**. Or press **Alt+'** to ask for a
+suggestion right now: with *When I ask*, nothing is ever sent until you do.
+
+<details>
+<summary><b>In detail: keys, servers, when it stays quiet</b></summary>
 
 - **Ghost-text Fill-in-the-Middle** as you type — **Tab** to accept, **Esc** to dismiss.
 - Three speeds, picked as cards in the settings: **Fast** (128 tok / 0.4 / 300 ms) · **Balanced** (256 / 0.2 /
@@ -298,7 +539,62 @@ exists.
   chat's is not there to fall back on. Ghost text on another machine than the chat's no longer waits for a chat answer
   to finish; on the chat's machine — under any of its names or addresses — it still does, the card being one.
 
+</details>
+
 ## Search & knowledge
+
+Inferpal indexes your workspace in the background and finds code **by meaning and by name** — so "where is the
+discount applied?" and `ApplyDiscount` both land. The best matches join your question on their own, as chips you can
+remove before sending.
+
+```mermaid
+flowchart LR
+    W["Your workspace"] --> CH["Split into functions<br/>and classes<br/>Roslyn · language server<br/>· patterns"]
+    CH --> IDX[("Local index<br/>meaning + words")]
+    Q["Your question"] --> IDX
+    IDX --> F["Best matches by meaning<br/>and by name, fused"]
+    F --> OUT["Chips on your question<br/>· search_codebase"]
+```
+
+<table>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="assets/features/auto-chips-dark.png">
+        <img src="assets/features/auto-chips-light.png" alt="The message box while typing 'Why does the cart total ignore the discounts': three dashed chips, CartController.cs, CartService.cs 38–61 and DiscountRules.cs 12–30, found in your code while you type and sent as excerpts" width="400">
+      </picture>
+      <br><sub>Found while you type, sent as excerpts. Remove what does not belong.</sub>
+    </td>
+    <td align="center" valign="top" width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="assets/features/mcp-form-dark.png">
+        <img src="assets/features/mcp-form-light.png" alt="An MCP server asks for information on a card in the chat: How should version 1.9.0 be published? A version bump choice, a release date, and a field showing 45 refused with: A whole number from 1 to 30" width="400">
+      </picture>
+      <br><sub>An MCP server that needs a value asks on a card — checked before it is sent.</sub>
+    </td>
+  </tr>
+</table>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/features/settings-search-dark.png">
+    <img src="assets/features/settings-search-light.png" alt="The Code search settings page: Index up to date, 7 files; meaning-based search plus exact names and keywords; folders left out of the index from .inferpal/project.json; and three documentation sites for @Docs with their page counts" width="740">
+  </picture>
+  <br><sub>The index, what it leaves out, and the documentation sites the agent can search.</sub>
+</p>
+
+**Try it**
+
+| Type | What happens |
+|---|---|
+| `@diff what could break in what I changed?` | The current `git diff` goes with the question |
+| `@problems fix these` | The current build errors go with it |
+| `/docs add https://learn.microsoft.com/ef/core` | The site is indexed; from then on the agent searches it when you ask about EF Core |
+
+Mentions: `@file` `@folder` `@code` `@diff` `@problems` `@debugger` `@clipboard` `@tree` — [what each attaches](mentions.md).
+
+<details>
+<summary><b>In detail: indexing, @Docs, MCP, mentions</b></summary>
 
 - **Semantic codebase search** — background indexing with 3-tier chunking (Roslyn → LSP →
   regex) and **hybrid retrieval** (cosine + BM25 lexical fused with RRF, so exact identifiers
@@ -310,7 +606,41 @@ exists.
 - **`@`-mentions** — a typed context picker (`@file`, `@diff`, `@debugger`, …). See
   **[Mentions](mentions.md)**.
 
-## Context & memory
+</details>
+
+## What the model reads
+
+What reaches the model is never a mystery. Inferpal reads the instructions your repository already wrote for coding
+agents — `AGENTS.md`, `CLAUDE.md`, Copilot's, Cursor's, Cline's, Roo's, Continue's — plus its own project files, and
+splits them in two: what never changes goes into the system prompt, so the model server can reuse its cache; what
+depends on the file you are in goes with the question.
+
+| System prompt — the same for every question | With your question — follows the file you are in |
+|---|---|
+| ① Inferpal's base prompt, then your custom prompt | ① Instructions and rules for the active file's folders and globs |
+| ② Pinned files, up to 3 | ② Code found by search, your mentions and chips |
+| ③ Repository instructions at the root: `AGENTS.md`, `CLAUDE.md`, Copilot, Cursor, Cline, Roo, Continue | ③ Your question |
+| ④ `.inferpal/`: context, memory, notes, the rules that always apply — they win a conflict | |
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/features/settings-instructions-dark.png">
+    <img src="assets/features/settings-instructions-light.png" alt="The Repository instructions part of the Context and memory page: the tools whose files are read, the ignore files read, and a list of files found: AGENTS.md always sent; two GitHub Copilot instruction files not for the active file; CLAUDE.md a duplicate of AGENTS.md; a Cursor rule by hand, not sent" width="760">
+  </picture>
+  <br><sub>Every instruction file found, its tool, when it applies, and whether the next question sends it.</sub>
+</p>
+
+**Try it**
+
+| Type | What happens |
+|---|---|
+| `/instructions` | What each instruction file sends, and why not when it does not |
+| `/xray` | The whole prompt, layer by layer, with what each layer weighs — and switches to leave one out |
+| `/onboard context` | A first `.inferpal/context.md`, drafted from the repository itself, opened for you to correct |
+| `/note the payment API sandbox resets every night` | Kept in `.inferpal/notes.md`, read with every later question |
+
+<details>
+<summary><b>In detail: prompt layers, memory, rules, skills, the project profile</b></summary>
 
 - **System prompt layering** — base prompt + custom prompt + pinned files + project context
   + agent memory + project notes + matching rules. See
@@ -370,7 +700,42 @@ exists.
   repository (layout, README, recent commits) and opens it for you to correct. See
   **[Configuration → The project profile](configuration.md#the-project-profile-inferpalprojectjson)**.
 
+</details>
+
 ## Conversation experience
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/features/welcome-dark.png">
+    <img src="assets/features/welcome-light.png" alt="The welcome screen: What should we work on? For Counter.razor, open in the editor: Explain this file, Write tests for it, Find where it is used; and 2 errors in the Problems panel with a Fix them button" width="440">
+  </picture>
+  <br><sub>An empty chat offers what makes sense for the file you are in.</sub>
+</p>
+
+A conversation is a file you can branch, search, export and come back to — in either editor.
+
+```mermaid
+%%{init: {"gitGraph": {"mainBranchName": "conversation", "rotateCommitLabel": false}}}%%
+gitGraph
+    commit id: "1 Reset button"
+    commit id: "2 Its test"
+    commit id: "3 Rename"
+    branch with-records
+    commit id: "4 Records"
+    checkout conversation
+    commit id: "4 Logging"
+```
+
+<sub>`/branch 3` forks at turn 3: the branch keeps turns 1 to 3 and the conversation goes on there, while the original is
+saved first. `/branch` shows the family tree.</sub>
+
+- **Real-time streaming** with Markdown, code blocks to copy, a **context ring** that fills as the model writes.
+- **Sessions** auto-saved with a generated title, searchable, exportable to `.md` with their statistics.
+- **Snippets, templates, prompt history** — ⭐ keeps a code block, `/template` loads a ready context, `/phistory`
+  finds what you asked before.
+
+<details>
+<summary><b>In detail: streaming, sessions, branching, the welcome screen</b></summary>
 
 - **Real-time streaming** — tokens appear as generated; Markdown renders once complete.
 - **Real-time context ring** — the composer's ring (share of the window; token counts in its
@@ -408,7 +773,51 @@ exists.
   The message bubble names what went with it, so the transcript — on screen, exported, or
   reloaded later — still says what the question was asked about.
 
+</details>
+
 ## Models & hardware
+
+One graphics card, several jobs. Inferpal gives each job the model you choose for it — or the chat model when you
+choose nothing — and shows what sits in graphics memory right now.
+
+```mermaid
+flowchart LR
+    A["Questions and agent runs"] --> M1["Chat and agent model"]
+    B["Explain · Fix · Refactor<br/>Edit with AI"] -. "same as chat,<br/>unless set" .-> M1
+    C["Titles · commit messages<br/>summaries"] -. "a small model,<br/>if set" .-> M4["Utility model"]
+    D["Ghost text"] -. "the chat model,<br/>unless set" .-> M2["Autocomplete model<br/>(can be on another server)"]
+    E["Code search · @Docs"] --> M3["Embedding model<br/>(optional)"]
+```
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/features/first-run-dark.png">
+    <img src="assets/features/first-run-light.png" alt="The first-run card: Found your server, Ollama answers at localhost:11434 with 3 models. For 24 GB of graphics memory: qwen3.8:27b for chat and agent, the same model for autocomplete, nomic-embed-text for code search; fits together with 3.9 GB to spare. Start with these, or Choose other models; LM Studio is also answering" width="440">
+  </picture>
+  <br><sub>First run: it finds your server and proposes models that fit your card.</sub>
+</p>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/features/settings-models-dark.png">
+    <img src="assets/features/settings-models-light.png" alt="The Server and models page: Loaded now, 2 models, 16.3 GB of graphics memory, each with what it is used for and when it unloads, and an Unload button; then A model per task: agent with tools, explain fix refactor, Edit with AI, background tasks" width="740">
+  </picture>
+  <br><sub>What is loaded, what each model is used for, and a model per task.</sub>
+</p>
+
+**Try it**
+
+| Type | What happens |
+|---|---|
+| `/bench` | Your installed models timed and scored, with a recommendation per role |
+| `/arena explain this regex: ^(?=.*\d).{8,}$` | Two models answer blind; `/arena a`, `b` or `tie` reveals them |
+| `/hardware` | Your memory budget, what is loaded, and the context size that fits |
+| `/models pull qwen3.8` | Downloads a model, with its progress (Ollama) |
+
+Which model for which card: **[Models](models.md#by-graphics-card)**, measured on real coding tasks.
+
+<details>
+<summary><b>In detail: model manager, VRAM, /bench, /arena, the Model Router</b></summary>
 
 - **Model manager** — `/models list/pull/delete/running` (streaming pull on Ollama).
 - **VRAM monitoring** — a header badge shows the models resident in VRAM;
@@ -432,11 +841,50 @@ exists.
   Opt-in **auto mode** (`modelRouterAuto`): with no utility model set, background tasks use
   the model `/bench` recommended for the utility role — but only when it is already warm in
   VRAM; a cold model is never loaded for a title or commit message.
+- **First run, in both editors** — Inferpal looks for a model server where one usually listens (Ollama, LM Studio,
+  llama-server, vLLM) and says what each place answered. VS Code shows it on a card in the chat: the models proposed
+  for your card, a server on another machine by its address, a key when a server asks for one, and — on Ollama
+  without a chat model — a download of a recommended model. Visual Studio takes the server that answers when nothing
+  was set up yet, and says so; `/setup` looks again in both.
 - **Dynamic timeout engine** — Quick / Normal / Deep thresholds per task complexity.
 - **Heartbeat & connection guard** — a silent pre-flight before every send; the Send button
   greys out when the server is unreachable, and recovers automatically.
 
+</details>
+
 ## Safety
+
+The model proposes; you decide. Every call that writes, runs a command or goes online passes the same checks before it
+can happen, and the last word is a card showing exactly what will run.
+
+```mermaid
+flowchart TB
+    C(["A write, a command or a web call"]) --> REF
+    subgraph REF ["Refused, the reason said"]
+        direction LR
+        X["A file your<br/>ignore files exclude"] ~~~ D["A deny rule or<br/>the built-in denylist"] ~~~ P["A package its<br/>registry does not have"]
+    end
+    REF -- "none of these" --> O{"Must it ask?"}
+    O -- "indirect execution · agent instructions<br/>· written by the repository" --> CARD["Card with the real diff<br/>Allow once · Always · a narrow rule · Deny"]
+    O -- no --> A{"Already allowed?"}
+    A -- "no" --> CARD
+    A -- "an allow rule ·<br/>Always this session" --> RUN(["Runs"])
+    CARD -- "you allow" --> RUN
+```
+
+**Try it**
+
+| Type | What happens |
+|---|---|
+| `/permissions` | Every rule, in the order it is evaluated, the built-in denylist included |
+| `/permissions suggest` | The narrow rules you granted three times and never refused; `/permissions add <n>` saves one |
+
+A committable `.inferpal/permissions.json` can only **deny**: a cloned repository can never approve anything on your
+behalf. And `.aiignore`, `.cursorignore` and the other tools' ignore files keep files away from everything that reads
+for the model — each exclusion said, never silent.
+
+<details>
+<summary><b>In detail: the sandbox, approvals, rules, ignore files, diagnostics</b></summary>
 
 - **Workspace-confined file operations** — a single `AssertUnderRoot` sandbox on every
   path-taking tool. In Visual Studio the workspace is the folder that holds the whole solution:
@@ -506,6 +954,65 @@ exists.
   publishes a heartbeat, and `/diagnostics` names the one that is missing — in the chat and in the
   support bundle. It says so only on **proof of absence**, never on absence of proof: in VS Code,
   where there is no in-process half at all, it stays quiet.
+
+</details>
+
+## Two editors, one engine
+
+The same engine runs behind every editor, so a conversation, a setting or an approval rule follows you from Visual
+Studio to VS Code and back — and to any editor that speaks the [Agent Client Protocol](acp.md).
+
+<table>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="assets/features/editor-vs-dark.png">
+        <img src="assets/features/editor-vs-light.png" alt="The Inferpal chat in Visual Studio: the agent plan, a finished run with its result bar, then a second run waiting on an approval card" width="400">
+      </picture>
+      <br><sub>Visual Studio</sub>
+    </td>
+    <td align="center" valign="top" width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="assets/features/editor-vscode-dark.png">
+        <img src="assets/features/editor-vscode-light.png" alt="The same conversation in the VS Code chat: the finished run with its result bar, then the second run waiting on the same approval card" width="400">
+      </picture>
+      <br><sub>VS Code</sub>
+    </td>
+  </tr>
+</table>
+
+| | Visual Studio 2026 / 2022 | VS Code | Zed, JetBrains, Qt Creator, Neovim, Emacs |
+|---|---|---|---|
+| Chat, agent, approvals, undo | ✓ | ✓ | ✓ (the editor's own diff and approvals) |
+| Ghost text, Edit with AI | ✓ | ✓ | — |
+| `/tdd` with the debugger, `/debug` | ✓ | ✓ | — |
+| `/fix-build` | ✓ | — | — |
+| Settings | the same seven pages | the same seven pages | the same seven pages, in your browser |
+
+<details>
+<summary><b>In detail: what each front-end has</b></summary>
+
+- The **Visual Studio extension** (primary) and the **VS Code extension** run the same
+  `Inferpal.Core` engine and share the same configuration: the agent, its tools and approvals, search, MCP, ghost
+  text, `/tdd` and `/debug` are the same in both. The VS Code chat has full markdown rendering, welcome screen,
+  connection + VRAM badge, collapsible tool bubbles (input/output, the colored change a write made, "Fix with AI" on
+  errors), live agent-plan block,
+  slash-command autocomplete, Shift+↑/↓ prompt history, token counter with a clickable context gauge (opens the X-Ray
+  panel), conversation search, `.md`/`.txt` export, Ctrl+Alt+I keybinding, and a localized webview (10 languages).
+- **Not in VS Code yet** — `/fix-build` is Visual Studio's alone (it answers that it is not available).
+- **Headless slash commands** — nearly all the slash commands are served by the host over JSON-RPC with the
+  same approval/permission pipeline; long commands are cancellable.
+- **Settings panel in VS Code** — an "Inferpal Settings" webview with the same seven pages as the
+  Visual Studio window, read from the same description in the Core, backed by the shared config.
+  `/settings` opens it from the chat (and the settings window in Visual Studio).
+- **Zed, JetBrains IDEs, Neovim, Emacs** — the same host, run with `--acp`, is an
+  [Agent Client Protocol](acp.md) agent: modes and model as thread options, the real diff before every change,
+  sessions saved and reloaded. Its settings are the same seven pages, in the browser: `/settings` in a thread, a button
+  at first setup, or `Inferpal.Host --settings`; saved, they apply to the open threads from their next question.
+- **Typed @-mentions, `/plan` and `/agent-step` modes, and per-turn RAG auto-context** all
+  work in VS Code too.
+
+</details>
 
 ## Localization & theming
 
