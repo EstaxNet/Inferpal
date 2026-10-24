@@ -732,6 +732,7 @@ internal class OllamaClient : InferenceProviderBase
         string?        model = null)
     {
         var base_ = ServerUrl.TrimEnd('/');
+        BeginFimAttempt();
         if (string.IsNullOrWhiteSpace(base_) || IsFimInCooldown()) return;
 
         // Yield the shared GPU to an in-flight chat/agent request: a delayed, now-stale ghost-text
@@ -823,8 +824,8 @@ internal class OllamaClient : InferenceProviderBase
             RecordFimSuccess();
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-        catch (OperationCanceledException) { return; } // stream hung — ghost text simply stops
-        catch { return; }                              // mid-stream network failure
+        catch (OperationCanceledException) { RecordFimCut(); return; } // stream hung — ghost text simply stops
+        catch { RecordFimCut(); return; }                              // mid-stream network failure
     }
 }
 

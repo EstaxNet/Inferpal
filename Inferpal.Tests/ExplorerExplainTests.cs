@@ -106,6 +106,24 @@ public sealed class ExplorerExplainTests : IDisposable
         Assert.Contains("(stopped at the 3,000-character budget", ask.Content.Replace(' ', ',').Replace(' ', ','));
     }
 
+    /// <summary>The budget bounds the whole attachment, the list of files included: a folder of many deep paths never
+    /// passes the window it was sized for, and keeps the notes on what is missing while it can.</summary>
+    [Fact]
+    public async Task AFolderOfManyFiles_FitsTheBudget_WithItsNotes()
+    {
+        var many = Path.Combine(_root, "Billing", "Generated", "Sources");   // within the walk's depth
+        Directory.CreateDirectory(many);
+        for (var i = 0; i < 150; i++)
+            File.WriteAllText(Path.Combine(many, $"AQuiteLongSourceFileNameForTheListing{i:D3}.cs"), $"// file {i}\n");
+
+        var ask = await ExplorerExplain.ForAsync(Path.Combine(_root, "Billing"), _root, overlay: null, budgetChars: 3_000,
+                                                 CancellationToken.None);
+
+        Assert.True(ask.Content.Length <= 3_000 + 400, $"{ask.Content.Length} characters for a budget of 3,000");
+        Assert.Contains("AQuiteLongSourceFileNameForTheListing000.cs", ask.Content);   // witness: the listing is there
+        Assert.Contains("(the list stops at", ask.Content);                           // and where it stops is said
+    }
+
     [Fact]
     public void AProjectOrASolution_StandsForItsFolder_AFileForItself()
     {

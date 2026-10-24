@@ -412,6 +412,7 @@
   <data name="HostOperationBusy" xml:space="preserve"><value>Inferpal завершает другую операцию (применение настроек, перезапуск серверов MCP) — повторите попытку через мгновение.</value></data>
   <data name="HostEditBusy" xml:space="preserve"><value>Inferpal изменяет код («Изменить с помощью ИИ») — повторите попытку, когда изменение будет показано.</value></data>
   <data name="HostCommitBusy" xml:space="preserve"><value>Inferpal пишет сообщение коммита — повторите попытку, когда оно появится в поле коммита.</value></data>
+  <data name="HostTestBusy" xml:space="preserve"><value>Inferpal выполняет тест (Объяснить сбой) — повторите попытку, когда он завершится.</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>Использование: `/model &lt;имя&gt;`  —  текущая: **{0}**</value></data>

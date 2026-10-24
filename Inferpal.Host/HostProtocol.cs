@@ -216,7 +216,9 @@ internal sealed record FimSettingsResult(bool Enabled, int DebounceMs, bool Yiel
 internal sealed record FimAskResult(string? Text, string? Notice);
 
 /// <summary>`problems/fix` — the diagnostics a quick fix was asked on.</summary>
-internal sealed record ProblemsFixParams(IReadOnlyList<Services.CodeActions.ProblemEntry> Problems);
+/// <param name="Problems">The diagnostics.</param>
+/// <param name="Model">The model the chat picked: the attachment is sized for its window.</param>
+internal sealed record ProblemsFixParams(IReadOnlyList<Services.CodeActions.ProblemEntry> Problems, string? Model = null);
 
 /// <summary>`debug/analyze` — the model the extension's chat picked: the attachment is sized for the window of the model
 /// the code action asks.</summary>

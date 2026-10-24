@@ -23,6 +23,9 @@ public sealed class TestViewFrontEndTests
         static string[] Commands(JsonElement menu) => [.. menu.EnumerateArray().Select(m => m.GetProperty("command").GetString() ?? "")];
 
         Assert.Equal(["inferpal.fixTest", "inferpal.explainTestFailure"], Commands(menus.GetProperty("testing/item/context")));
+        // Neither is offered on a test that passed: there is nothing to make pass, nothing to explain.
+        Assert.All(menus.GetProperty("testing/item/context").EnumerateArray(),
+                   m => Assert.Equal("testResultState != passed", m.GetProperty("when").GetString()));
         Assert.Equal(["inferpal.explainTestFailure"], Commands(menus.GetProperty("testing/message/context")));
         foreach (var command in new[] { "inferpal.fixTest", "inferpal.explainTestFailure" })
             Assert.Equal("false", menus.GetProperty("commandPalette").EnumerateArray()
@@ -55,6 +58,12 @@ public sealed class TestViewFrontEndTests
         var whileShown = ConversationPersistenceSilenceTests.TsMethodBody(provider, "private static whileShown<T>(");
         Assert.Contains("cancellable: true", whileShown, StringComparison.Ordinal);
         Assert.Contains("(result) => (token.isCancellationRequested ? undefined : result)", whileShown, StringComparison.Ordinal);
+
+        // The host runs the test in the turn slot, as /tdd: a chat turn building the same projects never runs beside it,
+        // and Stop reaches it; a failure message given runs nothing and takes no slot.
+        var host = ConventionCoverageTests.CodeOnly(Path.Combine(Root, "Inferpal.Host", "HostServer.cs"));
+        Assert.Matches(@"TestsExplainAsync\([\s\S]*?string\.IsNullOrWhiteSpace\(p\.Failure\) \? AcquireTurn\(ct, Strings\.HostTestBusy\)"
+                       + @"[\s\S]*?finally \{ if \(cts is not null\) ReleaseTurn\(cts\); \}", host);
 
         // The message menu passes { test, message }; the item menu, every selected test — one is taken, and named.
         var extension = File.ReadAllText(Path.Combine(Root, "vscode", "src", "extension.ts"));

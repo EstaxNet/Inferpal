@@ -82,22 +82,11 @@ internal static class TddCommandHandler
             catch (OperationCanceledException) { throw; }
             catch (Exception ex) { return new(Strings.MsgError(ex.Message)); }
 
-            // No runner / unusable report → surface the tool's own explanation, don't loop on it.
-            //
-            // ⚠ THREE states, not two. `run_tests` distinguishes "green", "failing" and "nothing
-            // ran" — a filter that matched nothing, a runner that exited 0 without a parsable
-            // summary — and this loop folded the third into the second: five agent rounds of
-            // speculative patches against a report whose first line says no test was executed.
-            // Stopping on ANY round is deliberate: the dishonest way for a fix loop to go green is
-            // to make the failing test stop existing, and that shows up here as round 2 suddenly
-            // matching nothing.
-            //
-            // ⚠ FOUR states. The budget is the one that can hand back a GREEN summary: on a
-            // solution whose first project finishes and whose second hangs, the killed run still
-            // carries that first project's pass. Read as a verdict it ends the loop with
-            // "suite green" on a run where half the tests never started — and read as a red one it
-            // would be five rounds of patches against tests that did not fail. Neither: stop, and
-            // say which budget ran out. Same place to look as NothingRan, not the same place to fix.
+            // ⚠ A report that is no verdict stops the loop, said (NotAVerdict): no runner, nothing ran, a run killed at its
+            // budget. Read as red, "nothing ran" sends the agent patching code whose tests never ran — and the dishonest way
+            // for a fix loop to go green is to make the failing test stop existing, which shows as a later round matching
+            // nothing, so the stop holds on ANY round. A run killed at its budget can carry a GREEN summary (the first
+            // project finished, the second hung): read as a verdict, it would end the loop "green" on tests never started.
             if (NotAVerdict(output) is { } notAVerdict) return new(notAVerdict);
 
             bool green = TestsPassed(output);

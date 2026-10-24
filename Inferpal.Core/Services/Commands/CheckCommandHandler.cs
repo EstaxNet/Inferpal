@@ -76,6 +76,8 @@ internal static class CheckCommandHandler
                 narrowed = true;
                 if (await CheckTarget.RevisionSpellingAsync(arg, git, ct) is { } spelling)
                     alsoRevision = Strings.CheckNameAlsoRevision(arg, spelling);
+                // A file or a folder of that name too: the answer names the spelling that reviews it, as for a revision.
+                if (PathScope(arg, projectRoot) is not null) alsoPath = Strings.CheckRevisionAlsoPath(arg.Trim('"'));
             }
             else if (unreadable.Any(f => Path.GetFileNameWithoutExtension(f).Equals(arg, StringComparison.OrdinalIgnoreCase)))
             {
@@ -270,9 +272,9 @@ internal static class CheckCommandHandler
     /// <summary>The git pathspec of <paramref name="scope"/>: relative to the folder git runs in, forward slashes, quoted.</summary>
     /// <remarks>
     /// ⚠ Never the absolute path in a quoted command-line argument: a folder ending in a separator writes <c>\"</c>, which
-    /// escapes the closing quote — git then matched nothing, exited 0, and the answer was "no uncommitted change" on a
-    /// folder that had changes. ⚠ And case-insensitive where the file system is (<c>:(icase)</c>): git's pathspecs are
-    /// not, so a folder typed or listed in another case than the disk's also matched nothing.
+    /// escapes the closing quote — git matches nothing, exits 0, and the answer says "no uncommitted change" on a folder
+    /// that has changes. ⚠ And case-insensitive where the file system is (<c>:(icase)</c>): git's pathspecs are not, so a
+    /// folder written in another case than the disk's matches nothing either.
     /// </remarks>
     internal static string Pathspec(string scope, string projectRoot)
     {

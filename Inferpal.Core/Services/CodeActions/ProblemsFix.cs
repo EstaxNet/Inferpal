@@ -35,14 +35,25 @@ internal static class ProblemsFix
     }
 
     /// <summary>What goes to the chat, the files read as the editor has them
-    /// (<see cref="FixPromptBuilder.AsTheEditorHasIt"/>).</summary>
+    /// (<see cref="FixPromptBuilder.AsTheEditorHasIt"/>), sized for the window of the model that answers.</summary>
+    /// <remarks>⚠ Only a file the agent may read has its code attached — under <paramref name="root"/>, not excluded: a
+    /// selection that mixes the solution's errors with another repository's file (whose own ignore files are not the
+    /// ones declared) names that file, never reads it.</remarks>
     internal static async Task<(string Question, string Chip, string Content)> ForAsync(
-        IReadOnlyList<ProblemEntry> problems, Editor.OpenDocumentOverlay? overlay, CancellationToken ct)
+        IReadOnlyList<ProblemEntry> problems, string? root, Editor.OpenDocumentOverlay? overlay, int budgetChars,
+        CancellationToken ct)
     {
-        if (overlay is not null)
-            await overlay.RefreshAsync(ct, problems.Select(p => p.File).OfType<string>().Distinct().ToList());
-        return For(problems, FixPromptBuilder.AsTheEditorHasIt(overlay));
+        var readable = problems.Select(p => p.File).OfType<string>().Where(f => MayRead(f, root))
+                               .Distinct(PathComparer.Default).ToList();
+        if (overlay is not null) await overlay.RefreshAsync(ct, readable);
+        var read = FixPromptBuilder.AsTheEditorHasIt(overlay);
+        var (question, chip, content) = For(problems, path => MayRead(path, root) ? read(path) : null);
+        var excerpt = CodeExcerpt.Of(content, budgetChars);
+        return (question, excerpt.Label(chip), excerpt.Text);
     }
+
+    private static bool MayRead(string path, string? root) =>
+        Governance.ContentExclusions.Of(path) is null && Tools.PathSanitizer.IsUnderRoot(Path.GetFullPath(path), root);
 
     /// <summary>What goes to the chat: the question, the attachment's label, and the attachment — each problem as a build
     /// prints it and the code around it (<see cref="FixPromptBuilder.ForProblems(IReadOnlyList{ProblemEntry}, Func{string, string?})"/>).</summary>

@@ -3281,7 +3281,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * — what Visual Studio's Error List sends — answered with the chat's tools: fixing is editing, under approvals.
    */
   fixProblems(problems: ProblemEntry[]): Promise<void> {
-    return this.askWithChip((host) => host.problemsFix(problems), 'fix problems', false);
+    return this.askWithChip((host) => host.problemsFix(problems, this.model || undefined), 'fix problems', false);
   }
 
   /**

@@ -52,9 +52,7 @@ internal static class CommitCommandHandler
         // ⚠ The lines of a file the workspace's ignore files exclude are its content: its sections leave what the model
         // reads, and the proposal says it did not read them — the commit still carries them.
         var excluded = new Governance.ContentExclusions.Tally();
-        var workTree = Governance.ContentExclusions.AnyRules()
-            ? (await git("rev-parse --show-toplevel", ct)) is { ExitCode: 0 } top ? top.Output.Trim() : null
-            : null;
+        var workTree = await Governance.ContentExclusions.DiffWorkTreeAsync(git, ct);
         var staged = Governance.ContentExclusions.WithoutExcludedFiles(stagedRun.Output, workTree, excluded);
 
         string diffContext;

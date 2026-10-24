@@ -55,9 +55,7 @@ internal static class PrCommandHandler
         // ⚠ The lines of a file the workspace's ignore files exclude are its content: they leave what the model reads,
         // and the answer says the description did not read them.
         var excluded = new Governance.ContentExclusions.Tally();
-        var workTree = Governance.ContentExclusions.AnyRules()
-            ? (await git("rev-parse --show-toplevel", ct)) is { ExitCode: 0 } top ? top.Output.Trim() : null
-            : null;
+        var workTree = await Governance.ContentExclusions.DiffWorkTreeAsync(git, ct);
         var diff = Governance.ContentExclusions.WithoutExcludedFiles(diffRun.Output, workTree, excluded);
 
         var notices = new List<string>();

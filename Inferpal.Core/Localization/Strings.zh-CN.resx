@@ -412,6 +412,7 @@
   <data name="HostOperationBusy" xml:space="preserve"><value>Inferpal 正在完成另一项操作（应用设置、重新启动 MCP 服务器）——请稍后重试。</value></data>
   <data name="HostEditBusy" xml:space="preserve"><value>Inferpal 正在编辑代码(使用 AI 编辑)— 请在显示更改后重试。</value></data>
   <data name="HostCommitBusy" xml:space="preserve"><value>Inferpal 正在编写提交消息 —— 待它出现在提交框中后再试。</value></data>
+  <data name="HostTestBusy" xml:space="preserve"><value>Inferpal 正在运行测试（解释失败）—— 待其结束后再试。</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>用法：`/model &lt;名称&gt;` — 当前：**{0}**</value></data>

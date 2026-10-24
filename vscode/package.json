@@ -234,6 +234,7 @@
       "testing/item/context": [
         {
           "command": "inferpal.fixTest",
+          "when": "testResultState != passed",
           "group": "z_inferpal@1"
         },
         {

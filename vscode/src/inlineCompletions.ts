@@ -52,8 +52,9 @@ export class FimProvider implements vscode.InlineCompletionItemProvider {
     // Asked for by its key (Alt+', or VS Code's own "Trigger Inline Suggestion"), not by a pause in typing: it goes at
     // once, and a key that brings nothing says why — a pause that brings nothing stays quiet, it comes back every pause.
     const asked = context.triggerKind === vscode.InlineCompletionTriggerKind.Invoke;
-    // A pause completes saved files only; the key also completes an untitled buffer, which has no path to send.
-    if (document.uri.scheme !== 'file' && !asked) {
+    // A pause completes saved files only; the key also completes an untitled buffer, which has no path to send. Nothing
+    // else: a commit message box, a comment widget or a notebook's output is text no ignore file can judge.
+    if (document.uri.scheme !== 'file' && !(asked && document.uri.scheme === 'untitled')) {
       return undefined;
     }
     if (!vscode.workspace.getConfiguration('inferpal').get<boolean>('fim.enabled', true)) {

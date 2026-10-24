@@ -1192,6 +1192,7 @@ internal static class Strings
     public static string HostOperationBusy       => Get(nameof(HostOperationBusy));
     public static string HostEditBusy            => Get(nameof(HostEditBusy));
     public static string HostCommitBusy          => Get(nameof(HostCommitBusy));
+    public static string HostTestBusy            => Get(nameof(HostTestBusy));
 
     // ── Slash commands ─────────────────────────────────────────────────────────
     public static string SlashModelCurrent(string model) => Format(Get(nameof(SlashModelCurrent)), model);

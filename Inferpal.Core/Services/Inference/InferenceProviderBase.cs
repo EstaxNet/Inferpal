@@ -236,6 +236,14 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     /// breaker.</summary>
     protected void RecordFimRefused() => _fimLastFailed = true;
 
+    /// <summary>A completion that starts: what <see cref="FimFailing"/> says is about IT — an earlier attempt's failure
+    /// would blame the server for one this attempt never asked (the GPU yielded to a chat, no model chosen).</summary>
+    protected void BeginFimAttempt() => _fimLastFailed = false;
+
+    /// <summary>A stream cut or stalled midway: this answer failed — the server's, not the caret's — without counting
+    /// toward the breaker (a dropped connection is not a server that refuses).</summary>
+    protected void RecordFimCut() => _fimLastFailed = true;
+
     /// <inheritdoc cref="IInferenceProvider.FimFailing"/>
     public bool FimFailing => _fimLastFailed || IsFimInCooldown();
 

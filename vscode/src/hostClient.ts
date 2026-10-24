@@ -538,8 +538,8 @@ export class HostClient {
   }
 
   /** "Fix with Inferpal" on diagnostics: the Core builds the question and its attachment, as for Visual Studio. */
-  problemsFix(problems: ProblemEntry[]): Promise<GestureQuestion> {
-    return this.connection().sendRequest<GestureQuestion>('problems/fix', { problems });
+  problemsFix(problems: ProblemEntry[], model?: string): Promise<GestureQuestion> {
+    return this.connection().sendRequest<GestureQuestion>('problems/fix', { problems, model });
   }
 
   /** "Analyze with Inferpal" on a debugger stop: the stop and the code around its frames, or why there is none. */

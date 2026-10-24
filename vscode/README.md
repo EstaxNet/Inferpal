@@ -17,7 +17,7 @@ Free and open source (GPL v3). The backend is bundled — no .NET to install.
 ## Why Inferpal
 
 - **Your models, your hardware.** Ollama, LM Studio or any OpenAI-compatible server (llama.cpp, vLLM…), on this machine or a GPU box on your network. Tool calls a server leaves as plain text — Qwen's XML, Mistral's `[TOOL_CALLS]`, GLM, Gemma, gpt-oss — are read anyway, and a model whose chat template refuses tools still works as an agent.
-- **Private by construction.** No account, no telemetry, no API key, no hosted service. Nothing leaves your machine unless you set it up (a remote model server, an MCP server, a documentation site to index) or approve it (a web search, a page fetch).
+- **Private by construction.** No account, no telemetry, no API key, no hosted service. Nothing leaves your machine unless you set it up (a remote model server, an MCP server, a documentation site to index) or approve it (a web search, a page fetch) — and the name of a package the model adds, looked up on its public registry so an invented one is refused (one setting turns it off).
 - **You approve, you can undo.** Every write, delete and command waits for your OK with the real diff — unless a rule you wrote allows it. Changed files are snapshotted, and a run ends with **Undo run**.
 - **It checks its own work.** A quick build or typecheck after each edit (.NET, TypeScript, Rust, Go). `/tdd` reruns your tests and fixes what fails, up to five rounds; on a failing .NET test it reads the debugger. On a fixed bench of 12 failing C# tests with a local 27B model: 12 fixed with the debugger's view, 10 without.
 - **Measured, not guessed.** Model advice comes from a battery of real tasks in C#, JavaScript and Python, judged by the project's own tests passing — and each known model family gets the sampling settings its vendor recommends.
@@ -78,7 +78,7 @@ Measured on our test server — one 24 GB card, LM Studio, 32K context — with 
 
 ## FAQ
 
-**Does my code leave my machine?** Not with a model server on your machine. There is no account, no telemetry, no hosted service. The only outbound traffic is what you set up or approve: the model server address you choose, MCP servers you add, a site you index with `/docs add`, and the agent's web searches and page fetches — each of which asks you first.
+**Does my code leave my machine?** Not with a model server on your machine. There is no account, no telemetry, no hosted service. The only outbound traffic is what you set up or approve: the model server address you choose, MCP servers you add, a site you index with `/docs add`, and the agent's web searches and page fetches — each of which asks you first. One check runs before you are asked: the name of a package the model adds (never your code) is looked up on nuget.org, npm or PyPI, so an invented one is refused; a private feed is never sent it, and **Check that a package exists before it is added** turns it off.
 
 **Which server should I use?** Ollama gets every feature (per-model memory in the header, model downloads from the chat, idle models unloaded). LM Studio runs everything — chat, agent, autocomplete, semantic search, model loading — without per-model memory figures. Other OpenAI-compatible servers (llama.cpp's `llama-server`, vLLM…) run the chat, the agent and semantic search, and inline completions where the server completes around the cursor (Ollama's `/v1`, llama-server).
 

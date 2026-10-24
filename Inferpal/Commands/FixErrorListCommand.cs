@@ -21,13 +21,17 @@ internal class FixErrorListCommand : Command
 
     private readonly VsContextHolder _contextHolder;
     private readonly Services.Editor.OpenDocumentOverlay _overlay;
+    private readonly InferpalConfig _config;
+    private readonly IInferenceProvider _client;
 
     public FixErrorListCommand(VisualStudioExtensibility extensibility, VsContextHolder contextHolder,
-                               Services.Editor.OpenDocumentOverlay overlay)
+                               Services.Editor.OpenDocumentOverlay overlay, InferpalConfig config, IInferenceProvider client)
         : base(extensibility)
     {
         _contextHolder = contextHolder;
         _overlay       = overlay;
+        _config        = config;
+        _client        = client;
     }
 
     public override CommandConfiguration CommandConfiguration => new("%InferpalFixErrorListCommand%")
@@ -61,7 +65,11 @@ internal class FixErrorListCommand : Command
             await Extensibility.Shell().ShowPromptAsync(outOfReach, PromptOptions.OK, ct);
             return;
         }
-        var (question, chip, content) = await ProblemsFix.ForAsync(answer.Problems, _overlay, ct);
+        // Asked with the chat's tools: sized for the window of the agent's model, which answers it.
+        var window = await Services.Agent.ContextManager.EffectiveWindowAsync(
+            _config, _client, ModelRouter.Resolve(_config, ModelRole.Agent), ct);
+        var (question, chip, content) = await ProblemsFix.ForAsync(answer.Problems, SolutionExtent.ActiveRoot(), _overlay,
+                                                                   CodeExcerpt.BudgetFor(window), ct);
         _contextHolder.SetPendingPrompt(question, modelOverride: null, attachLabel: chip, attachContent: content);
         await Extensibility.Shell().ShowToolWindowAsync<InferpalToolWindow>(activate: true, ct);
     }

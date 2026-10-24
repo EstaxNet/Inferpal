@@ -243,6 +243,11 @@ internal static class ContentExclusions
     /// <summary>Whether any declared workspace excludes anything — what spares the readers that must ask git for a path.</summary>
     internal static bool AnyRules() => Roots.Values.Any(r => r.HasRules());
 
+    /// <summary>The work tree a diff's paths are relative to (what <see cref="WithoutExcludedFiles"/> takes), asked of git
+    /// only while some workspace excludes something; <c>null</c> otherwise, or when git cannot say.</summary>
+    internal static async Task<string?> DiffWorkTreeAsync(GitRunner git, CancellationToken ct) =>
+        AnyRules() && await git("rev-parse --show-toplevel", ct) is { ExitCode: 0 } top ? top.Output.Trim() : null;
+
     /// <summary>
     /// <paramref name="diff"/> — git's unified diff, paths relative to <paramref name="workTree"/> — without the sections
     /// of the files the workspace's ignore files exclude, each dropped file counted in <paramref name="dropped"/>.

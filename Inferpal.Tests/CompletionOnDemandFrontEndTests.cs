@@ -29,6 +29,18 @@ public sealed class CompletionOnDemandFrontEndTests
         Assert.InRange(asks, key, pause);
     }
 
+    /// <summary>The key completes a file or an untitled buffer, nothing else: in the Source Control box, a comment widget
+    /// or a notebook output, the typed text would go to the completion server where no ignore file judges it.</summary>
+    [Fact]
+    public void TheKey_CompletesAFileOrAnUntitledBuffer_NeverTheCommitBox()
+    {
+        var body = ConversationPersistenceSilenceTests.TsMethodBody(Provider, "async provideInlineCompletionItems(");
+
+        var guard = body.IndexOf("if (document.uri.scheme !== 'file' && !(asked && document.uri.scheme === 'untitled')) {",
+                                 StringComparison.Ordinal);
+        Assert.InRange(guard, 0, body.IndexOf("return this.ask(", StringComparison.Ordinal));
+    }
+
     [Fact]
     public void OnDemand_APauseAsksForNothing_InVsCode()
     {
@@ -64,6 +76,10 @@ public sealed class CompletionOnDemandFrontEndTests
         Assert.Contains("if (!asked && !GhostTextTrigger.Asks(", controller, StringComparison.Ordinal);
         Assert.Contains("answer.Failed ? asked.Failed : asked.Nothing", controller, StringComparison.Ordinal);
         Assert.Contains("await SayAsync(ask.Refusal ?? ask.NoEditor)", watcher, StringComparison.Ordinal);
+        // A watcher that cannot start, or fails to restart, is tried again on a timer: the key never stays dead until
+        // another editor happens to open.
+        Assert.Matches(@"private static void Ensure\(\)[\s\S]*?_watcher = Start\(\);[\s\S]*?new Timer\(", watcher);
+        Assert.Matches(@"private static void OnError\([\s\S]*?_watcher = null;\s*Ensure\(\);", watcher);
     }
 
     [Fact]

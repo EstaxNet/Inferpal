@@ -86,4 +86,29 @@ public sealed class FimStreamErrorTests : IDisposable
         Assert.Equal(BreakerThreshold + 3, served);
         Assert.Contains("x", tokens);
     }
+
+    /// <summary>A completion cut midway is the server's failure, never "the model brought nothing back": the key of inline
+    /// completion would otherwise blame the caret for a dropped connection (<c>AskedCompletion.Empty</c>).</summary>
+    [Fact]
+    public async Task Ollama_ACompletionCutMidway_LeavesItsClientFailing()
+    {
+        var line = System.Text.Json.JsonSerializer.Serialize(new { response = "a + ", done = false }) + "\n";
+        using var server = new StreamDroppedTests.DroppingServer(line);
+        var client = new OllamaClient(new InferpalConfig
+        {
+            Provider = "ollama", BaseUrl = server.BaseUrl, InlineCompletionModel = "coder",
+        });
+
+        // A call that yields to a chat turn of another test sends nothing: called again until the stream began.
+        var text     = new System.Text.StringBuilder();
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (text.Length == 0 && DateTime.UtcNow < deadline)
+        {
+            await client.StreamFimAsync("return ", ";\n}", 16, 0.2, t => text.Append(t), CancellationToken.None);
+            if (text.Length == 0) await Task.Delay(50);
+        }
+
+        Assert.Equal("a + ", text.ToString());   // witness: the stream began, then broke
+        Assert.True(client.FimFailing);
+    }
 }

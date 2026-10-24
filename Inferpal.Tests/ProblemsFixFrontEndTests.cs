@@ -28,7 +28,10 @@ public sealed class ProblemsFixFrontEndTests
         // chat's tools (a model override would make it a tool-less code action).
         Assert.Matches(@"ErrorListSelectionSignal\.AskAsync\([\s\S]*?ProblemsFix\.Refusal\(answer[\s\S]*?ShowPromptAsync\(refusal"
                        + @"[\s\S]*?Exclusions\.Follow\(\)[\s\S]*?ProblemsFix\.NothingEditable\(answer!\.Problems, SolutionExtent\.ActiveRoot\(\)\)"
-                       + @"[\s\S]*?ShowPromptAsync\(outOfReach[\s\S]*?ProblemsFix\.ForAsync\(answer\.Problems, _overlay"
+                       + @"[\s\S]*?ShowPromptAsync\(outOfReach"
+                       // Only the workspace's files read, sized for the window of the agent's model, which answers it.
+                       + @"[\s\S]*?EffectiveWindowAsync\(\s*_config, _client, ModelRouter\.Resolve\(_config, ModelRole\.Agent\), ct\)"
+                       + @"[\s\S]*?ProblemsFix\.ForAsync\(answer\.Problems, SolutionExtent\.ActiveRoot\(\), _overlay,\s*CodeExcerpt\.BudgetFor\(window\), ct\)"
                        + @"[\s\S]*?SetPendingPrompt\(question, modelOverride: null",
                        command);
         // The package serves the request: the editor listener alive alone says nothing about it.
@@ -69,8 +72,9 @@ public sealed class ProblemsFixFrontEndTests
     public void VsCode_AsksTheHost_ThenSendsItsQuestionWithTheChip_NeverDuringATurn()
     {
         var provider = Path.Combine(Root, "vscode", "src", "chatViewProvider.ts");
-        // The quick fix asks the host for its question, answered with the chat's tools (fixing is editing).
-        Assert.Contains("this.askWithChip((host) => host.problemsFix(problems), 'fix problems', false)",
+        // The quick fix asks the host for its question, answered with the chat's tools (fixing is editing); the host sizes
+        // it for the model the chat answers with.
+        Assert.Contains("this.askWithChip((host) => host.problemsFix(problems, this.model || undefined), 'fix problems', false)",
                         ConversationPersistenceSilenceTests.TsMethodBody(provider, "fixProblems(problems: ProblemEntry[])"),
                         StringComparison.Ordinal);
         var body = ConversationPersistenceSilenceTests.TsMethodBody(provider, "private async askWithChip(");

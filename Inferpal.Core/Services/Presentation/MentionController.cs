@@ -291,6 +291,9 @@ internal static class MentionController
     /// <summary>Levels below the folder the walk descends into.</summary>
     private const int MaxWalkDepth = 4;
 
+    /// <summary>Characters the list of files leaves free for the notes that come after it.</summary>
+    private const int ListReserve = 400;
+
     /// <summary>
     /// The folder an <c>@folder</c> value names: resolved against the workspace root, never the process's directory.
     /// </summary>
@@ -384,8 +387,16 @@ internal static class MentionController
         CollectFolderFiles(folderPath, files, 0, ct, limits);
 
         sb.AppendLine("Files:");
+        // ⚠ The list counts in the budget too: a folder of a few hundred deep paths passes it by itself, and the
+        // attachment then outgrows the window it was sized for. It stops where the budget would, and says so below.
+        var listed = 0;
         foreach (var f in files)
-            sb.Append("  ").AppendLine(Path.GetRelativePath(folderPath, f));
+        {
+            var line = "  " + Path.GetRelativePath(folderPath, f);
+            if (sb.Length + line.Length + ListReserve > maxChars) break;
+            sb.AppendLine(line);
+            listed++;
+        }
         sb.AppendLine();
 
         var attempted  = Math.Min(files.Count, MaxFiles);
@@ -424,6 +435,9 @@ internal static class MentionController
         // files, an unreadable file by a permission, a walk ceiling by nothing the user can do
         // without splitting the folder.
         var notes = new List<string>(4);
+        if (listed < files.Count)
+            notes.Add($"(the list stops at {listed} of {files.Count} files: the {maxChars:N0}-character budget — the rest are "
+                    + "NOT named above)");
         if (files.Count > MaxFiles)
             notes.Add($"(bodies: the first {MaxFiles} of {files.Count} listed files — the rest are named above but NOT included)");
         if (budgetStop)

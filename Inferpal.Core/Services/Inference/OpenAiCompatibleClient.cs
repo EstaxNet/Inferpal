@@ -1078,6 +1078,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         string? model = null)
     {
         var base_ = BaseV1;
+        BeginFimAttempt();
         if (string.IsNullOrWhiteSpace(base_) || IsFimInCooldown()) return;
 
         // Yield the shared GPU to an in-flight chat/agent request, as the other clients do.
@@ -1229,7 +1230,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             RecordFimSuccess();
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-        catch (OperationCanceledException) { return; }
-        catch { return; }
+        catch (OperationCanceledException) { RecordFimCut(); return; }   // stalled midway
+        catch { RecordFimCut(); return; }                                // cut midway
     }
 }

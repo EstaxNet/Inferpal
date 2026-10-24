@@ -155,6 +155,7 @@ public sealed class CheckPathScopeTests : IDisposable
 
         Assert.Contains("Round half-up.", sent);                        // reviewed against that check
         Assert.DoesNotContain(Strings.CheckPathNoDiff("lib"), message); // not as the folder
+        Assert.Contains(Strings.CheckRevisionAlsoPath("lib"), message); // and the spelling for the folder is named
     }
 
     [Fact]

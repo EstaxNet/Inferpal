@@ -412,6 +412,7 @@ Copia de seguridad: {0}</value></data>
   <data name="HostOperationBusy" xml:space="preserve"><value>Inferpal está terminando otra operación (aplicar la configuración, reiniciar los servidores MCP): vuelva a intentarlo en un momento.</value></data>
   <data name="HostEditBusy" xml:space="preserve"><value>Inferpal está editando código (Editar con IA) — vuelve a intentarlo cuando se muestre el cambio.</value></data>
   <data name="HostCommitBusy" xml:space="preserve"><value>Inferpal está escribiendo un mensaje de commit: vuelva a intentarlo cuando esté en el cuadro de commit.</value></data>
+  <data name="HostTestBusy" xml:space="preserve"><value>Inferpal está ejecutando una prueba (Explicar el fallo): vuelva a intentarlo cuando termine.</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>Uso: `/model &lt;nombre&gt;`  —  actual: **{0}**</value></data>

@@ -16,7 +16,9 @@ internal static class CompletionAskWatcher
 {
     private static readonly object _gate = new object();
     private static readonly List<GhostTextController> _controllers = new List<GhostTextController>();
+    private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(10);
     private static FileSystemWatcher? _watcher;
+    private static Timer? _retry;
     private static string? _lastId;
 
     internal static void Add(GhostTextController controller)
@@ -24,8 +26,18 @@ internal static class CompletionAskWatcher
         lock (_gate)
         {
             _controllers.Add(controller);
-            if (_watcher is null) _watcher = Start();
+            Ensure();
         }
+    }
+
+    /// <summary>Under the lock: the watcher, or another try shortly — without it, a watcher that cannot start (a lock on
+    /// the folder, a failed restart) leaves the key dead until another editor opens, which may be never.</summary>
+    private static void Ensure()
+    {
+        if (_watcher is not null) return;
+        _watcher = Start();
+        if (_watcher is null)
+            (_retry ??= new Timer(_ => { lock (_gate) Ensure(); })).Change(RetryDelay, Timeout.InfiniteTimeSpan);
     }
 
     internal static void Remove(GhostTextController controller)
@@ -78,7 +90,8 @@ internal static class CompletionAskWatcher
         {
             if (!ReferenceEquals(sender, _watcher)) return;
             _watcher.Dispose();
-            _watcher = Start();
+            _watcher = null;
+            Ensure();
         }
     }
 

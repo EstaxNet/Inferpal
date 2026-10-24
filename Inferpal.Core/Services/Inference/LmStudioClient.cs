@@ -488,6 +488,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
         string? model = null)
     {
         var base_ = BaseV1;
+        BeginFimAttempt();
         if (string.IsNullOrWhiteSpace(base_) || IsFimInCooldown()) return;
 
         // Yield the shared GPU to an in-flight chat/agent request: a delayed, now-stale ghost-text

@@ -1326,9 +1326,14 @@ internal sealed partial class HostServer : IDisposable
     [JsonRpcMethod("problems/fix", UseSingleObjectParameterDeserialization = true)]
     public async Task<GestureQuestion> ProblemsFixPromptAsync(ProblemsFixParams p, CancellationToken ct)
     {
-        if (Services.CodeActions.ProblemsFix.NothingEditable(p.Problems, Session().RootDir) is { } outOfReach)
+        var s = Session();
+        if (Services.CodeActions.ProblemsFix.NothingEditable(p.Problems, s.RootDir) is { } outOfReach)
             return new GestureQuestion(string.Empty, string.Empty, string.Empty, outOfReach);
-        var (question, chip, content) = await Services.CodeActions.ProblemsFix.ForAsync(p.Problems, Session().Overlay, ct);
+        // Asked with the chat's tools: sized for the window of the model the chat's agent turn answers with.
+        var window = await Services.Agent.ContextManager.EffectiveWindowAsync(
+            s.Config, s.Client, TurnModel(s, codeAction: false, agentMode: true, p.Model, overridesRoles: false), ct);
+        var (question, chip, content) = await Services.CodeActions.ProblemsFix.ForAsync(
+            p.Problems, s.RootDir, s.Overlay, CodeExcerpt.BudgetFor(window), ct);
         return new GestureQuestion(question, chip, content);
     }
 
@@ -1372,12 +1377,20 @@ internal sealed partial class HostServer : IDisposable
     public async Task<GestureQuestion> TestsExplainAsync(TestsExplainParams p, CancellationToken ct)
     {
         var s = Session();
-        var window = await Services.Agent.ContextManager.EffectiveWindowAsync(
-            s.Config, s.Client, TurnModel(s, codeAction: true, agentMode: false, p.Model, overridesRoles: false), ct);
-        var a = await TestFailureExplain.ForAsync(p.Label, p.Filter, p.Failure, (p.File, p.Line), (p.FailureFile, p.FailureLine),
-            token => TestFailureExplain.RunTestAsync(s.Tools, p.Filter, p.File, s.RootDir, token),
-            s.RootDir, s.Overlay, CodeExcerpt.BudgetFor(window), ct);
-        return new GestureQuestion(a.Question, a.Chip, a.Content, a.Refusal);
+        // A run of the test takes the turn slot, as /tdd does: a chat turn building the same projects meanwhile fights
+        // over bin/obj, and Stop reaches the run. The failure message given runs nothing and needs none.
+        var cts = string.IsNullOrWhiteSpace(p.Failure) ? AcquireTurn(ct, Strings.HostTestBusy) : null;
+        try
+        {
+            var token = cts?.Token ?? ct;
+            var window = await Services.Agent.ContextManager.EffectiveWindowAsync(
+                s.Config, s.Client, TurnModel(s, codeAction: true, agentMode: false, p.Model, overridesRoles: false), token);
+            var a = await TestFailureExplain.ForAsync(p.Label, p.Filter, p.Failure, (p.File, p.Line), (p.FailureFile, p.FailureLine),
+                run => TestFailureExplain.RunTestAsync(s.Tools, p.Filter, p.File, s.RootDir, run),
+                s.RootDir, s.Overlay, CodeExcerpt.BudgetFor(window), token);
+            return new GestureQuestion(a.Question, a.Chip, a.Content, a.Refusal);
+        }
+        finally { if (cts is not null) ReleaseTurn(cts); }
     }
 
     /// <summary>

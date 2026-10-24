@@ -412,6 +412,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="HostOperationBusy" xml:space="preserve"><value>Inferpal は別の処理 (設定の適用、MCP サーバーの再起動) を完了しています。少し待ってからもう一度お試しください。</value></data>
   <data name="HostEditBusy" xml:space="preserve"><value>Inferpal がコードを編集しています (AI で編集) — 変更が表示されてからもう一度お試しください。</value></data>
   <data name="HostCommitBusy" xml:space="preserve"><value>Inferpal がコミット メッセージを作成しています。コミット ボックスに入ったらもう一度お試しください。</value></data>
+  <data name="HostTestBusy" xml:space="preserve"><value>Inferpal がテストを実行中です (失敗を説明)。終了してからもう一度お試しください。</value></data>
 
   <!-- Slash commands -->
   <data name="SlashModelCurrent" xml:space="preserve"><value>使用法：`/model &lt;名前&gt;`  —  現在：**{0}**</value></data>

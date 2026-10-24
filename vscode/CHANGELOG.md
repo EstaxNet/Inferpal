@@ -3,6 +3,29 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.8.5
+
+Inferpal where you already are: the Problems panel, the debugger, the explorer, the Test view and Source Control — and a
+completion that comes when you ask for it.
+
+- **A completion when you ask for it**: **Alt+'** asks for a suggestion at the caret without waiting, and takes the one
+  shown. Settings › Autocomplete › **When I ask** sends nothing until you press it, so on a small graphics card the chat
+  never shares it with the completion. A key that brings nothing says why in the status bar.
+- **Fix with Inferpal** is among the quick fixes of every diagnostic, in the editor and in the Problems panel: the agent
+  gets the problems with the code around each and fixes them under your approvals.
+- **Analyze with Inferpal, at a debugger stop**: in the call stack's and the variables' context menus — the stop, the
+  locals and the code around your frames explained, nothing continued or evaluated.
+- **Inferpal in the explorer**: right-click a file or a folder to **Explain** it, **Review Changes** under it
+  (`/check <path>`, which you can also type) or **Attach to Chat**.
+- **Inferpal in the Test view**: right-click a test — **Make This Test Pass** (`/tdd` on it) or **Explain the Failure**,
+  from the test (run first, cancellable) or from its failure message. A test that passes is said, not asked about.
+- **A commit message in Source Control**: **Propose a Commit Message** (✨) writes the proposal into the repository's
+  commit box. Nothing is committed, and a message you typed is only replaced if you agree.
+- **`/pr-description`**: a pull request's title and description for your branch, from its commits and its diff, in a
+  block to copy. Nothing is pushed.
+- **Fixed**: `/commit` no longer pre-fills a reply that had looped on itself; `/onboard context` keeps the prose after a
+  code block; `@folder` on a folder of many files no longer outgrows the model's window.
+
 ## 1.8.4
 
 A first run that finds your model server, the editor's gestures (Edit with AI, Explain, Add Tests), the change each

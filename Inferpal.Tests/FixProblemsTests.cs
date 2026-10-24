@@ -22,6 +22,47 @@ public sealed class FixProblemsTests : IDisposable
 
     // ── What reaches the chat ────────────────────────────────────────────────────
 
+    /// <summary>A selection that mixes the solution's errors with a file elsewhere (another repository, an SDK file):
+    /// that file is named, never read — its own ignore files are not the ones declared — and the attachment fits the
+    /// window of the model that answers, the cut said on the chip.</summary>
+    [Fact]
+    public async Task AFileOutsideTheWorkspace_IsNamedNeverRead_AndTheAttachmentFitsTheWindow()
+    {
+        var root    = Directory.CreateTempSubdirectory("inferpal-fix-root").FullName;
+        var outside = Directory.CreateTempSubdirectory("inferpal-fix-out").FullName;
+        try
+        {
+            var inside = Path.Combine(root, "Foo.cs");
+            var other  = Path.Combine(outside, "Other.cs");
+            File.WriteAllText(inside, "class Foo { int InsideMarker; }\n");
+            File.WriteAllText(other, "class Other { int OutsideMarker; }\n");
+            IReadOnlyList<ProblemEntry> problems =
+            [
+                new(inside, 1, 1, "error", "CS0103", "inside"),
+                new(other, 1, 1, "warning", "CS0168", "outside"),
+            ];
+
+            var (_, chip, content) = await ProblemsFix.ForAsync(problems, root, overlay: null, budgetChars: 60_000,
+                                                                CancellationToken.None);
+            var many = Enumerable.Range(0, 400)
+                .Select(i => new ProblemEntry(inside, 1, 1, "error", "CS0029", $"{i}: " + new string('t', 200))).ToList();
+            var (_, smallChip, small) = await ProblemsFix.ForAsync(many, root, overlay: null, budgetChars: 8_000,
+                                                                   CancellationToken.None);
+
+            Assert.Contains("InsideMarker", content);
+            Assert.DoesNotContain("OutsideMarker", content);
+            Assert.Contains(other, content);   // the problem itself stays listed, by its path
+            Assert.Equal(Strings.FixProblemsChip(2), chip);
+            Assert.True(small.Length <= 8_000 + 200, $"{small.Length} characters for a window of 8,000");
+            Assert.NotEqual(Strings.FixProblemsChip(400), smallChip);   // the cut is said on the chip
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+            Directory.Delete(outside, true);
+        }
+    }
+
     [Fact]
     public void EachProblem_IsWrittenAsABuildPrintsIt()
     {
@@ -91,14 +132,14 @@ public sealed class FixProblemsTests : IDisposable
         overlay.Set(file, "const typed = missing;\n");
 
         var (_, _, content) = await ProblemsFix.ForAsync(
-            [new(file, 1, 15, "error", "2304", "Cannot find name 'missing'.")], overlay, CancellationToken.None);
+            [new(file, 1, 15, "error", "2304", "Cannot find name 'missing'.")], _signals.Path, overlay, 60_000, CancellationToken.None);
 
         Assert.Contains("const typed = missing;", content);
         Assert.DoesNotContain("const old = 1;", content);
         // Witness: saved, the same file is read from disk.
         overlay.Set(file, "const old = 1;\n", unsaved: false);
         Assert.Contains("const old = 1;", (await ProblemsFix.ForAsync(
-            [new(file, 1, 7, "error", "2304", "x")], overlay, CancellationToken.None)).Content);
+            [new(file, 1, 7, "error", "2304", "x")], _signals.Path, overlay, 60_000, CancellationToken.None)).Content);
     }
 
     [Fact]
