@@ -1,15 +1,17 @@
 <p align="center">
-  <img src="Inferpal/assets/icon-256.png" alt="Inferpal" width="120" height="120">
+  <img src="Inferpal/assets/icon-256.png" alt="Inferpal" width="96" height="96">
 </p>
 
 <h1 align="center">Inferpal</h1>
 
 <p align="center">
-  An agentic developer assistant for Visual Studio 2026 and 2022 and <b>VS Code</b>,
-  and through the <b>Agent Client Protocol</b> for Zed, the JetBrains IDEs, Qt Creator, Neovim and Emacs —
-  powered entirely by <b>local LLMs</b>: Ollama, LM Studio, or any OpenAI-compatible server.
-  Full tool calling, inline ghost-text completions, semantic codebase search, and zero required
-  cloud dependency.
+  <b>Your local AI coding agent, inside Visual Studio, VS Code and the editors you already use.</b><br>
+  It reads your code, edits it behind an approval that shows the real diff, then builds and runs your tests.<br>
+  The model runs on your own hardware.
+</p>
+
+<p align="center">
+  No account · No telemetry · No API key · Works offline · Free and open source
 </p>
 
 <p align="center">
@@ -17,166 +19,187 @@
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
   <img src="https://img.shields.io/badge/tests-7217%20passing-brightgreen" alt="Tests">
-  <img src="https://img.shields.io/badge/.NET-8%20%7C%2010-512BD4" alt=".NET 8 | 10">
-  <img src="https://img.shields.io/badge/Visual%20Studio-2026%20%7C%202022-5C2D91" alt="Visual Studio 2026 | 2022">
-  <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/VS%20Marketplace-install-5C2D91" alt="Visual Studio Marketplace"></a>
-  <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><img src="https://img.shields.io/badge/VS%20Code%20Marketplace-install-007ACC" alt="VS Code Marketplace"></a>
-  <img src="https://img.shields.io/badge/VS%20Code-supported-007ACC" alt="VS Code">
+  <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/Visual%20Studio-install-5C2D91" alt="Install for Visual Studio"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><img src="https://img.shields.io/badge/VS%20Code-install-007ACC" alt="Install for VS Code"></a>
 </p>
 
 <p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><b>Inferpal for Visual Studio</b></a> ·
-  <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><b>Inferpal for VS Code</b></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><b>Visual Studio 2026 / 2022</b></a> ·
+  <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><b>VS Code</b></a> (Windows, Linux, macOS) ·
+  <a href="docs/acp.md"><b>Zed, JetBrains, Qt Creator, Neovim, Emacs</b></a>
+</p>
+
+<p align="center">
+  <img src="docs/assets/demo-vscode.gif" alt="Inferpal in VS Code: asked to add argument validation to a C# method and cover it with xUnit tests, the agent plans, edits the method, creates the test file and runs the tests behind approval cards, and ends on its answer and a result bar with Undo run, on a local model" width="820">
   <br>
-  or <a href="https://github.com/EstaxNet/Inferpal/releases/latest">download the latest release</a> —
-  <code>Inferpal-vs2026-*.vsix</code> for Visual Studio,
-  <code>inferpal-vscode-&lt;platform&gt;-*.vsix</code> for VS Code (Windows x64, Linux x64 or Apple Silicon),
-  <code>inferpal-acp-&lt;platform&gt;-*</code> for Zed, JetBrains IDEs, Qt Creator, Neovim and Emacs (<a href="docs/acp.md">setup</a>).
+  <sub>A real run on a local model (Devstral Small 2 in LM Studio), sped up. Every write and command was approved in the chat.</sub>
 </p>
+
+---
+
+## One turn, from question to green build
+
+Ask in plain words, for example *"add argument validation to this method and cover it with tests"*. The agent plans,
+reads, edits, builds and tests, and shows every step live. Nothing touches your disk until you have seen the change.
+
+```mermaid
+flowchart LR
+    ASK(["You ask"]) --> WORK["Plan, read and<br/>search your code"]
+    WORK --> EDIT["Propose<br/>a change"]
+    EDIT --> YOU{"You see<br/>the real diff"}
+    YOU -- Enter --> WRITE["Back up,<br/>then write"]
+    YOU -. Esc .-> WORK
+    WRITE --> CHECK["Build<br/>and test"]
+    CHECK -. errors .-> EDIT
+    CHECK --> DONE(["Answer +<br/>Undo run"])
+```
+
+<img src="docs/assets/result-bar.png" alt="The end of a run: the answer, then a result bar listing OrderServiceTests.cs +87 and OrderService.cs +8, build passed, and an Undo run button" width="380" align="right">
+
+- **Every write, delete and command waits for you**, with the real diff. Enter allows, Esc denies — or pick a narrow
+  rule such as *commands that start with `dotnet test`* (never a chain, a launcher or a program that deletes).
+- **Every file is backed up before it changes.** **Undo run** puts the whole run back in one click.
+- **Steer it while it works.** Type a correction and press Enter: the agent reads it before its next step.
+- **It checks its own work.** A build or typecheck after each edit (.NET, TypeScript, Rust, Go) feeds the errors
+  straight back.
+- **Invented packages are refused before you are asked.** Local models make up package names; each one is looked up
+  on nuget.org, npm or PyPI first.
+
+<br clear="right">
+
+## Right-click, and it's on it
+
+| Where you are | Visual Studio | VS Code |
+|---|---|---|
+| **Errors** | Error List → *Fix with Inferpal*, or *Fix with AI* on a failed build | Problems or light bulb → *Fix with Inferpal* |
+| **A failing test** | `/tdd` | Test view → *Make This Test Pass* · *Explain the Failure* |
+| **Debugger, stopped** | *Analyze with Inferpal* (Call Stack, Locals, Watch…) | *Analyze with Inferpal* |
+| **A file or a project** | Solution Explorer → *Explain* · *Review Changes* · *Attach to Chat* | Explorer → the same three |
+| **A selection** | *Edit with AI…* (Ctrl+Shift+I), accepted part by part in the editor | *Edit with AI*, shown in Refactor Preview first |
+| **Committing** | `/commit` drafts the message | Source Control → *Propose a Commit Message* |
+| **Typing** | Ghost-text completions: Tab, or Alt+' to ask | the same |
+
+## A failing test? It reads the debugger, not just the log
 
 <p align="center">
-  <img src="docs/assets/demo.gif" alt="Inferpal agent adding validation and tests to a C# method: plan, approval-gated diffs, live edits, test run — all on a local model" width="820">
+  <img src="docs/assets/demo-tdd-vscode.gif" alt="/tdd in VS Code on a local Qwen3.8 27B: the failing test is run again under the debugger, the fix is shown as a diff and approved, and the suite turns green after two rounds" width="820">
 </p>
 
----
+`/tdd` runs your tests (dotnet, pytest, npm, cargo, go), patches the code and runs them again, up to five rounds. On
+the first red round a failing .NET test runs again **under the editor's debugger**, and the real exception, call
+stack and local values go into the fix.
 
-## What is Inferpal?
+## Measured, not promised
 
-Inferpal turns a local model into a fully agentic coding assistant living inside your IDE.
-The model autonomously chains tool calls — reading and writing files, running commands,
-building, testing, and searching your codebase — to complete real tasks, while every write
-and every command stays behind an approval gate and a workspace sandbox. No API key, no
-telemetry, no cloud required.
-
-It ships as a **Visual Studio 2026 and 2022 extension** (the primary target) and a
-**VS Code extension** on the same engine, and runs as an
-**Agent Client Protocol agent** in Zed, the JetBrains IDEs (Rider included), Qt Creator, Neovim and Emacs
-([setup](docs/acp.md)) — one shared engine (`Inferpal.Core`), every editor.
-
-### Highlights
-
-- **Agentic loop** — 30 built-in tools, plus user-defined shell tools and **MCP** servers (stdio or Streamable HTTP, of the 2026-07-28 revision or an earlier one) — a server too heavy for the context window, like an IDE's own, waits on demand and `tool_search` loads its tools; any tool can be turned off one by one (`/tools off <tool>`, or the Tools page of the settings); a server that needs a value from you — a repository, a date, a choice — asks on a card in the chat that you fill, checked before it is sent, answered by nobody but you; independent read-only tools run in parallel.
-- **Local-first** — Ollama, LM Studio, or any OpenAI-compatible server (llama.cpp, vLLM); run the backend locally or on a [remote GPU host](docs/remote-inference.md).
-- **A chat you can read at a glance** — an agent run's steps fold into one line (`3 steps · read 1 file · edited 1 · build passed`), the answer ends on a result bar with the files changed — what its commands, test runs and MCP tools changed in a git repository included — the last build or test check and **Undo run**, and approvals are cards inside the conversation (**Allow once** with Enter, **Deny** with Esc, *Open diff* for the whole change) — and when one narrow rule describes the call, **Always: commands that start with `dotnet test`** or **writes under `tests/`**, saved to your machine's rules, never a chain, a launcher or a program that deletes. Same chat, same seven-page settings window in both editors.
-- **Steer a running turn** — type a correction while the agent works and press **Enter**: the run reads it before its next step, nothing stopped and nothing explained again; **Ctrl+Enter** queues a message for after the turn.
-- **Long runs you can leave** — the machine stays awake while the model works (Windows, macOS, Linux) and may sleep while an approval waits; a card left unanswered in an unfocused editor flashes the VS taskbar or raises a VS Code notification; a turn stopped at its iteration or length limit ends with a **Continue** button.
-- **Inline ghost-text completions** — Fill-in-the-Middle as you type (Tab / Esc), with three speeds: Fast, Balanced, Accurate.
-- **Semantic codebase search** — background indexing with hybrid retrieval (cosine + BM25 fused with RRF) and per-turn auto-context.
-- **Smart Fix Protocol** — after every edit, a polyglot build/typecheck (.NET / TypeScript / Rust / Go) feeds compile errors back so the agent fixes them in the same loop.
-- **Code actions & Inline Edit** — Explain / Fix / Refactor / Add Tests / Add Docstring, plus **Edit with AI** to rewrite a selection in place from an instruction, in both editors (**Ctrl+Shift+I** in Visual Studio).
-- **Safety by default** — approval-gated writes/commands, a catastrophic-command hard denylist, force-prompt on indirect execution (`iex`, `-EncodedCommand`, …) **and on anything a cloned repository authored** (committed validators, permission overlays), committable permission rules, and a hardened SSRF guard.
-- **Invented packages refused before you are asked** — local models invent package names (`Apache.Parquet`, `ibantools` on PyPI). A package a call adds — `dotnet add package`, `npm install`, `pip install`, `uv add`, or a dependency written into a `.csproj`, `package.json`, `requirements.txt` or `pyproject.toml` — is first looked up on its public registry (nuget.org, npm, PyPI); a name it does not have is refused before the approval card, and the model is told the close names that do exist. Only the added name is sent, and only to a public registry: a company feed or a registry that does not answer leaves the call to the card, unchecked. One setting turns it off.
-- **Files your repository keeps away from AI, kept away** — `.aiignore`, `.cursorignore`, `.geminiignore`, `.aiexclude` and the other tools' ignore files (and Inferpal's own `.inferpalignore`) are read in the gitignore syntax and honoured by everything that reads for the model: tools, `@`-mentions and chips, the index, pinned files, ghost text, code actions and git diffs. Every exclusion is said — the file, the line and the pattern — so a model never concludes a file does not exist, and `/check` and `/commit` say what they did not read.
-- **Nothing written into your repository behind your back** — Inferpal never edits your `.gitignore`. Before the agent changes a file it keeps a copy for `/undo-run` and `/restore`: in `.inferpal/history/`, which ignores itself in git, or — with *Backups of changed files* set to **In my user folder** — in Inferpal's local application data, one folder per repository, and nothing new is written into the project.
-- **Your repository's agent setup, read as it is** — `AGENTS.md`, `CLAUDE.md` and the instruction files written for Copilot, Cursor, Cline, Roo and Continue go with your questions (always, or when the active file matches), and `/instructions` shows what each one sends; the commands written for Copilot, Claude Code and Continue become slash commands; skills (`SKILL.md`) are joined with `/skill`; the repository's MCP servers start only after you approve them. On a fixed 10-question bench, two local models followed a repository rule **8/10 and 10/10** with its instruction file, **0/10** without.
-- **Coming from Continue or Roo Code** — `/import continue` reads your `~/.continue/config.yaml` (or the older `config.json`), `/import roo` a Roo Code settings export: a card lists what Inferpal can take — the model server and the models by role, rules, prompts and custom modes as commands, MCP servers, documentation sites, command rules — and why every other part stays (a hosted provider is never imported). Nothing is written until you apply, and your settings are copied aside first. See [Coming from Continue or Roo Code](docs/coming-from-continue.md).
-- **Governance & knowledge** — repo-versioned `.inferpal/rules` & AI checks, `@Docs` external-doc indexing, typed `@`-mentions, and 50+ slash commands.
-- **Built for the IDE** — live debugger awareness, VRAM monitoring, VS theme adaptation, and 10 UI languages.
-- **Debugger loop** — `/debug [goal]` lets the agent drive a **real debug session** from the chat: breakpoints, stepping, locals and call-stack inspection, in both editors (Visual Studio via an in-process driver, VS Code via a DAP bridge). Read-only, and starting a session always asks first.
-- **`/tdd` with a debugger** — when a test fails, the loop stops guessing from the runner's text: the failing test is re-run under the editor's debugger and the exception, the stack and the expanded locals go into the fix prompt. Measured on a fixed 12-case bench with a local 27B model: **12/12 fixed against 10/12** without it. It asks once per run, degrades cleanly when no debugger is available — and **says so** instead of silently looping. Writing a test file during a `/tdd` run always asks, whatever the permission rules say.
-- **Compiler-backed code intelligence** — `analyze_code` (its `impact` mode) and `rename_symbol` resolve C# symbols with the Roslyn compiler instead of name matching: real references, not homonyms — and `rename_symbol` no longer rewrites unrelated tokens that merely share the name. It follows the symbol into markup too (`.razor`, `.cshtml`, `.xaml`: bindings, `Model.X`, `asp-for`, a component's code, route and tag attributes) and lists every other occurrence instead of guessing; a file a generator writes is never edited by hand, and the refusal names where the change goes.
-- **Anchored diff review** — `/check` reviews your pending diff — or a branch before its pull request (`/check main..HEAD`), or one commit — for any bug or regression, with your repo-versioned AI checks on top, and anchors every finding to a diff line (and says so when a location can't be confirmed); `/commit` drafts the message, `/commit-exec` runs it only after you've read it.
-- **Persistent plans** — `/plan save|list|next|done` turns the current plan into a committable markdown file under `.inferpal/plans/` that survives `/clear`, restarts and editors; a plan can never execute anything by itself.
-- **Background agent tasks** — `/task [goal]` runs a read-only agent while you keep coding (serial queue behind the GPU scheduler); `/task propose` records the writes it *would* make, and `/task apply` replays each one through the normal approval prompt — never granted in advance.
-- **Project onboarding** — a committable, non-privileged `.inferpal/project.json` profile plus `/onboard` (report, apply model-role recommendations, generate the project context file). Classified by allow-list: unknown keys are ignored, never interpreted.
-- **Multi-model toolkit** — `/bench` scores your installed models per role, `/arena` runs blind A/B duels, and the **Model Router** sends background tasks (titles, commit messages, summaries) to a small utility model — never cold-loading one.
-- **Conversation branching** — `/branch <n>` forks a conversation at any turn: the branch keeps turns 1..*n* and the conversation continues there, while the original is written back to disk first. `/branch` lists the branch points and the family tree, `/branch <name>` switches. Branches are plain session files, so nothing else had to learn about them.
-- **Transparency** — the **Context X-Ray** panel breaks down the exact prompt sent to the model, layer by layer — the tool definitions each turn carries included — with per-layer toggles; `/replay` reconstructs an agent run post-mortem; `/fix` `/refactor` `/doc` show a per-hunk **inline diff preview** before touching your buffer.
-- **VS Code on the same engine** — the same chat (markdown, tool bubbles, plan display, typed `@`-mentions, slash commands with autocomplete), the same settings, the same approvals and inline FIM completions, backed by a bundled self-contained host (no .NET install needed). A few chat features are Visual Studio-only for now — `/fix-build` among them: [the list](docs/features.md#two-editors-one-engine).
-- **Zed, JetBrains IDEs, Qt Creator, Neovim and Emacs** — the same engine as an [Agent Client Protocol](https://agentclientprotocol.com) agent: each release carries an archive per system (Windows x64, Linux x64, Apple Silicon) whose executable, run with `--acp`, is started by the editor. The real diff is shown before every change and asked for, a file with unsaved changes in the editor is never written over, the three modes and the model are session options, sessions are saved and reloaded, and the editor's MCP servers are started for the session. Where the editor shows them (Zed 1.25 and later, ACP 1.11), Inferpal's notices and conversation compactions arrive as such, out of the transcript. Its settings are the same seven pages as in Visual Studio and VS Code, opened in your browser — `/settings` in a thread, or a button at first setup — and what you save applies from your next question. Tested in Zed, Rider, Qt Creator, and Visual Studio through Code Wicket, and against the protocol's conformance kit; setup for each editor, and how to run it across machines safely, in [docs/acp.md](docs/acp.md).
-
-> See **[docs/features.md](docs/features.md)** for the full functional tour.
-
----
-
-## Requirements
-
-| Requirement | Details |
+| On a fixed bench, with local models | Result |
 |---|---|
-| Editor | **Visual Studio 2026**, or **Visual Studio 2022 from 17.14** — Community / Professional / Enterprise, one package for both — or **VS Code** (Windows x64, Linux x64, or Apple Silicon on macOS 12 or later). |
-| .NET SDK | .NET 10 (building from source only — the VS Code VSIX bundles its own runtime) |
-| Model server | [Ollama](https://ollama.com) (default — full hardware-aware features), [LM Studio](https://lmstudio.ai), or any **OpenAI-compatible** server, local or [remote](docs/remote-inference.md) |
+| Real coding tasks in C#, JavaScript and Python, counted only when the project's own tests pass — Qwen3.8 27B on one 24 GB card | **14 / 14** |
+| 12 failing C# tests handed to `/tdd`, local 27B model | **12 fixed** with the debugger's view, 10 without |
+| A repository rule followed over 10 questions, two local models | **8 and 10** with its instruction file, **0** without |
 
-> Tool calling is required: the models measured best as the agent are `qwen3.8` and `devstral-small-2` — every
-> model's results in **[Models](docs/models.md)**, with the setup that fits an 8, 12, 16 or 24 GB card
-> ([By graphics card](docs/models.md#by-graphics-card)). Inline completions work best with a model trained for them
-> (Mellum2 or Qwen3.8, measured); semantic search works best with a dedicated embedding model.
+Every figure, model by model: **[Models](docs/models.md)**. `/bench` measures the ones you have, on your machine.
 
----
+## Pick a model for your card
 
-## Quick Start
+| Your card | Agent | Autocomplete beside it |
+|---|---|---|
+| 24 GB | Qwen3.8 27B (14/14), which also autocompletes, or Gemma 4 12B with Mellum2 | see the agent column |
+| 16 GB | Gemma 4 12B (12/14, fast), or Bonsai 27B, a 1-bit Qwen (13/14, about 3× slower) | Mellum2 fits only beside a weaker agent |
+| 12 GB | same as 16 GB | none measured fits |
+| 8 GB | Granite 4.2 8B (14/14, fast) | none measured fits |
+| More than 24 GB | not tested | — |
 
-1. Install the extension:
-   - **Visual Studio**: search *Inferpal* in Extensions → Manage Extensions, or
-     [install it from the Marketplace](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs);
-   - **VS Code**: search *Inferpal* in the Extensions view, or
-     [install it from the Marketplace](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode);
-   - or from **[the latest release](https://github.com/EstaxNet/Inferpal/releases/latest)**:
-     double-click `Inferpal-vs2026-<version>.vsix` (**close Visual Studio first** — the merge that
-     registers an extension gives up, silently, if any part of the configuration is in use), or
-     `code --install-extension inferpal-vscode-<platform>-<version>.vsix`;
-   - or build from source: `dotnet build Inferpal/Inferpal.csproj` — see [Development](docs/development.md).
-2. Start a model server:
+Measured on one 24 GB card (LM Studio, 32K context), its free memory cut to stand in for the smaller ones. Bigger
+cards, multi-GPU machines and 70B-class models were out of our budget, not out of interest: a bigger model makes a
+better agent. Any model that calls tools works — [details](docs/models.md#by-graphics-card).
 
-   ```powershell
-   ollama serve          # LM Studio / any OpenAI-compatible server also work
-   ollama pull qwen3.8   # or devstral-small-2, faster
-   ```
+## One engine, every editor
 
-3. In Visual Studio open **Tools → Inferpal** (or **Alt+B** / **Alt+O**); in VS Code, open the **Inferpal** view in the Activity Bar.
-4. Open **Inferpal Settings**, pick the provider, set the server URL, select a model, click **Test**, then start chatting. (Both editors share the same Inferpal configuration.)
+```mermaid
+flowchart TB
+    VS["Visual Studio<br/>2026 / 2022"]
+    VSC["VS Code<br/>Windows · Linux · macOS"]
+    ACP["Zed · JetBrains · Qt Creator<br/>Neovim · Emacs (ACP)"]
+    ENGINE["<b>Inferpal engine</b><br/>agent loop · 30 built-in tools + MCP<br/>approvals · backups · code index"]
+    MODEL[("Your model server<br/>Ollama · LM Studio · llama.cpp · vLLM<br/>on this computer or your own GPU machine")]
+    VS & VSC & ACP --> ENGINE
+    ENGINE <--> MODEL
+```
 
-Full walkthrough: **[Getting Started](docs/getting-started.md)**.
+The same chat, approvals and settings in every editor — and Visual Studio and VS Code share conversations, so you can
+start in one and finish in the other:
+
+<table>
+  <tr>
+    <td align="center" valign="top"><img src="docs/assets/chat-visual-studio.png" alt="The Inferpal chat in Visual Studio: the agent's plan, then an approval card showing the diff of OrderService.cs with Allow once, Always this session and Deny" width="400"><br><sub>Visual Studio</sub></td>
+    <td align="center" valign="top"><img src="docs/assets/chat-vscode.png" alt="The Inferpal chat in VS Code at the same moment of the same task: two steps done, then the same approval card for OrderService.cs" width="400"><br><sub>VS Code</sub></td>
+  </tr>
+</table>
+
+## Get started
+
+1. **Install** from the Marketplace — [Visual Studio](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs)
+   or [VS Code](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode) — or from the
+   [latest release](https://github.com/EstaxNet/Inferpal/releases/latest), which also carries the
+   [ACP agent](docs/acp.md) for the other editors.
+2. **Run a model server.** [Ollama](https://ollama.com) or [LM Studio](https://lmstudio.ai), on this computer or a
+   machine you own ([remote setup](docs/remote-inference.md)). On a 24 GB card: `ollama pull qwen3.8`.
+3. **Open Inferpal** — *Tools → Inferpal* in Visual Studio, the activity-bar icon or **Ctrl+Alt+I** in VS Code. The
+   first time, it looks for your model server and sets you up with a model; `/setup` looks again.
+
+Full walkthrough: **[Getting Started](docs/getting-started.md)**. Coming from Continue or Roo Code? `/import continue`
+or `/import roo` brings your models, rules, prompts and MCP servers over — [how](docs/coming-from-continue.md).
+
+## Also in the box
+
+- **30 built-in tools** — files, text and semantic search, build and tests, a shell with background jobs, git, the
+  editor, the debugger, compiler-backed analysis and rename, web search — plus any **MCP** server and your own shell
+  commands. [Reference](docs/tools.md)
+- **Reviews and git text** — `/check` reviews your diff, a branch or a commit, every finding anchored to a line;
+  `/commit` and `/pr-description` write the text.
+- **Typed context** — `@file` `@folder` `@code` `@diff` `@problems` `@debugger` `@clipboard` `@tree`, and **@Docs**
+  to index a documentation site.
+- **Your repository's setup, read as it is** — `AGENTS.md`, `CLAUDE.md`, the Copilot, Cursor, Cline, Roo and Continue
+  instruction files, and `.aiignore`-style files, honoured by everything that reads for the model.
+- **Work beside you** — `/task` investigates in the background while you code; `/debug` drives a real debug session
+  once you approve it.
+- **See what the model sees** — a gauge shows how full its window is, and `/xray` what fills it, layer by layer.
+- **Many models, one GPU** — `/bench` scores your installed models per role, `/arena` runs blind duels, and small
+  chores (titles, commit messages, summaries) can go to a small utility model.
+- **50+ slash commands** and an interface in 10 languages. [All commands](docs/slash-commands.md) ·
+  [Full feature tour](docs/features.md)
+
+## What leaves your machine
+
+With a model server on your machine, your code does not. There is no account, no telemetry and no hosted service.
+Only these go out: the model server address you choose, the MCP servers you add, a documentation site you index, the
+agent's web searches and page fetches (each one asks you first), and the name of a package the agent wants to add,
+looked up on its public registry — one setting turns that off.
 
 ---
 
 ## Documentation
 
-Complete functional and technical documentation lives in **[`docs/`](docs/README.md)**.
-
-| Functional | Technical |
-|---|---|
-| [Getting Started](docs/getting-started.md) · [Providers](docs/providers.md) · [Models](docs/models.md) · [Configuration](docs/configuration.md) | [Architecture](docs/architecture.md) |
-| [Features](docs/features.md) · [Slash Commands](docs/slash-commands.md) · [Tools](docs/tools.md) · [Mentions](docs/mentions.md) | [Development](docs/development.md) |
-| [Search & Indexing](docs/search-and-indexing.md) · [MCP](docs/mcp.md) · [Rules & Checks](docs/rules-and-checks.md) · [Remote Inference](docs/remote-inference.md) · [Zed, JetBrains, Qt Creator, Neovim (ACP)](docs/acp.md) · [Coming from Continue or Roo](docs/coming-from-continue.md) | |
-
----
+| Use it | Set it up | Under the hood |
+|---|---|---|
+| [Getting Started](docs/getting-started.md) · [Features](docs/features.md) · [Slash Commands](docs/slash-commands.md) · [Mentions](docs/mentions.md) · [Tools](docs/tools.md) | [Providers](docs/providers.md) · [Models](docs/models.md) · [Configuration](docs/configuration.md) · [Remote Inference](docs/remote-inference.md) · [Other editors (ACP)](docs/acp.md) · [Coming from Continue or Roo](docs/coming-from-continue.md) | [Architecture](docs/architecture.md) · [Search & Indexing](docs/search-and-indexing.md) · [MCP](docs/mcp.md) · [Rules & Checks](docs/rules-and-checks.md) · [Development](docs/development.md) |
 
 ## Official sources
 
-Inferpal is an independent open-source project (GPL v3) by EstaxNet. It runs on your machine, has no hosted
-version and no account, and is not affiliated with any cloud or API provider. The only official sources are this
-repository's [releases](https://github.com/EstaxNet/Inferpal/releases) and the two Marketplace listings, for
+Inferpal is an independent open-source project by EstaxNet. It has no hosted version and no account, and is not
+affiliated with any cloud or API provider. The only official sources are this repository's
+[releases](https://github.com/EstaxNet/Inferpal/releases) and the Marketplace listings for
 [Visual Studio](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs) and
-[VS Code](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode). An article that describes
-Inferpal as a cloud service is not about this project.
-
----
+[VS Code](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode). Since October 2026 Google
+returns no result for *Inferpal*, while Bing, DuckDuckGo and Brave still do: if a search brought you nothing, these
+are the links.
 
 ## Contributing
 
-Contributions are welcome — see **[Development](docs/development.md)** for the build, the
-project layout, and how to add a tool or a language. Quick version: implement `ITool`,
-register it in `ToolRegistry.cs`, and add any new strings to all 10 `.resx` files **and** to
-`Strings.cs`.
-
----
+Contributions are welcome — see **[Development](docs/development.md)** for the build, the project layout, and how to
+add a tool or a language. Quick version: implement `ITool`, register it in `ToolRegistry.cs`, and add any new strings
+to all 10 `.resx` files **and** to `Strings.cs`.
 
 ## License
 
-Licensed under the [GNU GPL v3](https://www.gnu.org/licenses/gpl-3.0).
-
-## Acknowledgments
-
-Developed with the assistance of **Claude** (Anthropic).
-
----
-
-## Not finding Inferpal on Google?
-
-As of October 2026, Google no longer returns any result for *Inferpal* — not this repository, not its releases, not
-its Marketplace listings — while other search engines, such as Bing, DuckDuckGo and Brave, still do. If a search
-brought you nothing, the official sources are the ones named above: this repository, its
-[releases](https://github.com/EstaxNet/Inferpal/releases), and the Marketplace listings for
-[Visual Studio](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs) and
-[VS Code](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode).
+[GNU GPL v3](https://www.gnu.org/licenses/gpl-3.0). Developed with the assistance of **Claude** (Anthropic).
