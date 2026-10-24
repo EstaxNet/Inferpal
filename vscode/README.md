@@ -100,6 +100,8 @@ These were measured on one 24 GB card (LM Studio, 32K context), with its free me
 
 **Can the model run on another machine?** Yes. Point the server address at it, as described in [Remote inference](https://github.com/EstaxNet/Inferpal/blob/master/docs/remote-inference.md).
 
+**Does it work with Remote - WSL, Remote - SSH or Dev Containers?** Yes: Inferpal runs on the other side, next to your files. There, `localhost` is WSL, the remote machine or the container — Inferpal says so when a local address does not answer, with the address to use instead ([details](https://github.com/EstaxNet/Inferpal/blob/master/docs/remote-inference.md#5-vs-code-connected-to-wsl-ssh-or-a-container)).
+
 **Does it work offline?** Yes, with a local server. Only web search and page fetch need the internet.
 
 ## Requirements

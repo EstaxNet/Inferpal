@@ -26,6 +26,11 @@ export interface InitializeParams {
    * (`chat/inputReceipt`): the host's calls then declare forms to the servers.
    */
   inputCards?: boolean;
+  /**
+   * Where VS Code runs this host when it is connected to another machine (`vscode.env.remoteName`: `wsl`, `ssh-remote`,
+   * `dev-container`…): there, `localhost` is that machine, and the host says so when a local address does not answer.
+   */
+  remoteName?: string;
 }
 
 export interface InitializeResult {

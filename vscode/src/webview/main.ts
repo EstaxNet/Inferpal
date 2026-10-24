@@ -2238,7 +2238,10 @@ function renderSetupView(): void {
       const list = document.createElement('ul');
       list.className = 'setup-places';
       for (const p of v.places) list.appendChild(setupPlaceRow(p, s));
-      setupEl.append(list, setupAddressForm(s, s.otherMachine));
+      setupEl.appendChild(list);
+      // Connected to WSL, an SSH server or a container: "here" is that machine, and the places above were looked at there.
+      if (s.remoteNote) setupEl.appendChild(setupText('p', 'setup-hint', s.remoteNote));
+      setupEl.appendChild(setupAddressForm(s, s.otherMachine));
       const install = document.createElement('section');
       install.className = 'setup-box';
       // The servers the sentence names: two that install with a model library and need no command line.

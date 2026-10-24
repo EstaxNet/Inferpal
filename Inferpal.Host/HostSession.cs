@@ -56,6 +56,9 @@ internal sealed class HostSession : IDisposable
     /// <summary>A compaction goes to the adapter as <c>chat/compaction</c> (<see cref="InitializeParams.CompactionEvents"/>).</summary>
     public bool CompactionEvents { get; init; }
 
+    /// <summary>Where the editor runs this host when it is connected to another machine (<see cref="InitializeParams.RemoteName"/>).</summary>
+    public string? RemoteName { get; init; }
+
     /// <summary>The host indexes the folder itself (<see cref="InitializeParams.IndexesTheFolder"/>); false: it only
     /// shows the index saved for it, whatever setting is saved — a pass starts on the page's Rebuild only.</summary>
     public bool IndexesTheFolder { get; init; } = true;

@@ -69,7 +69,18 @@ internal static class ServerScan
     ];
 
     /// <summary>The places looked at, in order: the configured address first when it is none of the usual ones.</summary>
-    internal static IReadOnlyList<(string Url, string? Expected)> Places(string? configured)
+    /// <param name="remoteName">Where the host runs (<see cref="RemoteSide"/>): from a container, the usual places are
+    /// also looked at on the machine that runs it — the server the person started is there, not in the container.</param>
+    internal static IReadOnlyList<(string Url, string? Expected)> Places(string? configured, string? remoteName = null)
+    {
+        var places = LocalPlaces(configured);
+        if (RemoteSide.Of(remoteName) == RemoteKind.Container)
+            places.AddRange(DefaultPlaces.Select(p => (RemoteSide.OnContainerHost($"http://localhost:{p.Port}"), (string?)p.Provider))
+                                         .Where(p => !places.Any(q => SameAddress(q.Item1, p.Item1))));
+        return places;
+    }
+
+    private static List<(string Url, string? Expected)> LocalPlaces(string? configured)
     {
         var mine = ProviderProbe.RootOf(configured);
         // A usual place the configured address names otherwise (127.0.0.1 for localhost) keeps the person's spelling:
@@ -106,9 +117,11 @@ internal static class ServerScan
     /// <summary>Looks at every place at once.</summary>
     /// <param name="configured">The configured address and its key: the key is sent there only.</param>
     /// <param name="createClient">Builds a client for a server that answers, to count its models.</param>
+    /// <param name="remoteName">Where the host runs (<see cref="Places"/>).</param>
     public static Task<IReadOnlyList<ServerPlace>> ScanAsync(
-        string? configured, string? apiKey, Func<InferpalConfig, IInferenceProvider> createClient, CancellationToken ct) =>
-        ScanAsync(Places(configured), configured, apiKey, createClient, ct);
+        string? configured, string? apiKey, Func<InferpalConfig, IInferenceProvider> createClient, CancellationToken ct,
+        string? remoteName = null) =>
+        ScanAsync(Places(configured, remoteName), configured, apiKey, createClient, ct);
 
     /// <summary>The same, over the given places (tests never probe this machine's real ports).</summary>
     internal static async Task<IReadOnlyList<ServerPlace>> ScanAsync(

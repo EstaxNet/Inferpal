@@ -887,8 +887,20 @@ internal static class Strings
     /// 404 for a URL at the wrong path) is running: "cannot reach… start it… check the firewall" sent its user to four
     /// remedies for a server that was up.
     /// </summary>
-    public static string MsgConnectionLost(string url, string backend, string? refusal) =>
-        refusal is null ? MsgConnectionGuardFailed(url, backend) : MsgConnectionRefused(url, backend, refusal);
+    /// <param name="remoteName">Where the host runs (VS Code's <c>remoteName</c>): from WSL, an SSH server or a container,
+    /// a <c>localhost</c> that does not answer is the other machine's, and "start it" is the wrong remedy.</param>
+    public static string MsgConnectionLost(string url, string backend, string? refusal, string? remoteName = null) =>
+        refusal is not null ? MsgConnectionRefused(url, backend, refusal)
+        : Services.Inference.RemoteSide.Unreachable(remoteName, url, backend) ?? MsgConnectionGuardFailed(url, backend);
+
+    public static string RemoteLocalhostWsl(string url, string backend) => Format(Get(nameof(RemoteLocalhostWsl)), url, backend);
+    public static string RemoteLocalhostSsh(string url, string backend, int port) => Format(Get(nameof(RemoteLocalhostSsh)), url, backend, port);
+    public static string RemoteLocalhostMachine(string url, string backend) => Format(Get(nameof(RemoteLocalhostMachine)), url, backend);
+    public static string RemoteLocalhostContainer(string url, string backend, string hostUrl) => Format(Get(nameof(RemoteLocalhostContainer)), url, backend, hostUrl);
+    public static string RemoteSetupWsl => Get(nameof(RemoteSetupWsl));
+    public static string RemoteSetupSsh => Get(nameof(RemoteSetupSsh));
+    public static string RemoteSetupMachine => Get(nameof(RemoteSetupMachine));
+    public static string RemoteSetupContainer => Get(nameof(RemoteSetupContainer));
 
     internal static string MsgConnectionGuardFailed(string url, string backend) =>
         Format(Get(nameof(MsgConnectionGuardFailed)), url, backend);

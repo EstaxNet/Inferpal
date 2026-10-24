@@ -189,6 +189,7 @@ internal sealed partial class HostServer : IDisposable
             ToolEvents   = p.ToolEvents,
             ReasoningChunks = p.ReasoningChunks,
             CompactionEvents = p.CompactionEvents,
+            RemoteName   = p.RemoteName,
             IndexesTheFolder = p.IndexesTheFolder,
             KeepsAutoSave = p.AutoSaveSlot,
             Approval     = approval,
@@ -1244,7 +1245,8 @@ internal sealed partial class HostServer : IDisposable
             ConnectionTransition.Lost     => Strings.MsgConnectionLost(
                                                  s.Config.BaseUrl,
                                                  InferenceProviderFactory.DisplayName(s.Config.Provider),
-                                                 s.Client.ConnectionRefusal),
+                                                 s.Client.ConnectionRefusal,
+                                                 s.RemoteName),
             _                             => null,
         };
         return new BackendStatusResult(connected, badge, notice,

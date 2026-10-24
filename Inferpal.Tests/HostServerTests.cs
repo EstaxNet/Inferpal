@@ -782,6 +782,59 @@ public partial class HostServerTests
         Assert.Null((await Beat()).EdgeNotice);
     }
 
+    /// <summary>
+    /// VS Code connected to WSL, an SSH server or a container runs the host there: a local address that does not answer
+    /// may be that machine's, and "start it — ollama serve" alone sends its user to start a second server next to the running
+    /// one: the gesture of that side is said.
+    /// </summary>
+    [Theory]
+    [InlineData("wsl", "networkingMode=mirrored")]
+    [InlineData("ssh-remote", "ssh -R 11434:localhost:11434")]
+    [InlineData("dev-container", "http://host.docker.internal:11434")]
+    public async Task BackendStatus_FromTheRemoteSide_SaysWhereLocalhostIs(string remoteName, string gesture)
+    {
+        using var h = CreateHarness(c => { c.Provider = "ollama"; c.BaseUrl = "http://localhost:11434"; });
+        await h.Client.InvokeWithParameterObjectAsync<InitializeResult>("initialize", new { rootDir = h.RootDir, remoteName })
+               .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.ConnectionOk = false;
+
+        var first = await h.Client.InvokeAsync<BackendStatusResult>("backend/status")
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Contains(gesture, first.EdgeNotice, StringComparison.Ordinal);
+        Assert.DoesNotContain("ollama serve", first.EdgeNotice, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task BackendStatus_WhereThePersonSits_KeepsTheOrdinarySteps()
+    {
+        // Reference arm: no remote name, the server may simply be stopped.
+        using var h = CreateHarness(c => { c.Provider = "ollama"; c.BaseUrl = "http://localhost:11434"; });
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.ConnectionOk = false;
+
+        var first = await h.Client.InvokeAsync<BackendStatusResult>("backend/status")
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Contains("ollama serve", first.EdgeNotice, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("wsl", true)]
+    [InlineData(null, false)]
+    public async Task SetupStrings_SayWhereHereIs_FromTheRemoteSideOnly(string? remoteName, bool said)
+    {
+        using var h = CreateHarness();
+        await h.Client.InvokeWithParameterObjectAsync<InitializeResult>("initialize", new { rootDir = h.RootDir, remoteName })
+               .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var labels = await h.Client.InvokeAsync<Dictionary<string, string>>("setup/strings")
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Equal(said, labels.ContainsKey("remoteNote"));
+        Assert.True(labels.ContainsKey("nothingTitle"));
+    }
+
     [Fact]
     public async Task BackendStatus_AnnouncesAnOutageThatWasThereFromTheStart()
     {

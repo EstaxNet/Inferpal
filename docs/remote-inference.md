@@ -167,6 +167,34 @@ minutes for a prompt because indexing monopolised the remote GPU. This is provid
 
 ---
 
+## 5. VS Code connected to WSL, SSH or a container
+
+With **Remote - WSL**, **Remote - SSH**, **Dev Containers** or a tunnel, VS Code runs Inferpal **on the other side**,
+next to your files, with the extension's package for that machine. Packages exist for **Linux x64**, Windows x64 and
+macOS on Apple silicon: an ARM Linux machine or container (a Dev Container on an Apple-silicon Mac, an ARM server) and
+Alpine-based images (musl) have none, and Inferpal does not start there. Measured from WSL (Ubuntu, x64): the engine
+starts, reaches the model servers and completes code in about the time it takes from Windows (1.3 s against 1.1 s, same
+server and model).
+
+What changes is **`localhost`**: on the other side it means WSL, the SSH server or the container — not the computer you
+sit at. A server you started on your computer is therefore not at `http://localhost:11434` for Inferpal. When a local
+address does not answer, Inferpal says where it runs and what to do; the first launch says it too, and from a container
+it also looks at `http://host.docker.internal`.
+
+| Connected to | A server on your computer answers at | What to set |
+|---|---|---|
+| **WSL**, mirrored networking | `http://localhost:11434` | nothing — `localhost` is shared with Windows; if it does not answer, the server is not started |
+| **WSL**, default (NAT) networking | not at `localhost` | turn on mirrored networking (Windows 11 22H2 or later): `networkingMode=mirrored` under `[wsl2]` in `%UserProfile%\.wslconfig`, then `wsl --shutdown` — or set the URL to Windows' address and make the server listen on it (Ollama: `OLLAMA_HOST=0.0.0.0`, plus the firewall rule of section 1) — or run the server inside WSL |
+| **SSH** | only through a tunnel | run the server on that machine, or set the URL of a server it can reach, or bring yours to it with a reverse tunnel: `ssh -R 11434:localhost:11434 <that machine>` (then `http://localhost:11434` works there — for everyone on that machine) |
+| **A VS Code tunnel, Codespaces** | not from there | run the server on that machine, or set the URL of a server it can reach |
+| **A container**, Docker Desktop | `http://host.docker.internal:11434` | that URL; the server needs no change |
+| **A container**, Docker Engine on Linux | `http://host.docker.internal:11434` once the container knows that name | add `--add-host=host.docker.internal:host-gateway` to the container's run arguments (`runArgs` in `devcontainer.json`) and make the server listen beyond 127.0.0.1 (Ollama: `OLLAMA_HOST=0.0.0.0`) |
+
+A team server reached by its name or address (`https://llm.example.com`) needs nothing: it is the same address from
+both sides. Visual Studio has no remote mode for extensions — Inferpal always runs on the machine you sit at.
+
+---
+
 ## Troubleshooting
 
 | Symptom | Likely cause / fix |

@@ -148,6 +148,8 @@ export interface HostClientOptions {
   /** Editor display language (e.g. vscode.env.language). */
   locale?: string;
   clientName?: string;
+  /** Where VS Code runs this host when connected to another machine (vscode.env.remoteName), passed to `initialize`. */
+  remoteName?: string;
   /** Receives host stderr lines and lifecycle messages (→ output channel). */
   log?(line: string): void;
   /** Called when the host process dies without a `stop()` call. */
@@ -386,6 +388,7 @@ export class HostClient {
       otherFolders: this.options.otherFolders,
       openExternal: true,
       inputCards: true,
+      remoteName: this.options.remoteName,
     };
     try {
       this.info = await conn.sendRequest<InitializeResult>('initialize', params);

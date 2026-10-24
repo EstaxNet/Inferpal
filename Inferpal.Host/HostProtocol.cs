@@ -42,6 +42,9 @@
 /// <param name="InputCards">The adapter draws the card an MCP server's form is filled on (<c>input/form</c>, answered with
 /// what the person did) and the line it leaves (<c>chat/inputReceipt</c>): its calls declare forms to the servers. False for
 /// an Agent Client Protocol client, which has no such card.</param>
+/// <param name="RemoteName">Where the editor runs this host when it is connected to another machine (VS Code's
+/// <c>vscode.env.remoteName</c>: <c>wsl</c>, <c>ssh-remote</c>, <c>dev-container</c>…); absent when it runs where the person
+/// sits. There, <c>localhost</c> is the other machine (<see cref="Services.Inference.RemoteSide"/>).</param>
 internal sealed record InitializeParams(
     string    RootDir,
     string?   Locale          = null,
@@ -58,7 +61,8 @@ internal sealed record InitializeParams(
     bool      AutoSaveSlot     = true,
     bool      OpenExternal     = false,
     bool      CompactionEvents = false,
-    bool      InputCards       = false);
+    bool      InputCards       = false,
+    string?   RemoteName       = null);
 
 /// <summary>`workspace/folders` — the editor's other workspace folders changed (a folder added or removed while the
 /// root stayed): restarting the host for it would kill the turn in flight, its shells and MCP servers.</summary>

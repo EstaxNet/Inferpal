@@ -46,7 +46,7 @@ flowchart LR
 | [MCP](mcp.md) | Connecting Model Context Protocol servers |
 | [Coming from Continue or Roo Code](coming-from-continue.md) | `/import`: what a Continue or Roo Code configuration brings over, and why the rest stays |
 | [Rules & AI Checks](rules-and-checks.md) | Repo-versioned governance (`.inferpal/rules`, `.inferpal/checks`) |
-| [Remote Inference](remote-inference.md) | Run the model server on another machine |
+| [Remote Inference](remote-inference.md) | Run the model server on another machine; VS Code connected to WSL, SSH or a container |
 | [Zed, JetBrains, Qt Creator, Neovim (ACP)](acp.md) | Inferpal as an Agent Client Protocol agent in other editors |
 | [ACP across machines](acp-security.md) | Who drives the agent, SSH, and why WebSocket bridges stay off open networks |
 

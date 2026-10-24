@@ -269,6 +269,7 @@ async function startHostCore(
       otherFolders: otherWorkspaceFolders(),
       locale: vscode.env.language,
       clientName: `vscode/${vscode.version}`,
+      remoteName: vscode.env.remoteName,
       log,
       onCrash: () => {
         host = undefined;

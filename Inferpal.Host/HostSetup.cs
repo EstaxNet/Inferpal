@@ -30,7 +30,7 @@ internal sealed partial class HostServer
     /// <summary>`setup/places` — where the scan will look, to show each place while it is checked.</summary>
     [JsonRpcMethod("setup/places")]
     public List<SetupPlaceDto> SetupPlaces() =>
-        [.. ServerScan.Places(Session().Config.BaseUrl).Select(p => new SetupPlaceDto(
+        [.. ServerScan.Places(Session().Config.BaseUrl, Session().RemoteName).Select(p => new SetupPlaceDto(
             p.Url, p.Expected, "checking", null, null, 0, 0,
             p.Expected is { } code ? InferenceProviderFactory.DisplayName(code) : p.Url, Strings.SetupChecking, null))];
 
@@ -39,7 +39,7 @@ internal sealed partial class HostServer
     public async Task<SetupScanResult> SetupScanAsync(CancellationToken ct)
     {
         var s = Session();
-        var places = await ServerScan.ScanAsync(s.Config.BaseUrl, s.Config.ApiKey, _providerFactory, ct);
+        var places = await ServerScan.ScanAsync(s.Config.BaseUrl, s.Config.ApiKey, _providerFactory, ct, s.RemoteName);
         return new([.. places.Select(SetupPlaceDto.Of)], ServerScan.Offered(places, s.Config.BaseUrl)?.Url);
     }
 
@@ -128,7 +128,15 @@ internal sealed partial class HostServer
     /// <summary>`setup/strings` — the card's fixed labels, in the editor's language (the sentences that carry a name or
     /// a number come composed with each answer).</summary>
     [JsonRpcMethod("setup/strings")]
-    public Dictionary<string, string> SetupStrings() => new()
+    public Dictionary<string, string> SetupStrings()
+    {
+        var labels = FixedSetupStrings();
+        // Connected to WSL, an SSH server or a container, "found here" means there: said under "no server found".
+        if (Services.Inference.RemoteSide.SetupNote(Session().RemoteName) is { } note) labels["remoteNote"] = note;
+        return labels;
+    }
+
+    private static Dictionary<string, string> FixedSetupStrings() => new()
     {
         ["lookingTitle"]   = Strings.SetupLookingTitle,
         ["lookingLead"]    = Strings.SetupLookingLead,
