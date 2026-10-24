@@ -1,0 +1,171 @@
+using System.IO;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace Inferpal.Services.Execution;
+
+/// <summary>
+/// A run as it is kept on disk, one file per run beside the workspace's snapshots: what lets <c>/undo-run</c> and a result
+/// bar's Undo work after the editor, the host or an ACP thread restarted (<see cref="FileHistoryService.Runs"/>).
+/// </summary>
+/// <remarks>
+/// ⚠ Read without trust. Undoing a run is the only write the product makes without an approval card, and under
+/// <c>historyStorage: project</c> these files live in the repository: one a clone brought, or one edited in place, would
+/// have files rewritten with what the repository supplies. Each file is signed with a random key that never leaves the
+/// user's local application data (<see cref="KeyIn"/>): a run the key does not sign is never read, and the caller still
+/// checks every path a signed one names.
+/// </remarks>
+internal static class RunManifest
+{
+    /// <summary>The folder of a history folder the runs are kept in.</summary>
+    internal const string Folder = "runs";
+
+    internal const string Extension = ".json";
+
+    /// <summary>How a run file begins, before its signature: a format a later version can tell from this one.</summary>
+    private const string Header = "inferpal-run 1 ";
+
+    private sealed record ChangeDto(
+        [property: JsonPropertyName("path")] string? Path,
+        [property: JsonPropertyName("snapshot")] string? Snapshot,
+        [property: JsonPropertyName("failed")] bool Failed);
+
+    private sealed record NoteDto(
+        [property: JsonPropertyName("call")] string? Call,
+        [property: JsonPropertyName("reason")] string? Reason,
+        [property: JsonPropertyName("file")] string? File);
+
+    private sealed record Dto(
+        [property: JsonPropertyName("id")] string? Id,
+        [property: JsonPropertyName("started")] DateTime Started,
+        [property: JsonPropertyName("open")] bool Open,
+        [property: JsonPropertyName("pid")] int Pid,
+        [property: JsonPropertyName("watched")] int Watched,
+        [property: JsonPropertyName("changes")] List<ChangeDto>? Changes,
+        [property: JsonPropertyName("undone")] bool Undone,
+        [property: JsonPropertyName("givenBack")] List<string>? GivenBack,
+        [property: JsonPropertyName("uncovered")] List<NoteDto>? Uncovered);
+
+    private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
+
+    /// <summary>
+    /// The key that signs this account's runs, kept in <paramref name="folder"/> (the user's local history root) and made
+    /// on first use; <c>null</c> when it can neither be read nor made — runs are then not kept on disk.
+    /// </summary>
+    internal static byte[]? KeyIn(string folder)
+    {
+        var path = System.IO.Path.Combine(folder, ".run-key");
+        try
+        {
+            if (File.Exists(path)) return Valid(File.ReadAllBytes(path));
+            Directory.CreateDirectory(folder);
+            var key = RandomNumberGenerator.GetBytes(32);
+            try
+            {
+                using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+                stream.Write(key);
+                return key;
+            }
+            catch (IOException) when (File.Exists(path)) { return Valid(File.ReadAllBytes(path)); }   // made meanwhile
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Diagnostics.Swallow("RunManifest.KeyIn", ex);
+            return null;
+        }
+
+        static byte[]? Valid(byte[] key) => key.Length == 32 ? key : null;
+    }
+
+    private static string Sign(string json, byte[] key) =>
+        Convert.ToHexString(HMACSHA256.HashData(key, Encoding.UTF8.GetBytes(json)));
+
+    /// <summary>The file name of <paramref name="run"/> in a runs folder.</summary>
+    internal static string FileName(HistoryRun run) => run.Id + Extension;
+
+    /// <summary>
+    /// <paramref name="run"/> as it is written, signed with <paramref name="key"/>; <paramref name="open"/> while its
+    /// process still records into it. Call under the run lock: the run may still be recording.
+    /// </summary>
+    internal static string Serialize(HistoryRun run, bool open, byte[] key, int? pid = null)
+    {
+        var json = JsonSerializer.Serialize(new Dto(
+            run.Id, run.StartedAt.ToUniversalTime(), open, pid ?? Environment.ProcessId, run.WatchedCalls,
+            run.Changes.Select(c => new ChangeDto(c.OriginalPath, c.SnapshotPath, c.SnapshotFailed)).ToList(),
+            run.Undone,
+            run.Changes.Select(c => c.OriginalPath).Where(run.IsGivenBack).ToList(),
+            run.Uncovered.Select(u => new NoteDto(u.Call, u.Note.Reason.ToString(), u.Note.File)).ToList()), Options);
+        return Header + Sign(json, key) + "\n" + json;
+    }
+
+    /// <summary>The run a file describes, once its signature holds; <c>null</c> with the reason otherwise.</summary>
+    private static Dto? Read(string text, byte[] key, out string? refusal)
+    {
+        var newline = text.IndexOf('\n');
+        if (!text.StartsWith(Header, StringComparison.Ordinal) || newline < 0)
+        {
+            refusal = "not a run file of this version";
+            return null;
+        }
+        var json = text[(newline + 1)..];
+        if (!CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(text[Header.Length..newline].Trim()),
+                                                     Encoding.ASCII.GetBytes(Sign(json, key))))
+        {
+            refusal = "not signed by this account's key (written elsewhere, or edited)";
+            return null;
+        }
+        try { refusal = null; return JsonSerializer.Deserialize<Dto>(json, Options); }
+        catch (JsonException ex) { refusal = "unreadable: " + ex.Message; return null; }
+    }
+
+    /// <summary>What a signed run file says: the run, whether its process was still recording, and which process.</summary>
+    internal sealed record Reading(HistoryRun Run, bool Open, int Pid);
+
+    /// <summary>
+    /// The run <paramref name="text"/> describes, or <c>null</c> with the reason it is not read: unsigned or edited, or
+    /// naming a file and copy <paramref name="accepts"/> refuses.
+    /// </summary>
+    internal static Reading? Parse(string text, byte[] key, Func<string, string?, bool> accepts, out string? refusal)
+    {
+        if (Read(text, key, out refusal) is not { Id.Length: > 0, Changes: not null } dto)
+        {
+            refusal ??= "unreadable: no id or no changes";
+            return null;
+        }
+        foreach (var change in dto.Changes)
+            if (change.Path is not { Length: > 0 } path || !System.IO.Path.IsPathFullyQualified(path)
+                || change.Snapshot is { } snap && !System.IO.Path.IsPathFullyQualified(snap)
+                || !accepts(path, change.Snapshot))
+            {
+                refusal = $"names a file or a copy outside this workspace's history: {change.Path}";
+                return null;
+            }
+
+        var run = new HistoryRun(dto.Id, dto.Started.ToLocalTime());
+        foreach (var change in dto.Changes) run.RecordFirst(change.Path!, change.Snapshot, change.Failed);
+        run.RestoreWatchedCalls(dto.Watched);
+        foreach (var note in dto.Uncovered ?? [])
+            if (note.Call is not null && Enum.TryParse<UncoveredReason>(note.Reason, out var reason))
+                run.NoteUncovered(note.Call, new UncoveredNote(reason, note.File));
+        MergeMarks(run, dto);
+        return new Reading(run, dto.Open, dto.Pid);
+    }
+
+    /// <summary>
+    /// Brings into <paramref name="run"/> what another process marked in its file — undone, given back. Both only grow:
+    /// without this, the editor that made a run undoes it a second time after the other editor has, over what was edited
+    /// since, and its next write clears the other's marks.
+    /// </summary>
+    internal static void MergeMarks(HistoryRun run, string text, byte[] key)
+    {
+        if (Read(text, key, out _) is { Id: { } id } dto && id == run.Id) MergeMarks(run, dto);
+    }
+
+    private static void MergeMarks(HistoryRun run, Dto dto)
+    {
+        foreach (var path in dto.GivenBack ?? []) run.NoteGivenBack(path);
+        if (dto.Undone) run.MarkUndone();
+    }
+}

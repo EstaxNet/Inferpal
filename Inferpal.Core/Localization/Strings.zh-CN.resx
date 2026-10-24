@@ -832,14 +832,15 @@
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>已启用诊断文件日志。</value></data>
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>已禁用诊断文件日志。</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>撤销上一次代理运行的所有文件更改</value></data>
-  <data name="UndoRunNone" xml:space="preserve"><value>本会话中没有可撤销文件更改的代理运行。</value></data>
+  <data name="UndoRunNone" xml:space="preserve"><value>本工作区中没有可撤销文件更改的代理运行。</value></data>
   <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>上一次代理运行已经撤销过了——没有做任何更改。</value></data>
   <data name="UndoRunNotTheLatest" xml:space="preserve"><value>未撤销：之后的一次运行在此之后修改了文件，撤销这一次会覆盖那些更改。请先撤销较新的那次运行（/undo-run）。</value></data>
   <data name="UndoRunWhileBusy" xml:space="preserve"><value>当前轮次仍在进行：请等它结束后再撤销。</value></data>
-  <data name="UndoRunListHeader" xml:space="preserve"><value>本会话跟踪的运行（{0}）：</value></data>
+  <data name="UndoRunListHeader" xml:space="preserve"><value>本工作区跟踪的运行（{0}）：</value></data>
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} 个文件</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>它们之前的状态已先行保存 — 使用 `/restore &lt;完整路径&gt;` 可恢复文件。</value></data>
   <data name="UndoRunRetryFailed" xml:space="preserve"><value>标有 ⚠ 的文件未能还原。待原因消除后（例如占用该文件的程序），请再次输入 `/undo-run`：只会重试这些文件。</value></data>
+  <data name="UndoRunCutShort" xml:space="preserve"><value>此运行因编辑器关闭而中断：在其最后一次写入磁盘之后更改的文件可能未包含在此次撤销中。</value></data>
   <data name="UndoRunNotCovered" xml:space="preserve"><value>未记录，因此未撤销：</value></data>
   <data name="UndoRunNotCoveredMore" xml:space="preserve"><value>… 另有 {0} 项。</value></data>
   <data name="UndoRunIgnoredNote" xml:space="preserve"><value>永远不会被记录：git 忽略的文件（构建输出、node_modules、被忽略的 .env）、嵌套仓库和子模块，以及仓库之外的文件。</value></data>

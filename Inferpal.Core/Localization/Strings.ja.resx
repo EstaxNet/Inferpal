@@ -832,14 +832,15 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>診断のファイル記録を有効にしました。</value></data>
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>診断のファイル記録を無効にしました。</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>直近のエージェント実行によるファイル変更をすべて元に戻す</value></data>
-  <data name="UndoRunNone" xml:space="preserve"><value>このセッションには元に戻せるファイル変更を伴うエージェント実行がありません。</value></data>
+  <data name="UndoRunNone" xml:space="preserve"><value>このワークスペースには元に戻せるファイル変更を伴うエージェント実行がありません。</value></data>
   <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>直前のエージェント実行はすでに元に戻されています。何も変更していません。</value></data>
   <data name="UndoRunNotTheLatest" xml:space="preserve"><value>元に戻していません: この後の実行がファイルを変更しており、この実行を元に戻すとその変更を上書きします。先に新しい実行を元に戻してください (/undo-run)。</value></data>
   <data name="UndoRunWhileBusy" xml:space="preserve"><value>まだターンの実行中です。終わってから元に戻してください。</value></data>
-  <data name="UndoRunListHeader" xml:space="preserve"><value>このセッションで追跡された実行（{0}）：</value></data>
+  <data name="UndoRunListHeader" xml:space="preserve"><value>このワークスペースで追跡された実行（{0}）：</value></data>
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} 個のファイル</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>直前の状態は先に保存されています — `/restore &lt;フルパス&gt;` でファイルを復元できます。</value></data>
   <data name="UndoRunRetryFailed" xml:space="preserve"><value>⚠ の付いたファイルは元に戻せませんでした。原因 (ファイルを開いているプログラムなど) を取り除いてから、もう一度 `/undo-run` と入力してください。再試行されるのはこれらのファイルだけです。</value></data>
+  <data name="UndoRunCutShort" xml:space="preserve"><value>この実行はエディターが閉じられたため中断されました。ディスクへの最後の保存後に変更されたファイルは、この取り消しに含まれていない可能性があります。</value></data>
   <data name="UndoRunNotCovered" xml:space="preserve"><value>記録されていないため、元に戻していません：</value></data>
   <data name="UndoRunNotCoveredMore" xml:space="preserve"><value>… ほか {0} 件。</value></data>
   <data name="UndoRunIgnoredNote" xml:space="preserve"><value>記録されないもの：git が無視するファイル（ビルド出力、node_modules、無視された .env）、入れ子のリポジトリとサブモジュール、リポジトリ外のファイル。</value></data>

@@ -840,14 +840,15 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>Diagnostics file logging enabled.</value></data>
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>Diagnostics file logging disabled.</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Undo all file changes from the last agent run</value></data>
-  <data name="UndoRunNone" xml:space="preserve"><value>No agent run with file changes to undo in this session.</value></data>
+  <data name="UndoRunNone" xml:space="preserve"><value>No agent run with file changes to undo in this workspace.</value></data>
   <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>The last agent run has already been undone — nothing was changed.</value></data>
   <data name="UndoRunNotTheLatest" xml:space="preserve"><value>Not undone: a later run changed files after this one, and undoing this one would overwrite them. Undo the later run first (/undo-run).</value></data>
   <data name="UndoRunWhileBusy" xml:space="preserve"><value>A turn is still running: wait for it to finish, then undo.</value></data>
-  <data name="UndoRunListHeader" xml:space="preserve"><value>Change-tracking runs this session ({0}):</value></data>
+  <data name="UndoRunListHeader" xml:space="preserve"><value>Change-tracking runs in this workspace ({0}):</value></data>
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} {1:file|files}</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Their previous state was saved first — `/restore &lt;full path&gt;` brings a file back.</value></data>
   <data name="UndoRunRetryFailed" xml:space="preserve"><value>The files marked ⚠ were not given back. Type `/undo-run` again once their cause is gone (a program holding the file, say): it tries those files only.</value></data>
+  <data name="UndoRunCutShort" xml:space="preserve"><value>This run was cut short when its editor closed: a file it changed after its last save to disk may be missing from this undo.</value></data>
   <data name="UndoRunNotCovered" xml:space="preserve"><value>Not recorded, so not undone:</value></data>
   <data name="UndoRunNotCoveredMore" xml:space="preserve"><value>… and {0} more.</value></data>
   <data name="UndoRunIgnoredNote" xml:space="preserve"><value>Never recorded: files git ignores (build output, node_modules, an ignored .env), nested repositories and submodules, and files outside the repository.</value></data>

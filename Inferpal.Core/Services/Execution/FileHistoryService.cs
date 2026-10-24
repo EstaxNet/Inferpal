@@ -236,7 +236,13 @@ internal class FileHistoryService
             // it, and record the file in the run as snapshot-failed so UndoRunAsync reports it
             // as Failed instead of not knowing it was ever touched.
             Diagnostics.Swallow($"FileHistoryService.Snapshot({filePath})", ex);
-            lock (_runLock) Run?.RecordFirst(filePath, snapshot: null, snapshotFailed: true);
+            HistoryRun? run;
+            lock (_runLock)
+            {
+                run = Run;
+                run?.RecordFirst(filePath, snapshot: null, snapshotFailed: true);
+            }
+            PersistAsItGrows(run);   // kept on disk too: after a restart the undo still names it as one it cannot give back
             return string.Empty;
         }
     }
@@ -308,6 +314,7 @@ internal class FileHistoryService
         public void Dispose()
         {
             _callWrites.Value = null;
+            HistoryRun? forgotten = null;
             foreach (var write in writes)
             {
                 if (Landed(write)) continue;
@@ -315,9 +322,11 @@ internal class FileHistoryService
                 {
                     // A failed backup was entered in the run without being counted as a write.
                     if (!write.Failed) owner.Run?.UncountWrite();
-                    if (write.FirstInRun) owner.Run?.Forget(write.Path);
+                    if (write.FirstInRun && owner.Run is { } run) (forgotten = run).Forget(write.Path);
                 }
             }
+            // Out of its file too: kept there, the write that did not land is one an undo would "give back".
+            owner.PersistAsItGrows(forgotten);
         }
     }
 
@@ -372,11 +381,19 @@ internal class FileHistoryService
         try
         {
             HashSet<string> held;
+            HashSet<string> own;
             lock (_runLock)
+            {
                 held = new HashSet<string>(
                     _runs.Append(_currentRun).OfType<HistoryRun>()
                          .SelectMany(r => r.Changes).Select(c => c.SnapshotPath).OfType<string>(),
                     PathComparer.Default);
+                own = _runs.Select(r => r.Id).ToHashSet();
+            }
+            // ⚠ The runs kept on disk hold their copies too: pruned on the live processes' runs alone, the pre-run backup
+            // of a run made before a restart goes with its file's twentieth snapshot, and its undo fails.
+            if (RunKey() is { } key)
+                held.UnionWith(DiskRuns(own, key).SelectMany(r => r.Changes).Select(c => c.SnapshotPath).OfType<string>());
             // ⚠ The history folder is the workspace's, shared by Visual Studio and VS Code, and the runs live in each
             // process's memory. Pruned on this process's runs alone, a pre-run backup another editor's run still holds
             // was deleted by this one's twentieth snapshot of the file, and that editor's /undo-run could no longer put
@@ -593,8 +610,8 @@ internal class FileHistoryService
     }
 
     // ── Run grouping (for /undo-run) ─────────────────────────────────────────────
-    // In-memory only: undo-run is meant to revert the agent run you just watched, in the same VS
-    // session. Cross-session recovery is still served by the persisted per-file snapshots + /restore.
+    // Held in memory while the process lives, and each run that changed or missed something is also kept on disk beside
+    // the workspace's snapshots (RunManifest): /undo-run and a result bar's Undo outlive a restart of the editor.
 
     private const int MaxRetainedRuns = 15;
     private readonly List<HistoryRun> _runs = [];   // chronological; newest last
@@ -631,9 +648,12 @@ internal class FileHistoryService
         // UTC, and invariant formatting. Local time repeats an hour every autumn, so two runs can
         // be handed the same identifier and the lexicographic order of identifiers lies for that
         // hour — SessionManager names its files the same way. The identifier is shown to nobody:
-        // it keys /undo-run.
+        // it keys /undo-run, and names the run's file on disk — hence the instance: two editors that open a run in the
+        // same millisecond would otherwise share one.
         var run = new HistoryRun(DateTime.UtcNow.ToString("yyyy-MM-dd_HH-mm-ss-fff",
-                                                          System.Globalization.CultureInfo.InvariantCulture));
+                                                          System.Globalization.CultureInfo.InvariantCulture)
+                                 + "_" + _instanceId + "-" + Interlocked.Increment(ref _runSequence).ToString(
+                                     "D4", System.Globalization.CultureInfo.InvariantCulture));
         lock (_runLock)
         {
             if (alreadyRead is not null) run.NoteRead(alreadyRead);
@@ -656,6 +676,9 @@ internal class FileHistoryService
     }
 
     private int _forgottenRuns;
+
+    // Two runs begun in the same millisecond still get two ids, and two files.
+    private int _runSequence;
 
     /// <summary>Runs that called tools and are no longer kept (past <see cref="MaxRetainedRuns"/>): what /replay can
     /// no longer show, and says.</summary>
@@ -730,7 +753,216 @@ internal class FileHistoryService
     /// </remarks>
     internal void EndRun()
     {
-        lock (_runLock) _currentRun = null;
+        HistoryRun? ended;
+        lock (_runLock)
+        {
+            ended = _currentRun;
+            _currentRun = null;
+        }
+        if (ended is not null) Persist(ended, open: false);
+    }
+
+    // ── Runs kept on disk (RunManifest) ──────────────────────────────────────────
+
+    // One writer of run files at a time in this instance: a state serialized before another and written after it would
+    // put an older run back on disk (an undo's marks, say).
+    private readonly object _persistGate = new();
+
+    private byte[]? _runKey;
+    private bool _runKeyRead;
+
+    /// <summary>This account's run key (<see cref="RunManifest.KeyIn"/>), read once; <c>null</c>: runs stay in memory.</summary>
+    private byte[]? RunKey()
+    {
+        lock (_persistGate)
+        {
+            if (!_runKeyRead) (_runKey, _runKeyRead) = (RunManifest.KeyIn(UserHistoryRoot), true);
+            return _runKey;
+        }
+    }
+
+    /// <summary>
+    /// Writes <paramref name="run"/>'s file while the run holds a file change and a workspace is known — <paramref name="open"/>
+    /// while this process still records into it —, and removes the file once the run holds none: a write that did not land
+    /// leaves no run behind for an undo to "give back". Best-effort: the run stays undoable in this process either way.
+    /// </summary>
+    private void Persist(HistoryRun run, bool open)
+    {
+        if (RunKey() is not { } key) return;
+        lock (_persistGate)
+        {
+            try
+            {
+                if (run.ManifestPath is { } existing) MergeFrom(run, existing, key);   // what the other editor marked stays
+                string text;
+                int files;
+                lock (_runLock)
+                {
+                    files = run.FileCount;
+                    text  = files == 0 ? string.Empty : RunManifest.Serialize(run, open, key);
+                }
+                if (files == 0)
+                {
+                    if (run.ManifestPath is { } gone) File.Delete(gone);
+                    run.ManifestPath = null;
+                }
+                else if (run.ManifestPath is { } path) AtomicFile.WriteAllText(path, text);
+                else if (RunsDirToWrite() is { } dir)
+                {
+                    Directory.CreateDirectory(dir);
+                    IgnoreInGit(Path.GetDirectoryName(dir)!);
+                    path = Path.Combine(dir, RunManifest.FileName(run));
+                    AtomicFile.WriteAllText(path, text);
+                    run.ManifestPath = path;
+                    TrimRuns(key);
+                }
+                lock (_runLock) run.PersistedFileCount = files;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+            {
+                Diagnostics.Swallow("FileHistoryService.Persist", ex);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Writes the run as its files change, so that an editor killed mid-run leaves a run to undo: at each change up to two
+    /// hundred files, then every fifty — a checkout that changes thousands rewrites the file a few dozen times, and a run
+    /// cut short past two hundred is said to be (<see cref="HistoryRun.CutShort"/>).
+    /// </summary>
+    private void PersistAsItGrows(HistoryRun? run)
+    {
+        if (run is null) return;
+        int files, persisted;
+        lock (_runLock) (files, persisted) = (run.FileCount, run.PersistedFileCount);
+        if (files != persisted && (files <= 200 || files % 50 == 0)) Persist(run, open: true);
+    }
+
+    /// <summary>Brings into <paramref name="run"/> the marks another process wrote in its file (undone, given back).</summary>
+    private void MergeFrom(HistoryRun run, string file, byte[] key)
+    {
+        try
+        {
+            if (!File.Exists(file)) return;
+            var text = File.ReadAllText(file);
+            lock (_runLock) RunManifest.MergeMarks(run, text, key);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Diagnostics.Swallow("FileHistoryService.MergeFrom", ex);
+        }
+    }
+
+    /// <summary>
+    /// Keeps the newest <see cref="MaxRetainedRuns"/> signed runs of the workspace, in both runs folders: only runs that
+    /// changed files are written, so the newest are the ones to keep (ids begin with their start, UTC). A file that is not
+    /// one of this account's runs is never deleted.
+    /// </summary>
+    private void TrimRuns(byte[] key)
+    {
+        foreach (var old in RunFiles().Where(f => ReadRunFile(f, key) is not null)
+                                      .OrderByDescending(Path.GetFileName, StringComparer.Ordinal)
+                                      .Skip(MaxRetainedRuns))
+            try { File.Delete(old); } catch { }
+    }
+
+    /// <summary>The anchor of the workspace root — its git work tree, else the root itself — or <c>null</c> without one.</summary>
+    private string? WorkspaceAnchor()
+    {
+        if (WorkspaceRoot?.Invoke() is not { Length: > 0 } root) return null;
+        var full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root));
+        return AnchorOfFolder(full, full);
+    }
+
+    /// <summary>Where this instance writes its runs: beside the workspace's new snapshots.</summary>
+    private string? RunsDirToWrite() => WorkspaceAnchor() is { } anchor
+        ? Path.Combine(OutsideProject?.Invoke() == true ? UserHistoryDir(anchor) : Path.Combine(anchor, ".inferpal", "history"),
+                       RunManifest.Folder)
+        : null;
+
+    /// <summary>Every run file of the workspace: in the project and outside it, whichever setting wrote.</summary>
+    private List<string> RunFiles()
+    {
+        var files = new List<string>();
+        try
+        {
+            if (WorkspaceAnchor() is not { } anchor) return files;
+            var dirs = new List<string> { Path.Combine(anchor, ".inferpal", "history", RunManifest.Folder) };
+            try { dirs.Add(Path.Combine(UserHistoryDir(anchor), RunManifest.Folder)); }
+            catch (IOException) { }   // no user folder: the project's still is one
+            foreach (var dir in dirs.Where(Directory.Exists).Distinct(PathComparer.Default))
+                files.AddRange(Directory.EnumerateFiles(dir, "*" + RunManifest.Extension));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            Diagnostics.Swallow("FileHistoryService.RunFiles", ex);
+        }
+        return files;
+    }
+
+    private sealed record CachedRun(DateTime Written, long Length, RunManifest.Reading? Reading);
+
+    // Run files parsed, by path: read again only when written since — a run of a checkout names thousands of files, each
+    // checked against the workspace.
+    private readonly Dictionary<string, CachedRun> _runFileCache = new(PathComparer.Default);
+
+    /// <summary>
+    /// The signed run in <paramref name="file"/>, every path it names under the workspace's anchor and every copy one of
+    /// its file's own; <c>null</c> otherwise, said once per version of the file.
+    /// </summary>
+    private RunManifest.Reading? ReadRunFile(string file, byte[] key)
+    {
+        var info = new FileInfo(file);
+        if (!info.Exists) return null;
+        lock (_runFileCache)
+            if (_runFileCache.TryGetValue(file, out var hit) && hit.Written == info.LastWriteTimeUtc && hit.Length == info.Length)
+                return hit.Reading;
+
+        RunManifest.Reading? reading = null;
+        string? refusal;
+        try
+        {
+            var anchor = WorkspaceAnchor();
+            reading = RunManifest.Parse(File.ReadAllText(file), key,
+                                        (path, copy) => anchor is not null && Tools.PathSanitizer.IsUnderRoot(path, anchor)
+                                                        && (copy is null || IsSnapshotOf(copy, path)),
+                                        out refusal);
+            if (reading is not null && reading.Run.Id != Path.GetFileNameWithoutExtension(file))
+                (reading, refusal) = (null, "its id is not its file's name");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            refusal = "could not be read: " + ex.Message;
+        }
+        if (reading is null)
+            Diagnostics.RecordOnce("FileHistoryService.Runs", $"A run kept on disk was left out ({file}): {refusal}",
+                                   file + "|" + info.LastWriteTimeUtc.Ticks.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        else
+        {
+            reading.Run.ManifestPath       = file;
+            reading.Run.PersistedFileCount = reading.Run.FileCount;
+        }
+        lock (_runFileCache) _runFileCache[file] = new CachedRun(info.LastWriteTimeUtc, info.Length, reading);
+        return reading;
+    }
+
+    /// <summary>
+    /// The workspace's runs kept on disk whose ids are not in <paramref name="own"/> — written by an earlier process, or by
+    /// the other editor. One still recorded into by a live process is marked so (<see cref="HistoryRun.OpenElsewhere"/>).
+    /// </summary>
+    private List<HistoryRun> DiskRuns(IReadOnlySet<string> own, byte[] key)
+    {
+        var runs = new List<HistoryRun>();
+        foreach (var file in RunFiles())
+        {
+            var id = Path.GetFileNameWithoutExtension(file);
+            if (own.Contains(id) || runs.Any(r => r.Id == id) || ReadRunFile(file, key) is not { } reading) continue;
+            // shortcut: a process id reused after a crash reads as alive, and the run waits until that process ends.
+            reading.Run.OpenElsewhere = reading.Open && IsAlive(reading.Pid);
+            reading.Run.CutShort      = reading.Open && !reading.Run.OpenElsewhere;
+            runs.Add(reading.Run);
+        }
+        return runs;
     }
 
     /// <summary>
@@ -752,11 +984,14 @@ internal class FileHistoryService
     /// <summary>Records that a file was created this run (no prior content → undo deletes it).</summary>
     internal void NoteCreated(string filePath)
     {
+        HistoryRun? run;
         lock (_runLock)
         {
-            Run?.RecordFirst(filePath, snapshot: null);
-            Run?.CountWrite();
+            run = Run;
+            run?.RecordFirst(filePath, snapshot: null);
+            run?.CountWrite();
         }
+        PersistAsItGrows(run);
     }
 
     /// <summary>
@@ -777,11 +1012,14 @@ internal class FileHistoryService
 
     private void RecordInRun(string filePath, string snapPath)
     {
+        HistoryRun? run;
         lock (_runLock)
         {
-            Run?.RecordFirst(filePath, snapPath);
-            Run?.CountWrite();
+            run = Run;
+            run?.RecordFirst(filePath, snapPath);
+            run?.CountWrite();
         }
+        PersistAsItGrows(run);
     }
 
     /// <summary>Whether a run is tracking this flow's calls — no run, no watch (a code action, a slash command, a task).</summary>
@@ -848,10 +1086,22 @@ internal class FileHistoryService
         }
     }
 
-    /// <summary>All tracked runs, most recent first.</summary>
+    /// <summary>All tracked runs, most recent first: this instance's, and the workspace's kept on disk — by an earlier
+    /// process or by the other editor, read again at each call (a later run of the other editor holds an undo back).</summary>
     internal IReadOnlyList<HistoryRun> Runs
     {
-        get { lock (_runLock) return Enumerable.Reverse(_runs).ToList(); }
+        get
+        {
+            List<HistoryRun> own;
+            lock (_runLock) own = Enumerable.Reverse(_runs).ToList();
+            if (RunKey() is not { } key) return own;
+            // Undone in the other editor is undone here: this instance's copy of a run would undo it a second time.
+            foreach (var run in own)
+                if (run.ManifestPath is { } file) MergeFrom(run, file, key);
+            var disk = DiskRuns(own.Select(r => r.Id).ToHashSet(), key);
+            // By id, which begins with the start in UTC: local times repeat an hour every autumn.
+            return disk.Count == 0 ? own : own.Concat(disk).OrderByDescending(r => r.Id, StringComparer.Ordinal).ToList();
+        }
     }
 
     /// <summary>
@@ -945,6 +1195,7 @@ internal class FileHistoryService
                 run.NoteGivenBack(change.OriginalPath);
             if (failed.Count == 0) run.MarkUndone();
         }
+        Persist(run, open: false);   // undone stays undone after a restart, and a retry gives back only what failed
         return new RunUndoResult(restored, deleted, failed, savedFirst);
     }
 
@@ -1196,7 +1447,21 @@ internal sealed class HistoryRun
     // FileHistoryService's run lock, like _firstByPath.
     private readonly HashSet<string> _read = new(PathComparer.Default);
 
-    public HistoryRun(string id) { Id = id; StartedAt = DateTime.Now; }
+    public HistoryRun(string id, DateTime? startedAt = null) { Id = id; StartedAt = startedAt ?? DateTime.Now; }
+
+    /// <summary>The file that keeps the run on disk (<see cref="RunManifest"/>), once it has been written or read.</summary>
+    public string? ManifestPath { get; set; }
+
+    /// <summary>The <see cref="FileCount"/> its file last held. Mutated under FileHistoryService's run lock.</summary>
+    public int PersistedFileCount { get; set; } = -1;
+
+    /// <summary>Read from disk while another live process still records into it: undoing it would revert files under
+    /// that process's agent.</summary>
+    public bool OpenElsewhere { get; set; }
+
+    /// <summary>Read from disk, left open by a process that has ended (an editor closed or killed mid-run): what it
+    /// changed after its last write to disk may be missing.</summary>
+    public bool CutShort { get; set; }
 
     /// <summary>
     /// The run has been undone. ⚠ It stays the most recent run with changes, so without this a second <c>/undo-run</c> — or
@@ -1292,6 +1557,9 @@ internal sealed class HistoryRun
     public int WatchedCalls { get; private set; }
 
     public void CountWatchedCall() => WatchedCalls++;
+
+    /// <summary>The count a run read from disk was written with.</summary>
+    public void RestoreWatchedCalls(int count) => WatchedCalls = Math.Max(0, count);
 
     // Every write, where _firstByPath keeps each file once. Mutated under FileHistoryService's run lock.
     public int WriteCount { get; private set; }

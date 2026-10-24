@@ -832,14 +832,15 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>Diagnose-Dateiprotokollierung aktiviert.</value></data>
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>Diagnose-Dateiprotokollierung deaktiviert.</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Alle Dateiänderungen des letzten Agent-Laufs rückgängig machen</value></data>
-  <data name="UndoRunNone" xml:space="preserve"><value>Kein Agent-Lauf mit Dateiänderungen in dieser Sitzung zum Rückgängigmachen.</value></data>
+  <data name="UndoRunNone" xml:space="preserve"><value>Kein Agent-Lauf mit Dateiänderungen in diesem Arbeitsbereich zum Rückgängigmachen.</value></data>
   <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>Der letzte Agent-Lauf wurde bereits rückgängig gemacht — nichts wurde geändert.</value></data>
   <data name="UndoRunNotTheLatest" xml:space="preserve"><value>Nicht rückgängig gemacht: Ein späterer Lauf hat danach Dateien geändert, und das Rückgängigmachen dieses Laufs würde sie überschreiben. Machen Sie zuerst den späteren Lauf rückgängig (/undo-run).</value></data>
   <data name="UndoRunWhileBusy" xml:space="preserve"><value>Ein Durchgang läuft noch: Warten Sie, bis er beendet ist, und machen Sie dann rückgängig.</value></data>
-  <data name="UndoRunListHeader" xml:space="preserve"><value>Verfolgte Läufe in dieser Sitzung ({0}):</value></data>
+  <data name="UndoRunListHeader" xml:space="preserve"><value>Verfolgte Läufe in diesem Arbeitsbereich ({0}):</value></data>
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} {1:Datei|Dateien}</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Ihr vorheriger Zustand wurde vorher gesichert — `/restore &lt;vollständiger Pfad&gt;` stellt eine Datei wieder her.</value></data>
   <data name="UndoRunRetryFailed" xml:space="preserve"><value>Die mit ⚠ markierten Dateien wurden nicht zurückgegeben. Geben Sie `/undo-run` erneut ein, sobald die Ursache behoben ist (etwa ein Programm, das die Datei geöffnet hält): Nur diese Dateien werden erneut versucht.</value></data>
+  <data name="UndoRunCutShort" xml:space="preserve"><value>Dieser Lauf wurde abgebrochen, als sein Editor geschlossen wurde: Eine Datei, die er nach seiner letzten Speicherung auf der Festplatte geändert hat, kann bei diesem Rückgängigmachen fehlen.</value></data>
   <data name="UndoRunNotCovered" xml:space="preserve"><value>Nicht aufgezeichnet, daher nicht rückgängig gemacht:</value></data>
   <data name="UndoRunNotCoveredMore" xml:space="preserve"><value>… und {0} weitere.</value></data>
   <data name="UndoRunIgnoredNote" xml:space="preserve"><value>Nie aufgezeichnet: Dateien, die git ignoriert (Build-Ausgaben, node_modules, eine ignorierte .env), verschachtelte Repositories und Submodule sowie Dateien außerhalb des Repositorys.</value></data>

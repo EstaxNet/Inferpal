@@ -832,14 +832,15 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>Włączono zapis diagnostyki do pliku.</value></data>
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>Wyłączono zapis diagnostyki do pliku.</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Cofnij wszystkie zmiany plików z ostatniego uruchomienia agenta</value></data>
-  <data name="UndoRunNone" xml:space="preserve"><value>Brak uruchomienia agenta ze zmianami plików do cofnięcia w tej sesji.</value></data>
+  <data name="UndoRunNone" xml:space="preserve"><value>Brak uruchomienia agenta ze zmianami plików do cofnięcia w tym obszarze roboczym.</value></data>
   <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>Ostatnie uruchomienie agenta zostało już cofnięte — nic nie zmieniono.</value></data>
   <data name="UndoRunNotTheLatest" xml:space="preserve"><value>Nie cofnięto: późniejsze uruchomienie zmieniło pliki po tym, a cofnięcie tego nadpisałoby te zmiany. Najpierw cofnij późniejsze (/undo-run).</value></data>
   <data name="UndoRunWhileBusy" xml:space="preserve"><value>Tura wciąż trwa: poczekaj, aż się skończy, a potem cofnij.</value></data>
-  <data name="UndoRunListHeader" xml:space="preserve"><value>Śledzone uruchomienia w tej sesji ({0}):</value></data>
+  <data name="UndoRunListHeader" xml:space="preserve"><value>Śledzone uruchomienia w tym obszarze roboczym ({0}):</value></data>
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} {1:plik|pliki|plików}</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Ich poprzedni stan został wcześniej zapisany — `/restore &lt;pełna ścieżka&gt;` przywraca plik.</value></data>
   <data name="UndoRunRetryFailed" xml:space="preserve"><value>Pliki oznaczone ⚠ nie zostały przywrócone. Wpisz ponownie `/undo-run`, gdy przyczyna zniknie (na przykład program blokujący plik): ponowiona zostanie próba tylko dla tych plików.</value></data>
+  <data name="UndoRunCutShort" xml:space="preserve"><value>To uruchomienie zostało przerwane przy zamknięciu edytora: plik zmieniony po jego ostatnim zapisie na dysk może nie zostać cofnięty.</value></data>
   <data name="UndoRunNotCovered" xml:space="preserve"><value>Niezapisane, więc niecofnięte:</value></data>
   <data name="UndoRunNotCoveredMore" xml:space="preserve"><value>… i {0} więcej.</value></data>
   <data name="UndoRunIgnoredNote" xml:space="preserve"><value>Nigdy nie są zapisywane: pliki ignorowane przez git (wyniki kompilacji, node_modules, ignorowany .env), zagnieżdżone repozytoria i submoduły oraz pliki spoza repozytorium.</value></data>

@@ -6,7 +6,7 @@ namespace Inferpal.Services.Commands;
 
 /// <summary>
 /// Execution logic for <c>/undo-run [list]</c> — reverts every file touched by the most recent
-/// agent run (restoring edits, deleting creations), or lists this session's tracked runs.
+/// agent run (restoring edits, deleting creations), or lists the workspace's tracked runs — kept across restarts.
 /// </summary>
 /// <remarks>
 /// Extracted from the two front-ends, which carried byte-identical copies differing only in how
@@ -30,8 +30,10 @@ internal static class UndoRunCommandHandler
 
             var list = new StringBuilder();
             list.AppendLine(Strings.UndoRunListHeader(withChanges.Count));
+            // Runs outlive a restart: one from another day carries its date.
             foreach (var r in withChanges)
-                list.Append("- ").AppendLine(Strings.UndoRunListEntry(r.StartedAt.ToString("HH:mm:ss"), r.FileCount));
+                list.Append("- ").AppendLine(Strings.UndoRunListEntry(
+                    r.StartedAt.ToString(r.StartedAt.Date == DateTime.Today ? "HH:mm:ss" : "yyyy-MM-dd HH:mm"), r.FileCount));
             return list.ToString().TrimEnd();
         }
 
@@ -64,6 +66,8 @@ internal static class UndoRunCommandHandler
             // button by undoing another one.
             if (run.Undone) return Strings.UndoRunAlreadyUndone;
         }
+        // Still recorded into by the other editor (or another agent thread): undone now, its agent writes on top.
+        if (run.OpenElsewhere) return Strings.UndoRunWhileBusy;
 
         // ⚠ The runs after this one changed no file that could be recorded, or they would be the one undone — but what
         // their commands changed unrecorded (a `sed -i` outside git) lies on top of what this undo writes back: said too.
@@ -79,6 +83,7 @@ internal static class UndoRunCommandHandler
         foreach (var f in result.Failed)   sb.AppendLine($"  ⚠ {Relativise(f, root)}");
         // The run stays to undo while a file failed: said, or the retry that brings it back is never tried.
         if (result.Failed.Count > 0) sb.AppendLine(Strings.UndoRunRetryFailed);
+        if (run.CutShort) sb.AppendLine(Strings.UndoRunCutShort);
         sb.Append(NotCovered(said, root));
         return sb.ToString().TrimEnd();
     }

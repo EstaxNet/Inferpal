@@ -1636,6 +1636,7 @@ internal static class Strings
     public static string UndoRunResult(int restored, int deleted) => Format(Get(nameof(UndoRunResult)), restored, deleted);
     public static string UndoRunSavedFirst                    => Get(nameof(UndoRunSavedFirst));
     public static string UndoRunRetryFailed                   => Get(nameof(UndoRunRetryFailed));
+    public static string UndoRunCutShort                      => Get(nameof(UndoRunCutShort));
     public static string UndoRunNotCovered                    => Get(nameof(UndoRunNotCovered));
     public static string UndoRunNotCoveredMore(int count)     => Format(Get(nameof(UndoRunNotCoveredMore)), count);
     public static string UndoRunIgnoredNote                   => Get(nameof(UndoRunIgnoredNote));

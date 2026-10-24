@@ -832,14 +832,15 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>Registrazione su file della diagnostica attivata.</value></data>
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>Registrazione su file della diagnostica disattivata.</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Annulla tutte le modifiche ai file dell'ultimo run dell'agente</value></data>
-  <data name="UndoRunNone" xml:space="preserve"><value>Nessun run dell'agente con modifiche ai file da annullare in questa sessione.</value></data>
+  <data name="UndoRunNone" xml:space="preserve"><value>Nessun run dell'agente con modifiche ai file da annullare in questo spazio di lavoro.</value></data>
   <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>L'ultimo run dell'agente è già stato annullato: non è stato modificato nulla.</value></data>
   <data name="UndoRunNotTheLatest" xml:space="preserve"><value>Non annullato: un'esecuzione successiva ha modificato dei file dopo questa, e annullare questa li sovrascriverebbe. Annulla prima quella più recente (/undo-run).</value></data>
   <data name="UndoRunWhileBusy" xml:space="preserve"><value>Un turno è ancora in corso: attendi che finisca, poi annulla.</value></data>
-  <data name="UndoRunListHeader" xml:space="preserve"><value>Run tracciati in questa sessione ({0}):</value></data>
+  <data name="UndoRunListHeader" xml:space="preserve"><value>Run tracciati in questo spazio di lavoro ({0}):</value></data>
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} {1:file|file}</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Il loro stato precedente è stato salvato prima — `/restore &lt;percorso completo&gt;` ripristina un file.</value></data>
   <data name="UndoRunRetryFailed" xml:space="preserve"><value>I file contrassegnati con ⚠ non sono stati ripristinati. Digita di nuovo `/undo-run` quando la causa è stata rimossa (ad esempio un programma che tiene aperto il file): verranno ritentati solo quei file.</value></data>
+  <data name="UndoRunCutShort" xml:space="preserve"><value>Questo run è stato interrotto alla chiusura del suo editor: un file modificato dopo l'ultimo salvataggio su disco potrebbe mancare da questo annullamento.</value></data>
   <data name="UndoRunNotCovered" xml:space="preserve"><value>Non registrato, quindi non annullato:</value></data>
   <data name="UndoRunNotCoveredMore" xml:space="preserve"><value>… e altri {0}.</value></data>
   <data name="UndoRunIgnoredNote" xml:space="preserve"><value>Mai registrati: i file che git ignora (output di build, node_modules, un .env ignorato), i repository annidati e i sottomoduli, e i file fuori dal repository.</value></data>

@@ -102,7 +102,15 @@ exists.
   continuing would do the same again.
 - **Undo a whole run** — `/undo-run` reverts every file changed during the last agent run
   (restores edited files, deletes files created that run); `/undo-run list` shows the
-  session's tracked runs. **What commands changed is undone too**: in a git repository, the
+  workspace's tracked runs. **Runs outlive a restart**: each run that changed files is kept beside
+  the backups (`runs/` in the history folder), so `/undo-run` and the **Undo run** of a reopened
+  conversation still work after Visual Studio, VS Code or an agent thread restarts — and a later
+  run made in the other editor holds an earlier one back, as a later run of your own does; one the
+  other editor's agent is still writing is not undone under it, and one cut short by an editor
+  that closed mid-run is undone and said to be. Each run file is signed with a key kept in your
+  own local application data: a run a repository brought, or one edited in place, is never read,
+  nor one naming a file outside the workspace.
+  **What commands changed is undone too**: in a git repository, the
   files a `run_command`, a test run, one of your shell tools or an MCP tool changed are recorded
   like the agent's own edits — byte for byte, nothing written to your repository — and counted on
   the result bar. A file you save while an approval card waits is yours, not the command's, and so

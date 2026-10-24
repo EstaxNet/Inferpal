@@ -830,14 +830,15 @@
   <data name="DiagnosticsFileOn" xml:space="preserve"><value>Запись диагностики в файл включена.</value></data>
   <data name="DiagnosticsFileOff" xml:space="preserve"><value>Запись диагностики в файл выключена.</value></data>
   <data name="SlashHintUndoRun" xml:space="preserve"><value>Отменить все изменения файлов из последнего запуска агента</value></data>
-  <data name="UndoRunNone" xml:space="preserve"><value>В этой сессии нет запуска агента с изменениями файлов для отмены.</value></data>
+  <data name="UndoRunNone" xml:space="preserve"><value>В этой рабочей области нет запуска агента с изменениями файлов для отмены.</value></data>
   <data name="UndoRunAlreadyUndone" xml:space="preserve"><value>Последний запуск агента уже отменён — ничего не изменено.</value></data>
   <data name="UndoRunNotTheLatest" xml:space="preserve"><value>Не отменено: более поздний запуск изменил файлы после этого, и отмена этого запуска перезаписала бы его изменения. Сначала отмените более поздний (/undo-run).</value></data>
   <data name="UndoRunWhileBusy" xml:space="preserve"><value>Ход ещё выполняется: дождитесь его окончания, затем отмените.</value></data>
-  <data name="UndoRunListHeader" xml:space="preserve"><value>Отслеживаемые запуски в этой сессии ({0}):</value></data>
+  <data name="UndoRunListHeader" xml:space="preserve"><value>Отслеживаемые запуски в этой рабочей области ({0}):</value></data>
   <data name="UndoRunListEntry" xml:space="preserve"><value>{0} — {1} {1:файл|файла|файлов}</value></data>
   <data name="UndoRunSavedFirst" xml:space="preserve"><value>Их предыдущее состояние сохранено заранее — `/restore &lt;полный путь&gt;` восстановит файл.</value></data>
   <data name="UndoRunRetryFailed" xml:space="preserve"><value>Файлы, отмеченные ⚠, не возвращены. Введите `/undo-run` ещё раз, когда причина будет устранена (например, программа, удерживающая файл): повторно обрабатываются только эти файлы.</value></data>
+  <data name="UndoRunCutShort" xml:space="preserve"><value>Этот запуск прервался при закрытии редактора: файл, изменённый после его последней записи на диск, может не попасть в эту отмену.</value></data>
   <data name="UndoRunNotCovered" xml:space="preserve"><value>Не записано, поэтому не отменено:</value></data>
   <data name="UndoRunNotCoveredMore" xml:space="preserve"><value>… и ещё {0}.</value></data>
   <data name="UndoRunIgnoredNote" xml:space="preserve"><value>Никогда не записываются: файлы, которые git игнорирует (результаты сборки, node_modules, игнорируемый .env), вложенные репозитории и подмодули, а также файлы вне репозитория.</value></data>
