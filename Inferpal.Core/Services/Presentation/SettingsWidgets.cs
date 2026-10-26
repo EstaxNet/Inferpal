@@ -94,6 +94,8 @@ internal static class SettingsWidgets
                       : state is "loading"                ? string.Empty   // which vectors it holds is not read yet
                       : model is not null                 ? Strings.IndexCardModelSemantic(model)
                       : state is "notBuilt"               ? string.Empty
+                      // Models installed but passed over: why it runs on keywords, never "none installed".
+                      : s.PassedOver is { Count: > 0 } p  ? Strings.SuggestEmbeddingBelowKeywords(p)
                       :                                     Strings.IndexCardModelKeywords;
 
         return new(state, title, detail, notes, oversizeNote, oversizeFiles, modelLine,

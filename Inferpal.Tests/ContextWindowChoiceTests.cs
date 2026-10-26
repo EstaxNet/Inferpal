@@ -81,6 +81,7 @@ public sealed class ContextWindowChoiceTests : IDisposable
             new InstalledModelInfo("granite4.2:8b", 5 * Gb, ["completion", "tools"]),
             new InstalledModelInfo("big:12b", 12 * Gb, ["completion", "tools"]),
             new InstalledModelInfo("bge-m3:latest", Gb, ["embedding"]),
+            new InstalledModelInfo("embeddinggemma:300m", Gb, ["embedding"]),
         ],
         OnShow = m => m is "granite4.2:8b" or "big:12b" ? Llama : null,
     };
@@ -148,19 +149,40 @@ public sealed class ContextWindowChoiceTests : IDisposable
     public void Beside_FollowsTheSwitches_AndTheChatsOwnModelIsNotASecondModel()
     {
         var on = new InferpalConfig { RagEnabled = true, InlineCompletionEnabled = true };
-        Assert.Equal(["bge-m3", "qwen2.5-coder:7b"], ContextWindowChoice.Beside(on, "granite4.2:8b", "bge-m3", "qwen2.5-coder:7b"));
-        Assert.Equal(["bge-m3"], ContextWindowChoice.Beside(on, "granite4.2:8b", "bge-m3", "Granite4.2:8B"));
-        Assert.Equal(["bge-m3"], ContextWindowChoice.Beside(on, "granite4.2:8b", "bge-m3", null));
+        Assert.Equal(["bge-m3", "qwen2.5-coder:7b"], ContextWindowChoice.Beside(on, "granite4.2:8b", ["bge-m3"], "qwen2.5-coder:7b"));
+        Assert.Equal(["bge-m3"], ContextWindowChoice.Beside(on, "granite4.2:8b", ["bge-m3"], "Granite4.2:8B"));
+        Assert.Equal(["bge-m3"], ContextWindowChoice.Beside(on, "granite4.2:8b", ["bge-m3"], null));
 
         var off = new InferpalConfig { RagEnabled = false, InlineCompletionEnabled = false };
-        Assert.Empty(ContextWindowChoice.Beside(off, "granite4.2:8b", "bge-m3", "qwen2.5-coder:7b"));
+        Assert.Empty(ContextWindowChoice.Beside(off, "granite4.2:8b", ["bge-m3"], "qwen2.5-coder:7b"));
 
         var elsewhere = new InferpalConfig
         {
             RagEmbeddingRunsOn = RoleServers.OnOther, RagEmbeddingBaseUrl = "http://192.0.2.7:11434",
             InlineCompletionRunsOn = RoleServers.OnOther, InlineCompletionBaseUrl = "http://192.0.2.7:11434",
         };
-        Assert.Empty(ContextWindowChoice.Beside(elsewhere, "granite4.2:8b", "bge-m3", "qwen2.5-coder:7b"));
+        Assert.Empty(ContextWindowChoice.Beside(elsewhere, "granite4.2:8b", ["bge-m3"], "qwen2.5-coder:7b"));
+    }
+
+    /// <summary>The search models that get loaded: a model named in the field serves both indexes; left automatic, the
+    /// code index's pick and @Docs' are each counted — @Docs keeps a family the code index passes over.</summary>
+    [Fact]
+    public void TheSearchModelsBeside_AreTheOnesThatGetLoaded_DocsIncluded()
+    {
+        var docs = JsonSerializer.Serialize(new[] { Inferpal.Services.Docs.DocSite.Create("https://vuejs.org/guide/", "Vue") });
+        var codeOnly = new InferpalConfig { RagEnabled = true };
+        var withDocs = new InferpalConfig { RagEnabled = true, DocSitesJson = docs };
+        var docsOnly = new InferpalConfig { RagEnabled = false, DocSitesJson = docs };
+        Assert.True(Inferpal.Services.Docs.DocSite.TryParse(docs, out var sites, out _) && sites.Count == 1);  // witness: read, not guessed
+
+        Assert.Empty(ContextWindowChoice.SearchModelsBeside(codeOnly, "", ["bge-m3:latest"]));
+        Assert.Equal(["bge-m3:latest"], ContextWindowChoice.SearchModelsBeside(withDocs, "", ["bge-m3:latest"]));
+        Assert.Equal(["granite-embedding:278m", "bge-m3:latest"],
+                     ContextWindowChoice.SearchModelsBeside(withDocs, "", ["bge-m3:latest", "granite-embedding:278m"]));
+        Assert.Equal(["embeddinggemma:300m"],
+                     ContextWindowChoice.SearchModelsBeside(withDocs, "", ["bge-m3:latest", "embeddinggemma:300m"]));
+        Assert.Equal(["bge-m3:latest"], ContextWindowChoice.SearchModelsBeside(docsOnly, "", ["bge-m3:latest"]));
+        Assert.Equal(["mine"], ContextWindowChoice.SearchModelsBeside(codeOnly, "mine", ["bge-m3:latest"]));
     }
 
     [Fact]
@@ -168,10 +190,12 @@ public sealed class ContextWindowChoiceTests : IDisposable
     {
         var installed = Server().Installed;
         var automatic = new InferpalConfig { DefaultModel = "granite4.2:8b", RagEmbeddingModel = "" };
-        Assert.Equal(["bge-m3:latest"], ContextWindowChoice.Beside(automatic, "granite4.2:8b", installed));
+        Assert.Equal(["embeddinggemma:300m"], ContextWindowChoice.Beside(automatic, "granite4.2:8b", installed));
+        // Only a family that searches code below keywords: the index picks none, so none lives beside the chat.
+        Assert.Empty(ContextWindowChoice.Beside(automatic, "granite4.2:8b", [.. installed.Where(m => !m.Name.StartsWith("embeddinggemma"))]));
 
         var withCoder = new InferpalConfig { DefaultModel = "granite4.2:8b", InlineCompletionModel = "qwen2.5-coder:7b" };
-        Assert.Equal(["bge-m3:latest", "qwen2.5-coder:7b"], ContextWindowChoice.Beside(withCoder, "granite4.2:8b", installed));
+        Assert.Equal(["embeddinggemma:300m", "qwen2.5-coder:7b"], ContextWindowChoice.Beside(withCoder, "granite4.2:8b", installed));
     }
 
     [Fact]

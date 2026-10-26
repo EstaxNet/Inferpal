@@ -2294,6 +2294,7 @@ function renderSetupView(): void {
       role(s.completion, !plan.completionModel || plan.completionModel === plan.chatModel ? s.sameModel : plan.completionModel);
       role(s.search, plan.searchModel || s.noSearchModel);
       box.append(setupText('span', 'setup-label', plan.legend), roles);
+      if (plan.searchNote) box.appendChild(setupText('p', 'setup-hint', plan.searchNote));
       if (plan.fitText) {
         const fit = document.createElement('div');
         fit.className = 'setup-fit' + (plan.fits ? '' : ' tight');

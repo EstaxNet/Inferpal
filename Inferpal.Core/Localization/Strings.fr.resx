@@ -1410,6 +1410,7 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="ModelRoleAutocomplete" xml:space="preserve"><value>autocomplétion</value></data>
   <data name="ModelRoleUtility" xml:space="preserve"><value>titres et résumés</value></data>
   <data name="ModelRoleCodeSearch" xml:space="preserve"><value>recherche de code</value></data>
+  <data name="ModelRoleDocsSearch" xml:space="preserve"><value>recherche dans la documentation</value></data>
   <data name="SuggestReview" xml:space="preserve"><value>Les modèles suggérés sont dans le formulaire : vérifiez-les, puis enregistrez.</value></data>
   <data name="SuggestNoChange" xml:space="preserve"><value>Ce sont déjà les meilleurs modèles installés.</value></data>
   <data name="SuggestOnlyEmbedding" xml:space="preserve"><value>Le serveur ne liste que des modèles d'embedding : installez d'abord un modèle de chat.</value></data>
@@ -1421,6 +1422,7 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="SuggestInstallRecommended" xml:space="preserve"><value>Pour le travail d'agent, les tests d'Inferpal recommandent {0} — aucun n'est installé.</value></data>
   <data name="SuggestEmbeddingNone" xml:space="preserve"><value>Recherche de code : aucun modèle d'embedding installé, elle cherche donc par mots-clés (EmbeddingGemma est le mieux mesuré).</value></data>
   <data name="SuggestEmbeddingAuto" xml:space="preserve"><value>Recherche de code : automatique, qui utilise {0}.</value></data>
+  <data name="SuggestEmbeddingBelowKeywords" xml:space="preserve"><value>Recherche de code : par mots — avec {0}, elle trouverait le code moins bien que les mots seuls ; EmbeddingGemma est celui mesuré pour mieux chercher.</value></data>
   <data name="SuggestEmbeddingReindex" xml:space="preserve"><value>Changer le modèle de recherche de code reconstruit l'index du projet.</value></data>
   <data name="SuggestFimMeasured" xml:space="preserve"><value>Autocomplétion : {0} — le modèle d'autocomplétion le mieux mesuré.</value></data>
   <data name="SuggestFimDoesNotFit" xml:space="preserve"><value>Autocomplétion : le modèle de chat. {0} est installé, mais avec lui les modèles demandent environ {1} Go, plus que les {2} Go indiqués pour votre carte.</value></data>

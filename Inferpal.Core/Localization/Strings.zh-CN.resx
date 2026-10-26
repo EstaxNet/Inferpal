@@ -1410,6 +1410,7 @@
   <data name="ModelRoleAutocomplete" xml:space="preserve"><value>自动补全</value></data>
   <data name="ModelRoleUtility" xml:space="preserve"><value>标题和摘要</value></data>
   <data name="ModelRoleCodeSearch" xml:space="preserve"><value>代码搜索</value></data>
+  <data name="ModelRoleDocsSearch" xml:space="preserve"><value>文档搜索</value></data>
   <data name="SuggestReview" xml:space="preserve"><value>建议的模型已填入表单：请检查后保存。</value></data>
   <data name="SuggestNoChange" xml:space="preserve"><value>这些已经是已安装模型中最好的。</value></data>
   <data name="SuggestOnlyEmbedding" xml:space="preserve"><value>服务器只列出嵌入模型：请先安装一个聊天模型。</value></data>
@@ -1421,6 +1422,7 @@
   <data name="SuggestInstallRecommended" xml:space="preserve"><value>对于智能体工作，Inferpal 测试推荐 {0} — 均未安装。</value></data>
   <data name="SuggestEmbeddingNone" xml:space="preserve"><value>代码搜索：未安装嵌入模型，因此按关键词搜索（测量结果最好的是 EmbeddingGemma）。</value></data>
   <data name="SuggestEmbeddingAuto" xml:space="preserve"><value>代码搜索：自动，即使用 {0}。</value></data>
+  <data name="SuggestEmbeddingBelowKeywords" xml:space="preserve"><value>代码搜索：仅关键词 — {0} 的搜索效果不如单用关键词；经测量，EmbeddingGemma 的搜索效果更好。</value></data>
   <data name="SuggestEmbeddingReindex" xml:space="preserve"><value>更换代码搜索模型会重建项目索引。</value></data>
   <data name="SuggestFimMeasured" xml:space="preserve"><value>自动补全：{0} — 测量结果最好的补全模型。</value></data>
   <data name="SuggestFimDoesNotFit" xml:space="preserve"><value>自动补全：使用聊天模型。{0} 已安装，但加上它模型约需 {1} GB，超过为您的显卡设置的 {2} GB。</value></data>

@@ -57,4 +57,56 @@ public class IndexKeywordOnlyStatusTests : IDisposable
         Assert.Contains("semantic search is off", index.Status, StringComparison.Ordinal);
         Assert.DoesNotContain("no embedding model", index.Status, StringComparison.Ordinal);
     }
+
+    /// <summary>With only embedding models that search code worse than keywords alone installed, the automatic choice
+    /// passes over them: the index runs on keywords, and its status names them and the family that searches better —
+    /// never "no embedding model is installed" beside one that is.</summary>
+    [Fact]
+    public async Task OnlyFamiliesBelowKeywords_LeaveTheIndexOnKeywords_AndTheStatusNamesThem()
+    {
+        File.WriteAllText(Path.Combine(_root, "pricing.py"),
+            "def apply_discount(price, percent):\n    return price - price * percent / 100\n\n\ndef other():\n    return 1\n");
+        var config = new InferpalConfig { RagEnabled = true, RagEmbeddingModel = "" };
+        var index  = new ProjectIndexService(new FakeInferenceProvider
+        {
+            Embedding = [0.1f, 0.2f], ModelNames = ["granite4.2:8b", "bge-m3:latest", "nomic-embed-text:latest"],
+        }, config, new LspSemanticProvider());
+        _services.Add(index);
+
+        IndexCommandHandler.Handle(index, config, ["/index", "rebuild"], _root);
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+        while ((index.IsIndexing || index.ChunkCount == 0) && DateTime.UtcNow < deadline) await Task.Delay(50);
+        Assert.True(index.ChunkCount > 0, $"the rebuild indexed nothing: {index.Status}");   // witness
+
+        Assert.Null(index.QueryEmbeddingModel);
+        Assert.Contains("keyword search only: bge-m3:latest, nomic-embed-text:latest search code worse than keywords alone",
+                        index.Status, StringComparison.Ordinal);
+        Assert.Contains("embeddinggemma", index.Status, StringComparison.Ordinal);
+        Assert.DoesNotContain("no embedding model", index.Status, StringComparison.Ordinal);
+    }
+
+    /// <summary>A model named in the field is used as named — one an earlier first run wrote there too — and the status
+    /// says when it searches code worse than keywords alone, so the choice is an informed one.</summary>
+    [Theory]
+    [InlineData("bge-m3:latest", true)]
+    [InlineData("embeddinggemma:300m", false)]
+    public async Task ANamedModelThatSearchesBelowKeywords_IsUsed_AndTheStatusSaysSo(string named, bool said)
+    {
+        File.WriteAllText(Path.Combine(_root, "pricing.py"),
+            "def apply_discount(price, percent):\n    return price - price * percent / 100\n\n\ndef other():\n    return 1\n");
+        var config = new InferpalConfig { RagEnabled = true, RagEmbeddingModel = named };
+        var index  = new ProjectIndexService(new FakeInferenceProvider
+        {
+            Embedding = [0.1f, 0.2f], ModelNames = ["granite4.2:8b", named],
+        }, config, new LspSemanticProvider());
+        _services.Add(index);
+
+        IndexCommandHandler.Handle(index, config, ["/index", "rebuild"], _root);
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+        while ((index.IsIndexing || index.ChunkCount == 0) && DateTime.UtcNow < deadline) await Task.Delay(50);
+        Assert.True(index.ChunkCount > 0, $"the rebuild indexed nothing: {index.Status}");   // witness
+
+        Assert.Equal(named, index.QueryEmbeddingModel);
+        Assert.Equal(said, index.Status.Contains($"{named} searches code worse than keywords alone", StringComparison.Ordinal));
+    }
 }

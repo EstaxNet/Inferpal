@@ -1410,6 +1410,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="ModelRoleAutocomplete" xml:space="preserve"><value>자동 완성</value></data>
   <data name="ModelRoleUtility" xml:space="preserve"><value>제목과 요약</value></data>
   <data name="ModelRoleCodeSearch" xml:space="preserve"><value>코드 검색</value></data>
+  <data name="ModelRoleDocsSearch" xml:space="preserve"><value>문서 검색</value></data>
   <data name="SuggestReview" xml:space="preserve"><value>제안된 모델이 양식에 입력되었습니다. 확인한 뒤 저장하세요.</value></data>
   <data name="SuggestNoChange" xml:space="preserve"><value>이미 설치된 모델 중 가장 좋은 모델입니다.</value></data>
   <data name="SuggestOnlyEmbedding" xml:space="preserve"><value>서버에 임베딩 모델만 있습니다. 먼저 채팅 모델을 설치하세요.</value></data>
@@ -1421,6 +1422,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="SuggestInstallRecommended" xml:space="preserve"><value>에이전트 작업에는 Inferpal 테스트가 {0}을(를) 권장합니다. 설치된 것은 없습니다.</value></data>
   <data name="SuggestEmbeddingNone" xml:space="preserve"><value>코드 검색: 임베딩 모델이 설치되지 않아 키워드로 검색합니다(측정상 최고는 EmbeddingGemma).</value></data>
   <data name="SuggestEmbeddingAuto" xml:space="preserve"><value>코드 검색: 자동({0} 사용).</value></data>
+  <data name="SuggestEmbeddingBelowKeywords" xml:space="preserve"><value>코드 검색: 키워드 — {0}은(는) 키워드만 쓸 때보다 검색이 떨어집니다. EmbeddingGemma가 더 잘 검색한다고 측정되었습니다.</value></data>
   <data name="SuggestEmbeddingReindex" xml:space="preserve"><value>코드 검색 모델을 바꾸면 프로젝트 색인이 다시 만들어집니다.</value></data>
   <data name="SuggestFimMeasured" xml:space="preserve"><value>자동 완성: {0} — 측정상 최고의 자동 완성 모델.</value></data>
   <data name="SuggestFimDoesNotFit" xml:space="preserve"><value>자동 완성: 채팅 모델. {0}이(가) 설치되어 있지만 함께 쓰면 약 {1} GB가 필요해 설정된 카드의 {2} GB를 넘습니다.</value></data>

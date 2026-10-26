@@ -60,12 +60,11 @@ internal sealed partial class HostServer
         var (budget, source) = await BudgetForAsync(s, server.BaseUrl, p.CardGb, ct);
         var client = _providerFactory(server);
         var plan = await FirstRunPlanner.PlanAsync(client, server, budget, ct);
+        var kept = KeptRoleModels(s, server, plan.CompletionModel, plan.SearchModel);
+        // A search model setup/apply keeps on this server stays in use: the card does not say search runs on keywords.
+        if (!string.IsNullOrWhiteSpace(kept.Search)) plan = plan with { SearchPassedOver = [] };
         if (plan.ChatModel is { } chat)
-            plan = plan with
-            {
-                Window = await WindowForAsync(s, server, client, plan.Installed ?? [], budget, chat,
-                                              KeptRoleModels(s, server, plan.CompletionModel, plan.SearchModel), ct),
-            };
+            plan = plan with { Window = await WindowForAsync(s, server, client, plan.Installed ?? [], budget, chat, kept, ct) };
         return SetupPlanDto.Of(plan, source);
     }
 
@@ -79,9 +78,9 @@ internal sealed partial class HostServer
         double budget, string chat, (string? Completion, string? Search, InferpalConfig After) kept, CancellationToken ct)
     {
         if (!ContextWindowChoice.Applies(server.Provider) || !ContextWindowChoice.IsAutomatic(s.Config)) return null;
-        // A search model left automatic is the one the index will pick.
+        // A search model left automatic is the ones that get loaded (the code index's pick, @Docs').
         var beside = ContextWindowChoice.Beside(kept.After, chat,
-            string.IsNullOrWhiteSpace(kept.Search) ? EmbeddingModels.PreferredOf(ModelsByKind.Of(installed).Embedding) : kept.Search,
+            ContextWindowChoice.SearchModelsBeside(kept.After, kept.Search, ModelsByKind.Of(installed).Embedding),
             kept.Completion);
         return await ContextWindowChoice.AdviseAsync(client, server.Provider, chat, beside, installed, budget, ct);
     }
@@ -322,12 +321,13 @@ internal sealed record SetupCardChoice(int Gb, string Label);
 /// download from here (<c>NoDownload</c> says where to get one), and <c>Listed</c> names what the server has. The
 /// sentences come composed: <c>Lead</c>, <c>Legend</c> (the card's memory), <c>FitText</c>. <c>CardChoices</c>: the
 /// memories to choose from when the figure was not found (unknown) or was chosen (to change it); empty otherwise.
-/// <c>WindowText</c>: the context window <c>setup/apply</c> writes, or why it stays.</summary>
+/// <c>WindowText</c>: the context window <c>setup/apply</c> writes, or why it stays. <c>SearchNote</c>: why code search
+/// stays on keywords beside installed embedding models.</summary>
 internal sealed record SetupPlanDto(
     string? ChatModel, string? CompletionModel, string? SearchModel, int ChatCount,
     double BudgetGb, double NeededGb, bool Fits, List<SetupDownloadDto> Downloads, List<string> Listed,
     string Lead, string Legend, string? FitText, string? ItsModels, string? NoDownload,
-    List<SetupCardChoice> CardChoices, string? CardQuestion, string? WindowText = null)
+    List<SetupCardChoice> CardChoices, string? CardQuestion, string? WindowText = null, string? SearchNote = null)
 {
     /// <summary>The memories offered: the cards the recommendations are measured for.</summary>
     internal static readonly int[] Cards = [8, 12, 16, 24];
@@ -362,7 +362,10 @@ internal sealed record SetupPlanDto(
             asks ? [.. Cards.Select(gb => new SetupCardChoice(gb, Strings.SetupDownloadSize(Gb(gb))))] : [],
             !asks ? null : source == SetupBudgetSource.Unknown ? Strings.SetupCardUnknown : Strings.SetupServerCard,
             // An unknown card is already asked on the card: its question is the remedy, not /hardware.
-            p.Window is { Tokens: not null } || !asks ? p.Window?.Sentence : null);
+            p.Window is { Tokens: not null } || !asks ? p.Window?.Sentence : null,
+            // No code-search model proposed beside models that are installed: why the search stays on keywords.
+            p.SearchModel is null && p.SearchPassedOver is { Count: > 0 } passed
+                ? Strings.SuggestEmbeddingBelowKeywords(passed) : null);
     }
 }
 

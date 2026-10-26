@@ -74,4 +74,15 @@ public class SearchDegradationTests
         Assert.Contains(Strings.SearchKeywordOnlyNoEmbeddingModel, none);
         Assert.DoesNotContain("/diagnostics", none);
     }
+
+    /// <summary>Models installed but passed over for searching code worse than keywords: the "nothing found" names them,
+    /// never "no embedding model is set or installed".</summary>
+    [Fact]
+    public void ModelsPassedOver_AreNamed_NotSaidAbsent()
+    {
+        var passed = SearchDegradation.Explain("nothing", SemanticSide.NoEmbeddingModel, "", ["bge-m3:latest"]);
+        Assert.StartsWith("nothing", passed);
+        Assert.Contains(Strings.SuggestEmbeddingBelowKeywords(["bge-m3:latest"]), passed);
+        Assert.DoesNotContain(Strings.SearchKeywordOnlyNoEmbeddingModel, passed);
+    }
 }

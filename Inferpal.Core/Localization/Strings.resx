@@ -1414,6 +1414,7 @@ What you save there applies from your next question, in this thread and the othe
   <data name="ModelRoleAutocomplete" xml:space="preserve"><value>autocomplete</value></data>
   <data name="ModelRoleUtility" xml:space="preserve"><value>titles and summaries</value></data>
   <data name="ModelRoleCodeSearch" xml:space="preserve"><value>code search</value></data>
+  <data name="ModelRoleDocsSearch" xml:space="preserve"><value>documentation search</value></data>
   <data name="SuggestReview" xml:space="preserve"><value>The suggested models are in the form: review them, then Save.</value></data>
   <data name="SuggestNoChange" xml:space="preserve"><value>These are already the best installed models.</value></data>
   <data name="SuggestOnlyEmbedding" xml:space="preserve"><value>The server lists only embedding models: install a chat model first.</value></data>
@@ -1425,6 +1426,7 @@ What you save there applies from your next question, in this thread and the othe
   <data name="SuggestInstallRecommended" xml:space="preserve"><value>For agent work, Inferpal's tests recommend {0} — none is installed.</value></data>
   <data name="SuggestEmbeddingNone" xml:space="preserve"><value>Code search: no embedding model installed, so it searches by keywords (EmbeddingGemma is the one measured best).</value></data>
   <data name="SuggestEmbeddingAuto" xml:space="preserve"><value>Code search: automatic, which uses {0}.</value></data>
+  <data name="SuggestEmbeddingBelowKeywords" xml:space="preserve"><value>Code search: by keywords — with {0}, it would find code worse than keywords alone; EmbeddingGemma is the one measured to search it better.</value></data>
   <data name="SuggestEmbeddingReindex" xml:space="preserve"><value>Changing the code-search model rebuilds the project's index.</value></data>
   <data name="SuggestFimMeasured" xml:space="preserve"><value>Autocomplete: {0} — the autocomplete model measured best.</value></data>
   <data name="SuggestFimDoesNotFit" xml:space="preserve"><value>Autocomplete: the chat model. {0} is installed, but with it the models need about {1} GB, more than the {2} GB set for your card.</value></data>

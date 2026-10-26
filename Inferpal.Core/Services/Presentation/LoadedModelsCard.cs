@@ -36,8 +36,11 @@ internal static class LoadedModelsCard
 {
     /// <summary>Reads the server and builds the block.</summary>
     /// <param name="embeddingModel">The model the code index embeds with, if any (the index knows; the setting may be empty).</param>
+    /// <param name="docsEmbeddingModel">The model the @Docs index embeds with, if any: it may differ from the code index's
+    /// (<see cref="EmbeddingModels.PreferredOf"/>).</param>
     public static async Task<LoadedModelsModel> ReadAsync(
-        IInferenceProvider client, InferpalConfig config, string? embeddingModel, CancellationToken ct, string? message = null)
+        IInferenceProvider client, InferpalConfig config, string? embeddingModel, CancellationToken ct, string? message = null,
+        string? docsEmbeddingModel = null)
     {
         var caps = client.Capabilities;
         if (!caps.VramMonitoring) return new(Strings.LoadedModelsUnknown, [], false, message);
@@ -61,20 +64,21 @@ internal static class LoadedModelsCard
         foreach (var m in running)
             contexts[m.Name] = await client.GetLoadedContextWindowAsync(m.Name, ct);
 
-        return Build(running, caps.ModelManagement, config, embeddingModel, sizes, contexts, DateTime.UtcNow, message);
+        return Build(running, caps.ModelManagement, config, embeddingModel, sizes, contexts, DateTime.UtcNow, message,
+                     docsEmbeddingModel);
     }
 
     /// <summary>The block, from what the server answered — pure.</summary>
     internal static LoadedModelsModel Build(
         IReadOnlyList<RunningModelInfo> running, bool canUnload, InferpalConfig config, string? embeddingModel,
         IReadOnlyDictionary<string, long> diskSizes, IReadOnlyDictionary<string, int?> contexts, DateTime nowUtc,
-        string? message = null)
+        string? message = null, string? docsEmbeddingModel = null)
     {
         if (running.Count == 0) return new(Strings.LoadedModelsNone, [], false, message);
 
         var rows = running.Select(m => new LoadedModelRow(
             m.Name,
-            Uses(m.Name, config, embeddingModel),
+            Uses(m.Name, config, embeddingModel, docsEmbeddingModel),
             string.Join(" · ", new[]
             {
                 Memory(m, diskSizes),
@@ -90,7 +94,7 @@ internal static class LoadedModelsCard
     }
 
     /// <summary>What the settings route to <paramref name="model"/>: each role whose model resolves to it.</summary>
-    internal static string Uses(string model, InferpalConfig config, string? embeddingModel)
+    internal static string Uses(string model, InferpalConfig config, string? embeddingModel, string? docsEmbeddingModel = null)
     {
         var roles = new List<string>();
         void Role(ModelRole role, string label)
@@ -106,6 +110,8 @@ internal static class LoadedModelsCard
         if ((EmbeddingModels.Configured(config) ?? embeddingModel) is { } embedding
             && ModelCatalog.SameModelName(embedding, model))
             roles.Add(Strings.ModelRoleCodeSearch);
+        if (docsEmbeddingModel is not null && ModelCatalog.SameModelName(docsEmbeddingModel, model))
+            roles.Add(Strings.ModelRoleDocsSearch);
         return roles.Count == 0 ? Strings.LoadedModelUnused : Strings.LoadedModelUses(string.Join(", ", roles));
     }
 

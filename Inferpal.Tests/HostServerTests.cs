@@ -3205,6 +3205,35 @@ public partial class HostServerTests
         finally { try { File.Delete(file); } catch { } }
     }
 
+    /// <summary>The card says code search stays on keywords only when <c>setup/apply</c> leaves it there: a search model it
+    /// keeps on the same server stays in use, whatever the automatic choice would pass over.</summary>
+    [Fact]
+    public async Task SetupCard_SaysSearchStaysOnKeywords_OnlyWhenApplyLeavesItThere()
+    {
+        var file = Path.Combine(Path.GetTempPath(), $"inferpal-setup-{Guid.NewGuid():N}.json");
+        try
+        {
+            using var h = CreateHarness(cfg =>
+            {
+                cfg.Provider = "ollama";
+                cfg.BaseUrl = "http://192.168.1.2:11434";
+                cfg.RagEmbeddingModel = "nomic-embed-text:latest";
+            }, settingsFile: file);
+            await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            h.Fake.Installed = [new("granite4.2:8b", 5_000_000_000), new("nomic-embed-text:latest", 274_000_000)];
+
+            var same = await h.Client.InvokeWithParameterObjectAsync<Host.SetupPlanDto>(
+                "setup/plan", new { url = "http://192.168.1.2:11434", provider = "ollama" });
+            Assert.Null(same.SearchNote);
+
+            // Reference arm: another server takes the card's choice — automatic, which passes nomic over.
+            var other = await h.Client.InvokeWithParameterObjectAsync<Host.SetupPlanDto>(
+                "setup/plan", new { url = "http://192.168.1.20:11434", provider = "ollama" });
+            Assert.Equal(Strings.SuggestEmbeddingBelowKeywords(["nomic-embed-text:latest"]), other.SearchNote);
+        }
+        finally { try { File.Delete(file); } catch { } }
+    }
+
     [Fact]
     public async Task SetupApply_SavesTheServerAndTheModels_AndEndsTheFirstRun()
     {

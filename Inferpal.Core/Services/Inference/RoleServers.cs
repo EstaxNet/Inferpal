@@ -109,6 +109,12 @@ internal static class RoleServers
         return ThisMachine().Contains(host) ? "localhost" : host;
     }
 
+    /// <summary>@Docs has sources to embed: its search model is used even with the code index off. Sources that cannot be
+    /// read count as sources — nothing is promised on a guess.</summary>
+    internal static bool HasDocSources(InferpalConfig c) =>
+        !string.IsNullOrWhiteSpace(c.DocSitesJson)
+        && (!Docs.DocSite.TryParse(c.DocSitesJson, out var sites, out _) || sites.Count > 0);
+
     /// <summary>The machines other than this one that the roles in use send code to — the chat always, completions when
     /// they are on, code search when the index is or <c>@Docs</c> has sources (its queries go to the search server
     /// whatever the index setting) — in role order, each once; empty when everything runs here.</summary>
@@ -120,11 +126,6 @@ internal static class RoleServers
         var roles = new List<ServerRole> { ServerRole.Chat };
         if (c.InlineCompletionEnabled) roles.Add(ServerRole.Completion);
         if (c.RagEnabled || HasDocSources(c)) roles.Add(ServerRole.Search);
-
-        // @Docs sources that cannot be read count as sources: the promise is never made on a guess.
-        static bool HasDocSources(InferpalConfig c) =>
-            !string.IsNullOrWhiteSpace(c.DocSitesJson)
-            && (!Docs.DocSite.TryParse(c.DocSitesJson, out var sites, out _) || sites.Count > 0);
 
         var hosts = new List<string>();
         foreach (var url in roles.Select(r => Of(c, r).BaseUrl).Where(u => !string.IsNullOrWhiteSpace(u)))

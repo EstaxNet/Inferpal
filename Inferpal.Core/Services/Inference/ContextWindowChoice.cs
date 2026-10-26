@@ -56,26 +56,44 @@ internal static class ContextWindowChoice
 
     /// <summary>
     /// What lives beside <paramref name="chatModel"/> on its server, by <paramref name="config"/>'s switches: the search
-    /// model while the index is on, and a completion model of its own while completions are on — the chat's own model
-    /// completes in the chat's runner (<c>OllamaClient.FimNumCtx</c>). A <c>null</c> or empty name is nothing beside.
+    /// model while the code index is on or <c>@Docs</c> has sources, and a completion model of its own while completions
+    /// are on — the chat's own model completes in the chat's runner (<c>OllamaClient.FimNumCtx</c>). A <c>null</c> or
+    /// empty name is nothing beside.
     /// </summary>
-    public static IReadOnlyList<string> Beside(InferpalConfig config, string chatModel, string? searchModel, string? completionModel)
+    public static IReadOnlyList<string> Beside(InferpalConfig config, string chatModel, IReadOnlyList<string> searchModels,
+                                               string? completionModel)
     {
         var beside = new List<string>();
-        if (config.RagEnabled && RoleServers.OnChatServer(config, ServerRole.Search) && !string.IsNullOrWhiteSpace(searchModel))
-            beside.Add(searchModel);
+        if ((config.RagEnabled || RoleServers.HasDocSources(config)) && RoleServers.OnChatServer(config, ServerRole.Search))
+            beside.AddRange(searchModels.Where(m => !string.IsNullOrWhiteSpace(m)));
         if (config.InlineCompletionEnabled && RoleServers.OnChatServer(config, ServerRole.Completion)
             && !string.IsNullOrWhiteSpace(completionModel) && !ModelCatalog.SameModelName(completionModel, chatModel))
             beside.Add(completionModel);
         return beside;
     }
 
-    /// <summary>What lives beside <paramref name="chatModel"/> under <paramref name="config"/> as it stands: the search model
-    /// the index uses (the best one <paramref name="installed"/> when left automatic) and the completion model.</summary>
+    /// <summary>
+    /// The search models that get loaded beside the chat under <paramref name="config"/>: <paramref name="chosen"/> when the
+    /// field names one (both indexes use it); left automatic, the code index's pick while it is on AND <c>@Docs</c>' while
+    /// it has sources — each as it picks it, so possibly two (<see cref="EmbeddingModels.PreferredOf"/>: the code index
+    /// passes over a family that searches code below keywords, <c>@Docs</c> does not).
+    /// </summary>
+    public static IReadOnlyList<string> SearchModelsBeside(InferpalConfig config, string? chosen, IReadOnlyList<string> installedEmbeddings)
+    {
+        if (!string.IsNullOrWhiteSpace(chosen)) return [chosen];
+        var models = new List<string>();
+        if (config.RagEnabled && EmbeddingModels.PreferredOf(installedEmbeddings) is { } code) models.Add(code);
+        if (RoleServers.HasDocSources(config) && EmbeddingModels.PreferredOf(installedEmbeddings, forCode: false) is { } docs
+            && !models.Any(m => ModelCatalog.SameModelName(m, docs)))
+            models.Add(docs);
+        return models;
+    }
+
+    /// <summary>What lives beside <paramref name="chatModel"/> under <paramref name="config"/> as it stands: the search models
+    /// that get loaded (<see cref="SearchModelsBeside"/>) and the completion model.</summary>
     public static IReadOnlyList<string> Beside(InferpalConfig config, string chatModel, IReadOnlyList<InstalledModelInfo> installed) =>
         Beside(config, chatModel,
-               string.IsNullOrWhiteSpace(config.RagEmbeddingModel)
-                   ? EmbeddingModels.PreferredOf(ModelsByKind.Of(installed).Embedding) : config.RagEmbeddingModel,
+               SearchModelsBeside(config, config.RagEmbeddingModel, ModelsByKind.Of(installed).Embedding),
                RoleServers.CompletionModel(config, null));
 
     /// <summary>The memory <paramref name="beside"/> takes, by their sizes in <paramref name="installed"/> — the one
@@ -89,7 +107,7 @@ internal static class ContextWindowChoice
     /// <summary>
     /// The window for <paramref name="chatModel"/> on a server of <paramref name="provider"/>, with the sentence that says
     /// it. <paramref name="installed"/> is what that server lists (the sizes); <paramref name="beside"/> the models that
-    /// live beside it (<see cref="Beside(InferpalConfig, string, string?, string?)"/>); <paramref name="budgetGb"/> the
+    /// live beside it (<see cref="Beside(InferpalConfig, string, IReadOnlyList{string}, string?)"/>); <paramref name="budgetGb"/> the
     /// card's memory, 0 when unknown.
     /// </summary>
     /// <remarks>The installed list is asked for by the caller, and only on Ollama (<see cref="Applies"/>): another server

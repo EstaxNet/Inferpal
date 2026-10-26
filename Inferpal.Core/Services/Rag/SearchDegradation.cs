@@ -14,7 +14,8 @@ internal enum SemanticSide
     /// <summary>The embedding never came back: model not pulled, backend down, breaker open.</summary>
     EmbeddingUnavailable,
 
-    /// <summary>No embedding model is set or installed: a keyword-only index, which is a choice, not a failure.</summary>
+    /// <summary>No embedding model is set, or none installed that searches code better than keywords alone: a
+    /// keyword-only index, which is a choice, not a failure.</summary>
     NoEmbeddingModel,
 }
 
@@ -58,12 +59,17 @@ internal static class SearchDegradation
     /// <paramref name="noResults"/> as-is when the full search ran; otherwise the same sentence
     /// followed by what was not looked for.
     /// </summary>
-    internal static string Explain(string noResults, SemanticSide side, string embeddingModel) =>
+    /// <param name="passedOver">With no embedding model: the installed ones the index passed over for searching code
+    /// worse than keywords alone — named, never "no embedding model installed" beside them.</param>
+    internal static string Explain(string noResults, SemanticSide side, string embeddingModel,
+                                   IReadOnlyList<string>? passedOver = null) =>
         side switch
         {
             SemanticSide.DisabledByUser       => noResults + "\n\n" + Strings.SearchKeywordOnlySemanticOff,
             SemanticSide.EmbeddingUnavailable => noResults + "\n\n" + Strings.SearchKeywordOnlyEmbeddingUnavailable(embeddingModel),
-            SemanticSide.NoEmbeddingModel     => noResults + "\n\n" + Strings.SearchKeywordOnlyNoEmbeddingModel,
+            SemanticSide.NoEmbeddingModel     => noResults + "\n\n" + (passedOver is { Count: > 0 }
+                                                     ? Strings.SuggestEmbeddingBelowKeywords(passedOver)
+                                                     : Strings.SearchKeywordOnlyNoEmbeddingModel),
             _                                 => noResults,
         };
 }

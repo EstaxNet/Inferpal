@@ -112,6 +112,19 @@ public class ModelAdvisorTests
         Assert.Contains(Strings.SuggestEmbeddingReindex, other.Notes);
     }
 
+    /// <summary>With only embedding models that search code worse than keywords alone installed, code search stays on
+    /// keywords — said with the models passed over, never as "no embedding model installed".</summary>
+    [Fact]
+    public void OnlyFamiliesBelowKeywords_KeepCodeSearchOnKeywords_AndSaySo()
+    {
+        var field = Field(Suggest([M("gemma4:12b", 7), M("bge-m3:latest", 1.1), M("nomic-embed-text", 0.3)]), "ragEmbeddingModel");
+
+        Assert.Equal("", field.Value);
+        Assert.Equal(Strings.SuggestEmbeddingBelowKeywords(["bge-m3:latest", "nomic-embed-text"]), field.Reason);
+        // Reference arm: nothing installed at all is the other sentence.
+        Assert.Equal(Strings.SuggestEmbeddingNone, Field(Suggest([M("gemma4:12b", 7)]), "ragEmbeddingModel").Reason);
+    }
+
     [Fact]
     public void TheAdvancedSettings_AreNamed_NeverWritten()
     {
@@ -133,7 +146,7 @@ public class ModelAdvisorTests
         var arch = new ModelArchInfo(32, 32, 8, 4096, 131072);
         FakeInferenceProvider Server() => new()
         {
-            Installed = [new("granite4.2:8b", 5 * Gb, ["completion", "tools"]), new("bge-m3:latest", Gb, ["embedding"])],
+            Installed = [new("granite4.2:8b", 5 * Gb, ["completion", "tools"]), new("embeddinggemma:300m", Gb, ["embedding"])],
             OnShow = m => m == "granite4.2:8b" ? arch : null,
         };
         // A 9 GB card: above the smallest window worth writing, below the ceiling — the search model beside the chat's
@@ -242,6 +255,22 @@ public class LoadedModelsCardTests
         Assert.Equal(Strings.LoadedModelUses(Strings.ModelRoleAutocomplete), card.Rows[1].Uses);
         Assert.Equal(Strings.LoadedModelUses(Strings.ModelRoleCodeSearch), card.Rows[2].Uses);
         Assert.Equal(Strings.LoadedModelUnused, card.Rows[3].Uses);
+    }
+
+    /// <summary>@Docs may embed with a model the code index passes over: loaded for it, it is in use — never "unused",
+    /// which invites unloading it.</summary>
+    [Fact]
+    public void TheDocsModel_IsInUse_EvenWhenTheCodeIndexPassesItOver()
+    {
+        var running = new RunningModelInfo[] { new("bge-m3:latest", Gb, ""), new("granite-embedding:278m", Gb / 2, "") };
+        var card = LoadedModelsCard.Build(running, canUnload: true, new InferpalConfig { DefaultModel = "qwen3.8:27b" },
+                                          "granite-embedding:278m", new Dictionary<string, long>(), new Dictionary<string, int?>(), Now,
+                                          docsEmbeddingModel: "bge-m3:latest");
+
+        Assert.Equal(Strings.LoadedModelUses(Strings.ModelRoleDocsSearch), card.Rows[0].Uses);
+        Assert.Equal(Strings.LoadedModelUses(Strings.ModelRoleCodeSearch), card.Rows[1].Uses);
+        // Reference arm: without @Docs' model, the same row is unused.
+        Assert.Equal(Strings.LoadedModelUnused, Build(running, embedding: "granite-embedding:278m").Rows[0].Uses);
     }
 
     [Fact]

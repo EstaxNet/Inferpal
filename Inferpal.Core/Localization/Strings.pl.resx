@@ -1410,6 +1410,7 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="ModelRoleAutocomplete" xml:space="preserve"><value>autouzupełnianie</value></data>
   <data name="ModelRoleUtility" xml:space="preserve"><value>tytuły i podsumowania</value></data>
   <data name="ModelRoleCodeSearch" xml:space="preserve"><value>wyszukiwanie w kodzie</value></data>
+  <data name="ModelRoleDocsSearch" xml:space="preserve"><value>wyszukiwanie w dokumentacji</value></data>
   <data name="SuggestReview" xml:space="preserve"><value>Sugerowane modele są w formularzu: sprawdź je, a potem zapisz.</value></data>
   <data name="SuggestNoChange" xml:space="preserve"><value>To już najlepsze zainstalowane modele.</value></data>
   <data name="SuggestOnlyEmbedding" xml:space="preserve"><value>Serwer wymienia tylko modele embeddingów: najpierw zainstaluj model czatu.</value></data>
@@ -1421,6 +1422,7 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="SuggestInstallRecommended" xml:space="preserve"><value>Do pracy agenta testy Inferpal zalecają {0} — żaden nie jest zainstalowany.</value></data>
   <data name="SuggestEmbeddingNone" xml:space="preserve"><value>Wyszukiwanie w kodzie: brak modelu embeddingów, więc szuka po słowach kluczowych (najlepiej zmierzony jest EmbeddingGemma).</value></data>
   <data name="SuggestEmbeddingAuto" xml:space="preserve"><value>Wyszukiwanie w kodzie: automatycznie, czyli {0}.</value></data>
+  <data name="SuggestEmbeddingBelowKeywords" xml:space="preserve"><value>Wyszukiwanie w kodzie: po słowach kluczowych — z {0} znajdowałoby kod gorzej niż same słowa kluczowe; EmbeddingGemma według pomiarów szuka lepiej.</value></data>
   <data name="SuggestEmbeddingReindex" xml:space="preserve"><value>Zmiana modelu wyszukiwania w kodzie przebudowuje indeks projektu.</value></data>
   <data name="SuggestFimMeasured" xml:space="preserve"><value>Autouzupełnianie: {0} — najlepiej zmierzony model autouzupełniania.</value></data>
   <data name="SuggestFimDoesNotFit" xml:space="preserve"><value>Autouzupełnianie: model czatu. {0} jest zainstalowany, ale z nim modele potrzebują około {1} GB, więcej niż {2} GB ustawione dla Twojej karty.</value></data>

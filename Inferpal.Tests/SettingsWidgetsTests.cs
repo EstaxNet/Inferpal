@@ -30,6 +30,21 @@ public class SettingsWidgetsTests
 
     private static readonly DateTime Now = new(2026, 10, 4, 15, 30, 0);
 
+    /// <summary>An index on keywords because the installed models search code worse says so — never "no embedding model
+    /// is set or installed" beside one that is.</summary>
+    [Fact]
+    public void AnIndexOnKeywords_ForModelsPassedOver_NamesThem()
+    {
+        Strings.ApplyLanguage("en");
+        var passed = Snapshot(completed: true, files: 10, chunks: 40, at: Now) with { PassedOver = ["bge-m3:latest"] };
+        Assert.Equal(Strings.SuggestEmbeddingBelowKeywords(["bge-m3:latest"]),
+                     SettingsWidgets.IndexCard(passed, ragEnabled: true, configuredModel: null, Now).ModelLine);
+
+        // Reference arm: nothing installed is the ordinary keyword line.
+        Assert.Equal(Strings.IndexCardModelKeywords,
+                     SettingsWidgets.IndexCard(Snapshot(completed: true, files: 10, chunks: 40, at: Now), true, null, Now).ModelLine);
+    }
+
     [Fact]
     public void ACompleteIndex_SaysItIsUpToDate_WithItsModel_AndNothingElse()
     {

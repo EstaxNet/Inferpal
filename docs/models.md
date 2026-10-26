@@ -40,9 +40,14 @@ for each model Inferpal is measured with, what the model does, what Inferpal doe
 | [Qwen2.5 Coder 7B](#qwen-coder) | Superseded for autocomplete by Mellum2; not the agent (3/14) | Uses its fill-in-the-middle tokens | A 2024 model, no longer benched |
 
 Embedding models (semantic search) are **optional**: with none installed, the search runs on keywords. With the field
-left empty in *Settings → Server and models → Code search*, Inferpal uses the best embedding model installed — EmbeddingGemma first. Measured on
-192 change descriptions taken from the history of five open-source projects (C#, Python, TypeScript) — how often the
-right file is among the 5 results: **EmbeddingGemma 300M**, **109** (29 of 50 in French); keyword search alone, 103
+left empty in *Settings → Server and models → Code search*, Inferpal uses the best embedding model installed —
+EmbeddingGemma first — but never, for code search, one that makes it worse than keywords alone: **bge-m3** (86 against
+106 for keywords alone, in a run where Ollama served them all), **mxbai-embed-large** (89), **nomic-embed-text** (96)
+and Qwen3 Embedding 0.6B (below). With only those installed, code search stays on keywords and the index's status says
+so; the code added automatically to each question, which needs an embedding model, is then off, and @Docs keeps using
+them. A model named in the field is used as named, and the index's status says when it is one of these. Measured on 192
+change descriptions taken from the history of five open-source projects (C#, Python, TypeScript), in an earlier run
+served by LM Studio — how often the right file is among the 5 results: **EmbeddingGemma 300M**, **109** (29 of 50 in French); keyword search alone, 103
 (25); **Nomic Embed Text v1.5**, 96 (21); **Qwen3 Embedding 0.6B**, 92 (20). Inferpal sends EmbeddingGemma and Qwen3
 the query format their authors document (Qwen3 scores 77 without it). EmbeddingGemma is the only one clearly ahead of
 Nomic; on descriptions like these (identifiers, type names) no embedding model adds much to keyword search, and a

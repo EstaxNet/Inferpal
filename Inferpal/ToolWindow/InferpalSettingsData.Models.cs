@@ -177,7 +177,7 @@ internal partial class InferpalSettingsData
         try
         {
             var embedding = _live is { } live ? (await live.Index.SnapshotAsync(ct)).Model : null;
-            var card = await LoadedModelsCard.ReadAsync(_client, _config, embedding, ct, message);
+            var card = await LoadedModelsCard.ReadAsync(_client, _config, embedding, ct, message, _live?.Docs.QueryEmbeddingModel);
             await RunOnVMContextAsync(() =>
             {
                 LoadedModelsSummary = card.Summary;

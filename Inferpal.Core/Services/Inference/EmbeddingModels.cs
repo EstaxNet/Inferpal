@@ -53,21 +53,65 @@ internal static class EmbeddingModels
     /// start-up would discard every stored vector, to be recomputed at the next start.
     /// </remarks>
     public static async Task<string?> ChooseAsync(InferpalConfig config, IInferenceProvider client, string? previous,
-                                                  CancellationToken ct)
+                                                  CancellationToken ct) =>
+        (await ChooseCoreAsync(config, client, previous, forCode: false, ct).ConfigureAwait(false)).Model;
+
+    /// <summary>
+    /// <see cref="ChooseAsync"/> for the CODE index, with the installed models the automatic choice passed over because
+    /// they search code worse than its keyword half (<see cref="SearchesCodeBelowKeywords"/>) — what the index's status
+    /// names when it runs on keywords.
+    /// </summary>
+    public static Task<(string? Model, IReadOnlyList<string> PassedOver)> ChooseForCodeAsync(
+        InferpalConfig config, IInferenceProvider client, string? previous, CancellationToken ct) =>
+        ChooseCoreAsync(config, client, previous, forCode: true, ct);
+
+    private static async Task<(string? Model, IReadOnlyList<string> PassedOver)> ChooseCoreAsync(
+        InferpalConfig config, IInferenceProvider client, string? previous, bool forCode, CancellationToken ct)
     {
-        if (Configured(config) is { } configured) return configured;
+        if (Configured(config) is { } configured) return (configured, []);
         var models = await client.ListModelsByKindAsync(ct);
-        if (models.Listed.Count == 0) return previous;
-        return PreferredOf(models.Embedding);
+        if (models.Listed.Count == 0) return (previous, []);
+        var chosen = PreferredOf(models.Embedding, forCode);
+        return (chosen, chosen is null && forCode ? PassedOver(models.Embedding) : []);
     }
 
     /// <summary>
-    /// The embedding model to pick among those installed: the preferred family if it is there, else the first listed.
-    /// <c>null</c> for an empty list.
+    /// The embedding model to pick among those installed: the preferred family if it is there, else the first listed —
+    /// for the CODE index (<paramref name="forCode"/>), never one that searches code worse than its keyword half alone
+    /// (<see cref="SearchesCodeBelowKeywords"/>). <c>null</c> when none is left: keyword search.
     /// </summary>
-    public static string? PreferredOf(IReadOnlyList<string> installedEmbeddingModels) =>
+    /// <param name="forCode">The code index (the default): the one the embedding bench measured. The documentation index
+    /// was not measured, and keeps the first one listed.</param>
+    public static string? PreferredOf(IReadOnlyList<string> installedEmbeddingModels, bool forCode = true) =>
         installedEmbeddingModels.FirstOrDefault(m => FormatOf(m)?.Tag == FormatOf(Preferred)!.Tag)
-        ?? installedEmbeddingModels.FirstOrDefault();
+        ?? installedEmbeddingModels.FirstOrDefault(m => !forCode || !SearchesCodeBelowKeywords(m));
+
+    /// <summary>The installed embedding models the code index's automatic choice passes over (<see cref="SearchesCodeBelowKeywords"/>).</summary>
+    public static IReadOnlyList<string> PassedOver(IReadOnlyList<string> installedEmbeddingModels) =>
+        [.. installedEmbeddingModels.Where(SearchesCodeBelowKeywords)];
+
+    // With each of these models, the product's hybrid search finds fewer of the right files than its keyword half alone:
+    // bge-m3, nomic-embed-text (v1.5) and mxbai-embed-large as Ollama serves them, Qwen3 Embedding 0.6B even with its
+    // instruction. Only these exact models: a sibling (nomic-embed-code, nomic-embed-text v2, Qwen3 Embedding 4B or 8B,
+    // mxbai-embed-xsmall) is another model, never measured. Matched on the name without separators (Flat).
+    private static readonly (string Has, string? Not)[] BelowKeywords =
+    [
+        ("bgem3", null), ("nomicembedtext", "v2"), ("mxbaiembedlarge", null), ("qwen3embedding06b", null),
+    ];
+
+    /// <summary>A model that makes the CODE search worse than its keyword half alone: never picked automatically for it
+    /// (a model the person set stays theirs).</summary>
+    internal static bool SearchesCodeBelowKeywords(string model)
+    {
+        var flat = Flat(model);
+        return BelowKeywords.Any(b => flat.Contains(b.Has, StringComparison.Ordinal)
+                                      && (b.Not is null || !flat.Contains(b.Not, StringComparison.Ordinal)));
+    }
+
+    /// <summary>The name without separators, lower case: every spelling a backend uses lands on the same family
+    /// (<c>embeddinggemma:300m</c>, <c>text-embedding-embeddinggemma-300m</c>, <c>Qwen3_Embedding-0.6B</c>).</summary>
+    private static string Flat(string model) =>
+        new(model.Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant).ToArray());
 
     /// <summary>A family's documented format for code retrieval.</summary>
     /// <param name="Tag">Names the document format in an index's identity; changes when <paramref name="Document"/> does.</param>
@@ -86,7 +130,7 @@ internal static class EmbeddingModels
     /// <summary>The documented format of <paramref name="model"/>'s family, or <c>null</c> for bare text.</summary>
     internal static Format? FormatOf(string model)
     {
-        var flat = new string(model.Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant).ToArray());
+        var flat = Flat(model);
         foreach (var (family, format) in Formats)
             if (flat.Contains(family, StringComparison.Ordinal)) return format;
         return null;

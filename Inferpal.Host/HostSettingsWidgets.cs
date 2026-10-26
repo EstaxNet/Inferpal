@@ -115,7 +115,8 @@ internal sealed partial class HostServer
     public async Task<LoadedModelsModel> SettingsLoadedModels(CancellationToken ct)
     {
         var s = Session();
-        return await LoadedModelsCard.ReadAsync(s.Client, s.Config, (await s.Index.SnapshotAsync(ct)).Model, ct);
+        return await LoadedModelsCard.ReadAsync(s.Client, s.Config, (await s.Index.SnapshotAsync(ct)).Model, ct,
+                                               docsEmbeddingModel: s.Docs.QueryEmbeddingModel);
     }
 
     /// <summary>`settings/unloadModels` — unloads the named models (every loaded one without names), then the block as
@@ -125,7 +126,8 @@ internal sealed partial class HostServer
     {
         var s = Session();
         var message = await ModelUnloader.UnloadAsync(s.Client, s.Config, p.Names is { Count: > 0 } ? p.Names : null, ct);
-        return await LoadedModelsCard.ReadAsync(s.Client, s.Config, (await s.Index.SnapshotAsync(ct)).Model, ct, message);
+        return await LoadedModelsCard.ReadAsync(s.Client, s.Config, (await s.Index.SnapshotAsync(ct)).Model, ct, message,
+                                               s.Docs.QueryEmbeddingModel);
     }
 
     /// <summary>

@@ -260,9 +260,12 @@ internal partial class InferpalToolWindowData
 
         // Auto-pick an embedding model only when nothing is configured yet: the default model's family if installed. Not
         // for code search on a server of its own: these are the chat server's models.
+        // None left — only families that search code worse than keywords alone — keeps the field empty: keyword search,
+        // said by the index's status.
         if (string.IsNullOrEmpty(_config.RagEmbeddingModel) && embModels.Count > 0
-            && Services.Inference.RoleServers.OnChatServer(_config, Services.Inference.ServerRole.Search))
-            _config.RagEmbeddingModel = Services.Inference.EmbeddingModels.PreferredOf(embModels)!;
+            && Services.Inference.RoleServers.OnChatServer(_config, Services.Inference.ServerRole.Search)
+            && Services.Inference.EmbeddingModels.PreferredOf(embModels) is { } preferredEmbedding)
+            _config.RagEmbeddingModel = preferredEmbedding;
 
         _config.IsFirstRun = false;
         _config.Save();
@@ -296,6 +299,11 @@ internal partial class InferpalToolWindowData
         var text = foundNote + Strings.MsgFirstRunWelcome(chatModels.Count, best);
         // A size is said only once written: another window may have set one between the read and the write.
         if (window?.Sentence is { } windowSentence && (window.Tokens is null || windowWritten)) text += "\n\n" + windowSentence;
+        // Embedding models installed, none picked for code search: why it runs on keywords — as VS Code's card says it.
+        if (_config.RagEnabled && string.IsNullOrEmpty(_config.RagEmbeddingModel)
+            && Services.Inference.EmbeddingModels.PreferredOf(embModels) is null
+            && Services.Inference.EmbeddingModels.PassedOver(embModels) is { Count: > 0 } passedOver)
+            text += "\n\n" + Strings.SuggestEmbeddingBelowKeywords(passedOver);
         if (vramWarning is not null) text += "\n\n" + vramWarning;
         await present(text).ConfigureAwait(false);
     }

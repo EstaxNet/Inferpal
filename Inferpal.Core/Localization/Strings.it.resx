@@ -1410,6 +1410,7 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="ModelRoleAutocomplete" xml:space="preserve"><value>completamento automatico</value></data>
   <data name="ModelRoleUtility" xml:space="preserve"><value>titoli e riassunti</value></data>
   <data name="ModelRoleCodeSearch" xml:space="preserve"><value>ricerca nel codice</value></data>
+  <data name="ModelRoleDocsSearch" xml:space="preserve"><value>ricerca nella documentazione</value></data>
   <data name="SuggestReview" xml:space="preserve"><value>I modelli suggeriti sono nel modulo: controllali, poi salva.</value></data>
   <data name="SuggestNoChange" xml:space="preserve"><value>Sono già i migliori modelli installati.</value></data>
   <data name="SuggestOnlyEmbedding" xml:space="preserve"><value>Il server elenca solo modelli di embedding: installa prima un modello di chat.</value></data>
@@ -1421,6 +1422,7 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="SuggestInstallRecommended" xml:space="preserve"><value>Per il lavoro da agente, i test di Inferpal consigliano {0}: nessuno è installato.</value></data>
   <data name="SuggestEmbeddingNone" xml:space="preserve"><value>Ricerca nel codice: nessun modello di embedding installato, quindi cerca per parole chiave (EmbeddingGemma è il migliore misurato).</value></data>
   <data name="SuggestEmbeddingAuto" xml:space="preserve"><value>Ricerca nel codice: automatica, che usa {0}.</value></data>
+  <data name="SuggestEmbeddingBelowKeywords" xml:space="preserve"><value>Ricerca nel codice: per parole chiave — con {0} troverebbe il codice peggio delle sole parole chiave; EmbeddingGemma è quello misurato per cercare meglio.</value></data>
   <data name="SuggestEmbeddingReindex" xml:space="preserve"><value>Cambiare il modello di ricerca nel codice ricostruisce l'indice del progetto.</value></data>
   <data name="SuggestFimMeasured" xml:space="preserve"><value>Completamento automatico: {0} — il modello di completamento misurato come migliore.</value></data>
   <data name="SuggestFimDoesNotFit" xml:space="preserve"><value>Completamento automatico: il modello di chat. {0} è installato, ma con esso i modelli richiedono circa {1} GB, più dei {2} GB indicati per la tua scheda.</value></data>

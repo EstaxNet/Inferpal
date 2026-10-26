@@ -1410,6 +1410,7 @@
   <data name="ModelRoleAutocomplete" xml:space="preserve"><value>автодополнение</value></data>
   <data name="ModelRoleUtility" xml:space="preserve"><value>заголовки и сводки</value></data>
   <data name="ModelRoleCodeSearch" xml:space="preserve"><value>поиск по коду</value></data>
+  <data name="ModelRoleDocsSearch" xml:space="preserve"><value>поиск по документации</value></data>
   <data name="SuggestReview" xml:space="preserve"><value>Предложенные модели внесены в форму: проверьте их и сохраните.</value></data>
   <data name="SuggestNoChange" xml:space="preserve"><value>Это уже лучшие из установленных моделей.</value></data>
   <data name="SuggestOnlyEmbedding" xml:space="preserve"><value>Сервер перечисляет только модели эмбеддингов: сначала установите модель для чата.</value></data>
@@ -1421,6 +1422,7 @@
   <data name="SuggestInstallRecommended" xml:space="preserve"><value>Для работы агента тесты Inferpal рекомендуют {0} — ни одна не установлена.</value></data>
   <data name="SuggestEmbeddingNone" xml:space="preserve"><value>Поиск по коду: модель эмбеддингов не установлена, поэтому поиск идёт по ключевым словам (лучшая по измерениям — EmbeddingGemma).</value></data>
   <data name="SuggestEmbeddingAuto" xml:space="preserve"><value>Поиск по коду: автоматически, то есть {0}.</value></data>
+  <data name="SuggestEmbeddingBelowKeywords" xml:space="preserve"><value>Поиск по коду: по ключевым словам — с {0} он находил бы код хуже, чем одни ключевые слова; EmbeddingGemma по измерениям ищет лучше.</value></data>
   <data name="SuggestEmbeddingReindex" xml:space="preserve"><value>Смена модели поиска по коду перестраивает индекс проекта.</value></data>
   <data name="SuggestFimMeasured" xml:space="preserve"><value>Автодополнение: {0} — лучшая по измерениям модель автодополнения.</value></data>
   <data name="SuggestFimDoesNotFit" xml:space="preserve"><value>Автодополнение: модель чата. {0} установлена, но вместе с ней моделям нужно около {1} ГБ — больше, чем {2} ГБ, указанные для вашей видеокарты.</value></data>

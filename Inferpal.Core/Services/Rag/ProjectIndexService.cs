@@ -493,9 +493,11 @@ internal sealed class ProjectIndexService : IDisposable
             var storedModel = await db.GetMetaAsync(EmbeddingModelMetaKey, ct);
             // With semantic search off nothing is chosen: the stored vectors stay what they are, for when it is back on.
             var previous    = EmbeddingModels.ModelOfIdentity(storedModel);
-            var embModel    = _config.RagEnabled
-                ? await EmbeddingModels.ChooseAsync(_config, _client, previous, ct)
-                : EmbeddingModels.Configured(_config) ?? previous;
+            string? embModel;
+            if (_config.RagEnabled)
+                (embModel, _passedOver) = await EmbeddingModels.ChooseForCodeAsync(_config, _client, previous, ct);
+            else
+                (embModel, _passedOver) = (EmbeddingModels.Configured(_config) ?? previous, []);
             var embIdentity = EmbeddingModels.CodeIndexIdentity(embModel);
             if (storedModel is not null && !string.Equals(storedModel, embIdentity, StringComparison.Ordinal))
                 foreach (var c in loaded) c.Embedding = null;
@@ -1041,9 +1043,19 @@ internal sealed class ProjectIndexService : IDisposable
     /// <summary>The <see cref="EmbeddingModels.CodeIndexIdentity"/> the in-memory vectors came from (set by the last pass).</summary>
     private volatile string _indexedEmbeddingModel = string.Empty;
 
+    /// <summary>The installed embedding models the last pass's automatic choice passed over, for searching code worse
+    /// than keywords alone — what the status names when the index runs on keywords.</summary>
+    private volatile IReadOnlyList<string> _passedOver = [];
+
+    /// <summary>The installed embedding models the last pass passed over (<see cref="EmbeddingModels.PassedOver"/>): every
+    /// reader that says the index runs on keywords — its status, its card, <c>search_codebase</c> — names them, never
+    /// "no embedding model installed" beside one that is.</summary>
+    public IReadOnlyList<string> PassedOverEmbeddingModels => _passedOver;
+
     /// <summary>
     /// The model a query is embedded with: the one the index's vectors came from (chosen by the last pass), or
-    /// <c>null</c> — keyword search only, because no embedding model is set or installed, or no pass has run yet.
+    /// <c>null</c> — keyword search only, because no embedding model is set or installed, the installed ones search code
+    /// worse than keywords alone (<see cref="PassedOverEmbeddingModels"/>), or no pass has run yet.
     /// </summary>
     public string? QueryEmbeddingModel => _config.RagEnabled ? EmbeddingModels.ModelOfIdentity(_indexedEmbeddingModel) : null;
 
@@ -1083,7 +1095,8 @@ internal sealed class ProjectIndexService : IDisposable
         return new IndexSnapshot(
             RootDir, IsIndexing, _progressDone, _progressTotal, _passCompleted, files, ChunkCount, unembedded,
             SkippedBySize, OversizeFiles, SkippedFolder, QueryEmbeddingModel, _client.IsEmbeddingCircuitOpen,
-            saved ? _savedAt : _updatedAt, _failure, _stopped, saved, Loading: _loadingSaved && !IsIndexing);
+            saved ? _savedAt : _updatedAt, _failure, _stopped, saved, Loading: _loadingSaved && !IsIndexing,
+            PassedOver: _passedOver);
     }
 
     /// <summary>
@@ -1113,13 +1126,21 @@ internal sealed class ProjectIndexService : IDisposable
         // installed).
         var holeStatus = !_config.RagEnabled
             ? " (keyword search only: semantic search is off — ragEnabled)"
+            : QueryEmbeddingModel is null && _passedOver is { Count: > 0 } passedOver
+            ? $" (keyword search only: {string.Join(", ", passedOver)} {(passedOver.Count == 1 ? "searches" : "search")} code "
+              + $"worse than keywords alone — {EmbeddingModels.Preferred} searches it better)"
             : QueryEmbeddingModel is null
             ? " (keyword search only: no embedding model is set or installed)"
             : unembedded > 0
             ? $" ({unembedded} of {total} chunks without embedding — semantic search misses them; run /index rebuild)"
             : string.Empty;
         var embStatus = _client.IsEmbeddingCircuitOpen ? " (embedding ⚠ circuit open, keyword fallback)" : string.Empty;
-        return $"RAG: ✅ {total} chunks from {files} files{holeStatus}{embStatus}";
+        // A model named in the settings is used as named — one an earlier first run wrote there too: said when it is a
+        // family that searches code worse than keywords alone, so the choice is an informed one.
+        var belowStatus = QueryEmbeddingModel is { } named && EmbeddingModels.SearchesCodeBelowKeywords(named)
+            ? $" ({named} searches code worse than keywords alone — {EmbeddingModels.Preferred} searches it better)"
+            : string.Empty;
+        return $"RAG: ✅ {total} chunks from {files} files{holeStatus}{belowStatus}{embStatus}";
     }
 
     /// <summary>
@@ -1464,7 +1485,10 @@ internal sealed record IgnoredSourceFiles(int Count, string Rules)
 /// <param name="Saved">The index shown is the one saved for the folder, read without a pass
 /// (<see cref="ProjectIndexService.ShowSavedAsync"/>); <paramref name="UpdatedAt"/> is then when it was saved.</param>
 /// <param name="Loading">The saved index is being read: what it holds is not known yet.</param>
+/// <param name="PassedOver">With <paramref name="Model"/> <c>null</c>: the installed embedding models the automatic choice
+/// passed over for searching code worse than keywords alone.</param>
 internal sealed record IndexSnapshot(
     string RootDir, bool IsIndexing, int Done, int Total, bool Completed, int Files, int Chunks, int Unembedded,
     int Oversize, IReadOnlyList<string> OversizeFiles, WorkspaceScan.WalkGap? SkippedFolder, string? Model,
-    bool EmbeddingDown, DateTime? UpdatedAt, string? Failure, bool Stopped, bool Saved = false, bool Loading = false);
+    bool EmbeddingDown, DateTime? UpdatedAt, string? Failure, bool Stopped, bool Saved = false, bool Loading = false,
+    IReadOnlyList<string>? PassedOver = null);

@@ -117,8 +117,41 @@ public sealed class EmbeddingModelsTests : IDisposable
         Assert.Equal("embeddinggemma:300m", EmbeddingModels.PreferredOf(["nomic-embed-text", "embeddinggemma:300m"]));
         Assert.Equal("text-embedding-embeddinggemma-300m",
                      EmbeddingModels.PreferredOf(["text-embedding-nomic-embed-text-v1.5", "text-embedding-embeddinggemma-300m"]));
-        Assert.Equal("nomic-embed-text", EmbeddingModels.PreferredOf(["nomic-embed-text", "mxbai-embed-large"]));
+        Assert.Equal("granite-embedding:278m", EmbeddingModels.PreferredOf(["granite-embedding:278m", "snowflake-arctic-embed"]));
         Assert.Null(EmbeddingModels.PreferredOf([]));
+    }
+
+    /// <summary>A family with which the code search finds fewer of the right files than its keyword half alone is never
+    /// picked for the code index: with only those installed, the code search stays on keywords, and they are named. The
+    /// documentation index, never measured, keeps the first one listed.</summary>
+    [Fact]
+    public void TheCodeIndex_NeverPicksAFamilyThatSearchesBelowKeywords()
+    {
+        string[] belowKeywords = ["bge-m3:latest", "nomic-embed-text:latest", "mxbai-embed-large:latest", "qwen3-embedding:0.6b",
+                                  "text-embedding-nomic-embed-text-v1.5", "text-embedding-qwen3-embedding-0.6b"];
+        Assert.All(belowKeywords, m => Assert.True(EmbeddingModels.SearchesCodeBelowKeywords(m), m));
+
+        Assert.Null(EmbeddingModels.PreferredOf(belowKeywords));
+        Assert.Equal(belowKeywords, EmbeddingModels.PassedOver(belowKeywords));
+        Assert.Equal("granite-embedding:278m", EmbeddingModels.PreferredOf([.. belowKeywords, "granite-embedding:278m"]));
+        Assert.Equal("embeddinggemma:300m", EmbeddingModels.PreferredOf(["bge-m3:latest", "embeddinggemma:300m"]));
+
+        // Reference arm: the documentation index keeps the first one listed.
+        Assert.Equal("bge-m3:latest", EmbeddingModels.PreferredOf(belowKeywords, forCode: false));
+    }
+
+    /// <summary>Only the measured models are passed over: a sibling of one — another model, never measured — stays
+    /// pickable, and is never said to search code worse than keywords.</summary>
+    [Theory]
+    [InlineData("nomic-embed-code")]
+    [InlineData("nomic-embed-text-v2-moe")]
+    [InlineData("qwen3-embedding:4b")]
+    [InlineData("qwen3-embedding:8b")]
+    [InlineData("mxbai-embed-xsmall")]
+    public void ASiblingOfAMeasuredModel_IsNotPassedOver(string sibling)
+    {
+        Assert.False(EmbeddingModels.SearchesCodeBelowKeywords(sibling));
+        Assert.Equal(sibling, EmbeddingModels.PreferredOf(["bge-m3:latest", sibling]));
     }
 
     // ── What the product actually sends ─────────────────────────────────────────────────────

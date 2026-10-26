@@ -1142,6 +1142,8 @@ export interface SetupPlan {
   cardQuestion?: string | null;
   /** The context window the card writes for this memory; or, with the memory unknown and not asked, why it stays. */
   windowText?: string | null;
+  /** Why code search stays on keywords beside the embedding models the server has. */
+  searchNote?: string | null;
 }
 
 export interface SetupApplyParams {

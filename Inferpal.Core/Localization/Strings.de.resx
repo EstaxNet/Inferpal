@@ -1410,6 +1410,7 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="ModelRoleAutocomplete" xml:space="preserve"><value>Autovervollständigung</value></data>
   <data name="ModelRoleUtility" xml:space="preserve"><value>Titel und Zusammenfassungen</value></data>
   <data name="ModelRoleCodeSearch" xml:space="preserve"><value>Codesuche</value></data>
+  <data name="ModelRoleDocsSearch" xml:space="preserve"><value>Dokumentationssuche</value></data>
   <data name="SuggestReview" xml:space="preserve"><value>Die vorgeschlagenen Modelle stehen im Formular: prüfen Sie sie und speichern Sie dann.</value></data>
   <data name="SuggestNoChange" xml:space="preserve"><value>Das sind bereits die besten installierten Modelle.</value></data>
   <data name="SuggestOnlyEmbedding" xml:space="preserve"><value>Der Server listet nur Embedding-Modelle: installieren Sie zuerst ein Chat-Modell.</value></data>
@@ -1421,6 +1422,7 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="SuggestInstallRecommended" xml:space="preserve"><value>Für Agentenarbeit empfehlen die Tests von Inferpal {0} — keines ist installiert.</value></data>
   <data name="SuggestEmbeddingNone" xml:space="preserve"><value>Codesuche: kein Embedding-Modell installiert, daher Suche nach Schlüsselwörtern (EmbeddingGemma wurde am besten gemessen).</value></data>
   <data name="SuggestEmbeddingAuto" xml:space="preserve"><value>Codesuche: automatisch, also {0}.</value></data>
+  <data name="SuggestEmbeddingBelowKeywords" xml:space="preserve"><value>Codesuche: per Stichwort — mit {0} fände sie Code schlechter als Stichwörter allein; EmbeddingGemma ist das Modell, das nachweislich besser sucht.</value></data>
   <data name="SuggestEmbeddingReindex" xml:space="preserve"><value>Ein anderes Codesuche-Modell baut den Index des Projekts neu auf.</value></data>
   <data name="SuggestFimMeasured" xml:space="preserve"><value>Autovervollständigung: {0} — das am besten gemessene Vervollständigungsmodell.</value></data>
   <data name="SuggestFimDoesNotFit" xml:space="preserve"><value>Autovervollständigung: das Chat-Modell. {0} ist installiert, aber damit bräuchten die Modelle etwa {1} GB, mehr als die {2} GB Ihrer Karte.</value></data>

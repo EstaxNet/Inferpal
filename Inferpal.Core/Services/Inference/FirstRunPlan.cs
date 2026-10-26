@@ -13,7 +13,8 @@ internal sealed record ModelDownload(string Name, string Tag, double DownloadGb,
 /// <summary>What the first run proposes for a server that answers.</summary>
 /// <param name="ChatModel">The chat and agent model proposed; <c>null</c> when the server has no chat model.</param>
 /// <param name="CompletionModel">The autocomplete model; <c>null</c> = the chat model.</param>
-/// <param name="SearchModel">The code-search model; <c>null</c> when the server has none (search then uses keywords).</param>
+/// <param name="SearchModel">The code-search model; <c>null</c> when the server has none, or only models that search code
+/// worse than keywords alone (<paramref name="SearchPassedOver"/> tells the two apart) — search then uses keywords.</param>
 /// <param name="BudgetGb">The card's memory; 0 = unknown.</param>
 /// <param name="NeededGb">The estimated memory of the proposed models together; 0 when nothing is proposed.</param>
 /// <param name="Downloads">Without a chat model, on a server Inferpal can download to: what fits the card.</param>
@@ -24,10 +25,13 @@ internal sealed record ModelDownload(string Name, string Tag, double DownloadGb,
 /// <param name="Window">The chat model's context window for the card (<see cref="ContextWindowChoice"/>), set by the
 /// caller that knows which role models the card keeps; <c>null</c> when there is nothing to propose or say.</param>
 /// <param name="Installed">What the server lists, as the plan read it (the sizes the window is sized from).</param>
+/// <param name="SearchPassedOver">With no code-search model proposed: the installed embedding models passed over for
+/// searching code worse than keywords alone (<see cref="EmbeddingModels.PassedOver"/>), said on the card.</param>
 internal sealed record FirstRunPlan(
     string Provider, string Url, string? ChatModel, string? CompletionModel, string? SearchModel, int ChatCount,
     double BudgetGb, double NeededGb, IReadOnlyList<ModelDownload> Downloads, IReadOnlyList<string> Listed,
-    int InstalledCount, bool NoneFits = false, WindowAdvice? Window = null, IReadOnlyList<InstalledModelInfo>? Installed = null)
+    int InstalledCount, bool NoneFits = false, WindowAdvice? Window = null, IReadOnlyList<InstalledModelInfo>? Installed = null,
+    IReadOnlyList<string>? SearchPassedOver = null)
 {
     /// <summary>The proposed models fit the card (or the card is unknown).</summary>
     public bool Fits => BudgetGb <= 0 || NeededGb <= BudgetGb;
@@ -77,6 +81,7 @@ internal static class FirstRunPlanner
         long SizeOf(string? name) =>
             name is null ? 0 : installed.FirstOrDefault(m => ModelCatalog.SameModelName(m.Name, name))?.SizeBytes ?? 0;
         ModelCatalog.TrioFitsBudget(budgetGb, [SizeOf(chat), SizeOf(completion), SizeOf(search)], out var needed);
-        return new(provider, url, chat, completion, search, byKind.Chat.Count, budgetGb, needed, [], [], installed.Count);
+        return new(provider, url, chat, completion, search, byKind.Chat.Count, budgetGb, needed, [], [], installed.Count,
+                   SearchPassedOver: search is null ? EmbeddingModels.PassedOver(byKind.Embedding) : []);
     }
 }

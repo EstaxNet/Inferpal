@@ -1410,6 +1410,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ModelRoleAutocomplete" xml:space="preserve"><value>自動補完</value></data>
   <data name="ModelRoleUtility" xml:space="preserve"><value>タイトルと要約</value></data>
   <data name="ModelRoleCodeSearch" xml:space="preserve"><value>コード検索</value></data>
+  <data name="ModelRoleDocsSearch" xml:space="preserve"><value>ドキュメント検索</value></data>
   <data name="SuggestReview" xml:space="preserve"><value>提案されたモデルをフォームに入力しました。確認してから保存してください。</value></data>
   <data name="SuggestNoChange" xml:space="preserve"><value>すでにインストール済みの中で最適なモデルです。</value></data>
   <data name="SuggestOnlyEmbedding" xml:space="preserve"><value>サーバーには埋め込みモデルしかありません。まずチャットモデルをインストールしてください。</value></data>
@@ -1421,6 +1422,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SuggestInstallRecommended" xml:space="preserve"><value>エージェント作業には、Inferpal のテストは {0} を推奨します。いずれもインストールされていません。</value></data>
   <data name="SuggestEmbeddingNone" xml:space="preserve"><value>コード検索: 埋め込みモデルがインストールされていないため、キーワードで検索します（測定で最良なのは EmbeddingGemma）。</value></data>
   <data name="SuggestEmbeddingAuto" xml:space="preserve"><value>コード検索: 自動（{0} を使用）。</value></data>
+  <data name="SuggestEmbeddingBelowKeywords" xml:space="preserve"><value>コード検索: キーワードのみ — {0} はキーワードだけの検索より精度が下がります。EmbeddingGemma はより良く検索できると測定されています。</value></data>
   <data name="SuggestEmbeddingReindex" xml:space="preserve"><value>コード検索モデルを変えると、プロジェクトのインデックスが再構築されます。</value></data>
   <data name="SuggestFimMeasured" xml:space="preserve"><value>自動補完: {0} — 測定で最良の補完モデル。</value></data>
   <data name="SuggestFimDoesNotFit" xml:space="preserve"><value>自動補完: チャットモデル。{0} はインストール済みですが、使うとモデル全体で約 {1} GB が必要になり、設定されたカードの {2} GB を超えます。</value></data>

@@ -2174,6 +2174,7 @@ internal static class Strings
     public static string ModelRoleAutocomplete => Get(nameof(ModelRoleAutocomplete));
     public static string ModelRoleUtility => Get(nameof(ModelRoleUtility));
     public static string ModelRoleCodeSearch => Get(nameof(ModelRoleCodeSearch));
+    public static string ModelRoleDocsSearch => Get(nameof(ModelRoleDocsSearch));
     public static string SuggestReview => Get(nameof(SuggestReview));
     public static string SuggestNoChange => Get(nameof(SuggestNoChange));
     public static string SuggestOnlyEmbedding => Get(nameof(SuggestOnlyEmbedding));
@@ -2191,6 +2192,8 @@ internal static class Strings
     public static string SuggestEmbeddingNone => Get(nameof(SuggestEmbeddingNone));
     public static string SuggestEmbeddingAuto(string a) =>
         Format(Get(nameof(SuggestEmbeddingAuto)), a);
+    public static string SuggestEmbeddingBelowKeywords(IReadOnlyList<string> models) =>
+        Format(Get(nameof(SuggestEmbeddingBelowKeywords)), string.Join(", ", models));
     public static string SuggestEmbeddingReindex => Get(nameof(SuggestEmbeddingReindex));
     public static string SuggestFimMeasured(string a) =>
         Format(Get(nameof(SuggestFimMeasured)), a);

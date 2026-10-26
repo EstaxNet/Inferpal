@@ -118,13 +118,14 @@ internal static class ModelAdvisor
         // (the best embedding model, the chat's own model). Only when a size is decided: an unknown card is asked by the
         // form's own memory field.
         string? Proposed(string key) => suggestion.Fields.FirstOrDefault(f => f.Key == key)?.Value;
-        var search = Proposed("ragEmbeddingModel") is { } s
-            ? s.Length > 0 ? s : EmbeddingModels.PreferredOf(ModelsByKind.Of(installed).Embedding)
-            : null;
         var switches = new Config.InferpalConfig
         {
             RagEnabled = saved?.RagEnabled ?? true, InlineCompletionEnabled = saved?.InlineCompletionEnabled ?? true,
+            DocSitesJson = saved?.DocSitesJson ?? "",
         };
+        IReadOnlyList<string> search = Proposed("ragEmbeddingModel") is { } s
+            ? ContextWindowChoice.SearchModelsBeside(switches, s, ModelsByKind.Of(installed).Embedding)
+            : [];
         var window = await ContextWindowChoice.AdviseAsync(client, server.Provider, chat,
             ContextWindowChoice.Beside(switches, chat, search, Proposed("inlineCompletionModel")), installed, vramBudgetGb, ct);
         if (window.Tokens is not { } tokens) return suggestion;
@@ -186,9 +187,13 @@ internal static class ModelAdvisor
         // A choice that already IS the best stays as written: rewriting it as "automatic" would count as a change.
         var embeddingValue = bestEmbedding is not null && ModelCatalog.SameModelName(configuredEmbedding, bestEmbedding)
             ? configuredEmbedding : "";
-        var embeddingField = Field("ragEmbeddingModel", embeddingValue, bestEmbedding is null
-            ? Strings.SuggestEmbeddingNone
-            : Strings.SuggestEmbeddingAuto(bestEmbedding));
+        // No model left for code search is said for what it is: none installed, or only families that search code worse
+        // than keywords alone (EmbeddingModels.PassedOver).
+        var passedOver = EmbeddingModels.PassedOver(embedding);
+        var embeddingField = Field("ragEmbeddingModel", embeddingValue, bestEmbedding is not null
+            ? Strings.SuggestEmbeddingAuto(bestEmbedding)
+            : passedOver.Count > 0 ? Strings.SuggestEmbeddingBelowKeywords(passedOver)
+            : Strings.SuggestEmbeddingNone);
         fields.Add(embeddingField);
         if (embeddingField.Changed) notes.Add(Strings.SuggestEmbeddingReindex);
 

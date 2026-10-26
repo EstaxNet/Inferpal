@@ -157,7 +157,7 @@ internal sealed class SemanticSearchTool : ITool
             var nothing = SearchDegradation.Explain(
                 Strings.RagNoResults(query),
                 SearchDegradation.Classify(_config.RagEnabled, queryEmbedding, modelChosen: model is not null),
-                model ?? string.Empty);
+                model ?? string.Empty, _index.PassedOverEmbeddingModels);
             return new Answer(behind + nothing, 0, nothing);
         }
 

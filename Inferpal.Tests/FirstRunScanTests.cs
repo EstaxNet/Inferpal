@@ -216,10 +216,20 @@ public sealed class FirstRunScanTests
         var plan = FirstRunPlanner.Plan(installed, "ollama", "http://localhost:11434", budgetGb: 24, canDownload: true);
 
         Assert.Equal(ModelCatalog.PickBestChatModel(["qwen3.8:27b", "llama3.1:8b"]), plan.ChatModel);
-        Assert.Equal("nomic-embed-text:latest", plan.SearchModel);
+        // nomic-embed-text makes the code search worse than keywords alone: none is proposed, and the card says why.
+        Assert.Null(plan.SearchModel);
+        Assert.Equal(["nomic-embed-text:latest"], plan.SearchPassedOver);
+        Assert.Equal(Inferpal.Localization.Strings.SuggestEmbeddingBelowKeywords(["nomic-embed-text:latest"]),
+                     SetupPlanDto.Of(plan).SearchNote);
         Assert.Equal(2, plan.ChatCount);
         Assert.True(plan.NeededGb > 0);
         Assert.Empty(plan.Downloads);
+
+        // Reference arm: EmbeddingGemma beside it is proposed, and nothing is said.
+        var withGemma = FirstRunPlanner.Plan([.. installed, new("embeddinggemma:300m", 622_000_000)], "ollama",
+                                             "http://localhost:11434", budgetGb: 24, canDownload: true);
+        Assert.Equal("embeddinggemma:300m", withGemma.SearchModel);
+        Assert.Null(SetupPlanDto.Of(withGemma).SearchNote);
     }
 
     [Theory]
