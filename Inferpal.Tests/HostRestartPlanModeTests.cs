@@ -29,15 +29,14 @@ public class HostRestartPlanModeTests
     }
 
     /// <summary>
-    /// ⚠ The window's model is its workspace setting, which wins over the shared default at start: the host — which
-    /// every utility task and bare <c>/model</c> read — is told, or it answers with another window's last choice.
+    /// ⚠ The window's model is its own choice (<c>windowModel</c>), which wins over the shared default at start: the host
+    /// — which every utility task and bare <c>/model</c> read — is told, or it answers with another window's last choice.
     /// </summary>
     [Fact]
     public void AStartingWindow_GivesTheHostItsModel()
     {
         var ready = OnHostReady();
-        var chosen = ready.IndexOf("this.model = vscode.workspace.getConfiguration('inferpal').get<string>('model'",
-                                   StringComparison.Ordinal);
+        var chosen = ready.IndexOf("this.model = this.windowModel()", StringComparison.Ordinal);
         var pushed = ready.IndexOf("await host.modelsUseForSession(this.model);", StringComparison.Ordinal);
         Assert.True(chosen > 0, "the window's model is no longer read where this rule looks");   // WITNESS
         Assert.True(pushed > chosen, "the window's model is not given to the host after it is chosen");

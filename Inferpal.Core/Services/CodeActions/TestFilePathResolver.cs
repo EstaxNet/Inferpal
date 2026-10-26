@@ -2,6 +2,9 @@ using System.IO;
 
 namespace Inferpal.Services.CodeActions;
 
+/// <summary>A C# source's project that no test project references, and the folder where none was found.</summary>
+internal sealed record MissingTestProject(string Project, string SearchedUnder);
+
 /// <summary>
 /// Pure, testable resolution of the conventional unit-test file path for a source file.
 /// <para>
@@ -18,7 +21,15 @@ namespace Inferpal.Services.CodeActions;
 internal static class TestFilePathResolver
 {
     /// <summary>Returns the absolute path of the test file for <paramref name="sourcePath"/>.</summary>
-    public static string Resolve(string sourcePath)
+    public static string Resolve(string sourcePath) => Locate(sourcePath).TestPath;
+
+    /// <summary>
+    /// The test file of <paramref name="sourcePath"/>, and — for a C# source whose .NET project no test project references
+    /// — that project and the folder searched: there the test file falls back beside the source, compiled into the code
+    /// under test and run by nobody. <c>Missing</c> is <c>null</c> otherwise, a workspace that could not be read included:
+    /// no cause is named on a search that did not finish.
+    /// </summary>
+    public static (string TestPath, MissingTestProject? Missing) Locate(string sourcePath)
     {
         var dir  = Path.GetDirectoryName(sourcePath) ?? string.Empty;
         var ext  = Path.GetExtension(sourcePath);                  // ".cs"
@@ -26,7 +37,7 @@ internal static class TestFilePathResolver
 
         // Already a test file → edit it in place.
         if (IsTestFileName(name))
-            return sourcePath;
+            return (sourcePath, null);
 
         var testFile = ext.ToLowerInvariant() switch
         {
@@ -40,14 +51,18 @@ internal static class TestFilePathResolver
         };
 
         var besideTheSource = Path.Combine(dir, testFile);
-        return ext.ToLowerInvariant() switch
+        if (ext.Equals(".cs", StringComparison.OrdinalIgnoreCase))
         {
-            ".cs"             => InDotnetTestProject(sourcePath, testFile) ?? besideTheSource,
+            var (found, missing) = InDotnetTestProject(sourcePath, testFile);
+            return (found ?? besideTheSource, missing);
+        }
+        return (ext.ToLowerInvariant() switch
+        {
             ".java" or ".kt"  => InMavenTestTree(sourcePath, testFile) ?? besideTheSource,
             ".py"             => InPythonTestTree(sourcePath, testFile) ?? besideTheSource,
             ".rs"             => InCargoTestsFolder(sourcePath, testFile) ?? besideTheSource,
             _                 => besideTheSource,
-        };
+        }, null);
     }
 
     /// <summary>
@@ -193,23 +208,28 @@ internal static class TestFilePathResolver
     // compiled into it and the build breaks ("'Fact' could not be found") — and the FooTests.cs that already exists
     // in the test project is never found, so a second one is created instead of that one being extended.
 
-    private static readonly string[] TestFrameworkMarkers = ["xunit", "nunit", "mstest", "Microsoft.NET.Test.Sdk"];
+    private static readonly string[] TestFrameworkMarkers =
+        ["xunit", "nunit", "mstest", "TUnit", "Microsoft.NET.Test.Sdk", "<IsTestProject>true"];
 
     /// <summary>
     /// The test file inside the test project that references the source's project: an existing one of that name,
-    /// else the source's folder mirrored there. <c>null</c> when there is no such project, or the source already lives
-    /// in a test project.
+    /// else the source's folder mirrored there. <c>Path</c> is <c>null</c> when there is no such project, or the source
+    /// already lives in a test project; <c>Missing</c> names the source's project and the folder searched only when the
+    /// search finished and found no test project for it — never on a file in no project, nor on a read that failed.
     /// </summary>
-    private static string? InDotnetTestProject(string sourcePath, string testFile)
+    private static (string? Path, MissingTestProject? Missing) InDotnetTestProject(string sourcePath, string testFile)
     {
         try
         {
             var project = FindUp(Path.GetDirectoryName(sourcePath), f => f.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase), levels: 8);
-            if (project is null || IsTestProject(project)) return null;
+            if (project is null || IsTestProject(project)) return (null, null);
             var projectDir = Path.GetDirectoryName(project)!;
 
+            // The repository holds the test projects even where the solution sits beside them (src/App.sln, tests/…) or
+            // there is none; without git, the solution's folder, else the project's parent.
             var root = FindUp(projectDir, SolutionFiles.IsSolution, levels: 6);
-            var searchRoot = root is not null ? Path.GetDirectoryName(root)! : Path.GetDirectoryName(projectDir) ?? projectDir;
+            var searchRoot = GitProcess.WorkTreeOf(projectDir)
+                ?? (root is not null ? Path.GetDirectoryName(root)! : Path.GetDirectoryName(projectDir) ?? projectDir);
 
             // The one named after the project first; among equals, the shallowest then the ordinal first — the sort is
             // stable, so the boolean key keeps that order (alone, it left ties to the file system's).
@@ -219,21 +239,21 @@ internal static class TestFilePathResolver
                 .OrderByDescending(p => Path.GetFileNameWithoutExtension(p)
                     .StartsWith(Path.GetFileNameWithoutExtension(project), StringComparison.OrdinalIgnoreCase))
                 .FirstOrDefault();
-            if (testProject is null) return null;
+            if (testProject is null) return (null, new MissingTestProject(Path.GetFileNameWithoutExtension(project), searchRoot));
             var testDir = Path.GetDirectoryName(testProject)!;
 
             // An existing test file of that name, anywhere in the test project, is the one to extend.
             var existing = WorkspaceScan.ShallowestFirst(WorkspaceScan.EnumerateFiles(testDir, testFile))
                 .FirstOrDefault(f => PathComparer.Default.Equals(Path.GetFileName(f), testFile));
-            if (existing is not null) return existing;
+            if (existing is not null) return (existing, null);
 
             var relativeDir = Path.GetRelativePath(projectDir, Path.GetDirectoryName(sourcePath)!);
-            return Path.GetFullPath(Path.Combine(testDir, relativeDir == "." ? string.Empty : relativeDir, testFile));
+            return (Path.GetFullPath(Path.Combine(testDir, relativeDir == "." ? string.Empty : relativeDir, testFile)), null);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             Diagnostics.Swallow("TestFilePathResolver.InDotnetTestProject", ex);
-            return null;
+            return (null, null);
         }
     }
 
@@ -297,8 +317,15 @@ internal static class TestFilePathResolver
         }
     }
 
+    /// <summary>A test project: one that names a test framework or declares itself one — or, its packages coming from a
+    /// <c>Directory.Build.props</c>, one named the way test projects are (<c>Lib.Tests</c>, <c>Lib.UnitTests</c>,
+    /// <c>LibTests</c>, <c>Lib.Specs</c>).</summary>
     private static bool IsTestProject(string csproj)
     {
+        var name = Path.GetFileNameWithoutExtension(csproj);
+        if (name.EndsWith(".Tests", StringComparison.OrdinalIgnoreCase) || name.EndsWith(".Test", StringComparison.OrdinalIgnoreCase)
+            || name.EndsWith(".Specs", StringComparison.OrdinalIgnoreCase) || name.EndsWith("Tests", StringComparison.Ordinal))
+            return true;
         var text = File.ReadAllText(csproj);
         return TestFrameworkMarkers.Any(m => text.Contains(m, StringComparison.OrdinalIgnoreCase));
     }

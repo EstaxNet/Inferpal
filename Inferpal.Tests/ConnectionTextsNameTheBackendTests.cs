@@ -58,7 +58,39 @@ public class ConnectionTextsNameTheBackendTests
         Assert.DoesNotContain("llama3.1", text);
         Assert.Contains("docs/models.md#by-graphics-card", text);
         Assert.Contains("/models pull", text);
+        // The gesture that re-runs the discovery, without restarting Visual Studio.
+        Assert.Contains("`/setup`", text);
     });
+
+    /// <summary>With the card's memory known, the first run names the measured model that fits it, by its pull name.</summary>
+    [Fact]
+    public void TheFirstRun_NamesTheModelMeasuredForTheCard_WhenItKnowsTheCard() => InEveryLanguage(culture =>
+    {
+        var text = Strings.MsgFirstRunNoModels("Ollama", canPull: true, pullTag: "granite4.2:8b", pullName: "Granite 4.2 8B");
+        Assert.True(text.Contains("/models pull granite4.2:8b", StringComparison.Ordinal), $"{culture}: {text}");
+        Assert.True(text.Contains("Granite 4.2 8B", StringComparison.Ordinal), $"{culture}: {text}");
+    });
+
+    [Theory]
+    [InlineData("ollama", 24, "qwen3.8:27b")]
+    [InlineData("ollama", 12, "gemma4:12b")]
+    [InlineData("ollama", 8, "granite4.2:8b")]
+    [InlineData("ollama", 0, null)]          // the card unknown: a guess could download a model that does not fit
+    [InlineData("lmstudio", 24, null)]       // another server: Ollama's tags are not its names
+    public void TheModelNamedForTheCard_IsTheMeasuredOneThatFits_OnOllamaOnly(string provider, double gb, string? tag) =>
+        Assert.Equal(tag, Inferpal.Services.Inference.ModelAdvisor.DownloadToName(provider, gb)?.Tag);
+
+    [Fact]
+    public void VisualStudiosFirstRun_NamesTheModelForTheCard()
+    {
+        var rag = ConventionCoverageTests.CodeOnly(Path.Combine(ConventionCoverageTests.RepoRoot(), "Inferpal", "ToolWindow",
+                                                                "InferpalToolWindowData.Rag.cs"));
+        var at = rag.IndexOf("if (chatModels.Count == 0)", StringComparison.Ordinal);
+        Assert.True(at >= 0, "the no-model branch moved: this rule would measure nothing");   // WITNESS
+        var branch = rag[at..rag.IndexOf("return;", at, StringComparison.Ordinal)];
+        Assert.Contains("ModelAdvisor.DownloadToName(_config.Provider, _config.VramBudgetGb)", branch, StringComparison.Ordinal);
+        Assert.Contains("pull?.Tag, pull?.Name", branch, StringComparison.Ordinal);
+    }
 
     /// <summary>
     /// The settings and command hints are shown whatever the backend: "Base URL of your local Ollama instance (default

@@ -81,6 +81,14 @@ internal static class ModelAdvisor
             .OrderByDescending(d => d.CardGb),
     ];
 
+    /// <summary>The measured model to name for a card of <paramref name="vramBudgetGb"/>: the largest that fits, on a
+    /// server that pulls Ollama's library (the tags are its library's); <c>null</c> elsewhere, and when the card is
+    /// unknown — a guess would download a model that does not fit.</summary>
+    internal static ModelDownload? DownloadToName(string provider, double vramBudgetGb) =>
+        InferenceProviderFactory.Canonical(provider) == InferenceProviderFactory.Ollama && vramBudgetGb > 0
+            ? DownloadsFor(vramBudgetGb).FirstOrDefault()
+            : null;
+
     /// <summary>Asks <paramref name="client"/> what it has installed, then suggests — both editors' one call.</summary>
     /// <param name="client">A client for the server the FORM names (the user may not have saved a new address yet).</param>
     /// <param name="server">That server's settings: an empty list is said for what it is (stopped, refused, empty).</param>

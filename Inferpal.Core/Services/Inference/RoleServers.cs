@@ -94,15 +94,45 @@ internal static class RoleServers
     /// it is called — localhost, its name, or one of its own network addresses.</summary>
     internal static bool SameMachine(string? a, string? b)
     {
-        string? Host(string? url)
-        {
-            if (Hardware.HardwareProbe.IsLoopback(url)) return "localhost";
-            if (!Uri.TryCreate(ProviderProbe.RootOf(url), UriKind.Absolute, out var u)) return null;
-            var host = u.Host.ToLowerInvariant();
-            return ThisMachine().Contains(host) ? "localhost" : host;
-        }
-        var (ha, hb) = (Host(a), Host(b));
+        var (ha, hb) = (MachineOf(a), MachineOf(b));
         return ha is null || hb is null || ha == hb;
+    }
+
+    /// <summary>The machine <paramref name="url"/> names: <c>localhost</c> for this one whatever it is called, else its
+    /// host in lower case; <c>null</c> when the address cannot be read.</summary>
+    private static string? MachineOf(string? url)
+    {
+        if (Hardware.HardwareProbe.IsLoopback(url)) return "localhost";
+        // "gpu-box:11434" without a scheme parses as the scheme "gpu-box" with no host: unread, not a machine named "".
+        if (!Uri.TryCreate(ProviderProbe.RootOf(url), UriKind.Absolute, out var u) || u.Host.Length == 0) return null;
+        var host = u.Host.ToLowerInvariant();
+        return ThisMachine().Contains(host) ? "localhost" : host;
+    }
+
+    /// <summary>The machines other than this one that the roles in use send code to — the chat always, completions when
+    /// they are on, code search when the index is or <c>@Docs</c> has sources (its queries go to the search server
+    /// whatever the index setting) — in role order, each once; empty when everything runs here.</summary>
+    /// <remarks>⚠ Unlike <see cref="SameMachine"/>, an address that cannot be read counts as ANOTHER machine, named as
+    /// written: this list decides whether "your code stays on this machine" is said, a promise never made on a guess.
+    /// </remarks>
+    internal static IReadOnlyList<string> OffMachineHosts(InferpalConfig c)
+    {
+        var roles = new List<ServerRole> { ServerRole.Chat };
+        if (c.InlineCompletionEnabled) roles.Add(ServerRole.Completion);
+        if (c.RagEnabled || HasDocSources(c)) roles.Add(ServerRole.Search);
+
+        // @Docs sources that cannot be read count as sources: the promise is never made on a guess.
+        static bool HasDocSources(InferpalConfig c) =>
+            !string.IsNullOrWhiteSpace(c.DocSitesJson)
+            && (!Docs.DocSite.TryParse(c.DocSitesJson, out var sites, out _) || sites.Count > 0);
+
+        var hosts = new List<string>();
+        foreach (var url in roles.Select(r => Of(c, r).BaseUrl).Where(u => !string.IsNullOrWhiteSpace(u)))
+        {
+            var host = MachineOf(url) ?? url.Trim();
+            if (host != "localhost" && !hosts.Contains(host, StringComparer.OrdinalIgnoreCase)) hosts.Add(host);
+        }
+        return hosts;
     }
 
     /// <summary>This machine's names and addresses as last read; replaced whole, never changed in place, so a thread that

@@ -195,6 +195,7 @@ internal static class Strings
     public static string QueueTitle => Get(nameof(QueueTitle));
     public static string QueueRemove => Get(nameof(QueueRemove));
     public static string ComposerPlaceholderBusy => Get(nameof(ComposerPlaceholderBusy));
+    public static string ComposerPlaceholderCard => Get(nameof(ComposerPlaceholderCard));
     public static string NoteNotRead => Get(nameof(NoteNotRead));
     public static string QueueGivenBack => Get(nameof(QueueGivenBack));
     public static string QueueActionsKept => Get(nameof(QueueActionsKept));
@@ -202,6 +203,9 @@ internal static class Strings
     public static string WelcomeTitle => Get(nameof(WelcomeTitle));
     public static string WelcomeLine(string model, string server) => Format(Get(nameof(WelcomeLine)), model, server);
     public static string WelcomeLocal => Get(nameof(WelcomeLocal));
+    public static string WelcomeLineRemote(string model, string server, string hosts) =>
+        Format(Get(nameof(WelcomeLineRemote)), model, server, hosts);
+    public static string WelcomeRemote(string hosts) => Format(Get(nameof(WelcomeRemote)), hosts);
     public static string WelcomeForFile(string file) => Format(Get(nameof(WelcomeForFile)), file);
     public static string WelcomeExplainFile => Get(nameof(WelcomeExplainFile));
     public static string WelcomeExplainFileDesc => Get(nameof(WelcomeExplainFileDesc));
@@ -477,6 +481,8 @@ internal static class Strings
     public static string TestsGenerateFailed => Get(nameof(TestsGenerateFailed));
     public static string TestsGenerateFailedBecause(string cause) =>
         Format(Get(nameof(TestsGenerateFailedBecause)), cause);
+    public static string TestsNoTestProject(string project, string folder) =>
+        Format(Get(nameof(TestsNoTestProject)), project, folder);
     public static string TestsFileUnreadable(string fileName) =>
         Format(Get(nameof(TestsFileUnreadable)), fileName);
     public static string TestsFileUnsaved(string fileName) =>
@@ -1501,13 +1507,17 @@ internal static class Strings
     /// <summary>The default model was never chosen and is not installed: the best installed one is used, and said.</summary>
     public static string MsgModelAdopted(string configured, string adopted) =>
         Format(Get(nameof(MsgModelAdopted)), configured, adopted);
-    /// <summary>The backend answered with no chat model: named (it is not always Ollama), with the slash command that
-    /// downloads one when the backend can (<paramref name="canPull"/>), and no model of our own choosing — the measured
-    /// ones live in docs/models.md, where they are kept current.</summary>
-    public static string MsgFirstRunNoModels(string backend, bool canPull) =>
-        Format(Get(nameof(MsgFirstRunNoModels)), backend)
-        + (canPull ? "\n\n" + MsgFirstRunPullHint : string.Empty);
+    /// <summary>The backend answered with no chat model: named (it is not always Ollama), with the measured models' page
+    /// of the version installed, <c>/setup</c> to look again once one is there, and the slash command that downloads one
+    /// when the backend can (<paramref name="canPull"/>) — naming the measured model that fits the card when it is known
+    /// (<paramref name="pullTag"/>, <paramref name="pullName"/>), never one of our own choosing.</summary>
+    public static string MsgFirstRunNoModels(string backend, bool canPull, string? pullTag = null, string? pullName = null) =>
+        Format(Get(nameof(MsgFirstRunNoModels)), backend,
+               Services.DocsLinks.For("models.md", Services.DocsLinks.InstalledVersion) + "#by-graphics-card")
+        + (!canPull ? string.Empty
+           : "\n\n" + (pullTag is null ? MsgFirstRunPullHint : MsgFirstRunPullModel(pullTag, pullName ?? pullTag)));
     private static string MsgFirstRunPullHint => Get(nameof(MsgFirstRunPullHint));
+    private static string MsgFirstRunPullModel(string tag, string name) => Format(Get(nameof(MsgFirstRunPullModel)), tag, name);
 
     /// <summary>The first run could not complete — said in the conversation, which is empty
     /// and waiting, and naming the gesture that re-runs it.</summary>

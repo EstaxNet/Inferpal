@@ -61,7 +61,7 @@
   <data name="LabelUrl" xml:space="preserve"><value>服务器地址</value></data>
   <data name="HintUrl" xml:space="preserve"><value>Ollama (:11434)、LM Studio (:1234) 或任何兼容 OpenAI 的服务器。点击测试可知道是哪一个在响应。</value></data>
   <data name="LabelChatModel" xml:space="preserve"><value>聊天与代理</value></data>
-  <data name="HintChatModel" xml:space="preserve"><value>回答您的问题并执行任务。/model 可在本次会话中切换。</value></data>
+  <data name="HintChatModel" xml:space="preserve"><value>回答您的问题并执行任务。/model 可切换。</value></data>
   <data name="BtnTest" xml:space="preserve"><value>测试</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ 取消</value></data>
   <data name="BtnSave" xml:space="preserve"><value>保存</value></data>
@@ -428,6 +428,7 @@
   <data name="TestsExtended" xml:space="preserve"><value>✅ 已向 **{0}** 添加测试（已打开 — 可用 Ctrl+Z 撤销）。</value></data>
   <data name="TestsGenerateFailed" xml:space="preserve"><value>⚠ 测试生成失败。请检查模型后重试。</value></data>
   <data name="TestsGenerateFailedBecause" xml:space="preserve"><value>⚠ 测试生成失败：{0}</value></data>
+  <data name="TestsNoTestProject" xml:space="preserve"><value>⚠ 在 {1} 下未找到引用 **{0}** 的测试项目（即引用 {0} 以及 xunit、NUnit、MSTest 或 TUnit 之一，或名称类似 {0}.Tests 的项目）。请添加一个（`dotnet new xunit`，然后添加对 {0} 的引用），再重新运行 /test：写在代码旁边的测试会被编译进代码中，且不会被任何人运行。</value></data>
   <data name="RefactorNoChange" xml:space="preserve"><value>✅ 代码已经很清晰，无需重构。</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ 未发现错误或问题，无需修复。</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ 代码已有足够的文档说明。</value></data>
@@ -625,8 +626,9 @@
   <data name="MsgModelAdopted" xml:space="preserve"><value>此服务器上未安装模型 **{0}**：Inferpal 使用已安装模型中最合适的 **{1}**。可在模型列表中选择其他模型。</value></data>
   <data name="MsgFirstRunNoModels" xml:space="preserve"><value>⚠ **首次启动** — {0} 正在运行，但还没有任何聊天模型。
 
-请获取一个 — 用 Inferpal 测量过的模型按显卡列在 [docs/models.md](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md#by-graphics-card) 中 — 然后重启 Visual Studio（或打开设置并点击 **Test**）。</value></data>
+请获取一个 — 用 Inferpal 测量过的模型按显卡列在 [docs/models.md]({1}) 中 — 然后输入 `/setup`。</value></data>
   <data name="MsgFirstRunPullHint" xml:space="preserve"><value>`/models pull &lt;名称&gt;` 可在不离开 Visual Studio 的情况下下载模型。</value></data>
+  <data name="MsgFirstRunPullModel" xml:space="preserve"><value>`/models pull {0}` 可在不离开 Visual Studio 的情况下下载 {1}，这是针对此显存大小测量过的模型。</value></data>
   <data name="FirstRunFailed" xml:space="preserve"><value>⚠ Inferpal 的首次设置未能完成：{0}
 
 输入 `/setup` 可重试。</value></data>
@@ -1371,8 +1373,8 @@
   <data name="ModeChat" xml:space="preserve"><value>聊天</value></data>
   <data name="ModeAgent" xml:space="preserve"><value>代理</value></data>
   <data name="ModePlan" xml:space="preserve"><value>计划</value></data>
-  <data name="ModeChatTip" xml:space="preserve"><value>不使用工具直接回答</value></data>
-  <data name="ModeAgentTip" xml:space="preserve"><value>使用工具；更改任何内容前都会询问</value></data>
+  <data name="ModeChatTip" xml:space="preserve"><value>借助工具逐步回答；更改任何内容前都会询问</value></data>
+  <data name="ModeAgentTip" xml:space="preserve"><value>先规划任务，再逐步完成；更改任何内容前都会询问</value></data>
   <data name="ModePlanTip" xml:space="preserve"><value>只阅读和规划，不做任何更改</value></data>
   <data name="ComposerPlaceholder" xml:space="preserve"><value>提问，或输入 @ 附加内容、/ 使用命令</value></data>
   <data name="ChatAttach" xml:space="preserve"><value>附加文件、选中内容或问题</value></data>
@@ -1383,6 +1385,8 @@
   <data name="WelcomeTitle" xml:space="preserve"><value>我们来做点什么？</value></data>
   <data name="WelcomeLine" xml:space="preserve"><value>{1} 上的 {0}。你的代码始终留在本机。</value></data>
   <data name="WelcomeLocal" xml:space="preserve"><value>你的代码始终留在本机。</value></data>
+  <data name="WelcomeLineRemote" xml:space="preserve"><value>{1} 上的 {0}。你的代码会发送到 {2}。</value></data>
+  <data name="WelcomeRemote" xml:space="preserve"><value>你的代码会发送到 {0}。</value></data>
   <data name="WelcomeForFile" xml:space="preserve"><value>针对编辑器中打开的 {0}</value></data>
   <data name="WelcomeExplainFile" xml:space="preserve"><value>解释此文件</value></data>
   <data name="WelcomeExplainFileDesc" xml:space="preserve"><value>它做什么，各部分如何衔接</value></data>
@@ -1633,6 +1637,7 @@
   <data name="QueueTitle" xml:space="preserve"><value>在本回合结束后发送</value></data>
   <data name="QueueRemove" xml:space="preserve"><value>从队列中移除</value></data>
   <data name="ComposerPlaceholderBusy" xml:space="preserve"><value>Enter：给正在进行的回合加一条备注 · Ctrl+Enter：在回合结束后发送</value></data>
+  <data name="ComposerPlaceholderCard" xml:space="preserve"><value>Enter：允许一次 · Esc：拒绝 · Ctrl+Enter：在回合结束后发送</value></data>
   <data name="NoteNotRead" xml:space="preserve"><value>回合结束前未读取你的备注：已放回输入框。</value></data>
   <data name="QueueGivenBack" xml:space="preserve"><value>本回合未正常结束：等待发送的消息已放回输入框。</value></data>
   <data name="QueueActionsKept" xml:space="preserve"><value>本回合未正常结束：你输入的消息已放回输入框；编辑器操作仍在队列中，将在下一次回答后运行。</value></data>

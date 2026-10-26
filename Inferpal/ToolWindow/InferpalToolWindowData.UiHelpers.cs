@@ -164,7 +164,7 @@ internal partial class InferpalToolWindowData
         // Another turn leaves: the last one's Continue is no longer the gesture it was.
         ForgetContinuable();
         // What the two keys do while a turn runs: a note for it, or a message sent after it — never a Stop.
-        ComposerPlaceholder = Strings.ComposerPlaceholderBusy;
+        RefreshComposerPlaceholder();
         return cts;
     }
 
@@ -182,7 +182,7 @@ internal partial class InferpalToolWindowData
         _currentCts = null;
         IsLoading   = false;
         CurrentStep = string.Empty;
-        ComposerPlaceholder = Strings.ComposerPlaceholder;
+        RefreshComposerPlaceholder();
         _turnDone?.TrySetResult();
         _turnDone   = null;
         // Every turn taken here ends here — a chat turn, a slash command, a code action: the messages typed meanwhile go

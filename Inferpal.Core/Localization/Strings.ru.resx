@@ -58,7 +58,7 @@
   <data name="LabelUrl" xml:space="preserve"><value>Адрес сервера</value></data>
   <data name="HintUrl" xml:space="preserve"><value>Ollama (:11434), LM Studio (:1234) или любой OpenAI-совместимый сервер. Кнопка «Проверить» покажет, какой отвечает.</value></data>
   <data name="LabelChatModel" xml:space="preserve"><value>Чат и агент</value></data>
-  <data name="HintChatModel" xml:space="preserve"><value>Отвечает на вопросы и выполняет задачи. /model меняет её на эту сессию.</value></data>
+  <data name="HintChatModel" xml:space="preserve"><value>Отвечает на вопросы и выполняет задачи. /model меняет её.</value></data>
   <data name="BtnTest" xml:space="preserve"><value>Проверить</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ Отмена</value></data>
   <data name="BtnSave" xml:space="preserve"><value>Сохранить</value></data>
@@ -428,6 +428,7 @@
   <data name="TestsExtended" xml:space="preserve"><value>✅ Тесты добавлены в **{0}** (открыто — отменить через Ctrl+Z).</value></data>
   <data name="TestsGenerateFailed" xml:space="preserve"><value>⚠ Не удалось создать тесты. Проверьте модель и повторите попытку.</value></data>
   <data name="TestsGenerateFailedBecause" xml:space="preserve"><value>⚠ Не удалось создать тесты: {0}</value></data>
+  <data name="TestsNoTestProject" xml:space="preserve"><value>⚠ В {1} не найден тестовый проект, ссылающийся на **{0}**, — проект со ссылками на {0} и на xunit, NUnit, MSTest или TUnit либо с именем вида {0}.Tests. Добавьте его (`dotnet new xunit`, затем ссылку на {0}) и снова запустите /test: тест, записанный рядом с кодом, был бы скомпилирован вместе с ним и никем не запускался бы.</value></data>
   <data name="RefactorNoChange" xml:space="preserve"><value>✅ Код уже понятен — рефакторинг не требуется.</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ Ошибок или проблем не найдено — исправлять нечего.</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ Код уже достаточно документирован.</value></data>
@@ -625,8 +626,9 @@
   <data name="MsgModelAdopted" xml:space="preserve"><value>Модель **{0}** не установлена на этом сервере: Inferpal использует **{1}**, лучшую из установленных. Выберите другую в списке моделей.</value></data>
   <data name="MsgFirstRunNoModels" xml:space="preserve"><value>⚠ **Первый запуск** — {0} запущен, но в нём ещё нет ни одной модели чата.
 
-Загрузите модель — модели, измеренные с Inferpal, по видеокартам перечислены в [docs/models.md](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md#by-graphics-card) — затем перезапустите Visual Studio (или откройте Настройки и нажмите **Test**).</value></data>
+Загрузите модель — модели, измеренные с Inferpal, по видеокартам перечислены в [docs/models.md]({1}) — затем введите `/setup`.</value></data>
   <data name="MsgFirstRunPullHint" xml:space="preserve"><value>`/models pull &lt;имя&gt;` загружает модель, не выходя из Visual Studio.</value></data>
+  <data name="MsgFirstRunPullModel" xml:space="preserve"><value>`/models pull {0}` загружает {1} — модель, измеренную для видеокарты такого объёма, не выходя из Visual Studio.</value></data>
   <data name="FirstRunFailed" xml:space="preserve"><value>⚠ Первоначальная настройка Inferpal не завершилась: {0}
 
 Введите `/setup`, чтобы повторить попытку.</value></data>
@@ -1371,8 +1373,8 @@
   <data name="ModeChat" xml:space="preserve"><value>Чат</value></data>
   <data name="ModeAgent" xml:space="preserve"><value>Агент</value></data>
   <data name="ModePlan" xml:space="preserve"><value>План</value></data>
-  <data name="ModeChatTip" xml:space="preserve"><value>Отвечает без инструментов</value></data>
-  <data name="ModeAgentTip" xml:space="preserve"><value>Использует инструменты и спрашивает перед любым изменением</value></data>
+  <data name="ModeChatTip" xml:space="preserve"><value>Отвечает с инструментами, шаг за шагом, и спрашивает перед любым изменением</value></data>
+  <data name="ModeAgentTip" xml:space="preserve"><value>Планирует задачу, затем выполняет её и спрашивает перед любым изменением</value></data>
   <data name="ModePlanTip" xml:space="preserve"><value>Читает и планирует, ничего не меняет</value></data>
   <data name="ComposerPlaceholder" xml:space="preserve"><value>Спросите или введите @, чтобы прикрепить, и / для команд</value></data>
   <data name="ChatAttach" xml:space="preserve"><value>Прикрепить файл, выделение или проблемы</value></data>
@@ -1383,6 +1385,8 @@
   <data name="WelcomeTitle" xml:space="preserve"><value>Над чем работаем?</value></data>
   <data name="WelcomeLine" xml:space="preserve"><value>{0} на {1}. Ваш код остаётся на этом компьютере.</value></data>
   <data name="WelcomeLocal" xml:space="preserve"><value>Ваш код остаётся на этом компьютере.</value></data>
+  <data name="WelcomeLineRemote" xml:space="preserve"><value>{0} на {1}. Ваш код отправляется на {2}.</value></data>
+  <data name="WelcomeRemote" xml:space="preserve"><value>Ваш код отправляется на {0}.</value></data>
   <data name="WelcomeForFile" xml:space="preserve"><value>Для {0}, открытого в редакторе</value></data>
   <data name="WelcomeExplainFile" xml:space="preserve"><value>Объяснить этот файл</value></data>
   <data name="WelcomeExplainFileDesc" xml:space="preserve"><value>Что он делает и как связаны части</value></data>
@@ -1633,6 +1637,7 @@
   <data name="QueueTitle" xml:space="preserve"><value>Будет отправлено после этого хода</value></data>
   <data name="QueueRemove" xml:space="preserve"><value>Убрать из очереди</value></data>
   <data name="ComposerPlaceholderBusy" xml:space="preserve"><value>Enter: заметка для текущего хода · Ctrl+Enter: отправить после хода</value></data>
+  <data name="ComposerPlaceholderCard" xml:space="preserve"><value>Enter: разрешить один раз · Esc: отклонить · Ctrl+Enter: отправить после хода</value></data>
   <data name="NoteNotRead" xml:space="preserve"><value>Заметка не была прочитана до конца хода — она возвращена в поле ввода.</value></data>
   <data name="QueueGivenBack" xml:space="preserve"><value>Ход завершился не как обычно — сообщения, ожидавшие отправки, возвращены в поле ввода.</value></data>
   <data name="QueueActionsKept" xml:space="preserve"><value>Ход завершился не как обычно — набранные сообщения возвращены в поле ввода; действия редактора остаются в очереди и выполнятся после следующего ответа.</value></data>

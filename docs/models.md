@@ -345,8 +345,11 @@ Inferpal's battery runs real tasks on real projects with each model — fix a bu
 rename a method everywhere, answer a question about the code, run a command — in C#/.NET, JavaScript (jest) and
 Python (pytest), and judges the outcome only. LM Studio, 32K context, the Linux host built from source.
 Inferpal's default context window is 8K (*Settings → Server and models*): on the same tasks, Devstral Small 2 and
-Gemma 4 12B passed as often at 8K (27 of 28 against 28 of 28) but took 1.5 to 2.3 times as long. If your card has the
-memory, a 32K window makes the agent faster; projects larger than the battery's were not measured at 8K.
+Gemma 4 12B passed as often at 8K (27 of 28 against 28 of 28), but took 1.5 to 2.3 times as long. For Devstral, the
+time lost came from the summary that replaces older turns: since it was fixed, it takes the same time at 8K as at 32K
+(24.8 s, in one pass, against 24.7 s). For Gemma 4 12B the runs were too noisy to conclude (30 to 55 s at 8K against
+24 s at 32K). If your card has the memory, a 32K window keeps the agent faster; at 8K, the tools' descriptions take more
+than half the window, and projects larger than the battery's were not measured.
 
 | Model | Result | Measured |
 |---|---|---|

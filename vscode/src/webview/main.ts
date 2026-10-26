@@ -395,8 +395,16 @@ function setBusy(value: boolean): void {
   sendBtn.title = value ? t('cancelTitle') : t('sendTitle');
   sendBtn.setAttribute('aria-label', sendBtn.title);
   sendBtn.classList.toggle('stop', value);
-  // What the two keys do while a turn runs: a note for it, or a message sent after it — never a Stop.
-  promptEl.placeholder = value ? t('composerPlaceholderBusy') : t('composerPlaceholder');
+  renderPlaceholder();
+}
+
+/** What the keys do in the EMPTY composer — the only one that shows this text: send; a note for the running turn, never
+ *  a Stop; or, while one approval card waits, answer it (Enter allows once, Esc denies — answerWaitingCard). Two cards:
+ *  no key answers either, so the turn's hint stays. */
+function renderPlaceholder(): void {
+  promptEl.placeholder = !busy ? t('composerPlaceholder')
+    : approvalCards.size === 1 ? t('composerPlaceholderCard')
+    : t('composerPlaceholderBusy');
 }
 
 // ── The queue: messages sent after the turn, in order, each removable ──────────
@@ -1510,6 +1518,7 @@ function addApprovalCard(id: number, message: string, card?: ApprovalCard | null
   el.className = 'approval';
   el.setAttribute('role', 'group');
   approvalCards.set(id, el);
+  renderPlaceholder();
 
   const head = document.createElement('div');
   head.className = 'approval-head';
@@ -1553,6 +1562,7 @@ function addApprovalCard(id: number, message: string, card?: ApprovalCard | null
       return;
     }
     approvalCards.delete(id);
+    renderPlaceholder();
     post({ type: 'approvalAnswer', id, answer: value });
     el.classList.add('answered');
     for (const b of actions.querySelectorAll('button')) {
@@ -1627,6 +1637,7 @@ function answerWaitingCard(value: 0 | 1): boolean {
 function dismissApprovalCard(id: number): void {
   const card = approvalCards.get(id);
   approvalCards.delete(id);
+  renderPlaceholder();
   if (!card) {
     return; // already answered
   }
@@ -1984,10 +1995,19 @@ messagesEl.appendChild(welcomeEl);
 const welcomeLine = document.createElement('p');
 welcomeLine.className = 'welcome-line';
 
+/** The model, its server, and where the code goes: "stays on this machine" only when the host says no role in use
+ *  runs elsewhere. A status that does not say (no host yet, a host down, a check that failed) gets no line at all:
+ *  neither the promise nor a name it cannot back. */
 function renderWelcomeLine(): void {
+  const hosts = connection?.offMachine;
+  if (!hosts) {
+    welcomeLine.textContent = '';
+    return;
+  }
+  const elsewhere = hosts.join(', ');
   welcomeLine.textContent = currentModel && connection?.server
-    ? t('welcomeLine', currentModel, connection.server)
-    : t('welcomeLocal');
+    ? (elsewhere ? t('welcomeLineRemote', currentModel, connection.server, elsewhere) : t('welcomeLine', currentModel, connection.server))
+    : (elsewhere ? t('welcomeRemote', elsewhere) : t('welcomeLocal'));
 }
 
 function welcomeCard(glyph: IconName, title: string, desc: string, onPick: () => void): HTMLElement {
@@ -2784,7 +2804,7 @@ function send(later = false): void {
   post(later ? { type: 'queue', text } : { type: 'steer', text });
 }
 
-promptEl.placeholder = t('composerPlaceholder');
+renderPlaceholder();
 /**
  * The composer's text set by the panel itself — a recalled question, a picked command or mention, a fix prompt: the
  * extension is told, as for a keystroke, or the chips found for the previous draft would go with the new one. Not as a
@@ -2848,8 +2868,9 @@ promptEl.addEventListener('keydown', (e) => {
   }
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
-    // A card waiting and nothing typed: Enter is the "Allow once" the card names. With text, it never approves.
-    if (promptEl.value.trim() === '' && answerWaitingCard(1)) {
+    // A card waiting and nothing typed: Enter is the "Allow once" the card names. With text, or with Ctrl (a message for
+    // after the turn, as in Visual Studio), it never approves.
+    if (!e.ctrlKey && !e.metaKey && promptEl.value.trim() === '' && answerWaitingCard(1)) {
       return;
     }
     send(e.ctrlKey || e.metaKey);

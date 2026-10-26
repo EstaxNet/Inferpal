@@ -12,9 +12,10 @@ sections cover the **VS Code extension**.
 | Model server | [Ollama](https://ollama.com) (default — full hardware-aware features), [LM Studio](https://lmstudio.ai), or any **OpenAI-compatible** server (llama.cpp, vLLM, …) |
 
 > [!IMPORTANT]
-> Tool calling is required for the agent. The models measured best at it are `qwen3.8` and
-> `devstral-small-2` — see **[Models](models.md)** for every model's results. A model not trained for
-> tool calling (`qwen2.5-coder`, `llama3` v1) chats but makes a poor agent.
+> Tool calling is required for the agent, and the model to pick depends on your graphics card: **Granite 4.2 8B** on
+> 8 GB, **Gemma 4 12B** on 12 to 16 GB, **Qwen3.8 27B** on 24 GB — see **[By graphics card](models.md#by-graphics-card)**
+> and **[Models](models.md)** for every model's results. A model not trained for tool calling (`qwen2.5-coder`,
+> `llama3` v1) chats but makes a poor agent.
 >
 > - **Inline completions** work with any model; one trained for it completes far better (Mellum2 and Qwen3.8 measured best — see [By graphics card](models.md#by-graphics-card)).
 > - **Semantic search** can add a dedicated embedding model — optional: without one, the search runs on keywords. EmbeddingGemma (`embeddinggemma`) measured best — see [Models](models.md).
@@ -27,15 +28,16 @@ differences.
 - **Ollama** (default `:11434`)
   ```powershell
   ollama serve
-  ollama pull qwen3.8            # chat and agent (or devstral-small-2: faster)
+  ollama pull qwen3.8:27b        # chat and agent on a 24 GB card — 12-16 GB: gemma4:12b · 8 GB: granite4.2:8b
   # Optional, dedicated models:
   # inline completions: the model that fits beside the agent depends on your card (docs/models.md#by-graphics-card)
   ollama pull embeddinggemma     # semantic search (optional)
   ```
 - **LM Studio** (default `:1234`)
   1. Open the **Developer** tab (the server view) and **Start** the server.
-  2. **Load** a tool-calling chat model (Qwen3.8 27B or Devstral Small 2) — and, optionally, an autocomplete model ([Mellum2](models.md#mellum) measured best) and
-     an embedding model for semantic search.
+  2. **Load** a tool-calling chat model — the one for your card ([By graphics card](models.md#by-graphics-card)) — and,
+     optionally, an autocomplete model ([Mellum2](models.md#mellum) measured best) and an embedding model for semantic
+     search.
   3. Inferpal uses LM Studio's native `/api/v1/*` API for the model list and load/unload, so
      `/models` works here too. Point the **Server URL** at `http://localhost:1234`.
 - **OpenAI-compatible** — expose the server's `/v1` endpoint (and an API key if it needs one).
@@ -85,14 +87,16 @@ on this computer (Ollama, LM Studio, llama-server, vLLM). When nothing was set u
 chosen), it takes the server that answers and picks a model, and says so in the chat. `/setup` looks again, and says what each place answered when none
 does. To choose by hand:
 
-1. Open **Inferpal Settings**.
-2. Under **Connection**, pick the **provider** (Ollama / LM Studio / OpenAI-compatible), set
-   the **Server URL** (Ollama default: `http://localhost:11434`) and an **API key** if the
-   server needs one, then select a chat model.
-3. Optionally set a separate **Code Actions model**, **FIM model**, and **embedding model**.
-4. Enable **Semantic Indexing** to power `search_codebase`.
-5. Click **Test** — it should report **Connected** and populate the model dropdown.
-6. Switch to the **Inferpal** chat window, type a prompt, and press **Enter** (or click **↑**).
+1. Open **Inferpal Settings** — the first page is **Server and models**.
+2. Set the server address (Ollama default: `http://localhost:11434`) and click **Test** beside it: it reports
+   **Connected** and fills the model list. Pick the **Chat and agent** model. The kind of server (Ollama / LM Studio /
+   OpenAI-compatible) and an **API key**, if it needs one, are under **Connection**, which **Show advanced settings**
+   unfolds.
+3. Optionally give autocomplete and code search a model — and a server — of their own on the same page, and a model per
+   task under **Show advanced settings**.
+4. Code search needs nothing: the workspace is indexed in the background by default (*Code search → Index this
+   workspace in the background*).
+5. Switch to the **Inferpal** chat window, type a prompt, and press **Enter** (or click **↑**).
 
 See **[Configuration](configuration.md)** for every available setting.
 
@@ -126,7 +130,9 @@ Visual Studio-only for now: [the list](features.md#two-editors-one-engine).
 3. Configure through the **Inferpal Settings** panel (the same seven pages as Visual Studio's —
    [Configuration](configuration.md) — backed by the configuration shared with Visual Studio). VS Code-side
    extension settings (`inferpal.*`) cover `hostPath` (leave empty for the bundled host), this
-   window's models (`model`, `utilityModel`, `modelRouterAuto`), `agentMode`, and `fim.enabled`.
+   window's models (`model`, `utilityModel`, `modelRouterAuto`), `agentMode`, and `fim.enabled`. A model or a mode
+   picked in the chat is kept by VS Code for that folder — nothing is written into the repository's
+   `.vscode/settings.json` — until `model` or `agentMode` is changed there, which then applies.
 
 To build it from source, see **[Development → VS Code extension](development.md#vs-code-extension)**.
 

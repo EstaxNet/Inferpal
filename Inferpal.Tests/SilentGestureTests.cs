@@ -146,14 +146,14 @@ public sealed class SilentGestureTests
         // The gestures whose failure used to stop at this.log(...). Named, because "is this a
         // gesture?" is not a syntactic question — the same reason the editor-surface rule is an
         // assertion rather than a scan.
-        // ⚠ The last three are `configSaved`'s, and they were invisible because TWO rules agreed on
-        // the same misclassification: this list did not name them, and `BackgroundPaths` below
-        // called that method a path "that runs without anyone asking" — while its own doc says
-        // "called after the settings panel SAVED". Two rules agreeing is not two checks.
+        // ⚠ The last one is `configSaved`'s: TWO rules can agree on the same misclassification — this list
+        // not naming it, and `BackgroundPaths` below calling that method a path "that runs without anyone
+        // asking" while its own doc says "called after the settings panel SAVED". Two rules agreeing is not
+        // two checks. (The window's model and mode are kept in VS Code's storage, which refuses nothing.)
         foreach (var what in new[] { "cancel", "resumeStep", "xray/panel",
                                      "model pick → host config", "agent mode → host config",
                                      "branch", "branch command", "branch switch",
-                                     "model setting", "agent mode setting", "settings reload" })
+                                     "settings reload" })
         {
             Assert.Contains($"this.gestureFailed('{what}', err)", src);
         }

@@ -796,42 +796,6 @@ public class WebviewRebuildTests
     }
 
     /// <summary>
-    /// Picking a model or switching the agent mode writes the workspace settings, which can refuse (a
-    /// settings.json with a syntax error, a read-only file). The refusal stopped the gesture half-way in
-    /// silence: the host kept the previous model, the agent switch did not move.
-    /// </summary>
-    [Theory]
-    [InlineData("pickModel")]
-    // The `/model <name>` effect: the host has already switched the model when the workspace write refuses.
-    [InlineData("stateChange")]
-    public void ASettingTheWorkspaceRefuses_IsSaid(string message)
-    {
-        // The whole source, not Body(): the signature of onMessage carries a `{` in its parameter type.
-        var onMessage = TsCode("chatViewProvider.ts");
-        var at        = onMessage.IndexOf($"case '{message}':", StringComparison.Ordinal);
-        Assert.True(at >= 0, $"case '{message}' moved — the rule measures nothing.");
-
-        var next  = onMessage.IndexOf("case '", at + 6, StringComparison.Ordinal);
-        var block = onMessage[at..(next < 0 ? onMessage.Length : next)];
-        Assert.Contains(".update(", block, StringComparison.Ordinal);   // witness: the case still writes the setting
-        Assert.True(block.Contains("catch", StringComparison.Ordinal)
-                    && block.Contains("t('Inferpal could not save this setting: {0}'", StringComparison.Ordinal),
-            $"'{message}' stops in silence when the workspace settings refuse the write.");
-    }
-
-    /// <summary>The mode switch (Chat / Agent / Plan) writes the same setting: a refusal is said, and the switch moves
-    /// back to what is really saved.</summary>
-    [Fact]
-    public void TheModeSwitch_SaysWhenTheWorkspaceRefuses()
-    {
-        var setMode = Body(TsCode("chatViewProvider.ts"), "private async setMode(");
-        Assert.Contains("update('agentMode'", setMode, StringComparison.Ordinal);   // witness: it writes the setting
-        Assert.True(setMode.Contains("catch", StringComparison.Ordinal)
-                    && setMode.Contains("t('Inferpal could not save this setting: {0}'", StringComparison.Ordinal),
-            "the mode switch stops in silence when the workspace settings refuse the write.");
-    }
-
-    /// <summary>
     /// The palette's three session commands say why they fail, from their first call to the host. Load and delete
     /// listed the sessions before their try, and save had no try at all: a store that refused (a full disk, a locked
     /// file) surfaced as VS Code's generic "command failed", untranslated, while the same commands already named the
@@ -879,10 +843,9 @@ public class WebviewRebuildTests
     }
 
     /// <summary>
-    /// Under VS Code, the chat model and the agent mode live in two places: the workspace settings (the chat's
-    /// picker and switch, sent on every turn) and Inferpal's config (the settings panel). The picker already pushed
-    /// its model into the config; nothing made the reverse trip, and the mode switch pushed nothing. Changing
-    /// either in the panel therefore changed nothing in the chat.
+    /// Under VS Code, the chat model and the agent mode live in two places: the window's own choice (the chat's picker
+    /// and switch, sent on every turn) and Inferpal's config (the settings panel). What the panel changes becomes the
+    /// window's choice, or changing either in the panel changes nothing in the chat.
     /// </summary>
     [Fact]
     public void TheChatAdoptsTheModelAndAgentModeSavedInTheSettingsPanel()
@@ -892,8 +855,8 @@ public class WebviewRebuildTests
         var saved = Body(source, "async configSaved(");
         Assert.Contains("defaultModel", saved, StringComparison.Ordinal);
         Assert.Contains("agentModeEnabled", saved, StringComparison.Ordinal);
-        Assert.Contains("update('model'", saved, StringComparison.Ordinal);
-        Assert.Contains("update('agentMode'", saved, StringComparison.Ordinal);
+        Assert.Contains("this.setWindowModel(cfg.defaultModel)", saved, StringComparison.Ordinal);
+        Assert.Contains("this.setWindowAgentMode(cfg.agentModeEnabled)", saved, StringComparison.Ordinal);
 
         // The chat's own switch pushes the mode to the host too.
         Assert.Contains("pushAgentModeToHost(", Body(source, "private async setMode("), StringComparison.Ordinal);

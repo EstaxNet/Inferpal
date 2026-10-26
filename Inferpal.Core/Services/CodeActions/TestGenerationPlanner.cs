@@ -72,6 +72,12 @@ internal sealed record TestGenerationPlan(
     /// <summary>The source or its test file is excluded by the workspace's ignore files: nothing is sent to the model.</summary>
     public static TestGenerationPlan Excluded(string testPath, string notice) =>
         new(false, testPath, Path.GetFileName(testPath), Extended: false, NoChange: false, string.Empty, Refusal: notice);
+
+    /// <summary>No test project references the source's .NET project: a test written beside the source would be compiled
+    /// into it and run by nobody. Nothing is sent to the model.</summary>
+    public static TestGenerationPlan NoTestProject(string testPath, MissingTestProject missing) =>
+        new(false, testPath, Path.GetFileName(testPath), Extended: false, NoChange: false, string.Empty,
+            Refusal: Strings.TestsNoTestProject(missing.Project, missing.SearchedUnder));
 }
 
 /// <summary>
@@ -136,7 +142,7 @@ internal static class TestGenerationPlanner
         if (string.IsNullOrWhiteSpace(sourceCode)) return TestGenerationPlan.Failed();
 
         var sourceName = Path.GetFileName(sourcePath);
-        var testPath   = TestFilePathResolver.Resolve(sourcePath);
+        var (testPath, missingTestProject) = TestFilePathResolver.Locate(sourcePath);
         var testName   = Path.GetFileName(testPath);
 
         // ⚠ Neither the source nor the test file it extends goes to the model when the workspace excludes it — both
@@ -145,6 +151,10 @@ internal static class TestGenerationPlanner
             return TestGenerationPlan.Excluded(testPath, sourceExcluded);
         if (Governance.ContentExclusions.NoticeFor(testPath, null) is { } testExcluded)
             return TestGenerationPlan.Excluded(testPath, testExcluded);
+        // ⚠ "A test is written where its runner COLLECTS it": the resolver's fallback beside a C# source is in the
+        // production project — refused here, before the model, in both editors.
+        if (missingTestProject is not null)
+            return TestGenerationPlan.NoTestProject(testPath, missingTestProject);
 
         // Read any existing test file so the model extends it instead of clobbering it.
         // ⚠ And a read that FAILS is not "there is no test file": swallowing it left `existing`

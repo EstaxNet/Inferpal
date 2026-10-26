@@ -61,7 +61,7 @@
   <data name="LabelUrl" xml:space="preserve"><value>Dirección del servidor</value></data>
   <data name="HintUrl" xml:space="preserve"><value>Ollama (:11434), LM Studio (:1234) o cualquier servidor compatible con OpenAI. Probar indica cuál responde.</value></data>
   <data name="LabelChatModel" xml:space="preserve"><value>Chat y agente</value></data>
-  <data name="HintChatModel" xml:space="preserve"><value>Responde a sus preguntas y ejecuta tareas. /model lo cambia para esta sesión.</value></data>
+  <data name="HintChatModel" xml:space="preserve"><value>Responde a sus preguntas y ejecuta tareas. /model lo cambia.</value></data>
   <data name="BtnTest" xml:space="preserve"><value>Probar</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ Cancelar</value></data>
   <data name="BtnSave" xml:space="preserve"><value>Guardar</value></data>
@@ -428,6 +428,7 @@ Copia de seguridad: {0}</value></data>
   <data name="TestsExtended" xml:space="preserve"><value>✅ Pruebas añadidas a **{0}** (abierto: deshaz con Ctrl+Z).</value></data>
   <data name="TestsGenerateFailed" xml:space="preserve"><value>⚠ Error al generar las pruebas. Revisa el modelo e inténtalo de nuevo.</value></data>
   <data name="TestsGenerateFailedBecause" xml:space="preserve"><value>⚠ Error al generar las pruebas: {0}</value></data>
+  <data name="TestsNoTestProject" xml:space="preserve"><value>⚠ No se encontró en {1} ningún proyecto de pruebas que haga referencia a **{0}** — un proyecto que haga referencia a {0} y a xunit, NUnit, MSTest o TUnit, o que se llame como {0}.Tests. Cree uno (`dotnet new xunit` y luego una referencia a {0}) y vuelva a ejecutar /test: una prueba escrita junto al código se compilaría dentro de él y nadie la ejecutaría.</value></data>
   <data name="RefactorNoChange" xml:space="preserve"><value>✅ El código ya es claro: no hace falta refactorizar.</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ No se ha encontrado ningún error o problema: nada que corregir.</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ El código ya está suficientemente documentado.</value></data>
@@ -625,8 +626,9 @@ Abra **Configuración** para cambiar el modelo o configurar un modelo dedicado p
   <data name="MsgModelAdopted" xml:space="preserve"><value>El modelo **{0}** no está instalado en este servidor: Inferpal usa **{1}**, el mejor de los instalados. Elija otro en la lista de modelos.</value></data>
   <data name="MsgFirstRunNoModels" xml:space="preserve"><value>⚠ **Primer inicio** — {0} está en ejecución pero aún no tiene ningún modelo de chat.
 
-Descargue uno — los modelos medidos con Inferpal, por tarjeta gráfica, figuran en [docs/models.md](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md#by-graphics-card) — y reinicie Visual Studio (o abra la Configuración y haga clic en **Test**).</value></data>
+Descargue uno — los modelos medidos con Inferpal, por tarjeta gráfica, figuran en [docs/models.md]({1}) — y luego escriba `/setup`.</value></data>
   <data name="MsgFirstRunPullHint" xml:space="preserve"><value>`/models pull &lt;nombre&gt;` descarga uno sin salir de Visual Studio.</value></data>
+  <data name="MsgFirstRunPullModel" xml:space="preserve"><value>`/models pull {0}` descarga {1}, el modelo medido para una tarjeta de este tamaño, sin salir de Visual Studio.</value></data>
   <data name="FirstRunFailed" xml:space="preserve"><value>⚠ La configuración inicial de Inferpal no ha podido completarse: {0}
 
 Escribe `/setup` para volver a intentarlo.</value></data>
@@ -1371,8 +1373,8 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="ModeChat" xml:space="preserve"><value>Chat</value></data>
   <data name="ModeAgent" xml:space="preserve"><value>Agente</value></data>
   <data name="ModePlan" xml:space="preserve"><value>Plan</value></data>
-  <data name="ModeChatTip" xml:space="preserve"><value>Responde sin herramientas</value></data>
-  <data name="ModeAgentTip" xml:space="preserve"><value>Usa herramientas; pregunta antes de cambiar nada</value></data>
+  <data name="ModeChatTip" xml:space="preserve"><value>Responde con herramientas, paso a paso; pregunta antes de cambiar nada</value></data>
+  <data name="ModeAgentTip" xml:space="preserve"><value>Planifica la tarea y luego la lleva a cabo; pregunta antes de cambiar nada</value></data>
   <data name="ModePlanTip" xml:space="preserve"><value>Lee y planifica; no cambia nada</value></data>
   <data name="ComposerPlaceholder" xml:space="preserve"><value>Pregunte, o escriba @ para adjuntar y / para comandos</value></data>
   <data name="ChatAttach" xml:space="preserve"><value>Adjuntar un archivo, una selección o problemas</value></data>
@@ -1383,6 +1385,8 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="WelcomeTitle" xml:space="preserve"><value>¿En qué trabajamos?</value></data>
   <data name="WelcomeLine" xml:space="preserve"><value>{0} en {1}. Su código se queda en esta máquina.</value></data>
   <data name="WelcomeLocal" xml:space="preserve"><value>Su código se queda en esta máquina.</value></data>
+  <data name="WelcomeLineRemote" xml:space="preserve"><value>{0} en {1}. Su código se envía a {2}.</value></data>
+  <data name="WelcomeRemote" xml:space="preserve"><value>Su código se envía a {0}.</value></data>
   <data name="WelcomeForFile" xml:space="preserve"><value>Para {0}, abierto en el editor</value></data>
   <data name="WelcomeExplainFile" xml:space="preserve"><value>Explicar este archivo</value></data>
   <data name="WelcomeExplainFileDesc" xml:space="preserve"><value>Qué hace y cómo encajan las piezas</value></data>
@@ -1633,6 +1637,7 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="QueueTitle" xml:space="preserve"><value>Se enviará después de este turno</value></data>
   <data name="QueueRemove" xml:space="preserve"><value>Quitar de la cola</value></data>
   <data name="ComposerPlaceholderBusy" xml:space="preserve"><value>Intro: una nota para el turno en curso · Ctrl+Intro: enviarla después del turno</value></data>
+  <data name="ComposerPlaceholderCard" xml:space="preserve"><value>Intro: permitir una vez · Esc: denegar · Ctrl+Intro: enviar después del turno</value></data>
   <data name="NoteNotRead" xml:space="preserve"><value>Tu nota no se leyó antes de que terminara el turno: ha vuelto al cuadro de entrada.</value></data>
   <data name="QueueGivenBack" xml:space="preserve"><value>El turno no terminó con normalidad: los mensajes pendientes de envío han vuelto al cuadro de entrada.</value></data>
   <data name="QueueActionsKept" xml:space="preserve"><value>El turno no terminó con normalidad: los mensajes que escribiste han vuelto al cuadro de entrada; las acciones del editor siguen en la cola y se ejecutarán después de la próxima respuesta.</value></data>

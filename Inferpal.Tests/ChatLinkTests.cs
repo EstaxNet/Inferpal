@@ -63,8 +63,10 @@ public sealed class ChatLinkTests
             Strings.ApplyLanguage(language);
             try
             {
+                // The page of the version installed, never master: the advice there may already be a later release's.
                 Assert.Contains(Runs(Strings.MsgFirstRunNoModels("Ollama", canPull: false)),
-                                r => r.Url == "https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md#by-graphics-card");
+                                r => r.Url == Inferpal.Services.DocsLinks.For("models.md", Inferpal.Services.DocsLinks.InstalledVersion)
+                                              + "#by-graphics-card");
             }
             finally { Strings.ApplyLanguage(null); }
         }

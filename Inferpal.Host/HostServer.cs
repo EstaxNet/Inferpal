@@ -1251,7 +1251,8 @@ internal sealed partial class HostServer : IDisposable
         };
         return new BackendStatusResult(connected, badge, notice,
                                        !connected && s.Client.ConnectionRefusal is not null ? status.StatusText : null,
-                                       InferenceProviderFactory.DisplayName(s.Config.Provider));
+                                       InferenceProviderFactory.DisplayName(s.Config.Provider),
+                                       [.. RoleServers.OffMachineHosts(s.Config)]);
     }
 
     [JsonRpcMethod("fim/complete", UseSingleObjectParameterDeserialization = true)]

@@ -207,7 +207,7 @@ internal partial class InferpalToolWindowData
         TipModeChat          = Strings.ModeChatTip;
         TipModeAgent         = Strings.ModeAgentTip;
         TipModePlan          = Strings.ModePlanTip;
-        ComposerPlaceholder  = IsLoading ? Strings.ComposerPlaceholderBusy : Strings.ComposerPlaceholder;
+        RefreshComposerPlaceholder();
         QueueTitle           = Strings.QueueTitle;
         QueueRemoveLabel     = Strings.QueueRemove;
         TooltipAttach        = Strings.ChatAttach;
@@ -263,10 +263,20 @@ internal partial class InferpalToolWindowData
         null  => "● …",
     };
 
-    private void RefreshWelcomeLine() =>
+    /// <summary>The model, its server, and where the code goes: "stays on this machine" only when every role in use runs
+    /// here (<see cref="Services.Inference.RoleServers.OffMachineHosts"/>), the other machines named otherwise.</summary>
+    /// <remarks>⚠ Judged on the settings FILE: the other editor can move a role to another machine, and this window's
+    /// copy follows only its own saves. An unreadable file falls back to that copy.</remarks>
+    private void RefreshWelcomeLine()
+    {
+        var servers   = Config.InferpalConfig.LoadOwnCopyToFollow() ?? _config;
+        var elsewhere = string.Join(", ", Services.Inference.RoleServers.OffMachineHosts(servers));
+        var server    = Services.Inference.InferenceProviderFactory.DisplayName(_config.Provider);
         WelcomeLine = string.IsNullOrEmpty(ActiveModelLabel)
-            ? Strings.WelcomeLocal
-            : Strings.WelcomeLine(ActiveModelLabel, Services.Inference.InferenceProviderFactory.DisplayName(_config.Provider));
+            ? (elsewhere.Length == 0 ? Strings.WelcomeLocal : Strings.WelcomeRemote(elsewhere))
+            : elsewhere.Length == 0 ? Strings.WelcomeLine(ActiveModelLabel, server)
+            : Strings.WelcomeLineRemote(ActiveModelLabel, server, elsewhere);
+    }
 
     /// <summary>The welcome screen, from the open file and the last build.</summary>
     private void RefreshWelcome()
@@ -436,6 +446,7 @@ internal partial class InferpalToolWindowData
                 openDiff is null ? null : () => _ = OpenCardDiffAsync(created!, openDiff, answeredToken));
             InsertCard(created);
             _pendingApproval = created;
+            RefreshComposerPlaceholder();
             if (_turnHead is not null) _turnHead.TurnState = Strings.TurnWaiting;
             ScrollToBottom();
             item = created;
@@ -465,10 +476,19 @@ internal partial class InferpalToolWindowData
             await RunOnVMContextAsync(() =>
             {
                 if (ReferenceEquals(_pendingApproval, item)) _pendingApproval = null;
+                RefreshComposerPlaceholder();
                 TurnWorking();
             });
         }
     }
+
+    /// <summary>What the keys do in the EMPTY composer — the only one that shows this text: send; a note for the running
+    /// turn; or, while an approval card waits, answer it (Enter allows once, Esc denies: the composer's key handler).
+    /// VM context.</summary>
+    private void RefreshComposerPlaceholder() =>
+        ComposerPlaceholder = !IsLoading ? Strings.ComposerPlaceholder
+            : _pendingApproval is { IsAnswered: false } ? Strings.ComposerPlaceholderCard
+            : Strings.ComposerPlaceholderBusy;
 
     /// <summary>A card the turn waits on — an approval, a server's form — above what the turn is still writing (its live
     /// status, its answer so far), under its steps. VM context.</summary>

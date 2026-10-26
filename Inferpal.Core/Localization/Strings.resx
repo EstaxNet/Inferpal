@@ -61,7 +61,7 @@
   <data name="LabelUrl" xml:space="preserve"><value>Server address</value></data>
   <data name="HintUrl" xml:space="preserve"><value>Ollama (:11434), LM Studio (:1234) or any OpenAI-compatible server. Test says which one answers.</value></data>
   <data name="LabelChatModel" xml:space="preserve"><value>Chat and agent</value></data>
-  <data name="HintChatModel" xml:space="preserve"><value>Answers your questions and runs tasks. /model switches it for this session.</value></data>
+  <data name="HintChatModel" xml:space="preserve"><value>Answers your questions and runs tasks. /model changes it.</value></data>
   <data name="BtnTest" xml:space="preserve"><value>Test</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ Cancel</value></data>
   <data name="BtnSave" xml:space="preserve"><value>Save</value></data>
@@ -429,6 +429,7 @@ Backup: {0}</value></data>
   <data name="TestsExtended" xml:space="preserve"><value>✅ Tests added to **{0}** (open — undo with Ctrl+Z).</value></data>
   <data name="TestsGenerateFailed" xml:space="preserve"><value>⚠ Test generation failed. Check the model and try again.</value></data>
   <data name="TestsGenerateFailedBecause" xml:space="preserve"><value>⚠ Test generation failed: {0}</value></data>
+  <data name="TestsNoTestProject" xml:space="preserve"><value>⚠ No test project referencing **{0}** was found under {1} — a project that references {0} and xunit, NUnit, MSTest or TUnit, or is named like {0}.Tests. Add one (`dotnet new xunit`, then a reference to {0}) and run /test again: a test written beside the code would be compiled into it and run by nobody.</value></data>
   <data name="RefactorNoChange" xml:space="preserve"><value>✅ The code is already clear — no refactor needed.</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ No bug or issue found — nothing to fix.</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ The code is already adequately documented.</value></data>
@@ -649,8 +650,9 @@ Open **Settings** to change the model or configure a dedicated model for code ac
   <data name="MsgModelAdopted" xml:space="preserve"><value>The model **{0}** is not installed on this server: Inferpal uses **{1}**, the best of the installed ones. Pick another in the model list.</value></data>
   <data name="MsgFirstRunNoModels" xml:space="preserve"><value>⚠ **First launch** — {0} is running but has no chat model yet.
 
-Get one — the models measured with Inferpal, for each graphics card, are listed in [docs/models.md](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md#by-graphics-card) — then restart Visual Studio (or open Settings and click **Test**).</value></data>
+Get one — the models measured with Inferpal, for each graphics card, are listed in [docs/models.md]({1}) — then type `/setup`.</value></data>
   <data name="MsgFirstRunPullHint" xml:space="preserve"><value>`/models pull &lt;name&gt;` downloads one without leaving Visual Studio.</value></data>
+  <data name="MsgFirstRunPullModel" xml:space="preserve"><value>`/models pull {0}` downloads {1}, the model measured for a card of this size, without leaving Visual Studio.</value></data>
   <data name="FirstRunFailed" xml:space="preserve"><value>⚠ Inferpal's first-run setup could not complete: {0}
 
 Type `/setup` to try again.</value></data>
@@ -1375,8 +1377,8 @@ What you save there applies from your next question, in this thread and the othe
   <data name="ModeChat" xml:space="preserve"><value>Chat</value></data>
   <data name="ModeAgent" xml:space="preserve"><value>Agent</value></data>
   <data name="ModePlan" xml:space="preserve"><value>Plan</value></data>
-  <data name="ModeChatTip" xml:space="preserve"><value>Answers without tools</value></data>
-  <data name="ModeAgentTip" xml:space="preserve"><value>Uses tools; asks before changing anything</value></data>
+  <data name="ModeChatTip" xml:space="preserve"><value>Answers with tools, step by step; asks before changing anything</value></data>
+  <data name="ModeAgentTip" xml:space="preserve"><value>Plans the task, then works through it; asks before changing anything</value></data>
   <data name="ModePlanTip" xml:space="preserve"><value>Reads and plans; changes nothing</value></data>
   <data name="ComposerPlaceholder" xml:space="preserve"><value>Ask, or type @ to attach and / for commands</value></data>
   <data name="ChatAttach" xml:space="preserve"><value>Attach a file, a selection or problems</value></data>
@@ -1387,6 +1389,8 @@ What you save there applies from your next question, in this thread and the othe
   <data name="WelcomeTitle" xml:space="preserve"><value>What should we work on?</value></data>
   <data name="WelcomeLine" xml:space="preserve"><value>{0} on {1}. Your code stays on this machine.</value></data>
   <data name="WelcomeLocal" xml:space="preserve"><value>Your code stays on this machine.</value></data>
+  <data name="WelcomeLineRemote" xml:space="preserve"><value>{0} on {1}. Your code is sent to {2}.</value></data>
+  <data name="WelcomeRemote" xml:space="preserve"><value>Your code is sent to {0}.</value></data>
   <data name="WelcomeForFile" xml:space="preserve"><value>For {0}, open in the editor</value></data>
   <data name="WelcomeExplainFile" xml:space="preserve"><value>Explain this file</value></data>
   <data name="WelcomeExplainFileDesc" xml:space="preserve"><value>What it does and how the pieces connect</value></data>
@@ -1637,6 +1641,7 @@ What you save there applies from your next question, in this thread and the othe
   <data name="QueueTitle" xml:space="preserve"><value>Sent after this turn</value></data>
   <data name="QueueRemove" xml:space="preserve"><value>Remove from the queue</value></data>
   <data name="ComposerPlaceholderBusy" xml:space="preserve"><value>Enter: a note for the running turn · Ctrl+Enter: send it after the turn</value></data>
+  <data name="ComposerPlaceholderCard" xml:space="preserve"><value>Enter: allow once · Esc: deny · Ctrl+Enter: send after the turn</value></data>
   <data name="NoteNotRead" xml:space="preserve"><value>Your note was not read before the turn ended: it is back in the input box.</value></data>
   <data name="QueueGivenBack" xml:space="preserve"><value>The turn did not end normally: the messages waiting to be sent are back in the input box.</value></data>
   <data name="QueueActionsKept" xml:space="preserve"><value>The turn did not end normally: the messages you typed are back in the input box; the editor actions stay in the queue and run after the next answer.</value></data>

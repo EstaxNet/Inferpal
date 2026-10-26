@@ -225,6 +225,8 @@ export interface BackendStatusResult {
   /** Not connected, but the server REFUSED the check (a wrong API key: 401): the badge text, already localized.
    *  A server that answers is running — "unreachable" sends the user to start it. */
   refused?: string | null;
+  /** The machines other than the host's that the roles in use send code to; empty: the code stays on this machine. */
+  offMachine?: string[] | null;
 }
 
 /** `host/runningWork` — what the host runs beyond a turn, as the notice to show once it is stopped. */

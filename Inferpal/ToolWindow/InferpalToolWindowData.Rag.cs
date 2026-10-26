@@ -237,10 +237,13 @@ internal partial class InferpalToolWindowData
 
         if (chatModels.Count == 0)
         {
+            // The measured model for the card, when the card's memory can be known.
+            await Services.Hardware.HardwareProfile.EnsureBudgetAsync(_config, ct).ConfigureAwait(false);
+            var pull = Services.Inference.ModelAdvisor.DownloadToName(_config.Provider, _config.VramBudgetGb);
             // The backend DETECTED above, not "Ollama": an LM Studio with nothing downloaded lands here too.
             await present(foundNote + Strings.MsgFirstRunNoModels(
                 Services.Inference.InferenceProviderFactory.DisplayName(_config.Provider),
-                client.Capabilities.ModelManagement)).ConfigureAwait(false);
+                client.Capabilities.ModelManagement, pull?.Tag, pull?.Name)).ConfigureAwait(false);
             return;
         }
 

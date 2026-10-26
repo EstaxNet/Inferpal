@@ -385,8 +385,10 @@ internal sealed record IndexStatusResult(bool IsIndexing, int ChunkCount, string
 /// <param name="Refused">Not connected, but the server answered the check with a refusal (a wrong API key: 401): the
 /// badge text to show instead of "unreachable", already localized — and the pre-flight's cue to say "refused".</param>
 /// <param name="Server">The configured backend, as the chat header names it ("LM Studio").</param>
+/// <param name="OffMachine">The machines other than this one that the roles in use send code to
+/// (<c>RoleServers.OffMachineHosts</c>): empty, the welcome line says the code stays on this machine.</param>
 internal sealed record BackendStatusResult(bool Connected, string VramBadge, string? EdgeNotice = null, string? Refused = null,
-                                           string? Server = null);
+                                           string? Server = null, string[]? OffMachine = null);
 
 /// <summary>`models/adoptDefault` — the model now used in place of a default nobody chose and the backend lacks, with
 /// the sentence that says so; both null when nothing changed.</summary>

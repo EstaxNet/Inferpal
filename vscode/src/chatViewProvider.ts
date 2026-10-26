@@ -41,6 +41,15 @@ const PICKER_EXCLUDED_DIRS = ['obj', 'bin', 'build', 'dist', '.git', '.vs', '.ge
   '.inferpal', 'out'];
 
 const HISTORY_KEY = 'inferpal.promptHistory';
+/** This window's model and mode, in VS Code's storage for the workspace (see `windowModel`). */
+const WINDOW_MODEL_KEY = 'inferpal.windowModel';
+const WINDOW_AGENT_MODE_KEY = 'inferpal.windowAgentMode';
+
+/** A choice made in the window, with the setting it was made under: a setting changed since takes over. */
+interface WindowChoice<T> {
+  value: T;
+  setting: T;
+}
 const HISTORY_MAX = 50;
 const STATUS_POLL_MS = 30_000;
 /** How long an approval card waits unanswered before a window without the focus says so — the Core's
@@ -185,13 +194,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   /** The first-run card saved its choice: the chat takes the model, or the host restarts for a server of another type. */
   private async setupApplied(model: string, restartNeeded: boolean): Promise<void> {
-    // ⚠ This window's model setting wins over the shared one at the next activation (and at a restart): left as it was,
-    // it brought the old model back over the one just chosen. configSaved writes it for the same reason.
-    try {
-      await vscode.workspace.getConfiguration('inferpal').update('model', model, vscode.ConfigurationTarget.Workspace);
-    } catch (err) {
-      this.gestureFailed('model setting', err);
-    }
+    // ⚠ This window's model wins over the shared one at the next activation (and at a restart): left as it is, it brings
+    // the old model back over the one just chosen. configSaved writes it for the same reason.
+    await this.setWindowModel(model);
     if (restartNeeded) {
       await vscode.commands.executeCommand('inferpal.restartHost');
       return;
@@ -582,8 +587,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       onNotice: (text) => this.sayOutOfTurn(text),
     });
 
-    this.model = vscode.workspace.getConfiguration('inferpal').get<string>('model', '') || host.info?.defaultModel || '';
-    // ⚠ This window's model (its workspace setting) wins over the shared default, and the host must answer with it
+    this.model = this.windowModel() || host.info?.defaultModel || '';
+    // ⚠ This window's model (windowModel) wins over the shared default, and the host must answer with it
     // too: bare `/model`, titles, compaction summaries, `/commit`, `/check`, `/task` read the host's default. For this
     // session only — opening a workspace is not a pick, and the other editor keeps its model.
     if (this.model && this.model !== host.info?.defaultModel) {
@@ -756,27 +761,17 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // The open conversation follows a new density at once.
       this.compact = cfg.chatDensity === 'compact';
       this.post({ type: 'density', compact: this.compact });
-      // The chat sends its own model and agent mode on every turn (workspace settings): what the settings panel
-      // CHANGED is adopted here, or it changed nothing. Only a change is adopted, so a model picked for this
-      // workspace survives a save that did not touch it.
-      const settings = vscode.workspace.getConfiguration('inferpal');
+      // The chat sends its own model and agent mode on every turn (this window's): what the settings panel CHANGED
+      // is adopted here, or it changed nothing. Only a change is adopted, so a model picked for this workspace
+      // survives a save that did not touch it.
       if (cfg.defaultModel && cfg.defaultModel !== this.sharedEcho.defaultModel) {
         this.model = cfg.defaultModel;
-        try {
-          await settings.update('model', cfg.defaultModel, vscode.ConfigurationTarget.Workspace);
-        } catch (err) {
-          // ⚠ Not just the log: this per-workspace copy WINS over the host's value at the next
-          // activation, so losing it silently reverts the model the panel just saved. The
-          // `stateChange` path two hundred lines below already says so for the same failure.
-          this.gestureFailed('model setting', err);
-        }
+        // ⚠ This window's copy WINS over the host's value at the next activation: left as it is, it brings back the model
+        // the panel just replaced.
+        await this.setWindowModel(cfg.defaultModel);
       }
       if (typeof cfg.agentModeEnabled === 'boolean' && cfg.agentModeEnabled !== this.sharedEcho.agentModeEnabled) {
-        try {
-          await settings.update('agentMode', cfg.agentModeEnabled, vscode.ConfigurationTarget.Workspace);
-        } catch (err) {
-          this.gestureFailed('agent mode setting', err);
-        }
+        await this.setWindowAgentMode(cfg.agentModeEnabled);
       }
       this.sharedEcho = { defaultModel: cfg.defaultModel, agentModeEnabled: cfg.agentModeEnabled };
     } catch (err) {
@@ -844,7 +839,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     let edgeNotice: string | null = null;
     try {
       const s = await host.backendStatus();
-      this.status = { connected: s.connected, vramBadge: s.vramBadge, refused: s.refused ?? null, server: s.server ?? null };
+      this.status = { connected: s.connected, vramBadge: s.vramBadge, refused: s.refused ?? null, server: s.server ?? null,
+                      offMachine: s.offMachine ?? null };
       edgeNotice = s.edgeNotice ?? null;
     } catch {
       this.status = { connected: false, vramBadge: '' };
@@ -924,7 +920,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** A default nobody chose, which the backend does not have: the host puts the best installed model in its place and
    *  says so — VS Code has no first run, and every question went to a model that is not there. */
   private async adoptDefaultModel(host: HostClient): Promise<void> {
-    if (vscode.workspace.getConfiguration('inferpal').get<string>('model', '')
+    if (this.windowModel()
         || !this.model || this.models.length === 0 || this.models.includes(this.model)) {
       return;
     }
@@ -1363,6 +1359,39 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  // ── This window's model and mode (VS Code's storage for the workspace) ─────
+
+  /**
+   * The model this window answers with: the last pick made here while the `inferpal.model` setting stays what it was
+   * then, else that setting, else the shared default (the caller's fallback).
+   * ⚠ Kept in VS Code's storage, never in the workspace settings: those are the repository's `.vscode/settings.json`,
+   * which `git status` shows and `/commit-exec` commits. A setting written there (by hand, by an earlier version, by a
+   * pull) applies as soon as it differs from the one the pick was made under — even changed while the window was closed.
+   */
+  private windowModel(): string {
+    const setting = vscode.workspace.getConfiguration('inferpal').get<string>('model', '');
+    const pick = this.context.workspaceState.get<WindowChoice<string>>(WINDOW_MODEL_KEY);
+    return pick && pick.setting === setting ? pick.value : setting;
+  }
+
+  private async setWindowModel(model: string): Promise<void> {
+    const setting = vscode.workspace.getConfiguration('inferpal').get<string>('model', '');
+    await this.context.workspaceState.update(WINDOW_MODEL_KEY, { value: model, setting } satisfies WindowChoice<string>);
+  }
+
+  /** Agent mode for this window, read on every turn: the last switch made here while the `inferpal.agentMode` setting
+   *  stays what it was then, else that setting. */
+  private windowAgentMode(): boolean {
+    const setting = vscode.workspace.getConfiguration('inferpal').get<boolean>('agentMode', false);
+    const pick = this.context.workspaceState.get<WindowChoice<boolean>>(WINDOW_AGENT_MODE_KEY);
+    return pick && pick.setting === setting ? pick.value : setting;
+  }
+
+  private async setWindowAgentMode(enabled: boolean): Promise<void> {
+    const setting = vscode.workspace.getConfiguration('inferpal').get<boolean>('agentMode', false);
+    await this.context.workspaceState.update(WINDOW_AGENT_MODE_KEY, { value: enabled, setting } satisfies WindowChoice<boolean>);
+  }
+
   // ── Prompt history (persisted workspace-side, navigated in the webview) ─────
 
   private historyEntries(): string[] {
@@ -1504,14 +1533,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         return;
       case 'pickModel': {
         this.model = msg.model;
-        try {
-          await vscode.workspace.getConfiguration('inferpal').update('model', msg.model, vscode.ConfigurationTarget.Workspace);
-        } catch (err) {
-          // A settings.json with a syntax error, a read-only file: the pick still applies to this window and
-          // the host below, but it will not survive a reload — say so instead of stopping half-way.
-          this.log(`[chat] model setting not saved: ${String(err)}`);
-          void vscode.window.showWarningMessage(t('Inferpal could not save this setting: {0}', ChatViewProvider.errorText(err)));
-        }
+        await this.setWindowModel(msg.model);
         // Also push the pick into the host's shared config: without it, `/model` (no argument)
         // kept answering the OLD model and every Model Router role that falls back to
         // DefaultModel (session titles, code actions) silently stayed on it.
@@ -2197,14 +2219,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private readonly idleWork = new Map<string, () => Promise<void>>();
 
   /**
-   * Runs a push that calls config/update now, or when the running turn ends: the host refuses config/update while
-   * a turn holds its slot, and a refused push is lost.
-   */
-  /**
-   * The window's model setting changed outside the picker (the Settings editor, settings.json): the chat follows it,
-   * as the host's next start would — for this session (`models/useForSession`), never written to the shared default.
-   * Without it, the button and every question kept the old model until the host restarted. The picker's own write
-   * lands here too, already applied.
+   * The `inferpal.model` setting changed (the Settings editor, settings.json — Inferpal keeps its own picks in the
+   * window's storage, never there): the chat follows it, as the host's next start would — for this session
+   * (`models/useForSession`), never written to the shared default — and it becomes this window's choice, or the last
+   * pick kept in the window's storage would win again at the next activation. Without it, the button and every question
+   * keep the old model until the host restarts.
    */
   async followModelSetting(): Promise<void> {
     const configured = vscode.workspace.getConfiguration('inferpal').get<string>('model', '');
@@ -2212,6 +2231,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       return;
     }
     this.model = configured;
+    await this.setWindowModel(configured);
     this.post({ type: 'models', models: this.models, model: configured });
     // Refused by the host while a turn runs: pushed when it ends. Without a host, its start reads the setting.
     this.runWhenIdle('modelSetting', async () => {
@@ -2226,6 +2246,20 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     });
   }
 
+  /**
+   * The `inferpal.agentMode` setting changed: it becomes this window's mode (windowAgentMode already reads it), kept as
+   * the window's choice, and the switch shows it — or the switch keeps showing a mode the turns no longer run in.
+   */
+  async followAgentModeSetting(): Promise<void> {
+    const configured = vscode.workspace.getConfiguration('inferpal').get<boolean>('agentMode', false);
+    await this.setWindowAgentMode(configured);
+    this.post({ type: 'agentMode', enabled: configured });
+  }
+
+  /**
+   * Runs a push that calls config/update now, or when the running turn ends: the host refuses config/update while
+   * a turn holds its slot, and a refused push is lost.
+   */
   runWhenIdle(key: string, work: () => Promise<void>): void {
     if (!this.busy) {
       void work();
@@ -2777,15 +2811,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             this.model = e.value;
             this.sharedEcho.defaultModel = e.value;
             rehydrate = true;
-            // The host has already switched and saved the model: a workspace settings file that refuses the
-            // write only loses the per-workspace copy. Said next to the host's answer — thrown, it turned the
-            // whole command into an error bubble.
-            try {
-              await vscode.workspace.getConfiguration('inferpal').update('model', e.value, vscode.ConfigurationTarget.Workspace);
-            } catch (err) {
-              this.log(`[chat] model setting not saved: ${String(err)}`);
-              notes.push(t('Inferpal could not save this setting: {0}', ChatViewProvider.errorText(err)));
-            }
+            // The host has already switched and saved the model; this window keeps it as its own too.
+            await this.setWindowModel(e.value);
           }
           break;
         case 'openSetup':
@@ -2901,7 +2928,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // When the request left: a long turn's end is announced (announceRunEnd); 0 = it never left.
     let startedAt = 0;
     try {
-      const agentMode = vscode.workspace.getConfiguration('inferpal').get<boolean>('agentMode', false);
+      const agentMode = this.windowAgentMode();
       const mentions = await this.expandMentions(prompt, host);
       let expanded = mentions.text;
       const attachedPaths = [...mentions.paths];
@@ -3910,7 +3937,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       stream: this.streamText,
       status,
       commands: this.commands,
-      agentMode: vscode.workspace.getConfiguration('inferpal').get<boolean>('agentMode', false),
+      agentMode: this.windowAgentMode(),
       contextWindow: this.contextWindow,
       promptTokens: this.promptTokens,
       lastTokens: this.lastTokens,
@@ -4016,20 +4043,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     );
   }
 
-  /** The mode switch: agent mode is a setting, plan mode is the host's — Plan is agent mode, read-only. */
+  /** The mode switch: agent mode is this window's, plan mode is the host's — Plan is agent mode, read-only. */
   private async setMode(mode: 'chat' | 'agent' | 'plan'): Promise<void> {
     const agent = mode !== 'chat';
-    const config = vscode.workspace.getConfiguration('inferpal');
-    if (config.get<boolean>('agentMode', false) !== agent) {
-      try {
-        await config.update('agentMode', agent, vscode.ConfigurationTarget.Workspace);
-      } catch (err) {
-        // The mode is read from the settings on every turn: unsaved, it did not change — the switch stays.
-        this.log(`[chat] agent mode not saved: ${String(err)}`);
-        void vscode.window.showWarningMessage(t('Inferpal could not save this setting: {0}', ChatViewProvider.errorText(err)));
-        this.post({ type: 'agentMode', enabled: !agent });
-        return;
-      }
+    if (this.windowAgentMode() !== agent) {
+      await this.setWindowAgentMode(agent);
       this.post({ type: 'agentMode', enabled: agent });
       await this.pushAgentModeToHost(agent);
     }

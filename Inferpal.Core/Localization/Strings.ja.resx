@@ -58,7 +58,7 @@
   <data name="LabelUrl" xml:space="preserve"><value>サーバーのアドレス</value></data>
   <data name="HintUrl" xml:space="preserve"><value>Ollama (:11434)、LM Studio (:1234)、または OpenAI 互換サーバー。テストで応答したサーバーがわかります。</value></data>
   <data name="LabelChatModel" xml:space="preserve"><value>チャットとエージェント</value></data>
-  <data name="HintChatModel" xml:space="preserve"><value>質問に答え、タスクを実行します。/model でこのセッションだけ切り替えられます。</value></data>
+  <data name="HintChatModel" xml:space="preserve"><value>質問に答え、タスクを実行します。/model で切り替えられます。</value></data>
   <data name="BtnTest" xml:space="preserve"><value>テスト</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ キャンセル</value></data>
   <data name="BtnSave" xml:space="preserve"><value>保存</value></data>
@@ -428,6 +428,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="TestsExtended" xml:space="preserve"><value>✅ **{0}** にテストを追加しました（オープン中 — Ctrl+Z で元に戻せます）。</value></data>
   <data name="TestsGenerateFailed" xml:space="preserve"><value>⚠ テストの生成に失敗しました。モデルを確認して再試行してください。</value></data>
   <data name="TestsGenerateFailedBecause" xml:space="preserve"><value>⚠ テストの生成に失敗しました: {0}</value></data>
+  <data name="TestsNoTestProject" xml:space="preserve"><value>⚠ {1} の下に、**{0}** を参照するテスト プロジェクト（{0} と xunit、NUnit、MSTest、TUnit のいずれかを参照するか、{0}.Tests のような名前のプロジェクト）が見つかりません。テスト プロジェクトを追加し（`dotnet new xunit` の後に {0} への参照）、/test をもう一度実行してください。コードの横に書いたテストはそのコードに組み込まれてコンパイルされ、誰にも実行されません。</value></data>
   <data name="RefactorNoChange" xml:space="preserve"><value>✅ コードはすでに明確です。リファクタリングは不要です。</value></data>
   <data name="FixNoChange" xml:space="preserve"><value>✅ バグや問題は見つかりませんでした。修正は不要です。</value></data>
   <data name="DocNoChange" xml:space="preserve"><value>✅ コードはすでに十分に文書化されています。</value></data>
@@ -625,8 +626,9 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="MsgModelAdopted" xml:space="preserve"><value>モデル **{0}** はこのサーバーにインストールされていません。Inferpal はインストール済みで最適な **{1}** を使います。モデル一覧で別のモデルを選べます。</value></data>
   <data name="MsgFirstRunNoModels" xml:space="preserve"><value>⚠ **初回起動** — {0} は起動していますが、チャットモデルがまだありません。
 
-モデルを入手してください — Inferpal で計測したモデルはグラフィックカードごとに [docs/models.md](https://github.com/EstaxNet/Inferpal/blob/master/docs/models.md#by-graphics-card) にあります — その後 Visual Studio を再起動するか、設定を開いて **Test** をクリックしてください。</value></data>
+モデルを入手してください — Inferpal で計測したモデルはグラフィックカードごとに [docs/models.md]({1}) にあります — その後 `/setup` と入力してください。</value></data>
   <data name="MsgFirstRunPullHint" xml:space="preserve"><value>`/models pull &lt;名前&gt;` で Visual Studio を離れずにダウンロードできます。</value></data>
+  <data name="MsgFirstRunPullModel" xml:space="preserve"><value>`/models pull {0}` で、このサイズのカード向けに計測したモデル {1} を Visual Studio を離れずにダウンロードできます。</value></data>
   <data name="FirstRunFailed" xml:space="preserve"><value>⚠ Inferpal の初期セットアップを完了できませんでした: {0}
 
 `/setup` と入力すると再試行できます。</value></data>
@@ -1371,8 +1373,8 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ModeChat" xml:space="preserve"><value>チャット</value></data>
   <data name="ModeAgent" xml:space="preserve"><value>エージェント</value></data>
   <data name="ModePlan" xml:space="preserve"><value>計画</value></data>
-  <data name="ModeChatTip" xml:space="preserve"><value>ツールを使わずに回答</value></data>
-  <data name="ModeAgentTip" xml:space="preserve"><value>ツールを使用し、変更前に確認します</value></data>
+  <data name="ModeChatTip" xml:space="preserve"><value>ツールを使って一歩ずつ回答し、変更前に確認します</value></data>
+  <data name="ModeAgentTip" xml:space="preserve"><value>タスクを計画してから順に進め、変更前に確認します</value></data>
   <data name="ModePlanTip" xml:space="preserve"><value>読み取りと計画のみ。何も変更しません</value></data>
   <data name="ComposerPlaceholder" xml:space="preserve"><value>質問するか、@ で添付、/ でコマンド</value></data>
   <data name="ChatAttach" xml:space="preserve"><value>ファイル、選択範囲、問題を添付</value></data>
@@ -1383,6 +1385,8 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="WelcomeTitle" xml:space="preserve"><value>何に取り組みますか?</value></data>
   <data name="WelcomeLine" xml:space="preserve"><value>{1} 上の {0}。コードはこのマシンから出ません。</value></data>
   <data name="WelcomeLocal" xml:space="preserve"><value>コードはこのマシンから出ません。</value></data>
+  <data name="WelcomeLineRemote" xml:space="preserve"><value>{1} 上の {0}。コードは {2} に送信されます。</value></data>
+  <data name="WelcomeRemote" xml:space="preserve"><value>コードは {0} に送信されます。</value></data>
   <data name="WelcomeForFile" xml:space="preserve"><value>エディターで開いている {0} について</value></data>
   <data name="WelcomeExplainFile" xml:space="preserve"><value>このファイルを説明</value></data>
   <data name="WelcomeExplainFileDesc" xml:space="preserve"><value>何をしていて、各部分がどうつながるか</value></data>
@@ -1633,6 +1637,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="QueueTitle" xml:space="preserve"><value>このターンの後に送信</value></data>
   <data name="QueueRemove" xml:space="preserve"><value>キューから削除</value></data>
   <data name="ComposerPlaceholderBusy" xml:space="preserve"><value>Enter: 実行中のターンへのメモ · Ctrl+Enter: ターンの後に送信</value></data>
+  <data name="ComposerPlaceholderCard" xml:space="preserve"><value>Enter: 1回だけ許可 · Esc: 拒否 · Ctrl+Enter: ターンの後に送信</value></data>
   <data name="NoteNotRead" xml:space="preserve"><value>ターンが終わる前にメモは読まれませんでした。入力欄に戻されました。</value></data>
   <data name="QueueGivenBack" xml:space="preserve"><value>ターンが正常に終了しませんでした。送信待ちのメッセージは入力欄に戻されました。</value></data>
   <data name="QueueActionsKept" xml:space="preserve"><value>ターンが正常に終了しませんでした。入力したメッセージは入力欄に戻されました。エディターのアクションはキューに残り、次の回答の後に実行されます。</value></data>

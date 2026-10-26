@@ -100,6 +100,8 @@ export interface WvBackendStatus {
   hostDown?: string | null;
   /** The configured backend, for the header ("LM Studio"). */
   server?: string | null;
+  /** The machines other than this one the code is sent to (see `BackendStatusResult.offMachine`). */
+  offMachine?: string[] | null;
 }
 
 /** One slash command of the autocomplete popup. */
