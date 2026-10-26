@@ -76,6 +76,8 @@
   "Settings saved.": "设置已保存。",
   "Loading settings…": "正在加载设置…",
   "Search the codebase for \"{0}\"": "在代码库中搜索“{0}”",
+  "Attach the page {0}": "附加页面 {0}",
+  "Attach the commit {0}": "附加提交 {0}",
   "Remove": "移除",
   "Attach the active file": "附加当前文件",
   "Attach the selection": "附加所选内容",

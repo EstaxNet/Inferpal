@@ -385,6 +385,16 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
   <data name="StoppedWorkCommand" xml:space="preserve"><value>백그라운드 명령 {0} — {1}</value></data>
   <data name="StoppedWorkDocs" xml:space="preserve"><value>문서 소스 {0} 인덱싱 (`/docs reindex {0}`)</value></data>
   <data name="MentionDiffUnavailable" xml:space="preserve"><value>@diff에 첨부된 내용이 없습니다 — {0}</value></data>
+  <data name="MentionUrlDesc" xml:space="preserve"><value>웹 페이지의 텍스트 첨부</value></data>
+  <data name="MentionCommitDesc" xml:space="preserve"><value>커밋의 메시지와 diff 첨부</value></data>
+  <data name="MentionUrlHint" xml:space="preserve"><value>주소를 입력하거나 붙여 넣으세요…</value></data>
+  <data name="MentionUrlUnavailable" xml:space="preserve"><value>@url에 첨부된 내용이 없습니다 — {0}</value></data>
+  <data name="MentionUrlEmpty" xml:space="preserve"><value>@url에 첨부된 내용이 없습니다: {0}에 읽을 수 있는 텍스트가 없습니다.</value></data>
+  <data name="MentionCommitUnavailable" xml:space="preserve"><value>@commit에 첨부된 내용이 없습니다 — {0}</value></data>
+  <data name="MentionCommitUnknown" xml:space="preserve"><value>@commit에 첨부된 내용이 없습니다: '{0}'(이)라는 커밋이 없습니다. 해시, 브랜치 또는 태그로 커밋을 지정합니다.</value></data>
+  <data name="MentionCommitRange" xml:space="preserve"><value>@commit에 첨부된 내용이 없습니다: '{0}'은(는) 범위이며, @commit은 커밋 하나만 첨부합니다. 범위는 `/check {0}`로 검토합니다.</value></data>
+  <data name="MentionUrlNotAllowed" xml:space="preserve"><value>@url에 첨부된 내용이 없습니다: 설정에 따라 Inferpal이 {0}을(를) 가져올 수 없습니다(fetch_url이 꺼져 있거나 deny 규칙이 일치함).</value></data>
+  <data name="MentionCommitNoneYet" xml:space="preserve"><value>@commit에 첨부된 내용이 없습니다: 이 저장소에는 아직 커밋이 없습니다.</value></data>
   <data name="MentionDiffEmpty" xml:space="preserve"><value>@diff에 첨부된 내용이 없습니다: 추적 중인 파일에 커밋되지 않은 변경이 없습니다. git에 한 번도 추가되지 않은 새 파일은 diff에 포함되지 않습니다 — @file로 첨부하세요.</value></data>
   <data name="MentionCodeNothingFound" xml:space="preserve"><value>@code에 첨부된 내용이 없습니다 — {0}</value></data>
   <data name="MentionTreeNoRoot" xml:space="preserve"><value>@tree에 첨부된 내용이 없습니다: 맵을 만들 솔루션이나 프로젝트 폴더를 찾지 못했습니다.</value></data>

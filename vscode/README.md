@@ -75,7 +75,7 @@ These were measured on one 24 GB card (LM Studio, 32K context), with its free me
 - **30 built-in tools**: files, text and semantic search, build and tests, shell with background jobs, git, the editor, the debugger, compiler-backed analysis and symbol rename, web search and page fetch. Add any **MCP** server's tools and your own shell commands. See the [reference](https://github.com/EstaxNet/Inferpal/blob/master/docs/tools.md).
 - **Semantic code search** across your workspace. The most relevant code is added to each question, and suggested as chips while you type.
 - **Reviews and Git text.** `/check` reviews your diff, a branch or a commit, and anchors every finding to a line. `/commit` drafts the commit message, and `/pr-description` writes the pull request description.
-- **Typed mentions**: `@file` `@folder` `@code` `@diff` `@problems` `@debugger` `@clipboard` `@tree`. **@Docs** indexes a documentation site with `/docs add <url>`.
+- **Typed mentions**: `@file` `@folder` `@code` `@diff` `@commit` `@problems` `@debugger` `@clipboard` `@tree` `@url`. **@Docs** indexes a documentation site with `/docs add <url>`.
 - **Your repository's agent setup, read as it is.** It reads `AGENTS.md`, `CLAUDE.md`, the Copilot and Cursor instruction files, and your project rules. It honours `.aiignore`-style files.
 - **Background and debug sessions.** `/task` investigates in the background while you work. `/debug` drives a debug session once you approve it.
 - **Context you can see.** A gauge shows how full the model's window is, and `/xray` shows what fills it.

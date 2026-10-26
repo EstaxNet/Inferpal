@@ -385,6 +385,16 @@ Kopia zapasowa: {0}</value></data>
   <data name="StoppedWorkCommand" xml:space="preserve"><value>polecenie w tle {0} — {1}</value></data>
   <data name="StoppedWorkDocs" xml:space="preserve"><value>indeksowanie źródła dokumentacji {0} (`/docs reindex {0}`)</value></data>
   <data name="MentionDiffUnavailable" xml:space="preserve"><value>Nic nie dołączono dla @diff — {0}</value></data>
+  <data name="MentionUrlDesc" xml:space="preserve"><value>dołącz tekst strony internetowej</value></data>
+  <data name="MentionCommitDesc" xml:space="preserve"><value>dołącz komunikat i diff commita</value></data>
+  <data name="MentionUrlHint" xml:space="preserve"><value>wpisz lub wklej adres…</value></data>
+  <data name="MentionUrlUnavailable" xml:space="preserve"><value>Nic nie dołączono dla @url — {0}</value></data>
+  <data name="MentionUrlEmpty" xml:space="preserve"><value>Nic nie dołączono dla @url: {0} nie zawiera czytelnego tekstu.</value></data>
+  <data name="MentionCommitUnavailable" xml:space="preserve"><value>Nic nie dołączono dla @commit — {0}</value></data>
+  <data name="MentionCommitUnknown" xml:space="preserve"><value>Nic nie dołączono dla @commit: żaden commit nie nazywa się '{0}'. Commit wskazuje hash, gałąź lub tag.</value></data>
+  <data name="MentionCommitRange" xml:space="preserve"><value>Nic nie dołączono dla @commit: '{0}' to zakres, a @commit dołącza jeden commit. `/check {0}` przegląda zakres.</value></data>
+  <data name="MentionUrlNotAllowed" xml:space="preserve"><value>Nic nie dołączono dla @url: Twoje ustawienia nie pozwalają Inferpal pobrać {0} (fetch_url jest wyłączone albo pasuje reguła deny).</value></data>
+  <data name="MentionCommitNoneYet" xml:space="preserve"><value>Nic nie dołączono dla @commit: to repozytorium nie ma jeszcze żadnego commita.</value></data>
   <data name="MentionDiffEmpty" xml:space="preserve"><value>Nic nie dołączono dla @diff: brak niezatwierdzonych zmian w śledzonym pliku. Nowy plik, którego nigdy nie dodano do git, nie należy do diffu — dołącz go przez @file.</value></data>
   <data name="MentionCodeNothingFound" xml:space="preserve"><value>Nic nie dołączono dla @code — {0}</value></data>
   <data name="MentionTreeNoRoot" xml:space="preserve"><value>Nic nie dołączono dla @tree: nie znaleziono rozwiązania ani folderu projektu do zmapowania.</value></data>

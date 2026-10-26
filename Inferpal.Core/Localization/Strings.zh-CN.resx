@@ -385,6 +385,16 @@
   <data name="StoppedWorkCommand" xml:space="preserve"><value>后台命令 {0} — {1}</value></data>
   <data name="StoppedWorkDocs" xml:space="preserve"><value>文档源 {0} 的索引（`/docs reindex {0}`）</value></data>
   <data name="MentionDiffUnavailable" xml:space="preserve"><value>@diff 未附加任何内容 — {0}</value></data>
+  <data name="MentionUrlDesc" xml:space="preserve"><value>附加网页的文本</value></data>
+  <data name="MentionCommitDesc" xml:space="preserve"><value>附加提交的消息和 diff</value></data>
+  <data name="MentionUrlHint" xml:space="preserve"><value>输入或粘贴地址…</value></data>
+  <data name="MentionUrlUnavailable" xml:space="preserve"><value>@url 未附加任何内容 — {0}</value></data>
+  <data name="MentionUrlEmpty" xml:space="preserve"><value>@url 未附加任何内容：{0} 没有可读的文本。</value></data>
+  <data name="MentionCommitUnavailable" xml:space="preserve"><value>@commit 未附加任何内容 — {0}</value></data>
+  <data name="MentionCommitUnknown" xml:space="preserve"><value>@commit 未附加任何内容：没有名为“{0}”的提交。哈希、分支或标签可以指定一个提交。</value></data>
+  <data name="MentionCommitRange" xml:space="preserve"><value>@commit 未附加任何内容：“{0}”是一个范围，而 @commit 只附加一个提交。`/check {0}` 用于审查范围。</value></data>
+  <data name="MentionUrlNotAllowed" xml:space="preserve"><value>@url 未附加任何内容：你的设置不允许 Inferpal 获取 {0}（fetch_url 已关闭，或有 deny 规则匹配）。</value></data>
+  <data name="MentionCommitNoneYet" xml:space="preserve"><value>@commit 未附加任何内容：此仓库还没有任何提交。</value></data>
   <data name="MentionDiffEmpty" xml:space="preserve"><value>@diff 未附加任何内容：已跟踪的文件没有未提交的更改。从未添加到 git 的新文件不属于 diff——请用 @file 附加。</value></data>
   <data name="MentionCodeNothingFound" xml:space="preserve"><value>@code 未附加任何内容 — {0}</value></data>
   <data name="MentionTreeNoRoot" xml:space="preserve"><value>@tree 未附加任何内容：未找到可生成映射的解决方案或项目文件夹。</value></data>

@@ -1161,6 +1161,16 @@ internal static class Strings
     public static string MentionDebuggerNone  => Get(nameof(MentionDebuggerNone));
     public static string MentionDiffUnavailable(string reason) => Format(Get(nameof(MentionDiffUnavailable)), reason);
     public static string MentionDiffEmpty => Get(nameof(MentionDiffEmpty));
+    public static string MentionUrlDesc       => Get(nameof(MentionUrlDesc));
+    public static string MentionCommitDesc    => Get(nameof(MentionCommitDesc));
+    public static string MentionUrlHint       => Get(nameof(MentionUrlHint));
+    public static string MentionUrlUnavailable(string reason) => Format(Get(nameof(MentionUrlUnavailable)), reason);
+    public static string MentionUrlEmpty(string url) => Format(Get(nameof(MentionUrlEmpty)), url);
+    public static string MentionCommitUnavailable(string reason) => Format(Get(nameof(MentionCommitUnavailable)), reason);
+    public static string MentionCommitUnknown(string revision) => Format(Get(nameof(MentionCommitUnknown)), revision);
+    public static string MentionCommitRange(string range) => Format(Get(nameof(MentionCommitRange)), range);
+    public static string MentionUrlNotAllowed(string url) => Format(Get(nameof(MentionUrlNotAllowed)), url);
+    public static string MentionCommitNoneYet => Get(nameof(MentionCommitNoneYet));
     public static string MentionCodeNothingFound(string reason) => Format(Get(nameof(MentionCodeNothingFound)), reason);
     public static string MentionTreeNoRoot => Get(nameof(MentionTreeNoRoot));
     public static string MentionDiffCutLabel(string label, int shown, int total) => Format(Get(nameof(MentionDiffCutLabel)), label, shown, total);

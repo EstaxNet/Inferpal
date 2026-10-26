@@ -111,6 +111,12 @@ internal class FetchUrlTool : ITool
             : body + $"\n\n[... characters {start}–{end} of {text.Length} — the end of the page]";
     }
 
+    /// <summary>The page at <paramref name="url"/> by this tool's network path, without its approval card: for a fetch the
+    /// person asked for themselves (<c>@url</c>). <see cref="Refusal"/> is the caller's to read first.</summary>
+    /// <remarks>⚠ The host check below is best-effort against DNS rebinding, and here no card follows it: the address is
+    /// the person's choice, and what it returns goes to the local model only.</remarks>
+    internal static Task<WebPage.WebText> FetchAsync(string url, CancellationToken ct) => GetStringCheckingRedirectsAsync(url, ct);
+
     /// <summary>
     /// GETs <paramref name="url"/>, following up to <see cref="MaxRedirects"/> redirects
     /// manually and re-validating EVERY hop against <see cref="IsPrivateOrLoopback"/>.
@@ -125,7 +131,7 @@ internal class FetchUrlTool : ITool
             // ⚠ Best-effort, not a closed gap: the actual GET below resolves DNS again on its own,
             // so a TTL≈0 attacker can answer public here and private there (classic rebinding).
             // Pinning the validated IP via ConnectCallback would close it; today the approval
-            // prompt upstream is the real boundary.
+            // prompt upstream is the real boundary for the model's calls (FetchAsync: the person's own).
             var check = IsPrivateOrLoopback(current) ? HostCheck.Private : await CheckHostAsync(current, ct);
             if (check == HostCheck.Private)
                 throw new ArgumentException(

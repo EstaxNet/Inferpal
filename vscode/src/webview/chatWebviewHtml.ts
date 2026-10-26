@@ -43,6 +43,8 @@ export function webviewStrings(): Record<string, string> {
     xrayWindow: t('window {0}% full'),
     xrayHint: t('Unchecked sections are excluded from the next turn.'),
     mentionSearchCode: t('Search the codebase for "{0}"'),
+    mentionAttachUrl: t('Attach the page {0}'),
+    mentionAttachCommit: t('Attach the commit {0}'),
     stepPaused: t('Agent paused after tool call. Resume to continue, or Cancel to abort.'),
     resume: t('Resume'),
     fixWithAi: t('Fix with AI'),

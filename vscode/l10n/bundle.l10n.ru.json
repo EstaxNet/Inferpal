@@ -76,6 +76,8 @@
   "Settings saved.": "Настройки сохранены.",
   "Loading settings…": "Загрузка настроек…",
   "Search the codebase for \"{0}\"": "Искать «{0}» в кодовой базе",
+  "Attach the page {0}": "Прикрепить страницу {0}",
+  "Attach the commit {0}": "Прикрепить коммит {0}",
   "Remove": "Убрать",
   "Attach the active file": "Прикрепить активный файл",
   "Attach the selection": "Прикрепить выделение",

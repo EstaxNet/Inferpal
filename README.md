@@ -157,8 +157,8 @@ or `/import roo` brings your models, rules, prompts and MCP servers over — [ho
   commands. [Reference](docs/tools.md)
 - **Reviews and git text** — `/check` reviews your diff, a branch or a commit, every finding anchored to a line;
   `/commit` and `/pr-description` write the text.
-- **Typed context** — `@file` `@folder` `@code` `@diff` `@problems` `@debugger` `@clipboard` `@tree`, and **@Docs**
-  to index a documentation site.
+- **Typed context** — `@file` `@folder` `@code` `@diff` `@commit` `@problems` `@debugger` `@clipboard` `@tree` `@url`, and
+  **@Docs** to index a documentation site.
 - **Your repository's setup, read as it is** — `AGENTS.md`, `CLAUDE.md`, the Copilot, Cursor, Cline, Roo and Continue
   instruction files, and `.aiignore`-style files, honoured by everything that reads for the model.
 - **Work beside you** — `/task` investigates in the background while you code; `/debug` drives a real debug session

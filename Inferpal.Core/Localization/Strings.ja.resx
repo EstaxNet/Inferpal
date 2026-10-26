@@ -385,6 +385,16 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="StoppedWorkCommand" xml:space="preserve"><value>バックグラウンドコマンド {0} — {1}</value></data>
   <data name="StoppedWorkDocs" xml:space="preserve"><value>ドキュメントソース {0} のインデックス作成 (`/docs reindex {0}`)</value></data>
   <data name="MentionDiffUnavailable" xml:space="preserve"><value>@diff には何も添付されていません — {0}</value></data>
+  <data name="MentionUrlDesc" xml:space="preserve"><value>Web ページのテキストを添付</value></data>
+  <data name="MentionCommitDesc" xml:space="preserve"><value>コミットのメッセージと diff を添付</value></data>
+  <data name="MentionUrlHint" xml:space="preserve"><value>アドレスを入力または貼り付け…</value></data>
+  <data name="MentionUrlUnavailable" xml:space="preserve"><value>@url には何も添付されていません — {0}</value></data>
+  <data name="MentionUrlEmpty" xml:space="preserve"><value>@url には何も添付されていません: {0} に読み取れるテキストがありません。</value></data>
+  <data name="MentionCommitUnavailable" xml:space="preserve"><value>@commit には何も添付されていません — {0}</value></data>
+  <data name="MentionCommitUnknown" xml:space="preserve"><value>@commit には何も添付されていません: '{0}' という名前のコミットはありません。ハッシュ、ブランチ、タグでコミットを指定できます。</value></data>
+  <data name="MentionCommitRange" xml:space="preserve"><value>@commit には何も添付されていません: '{0}' は範囲です。@commit は 1 つのコミットを添付します。範囲は `/check {0}` でレビューできます。</value></data>
+  <data name="MentionUrlNotAllowed" xml:space="preserve"><value>@url には何も添付されていません: 設定により Inferpal は {0} を取得できません (fetch_url がオフになっているか、deny ルールが一致しています)。</value></data>
+  <data name="MentionCommitNoneYet" xml:space="preserve"><value>@commit には何も添付されていません: このリポジトリにはまだコミットがありません。</value></data>
   <data name="MentionDiffEmpty" xml:space="preserve"><value>@diff には何も添付されていません: 追跡対象ファイルに未コミットの変更はありません。git に一度も追加されていない新しいファイルは diff に含まれません — @file で添付してください。</value></data>
   <data name="MentionCodeNothingFound" xml:space="preserve"><value>@code には何も添付されていません — {0}</value></data>
   <data name="MentionTreeNoRoot" xml:space="preserve"><value>@tree には何も添付されていません: マップを作成するソリューションまたはプロジェクト フォルダーが見つかりませんでした。</value></data>

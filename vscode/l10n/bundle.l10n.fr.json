@@ -76,6 +76,8 @@
   "Settings saved.": "Paramètres enregistrés.",
   "Loading settings…": "Chargement des paramètres…",
   "Search the codebase for \"{0}\"": "Rechercher « {0} » dans le code",
+  "Attach the page {0}": "Joindre la page {0}",
+  "Attach the commit {0}": "Joindre le commit {0}",
   "Remove": "Retirer",
   "Attach the active file": "Joindre le fichier actif",
   "Attach the selection": "Joindre la sélection",

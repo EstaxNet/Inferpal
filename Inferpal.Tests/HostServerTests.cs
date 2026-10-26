@@ -2757,6 +2757,40 @@ public partial class HostServerTests
         Assert.Contains("class Order", folder.Content, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// The host serves <c>@commit</c> (the list, then the chip) and <c>@url</c> to VS Code: what MentionUrlCommitTests holds
+    /// for the decision, reached through the two RPCs with the value the webview sends.
+    /// </summary>
+    [Fact]
+    public async Task MentionCommitAndUrl_AreServed_ThroughSearchAndResolve()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        async Task Git(string args) =>
+            Assert.Equal(0, (await Services.GitProcess.RunAsync(args, h.RootDir, CancellationToken.None)).ExitCode);
+        await Git("init -q -b main");
+        await Git("config user.email t@example.test");
+        await Git("config user.name t");
+        File.WriteAllText(Path.Combine(h.RootDir, "Pricing.cs"), "class Pricing { int HOST_LINE = 1; }\n");
+        await Git("add -A");
+        await Git("-c commit.gpgsign=false commit -q -m host-commit-subject");
+
+        var items = await h.Client.InvokeWithParameterObjectAsync<List<Host.MentionItemDto>>(
+            "mention/search", new { category = "commit", query = "host-commit" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var item = Assert.Single(items);
+        Assert.Equal("host-commit-subject", item.Detail);
+
+        var commit = await h.Client.InvokeWithParameterObjectAsync<Host.MentionResolveResult>(
+            "mention/resolve", new { category = "commit", value = item.Value }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.Equal($"📜 @commit {item.Value[..8]}", commit.Name);
+        Assert.Contains("+class Pricing { int HOST_LINE = 1; }", commit.Content, StringComparison.Ordinal);
+
+        var url = await h.Client.InvokeWithParameterObjectAsync<Host.MentionResolveResult>(
+            "mention/resolve", new { category = "url", value = "http://127.0.0.1:9/" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.Null(url.Name);
+        Assert.Contains("private/loopback", url.Notice, StringComparison.Ordinal);
+    }
+
     // The bug this locks: /test used to fall through to `Handled = false`, and since the VS Code
     // adapter only intercepts /fix /refactor /doc, the literal string "/test" reached the model,
     // which improvised an answer about a command it knows nothing about. Anything but

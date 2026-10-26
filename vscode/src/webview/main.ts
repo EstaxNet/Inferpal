@@ -2406,7 +2406,9 @@ let mentionStart = -1; // offset of '@' in the textarea, -1 = popup closed
 let mentionActions: (() => void)[] = [];
 let mentionDebounce: ReturnType<typeof setTimeout> | undefined;
 
-const COMMITTED_RE = /@(file|code|folder) ([^\n@]*)$/i;
+// An address or a revision holds no space and may hold an '@': its value ends at the first space, past which the line
+// is the question (MentionController.MentionQueryRegex reads it the same way).
+const COMMITTED_RE = /@(?:(file|code|folder) ([^\n@]*)|(url|commit) (\S*))$/i;
 const TYPING_RE = /@([\w.]*)$/;
 
 function closeMentions(): void {
@@ -2449,8 +2451,8 @@ function detectMention(): void {
   const committed = before.match(COMMITTED_RE);
   if (committed) {
     mentionStart = caret - committed[0].length;
-    const category = committed[1].toLowerCase();
-    const query = committed[2];
+    const category = (committed[1] ?? committed[3]).toLowerCase();
+    const query = committed[2] ?? committed[4];
     if (category === 'code') {
       // Semantic search has no intermediate hits: one action row running the query.
       openMentionRows(query.trim().length === 0 ? [] : [{
@@ -2461,6 +2463,23 @@ function detectMention(): void {
         },
       }]);
       return;
+    }
+    if (category === 'url') {
+      // An address has no intermediate hits either: one action row fetching it.
+      const url = query.trim();
+      openMentionRows(url.length === 0 ? [] : [{
+        build: (row) => { setIcon(row, 'attach', t('mentionAttachUrl', url), 13); },
+        action: () => {
+          stripMentionToken();
+          post({ type: 'resolveMention', category: 'url', value: url });
+        },
+      }]);
+      return;
+    }
+    if (category === 'commit') {
+      // The typed line now, never after the search: Enter takes the first row, and an older one would attach the
+      // revision typed before. The latest commits join it when the host answers.
+      openMentionRows([commitTypedRow(query.trim())]);
     }
     if (mentionDebounce) {
       clearTimeout(mentionDebounce);
@@ -2575,11 +2594,23 @@ function renderMentions(items: string[]): void {
 }
 
 /** @file / @folder sub-search results pushed back by the extension. */
+/** @commit's first row: the typed revision — a branch, a tag, an older hash; the last commit before anything is typed. */
+function commitTypedRow(revision: string): { build: (row: HTMLElement) => void; action: () => void } {
+  return {
+    build: (row) => { setIcon(row, 'history', t('mentionAttachCommit', revision || 'HEAD'), 13); },
+    action: () => {
+      stripMentionToken();
+      post({ type: 'resolveMention', category: 'commit', value: revision });
+    },
+  };
+}
+
 function renderMentionResults(category: string, items: WvMentionItem[]): void {
   if (mentionStart < 0) {
     return;
   }
-  openMentionRows(items.map((item) => ({
+  const typed = category === 'commit' ? [commitTypedRow(latestMentionSearch.query.trim())] : [];
+  openMentionRows([...typed, ...items.map((item) => ({
     build: (row: HTMLElement) => {
       const label = document.createElement('span');
       label.className = 'slash-cmd';
@@ -2605,7 +2636,7 @@ function renderMentionResults(category: string, items: WvMentionItem[]): void {
         post({ type: 'resolveMention', category, value: item.value });
       }
     },
-  })));
+  }))]);
 }
 
 // ── Context chips + "+" attach menu ──────────────────────────────────────────

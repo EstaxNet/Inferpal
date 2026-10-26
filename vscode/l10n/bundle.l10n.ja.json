@@ -76,6 +76,8 @@
   "Settings saved.": "設定を保存しました。",
   "Loading settings…": "設定を読み込み中…",
   "Search the codebase for \"{0}\"": "コードベースで「{0}」を検索",
+  "Attach the page {0}": "ページ {0} を添付",
+  "Attach the commit {0}": "コミット {0} を添付",
   "Remove": "削除",
   "Attach the active file": "アクティブなファイルを添付",
   "Attach the selection": "選択範囲を添付",

@@ -76,6 +76,8 @@
   "Settings saved.": "Ustawienia zapisane.",
   "Loading settings…": "Ładowanie ustawień…",
   "Search the codebase for \"{0}\"": "Szukaj „{0}” w kodzie",
+  "Attach the page {0}": "Dołącz stronę {0}",
+  "Attach the commit {0}": "Dołącz commit {0}",
   "Remove": "Usuń",
   "Attach the active file": "Dołącz aktywny plik",
   "Attach the selection": "Dołącz zaznaczenie",

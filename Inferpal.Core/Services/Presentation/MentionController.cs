@@ -7,7 +7,7 @@ using Inferpal.Services.Tools;
 namespace Inferpal.Services.Presentation;
 
 /// <summary>Context-provider categories offered when typing <c>@</c> in the chat prompt.</summary>
-internal enum MentionKind { File, Code, Folder, Clipboard, Tree, Diff, Problems, Debugger }
+internal enum MentionKind { File, Code, Folder, Clipboard, Tree, Diff, Problems, Debugger, Url, Commit }
 
 /// <summary>What a mention resolves to: a chip (label and content), or a notice when there is nothing to attach.</summary>
 internal readonly record struct MentionOutcome(string? Label, string? Content, string? Notice);
@@ -47,10 +47,12 @@ internal static class MentionController
         new(@"@([\w.]*)$", RegexOptions.Compiled, RegexBudget.Default);
 
     // A query-based category is "committed" once a space follows its @token
-    // (e.g. "@file Foo", "@folder Serv", "@code auth logic"). Only file/code/folder drill down;
-    // the instant providers (clipboard/tree/diff/problems) attach straight from the category menu.
+    // (e.g. "@file Foo", "@folder Serv", "@code auth logic", "@url docs.rs"). Only file/code/folder/url/commit drill
+    // down; the instant providers (clipboard/tree/diff/problems) attach straight from the category menu.
+    // ⚠ An address or a revision holds no space, and may hold an '@' (npmjs.com/package/@types/node, HEAD@{1}): its value
+    // ends at the first space — past it, the rest of the line is the question, which picking the row would strip.
     internal static readonly Regex MentionQueryRegex =
-        new(@"@(?<cat>file|code|folder)[ ](?<q>[^\n@]*)$",
+        new(@"@(?:(?<cat>file|code|folder)[ ](?<q>[^\n@]*)|(?<cat>url|commit)[ ](?<q>\S*))$",
             RegexOptions.Compiled | RegexOptions.IgnoreCase, RegexBudget.Default);
 
     internal static readonly MentionCategory[] Categories =
@@ -63,6 +65,8 @@ internal static class MentionController
         new("@diff",      MentionKind.Diff,      () => Strings.MentionDiffDesc,      QueryBased: false),
         new("@problems",  MentionKind.Problems,  () => Strings.MentionProblemsDesc,  QueryBased: false),
         new("@debugger",  MentionKind.Debugger,  () => Strings.MentionDebuggerDesc,  QueryBased: false),
+        new("@url",       MentionKind.Url,       () => Strings.MentionUrlDesc,       QueryBased: true),
+        new("@commit",    MentionKind.Commit,    () => Strings.MentionCommitDesc,    QueryBased: true),
     ];
 
     /// <summary>File extensions eligible for <c>@file</c> search and folder context bodies.</summary>
@@ -131,6 +135,114 @@ internal static class MentionController
         _ => new MentionOutcome(
             report.DiffCut ? Strings.MentionDiffCutLabel(label, report.DiffShown, report.DiffTotal) : label, report.Text, null),
     };
+
+    /// <summary>
+    /// What <c>@url</c> attaches: the page's readable text, fetched by <c>fetch_url</c>'s network path — its refusal of
+    /// private addresses and its re-checked redirects included — or a notice saying why there is none.
+    /// </summary>
+    /// <param name="notAllowed">Why the person's settings refuse fetching the address (<c>fetch_url</c> turned off, a deny
+    /// rule: <see cref="Execution.ToolRegistry.PersonFetchRefusal"/>), or <c>null</c>.</param>
+    /// <remarks>⚠ No approval card: the address is the one the person typed, and the card guards against a model sending
+    /// data out. But the switch and the deny rules are the person's own: a fetch they turned off stays off. A binary page
+    /// is a notice, never a chip whose content says it is binary.</remarks>
+    internal static async Task<MentionOutcome> UrlMentionAsync(string typed, Func<string, string?> notAllowed, CancellationToken ct)
+    {
+        var url = typed.Trim();
+        if (url.Length == 0) return new(null, null, Strings.MentionNothingToAttach("url"));
+        if (!url.Contains("://", StringComparison.Ordinal)) url = "https://" + url;
+        if (FetchUrlTool.Refusal(url) is { } refused) return new(null, null, Strings.MentionUrlUnavailable(refused));
+        if (notAllowed(url) is { } off) return new(null, null, off);
+
+        WebPage.WebText page;
+        try { page = await FetchUrlTool.FetchAsync(url, ct); }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex) { return new(null, null, Strings.MentionUrlUnavailable(Diagnostics.RootMessage(ex))); }
+
+        var text = FetchUrlTool.Readable(page);
+        if (page.Binary) return new(null, null, Strings.MentionUrlUnavailable(text));
+        if (string.IsNullOrWhiteSpace(text)) return new(null, null, Strings.MentionUrlEmpty(url));
+        var shown = Uri.TryCreate(url, UriKind.Absolute, out var u) ? u.Host + u.AbsolutePath.TrimEnd('/') : url;
+        return new("🌐 " + ChatTurnPolicy.OneLinePreview(shown, 48), $"{url}\n\n{text}", null);
+    }
+
+    /// <summary>
+    /// The commits <c>@commit</c> offers under the line that attaches the typed revision: the latest ones whose hash
+    /// starts with <paramref name="query"/> or whose subject holds it, each valued by its full object name.
+    /// </summary>
+    /// <remarks>Only the latest 200 are looked through: an older commit is attached by its hash, branch or tag, through the
+    /// typed line. Nothing on a folder outside a repository or a git that refused: the typed line says why.</remarks>
+    internal static async Task<IReadOnlyList<(string Short, string Subject, string Sha)>> FindCommitsAsync(
+        string? root, string query, CancellationToken ct)
+    {
+        if (await WorkTreeAsync(root, ct) is not { } workTree) return [];
+        var run = await GitProcess.For(workTree)("log -n 200 --no-show-signature --no-color --format=%H%x09%h%x09%s", ct);
+        if (run.ExitCode != 0) return [];
+        var q = query.Trim();
+        return run.Output.Split('\n')
+            .Select(l => l.TrimEnd('\r').Split('\t', 3))
+            .Where(p => p.Length == 3 && p[0].Length >= 40)
+            .Where(p => q.Length == 0 || p[0].StartsWith(q, StringComparison.OrdinalIgnoreCase)
+                                      || p[2].Contains(q, StringComparison.OrdinalIgnoreCase))
+            .Take(8)
+            .Select(p => (p[1], p[2], p[0]))
+            .ToList();
+    }
+
+    /// <summary>
+    /// What <c>@commit</c> attaches: one commit's message and its diff against its first parent, the files the workspace's
+    /// ignore files exclude left out and named — or a notice when there is no such commit to read.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ One commit, never a range: <c>a..b</c> is refused saying so. The revision is read by <see cref="Commands.CheckTarget"/> —
+    /// the person's text never reaches git as an option, a name two refs share is refused naming them — and the diff is
+    /// <c>/check</c>'s: a root commit against nothing, a merge against its first parent, the edge of a shallow clone said.
+    /// </remarks>
+    internal static async Task<MentionOutcome> CommitMentionAsync(string? root, string typed, CancellationToken ct)
+    {
+        var revision = typed.Trim() is { Length: > 0 } t ? t : "HEAD";
+        if (await WorkTreeAsync(root, ct) is not { } workTree)
+            return new(null, null, Strings.MentionCommitUnavailable(Strings.GitNotRepo));
+        if (revision.Contains("..", StringComparison.Ordinal)) return new(null, null, Strings.MentionCommitRange(revision));
+        if (!Commands.CheckTarget.IsRevisionText(revision)) return new(null, null, Strings.MentionCommitUnknown(revision));
+
+        var git = GitProcess.For(workTree);
+        var (sha, why) = await Commands.CheckTarget.CommitOrWhyAsync(revision, git, ct);
+        if (why is not null) return new(null, null, Strings.MentionCommitUnavailable(why));
+        if (sha is null)
+            // No HEAD at all is a repository without a commit yet, never a name to type better.
+            return new(null, null, (await git("rev-parse --verify --quiet HEAD", ct)).ExitCode == 0
+                ? Strings.MentionCommitUnknown(revision)
+                : Strings.MentionCommitNoneYet);
+        // Resolved by its object name, never the person's text: a branch would be read as what it adds to HEAD.
+        var (target, nothing) = await Commands.CheckTarget.ResolveAsync(sha, git, ct);
+        if (target is null) return new(null, null, Strings.MentionCommitUnavailable(nothing ?? Strings.GitNotRepo));
+
+        var log = $"log -1 --no-show-signature --no-decorate --no-color --format=medium {sha}";
+        var message = await git(log, ct);
+        if (GitProcess.FailureNote(log, message) is { } logFailed) return new(null, null, Strings.MentionCommitUnavailable(logFailed));
+        var diff = await git(target.DiffArgs, ct);
+        if (GitProcess.FailureNote(target.DiffArgs, diff) is { } diffFailed)
+            return new(null, null, Strings.MentionCommitUnavailable(diffFailed));
+
+        // The lines of an excluded file are its content: its sections leave the diff, and the note above says so.
+        var excluded = new Governance.ContentExclusions.Tally();
+        var readable = Governance.ContentExclusions.WithoutExcludedFiles(diff.Output, workTree, excluded).TrimEnd();
+        var content  = new StringBuilder(message.Output.TrimEnd()).Append("\n\n");
+        if (excluded.Count > 0) content.Append(excluded.Note()).Append('\n');
+        content.Append(readable.Length > 0 ? readable : excluded.Count > 0 ? "" : "(no change against its first parent)");
+        return new($"📜 @commit {target.Shown}", content.ToString().TrimEnd(), null);
+    }
+
+    /// <summary>The git work tree that holds <paramref name="root"/>, or <c>null</c> outside one.</summary>
+    /// <remarks>Asked of git when no <c>.git</c> is found above the folder as written: a workspace that is a link into a
+    /// repository is in it.</remarks>
+    private static async Task<string?> WorkTreeAsync(string? root, CancellationToken ct)
+    {
+        if (string.IsNullOrEmpty(root)) return null;
+        if (GitProcess.WorkTreeOf(root) is { } found) return found;
+        var top = await GitProcess.For(root)("rev-parse --show-toplevel", ct);
+        return top.ExitCode == 0 && GitProcess.FirstLine(top.Output) is { Length: > 0 } dir && Directory.Exists(dir) ? dir : null;
+    }
 
     /// <summary>
     /// What <c>@problems</c> attaches in Visual Studio, decided on the build verdict's single reader: the build's answer,

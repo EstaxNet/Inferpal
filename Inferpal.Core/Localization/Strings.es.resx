@@ -385,6 +385,16 @@ Copia de seguridad: {0}</value></data>
   <data name="StoppedWorkCommand" xml:space="preserve"><value>comando en segundo plano {0} — {1}</value></data>
   <data name="StoppedWorkDocs" xml:space="preserve"><value>indexación de la fuente de documentación {0} (`/docs reindex {0}`)</value></data>
   <data name="MentionDiffUnavailable" xml:space="preserve"><value>No se adjuntó nada para @diff — {0}</value></data>
+  <data name="MentionUrlDesc" xml:space="preserve"><value>adjuntar el texto de una página web</value></data>
+  <data name="MentionCommitDesc" xml:space="preserve"><value>adjuntar el mensaje y el diff de un commit</value></data>
+  <data name="MentionUrlHint" xml:space="preserve"><value>escribe o pega una dirección…</value></data>
+  <data name="MentionUrlUnavailable" xml:space="preserve"><value>No se adjuntó nada para @url — {0}</value></data>
+  <data name="MentionUrlEmpty" xml:space="preserve"><value>No se adjuntó nada para @url: {0} no tiene texto legible.</value></data>
+  <data name="MentionCommitUnavailable" xml:space="preserve"><value>No se adjuntó nada para @commit — {0}</value></data>
+  <data name="MentionCommitUnknown" xml:space="preserve"><value>No se adjuntó nada para @commit: ningún commit se llama '{0}'. Un hash, una rama o una etiqueta designa uno.</value></data>
+  <data name="MentionCommitRange" xml:space="preserve"><value>No se adjuntó nada para @commit: '{0}' es un rango, y @commit adjunta un solo commit. `/check {0}` revisa un rango.</value></data>
+  <data name="MentionUrlNotAllowed" xml:space="preserve"><value>No se adjuntó nada para @url: tu configuración no permite que Inferpal obtenga {0} (fetch_url está desactivado o una regla deny la cubre).</value></data>
+  <data name="MentionCommitNoneYet" xml:space="preserve"><value>No se adjuntó nada para @commit: este repositorio aún no tiene ningún commit.</value></data>
   <data name="MentionDiffEmpty" xml:space="preserve"><value>No se adjuntó nada para @diff: no hay ningún cambio sin confirmar en un archivo con seguimiento. Un archivo nuevo que nunca se añadió a git no forma parte de un diff; adjúntelo con @file.</value></data>
   <data name="MentionCodeNothingFound" xml:space="preserve"><value>No se adjuntó nada para @code — {0}</value></data>
   <data name="MentionTreeNoRoot" xml:space="preserve"><value>No se adjuntó nada para @tree: no se encontró ninguna solución ni carpeta de proyecto que representar.</value></data>

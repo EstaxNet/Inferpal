@@ -65,13 +65,20 @@ public sealed class ToolSwitchesFollowTheFileTests : IDisposable
             Task.FromResult<IReadOnlyList<string>>([]);
     }
 
-    private ToolRegistry Registry(InferpalConfig config, IPackageLookup? lookup = null)
+    /// <summary>An approval service that holds the rules (no card is ever shown here).</summary>
+    private sealed class HoldsRules(InferpalConfig config) : ApprovalServiceBase(config, () => null)
+    {
+        protected override Task<ApprovalDecision> PromptUserAsync(string message, DiffInfo? diff, CancellationToken ct) =>
+            Task.FromResult(ApprovalDecision.Once);
+    }
+
+    private ToolRegistry Registry(InferpalConfig config, IPackageLookup? lookup = null, IApprovalService? rules = null)
     {
         var client = new FakeInferenceProvider();
         var editor = new NullEditorSurface();
         var index  = new ProjectIndexService(client, config, new LspSemanticProvider());
         index.SetRoot(_root);
-        var approval = new Approves();
+        var approval = rules ?? new Approves();
         return new ToolRegistry(editor, approval, config, index, client, new ProjectMapService(editor),
                                 new McpToolService(config, approval), new DocsIndexService(client, config),
                                 new OpenDocumentOverlay(), new NullDebugSession(),
@@ -102,6 +109,23 @@ public sealed class ToolSwitchesFollowTheFileTests : IDisposable
         Assert.False(Offers(tools, "run_command"));
         Assert.NotNull(tools.TurnedOffRefusal("run_command"));
         Assert.Contains("run_command", tools.TurnedOffKeys());
+    }
+
+    /// <summary><c>@url</c> skips the card, never the person's own switch and deny rules — read from the file now.</summary>
+    [Fact]
+    public void ThePersonsOwnFetch_AnswersToTheSwitchAndTheDenyRules()
+    {
+        new InferpalConfig().Save();
+        var config = InferpalConfig.Load();
+        var tools  = Registry(config, rules: new HoldsRules(config));
+        Assert.Null(tools.PersonFetchRefusal("https://example.com/docs"));                // witness: allowed before
+
+        WriteAsTheOtherWindow(c => c.DisabledTools = "fetch_url");
+        Assert.NotNull(tools.PersonFetchRefusal("https://example.com/docs"));
+
+        WriteAsTheOtherWindow(c => { c.DisabledTools = string.Empty; c.PermissionRules = @"deny fetch_url .*internal\..*"; });
+        Assert.NotNull(tools.PersonFetchRefusal("https://wiki.internal.corp/page"));
+        Assert.Null(tools.PersonFetchRefusal("https://example.com/docs"));                // the rule is narrow
     }
 
     [Fact]

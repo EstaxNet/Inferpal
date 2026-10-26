@@ -385,6 +385,16 @@ Backup: {0}</value></data>
   <data name="StoppedWorkCommand" xml:space="preserve"><value>comando in background {0} — {1}</value></data>
   <data name="StoppedWorkDocs" xml:space="preserve"><value>indicizzazione della fonte di documentazione {0} (`/docs reindex {0}`)</value></data>
   <data name="MentionDiffUnavailable" xml:space="preserve"><value>Nessun allegato per @diff — {0}</value></data>
+  <data name="MentionUrlDesc" xml:space="preserve"><value>allega il testo di una pagina web</value></data>
+  <data name="MentionCommitDesc" xml:space="preserve"><value>allega il messaggio e il diff di un commit</value></data>
+  <data name="MentionUrlHint" xml:space="preserve"><value>digita o incolla un indirizzo…</value></data>
+  <data name="MentionUrlUnavailable" xml:space="preserve"><value>Nessun allegato per @url — {0}</value></data>
+  <data name="MentionUrlEmpty" xml:space="preserve"><value>Nessun allegato per @url: {0} non ha testo leggibile.</value></data>
+  <data name="MentionCommitUnavailable" xml:space="preserve"><value>Nessun allegato per @commit — {0}</value></data>
+  <data name="MentionCommitUnknown" xml:space="preserve"><value>Nessun allegato per @commit: nessun commit si chiama '{0}'. Un hash, un branch o un tag ne indica uno.</value></data>
+  <data name="MentionCommitRange" xml:space="preserve"><value>Nessun allegato per @commit: '{0}' è un intervallo, e @commit allega un solo commit. `/check {0}` revisiona un intervallo.</value></data>
+  <data name="MentionUrlNotAllowed" xml:space="preserve"><value>Nessun allegato per @url: le tue impostazioni non permettono a Inferpal di recuperare {0} (fetch_url è disattivato, oppure una regola deny lo copre).</value></data>
+  <data name="MentionCommitNoneYet" xml:space="preserve"><value>Nessun allegato per @commit: questo repository non ha ancora nessun commit.</value></data>
   <data name="MentionDiffEmpty" xml:space="preserve"><value>Nessun allegato per @diff: non c’è alcuna modifica non committata in un file tracciato. Un nuovo file mai aggiunto a git non fa parte di un diff — allegalo con @file.</value></data>
   <data name="MentionCodeNothingFound" xml:space="preserve"><value>Nessun allegato per @code — {0}</value></data>
   <data name="MentionTreeNoRoot" xml:space="preserve"><value>Nessun allegato per @tree: non è stata trovata alcuna soluzione né cartella di progetto da mappare.</value></data>

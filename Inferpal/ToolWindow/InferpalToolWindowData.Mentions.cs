@@ -139,7 +139,60 @@ internal partial class InferpalToolWindowData
                 return;
             }
 
-            // ── 1b. "@file Foo" / "@folder Bar" committed → debounced filesystem search. ──
+            // ── 1b. "@url …" committed: a single action item attaching the typed address. ──
+            case MentionCommittedQuery { Category: "url" } url:
+            {
+                MentionSuggestions.Clear();
+                var q = url.Query.Trim();
+                MentionSuggestions.Add(q.Length > 0
+                    ? new MentionSuggestion("🌐 " + q, Strings.MentionUrlDesc, text, sub, ct => SelectUrlMentionAsync(q, ct))
+                    : new MentionSuggestion("🌐 " + Strings.MentionUrlHint, Strings.MentionUrlDesc, text, sub,
+                                            _ => Task.CompletedTask));
+                HasMentionSuggestions = true;
+                return;
+            }
+
+            // ── 1c. "@commit …" committed: the typed revision (HEAD before anything is typed), then the latest commits
+            //        whose hash or subject matches — debounced, each search runs git. ──
+            case MentionCommittedQuery { Category: "commit" } commit:
+            {
+                var q      = commit.Query.Trim();
+                var root   = _indexService.RootDir;
+                // The typed line now, never after the search: Enter takes the first item, and an older line would attach
+                // the revision typed before.
+                MentionSuggestion Typed() => new(
+                    "📜 " + (q.Length > 0 ? q : "HEAD"), Strings.MentionCommitDesc, text, sub,
+                    ct => SelectCommitMentionAsync(q, ct));
+                MentionSuggestions.Clear();
+                MentionSuggestions.Add(Typed());
+                HasMentionSuggestions = true;
+                var catCts = _mentionCts = new CancellationTokenSource();
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await Task.Delay(120, catCts.Token);
+                        var found = await MentionController.FindCommitsAsync(root, q, catCts.Token);
+                        if (catCts.IsCancellationRequested) return;
+                        Post(() =>
+                        {
+                            MentionSuggestions.Clear();
+                            MentionSuggestions.Add(Typed());
+                            foreach (var c in found)
+                            {
+                                var sha = c.Sha;
+                                MentionSuggestions.Add(new MentionSuggestion(
+                                    c.Short, c.Subject, text, sub, ct => SelectCommitMentionAsync(sha, ct)));
+                            }
+                            HasMentionSuggestions = true;
+                        });
+                    }
+                    catch (OperationCanceledException) { }
+                }, catCts.Token);
+                return;
+            }
+
+            // ── 1d. "@file Foo" / "@folder Bar" committed → debounced filesystem search. ──
             case MentionCommittedQuery committed:
             {
                 var ql         = committed.Query.Trim().ToLowerInvariant();
@@ -405,33 +458,42 @@ internal partial class InferpalToolWindowData
         }
     }
 
-    private async Task SelectCodeMentionAsync(string query, CancellationToken ct)
+    private Task SelectCodeMentionAsync(string query, CancellationToken ct) =>
+        AttachMentionOutcomeAsync(async () =>
+            // A notice, never a chip, when there is no index to search (MentionController.CodeRefusal); decided on the hit
+            // count after: a search that found nothing is a notice too.
+            MentionController.CodeRefusal(_indexService) is { } noIndex
+                ? new MentionOutcome(null, null, noIndex)
+                : MentionController.CodeMention(
+                    await _tools.CodeSearch.AnswerAsync(MentionArgs(new { query }), ct),
+                    "🔮 " + (query.Length > 40 ? query[..40] + "…" : query)));
+
+    /// <summary><c>@url</c>: the page's text as a chip, or the notice that says why there is none.</summary>
+    private Task SelectUrlMentionAsync(string url, CancellationToken ct) =>
+        AttachMentionOutcomeAsync(() => MentionController.UrlMentionAsync(url, _tools.PersonFetchRefusal, ct));
+
+    /// <summary><c>@commit</c>: one commit's message and diff as a chip, or the notice that says why there is none.</summary>
+    private Task SelectCommitMentionAsync(string revision, CancellationToken ct) =>
+        AttachMentionOutcomeAsync(() => MentionController.CommitMentionAsync(_indexService.RootDir, revision, ct));
+
+    /// <summary>Strips the typed mention, then attaches what <paramref name="resolve"/> found or says its notice.</summary>
+    private async Task AttachMentionOutcomeAsync(Func<Task<MentionOutcome>> resolve)
     {
         try
         {
             await RunOnVMContextAsync(StripMentionToken);
-            // A notice, never a chip, when there is no index to search (MentionController.CodeRefusal).
-            if (MentionController.CodeRefusal(_indexService) is { } noIndex)
+            var outcome = await resolve();
+            if (outcome.Notice is not null)
             {
-                await NotifyMentionAsync(noIndex);
+                await NotifyMentionAsync(outcome.Notice);
                 return;
             }
-            // Decided on the hit count: a search that found nothing is a notice, not a chip.
-            var code = MentionController.CodeMention(
-                await _tools.CodeSearch.AnswerAsync(MentionArgs(new { query }), ct),
-                "🔮 " + (query.Length > 40 ? query[..40] + "…" : query));
-            if (code.Notice is not null)
-            {
-                await NotifyMentionAsync(code.Notice);
-                return;
-            }
-            await RunOnVMContextAsync(() => AddAttachment(code.Label!, code.Content!));
+            await RunOnVMContextAsync(() => AddAttachment(outcome.Label!, outcome.Content!));
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
-            var m = ex.Message;
-            await NotifyMentionAsync(Strings.AttachError(m));
+            await NotifyMentionAsync(Strings.AttachError(ex.Message));
         }
     }
 

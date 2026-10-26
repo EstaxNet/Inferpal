@@ -385,6 +385,16 @@
   <data name="StoppedWorkCommand" xml:space="preserve"><value>фоновая команда {0} — {1}</value></data>
   <data name="StoppedWorkDocs" xml:space="preserve"><value>индексация источника документации {0} (`/docs reindex {0}`)</value></data>
   <data name="MentionDiffUnavailable" xml:space="preserve"><value>Для @diff ничего не прикреплено — {0}</value></data>
+  <data name="MentionUrlDesc" xml:space="preserve"><value>прикрепить текст веб-страницы</value></data>
+  <data name="MentionCommitDesc" xml:space="preserve"><value>прикрепить сообщение и diff коммита</value></data>
+  <data name="MentionUrlHint" xml:space="preserve"><value>введите или вставьте адрес…</value></data>
+  <data name="MentionUrlUnavailable" xml:space="preserve"><value>Для @url ничего не прикреплено — {0}</value></data>
+  <data name="MentionUrlEmpty" xml:space="preserve"><value>Для @url ничего не прикреплено: на {0} нет читаемого текста.</value></data>
+  <data name="MentionCommitUnavailable" xml:space="preserve"><value>Для @commit ничего не прикреплено — {0}</value></data>
+  <data name="MentionCommitUnknown" xml:space="preserve"><value>Для @commit ничего не прикреплено: нет коммита с именем '{0}'. Коммит указывается хешем, веткой или тегом.</value></data>
+  <data name="MentionCommitRange" xml:space="preserve"><value>Для @commit ничего не прикреплено: '{0}' — это диапазон, а @commit прикрепляет один коммит. `/check {0}` проверяет диапазон.</value></data>
+  <data name="MentionUrlNotAllowed" xml:space="preserve"><value>Для @url ничего не прикреплено: ваши настройки не позволяют Inferpal загрузить {0} (fetch_url отключён или совпало правило deny).</value></data>
+  <data name="MentionCommitNoneYet" xml:space="preserve"><value>Для @commit ничего не прикреплено: в этом репозитории ещё нет коммитов.</value></data>
   <data name="MentionDiffEmpty" xml:space="preserve"><value>Для @diff ничего не прикреплено: в отслеживаемых файлах нет незакоммиченных изменений. Новый файл, который ни разу не добавляли в git, не входит в diff — прикрепите его через @file.</value></data>
   <data name="MentionCodeNothingFound" xml:space="preserve"><value>Для @code ничего не прикреплено — {0}</value></data>
   <data name="MentionTreeNoRoot" xml:space="preserve"><value>Для @tree ничего не прикреплено: не найдено ни решения, ни папки проекта для построения карты.</value></data>

@@ -385,6 +385,16 @@ Sicherung: {0}</value></data>
   <data name="StoppedWorkCommand" xml:space="preserve"><value>Hintergrundbefehl {0} — {1}</value></data>
   <data name="StoppedWorkDocs" xml:space="preserve"><value>Indizierung der Dokumentationsquelle {0} (`/docs reindex {0}`)</value></data>
   <data name="MentionDiffUnavailable" xml:space="preserve"><value>Für @diff wurde nichts angehängt — {0}</value></data>
+  <data name="MentionUrlDesc" xml:space="preserve"><value>Text einer Webseite anhängen</value></data>
+  <data name="MentionCommitDesc" xml:space="preserve"><value>Nachricht und Diff eines Commits anhängen</value></data>
+  <data name="MentionUrlHint" xml:space="preserve"><value>Adresse eingeben oder einfügen…</value></data>
+  <data name="MentionUrlUnavailable" xml:space="preserve"><value>Für @url wurde nichts angehängt — {0}</value></data>
+  <data name="MentionUrlEmpty" xml:space="preserve"><value>Für @url wurde nichts angehängt: {0} enthält keinen lesbaren Text.</value></data>
+  <data name="MentionCommitUnavailable" xml:space="preserve"><value>Für @commit wurde nichts angehängt — {0}</value></data>
+  <data name="MentionCommitUnknown" xml:space="preserve"><value>Für @commit wurde nichts angehängt: Kein Commit heißt '{0}'. Ein Hash, ein Branch oder ein Tag benennt einen.</value></data>
+  <data name="MentionCommitRange" xml:space="preserve"><value>Für @commit wurde nichts angehängt: '{0}' ist ein Bereich, und @commit hängt einen einzelnen Commit an. `/check {0}` prüft einen Bereich.</value></data>
+  <data name="MentionUrlNotAllowed" xml:space="preserve"><value>Für @url wurde nichts angehängt: Ihre Einstellungen erlauben Inferpal nicht, {0} abzurufen (fetch_url ist ausgeschaltet oder eine deny-Regel trifft zu).</value></data>
+  <data name="MentionCommitNoneYet" xml:space="preserve"><value>Für @commit wurde nichts angehängt: Dieses Repository hat noch keinen Commit.</value></data>
   <data name="MentionDiffEmpty" xml:space="preserve"><value>Für @diff wurde nichts angehängt: Es gibt keine nicht committete Änderung an einer verfolgten Datei. Eine neue Datei, die nie zu git hinzugefügt wurde, gehört nicht zu einem Diff — hängen Sie sie mit @file an.</value></data>
   <data name="MentionCodeNothingFound" xml:space="preserve"><value>Für @code wurde nichts angehängt — {0}</value></data>
   <data name="MentionTreeNoRoot" xml:space="preserve"><value>Für @tree wurde nichts angehängt: Es wurde keine Projektmappe und kein Projektordner zum Abbilden gefunden.</value></data>

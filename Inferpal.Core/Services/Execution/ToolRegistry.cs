@@ -341,6 +341,16 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     }
 
     /// <summary>
+    /// Why the person's own fetch of <paramref name="url"/> (<c>@url</c>) is not made: <c>fetch_url</c> turned off, or a
+    /// deny rule that matches the address — <c>null</c> otherwise. The person's gesture answers to the same switch and
+    /// rules as the model's call, never to its card.
+    /// </summary>
+    internal string? PersonFetchRefusal(string url) =>
+        (_tools.TryGetValue("fetch_url", out var fetch) && TurnedOff(fetch)) || _rules.Refuses("fetch_url", url)
+            ? Localization.Strings.MentionUrlNotAllowed(url)
+            : null;
+
+    /// <summary>
     /// Whether <paramref name="tool"/> is turned off — by the user (<see cref="InferpalConfig.DisabledTools"/>) or, for an
     /// MCP tool, by its server's entry (<c>disabledTools</c>). A tool turned off is never offered to the model.
     /// </summary>

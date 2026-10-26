@@ -10,10 +10,12 @@ replaced with the corresponding attachment.
 | `@folder` | A folder: the list of its files, plus the text of the first of them |
 | `@code` | A semantic search of the indexed codebase — type the query after the token |
 | `@diff` | The current `git diff` |
+| `@commit` | One commit's message and diff — pick one of the latest, or type a hash, a branch or a tag (alone, the last commit) |
 | `@problems` | The current build errors |
 | `@debugger` | The live debugger break state (via `get_debugger_state`) |
 | `@clipboard` | The clipboard contents |
 | `@tree` | The solution tree |
+| `@url` | A web page's text — type or paste the address after the token |
 
 > [!TIP]
 > The `@`-mention popup and the `/`-command popup are mutually exclusive — typing `@` opens
@@ -29,9 +31,16 @@ replaced with the corresponding attachment.
 > [!NOTE]
 > **A mention with nothing to attach says why instead of leaving a chip.** `@folder` on a path that does not exist, or
 > on a file (use `@file`), `@code` while there is no index to search or when its search finds nothing, `@tree` with no
-> solution or project folder to map, and `@diff` outside a git repository or with no uncommitted change, answer with a
-> short notice — a chip always means something joined your question. A long diff is
+> solution or project folder to map, `@diff` outside a git repository or with no uncommitted change, `@commit` on a name no commit has
+> or on a range (`a..b`: `/check` reviews a range), and `@url` on a page that cannot be fetched, is binary or has no text,
+> answer with a short notice — a chip always means something joined your question. A long diff is
 > cut to the size of one attachment, and its chip says how many characters it kept.
+
+> [!NOTE]
+> **`@url` fetches the address you typed, without asking.** It goes the way `fetch_url` goes — a private or local address
+> is refused, and so is a redirect to one; `fetch_url` turned off or a deny rule that matches the address refuses it too —
+> but there is no approval card: you typed the address yourself. `@commit` leaves out the files your ignore files exclude,
+> and says how many.
 
 > [!NOTE]
 > **A file your repository keeps away from AI tools is never attached.** `@file`, a chip, a path typed after `@` or an ACP
@@ -40,8 +49,8 @@ replaced with the corresponding attachment.
 > (see [Features → Safety](features.md#safety)).
 
 > [!NOTE]
-> **VS Code:** typed mentions work there too (since 1.2.0) — the eight categories from
-> `@file` to `@tree` are offered in a two-level popup, and resolved mentions appear as
+> **VS Code:** typed mentions work there too (since 1.2.0) — the ten categories from
+> `@file` to `@commit` are offered in a two-level popup, and resolved mentions appear as
 > context chips in the composer, alongside a "+" attach menu (active file, selection, file
 > from disk, and **pin the active file** — pinned files show above the input box, ✕ unpins one).
 > A path typed after `@` (`@src/app.ts`) attaches the file directly: up to 5 files per question, each up to 40,000

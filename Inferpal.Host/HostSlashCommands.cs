@@ -830,13 +830,19 @@ internal sealed partial class HostServer
             .Select(c => new MentionCategoryDto(c.Token, c.Desc(), c.QueryBased))
             .ToList();
 
-    /// <summary>Sub-search of @file / @folder under the workspace root (fuzzy, best 8).</summary>
+    /// <summary>Sub-search of @file / @folder under the workspace root (fuzzy, best 8), and of @commit in its repository
+    /// (the latest commits, valued by their full object name).</summary>
     [JsonRpcMethod("mention/search", UseSingleObjectParameterDeserialization = true)]
-    public List<MentionItemDto> MentionSearch(MentionSearchParams p, CancellationToken ct)
+    public async Task<List<MentionItemDto>> MentionSearchAsync(MentionSearchParams p, CancellationToken ct)
     {
         var s = Session();
         if (string.IsNullOrEmpty(s.RootDir))
             return [];
+
+        if (p.Category.Equals("commit", StringComparison.OrdinalIgnoreCase))
+            return (await MentionController.FindCommitsAsync(s.RootDir, p.Query, ct))
+                .Select(c => new MentionItemDto(c.Short, c.Subject, c.Sha))
+                .ToList();
 
         var query = p.Query.Trim().ToLowerInvariant();
         var paths = p.Category.ToLowerInvariant() switch
@@ -876,7 +882,7 @@ internal sealed partial class HostServer
     }
 
     /// <summary>Materializes a mention host-side: @tree (project map), @diff (git diff),
-    /// @folder (folder context body) and @code (semantic search). Tool-backed categories read their
+    /// @folder (folder context body), @code (semantic search), @url (a web page) and @commit (one commit). Tool-backed categories read their
     /// tool's state, never its text: what found or mapped nothing is a notice, not a chip.</summary>
     [JsonRpcMethod("mention/resolve", UseSingleObjectParameterDeserialization = true)]
     public async Task<MentionResolveResult> MentionResolveAsync(MentionResolveParams p, CancellationToken ct)
@@ -927,6 +933,17 @@ internal sealed partial class HostServer
                     var code = MentionController.CodeMention(await s.Tools.CodeSearch.AnswerAsync(
                         JsonSerializer.SerializeToElement(new { query = p.Value }), ct), "🔮 " + p.Value);
                     return new MentionResolveResult(code.Label, code.Content, code.Notice);
+                }
+                case "url":
+                {
+                    var url = await MentionController.UrlMentionAsync(p.Value ?? "", s.Tools.PersonFetchRefusal, ct);
+                    return new MentionResolveResult(url.Label, url.Content, url.Notice);
+                }
+                case "commit":
+                {
+                    // An empty value is the last commit: the typed line offers HEAD before anything is typed.
+                    var commit = await MentionController.CommitMentionAsync(s.RootDir, p.Value ?? "", ct);
+                    return new MentionResolveResult(commit.Label, commit.Content, commit.Notice);
                 }
                 // ⚠ Nulls all the way down are what the adapter shows as NOTHING AT ALL: the
                 // mention the user typed leaves no chip and no message, which reads as a broken

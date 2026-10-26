@@ -591,7 +591,7 @@ flowchart LR
 | `@problems fix these` | The current build errors go with it |
 | `/docs add https://learn.microsoft.com/ef/core` | The site is indexed; from then on the agent searches it when you ask about EF Core |
 
-Mentions: `@file` `@folder` `@code` `@diff` `@problems` `@debugger` `@clipboard` `@tree` — [what each attaches](mentions.md).
+Mentions: `@file` `@folder` `@code` `@diff` `@commit` `@problems` `@debugger` `@clipboard` `@tree` `@url` — [what each attaches](mentions.md).
 
 <details>
 <summary><b>In detail: indexing, @Docs, MCP, mentions</b></summary>

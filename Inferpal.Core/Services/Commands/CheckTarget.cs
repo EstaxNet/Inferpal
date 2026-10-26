@@ -187,7 +187,7 @@ internal sealed record CheckTarget(string DiffArgs, string Shown, string Label, 
 
     /// <summary>The commit <paramref name="revision"/> names, or why it names none: a git that could not answer, a
     /// name two refs share, a hash prefix several objects share; <c>(null, null)</c> when it simply names nothing.</summary>
-    private static async Task<(string? Sha, string? Nothing)> CommitOrWhyAsync(string revision, GitRunner git, CancellationToken ct)
+    internal static async Task<(string? Sha, string? Nothing)> CommitOrWhyAsync(string revision, GitRunner git, CancellationToken ct)
     {
         var (sha, failed) = await CommitOfAsync(revision, git, ct);
         if (failed is not null) return (null, failed);
