@@ -44,7 +44,8 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     public Action<Action<string>>? DriveThinking { get; set; }
 
     /// <summary>Drives the waiting line a turn was given (what a client says while the server reads the prompt), so a
-    /// test sees where the caller shows it, and what it shows once the first token came (<c>null</c>).</summary>
+    /// test sees where the caller shows it, and what it shows once the first token came (<c>null</c>). Like the real
+    /// clients, a call given none says it to the open <see cref="ModelWaitScope"/>.</summary>
     public Action<Action<string?>>? DriveWaiting { get; set; }
 
     /// <summary>Scripted FIM completion (prefix, suffix → streamed text); null = no-op like a
@@ -93,7 +94,7 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
         ChatModels.Add(model);
         Efforts.Add(effort);
         if (onThinking is not null) DriveThinking?.Invoke(onThinking);
-        if (onWaiting is not null) DriveWaiting?.Invoke(onWaiting);
+        if ((onWaiting ?? ModelWaitScope.Current) is { } waiting) DriveWaiting?.Invoke(waiting);
         return OnChatRequest?.Invoke(model, messages, tools, onToken)
             ?? OnChat?.Invoke(onToken, ct)
             ?? Task.FromResult(ChatResult);

@@ -72,6 +72,12 @@ public partial class HostServerTests
         [JsonRpcMethod("host/notice", UseSingleObjectParameterDeserialization = true)]
         public void HostNotice(TokenNote note) => HostNotices.Enqueue(note.Text);
 
+        /// <summary>Every <c>chat/step</c> received, in order: the turn's status line (filled by the RPC dispatch thread).</summary>
+        public readonly System.Collections.Concurrent.ConcurrentQueue<string> Steps = new();
+
+        [JsonRpcMethod("chat/step", UseSingleObjectParameterDeserialization = true)]
+        public void ChatStep(TokenNote note) => Steps.Enqueue(note.Text);
+
         /// <summary>Every <c>chat/tool</c> notice received, in order (filled by the RPC dispatch thread).</summary>
         public readonly System.Collections.Concurrent.ConcurrentQueue<ToolNote> ToolNotes = new();
 
@@ -2815,6 +2821,28 @@ public partial class HostServerTests
         Assert.Equal(Strings.ReplayNone, result.Markdown);
     }
 
+    /// <summary>A command's model call that names no place for its wait says it on the turn's status line — the turn's
+    /// scope — and the step it covered shows again once the first token is in.</summary>
+    [Fact]
+    public async Task ALongCommand_SaysTheModelsWait_OnTheTurnsStatusLine()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.DriveWaiting = waiting => { waiting("Reading the prompt: test"); waiting(null); };
+
+        await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/onboard context" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        // Notifications are one-way: a round-trip request guarantees they were dispatched.
+        await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var steps = h.Target.Steps.ToArray();
+        var at = Array.IndexOf(steps, "Reading the prompt: test");
+        Assert.True(at > 0, string.Join(" | ", steps));
+        Assert.Equal(Strings.OnboardContextDraftingLabel, steps[at - 1]);
+        Assert.Equal(Strings.OnboardContextDraftingLabel, steps[at + 1]);
+    }
+
     // The headless side must serve /onboard from the same Core handler as VS —
     // a command that only exists in the tool window is how the two front-ends drift apart.
     [Fact]
@@ -2940,6 +2968,30 @@ public partial class HostServerTests
         Assert.Equal(0, edit.Start);
         Assert.Equal(11, edit.End);                 // "int x = 1;\n" replaced
         Assert.Equal("int y = 2;\n", edit.NewText);
+    }
+
+    /// <summary>An in-place action's label is the editor's own ("Running /fix on …"): the host says no wait over it — on
+    /// the turn's line it would come back as a generic one. Its wait is said with that screen.</summary>
+    [Fact]
+    public async Task CodeActionRun_SaysNoWait_OverTheEditorsOwnLabel()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.ChatResult = new ChatTurnResult("int y = 2;", null, 0, 0);
+        var driven = 0;
+        h.Fake.DriveWaiting = waiting => { driven++; waiting("Reading the prompt: test"); waiting(null); };
+
+        await h.Client.InvokeWithParameterObjectAsync<Host.CodeActionResultDto>(
+            "codeAction/run", new { kind = "fix", text = "int x = 1;", selStart = 0, selEnd = 0 })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        // Reference arm: a command that does take the line, in the same harness.
+        await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = "/onboard context" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Equal(1, driven);   // only the command's call had a place to say it
+        Assert.Single(h.Target.Steps, s => s == "Reading the prompt: test");
     }
 
     /// <summary>

@@ -62,7 +62,7 @@ public sealed class TestViewFrontEndTests
         // The host runs the test in the turn slot, as /tdd: a chat turn building the same projects never runs beside it,
         // and Stop reaches it; a failure message given runs nothing and takes no slot.
         var host = ConventionCoverageTests.CodeOnly(Path.Combine(Root, "Inferpal.Host", "HostServer.cs"));
-        Assert.Matches(@"TestsExplainAsync\([\s\S]*?string\.IsNullOrWhiteSpace\(p\.Failure\) \? AcquireTurn\(ct, Strings\.HostTestBusy\)"
+        Assert.Matches(@"TestsExplainAsync\([\s\S]*?string\.IsNullOrWhiteSpace\(p\.Failure\) \? AcquireTurn\(ct, Strings\.HostTestBusy[^)]*\)"
                        + @"[\s\S]*?finally \{ if \(cts is not null\) ReleaseTurn\(cts\); \}", host);
 
         // The message menu passes { test, message }; the item menu, every selected test — one is taken, and named.

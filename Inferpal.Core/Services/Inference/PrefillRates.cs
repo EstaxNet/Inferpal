@@ -324,16 +324,18 @@ internal sealed class PrefillWait : IDisposable
     private readonly object _gate = new();
     private bool _stopped, _said, _disposed;
 
-    /// <param name="onWaiting">The line, or <c>null</c> when it gives its place back; <c>null</c> to say nothing. ⚠ It must
-    /// not block (the editors post it): it is called under the lock that keeps a line from following its withdrawal.</param>
+    /// <param name="onWaiting">The line, or <c>null</c> when it gives its place back; <c>null</c> for the open
+    /// <see cref="ModelWaitScope"/>'s, and nothing said without one. ⚠ It must not block (the editors post it): it is
+    /// called under the lock that keeps a line from following its withdrawal.</param>
     /// <param name="tokens">The tokens to read, as the server counts them.</param>
     /// <param name="coldRead">The measured cold read of a request this size, said with the line; <c>null</c> when not
     /// measured.</param>
     /// <param name="firstSaid">The silence before the first line; <see cref="FirstSaid"/> when <c>null</c> (tests).</param>
     public PrefillWait(Action<string?>? onWaiting, int tokens, TimeSpan? coldRead, TimeSpan? firstSaid = null)
     {
-        _onWaiting = onWaiting;
-        if (onWaiting is not null) _ = SayAsync(tokens, coldRead, firstSaid ?? FirstSaid, _stop.Token);
+        // Every call reaches this line, so the scope is read here once for both clients.
+        _onWaiting = onWaiting ?? ModelWaitScope.Current;
+        if (_onWaiting is not null) _ = SayAsync(tokens, coldRead, firstSaid ?? FirstSaid, _stop.Token);
     }
 
     /// <summary>The time since the request was sent.</summary>

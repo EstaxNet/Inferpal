@@ -46,7 +46,7 @@ internal sealed partial class HostServer
             // and chat/cancel cannot stop it.
             case SlashCodeAction { Kind: SlashCodeActionKind.Test } test:
             {
-                var cts = AcquireTurn(ct);
+                var cts = AcquireTurn(ct, saysWaits: false);
                 try     { return await RunGenerateTestsAsync(s, test.Request, cts.Token); }
                 finally { ReleaseTurn(cts); }
             }
@@ -356,7 +356,7 @@ internal sealed partial class HostServer
                     // Long-running (a full micro-eval suite per model). Progress is surfaced through
                     // the same chat/step notifications the agent loop uses.
                     var result = await BenchCommandHandler.HandleAsync(
-                        s.Client, s.Config, parts, progress => Notify("chat/step", new { text = progress }), cts.Token);
+                        s.Client, s.Config, parts, Step, cts.Token);
                     return new SlashCommandResult(true, result.Message);
                 }
 
@@ -365,7 +365,7 @@ internal sealed partial class HostServer
                     // Two sequential inference calls; progress goes through the same chat/step
                     // notifications as /bench.
                     var result = await ArenaCommandHandler.HandleAsync(
-                        s.Client, s.Config, parts, progress => Notify("chat/step", new { text = progress }), cts.Token,
+                        s.Client, s.Config, parts, Step, cts.Token,
                         shown: s.Arena);
                     return new SlashCommandResult(true, result.Message);
                 }
@@ -382,9 +382,9 @@ internal sealed partial class HostServer
                         s.Client, s.Config, s.Tools,
                         BuildSystemPromptText(s), parts,
                         string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir,
-                        onProgress:   msg => Notify("chat/step", new { text = msg }),
+                        onProgress:   Step,
                         onTestReport: (output, green) => Notify("chat/tool", new ToolNotice("run_tests", string.Empty, output, !green)),
-                        onStep:       st => Notify("chat/step", new { text = st }),
+                        onStep:       Step,
                         onToken:      null,
                         onFixResult:  text =>
                         {
@@ -404,7 +404,7 @@ internal sealed partial class HostServer
                 case SlashCommandId.TestCoverage:
                     return new SlashCommandResult(true, await TestCoverageCommandHandler.HandleAsync(
                         s.Client, s.Config, s.Tools, s.Tools.History, parts, s.RootDir,
-                        onProgress: msg => Notify("chat/step", new { text = msg }), cts.Token));
+                        onProgress: Step, cts.Token));
 
                 case SlashCommandId.Task:
                 {
@@ -479,7 +479,7 @@ internal sealed partial class HostServer
                     var result = await CheckCommandHandler.HandleAsync(
                         s.Client, s.Config, s.RootDir ?? Directory.GetCurrentDirectory(), parts,
                         git: GitProcess.For(s.RootDir),
-                        onProgress: progress => Notify("chat/step", new { text = progress }),
+                        onProgress: Step,
                         cts.Token);
 
                     // `init` writes through the same helper as /rules|/checks|/prompts init.
@@ -496,7 +496,7 @@ internal sealed partial class HostServer
                     // Same handler as the VM: the range, the notices and the block to copy are identical everywhere.
                     var message = await PrCommandHandler.HandleAsync(
                         s.Client, s.Config, parts, GitProcess.For(s.RootDir),
-                        onProgress: progress => Notify("chat/step", new { text = progress }), cts.Token);
+                        onProgress: Step, cts.Token);
                     return new SlashCommandResult(true, message);
                 }
 
@@ -520,7 +520,7 @@ internal sealed partial class HostServer
                     var result = await OnboardCommandHandler.HandleAsync(
                         s.Client, s.Config, s.RootDir ?? Directory.GetCurrentDirectory(), parts,
                         git: GitProcess.For(s.RootDir),
-                        onProgress: progress => Notify("chat/step", new { text = progress }),
+                        onProgress: Step,
                         cts.Token);
 
                     if (result.Scaffold is { } scaffold)
@@ -574,7 +574,7 @@ internal sealed partial class HostServer
                     // No token streaming: `chat/token` feeds the assistant bubble of a chat turn,
                     // and there is none open during a slash command. The status line carries the
                     // wait, exactly like /bench and /tdd.
-                    Notify("chat/step", new { text = Strings.CommitProposingLabel });
+                    Step(Strings.CommitProposingLabel);
                     var proposal = await CommitCommandHandler.ProposeAsync(
                         s.Client, s.Config, GitProcess.For(s.RootDir), onToken: null, cts.Token);
 
@@ -696,6 +696,7 @@ internal sealed partial class HostServer
     /// run in the background, their progress surfaced through the same chat/step notifications the agent loop uses.</summary>
     private async Task<SlashCommandResult> HandleDocsSlashAsync(HostSession s, string[] parts, CancellationToken ct)
     {
+        // The crawl outlives the command (detached): its progress is said, never kept as a turn's step.
         var progress = new Progress<string>(msg => Notify("chat/step", new { text = msg }));
         return new SlashCommandResult(true,
             await DocsCommandHandler.HandleAsync(s.Config, s.Docs, parts, progress, ct));

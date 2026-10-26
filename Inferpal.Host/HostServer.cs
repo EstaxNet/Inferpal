@@ -437,7 +437,7 @@ internal sealed partial class HostServer : IDisposable
             var windowBefore = s.ContextWindowInUse;
             var ctxDecision = await Services.Agent.ContextManager.PrepareAsync(
                 s.History, s.Config, s.Client, s.LastPromptTokens,
-                onStep: step => Notify("chat/step", new { text = step }),
+                onStep: Step,
                 ct: cts.Token, model: model,
                 toolTokens: Services.Agent.ContextManager.NextTurnToolTokens(s.Tools, useTools, s.PlanMode));
             s.LastContextWindow = ctxDecision.Window;
@@ -500,7 +500,7 @@ internal sealed partial class HostServer : IDisposable
                 turnRunId = runId;
                 var result = await s.Orchestrator.RunAsync(
                     model, s.History, effectiveTools,
-                    onStep:         step => Notify("chat/step", new { text = step }),
+                    onStep:         Step,
                     onToken:        OnToken,
                     onPlanReady:    plan => Notify("chat/plan", new
                                     {
@@ -567,7 +567,7 @@ internal sealed partial class HostServer : IDisposable
                 turnRunId = runId;
                 var run = await s.Client.RunAgentAsync(
                     model, s.History, chatTools,
-                    onStep:         step => Notify("chat/step", new { text = step }),
+                    onStep:         Step,
                     onToken:        OnToken,
                     ct:             cts.Token,
                     complexity:     ChatTurnPolicy.TurnComplexity(codeAction: false),
@@ -606,6 +606,7 @@ internal sealed partial class HostServer : IDisposable
                                                                   run.AnswerCut, run.AnswerRepeating));
             }
 
+            _lastStep = Strings.StatusThinking;
             var turn = await s.Client.SendChatAsync(
                 model, s.History, EmptyToolRegistry.Instance, OnToken,
                 ChatTurnPolicy.TurnEffort(s.Config, p.CodeAction), cts.Token,
@@ -752,7 +753,7 @@ internal sealed partial class HostServer : IDisposable
         var every = s.Config.OodaTurnThreshold;
         if (every <= 0 || s.ConversationTurnCount % every != 0) return;
 
-        Notify("chat/step", new { text = Strings.StatusOodaSummarizing });
+        Step(Strings.StatusOodaSummarizing);
         try
         {
             // The request (bounded by the utility model's window), the call and the reading of the reply are shared
@@ -1000,7 +1001,7 @@ internal sealed partial class HostServer : IDisposable
         // ⚠ Inside the turn slot, like /test: outside it, Stop (chat/cancel cancels the slot) reached nothing — the chat
         // stayed busy, and minutes later the rewrite was offered, or applied straight to the file with the preview off.
         // Edit with AI runs outside the chat: a question typed meanwhile is told what holds the slot, not "a turn".
-        var cts = AcquireTurn(ct, edit ? Strings.HostEditBusy : null);
+        var cts = AcquireTurn(ct, edit ? Strings.HostEditBusy : null, saysWaits: false);
         CodeActionRun run;
         try
         {
@@ -1388,7 +1389,7 @@ internal sealed partial class HostServer : IDisposable
         var s = Session();
         // A run of the test takes the turn slot, as /tdd does: a chat turn building the same projects meanwhile fights
         // over bin/obj, and Stop reaches the run. The failure message given runs nothing and needs none.
-        var cts = string.IsNullOrWhiteSpace(p.Failure) ? AcquireTurn(ct, Strings.HostTestBusy) : null;
+        var cts = string.IsNullOrWhiteSpace(p.Failure) ? AcquireTurn(ct, Strings.HostTestBusy, saysWaits: false) : null;
         try
         {
             var token = cts?.Token ?? ct;
@@ -1450,7 +1451,7 @@ internal sealed partial class HostServer : IDisposable
         if (!folders.Any(f => Services.Tools.PathSanitizer.IsUnderRoot(p.Root, f) || Services.Tools.PathSanitizer.IsUnderRoot(f, p.Root)))
             return new CommitMessageProposal(Strings.CommitRepositoryOutside(p.Root), null, null);
         // Inside the turn slot, as /commit typed in the chat: one model at a time on the GPU, and Stop reaches it.
-        var cts = AcquireTurn(ct, Strings.HostCommitBusy);
+        var cts = AcquireTurn(ct, Strings.HostCommitBusy, saysWaits: false);
         try
         {
             var proposal = await Services.Commands.CommitCommandHandler.ProposeAsync(
@@ -1968,7 +1969,12 @@ internal sealed partial class HostServer : IDisposable
     /// is already running. The returned CTS is cancelled by `chat/cancel` and `shutdown`.</summary>
     /// <param name="busyText">What a request refused meanwhile is told holds the slot, when it is not a chat turn the
     /// chat shows (Edit with AI runs outside it).</param>
-    private CancellationTokenSource AcquireTurn(CancellationToken ct, string? busyText = null)
+    /// <param name="saysWaits">The turn's status line says the waits of its model calls (<see cref="ModelWaitScope"/>,
+    /// <see cref="SayWait"/>), closed by <see cref="ReleaseTurn"/>: a compaction or a review included. Off for the gestures
+    /// whose label the editor draws itself (an in-place action, tests, a commit message): replaced on the line, it would
+    /// come back as a generic one.</param>
+    /// <remarks>Opened here, in a synchronous method, the scope holds for the async caller that took the slot.</remarks>
+    private CancellationTokenSource AcquireTurn(CancellationToken ct, string? busyText = null, bool saysWaits = true)
     {
         lock (_gate)
         {
@@ -1976,9 +1982,30 @@ internal sealed partial class HostServer : IDisposable
                 throw new InvalidOperationException(BusyText());
             _slotHeldByTurn = true;
             _slotBusyText = busyText;
-            return _chatCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            _lastStep = null;
+            _chatCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            if (saysWaits) _waitScope = ModelWaitScope.Open(SayWait);
+            return _chatCts;
         }
     }
+
+    /// <summary>The wait scope of the turn holding the slot (<see cref="AcquireTurn"/>).</summary>
+    private IDisposable? _waitScope;
+
+    /// <summary>The step the turn said last (<see cref="Step"/>): what shows again once a wait gives its place back.</summary>
+    private volatile string? _lastStep;
+
+    /// <summary>Says a step of the turn on its status line (<c>chat/step</c>), and keeps it for <see cref="SayWait"/>.</summary>
+    private void Step(string text)
+    {
+        _lastStep = text;
+        Notify("chat/step", new { text });
+    }
+
+    /// <summary>A wait said by a model call of the turn (<see cref="ModelWaitScope"/>): the line while the server reads,
+    /// then the step it covered.</summary>
+    private void SayWait(string? line) =>
+        Notify("chat/step", new { text = line ?? _lastStep ?? Strings.StatusThinking });
 
     /// <summary>What a request refused while the slot is held is told; set with the slot.</summary>
     private string? _slotBusyText;
@@ -1988,7 +2015,12 @@ internal sealed partial class HostServer : IDisposable
 
     private void ReleaseTurn(CancellationTokenSource cts)
     {
-        lock (_gate) _chatCts = null;
+        lock (_gate)
+        {
+            _chatCts = null;
+            _waitScope?.Dispose();
+            _waitScope = null;
+        }
         cts.Dispose();
     }
 
@@ -2340,6 +2372,8 @@ internal sealed partial class HostServer : IDisposable
         {
             _chatCts?.Cancel();
             _chatCts = null;
+            _waitScope?.Dispose();
+            _waitScope = null;
         }
         _session?.Dispose();
         _session = null;
