@@ -1870,6 +1870,7 @@ What you save there applies from your next question, in this thread and the othe
   <data name="RewindButtonTip" xml:space="preserve"><value>Go back here — the conversation and its files</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>Go back to “{0}”?</value></data>
   <data name="RewindLead" xml:space="preserve"><value>The conversation resumes from this question, as you asked it. The {0} {0:run|runs} that followed it {0:is|are} undone:</value></data>
+  <data name="RewindOtherRunsLeft" xml:space="preserve"><value>Not undone ({0}): the runs made after this question outside this conversation — a command such as `/tdd` or `/test coverage`, or the other editor. Their files stay as they are.</value></data>
   <data name="RewindLeadNoRun" xml:space="preserve"><value>The conversation resumes from this question, as you asked it. No run recorded after it changed a file.</value></data>
   <data name="RewindPutBack" xml:space="preserve"><value>put back</value></data>
   <data name="RewindDeleted" xml:space="preserve"><value>created by a run, deleted</value></data>

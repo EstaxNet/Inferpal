@@ -58,7 +58,11 @@ internal static class RewindCard
         })).ToList();
         return new RewindCardModel(plan.Turn, question, Strings.RewindTitle(shown),
                                    plan.Runs.Count > 0 ? Strings.RewindLead(plan.Runs.Count) : Strings.RewindLeadNoRun,
-                                   lines, Strings.RewindNote, Refused: false, runIds);
+                                   lines,
+                                   // ⚠ Said: "the runs that followed it are undone" read as all of them.
+                                   plan.OtherRuns > 0 ? Strings.RewindOtherRunsLeft(plan.OtherRuns) + " " + Strings.RewindNote
+                                                      : Strings.RewindNote,
+                                   Refused: false, runIds);
     }
 
     /// <summary>What the conversation says once it is back at the question — and that what went with it is not attached

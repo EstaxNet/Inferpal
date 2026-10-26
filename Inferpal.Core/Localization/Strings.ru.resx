@@ -1866,6 +1866,7 @@
   <data name="RewindButtonTip" xml:space="preserve"><value>Вернуться сюда — к разговору и его файлам</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>Вернуться к «{0}»?</value></data>
   <data name="RewindLead" xml:space="preserve"><value>Разговор продолжится с этого вопроса, как вы его задали. Запуски после него будут отменены ({0}):</value></data>
+  <data name="RewindOtherRunsLeft" xml:space="preserve"><value>Не отменяются ({0}): запуски после этого вопроса вне этой беседы — команда вроде `/tdd` или `/test coverage` либо другой редактор. Их файлы остаются как есть.</value></data>
   <data name="RewindLeadNoRun" xml:space="preserve"><value>Разговор продолжится с этого вопроса, как вы его задали. Ни один записанный после него запуск не менял файлы.</value></data>
   <data name="RewindPutBack" xml:space="preserve"><value>возвращён</value></data>
   <data name="RewindDeleted" xml:space="preserve"><value>создан запуском, удалён</value></data>

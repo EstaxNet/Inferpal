@@ -37,9 +37,11 @@ internal sealed record RewindFile(string Path, RewindFileKind Kind);
 /// <param name="Question">The question as it was saved — what went with it named in its last line.</param>
 /// <param name="RefusedPath">The file a refusal names; null for <see cref="RewindRefusal.NotKept"/>.</param>
 /// <param name="ChangedAt">When the refused file last changed (local time); null when it is gone.</param>
+/// <param name="OtherRuns">Runs made after the question outside this conversation — a command such as <c>/tdd</c>, the
+/// other editor — that changed only other files: left as they are, and the card says so.</param>
 internal sealed record RewindPlan(
     int Turn, string Question, IReadOnlyList<HistoryRun> Runs, IReadOnlyList<RewindFile> Files,
-    RewindRefusal Refusal = RewindRefusal.None, string? RefusedPath = null, DateTime? ChangedAt = null);
+    RewindRefusal Refusal = RewindRefusal.None, string? RefusedPath = null, DateTime? ChangedAt = null, int OtherRuns = 0);
 
 /// <summary>What going back did to the files.</summary>
 /// <param name="Failed">Files an undo could not give back: the runs before them were already undone, those after not.</param>
@@ -123,7 +125,8 @@ internal static class Rewind
                 return new RewindPlan(turn, question, runs, files, RewindRefusal.ChangedBetween, path);
             files.Add(new RewindFile(path, first.Change.SnapshotPath is null ? RewindFileKind.Deleted : RewindFileKind.PutBack));
         }
-        return new RewindPlan(turn, question, runs, files);
+        return new RewindPlan(turn, question, runs, files,
+                              OtherRuns: outside.Values.SelectMany(ids => ids).Distinct(StringComparer.Ordinal).Count());
     }
 
     /// <summary>Whether the file changed between two of these runs: what one left is not what the next found.</summary>

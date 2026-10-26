@@ -1866,6 +1866,7 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="RewindButtonTip" xml:space="preserve"><value>Wróć tutaj — rozmowa i jej pliki</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>Wrócić do „{0}”?</value></data>
   <data name="RewindLead" xml:space="preserve"><value>Rozmowa wznowi się od tego pytania, tak jak je zadano. Uruchomienia po nim zostaną cofnięte ({0}):</value></data>
+  <data name="RewindOtherRunsLeft" xml:space="preserve"><value>Nie cofnięte ({0}): uruchomienia po tym pytaniu spoza tej rozmowy — polecenie takie jak `/tdd` lub `/test coverage` albo drugi edytor. Ich pliki pozostają bez zmian.</value></data>
   <data name="RewindLeadNoRun" xml:space="preserve"><value>Rozmowa wznowi się od tego pytania, tak jak je zadano. Żadne zapisane późniejsze uruchomienie nie zmieniło pliku.</value></data>
   <data name="RewindPutBack" xml:space="preserve"><value>przywrócony</value></data>
   <data name="RewindDeleted" xml:space="preserve"><value>utworzony przez uruchomienie, usunięty</value></data>

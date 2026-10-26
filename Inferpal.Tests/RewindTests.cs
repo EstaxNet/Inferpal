@@ -88,6 +88,9 @@ public sealed class RewindTests : IDisposable
         Assert.DoesNotContain(plan.Files, f => f.Path == PathOf("Other.cs"));
         Assert.Contains(plan.Files, f => f.Path == PathOf("New.cs") && f.Kind == RewindFileKind.Deleted);
         Assert.Contains(plan.Files, f => f.Path == PathOf("A.cs") && f.Kind == RewindFileKind.PutBack);
+        // The run it leaves is said: "the runs that followed it are undone" read as all of them.
+        Assert.Equal(1, plan.OtherRuns);
+        Assert.Contains(Strings.RewindOtherRunsLeft(1), RewindCard.Build(plan).Note, StringComparison.Ordinal);
     }
 
     [Fact]

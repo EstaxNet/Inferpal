@@ -65,7 +65,7 @@ internal static class RunManifest
         var path = System.IO.Path.Combine(folder, ".run-key");
         try
         {
-            if (File.Exists(path)) return Valid(File.ReadAllBytes(path));
+            if (File.Exists(path)) return ReadKey(path);
             Directory.CreateDirectory(folder);
             var key = RandomNumberGenerator.GetBytes(32);
             try
@@ -74,16 +74,34 @@ internal static class RunManifest
                 stream.Write(key);
                 return key;
             }
-            catch (IOException) when (File.Exists(path)) { return Valid(File.ReadAllBytes(path)); }   // made meanwhile
+            catch (IOException) when (File.Exists(path)) { return ReadKey(path); }   // made meanwhile
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             Diagnostics.Swallow("RunManifest.KeyIn", ex);
             return null;
         }
-
-        static byte[]? Valid(byte[] key) => key.Length == 32 ? key : null;
     }
+
+    /// <summary>The key at <paramref name="path"/>. ⚠ The other editor may be making it this very moment — held open, or
+    /// not yet written — so it is read again for a moment before it counts as unreadable: its caller keeps the answer
+    /// for the life of the process, and without a key no run is kept on disk.</summary>
+    private static byte[]? ReadKey(string path)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                var key = File.ReadAllBytes(path);
+                if (key.Length == 32) return key;
+                if (attempt >= KeyReadAttempts) return null;
+            }
+            catch (IOException) when (attempt < KeyReadAttempts) { }
+            Thread.Sleep(20);
+        }
+    }
+
+    private const int KeyReadAttempts = 50;
 
     private static string Sign(string json, byte[] key) =>
         Convert.ToHexString(HMACSHA256.HashData(key, Encoding.UTF8.GetBytes(json)));

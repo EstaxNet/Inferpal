@@ -1866,6 +1866,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="RewindButtonTip" xml:space="preserve"><value>여기로 돌아가기 — 대화와 파일</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>“{0}”(으)로 돌아갈까요?</value></data>
   <data name="RewindLead" xml:space="preserve"><value>대화는 이 질문부터, 질문한 그대로 다시 시작됩니다. 이 질문 이후의 실행 {0}개를 되돌립니다:</value></data>
+  <data name="RewindOtherRunsLeft" xml:space="preserve"><value>되돌리지 않음({0}개): 이 질문 이후 이 대화 밖에서 수행된 실행 — `/tdd`나 `/test coverage` 같은 명령 또는 다른 편집기. 해당 파일은 그대로 남습니다.</value></data>
   <data name="RewindLeadNoRun" xml:space="preserve"><value>대화는 이 질문부터, 질문한 그대로 다시 시작됩니다. 이후 기록된 실행 중 파일을 변경한 것은 없습니다.</value></data>
   <data name="RewindPutBack" xml:space="preserve"><value>되돌림</value></data>
   <data name="RewindDeleted" xml:space="preserve"><value>실행이 만든 파일, 삭제</value></data>

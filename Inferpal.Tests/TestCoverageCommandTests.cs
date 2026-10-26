@@ -467,6 +467,21 @@ public sealed class TestCoverageCommandTests : IDisposable
         Assert.Contains("of the target not shown", shown, StringComparison.Ordinal);
     }
 
+    /// <summary>The source file beside the target (<c>Bounded</c>) stays within the same budget: a minified file or a method
+    /// of thousands of lines filled the model's window, and the failed request dropped every target after it.</summary>
+    [Theory]
+    [InlineData(20, 50_000, 5)]        // minified: twenty lines of 50,000 characters
+    [InlineData(4_000, 80, 2_000)]     // a method thousands of lines long
+    public void TheSourceBesideTheTarget_IsBoundedToo(int count, int width, int target)
+    {
+        var lines = Enumerable.Range(1, count).Select(n => new string('x', width)).ToArray();
+
+        var shown = TestCoverageCommandHandler.Bounded(lines, target, count - 1);
+
+        Assert.True(shown.Length < 13_000, $"{shown.Length} characters");
+        Assert.EndsWith("# ... (rest not shown)", shown, StringComparison.Ordinal);
+    }
+
     // ── New test paths ──────────────────────────────────────────────────────
 
     [Theory]

@@ -3,6 +3,36 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.8.6
+
+Take back part of a run, go back to a question with its files, attach a web page or a commit, and know what a long
+command is waiting for.
+
+- **Review a run file by file**: **Review changes**, on the result bar, lists each file the run changed with its diff,
+  and **Keep**, **Undo** or **Delete** for that file alone; an undone file offers **Redo**.
+- **Go back here**, under a question, undoes the runs that followed it and resumes the conversation from that question.
+  A file changed since refuses it whole, named with the time it changed.
+- **Undo run keeps what you changed since**, and survives a restart of VS Code.
+- **`@url <address>`** attaches a page's text and **`@commit`** a commit's message and diff (one of the latest, or a
+  hash, a branch or a tag). Your question goes on after the address or the revision.
+- **`/test coverage [folder]`** measures the coverage with your project's own tool and has the model write tests for
+  the methods no test reaches; only the files that pass, assert something and cover new lines are kept.
+- **Connected to WSL, SSH or a container**, a `localhost` server that does not answer is said for what it is — on the
+  other side — with what reaches your server from there.
+- **Long commands say what they are waiting for**: `/check`, `/onboard context`, `/arena`, `/bench`, `/test coverage`,
+  `/commit`, `/pr-description` and the summary of a long conversation show "Reading the prompt: …" while the server
+  reads, then their own label.
+- **A context window sized for your graphics card** on Ollama, set by the first run, `/setup` and **Suggest the best
+  models**; a window you set yourself is never touched.
+- Code search no longer picks an embedding model that makes it worse than keywords alone; autocomplete no longer
+  reloads the chat model on Ollama.
+- **VS Code no longer writes into your repository**: picking a model or a mode is kept by VS Code itself, not in the
+  folder's `.vscode/settings.json`.
+- `/test` no longer writes a C# test into your production project; the mode buttons' tooltips say what each mode does;
+  the welcome line says where your code is sent when a server is on another machine.
+- **Ctrl+Alt+I is VS Code's own chat again** (Cmd+Alt+I on macOS): Inferpal binds no key to open it — the activity-bar
+  icon does, and Keyboard Shortcuts gives `inferpal.chat.focus` the key you want.
+
 ## 1.8.5
 
 Inferpal where you already are: the Problems panel, the debugger, the explorer, the Test view and Source Control — and a

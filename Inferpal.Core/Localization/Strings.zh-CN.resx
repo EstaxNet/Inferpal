@@ -1866,6 +1866,7 @@
   <data name="RewindButtonTip" xml:space="preserve"><value>回到这里 — 对话及其文件</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>回到“{0}”？</value></data>
   <data name="RewindLead" xml:space="preserve"><value>对话将从这个问题按你原来的提问重新开始。之后的 {0} 次运行将被撤销：</value></data>
+  <data name="RewindOtherRunsLeft" xml:space="preserve"><value>不会撤销（{0} 次）：此问题之后在本对话之外进行的运行——例如 `/tdd` 或 `/test coverage` 等命令，或另一个编辑器。其文件保持原样。</value></data>
   <data name="RewindLeadNoRun" xml:space="preserve"><value>对话将从这个问题按你原来的提问重新开始。之后记录的运行都没有修改过文件。</value></data>
   <data name="RewindPutBack" xml:space="preserve"><value>恢复</value></data>
   <data name="RewindDeleted" xml:space="preserve"><value>由运行创建，删除</value></data>

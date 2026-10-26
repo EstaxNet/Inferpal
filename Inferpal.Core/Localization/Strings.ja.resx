@@ -1866,6 +1866,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="RewindButtonTip" xml:space="preserve"><value>ここに戻る — 会話とファイル</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>「{0}」に戻りますか？</value></data>
   <data name="RewindLead" xml:space="preserve"><value>会話はこの質問から、あなたが尋ねたとおりに再開します。この質問の後の {0} 件の実行を取り消します:</value></data>
+  <data name="RewindOtherRunsLeft" xml:space="preserve"><value>取り消されないもの ({0} 件): この質問の後、この会話の外で行われた実行 (`/tdd` や `/test coverage` などのコマンド、またはもう一方のエディター)。そのファイルはそのまま残ります。</value></data>
   <data name="RewindLeadNoRun" xml:space="preserve"><value>会話はこの質問から、あなたが尋ねたとおりに再開します。この後に記録された実行でファイルを変更したものはありません。</value></data>
   <data name="RewindPutBack" xml:space="preserve"><value>元に戻す</value></data>
   <data name="RewindDeleted" xml:space="preserve"><value>実行で作成 — 削除</value></data>

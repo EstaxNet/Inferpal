@@ -1866,6 +1866,7 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="RewindButtonTip" xml:space="preserve"><value>Revenir ici — la conversation et ses fichiers</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>Revenir à « {0} » ?</value></data>
   <data name="RewindLead" xml:space="preserve"><value>La conversation reprend à cette question, telle que vous l'avez posée. Les runs qui l'ont suivie sont annulés ({0}) :</value></data>
+  <data name="RewindOtherRunsLeft" xml:space="preserve"><value>Non annulés ({0}) : les runs faits après cette question hors de cette conversation — une commande comme `/tdd` ou `/test coverage`, ou l'autre éditeur. Leurs fichiers restent tels quels.</value></data>
   <data name="RewindLeadNoRun" xml:space="preserve"><value>La conversation reprend à cette question, telle que vous l'avez posée. Aucun run enregistré après elle n'a changé de fichier.</value></data>
   <data name="RewindPutBack" xml:space="preserve"><value>remis</value></data>
   <data name="RewindDeleted" xml:space="preserve"><value>créé par un run, supprimé</value></data>

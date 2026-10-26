@@ -1705,6 +1705,7 @@ internal static class Strings
     public static string RewindButtonTip => Get(nameof(RewindButtonTip));
     public static string RewindTitle(string question) => Format(Get(nameof(RewindTitle)), question);
     public static string RewindLead(int runs) => Format(Get(nameof(RewindLead)), runs);
+    public static string RewindOtherRunsLeft(int runs) => Format(Get(nameof(RewindOtherRunsLeft)), runs);
     public static string RewindLeadNoRun => Get(nameof(RewindLeadNoRun));
     public static string RewindPutBack => Get(nameof(RewindPutBack));
     public static string RewindDeleted => Get(nameof(RewindDeleted));

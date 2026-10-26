@@ -1866,6 +1866,7 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="RewindButtonTip" xml:space="preserve"><value>Torna qui — la conversazione e i suoi file</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>Tornare a «{0}»?</value></data>
   <data name="RewindLead" xml:space="preserve"><value>La conversazione riprende da questa domanda, così come l'hai posta. I run che l'hanno seguita vengono annullati ({0}):</value></data>
+  <data name="RewindOtherRunsLeft" xml:space="preserve"><value>Non annullati ({0}): i run fatti dopo questa domanda fuori da questa conversazione — un comando come `/tdd` o `/test coverage`, o l'altro editor. I loro file restano come sono.</value></data>
   <data name="RewindLeadNoRun" xml:space="preserve"><value>La conversazione riprende da questa domanda, così come l'hai posta. Nessun run registrato dopo ha modificato un file.</value></data>
   <data name="RewindPutBack" xml:space="preserve"><value>ripristinato</value></data>
   <data name="RewindDeleted" xml:space="preserve"><value>creato da un run, eliminato</value></data>

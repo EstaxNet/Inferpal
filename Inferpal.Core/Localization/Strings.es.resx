@@ -1866,6 +1866,7 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="RewindButtonTip" xml:space="preserve"><value>Volver aquí — la conversación y sus archivos</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>¿Volver a «{0}»?</value></data>
   <data name="RewindLead" xml:space="preserve"><value>La conversación se retoma desde esta pregunta, tal como la hiciste. Se deshacen los runs que la siguieron ({0}):</value></data>
+  <data name="RewindOtherRunsLeft" xml:space="preserve"><value>No se deshacen ({0}): los runs hechos después de esta pregunta fuera de esta conversación (un comando como `/tdd` o `/test coverage`, o el otro editor). Sus archivos quedan como están.</value></data>
   <data name="RewindLeadNoRun" xml:space="preserve"><value>La conversación se retoma desde esta pregunta, tal como la hiciste. Ningún run registrado después cambió un archivo.</value></data>
   <data name="RewindPutBack" xml:space="preserve"><value>restaurado</value></data>
   <data name="RewindDeleted" xml:space="preserve"><value>creado por un run, eliminado</value></data>

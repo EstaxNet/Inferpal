@@ -807,7 +807,10 @@ internal class FileHistoryService
                 lock (_runLock)
                 {
                     files = run.FileCount;
-                    text  = files == 0 ? string.Empty : RunManifest.Serialize(run, open, key);
+                    // A run read from disk keeps who recorded it, and stays open if it was: a Keep in its review must
+                    // not make a run cut short by a killed editor read as closed, nor one still recording elsewhere.
+                    text  = files == 0 ? string.Empty
+                          : RunManifest.Serialize(run, open || run.OpenElsewhere || run.CutShort, key, run.RecordedBy);
                 }
                 if (files == 0)
                 {
@@ -968,6 +971,7 @@ internal class FileHistoryService
             // shortcut: a process id reused after a crash reads as alive, and the run waits until that process ends.
             reading.Run.OpenElsewhere = reading.Open && IsAlive(reading.Pid);
             reading.Run.CutShort      = reading.Open && !reading.Run.OpenElsewhere;
+            reading.Run.RecordedBy    = reading.Pid;
             runs.Add(reading.Run);
         }
         return runs;
@@ -1667,6 +1671,10 @@ internal sealed class HistoryRun
     /// <summary>Read from disk, left open by a process that has ended (an editor closed or killed mid-run): what it
     /// changed after its last write to disk may be missing.</summary>
     public bool CutShort { get; set; }
+
+    /// <summary>Read from disk: the process that recorded it, kept when this one writes the run again; <c>null</c> for
+    /// this process's own runs.</summary>
+    public int? RecordedBy { get; set; }
 
     /// <summary>
     /// The run has been undone. ⚠ It stays the most recent run with changes, so without this a second <c>/undo-run</c> — or

@@ -313,7 +313,7 @@ internal static class TestCoverageCommandHandler
         {
             if (File.Exists(path) && Normal(await File.ReadAllTextAsync(path, ct)) == Normal(content)) return null;
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Diagnostics.Swallow("TestCoverage.ReadBack", ex); }
         return answer.Contains(Strings.WriteCancelled, StringComparison.Ordinal)
             ? (CoverageVerdict.Declined, null)
             : (CoverageVerdict.NotWritten, Tail(answer.Split('\n')[0], 300));
@@ -376,15 +376,20 @@ internal static class TestCoverageCommandHandler
         return sb.ToString().TrimEnd();
     }
 
-    /// <summary>The whole file when it fits, else its head and the target's surroundings, the cuts said.</summary>
-    private static string Bounded(string[] lines, int first, int last)
+    /// <summary>The whole file when it fits, else its head and the target's surroundings, the cuts said — within the
+    /// same budget: a method of thousands of lines or a minified file would otherwise fill the model's window, and every
+    /// target after it would be dropped with the failed request.</summary>
+    internal static string Bounded(string[] lines, int first, int last)
     {
         var text = string.Join('\n', lines);
         if (text.Length <= SourceBudget) return text;
         var low  = Math.Max(40, first - 80);
         var high = Math.Min(lines.Length, last + 80);
-        return string.Join('\n', lines.Take(40)) + $"\n# ... (lines 41-{low} not shown)\n"
-             + string.Join('\n', lines.Skip(low).Take(high - low)) + "\n# ... (rest not shown)";
+        var kept = string.Join('\n', lines.Take(40).Select(Short)) + $"\n# ... (lines 41-{low} not shown)\n"
+                 + string.Join('\n', lines.Skip(low).Take(high - low).Select(Short));
+        return (kept.Length <= SourceBudget ? kept : kept[..SourceBudget]) + "\n# ... (rest not shown)";
+
+        static string Short(string line) => line.Length > 1_000 ? line[..1_000] + " # ... (line cut)" : line;
     }
 
     /// <summary>A test file to imitate: one that imports a file of the target's own folder first (it shows how to reach

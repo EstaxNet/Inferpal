@@ -175,6 +175,45 @@ public sealed class RunsAcrossRestartsTests : IDisposable
         Assert.Contains(Strings.UndoRunCutShort, answer, StringComparison.Ordinal);
     }
 
+    /// <summary>A run cut short stays cut short once this process writes it again (a Keep in its review): rewritten as
+    /// closed, the warning that its last changes may be missing would go.</summary>
+    [Fact]
+    public async Task ARunCutShort_StaysCutShort_AfterAKeepInItsReview()
+    {
+        var file  = File("A.cs", "a0");
+        var other = File("B.cs", "b0");
+        var dead  = Service();
+        dead.BeginRun();
+        await Edit(dead, file, "a1");
+        await Edit(dead, other, "b1");
+        var run = Assert.Single(dead.Runs);
+        await System.IO.File.WriteAllTextAsync(run.ManifestPath!,
+            RunManifest.Serialize(run, open: true, RunManifest.KeyIn(_user)!, pid: int.MaxValue));
+
+        var here = Service();
+        var read = Assert.Single(here.Runs);
+        Assert.True(read.CutShort);                                       // witness: read as cut short
+        here.KeepFile(read, file);
+
+        Assert.True(Assert.Single(Service().Runs).CutShort);
+    }
+
+    /// <summary>The key the other editor is making right now — held open — is read once it lets go: taken as no key, the
+    /// process would keep no run on disk for as long as it lives.</summary>
+    [Fact]
+    public async Task TheRunKey_HeldOpenByTheOtherEditor_IsReadOnceReleased()
+    {
+        var key = RunManifest.KeyIn(_user)!;
+        var path = Path.Combine(_user, ".run-key");
+        var held = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None);
+        var release = Task.Run(async () => { await Task.Delay(100); held.Dispose(); });
+
+        var read = RunManifest.KeyIn(_user);
+
+        await release;
+        Assert.Equal(key, read);
+    }
+
     /// <summary>A write that changed nothing leaves the run: kept on disk, it was a run an undo would "give back" over the
     /// file's later edits.</summary>
     [Fact]

@@ -1866,6 +1866,7 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="RewindButtonTip" xml:space="preserve"><value>Hierher zurück — die Unterhaltung und ihre Dateien</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>Zurück zu „{0}“?</value></data>
   <data name="RewindLead" xml:space="preserve"><value>Die Unterhaltung geht bei dieser Frage weiter, so wie Sie sie gestellt haben. Die Läufe danach werden rückgängig gemacht ({0}):</value></data>
+  <data name="RewindOtherRunsLeft" xml:space="preserve"><value>Nicht rückgängig gemacht ({0}): Läufe nach dieser Frage außerhalb dieser Unterhaltung – ein Befehl wie `/tdd` oder `/test coverage` oder der andere Editor. Ihre Dateien bleiben, wie sie sind.</value></data>
   <data name="RewindLeadNoRun" xml:space="preserve"><value>Die Unterhaltung geht bei dieser Frage weiter, so wie Sie sie gestellt haben. Kein aufgezeichneter Lauf danach hat eine Datei geändert.</value></data>
   <data name="RewindPutBack" xml:space="preserve"><value>wiederhergestellt</value></data>
   <data name="RewindDeleted" xml:space="preserve"><value>von einem Lauf erstellt, gelöscht</value></data>
