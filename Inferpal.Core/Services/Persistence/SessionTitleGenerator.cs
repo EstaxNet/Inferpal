@@ -53,7 +53,9 @@ internal static class SessionTitleGenerator
                 onStep:  _ => { },
                 onToken: null,
                 ct:      cts.Token,
-                effort:  ReasoningEffort.Off);
+                effort:  ReasoningEffort.Off,
+                // Said nowhere: it runs behind an answer already shown, and nobody waits on it.
+                onWaiting: static _ => { });
 
             // A failed run returns its error as the reply: the session would be named after the refusal.
             if (result.Failed) return fallback;

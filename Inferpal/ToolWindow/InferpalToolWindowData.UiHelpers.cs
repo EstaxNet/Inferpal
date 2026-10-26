@@ -199,13 +199,8 @@ internal partial class InferpalToolWindowData
     private async Task RunOwnedCommandAsync(Func<CancellationToken, Task> body, CancellationToken ct)
     {
         CancellationTokenSource? cts = null;
-        await RunOnVMContextAsync(() =>
-        {
-            cts = BeginOwnedTurn(ct);
-            _commandWait  = null;
-            _commandOwner = cts;
-        });
-        var waitScope = ModelWaitScope.Open(line => SayCommandWait(cts!, line));
+        await RunOnVMContextAsync(() => cts = BeginOwnedTurn(ct));
+        var status = OwnCommandStatus(cts!);
         try
         {
             await body(cts!.Token);
@@ -218,16 +213,43 @@ internal partial class InferpalToolWindowData
         catch (Exception ex) when (ex is not OperationCanceledException && FailsTheTurn()) { }
         finally
         {
+            status.Dispose();
+            await RunOnVMContextAsync(() => EndOwnedTurn(cts));
+        }
+    }
+
+    /// <summary>
+    /// Makes the command whose turn is <paramref name="cts"/> the one whose steps (<see cref="CurrentStep"/>) and model
+    /// waits the status bubble shows, until the handle is disposed — which removes the bubble. Every gesture that takes
+    /// the turn and reports through <see cref="CurrentStep"/> takes this too, or its steps are drawn nowhere.
+    /// </summary>
+    /// <remarks>Called in the command's own flow, right after it took the turn: the wait scope reaches the calls made
+    /// from there, never from a posted <see cref="BeginOwnedTurn"/>. Disposed before the turn is released; the posts
+    /// swallow what drawing throws, so the release always follows.</remarks>
+    private IDisposable OwnCommandStatus(CancellationTokenSource cts)
+    {
+        Post(() =>
+        {
+            _commandWait  = null;
+            _commandOwner = cts;
+            ShowCommandStatus();
+        });
+        var waitScope = ModelWaitScope.Open(line => SayCommandWait(cts, line));
+        return new OnDispose(() =>
+        {
             waitScope.Dispose();
-            await RunOnVMContextAsync(() =>
+            Post(() =>
             {
                 // Only its own: a code action may have cancelled this command and taken the turn meanwhile.
                 if (ReferenceEquals(_commandOwner, cts)) _commandOwner = null;
-                // The turn is released whatever drawing the bubble does: otherwise Stop has nothing left to cancel.
-                try     { ShowCommandStatus(); }
-                finally { EndOwnedTurn(cts); }
+                ShowCommandStatus();
             });
-        }
+        });
+    }
+
+    private sealed class OnDispose(Action action) : IDisposable
+    {
+        public void Dispose() => action();
     }
 
     // ── A long command's status bubble ─────────────────────────────────────────
@@ -270,8 +292,19 @@ internal partial class InferpalToolWindowData
             ApplyItemTheme(_commandStatus);
             Messages.Insert(Messages.Count - 2, _commandStatus);
             ScrollToBottom();
+            return;
         }
-        else _commandStatus.Content = text;
+        _commandStatus.Content = text;
+        // Kept last, above the anchors: a command that writes results as it goes (/tdd's test reports) would leave its
+        // step above them, away from where the person reads — and put back when the conversation was cleared under it.
+        // ⚠ No ScrollToBottom: it would pull back down someone who scrolled up to read a report; following, the
+        // auto-scroller keeps up with the move on its own.
+        var at = Messages.IndexOf(_commandStatus);
+        if (at != Messages.Count - 3)
+        {
+            if (at >= 0) Messages.RemoveAt(at);
+            Messages.Insert(Messages.Count - 2, _commandStatus);
+        }
     }
 
     private Task RunOnVMContextAsync(Action action)

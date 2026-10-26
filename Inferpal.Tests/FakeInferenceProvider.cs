@@ -123,7 +123,7 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
         string model, List<ChatMessageDto> history, IToolRegistry tools, Action<string> onStep,
         Action<string>? onToken, CancellationToken ct, TaskComplexity complexity = TaskComplexity.Normal,
         Action<ToolExecution>? onToolExecuted = null, Action<string>? onThinking = null,
-        ReasoningEffort effort = ReasoningEffort.Server, RunSteering? steering = null)
+        ReasoningEffort effort = ReasoningEffort.Server, RunSteering? steering = null, Action<string?>? onWaiting = null)
     {
         AgentRuns.Add((model, history));
         Steerings.Add(steering);
@@ -133,19 +133,23 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
         if (AgentRunResult is not null)
             return Task.FromResult(AgentRunResult with { UpdatedHistory = history });
         if (RunAgentThroughChat)
-            return RunOneChatTurnAsync(model, history, tools, onToken, effort, ct, complexity, onThinking);
+            // The wait as the real loop says it: where the caller names, else the scope, else through its step.
+            return RunOneChatTurnAsync(model, history, tools, onToken, effort, ct, complexity, onThinking,
+                                       onWaiting ?? ModelWaitScope.Current
+                                       ?? (text => onStep(text ?? Inferpal.Localization.Strings.StatusThinking)));
         if (onThinking is not null) DriveThinking?.Invoke(onThinking);
         return Task.FromResult(new AgentResult(ChatResult.TextContent, [], history));
     }
 
     private async Task<AgentResult> RunOneChatTurnAsync(
         string model, List<ChatMessageDto> history, IToolRegistry tools, Action<string>? onToken,
-        ReasoningEffort effort, CancellationToken ct, TaskComplexity complexity, Action<string>? onThinking)
+        ReasoningEffort effort, CancellationToken ct, TaskComplexity complexity, Action<string>? onThinking,
+        Action<string?> onWaiting)
     {
         // The real loop never throws for a backend failure: it returns the message as the result. Mirrored, or a test
         // of a caller would see an exception the caller never gets.
         ChatTurnResult turn;
-        try { turn = await SendChatAsync(model, history, tools, onToken, effort, ct, complexity, null, onThinking); }
+        try { turn = await SendChatAsync(model, history, tools, onToken, effort, ct, complexity, null, onThinking, onWaiting); }
         catch (AgentHttpException ex) { return new AgentResult(ex.Message, [], history, Failed: true); }
         return new AgentResult(turn.TextContent, [], history, turn.TokensUsed, turn.PromptTokens,
                                AnswerCut: turn.CutAtLimit, AnswerRepeating: turn.StoppedRepeating,

@@ -43,7 +43,9 @@ internal static class SessionRecap
             onStep:  _ => { },
             onToken: null,
             ct:      ct,
-            effort:  ReasoningEffort.Off).ConfigureAwait(false);
+            effort:  ReasoningEffort.Off,
+            // Said nowhere: it runs behind an answer already shown, and nobody waits on it.
+            onWaiting: static _ => { }).ConfigureAwait(false);
 
         // ⚠ A failed run returns its error as the reply — and the recap joins the system prompt of every following
         // question.

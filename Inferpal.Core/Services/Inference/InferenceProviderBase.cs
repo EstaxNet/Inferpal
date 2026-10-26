@@ -588,6 +588,9 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     /// <param name="effort">The reasoning every turn of the run asks for — one effort for the whole run.</param>
     /// <param name="steering">The notes the user types while the run works, read before each request
     /// (<see cref="RunSteering"/>); <c>null</c> for a run nobody steers.</param>
+    /// <param name="onWaiting">Where the wait of each request is said (the line, then <c>null</c> when it gives its place
+    /// back); <c>null</c>: the scope the run is under (<see cref="ModelWaitScope.Current"/>), else as a step through
+    /// <paramref name="onStep"/>. A run nobody waits on passes a no-op.</param>
     /// <returns>
     /// An <see cref="AgentResult"/> with the final response text, all tool executions,
     /// the updated conversation history, and token counts.
@@ -603,7 +606,8 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         Action<ToolExecution>? onToolExecuted = null,
         Action<string>? onThinking = null,
         ReasoningEffort effort = ReasoningEffort.Server,
-        RunSteering? steering = null)
+        RunSteering? steering = null,
+        Action<string?>? onWaiting = null)
     {
         var base_ = ServerUrl.TrimEnd('/');
         if (string.IsNullOrWhiteSpace(base_))
@@ -661,7 +665,11 @@ internal abstract class InferenceProviderBase : IInferenceProvider
             {
                 // While the server reads the prompt the line says so, then gives the step back.
                 turn = await SendChatAsync(model, messages, tools, onToken, effort, ct, complexity, null, onThinking,
-                                           onWaiting: text => onStep(text ?? Strings.StatusThinking));
+                                           // ⚠ The scope before the step: a caller with no step to show (`/commit`) lost
+                                           // its wait in its no-op step, and one that shows its steps (`/tdd`) saw its
+                                           // own line replaced by the wait, then by "Thinking…".
+                                           onWaiting: onWaiting ?? ModelWaitScope.Current
+                                                      ?? (text => onStep(text ?? Strings.StatusThinking)));
             }
             catch (OperationCanceledException) { throw; } // propagate user-initiated cancel
             catch (AgentHttpException ex)

@@ -320,8 +320,18 @@ internal partial class InferpalToolWindowData
         // agent works.  Removed before the final response is inserted so it never persists.
         ChatMessageItem? statusBubble  = null;
 
+        // The turn's step, and the wait of a call that names no place of its own: the wait wins, the step comes back.
+        string? turnStep = null, turnWait = null;
+
         // Creates the live-status bubble on first use, then updates it in place.
         void UpsertStatusBubble(string text) => Post(() =>
+        {
+            turnStep = text;
+            ShowStatus(turnWait ?? text);
+        });
+
+        // The same, on the VM context.
+        void ShowStatus(string text)
         {
             CurrentStep = text;
             if (statusBubble is null)
@@ -335,7 +345,7 @@ internal partial class InferpalToolWindowData
             {
                 statusBubble.Content = text;
             }
-        });
+        }
 
         // Removes the live-status bubble so it never persists in the conversation or on disk.
         // Must run on the VM context (called from within RunOnVMContextAsync below).
@@ -350,6 +360,15 @@ internal partial class InferpalToolWindowData
         // Background RAG indexing yields to this turn automatically: RunAgentAsync and
         // AgentOrchestrator.RunAsync each hold a GpuScheduler chat lease for their whole duration
         // (covers every chat entrypoint), so the chat model is never starved by the embedding workload.
+        // The waits of the turn's model calls on its status bubble (ModelWaitScope), then its step back. Closed first in
+        // the finally: a line said after would bring the bubble back.
+        var waitScope = ModelWaitScope.Open(line => Post(() =>
+        {
+            turnWait = line is null ? null : "⏳ " + line;
+            if ((turnWait ?? turnStep) is { } text) ShowStatus(text);
+            else RemoveStatusBubble();
+        }));
+
         // The turn's run, whatever way the turn ends: its last line carries it (going back to the question undoes it).
         string? turnRunId = null;
         try
@@ -381,7 +400,13 @@ internal partial class InferpalToolWindowData
             // really loaded THIS model with, when that is smaller than the configured one.
             // A code action (one-time model) sends no tool; every other turn sends the registry chosen below.
             await CompactOrTruncateAsync(effectiveModel,
-                oneTimeModel is null ? NextTurnToolTokens() : 0, localCts!.Token);
+                oneTimeModel is null ? NextTurnToolTokens() : 0, step => UpsertStatusBubble("⏳ " + step), localCts!.Token);
+            // The compaction is done: its line goes, and its notice stays above everything the run adds after it.
+            await RunOnVMContextAsync(() =>
+            {
+                turnStep = null;
+                RemoveStatusBubble();
+            });
 
             using var sink = new ThrottledTokenSink(chunk => Post(() =>
             {
@@ -802,6 +827,7 @@ internal partial class InferpalToolWindowData
         }
         finally
         {
+            waitScope.Dispose();
             // Background RAG indexing resumes automatically when RunAgentAsync releases its
             // GpuScheduler chat lease — no manual gate balancing needed here anymore.
             await RunOnVMContextAsync(() =>

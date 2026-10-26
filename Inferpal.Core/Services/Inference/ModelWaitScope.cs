@@ -6,9 +6,10 @@ namespace Inferpal.Services.Inference;
 /// the person is waiting, without each call site wiring it.
 /// </summary>
 /// <remarks>
-/// ⚠ A caller that passes its own <c>onWaiting</c> keeps it: the scope is only the default. ⚠ Work that outlives the
-/// gesture (a task started from it and left running) carries the scope with it — a closed scope says nothing more, so a
-/// late line never lands in a turn that has ended.
+/// ⚠ A caller that passes its own <c>onWaiting</c> keeps it; under a scope, the agent loop says the wait there before
+/// its caller's step. ⚠ Work that outlives the gesture (a task started from it and left running) leaves the scope as it
+/// starts (<see cref="Leave"/>): its waits go to its own steps, never into a line that closes under it. One that does not
+/// still says nothing after the close — a late line never lands in a turn that has ended.
 /// </remarks>
 internal static class ModelWaitScope
 {
@@ -16,6 +17,10 @@ internal static class ModelWaitScope
 
     /// <summary>Where a call made now says its wait, or <c>null</c> (no scope, or a closed one).</summary>
     public static Action<string?>? Current => _current.Value is { IsOpen: true } scope ? scope.Say : null;
+
+    /// <summary>Leaves any scope for the rest of this flow (a task's worker, started from a gesture it outlives); the
+    /// flow that started it keeps its own.</summary>
+    public static void Leave() => _current.Value = null;
 
     /// <summary>
     /// Opens a scope for the calls made from here, in this flow and the tasks it starts, until it is disposed. Opened

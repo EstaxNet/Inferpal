@@ -177,6 +177,7 @@ internal partial class InferpalToolWindowData
         CancellationTokenSource? localCts = null;
         await RunOnVMContextAsync(() => localCts = BeginOwnedTurn(ct));
         var tok = localCts!.Token;
+        var status = OwnCommandStatus(localCts);
         // The fixes go through the real registry: in a run of their own, /undo-run can revert them.
         _tools.History.BeginRun();
 
@@ -275,6 +276,8 @@ internal partial class InferpalToolWindowData
         }
         finally
         {
+            // Before the turn is released, as every command gives its bubble back.
+            status.Dispose();
             await RunOnVMContextAsync(() =>
             {
                 _tools.History.EndRun();
@@ -388,7 +391,6 @@ internal partial class InferpalToolWindowData
             Messages.Insert(Messages.Count - 2, streamItem);
             // IsLoading turns the send button into Stop, and Stop only cancels _currentCts.
             localCts    = BeginOwnedTurn(ct);
-            CurrentStep = Strings.StatusThinking;
             ScrollToBottom();
         });
         var tok = localCts!.Token;
@@ -400,9 +402,16 @@ internal partial class InferpalToolWindowData
         var gotProposal = false;
         try
         {
-            proposal = await Services.Commands.CommitCommandHandler.ProposeAsync(
-                _client, _config, Services.GitProcess.For(FindProjectRoot()),
-                onToken: token => sink.Append(token), tok);
+            // The model's wait on the label of the bubble the proposal streams into, then the label back.
+            using (ModelWaitScope.Open(line => Post(() =>
+                   {
+                       if (streamItem is not null) streamItem.Label = line is null ? Strings.CommitProposingLabel : "⏳ " + line;
+                   })))
+            {
+                proposal = await Services.Commands.CommitCommandHandler.ProposeAsync(
+                    _client, _config, Services.GitProcess.For(FindProjectRoot()),
+                    onToken: token => sink.Append(token), tok);
+            }
             gotProposal = true;
         }
         catch (OperationCanceledException) { /* cancelled: nothing is suggested */ }

@@ -401,7 +401,8 @@ internal partial class InferpalToolWindowData
     private int NextTurnToolTokens() =>
         Services.Agent.ContextManager.NextTurnToolTokens(_tools, _toolsEnabled, _planMode);
 
-    private async Task CompactOrTruncateAsync(string model, int toolTokens, CancellationToken ct)
+    /// <param name="onStep">Where the turn shows its steps (its status bubble).</param>
+    private async Task CompactOrTruncateAsync(string model, int toolTokens, Action<string> onStep, CancellationToken ct)
     {
         // The decision, the summarising model call and its fuse lived HERE, so on the VS Code side
         // the history was NEVER bounded and three settings of the panel did nothing there. All of
@@ -410,7 +411,7 @@ internal partial class InferpalToolWindowData
         // placing the bubbles.
         var decision = await Services.Agent.ContextManager.PrepareAsync(
             _history, _config, _client, _lastPromptTokens,
-            onStep: step => Post(() => CurrentStep = step),
+            onStep: onStep,
             ct: ct, model: model, toolTokens: toolTokens);
 
         await RunOnVMContextAsync(() =>

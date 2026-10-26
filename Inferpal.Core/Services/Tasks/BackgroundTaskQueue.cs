@@ -284,6 +284,9 @@ internal sealed class BackgroundTaskQueue : IDisposable
 
     private async Task WorkerLoopAsync()
     {
+        // Started from a gesture it outlives: its runs say their waits through their own steps, not into that gesture's
+        // line, which closes under them.
+        ModelWaitScope.Leave();
         while (true)
         {
             Job job;

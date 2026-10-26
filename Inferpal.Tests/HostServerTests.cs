@@ -2877,6 +2877,46 @@ public partial class HostServerTests
         Assert.Equal(Strings.OnboardContextDraftingLabel, steps[at + 1]);
     }
 
+    /// <summary>
+    /// <c>/commit</c> and <c>/pr-description</c> run the base loop with no step of their own to show: the loop said the
+    /// model's wait through that empty step, and it was lost before reaching the turn's status line.
+    /// </summary>
+    [Theory]
+    [InlineData("/commit")]
+    [InlineData("/pr-description main")]
+    public async Task CommitAndPr_SayTheModelsWait_OnTheTurnsStatusLine(string command)
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        async Task Git(string args) =>
+            Assert.Equal(0, (await Services.GitProcess.RunAsync(args, h.RootDir, CancellationToken.None)).ExitCode);
+        await Git("init -q -b main");
+        await Git("config user.email t@example.test");
+        await Git("config user.name t");
+        File.WriteAllText(Path.Combine(h.RootDir, "App.cs"), "class App {}\n");
+        await Git("add -A");
+        await Git("-c commit.gpgsign=false commit -q -m base");
+        await Git("checkout -q -b feature");
+        File.WriteAllText(Path.Combine(h.RootDir, "App.cs"), "class App { int Feature; }\n");
+        await Git("add -A");
+        await Git("-c commit.gpgsign=false commit -q -m feature");
+        File.WriteAllText(Path.Combine(h.RootDir, "App.cs"), "class App { int Feature; int Staged; }\n");
+        await Git("add -A");
+        h.Fake.RunAgentThroughChat = true;
+        h.Fake.DriveWaiting = waiting => { waiting("Reading the prompt: test"); waiting(null); };
+
+        await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+            "command/slash", new { text = command }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        // Notifications are one-way: a round-trip request guarantees they were dispatched.
+        await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var steps = h.Target.Steps.ToArray();
+        var at = Array.IndexOf(steps, "Reading the prompt: test");
+        Assert.True(at > 0, string.Join(" | ", steps));
+        Assert.Equal(steps[at - 1], steps[at + 1]);   // then the command's own step, given back
+    }
+
     // The headless side must serve /onboard from the same Core handler as VS —
     // a command that only exists in the tool window is how the two front-ends drift apart.
     [Fact]

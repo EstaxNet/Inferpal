@@ -491,6 +491,7 @@ internal partial class InferpalToolWindowData
         CancellationTokenSource? localCts = null;
         await RunOnVMContextAsync(() => localCts = BeginOwnedTurn(ct));
         var tok = localCts!.Token;
+        var status = OwnCommandStatus(localCts);
 
         try
         {
@@ -536,6 +537,8 @@ internal partial class InferpalToolWindowData
         catch (Exception ex) when (ex is not OperationCanceledException && FailsTheTurn()) { }
         finally
         {
+            // Before the turn is released, as every command gives its bubble back.
+            status.Dispose();
             await RunOnVMContextAsync(() => EndOwnedTurn(localCts));
         }
     }

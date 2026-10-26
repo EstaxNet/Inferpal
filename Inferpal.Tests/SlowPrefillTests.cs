@@ -430,6 +430,46 @@ public sealed class SlowPrefillOpenAiTests : IDisposable
     }
 
     /// <summary>
+    /// Under a front-end's scope the loop says the wait there, never through the caller's step: a caller with no step to
+    /// show (<c>/commit</c>) lost it in its no-op step, one that shows its steps (<c>/tdd</c>) saw its line replaced. A run
+    /// nobody waits on (the session title) passes a no-op, and says it nowhere.
+    /// </summary>
+    [Fact]
+    public async Task UnderAScope_TheWaitGoesToTheScope_NeverToTheStep_AndANoOpSaysItNowhere()
+    {
+        OpenAiCompatibleClient client;
+        var steps  = new List<string>();
+        var scoped = new List<string?>();
+        using (ModelWaitScope.Open(line => { lock (scoped) scoped.Add(line); }))
+        {
+            using (var server = new SlowReadServer(headersFirst: true, TimeSpan.FromSeconds(3), "text/event-stream", Sse))
+            {
+                client = new OpenAiCompatibleClient(Config(server.BaseUrl));
+                var run = await client.RunAgentAsync(_model, new List<ChatMessageDto>(Question), EmptyToolRegistry.Instance,
+                                                     step => { lock (steps) steps.Add(step); }, null, CancellationToken.None);
+                Assert.False(run.Failed, run.FinalResponse);
+            }
+            int saidBefore;
+            lock (scoped)
+            {
+                Assert.True(scoped.Any(l => l is not null), "the wait never reached the scope");
+                Assert.Null(scoped[^1]);                                           // the line gave its place back
+                saidBefore = scoped.Count;
+            }
+            lock (steps) Assert.All(steps, s => Assert.Equal(Strings.StatusThinking, s));   // the step never said it
+
+            using (var server = new SlowReadServer(headersFirst: true, TimeSpan.FromSeconds(3), "text/event-stream", Sse))
+            {
+                client = new OpenAiCompatibleClient(Config(server.BaseUrl));
+                var quiet = await client.RunAgentAsync(_model, new List<ChatMessageDto>(Question), EmptyToolRegistry.Instance,
+                                                       _ => { }, null, CancellationToken.None, onWaiting: static _ => { });
+                Assert.False(quiet.Failed, quiet.FinalResponse);
+            }
+            lock (scoped) Assert.Equal(saidBefore, scoped.Count);
+        }
+    }
+
+    /// <summary>
     /// ⚠ An OpenAI-compatible server that loads a model on demand (LM Studio, llama-swap) counts the load in its first
     /// read, and says nothing of it: the first read of a model in the process is no sample — the second is.
     /// </summary>
