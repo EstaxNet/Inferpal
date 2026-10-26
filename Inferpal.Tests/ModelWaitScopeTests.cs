@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.IO;
 using Inferpal.Services.Inference;
 using Xunit;
 
@@ -73,6 +74,29 @@ public class ModelWaitScopeTests
 
         Assert.True(wasOpen);     // witness: the task did carry the scope
         Assert.False(await late.WaitAsync(TimeSpan.FromSeconds(30)));
+    }
+
+    /// <summary>
+    /// Visual Studio (its window is built in no test, so its source is read): a long command's model calls that name no
+    /// wait of their own say it in the command's status bubble — the scope opened in the command's own flow, never in
+    /// the posted
+    /// <c>BeginOwnedTurn</c>, whose context does not reach the calls — and its steps (<c>CurrentStep</c>) are drawn.
+    /// </summary>
+    [Fact]
+    public void VisualStudio_ALongCommand_SaysItsStepsAndWaits_FromItsOwnFlow()
+    {
+        var window = Path.Combine(ConversationPersistenceSilenceTests.RepoRoot(), "Inferpal", "ToolWindow");
+        var helpers = ConventionCoverageTests.CodeOnly(Path.Combine(window, "InferpalToolWindowData.UiHelpers.cs"));
+        Assert.Matches(@"Task RunOwnedCommandAsync\([\s\S]*?await RunOnVMContextAsync\([\s\S]*?_commandOwner = cts;[\s\S]*?\}\);\s*"
+                       + @"var waitScope = ModelWaitScope\.Open\(line => SayCommandWait\(cts!, line\)\);[\s\S]*?await body\(", helpers);
+        Assert.Matches(@"void SayCommandWait\([\s\S]*?ReferenceEquals\(_commandOwner, owner\)[\s\S]*?ShowCommandStatus\(\);", helpers);
+        // Removed however the command ends, before the turn is released; the wait wins over the step; and shown only
+        // while the command still holds the turn (a code action may cancel it and take the turn first).
+        Assert.Matches(@"finally\s*\{\s*waitScope\.Dispose\(\);[\s\S]*?try\s*\{ ShowCommandStatus\(\); \}\s*finally \{ EndOwnedTurn\(cts\); \}", helpers);
+        Assert.Contains("_commandWait ?? _currentStep", helpers, StringComparison.Ordinal);
+        Assert.Contains("ReferenceEquals(_commandOwner, _currentCts)", helpers, StringComparison.Ordinal);
+        var properties = ConventionCoverageTests.CodeOnly(Path.Combine(window, "InferpalToolWindowData.Construction.cs"));
+        Assert.Matches(@"string CurrentStep\s*\{[^}]*set \{ if \(SetProperty\(ref _currentStep, value\)\) ShowCommandStatus\(\);", properties);
     }
 
     [Fact]

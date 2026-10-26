@@ -309,7 +309,7 @@ internal partial class InferpalToolWindowData
     {
         var sub = parts.Length >= 2 ? parts[1].ToLowerInvariant() : "list";
 
-        // Pull owns a live status bubble (insert → update → remove), so it stays in the VM; the rest
+        // Pull shows its progress in the command's status bubble, so it stays in the VM; the rest
         // (list/delete/running) is pure decision logic in ModelsCommandHandler.
         if (sub == "pull")
         {
@@ -322,22 +322,17 @@ internal partial class InferpalToolWindowData
         await ShowInfoAsync(result.Message);
     }
 
-    // /models pull <name> — downloads a model while showing a live status bubble updated per progress line.
+    // /models pull <name> — downloads a model, its progress in the command's status bubble (removed by
+    // RunOwnedCommandAsync however the pull ends: done, failed or stopped).
     private async Task PullModelInteractiveAsync(string[] parts, CancellationToken ct)
     {
         if (parts.Length < 3) { await ShowInfoAsync(Strings.ModelsPullUsage); return; }
         var model     = string.Join(" ", parts[2..]);
-        var statusBbl = ChatMessageItem.StatusMsg(Strings.ModelsPulling(model));
-        await RunOnVMContextAsync(() => { ApplyItemTheme(statusBbl); Messages.Insert(Messages.Count - 2, statusBbl); });
+        Post(() => CurrentStep = Strings.ModelsPulling(model));
 
         var ok = await _client.PullModelAsync(model, status =>
-            Post(() => statusBbl.Content = Strings.ModelsPullingStatus(model, status)), ct);
-
-        await RunOnVMContextAsync(() =>
-        {
-            var idx = Messages.IndexOf(statusBbl);
-            if (idx >= 0) Messages.RemoveAt(idx);
-        });
+            Post(() => CurrentStep = Strings.ModelsPullingStatus(model, status)), ct);
+        Post(() => CurrentStep = string.Empty);
 
         await ShowInfoAsync(ok ? Strings.ModelsPulled(model) : Strings.ModelsPullFailed(model));
         // The first model a fresh install gets: an unfinished first run completes, or the default nobody chose is
@@ -347,48 +342,23 @@ internal partial class InferpalToolWindowData
 
     // /bench [model…] — long run (one full micro-eval suite per model): live status bubble
     // updated per model (same pattern as /models pull), final report as a regular info bubble.
+    // The status bubble is the command's (RunOwnedCommandAsync): its steps and its model calls' waits in one place.
     private async Task HandleBenchCommandAsync(string[] parts, CancellationToken ct)
     {
-        var statusBbl = ChatMessageItem.StatusMsg(Strings.SlashHintBench);
-        await RunOnVMContextAsync(() => { ApplyItemTheme(statusBbl); Messages.Insert(Messages.Count - 2, statusBbl); });
-
-        try
-        {
-            var result = await Services.Commands.BenchCommandHandler.HandleAsync(
-                _client, _config, parts, progress => Post(() => statusBbl.Content = progress), ct);
-            await ShowInfoAsync(result.Message);
-        }
-        finally
-        {
-            await RunOnVMContextAsync(() =>
-            {
-                var idx = Messages.IndexOf(statusBbl);
-                if (idx >= 0) Messages.RemoveAt(idx);
-            });
-        }
+        Post(() => CurrentStep = Strings.SlashHintBench);
+        var result = await Services.Commands.BenchCommandHandler.HandleAsync(
+            _client, _config, parts, progress => Post(() => CurrentStep = progress), ct);
+        await ShowInfoAsync(result.Message);
     }
 
-    // /arena — two sequential inference calls: live status bubble while each answer is generated
+    // /arena — two sequential inference calls: the command's status bubble while each answer is generated
     // (same pattern as /bench), final blind A/B report or vote/stats result as an info bubble.
     private async Task HandleArenaCommandAsync(string[] parts, CancellationToken ct)
     {
-        var statusBbl = ChatMessageItem.StatusMsg(Strings.SlashHintArena);
-        await RunOnVMContextAsync(() => { ApplyItemTheme(statusBbl); Messages.Insert(Messages.Count - 2, statusBbl); });
-
-        try
-        {
-            var result = await Services.Commands.ArenaCommandHandler.HandleAsync(
-                _client, _config, parts, progress => Post(() => statusBbl.Content = progress), ct);
-            await ShowInfoAsync(result.Message);
-        }
-        finally
-        {
-            await RunOnVMContextAsync(() =>
-            {
-                var idx = Messages.IndexOf(statusBbl);
-                if (idx >= 0) Messages.RemoveAt(idx);
-            });
-        }
+        Post(() => CurrentStep = Strings.SlashHintArena);
+        var result = await Services.Commands.ArenaCommandHandler.HandleAsync(
+            _client, _config, parts, progress => Post(() => CurrentStep = progress), ct);
+        await ShowInfoAsync(result.Message);
     }
 
     // /tdd [filter] — "fix until green" loop (twin of /fix-build, test side). The shared handler

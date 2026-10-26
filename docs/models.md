@@ -156,7 +156,9 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
 - **Reasoning.** On by default; the template opens `<think>` itself, so a server that does not separate reasoning
   leaves a lone `</think>` in the answer. LM Studio (0.4.7 and later) separates it.
 - **Inferpal.** Structured calls on LM Studio; the XML form is read when a call arrives as text. Autocomplete uses
-  its fill-in-the-middle tokens: 27 right completions in 36 with them, 12 from the code before the cursor alone.
+  its fill-in-the-middle tokens: 27 right completions in 36 with them, 12 from the code before the cursor alone. On the
+  default path — Ollama, the 24K window a 24 GB card gets — 18 tasks in 18 in each mode, twice, and the same 27 in 36
+  autocompleting.
 - **Settings.** Inferpal sends the thinking-mode values: temperature 1.0, top_p 0.95, top_k 20, min_p 0.0. Without
   thinking, Qwen recommends temperature 0.7, top_p 0.8, presence penalty 1.5.
 - **Known issues.** Its template refuses a system message that is not the first one (HTTP 500 "System message must
@@ -228,7 +230,9 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
   Ollama the calls arrived structured.
 - **Measured.** 14 tasks in 14, and the 4 harder scenarios added to the battery since; it fits an 8 GB card beside
   the embedding model, at an 8K and a 32K context (86 % of its speed with the free memory reduced to 7 GB — it may
-  spill a little). One run, like every figure on this page.
+  spill a little). One run on LM Studio. On the default path — Ollama, the 8K window an 8 GB card keeps, two runs in
+  the Chat mode and two in the Agent mode — the 14 again every time, but 2 or 3 of the 4 harder scenarios: the longer
+  ones stop at the length limit or end without writing.
 - **Getting it.** Ollama: `granite4.2:8b` is the file measured (Q4_K_M, 5.3 GB); Inferpal's first-run card offers it
   from an 8 GB card up.
 - **Sources.** [GGUF files](https://huggingface.co/ibm-granite/granite-4.2-8b-GGUF)
@@ -255,7 +259,9 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
   ([#2233](https://github.com/lmstudio-ai/lmstudio-bug-tracker/issues/2233)). Both refuse every request with tools.
   To get Gemma's native tool calling back, fix the template in *My Models → Gemma 4 → Prompt Template* (the fixes are
   in those issues); Inferpal's fallback works either way.
-- **Measured.** 12B (7.2 GB): 12 tasks in 14; 26B A4B: 10 in 14. The 31B is not measured yet.
+- **Measured.** 12B (7.2 GB): 12 tasks in 14 — on the default path (Ollama, the 8K window a 12 GB card keeps, two runs
+  per mode) 10 to 14, and in 6 tasks of 72 it left a build or a test failing, which Inferpal's end notice said (among
+  them a Razor directive written twice); 26B A4B: 10 in 14. The 31B is not measured yet.
 - **Sources.** [Prompt format](https://ai.google.dev/gemma/docs/core/prompt-formatting-gemma4) ·
   [Function calling](https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4)
 
@@ -334,6 +340,10 @@ completion ends, on the test server — a smaller card is slower):
 | Ministral 3 8B / 14B Base | 11–12 | 3–4 s | writes the right code, then keeps going |
 
 Which one fits beside your agent depends on your card: see [By graphics card](#by-graphics-card).
+
+With no autocomplete model set — the default — the chat model completes. Measured the same way on Ollama: Qwen3.8 27B
+27 in 36, as on LM Studio; Gemma 4 12B 9 and Granite 4.2 8B 8 (16 on LM Studio). On an 8 or 12 GB card, the default
+autocomplete gets about one suggestion in four right, and no model measured fits beside the agent there.
 
 | Family | Tokens |
 |---|---|

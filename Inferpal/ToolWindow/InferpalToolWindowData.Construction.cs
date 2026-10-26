@@ -237,7 +237,7 @@ internal partial class InferpalToolWindowData
             DeleteSessionCommand.CanExecute = !string.IsNullOrEmpty(value);
         }
     }
-    [DataMember] public string CurrentStep           { get => _currentStep;           set => SetProperty(ref _currentStep,           value); }
+    [DataMember] public string CurrentStep           { get => _currentStep;           set { if (SetProperty(ref _currentStep, value)) ShowCommandStatus(); } }
     [DataMember] public string TokenInfo             { get => _tokenInfo;             set { SetProperty(ref _tokenInfo, value); HasTokenInfo = !string.IsNullOrEmpty(value); } }
     [DataMember] public bool   HasTokenInfo          { get => _hasTokenInfo;          set => SetProperty(ref _hasTokenInfo,          value); }
     [DataMember] public bool   HasContextBudget      { get => _hasContextBudget;      set => SetProperty(ref _hasContextBudget,      value); }

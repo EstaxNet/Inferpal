@@ -193,10 +193,19 @@ internal partial class InferpalToolWindowData
     /// <summary>
     /// Runs a long command as a turn: Stop cancels it, and no chat turn can start underneath it.
     /// </summary>
+    /// <remarks>Its steps (<see cref="CurrentStep"/>) and the waits of its model calls show in a status bubble while it
+    /// runs — the scope is opened here, in this flow: <see cref="BeginOwnedTurn"/> runs posted, where it would not
+    /// reach the calls.</remarks>
     private async Task RunOwnedCommandAsync(Func<CancellationToken, Task> body, CancellationToken ct)
     {
         CancellationTokenSource? cts = null;
-        await RunOnVMContextAsync(() => cts = BeginOwnedTurn(ct));
+        await RunOnVMContextAsync(() =>
+        {
+            cts = BeginOwnedTurn(ct);
+            _commandWait  = null;
+            _commandOwner = cts;
+        });
+        var waitScope = ModelWaitScope.Open(line => SayCommandWait(cts!, line));
         try
         {
             await body(cts!.Token);
@@ -209,8 +218,60 @@ internal partial class InferpalToolWindowData
         catch (Exception ex) when (ex is not OperationCanceledException && FailsTheTurn()) { }
         finally
         {
-            await RunOnVMContextAsync(() => EndOwnedTurn(cts));
+            waitScope.Dispose();
+            await RunOnVMContextAsync(() =>
+            {
+                // Only its own: a code action may have cancelled this command and taken the turn meanwhile.
+                if (ReferenceEquals(_commandOwner, cts)) _commandOwner = null;
+                // The turn is released whatever drawing the bubble does: otherwise Stop has nothing left to cancel.
+                try     { ShowCommandStatus(); }
+                finally { EndOwnedTurn(cts); }
+            });
         }
+    }
+
+    // ── A long command's status bubble ─────────────────────────────────────────
+
+    /// <summary>The turn of the long command whose steps and waits are shown (<see cref="RunOwnedCommandAsync"/>); they
+    /// are shown only while it is still the current turn.</summary>
+    private CancellationTokenSource? _commandOwner;
+
+    /// <summary>The status bubble of the running command, while it says something.</summary>
+    private ChatMessageItem? _commandStatus;
+
+    /// <summary>The wait a model call of the command is saying, or <c>null</c>.</summary>
+    private string? _commandWait;
+
+    /// <summary>A wait said by a model call of the command whose turn is <paramref name="owner"/>
+    /// (<see cref="ModelWaitScope"/>): the line while the server reads, then the step it covered — never into another
+    /// command's bubble, when this one was cancelled and is still unwinding.</summary>
+    private void SayCommandWait(CancellationTokenSource owner, string? line) => Post(() =>
+    {
+        if (!ReferenceEquals(_commandOwner, owner)) return;
+        _commandWait = line is null ? null : "⏳ " + line;
+        ShowCommandStatus();
+    });
+
+    /// <summary>Draws the running command's status bubble — its wait, else its step — or removes it once neither is
+    /// said or the command has ended. VM context only.</summary>
+    private void ShowCommandStatus()
+    {
+        var shows = _commandOwner is not null && ReferenceEquals(_commandOwner, _currentCts);
+        var text  = shows ? _commandWait ?? _currentStep : string.Empty;
+        if (string.IsNullOrEmpty(text))
+        {
+            if (_commandStatus is not null) Messages.Remove(_commandStatus);
+            _commandStatus = null;
+            return;
+        }
+        if (_commandStatus is null)
+        {
+            _commandStatus = ChatMessageItem.StatusMsg(text);
+            ApplyItemTheme(_commandStatus);
+            Messages.Insert(Messages.Count - 2, _commandStatus);
+            ScrollToBottom();
+        }
+        else _commandStatus.Content = text;
     }
 
     private Task RunOnVMContextAsync(Action action)
