@@ -360,11 +360,6 @@
     },
     "keybindings": [
       {
-        "command": "inferpal.chat.focus",
-        "key": "ctrl+alt+i",
-        "mac": "cmd+alt+i"
-      },
-      {
         "command": "inferpal.map",
         "key": "alt+m",
         "mac": "ctrl+alt+m",

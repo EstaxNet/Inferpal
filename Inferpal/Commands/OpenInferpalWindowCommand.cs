@@ -17,12 +17,8 @@ internal class OpenInferpalWindowCommand : Command
 
     public override CommandConfiguration CommandConfiguration => new("%InferpalChatCommand%")
     {
+        // No default key: Alt+B opens the Build menu in English Visual Studio, Alt+O the Tools menu ("Outils") in French.
         Icon = new(ImageMoniker.KnownValues.Extension, IconSettings.IconAndText),
-        Shortcuts =
-        [
-            new CommandShortcutConfiguration(ModifierKey.LeftAlt, Key.O),
-            new CommandShortcutConfiguration(ModifierKey.LeftAlt, Key.B),
-        ],
     };
 
     public override async Task ExecuteCommandAsync(IClientContext context, CancellationToken ct)

@@ -77,8 +77,7 @@ double-click it to install into Visual Studio.
 
 ## 4. Open the tool window
 
-In Visual Studio: **Tools → Inferpal**, or press **Alt+B** / **Alt+O** from
-anywhere.
+In Visual Studio: **Tools → Inferpal → Inferpal Chat**.
 
 ## 5. Configure and connect
 
@@ -119,7 +118,7 @@ Visual Studio-only for now: [the list](features.md#two-editors-one-engine).
    `inferpal-vscode-darwin-arm64-<version>.vsix` (Apple Silicon) —
    `code --install-extension inferpal-vscode-<platform>-<version>.vsix`
    (or Extensions view → `…` → *Install from VSIX…*).
-2. Open the **Inferpal** view in the Activity Bar (or press **Ctrl+Alt+I**). The first time, a card looks for a
+2. Open the **Inferpal** view in the Activity Bar. The first time, a card looks for a
    model server on this computer and proposes the models that fit your card (**Start with these**); a server on
    another machine is typed on the same card, and Ollama without a chat model gets a recommended one downloaded.
    `/setup` brings the card back. Then start chatting: streaming replies with full markdown, the agentic loop with approvals and a

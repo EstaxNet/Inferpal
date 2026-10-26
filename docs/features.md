@@ -256,7 +256,7 @@ the problem with it.
 |---|---|---|
 | **Build errors** | Error List → *Fix with Inferpal*; *Fix with AI* on the failed-build banner; `/fix-build` | Problems or light bulb → *Fix with Inferpal*; the banner of a failed build task |
 | **A selection** | *Edit with AI…* (**Ctrl+Shift+I**): red and green in the editor, accepted part by part | *Edit with AI*, shown in Refactor Preview first |
-| **The editor's menu** | Explain · Fix · Refactor · Add Tests · Add Docstring | Fix · Refactor · Document; `/explain` and `/test` |
+| **The editor's menu** | Explain · Fix · Refactor · Add Tests · Add Docstring | Explain · Fix · Refactor · Add Tests · Document |
 | **A file or a project** | Solution Explorer → *Explain* · *Review Changes* · *Attach to Chat* | Explorer → the same three |
 | **The debugger, stopped** | *Analyze with Inferpal* (Debug menu, Call Stack, Locals, Autos, Watch) | *Analyze with Inferpal* (call stack, variables) |
 | **Committing** | `/commit` drafts the message | Source Control → *Propose a Commit Message* |
@@ -279,9 +279,9 @@ The change appears in the editor in red and green; keep or drop each part.
 <summary><b>In detail: code actions, Edit with AI, Smart Fix, the menus</b></summary>
 
 - **Code actions** (editor context menu → **Inferpal**) — **Explain**, **Fix**, **Refactor**,
-  **Add Tests**, **Add Docstring** (Visual Studio; VS Code's editor context menu has *Inferpal: Fix This Code*,
-  *Refactor This Code* and *Document This Code*, and the others are the `/explain` and `/test` commands). All use a
-  dedicated model and run without tool calling.
+  **Add Tests**, **Add Docstring** (VS Code's editor context menu has the same five: *Inferpal: Explain This Code*,
+  *Fix This Code*, *Refactor This Code*, *Add Tests* and *Document This Code*). All use a dedicated model and run
+  without tool calling.
   **Fix**, **Refactor** and **Add Docstring** apply their result **directly in the editor**
   (undoable with Ctrl+Z); **Add Tests** writes into a **separate test file** (created/opened,
   or extended if it already exists); only **Explain** answers in the chat window.
@@ -998,7 +998,7 @@ Studio to VS Code and back — and to any editor that speaks the [Agent Client P
   connection + VRAM badge, collapsible tool bubbles (input/output, the colored change a write made, "Fix with AI" on
   errors), live agent-plan block,
   slash-command autocomplete, Shift+↑/↓ prompt history, token counter with a clickable context gauge (opens the X-Ray
-  panel), conversation search, `.md`/`.txt` export, Ctrl+Alt+I keybinding, and a localized webview (10 languages).
+  panel), conversation search, `.md`/`.txt` export, and a localized webview (10 languages).
 - **Not in VS Code yet** — `/fix-build` is Visual Studio's alone (it answers that it is not available).
 - **Headless slash commands** — nearly all the slash commands are served by the host over JSON-RPC with the
   same approval/permission pipeline; long commands are cancellable.
@@ -1022,14 +1022,15 @@ Studio to VS Code and back — and to any editor that speaks the [Agent Client P
 
 ## Keyboard shortcuts
 
-Alt+B and Alt+O are Visual Studio's; in VS Code, **Ctrl+Alt+I** opens the chat. Alt+M works in both (**Ctrl+Alt+M** on
-macOS, where Option+M types µ). **Ctrl+Shift+I** is Visual Studio's: in VS Code that key already belongs to the
+Opening Inferpal takes no key of its own: the keys it had open Visual Studio's Build menu in English and its Tools menu
+in French, and VS Code's own chat. **Tools → Inferpal → Inferpal Chat** and the activity-bar icon open it; in VS Code,
+Keyboard Shortcuts binds a key to `inferpal.chat.focus`. Alt+M works in both (**Ctrl+Alt+M** on macOS, where Option+M
+types µ). **Ctrl+Shift+I** is Visual Studio's: in VS Code that key already belongs to the
 developer tools and to other assistants' chats, so Edit with AI has no key of its own there — it is in the editor's
 context menu and the command palette, and VS Code's Keyboard Shortcuts binds it to the key you want.
 
 | Shortcut | Action |
 |---|---|
-| **Alt+B** / **Alt+O** | Open the Inferpal chat window from anywhere |
 | **Alt+M** | Run `/map`: the project's architecture map |
 | **Ctrl+Shift+I** | Inline Edit (Edit with AI) on the selection |
 | **Enter** | Send the message |

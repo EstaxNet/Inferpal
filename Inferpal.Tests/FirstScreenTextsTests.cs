@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Xunit;
 
@@ -99,5 +100,34 @@ public sealed class FirstScreenTextsTests
         Assert.Contains("renderPlaceholder()", WebviewRebuildTests.Body(webview, "function setBusy("), StringComparison.Ordinal);
         // That reader is the only writer.
         Assert.Single(Regex.Matches(webview, @"promptEl\.placeholder\s*="));
+    }
+
+    /// <summary>
+    /// Opening Inferpal takes no key by default, in either editor: Alt+B opens the Build menu in English Visual Studio
+    /// and Alt+O the Tools menu ("Outils") in French, and VS Code gives Ctrl+Alt+I to its own chat (Cmd+Alt+I to the
+    /// developer tools on macOS). Tools → Inferpal → Inferpal Chat and the activity-bar icon open it — and no page that
+    /// describes the product names one of those keys.
+    /// </summary>
+    [Fact]
+    public void OpeningInferpal_TakesNoKeyTheEditorAlreadyGives()
+    {
+        var command = ConventionCoverageTests.CodeOnly(Path.Combine(Root, "Inferpal", "Commands", "OpenInferpalWindowCommand.cs"));
+        Assert.Contains("CommandConfiguration", command, StringComparison.Ordinal);   // WITNESS
+        Assert.DoesNotContain("Shortcuts", command, StringComparison.Ordinal);
+
+        // The view answers to two commands: its own focus command and its activity-bar container's.
+        using var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(Root, "vscode", "package.json")));
+        var bound = manifest.RootElement.GetProperty("contributes").GetProperty("keybindings").EnumerateArray()
+            .Select(b => b.GetProperty("command").GetString()).ToList();
+        Assert.Contains("inferpal.map", bound);   // WITNESS
+        Assert.DoesNotContain("inferpal.chat.focus", bound);
+        Assert.DoesNotContain("workbench.view.extension.inferpal", bound);
+
+        var keys = new Regex(@"\balt\s*\+\s*[bo]\b|\b(ctrl|cmd)\s*\+\s*alt\s*\+\s*i\b", RegexOptions.IgnoreCase);
+        Assert.Matches(keys, "press Alt + B");   // WITNESS
+        Assert.Matches(keys, "cmd+alt+i");       // WITNESS
+        var docs = DocCountersTests.LivingDocs().ToList();
+        Assert.Contains(docs, d => d.EndsWith("getting-started.md", StringComparison.Ordinal));   // WITNESS
+        Assert.Empty(docs.Where(d => keys.IsMatch(File.ReadAllText(d))).Select(Path.GetFileName));
     }
 }

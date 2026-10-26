@@ -24,7 +24,7 @@ Windows, Linux and Apple Silicon, with the backend bundled (no .NET to install) 
 | **Editor** | Edit with AI | Your instruction applied to the selection, shown in Refactor Preview first |
 | **While you type** | Tab, or Alt+' | Ghost-text completions, either after a pause or only when you ask |
 
-Open the chat with **Ctrl+Alt+I** (**Cmd+Alt+I** on macOS). Every change waits for your approval.
+Open the chat from the **Inferpal** icon in the activity bar. Every change waits for your approval.
 
 ## A failing test? It reads the debugger, not just the log
 
@@ -65,7 +65,7 @@ These were measured on one 24 GB card (LM Studio, 32K context), with its free me
 
 1. **Run a model server.** [Ollama](https://ollama.com) and [LM Studio](https://lmstudio.ai) are both free, and can run on this computer or on a machine you own. On a 24 GB card: `ollama pull qwen3.8`.
 2. **Open your project folder** in a trusted workspace.
-3. **Open Inferpal** from its activity-bar icon, or with **Ctrl+Alt+I**. The first time, it looks for a model server on this computer and proposes the models that fit your card: **Start with these**. For a server on another machine, type its address on the same card. On Ollama without a chat model, the card downloads one for you. `/setup` brings the card back.
+3. **Open Inferpal** from its activity-bar icon. The first time, it looks for a model server on this computer and proposes the models that fit your card: **Start with these**. For a server on another machine, type its address on the same card. On Ollama without a chat model, the card downloads one for you. `/setup` brings the card back.
 4. **Ask a question, or right-click a failing test.**
 
 **Coming from Continue or Roo Code?** `/import continue` or `/import roo` brings over your model server, models, rules, prompts, MCP servers and documentation sites. A card shows what it will take, and nothing is written until you apply. See [Coming from Continue or Roo Code](https://github.com/EstaxNet/Inferpal/blob/master/docs/coming-from-continue.md).
