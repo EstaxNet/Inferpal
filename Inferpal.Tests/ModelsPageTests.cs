@@ -124,6 +124,54 @@ public class ModelAdvisorTests
         Assert.Contains(Strings.ModelRoleUtility, note, StringComparison.Ordinal);
     }
 
+    /// <summary>On Ollama with the card known, the suggestion also proposes the context window sized for that card beside
+    /// the models it proposes, right after the chat model (its place in the form) — over the factory window or the one the
+    /// product last sized, never over one the person set: a Save to keep the models would change it with them.</summary>
+    [Fact]
+    public async Task OnOllama_TheWindowForTheCard_IsProposed_OnlyOverAnAutomaticWindow()
+    {
+        var arch = new ModelArchInfo(32, 32, 8, 4096, 131072);
+        FakeInferenceProvider Server() => new()
+        {
+            Installed = [new("granite4.2:8b", 5 * Gb, ["completion", "tools"]), new("bge-m3:latest", Gb, ["embedding"])],
+            OnShow = m => m == "granite4.2:8b" ? arch : null,
+        };
+        // A 9 GB card: above the smallest window worth writing, below the ceiling — the search model beside the chat's
+        // changes the window.
+        var tokens = ContextWindowChoice.Fits(9, 5 * Gb, arch, ModelCatalog.EstimateVramBytes(Gb));
+        Assert.NotEqual(ContextWindowChoice.Fits(9, 5 * Gb, arch, 0), tokens);                            // witness
+        var expected = tokens.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        Task<ModelSuggestion> Ask(string held, InferpalConfig? saved = null, string provider = "ollama", double card = 9) =>
+            ModelAdvisor.SuggestAsync(Server(), new InferpalConfig { Provider = provider }, card,
+                                      new Dictionary<string, string> { [ModelAdvisor.WindowKey] = held }, CancellationToken.None,
+                                      saved);
+
+        var s = await Ask("8192");
+        Assert.Equal(["defaultModel", ModelAdvisor.WindowKey], s.Fields.Take(2).Select(f => f.Key));
+        Assert.Equal((expected, true), (Field(s, ModelAdvisor.WindowKey).Value, Field(s, ModelAdvisor.WindowKey).Changed));
+
+        // The window the product sized before (another model, another card) is still its own to propose over.
+        // The saved settings, with no file behind them: what the product last wrote is this copy's.
+        InferpalConfig Saved(int auto) => new()
+        {
+            ContextWindowSizeAuto = auto, SavePathForTests = Path.Combine(Path.GetTempPath(), $"absent-{Guid.NewGuid():N}.json"),
+        };
+        var resized = await Ask("30720", Saved(30720));
+        Assert.Equal(expected, Field(resized, ModelAdvisor.WindowKey).Value);
+
+        // A window the product sized for a larger card is brought back down to the factory one when nothing worth writing
+        // fits the card the form now names.
+        var down = await Ask("24576", Saved(24576), card: 8);
+        Assert.Equal(("8192", true), (Field(down, ModelAdvisor.WindowKey).Value, Field(down, ModelAdvisor.WindowKey).Changed));
+        Assert.Equal(Strings.WindowChosen(8192, "8"), Field(down, ModelAdvisor.WindowKey).Reason);
+
+        // Reference arms: a window the person set, another server type, an unknown card — no window field.
+        Assert.Contains((await Ask("16384")).Fields, f => f.Key == "defaultModel");                        // witness
+        Assert.DoesNotContain((await Ask("16384")).Fields, f => f.Key == ModelAdvisor.WindowKey);
+        Assert.DoesNotContain((await Ask("8192", provider: "lmstudio")).Fields, f => f.Key == ModelAdvisor.WindowKey);
+        Assert.DoesNotContain((await Ask("8192", card: 0)).Fields, f => f.Key == ModelAdvisor.WindowKey);
+    }
+
     [Fact]
     public void WhatTheFormAlreadyHolds_IsNoChange()
     {

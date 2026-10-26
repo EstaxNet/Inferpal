@@ -5,7 +5,8 @@ using Inferpal.Models;
 namespace Inferpal.Services.Inference;
 
 /// <summary>One field of the settings form the suggestion fills, the value it proposes and why.</summary>
-/// <param name="Key">The configuration key (<c>defaultModel</c>, <c>inlineCompletionModel</c>, <c>ragEmbeddingModel</c>).</param>
+/// <param name="Key">The configuration key (<c>defaultModel</c>, <c>inlineCompletionModel</c>, <c>ragEmbeddingModel</c>,
+/// and <c>contextWindowSize</c> when a size is decided for the card).</param>
 /// <param name="Value">The proposed value; empty means the field's automatic choice ("same as chat", "automatic").</param>
 /// <param name="Changed">The value differs from what the form holds.</param>
 internal sealed record ModelSuggestionField(string Key, string Value, string Reason, bool Changed);
@@ -92,16 +93,55 @@ internal static class ModelAdvisor
     /// <summary>Asks <paramref name="client"/> what it has installed, then suggests — both editors' one call.</summary>
     /// <param name="client">A client for the server the FORM names (the user may not have saved a new address yet).</param>
     /// <param name="server">That server's settings: an empty list is said for what it is (stopped, refused, empty).</param>
+    /// <param name="saved">The saved settings: their switches (the index, completions) and the window the product last
+    /// sized. <c>null</c>: the factory switches, and no window of the product's.</param>
     public static async Task<ModelSuggestion> SuggestAsync(
         IInferenceProvider client, Config.InferpalConfig server, double vramBudgetGb,
-        IReadOnlyDictionary<string, string> current, CancellationToken ct)
+        IReadOnlyDictionary<string, string> current, CancellationToken ct, Config.InferpalConfig? saved = null)
     {
         var installed = await client.ListInstalledModelsAsync(ct, server.BaseUrl);
         var nothing = installed.Count == 0
             ? await ModelCatalog.EmptyListMeansAsync(client, server, Strings.SuggestNothingListed, ct)
             : Strings.SuggestNothingListed;
-        return Suggest(installed, vramBudgetGb, current, nothing);
+        var suggestion = Suggest(installed, vramBudgetGb, current, nothing);
+        if (suggestion.Fields.FirstOrDefault(f => f.Key == "defaultModel")?.Value is not { Length: > 0 } chat) return suggestion;
+
+        // ⚠ Only over an AUTOMATIC window: a window the person set is theirs, and a Save to keep the proposed models would
+        // otherwise change it with them. What the product last wrote is read in the FILE: the other editor's /setup counts.
+        var held = current.TryGetValue(WindowKey, out var h) ? h?.Trim() ?? "" : "";
+        if (held.Length > 0 && !(int.TryParse(held, NumberStyles.Integer, CultureInfo.InvariantCulture, out var heldTokens)
+                                 && ContextWindowChoice.IsAutomatic(heldTokens, saved is null ? 0 : ContextWindowChoice.WrittenAuto(saved))))
+            return suggestion;
+
+        // The context window for that model and card, beside the search and completion models it proposes. A role on a
+        // server of its own has no field here, so nothing beside the chat; an empty value is the field's automatic choice
+        // (the best embedding model, the chat's own model). Only when a size is decided: an unknown card is asked by the
+        // form's own memory field.
+        string? Proposed(string key) => suggestion.Fields.FirstOrDefault(f => f.Key == key)?.Value;
+        var search = Proposed("ragEmbeddingModel") is { } s
+            ? s.Length > 0 ? s : EmbeddingModels.PreferredOf(ModelsByKind.Of(installed).Embedding)
+            : null;
+        var switches = new Config.InferpalConfig
+        {
+            RagEnabled = saved?.RagEnabled ?? true, InlineCompletionEnabled = saved?.InlineCompletionEnabled ?? true,
+        };
+        var window = await ContextWindowChoice.AdviseAsync(client, server.Provider, chat,
+            ContextWindowChoice.Beside(switches, chat, search, Proposed("inlineCompletionModel")), installed, vramBudgetGb, ct);
+        if (window.Tokens is not { } tokens) return suggestion;
+        var value   = tokens.ToString(CultureInfo.InvariantCulture);
+        // A form that sends no window holds the factory one.
+        var changed = !string.Equals(held.Length > 0 ? held : ContextWindowChoice.Factory.ToString(CultureInfo.InvariantCulture),
+                                     value, StringComparison.Ordinal);
+        // The factory window is proposed only to bring a larger automatic one back down (another card, another model).
+        if (window.Sentence is null && !changed) return suggestion;
+        var reason = window.Sentence ?? Strings.WindowChosen(tokens, vramBudgetGb.ToString("0.#", CultureInfo.CurrentCulture));
+        var fields = suggestion.Fields.ToList();
+        fields.Insert(fields.FindIndex(f => f.Key == "defaultModel") + 1, new ModelSuggestionField(WindowKey, value, reason, changed));
+        return suggestion with { Fields = fields };
     }
+
+    /// <summary>The context window's field, proposed beside the chat model when a size is decided for the card.</summary>
+    public const string WindowKey = "contextWindowSize";
 
     /// <param name="installed">What the server lists, with the size of each on disk (0 when it does not say).</param>
     /// <param name="vramBudgetGb">The card's memory set in the settings; 0 = unknown.</param>

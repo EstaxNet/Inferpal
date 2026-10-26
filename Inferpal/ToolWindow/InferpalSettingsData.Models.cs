@@ -89,6 +89,7 @@ internal partial class InferpalSettingsData
                 current      = new()
                 {
                     ["defaultModel"]          = SelectedModel ?? "",
+                    [Services.Inference.ModelAdvisor.WindowKey] = ContextWindowSizeText ?? "",
                     ["inlineCompletionModel"] = InlineCompletionModel ?? "",
                     ["ragEmbeddingModel"]     = RagEmbeddingModel ?? "",
                     ["agentModel"]            = AgentModel ?? "",
@@ -104,7 +105,8 @@ internal partial class InferpalSettingsData
             var server = new InferpalConfig { Provider = providerCode, BaseUrl = url, ApiKey = apiKey };
             var budget = double.TryParse(budgetText, NumberStyles.Float, CultureInfo.CurrentCulture, out var gb) && gb > 0
                 ? gb : _config.VramBudgetGb;
-            var suggestion = await ModelAdvisor.SuggestAsync(InferenceProviderFactory.Create(server), server, budget, current, ct);
+            var suggestion = await ModelAdvisor.SuggestAsync(InferenceProviderFactory.Create(server), server, budget, current, ct,
+                                                             _config);
 
             // The lists first: a value the combo box does not hold is written back as null by the Selector.
             await RefreshModelsAsync(url, ct);
@@ -121,6 +123,7 @@ internal partial class InferpalSettingsData
                             switch (f.Key)
                             {
                                 case "defaultModel":          SelectedModel         = f.Value; break;
+                                case Services.Inference.ModelAdvisor.WindowKey: ContextWindowSizeText = f.Value; break;
                                 case "inlineCompletionModel": InlineCompletionModel = f.Value; break;
                                 case "ragEmbeddingModel":     RagEmbeddingModel     = f.Value; break;
                             }

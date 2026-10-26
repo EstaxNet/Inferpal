@@ -349,7 +349,17 @@ Gemma 4 12B passed as often at 8K (27 of 28 against 28 of 28), but took 1.5 to 2
 time lost came from the summary that replaces older turns: since it was fixed, it takes the same time at 8K as at 32K
 (24.8 s, in one pass, against 24.7 s). For Gemma 4 12B the runs were too noisy to conclude (30 to 55 s at 8K against
 24 s at 32K). If your card has the memory, a 32K window keeps the agent faster; at 8K, the tools' descriptions take more
-than half the window, and projects larger than the battery's were not measured.
+than half the window.
+
+On real projects the difference is larger. Questions about tablib, js-yaml and scriban in the default setup (Ollama, Chat
+mode): at 8K, 15 of 24 answers by Granite 4.2 8B and Gemma 4 12B ended on "the request is larger than the context the
+model is loaded with" or were cut; at 32K (Granite) and 20K (Gemma), none was. So on Ollama, when your graphics card's
+memory is known, the first run, `/setup` and **Suggest the best models** set the context window for the card: the
+largest that fits beside the search and autocomplete models, up to 32K. They set it only from 16K: at 11K (Granite on
+an 8 GB card) answers still overflowed or looped, so an 8 GB card keeps 8K. Gemma 4 12B also keeps 8K on a 12 GB card:
+Inferpal sizes the memory a window takes as if every layer attended to the whole window, which Gemma 4's sliding
+window does not, and its real footprint could not be read on the test server. A window you set yourself is never
+changed.
 
 | Model | Result | Measured |
 |---|---|---|

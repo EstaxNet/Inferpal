@@ -713,6 +713,21 @@ internal class OllamaClient : InferenceProviderBase
         catch { return false; }
     }
 
+    /// <summary>
+    /// The window a completion asks for: the chat's when the completion model is one the chat answers with (the chat
+    /// model, or a task's — agent, code actions, inline edit, utility), on the chat's server; <c>null</c> (the server's
+    /// default) otherwise.
+    /// </summary>
+    /// <remarks>⚠ Ollama keeps one runner per model and window, and every chat request asks for the configured window:
+    /// a completion at the server's default size reloaded that model at every switch between typing and asking. A
+    /// completion model of its own keeps the default — the chat's window would cost its memory for nothing.</remarks>
+    private int? FimNumCtx(string model) =>
+        _config.ContextWindowSize > 0 && RoleServers.OnChatServer(_config, ServerRole.Completion)
+        && new[] { _config.DefaultModel, _config.AgentModel, _config.CodeActionsModel, _config.InlineEditModel, _config.UtilityModel }
+               .Any(m => !string.IsNullOrWhiteSpace(m) && ModelCatalog.SameModelName(model, m))
+            ? _config.ContextWindowSize
+            : null;
+
     /// <summary>"server|model" pairs Ollama refused a <c>suffix</c> for (no insert slot in the template): completed from a
     /// prompt built here, sent raw.</summary>
     internal static readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> RawFimModels = new();
@@ -743,6 +758,7 @@ internal class OllamaClient : InferenceProviderBase
         var m      = FimModelFor(model);
         if (m is null) return;
         var rawKey = base_ + "|" + m;
+        var numCtx = FimNumCtx(m);
         GenerateRequest request;
         if (RawFimModels.ContainsKey(rawKey))
         {
@@ -750,7 +766,7 @@ internal class OllamaClient : InferenceProviderBase
             // family's FIM tokens when measured better, the prefix alone otherwise — and sent past the template.
             var spec = FimTemplate.Build(m, prefix, suffix);
             request = new GenerateRequest(m, spec.Prompt, Suffix: null, Stream: true,
-                                          new GenerateOptions(temperature, maxTokens, Stop: FimCompletion.Stops(suffix, spec.Stop)),
+                                          new GenerateOptions(temperature, maxTokens, Stop: FimCompletion.Stops(suffix, spec.Stop), NumCtx: numCtx),
                                           ComputeKeepAlive(), Raw: true);
         }
         else
@@ -759,7 +775,7 @@ internal class OllamaClient : InferenceProviderBase
                 Prompt:    prefix,
                 Suffix:    suffix,
                 Stream:    true,
-                Options:   new GenerateOptions(temperature, maxTokens, Stop: FimCompletion.Stops(suffix, ["\n\n\n"])),
+                Options:   new GenerateOptions(temperature, maxTokens, Stop: FimCompletion.Stops(suffix, ["\n\n\n"]), NumCtx: numCtx),
                 KeepAlive: ComputeKeepAlive());
 
         // 60 s bounds time-to-first-byte, then chunk inactivity (see SendChatAsync).

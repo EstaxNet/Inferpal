@@ -3231,6 +3231,63 @@ public partial class HostServerTests
         finally { try { File.Delete(file); } catch { } }
     }
 
+    /// <summary>The card shows the context window sized for its memory beside the models <c>setup/apply</c> KEEPS, applying
+    /// it writes that same window and says it in the chat; a window the person chose is neither announced nor written over,
+    /// and one the product wrote for another model is resized.</summary>
+    [Theory]
+    [InlineData(8192, 0, null, true)]                    // the factory window: sized
+    [InlineData(16384, 0, null, false)]                  // the person's: left alone, unannounced
+    [InlineData(30720, 30720, null, true)]               // the product's, for another model: resized
+    [InlineData(8192, 0, "qwen2.5-coder:7b", true)]      // a completion model kept on the same server: counted beside
+    public async Task SetupCard_SizesTheWindowForTheCard_BesideWhatItKeeps(int held, int auto, string? keptCompletion, bool written)
+    {
+        var file = Path.Combine(Path.GetTempPath(), $"inferpal-setup-{Guid.NewGuid():N}.json");
+        try
+        {
+            using var h = CreateHarness(cfg =>
+            {
+                cfg.Provider = "ollama";
+                cfg.BaseUrl = "http://192.168.1.5:11434";
+                cfg.VramBudgetGb = 9;
+                cfg.ContextWindowSize = held;
+                cfg.ContextWindowSizeAuto = auto;
+                if (keptCompletion is not null) cfg.InlineCompletionModel = keptCompletion;
+            }, settingsFile: file);
+            await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            const long gb = 1L << 30;
+            var arch = new ModelArchInfo(32, 32, 8, 4096, 131072);
+            h.Fake.Installed = [new("granite4.2:8b", 5 * gb, ["completion", "tools"]), new("bge-m3:latest", gb, ["embedding"]),
+                                new("qwen2.5-coder:7b", gb, ["completion", "insert"])];
+            h.Fake.OnShow = m => m == "granite4.2:8b" ? arch : null;
+            // A 9 GB card: above the smallest window worth writing, below the ceiling, where what lives beside the chat model
+            // changes the window. The harness keeps the index off: the search model is not beside, a completion model kept is.
+            var beside = keptCompletion is null ? 0 : ModelCatalog.EstimateVramBytes(gb);
+            var expected = ContextWindowChoice.Fits(9, 5 * gb, arch, beside);
+            if (keptCompletion is not null)
+                Assert.NotEqual(ContextWindowChoice.Fits(9, 5 * gb, arch, 0), expected);                              // witness
+            var sentence = Strings.WindowChosen(expected, "9");
+
+            var plan = await h.Client.InvokeWithParameterObjectAsync<Host.SetupPlanDto>(
+                "setup/plan", new { url = "http://192.168.1.5:11434", provider = "ollama" });
+            Assert.Equal("granite4.2:8b", plan.ChatModel);                                                    // witness
+            Assert.Equal(written ? sentence : null, plan.WindowText);
+            if (written && expected > ContextWindowChoice.Factory) Assert.Null(plan.FitText);   // the window uses the spare memory
+
+            var result = await h.Client.InvokeWithParameterObjectAsync<Host.SetupApplyResult>("setup/apply", new
+            {
+                url = "http://192.168.1.5:11434", provider = "ollama", chatModel = "granite4.2:8b",
+            });
+            var c = h.Server.CurrentSession!.Config;
+            Assert.Equal(written ? sentence : null, result.WindowText);
+            Assert.Equal(written ? expected : held, c.ContextWindowSize);
+            Assert.Equal(written ? (expected == ContextWindowChoice.Factory ? 0 : expected) : auto, c.ContextWindowSizeAuto);
+            Assert.Equal(written ? expected : held,
+                         System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(file))!["contextWindowSize"]!.GetValue<int>());
+            Assert.Equal(keptCompletion ?? "", c.InlineCompletionModel);
+        }
+        finally { try { File.Delete(file); } catch { } }
+    }
+
     /// <summary>The setup lists the chat's server: a role on a server of its own keeps its model, which that list does not
     /// hold.</summary>
     [Fact]

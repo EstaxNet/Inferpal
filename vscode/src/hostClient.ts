@@ -639,8 +639,8 @@ export class HostClient {
     return this.connection().sendRequest<SetupPlan>('setup/plan', { url, provider, apiKey, cardGb });
   }
 
-  setupApply(params: SetupApplyParams): Promise<{ restartNeeded: boolean }> {
-    return this.connection().sendRequest<{ restartNeeded: boolean }>('setup/apply', params);
+  setupApply(params: SetupApplyParams): Promise<{ restartNeeded: boolean; windowText?: string | null }> {
+    return this.connection().sendRequest<{ restartNeeded: boolean; windowText?: string | null }>('setup/apply', params);
   }
 
   /** Downloads a model to the server the card shows; progress arrives through `onSetupPullProgress`. */

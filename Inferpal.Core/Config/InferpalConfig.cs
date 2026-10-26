@@ -166,6 +166,14 @@ internal class InferpalConfig
     public int ContextWindowSize { get; set; } = 8192;
 
     /// <summary>
+    /// The context window the first run, <c>/setup</c> or the setup card last sized for the card; 0 = none. While
+    /// <see cref="ContextWindowSize"/> holds it (or the factory value) the window is the product's to resize — another
+    /// chat model, another card; any other value is the person's (<c>ContextWindowChoice.IsAutomatic</c>).
+    /// </summary>
+    [JsonPropertyName("contextWindowSizeAuto")]
+    public int ContextWindowSizeAuto { get; set; }
+
+    /// <summary>
     /// When <c>true</c>, chat and agent requests carry the sampling settings the model's vendor recommends for a family
     /// Inferpal knows (<c>ModelProfiles</c>, documented in docs/models.md) — only the values the vendor publishes.
     /// <c>false</c> sends none, and the server's own per-model settings apply.
@@ -973,6 +981,14 @@ internal class InferpalConfig
         (typeof(InferpalConfig).GetProperty(property)
             ?? throw new ArgumentException($"No setting named {property}.", nameof(property)))
         .GetCustomAttributes(typeof(JsonPropertyNameAttribute), false).OfType<JsonPropertyNameAttribute>().Single().Name;
+
+    /// <summary>The settings as the FILE this copy saves to holds them now; <c>null</c> when it is absent or unreadable.
+    /// For a decision on what the other window may have set since this copy was read.</summary>
+    internal InferpalConfig? ReadFileNow()
+    {
+        var path = SavePathForTests ?? EffectiveConfigPath;
+        return File.Exists(path) && TryRead(path, out var onDisk, out _, out _) ? onDisk : null;
+    }
 
     /// <summary>
     /// Before an AUTOMATIC decision fills a setting nobody set (a first run, a model adopted, a VRAM budget detected):

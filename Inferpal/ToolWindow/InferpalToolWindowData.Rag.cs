@@ -274,11 +274,28 @@ internal partial class InferpalToolWindowData
         await Services.Hardware.HardwareProfile.EnsureBudgetAsync(_config, ct)
             .ConfigureAwait(false);
 
+        // ── 5. Context window ─────────────────────────────────────────────────
+        // Sized for the card beside the models that live with the chat's (Ollama only: another server is not even
+        // listed); a window the person chose stands, unsaid.
+        Services.Inference.WindowAdvice? window = null;
+        if (Services.Inference.ContextWindowChoice.Applies(_config.Provider)
+            && Services.Inference.ContextWindowChoice.IsAutomatic(_config))
+        {
+            var installed = await client.ListInstalledModelsAsync(ct).ConfigureAwait(false);
+            window = await Services.Inference.ContextWindowChoice.AdviseAsync(client, _config.Provider, best,
+                    Services.Inference.ContextWindowChoice.Beside(_config, best, installed), installed, _config.VramBudgetGb, ct)
+                .ConfigureAwait(false);
+        }
+        var windowWritten = window?.Tokens is { } tokens && Services.Inference.ContextWindowChoice.Apply(_config, tokens);
+        if (windowWritten) _config.Save();
+
         var vramWarning = await BuildFirstRunVramWarningAsync(best, ct).ConfigureAwait(false);
 
         // The count agrees with its noun in the language (Strings.Format): an English "3 models" landed in every
         // translated sentence — "3 models disponible(s)", "3 models 個のモデル".
         var text = foundNote + Strings.MsgFirstRunWelcome(chatModels.Count, best);
+        // A size is said only once written: another window may have set one between the read and the write.
+        if (window?.Sentence is { } windowSentence && (window.Tokens is null || windowWritten)) text += "\n\n" + windowSentence;
         if (vramWarning is not null) text += "\n\n" + vramWarning;
         await present(text).ConfigureAwait(false);
     }

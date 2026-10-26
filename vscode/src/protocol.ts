@@ -1140,6 +1140,8 @@ export interface SetupPlan {
   /** The graphics memories to choose from, when the server's was not found (or was chosen here, to change it). */
   cardChoices: { gb: number; label: string }[];
   cardQuestion?: string | null;
+  /** The context window the card writes for this memory; or, with the memory unknown and not asked, why it stays. */
+  windowText?: string | null;
 }
 
 export interface SetupApplyParams {

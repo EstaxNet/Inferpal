@@ -1391,6 +1391,8 @@ What you save there applies from your next question, in this thread and the othe
   <data name="WelcomeLocal" xml:space="preserve"><value>Your code stays on this machine.</value></data>
   <data name="WelcomeLineRemote" xml:space="preserve"><value>{0} on {1}. Your code is sent to {2}.</value></data>
   <data name="WelcomeRemote" xml:space="preserve"><value>Your code is sent to {0}.</value></data>
+  <data name="WindowChosen" xml:space="preserve"><value>Context window: {0:N0} {0:token|tokens}, sized for a {1} GB card beside the other models.</value></data>
+  <data name="WindowUnknownCard" xml:space="preserve"><value>Context window left at {0:N0} {0:token|tokens}: the graphics card's memory is not known. Type `/hardware &lt;GB&gt;`, then `/setup`.</value></data>
   <data name="WelcomeForFile" xml:space="preserve"><value>For {0}, open in the editor</value></data>
   <data name="WelcomeExplainFile" xml:space="preserve"><value>Explain this file</value></data>
   <data name="WelcomeExplainFileDesc" xml:space="preserve"><value>What it does and how the pieces connect</value></data>
@@ -1449,7 +1451,7 @@ What you save there applies from your next question, in this thread and the othe
   <data name="UnloadKept" xml:space="preserve"><value>Still loaded: {0} — the server did not unload it.</value></data>
   <data name="UnloadUnverified" xml:space="preserve"><value>Unload asked for {0}, but the server did not answer the check afterwards — whether it is still loaded is unknown.</value></data>
   <data name="BtnSuggestModels" xml:space="preserve"><value>Suggest the best models</value></data>
-  <data name="HintSuggestModels" xml:space="preserve"><value>Picks among the installed models, from Inferpal's measurements. Nothing is saved until you click Save.</value></data>
+  <data name="HintSuggestModels" xml:space="preserve"><value>Picks among the installed models, from Inferpal's measurements, and on Ollama the context window for the card. Nothing is saved until you click Save.</value></data>
   <data name="SettingsSectionLoadedModels" xml:space="preserve"><value>Loaded now</value></data>
   <data name="NoteLoadedModels" xml:space="preserve"><value>An unloaded model loads again at the next request that needs it.</value></data>
   <data name="BtnUnloadModel" xml:space="preserve"><value>Unload</value></data>

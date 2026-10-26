@@ -105,9 +105,9 @@ function themeCards(host: WidgetHost): LiveWidget {
 
 // ── Server and models page: the best installed models, and what is loaded ────
 
-/** The fields the suggestion reads: the three models it may fill, the advanced ones it only names, and where
- *  autocomplete and code search run - a role on a server of its own keeps its model. */
-const SUGGESTION_KEYS = ['defaultModel', 'inlineCompletionModel', 'ragEmbeddingModel',
+/** The fields the suggestion reads: the three models and the context window it may fill, the advanced ones it only
+ *  names, and where autocomplete and code search run - a role on a server of its own keeps its model. */
+const SUGGESTION_KEYS = ['defaultModel', 'contextWindowSize', 'inlineCompletionModel', 'ragEmbeddingModel',
   'agentModel', 'codeActionsModel', 'inlineEditModel', 'utilityModel', 'inlineCompletionRunsOn', 'ragEmbeddingRunsOn'];
 
 /** "Suggest the best models": the host picks among the installed models and says why; the picks land in the form as

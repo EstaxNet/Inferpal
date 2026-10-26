@@ -206,6 +206,8 @@ internal static class Strings
     public static string WelcomeLineRemote(string model, string server, string hosts) =>
         Format(Get(nameof(WelcomeLineRemote)), model, server, hosts);
     public static string WelcomeRemote(string hosts) => Format(Get(nameof(WelcomeRemote)), hosts);
+    public static string WindowChosen(int tokens, string cardGb) => Format(Get(nameof(WindowChosen)), tokens, cardGb);
+    public static string WindowUnknownCard(int tokens) => Format(Get(nameof(WindowUnknownCard)), tokens);
     public static string WelcomeForFile(string file) => Format(Get(nameof(WelcomeForFile)), file);
     public static string WelcomeExplainFile => Get(nameof(WelcomeExplainFile));
     public static string WelcomeExplainFileDesc => Get(nameof(WelcomeExplainFileDesc));

@@ -21,10 +21,13 @@ internal sealed record ModelDownload(string Name, string Tag, double DownloadGb,
 /// <param name="InstalledCount">How many models the server has, of every kind.</param>
 /// <param name="NoneFits">The server takes downloads, but none of the recommended models fits the card: said as that,
 /// not as a server that cannot download.</param>
+/// <param name="Window">The chat model's context window for the card (<see cref="ContextWindowChoice"/>), set by the
+/// caller that knows which role models the card keeps; <c>null</c> when there is nothing to propose or say.</param>
+/// <param name="Installed">What the server lists, as the plan read it (the sizes the window is sized from).</param>
 internal sealed record FirstRunPlan(
     string Provider, string Url, string? ChatModel, string? CompletionModel, string? SearchModel, int ChatCount,
     double BudgetGb, double NeededGb, IReadOnlyList<ModelDownload> Downloads, IReadOnlyList<string> Listed,
-    int InstalledCount, bool NoneFits = false)
+    int InstalledCount, bool NoneFits = false, WindowAdvice? Window = null, IReadOnlyList<InstalledModelInfo>? Installed = null)
 {
     /// <summary>The proposed models fit the card (or the card is unknown).</summary>
     public bool Fits => BudgetGb <= 0 || NeededGb <= BudgetGb;
@@ -44,7 +47,10 @@ internal static class FirstRunPlanner
         IInferenceProvider client, InferpalConfig server, double budgetGb, CancellationToken ct)
     {
         var installed = await client.ListInstalledModelsAsync(ct, server.BaseUrl).ConfigureAwait(false);
-        return Plan(installed, server.Provider, server.BaseUrl, budgetGb, client.Capabilities.ModelManagement);
+        return Plan(installed, server.Provider, server.BaseUrl, budgetGb, client.Capabilities.ModelManagement) with
+        {
+            Installed = installed,
+        };
     }
 
     /// <summary>The pure decision (tested without a server).</summary>

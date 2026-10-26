@@ -83,7 +83,8 @@ In Visual Studio: **Tools → Inferpal → Inferpal Chat**.
 
 The first time the window opens, Inferpal looks for a model server: the address set, else where one usually listens
 on this computer (Ollama, LM Studio, llama-server, vLLM). When nothing was set up yet (no address, key or model
-chosen), it takes the server that answers and picks a model, and says so in the chat. `/setup` looks again, and says what each place answered when none
+chosen), it takes the server that answers and picks a model, and says so in the chat; on Ollama, with the graphics card's
+memory known, it also sets the context window for the card ([Models](models.md#measured-results)). `/setup` looks again, and says what each place answered when none
 does. To choose by hand:
 
 1. Open **Inferpal Settings** — the first page is **Server and models**.

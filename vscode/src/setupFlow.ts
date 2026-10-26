@@ -12,7 +12,8 @@ export interface SetupFlowDeps {
   show(view: WvSetupView | null): void;
   log(line: string): void;
   /** The choice is saved: the chat takes the model, or the host restarts for a server of another type. */
-  applied(model: string, restartNeeded: boolean): Promise<void>;
+  /** The card's choice is saved; `windowText`: the context window written, or why it stays, said in the chat. */
+  applied(model: string, restartNeeded: boolean, windowText?: string | null): Promise<void>;
   openSettings(): Promise<void>;
 }
 
@@ -122,7 +123,7 @@ export class SetupFlow {
           });
           if (g !== this.generation) return;
           this.finish();
-          await this.deps.applied(plan.chatModel, result.restartNeeded);
+          await this.deps.applied(plan.chatModel, result.restartNeeded, result.windowText);
           if (a.action === 'chooseOther') await this.deps.openSettings();
           return;
         }
@@ -143,7 +144,7 @@ export class SetupFlow {
           });
           if (g !== this.generation) return;
           this.finish();
-          await this.deps.applied(download.tag, result.restartNeeded);
+          await this.deps.applied(download.tag, result.restartNeeded, result.windowText);
           return;
         }
       }

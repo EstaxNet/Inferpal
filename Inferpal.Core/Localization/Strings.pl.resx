@@ -1387,6 +1387,8 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="WelcomeLocal" xml:space="preserve"><value>Twój kod zostaje na tym komputerze.</value></data>
   <data name="WelcomeLineRemote" xml:space="preserve"><value>{0} na {1}. Twój kod jest wysyłany do {2}.</value></data>
   <data name="WelcomeRemote" xml:space="preserve"><value>Twój kod jest wysyłany do {0}.</value></data>
+  <data name="WindowChosen" xml:space="preserve"><value>Okno kontekstu: {0:N0} {0:token|tokeny|tokenów}, dobrane do karty {1} GB razem z pozostałymi modelami.</value></data>
+  <data name="WindowUnknownCard" xml:space="preserve"><value>Okno kontekstu pozostaje na {0:N0} {0:tokenie|tokenach|tokenach}: pamięć karty graficznej nie jest znana. Wpisz `/hardware &lt;GB&gt;`, a potem `/setup`.</value></data>
   <data name="WelcomeForFile" xml:space="preserve"><value>Dla {0}, otwartego w edytorze</value></data>
   <data name="WelcomeExplainFile" xml:space="preserve"><value>Wyjaśnij ten plik</value></data>
   <data name="WelcomeExplainFileDesc" xml:space="preserve"><value>Co robi i jak łączą się elementy</value></data>
@@ -1445,7 +1447,7 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="UnloadKept" xml:space="preserve"><value>Nadal załadowany: {0} — serwer go nie zwolnił.</value></data>
   <data name="UnloadUnverified" xml:space="preserve"><value>Zażądano zwolnienia {0}, ale serwer nie odpowiedział na późniejsze sprawdzenie — nie wiadomo, czy nadal jest załadowany.</value></data>
   <data name="BtnSuggestModels" xml:space="preserve"><value>Zasugeruj najlepsze modele</value></data>
-  <data name="HintSuggestModels" xml:space="preserve"><value>Wybiera spośród zainstalowanych modeli na podstawie pomiarów Inferpal. Nic nie zostanie zapisane, dopóki nie klikniesz Zapisz.</value></data>
+  <data name="HintSuggestModels" xml:space="preserve"><value>Wybiera spośród zainstalowanych modeli na podstawie pomiarów Inferpal, a w Ollama także okno kontekstu dla karty. Nic nie zostanie zapisane, dopóki nie klikniesz Zapisz.</value></data>
   <data name="SettingsSectionLoadedModels" xml:space="preserve"><value>Załadowane teraz</value></data>
   <data name="NoteLoadedModels" xml:space="preserve"><value>Zwolniony model załaduje się ponownie przy następnym żądaniu, które go potrzebuje.</value></data>
   <data name="BtnUnloadModel" xml:space="preserve"><value>Zwolnij</value></data>

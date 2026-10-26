@@ -1387,6 +1387,8 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="WelcomeLocal" xml:space="preserve"><value>Ihr Code bleibt auf diesem Rechner.</value></data>
   <data name="WelcomeLineRemote" xml:space="preserve"><value>{0} auf {1}. Ihr Code wird an {2} gesendet.</value></data>
   <data name="WelcomeRemote" xml:space="preserve"><value>Ihr Code wird an {0} gesendet.</value></data>
+  <data name="WindowChosen" xml:space="preserve"><value>Kontextfenster: {0:N0} {0:Token|Token}, bemessen für eine Karte mit {1} GB neben den anderen Modellen.</value></data>
+  <data name="WindowUnknownCard" xml:space="preserve"><value>Das Kontextfenster bleibt bei {0:N0} {0:Token|Token}: Der Speicher der Grafikkarte ist nicht bekannt. Geben Sie `/hardware &lt;GB&gt;` ein, dann `/setup`.</value></data>
   <data name="WelcomeForFile" xml:space="preserve"><value>Für {0}, im Editor geöffnet</value></data>
   <data name="WelcomeExplainFile" xml:space="preserve"><value>Diese Datei erklären</value></data>
   <data name="WelcomeExplainFileDesc" xml:space="preserve"><value>Was sie tut und wie die Teile zusammenhängen</value></data>
@@ -1445,7 +1447,7 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="UnloadKept" xml:space="preserve"><value>Noch geladen: {0} — der Server hat es nicht entladen.</value></data>
   <data name="UnloadUnverified" xml:space="preserve"><value>Entladen für {0} angefordert, aber der Server hat auf die anschließende Prüfung nicht geantwortet — ob es noch geladen ist, ist unbekannt.</value></data>
   <data name="BtnSuggestModels" xml:space="preserve"><value>Die besten Modelle vorschlagen</value></data>
-  <data name="HintSuggestModels" xml:space="preserve"><value>Wählt unter den installierten Modellen anhand der Messungen von Inferpal. Nichts wird gespeichert, bevor Sie auf Speichern klicken.</value></data>
+  <data name="HintSuggestModels" xml:space="preserve"><value>Wählt unter den installierten Modellen anhand der Messungen von Inferpal, und unter Ollama das Kontextfenster für die Karte. Nichts wird gespeichert, bevor Sie auf Speichern klicken.</value></data>
   <data name="SettingsSectionLoadedModels" xml:space="preserve"><value>Jetzt geladen</value></data>
   <data name="NoteLoadedModels" xml:space="preserve"><value>Ein entladenes Modell wird bei der nächsten Anfrage, die es braucht, wieder geladen.</value></data>
   <data name="BtnUnloadModel" xml:space="preserve"><value>Entladen</value></data>

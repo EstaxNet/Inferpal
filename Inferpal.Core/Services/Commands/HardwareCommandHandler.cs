@@ -94,7 +94,10 @@ internal static class HardwareCommandHandler
         // The configured name may omit Ollama's implicit `:latest` tag; missing weights would size the
         // KV cache over the whole budget and recommend a context that does not fit.
         var weights     = installed.FirstOrDefault(m => ModelCatalog.SameModelName(m.Name, model))?.SizeBytes ?? 0;
-        var recommended = ModelCatalog.MaxSafeNumCtx(config.VramBudgetGb, weights, arch);
+        // What the memory holds beside the models that live with the chat's — counted alone, the figure sent a user to a
+        // window that overflows once the search model loads. Uncapped: this is what fits, not what the first run writes.
+        var beside      = ContextWindowChoice.BesideBytes(ContextWindowChoice.Beside(config, model, installed), installed);
+        var recommended = ContextWindowChoice.FitsMemory(config.VramBudgetGb, weights, arch, beside);
 
         return new ContextWindowAdvice(model, config.ContextWindowSize, recommended, arch.ContextLength);
     }

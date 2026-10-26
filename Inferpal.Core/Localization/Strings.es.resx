@@ -1387,6 +1387,8 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="WelcomeLocal" xml:space="preserve"><value>Su código se queda en esta máquina.</value></data>
   <data name="WelcomeLineRemote" xml:space="preserve"><value>{0} en {1}. Su código se envía a {2}.</value></data>
   <data name="WelcomeRemote" xml:space="preserve"><value>Su código se envía a {0}.</value></data>
+  <data name="WindowChosen" xml:space="preserve"><value>Ventana de contexto: {0:N0} {0:token|tokens}, dimensionada para una tarjeta de {1} GB junto a los demás modelos.</value></data>
+  <data name="WindowUnknownCard" xml:space="preserve"><value>La ventana de contexto se queda en {0:N0} {0:token|tokens}: no se conoce la memoria de la tarjeta gráfica. Escriba `/hardware &lt;GB&gt;` y después `/setup`.</value></data>
   <data name="WelcomeForFile" xml:space="preserve"><value>Para {0}, abierto en el editor</value></data>
   <data name="WelcomeExplainFile" xml:space="preserve"><value>Explicar este archivo</value></data>
   <data name="WelcomeExplainFileDesc" xml:space="preserve"><value>Qué hace y cómo encajan las piezas</value></data>
@@ -1445,7 +1447,7 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="UnloadKept" xml:space="preserve"><value>Sigue cargado: {0}; el servidor no lo descargó.</value></data>
   <data name="UnloadUnverified" xml:space="preserve"><value>Se pidió descargar {0}, pero el servidor no respondió a la comprobación posterior: no se sabe si sigue cargado.</value></data>
   <data name="BtnSuggestModels" xml:space="preserve"><value>Sugerir los mejores modelos</value></data>
-  <data name="HintSuggestModels" xml:space="preserve"><value>Elige entre los modelos instalados, según las mediciones de Inferpal. No se guarda nada hasta que pulse Guardar.</value></data>
+  <data name="HintSuggestModels" xml:space="preserve"><value>Elige entre los modelos instalados, según las mediciones de Inferpal, y con Ollama la ventana de contexto para la tarjeta. No se guarda nada hasta que pulse Guardar.</value></data>
   <data name="SettingsSectionLoadedModels" xml:space="preserve"><value>Cargados ahora</value></data>
   <data name="NoteLoadedModels" xml:space="preserve"><value>Un modelo descargado vuelve a cargarse en la siguiente solicitud que lo necesite.</value></data>
   <data name="BtnUnloadModel" xml:space="preserve"><value>Descargar</value></data>

@@ -1387,6 +1387,8 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="WelcomeLocal" xml:space="preserve"><value>コードはこのマシンから出ません。</value></data>
   <data name="WelcomeLineRemote" xml:space="preserve"><value>{1} 上の {0}。コードは {2} に送信されます。</value></data>
   <data name="WelcomeRemote" xml:space="preserve"><value>コードは {0} に送信されます。</value></data>
+  <data name="WindowChosen" xml:space="preserve"><value>コンテキストウィンドウ: {0:N0} トークン。{1} GB のカードで他のモデルと並べて動く大きさにしました。</value></data>
+  <data name="WindowUnknownCard" xml:space="preserve"><value>コンテキストウィンドウは {0:N0} トークンのままです。グラフィックカードのメモリ量が不明です。`/hardware &lt;GB&gt;` と入力してから `/setup` を実行してください。</value></data>
   <data name="WelcomeForFile" xml:space="preserve"><value>エディターで開いている {0} について</value></data>
   <data name="WelcomeExplainFile" xml:space="preserve"><value>このファイルを説明</value></data>
   <data name="WelcomeExplainFileDesc" xml:space="preserve"><value>何をしていて、各部分がどうつながるか</value></data>
@@ -1445,7 +1447,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="UnloadKept" xml:space="preserve"><value>まだ読み込まれています: {0} — サーバーがアンロードしませんでした。</value></data>
   <data name="UnloadUnverified" xml:space="preserve"><value>{0} のアンロードを要求しましたが、その後の確認にサーバーが応答しませんでした。まだ読み込まれているかは不明です。</value></data>
   <data name="BtnSuggestModels" xml:space="preserve"><value>最適なモデルを提案</value></data>
-  <data name="HintSuggestModels" xml:space="preserve"><value>Inferpal の測定に基づき、インストール済みモデルから選びます。保存をクリックするまで何も保存されません。</value></data>
+  <data name="HintSuggestModels" xml:space="preserve"><value>Inferpal の測定に基づき、インストール済みモデルから選びます。Ollama ではカードに合わせたコンテキストウィンドウも選びます。保存をクリックするまで何も保存されません。</value></data>
   <data name="SettingsSectionLoadedModels" xml:space="preserve"><value>現在読み込み中</value></data>
   <data name="NoteLoadedModels" xml:space="preserve"><value>アンロードしたモデルは、次に必要になったリクエストで再び読み込まれます。</value></data>
   <data name="BtnUnloadModel" xml:space="preserve"><value>アンロード</value></data>

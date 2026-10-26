@@ -1,5 +1,6 @@
 using Inferpal.Config;
 using Inferpal.Localization;
+using Inferpal.Models;
 using Inferpal.Services.Hardware;
 using Inferpal.Services.Inference;
 using StreamJsonRpc;
@@ -57,8 +58,55 @@ internal sealed partial class HostServer
         var s = Session();
         var server = ServerConfig(s, p);
         var (budget, source) = await BudgetForAsync(s, server.BaseUrl, p.CardGb, ct);
-        var plan = await FirstRunPlanner.PlanAsync(_providerFactory(server), server, budget, ct);
+        var client = _providerFactory(server);
+        var plan = await FirstRunPlanner.PlanAsync(client, server, budget, ct);
+        if (plan.ChatModel is { } chat)
+            plan = plan with
+            {
+                Window = await WindowForAsync(s, server, client, plan.Installed ?? [], budget, chat,
+                                              KeptRoleModels(s, server, plan.CompletionModel, plan.SearchModel), ct),
+            };
         return SetupPlanDto.Of(plan, source);
+    }
+
+    /// <summary>
+    /// The context window <c>setup/apply</c> writes for <paramref name="chat"/>, beside the role models it KEEPS
+    /// (<paramref name="kept"/>, <see cref="KeptRoleModels"/>) — the card shows the same one. <c>null</c> on another server
+    /// type, and when the window is the person's: <c>setup/apply</c> leaves it, and the card does not announce another.
+    /// </summary>
+    private static async Task<WindowAdvice?> WindowForAsync(
+        HostSession s, InferpalConfig server, IInferenceProvider client, IReadOnlyList<InstalledModelInfo> installed,
+        double budget, string chat, (string? Completion, string? Search, InferpalConfig After) kept, CancellationToken ct)
+    {
+        if (!ContextWindowChoice.Applies(server.Provider) || !ContextWindowChoice.IsAutomatic(s.Config)) return null;
+        // A search model left automatic is the one the index will pick.
+        var beside = ContextWindowChoice.Beside(kept.After, chat,
+            string.IsNullOrWhiteSpace(kept.Search) ? EmbeddingModels.PreferredOf(ModelsByKind.Of(installed).Embedding) : kept.Search,
+            kept.Completion);
+        return await ContextWindowChoice.AdviseAsync(client, server.Provider, chat, beside, installed, budget, ct);
+    }
+
+    /// <summary>
+    /// The completion and search models <c>setup/apply</c> leaves: on the chat's server, the card's — except while the
+    /// server stays, where a model the card leaves out keeps the one chosen before (<c>/setup</c> run again to download a
+    /// chat model wiped the completion and search models picked earlier, and the index was embedded again). A role on a
+    /// server of its own keeps its model, which is not the card's to set: <c>null</c>.
+    /// </summary>
+    private static (string? Completion, string? Search, InferpalConfig After) KeptRoleModels(
+        HostSession s, InferpalConfig server, string? cardCompletion, string? cardSearch)
+    {
+        // "The same server" is the chat's as the settings hold it now; "on the chat's server", the chat's as it will be:
+        // a role on a server of its own at the old chat address is not on the new one.
+        var sameServer = ServerScan.SameAddress(s.Config.BaseUrl, server.BaseUrl);
+        var after = System.Text.Json.JsonSerializer.Deserialize<InferpalConfig>(System.Text.Json.JsonSerializer.Serialize(s.Config))!;
+        after.Provider = server.Provider;
+        after.BaseUrl  = server.BaseUrl;
+        string? Kept(ServerRole role, string? card, string current) =>
+            !RoleServers.OnChatServer(after, role) ? null
+            : !sameServer || !string.IsNullOrWhiteSpace(card) ? card?.Trim() ?? ""
+            : current;
+        return (Kept(ServerRole.Completion, cardCompletion, s.Config.InlineCompletionModel),
+                Kept(ServerRole.Search, cardSearch, s.Config.RagEmbeddingModel), after);
     }
 
     /// <summary>
@@ -71,6 +119,19 @@ internal sealed partial class HostServer
         var s = Session();
         var server = ServerConfig(s, new SetupServerParams(p.Url, p.Provider, p.ApiKey));
         var (budget, source) = await BudgetForAsync(s, server.BaseUrl, p.CardGb, ct);
+        var chat = p.ChatModel.Trim();
+        // Decided before the server changes: "the same server" is the one the settings hold now.
+        var kept = KeptRoleModels(s, server, p.CompletionModel, p.SearchModel);
+        var (completion, search, _) = kept;
+        // The window the card showed (only Ollama is asked: another server would be listed for nothing).
+        WindowAdvice? window = null;
+        if (ContextWindowChoice.Applies(server.Provider))
+        {
+            var client = _providerFactory(server);
+            window = await WindowForAsync(s, server, client, await client.ListInstalledModelsAsync(ct, server.BaseUrl),
+                                          budget, chat, kept, ct);
+        }
+        string? windowText = null;
 
         await WithTurnSlotAsync("setup/apply", ct, async _ =>
         {
@@ -84,26 +145,24 @@ internal sealed partial class HostServer
                 s.Config.FillFromFile(nameof(InferpalConfig.VramBudgetGb));
                 s.Config.VramBudgetGb = budget;
             }
-            var sameServer = ServerScan.SameAddress(s.Config.BaseUrl, server.BaseUrl);
             s.Config.Provider              = server.Provider;
             s.Config.BaseUrl               = server.BaseUrl;
             s.Config.ApiKey                = server.ApiKey;
-            s.Config.DefaultModel          = p.ChatModel.Trim();
-            // A role on a server of its own keeps its model: the models proposed are this server's, not that one's. On
-            // the chat's server, a model the card leaves out keeps the one chosen while the server stays — /setup run
-            // again to download a chat model wiped the completion and search models picked before, and the index was
-            // embedded again; on another server, the old choice may not be there, and the card's choice is taken.
-            if (RoleServers.OnChatServer(s.Config, ServerRole.Completion) && (!sameServer || !string.IsNullOrWhiteSpace(p.CompletionModel)))
-                s.Config.InlineCompletionModel = p.CompletionModel?.Trim() ?? "";
-            if (RoleServers.OnChatServer(s.Config, ServerRole.Search) && (!sameServer || !string.IsNullOrWhiteSpace(p.SearchModel)))
-                s.Config.RagEmbeddingModel = p.SearchModel?.Trim() ?? "";
+            s.Config.DefaultModel          = chat;
+            // One rule for what is kept and for what the window was sized beside (KeptRoleModels); on another server the
+            // old choice may not be there, and the card's is taken.
+            if (completion is not null) s.Config.InlineCompletionModel = completion;
+            if (search is not null)     s.Config.RagEmbeddingModel     = search;
+            // A size is said only once written; a card left unknown says why the window stays.
+            if (window?.Tokens is { } tokens) windowText = ContextWindowChoice.Apply(s.Config, tokens) ? window.Sentence : null;
+            else windowText = window?.Sentence;
             s.Config.IsFirstRun = false;
             s.Config.Save();
             s.FileSettings = (_fileSettings() ?? s.Config).SnapshotNow();
             await AfterSettingsChangedAsync(s, mcpBefore, ct);
             return true;
         });
-        return new(InferenceProviderFactory.PendingSwitch(s.Client, s.Config.Provider) is not null);
+        return new(InferenceProviderFactory.PendingSwitch(s.Client, s.Config.Provider) is not null, windowText);
     }
 
     /// <summary>`setup/pull` — downloads a model to the server the card shows, its progress in `setup/pullProgress`
@@ -262,12 +321,13 @@ internal sealed record SetupCardChoice(int Gb, string Label);
 /// <summary>`setup/plan` answer. <c>ChatModel</c> null: no chat model there — <c>Downloads</c> (Ollama) or nothing to
 /// download from here (<c>NoDownload</c> says where to get one), and <c>Listed</c> names what the server has. The
 /// sentences come composed: <c>Lead</c>, <c>Legend</c> (the card's memory), <c>FitText</c>. <c>CardChoices</c>: the
-/// memories to choose from when the figure was not found (unknown) or was chosen (to change it); empty otherwise.</summary>
+/// memories to choose from when the figure was not found (unknown) or was chosen (to change it); empty otherwise.
+/// <c>WindowText</c>: the context window <c>setup/apply</c> writes, or why it stays.</summary>
 internal sealed record SetupPlanDto(
     string? ChatModel, string? CompletionModel, string? SearchModel, int ChatCount,
     double BudgetGb, double NeededGb, bool Fits, List<SetupDownloadDto> Downloads, List<string> Listed,
     string Lead, string Legend, string? FitText, string? ItsModels, string? NoDownload,
-    List<SetupCardChoice> CardChoices, string? CardQuestion)
+    List<SetupCardChoice> CardChoices, string? CardQuestion, string? WindowText = null)
 {
     /// <summary>The memories offered: the cards the recommendations are measured for.</summary>
     internal static readonly int[] Cards = [8, 12, 16, 24];
@@ -291,7 +351,8 @@ internal sealed record SetupPlanDto(
             noChat
                 ? p.BudgetGb > 0 ? Strings.SetupDownloadLegend(Gb(p.BudgetGb)) : Strings.SetupDownloadLegendUnknown
                 : p.BudgetGb > 0 ? Strings.SetupForThisCard(Gb(p.BudgetGb)) : Strings.SetupProposed,
-            noChat || p.BudgetGb <= 0 || p.NeededGb <= 0 ? null
+            // A window sized for the card uses the memory "to spare": its own line says the models and it fit.
+            noChat || p.BudgetGb <= 0 || p.NeededGb <= 0 || p.Window?.Tokens > ContextWindowChoice.Factory ? null
                 : p.Fits ? Strings.SetupFits(Gb(p.BudgetGb - p.NeededGb))
                 : Strings.SetupDoesNotFit(Gb(p.NeededGb), Gb(p.BudgetGb)),
             noChat && p.Listed.Count > 0 ? Strings.SetupItsModels(string.Join(", ", p.Listed)) : null,
@@ -299,7 +360,9 @@ internal sealed record SetupPlanDto(
                 : p.NoneFits ? Strings.SetupNoneFits(Gb(p.BudgetGb), name)
                 : Strings.SetupNoDownloadHere(name),
             asks ? [.. Cards.Select(gb => new SetupCardChoice(gb, Strings.SetupDownloadSize(Gb(gb))))] : [],
-            !asks ? null : source == SetupBudgetSource.Unknown ? Strings.SetupCardUnknown : Strings.SetupServerCard);
+            !asks ? null : source == SetupBudgetSource.Unknown ? Strings.SetupCardUnknown : Strings.SetupServerCard,
+            // An unknown card is already asked on the card: its question is the remedy, not /hardware.
+            p.Window is { Tokens: not null } || !asks ? p.Window?.Sentence : null);
     }
 }
 
@@ -309,8 +372,9 @@ internal sealed record SetupApplyParams(
     string Url, string Provider, string ChatModel, string? CompletionModel = null, string? SearchModel = null,
     string? ApiKey = null, double? CardGb = null);
 
-/// <summary>`setup/apply` answer: the server type changed, the editor restarts the host.</summary>
-internal sealed record SetupApplyResult(bool RestartNeeded);
+/// <summary>`setup/apply` answer: the server type changed, the editor restarts the host. <c>WindowText</c>: the context
+/// window written, or why it stays — said in the chat, which outlives the card (a download never showed it).</summary>
+internal sealed record SetupApplyResult(bool RestartNeeded, string? WindowText = null);
 
 /// <summary>`setup/pull` — the model to download and the server the card shows.</summary>
 internal sealed record SetupPullParams(string Tag, string Url, string Provider, string? ApiKey = null);

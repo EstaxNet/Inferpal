@@ -191,10 +191,12 @@ record GenerateRequest(
     [property: JsonPropertyName("raw")]        bool?           Raw = null);
 
 /// <summary>Sampling options for <c>/api/generate</c>.</summary>
+/// <param name="NumCtx">The window to load the model at; <c>null</c> = the server's default.</param>
 record GenerateOptions(
     [property: JsonPropertyName("temperature")] double    Temperature,
     [property: JsonPropertyName("num_predict")] int       NumPredict,
-    [property: JsonPropertyName("stop")]        string[]? Stop = null);
+    [property: JsonPropertyName("stop")]        string[]? Stop = null,
+    [property: JsonPropertyName("num_ctx")]     int?      NumCtx = null);
 
 /// <summary>One NDJSON chunk from the <c>/api/generate</c> stream.</summary>
 record GenerateResponse(

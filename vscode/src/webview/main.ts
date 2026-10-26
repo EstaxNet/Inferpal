@@ -2300,6 +2300,7 @@ function renderSetupView(): void {
         fit.append(icon(plan.fits ? 'check' : 'warning', 14), document.createTextNode(plan.fitText));
         box.appendChild(fit);
       }
+      if (plan.windowText) box.appendChild(setupText('p', 'setup-hint', plan.windowText));
       const actions = document.createElement('div');
       actions.className = 'setup-row';
       actions.append(setupButton(s.start, { action: 'start' }, true), setupButton(s.chooseOther, { action: 'chooseOther' }));

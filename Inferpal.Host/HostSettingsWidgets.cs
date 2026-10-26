@@ -147,7 +147,7 @@ internal sealed partial class HostServer
                                      System.Globalization.CultureInfo.InvariantCulture, out var gb) && gb > 0
             ? gb : s.Config.VramBudgetGb;
         return await ModelAdvisor.SuggestAsync(_providerFactory(draft), draft, budget,
-                                               p.Current ?? new Dictionary<string, string>(), ct);
+                                               p.Current ?? new Dictionary<string, string>(), ct, s.Config);
     }
 
     private SettingsDocsActions DocsActions() => Session().DocsActions;

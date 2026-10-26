@@ -1387,6 +1387,8 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="WelcomeLocal" xml:space="preserve"><value>Il vostro codice resta su questa macchina.</value></data>
   <data name="WelcomeLineRemote" xml:space="preserve"><value>{0} su {1}. Il vostro codice viene inviato a {2}.</value></data>
   <data name="WelcomeRemote" xml:space="preserve"><value>Il vostro codice viene inviato a {0}.</value></data>
+  <data name="WindowChosen" xml:space="preserve"><value>Finestra di contesto: {0:N0} {0:token|token}, dimensionata per una scheda da {1} GB accanto agli altri modelli.</value></data>
+  <data name="WindowUnknownCard" xml:space="preserve"><value>La finestra di contesto resta a {0:N0} {0:token|token}: la memoria della scheda grafica non è nota. Digitate `/hardware &lt;GB&gt;`, poi `/setup`.</value></data>
   <data name="WelcomeForFile" xml:space="preserve"><value>Per {0}, aperto nell'editor</value></data>
   <data name="WelcomeExplainFile" xml:space="preserve"><value>Spiega questo file</value></data>
   <data name="WelcomeExplainFileDesc" xml:space="preserve"><value>Cosa fa e come si collegano le parti</value></data>
@@ -1445,7 +1447,7 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="UnloadKept" xml:space="preserve"><value>Ancora caricato: {0}; il server non l'ha scaricato.</value></data>
   <data name="UnloadUnverified" xml:space="preserve"><value>Scaricamento richiesto per {0}, ma il server non ha risposto alla verifica successiva: non si sa se sia ancora caricato.</value></data>
   <data name="BtnSuggestModels" xml:space="preserve"><value>Suggerisci i modelli migliori</value></data>
-  <data name="HintSuggestModels" xml:space="preserve"><value>Sceglie tra i modelli installati, in base alle misurazioni di Inferpal. Nulla viene salvato finché non fai clic su Salva.</value></data>
+  <data name="HintSuggestModels" xml:space="preserve"><value>Sceglie tra i modelli installati, in base alle misurazioni di Inferpal, e con Ollama la finestra di contesto per la scheda. Nulla viene salvato finché non fai clic su Salva.</value></data>
   <data name="SettingsSectionLoadedModels" xml:space="preserve"><value>Caricati ora</value></data>
   <data name="NoteLoadedModels" xml:space="preserve"><value>Un modello scaricato si ricarica alla prossima richiesta che ne ha bisogno.</value></data>
   <data name="BtnUnloadModel" xml:space="preserve"><value>Scarica</value></data>

@@ -1387,6 +1387,8 @@
   <data name="WelcomeLocal" xml:space="preserve"><value>Ваш код остаётся на этом компьютере.</value></data>
   <data name="WelcomeLineRemote" xml:space="preserve"><value>{0} на {1}. Ваш код отправляется на {2}.</value></data>
   <data name="WelcomeRemote" xml:space="preserve"><value>Ваш код отправляется на {0}.</value></data>
+  <data name="WindowChosen" xml:space="preserve"><value>Окно контекста: {0:N0} {0:токен|токена|токенов}, рассчитано на видеокарту с {1} ГБ вместе с остальными моделями.</value></data>
+  <data name="WindowUnknownCard" xml:space="preserve"><value>Окно контекста оставлено на {0:N0} {0:токене|токенах|токенах}: объём памяти видеокарты неизвестен. Введите `/hardware &lt;ГБ&gt;`, затем `/setup`.</value></data>
   <data name="WelcomeForFile" xml:space="preserve"><value>Для {0}, открытого в редакторе</value></data>
   <data name="WelcomeExplainFile" xml:space="preserve"><value>Объяснить этот файл</value></data>
   <data name="WelcomeExplainFileDesc" xml:space="preserve"><value>Что он делает и как связаны части</value></data>
@@ -1445,7 +1447,7 @@
   <data name="UnloadKept" xml:space="preserve"><value>Всё ещё загружено: {0} — сервер не выгрузил.</value></data>
   <data name="UnloadUnverified" xml:space="preserve"><value>Выгрузка {0} запрошена, но сервер не ответил на последующую проверку — неизвестно, загружена ли модель до сих пор.</value></data>
   <data name="BtnSuggestModels" xml:space="preserve"><value>Предложить лучшие модели</value></data>
-  <data name="HintSuggestModels" xml:space="preserve"><value>Выбирает среди установленных моделей по измерениям Inferpal. Ничего не сохраняется, пока вы не нажмёте «Сохранить».</value></data>
+  <data name="HintSuggestModels" xml:space="preserve"><value>Выбирает среди установленных моделей по измерениям Inferpal, а в Ollama — и окно контекста для видеокарты. Ничего не сохраняется, пока вы не нажмёте «Сохранить».</value></data>
   <data name="SettingsSectionLoadedModels" xml:space="preserve"><value>Загружено сейчас</value></data>
   <data name="NoteLoadedModels" xml:space="preserve"><value>Выгруженная модель снова загрузится при следующем запросе, которому она нужна.</value></data>
   <data name="BtnUnloadModel" xml:space="preserve"><value>Выгрузить</value></data>

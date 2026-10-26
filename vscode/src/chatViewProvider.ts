@@ -184,7 +184,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       host: () => this.getHost(),
       show: (view) => this.post({ type: 'setup', view }),
       log: (line) => this.log(line),
-      applied: (model, restartNeeded) => this.setupApplied(model, restartNeeded),
+      applied: (model, restartNeeded, windowText) => this.setupApplied(model, restartNeeded, windowText),
       openSettings: async () => {
         await vscode.commands.executeCommand('inferpal.openSettings');
       },
@@ -193,10 +193,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   /** The first-run card saved its choice: the chat takes the model, or the host restarts for a server of another type. */
-  private async setupApplied(model: string, restartNeeded: boolean): Promise<void> {
+  private async setupApplied(model: string, restartNeeded: boolean, windowText?: string | null): Promise<void> {
     // ⚠ This window's model wins over the shared one at the next activation (and at a restart): left as it is, it brings
     // the old model back over the one just chosen. configSaved writes it for the same reason.
     await this.setWindowModel(model);
+    // The card is gone: the window it wrote is said where it stays — a download path never showed it at all.
+    if (windowText) {
+      this.sayOutOfTurn(windowText);
+    }
     if (restartNeeded) {
       await vscode.commands.executeCommand('inferpal.restartHost');
       return;
