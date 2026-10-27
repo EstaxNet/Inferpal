@@ -16,6 +16,7 @@ replaced with the corresponding attachment.
 | `@clipboard` | The clipboard contents |
 | `@tree` | The solution tree |
 | `@url` | A web page's text — type or paste the address after the token |
+| `@terminal` | *VS Code:* the last command a terminal finished — the command, its folder, its output (its end, when it is long) and its exit code |
 
 > [!TIP]
 > The `@`-mention popup and the `/`-command popup are mutually exclusive — typing `@` opens
@@ -49,8 +50,16 @@ replaced with the corresponding attachment.
 > (see [Features → Safety](features.md#safety)).
 
 > [!NOTE]
-> **VS Code:** typed mentions work there too (since 1.2.0) — the ten categories from
-> `@file` to `@commit` are offered in a two-level popup, and resolved mentions appear as
+> **`@terminal` reads what VS Code's shell integration reports** (on by default for bash, zsh, fish and PowerShell):
+> the active terminal's last finished command — another terminal's is never taken in its place. Inferpal follows a
+> terminal's commands from the first time `@terminal` is used in it, so that first time it asks you to run the command
+> again: while a command runs, VS Code keeps its whole output in memory for whoever reads it, and following every
+> terminal would cost that to people who never use `@terminal`. A command still running is not attached: use
+> `@terminal` again once it ends. Visual Studio does not offer `@terminal` yet.
+
+> [!NOTE]
+> **VS Code:** typed mentions work there too (since 1.2.0) — the eleven categories from
+> `@file` to `@terminal` are offered in a two-level popup, and resolved mentions appear as
 > context chips in the composer, alongside a "+" attach menu (active file, selection, file
 > from disk, and **pin the active file** — pinned files show above the input box, ✕ unpins one).
 > A path typed after `@` (`@src/app.ts`) attaches the file directly: up to 5 files per question, each up to 40,000

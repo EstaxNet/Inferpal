@@ -1168,6 +1168,7 @@ internal static class Strings
     public static string MentionDiffEmpty => Get(nameof(MentionDiffEmpty));
     public static string MentionUrlDesc       => Get(nameof(MentionUrlDesc));
     public static string MentionCommitDesc    => Get(nameof(MentionCommitDesc));
+    public static string MentionTerminalDesc  => Get(nameof(MentionTerminalDesc));
     public static string MentionUrlHint       => Get(nameof(MentionUrlHint));
     public static string MentionUrlUnavailable(string reason) => Format(Get(nameof(MentionUrlUnavailable)), reason);
     public static string MentionUrlEmpty(string url) => Format(Get(nameof(MentionUrlEmpty)), url);

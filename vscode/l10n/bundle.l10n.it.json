@@ -211,5 +211,11 @@
   "Writing a commit message…": "Scrittura di un messaggio di commit…",
   "The commit message box already holds a message. Replace it with the proposal?": "La casella del messaggio di commit contiene già un messaggio. Sostituirlo con la proposta?",
   "The Git extension has no open repository at {0}: refresh the Source Control view, then try again.": "L'estensione Git non ha alcun repository aperto in {0}: aggiorna la vista Controllo del codice sorgente, poi riprova.",
-  "The commit message box was emptied while the message was written — committed meanwhile? Propose again.": "La casella del messaggio di commit è stata svuotata mentre il messaggio veniva scritto: commit fatto nel frattempo? Chiedi di nuovo una proposta."
+  "The commit message box was emptied while the message was written — committed meanwhile? Propose again.": "La casella del messaggio di commit è stata svuotata mentre il messaggio veniva scritto: commit fatto nel frattempo? Chiedi di nuovo una proposta.",
+  "No terminal is open.": "Nessun terminale è aperto.",
+  "This terminal's shell integration is off: VS Code cannot tell where a command's output starts and ends. It is on by default for bash, zsh, fish and PowerShell (terminal.integrated.shellIntegration.enabled).": "L'integrazione della shell di questo terminale è disattivata: VS Code non può sapere dove inizia e finisce l'output di un comando. È attiva per impostazione predefinita per bash, zsh, fish e PowerShell (terminal.integrated.shellIntegration.enabled).",
+  "Inferpal follows this terminal's commands from now on: run the command again, then use @terminal.": "Da ora Inferpal segue i comandi di questo terminale: riesegui il comando, poi usa @terminal.",
+  "A command is still running in this terminal: use @terminal again once it has finished.": "Un comando è ancora in esecuzione in questo terminale: usa di nuovo @terminal una volta terminato.",
+  "No command has finished in this terminal; the last one finished in “{0}”: switch to it, then use @terminal.": "Nessun comando è terminato in questo terminale; l'ultimo è terminato in «{0}»: passa a quello, poi usa @terminal.",
+  "No command has finished in this terminal since Inferpal began following it: run it again, then use @terminal.": "Nessun comando è terminato in questo terminale da quando Inferpal lo segue: rieseguilo, poi usa @terminal."
 }

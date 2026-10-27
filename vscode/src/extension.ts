@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { ChatViewProvider } from './chatViewProvider';
+import { TerminalHistory } from './terminalHistory';
 import { SettingsPanel } from './settingsPanel';
 import { DebugBridge } from './debugBridge';
 import { EditorBridge, panelDiagnostics } from './editorBridge';
@@ -36,12 +37,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   debugBridge = new DebugBridge(log);
   context.subscriptions.push(debugBridge);
 
+  // Followed from activation: a command's output is readable only from its start (`@terminal`).
+  const terminals = new TerminalHistory(log);
+  context.subscriptions.push(terminals);
+
   const chatView = new ChatViewProvider(
     context,
     () => host,
     () => bridge?.activeEditor(),
     () => bridge?.editorDiagnostics() ?? Promise.resolve(null),
     log,
+    terminals,
   );
   bridge.setApprovalCard((note, token) => chatView.requestApproval(note.message, token, note.card ?? null));
   bridge.setInputCard((card, token) => chatView.requestInput(card, token));

@@ -396,6 +396,7 @@ Backup: {0}</value></data>
   <data name="MentionDiffUnavailable" xml:space="preserve"><value>Nothing attached for @diff — {0}</value></data>
   <data name="MentionUrlDesc" xml:space="preserve"><value>attach a web page's text</value></data>
   <data name="MentionCommitDesc" xml:space="preserve"><value>attach a commit's message and diff</value></data>
+  <data name="MentionTerminalDesc" xml:space="preserve"><value>attach the terminal's last command, its output and exit code</value></data>
   <data name="MentionUrlHint" xml:space="preserve"><value>type or paste an address…</value></data>
   <data name="MentionUrlUnavailable" xml:space="preserve"><value>Nothing attached for @url — {0}</value></data>
   <data name="MentionUrlEmpty" xml:space="preserve"><value>Nothing attached for @url: {0} has no readable text.</value></data>

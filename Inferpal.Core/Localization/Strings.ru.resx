@@ -395,6 +395,7 @@
   <data name="MentionDiffUnavailable" xml:space="preserve"><value>Для @diff ничего не прикреплено — {0}</value></data>
   <data name="MentionUrlDesc" xml:space="preserve"><value>прикрепить текст веб-страницы</value></data>
   <data name="MentionCommitDesc" xml:space="preserve"><value>прикрепить сообщение и diff коммита</value></data>
+  <data name="MentionTerminalDesc" xml:space="preserve"><value>прикрепить последнюю команду терминала, её вывод и код выхода</value></data>
   <data name="MentionUrlHint" xml:space="preserve"><value>введите или вставьте адрес…</value></data>
   <data name="MentionUrlUnavailable" xml:space="preserve"><value>Для @url ничего не прикреплено — {0}</value></data>
   <data name="MentionUrlEmpty" xml:space="preserve"><value>Для @url ничего не прикреплено: на {0} нет читаемого текста.</value></data>

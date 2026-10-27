@@ -7,7 +7,7 @@ using Inferpal.Services.Tools;
 namespace Inferpal.Services.Presentation;
 
 /// <summary>Context-provider categories offered when typing <c>@</c> in the chat prompt.</summary>
-internal enum MentionKind { File, Code, Folder, Clipboard, Tree, Diff, Problems, Debugger, Url, Commit }
+internal enum MentionKind { File, Code, Folder, Clipboard, Tree, Diff, Problems, Debugger, Url, Commit, Terminal }
 
 /// <summary>What a mention resolves to: a chip (label and content), or a notice when there is nothing to attach.</summary>
 internal readonly record struct MentionOutcome(string? Label, string? Content, string? Notice);
@@ -17,7 +17,10 @@ internal readonly record struct MentionOutcome(string? Label, string? Content, s
 /// active UI language. Query-based categories (<c>@file</c>/<c>@code</c>/<c>@folder</c>)
 /// commit to a sub-search; instant ones attach their context directly.
 /// </summary>
-internal sealed record MentionCategory(string Token, MentionKind Kind, Func<string> Desc, bool QueryBased);
+/// <param name="InVisualStudio">Offered by the Visual Studio window: <c>@terminal</c> is not yet — VS Code reads its
+/// terminal, Visual Studio's output has no reader yet; a category always unavailable is not listed.</param>
+internal sealed record MentionCategory(string Token, MentionKind Kind, Func<string> Desc, bool QueryBased,
+                                       bool InVisualStudio = true);
 
 /// <summary>Parsed state of the prompt's trailing @mention (see <see cref="MentionController.Parse"/>).</summary>
 internal abstract record MentionState;
@@ -67,6 +70,7 @@ internal static class MentionController
         new("@debugger",  MentionKind.Debugger,  () => Strings.MentionDebuggerDesc,  QueryBased: false),
         new("@url",       MentionKind.Url,       () => Strings.MentionUrlDesc,       QueryBased: true),
         new("@commit",    MentionKind.Commit,    () => Strings.MentionCommitDesc,    QueryBased: true),
+        new("@terminal",  MentionKind.Terminal,  () => Strings.MentionTerminalDesc,  QueryBased: false, InVisualStudio: false),
     ];
 
     /// <summary>File extensions eligible for <c>@file</c> search and folder context bodies.</summary>
@@ -110,9 +114,10 @@ internal static class MentionController
             : MentionNone.Instance;
     }
 
-    /// <summary>Categories whose token (without <c>@</c>) starts with the typed partial (lower-cased).</summary>
+    /// <summary>The categories the Visual Studio window offers whose token (without <c>@</c>) starts with the typed
+    /// partial (lower-cased).</summary>
     public static IReadOnlyList<MentionCategory> MatchCategories(string partialLower) =>
-        Categories.Where(c => c.Token[1..].StartsWith(partialLower, StringComparison.Ordinal)).ToList();
+        Categories.Where(c => c.InVisualStudio && c.Token[1..].StartsWith(partialLower, StringComparison.Ordinal)).ToList();
 
     /// <summary>Replaces the trailing partial token with the committed <c>@token␠</c> so the user types the query.</summary>
     public static string CommitCategory(string prompt, string token) =>

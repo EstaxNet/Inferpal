@@ -54,7 +54,9 @@ public class MentionControllerTests
     [Fact]
     public void MatchCategories_PrefixOnTokenWithoutAt()
     {
-        Assert.Equal(MentionController.Categories.Length, MentionController.MatchCategories("").Count);
+        // Visual Studio offers every category but those it cannot serve yet (@terminal).
+        Assert.Equal(MentionController.Categories.Count(c => c.InVisualStudio), MentionController.MatchCategories("").Count);
+        Assert.DoesNotContain(MentionController.MatchCategories(""), c => c.Token == "@terminal");
 
         var f = MentionController.MatchCategories("f");
         Assert.Equal(["@file", "@folder"], f.Select(c => c.Token));

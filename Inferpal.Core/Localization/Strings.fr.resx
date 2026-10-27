@@ -395,6 +395,7 @@ Sauvegarde : {0}</value></data>
   <data name="MentionDiffUnavailable" xml:space="preserve"><value>Rien de joint pour @diff — {0}</value></data>
   <data name="MentionUrlDesc" xml:space="preserve"><value>attacher le texte d'une page web</value></data>
   <data name="MentionCommitDesc" xml:space="preserve"><value>attacher le message et le diff d'un commit</value></data>
+  <data name="MentionTerminalDesc" xml:space="preserve"><value>attacher la dernière commande du terminal, sa sortie et son code de retour</value></data>
   <data name="MentionUrlHint" xml:space="preserve"><value>tapez ou collez une adresse…</value></data>
   <data name="MentionUrlUnavailable" xml:space="preserve"><value>Rien de joint pour @url — {0}</value></data>
   <data name="MentionUrlEmpty" xml:space="preserve"><value>Rien de joint pour @url : {0} n'a aucun texte lisible.</value></data>

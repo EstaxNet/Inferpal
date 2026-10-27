@@ -211,5 +211,11 @@
   "Writing a commit message…": "コミット メッセージを作成しています…",
   "The commit message box already holds a message. Replace it with the proposal?": "コミット メッセージ ボックスには既にメッセージがあります。提案で置き換えますか?",
   "The Git extension has no open repository at {0}: refresh the Source Control view, then try again.": "Git 拡張機能には {0} で開いているリポジトリがありません。ソース管理ビューを更新してから、もう一度お試しください。",
-  "The commit message box was emptied while the message was written — committed meanwhile? Propose again.": "メッセージの作成中にコミット メッセージ ボックスが空になりました。その間にコミットしましたか? もう一度提案させてください。"
+  "The commit message box was emptied while the message was written — committed meanwhile? Propose again.": "メッセージの作成中にコミット メッセージ ボックスが空になりました。その間にコミットしましたか? もう一度提案させてください。",
+  "No terminal is open.": "開いているターミナルがありません。",
+  "This terminal's shell integration is off: VS Code cannot tell where a command's output starts and ends. It is on by default for bash, zsh, fish and PowerShell (terminal.integrated.shellIntegration.enabled).": "このターミナルのシェル統合がオフです。VS Code はコマンドの出力の開始と終了を判別できません。bash、zsh、fish、PowerShell では既定でオンです (terminal.integrated.shellIntegration.enabled)。",
+  "Inferpal follows this terminal's commands from now on: run the command again, then use @terminal.": "Inferpal はこれからこのターミナルのコマンドを追跡します。コマンドをもう一度実行してから @terminal を使ってください。",
+  "A command is still running in this terminal: use @terminal again once it has finished.": "このターミナルでコマンドがまだ実行中です。終了したら、もう一度 @terminal を使ってください。",
+  "No command has finished in this terminal; the last one finished in “{0}”: switch to it, then use @terminal.": "このターミナルでは終了したコマンドがありません。最後のコマンドは「{0}」で終了しました。そちらに切り替えてから @terminal を使ってください。",
+  "No command has finished in this terminal since Inferpal began following it: run it again, then use @terminal.": "Inferpal が追跡を始めてから、このターミナルで終了したコマンドはありません。もう一度実行してから @terminal を使ってください。"
 }

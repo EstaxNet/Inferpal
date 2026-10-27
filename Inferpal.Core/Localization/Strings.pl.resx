@@ -395,6 +395,7 @@ Kopia zapasowa: {0}</value></data>
   <data name="MentionDiffUnavailable" xml:space="preserve"><value>Nic nie dołączono dla @diff — {0}</value></data>
   <data name="MentionUrlDesc" xml:space="preserve"><value>dołącz tekst strony internetowej</value></data>
   <data name="MentionCommitDesc" xml:space="preserve"><value>dołącz komunikat i diff commita</value></data>
+  <data name="MentionTerminalDesc" xml:space="preserve"><value>dołącz ostatnie polecenie terminala, jego wyjście i kod wyjścia</value></data>
   <data name="MentionUrlHint" xml:space="preserve"><value>wpisz lub wklej adres…</value></data>
   <data name="MentionUrlUnavailable" xml:space="preserve"><value>Nic nie dołączono dla @url — {0}</value></data>
   <data name="MentionUrlEmpty" xml:space="preserve"><value>Nic nie dołączono dla @url: {0} nie zawiera czytelnego tekstu.</value></data>

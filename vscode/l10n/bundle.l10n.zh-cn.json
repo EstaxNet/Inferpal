@@ -211,5 +211,11 @@
   "Writing a commit message…": "正在编写提交消息…",
   "The commit message box already holds a message. Replace it with the proposal?": "提交消息框中已有消息。要用建议替换它吗?",
   "The Git extension has no open repository at {0}: refresh the Source Control view, then try again.": "Git 扩展在 {0} 处没有打开的存储库：请刷新“源代码管理”视图，然后重试。",
-  "The commit message box was emptied while the message was written — committed meanwhile? Propose again.": "编写消息时提交消息框被清空了 —— 期间已提交？请再次请求建议。"
+  "The commit message box was emptied while the message was written — committed meanwhile? Propose again.": "编写消息时提交消息框被清空了 —— 期间已提交？请再次请求建议。",
+  "No terminal is open.": "没有打开的终端。",
+  "This terminal's shell integration is off: VS Code cannot tell where a command's output starts and ends. It is on by default for bash, zsh, fish and PowerShell (terminal.integrated.shellIntegration.enabled).": "此终端的 Shell 集成已关闭：VS Code 无法判断命令输出的开始和结束。bash、zsh、fish 和 PowerShell 默认开启 (terminal.integrated.shellIntegration.enabled)。",
+  "Inferpal follows this terminal's commands from now on: run the command again, then use @terminal.": "Inferpal 从现在起跟踪此终端的命令：请重新运行该命令，然后使用 @terminal。",
+  "A command is still running in this terminal: use @terminal again once it has finished.": "此终端中仍有命令在运行：命令结束后请再次使用 @terminal。",
+  "No command has finished in this terminal; the last one finished in “{0}”: switch to it, then use @terminal.": "此终端中没有已结束的命令；最后一条命令在“{0}”中结束：请切换过去，然后使用 @terminal。",
+  "No command has finished in this terminal since Inferpal began following it: run it again, then use @terminal.": "自 Inferpal 开始跟踪此终端以来，没有命令结束：请重新运行，然后使用 @terminal。"
 }

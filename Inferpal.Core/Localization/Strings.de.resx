@@ -395,6 +395,7 @@ Sicherung: {0}</value></data>
   <data name="MentionDiffUnavailable" xml:space="preserve"><value>Für @diff wurde nichts angehängt — {0}</value></data>
   <data name="MentionUrlDesc" xml:space="preserve"><value>Text einer Webseite anhängen</value></data>
   <data name="MentionCommitDesc" xml:space="preserve"><value>Nachricht und Diff eines Commits anhängen</value></data>
+  <data name="MentionTerminalDesc" xml:space="preserve"><value>letzten Terminalbefehl mit Ausgabe und Exitcode anhängen</value></data>
   <data name="MentionUrlHint" xml:space="preserve"><value>Adresse eingeben oder einfügen…</value></data>
   <data name="MentionUrlUnavailable" xml:space="preserve"><value>Für @url wurde nichts angehängt — {0}</value></data>
   <data name="MentionUrlEmpty" xml:space="preserve"><value>Für @url wurde nichts angehängt: {0} enthält keinen lesbaren Text.</value></data>

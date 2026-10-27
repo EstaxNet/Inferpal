@@ -12,6 +12,7 @@ import { SettingsPanel } from './settingsPanel';
 import { SetupFlow } from './setupFlow';
 import { buildBannerOf, isBuildTask, openTabPaths, panelErrors } from './editorBridge';
 import { capAttachment, CappedText } from './attachmentCap';
+import { TerminalHistory } from './terminalHistory';
 import { failureText, testFilter } from './testGestures';
 import { gitApi, repositoryFor } from './gitGestures';
 import { renderChatHtml } from './webview/chatWebviewHtml';
@@ -179,6 +180,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     private readonly getActiveEditor: () => vscode.TextEditor | undefined,
     private readonly getDiagnostics: () => Promise<string | null>,
     private readonly log: (line: string) => void,
+    private readonly terminals: TerminalHistory,
   ) {
     this.setupFlow = new SetupFlow({
       host: () => this.getHost(),
@@ -1986,7 +1988,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  /** Materializes an instant/selected mention: clipboard and problems are editor-side (they read
+  /** Materializes an instant/selected mention: clipboard, problems and terminal are editor-side (they read
    * panels only the adapter can see); everything else goes through the host (mention/resolve).
    *
    * ⚠ `debugger` is served by the HOST, not here: answered editor-side it attaches the session's
@@ -2004,6 +2006,16 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             this.addChip('📋 clipboard', text);
           } else {
             void vscode.window.showInformationMessage(t('The clipboard is empty.'));
+          }
+          return;
+        }
+        case 'terminal': {
+          // The last command a terminal finished: followed from its start, since its output is readable only then.
+          const terminal = this.terminals.attachment();
+          if ('content' in terminal) {
+            this.addChip(terminal.chip, terminal.content);
+          } else {
+            void vscode.window.showInformationMessage(terminal.notice);
           }
           return;
         }

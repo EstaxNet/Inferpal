@@ -395,6 +395,7 @@
   <data name="MentionDiffUnavailable" xml:space="preserve"><value>@diff 未附加任何内容 — {0}</value></data>
   <data name="MentionUrlDesc" xml:space="preserve"><value>附加网页的文本</value></data>
   <data name="MentionCommitDesc" xml:space="preserve"><value>附加提交的消息和 diff</value></data>
+  <data name="MentionTerminalDesc" xml:space="preserve"><value>附加终端的最后一条命令及其输出和退出码</value></data>
   <data name="MentionUrlHint" xml:space="preserve"><value>输入或粘贴地址…</value></data>
   <data name="MentionUrlUnavailable" xml:space="preserve"><value>@url 未附加任何内容 — {0}</value></data>
   <data name="MentionUrlEmpty" xml:space="preserve"><value>@url 未附加任何内容：{0} 没有可读的文本。</value></data>

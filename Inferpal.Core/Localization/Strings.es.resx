@@ -395,6 +395,7 @@ Copia de seguridad: {0}</value></data>
   <data name="MentionDiffUnavailable" xml:space="preserve"><value>No se adjuntó nada para @diff — {0}</value></data>
   <data name="MentionUrlDesc" xml:space="preserve"><value>adjuntar el texto de una página web</value></data>
   <data name="MentionCommitDesc" xml:space="preserve"><value>adjuntar el mensaje y el diff de un commit</value></data>
+  <data name="MentionTerminalDesc" xml:space="preserve"><value>adjuntar el último comando del terminal, su salida y su código de salida</value></data>
   <data name="MentionUrlHint" xml:space="preserve"><value>escribe o pega una dirección…</value></data>
   <data name="MentionUrlUnavailable" xml:space="preserve"><value>No se adjuntó nada para @url — {0}</value></data>
   <data name="MentionUrlEmpty" xml:space="preserve"><value>No se adjuntó nada para @url: {0} no tiene texto legible.</value></data>

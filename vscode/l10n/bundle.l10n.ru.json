@@ -211,5 +211,11 @@
   "Writing a commit message…": "Пишется сообщение коммита…",
   "The commit message box already holds a message. Replace it with the proposal?": "В поле сообщения коммита уже есть сообщение. Заменить его предложением?",
   "The Git extension has no open repository at {0}: refresh the Source Control view, then try again.": "У расширения Git нет открытого репозитория в {0}: обновите представление «Система управления версиями» и повторите попытку.",
-  "The commit message box was emptied while the message was written — committed meanwhile? Propose again.": "Поле сообщения коммита очистилось, пока писалось сообщение, — коммит уже сделан? Запросите предложение снова."
+  "The commit message box was emptied while the message was written — committed meanwhile? Propose again.": "Поле сообщения коммита очистилось, пока писалось сообщение, — коммит уже сделан? Запросите предложение снова.",
+  "No terminal is open.": "Ни один терминал не открыт.",
+  "This terminal's shell integration is off: VS Code cannot tell where a command's output starts and ends. It is on by default for bash, zsh, fish and PowerShell (terminal.integrated.shellIntegration.enabled).": "Интеграция оболочки в этом терминале выключена: VS Code не может определить, где начинается и заканчивается вывод команды. Для bash, zsh, fish и PowerShell она включена по умолчанию (terminal.integrated.shellIntegration.enabled).",
+  "Inferpal follows this terminal's commands from now on: run the command again, then use @terminal.": "Теперь Inferpal отслеживает команды этого терминала: запустите команду снова, затем используйте @terminal.",
+  "A command is still running in this terminal: use @terminal again once it has finished.": "В этом терминале ещё выполняется команда: снова используйте @terminal, когда она завершится.",
+  "No command has finished in this terminal; the last one finished in “{0}”: switch to it, then use @terminal.": "В этом терминале не завершилась ни одна команда; последняя завершилась в «{0}»: переключитесь туда, затем используйте @terminal.",
+  "No command has finished in this terminal since Inferpal began following it: run it again, then use @terminal.": "С тех пор как Inferpal отслеживает этот терминал, в нём не завершилась ни одна команда: запустите её снова, затем используйте @terminal."
 }
