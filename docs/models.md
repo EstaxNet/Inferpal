@@ -176,6 +176,9 @@ above is read for every model, so a renamed or fine-tuned model keeps working.
   `[TOOL_RESULTS]` blocks, matched by position.
 - **Inferpal.** Structured calls on LM Studio; the `[TOOL_CALLS]` form is read when a call arrives as text.
 - **Settings.** Inferpal sends temperature 0.15 (the model card's value).
+- **Measured.** On the default path — Ollama (`devstral-small-2`), the 32K window a 24 GB card gets, two runs per
+  mode — 14 tasks in 14 in the Agent mode, and 12 to 13 in the Chat mode, where it more often ends with a change
+  shown but not written; 10 right completions in 36 autocompleting.
 - **Known issues.** The template bundled with the lmstudio-community GGUF refuses a system message that is not the
   first one and enforces strict user/assistant alternation. Inside tool-call JSON the model sometimes drops a
   character — measured: the `$` of a C# interpolated string (`$"Total: {…}"`), in one call in five in isolation and

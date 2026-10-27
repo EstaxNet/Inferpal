@@ -123,7 +123,7 @@ public sealed class WriteFileLineEndingsTests : IDisposable
     [Fact]
     public async Task ANewFile_IsWrittenAsGiven()
     {
-        var path = Path.Combine(_ws, "New.cs");
+        var path = Path.Combine(_ws, "New.txt");
 
         var (written, _) = await WriteAsync(path, "a\nb\n");
 

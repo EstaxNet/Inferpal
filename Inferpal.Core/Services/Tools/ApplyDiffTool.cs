@@ -93,6 +93,7 @@ internal class ApplyDiffTool : ITool
 
         var modified = resolution.Modified;
         if (FileTarget.EncodingRefusal(path, modified) is { } cannotHold) return cannotHold;
+        if (await SyntaxGuard.RefusalAsync(path, fileContent, modified, root, ct) is { } broken) return broken;
 
         // Pass the structured change so the approval prompt shows the actual diff, not just a path
         // (colored viewer in VS; textual fallback elsewhere).

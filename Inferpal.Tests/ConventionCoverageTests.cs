@@ -67,9 +67,10 @@ public class ConventionCoverageTests
     [Fact]
     public void ToolTextWrites_GoThroughSafeFileWriter()
     {
-        // The funnel itself is the only exemption: it is the one allowed to call
-        // File.WriteAllTextAsync (with the detected encoding).
-        string[] exempt = ["SafeFileWriter.cs"];
+        // The funnel itself is allowed to call File.WriteAllTextAsync (with the detected encoding); the syntax guard writes
+        // a copy for its checkers into a folder of its own under the temporary folder, never a user's file (held by
+        // MutatingTools_GoThroughTheApprovalService).
+        string[] exempt = ["SafeFileWriter.cs", "SyntaxGuard.cs"];
 
         foreach (var file in ToolsSources().Where(f => !exempt.Contains(Path.GetFileName(f))))
         {
@@ -263,7 +264,15 @@ public class ConventionCoverageTests
             "SafeFileWriter.cs",    // the write funnel itself, called by the guarded tools
             "EditorWriteGate.cs",   // the gate: it is the one calling RequestApprovalAsync
             "RestoreFileTool.cs",   // guarded, but the call lives in the body — checked by hand below
+            "SyntaxGuard.cs",       // writes only its checkers' copy, under the temporary folder — checked below
         ];
+
+        // The exemption is the rule's, not the property's: the guard writes nothing but its copy for the checkers, in a
+        // folder of its own under the temporary folder, before any approval.
+        var guard = CodeOnly(ToolsSources().Single(f => Path.GetFileName(f) == "SyntaxGuard.cs"));
+        Assert.Matches(@"var dir\s*=\s*Path\.Combine\(Path\.GetTempPath\(\), ""inferpal-syntax""", guard);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(guard, @"File\.Write\w*\("));
+        Assert.Contains("File.WriteAllTextAsync(file, text, ct)", guard, StringComparison.Ordinal);
 
         var offenders = new List<string>();
         foreach (var file in ToolsSources().Where(f => !exempt.Contains(Path.GetFileName(f))))

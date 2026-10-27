@@ -68,6 +68,7 @@ internal class WriteFileTool : ITool
             content = LineEndings.ToEol(content, LineEndings.Dominant(oldContent));
         if (exists) content = LineEndings.WithFinalBreakOf(oldContent, content);
         if (exists && FileTarget.EncodingRefusal(path, content) is { } cannotHold) return cannotHold;
+        if (await SyntaxGuard.RefusalAsync(path, exists ? oldContent : null, content, root, ct) is { } broken) return broken;
 
         var details    = exists
             ? Strings.WriteOverwrite(path, content.Length)
