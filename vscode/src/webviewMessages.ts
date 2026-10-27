@@ -288,8 +288,8 @@ export type WebviewToExt =
   | { type: 'rewind'; ordinal: number; question: string; conversationOnly: boolean; expectedRuns: string[] }
   /** The result bar's "Review changes". */
   | { type: 'runReview'; runId: string }
-  /** One file of a run's review undone, redone or kept. */
-  | { type: 'runFile'; runId: string; path: string; action: 'undo' | 'redo' | 'keep' }
+  /** One file of a run's review undone, redone or kept — or, with `piece` (1-based), one change of it. */
+  | { type: 'runFile'; runId: string; path: string; action: 'undo' | 'redo' | 'keep'; piece?: number }
   | { type: 'copyText'; text: string }
   | { type: 'regenerate' }
   | { type: 'continue' }

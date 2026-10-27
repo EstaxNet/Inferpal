@@ -1250,8 +1250,130 @@
                                                     <TextBlock Text="{Binding ChangedWhy}" FontSize="12" Margin="12,0,12,7" TextWrapping="Wrap"
                                                                Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"
                                                                Visibility="{Binding IsChangedSince, Converter={StaticResource b2v}}"/>
-                                                    <Border Padding="0,6" Background="{Binding DataContext.ThemeCodeBg, ElementName=root}"
-                                                            Visibility="{Binding IsExpanded, Converter={StaticResource b2v}}">
+                                                    <!-- Why its changes are not offered one by one (not text, too long, its encoding changed) -->
+                                                    <TextBlock Text="{Binding WholeOnly}" FontSize="12" Margin="12,0,12,7" TextWrapping="Wrap"
+                                                               Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding WholeOnly}" Value="">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                    <!-- A file of several changes: each kept or undone on its own, under a row of its own -->
+                                                    <StackPanel Visibility="{Binding IsExpanded, Converter={StaticResource b2v}}">
+                                                        <TextBlock Text="{Binding PiecesSummary}" FontSize="12" Margin="30,0,12,6" TextWrapping="Wrap"
+                                                                   Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"
+                                                                   Visibility="{Binding HasPieces, Converter={StaticResource b2v}}"/>
+                                                        <ItemsControl ItemsSource="{Binding Pieces}">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <Border BorderThickness="0,1,0,0" BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}">
+                                                                        <StackPanel>
+                                                                            <DockPanel Margin="30,5,12,5" LastChildFill="True">
+                                                                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"
+                                                                                            IsEnabled="{Binding CanAct}">
+                                                                                    <Button Style="{StaticResource LineBtn}" Margin="6,0,0,0"
+                                                                                            BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                                                                            Command="{Binding KeepCommand}" AutomationProperties.Name="{Binding KeepName}"
+                                                                                            Visibility="{Binding HasKeep, Converter={StaticResource b2v}}">
+                                                                                        <TextBlock Text="{Binding BtnKeep}" FontSize="12"
+                                                                                                   Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
+                                                                                    </Button>
+                                                                                    <Button Template="{StaticResource Flat6}" Height="26" Padding="10,0" Margin="6,0,0,0"
+                                                                                            BorderThickness="0" Cursor="Hand"
+                                                                                            Background="{Binding DataContext.ThemeAccent, ElementName=root}"
+                                                                                            Command="{Binding UndoCommand}" AutomationProperties.Name="{Binding UndoName}"
+                                                                                            Visibility="{Binding HasUndo, Converter={StaticResource b2v}}">
+                                                                                        <TextBlock Text="{Binding BtnUndo}" FontSize="12" VerticalAlignment="Center"
+                                                                                                   Foreground="{Binding DataContext.ThemeOnAccent, ElementName=root}"/>
+                                                                                    </Button>
+                                                                                    <Button Style="{StaticResource LineBtn}" Margin="6,0,0,0"
+                                                                                            BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                                                                            Command="{Binding RedoCommand}" AutomationProperties.Name="{Binding RedoName}"
+                                                                                            Visibility="{Binding HasRedo, Converter={StaticResource b2v}}">
+                                                                                        <TextBlock Text="{Binding BtnRedo}" FontSize="12"
+                                                                                                   Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
+                                                                                    </Button>
+                                                                                </StackPanel>
+                                                                                <WrapPanel VerticalAlignment="Center">
+                                                                                    <TextBlock Text="{Binding Title}" FontSize="12" VerticalAlignment="Center"
+                                                                                               Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
+                                                                                    <TextBlock Text="{Binding LineLabel}" FontSize="12" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                                                               Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"/>
+                                                                                    <TextBlock Text="{Binding StateLabel}" FontSize="12" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                                                        <TextBlock.Style>
+                                                                                            <Style TargetType="TextBlock">
+                                                                                                <Setter Property="Foreground" Value="{Binding DataContext.ThemeSubtleText, ElementName=root}"/>
+                                                                                                <Style.Triggers>
+                                                                                                    <DataTrigger Binding="{Binding IsKept}" Value="True">
+                                                                                                        <Setter Property="Foreground" Value="{Binding DataContext.ThemeOk, ElementName=root}"/>
+                                                                                                    </DataTrigger>
+                                                                                                </Style.Triggers>
+                                                                                            </Style>
+                                                                                        </TextBlock.Style>
+                                                                                    </TextBlock>
+                                                                                </WrapPanel>
+                                                                            </DockPanel>
+                                                                            <Border Padding="0,4" Background="{Binding DataContext.ThemeCodeBg, ElementName=root}">
+                                                                                <ItemsControl ItemsSource="{Binding Lines}" FontFamily="Cascadia Mono, Consolas" FontSize="12">
+                                                                                    <ItemsControl.ItemTemplate>
+                                                                                        <DataTemplate>
+                                                                                            <Grid Background="{Binding Background}">
+                                                                                                <Grid.ColumnDefinitions>
+                                                                                                    <ColumnDefinition Width="Auto"/>
+                                                                                                    <ColumnDefinition Width="*"/>
+                                                                                                </Grid.ColumnDefinitions>
+                                                                                                <TextBlock Grid.Column="0" Text="{Binding Prefix}" Foreground="{Binding Foreground}"
+                                                                                                           Margin="12,1,8,1"/>
+                                                                                                <!-- Given back: its lines read as gone, still there to be redone -->
+                                                                                                <TextBlock Grid.Column="1" Text="{Binding Text}" TextWrapping="Wrap" Margin="0,1,12,1">
+                                                                                                    <TextBlock.Style>
+                                                                                                        <Style TargetType="TextBlock">
+                                                                                                            <Setter Property="Foreground" Value="{Binding DataContext.ThemeText, ElementName=root}"/>
+                                                                                                            <Style.Triggers>
+                                                                                                                <!-- Only the run's lines: the lines from before the run are back in the file -->
+                                                                                                                <MultiDataTrigger>
+                                                                                                                    <MultiDataTrigger.Conditions>
+                                                                                                                        <Condition Binding="{Binding DataContext.IsUndone, RelativeSource={RelativeSource AncestorType=ItemsControl}}" Value="True"/>
+                                                                                                                        <Condition Binding="{Binding Prefix}" Value="+"/>
+                                                                                                                    </MultiDataTrigger.Conditions>
+                                                                                                                    <Setter Property="Foreground" Value="{Binding DataContext.ThemeSubtleText, ElementName=root}"/>
+                                                                                                                    <Setter Property="TextDecorations" Value="Strikethrough"/>
+                                                                                                                </MultiDataTrigger>
+                                                                                                            </Style.Triggers>
+                                                                                                        </Style>
+                                                                                                    </TextBlock.Style>
+                                                                                                </TextBlock>
+                                                                                            </Grid>
+                                                                                        </DataTemplate>
+                                                                                    </ItemsControl.ItemTemplate>
+                                                                                </ItemsControl>
+                                                                            </Border>
+                                                                        </StackPanel>
+                                                                    </Border>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </StackPanel>
+                                                    <Border Padding="0,6" Background="{Binding DataContext.ThemeCodeBg, ElementName=root}">
+                                                        <Border.Style>
+                                                            <Style TargetType="Border">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                    <!-- Its changes stand for its diff -->
+                                                                    <DataTrigger Binding="{Binding HasPieces}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
                                                         <ItemsControl ItemsSource="{Binding Lines}" FontFamily="Cascadia Mono, Consolas" FontSize="12">
                                                             <ItemsControl.ItemTemplate>
                                                                 <DataTemplate>

@@ -1172,6 +1172,34 @@ kbd {
   color: var(--ip-muted);
 }
 
+/* A file of several changes: each kept or undone on its own, its lines under a row of its own. */
+.run-review-piece {
+  border-top: 1px solid var(--ip-line);
+}
+
+.run-review-piece-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 5px 12px 5px 30px;
+  font-size: 12px;
+}
+
+.run-review-piece .approval-preview {
+  margin: 0;
+}
+
+/* Given back: the run's lines read as gone, still there to be redone; the lines from before the run are back. */
+.run-review-piece.undone .approval-preview .pl.add {
+  color: var(--ip-muted);
+  text-decoration: line-through;
+}
+
+.run-review-piece.kept .run-review-piece-state {
+  color: var(--ip-add);
+}
+
 .run-review-status,
 .run-review-note {
   padding: 8px 12px;

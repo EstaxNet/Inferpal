@@ -1880,6 +1880,11 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="RunReviewHowToPieces" xml:space="preserve"><value>Cofnij jedną zmianę: `/undo-run #{0}:&lt;n&gt; &lt;plik&gt;`; przywróć ją: `/undo-run redo #{0}:&lt;n&gt; &lt;plik&gt;`.</value></data>
   <data name="RunPiecesWholeLabel" xml:space="preserve"><value>tylko w całości — {0}</value></data>
   <data name="RunPieceLine" xml:space="preserve"><value>wiersz {0}</value></data>
+  <data name="RunPieceTitle" xml:space="preserve"><value>Zmiana {0}</value></data>
+  <data name="RunPiecesSummary" xml:space="preserve"><value>{0} {0:zmiana|zmiany|zmian} · zachowane: {1} · cofnięte: {2}</value></data>
+  <data name="RunReviewPiecesNote" xml:space="preserve"><value>Cofnij przywraca plik albo jedną z jego zmian do stanu sprzed tego uruchomienia; pozostałe zmiany zostają dokładnie takie, jakie są. To, co zastępuje, jest najpierw zapisywane: Ponów to przywraca.</value></data>
+  <data name="RunPieceKeptLabel" xml:space="preserve"><value>zachowana</value></data>
+  <data name="RunPieceUndoneLabel" xml:space="preserve"><value>cofnięta</value></data>
   <data name="RewindButton" xml:space="preserve"><value>Wróć tutaj</value></data>
   <data name="RewindButtonTip" xml:space="preserve"><value>Wróć tutaj — rozmowa i jej pliki</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>Wrócić do „{0}”?</value></data>

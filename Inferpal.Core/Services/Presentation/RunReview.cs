@@ -102,6 +102,42 @@ internal static class RunReview
         _                         => string.Empty,
     };
 
+    /// <summary>What the card says of a change's state, the same words as a file's; empty for a change waiting on a
+    /// decision.</summary>
+    public static string PieceStateLabel(RunPieceState state) => state switch
+    {
+        // Their own words: in several languages they agree with "change", not with "file".
+        RunPieceState.Kept   => Localization.Strings.RunPieceKeptLabel,
+        RunPieceState.Undone => Localization.Strings.RunPieceUndoneLabel,
+        _                    => string.Empty,
+    };
+
+    /// <summary>Why a file goes back whole only, in the words of the card and the text.</summary>
+    public static string WholeReason(RunPieces.Whole why) => why switch
+    {
+        RunPieces.Whole.Binary     => Localization.Strings.RunPiecesWholeBinary,
+        RunPieces.Whole.TooLarge   => Localization.Strings.RunPiecesWholeTooLarge(RunPieces.MaxDifferingLines),
+        RunPieces.Whole.NotRebuilt => Localization.Strings.RunPiecesWholeNotRebuilt,
+        _                          => Localization.Strings.RunPiecesWholeCreated,
+    };
+
+    /// <summary>The line under a file whose changes are not offered one by one; empty when they are, or when the question
+    /// does not arise.</summary>
+    public static string WholeOnlyLabel(RunReviewFile file) => file.WholeOnly == RunPieces.Whole.None
+        ? string.Empty
+        : Localization.Strings.RunPiecesWholeLabel(WholeReason(file.WholeOnly));
+
+    /// <summary>The note under the card: it speaks of changes too once a file shows them.</summary>
+    public static string Note(RunReviewModel review) => review.Files.Any(f => f.Pieces is { Count: > 0 })
+        ? Localization.Strings.RunReviewPiecesNote
+        : Localization.Strings.RunReviewNote;
+
+    /// <summary>How many changes a file holds, kept and undone, for the line under its name; empty without changes.</summary>
+    public static string PiecesSummary(RunReviewFile file) => file.Pieces is { Count: > 0 } pieces
+        ? Localization.Strings.RunPiecesSummary(pieces.Count, pieces.Count(p => p.State == RunPieceState.Kept),
+                                                pieces.Count(p => p.State == RunPieceState.Undone))
+        : string.Empty;
+
     /// <summary>
     /// The changes of a file, cut from its copy before the run and its version from the run — the copy taken at the first
     /// gesture, else the file now, which the caller found as the run left it. One change is the file itself: none listed.

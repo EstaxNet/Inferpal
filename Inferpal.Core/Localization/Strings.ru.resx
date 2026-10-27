@@ -1880,6 +1880,11 @@
   <data name="RunReviewHowToPieces" xml:space="preserve"><value>Отменить одно изменение: `/undo-run #{0}:&lt;n&gt; &lt;файл&gt;`; вернуть его: `/undo-run redo #{0}:&lt;n&gt; &lt;файл&gt;`.</value></data>
   <data name="RunPiecesWholeLabel" xml:space="preserve"><value>только целиком — {0}</value></data>
   <data name="RunPieceLine" xml:space="preserve"><value>строка {0}</value></data>
+  <data name="RunPieceTitle" xml:space="preserve"><value>Изменение {0}</value></data>
+  <data name="RunPiecesSummary" xml:space="preserve"><value>{0} {0:изменение|изменения|изменений} · сохранено: {1} · отменено: {2}</value></data>
+  <data name="RunReviewPiecesNote" xml:space="preserve"><value>«Отменить» возвращает файл или одно из его изменений к состоянию до этого запуска; остальные изменения остаются в точности как есть. Заменяемое сначала сохраняется: «Повторить» возвращает его.</value></data>
+  <data name="RunPieceKeptLabel" xml:space="preserve"><value>сохранено</value></data>
+  <data name="RunPieceUndoneLabel" xml:space="preserve"><value>отменено</value></data>
   <data name="RewindButton" xml:space="preserve"><value>Вернуться сюда</value></data>
   <data name="RewindButtonTip" xml:space="preserve"><value>Вернуться сюда — к разговору и его файлам</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>Вернуться к «{0}»?</value></data>

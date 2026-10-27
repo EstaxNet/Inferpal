@@ -1880,6 +1880,11 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="RunReviewHowToPieces" xml:space="preserve"><value>Annuler un seul changement : `/undo-run #{0}:&lt;n&gt; &lt;fichier&gt;` ; le rétablir : `/undo-run redo #{0}:&lt;n&gt; &lt;fichier&gt;`.</value></data>
   <data name="RunPiecesWholeLabel" xml:space="preserve"><value>en entier seulement — {0}</value></data>
   <data name="RunPieceLine" xml:space="preserve"><value>ligne {0}</value></data>
+  <data name="RunPieceTitle" xml:space="preserve"><value>Changement {0}</value></data>
+  <data name="RunPiecesSummary" xml:space="preserve"><value>{0} {0:changement|changements} · {1} {1:gardé|gardés} · {2} {2:annulé|annulés}</value></data>
+  <data name="RunReviewPiecesNote" xml:space="preserve"><value>Annuler remet un fichier, ou l'un de ses changements, tel qu'il était avant ce run ; les autres changements restent exactement tels quels. Ce qu'il remplace est d'abord sauvegardé : Rétablir le redonne.</value></data>
+  <data name="RunPieceKeptLabel" xml:space="preserve"><value>gardé</value></data>
+  <data name="RunPieceUndoneLabel" xml:space="preserve"><value>annulé</value></data>
   <data name="RewindButton" xml:space="preserve"><value>Revenir ici</value></data>
   <data name="RewindButtonTip" xml:space="preserve"><value>Revenir ici — la conversation et ses fichiers</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>Revenir à « {0} » ?</value></data>

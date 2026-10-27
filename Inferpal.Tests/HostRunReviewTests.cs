@@ -45,6 +45,34 @@ public partial class HostServerTests
         Assert.Equal("before", await File.ReadAllTextAsync(file));
     }
 
+    [Fact]
+    public async Task RunReview_ListsAFilesChanges_AndRunFile_UndoesOneOfThem_TheOthersStay()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var file = Path.Combine(h.RootDir, "Orders.cs");
+        await File.WriteAllTextAsync(file, "a\nb\nc\nd\ne\n");
+        var history = new FileHistoryService { WorkspaceRoot = () => h.RootDir };
+        history.BeginRun();
+        Assert.True((await history.BackUpBeforeChangeAsync(file, CancellationToken.None)).Item1);
+        await File.WriteAllTextAsync(file, "A\nb\nc\nd\nE\n");
+        history.EndRun();
+        var runId = Assert.Single(history.Runs).Id;
+
+        var review = await h.Client.InvokeWithParameterObjectAsync<RunReviewDto>("run/review", new { runId });
+        var undone = await h.Client.InvokeWithParameterObjectAsync<RunFileResult>("run/file",
+                                                                                   new { runId, path = file, action = "undo", piece = 2 });
+
+        Assert.Equal([1, 2], Assert.Single(review.Files).Pieces.Select(p => p.Number));
+        Assert.Equal(Strings.RunPieceTitle(2), review.Files[0].Pieces[1].Title);
+        Assert.Equal(Strings.RunPieceUndone(2, "Orders.cs"), undone.Message);
+        Assert.Equal(["pending", "undone"], Assert.Single(undone.Review!.Files).Pieces.Select(p => p.State));
+        Assert.Equal(Strings.RunPiecesSummary(2, 0, 1), undone.Review.Files[0].PiecesSummary);
+        Assert.True(undone.Review.Files[0].CanRedo);
+        Assert.Equal(Strings.RunReviewPiecesNote, undone.Review.Note);
+        Assert.Equal("A\nb\nc\nd\ne\n", await File.ReadAllTextAsync(file));
+    }
+
     /// <summary>An action the host does not know is refused: read as an undo, a misspelt "keep" would overwrite the file.</summary>
     [Fact]
     public async Task RunFile_WithAnActionItDoesNotKnow_IsRefused_AndTheFileStays()

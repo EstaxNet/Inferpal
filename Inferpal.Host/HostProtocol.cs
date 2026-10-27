@@ -176,17 +176,28 @@ internal sealed record RunSummaryDto(
 /// <summary>`run/review` — the review card of a run (<see cref="Services.Presentation.RunReviewModel"/>).</summary>
 internal sealed record RunReviewParams(string RunId);
 
-/// <summary>`run/file` — one file of a run undone (<c>undo</c>), redone (<c>redo</c>) or kept (<c>keep</c>).</summary>
-internal sealed record RunFileParams(string RunId, string Path, string Action);
+/// <summary>`run/file` — one file of a run undone (<c>undo</c>), redone (<c>redo</c>) or kept (<c>keep</c>); with
+/// <paramref name="Piece"/>, only that change of it (1-based, <see cref="RunReviewPieceDto.Number"/>).</summary>
+internal sealed record RunFileParams(string RunId, string Path, string Action, int? Piece = null);
 
 /// <summary>One file of a run's review card.</summary>
 /// <param name="State"><c>pending</c>, <c>kept</c>, <c>undone</c>, <c>changedSince</c> or <c>noCopy</c>.</param>
 /// <param name="StateLabel">What the card says of that state (<see cref="Services.Presentation.RunReview.StateLabel"/>);
 /// empty for a pending file.</param>
 /// <param name="Diff">The file before the run against now, <c>+ - " " …</c> prefixes, cut and said past its cap.</param>
+/// <param name="Pieces">Its changes, kept or undone one by one, when it holds two or more; empty otherwise.</param>
+/// <param name="PiecesSummary">How many changes, kept and undone; empty without pieces.</param>
+/// <param name="WholeOnly">Why its changes are not offered one by one; empty when they are, or when it does not arise.</param>
 internal sealed record RunReviewFileDto(
     string Path, string Name, int Added, int Removed, bool Created, bool Gone, string State, string StateLabel, bool CanRedo,
-    List<RunReviewLineDto> Diff);
+    List<RunReviewLineDto> Diff, List<RunReviewPieceDto> Pieces, string PiecesSummary, string WholeOnly);
+
+/// <summary>One change of a file of a run's review card.</summary>
+/// <param name="State"><c>pending</c>, <c>kept</c> or <c>undone</c>.</param>
+/// <param name="StateLabel">What the card says of that state; empty for a pending change.</param>
+/// <param name="Diff">Its lines from before the run and from the run, between unchanged ones.</param>
+internal sealed record RunReviewPieceDto(
+    int Number, string Title, string Line, int Added, int Removed, string State, string StateLabel, List<RunReviewLineDto> Diff);
 
 internal sealed record RunReviewLineDto(string Prefix, string Text);
 
@@ -197,12 +208,18 @@ internal sealed record RunReviewDto(
 {
     public static RunReviewDto Of(Services.Presentation.RunReviewModel m) => new(
         m.RunId, Localization.Strings.RunReviewTitle, Localization.Strings.RunReviewSubtitle(m.Files.Count, m.Started),
-        Localization.Strings.RunReviewNote, Localization.Strings.RunFileChangedWhy,
+        Services.Presentation.RunReview.Note(m),
+        Localization.Strings.RunFileChangedWhy,
         [.. m.Files.Select(f => new RunReviewFileDto(
             f.Path, f.Name, f.Added, f.Removed, f.Created, f.Gone,
             char.ToLowerInvariant(f.State.ToString()[0]) + f.State.ToString()[1..],
             Services.Presentation.RunReview.StateLabel(f),
-            f.CanRedo, [.. f.Diff.Select(l => new RunReviewLineDto(l.Prefix, l.Text))]))],
+            f.CanRedo, [.. f.Diff.Select(l => new RunReviewLineDto(l.Prefix, l.Text))],
+            [.. (f.Pieces ?? []).Select(p => new RunReviewPieceDto(
+                p.Number, Localization.Strings.RunPieceTitle(p.Number), Localization.Strings.RunPieceLine(p.Line),
+                p.Added, p.Removed, p.State.ToString().ToLowerInvariant(), Services.Presentation.RunReview.PieceStateLabel(p.State),
+                [.. p.Diff.Select(l => new RunReviewLineDto(l.Prefix, l.Text))]))],
+            Services.Presentation.RunReview.PiecesSummary(f), Services.Presentation.RunReview.WholeOnlyLabel(f)))],
         Localization.Strings.RunFileKeep, Localization.Strings.RunFileUndo, Localization.Strings.RunFileDelete,
         Localization.Strings.RunFileRedo, Localization.Strings.RunFileNew);
 }

@@ -1430,8 +1430,10 @@ internal sealed partial class HostServer : IDisposable
         };
         return WithTurnSlotAsync("run/file", ct, async token =>
         {
-            var (message, review) = await UndoRunCommandHandler.FileActionAsync(
-                s.Tools.History, p.RunId, p.Path, action, s.RootDir, busy: false, token);
+            // One change of the file (1-based), or the whole file.
+            var (message, review) = p.Piece is { } piece
+                ? await UndoRunCommandHandler.PieceActionAsync(s.Tools.History, p.RunId, p.Path, piece, action, s.RootDir, busy: false, token)
+                : await UndoRunCommandHandler.FileActionAsync(s.Tools.History, p.RunId, p.Path, action, s.RootDir, busy: false, token);
             return new RunFileResult(message, review is null ? null : RunReviewDto.Of(review));
         });
     }

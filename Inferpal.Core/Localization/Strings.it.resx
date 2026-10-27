@@ -1880,6 +1880,11 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="RunReviewHowToPieces" xml:space="preserve"><value>Annullare una sola modifica: `/undo-run #{0}:&lt;n&gt; &lt;file&gt;`; ripristinarla: `/undo-run redo #{0}:&lt;n&gt; &lt;file&gt;`.</value></data>
   <data name="RunPiecesWholeLabel" xml:space="preserve"><value>solo per intero — {0}</value></data>
   <data name="RunPieceLine" xml:space="preserve"><value>riga {0}</value></data>
+  <data name="RunPieceTitle" xml:space="preserve"><value>Modifica {0}</value></data>
+  <data name="RunPiecesSummary" xml:space="preserve"><value>{0} {0:modifica|modifiche} · {1} {1:tenuta|tenute} · {2} {2:annullata|annullate}</value></data>
+  <data name="RunReviewPiecesNote" xml:space="preserve"><value>Annulla riporta un file, o una delle sue modifiche, com'era prima di questo run; le altre modifiche restano esattamente come sono. Ciò che sostituisce viene prima salvato: Ripristina lo riporta.</value></data>
+  <data name="RunPieceKeptLabel" xml:space="preserve"><value>tenuta</value></data>
+  <data name="RunPieceUndoneLabel" xml:space="preserve"><value>annullata</value></data>
   <data name="RewindButton" xml:space="preserve"><value>Torna qui</value></data>
   <data name="RewindButtonTip" xml:space="preserve"><value>Torna qui — la conversazione e i suoi file</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>Tornare a «{0}»?</value></data>

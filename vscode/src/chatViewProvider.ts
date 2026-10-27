@@ -1615,7 +1615,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           return;
         }
         try {
-          const result = await host.runFile(msg.runId, msg.path, msg.action);
+          const result = await host.runFile(msg.runId, msg.path, msg.action, msg.piece);
           this.post({ type: 'runReview', runId: msg.runId, review: result.review, message: result.message });
         } catch (err) {
           // Refused while a turn runs, or failed: the card is drawn again as it stands, under the reason.

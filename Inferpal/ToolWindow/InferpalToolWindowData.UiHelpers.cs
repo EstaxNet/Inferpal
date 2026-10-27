@@ -400,7 +400,11 @@ internal partial class InferpalToolWindowData
         // Diff viewer: green-background additions / red-background deletions per the active theme.
         DiffLine.ApplyTheme(item.DiffLines, p);
         DiffLine.ApplyTheme(item.CardLines, p);
-        foreach (var f in item.ReviewFiles) DiffLine.ApplyTheme(f.Lines, p);
+        foreach (var f in item.ReviewFiles)
+        {
+            DiffLine.ApplyTheme(f.Lines, p);
+            foreach (var piece in f.Pieces) DiffLine.ApplyTheme(piece.Lines, p);
+        }
         // Every item shown passes here: a question's "Go back here" is wired with its colours.
         item.HookRewind(question => _ = RewindPlanAsync(question));
     }

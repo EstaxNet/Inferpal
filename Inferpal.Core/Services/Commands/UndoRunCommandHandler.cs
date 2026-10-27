@@ -62,7 +62,7 @@ internal static class UndoRunCommandHandler
         {
             var file = string.Join(' ', parts[2..]).Trim('"');
             return change is { } number
-                ? (await PieceActionAsync(history, named, file, number, redo ? PieceAction.Redo : PieceAction.Undo, root,
+                ? (await PieceActionAsync(history, named, file, number, redo ? RunFileAction.Redo : RunFileAction.Undo, root,
                                           busy: false, ct)).Message
                 : (await FileActionAsync(history, named, file, redo ? RunFileAction.Redo : RunFileAction.Undo, root,
                                          busy: false, ct)).Message;
@@ -161,11 +161,18 @@ internal static class UndoRunCommandHandler
     /// or kept: the sentence both editors show, and the review as it stands after.
     /// </summary>
     public static async Task<(string Message, Presentation.RunReviewModel? Review)> PieceActionAsync(
-        FileHistoryService history, string runId, string path, int number, PieceAction action, string? root, bool busy,
+        FileHistoryService history, string runId, string path, int number, RunFileAction action, string? root, bool busy,
         CancellationToken ct)
     {
         if (Refused(history, runId, path, root, busy, out var run, out var full) is { } refused) return refused;
-        var (outcome, why) = await history.PieceActionAsync(run, full, number - 1, action, ct);
+        var (outcome, why) = await history.PieceActionAsync(run, full, number - 1, action switch
+        {
+            RunFileAction.Undo => PieceAction.Undo,
+            RunFileAction.Redo => PieceAction.Redo,
+            RunFileAction.Keep => PieceAction.Keep,
+            // ⚠ Never read as another gesture: a Keep read as an Undo would rewrite the file.
+            _                  => throw new ArgumentOutOfRangeException(nameof(action), action, null),
+        }, ct);
         var name = Relativise(full, root);
         var message = outcome switch
         {
@@ -177,7 +184,7 @@ internal static class UndoRunCommandHandler
             PieceOutcome.ChangedSince   => Strings.RunPieceChangedSince(name, number),
             PieceOutcome.GivenBackWhole => Strings.RunPieceGivenBackWhole(name),
             PieceOutcome.NoSuchPiece    => Strings.RunPieceNoSuch(name, number),
-            PieceOutcome.WholeOnly      => Strings.RunPieceWholeOnly(name, WholeReason(why)),
+            PieceOutcome.WholeOnly      => Strings.RunPieceWholeOnly(name, Presentation.RunReview.WholeReason(why)),
             PieceOutcome.NoCopy         => Strings.RunPieceNoCopy(name),
             PieceOutcome.NotInRun       => Strings.RunFileNotInRun(name),
             _                           => Strings.RunFileFailed(name),
@@ -196,15 +203,6 @@ internal static class UndoRunCommandHandler
         return busy || run.OpenElsewhere ? (Strings.UndoRunWhileBusy, Presentation.RunReview.Build(history, run)) : null;
     }
 
-    /// <summary>Why a file goes back whole only, in the words of the card and the text.</summary>
-    internal static string WholeReason(RunPieces.Whole why) => why switch
-    {
-        RunPieces.Whole.Binary     => Strings.RunPiecesWholeBinary,
-        RunPieces.Whole.TooLarge   => Strings.RunPiecesWholeTooLarge(RunPieces.MaxDifferingLines),
-        RunPieces.Whole.NotRebuilt => Strings.RunPiecesWholeNotRebuilt,
-        _                          => Strings.RunPiecesWholeCreated,
-    };
-
     /// <summary><c>/undo-run review [#id]</c>: the review card as text — where there is no card (an ACP client).</summary>
     private static string Review(FileHistoryService history, IReadOnlyList<HistoryRun> runs, string? id, string? root)
     {
@@ -219,13 +217,12 @@ internal static class UndoRunCommandHandler
             sb.Append("  - ").Append(Relativise(file.Path, root)).Append($" +{file.Added} −{file.Removed}");
             if (file.Created) sb.Append(" · ").Append(Strings.RunFileNew);
             if (Presentation.RunReview.StateLabel(file) is { Length: > 0 } state) sb.Append(" · ").Append(state);
-            if (file.WholeOnly != RunPieces.Whole.None) sb.Append(" · ").Append(Strings.RunPiecesWholeLabel(WholeReason(file.WholeOnly)));
+            if (Presentation.RunReview.WholeOnlyLabel(file) is { Length: > 0 } whole) sb.Append(" · ").Append(whole);
             sb.AppendLine();
             foreach (var piece in file.Pieces ?? [])
             {
                 sb.Append($"      {piece.Number}. ").Append(Strings.RunPieceLine(piece.Line)).Append($" +{piece.Added} −{piece.Removed}");
-                if (piece.State != Presentation.RunPieceState.Pending)
-                    sb.Append(" · ").Append(piece.State == Presentation.RunPieceState.Kept ? Strings.RunFileKeptLabel : Strings.RunFileUndoneLabel);
+                if (Presentation.RunReview.PieceStateLabel(piece.State) is { Length: > 0 } label) sb.Append(" · ").Append(label);
                 sb.AppendLine();
             }
         }

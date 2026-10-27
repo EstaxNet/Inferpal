@@ -1880,6 +1880,11 @@
   <data name="RunReviewHowToPieces" xml:space="preserve"><value>只撤销一处更改：`/undo-run #{0}:&lt;n&gt; &lt;文件&gt;`；重做：`/undo-run redo #{0}:&lt;n&gt; &lt;文件&gt;`。</value></data>
   <data name="RunPiecesWholeLabel" xml:space="preserve"><value>仅能整体撤销——{0}</value></data>
   <data name="RunPieceLine" xml:space="preserve"><value>第 {0} 行</value></data>
+  <data name="RunPieceTitle" xml:space="preserve"><value>第 {0} 处更改</value></data>
+  <data name="RunPiecesSummary" xml:space="preserve"><value>{0} 处更改 · 保留 {1} 处 · 已撤销 {2} 处</value></data>
+  <data name="RunReviewPiecesNote" xml:space="preserve"><value>撤销会把文件或其中一处更改恢复到本次运行前的状态，其余更改保持原样。被替换的内容会先保存，因此可以重做恢复。</value></data>
+  <data name="RunPieceKeptLabel" xml:space="preserve"><value>已保留</value></data>
+  <data name="RunPieceUndoneLabel" xml:space="preserve"><value>已撤销</value></data>
   <data name="RewindButton" xml:space="preserve"><value>回到这里</value></data>
   <data name="RewindButtonTip" xml:space="preserve"><value>回到这里 — 对话及其文件</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>回到“{0}”？</value></data>

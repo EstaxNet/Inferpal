@@ -659,8 +659,9 @@ internal partial class InferpalToolWindowData
     /// </summary>
     /// <param name="under">Where the card goes when the run's bar is not on screen (a reloaded conversation): the refused
     /// "Go back here" card that asked for it.</param>
+    /// <param name="piece">The change of <paramref name="path"/> the action is for (1-based); null: the whole file.</param>
     private async Task ReviewRunAsync(string runId, string? path, Services.Commands.UndoRunCommandHandler.RunFileAction? action,
-                                      ChatMessageItem? under = null)
+                                      ChatMessageItem? under = null, int? piece = null)
     {
         try
         {
@@ -671,8 +672,11 @@ internal partial class InferpalToolWindowData
                 var busy = false;
                 await RunOnVMContextAsync(() => busy = IsLoading || _sendStarting);
                 PinWorkspaceRoot();
-                (status, review) = await UndoOutsideAnyRunAsync(() => Services.Commands.UndoRunCommandHandler.FileActionAsync(
-                    _tools.History, runId, path, act, FindProjectRoot(), busy, CancellationToken.None));
+                (status, review) = await UndoOutsideAnyRunAsync(() => piece is { } number
+                    ? Services.Commands.UndoRunCommandHandler.PieceActionAsync(
+                        _tools.History, runId, path, number, act, FindProjectRoot(), busy, CancellationToken.None)
+                    : Services.Commands.UndoRunCommandHandler.FileActionAsync(
+                        _tools.History, runId, path, act, FindProjectRoot(), busy, CancellationToken.None));
             }
             else
             {
@@ -693,7 +697,7 @@ internal partial class InferpalToolWindowData
                         {
                             if (Messages.FirstOrDefault(m => m.Role == "review" && m.RunId == runId) is { } shown) Messages.Remove(shown);
                         }),
-                        act: (file, what) => _ = ReviewRunAsync(runId, file, what, under));
+                        act: (file, piece, what) => _ = ReviewRunAsync(runId, file, what, under, piece));
                     card.ShowReview(review, status);
                     ApplyItemTheme(card);
                     Messages.Insert(Messages.IndexOf(bar) + 1, card);

@@ -530,6 +530,25 @@ export interface RunReviewFile {
   stateLabel: string;
   canRedo: boolean;
   diff: RunReviewLine[];
+  /** Its changes, kept or undone one by one, when it holds two or more; empty otherwise. */
+  pieces: RunReviewPiece[];
+  /** How many changes, kept and undone; empty without pieces. */
+  piecesSummary: string;
+  /** Why its changes are not offered one by one; empty when they are, or when it does not arise. */
+  wholeOnly: string;
+}
+
+/** One change of a file of a run's review card (`RunReviewPieceDto` in the host). */
+export interface RunReviewPiece {
+  /** 1-based: what `run/file` names as `piece`. */
+  number: number;
+  title: string;
+  line: string;
+  added: number;
+  removed: number;
+  state: 'pending' | 'kept' | 'undone';
+  stateLabel: string;
+  diff: RunReviewLine[];
 }
 
 /** `run/review`: each file a run changed against the state before it, its words in the person's language. */

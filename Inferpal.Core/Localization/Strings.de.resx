@@ -1880,6 +1880,11 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="RunReviewHowToPieces" xml:space="preserve"><value>Eine einzelne Änderung rückgängig machen: `/undo-run #{0}:&lt;n&gt; &lt;Datei&gt;`; wiederherstellen: `/undo-run redo #{0}:&lt;n&gt; &lt;Datei&gt;`.</value></data>
   <data name="RunPiecesWholeLabel" xml:space="preserve"><value>nur vollständig — {0}</value></data>
   <data name="RunPieceLine" xml:space="preserve"><value>Zeile {0}</value></data>
+  <data name="RunPieceTitle" xml:space="preserve"><value>Änderung {0}</value></data>
+  <data name="RunPiecesSummary" xml:space="preserve"><value>{0} {0:Änderung|Änderungen} · {1} behalten · {2} rückgängig gemacht</value></data>
+  <data name="RunReviewPiecesNote" xml:space="preserve"><value>Rückgängig machen setzt eine Datei oder eine ihrer Änderungen auf den Stand vor diesem Lauf zurück; die anderen Änderungen bleiben genau, wie sie sind. Was ersetzt wird, wird zuerst gesichert: Wiederholen bringt es zurück.</value></data>
+  <data name="RunPieceKeptLabel" xml:space="preserve"><value>behalten</value></data>
+  <data name="RunPieceUndoneLabel" xml:space="preserve"><value>rückgängig gemacht</value></data>
   <data name="RewindButton" xml:space="preserve"><value>Hierher zurück</value></data>
   <data name="RewindButtonTip" xml:space="preserve"><value>Hierher zurück — die Unterhaltung und ihre Dateien</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>Zurück zu „{0}“?</value></data>

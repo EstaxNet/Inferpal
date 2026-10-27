@@ -676,9 +676,10 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     }
 
     /// <summary>A run's review card, under its result bar (<see cref="Services.Presentation.RunReviewModel"/>).</summary>
-    /// <param name="act">A file's Keep, Undo or Redo: the file's path and the action.</param>
+    /// <param name="act">A file's Keep, Undo or Redo: the file's path, the change of it (1-based; null: the whole file),
+    /// and the action.</param>
     internal static ChatMessageItem ReviewMsg(string runId, Action onClose,
-                                              Action<string, Services.Commands.UndoRunCommandHandler.RunFileAction> act) =>
+                                              Action<string, int?, Services.Commands.UndoRunCommandHandler.RunFileAction> act) =>
         new()
         {
             Role = "review", RunId = runId, _onCloseReview = onClose, _onReviewAction = act, ReviewNote = Strings.RunReviewNote,
@@ -687,7 +688,7 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
 
     [DataMember] public string BtnCloseReview { get; private set; } = string.Empty;
 
-    private Action<string, Services.Commands.UndoRunCommandHandler.RunFileAction>? _onReviewAction;
+    private Action<string, int?, Services.Commands.UndoRunCommandHandler.RunFileAction>? _onReviewAction;
 
     /// <summary>Draws <paramref name="review"/> in this card: its files replaced, the ones left open kept open.</summary>
     /// <param name="review"><c>null</c>: the run is no longer kept — only <paramref name="status"/> remains.</param>
@@ -704,11 +705,12 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
         }
         CardTitle   = Strings.RunReviewTitle;
         CardSubject = Strings.RunReviewSubtitle(review.Files.Count, review.Started);
+        ReviewNote  = Services.Presentation.RunReview.Note(review);
         foreach (var f in review.Files)
-            ReviewFiles.Add(new ReviewFileItem(f, open.Contains(f.Path), (path, action) =>
+            ReviewFiles.Add(new ReviewFileItem(f, open.Contains(f.Path), (path, piece, action) =>
             {
                 EnableReviewActions(false);
-                _onReviewAction?.Invoke(path, action);
+                _onReviewAction?.Invoke(path, piece, action);
             }));
         RaiseNotifyPropertyChangedEvent(nameof(CardTitle));
         RaiseNotifyPropertyChangedEvent(nameof(CardSubject));
@@ -1044,8 +1046,9 @@ internal sealed class ReviewFileItem : NotifyPropertyChangedObject
 {
     private bool _isExpanded;
 
+    /// <param name="act">The file's path, the change of it (1-based; null: the whole file), and the action.</param>
     public ReviewFileItem(Services.Presentation.RunReviewFile file, bool expanded,
-                          Action<string, Services.Commands.UndoRunCommandHandler.RunFileAction> act)
+                          Action<string, int?, Services.Commands.UndoRunCommandHandler.RunFileAction> act)
     {
         Name       = file.Name;
         Path       = file.Path;
@@ -1061,15 +1064,22 @@ internal sealed class ReviewFileItem : NotifyPropertyChangedObject
         BtnKeep    = Strings.RunFileKeep;
         BtnUndo    = file.Created ? Strings.RunFileDelete : Strings.RunFileUndo;
         BtnRedo    = Strings.RunFileRedo;
-        CanAct     = true;
+        WholeOnly  = Services.Presentation.RunReview.WholeOnlyLabel(file);
+        PiecesSummary = Services.Presentation.RunReview.PiecesSummary(file);
+        HasPieces  = file.Pieces is { Count: > 0 };
         _isExpanded = expanded;
-        foreach (var line in file.Diff)
-            Lines.Add(new DiffLine { Prefix = line.Prefix, Text = line.Text });
+        // A file of several changes shows each with its own actions instead of its diff.
+        if (!HasPieces)
+            foreach (var line in file.Diff)
+                Lines.Add(new DiffLine { Prefix = line.Prefix, Text = line.Text });
+        foreach (var piece in file.Pieces ?? [])
+            Pieces.Add(new ReviewPieceItem(piece, action => act(Path, piece.Number, action)));
+        CanAct     = true;
         ToggleCommand = new AsyncCommand((_, _) => { IsExpanded = !IsExpanded; return Task.CompletedTask; });
         // One action at a time on the card (it disables them all): the card is drawn again from the answer.
         AsyncCommand Act(Services.Commands.UndoRunCommandHandler.RunFileAction action) => new((_, _) =>
         {
-            if (CanAct) act(Path, action);
+            if (CanAct) act(Path, null, action);
             return Task.CompletedTask;
         });
         KeepCommand = Act(Services.Commands.UndoRunCommandHandler.RunFileAction.Keep);
@@ -1091,15 +1101,85 @@ internal sealed class ReviewFileItem : NotifyPropertyChangedObject
     [DataMember] public string BtnKeep        { get; }
     [DataMember] public string BtnUndo        { get; }
     [DataMember] public string BtnRedo        { get; }
+    [DataMember] public string WholeOnly      { get; }
+    [DataMember] public string PiecesSummary  { get; }
+    [DataMember] public bool   HasPieces      { get; }
     private bool _canAct;
-    /// <summary>False while an action of the card runs; set by the card (<see cref="ChatMessageItem.ShowReview"/>).</summary>
-    [DataMember] public bool   CanAct     { get => _canAct;     internal set => SetProperty(ref _canAct, value); }
+    /// <summary>False while an action of the card runs, its changes' too; set by the card
+    /// (<see cref="ChatMessageItem.ShowReview"/>).</summary>
+    [DataMember] public bool   CanAct
+    {
+        get => _canAct;
+        internal set
+        {
+            SetProperty(ref _canAct, value);
+            foreach (var piece in Pieces) piece.CanAct = value;
+        }
+    }
     [DataMember] public bool   IsExpanded { get => _isExpanded; private set => SetProperty(ref _isExpanded, value); }
     [DataMember] public ObservableCollection<DiffLine> Lines { get; } = [];
+    [DataMember] public ObservableCollection<ReviewPieceItem> Pieces { get; } = [];
     [DataMember] public AsyncCommand ToggleCommand { get; }
     [DataMember] public AsyncCommand KeepCommand   { get; }
     [DataMember] public AsyncCommand UndoCommand   { get; }
     [DataMember] public AsyncCommand RedoCommand   { get; }
+}
+
+/// <summary>One change of a file of a run's review card: its lines, and the actions its state allows.</summary>
+[DataContract]
+internal sealed class ReviewPieceItem : NotifyPropertyChangedObject
+{
+    public ReviewPieceItem(Services.Presentation.RunReviewPiece piece, Action<Services.Commands.UndoRunCommandHandler.RunFileAction> act)
+    {
+        Title      = Strings.RunPieceTitle(piece.Number);
+        LineLabel  = Strings.RunPieceLine(piece.Line);
+        StateLabel = Services.Presentation.RunReview.PieceStateLabel(piece.State);
+        IsUndone   = piece.State == Services.Presentation.RunPieceState.Undone;
+        IsKept     = piece.State == Services.Presentation.RunPieceState.Kept;
+        HasKeep    = piece.State == Services.Presentation.RunPieceState.Pending;
+        HasUndo    = !IsUndone;
+        HasRedo    = IsUndone;
+        BtnKeep    = Strings.RunFileKeep;
+        BtnUndo    = Strings.RunFileUndo;
+        BtnRedo    = Strings.RunFileRedo;
+        // A panel has no automation peer: each button carries which change it acts on, or a screen reader hears
+        // "Keep, Undo, Keep, Undo" for a whole file.
+        KeepName   = $"{BtnKeep}, {Title}";
+        UndoName   = $"{BtnUndo}, {Title}";
+        RedoName   = $"{BtnRedo}, {Title}";
+        foreach (var line in piece.Diff)
+            Lines.Add(new DiffLine { Prefix = line.Prefix, Text = line.Text });
+        _canAct = true;
+        AsyncCommand Act(Services.Commands.UndoRunCommandHandler.RunFileAction action) => new((_, _) =>
+        {
+            if (CanAct) act(action);
+            return Task.CompletedTask;
+        });
+        KeepCommand = Act(Services.Commands.UndoRunCommandHandler.RunFileAction.Keep);
+        UndoCommand = Act(Services.Commands.UndoRunCommandHandler.RunFileAction.Undo);
+        RedoCommand = Act(Services.Commands.UndoRunCommandHandler.RunFileAction.Redo);
+    }
+
+    [DataMember] public string Title          { get; }
+    [DataMember] public string LineLabel      { get; }
+    [DataMember] public string StateLabel     { get; }
+    [DataMember] public string KeepName       { get; }
+    [DataMember] public string UndoName       { get; }
+    [DataMember] public string RedoName       { get; }
+    [DataMember] public bool   IsUndone       { get; }
+    [DataMember] public bool   IsKept         { get; }
+    [DataMember] public bool   HasKeep        { get; }
+    [DataMember] public bool   HasUndo        { get; }
+    [DataMember] public bool   HasRedo        { get; }
+    [DataMember] public string BtnKeep        { get; }
+    [DataMember] public string BtnUndo        { get; }
+    [DataMember] public string BtnRedo        { get; }
+    private bool _canAct;
+    [DataMember] public bool   CanAct { get => _canAct; internal set => SetProperty(ref _canAct, value); }
+    [DataMember] public ObservableCollection<DiffLine> Lines { get; } = [];
+    [DataMember] public AsyncCommand KeepCommand { get; }
+    [DataMember] public AsyncCommand UndoCommand { get; }
+    [DataMember] public AsyncCommand RedoCommand { get; }
 }
 
 /// <summary>The Segoe MDL2 Assets glyphs the chat draws from code (the XAML holds the rest).</summary>

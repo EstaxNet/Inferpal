@@ -506,8 +506,8 @@ export class HostClient {
   }
 
   /** One file of a run undone, redone or kept; refused (thrown) while a turn holds the host. */
-  runFile(runId: string, path: string, action: 'undo' | 'redo' | 'keep'): Promise<RunFileResult> {
-    return this.connection().sendRequest<RunFileResult>('run/file', { runId, path, action });
+  runFile(runId: string, path: string, action: 'undo' | 'redo' | 'keep', piece?: number): Promise<RunFileResult> {
+    return this.connection().sendRequest<RunFileResult>('run/file', { runId, path, action, piece });
   }
 
   /** Switches one prompt section on/off for the next turns; returns the refreshed panel. */

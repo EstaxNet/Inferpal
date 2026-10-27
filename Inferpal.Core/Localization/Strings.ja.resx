@@ -1880,6 +1880,11 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="RunReviewHowToPieces" xml:space="preserve"><value>1 つの変更だけを元に戻す: `/undo-run #{0}:&lt;n&gt; &lt;ファイル&gt;`、やり直す: `/undo-run redo #{0}:&lt;n&gt; &lt;ファイル&gt;`。</value></data>
   <data name="RunPiecesWholeLabel" xml:space="preserve"><value>ファイル全体のみ — {0}</value></data>
   <data name="RunPieceLine" xml:space="preserve"><value>{0} 行目</value></data>
+  <data name="RunPieceTitle" xml:space="preserve"><value>変更 {0}</value></data>
+  <data name="RunPiecesSummary" xml:space="preserve"><value>変更 {0} 件 · 保持 {1} 件 · 元に戻した変更 {2} 件</value></data>
+  <data name="RunReviewPiecesNote" xml:space="preserve"><value>元に戻すと、ファイルまたはその変更の 1 つが実行前の状態に戻ります。ほかの変更はそのまま残ります。置き換える内容は先に保存されるので、やり直しで戻せます。</value></data>
+  <data name="RunPieceKeptLabel" xml:space="preserve"><value>保持</value></data>
+  <data name="RunPieceUndoneLabel" xml:space="preserve"><value>元に戻しました</value></data>
   <data name="RewindButton" xml:space="preserve"><value>ここに戻る</value></data>
   <data name="RewindButtonTip" xml:space="preserve"><value>ここに戻る — 会話とファイル</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>「{0}」に戻りますか？</value></data>

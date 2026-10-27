@@ -1880,6 +1880,11 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="RunReviewHowToPieces" xml:space="preserve"><value>Deshacer un solo cambio: `/undo-run #{0}:&lt;n&gt; &lt;archivo&gt;`; rehacerlo: `/undo-run redo #{0}:&lt;n&gt; &lt;archivo&gt;`.</value></data>
   <data name="RunPiecesWholeLabel" xml:space="preserve"><value>solo entero — {0}</value></data>
   <data name="RunPieceLine" xml:space="preserve"><value>línea {0}</value></data>
+  <data name="RunPieceTitle" xml:space="preserve"><value>Cambio {0}</value></data>
+  <data name="RunPiecesSummary" xml:space="preserve"><value>{0} {0:cambio|cambios} · {1} {1:conservado|conservados} · {2} {2:deshecho|deshechos}</value></data>
+  <data name="RunReviewPiecesNote" xml:space="preserve"><value>Deshacer devuelve un archivo, o uno de sus cambios, a como estaba antes de este run; los demás cambios quedan exactamente como están. Lo que reemplaza se guarda primero: Rehacer lo devuelve.</value></data>
+  <data name="RunPieceKeptLabel" xml:space="preserve"><value>conservado</value></data>
+  <data name="RunPieceUndoneLabel" xml:space="preserve"><value>deshecho</value></data>
   <data name="RewindButton" xml:space="preserve"><value>Volver aquí</value></data>
   <data name="RewindButtonTip" xml:space="preserve"><value>Volver aquí — la conversación y sus archivos</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>¿Volver a «{0}»?</value></data>

@@ -3,7 +3,7 @@
 // destroyed on hide: everything re-renders from the 'hydrate' message.
 // No literal user-visible English here — strings go through t() (window.__l10n).
 import type {
-  ApprovalCard, InputCard, InputCardField, InputFormAnswer, RewindCard, RunReview, RunSummary, SetupPlace, SetupPlan,
+  ApprovalCard, InputCard, InputCardField, InputFormAnswer, RewindCard, RunReview, RunReviewLine, RunSummary, SetupPlace, SetupPlan,
 } from '../protocol';
 import type {
   ExtToWebview,
@@ -1361,24 +1361,26 @@ function renderRunReview(runId: string, review: RunReview | null | undefined, me
     }
     const actions = document.createElement('span');
     actions.className = 'run-review-actions';
-    const action = (label: string, what: 'undo' | 'redo' | 'keep', primary = false) => {
+    // A file's actions, or one change's (`piece`, 1-based) in its own row.
+    const action = (into: HTMLElement, label: string, what: 'undo' | 'redo' | 'keep', primary = false, piece?: number) => {
       const b = document.createElement('button');
       b.className = 'run-review-action' + (primary ? ' primary' : '');
       b.textContent = label;
       b.addEventListener('click', () => {
         disableAll();
-        post({ type: 'runFile', runId, path: f.path, action: what });
+        post({ type: 'runFile', runId, path: f.path, action: what, piece });
       });
-      actions.appendChild(b);
+      into.appendChild(b);
     };
     if (f.state === 'pending') {
-      action(review.keep, 'keep');
+      action(actions, review.keep, 'keep');
     }
     if (f.state === 'pending' || f.state === 'kept') {
-      action(f.created ? review.delete : review.undo, 'undo', true);
+      action(actions, f.created ? review.delete : review.undo, 'undo', true);
     }
-    if (f.state === 'undone' && f.canRedo) {
-      action(review.redo, 'redo');
+    // Undone whole, or changes undone one by one: given the run's version again together.
+    if (f.canRedo) {
+      action(actions, review.redo, 'redo');
     }
     line.appendChild(actions);
     row.appendChild(line);
@@ -1388,13 +1390,68 @@ function renderRunReview(runId: string, review: RunReview | null | undefined, me
       why.textContent = review.changedWhy;
       row.appendChild(why);
     }
-    const diff = document.createElement('pre');
-    diff.className = 'approval-preview';
-    for (const l of f.diff) {
-      const span = document.createElement('span');
-      span.className = 'pl' + (l.prefix === '+' ? ' add' : l.prefix === '-' ? ' del' : l.prefix === '…' ? ' gap' : '');
-      span.textContent = `${l.prefix} ${l.text}`;
-      diff.appendChild(span);
+    if (f.wholeOnly) {
+      const whole = document.createElement('div');
+      whole.className = 'run-review-why';
+      whole.textContent = f.wholeOnly;
+      row.appendChild(whole);
+    }
+    const diffOf = (lines: RunReviewLine[]) => {
+      const pre = document.createElement('pre');
+      pre.className = 'approval-preview';
+      for (const l of lines) {
+        const span = document.createElement('span');
+        span.className = 'pl' + (l.prefix === '+' ? ' add' : l.prefix === '-' ? ' del' : l.prefix === '…' ? ' gap' : '');
+        span.textContent = `${l.prefix} ${l.text}`;
+        pre.appendChild(span);
+      }
+      return pre;
+    };
+    // A file of several changes shows each with its own actions; otherwise its diff.
+    let diff: HTMLElement;
+    if (f.pieces.length > 0) {
+      diff = document.createElement('div');
+      diff.className = 'run-review-pieces';
+      const summary = document.createElement('div');
+      summary.className = 'run-review-why';
+      summary.textContent = f.piecesSummary;
+      diff.appendChild(summary);
+      for (const p of f.pieces) {
+        const piece = document.createElement('div');
+        piece.className = 'run-review-piece ' + p.state;
+        piece.setAttribute('role', 'group');
+        piece.setAttribute('aria-label', [p.title, p.line, p.stateLabel].filter((s) => s).join(', '));
+        const pieceHead = document.createElement('div');
+        pieceHead.className = 'run-review-piece-head';
+        const pieceTitle = document.createElement('span');
+        pieceTitle.textContent = p.title;
+        const pieceLine = document.createElement('span');
+        pieceLine.className = 'run-review-state';
+        pieceLine.textContent = p.line;
+        pieceHead.append(pieceTitle, pieceLine);
+        if (p.stateLabel) {
+          const pieceState = document.createElement('span');
+          pieceState.className = 'run-review-state run-review-piece-state';
+          pieceState.textContent = p.stateLabel;
+          pieceHead.appendChild(pieceState);
+        }
+        const pieceActions = document.createElement('span');
+        pieceActions.className = 'run-review-actions';
+        if (p.state === 'pending') {
+          action(pieceActions, review.keep, 'keep', false, p.number);
+        }
+        if (p.state === 'pending' || p.state === 'kept') {
+          action(pieceActions, review.undo, 'undo', true, p.number);
+        }
+        if (p.state === 'undone') {
+          action(pieceActions, review.redo, 'redo', false, p.number);
+        }
+        pieceHead.appendChild(pieceActions);
+        piece.append(pieceHead, diffOf(p.diff));
+        diff.appendChild(piece);
+      }
+    } else {
+      diff = diffOf(f.diff);
     }
     const show = (shown: boolean) => {
       diff.hidden = !shown;

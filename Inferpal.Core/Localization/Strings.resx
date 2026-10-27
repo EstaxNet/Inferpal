@@ -1884,6 +1884,11 @@ What you save there applies from your next question, in this thread and the othe
   <data name="RunReviewHowToPieces" xml:space="preserve"><value>Undo one change: `/undo-run #{0}:&lt;n&gt; &lt;file&gt;`; redo it: `/undo-run redo #{0}:&lt;n&gt; &lt;file&gt;`.</value></data>
   <data name="RunPiecesWholeLabel" xml:space="preserve"><value>whole only — {0}</value></data>
   <data name="RunPieceLine" xml:space="preserve"><value>line {0}</value></data>
+  <data name="RunPieceTitle" xml:space="preserve"><value>Change {0}</value></data>
+  <data name="RunPiecesSummary" xml:space="preserve"><value>{0} {0:change|changes} · {1} kept · {2} undone</value></data>
+  <data name="RunReviewPiecesNote" xml:space="preserve"><value>Undo puts a file, or one of its changes, back as it was before this run; the other changes stay exactly as they are. What it replaces is saved first, so Redo gives it back.</value></data>
+  <data name="RunPieceKeptLabel" xml:space="preserve"><value>kept</value></data>
+  <data name="RunPieceUndoneLabel" xml:space="preserve"><value>undone</value></data>
   <data name="RewindButton" xml:space="preserve"><value>Go back here</value></data>
   <data name="RewindButtonTip" xml:space="preserve"><value>Go back here — the conversation and its files</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>Go back to “{0}”?</value></data>

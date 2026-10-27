@@ -1719,6 +1719,11 @@ internal static class Strings
     public static string RunReviewHowToPieces(string runId) => Format(Get(nameof(RunReviewHowToPieces)), runId);
     public static string RunPiecesWholeLabel(string reason) => Format(Get(nameof(RunPiecesWholeLabel)), reason);
     public static string RunPieceLine(int line) => Format(Get(nameof(RunPieceLine)), line);
+    public static string RunPieceTitle(int change) => Format(Get(nameof(RunPieceTitle)), change);
+    public static string RunPiecesSummary(int changes, int kept, int undone) => Format(Get(nameof(RunPiecesSummary)), changes, kept, undone);
+    public static string RunReviewPiecesNote => Get(nameof(RunReviewPiecesNote));
+    public static string RunPieceKeptLabel => Get(nameof(RunPieceKeptLabel));
+    public static string RunPieceUndoneLabel => Get(nameof(RunPieceUndoneLabel));
     public static string RewindButton => Get(nameof(RewindButton));
     public static string RewindButtonTip => Get(nameof(RewindButtonTip));
     public static string RewindTitle(string question) => Format(Get(nameof(RewindTitle)), question);

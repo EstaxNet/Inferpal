@@ -1880,6 +1880,11 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="RunReviewHowToPieces" xml:space="preserve"><value>변경 하나만 되돌리기: `/undo-run #{0}:&lt;n&gt; &lt;파일&gt;`, 다시 적용: `/undo-run redo #{0}:&lt;n&gt; &lt;파일&gt;`.</value></data>
   <data name="RunPiecesWholeLabel" xml:space="preserve"><value>파일 전체로만 — {0}</value></data>
   <data name="RunPieceLine" xml:space="preserve"><value>{0}번째 줄</value></data>
+  <data name="RunPieceTitle" xml:space="preserve"><value>변경 {0}</value></data>
+  <data name="RunPiecesSummary" xml:space="preserve"><value>변경 {0}개 · 유지 {1}개 · 되돌림 {2}개</value></data>
+  <data name="RunReviewPiecesNote" xml:space="preserve"><value>되돌리기는 파일 또는 그 변경 하나를 이번 실행 전 상태로 되돌리며, 나머지 변경은 그대로 남습니다. 바뀌는 내용은 먼저 저장되므로 다시 실행으로 되살릴 수 있습니다.</value></data>
+  <data name="RunPieceKeptLabel" xml:space="preserve"><value>유지됨</value></data>
+  <data name="RunPieceUndoneLabel" xml:space="preserve"><value>되돌림</value></data>
   <data name="RewindButton" xml:space="preserve"><value>여기로 돌아가기</value></data>
   <data name="RewindButtonTip" xml:space="preserve"><value>여기로 돌아가기 — 대화와 파일</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>“{0}”(으)로 돌아갈까요?</value></data>
