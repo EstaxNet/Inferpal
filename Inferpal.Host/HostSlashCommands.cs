@@ -833,6 +833,7 @@ internal sealed partial class HostServer
     [JsonRpcMethod("mention/categories")]
     public List<MentionCategoryDto> MentionCategories()
         => MentionController.Categories
+            .Where(c => c.Editors != MentionEditors.VisualStudio)   // @output reads Visual Studio's Output window
             .Select(c => new MentionCategoryDto(c.Token, c.Desc(), c.QueryBased))
             .ToList();
 

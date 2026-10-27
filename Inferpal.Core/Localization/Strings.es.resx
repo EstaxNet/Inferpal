@@ -396,6 +396,14 @@ Copia de seguridad: {0}</value></data>
   <data name="MentionUrlDesc" xml:space="preserve"><value>adjuntar el texto de una página web</value></data>
   <data name="MentionCommitDesc" xml:space="preserve"><value>adjuntar el mensaje y el diff de un commit</value></data>
   <data name="MentionTerminalDesc" xml:space="preserve"><value>adjuntar el último comando del terminal, su salida y su código de salida</value></data>
+  <data name="MentionOutputDesc" xml:space="preserve"><value>adjuntar el panel de la ventana Salida: el que se muestra o, si no, Build</value></data>
+  <data name="MentionOutputNone" xml:space="preserve"><value>La ventana Salida todavía no tiene ningún panel: compila o ejecuta algo que escriba en ella y luego usa @output.</value></data>
+  <data name="MentionOutputEmpty" xml:space="preserve"><value>El panel «{0}» de la ventana Salida está vacío.</value></data>
+  <data name="MentionOutputUnreadable" xml:space="preserve"><value>Visual Studio no da el texto del panel «{0}»: muestra otro panel de la ventana Salida, como Build, y vuelve a usar @output.</value></data>
+  <data name="MentionOutputNoAnswer" xml:space="preserve"><value>Visual Studio no entregó a tiempo el texto de la ventana Salida. Vuelva a intentarlo.</value></data>
+  <data name="MentionOutputNoInProc" xml:space="preserve"><value>No se pudo leer la ventana Salida: la parte en proceso de Inferpal no está cargada en este Visual Studio — /diagnostics indica el motivo.</value></data>
+  <data name="MentionOutputFailed" xml:space="preserve"><value>No se pudo leer la ventana Salida de Visual Studio: {0}</value></data>
+  <data name="MentionOutputCutLabel" xml:space="preserve"><value>{0} (el final: los últimos {1:N0} caracteres)</value></data>
   <data name="MentionUrlHint" xml:space="preserve"><value>escribe o pega una dirección…</value></data>
   <data name="MentionUrlUnavailable" xml:space="preserve"><value>No se adjuntó nada para @url — {0}</value></data>
   <data name="MentionUrlEmpty" xml:space="preserve"><value>No se adjuntó nada para @url: {0} no tiene texto legible.</value></data>

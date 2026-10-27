@@ -379,6 +379,21 @@ internal partial class InferpalToolWindowData
                     await RunOnVMContextAsync(() => AddAttachment(problems.Label!, problems.Content!));
                     break;
                 }
+                case MentionKind.Output:
+                {
+                    // Read inside devenv — a tool window's text does not cross to this process —, asked through a file.
+                    var answer = await Services.Signals.OutputPaneSignal.AskAsync(Services.Signals.OutputPaneSignal.AnswerBudget, ct);
+                    // The package serves the request: without it loaded, waiting again changes nothing — said apart.
+                    var output = MentionController.OutputMention(answer, "▤ @output",
+                                                                 Services.Signals.InProcAliveSignal.TryRead() is { HasPackage: true });
+                    if (output.Notice is not null)
+                    {
+                        await NotifyMentionAsync(output.Notice);
+                        return;
+                    }
+                    await RunOnVMContextAsync(() => AddAttachment(output.Label!, output.Content!));
+                    break;
+                }
                 case MentionKind.Debugger:
                 {
                     // Read the state directly (not via the tool) so "not paused" can be a

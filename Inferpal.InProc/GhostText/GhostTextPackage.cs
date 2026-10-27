@@ -75,6 +75,8 @@ internal sealed class GhostTextPackage : AsyncPackage
 
         // The Error List's "Fix with Inferpal" asks this side for the lines chosen in the list.
         ErrorListSelectionWatcher.Start();
+        // @output asks this side for the text of the Output window.
+        OutputPaneWatcher.Start();
 
         if (buildMgr is null || solution is null) return;
         try
@@ -167,6 +169,7 @@ internal sealed class GhostTextPackage : AsyncPackage
         {
             FimSidecar.Shutdown();
             ErrorListSelectionWatcher.Stop();
+            OutputPaneWatcher.Stop();
         }
         base.Dispose(disposing);
     }

@@ -396,6 +396,14 @@ Sicherung: {0}</value></data>
   <data name="MentionUrlDesc" xml:space="preserve"><value>Text einer Webseite anhängen</value></data>
   <data name="MentionCommitDesc" xml:space="preserve"><value>Nachricht und Diff eines Commits anhängen</value></data>
   <data name="MentionTerminalDesc" xml:space="preserve"><value>letzten Terminalbefehl mit Ausgabe und Exitcode anhängen</value></data>
+  <data name="MentionOutputDesc" xml:space="preserve"><value>Bereich des Ausgabefensters anhängen — den angezeigten, sonst Build</value></data>
+  <data name="MentionOutputNone" xml:space="preserve"><value>Das Ausgabefenster hat noch keinen Bereich: Erstellen Sie etwas oder führen Sie etwas aus, das hineinschreibt, und verwenden Sie dann @output.</value></data>
+  <data name="MentionOutputEmpty" xml:space="preserve"><value>Der Bereich „{0}“ des Ausgabefensters ist leer.</value></data>
+  <data name="MentionOutputUnreadable" xml:space="preserve"><value>Visual Studio gibt den Text des Bereichs „{0}“ nicht heraus: Zeigen Sie einen anderen Bereich des Ausgabefensters an, etwa Build, und verwenden Sie dann erneut @output.</value></data>
+  <data name="MentionOutputNoAnswer" xml:space="preserve"><value>Visual Studio hat den Text des Ausgabefensters nicht rechtzeitig geliefert. Versuchen Sie es erneut.</value></data>
+  <data name="MentionOutputNoInProc" xml:space="preserve"><value>Das Ausgabefenster konnte nicht gelesen werden: Der In-Process-Teil von Inferpal ist in diesem Visual Studio nicht geladen – /diagnostics nennt den Grund.</value></data>
+  <data name="MentionOutputFailed" xml:space="preserve"><value>Das Ausgabefenster von Visual Studio konnte nicht gelesen werden: {0}</value></data>
+  <data name="MentionOutputCutLabel" xml:space="preserve"><value>{0} (das Ende: die letzten {1:N0} Zeichen)</value></data>
   <data name="MentionUrlHint" xml:space="preserve"><value>Adresse eingeben oder einfügen…</value></data>
   <data name="MentionUrlUnavailable" xml:space="preserve"><value>Für @url wurde nichts angehängt — {0}</value></data>
   <data name="MentionUrlEmpty" xml:space="preserve"><value>Für @url wurde nichts angehängt: {0} enthält keinen lesbaren Text.</value></data>

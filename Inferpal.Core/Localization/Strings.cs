@@ -1169,6 +1169,14 @@ internal static class Strings
     public static string MentionUrlDesc       => Get(nameof(MentionUrlDesc));
     public static string MentionCommitDesc    => Get(nameof(MentionCommitDesc));
     public static string MentionTerminalDesc  => Get(nameof(MentionTerminalDesc));
+    public static string MentionOutputDesc    => Get(nameof(MentionOutputDesc));
+    public static string MentionOutputNone    => Get(nameof(MentionOutputNone));
+    public static string MentionOutputEmpty(string pane) => Format(Get(nameof(MentionOutputEmpty)), pane);
+    public static string MentionOutputUnreadable(string pane) => Format(Get(nameof(MentionOutputUnreadable)), pane);
+    public static string MentionOutputNoAnswer => Get(nameof(MentionOutputNoAnswer));
+    public static string MentionOutputNoInProc => Get(nameof(MentionOutputNoInProc));
+    public static string MentionOutputFailed(string why) => Format(Get(nameof(MentionOutputFailed)), why);
+    public static string MentionOutputCutLabel(string label, int kept) => Format(Get(nameof(MentionOutputCutLabel)), label, kept);
     public static string MentionUrlHint       => Get(nameof(MentionUrlHint));
     public static string MentionUrlUnavailable(string reason) => Format(Get(nameof(MentionUrlUnavailable)), reason);
     public static string MentionUrlEmpty(string url) => Format(Get(nameof(MentionUrlEmpty)), url);

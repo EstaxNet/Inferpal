@@ -396,6 +396,14 @@
   <data name="MentionUrlDesc" xml:space="preserve"><value>прикрепить текст веб-страницы</value></data>
   <data name="MentionCommitDesc" xml:space="preserve"><value>прикрепить сообщение и diff коммита</value></data>
   <data name="MentionTerminalDesc" xml:space="preserve"><value>прикрепить последнюю команду терминала, её вывод и код выхода</value></data>
+  <data name="MentionOutputDesc" xml:space="preserve"><value>прикрепить панель окна «Вывод» — показанную, иначе Build</value></data>
+  <data name="MentionOutputNone" xml:space="preserve"><value>В окне «Вывод» ещё нет ни одной панели: выполните сборку или запустите что-то, что пишет в него, затем используйте @output.</value></data>
+  <data name="MentionOutputEmpty" xml:space="preserve"><value>Панель «{0}» окна «Вывод» пуста.</value></data>
+  <data name="MentionOutputUnreadable" xml:space="preserve"><value>Visual Studio не отдаёт текст панели «{0}»: покажите другую панель окна «Вывод», например Build, затем снова используйте @output.</value></data>
+  <data name="MentionOutputNoAnswer" xml:space="preserve"><value>Visual Studio не передал текст окна «Вывод» вовремя. Повторите попытку.</value></data>
+  <data name="MentionOutputNoInProc" xml:space="preserve"><value>Не удалось прочитать окно «Вывод»: внутрипроцессная часть Inferpal не загружена в этом Visual Studio — /diagnostics скажет почему.</value></data>
+  <data name="MentionOutputFailed" xml:space="preserve"><value>Не удалось прочитать окно «Вывод» Visual Studio: {0}</value></data>
+  <data name="MentionOutputCutLabel" xml:space="preserve"><value>{0} (конец: последние {1:N0} {1:символ|символа|символов})</value></data>
   <data name="MentionUrlHint" xml:space="preserve"><value>введите или вставьте адрес…</value></data>
   <data name="MentionUrlUnavailable" xml:space="preserve"><value>Для @url ничего не прикреплено — {0}</value></data>
   <data name="MentionUrlEmpty" xml:space="preserve"><value>Для @url ничего не прикреплено: на {0} нет читаемого текста.</value></data>

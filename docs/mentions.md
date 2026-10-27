@@ -17,6 +17,7 @@ replaced with the corresponding attachment.
 | `@tree` | The solution tree |
 | `@url` | A web page's text — type or paste the address after the token |
 | `@terminal` | *VS Code:* the last command a terminal finished — the command, its folder, its output (its end, when it is long) and its exit code |
+| `@output` | *Visual Studio:* the Output window's pane — the one shown, else Build — its end when it is long |
 
 > [!TIP]
 > The `@`-mention popup and the `/`-command popup are mutually exclusive — typing `@` opens
@@ -55,7 +56,9 @@ replaced with the corresponding attachment.
 > terminal's commands from the first time `@terminal` is used in it, so that first time it asks you to run the command
 > again: while a command runs, VS Code keeps its whole output in memory for whoever reads it, and following every
 > terminal would cost that to people who never use `@terminal`. A command still running is not attached: use
-> `@terminal` again once it ends. Visual Studio does not offer `@terminal` yet.
+> `@terminal` again once it ends. Visual Studio offers `@output` instead: the text of the Output window's pane you are looking at (else the
+> Build pane), its end when it is long; a pane Visual Studio does not give the text of (one not yet shown) is
+> said, never attached empty.
 
 > [!NOTE]
 > **VS Code:** typed mentions work there too (since 1.2.0) — the eleven categories from

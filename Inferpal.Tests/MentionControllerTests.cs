@@ -54,8 +54,8 @@ public class MentionControllerTests
     [Fact]
     public void MatchCategories_PrefixOnTokenWithoutAt()
     {
-        // Visual Studio offers every category but those it cannot serve yet (@terminal).
-        Assert.Equal(MentionController.Categories.Count(c => c.InVisualStudio), MentionController.MatchCategories("").Count);
+        // Visual Studio offers every category but VS Code's own (@terminal).
+        Assert.Equal(MentionController.Categories.Count(c => c.Editors != MentionEditors.VsCode), MentionController.MatchCategories("").Count);
         Assert.DoesNotContain(MentionController.MatchCategories(""), c => c.Token == "@terminal");
 
         var f = MentionController.MatchCategories("f");

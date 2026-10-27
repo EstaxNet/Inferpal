@@ -396,6 +396,14 @@ Backup: {0}</value></data>
   <data name="MentionUrlDesc" xml:space="preserve"><value>allega il testo di una pagina web</value></data>
   <data name="MentionCommitDesc" xml:space="preserve"><value>allega il messaggio e il diff di un commit</value></data>
   <data name="MentionTerminalDesc" xml:space="preserve"><value>allega l'ultimo comando del terminale, il suo output e il codice di uscita</value></data>
+  <data name="MentionOutputDesc" xml:space="preserve"><value>allega il riquadro della finestra Output: quello mostrato, altrimenti Build</value></data>
+  <data name="MentionOutputNone" xml:space="preserve"><value>La finestra Output non ha ancora alcun riquadro: compila o esegui qualcosa che ci scriva, poi usa @output.</value></data>
+  <data name="MentionOutputEmpty" xml:space="preserve"><value>Il riquadro «{0}» della finestra Output è vuoto.</value></data>
+  <data name="MentionOutputUnreadable" xml:space="preserve"><value>Visual Studio non fornisce il testo del riquadro «{0}»: mostra un altro riquadro della finestra Output, come Build, poi usa di nuovo @output.</value></data>
+  <data name="MentionOutputNoAnswer" xml:space="preserve"><value>Visual Studio non ha fornito in tempo il testo della finestra Output. Riprovate.</value></data>
+  <data name="MentionOutputNoInProc" xml:space="preserve"><value>Non è stato possibile leggere la finestra Output: la parte in-process di Inferpal non è caricata in questo Visual Studio — /diagnostics dice perché.</value></data>
+  <data name="MentionOutputFailed" xml:space="preserve"><value>Impossibile leggere la finestra Output di Visual Studio: {0}</value></data>
+  <data name="MentionOutputCutLabel" xml:space="preserve"><value>{0} (la fine: gli ultimi {1:N0} caratteri)</value></data>
   <data name="MentionUrlHint" xml:space="preserve"><value>digita o incolla un indirizzo…</value></data>
   <data name="MentionUrlUnavailable" xml:space="preserve"><value>Nessun allegato per @url — {0}</value></data>
   <data name="MentionUrlEmpty" xml:space="preserve"><value>Nessun allegato per @url: {0} non ha testo leggibile.</value></data>

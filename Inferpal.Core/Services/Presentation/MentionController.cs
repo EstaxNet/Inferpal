@@ -7,7 +7,11 @@ using Inferpal.Services.Tools;
 namespace Inferpal.Services.Presentation;
 
 /// <summary>Context-provider categories offered when typing <c>@</c> in the chat prompt.</summary>
-internal enum MentionKind { File, Code, Folder, Clipboard, Tree, Diff, Problems, Debugger, Url, Commit, Terminal }
+internal enum MentionKind { File, Code, Folder, Clipboard, Tree, Diff, Problems, Debugger, Url, Commit, Terminal, Output }
+
+/// <summary>The editors that offer a category: one an editor cannot serve is not listed there — <c>@terminal</c> reads
+/// VS Code's terminal, <c>@output</c> Visual Studio's Output window.</summary>
+internal enum MentionEditors { Both, VisualStudio, VsCode }
 
 /// <summary>What a mention resolves to: a chip (label and content), or a notice when there is nothing to attach.</summary>
 internal readonly record struct MentionOutcome(string? Label, string? Content, string? Notice);
@@ -17,10 +21,9 @@ internal readonly record struct MentionOutcome(string? Label, string? Content, s
 /// active UI language. Query-based categories (<c>@file</c>/<c>@code</c>/<c>@folder</c>)
 /// commit to a sub-search; instant ones attach their context directly.
 /// </summary>
-/// <param name="InVisualStudio">Offered by the Visual Studio window: <c>@terminal</c> is not yet — VS Code reads its
-/// terminal, Visual Studio's output has no reader yet; a category always unavailable is not listed.</param>
+/// <param name="Editors">The editors that offer it (<see cref="MentionEditors"/>).</param>
 internal sealed record MentionCategory(string Token, MentionKind Kind, Func<string> Desc, bool QueryBased,
-                                       bool InVisualStudio = true);
+                                       MentionEditors Editors = MentionEditors.Both);
 
 /// <summary>Parsed state of the prompt's trailing @mention (see <see cref="MentionController.Parse"/>).</summary>
 internal abstract record MentionState;
@@ -70,7 +73,8 @@ internal static class MentionController
         new("@debugger",  MentionKind.Debugger,  () => Strings.MentionDebuggerDesc,  QueryBased: false),
         new("@url",       MentionKind.Url,       () => Strings.MentionUrlDesc,       QueryBased: true),
         new("@commit",    MentionKind.Commit,    () => Strings.MentionCommitDesc,    QueryBased: true),
-        new("@terminal",  MentionKind.Terminal,  () => Strings.MentionTerminalDesc,  QueryBased: false, InVisualStudio: false),
+        new("@terminal",  MentionKind.Terminal,  () => Strings.MentionTerminalDesc,  QueryBased: false, MentionEditors.VsCode),
+        new("@output",    MentionKind.Output,    () => Strings.MentionOutputDesc,    QueryBased: false, MentionEditors.VisualStudio),
     ];
 
     /// <summary>File extensions eligible for <c>@file</c> search and folder context bodies.</summary>
@@ -117,7 +121,35 @@ internal static class MentionController
     /// <summary>The categories the Visual Studio window offers whose token (without <c>@</c>) starts with the typed
     /// partial (lower-cased).</summary>
     public static IReadOnlyList<MentionCategory> MatchCategories(string partialLower) =>
-        Categories.Where(c => c.InVisualStudio && c.Token[1..].StartsWith(partialLower, StringComparison.Ordinal)).ToList();
+        Categories.Where(c => c.Editors != MentionEditors.VsCode && c.Token[1..].StartsWith(partialLower, StringComparison.Ordinal)).ToList();
+
+    /// <summary>What <c>@output</c> attaches from devenv's answer, or why nothing — each cause its own sentence: the
+    /// in-process part not loaded, no answer in time, a failure with its detail, no pane, an empty pane, a pane Visual
+    /// Studio does not give.</summary>
+    /// <param name="inProcLoaded">Whether the package that answers is loaded in this Visual Studio
+    /// (<c>InProcAliveSignal</c>): without it, waiting again changes nothing.</param>
+    internal static MentionOutcome OutputMention(Signals.OutputPaneAnswer? answer, string label, bool inProcLoaded) => answer switch
+    {
+        null => new MentionOutcome(null, null, inProcLoaded ? Strings.MentionOutputNoAnswer : Strings.MentionOutputNoInProc),
+        { Text: { Length: > 0 } text } => OutputAttachment(label + ": " + answer.Pane, answer.Pane, text, answer.Cut),
+        { Reason: Signals.OutputPaneSignal.ReasonEmpty } => new MentionOutcome(null, null, Strings.MentionOutputEmpty(answer.Pane ?? "")),
+        { Reason: Signals.OutputPaneSignal.ReasonUnreadable, Pane: { } pane } => new MentionOutcome(null, null, Strings.MentionOutputUnreadable(pane)),
+        { Failure: { } why } => new MentionOutcome(null, null, Strings.MentionOutputFailed(why)),
+        _ => new MentionOutcome(null, null, Strings.MentionOutputNone),
+    };
+
+    /// <summary>The pane as the model reads it, in English: its name, and — cut — its end, the cut said and its first line,
+    /// likely cut in the middle, dropped when another follows; the cut said to the person too, on the chip, with what is
+    /// sent.</summary>
+    private static MentionOutcome OutputAttachment(string label, string? pane, string text, bool cut)
+    {
+        var head = $"Visual Studio's Output window, pane \"{pane}\":\n";
+        if (!cut) return new MentionOutcome(label, head + text, null);
+        var firstBreak = text.IndexOf('\n');
+        var body = firstBreak >= 0 && firstBreak < text.TrimEnd().Length ? text[(firstBreak + 1)..] : text;
+        return new MentionOutcome(Strings.MentionOutputCutLabel(label, body.Length),
+                                  head + "…(the start of the pane is cut: only its end is attached)\n" + body, null);
+    }
 
     /// <summary>Replaces the trailing partial token with the committed <c>@token␠</c> so the user types the query.</summary>
     public static string CommitCategory(string prompt, string token) =>

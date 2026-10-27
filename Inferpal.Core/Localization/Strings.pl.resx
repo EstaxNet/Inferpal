@@ -396,6 +396,14 @@ Kopia zapasowa: {0}</value></data>
   <data name="MentionUrlDesc" xml:space="preserve"><value>dołącz tekst strony internetowej</value></data>
   <data name="MentionCommitDesc" xml:space="preserve"><value>dołącz komunikat i diff commita</value></data>
   <data name="MentionTerminalDesc" xml:space="preserve"><value>dołącz ostatnie polecenie terminala, jego wyjście i kod wyjścia</value></data>
+  <data name="MentionOutputDesc" xml:space="preserve"><value>dołącz okienko okna Dane wyjściowe — wyświetlane, a w przeciwnym razie Build</value></data>
+  <data name="MentionOutputNone" xml:space="preserve"><value>Okno Dane wyjściowe nie ma jeszcze żadnego okienka: skompiluj lub uruchom coś, co do niego pisze, a potem użyj @output.</value></data>
+  <data name="MentionOutputEmpty" xml:space="preserve"><value>Okienko „{0}” okna Dane wyjściowe jest puste.</value></data>
+  <data name="MentionOutputUnreadable" xml:space="preserve"><value>Visual Studio nie udostępnia tekstu okienka „{0}”: wyświetl inne okienko okna Dane wyjściowe, na przykład Build, a potem ponownie użyj @output.</value></data>
+  <data name="MentionOutputNoAnswer" xml:space="preserve"><value>Visual Studio nie przekazało na czas tekstu okna Dane wyjściowe. Spróbuj ponownie.</value></data>
+  <data name="MentionOutputNoInProc" xml:space="preserve"><value>Nie udało się odczytać okna Dane wyjściowe: część in-process Inferpal nie jest załadowana w tym Visual Studio — /diagnostics podaje przyczynę.</value></data>
+  <data name="MentionOutputFailed" xml:space="preserve"><value>Nie udało się odczytać okna Dane wyjściowe programu Visual Studio: {0}</value></data>
+  <data name="MentionOutputCutLabel" xml:space="preserve"><value>{0} (koniec: ostatnie {1:N0} {1:znak|znaki|znaków})</value></data>
   <data name="MentionUrlHint" xml:space="preserve"><value>wpisz lub wklej adres…</value></data>
   <data name="MentionUrlUnavailable" xml:space="preserve"><value>Nic nie dołączono dla @url — {0}</value></data>
   <data name="MentionUrlEmpty" xml:space="preserve"><value>Nic nie dołączono dla @url: {0} nie zawiera czytelnego tekstu.</value></data>

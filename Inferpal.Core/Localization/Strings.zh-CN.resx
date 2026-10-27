@@ -396,6 +396,14 @@
   <data name="MentionUrlDesc" xml:space="preserve"><value>附加网页的文本</value></data>
   <data name="MentionCommitDesc" xml:space="preserve"><value>附加提交的消息和 diff</value></data>
   <data name="MentionTerminalDesc" xml:space="preserve"><value>附加终端的最后一条命令及其输出和退出码</value></data>
+  <data name="MentionOutputDesc" xml:space="preserve"><value>附加“输出”窗口的窗格（当前显示的，否则为 Build）</value></data>
+  <data name="MentionOutputNone" xml:space="preserve"><value>“输出”窗口还没有任何窗格：请先生成，或运行会写入该窗口的内容，然后使用 @output。</value></data>
+  <data name="MentionOutputEmpty" xml:space="preserve"><value>“输出”窗口的“{0}”窗格为空。</value></data>
+  <data name="MentionOutputUnreadable" xml:space="preserve"><value>Visual Studio 不提供“{0}”窗格的文本：请显示“输出”窗口的其他窗格（例如 Build），然后再次使用 @output。</value></data>
+  <data name="MentionOutputNoAnswer" xml:space="preserve"><value>Visual Studio 未及时提供“输出”窗口的文本。请重试。</value></data>
+  <data name="MentionOutputNoInProc" xml:space="preserve"><value>无法读取“输出”窗口：此 Visual Studio 中未加载 Inferpal 的进程内部分 — 原因见 /diagnostics。</value></data>
+  <data name="MentionOutputFailed" xml:space="preserve"><value>无法读取 Visual Studio 的“输出”窗口：{0}</value></data>
+  <data name="MentionOutputCutLabel" xml:space="preserve"><value>{0}（结尾：最后 {1:N0} 个字符）</value></data>
   <data name="MentionUrlHint" xml:space="preserve"><value>输入或粘贴地址…</value></data>
   <data name="MentionUrlUnavailable" xml:space="preserve"><value>@url 未附加任何内容 — {0}</value></data>
   <data name="MentionUrlEmpty" xml:space="preserve"><value>@url 未附加任何内容：{0} 没有可读的文本。</value></data>

@@ -55,7 +55,7 @@ public class TerminalMentionTests
     public void VisualStudioDoesNotOfferIt()
     {
         var terminal = Assert.Single(MentionController.Categories, c => c.Token == "@terminal");
-        Assert.False(terminal.InVisualStudio);
+        Assert.Equal(MentionEditors.VsCode, terminal.Editors);
         Assert.False(terminal.QueryBased);
         Assert.DoesNotContain(MentionController.MatchCategories("ter"), c => c.Token == "@terminal");
     }

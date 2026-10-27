@@ -396,6 +396,14 @@ Sauvegarde : {0}</value></data>
   <data name="MentionUrlDesc" xml:space="preserve"><value>attacher le texte d'une page web</value></data>
   <data name="MentionCommitDesc" xml:space="preserve"><value>attacher le message et le diff d'un commit</value></data>
   <data name="MentionTerminalDesc" xml:space="preserve"><value>attacher la dernière commande du terminal, sa sortie et son code de retour</value></data>
+  <data name="MentionOutputDesc" xml:space="preserve"><value>attacher le volet de la fenêtre Sortie — celui affiché, sinon Build</value></data>
+  <data name="MentionOutputNone" xml:space="preserve"><value>La fenêtre Sortie n'a encore aucun volet : générez, ou lancez quelque chose qui y écrit, puis utilisez @output.</value></data>
+  <data name="MentionOutputEmpty" xml:space="preserve"><value>Le volet « {0} » de la fenêtre Sortie est vide.</value></data>
+  <data name="MentionOutputUnreadable" xml:space="preserve"><value>Visual Studio ne donne pas le texte du volet « {0} » : affichez un autre volet de la fenêtre Sortie, comme Build, puis utilisez de nouveau @output.</value></data>
+  <data name="MentionOutputNoAnswer" xml:space="preserve"><value>Visual Studio n'a pas donné le texte de la fenêtre Sortie à temps. Réessayez.</value></data>
+  <data name="MentionOutputNoInProc" xml:space="preserve"><value>La fenêtre Sortie n'a pas pu être lue : la partie in-process d'Inferpal n'est pas chargée dans ce Visual Studio — /diagnostics dit pourquoi.</value></data>
+  <data name="MentionOutputFailed" xml:space="preserve"><value>La fenêtre Sortie de Visual Studio n'a pas pu être lue : {0}</value></data>
+  <data name="MentionOutputCutLabel" xml:space="preserve"><value>{0} (la fin : les {1:N0} derniers caractères)</value></data>
   <data name="MentionUrlHint" xml:space="preserve"><value>tapez ou collez une adresse…</value></data>
   <data name="MentionUrlUnavailable" xml:space="preserve"><value>Rien de joint pour @url — {0}</value></data>
   <data name="MentionUrlEmpty" xml:space="preserve"><value>Rien de joint pour @url : {0} n'a aucun texte lisible.</value></data>

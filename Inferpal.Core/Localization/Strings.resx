@@ -397,6 +397,14 @@ Backup: {0}</value></data>
   <data name="MentionUrlDesc" xml:space="preserve"><value>attach a web page's text</value></data>
   <data name="MentionCommitDesc" xml:space="preserve"><value>attach a commit's message and diff</value></data>
   <data name="MentionTerminalDesc" xml:space="preserve"><value>attach the terminal's last command, its output and exit code</value></data>
+  <data name="MentionOutputDesc" xml:space="preserve"><value>attach the Output window's pane — the one shown, else Build</value></data>
+  <data name="MentionOutputNone" xml:space="preserve"><value>The Output window has no pane yet: build, or run something that writes to it, then use @output.</value></data>
+  <data name="MentionOutputEmpty" xml:space="preserve"><value>The “{0}” pane of the Output window is empty.</value></data>
+  <data name="MentionOutputUnreadable" xml:space="preserve"><value>Visual Studio does not give the text of the “{0}” pane: show another pane of the Output window, such as Build, then use @output again.</value></data>
+  <data name="MentionOutputNoAnswer" xml:space="preserve"><value>Visual Studio did not give the Output window's text in time. Try again.</value></data>
+  <data name="MentionOutputNoInProc" xml:space="preserve"><value>The Output window could not be read: Inferpal's in-process part is not loaded in this Visual Studio — /diagnostics says why.</value></data>
+  <data name="MentionOutputFailed" xml:space="preserve"><value>Visual Studio's Output window could not be read: {0}</value></data>
+  <data name="MentionOutputCutLabel" xml:space="preserve"><value>{0} (its end: the last {1:N0} characters)</value></data>
   <data name="MentionUrlHint" xml:space="preserve"><value>type or paste an address…</value></data>
   <data name="MentionUrlUnavailable" xml:space="preserve"><value>Nothing attached for @url — {0}</value></data>
   <data name="MentionUrlEmpty" xml:space="preserve"><value>Nothing attached for @url: {0} has no readable text.</value></data>

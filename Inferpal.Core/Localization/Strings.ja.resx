@@ -396,6 +396,14 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="MentionUrlDesc" xml:space="preserve"><value>Web ページのテキストを添付</value></data>
   <data name="MentionCommitDesc" xml:space="preserve"><value>コミットのメッセージと diff を添付</value></data>
   <data name="MentionTerminalDesc" xml:space="preserve"><value>ターミナルの最後のコマンドと出力・終了コードを添付</value></data>
+  <data name="MentionOutputDesc" xml:space="preserve"><value>出力ウィンドウのペインを添付（表示中のもの、なければ Build）</value></data>
+  <data name="MentionOutputNone" xml:space="preserve"><value>出力ウィンドウにはまだペインがありません。ビルドするか、出力ウィンドウに書き込む処理を実行してから @output を使ってください。</value></data>
+  <data name="MentionOutputEmpty" xml:space="preserve"><value>出力ウィンドウの「{0}」ペインは空です。</value></data>
+  <data name="MentionOutputUnreadable" xml:space="preserve"><value>Visual Studio は「{0}」ペインのテキストを提供しません。Build など出力ウィンドウの別のペインを表示してから、もう一度 @output を使ってください。</value></data>
+  <data name="MentionOutputNoAnswer" xml:space="preserve"><value>Visual Studio が出力ウィンドウのテキストを時間内に返しませんでした。もう一度お試しください。</value></data>
+  <data name="MentionOutputNoInProc" xml:space="preserve"><value>出力ウィンドウを読み取れませんでした: この Visual Studio に Inferpal のインプロセス部分が読み込まれていません — 理由は /diagnostics に表示されます。</value></data>
+  <data name="MentionOutputFailed" xml:space="preserve"><value>Visual Studio の出力ウィンドウを読み取れませんでした: {0}</value></data>
+  <data name="MentionOutputCutLabel" xml:space="preserve"><value>{0}（末尾：最後の {1:N0} 文字）</value></data>
   <data name="MentionUrlHint" xml:space="preserve"><value>アドレスを入力または貼り付け…</value></data>
   <data name="MentionUrlUnavailable" xml:space="preserve"><value>@url には何も添付されていません — {0}</value></data>
   <data name="MentionUrlEmpty" xml:space="preserve"><value>@url には何も添付されていません: {0} に読み取れるテキストがありません。</value></data>

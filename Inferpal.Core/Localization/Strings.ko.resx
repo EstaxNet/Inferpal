@@ -396,6 +396,14 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
   <data name="MentionUrlDesc" xml:space="preserve"><value>웹 페이지의 텍스트 첨부</value></data>
   <data name="MentionCommitDesc" xml:space="preserve"><value>커밋의 메시지와 diff 첨부</value></data>
   <data name="MentionTerminalDesc" xml:space="preserve"><value>터미널의 마지막 명령과 출력, 종료 코드 첨부</value></data>
+  <data name="MentionOutputDesc" xml:space="preserve"><value>출력 창의 창 첨부(표시된 창, 없으면 Build)</value></data>
+  <data name="MentionOutputNone" xml:space="preserve"><value>출력 창에 아직 창이 없습니다. 빌드하거나 출력 창에 쓰는 작업을 실행한 뒤 @output을 사용하세요.</value></data>
+  <data name="MentionOutputEmpty" xml:space="preserve"><value>출력 창의 '{0}' 창이 비어 있습니다.</value></data>
+  <data name="MentionOutputUnreadable" xml:space="preserve"><value>Visual Studio가 '{0}' 창의 텍스트를 제공하지 않습니다. Build 같은 출력 창의 다른 창을 표시한 뒤 @output을 다시 사용하세요.</value></data>
+  <data name="MentionOutputNoAnswer" xml:space="preserve"><value>Visual Studio가 출력 창의 텍스트를 제때 넘겨주지 않았습니다. 다시 시도하세요.</value></data>
+  <data name="MentionOutputNoInProc" xml:space="preserve"><value>출력 창을 읽지 못했습니다: 이 Visual Studio에 Inferpal의 in-process 부분이 로드되지 않았습니다 — 이유는 /diagnostics에서 확인하세요.</value></data>
+  <data name="MentionOutputFailed" xml:space="preserve"><value>Visual Studio 출력 창을 읽을 수 없습니다: {0}</value></data>
+  <data name="MentionOutputCutLabel" xml:space="preserve"><value>{0}(끝부분: 마지막 {1:N0}자)</value></data>
   <data name="MentionUrlHint" xml:space="preserve"><value>주소를 입력하거나 붙여 넣으세요…</value></data>
   <data name="MentionUrlUnavailable" xml:space="preserve"><value>@url에 첨부된 내용이 없습니다 — {0}</value></data>
   <data name="MentionUrlEmpty" xml:space="preserve"><value>@url에 첨부된 내용이 없습니다: {0}에 읽을 수 있는 텍스트가 없습니다.</value></data>
