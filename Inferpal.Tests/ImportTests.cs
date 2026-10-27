@@ -22,12 +22,14 @@ public sealed class ImportTests : IDisposable
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "inferpal-tests", "import-" + Guid.NewGuid().ToString("N"));
     private readonly string _home;
     private readonly string _commands;
+    private readonly string _modes;
     private readonly string _configFile;
 
     public ImportTests()
     {
         _home = Path.Combine(_dir, "home");
         _commands = Path.Combine(_dir, "appdata", "prompts");
+        _modes = Path.Combine(_dir, "appdata", "modes");
         _configFile = Path.Combine(_dir, "appdata", "config.json");
         Directory.CreateDirectory(_home);
         Directory.CreateDirectory(Path.GetDirectoryName(_configFile)!);
@@ -132,7 +134,7 @@ public sealed class ImportTests : IDisposable
         return config;
     }
 
-    private ImportContext Context(InferpalConfig config) => new(config, _home, _commands, _ => null);
+    private ImportContext Context(InferpalConfig config) => new(config, _home, _commands, _ => null, ModesFolder: _modes);
 
     private ImportPlan ReadYaml(InferpalConfig? config = null)
     {
@@ -254,7 +256,7 @@ public sealed class ImportTests : IDisposable
         var config = NewConfig();
         var plan = ContinueImport.Read(Write("config.yaml", yaml), Context(config));
         var server = plan.Items.Single(i => i.Effect is AddMcpServer);
-        Assert.Empty(ImportApplier.Apply(plan, new HashSet<string> { server.Id }, config, _configFile, _commands, DateTime.Now).Failed);
+        Assert.Empty(ImportApplier.Apply(plan, new HashSet<string> { server.Id }, config, _configFile, _commands, _modes, DateTime.Now).Failed);
 
         Assert.Equal("/srv/mcp", Assert.Single(McpServerConfig.Parse(config.McpServersJson)).WorkingDirectory);
     }
@@ -269,7 +271,7 @@ public sealed class ImportTests : IDisposable
         var config = NewConfig();
         var plan = ReadYaml(config);
         var review = plan.Items.Single(i => i.Effect is WriteCommand { Name: "review-continue" });   // WITNESS
-        Assert.Empty(ImportApplier.Apply(plan, new HashSet<string> { review.Id }, config, _configFile, _commands, DateTime.Now).Failed);
+        Assert.Empty(ImportApplier.Apply(plan, new HashSet<string> { review.Id }, config, _configFile, _commands, _modes, DateTime.Now).Failed);
 
         var again = ReadYaml(config);
         Assert.DoesNotContain(again.Items, i => i.Effect is WriteCommand { Name: var n } && n.StartsWith("review", StringComparison.Ordinal));
@@ -292,7 +294,7 @@ public sealed class ImportTests : IDisposable
         var plan = ReadYaml(config);
         var docs = plan.Items.Single(i => i.Effect is AddDocSite);   // WITNESS: offered, another address
 
-        Assert.Empty(ImportApplier.Apply(plan, new HashSet<string> { docs.Id }, config, _configFile, _commands, DateTime.Now).Failed);
+        Assert.Empty(ImportApplier.Apply(plan, new HashSet<string> { docs.Id }, config, _configFile, _commands, _modes, DateTime.Now).Failed);
         var sites = DocSite.Parse(config.DocSitesJson);
         Assert.Contains(mine, sites);
         var added = Assert.Single(sites, s => s.StartUrl == "https://doc.rust-lang.org/book/");
@@ -329,7 +331,7 @@ public sealed class ImportTests : IDisposable
                                            && s.Cause == ImportSkipCause.SameNameEarlier && s.Detail == "server-github");
 
         var outcome = ImportApplier.Apply(plan, plan.Items.Where(i => i.Kind == ImportItemKind.McpServer).Select(i => i.Id).ToHashSet(),
-                                          config, _configFile, _commands, DateTime.Now);
+                                          config, _configFile, _commands, _modes, DateTime.Now);
         Assert.Empty(outcome.Failed);
         Assert.Equal(4, McpServerConfig.Parse(config.McpServersJson).Count);   // the user's own, and the three
 
@@ -421,7 +423,7 @@ public sealed class ImportTests : IDisposable
         var rules = plan.Items.Where(i => i.Kind == ImportItemKind.Instructions).ToList();
         Assert.NotEmpty(rules);   // WITNESS
         var ids = rules.Select(i => i.Id).ToHashSet();
-        ImportApplier.Apply(plan, ids, config, _configFile, _commands, DateTime.Now);
+        ImportApplier.Apply(plan, ids, config, _configFile, _commands, _modes, DateTime.Now);
 
         // Saved by the settings form since, with Windows line endings: the same text.
         config.CustomSystemPrompt = config.CustomSystemPrompt.Replace("\n", "\r\n", StringComparison.Ordinal);
@@ -432,7 +434,7 @@ public sealed class ImportTests : IDisposable
             Assert.Contains(again.Skipped, s => s.Cause == ImportSkipCause.AlreadyConfigured && s.Detail == ((AddInstructions)rule.Effect).Title);
 
         // The first card applied once more: nothing written twice.
-        ImportApplier.Apply(plan, ids, config, _configFile, _commands, DateTime.Now);
+        ImportApplier.Apply(plan, ids, config, _configFile, _commands, _modes, DateTime.Now);
         Assert.Equal(once, config.CustomSystemPrompt);
     }
 
@@ -477,7 +479,7 @@ public sealed class ImportTests : IDisposable
               "cloud": { "apiProvider": "openrouter", "openRouterModelId": "anthropic/claude-sonnet-4", "id": "a1" },
               "local": { "apiProvider": "ollama", "ollamaModelId": "devstral:24b", "ollamaBaseUrl": "http://localhost:11434", "id": "b2" }
             },
-            "modeApiConfigs": { "code": "b2" }
+            "modeApiConfigs": { "code": "b2", "review": "b2", "docs": "a1" }
           },
           "globalSettings": {
             "customInstructions": "Prefer small diffs.",
@@ -526,21 +528,146 @@ public sealed class ImportTests : IDisposable
         Assert.Contains(plan.Skipped, s => s.Path == "globalSettings.allowedCommands[1]" && s.Cause == ImportSkipCause.AutoApprovalWasOff);
     }
 
+    private const string RooModes = """
+        [ { "slug": "review", "name": "Strict reviewer", "roleDefinition": "You review code.",
+            "customInstructions": "Be strict.", "groups": ["read"], "whenToUse": "Before a commit." },
+          { "slug": "docs", "name": "Docs Writer", "description": "Writes the documentation", "roleDefinition": "You write docs.",
+            "groups": ["read", ["edit", { "fileRegex": "\\.(md|mdx)$", "description": "Markdown only" }], "browser"] },
+          { "slug": "planner", "name": "Plan", "roleDefinition": "You plan.", "groups": [] } ]
+        """;
+
+    /// <summary>A Roo mode becomes a mode: its instructions, its groups with the files its edits are limited to, its model
+    /// when a server the person runs serves it — never a hosted model's name. What it cannot carry is named.</summary>
     [Fact]
-    public void ARooCustomMode_BecomesACommand_RenamedAroundInferpalsOwn_WithoutItsToolGroups()
+    public void ARooCustomMode_BecomesAMode_WithItsGroupsAndFileRegex_AndItsModelWhenARunServerServesIt()
+    {
+        var plan = RooImport.Read(Write("roo.json", RooExport(true, RooModes)), Context(NewConfig()));
+
+        var modes = plan.Items.Where(i => i.Kind == ImportItemKind.Mode).ToDictionary(i => ((WriteMode)i.Effect).FileName);
+        Assert.Equal(["docs.md", "planner.md", "review.md"], modes.Keys.Order(StringComparer.Ordinal));
+        ChatMode Read(string file) =>
+            ChatModes.ReadAgentFile(((WriteMode)modes[file].Effect).Text, file, ChatModeOrigin.User, file, [])!;
+
+        var review = Read("review.md");
+        Assert.Equal("Strict reviewer", review.Name);
+        Assert.Equal("You review code.\n\nBe strict.", review.Instructions);
+        Assert.Equal(["devstral:24b"], review.Models);                    // its profile is a server the person runs
+        Assert.False(review.Tools!.MayWrite);
+        Assert.Contains("providerProfiles.modeApiConfigs[review]", modes["review.md"].SourcePaths);
+        Assert.Contains(plan.Skipped, s => s.Path == "globalSettings.customModes[0].whenToUse" && s.Cause == ImportSkipCause.WhenToUse);
+
+        var docs = Read("docs.md");
+        Assert.Equal(@"\.(md|mdx)$", docs.Tools!.EditPatternText);
+        Assert.True(docs.Tools.Allows("write_file"));
+        Assert.Empty(docs.Models);                                        // its profile is hosted: no model name written
+        Assert.Contains(plan.Skipped, s => s.Path == "providerProfiles.modeApiConfigs[docs]" && s.Cause == ImportSkipCause.HostedProvider
+                                           && s.Detail == "openrouter");
+        Assert.Contains(modes["docs.md"].Notes, n => n.Kind == ImportNote.ModeNotCarried && n.Detail == "browser");
+        Assert.Contains(plan.Skipped, s => s.Path == "providerProfiles.modeApiConfigs[code]" && s.Cause == ImportSkipCause.ModelPerMode);
+
+        // Inferpal's own name: renamed, said; no group at all: no tool at all, never every tool.
+        var planner = Read("planner.md");
+        Assert.Equal("Plan (Roo)", planner.Name);
+        Assert.Contains(modes["planner.md"].Notes, n => n.Kind == ImportNote.ModeRenamed && n.Detail == "Plan");
+        Assert.False(planner.Tools!.Allows("read_file"));
+    }
+
+    /// <summary>Applied, the modes are files of the person's modes folder — the settings untouched, no copy of them made —,
+    /// and the same file imported again finds them there: never written twice, never overwritten.</summary>
+    [Fact]
+    public void AppliedRooModes_AreThePersonsModes_AndAreFoundThereByTheNextImport()
+    {
+        var config = NewConfig();
+        var file = Write("roo.json", RooExport(true, RooModes));
+        var plan = RooImport.Read(file, Context(config));
+
+        var outcome = ImportApplier.Apply(plan, plan.Items.Where(i => i.Kind == ImportItemKind.Mode).Select(i => i.Id).ToHashSet(),
+                                          config, _configFile, _commands, _modes, DateTime.Now);
+
+        Assert.Empty(outcome.Failed);
+        Assert.Null(outcome.Backup);
+        Assert.False(outcome.ConfigChanged);
+        var found = ChatModes.Discover(null, _modes);
+        Assert.Equal(["Docs Writer", "Plan (Roo)", "Strict reviewer"], found.Modes.Select(m => m.Name).Order(StringComparer.Ordinal));
+        Assert.Contains(Strings.ImportModesWhere(_modes), ImportPreview.Outcome(outcome, _commands, _modes), StringComparison.Ordinal);
+
+        var again = RooImport.Read(file, Context(config));
+        Assert.DoesNotContain(again.Items, i => i.Kind == ImportItemKind.Mode);
+        Assert.Contains(again.Skipped, s => s.Path == "globalSettings.customModes[0]" && s.Cause == ImportSkipCause.AlreadyConfigured
+                                            && s.Detail == "Strict reviewer");
+    }
+
+    /// <summary>A name the reader would clean into Inferpal's own is that name; a model of another local server is not
+    /// written — Inferpal has one server, and the model would be missing at every question.</summary>
+    [Fact]
+    public void ARooModesName_IsJudgedAsTheReaderReadsIt_AndAModelOfAnotherServerIsNotWritten()
     {
         const string modes = """
-            [ { "slug": "review", "name": "Strict reviewer", "roleDefinition": "You review code.",
-                "customInstructions": "Be strict.", "groups": ["read"] } ]
+            [ { "slug": "agent", "name": "Agent\u200B", "roleDefinition": "You act.", "groups": ["read"] },
+              { "slug": "docs", "name": "Docs", "roleDefinition": "You write.", "groups": ["read"] } ]
             """;
+        var export = RooExport(true, modes)
+            .Replace("\"cloud\": { \"apiProvider\": \"openrouter\", \"openRouterModelId\": \"anthropic/claude-sonnet-4\", \"id\": \"a1\" }",
+                     "\"studio\": { \"apiProvider\": \"lmstudio\", \"lmStudioModelId\": \"qwen3-8b\", \"lmStudioBaseUrl\": \"http://gpu-box:1234\", \"id\": \"a1\" }",
+                     StringComparison.Ordinal);
+        var plan = RooImport.Read(Write("roo.json", export), Context(NewConfig()));
+
+        var agent = plan.Items.Single(i => i.Effect is WriteMode { FileName: "agent.md" });
+        Assert.Equal("Agent (Roo)", ((WriteMode)agent.Effect).Name);
+        Assert.Contains(agent.Notes, n => n.Kind == ImportNote.ModeRenamed && n.Detail == "Agent");
+        var docs = (WriteMode)plan.Items.Single(i => i.Effect is WriteMode { FileName: "docs.md" }).Effect;
+        Assert.Empty(ChatModes.ReadAgentFile(docs.Text, "docs.md", ChatModeOrigin.User, "docs.md", [])!.Models);
+        Assert.Contains(plan.Skipped, s => s.Path == "providerProfiles.modeApiConfigs[docs]" && s.Cause == ImportSkipCause.OtherServer);
+    }
+
+    /// <summary>The command says it wrote modes: the editors read them again (the selector appears with the first one).</summary>
+    [Fact]
+    public void AnApplicationThatWritesModes_SaysSo_AndOneThatDoesNot_DoesNot()
+    {
+        var config = NewConfig();
+        var file = Write("roo.json", RooExport(true, RooModes));
+
+        var modes = ImportCommandHandler.Handle(["/import", "roo", file, "apply", "all"], Context(config), _configFile, DateTime.Now);
+        var none  = ImportCommandHandler.Handle(["/import", "roo", file, "apply", "none"], Context(config), _configFile, DateTime.Now);
+
+        Assert.True(modes.ModesWritten);
+        Assert.False(none.ModesWritten);
+        Assert.True(File.Exists(Path.Combine(_modes, "review.md")));
+    }
+
+    /// <summary>A mode of the person's that has the name — another mode, not this one imported before — is never taken
+    /// for it: the Roo mode comes under a new name, said; and what of the mode has no equivalent is named.</summary>
+    [Fact]
+    public void APersonsOwnModeOfThatName_KeepsIt_AndTheRooModeComesRenamed()
+    {
+        Directory.CreateDirectory(_modes);
+        File.WriteAllText(Path.Combine(_modes, "mine.md"), "---\nname: Docs Writer\n---\nMy own.\n");
+        const string modes = """
+            [ { "slug": "docs", "name": "Docs Writer", "roleDefinition": "You write.", "groups": ["read"], "iconName": "codicon-book" } ]
+            """;
+
         var plan = RooImport.Read(Write("roo.json", RooExport(true, modes)), Context(NewConfig()));
 
-        var mode = plan.Items.Single(i => i.Effect is WriteCommand);
-        var command = (WriteCommand)mode.Effect;
-        Assert.Equal("review-roo", command.Name);
-        Assert.Equal("You review code.\n\nBe strict.\n\n{args}", command.Text);
-        Assert.Contains(mode.Notes, n => n.Kind == ImportNote.Renamed);
-        Assert.Contains(mode.Notes, n => n.Kind == ImportNote.ModeToolsNotKept);
+        var docs = plan.Items.Single(i => i.Kind == ImportItemKind.Mode);
+        Assert.Equal("Docs Writer (Roo)", ((WriteMode)docs.Effect).Name);
+        Assert.Contains(docs.Notes, n => n.Kind == ImportNote.ModeRenamed && n.Detail == "Docs Writer");
+        Assert.Contains(plan.Skipped, s => s.Path == "globalSettings.customModes[0].iconName" && s.Cause == ImportSkipCause.NoEquivalent);
+        Assert.Equal("---\nname: Docs Writer\n---\nMy own.\n", File.ReadAllText(Path.Combine(_modes, "mine.md")));
+    }
+
+    [Fact]
+    public void AModeFileThatAppearedSinceThePreview_IsNeverOverwritten()
+    {
+        var config = NewConfig();
+        var plan = RooImport.Read(Write("roo.json", RooExport(true, RooModes)), Context(config));
+        var review = plan.Items.Single(i => i.Effect is WriteMode { FileName: "review.md" });
+        Directory.CreateDirectory(_modes);
+        File.WriteAllText(Path.Combine(_modes, "review.md"), "mine");
+
+        var outcome = ImportApplier.Apply(plan, new HashSet<string> { review.Id }, config, _configFile, _commands, _modes, DateTime.Now);
+
+        Assert.Single(outcome.Failed);
+        Assert.Equal("mine", File.ReadAllText(Path.Combine(_modes, "review.md")));
     }
 
     // ── Applying ────────────────────────────────────────────────────────────
@@ -555,7 +682,7 @@ public sealed class ImportTests : IDisposable
         var summarize = plan.Items.Single(i => i.Effect is WriteCommand { Name: "summarize" });
 
         var outcome = ImportApplier.Apply(plan, new HashSet<string> { chat.Id, summarize.Id }, config, _configFile, _commands,
-                                          new DateTime(2026, 10, 10, 18, 0, 0));
+                                          _modes, new DateTime(2026, 10, 10, 18, 0, 0));
 
         Assert.Empty(outcome.Failed);
         Assert.Equal(before, File.ReadAllBytes(outcome.Backup!));     // the way back, byte for byte
@@ -575,7 +702,7 @@ public sealed class ImportTests : IDisposable
         var plan = ReadYaml(config);
         var server = plan.Items.Single(i => i.Kind == ImportItemKind.McpServer);
 
-        ImportApplier.Apply(plan, new HashSet<string> { server.Id }, config, _configFile, _commands, DateTime.Now);
+        ImportApplier.Apply(plan, new HashSet<string> { server.Id }, config, _configFile, _commands, _modes, DateTime.Now);
 
         var map = JsonNode.Parse(config.McpServersJson)!["mcpServers"]!.AsObject();
         Assert.Equal(["mine", "odd", "fs"], map.Select(p => p.Key));
@@ -592,7 +719,7 @@ public sealed class ImportTests : IDisposable
         Directory.CreateDirectory(_commands);
         File.WriteAllText(Path.Combine(_commands, "summarize.md"), "mine");
 
-        var outcome = ImportApplier.Apply(plan, new HashSet<string> { summarize.Id }, config, _configFile, _commands, DateTime.Now);
+        var outcome = ImportApplier.Apply(plan, new HashSet<string> { summarize.Id }, config, _configFile, _commands, _modes, DateTime.Now);
 
         Assert.Single(outcome.Failed);
         Assert.Equal("mine", File.ReadAllText(Path.Combine(_commands, "summarize.md")));
@@ -684,7 +811,7 @@ public sealed class ImportTests : IDisposable
         Assert.Contains(Strings.ImportNoteKeyNotCarried("gateway.corp.example"),
                         ImportPreview.Card(plan).Items.Single(i => i.Target == Strings.ImportTargetServer).Notes);
 
-        ImportApplier.Apply(plan, new HashSet<string> { backend.Id }, config, _configFile, _commands, DateTime.Now);
+        ImportApplier.Apply(plan, new HashSet<string> { backend.Id }, config, _configFile, _commands, _modes, DateTime.Now);
 
         Assert.Equal("http://127.0.0.1:8080/v1", config.BaseUrl);
         Assert.Equal("", config.ApiKey);
@@ -703,7 +830,7 @@ public sealed class ImportTests : IDisposable
         var backend = plan.Items.Single(i => i.Kind == ImportItemKind.Backend);
         Assert.Null(((SetBackend)backend.Effect).ApiKey);
         Assert.DoesNotContain(backend.Notes, n => n.Kind == ImportNote.KeyNotCarried);
-        ImportApplier.Apply(plan, new HashSet<string> { backend.Id }, config, _configFile, _commands, DateTime.Now);
+        ImportApplier.Apply(plan, new HashSet<string> { backend.Id }, config, _configFile, _commands, _modes, DateTime.Now);
         Assert.Equal("K-lan", config.ApiKey);
     }
 
@@ -722,7 +849,7 @@ public sealed class ImportTests : IDisposable
         config.PermissionRules = @"allow run_command ^dotnet(\s|$)";
         var plan = RooImport.Read(Write("roo.json", export), Context(config));
 
-        ImportApplier.Apply(plan, plan.Items.Select(i => i.Id).ToHashSet(), config, _configFile, _commands, DateTime.Now);
+        ImportApplier.Apply(plan, plan.Items.Select(i => i.Id).ToHashSet(), config, _configFile, _commands, _modes, DateTime.Now);
 
         var policy = new PermissionPolicy(PermissionPolicy.ParseRules(config.PermissionRules));
         Assert.Equal(PermissionDecision.Deny, policy.Evaluate("run_command", "git push --force"));

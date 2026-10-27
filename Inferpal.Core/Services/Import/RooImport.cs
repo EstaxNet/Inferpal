@@ -7,8 +7,9 @@ namespace Inferpal.Services.Import;
 
 /// <summary>
 /// Reads the file Roo Code exports from its settings (<c>roo-code-settings.json</c>: <c>providerProfiles</c> and
-/// <c>globalSettings</c>) into an <see cref="ImportPlan"/>: its instructions, its custom modes as commands, its allowed and
-/// denied commands as permission rules, a model a user runs — and every other setting named with the reason it stays.
+/// <c>globalSettings</c>) into an <see cref="ImportPlan"/>: its instructions, its custom modes as modes (what was added to
+/// Roo's own modes as commands), its allowed and denied commands as permission rules, a model a user runs — and every
+/// other setting named with the reason it stays.
 /// </summary>
 /// <remarks>
 /// <para>⚠ An allowed command lets a command run WITHOUT asking: it is offered unticked, and not at all when Roo's
@@ -44,22 +45,24 @@ internal static class RooImport
         var root = ReadTree(file);
         var plan = new ImportPlanBuilder(ImportSource.Roo, context);
         var backend = new Backend();
+        var modes = new Modes();
 
         foreach (var (key, value) in root)
         {
             switch (key)
             {
                 case "providerProfiles" when value is JsonObject profiles:
-                    Profiles(plan, profiles, backend);
+                    Profiles(plan, profiles, backend, modes);
                     break;
                 case "globalSettings" when value is JsonObject settings:
-                    Settings(plan, settings, backend);
+                    Settings(plan, settings, backend, modes);
                     break;
                 default:
                     plan.Skip(key, ImportSkipCause.UnknownKey, key);
                     break;
             }
         }
+        modes.Finish(plan, backend.Server);
         backend.Finish(plan);
         return plan.Build(file);
     }
@@ -78,9 +81,86 @@ internal static class RooImport
         }
     }
 
+    /// <summary>
+    /// The custom modes, written once both parts of the file are read: a mode's model is a profile of
+    /// <c>providerProfiles</c>, named by <c>modeApiConfigs</c>, and Roo writes the two parts in either order.
+    /// </summary>
+    private sealed class Modes
+    {
+        /// <summary>The profiles by their id: the server a user runs (<c>null</c>: hosted), its model, its provider.</summary>
+        public readonly Dictionary<string, (ImportServer? Server, string? Model, string? Provider)> Profiles = new(StringComparer.Ordinal);
+        /// <summary><c>modeApiConfigs</c>: a mode's slug, the id of its profile.</summary>
+        public JsonObject? Configs;
+        public readonly List<(string Path, string Slug, JsonObject Mode)> Pending = [];
+
+        /// <param name="kept">The server the import keeps: a mode's model is written only when that server serves it.</param>
+        public void Finish(ImportPlanBuilder plan, ImportServer? kept)
+        {
+            var carried = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var (path, slug, mode) in Pending)
+            {
+                var name = Text(mode["name"]) ?? slug;
+                // Its model, when the server the import keeps serves it: never a hosted model's name, nor a model of
+                // another server — Inferpal has one, and that model would be missing at every question.
+                string? model = null;
+                if (Configs?[slug] is { } node && Text(node) is { } id && Profiles.TryGetValue(id, out var profile)
+                    && profile.Model is not null && kept is not null && profile.Server?.SameAs(kept.Provider, kept.BaseUrl) == true)
+                    model = profile.Model;
+                var groups = mode["groups"] as JsonArray;
+                var instructions = string.Join("\n\n", new[] { Text(mode["roleDefinition"]), Text(mode["customInstructions"]) }
+                                                       .Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!.Trim()));
+                var description = Text(mode["description"]);
+                if (plan.Mode(slug, name, n => ChatModes.RooModeFile(n, description, model, groups, instructions)) is not { } target)
+                {
+                    plan.Skip(path, ImportSkipCause.AlreadyConfigured, name);
+                    continue;
+                }
+                // Read back as the selector will read it: a file it would not read as this mode is not offered as one.
+                if (System.Text.Encoding.UTF8.GetByteCount(target.Text) > ChatModes.MaxFileBytes
+                    || ChatModes.ReadAgentFile(target.Text, target.FileName, ChatModeOrigin.User, target.FileName, []) is not { } back
+                    || back.Name != target.Name)
+                {
+                    plan.Skip(path, ImportSkipCause.ModeUnreadable, name);
+                    continue;
+                }
+                var paths = new List<string> { path };
+                if (model is not null)
+                {
+                    paths.Add($"providerProfiles.modeApiConfigs[{slug}]");
+                    carried.Add(slug);
+                }
+                var notes = new List<ImportItemNote>();
+                if (target.Note is { } renamed) notes.Add(renamed);
+                if (back.NotCarried is { Count: > 0 } lost)
+                    notes.Add(new ImportItemNote(ImportNote.ModeNotCarried, string.Join(", ", lost)));
+                plan.Add(ImportItemKind.Mode, new WriteMode(target.FileName, target.Name, description, target.Text),
+                         paths, true, [.. notes]);
+            }
+            foreach (var (slug, node) in Configs ?? [])
+            {
+                if (carried.Contains(slug)) continue;
+                var path = $"providerProfiles.modeApiConfigs[{slug}]";
+                var profile = Text(node) is { } id && Profiles.TryGetValue(id, out var p) ? p : default;
+                if (profile.Provider is not null && profile.Server is null)
+                    plan.Skip(path, ImportSkipCause.HostedProvider, profile.Provider);
+                else if (profile.Server is not null && Pending.Any(m => m.Slug == slug))
+                    plan.Skip(path, ImportSkipCause.OtherServer, profile.Server.BaseUrl);   // not the server kept
+                else plan.Skip(path, ImportSkipCause.ModelPerMode);   // one of Roo's own modes, or no model there
+            }
+        }
+    }
+
     // ── Profiles ────────────────────────────────────────────────────────────
 
-    private static void Profiles(ImportPlanBuilder plan, JsonObject profiles, Backend backend)
+    /// <summary>A hosted profile's service as the card names it: "openai" says only the protocol, the host names the
+    /// service it reaches.</summary>
+    private static string? Hosted(JsonObject profile)
+    {
+        var provider = Text(profile["apiProvider"]);
+        return provider == "openai" && Uri.TryCreate(Text(profile["openAiBaseUrl"]), UriKind.Absolute, out var u) ? u.Host : provider;
+    }
+
+    private static void Profiles(ImportPlanBuilder plan, JsonObject profiles, Backend backend, Modes modes)
     {
         var configs = profiles["apiConfigs"] as JsonObject ?? [];
         var currentName = Text(profiles["currentApiConfigName"]);
@@ -88,6 +168,8 @@ internal static class RooImport
                           .Select(p => (Name: p.Key, Profile: (JsonObject)p.Value!,
                                         Server: ImportServers.FromRoo((JsonObject)p.Value!, out var m, out var k), Model: m, Key: k))
                           .ToList();
+        foreach (var p in read)
+            if (Text(p.Profile["id"]) is { } id) modes.Profiles[id] = (p.Server, p.Model, Hosted(p.Profile));
         var kept = read.FirstOrDefault(p => p.Name == currentName && p.Server is not null);
         if (kept.Server is null) kept = read.FirstOrDefault(p => p.Server is not null);
         if (kept.Server is not null) { backend.Server = kept.Server; backend.ApiKey = kept.Key; }
@@ -98,9 +180,7 @@ internal static class RooImport
             var provider = Text(profile["apiProvider"]);
             if (server is null)
             {
-                // "openai" says only the protocol: the host names the service it reaches.
-                var hosted = provider == "openai" && Uri.TryCreate(Text(profile["openAiBaseUrl"]), UriKind.Absolute, out var u) ? u.Host : provider;
-                plan.SkipAll(path, profile, ImportSkipCause.HostedProvider, hosted);
+                plan.SkipAll(path, profile, ImportSkipCause.HostedProvider, Hosted(profile));
                 continue;
             }
             if (name != kept.Name)
@@ -157,7 +237,9 @@ internal static class RooImport
                         plan.Skip("providerProfiles." + key, ImportSkipCause.AlreadyConfigured, current.Model);
                     break;      // otherwise carried by the chat model's item
                 case "modeApiConfigs":
-                    plan.Skip("providerProfiles." + key, ImportSkipCause.ModelPerMode);
+                    // Each entry is said with the modes (a model per mode), once both parts are read.
+                    modes.Configs = value as JsonObject;
+                    if (modes.Configs is not { Count: > 0 }) plan.Skip("providerProfiles." + key, ImportSkipCause.Empty);
                     break;
                 default:
                     plan.Skip("providerProfiles." + key, ImportSkipCause.NoEquivalent, key);
@@ -168,7 +250,7 @@ internal static class RooImport
 
     // ── Settings ────────────────────────────────────────────────────────────
 
-    private static void Settings(ImportPlanBuilder plan, JsonObject settings, Backend backend)
+    private static void Settings(ImportPlanBuilder plan, JsonObject settings, Backend backend, Modes modes)
     {
         var commandsRan = Bool(settings["autoApprovalEnabled"]) == true && Bool(settings["alwaysAllowExecute"]) == true;
         foreach (var (key, value) in settings)
@@ -182,7 +264,7 @@ internal static class RooImport
                     else plan.Skip(path, ImportSkipCause.Empty);
                     break;
                 case "customModes":
-                    Modes(plan, path, value as JsonArray);
+                    CustomModes(plan, path, value as JsonArray, modes);
                     break;
                 case "customModePrompts":
                     ModePrompts(plan, path, value as JsonObject);
@@ -229,18 +311,23 @@ internal static class RooImport
         }
     }
 
-    /// <summary>A custom mode becomes a command: the mode's role and instructions, then what the user types.</summary>
-    private static void Modes(ImportPlanBuilder plan, string path, JsonArray? modes)
+    /// <summary>A custom mode becomes a mode — its role and instructions, its tool groups with the files its edits are
+    /// limited to, its model — written in the person's modes folder once the whole file is read.</summary>
+    private static void CustomModes(ImportPlanBuilder plan, string path, JsonArray? list, Modes modes)
     {
-        if (modes is null || modes.Count == 0) { plan.Skip(path, ImportSkipCause.Empty); return; }
-        for (var i = 0; i < modes.Count; i++)
+        if (list is null || list.Count == 0) { plan.Skip(path, ImportSkipCause.Empty); return; }
+        for (var i = 0; i < list.Count; i++)
         {
             var p = $"{path}[{i}]";
-            if (modes[i] is not JsonObject mode || Text(mode["slug"]) is not { } slug) { plan.Skip(p, ImportSkipCause.Empty); continue; }
-            var text = ModeText(Text(mode["roleDefinition"]), Text(mode["customInstructions"]));
-            if (text is null) { plan.Skip(p, ImportSkipCause.Empty); continue; }
-            Command(plan, p, slug, Text(mode["description"]) ?? Text(mode["name"]), text,
-                    mode["groups"] is JsonArray { Count: > 0 } ? new ImportItemNote(ImportNote.ModeToolsNotKept) : null);
+            if (list[i] is not JsonObject mode || Text(mode["slug"]) is not { } slug) { plan.Skip(p, ImportSkipCause.Empty); continue; }
+            foreach (var (key, _) in mode)
+            {
+                if (key == "whenToUse") plan.Skip(p + ".whenToUse", ImportSkipCause.WhenToUse);
+                else if (key is not ("slug" or "name" or "description" or "roleDefinition" or "customInstructions"
+                                     or "groups" or "source"))
+                    plan.Skip(p + "." + key, ImportSkipCause.NoEquivalent, key);
+            }
+            modes.Pending.Add((p, slug, mode));
         }
     }
 
@@ -254,7 +341,7 @@ internal static class RooImport
             if (node is not JsonObject mode) continue;
             whenToUse |= mode.ContainsKey("whenToUse") || mode.ContainsKey("description");
             if (ModeText(Text(mode["roleDefinition"]), Text(mode["customInstructions"])) is { } text)
-                Command(plan, path, slug, $"Roo's {slug} mode", text, null);
+                Command(plan, path, slug, $"Roo's {slug} mode", text);
         }
         if (whenToUse) plan.Skip(path, ImportSkipCause.WhenToUse);
         else if (!prompts.Any(p => p.Value is JsonObject m && ModeText(Text(m["roleDefinition"]), Text(m["customInstructions"])) is not null))
@@ -267,18 +354,15 @@ internal static class RooImport
         return parts.Count == 0 ? null : string.Join("\n\n", parts) + "\n\n{args}";
     }
 
-    private static void Command(ImportPlanBuilder plan, string path, string slug, string? description, string text,
-                                ImportItemNote? tools)
+    private static void Command(ImportPlanBuilder plan, string path, string slug, string? description, string text)
     {
         if (plan.Command(slug, text) is not { } command)
         {
             plan.Skip(path, ImportSkipCause.AlreadyConfigured, "/" + slug);
             return;
         }
-        var notes = new List<ImportItemNote>();
-        if (command.Note is { } renamed) notes.Add(renamed);
-        if (tools is not null) notes.Add(tools);
-        plan.Add(ImportItemKind.Command, new WriteCommand(command.Name, description, text), [path], true, [.. notes]);
+        plan.Add(ImportItemKind.Command, new WriteCommand(command.Name, description, text), [path], true,
+                 command.Note is { } renamed ? [renamed] : []);
     }
 
     /// <summary>

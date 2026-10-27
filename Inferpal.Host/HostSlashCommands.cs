@@ -513,6 +513,8 @@ internal sealed partial class HostServer
                                                              s.Config.SaveFilePath, DateTime.Now);
                     if (result.SaveConfig) await SaveAndApplyAsync(s, mcpBefore, cts.Token);
                     List<SlashEffectDto> saved = result.SaveConfig ? [new SlashEffectDto("configSaved")] : [];
+                    // Modes it wrote show in the editor's mode selector at once.
+                    if (result.ModesWritten) saved.Add(new SlashEffectDto("modesChanged"));
                     return new SlashCommandResult(true, result.Message, saved, result.Card);
                 }
 

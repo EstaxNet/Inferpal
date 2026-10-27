@@ -1621,6 +1621,7 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="ImportTargetContextWindow" xml:space="preserve"><value>Kontextfenster</value></data>
   <data name="ImportTargetInstructions" xml:space="preserve"><value>Benutzerdefinierter System-Prompt</value></data>
   <data name="ImportTargetCommand" xml:space="preserve"><value>Befehl</value></data>
+  <data name="ImportTargetMode" xml:space="preserve"><value>Modus</value></data>
   <data name="ImportTargetMcpServer" xml:space="preserve"><value>MCP-Server</value></data>
   <data name="ImportTargetDocSite" xml:space="preserve"><value>@Docs-Quelle</value></data>
   <data name="ImportTargetPermissionRule" xml:space="preserve"><value>Berechtigungsregel</value></data>
@@ -1629,7 +1630,8 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="ImportNoteRenamed" xml:space="preserve"><value>Der Name {0} ist vergeben (ein Befehl von Inferpal oder einer Ihrer eigenen): unter diesem importiert.</value></data>
   <data name="ImportNoteIgnoredByContinue" xml:space="preserve"><value>Continue ignorierte `{0}` in config.yaml: so importiert, wie Sie es geschrieben haben.</value></data>
   <data name="ImportNoteScopeInText" xml:space="preserve"><value>Auf bestimmte Dateien beschränkt: Der Geltungsbereich steht im Text, den das Modell liest.</value></data>
-  <data name="ImportNoteModeToolsNotKept" xml:space="preserve"><value>Die Werkzeugbeschränkungen des Modus werden nicht übernommen: Der Befehl behält seine Anweisungen.</value></data>
+  <data name="ImportNoteModeRenamed" xml:space="preserve"><value>Der Name {0} ist vergeben (ein Modus von Inferpal, einer Ihrer eigenen oder ein früherer dieser Datei): unter diesem importiert.</value></data>
+  <data name="ImportNoteModeNotCarried" xml:space="preserve"><value>Nicht übernommen, hier ohne Entsprechung: {0}.</value></data>
   <data name="ImportNoteTakesEffectAfterRestart" xml:space="preserve"><value>Wird beim Neustart von Inferpal wirksam.</value></data>
   <data name="ImportNoteSecretToFill" xml:space="preserve"><value>Geheimnis {0} nicht gefunden: unverändert geschrieben, später ergänzen.</value></data>
   <data name="ImportNoteKeyNotCarried" xml:space="preserve"><value>Der für {0} gesetzte API-Schlüssel wird entfernt und nie an diesen Server gesendet: Braucht er einen, geben Sie seinen Schlüssel in den Einstellungen ein.</value></data>
@@ -1646,6 +1648,7 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="ImportItemFailed" xml:space="preserve"><value>Nicht geschrieben — {0}: {1}</value></data>
   <data name="ImportRefused" xml:space="preserve"><value>Es wurde nichts geschrieben: config.json konnte nicht gesichert werden ({0}).</value></data>
   <data name="ImportCommandsWhere" xml:space="preserve"><value>Die Befehle liegen in {0}: Tippen Sie /, um sie in jedem Arbeitsbereich zu verwenden.</value></data>
+  <data name="ImportModesWhere" xml:space="preserve"><value>Die Modi liegen in {0}: Wählen Sie einen unter „Modi“ neben Chat, Agent und Plan, in jedem Arbeitsbereich.</value></data>
   <data name="ImportSelectionUnknown" xml:space="preserve"><value>Kein Element hat die Nummer {0}: Es wurde nichts geschrieben.</value></data>
   <data name="ImportCardStale" xml:space="preserve"><value>Diese Karte entspricht nicht mehr dem, was der Import schreiben würde: Die Datei oder Ihre Einstellungen haben sich seit ihrer Anzeige geändert, und ein inzwischen übernommenes Element verschiebt die folgenden. Es wurde nichts geschrieben — führen Sie `/import {0}` erneut aus, um eine aktuelle Karte zu erhalten.</value></data>
   <data name="ImportSkipFileIdentity" xml:space="preserve"><value>Identität der Datei (Name, Version, Schema), keine Einstellung</value></data>
@@ -1684,6 +1687,7 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="ImportSkipWhenToUse" xml:space="preserve"><value>whenToUse: dient Roos automatischer Moduswahl</value></data>
   <data name="ImportSkipUnsupportedLanguage" xml:space="preserve"><value>eine Sprache, in die Inferpal nicht übersetzt ist</value></data>
   <data name="ImportSkipNoServersInExport" xml:space="preserve"><value>der Export enthält keinen MCP-Server (Roo speichert sie in einer eigenen Datei)</value></data>
+  <data name="ImportSkipModeUnreadable" xml:space="preserve"><value>ein Modus, der sich nicht so schreiben lässt, dass Inferpal ihn wieder liest (zu lang oder ein Wert, den er nicht behält)</value></data>
   <data name="ImportApplyWhileBusy" xml:space="preserve"><value>Ein Durchgang läuft noch: Warten Sie, bis er beendet ist, dann wenden Sie an.</value></data>
   <data name="NoteLabel" xml:space="preserve"><value>Notiz</value></data>
   <data name="NoteWaiting" xml:space="preserve"><value>Notiz — wird beim nächsten Schritt gelesen</value></data>

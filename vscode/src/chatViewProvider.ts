@@ -2864,6 +2864,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             await this.setWindowModel(e.value);
           }
           break;
+        case 'modesChanged':
+          // Modes written (`/import roo`): the selector shows them at once — it appears with the first one.
+          void this.refreshModes();
+          break;
         case 'openSetup':
           // `/setup`: the first-run card, looking again.
           void this.setupFlow.start('command');

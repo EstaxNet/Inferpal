@@ -2438,6 +2438,7 @@ internal static class Strings
     public static string ImportTargetContextWindow => Get(nameof(ImportTargetContextWindow));
     public static string ImportTargetInstructions => Get(nameof(ImportTargetInstructions));
     public static string ImportTargetCommand => Get(nameof(ImportTargetCommand));
+    public static string ImportTargetMode => Get(nameof(ImportTargetMode));
     public static string ImportTargetMcpServer => Get(nameof(ImportTargetMcpServer));
     public static string ImportTargetDocSite => Get(nameof(ImportTargetDocSite));
     public static string ImportTargetPermissionRule => Get(nameof(ImportTargetPermissionRule));
@@ -2446,7 +2447,8 @@ internal static class Strings
     public static string ImportNoteRenamed(string name) => Format(Get(nameof(ImportNoteRenamed)), name);
     public static string ImportNoteIgnoredByContinue(string key) => Format(Get(nameof(ImportNoteIgnoredByContinue)), key);
     public static string ImportNoteScopeInText => Get(nameof(ImportNoteScopeInText));
-    public static string ImportNoteModeToolsNotKept => Get(nameof(ImportNoteModeToolsNotKept));
+    public static string ImportNoteModeRenamed(string name) => Format(Get(nameof(ImportNoteModeRenamed)), name);
+    public static string ImportNoteModeNotCarried(string what) => Format(Get(nameof(ImportNoteModeNotCarried)), what);
     public static string ImportNoteTakesEffectAfterRestart => Get(nameof(ImportNoteTakesEffectAfterRestart));
     public static string ImportNoteSecretToFill(string name) => Format(Get(nameof(ImportNoteSecretToFill)), name);
     public static string ImportNoteKeyNotCarried(string host) => Format(Get(nameof(ImportNoteKeyNotCarried)), host);
@@ -2463,6 +2465,7 @@ internal static class Strings
     public static string ImportItemFailed(string item, string reason) => Format(Get(nameof(ImportItemFailed)), item, reason);
     public static string ImportRefused(string reason) => Format(Get(nameof(ImportRefused)), reason);
     public static string ImportCommandsWhere(string folder) => Format(Get(nameof(ImportCommandsWhere)), folder);
+    public static string ImportModesWhere(string folder) => Format(Get(nameof(ImportModesWhere)), folder);
     public static string ImportSelectionUnknown(string token) => Format(Get(nameof(ImportSelectionUnknown)), token);
     public static string ImportCardStale(string keyword) => Format(Get(nameof(ImportCardStale)), keyword);
     public static string ImportSkipFileIdentity => Get(nameof(ImportSkipFileIdentity));
@@ -2501,5 +2504,6 @@ internal static class Strings
     public static string ImportSkipWhenToUse => Get(nameof(ImportSkipWhenToUse));
     public static string ImportSkipUnsupportedLanguage => Get(nameof(ImportSkipUnsupportedLanguage));
     public static string ImportSkipNoServersInExport => Get(nameof(ImportSkipNoServersInExport));
+    public static string ImportSkipModeUnreadable => Get(nameof(ImportSkipModeUnreadable));
     public static string ImportApplyWhileBusy => Get(nameof(ImportApplyWhileBusy));
 }

@@ -665,6 +665,8 @@ internal partial class InferpalToolWindowData
             _config.Save();
             await ApplyImportedSettingsAsync(mcpBefore, languageBefore);
         }
+        // Modes it wrote show in the selector at once (it appears with the first one).
+        if (result.ModesWritten) _ = RefreshModesQuietlyAsync();
         if (result.Card is not { } card)
         {
             await ShowInfoAsync(result.Message);

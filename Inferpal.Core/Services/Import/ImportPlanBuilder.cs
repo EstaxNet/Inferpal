@@ -16,13 +16,19 @@ namespace Inferpal.Services.Import;
 /// <param name="EnvironmentVariable">The process environment, injectable for tests.</param>
 /// <param name="WorkspaceRoot">The folder a relative path typed after <c>/import</c> is read from; <c>null</c> when the
 /// editor has none open.</param>
+/// <param name="ModesFolder">The person's modes folder, where imported modes are written; <c>null</c>: its usual place
+/// (<see cref="ChatModes.UserDir"/>).</param>
 internal sealed record ImportContext(InferpalConfig Current, string Home, string CommandsFolder,
-                                     Func<string, string?>? EnvironmentVariable = null, string? WorkspaceRoot = null)
+                                     Func<string, string?>? EnvironmentVariable = null, string? WorkspaceRoot = null,
+                                     string? ModesFolder = null)
 {
     /// <summary>The context of an editor: this user's home, the commands beside these settings, its workspace.</summary>
     public static ImportContext For(InferpalConfig config, string? workspaceRoot) =>
         new(config, UserFolders.Of(Environment.SpecialFolder.UserProfile), config.MachinePromptsFolder,
             WorkspaceRoot: string.IsNullOrEmpty(workspaceRoot) ? null : workspaceRoot);
+
+    /// <summary>Where imported modes are written, and where the modes already there are read.</summary>
+    public string Modes => ModesFolder ?? ChatModes.UserDir;
 }
 
 /// <summary>A source the import could not read, and why — the message names the file.</summary>
@@ -38,6 +44,11 @@ internal sealed class ImportPlanBuilder
     private readonly List<ImportItem> _items = [];
     private readonly List<ImportSkip> _skips = [];
     private readonly HashSet<string> _commandNames = new(StringComparer.Ordinal);
+    /// <summary>The person's modes, by name, with their file's text — read once, when the first mode of the source is
+    /// placed.</summary>
+    private Dictionary<string, string>? _modeTexts;
+    private readonly HashSet<string> _plannedModes = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _plannedModeFiles = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _existingCommandFiles = new(StringComparer.Ordinal);
 
     public ImportPlanBuilder(ImportSource source, ImportContext context)
@@ -124,6 +135,58 @@ internal sealed class ImportPlanBuilder
         var item = new ImportItem(id, kind, effect, sources, isChecked, notes);
         _items.Add(item);
         return item;
+    }
+
+    /// <summary>
+    /// The file, the name and the text a source's mode becomes in the person's modes folder: <c>&lt;slug&gt;.md</c>, with
+    /// <c>-roo</c> and a number when that file is another one's; its own name, or <c>"&lt;name&gt; (Roo)"</c> when one of
+    /// Inferpal's modes, one of the person's or an earlier mode of the source has it. <c>null</c> when the person's modes
+    /// already hold it — the very same text under that name (an earlier import of this file): never written twice,
+    /// never overwritten.
+    /// </summary>
+    /// <param name="textFor">The mode's file for a name: the one compared with the person's, and the one written.</param>
+    public (string FileName, string Name, string Text, ImportItemNote? Note)? Mode(string slug, string name,
+                                                                                Func<string, string> textFor)
+    {
+        _modeTexts ??= ReadPersonsModes();
+        // As the reader will read it back: a name it cleans to Inferpal's own, or to the person's, is that name.
+        var own = ChatModes.CleanName(name) is { Length: > 0 } clean ? clean : slug;
+        var shown = own;
+        ImportItemNote? note = null;
+        if (ChatModes.ReservedNames.Contains(own) || _plannedModes.Contains(own) || _modeTexts.ContainsKey(own))
+        {
+            if (SameText(own)) return null;
+            shown = own + " (Roo)";
+            // Under its new name before — the same, or edited since: never written over.
+            if (_modeTexts.ContainsKey(shown) || _plannedModes.Contains(shown)) return null;
+            note = new ImportItemNote(ImportNote.ModeRenamed, own);
+        }
+        var stem = Regex.Replace(slug, @"[^\p{L}\p{N}\-]", "-", RegexOptions.None, MatchTimeout).Trim('-');
+        if (stem.Length == 0) stem = "mode";
+        // A device name (con, nul, com1…) is no file on Windows.
+        if (Regex.IsMatch(stem, @"^(con|prn|aux|nul|com[0-9]|lpt[0-9])$", RegexOptions.IgnoreCase, MatchTimeout)) stem += "-mode";
+        var file = stem + ".md";
+        for (var n = 1; File.Exists(Path.Combine(Context.Modes, file)) || _plannedModeFiles.Contains(file); n++)
+            file = stem + "-roo" + (n == 1 ? "" : "-" + n.ToString(CultureInfo.InvariantCulture)) + ".md";
+        _plannedModes.Add(shown);
+        _plannedModeFiles.Add(file);
+        return (file, shown, textFor(shown), note);
+
+        bool SameText(string n) =>
+            _modeTexts.TryGetValue(n, out var mine)
+            && mine.Replace("\r\n", "\n", StringComparison.Ordinal) == textFor(n).Replace("\r\n", "\n", StringComparison.Ordinal);
+    }
+
+    /// <summary>The person's modes by name, each with its file's text (empty when it cannot be read again).</summary>
+    private Dictionary<string, string> ReadPersonsModes()
+    {
+        var texts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var mode in ChatModes.Discover(null, Context.Modes).Modes)
+        {
+            try { texts[mode.Name] = File.ReadAllText(mode.Source); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { texts[mode.Name] = string.Empty; }
+        }
+        return texts;
     }
 
     /// <summary>

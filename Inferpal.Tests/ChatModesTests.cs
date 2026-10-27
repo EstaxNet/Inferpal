@@ -32,6 +32,53 @@ public sealed class ChatModesTests : IDisposable
         try { Directory.Delete(_root, recursive: true); } catch { }
     }
 
+    /// <summary>The file /import roo writes reads back as the same mode — names, descriptions and patterns with quotes,
+    /// hashes, colons, backslashes and line breaks; options it cannot read stay unreadable, edits narrowed to nothing.</summary>
+    [Fact]
+    public void ARooModeFile_ReadsBackAsTheSameMode_WhateverItsValuesHold()
+    {
+        var groups = (System.Text.Json.Nodes.JsonArray)System.Text.Json.Nodes.JsonNode.Parse("""
+            ["read", ["edit", { "fileRegex": "^docs/.*\\.(md|txt)$|it's # odd: \"q\"", "description": "Docs: 'only' # here" }],
+             "command", "mcp", "browser"]
+            """)!;
+        var text = ChatModes.RooModeFile("It's \"odd\" # name: x", "Line one\nline two", "qwen3:8b", groups, "Be careful.\n\n---\nStill text.");
+
+        var mode = ChatModes.ReadAgentFile(text, "odd.md", ChatModeOrigin.User, "odd.md", [])!;
+
+        Assert.Equal("It's \"odd\" # name: x", mode.Name);
+        Assert.Equal("Line one line two", mode.Description);
+        Assert.Equal(["qwen3:8b"], mode.Models);
+        Assert.Equal("^docs/.*\\.(md|txt)$|it's # odd: \"q\"", mode.Tools!.EditPatternText);
+        Assert.Equal("Docs: 'only' # here", mode.Tools.EditPatternDescription);
+        Assert.True(mode.Tools.Allows("run_command"));
+        Assert.Contains("browser", mode.NotCarried);
+        Assert.Equal("Be careful.\n\n---\nStill text.", mode.Instructions);
+
+        // A key the reader does not read, in any shape, leaves the pattern readable; a double quote beside a control
+        // character survives the comment the reader looks for.
+        var extra = (System.Text.Json.Nodes.JsonArray)System.Text.Json.Nodes.JsonNode.Parse(
+            """[["edit", { "fileRegex": "\\.md$", "description": { "en": "Markdown" }, "other": [1, 2] }]]""")!;
+        var kept = ChatModes.ReadAgentFile(ChatModes.RooModeFile("Tab\t\" # x", null, null, extra, "x"), "k.md", ChatModeOrigin.User, "k.md", [])!;
+        Assert.Equal("\\.md$", kept.Tools!.EditPatternText);
+        Assert.Equal("Tab\" # x", kept.Name);   // the tab is cleaned away by the reader, the rest kept
+
+        // Options in another shape: as Roo, edits narrowed to nothing — never a pattern that lets them through.
+        var odd = (System.Text.Json.Nodes.JsonArray)System.Text.Json.Nodes.JsonNode.Parse("""[["edit", ["\\.md$"]]]""")!;
+        var narrowed = ChatModes.ReadAgentFile(ChatModes.RooModeFile("Odd", null, null, odd, "x"), "o.md", ChatModeOrigin.User, "o.md", [])!;
+        Assert.True(narrowed.Tools!.EditPattern!.IsMatch("README.md") is false);
+        Assert.Contains("edit options", narrowed.NotCarried);
+    }
+
+    /// <summary>A mode file with both lists keeps its own (<c>tools</c>) and names the other: one list decides.</summary>
+    [Fact]
+    public void AModeFileWithToolsAndGroups_KeepsItsTools_AndNamesTheGroups()
+    {
+        var mode = ChatModes.ReadAgentFile("---\nname: Both\ntools: [read]\ngroups: [edit]\n---\nx\n", "b.md", ChatModeOrigin.User, "b.md", [])!;
+
+        Assert.False(mode.Tools!.MayWrite);
+        Assert.Contains("groups", mode.NotCarried);
+    }
+
     private static string Fixture(string name) =>
         Path.Combine(ConversationPersistenceSilenceTests.RepoRoot(), "Inferpal.Tests", "Fixtures", "modes", name);
 

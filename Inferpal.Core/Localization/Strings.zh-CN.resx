@@ -1621,6 +1621,7 @@
   <data name="ImportTargetContextWindow" xml:space="preserve"><value>上下文窗口</value></data>
   <data name="ImportTargetInstructions" xml:space="preserve"><value>自定义系统提示词</value></data>
   <data name="ImportTargetCommand" xml:space="preserve"><value>命令</value></data>
+  <data name="ImportTargetMode" xml:space="preserve"><value>模式</value></data>
   <data name="ImportTargetMcpServer" xml:space="preserve"><value>MCP 服务器</value></data>
   <data name="ImportTargetDocSite" xml:space="preserve"><value>@Docs 源</value></data>
   <data name="ImportTargetPermissionRule" xml:space="preserve"><value>权限规则</value></data>
@@ -1629,7 +1630,8 @@
   <data name="ImportNoteRenamed" xml:space="preserve"><value>名称 {0} 已被占用（Inferpal 或你自己的命令）：以此名称导入。</value></data>
   <data name="ImportNoteIgnoredByContinue" xml:space="preserve"><value>Continue 会忽略 config.yaml 中的 `{0}`：按你写的原样导入。</value></data>
   <data name="ImportNoteScopeInText" xml:space="preserve"><value>仅适用于部分文件：适用范围写在文本中，模型会读取。</value></data>
-  <data name="ImportNoteModeToolsNotKept" xml:space="preserve"><value>模式的工具限制不会导入：命令保留其说明。</value></data>
+  <data name="ImportNoteModeRenamed" xml:space="preserve"><value>名称 {0} 已被占用（Inferpal 的模式、你自己的模式或此文件中较早的模式）：以此名称导入。</value></data>
+  <data name="ImportNoteModeNotCarried" xml:space="preserve"><value>未导入，此处没有对应项：{0}。</value></data>
   <data name="ImportNoteTakesEffectAfterRestart" xml:space="preserve"><value>Inferpal 重启后生效。</value></data>
   <data name="ImportNoteSecretToFill" xml:space="preserve"><value>找不到密钥 {0}：按原样写入，之后请补充。</value></data>
   <data name="ImportNoteKeyNotCarried" xml:space="preserve"><value>为 {0} 设置的 API 密钥将被移除，绝不会发送到此服务器：如果它需要密钥，请在设置中输入。</value></data>
@@ -1646,6 +1648,7 @@
   <data name="ImportItemFailed" xml:space="preserve"><value>未写入 — {0}：{1}</value></data>
   <data name="ImportRefused" xml:space="preserve"><value>未写入任何内容：无法复制 config.json（{0}）。</value></data>
   <data name="ImportCommandsWhere" xml:space="preserve"><value>命令位于 {0}：输入 / 即可在任意工作区中使用。</value></data>
+  <data name="ImportModesWhere" xml:space="preserve"><value>模式位于 {0}：在“聊天”“代理”“计划”旁的“模式”中选择，任意工作区均可使用。</value></data>
   <data name="ImportSelectionUnknown" xml:space="preserve"><value>没有编号为 {0} 的项：未写入任何内容。</value></data>
   <data name="ImportCardStale" xml:space="preserve"><value>此卡片已与导入将写入的内容不一致：自显示以来文件或设置已更改，期间应用的项目会使其后的项目移位。未写入任何内容——请再次运行 `/import {0}` 获取最新卡片。</value></data>
   <data name="ImportSkipFileIdentity" xml:space="preserve"><value>文件自身的标识（名称、版本、架构），不是设置</value></data>
@@ -1684,6 +1687,7 @@
   <data name="ImportSkipWhenToUse" xml:space="preserve"><value>whenToUse：用于 Roo 自动选择模式</value></data>
   <data name="ImportSkipUnsupportedLanguage" xml:space="preserve"><value>Inferpal 未提供该语言的翻译</value></data>
   <data name="ImportSkipNoServersInExport" xml:space="preserve"><value>导出文件中不含 MCP 服务器（Roo 将其保存在单独的文件中）</value></data>
+  <data name="ImportSkipModeUnreadable" xml:space="preserve"><value>无法以 Inferpal 能读回的形式写入的模式（过长，或含有无法保留的值）</value></data>
   <data name="ImportApplyWhileBusy" xml:space="preserve"><value>仍有回合在运行：请等其结束后再应用。</value></data>
   <data name="NoteLabel" xml:space="preserve"><value>备注</value></data>
   <data name="NoteWaiting" xml:space="preserve"><value>备注——将在下一步读取</value></data>

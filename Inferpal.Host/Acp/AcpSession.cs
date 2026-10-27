@@ -694,6 +694,11 @@ internal sealed class AcpSession : IAsyncDisposable
                     await ReadConfiguredModelsAsync(CancellationToken.None);
                     Update(new { sessionUpdate = "config_option_update", configOptions = ConfigOptions() });
                     break;
+                case "modesChanged":
+                    // Modes written (/import roo): the client's list shows them now, not at the next question.
+                    if (await RefreshModesAsync(CancellationToken.None))
+                        Update(new { sessionUpdate = "config_option_update", configOptions = ConfigOptions() });
+                    break;
                 case "openSettings":
                     notes.Add(await _agent.OpenSettingsWindowAsync(Cwd, CancellationToken.None));
                     break;

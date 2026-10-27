@@ -1621,6 +1621,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ImportTargetContextWindow" xml:space="preserve"><value>コンテキスト ウィンドウ</value></data>
   <data name="ImportTargetInstructions" xml:space="preserve"><value>カスタムシステムプロンプト</value></data>
   <data name="ImportTargetCommand" xml:space="preserve"><value>コマンド</value></data>
+  <data name="ImportTargetMode" xml:space="preserve"><value>モード</value></data>
   <data name="ImportTargetMcpServer" xml:space="preserve"><value>MCP サーバー</value></data>
   <data name="ImportTargetDocSite" xml:space="preserve"><value>@Docs のソース</value></data>
   <data name="ImportTargetPermissionRule" xml:space="preserve"><value>権限ルール</value></data>
@@ -1629,7 +1630,8 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ImportNoteRenamed" xml:space="preserve"><value>名前 {0} は使用済み（Inferpal またはご自身のコマンド）のため、この名前で取り込みます。</value></data>
   <data name="ImportNoteIgnoredByContinue" xml:space="preserve"><value>Continue は config.yaml の `{0}` を無視していました。書かれたとおりに取り込みます。</value></data>
   <data name="ImportNoteScopeInText" xml:space="preserve"><value>一部のファイルに限定：適用範囲は本文に記載され、モデルが読みます。</value></data>
-  <data name="ImportNoteModeToolsNotKept" xml:space="preserve"><value>モードのツール制限は引き継がず、指示のみコマンドに残します。</value></data>
+  <data name="ImportNoteModeRenamed" xml:space="preserve"><value>名前 {0} は使用済み（Inferpal のモード、ご自身のモード、またはこのファイルの前のモード）のため、この名前で取り込みます。</value></data>
+  <data name="ImportNoteModeNotCarried" xml:space="preserve"><value>ここに相当するものがないため引き継ぎません: {0}。</value></data>
   <data name="ImportNoteTakesEffectAfterRestart" xml:space="preserve"><value>Inferpal の再起動後に反映されます。</value></data>
   <data name="ImportNoteSecretToFill" xml:space="preserve"><value>シークレット {0} が見つからないため、そのまま書き込みます。後で入力してください。</value></data>
   <data name="ImportNoteKeyNotCarried" xml:space="preserve"><value>{0} 用に設定された API キーは削除され、このサーバーには送信されません。キーが必要な場合は設定で入力してください。</value></data>
@@ -1646,6 +1648,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ImportItemFailed" xml:space="preserve"><value>書き込めませんでした — {0}：{1}</value></data>
   <data name="ImportRefused" xml:space="preserve"><value>何も書き込んでいません：config.json をコピーできませんでした（{0}）。</value></data>
   <data name="ImportCommandsWhere" xml:space="preserve"><value>コマンドは {0} にあります。/ を入力すると、どのワークスペースでも使えます。</value></data>
+  <data name="ImportModesWhere" xml:space="preserve"><value>モードは {0} にあります。チャット・エージェント・計画の隣の「モード」から、どのワークスペースでも選べます。</value></data>
   <data name="ImportSelectionUnknown" xml:space="preserve"><value>番号 {0} の項目はありません。何も書き込んでいません。</value></data>
   <data name="ImportCardStale" xml:space="preserve"><value>このカードは、インポートが書き込む内容と一致しなくなりました。表示後にファイルまたは設定が変更され、その間に適用された項目によって以降の項目がずれています。何も書き込んでいません。最新のカードを得るには `/import {0}` を再実行してください。</value></data>
   <data name="ImportSkipFileIdentity" xml:space="preserve"><value>ファイル自体の識別情報（名前、バージョン、スキーマ）で、設定ではありません</value></data>
@@ -1684,6 +1687,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ImportSkipWhenToUse" xml:space="preserve"><value>whenToUse：Roo がモードを自動選択するためのものです</value></data>
   <data name="ImportSkipUnsupportedLanguage" xml:space="preserve"><value>Inferpal が翻訳されていない言語</value></data>
   <data name="ImportSkipNoServersInExport" xml:space="preserve"><value>エクスポートに MCP サーバーは含まれません（Roo は専用ファイルに保存します）</value></data>
+  <data name="ImportSkipModeUnreadable" xml:space="preserve"><value>Inferpal が読み戻せる形で書けないモード（長すぎる、または保持できない値）</value></data>
   <data name="ImportApplyWhileBusy" xml:space="preserve"><value>ターンがまだ実行中です。終了を待ってから適用してください。</value></data>
   <data name="NoteLabel" xml:space="preserve"><value>メモ</value></data>
   <data name="NoteWaiting" xml:space="preserve"><value>メモ — 次のステップで読まれます</value></data>

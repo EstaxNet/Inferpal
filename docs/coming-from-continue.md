@@ -28,7 +28,8 @@ ticked), `apply all`, or `apply 1,3,5`.
 | Chat, autocomplete, edit, summarize and embed roles | The chat, completion (FIM), inline edit, utility and embedding models |
 | The chat model's context length | The context window |
 | Rules, a model's system message, Roo's custom instructions | Sections added to the custom system prompt; a rule scoped to files keeps its scope, written in the text the model reads |
-| Prompts and custom commands; Roo's custom modes and its additions to the built-in modes | Commands in this machine's prompts folder, usable in every workspace; `{{{ input }}}` becomes what you type after the command |
+| Prompts and custom commands; Roo's additions to its built-in modes | Commands in this machine's prompts folder, usable in every workspace; `{{{ input }}}` becomes what you type after the command |
+| Roo's custom modes | [Modes](configuration.md#modes) of your own (`%AppData%\Inferpal\modes\`, one file per mode): their instructions, their tool groups with the files their edits are limited to (`fileRegex`), and their model when a server you run serves it. A mode named like one of yours stays yours |
 | MCP servers | MCP servers (and MCP is turned on); one left unnamed is named after the package it runs (`npx -y @scope/server-x` → `server-x`) |
 | Documentation sites | @Docs sources — index them with `/docs reindex` |
 | Roo's allowed and denied commands | Permission rules for `run_command` — allowed ones are **unticked**: they let a command run without asking, so the choice is yours. Denied ones go first, so no allow rule can override them |
@@ -46,8 +47,8 @@ ticked), `apply all`, or `apply 1,3,5`.
 - **Roo's automatic approval** (`alwaysAllowWrite`…): an import never turns off Inferpal's approval prompt. Roo's
   allowed commands are offered as rules only when Roo's automatic approval of commands was on — otherwise the list did
   nothing, and importing it would grant more than Roo did.
-- **A Roo mode's tool groups.** A mode becomes a command that carries its instructions; Inferpal has no per-command tool
-  restrictions.
+- **A Roo mode's `browser` group, and `whenToUse`** (Roo's automatic choice of mode): no equivalent, named on the card.
+  A mode's model on a hosted provider is not written either — the mode answers with the chat's model.
 - **Hub blocks** (`uses: owner/slug`): Continue's Hub is closed, they cannot be read.
 - **A secret** written `${{ secrets.NAME }}` is looked for in `~/.continue/.env` and in the environment; one that is not
   found is named, to type in the settings.

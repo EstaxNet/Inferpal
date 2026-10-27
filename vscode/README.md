@@ -68,7 +68,7 @@ These were measured on one 24 GB card (LM Studio, 32K context), with its free me
 3. **Open Inferpal** from its activity-bar icon. The first time, it looks for a model server on this computer and proposes the models that fit your card: **Start with these**. For a server on another machine, type its address on the same card. On Ollama without a chat model, the card downloads one for you. `/setup` brings the card back.
 4. **Ask a question, or right-click a failing test.**
 
-**Coming from Continue or Roo Code?** `/import continue` or `/import roo` brings over your model server, models, rules, prompts, MCP servers and documentation sites. A card shows what it will take, and nothing is written until you apply. See [Coming from Continue or Roo Code](https://github.com/EstaxNet/Inferpal/blob/master/docs/coming-from-continue.md).
+**Coming from Continue or Roo Code?** `/import continue` or `/import roo` brings over your model server, models, rules, prompts, Roo's custom modes, MCP servers and documentation sites. A card shows what it will take, and nothing is written until you apply. See [Coming from Continue or Roo Code](https://github.com/EstaxNet/Inferpal/blob/master/docs/coming-from-continue.md).
 
 ## Also in the box
 

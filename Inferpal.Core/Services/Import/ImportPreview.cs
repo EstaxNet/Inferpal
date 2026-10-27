@@ -103,7 +103,8 @@ internal static class ImportPreview
     }
 
     /// <summary>What an application did, and what comes next — the copy of the settings named first.</summary>
-    public static string Outcome(ImportOutcome outcome, string commandsFolder)
+    /// <param name="modesFolder">Where the modes were written: said when some were.</param>
+    public static string Outcome(ImportOutcome outcome, string commandsFolder, string modesFolder)
     {
         if (outcome.Refused is { } refused) return Strings.ImportRefused(refused);
         if (outcome.Applied.Count == 0 && outcome.Failed.Count == 0) return Strings.ImportNothingChosen;
@@ -115,6 +116,8 @@ internal static class ImportPreview
         lines.AddRange(outcome.Failed.Select(f => Strings.ImportItemFailed(Label(f.Item.Effect), f.Reason)));
         if (outcome.Backup is { } backup) lines.Add(Strings.ImportBackup(backup));
         if (outcome.Applied.Any(i => i.Kind == ImportItemKind.Command)) lines.Add(Strings.ImportCommandsWhere(commandsFolder));
+        if (outcome.Applied.Any(i => i.Kind == ImportItemKind.Mode))
+            lines.Add(Strings.ImportModesWhere(modesFolder));
         if (outcome.Applied.Any(i => i.Kind == ImportItemKind.DocSite)) lines.Add(Strings.ImportDocsNext);
         if (outcome.ServerChanged) lines.Add(Strings.ImportRestart);
         return string.Join("\n\n", lines);
@@ -137,6 +140,7 @@ internal static class ImportPreview
         SetContextWindow w   => w.Tokens.ToString("N0", CultureInfo.CurrentCulture),
         AddInstructions i    => i.Title,
         WriteCommand c       => "/" + c.Name + (string.IsNullOrWhiteSpace(c.Description) ? "" : " — " + c.Description),
+        WriteMode m          => m.Name + (string.IsNullOrWhiteSpace(m.Description) ? "" : " — " + m.Description),
         AddMcpServer s       => s.Server.Name + " (" + (s.Server.Command ?? s.Server.Url) + ")",
         AddDocSite d         => d.Title == d.StartUrl ? d.StartUrl : d.Title + " (" + d.StartUrl + ")",
         AddPermissionRule r  => r.Rule,
@@ -156,6 +160,7 @@ internal static class ImportPreview
         ImportItemKind.ContextWindow   => Strings.ImportTargetContextWindow,
         ImportItemKind.Instructions    => Strings.ImportTargetInstructions,
         ImportItemKind.Command         => Strings.ImportTargetCommand,
+        ImportItemKind.Mode            => Strings.ImportTargetMode,
         ImportItemKind.McpServer       => Strings.ImportTargetMcpServer,
         ImportItemKind.DocSite         => Strings.ImportTargetDocSite,
         ImportItemKind.PermissionRule  => Strings.ImportTargetPermissionRule,
@@ -169,7 +174,8 @@ internal static class ImportPreview
         ImportNote.Renamed                 => Strings.ImportNoteRenamed(note.Detail ?? ""),
         ImportNote.IgnoredByContinue       => Strings.ImportNoteIgnoredByContinue(note.Detail ?? ""),
         ImportNote.ScopeInText             => Strings.ImportNoteScopeInText,
-        ImportNote.ModeToolsNotKept        => Strings.ImportNoteModeToolsNotKept,
+        ImportNote.ModeRenamed             => Strings.ImportNoteModeRenamed(note.Detail ?? ""),
+        ImportNote.ModeNotCarried          => Strings.ImportNoteModeNotCarried(note.Detail ?? ""),
         ImportNote.TakesEffectAfterRestart => Strings.ImportNoteTakesEffectAfterRestart,
         ImportNote.SecretToFill            => Strings.ImportNoteSecretToFill(note.Detail ?? ""),
         ImportNote.KeyNotCarried           => Strings.ImportNoteKeyNotCarried(note.Detail ?? ""),
@@ -216,6 +222,7 @@ internal static class ImportPreview
         ImportSkipCause.WhenToUse              => Strings.ImportSkipWhenToUse,
         ImportSkipCause.UnsupportedLanguage    => Strings.ImportSkipUnsupportedLanguage,
         ImportSkipCause.NoServersInExport      => Strings.ImportSkipNoServersInExport,
+        ImportSkipCause.ModeUnreadable         => Strings.ImportSkipModeUnreadable,
         _                                      => cause.ToString(),
     };
 }

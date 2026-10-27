@@ -18,7 +18,7 @@
   <a href="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml"><img src="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/tests-7452%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-7460%20passing-brightgreen" alt="Tests">
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/Visual%20Studio-install-5C2D91" alt="Install for Visual Studio"></a>
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><img src="https://img.shields.io/badge/VS%20Code-install-007ACC" alt="Install for VS Code"></a>
 </p>
@@ -148,7 +148,7 @@ start in one and finish in the other:
    first time, it looks for your model server and sets you up with a model; `/setup` looks again.
 
 Full walkthrough: **[Getting Started](docs/getting-started.md)**. Coming from Continue or Roo Code? `/import continue`
-or `/import roo` brings your models, rules, prompts and MCP servers over — [how](docs/coming-from-continue.md).
+or `/import roo` brings your models, rules, prompts, Roo's modes and MCP servers over — [how](docs/coming-from-continue.md).
 
 ## Also in the box
 

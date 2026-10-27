@@ -232,7 +232,7 @@ reasoning-effort: high
 Review the change against the repository's conventions. Never edit a file.
 ```
 
-`tools` names families (`read`, `search`, `edit`, `execute`, `web`), Inferpal's own tool names, Copilot's tool names (`codebase`, `editFiles`, `runInTerminal`…), and MCP tools as `server/*` or `server/tool`. Left out, the mode keeps every tool. A name Inferpal does not know is named by `/modes` and dropped — it never widens anything.
+`tools` names families (`read`, `search`, `edit`, `execute`, `web`), Inferpal's own tool names, Copilot's tool names (`codebase`, `editFiles`, `runInTerminal`…), and MCP tools as `server/*` or `server/tool`. Left out, the mode keeps every tool. A name Inferpal does not know is named by `/modes` and dropped — it never widens anything. In place of `tools`, a mode file can carry Roo's own `groups` (`read`, `edit` with its `fileRegex`, `command`, `mcp`), as `.roomodes` writes them: that is what `/import roo` writes, one file per custom mode of Roo's settings export, in `%AppData%\Inferpal\modes\` — with its model when a server you run serves it.
 
 **A mode only narrows.** A tool outside it is neither offered to the model nor run; an edit outside its `fileRegex` is refused before the approval card; and a mode adds no rule, no grant and no auto-approval — what asks first without it still does. Writing a mode's file (by the agent) always shows the approval card, like the repository's other instructions, and a mode file reached through a link that leaves the repository is not read.
 

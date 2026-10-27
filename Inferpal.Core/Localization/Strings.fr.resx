@@ -1621,6 +1621,7 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="ImportTargetContextWindow" xml:space="preserve"><value>Fenêtre de contexte</value></data>
   <data name="ImportTargetInstructions" xml:space="preserve"><value>Prompt système personnalisé</value></data>
   <data name="ImportTargetCommand" xml:space="preserve"><value>Commande</value></data>
+  <data name="ImportTargetMode" xml:space="preserve"><value>Mode</value></data>
   <data name="ImportTargetMcpServer" xml:space="preserve"><value>Serveur MCP</value></data>
   <data name="ImportTargetDocSite" xml:space="preserve"><value>Source @Docs</value></data>
   <data name="ImportTargetPermissionRule" xml:space="preserve"><value>Règle de permission</value></data>
@@ -1629,7 +1630,8 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="ImportNoteRenamed" xml:space="preserve"><value>Le nom {0} est pris (une commande d'Inferpal ou une des vôtres) : importée sous celui-ci.</value></data>
   <data name="ImportNoteIgnoredByContinue" xml:space="preserve"><value>Continue ignorait `{0}` dans config.yaml : importé tel que vous l'avez écrit.</value></data>
   <data name="ImportNoteScopeInText" xml:space="preserve"><value>Limitée à certains fichiers : la portée est écrite dans le texte, que le modèle lit.</value></data>
-  <data name="ImportNoteModeToolsNotKept" xml:space="preserve"><value>Les restrictions d'outils du mode ne sont pas reprises : la commande garde ses consignes.</value></data>
+  <data name="ImportNoteModeRenamed" xml:space="preserve"><value>Le nom {0} est pris (un mode d'Inferpal, un des vôtres ou un mode précédent de ce fichier) : importé sous celui-ci.</value></data>
+  <data name="ImportNoteModeNotCarried" xml:space="preserve"><value>Non repris, sans équivalent ici : {0}.</value></data>
   <data name="ImportNoteTakesEffectAfterRestart" xml:space="preserve"><value>Pris en compte au redémarrage d'Inferpal.</value></data>
   <data name="ImportNoteSecretToFill" xml:space="preserve"><value>Secret {0} introuvable : écrit tel quel, à compléter ensuite.</value></data>
   <data name="ImportNoteKeyNotCarried" xml:space="preserve"><value>La clé API réglée pour {0} est retirée, jamais envoyée à ce serveur : s'il en demande une, saisissez sa clé dans les réglages.</value></data>
@@ -1646,6 +1648,7 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="ImportItemFailed" xml:space="preserve"><value>Non écrit — {0} : {1}</value></data>
   <data name="ImportRefused" xml:space="preserve"><value>Rien n'a été écrit : config.json n'a pas pu être copié ({0}).</value></data>
   <data name="ImportCommandsWhere" xml:space="preserve"><value>Les commandes sont dans {0} : tapez / pour les utiliser, dans tous les espaces de travail.</value></data>
+  <data name="ImportModesWhere" xml:space="preserve"><value>Les modes sont dans {0} : choisissez-en un sous « Modes », à côté de Chat, Agent et Plan, dans tous les espaces de travail.</value></data>
   <data name="ImportSelectionUnknown" xml:space="preserve"><value>Aucun élément ne porte le numéro {0} : rien n'a été écrit.</value></data>
   <data name="ImportCardStale" xml:space="preserve"><value>Cette carte ne correspond plus à ce que l'import écrirait : le fichier ou vos réglages ont changé depuis son affichage, et un élément appliqué entre-temps décale les suivants. Rien n'a été écrit — relancez `/import {0}` pour une carte à jour.</value></data>
   <data name="ImportSkipFileIdentity" xml:space="preserve"><value>identité du fichier (nom, version, schéma), pas un réglage</value></data>
@@ -1684,6 +1687,7 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="ImportSkipWhenToUse" xml:space="preserve"><value>whenToUse : sert au choix automatique de mode de Roo</value></data>
   <data name="ImportSkipUnsupportedLanguage" xml:space="preserve"><value>langue dans laquelle Inferpal n'est pas traduit</value></data>
   <data name="ImportSkipNoServersInExport" xml:space="preserve"><value>l'export ne contient aucun serveur MCP (Roo les garde dans son propre fichier)</value></data>
+  <data name="ImportSkipModeUnreadable" xml:space="preserve"><value>un mode qui ne peut pas être écrit de façon qu'Inferpal le relise (trop long, ou une valeur qu'il ne sait pas garder)</value></data>
   <data name="ImportApplyWhileBusy" xml:space="preserve"><value>Un tour est encore en cours : attendez qu'il se termine, puis appliquez.</value></data>
   <data name="NoteLabel" xml:space="preserve"><value>Note</value></data>
   <data name="NoteWaiting" xml:space="preserve"><value>Note — lue à la prochaine étape</value></data>

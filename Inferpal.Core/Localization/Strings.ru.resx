@@ -1621,6 +1621,7 @@
   <data name="ImportTargetContextWindow" xml:space="preserve"><value>Окно контекста</value></data>
   <data name="ImportTargetInstructions" xml:space="preserve"><value>Пользовательский системный промпт</value></data>
   <data name="ImportTargetCommand" xml:space="preserve"><value>Команда</value></data>
+  <data name="ImportTargetMode" xml:space="preserve"><value>Режим</value></data>
   <data name="ImportTargetMcpServer" xml:space="preserve"><value>Сервер MCP</value></data>
   <data name="ImportTargetDocSite" xml:space="preserve"><value>Источник @Docs</value></data>
   <data name="ImportTargetPermissionRule" xml:space="preserve"><value>Правило разрешений</value></data>
@@ -1629,7 +1630,8 @@
   <data name="ImportNoteRenamed" xml:space="preserve"><value>Имя {0} занято (команда Inferpal или ваша): импортировано под этим.</value></data>
   <data name="ImportNoteIgnoredByContinue" xml:space="preserve"><value>Continue игнорировал `{0}` в config.yaml: импортировано так, как вы написали.</value></data>
   <data name="ImportNoteScopeInText" xml:space="preserve"><value>Действует только для некоторых файлов: область действия записана в тексте, который читает модель.</value></data>
-  <data name="ImportNoteModeToolsNotKept" xml:space="preserve"><value>Ограничения инструментов режима не переносятся: команда сохраняет его инструкции.</value></data>
+  <data name="ImportNoteModeRenamed" xml:space="preserve"><value>Имя {0} занято (режим Inferpal, ваш или более ранний режим этого файла): импортировано под этим.</value></data>
+  <data name="ImportNoteModeNotCarried" xml:space="preserve"><value>Не переносится, здесь нет аналога: {0}.</value></data>
   <data name="ImportNoteTakesEffectAfterRestart" xml:space="preserve"><value>Вступит в силу после перезапуска Inferpal.</value></data>
   <data name="ImportNoteSecretToFill" xml:space="preserve"><value>Секрет {0} не найден: записано как есть, заполните позже.</value></data>
   <data name="ImportNoteKeyNotCarried" xml:space="preserve"><value>Ключ API, заданный для {0}, удаляется и никогда не отправляется этому серверу: если серверу нужен ключ, введите его в настройках.</value></data>
@@ -1646,6 +1648,7 @@
   <data name="ImportItemFailed" xml:space="preserve"><value>Не записано — {0}: {1}</value></data>
   <data name="ImportRefused" xml:space="preserve"><value>Ничего не записано: не удалось скопировать config.json ({0}).</value></data>
   <data name="ImportCommandsWhere" xml:space="preserve"><value>Команды лежат в {0}: наберите /, чтобы пользоваться ими в любом рабочем пространстве.</value></data>
+  <data name="ImportModesWhere" xml:space="preserve"><value>Режимы лежат в {0}: выберите режим в «Режимы» рядом с «Чат», «Агент» и «План», в любом рабочем пространстве.</value></data>
   <data name="ImportSelectionUnknown" xml:space="preserve"><value>Нет элемента с номером {0}: ничего не записано.</value></data>
   <data name="ImportCardStale" xml:space="preserve"><value>Эта карточка больше не соответствует тому, что записал бы импорт: файл или настройки изменились после её показа, а элемент, применённый за это время, сдвигает следующие. Ничего не записано — снова запустите `/import {0}`, чтобы получить актуальную карточку.</value></data>
   <data name="ImportSkipFileIdentity" xml:space="preserve"><value>описание самого файла (имя, версия, схема), а не настройка</value></data>
@@ -1684,6 +1687,7 @@
   <data name="ImportSkipWhenToUse" xml:space="preserve"><value>whenToUse: нужно Roo для автоматического выбора режима</value></data>
   <data name="ImportSkipUnsupportedLanguage" xml:space="preserve"><value>язык, на который Inferpal не переведён</value></data>
   <data name="ImportSkipNoServersInExport" xml:space="preserve"><value>в экспорте нет серверов MCP (Roo хранит их в своём файле)</value></data>
+  <data name="ImportSkipModeUnreadable" xml:space="preserve"><value>режим, который нельзя записать так, чтобы Inferpal прочитал его снова (слишком длинный или значение, которое он не сохраняет)</value></data>
   <data name="ImportApplyWhileBusy" xml:space="preserve"><value>Ход ещё выполняется: дождитесь его завершения, затем примените.</value></data>
   <data name="NoteLabel" xml:space="preserve"><value>Заметка</value></data>
   <data name="NoteWaiting" xml:space="preserve"><value>Заметка — будет прочитана на следующем шаге</value></data>

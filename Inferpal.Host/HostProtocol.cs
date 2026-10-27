@@ -563,7 +563,8 @@ internal sealed record SlashCommandParams(string Text, List<string>? PromptHisto
 /// <c>copyToClipboard</c> (Value) | <c>clearTranscript</c> | <c>stateChange</c>
 /// (Name = key e.g. <c>model</c>, Value) | <c>openFile</c> (Value = absolute path) |
 /// <c>exportRequest</c> | <c>configSaved</c> | <c>openSettings</c> (the front-end's settings: VS Code's panel, an ACP
-/// thread's browser window). Unknown kinds must be ignored (forward compatibility).</summary>
+/// thread's browser window) | <c>modesChanged</c> (modes were written: the mode selector reads them again). Unknown kinds
+/// must be ignored (forward compatibility).</summary>
 internal sealed record SlashEffectDto(string Kind, string? Value = null, string? Name = null);
 
 /// <summary>`command/slash` answer: <paramref name="Markdown"/> is the bubble to render

@@ -74,6 +74,22 @@ public class ModeSelectorTests
         Assert.Contains("if (IsPlanMode) LeaveHeldMode();", Code("InferpalToolWindowData.Connection.cs"));
     }
 
+    /// <summary>Modes an import wrote show at once in the three clients: one effect from the host, read by VS Code's
+    /// extension and the ACP agent; the Visual Studio window reads the command's own flag.</summary>
+    [Fact]
+    public void ModesAnImportWrote_AreReadAgainByEveryClient()
+    {
+        var repo = ConversationPersistenceSilenceTests.RepoRoot();
+        string Cs(params string[] path) => ConventionCoverageTests.CodeOnly(Path.Combine([repo, .. path]));
+
+        Assert.Contains("if (result.ModesWritten) saved.Add(new SlashEffectDto(\"modesChanged\"));", Cs("Inferpal.Host", "HostSlashCommands.cs"));
+        Assert.Contains("case \"modesChanged\":", Cs("Inferpal.Host", "Acp", "AcpSession.cs"));
+        Assert.Contains("if (result.ModesWritten) _ = RefreshModesQuietlyAsync();", Cs("Inferpal", "ToolWindow", "InferpalToolWindowData.SlashCommands.cs"));
+        var provider = SettingsSchemaDriftTests.NeutralizeTypeScriptComments(
+            File.ReadAllText(Path.Combine(repo, "vscode", "src", "chatViewProvider.ts")));
+        Assert.Matches(@"case 'modesChanged':\s*void this\.refreshModes\(\);", provider);
+    }
+
     [Fact]
     public void TheVsCodeExtension_LeavesTheModeForChatAgentAndPlan_AndHoldsItAgainAfterARestart()
     {

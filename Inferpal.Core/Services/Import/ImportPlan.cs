@@ -9,7 +9,7 @@ internal enum ImportSource { Continue, Roo }
 internal enum ImportItemKind
 {
     Backend, ChatModel, CompletionModel, EditModel, UtilityModel, EmbeddingModel, ContextWindow,
-    Instructions, Command, McpServer, DocSite, PermissionRule, Language, Indexing,
+    Instructions, Command, Mode, McpServer, DocSite, PermissionRule, Language, Indexing,
 }
 
 /// <summary>
@@ -34,6 +34,10 @@ internal sealed record AddInstructions(string Title, string Text) : ImportEffect
 /// <summary>A command file in the machine's prompts folder: <c>/<paramref name="Name"/></c>.</summary>
 internal sealed record WriteCommand(string Name, string? Description, string Text) : ImportEffect;
 
+/// <summary>A mode file in the person's modes folder: <paramref name="FileName"/> holds <paramref name="Text"/>, the
+/// mode called <paramref name="Name"/>.</summary>
+internal sealed record WriteMode(string FileName, string Name, string? Description, string Text) : ImportEffect;
+
 internal sealed record AddMcpServer(McpServerConfig Server) : ImportEffect;
 
 internal sealed record AddDocSite(string Title, string StartUrl) : ImportEffect;
@@ -54,8 +58,11 @@ internal enum ImportNote
     IgnoredByContinue,
     /// <summary>A rule scoped to files: its scope is written in the text, which the model reads.</summary>
     ScopeInText,
-    /// <summary>A Roo mode's tool groups have no equivalent: the command keeps its instructions only.</summary>
-    ModeToolsNotKept,
+    /// <summary>The mode's own name is one of Inferpal's modes, or an earlier mode of the file: renamed, the name in the
+    /// detail.</summary>
+    ModeRenamed,
+    /// <summary>What of a mode has no equivalent here (Roo's <c>browser</c> group…), named in the detail.</summary>
+    ModeNotCarried,
     /// <summary>The server or the model changes: the editor takes it after a restart.</summary>
     TakesEffectAfterRestart,
     /// <summary>A secret the import could not find (<c>${{ secrets.X }}</c>): written as is, to fill in.</summary>
@@ -152,6 +159,8 @@ internal enum ImportSkipCause
     UnsupportedLanguage,
     /// <summary>Roo: the export carries no MCP server (they live in Roo's own file).</summary>
     NoServersInExport,
+    /// <summary>A mode whose file would not read back as written (too long, a value the format cannot keep).</summary>
+    ModeUnreadable,
 }
 
 /// <summary>A part of the source the import does not write, and why.</summary>

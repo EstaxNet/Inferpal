@@ -20,8 +20,8 @@ internal sealed record ImportOutcome(IReadOnlyList<ImportItem> Applied, IReadOnl
                                      string? Backup, bool ConfigChanged, bool ServerChanged, string? Refused = null);
 
 /// <summary>
-/// Writes the items the user ticked, and only those: the settings in memory (the caller saves them) and one file per
-/// command in the machine's prompts folder.
+/// Writes the items the user ticked, and only those: the settings in memory (the caller saves them), one file per
+/// command in the machine's prompts folder and one per mode in the person's modes folder.
 /// </summary>
 /// <remarks>
 /// <para>⚠ The settings file is copied aside BEFORE anything changes, and an import whose copy fails writes nothing —
@@ -29,16 +29,20 @@ internal sealed record ImportOutcome(IReadOnlyList<ImportItem> Applied, IReadOnl
 /// <para>⚠ The MCP list is merged as JSON, entry by entry: parsed into records and written back, it would drop every entry
 /// the reader skips — the user's own servers among them.</para>
 /// <para>⚠ A command file that exists is never overwritten: the plan already renamed around the names it saw, so a file
-/// there now appeared in between.</para>
+/// there now appeared in between. A mode file likewise, and a mode whose name one of the person's took since.</para>
 /// </remarks>
 internal static class ImportApplier
 {
+    /// <param name="modesFolder">The person's modes folder, where modes are written.</param>
     public static ImportOutcome Apply(ImportPlan plan, IReadOnlySet<string> ids, InferpalConfig config, string configFile,
-                                      string commandsFolder, DateTime now)
+                                      string commandsFolder, string modesFolder, DateTime now)
     {
+        // The person's modes, read once for all the modes written — each one added as it is.
+        var modeNames = new Lazy<HashSet<string>>(() => ChatModes.Discover(null, modesFolder).Modes.Select(m => m.Name)
+                                                            .ToHashSet(StringComparer.OrdinalIgnoreCase));
         var chosen = plan.Items.Where(i => ids.Contains(i.Id)).ToList();
         string? backup = null;
-        if (chosen.Any(i => i.Kind != ImportItemKind.Command) && File.Exists(configFile))
+        if (chosen.Any(TouchesTheSettings) && File.Exists(configFile))
         {
             try { backup = CopyAside(configFile, now); }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -55,7 +59,7 @@ internal static class ImportApplier
         {
             try
             {
-                if (Write(item, config, commandsFolder) is { } reason) failed.Add(new(item, reason));
+                if (Write(item, config, commandsFolder, modesFolder, modeNames) is { } reason) failed.Add(new(item, reason));
                 else
                 {
                     applied.Add(item);
@@ -69,8 +73,11 @@ internal static class ImportApplier
             }
         }
         if (applied.Any(i => i.Kind == ImportItemKind.Command)) PromptFilesService.InvalidateCache();
-        return new ImportOutcome(applied, failed, backup, applied.Any(i => i.Kind != ImportItemKind.Command), serverChanged);
+        return new ImportOutcome(applied, failed, backup, applied.Any(TouchesTheSettings), serverChanged);
     }
+
+    /// <summary>Whether an item changes the settings — every one but a command or a mode, which are files of their own.</summary>
+    private static bool TouchesTheSettings(ImportItem item) => item.Kind is not (ImportItemKind.Command or ImportItemKind.Mode);
 
     /// <summary>The copy of the settings before the import, beside them; a second import in the same second gets its own.</summary>
     private static string CopyAside(string configFile, DateTime now)
@@ -86,7 +93,8 @@ internal static class ImportApplier
     }
 
     /// <summary>Applies one item; the reason it could not be, or <c>null</c>.</summary>
-    private static string? Write(ImportItem item, InferpalConfig config, string commandsFolder)
+    private static string? Write(ImportItem item, InferpalConfig config, string commandsFolder, string modesFolder,
+                                 Lazy<HashSet<string>> modeNames)
     {
         switch (item.Effect)
         {
@@ -115,6 +123,8 @@ internal static class ImportApplier
                 return null;
             case WriteCommand command:
                 return WriteCommandFile(command, commandsFolder);
+            case WriteMode mode:
+                return WriteModeFile(mode, modesFolder, modeNames);
             case AddMcpServer server:
                 return AddServer(config, server.Server);
             case AddDocSite site:
@@ -171,6 +181,17 @@ internal static class ImportApplier
             ? string.Empty
             : "---\ndescription: " + string.Join(' ', command.Description.Split('\n', StringSplitOptions.TrimEntries)) + "\n---\n\n";
         AtomicFile.WriteAllText(file, header + command.Text.Trim() + "\n");
+        return null;
+    }
+
+    private static string? WriteModeFile(WriteMode mode, string folder, Lazy<HashSet<string>> names)
+    {
+        var file = Path.Combine(folder, mode.FileName);
+        if (File.Exists(file)) return "a file of that name appeared in the meantime: " + file;
+        if (names.Value.Contains(mode.Name)) return "a mode of that name appeared in the meantime: " + mode.Name;
+        Directory.CreateDirectory(folder);
+        AtomicFile.WriteAllText(file, mode.Text);
+        names.Value.Add(mode.Name);
         return null;
     }
 

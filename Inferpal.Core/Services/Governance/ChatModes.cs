@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -154,7 +155,7 @@ internal static class ChatModes
     /// <summary>The front-matter keys a mode carries; every other key of the file is named in <see cref="ChatMode.NotCarried"/>.</summary>
     private static readonly HashSet<string> CarriedKeys = new(StringComparer.OrdinalIgnoreCase)
     {
-        "name", "description", "tools", "model", "reasoning-effort",
+        "name", "description", "tools", "groups", "model", "reasoning-effort",
     };
 
     /// <summary>Whether a path, cut on its separators, ends at a file a mode is read from — this reader's own folders,
@@ -251,9 +252,18 @@ internal static class ChatModes
         var name = CleanName(Scalar(Key(fm, "name").Value)) is { Length: > 0 } n ? n : StemOf(fileName);
         ModeTools? tools = null;
         // ⚠ Read case aside: `Tools:` read as no key at all left every tool to a mode written as read-only.
+        var groups = Key(fm, "groups");
         if (Key(fm, "tools") is { Present: true } listed)
         {
             tools = ModeTools.FromCopilot(List(listed.Value));
+            notCarried.AddRange(tools.NotCarried);
+            if (groups.Present) notCarried.Add("groups");   // one list of tools: `tools` is this format's own
+        }
+        // Roo's groups — what /import roo writes —, read as a .roomodes reads them: the files its edits are limited to
+        // come with them.
+        else if (groups.Present)
+        {
+            tools = ModeTools.FromRoo(RooGroups(groups.Value));
             notCarried.AddRange(tools.NotCarried);
         }
         var effort = Effort(Scalar(Key(fm, "reasoning-effort").Value), notCarried);
@@ -300,21 +310,7 @@ internal static class ChatModes
             var notCarried = new List<string>(mode.Where(p => p.Key is not ("slug" or "name" or "description" or "roleDefinition"
                                                                                 or "customInstructions" or "groups" or "source"))
                                                   .Select(p => p.Key));
-            var groups = new List<(string, string?, string?, bool)>();
-            foreach (var g in mode["groups"] as JsonArray ?? [])
-            {
-                if (Scalar(g) is { } plain) groups.Add((plain, null, null, false));
-                else if (g is JsonArray { Count: > 0 } pair && Scalar(pair[0]) is { } group)
-                {
-                    // ["edit", {fileRegex, description}]: options in another shape, or a pattern that is no text, narrow the
-                    // group to nothing — Roo itself refuses such a mode — never to all.
-                    var options = pair.Count > 1 ? pair[1] : null;
-                    var regex   = (options as JsonObject)?["fileRegex"];
-                    var unread  = options is not null && (options is not JsonObject || regex is not null && Scalar(regex) is null);
-                    groups.Add((group, Scalar(regex), Scalar((options as JsonObject)?["description"]), unread));
-                }
-            }
-            var tools = ModeTools.FromRoo(groups);
+            var tools = ModeTools.FromRoo(RooGroups(mode["groups"]));
             notCarried.AddRange(tools.NotCarried);
             var instructions = string.Join("\n\n", new[]
             {
@@ -326,6 +322,85 @@ internal static class ChatModes
         }
         return modes;
     }
+
+    /// <summary>Roo's <c>groups</c> as <see cref="ModeTools.FromRoo"/> takes them: a group's name alone, or
+    /// <c>[group, {fileRegex, description}]</c>; anything but a list is no group at all.</summary>
+    internal static List<(string Group, string? FileRegex, string? Description, bool Unreadable)> RooGroups(JsonNode? node)
+    {
+        var groups = new List<(string, string?, string?, bool)>();
+        foreach (var g in node as JsonArray ?? [])
+        {
+            if (Scalar(g) is { } plain) groups.Add((plain, null, null, false));
+            else if (g is JsonArray { Count: > 0 } pair && Scalar(pair[0]) is { } group)
+            {
+                // ["edit", {fileRegex, description}]: options in another shape, or a pattern that is no text, narrow the
+                // group to nothing — Roo itself refuses such a mode — never to all.
+                var options = pair.Count > 1 ? pair[1] : null;
+                var regex   = (options as JsonObject)?["fileRegex"];
+                var unread  = options is not null && (options is not JsonObject || regex is not null && Scalar(regex) is null);
+                groups.Add((group, Scalar(regex), Scalar((options as JsonObject)?["description"]), unread));
+            }
+        }
+        return groups;
+    }
+
+    /// <summary>A mode file of this reader's format for a Roo mode: its name, description, model, Roo's own
+    /// <c>groups</c> and its instructions — read back as the same mode (<see cref="ReadAgentFile"/>). What
+    /// <c>/import roo</c> writes.</summary>
+    /// <remarks>⚠ A group's options in a shape <see cref="RooGroups"/> cannot read as a pattern are written as one text,
+    /// which it reads as unreadable again: narrowed to nothing, as Roo's own, never turned into a pattern that lets edits
+    /// through.</remarks>
+    internal static string RooModeFile(string name, string? description, string? model, JsonArray? groups, string instructions)
+    {
+        var sb = new StringBuilder("---\n");
+        sb.Append("name: ").Append(Quoted(OneLine(name))).Append('\n');
+        if (!string.IsNullOrWhiteSpace(description)) sb.Append("description: ").Append(Quoted(OneLine(description))).Append('\n');
+        if (!string.IsNullOrWhiteSpace(model)) sb.Append("model: ").Append(Quoted(model.Trim())).Append('\n');
+        // No group: no tool at all, as a .roomodes mode without groups — never "every tool", which a missing key means here.
+        sb.Append(groups is { Count: > 0 } ? "groups:\n" : "groups: []\n");
+        foreach (var g in groups ?? [])
+        {
+            if (Scalar(g) is { } plain) sb.Append("  - ").Append(Quoted(plain)).Append('\n');
+            else if (g is JsonArray { Count: > 0 } pair && Scalar(pair[0]) is { } group)
+            {
+                sb.Append("  - - ").Append(Quoted(group)).Append('\n');
+                if (pair.Count < 2 || pair[1] is null) continue;
+                // Readable as the reader reads them (RooGroups): an object whose fileRegex, if any, is text. Its other keys
+                // are not read there, so they are not written here.
+                var options = pair[1] as JsonObject;
+                if (options is not null && (options["fileRegex"] is null || Scalar(options["fileRegex"]) is not null))
+                {
+                    var first = true;
+                    foreach (var key in new[] { "fileRegex", "description" })
+                    {
+                        if (Scalar(options[key]) is not { } value) continue;
+                        sb.Append(first ? "    - " : "      ").Append(key).Append(": ").Append(Quoted(value)).Append('\n');
+                        first = false;
+                    }
+                    if (first) sb.Append("    - {}\n");
+                }
+                else sb.Append("    - ").Append(Quoted(pair[1]!.ToJsonString())).Append('\n');
+            }
+        }
+        sb.Append("---\n\n").Append(instructions.Trim()).Append('\n');
+        return sb.ToString();
+
+        static string OneLine(string text) => string.Join(' ', text.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries));
+    }
+
+    /// <summary>A value as YAML reads it back unchanged: single-quoted, or double-quoted with its escapes when it holds a
+    /// control character (a line break would end the line).</summary>
+    /// <remarks>⚠ A double quote there is <c>\x22</c>, never <c>\"</c>: the reader finds a comment by its quotes without
+    /// reading escapes, so <c>\"</c> would close the value and a later <c> #</c> cut the line.</remarks>
+    private static string Quoted(string value) =>
+        value.Any(char.IsControl)
+            ? "\"" + string.Concat(value.Select(c => c switch
+              {
+                  '\\' => "\\\\", '"' => "\\x22", '\n' => "\\n", '\r' => "\\r", '\t' => "\\t",
+                  _ when char.IsControl(c) => "\\x" + ((int)c).ToString("x2", System.Globalization.CultureInfo.InvariantCulture),
+                  _ => c.ToString(),
+              })) + "\""
+            : "'" + value.Replace("'", "''", StringComparison.Ordinal) + "'";
 
     /// <summary>A Roo mode's own rules: the files of <c>.roo/rules-&lt;slug&gt;/</c> and its sub-folders (links not
     /// followed), in case-insensitive order of their paths, <see cref="MaxFileBytes"/> in all; without them,
@@ -390,7 +465,7 @@ internal static class ChatModes
 
     /// <summary>A name as the picker shows it: no control or invisible format characters, no surrounding spaces — so that
     /// <c>"Agent "</c> or <c>"Agent​"</c> is Inferpal's own name, refused.</summary>
-    private static string? CleanName(string? name) =>
+    internal static string? CleanName(string? name) =>
         name is null ? null
         : new string(name.Where(c => !char.IsControl(c)
                                      && System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.Format)

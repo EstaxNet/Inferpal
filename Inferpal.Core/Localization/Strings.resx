@@ -1625,6 +1625,7 @@ What you save there applies from your next question, in this thread and the othe
   <data name="ImportTargetContextWindow" xml:space="preserve"><value>Context window</value></data>
   <data name="ImportTargetInstructions" xml:space="preserve"><value>Custom system prompt</value></data>
   <data name="ImportTargetCommand" xml:space="preserve"><value>Command</value></data>
+  <data name="ImportTargetMode" xml:space="preserve"><value>Mode</value></data>
   <data name="ImportTargetMcpServer" xml:space="preserve"><value>MCP server</value></data>
   <data name="ImportTargetDocSite" xml:space="preserve"><value>@Docs source</value></data>
   <data name="ImportTargetPermissionRule" xml:space="preserve"><value>Permission rule</value></data>
@@ -1633,7 +1634,8 @@ What you save there applies from your next question, in this thread and the othe
   <data name="ImportNoteRenamed" xml:space="preserve"><value>The name {0} is taken (a command of Inferpal or of yours): imported under this one.</value></data>
   <data name="ImportNoteIgnoredByContinue" xml:space="preserve"><value>Continue ignored `{0}` in config.yaml: imported as you wrote it.</value></data>
   <data name="ImportNoteScopeInText" xml:space="preserve"><value>Scoped to some files: the scope is written in the text, which the model reads.</value></data>
-  <data name="ImportNoteModeToolsNotKept" xml:space="preserve"><value>The mode's tool restrictions are not carried: the command keeps its instructions.</value></data>
+  <data name="ImportNoteModeRenamed" xml:space="preserve"><value>The name {0} is taken (one of Inferpal's modes, one of yours, or an earlier one of this file): imported under this one.</value></data>
+  <data name="ImportNoteModeNotCarried" xml:space="preserve"><value>Not carried, no equivalent here: {0}.</value></data>
   <data name="ImportNoteTakesEffectAfterRestart" xml:space="preserve"><value>Takes effect when Inferpal restarts.</value></data>
   <data name="ImportNoteSecretToFill" xml:space="preserve"><value>Secret {0} not found: written as is, fill it in afterwards.</value></data>
   <data name="ImportNoteKeyNotCarried" xml:space="preserve"><value>The API key set for {0} is removed, never sent to this server: if it needs one, type its key in the settings.</value></data>
@@ -1650,6 +1652,7 @@ What you save there applies from your next question, in this thread and the othe
   <data name="ImportItemFailed" xml:space="preserve"><value>Not written — {0}: {1}</value></data>
   <data name="ImportRefused" xml:space="preserve"><value>Nothing was written: config.json could not be copied aside ({0}).</value></data>
   <data name="ImportCommandsWhere" xml:space="preserve"><value>Commands are in {0}: type / to use them, in every workspace.</value></data>
+  <data name="ImportModesWhere" xml:space="preserve"><value>Modes are in {0}: pick one under Modes, beside Chat, Agent and Plan, in every workspace.</value></data>
   <data name="ImportSelectionUnknown" xml:space="preserve"><value>No item has the number {0}: nothing was written.</value></data>
   <data name="ImportCardStale" xml:space="preserve"><value>This card no longer matches what the import would write: the file or your settings changed since it was shown, and an item applied in the meantime moves the ones after it. Nothing was written — run `/import {0}` again for an up-to-date card.</value></data>
   <data name="ImportSkipFileIdentity" xml:space="preserve"><value>identity of the file (name, version, schema), not a setting</value></data>
@@ -1688,6 +1691,7 @@ What you save there applies from your next question, in this thread and the othe
   <data name="ImportSkipWhenToUse" xml:space="preserve"><value>whenToUse: serves Roo's automatic choice of mode</value></data>
   <data name="ImportSkipUnsupportedLanguage" xml:space="preserve"><value>a language Inferpal is not translated into</value></data>
   <data name="ImportSkipNoServersInExport" xml:space="preserve"><value>the export holds no MCP server (Roo keeps them in its own file)</value></data>
+  <data name="ImportSkipModeUnreadable" xml:space="preserve"><value>a mode that could not be written so that Inferpal reads it back (too long, or a value it cannot keep)</value></data>
   <data name="ImportApplyWhileBusy" xml:space="preserve"><value>A turn is still running: wait for it to finish, then apply.</value></data>
   <data name="NoteLabel" xml:space="preserve"><value>Note</value></data>
   <data name="NoteWaiting" xml:space="preserve"><value>Note — read at the next step</value></data>

@@ -10,8 +10,9 @@ namespace Inferpal.Services.Commands;
 /// <param name="SaveConfig">The settings changed in memory: the caller saves them (the handler never does, so its tests
 /// stay away from the real settings).</param>
 /// <param name="ServerChanged">The model server changed: it takes effect when Inferpal restarts.</param>
+/// <param name="ModesWritten">Modes were written: the editors' mode selectors read them again.</param>
 internal sealed record ImportCommandResult(string Message, ImportCard? Card = null, bool SaveConfig = false,
-                                           bool ServerChanged = false);
+                                           bool ServerChanged = false, bool ModesWritten = false);
 
 /// <summary>
 /// <c>/import continue|roo [file] [apply [all|none|1,3,5]]</c> — logic shared by Visual Studio, VS Code and the agent
@@ -81,8 +82,9 @@ internal static class ImportCommandHandler
             return new(Strings.ImportCardStale(ImportPreview.Keyword(from)));
         var selection = string.Join(' ', tokens.Where(t => !t.StartsWith('#'))).Trim();
         if (Chosen(plan, selection, out var unknown) is not { } ids) return new(Strings.ImportSelectionUnknown(unknown!));
-        var outcome = ImportApplier.Apply(plan, ids, context.Current, configFile, context.CommandsFolder, now);
-        return new(ImportPreview.Outcome(outcome, context.CommandsFolder), null, outcome.ConfigChanged, outcome.ServerChanged);
+        var outcome = ImportApplier.Apply(plan, ids, context.Current, configFile, context.CommandsFolder, context.Modes, now);
+        return new(ImportPreview.Outcome(outcome, context.CommandsFolder, context.Modes), null, outcome.ConfigChanged,
+                   outcome.ServerChanged, outcome.Applied.Any(i => i.Kind == ImportItemKind.Mode));
     }
 
     /// <summary>The ids chosen by what follows <c>apply</c>; <c>null</c> with the number no item has.</summary>
