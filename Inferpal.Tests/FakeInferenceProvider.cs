@@ -46,7 +46,7 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     /// <summary>Drives the waiting line a turn was given (what a client says while the server reads the prompt), so a
     /// test sees where the caller shows it, and what it shows once the first token came (<c>null</c>). Like the real
     /// clients, a call given none says it to the open <see cref="ModelWaitScope"/>.</summary>
-    public Action<Action<string?>>? DriveWaiting { get; set; }
+    public Action<Action<ModelWait?>>? DriveWaiting { get; set; }
 
     /// <summary>Scripted FIM completion (prefix, suffix → streamed text); null = no-op like a
     /// backend without FIM output.</summary>
@@ -89,7 +89,7 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     public Task<ChatTurnResult> SendChatAsync(
         string model, List<ChatMessageDto> messages, IToolRegistry tools, Action<string>? onToken,
         ReasoningEffort effort, CancellationToken ct, TaskComplexity complexity = TaskComplexity.Normal,
-        string? toolChoice = null, Action<string>? onThinking = null, Action<string?>? onWaiting = null)
+        string? toolChoice = null, Action<string>? onThinking = null, Action<ModelWait?>? onWaiting = null)
     {
         ChatModels.Add(model);
         Efforts.Add(effort);
@@ -123,7 +123,7 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
         string model, List<ChatMessageDto> history, IToolRegistry tools, Action<string> onStep,
         Action<string>? onToken, CancellationToken ct, TaskComplexity complexity = TaskComplexity.Normal,
         Action<ToolExecution>? onToolExecuted = null, Action<string>? onThinking = null,
-        ReasoningEffort effort = ReasoningEffort.Server, RunSteering? steering = null, Action<string?>? onWaiting = null)
+        ReasoningEffort effort = ReasoningEffort.Server, RunSteering? steering = null, Action<ModelWait?>? onWaiting = null)
     {
         AgentRuns.Add((model, history));
         Steerings.Add(steering);
@@ -135,8 +135,7 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
         if (RunAgentThroughChat)
             // The wait as the real loop says it: where the caller names, else the scope, else through its step.
             return RunOneChatTurnAsync(model, history, tools, onToken, effort, ct, complexity, onThinking,
-                                       onWaiting ?? ModelWaitScope.Current
-                                       ?? (text => onStep(text ?? Inferpal.Localization.Strings.StatusThinking)));
+                                       onWaiting ?? ModelWaitScope.OrStep(onStep, Inferpal.Localization.Strings.StatusThinking));
         if (onThinking is not null) DriveThinking?.Invoke(onThinking);
         return Task.FromResult(new AgentResult(ChatResult.TextContent, [], history));
     }
@@ -144,7 +143,7 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     private async Task<AgentResult> RunOneChatTurnAsync(
         string model, List<ChatMessageDto> history, IToolRegistry tools, Action<string>? onToken,
         ReasoningEffort effort, CancellationToken ct, TaskComplexity complexity, Action<string>? onThinking,
-        Action<string?> onWaiting)
+        Action<ModelWait?> onWaiting)
     {
         // The real loop never throws for a backend failure: it returns the message as the result. Mirrored, or a test
         // of a caller would see an exception the caller never gets.

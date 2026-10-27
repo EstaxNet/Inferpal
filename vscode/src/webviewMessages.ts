@@ -2,7 +2,7 @@
 // chat webview (src/webview/main.ts). Both sides are bundled from this repo, so the
 // types are shared instead of mirrored. No 'vscode' import — the webview bundle uses it.
 import type {
-  ApprovalCard, ImportCard, InputCard, InputFormAnswer, RewindCard, RunReview, RunSummary, SavedMessage, SetupPlace,
+  ApprovalCard, ImportCard, InputCard, InputFormAnswer, ModelWait, RewindCard, RunReview, RunSummary, SavedMessage, SetupPlace,
   SetupPlan,
   XRayPanel,
 } from './protocol';
@@ -203,6 +203,8 @@ export type ExtToWebview =
    *  in plain chat, where the webview falls back to its generic indicator. */
   | { type: 'thinking'; text?: string | null }
   | { type: 'status'; text: string }
+  /** The turn's wait card: a request waiting on a server that reads its prompt; null takes it away. */
+  | { type: 'wait'; wait: ModelWait | null }
   | { type: 'assistant'; text: string; timestamp: string; notice?: boolean }
   | { type: 'tool'; name: string; input: string; output: string; hasErrors: boolean; diff?: string; timestamp: string; expanded: boolean }
   | { type: 'plan'; plan: WvPlan }

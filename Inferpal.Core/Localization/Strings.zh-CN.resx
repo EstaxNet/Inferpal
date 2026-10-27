@@ -246,8 +246,13 @@
   <data name="CodeActionReplyCut" xml:space="preserve"><value>回答在代码结束前就达到了模型的长度限制——未应用任何更改。请选择文件中较小的部分，或增大上下文长度。</value></data>
   <data name="OnboardContextCut" xml:space="preserve"><value>草稿在结束前就达到了模型的长度限制——未写入 .inferpal/context.md。请增大上下文长度，或选择窗口更大的模型，然后重新运行 /onboard context。</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>连接超时 — {0} 的后端已停止响应（空闲超时）。</value></data>
-  <data name="StatusReadingPrompt" xml:space="preserve"><value>正在读取提示：约 {0:N0} 个令牌 · {1}</value></data>
-  <data name="StatusReadingPromptEstimate" xml:space="preserve"><value>正在读取提示：约 {0:N0} 个令牌，若无缓存最多约 {1} · {2}</value></data>
+  <data name="WaitReading" xml:space="preserve"><value>正在读取提示</value></data>
+  <data name="WaitReadingLonger" xml:space="preserve"><value>正在读取提示——比平时更久</value></data>
+  <data name="WaitTimesOfAbout" xml:space="preserve"><value>{0} / 最多约 {1}</value></data>
+  <data name="WaitTimesOfBound" xml:space="preserve"><value>{0} / {1}</value></data>
+  <data name="WaitDetail" xml:space="preserve"><value>约 {0:N0} 个令牌；若无缓存最多约 {1}。若服务器一直没有响应，将在 {2} 时停止。</value></data>
+  <data name="WaitDetailUnmeasured" xml:space="preserve"><value>约 {0:N0} 个令牌。若服务器一直没有响应，将在 {1} 时停止。</value></data>
+  <data name="WaitDetailLonger" xml:space="preserve"><value>这里通常最多约 {0}。若服务器一直没有响应，将在 {1} 时停止并说明原因——点“停止”可立即结束。</value></data>
   <data name="MsgPrefillOverran" xml:space="preserve"><value>{1} 后仍未收到 {0} 的回复：它还在读取约 {2:N0} 个令牌的提示。慢速服务器读取长提示可能需要数分钟：对此模型的下一个请求会等待更久，最短等待时间由“{3}”设置（{4} → {5}）。</value></data>
   <data name="MsgPrefillNoAnswer" xml:space="preserve"><value>{1} 后仍未收到 {0} 的回复：它还在读取约 {2:N0} 个令牌的提示，或者没有响应。Inferpal 等待第一个词的时间由“{3}”设置（{4} → {5}）。</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>无法连接到 {0} 的后端。请在设置中检查 URL。</value></data>

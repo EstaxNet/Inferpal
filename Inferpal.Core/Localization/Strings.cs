@@ -836,13 +836,14 @@ internal static class Strings
     public static string MsgTimeout(string url) =>
         Format(Get(nameof(MsgTimeout)), url);
 
-    /// <summary>The line said while a server reads a prompt and nothing has come back: the tokens, the measured cold read
-    /// when there is one (an upper bound: what is cached is read at once), and the time waited.</summary>
-    public static string StatusReadingPrompt(int tokens, TimeSpan? coldRead, TimeSpan elapsed) =>
-        coldRead is { } read
-            ? Format(Get("StatusReadingPromptEstimate"), tokens,
-                     Services.Presentation.RunSummary.Duration(read), Services.Presentation.RunSummary.Duration(elapsed))
-            : Format(Get(nameof(StatusReadingPrompt)), tokens, Services.Presentation.RunSummary.Duration(elapsed));
+    // The wait while a server reads a prompt (ModelWait): its title, its times, its detail.
+    public static string WaitReading => Get(nameof(WaitReading));
+    public static string WaitReadingLonger => Get(nameof(WaitReadingLonger));
+    public static string WaitTimesOfAbout(string elapsed, string cold) => Format(Get(nameof(WaitTimesOfAbout)), elapsed, cold);
+    public static string WaitTimesOfBound(string elapsed, string bound) => Format(Get(nameof(WaitTimesOfBound)), elapsed, bound);
+    public static string WaitDetail(int tokens, string cold, string bound) => Format(Get(nameof(WaitDetail)), tokens, cold, bound);
+    public static string WaitDetailUnmeasured(int tokens, string bound) => Format(Get(nameof(WaitDetailUnmeasured)), tokens, bound);
+    public static string WaitDetailLonger(string cold, string bound) => Format(Get(nameof(WaitDetailLonger)), cold, bound);
 
     /// <summary>A request with no first token when its wait ran out, the server still reading: not an unreachable one.
     /// <paramref name="quick"/> names the short wait's setting, the turn's otherwise; <paramref name="waitsLonger"/> says

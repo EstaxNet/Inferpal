@@ -606,13 +606,11 @@ internal sealed partial class HostServer : IDisposable
                                                                   run.AnswerCut, run.AnswerRepeating));
             }
 
-            _lastStep = Strings.StatusThinking;
             var turn = await s.Client.SendChatAsync(
                 model, s.History, EmptyToolRegistry.Instance, OnToken,
                 ChatTurnPolicy.TurnEffort(s.Config, p.CodeAction), cts.Token,
-                complexity: ChatTurnPolicy.TurnComplexity(p.CodeAction), onThinking: OnThinking,
-                // While the server reads the prompt the turn's status line says so, then goes back to thinking.
-                onWaiting: text => Notify("chat/step", new { text = text ?? Strings.StatusThinking }));
+                // While the server reads the prompt the turn's scope draws its wait card, gone at the first word.
+                complexity: ChatTurnPolicy.TurnComplexity(p.CodeAction), onThinking: OnThinking);
             // The answer the user saw, as on the two paths above and in Visual Studio: without the model's reasoning.
             var said = ChatTurnPolicy.ChoosePersistedAnswer(
                 !ChatTurnPolicy.IsVisiblyEmpty(streamed.ToString()) ? streamed.ToString() : null, turn.TextContent);
@@ -1984,7 +1982,6 @@ internal sealed partial class HostServer : IDisposable
                 throw new InvalidOperationException(BusyText());
             _slotHeldByTurn = true;
             _slotBusyText = busyText;
-            _lastStep = null;
             _chatCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             if (saysWaits) _waitScope = ModelWaitScope.Open(SayWait);
             return _chatCts;
@@ -1994,20 +1991,12 @@ internal sealed partial class HostServer : IDisposable
     /// <summary>The wait scope of the turn holding the slot (<see cref="AcquireTurn"/>).</summary>
     private IDisposable? _waitScope;
 
-    /// <summary>The step the turn said last (<see cref="Step"/>): what shows again once a wait gives its place back.</summary>
-    private volatile string? _lastStep;
+    /// <summary>Says a step of the turn on its status line (<c>chat/step</c>); a wait comes as a card under it.</summary>
+    private void Step(string text) => Notify("chat/step", new { text });
 
-    /// <summary>Says a step of the turn on its status line (<c>chat/step</c>), and keeps it for <see cref="SayWait"/>.</summary>
-    private void Step(string text)
-    {
-        _lastStep = text;
-        Notify("chat/step", new { text });
-    }
-
-    /// <summary>A wait said by a model call of the turn (<see cref="ModelWaitScope"/>): the line while the server reads,
-    /// then the step it covered.</summary>
-    private void SayWait(string? line) =>
-        Notify("chat/step", new { text = line ?? _lastStep ?? Strings.StatusThinking });
+    /// <summary>A wait said by a model call of the turn (<see cref="ModelWaitScope"/>): its card while the server reads
+    /// (<c>chat/wait</c>), gone when it gives its place back; the status line keeps the step it covers.</summary>
+    private void SayWait(ModelWait? wait) => Notify("chat/wait", new { wait = ModelWaitDto.Of(wait) });
 
     /// <summary>What a request refused while the slot is held is told; set with the slot.</summary>
     private string? _slotBusyText;

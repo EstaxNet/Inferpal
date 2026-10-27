@@ -56,7 +56,7 @@ internal interface IInferenceProvider : IChatTurnClient
         Action<string>? onThinking = null,
         ReasoningEffort effort = ReasoningEffort.Server,
         RunSteering? steering = null,
-        Action<string?>? onWaiting = null);
+        Action<ModelWait?>? onWaiting = null);
 
     /// <inheritdoc cref="OllamaClient.GetEmbeddingAsync"/>
     Task<float[]?> GetEmbeddingAsync(string text, string model, CancellationToken ct);

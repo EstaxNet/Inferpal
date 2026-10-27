@@ -821,6 +821,34 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     internal static ChatMessageItem StatusMsg(string step) =>
         new() { Role = "status", Content = step, Label = string.Empty };
 
+    // ── A request waiting on a server that reads its prompt (ModelWait): its card under the status line ──
+    private bool _hasWait, _hasWaitBar, _isWaitLonger;
+    private string _waitTitle = string.Empty, _waitTimes = string.Empty, _waitDetail = string.Empty;
+    private double _waitFraction;
+    [DataMember] public bool   HasWait      { get => _hasWait;      private set => SetProperty(ref _hasWait, value); }
+    [DataMember] public string WaitTitle    { get => _waitTitle;    private set => SetProperty(ref _waitTitle, value); }
+    [DataMember] public string WaitTimes    { get => _waitTimes;    private set => SetProperty(ref _waitTimes, value); }
+    [DataMember] public string WaitDetail   { get => _waitDetail;   private set => SetProperty(ref _waitDetail, value); }
+    /// <summary>A bar only when a read was measured: creeping toward the bound, it would read as a forecast.</summary>
+    [DataMember] public bool   HasWaitBar   { get => _hasWaitBar;   private set => SetProperty(ref _hasWaitBar, value); }
+    /// <summary>How far along, 0 to 1: the scale of the bar's band.</summary>
+    [DataMember] public double WaitFraction { get => _waitFraction; private set => SetProperty(ref _waitFraction, value); }
+    /// <summary>Past the measured read: drawn as a warning, measured against the bound.</summary>
+    [DataMember] public bool   IsWaitLonger { get => _isWaitLonger; private set => SetProperty(ref _isWaitLonger, value); }
+
+    /// <summary>Draws <paramref name="wait"/> under this status line, or takes it away (<c>null</c>).</summary>
+    internal void ShowWait(Services.Inference.ModelWait? wait)
+    {
+        HasWait = wait is not null;
+        if (wait is null) return;
+        WaitTitle    = wait.Title;
+        WaitTimes    = wait.Times;
+        WaitDetail   = wait.Detail;
+        HasWaitBar   = wait.Fraction is not null;
+        WaitFraction = wait.Fraction ?? 0;
+        IsWaitLonger = wait.Longer;
+    }
+
     /// <summary>
     /// Creates a live plan bubble (Role = "plan") for the autonomous agent mode.
     /// The content is set once and later updated in-place via <see cref="RefreshPlan"/>.

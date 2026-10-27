@@ -66,6 +66,8 @@ import {
   SlashCommandResult,
   StepUpdateNotice,
   TextNote,
+  WaitNote,
+  ModelWait,
   ThinkingNote,
   ToolNotice,
   XRayPanel,
@@ -120,6 +122,8 @@ export interface ChatEvents {
    *  The Core decides which; this is only the wire. */
   onThinking?(text: string | null): void;
   onStep?(text: string): void;
+  /** A request of the turn waiting on a server that reads its prompt, or null when it gives its place back. */
+  onWait?(wait: ModelWait | null): void;
   onPlan?(plan: PlanNotice): void;
   onStepUpdate?(update: StepUpdateNotice): void;
   onTool?(tool: ToolNotice): void;
@@ -362,6 +366,7 @@ export class HostClient {
     conn.onNotification('chat/token', (n: TextNote) => this.events.onToken?.(n.text));
     conn.onNotification('chat/thinking', (n: ThinkingNote) => this.events.onThinking?.(n.text ?? null));
     conn.onNotification('chat/step', (n: TextNote) => this.events.onStep?.(n.text));
+    conn.onNotification('chat/wait', (n: WaitNote) => this.events.onWait?.(n.wait));
     conn.onNotification('chat/plan', (n: PlanNotice) => this.events.onPlan?.(n));
     conn.onNotification('chat/stepUpdate', (n: StepUpdateNotice) => this.events.onStepUpdate?.(n));
     conn.onNotification('chat/tool', (n: ToolNotice) => this.events.onTool?.(n));

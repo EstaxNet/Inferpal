@@ -1172,6 +1172,71 @@ kbd {
   color: var(--ip-muted);
 }
 
+/* A request waiting on a server that reads its prompt: what, how long against what, when it stops. */
+.wait-card {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 6px 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--ip-line);
+  background: var(--ip-surface, transparent);
+}
+
+.wait-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.wait-icon {
+  display: inline-flex;
+  color: var(--vscode-textLink-foreground);
+}
+
+.wait-title {
+  font-weight: 600;
+}
+
+.wait-times {
+  margin-left: auto;
+  color: var(--ip-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.wait-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--ip-line);
+  overflow: hidden;
+}
+
+.wait-fill {
+  height: 4px;
+  background: var(--vscode-progressBar-background, var(--vscode-button-background));
+}
+
+.wait-detail {
+  font-size: 12px;
+  color: var(--ip-muted);
+}
+
+/* Longer than its measured read: a warning, measured against the bound. */
+.wait-card.longer {
+  border-color: var(--vscode-editorWarning-foreground, #cca700);
+}
+
+.wait-card.longer .wait-icon {
+  color: var(--vscode-editorWarning-foreground, #cca700);
+}
+
+.wait-card.longer .wait-fill {
+  background: var(--vscode-editorWarning-foreground, #cca700);
+}
+
 /* A file of several changes: each kept or undone on its own, its lines under a row of its own. */
 .run-review-piece {
   border-top: 1px solid var(--ip-line);

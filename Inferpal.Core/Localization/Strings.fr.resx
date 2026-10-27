@@ -246,8 +246,13 @@ Pour chaque problème, cite la ligne ou le symbole, explique le risque et propos
   <data name="CodeActionReplyCut" xml:space="preserve"><value>La réponse s'est arrêtée à la limite de longueur du modèle avant la fin du code — rien n'a été appliqué. Sélectionnez une partie plus petite du fichier, ou augmentez la longueur de contexte.</value></data>
   <data name="OnboardContextCut" xml:space="preserve"><value>Le brouillon s'est arrêté à la limite de longueur du modèle avant sa fin — .inferpal/context.md n'a pas été écrit. Augmentez la longueur de contexte, ou choisissez un modèle à la fenêtre plus grande, puis relancez /onboard context.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>Délai d'attente dépassé — le backend à {0} ne répond plus (délai d'inactivité).</value></data>
-  <data name="StatusReadingPrompt" xml:space="preserve"><value>Lecture du prompt : environ {0:N0} {0:jeton|jetons} · {1}</value></data>
-  <data name="StatusReadingPromptEstimate" xml:space="preserve"><value>Lecture du prompt : environ {0:N0} {0:jeton|jetons}, jusqu'à environ {1} si rien n'est en cache · {2}</value></data>
+  <data name="WaitReading" xml:space="preserve"><value>Lecture du prompt</value></data>
+  <data name="WaitReadingLonger" xml:space="preserve"><value>Lecture du prompt — plus longue que d'habitude</value></data>
+  <data name="WaitTimesOfAbout" xml:space="preserve"><value>{0} sur environ {1} au plus</value></data>
+  <data name="WaitTimesOfBound" xml:space="preserve"><value>{0} sur {1}</value></data>
+  <data name="WaitDetail" xml:space="preserve"><value>Environ {0:N0} {0:jeton|jetons} ; jusqu'à environ {1} si rien n'est en cache. S'arrête à {2} si le serveur reste muet.</value></data>
+  <data name="WaitDetailUnmeasured" xml:space="preserve"><value>Environ {0:N0} {0:jeton|jetons}. S'arrête à {1} si le serveur reste muet.</value></data>
+  <data name="WaitDetailLonger" xml:space="preserve"><value>Cela prend d'habitude au plus environ {0} ici. Si le serveur reste muet, l'attente s'arrête à {1} et dit pourquoi — Arrêter y met fin maintenant.</value></data>
   <data name="MsgPrefillOverran" xml:space="preserve"><value>Pas de réponse de {0} après {1} : il lisait encore un prompt d'environ {2:N0} {2:jeton|jetons}. Un serveur lent peut lire un long prompt pendant des minutes : la prochaine requête à ce modèle attendra plus longtemps, et « {3} » fixe l'attente la plus courte ({4} → {5}).</value></data>
   <data name="MsgPrefillNoAnswer" xml:space="preserve"><value>Pas de réponse de {0} après {1} : il lisait encore un prompt d'environ {2:N0} {2:jeton|jetons}, ou il ne répond pas. « {3} » fixe combien de temps Inferpal attend un premier mot ({4} → {5}).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>Impossible de joindre le backend à {0}. Vérifiez l'URL dans les paramètres.</value></data>

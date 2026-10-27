@@ -28,6 +28,12 @@ public partial class HostServerTests
     // ── In-test editor adapter (client side of the connection) ────────────────
 
     private sealed record TokenNote(string Text);
+
+    /// <summary>A <c>chat/wait</c> notification: the card, or none.</summary>
+    private sealed record WaitNote(Host.ModelWaitDto? Wait);
+
+    /// <summary>The wait a fake call says: the card it draws is the Core's, read back by its title.</summary>
+    private static readonly ModelWait TestWait = new ModelWait(1_000, TimeSpan.FromSeconds(9), null, TimeSpan.FromMinutes(5));
     private sealed record ThinkingNote(string? Text);
     private sealed record ToolNote(string Name, string Input, string Output, bool HasErrors, string? Diff = null);
     private sealed record ApprovalNote(string Message);
@@ -77,6 +83,13 @@ public partial class HostServerTests
 
         [JsonRpcMethod("chat/step", UseSingleObjectParameterDeserialization = true)]
         public void ChatStep(TokenNote note) => Steps.Enqueue(note.Text);
+
+        /// <summary>Every <c>chat/wait</c> received, in order: the turn's wait card, by its title, and <c>null</c> when it
+        /// goes (filled by the RPC dispatch thread).</summary>
+        public readonly System.Collections.Concurrent.ConcurrentQueue<string?> Waits = new();
+
+        [JsonRpcMethod("chat/wait", UseSingleObjectParameterDeserialization = true)]
+        public void ChatWait(WaitNote note) => Waits.Enqueue(note.Wait?.Title);
 
         /// <summary>Every <c>chat/tool</c> notice received, in order (filled by the RPC dispatch thread).</summary>
         public readonly System.Collections.Concurrent.ConcurrentQueue<ToolNote> ToolNotes = new();
@@ -1130,6 +1143,25 @@ public partial class HostServerTests
         // Token notifications reached the adapter.
         var first = await h.Target.FirstToken.Task.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
         Assert.Equal("Hel", first);
+    }
+
+    /// <summary>A plain chat turn waiting on a server that reads its prompt shows its wait card (<c>chat/wait</c>), gone
+    /// at the first word; the status line keeps its own step.</summary>
+    [Fact]
+    public async Task ChatSend_PlainChat_ShowsTheWaitCard_ThenTakesItAway()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+        h.Fake.DriveWaiting = waiting => { waiting(TestWait); waiting(null); };
+
+        await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send", new { prompt = "hi", agentMode = false })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        // Notifications are one-way: a round-trip request guarantees they were dispatched.
+        await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Equal([TestWait.Title, null], h.Target.Waits);
+        Assert.DoesNotContain(h.Target.Steps, s => s.Contains(TestWait.Title, StringComparison.Ordinal));
     }
 
     /// <summary>
@@ -2862,7 +2894,7 @@ public partial class HostServerTests
     {
         using var h = CreateHarness();
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
-        h.Fake.DriveWaiting = waiting => { waiting("Reading the prompt: test"); waiting(null); };
+        h.Fake.DriveWaiting = waiting => { waiting(TestWait); waiting(null); };
 
         await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
             "command/slash", new { text = "/onboard context" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
@@ -2870,11 +2902,10 @@ public partial class HostServerTests
         await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { })
             .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
-        var steps = h.Target.Steps.ToArray();
-        var at = Array.IndexOf(steps, "Reading the prompt: test");
-        Assert.True(at > 0, string.Join(" | ", steps));
-        Assert.Equal(Strings.OnboardContextDraftingLabel, steps[at - 1]);
-        Assert.Equal(Strings.OnboardContextDraftingLabel, steps[at + 1]);
+        // The card, then gone at the first word; the status line keeps the command's own step under it.
+        Assert.Equal([TestWait.Title, null], h.Target.Waits);
+        Assert.Contains(Strings.OnboardContextDraftingLabel, h.Target.Steps);
+        Assert.DoesNotContain(h.Target.Steps, s => s.Contains(TestWait.Title, StringComparison.Ordinal));
     }
 
     /// <summary>
@@ -2903,7 +2934,7 @@ public partial class HostServerTests
         File.WriteAllText(Path.Combine(h.RootDir, "App.cs"), "class App { int Feature; int Staged; }\n");
         await Git("add -A");
         h.Fake.RunAgentThroughChat = true;
-        h.Fake.DriveWaiting = waiting => { waiting("Reading the prompt: test"); waiting(null); };
+        h.Fake.DriveWaiting = waiting => { waiting(TestWait); waiting(null); };
 
         await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
             "command/slash", new { text = command }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
@@ -2911,10 +2942,8 @@ public partial class HostServerTests
         await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { })
             .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
-        var steps = h.Target.Steps.ToArray();
-        var at = Array.IndexOf(steps, "Reading the prompt: test");
-        Assert.True(at > 0, string.Join(" | ", steps));
-        Assert.Equal(steps[at - 1], steps[at + 1]);   // then the command's own step, given back
+        // The card, then gone at the first word: the command's own step was never replaced.
+        Assert.Equal([TestWait.Title, null], h.Target.Waits);
     }
 
     // The headless side must serve /onboard from the same Core handler as VS —
@@ -3053,7 +3082,7 @@ public partial class HostServerTests
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
         h.Fake.ChatResult = new ChatTurnResult("int y = 2;", null, 0, 0);
         var driven = 0;
-        h.Fake.DriveWaiting = waiting => { driven++; waiting("Reading the prompt: test"); waiting(null); };
+        h.Fake.DriveWaiting = waiting => { driven++; waiting(TestWait); waiting(null); };
 
         await h.Client.InvokeWithParameterObjectAsync<Host.CodeActionResultDto>(
             "codeAction/run", new { kind = "fix", text = "int x = 1;", selStart = 0, selEnd = 0 })
@@ -3065,7 +3094,7 @@ public partial class HostServerTests
             .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
         Assert.Equal(1, driven);   // only the command's call had a place to say it
-        Assert.Single(h.Target.Steps, s => s == "Reading the prompt: test");
+        Assert.Single(h.Target.Waits, w => w is not null);
     }
 
     /// <summary>

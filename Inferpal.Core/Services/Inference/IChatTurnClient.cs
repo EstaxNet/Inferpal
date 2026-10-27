@@ -39,6 +39,6 @@ internal interface IChatTurnClient
         TaskComplexity complexity = TaskComplexity.Normal,
         string? toolChoice = null,
         Action<string>? onThinking = null,
-        Action<string?>? onWaiting = null)
+        Action<ModelWait?>? onWaiting = null)
         => SendChatAsync(model, messages, tools, onToken, ct, complexity, toolChoice, onThinking);
 }

@@ -142,6 +142,9 @@ internal partial class InferpalToolWindowData
     private string _themeChipLine = "#2E2B3D", _themeOnAccent = "#FFFFFF";
     [DataMember] public string ThemeChipLine   { get => _themeChipLine;   set => SetProperty(ref _themeChipLine,   value); }
     [DataMember] public string ThemeOnAccent   { get => _themeOnAccent;   set => SetProperty(ref _themeOnAccent,   value); }
+    private string _themeWarn = "#E2B341";
+    /// <summary>A wait past its measured read: a warning, not a failure.</summary>
+    [DataMember] public string ThemeWarn       { get => _themeWarn;       set => SetProperty(ref _themeWarn,       value); }
 
     /// <summary>Builds the chrome's commands; called by the constructor.</summary>
     private void InitChrome()
@@ -956,6 +959,7 @@ internal partial class InferpalToolWindowData
         ThemeErrorLine  = p.ErrorLine;
         ThemeChipLine   = p.ChipLine;
         ThemeOnAccent   = p.OnAccent;
+        ThemeWarn       = p.Warn;
         RefreshModelButton();
     }
 

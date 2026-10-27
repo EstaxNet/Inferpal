@@ -13,6 +13,9 @@ public class ModelWaitScopeTests
 {
     private static readonly TimeSpan Soon = TimeSpan.FromMilliseconds(1);
 
+    private static readonly ModelWait Inner = new(1_000, TimeSpan.FromSeconds(9), null, TimeSpan.FromMinutes(5));
+    private static readonly ModelWait Outer = new(2_000, TimeSpan.FromSeconds(9), null, TimeSpan.FromMinutes(5));
+
     private static async Task UntilAsync(Func<bool> done)
     {
         var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
@@ -23,10 +26,10 @@ public class ModelWaitScopeTests
     [Fact]
     public async Task AWaitWithNoLineOfItsOwn_IsSaidToTheOpenScope_ThenGivesItsPlaceBack()
     {
-        var said = new ConcurrentQueue<string?>();
+        var said = new ConcurrentQueue<ModelWait?>();
         using (ModelWaitScope.Open(said.Enqueue))
         {
-            using var wait = new PrefillWait(null, 12_000, null, firstSaid: Soon);
+            using var wait = new PrefillWait(null, 12_000, null, TimeSpan.FromMinutes(10), firstSaid: Soon);
             await UntilAsync(() => !said.IsEmpty);
             wait.Arrived();
         }
@@ -40,11 +43,11 @@ public class ModelWaitScopeTests
     [Fact]
     public async Task ACallersOwnLine_WinsOverTheScope()
     {
-        var scope = new ConcurrentQueue<string?>();
-        var own   = new ConcurrentQueue<string?>();
+        var scope = new ConcurrentQueue<ModelWait?>();
+        var own   = new ConcurrentQueue<ModelWait?>();
         using (ModelWaitScope.Open(scope.Enqueue))
         {
-            using var wait = new PrefillWait(own.Enqueue, 12_000, null, firstSaid: Soon);
+            using var wait = new PrefillWait(own.Enqueue, 12_000, null, TimeSpan.FromMinutes(10), firstSaid: Soon);
             await UntilAsync(() => !own.IsEmpty);
         }
         Assert.Empty(scope);
@@ -55,7 +58,7 @@ public class ModelWaitScopeTests
     [Fact]
     public async Task AScopeClosed_SaysNothingMore_ToWorkStartedUnderIt()
     {
-        var said    = new ConcurrentQueue<string?>();
+        var said    = new ConcurrentQueue<ModelWait?>();
         var started = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var closed  = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         Task<bool> late;
@@ -87,14 +90,16 @@ public class ModelWaitScopeTests
         var window = Path.Combine(ConversationPersistenceSilenceTests.RepoRoot(), "Inferpal", "ToolWindow");
         var helpers = ConventionCoverageTests.CodeOnly(Path.Combine(window, "InferpalToolWindowData.UiHelpers.cs"));
         Assert.Matches(@"IDisposable OwnCommandStatus\(CancellationTokenSource cts\)[\s\S]*?_commandOwner = cts;[\s\S]*?"
-                       + @"ModelWaitScope\.Open\(line => SayCommandWait\(cts, line\)\)[\s\S]*?waitScope\.Dispose\(\);[\s\S]*?"
+                       + @"ModelWaitScope\.Open\(wait => SayCommandWait\(cts, wait\)\)[\s\S]*?waitScope\.Dispose\(\);[\s\S]*?"
                        + @"ReferenceEquals\(_commandOwner, cts\)[\s\S]*?ShowCommandStatus\(\);", helpers);
         // The long commands take it right after the turn, and give it back before the turn is released.
         Assert.Matches(@"cts = BeginOwnedTurn\(ct\)\);\s*var status = OwnCommandStatus\(cts!\);[\s\S]*?await body\("
                        + @"[\s\S]*?finally\s*\{\s*status\.Dispose\(\);\s*await RunOnVMContextAsync\(\(\) => EndOwnedTurn\(cts\)\);", helpers);
         Assert.Matches(@"void SayCommandWait\([\s\S]*?ReferenceEquals\(_commandOwner, owner\)[\s\S]*?ShowCommandStatus\(\);", helpers);
-        // The wait wins over the step; shown only while the command still holds the turn.
-        Assert.Contains("_commandWait ?? _currentStep", helpers, StringComparison.Ordinal);
+        // The step on the line, the wait as a card under it; shown only while the command still holds the turn.
+        Assert.Contains("_commandStatus.ShowWait(_commandWait);", helpers, StringComparison.Ordinal);
+        // A command's step is "" between steps, never null: a wait said then still gets its line.
+        Assert.Matches(@"!string\.IsNullOrEmpty\(_currentStep\) \? _currentStep\s*:\s*_commandWait is not null \? Strings\.StatusThinking", helpers);
         Assert.Contains("ReferenceEquals(_commandOwner, _currentCts)", helpers, StringComparison.Ordinal);
         var properties = ConventionCoverageTests.CodeOnly(Path.Combine(window, "InferpalToolWindowData.Construction.cs"));
         Assert.Matches(@"string CurrentStep\s*\{[^}]*set \{ if \(SetProperty\(ref _currentStep, value\)\) ShowCommandStatus\(\);", properties);
@@ -103,7 +108,7 @@ public class ModelWaitScopeTests
         // first in the finally (a line said after would bring the bubble back).
         var turn = ConventionCoverageTests.CodeOnly(Path.Combine(window, "InferpalToolWindowData.ChatTurn.cs"));
         Assert.Matches(@"CompactOrTruncateAsync\([^;]*step => UpsertStatusBubble\([^;]*;\s*await RunOnVMContextAsync\([\s\S]{0,80}RemoveStatusBubble\(\)", turn);
-        Assert.Matches(@"var waitScope = ModelWaitScope\.Open\([\s\S]*?turnWait \?\? turnStep[\s\S]*?finally\s*\{\s*waitScope\.Dispose\(\);", turn);
+        Assert.Matches(@"var waitScope = ModelWaitScope\.Open\([\s\S]*?turnWait = wait;[\s\S]*?statusBubble\?\.ShowWait\(wait\);[\s\S]*?finally\s*\{\s*waitScope\.Dispose\(\);", turn);
         // /tdd and /fix-build give their bubble back before the turn is released.
         foreach (var (name, gesture) in new[] { ("SlashCommands", "HandleTddCommandAsync"), ("PromptHistory", "HandleFixBuildCommandAsync") })
         {
@@ -170,16 +175,16 @@ public class ModelWaitScopeTests
     [Fact]
     public void ANestedScope_GivesBackTheOuterOne()
     {
-        var outer = new ConcurrentQueue<string?>();
-        var inner = new ConcurrentQueue<string?>();
+        var outer = new ConcurrentQueue<ModelWait?>();
+        var inner = new ConcurrentQueue<ModelWait?>();
         Assert.Null(ModelWaitScope.Current);
         using (ModelWaitScope.Open(outer.Enqueue))
         {
-            using (ModelWaitScope.Open(inner.Enqueue)) ModelWaitScope.Current!("inner");
-            ModelWaitScope.Current!("outer");
+            using (ModelWaitScope.Open(inner.Enqueue)) ModelWaitScope.Current!(Inner);
+            ModelWaitScope.Current!(Outer);
         }
         Assert.Null(ModelWaitScope.Current);
-        Assert.Equal(["inner"], inner);
-        Assert.Equal(["outer"], outer);
+        Assert.Equal([Inner], inner);
+        Assert.Equal([Outer], outer);
     }
 }

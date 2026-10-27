@@ -1105,6 +1105,9 @@ internal sealed class AcpSession : IAsyncDisposable
     // the step pause are covered by chat/reasoning and by /agent-step not being offered.
     [JsonRpcMethod("chat/thinking")]     public void ChatThinking() { }
     [JsonRpcMethod("chat/step")]         public void ChatStep() { }
+    // The wait card, as the status line: ACP has no wire for a card, and how a client should show a request still
+    // reading its prompt is not settled.
+    [JsonRpcMethod("chat/wait")]         public void ChatWait() { }
     /// <summary>What the model wrote so far in this act is not the answer: the next act's thinking starts a paragraph.</summary>
     [JsonRpcMethod("chat/streamReset")]  public void ChatStreamReset() => _actBreak = _provisional;
     [JsonRpcMethod("chat/stepPaused")]   public void ChatStepPaused() { }

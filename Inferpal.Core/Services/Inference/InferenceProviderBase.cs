@@ -14,7 +14,7 @@ namespace Inferpal.Services.Inference;
 /// (Ollama and OpenAI-compatible). Holds the cross-cutting concerns that do not depend on the
 /// wire format: the shared <see cref="HttpClient"/>, the chat + embedding circuit breakers, the
 /// per-task timeout policy, the streaming POST helper, and the whole agentic loop
-/// (<see cref="RunAgentAsync"/>, which only ever calls <see cref="SendChatAsync(string, List{ChatMessageDto}, IToolRegistry, Action{string}, ReasoningEffort, CancellationToken, TaskComplexity, string, Action{string}, Action{string})"/>).
+/// (<see cref="RunAgentAsync"/>, which only ever calls <see cref="SendChatAsync(string, List{ChatMessageDto}, IToolRegistry, Action{string}, ReasoningEffort, CancellationToken, TaskComplexity, string, Action{string}, Action{ModelWait})"/>).
 /// </summary>
 /// <remarks>
 /// Wire-format-specific operations are <c>abstract</c> (chat, embeddings, model listing, connection
@@ -475,7 +475,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         TaskComplexity complexity = TaskComplexity.Normal,
         string? toolChoice = null,
         Action<string>? onThinking = null,
-        Action<string?>? onWaiting = null)
+        Action<ModelWait?>? onWaiting = null)
         => SendChatAsync(model, messages, tools, onToken, ct, complexity, toolChoice, onThinking);
 
     /// <inheritdoc/>
@@ -574,7 +574,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     // ── Agentic loop (backend-agnostic: only calls SendChatAsync) ──────────────
 
     /// <summary>
-    /// Runs the basic agentic loop: one <see cref="SendChatAsync(string, List{ChatMessageDto}, IToolRegistry, Action{string}, ReasoningEffort, CancellationToken, TaskComplexity, string, Action{string}, Action{string})"/> turn at a time, executing any
+    /// Runs the basic agentic loop: one <see cref="SendChatAsync(string, List{ChatMessageDto}, IToolRegistry, Action{string}, ReasoningEffort, CancellationToken, TaskComplexity, string, Action{string}, Action{ModelWait})"/> turn at a time, executing any
     /// returned tool calls, until the model answers without tools or the configured iteration cap
     /// (<see cref="InferpalConfig.AgentMaxIterations"/>) is reached. Tool results are size-capped
     /// and the oldest are elided when the running context nears num_ctx (shared policies with
@@ -607,7 +607,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         Action<string>? onThinking = null,
         ReasoningEffort effort = ReasoningEffort.Server,
         RunSteering? steering = null,
-        Action<string?>? onWaiting = null)
+        Action<ModelWait?>? onWaiting = null)
     {
         var base_ = ServerUrl.TrimEnd('/');
         if (string.IsNullOrWhiteSpace(base_))
@@ -668,8 +668,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
                                            // ⚠ The scope before the step: a caller with no step to show (`/commit`) lost
                                            // its wait in its no-op step, and one that shows its steps (`/tdd`) saw its
                                            // own line replaced by the wait, then by "Thinking…".
-                                           onWaiting: onWaiting ?? ModelWaitScope.Current
-                                                      ?? (text => onStep(text ?? Strings.StatusThinking)));
+                                           onWaiting: onWaiting ?? ModelWaitScope.OrStep(onStep, Strings.StatusThinking));
             }
             catch (OperationCanceledException) { throw; } // propagate user-initiated cancel
             catch (AgentHttpException ex)

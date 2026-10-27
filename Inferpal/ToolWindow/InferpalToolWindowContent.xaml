@@ -587,10 +587,9 @@
                         </StackPanel>
 
                         <!-- ── The live status: what the agent is doing now ── -->
-                        <TextBlock Text="{Binding Content}" TextWrapping="Wrap" FontSize="12" FontStyle="Italic"
-                                   Foreground="{Binding ThemeSubtleText}">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
                                     <Setter Property="Visibility" Value="Collapsed"/>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding Role}" Value="status">
@@ -598,8 +597,68 @@
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
+                            </StackPanel.Style>
+                        <TextBlock Text="{Binding Content}" TextWrapping="Wrap" FontSize="12" FontStyle="Italic"
+                                   Foreground="{Binding ThemeSubtleText}"/>
+
+                        <!-- ── Under it, a request waiting on a server that reads its prompt: what, how long, when it stops ── -->
+                        <Border CornerRadius="8" BorderThickness="1" Padding="12,10" Margin="0,8,0,0"
+                                Background="{Binding DataContext.ThemeSurface, ElementName=root}"
+                                Visibility="{Binding HasWait, Converter={StaticResource b2v}}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="BorderBrush" Value="{Binding DataContext.ThemeBorder, ElementName=root}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsWaitLonger}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{Binding DataContext.ThemeWarn, ElementName=root}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel>
+                                <DockPanel LastChildFill="True">
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding WaitTimes}" FontSize="12" Margin="8,0,0,0"
+                                               VerticalAlignment="Center" Foreground="{Binding ThemeSubtleText}"/>
+                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE823;" FontSize="13" Margin="0,0,8,0"
+                                               VerticalAlignment="Center" AutomationProperties.Name="">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{Binding DataContext.ThemeAccentText, ElementName=root}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsWaitLonger}" Value="True">
+                                                        <Setter Property="Foreground" Value="{Binding DataContext.ThemeWarn, ElementName=root}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding WaitTitle}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap"
+                                               VerticalAlignment="Center" Foreground="{Binding ThemeText}"/>
+                                </DockPanel>
+                                <!-- A bar only when a read was measured: a band scaled to the fraction, over its track -->
+                                <Grid Height="4" Margin="0,8,0,0" Visibility="{Binding HasWaitBar, Converter={StaticResource b2v}}">
+                                    <Border CornerRadius="2" Background="{Binding DataContext.ThemeBorder, ElementName=root}"/>
+                                    <Border CornerRadius="2" RenderTransformOrigin="0,0.5">
+                                        <Border.RenderTransform>
+                                            <ScaleTransform ScaleX="{Binding WaitFraction}"/>
+                                        </Border.RenderTransform>
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="{Binding DataContext.ThemeAccent, ElementName=root}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsWaitLonger}" Value="True">
+                                                        <Setter Property="Background" Value="{Binding DataContext.ThemeWarn, ElementName=root}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                    </Border>
+                                </Grid>
+                                <TextBlock Text="{Binding WaitDetail}" FontSize="12" Margin="0,8,0,0" TextWrapping="Wrap"
+                                           Foreground="{Binding ThemeSubtleText}"/>
+                            </StackPanel>
+                        </Border>
+                        </StackPanel>
 
                         <!-- ── The agent's plan: its goal and steps, as it updates them ── -->
                         <Border CornerRadius="8" BorderThickness="1" Padding="10,8"

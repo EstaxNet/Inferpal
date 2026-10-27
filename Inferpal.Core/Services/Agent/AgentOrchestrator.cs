@@ -598,7 +598,7 @@ internal sealed class AgentOrchestrator
         {
             var turn   = await _client.SendChatAsync(
                 model, synth, EmptyToolRegistry.Instance, onToken, effort, ct, TaskComplexity.Normal, onThinking: onThinking,
-                onWaiting: text => onStep(text ?? Strings.StatusAgentSynthesizing));
+                onWaiting: ModelWaitScope.OrStep(onStep, Strings.StatusAgentSynthesizing));
             var answer = MarkdownParser.StripThinkTags(turn.TextContent);
             // ⚠ A synthesis the client stopped because it kept repeating is cut AND repeating: carried as a cut alone,
             // the end notice advised a longer context — the one remedy that does nothing for a loop.
@@ -867,7 +867,7 @@ internal sealed class AgentOrchestrator
             // No tools during planning — we want a pure JSON response.  Quick timeout: plans are short.
             // While the server reads the prompt the line says so, then gives the step back.
             planTurn = await _client.SendChatAsync(model, planMessages, EmptyToolRegistry.Instance, null, runEffort, ct, TaskComplexity.Quick,
-                                                   onThinking: onThinking, onWaiting: text => onStep(text ?? Strings.StatusAgentPlanning));
+                                                   onThinking: onThinking, onWaiting: ModelWaitScope.OrStep(onStep, Strings.StatusAgentPlanning));
         }
         catch (OperationCanceledException) { throw; }
         catch (AgentHttpException ex)
@@ -960,7 +960,7 @@ internal sealed class AgentOrchestrator
                 var toolChoice = (iteration == 0 || retryForcesTool) ? "required" : null;
                 retryForcesTool = false;
                 turn = await _client.SendChatAsync(model, messages, tools, onToken, runEffort, ct, TaskComplexity.Normal, toolChoice, onThinking,
-                                                   text => onStep(text ?? Strings.StatusThinking));
+                                                   ModelWaitScope.OrStep(onStep, Strings.StatusThinking));
             }
             catch (OperationCanceledException) { throw; }
             catch (AgentHttpException ex)

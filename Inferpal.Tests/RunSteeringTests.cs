@@ -362,7 +362,7 @@ public class RunSteeringTests
         public override Task<ChatTurnResult> SendChatAsync(
             string model, List<ChatMessageDto> messages, IToolRegistry tools, Action<string>? onToken,
             ReasoningEffort effort, CancellationToken ct, TaskComplexity complexity = TaskComplexity.Normal,
-            string? toolChoice = null, Action<string>? onThinking = null, Action<string?>? onWaiting = null)
+            string? toolChoice = null, Action<string>? onThinking = null, Action<ModelWait?>? onWaiting = null)
         {
             SeenMessages.Add(new List<ChatMessageDto>(messages));
             return Task.FromResult(_script.Count > 1 ? _script.Dequeue() : _script.Peek());

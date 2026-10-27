@@ -271,8 +271,8 @@ public sealed class PrefillDecisionTests
     [Fact]
     public async Task ALineSaid_IsGivenBack_WhenTheRequestEndsWithoutAnAnswer()
     {
-        var said = new List<string?>();
-        var wait = new PrefillWait(s => { lock (said) said.Add(s); }, 5_000, null, firstSaid: TimeSpan.FromMilliseconds(20));
+        var said = new List<ModelWait?>();
+        var wait = new PrefillWait(s => { lock (said) said.Add(s); }, 5_000, null, TimeSpan.FromMinutes(10), firstSaid: TimeSpan.FromMilliseconds(20));
         var clock = System.Diagnostics.Stopwatch.StartNew();
         while (Count() == 0 && clock.Elapsed < TimeSpan.FromSeconds(30)) await Task.Delay(10);
 
@@ -289,9 +289,9 @@ public sealed class PrefillDecisionTests
     [Fact]
     public void ALineNeverSaid_GivesNothingBack()
     {
-        var said = new List<string?>();
+        var said = new List<ModelWait?>();
 
-        using (new PrefillWait(s => said.Add(s), 5_000, null)) { }
+        using (new PrefillWait(s => said.Add(s), 5_000, null, TimeSpan.FromMinutes(10))) { }
 
         Assert.Empty(said);
     }
@@ -439,7 +439,7 @@ public sealed class SlowPrefillOpenAiTests : IDisposable
     {
         OpenAiCompatibleClient client;
         var steps  = new List<string>();
-        var scoped = new List<string?>();
+        var scoped = new List<ModelWait?>();
         using (ModelWaitScope.Open(line => { lock (scoped) scoped.Add(line); }))
         {
             using (var server = new SlowReadServer(headersFirst: true, TimeSpan.FromSeconds(3), "text/event-stream", Sse))
@@ -537,7 +537,7 @@ public sealed class SlowPrefillOpenAiTests : IDisposable
         {
             Provider = "openai", BaseUrl = server.BaseUrl, QuickTimeoutSeconds = 30, NormalTimeoutSeconds = 30,
         });
-        var said   = new List<string?>();
+        var said   = new List<ModelWait?>();
 
         var turn = await client.SendChatAsync(_model, new List<ChatMessageDto>(Question), new PrefillWaitingLineTests.OneTool(),
                                               null, ReasoningEffort.Server, CancellationToken.None, toolChoice: "required",
@@ -548,7 +548,7 @@ public sealed class SlowPrefillOpenAiTests : IDisposable
         {
             var givenBack = said.IndexOf(null);
             Assert.True(givenBack > 0 && givenBack < said.Count - 1 && said[givenBack + 1] is not null,
-                        "no line given back before the retry's own: " + string.Join(" | ", said.Select(s => s ?? "(null)")));
+                        "no line given back before the retry's own: " + string.Join(" | ", said.Select(s => s?.Short ?? "(null)")));
             Assert.Null(said[^1]);
         }
     }
@@ -801,7 +801,9 @@ public sealed class PrefillWaitingLineTests
     [Fact]
     public async Task EveryCallOfAnAgentRun_SaysTheWait_ThenGivesItsStepBack()
     {
-        const string Reading = "reading the prompt";
+        // With no scope, the orchestrator says the wait on its step line: the title and the times.
+        var wait = new ModelWait(3_000, TimeSpan.FromSeconds(9), null, TimeSpan.FromMinutes(5));
+        var Reading = wait.Short;
         // The plan, the step that reads a file, an empty answer — and the synthesis that replaces it.
         var replies = new Queue<ChatTurnResult>(
         [
@@ -814,7 +816,7 @@ public sealed class PrefillWaitingLineTests
         var client = new FakeInferenceProvider
         {
             OnChatRequest = (_, _, _, _) => Task.FromResult(replies.Count > 1 ? replies.Dequeue() : replies.Peek()),
-            DriveWaiting  = waiting => { waiting(Reading); waiting(null); },
+            DriveWaiting  = waiting => { waiting(wait); waiting(null); },
         };
         var steps = new List<string>();
 
@@ -831,12 +833,16 @@ public sealed class PrefillWaitingLineTests
         Assert.Contains(Strings.StatusAgentSynthesizing, givenBack);
     }
 
+    /// <summary>The host's question without tools says its wait through the turn's scope, like every call of the turn: a
+    /// place of its own would bypass the rule that an editor drawing its own label (<c>saysWaits: false</c>) shows no card.
+    /// The card itself is <c>HostServerTests.ChatSend_PlainChat_ShowsTheWaitCard_ThenTakesItAway</c>.</summary>
     [Fact]
-    public void TheHostsQuestionWithoutTools_SaysTheWaitOnItsStatusLine()
+    public void TheHostsQuestionWithoutTools_SaysTheWaitThroughTheTurnsScope()
     {
         var call = ChatTurnBudgetParityTests.ModelCalls("Inferpal.Host/HostServer.cs")
             .Single(c => ((Microsoft.CodeAnalysis.CSharp.Syntax.MemberAccessExpressionSyntax)c.Expression).Name.Identifier.Text == "SendChatAsync");
 
-        Assert.Contains(call.ArgumentList.Arguments, a => a.NameColon?.Name.Identifier.Text == "onWaiting");
+        Assert.DoesNotContain(call.ArgumentList.Arguments, a => a.NameColon?.Name.Identifier.Text == "onWaiting");
+        Assert.True(call.ArgumentList.Arguments.Count >= 6);   // witness: the call read is the chat turn's
     }
 }

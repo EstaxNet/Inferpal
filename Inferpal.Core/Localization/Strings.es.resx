@@ -246,8 +246,13 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
   <data name="CodeActionReplyCut" xml:space="preserve"><value>La respuesta se detuvo en el límite de longitud del modelo antes del final del código: no se aplicó nada. Selecciona una parte más pequeña del archivo o aumenta la longitud de contexto.</value></data>
   <data name="OnboardContextCut" xml:space="preserve"><value>El borrador se detuvo en el límite de longitud del modelo antes de terminar: no se escribió .inferpal/context.md. Aumenta la longitud de contexto o elige un modelo con una ventana mayor y vuelve a ejecutar /onboard context.</value></data>
   <data name="MsgTimeout" xml:space="preserve"><value>Tiempo de espera agotado — el backend en {0} dejó de responder (tiempo de inactividad).</value></data>
-  <data name="StatusReadingPrompt" xml:space="preserve"><value>Leyendo el prompt: unos {0:N0} {0:token|tokens} · {1}</value></data>
-  <data name="StatusReadingPromptEstimate" xml:space="preserve"><value>Leyendo el prompt: unos {0:N0} {0:token|tokens}, hasta unos {1} si nada está en caché · {2}</value></data>
+  <data name="WaitReading" xml:space="preserve"><value>Leyendo el prompt</value></data>
+  <data name="WaitReadingLonger" xml:space="preserve"><value>Leyendo el prompt — más de lo habitual</value></data>
+  <data name="WaitTimesOfAbout" xml:space="preserve"><value>{0} de hasta unos {1}</value></data>
+  <data name="WaitTimesOfBound" xml:space="preserve"><value>{0} de {1}</value></data>
+  <data name="WaitDetail" xml:space="preserve"><value>Unos {0:N0} {0:token|tokens}; hasta unos {1} si nada está en caché. Se detiene a los {2} si el servidor no responde.</value></data>
+  <data name="WaitDetailUnmeasured" xml:space="preserve"><value>Unos {0:N0} {0:token|tokens}. Se detiene a los {1} si el servidor no responde.</value></data>
+  <data name="WaitDetailLonger" xml:space="preserve"><value>Aquí suele tardar como mucho unos {0}. Si el servidor no responde, se detiene a los {1} y dice por qué; Detener lo termina ahora.</value></data>
   <data name="MsgPrefillOverran" xml:space="preserve"><value>Sin respuesta de {0} tras {1}: aún leía un prompt de unos {2:N0} {2:token|tokens}. Un servidor lento puede leer un prompt largo durante minutos: la próxima solicitud a este modelo esperará más, y «{3}» fija la espera más corta ({4} → {5}).</value></data>
   <data name="MsgPrefillNoAnswer" xml:space="preserve"><value>Sin respuesta de {0} tras {1}: aún leía un prompt de unos {2:N0} {2:token|tokens}, o no responde. «{3}» fija cuánto espera Inferpal una primera palabra ({4} → {5}).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>No se puede alcanzar el backend en {0}. Verifica la URL en Configuración.</value></data>

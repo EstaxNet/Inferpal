@@ -182,6 +182,22 @@ export interface TextNote {
   text: string;
 }
 
+/** `chat/wait` — a request waiting on a server that reads its prompt (`ModelWaitDto`), or null when it gives its place
+ *  back. Its words come from the host, in the person's language. */
+export interface ModelWait {
+  title: string;
+  times: string;
+  detail: string;
+  /** How far along, 0 to 1; null with nothing measured: no bar. */
+  fraction: number | null;
+  /** Past the measured read: drawn as a warning, measured against the bound. */
+  longer: boolean;
+}
+
+export interface WaitNote {
+  wait: ModelWait | null;
+}
+
 /** `chat/thinking` — the throttled reasoning tail, or no text at all when the host only means
  *  "the model is thinking" (plain chat). */
 export interface ThinkingNote {

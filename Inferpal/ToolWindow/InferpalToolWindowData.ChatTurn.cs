@@ -320,14 +320,17 @@ internal partial class InferpalToolWindowData
         // agent works.  Removed before the final response is inserted so it never persists.
         ChatMessageItem? statusBubble  = null;
 
-        // The turn's step, and the wait of a call that names no place of its own: the wait wins, the step comes back.
-        string? turnStep = null, turnWait = null;
+        // The turn's step, and the wait of a call that names no place of its own: the step on the line, the wait as a
+        // card under it until the first word.
+        string? turnStep = null;
+        Services.Inference.ModelWait? turnWait = null;
 
         // Creates the live-status bubble on first use, then updates it in place.
         void UpsertStatusBubble(string text) => Post(() =>
         {
             turnStep = text;
-            ShowStatus(turnWait ?? text);
+            ShowStatus(text);
+            statusBubble?.ShowWait(turnWait);
         });
 
         // The same, on the VM context.
@@ -362,11 +365,16 @@ internal partial class InferpalToolWindowData
         // (covers every chat entrypoint), so the chat model is never starved by the embedding workload.
         // The waits of the turn's model calls on its status bubble (ModelWaitScope), then its step back. Closed first in
         // the finally: a line said after would bring the bubble back.
-        var waitScope = ModelWaitScope.Open(line => Post(() =>
+        var waitScope = ModelWaitScope.Open(wait => Post(() =>
         {
-            turnWait = line is null ? null : "⏳ " + line;
-            if ((turnWait ?? turnStep) is { } text) ShowStatus(text);
-            else RemoveStatusBubble();
+            turnWait = wait;
+            if (wait is null && turnStep is null)
+            {
+                RemoveStatusBubble();
+                return;
+            }
+            ShowStatus(turnStep ?? Strings.StatusThinking);
+            statusBubble?.ShowWait(wait);
         }));
 
         // The turn's run, whatever way the turn ends: its last line carries it (going back to the question undoes it).

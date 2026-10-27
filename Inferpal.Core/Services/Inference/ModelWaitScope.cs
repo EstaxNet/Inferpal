@@ -16,7 +16,12 @@ internal static class ModelWaitScope
     private static readonly AsyncLocal<Scope?> _current = new();
 
     /// <summary>Where a call made now says its wait, or <c>null</c> (no scope, or a closed one).</summary>
-    public static Action<string?>? Current => _current.Value is { IsOpen: true } scope ? scope.Say : null;
+    public static Action<ModelWait?>? Current => _current.Value is { IsOpen: true } scope ? scope.Say : null;
+
+    /// <summary>Where a call that has a step line says its wait: the open scope, else the step line itself — the title and
+    /// the times, then <paramref name="fallback"/> once the wait gives its place back.</summary>
+    public static Action<ModelWait?> OrStep(Action<string> onStep, string fallback) =>
+        Current ?? (wait => onStep(wait?.Short ?? fallback));
 
     /// <summary>Leaves any scope for the rest of this flow (a task's worker, started from a gesture it outlives); the
     /// flow that started it keeps its own.</summary>
@@ -26,24 +31,24 @@ internal static class ModelWaitScope
     /// Opens a scope for the calls made from here, in this flow and the tasks it starts, until it is disposed. Opened
     /// in a synchronous method, it holds for its async caller until that caller returns.
     /// </summary>
-    /// <param name="onWaiting">The line, or <c>null</c> when it gives its place back; called under
+    /// <param name="onWaiting">The wait, or <c>null</c> when it gives its place back; called under
     /// <see cref="PrefillWait"/>'s lock, so it must not block.</param>
-    public static IDisposable Open(Action<string?> onWaiting) => _current.Value = new Scope(onWaiting, _current.Value);
+    public static IDisposable Open(Action<ModelWait?> onWaiting) => _current.Value = new Scope(onWaiting, _current.Value);
 
     /// <remarks>⚠ Work that outlives the turn keeps the scope object in its captured context: once closed it lets go of
     /// its line (the front-end behind it) and of the scopes it covered, or an ended session could never be collected.
     /// ⚠ Closing and saying share a lock: once <see cref="Dispose"/> returns, no line is said.</remarks>
-    private sealed class Scope(Action<string?> onWaiting, Scope? previous) : IDisposable
+    private sealed class Scope(Action<ModelWait?> onWaiting, Scope? previous) : IDisposable
     {
         private readonly object _gate = new();
-        private Action<string?>? _onWaiting = onWaiting;
+        private Action<ModelWait?>? _onWaiting = onWaiting;
         private Scope? _previous = previous;
 
         public bool IsOpen => Volatile.Read(ref _onWaiting) is not null;
 
-        public void Say(string? line)
+        public void Say(ModelWait? wait)
         {
-            lock (_gate) _onWaiting?.Invoke(line);
+            lock (_gate) _onWaiting?.Invoke(wait);
         }
 
         public void Dispose()

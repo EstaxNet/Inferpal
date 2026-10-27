@@ -403,9 +403,10 @@ internal partial class InferpalToolWindowData
         try
         {
             // The model's wait on the label of the bubble the proposal streams into, then the label back.
-            using (ModelWaitScope.Open(line => Post(() =>
+            using (ModelWaitScope.Open(wait => Post(() =>
                    {
-                       if (streamItem is not null) streamItem.Label = line is null ? Strings.CommitProposingLabel : "⏳ " + line;
+                       // A label has room for a line: the title and the times.
+                       if (streamItem is not null) streamItem.Label = wait is null ? Strings.CommitProposingLabel : "⏳ " + wait.Short;
                    })))
             {
                 proposal = await Services.Commands.CommitCommandHandler.ProposeAsync(

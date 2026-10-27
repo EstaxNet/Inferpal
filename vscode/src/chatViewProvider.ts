@@ -530,6 +530,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         this.post({ type: 'token', text });
       },
       onStep: (text) => this.post({ type: 'status', text }),
+      onWait: (wait) => this.post({ type: 'wait', wait }),
       // ⚠ The text was THROWN AWAY here, while the host streamed it with no throttle: a
       // reasoning model's thinking phase showed nothing but a frozen status. On the agent path the
       // tail IS step progress; in plain chat the host sends nothing and the generic indicator takes

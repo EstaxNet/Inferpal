@@ -281,7 +281,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         TaskComplexity complexity = TaskComplexity.Normal,
         string? toolChoice = null,
         Action<string>? onThinking = null,
-        Action<string?>? onWaiting = null)
+        Action<ModelWait?>? onWaiting = null)
     {
         var base_ = BaseV1;
         if (string.IsNullOrWhiteSpace(base_))
@@ -385,7 +385,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         var reading   = PrefillRates.Shared.Describe(base_, model, size.Total);
         var firstWait = PrefillDeadline.For(deadline, reading.ColdRead);
         var toRead    = reading.Tokens;
-        wait = new PrefillWait(onWaiting, toRead, reading.Measured);
+        wait = new PrefillWait(onWaiting, toRead, reading.Measured, firstWait);
         using var waitScope = wait;
         TimeSpan? firstUseful = null;
         // No first token when the wait ran out — never before the connection deadline (PrefillDeadline.AfterConnect): the

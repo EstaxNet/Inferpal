@@ -3,7 +3,7 @@
 // destroyed on hide: everything re-renders from the 'hydrate' message.
 // No literal user-visible English here — strings go through t() (window.__l10n).
 import type {
-  ApprovalCard, InputCard, InputCardField, InputFormAnswer, RewindCard, RunReview, RunReviewLine, RunSummary, SetupPlace, SetupPlan,
+  ApprovalCard, InputCard, InputCardField, InputFormAnswer, ModelWait, RewindCard, RunReview, RunReviewLine, RunSummary, SetupPlace, SetupPlan,
 } from '../protocol';
 import type {
   ExtToWebview,
@@ -390,6 +390,8 @@ function setBusy(value: boolean): void {
     for (const el of messagesEl.querySelectorAll<HTMLElement>('.continue-turn')) {
       el.hidden = false;
     }
+    // A wait never outlives its turn: stopped, failed or answered, the card goes with it.
+    messagesEl.querySelectorAll('.wait-card').forEach((el) => el.remove());
   }
   setIcon(sendBtn, value ? 'stop' : 'send', undefined, 15);
   sendBtn.title = value ? t('cancelTitle') : t('sendTitle');
@@ -523,6 +525,51 @@ function setStatus(text: string): void {
   if (turn && busy) {
     turn.when.textContent = text;
   }
+}
+
+/** The turn's wait card: what the server is doing, how long against what, and when it stops — gone with null. The
+ *  words are the host's (`ModelWait`); the bar only when a read was measured. */
+function renderWait(wait: ModelWait | null): void {
+  let card = turn?.el.querySelector<HTMLElement>('.wait-card') ?? null;
+  if (!wait || !turn || !busy) {
+    card?.remove();
+    return;
+  }
+  if (!card) {
+    card = document.createElement('div');
+    card.className = 'wait-card';
+    // Only the title is announced: it changes once, to "longer than usual"; the times change every few seconds.
+    card.setAttribute('role', 'group');
+    const head = document.createElement('div');
+    head.className = 'wait-head';
+    const icon = document.createElement('span');
+    icon.className = 'wait-icon';
+    setIcon(icon, 'history', undefined, 15);
+    const title = document.createElement('span');
+    title.className = 'wait-title';
+    title.setAttribute('aria-live', 'polite');
+    const times = document.createElement('span');
+    times.className = 'wait-times';
+    head.append(icon, title, times);
+    const bar = document.createElement('div');
+    bar.className = 'wait-bar';
+    bar.setAttribute('aria-hidden', 'true');
+    const fill = document.createElement('div');
+    fill.className = 'wait-fill';
+    bar.appendChild(fill);
+    const detail = document.createElement('div');
+    detail.className = 'wait-detail';
+    card.append(head, bar, detail);
+    turn.body.appendChild(card);
+    scrollToBottom();
+  }
+  card.classList.toggle('longer', wait.longer);
+  card.querySelector<HTMLElement>('.wait-title')!.textContent = wait.title;
+  card.querySelector<HTMLElement>('.wait-times')!.textContent = wait.times;
+  card.querySelector<HTMLElement>('.wait-detail')!.textContent = wait.detail;
+  const bar = card.querySelector<HTMLElement>('.wait-bar')!;
+  bar.hidden = wait.fraction === null;
+  card.querySelector<HTMLElement>('.wait-fill')!.style.width = `${Math.round((wait.fraction ?? 0) * 100)}%`;
 }
 
 function renderPlan(plan: WvPlan | null): void {
@@ -3107,6 +3154,9 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       break;
     case 'status':
       setStatus(msg.text);
+      break;
+    case 'wait':
+      renderWait(msg.wait);
       break;
     case 'assistant':
       // Out-of-turn assistant bubble (e.g. a background /task finishing) — persistent, unlike a

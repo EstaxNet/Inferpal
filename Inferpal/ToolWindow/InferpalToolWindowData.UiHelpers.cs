@@ -234,7 +234,7 @@ internal partial class InferpalToolWindowData
             _commandOwner = cts;
             ShowCommandStatus();
         });
-        var waitScope = ModelWaitScope.Open(line => SayCommandWait(cts, line));
+        var waitScope = ModelWaitScope.Open(wait => SayCommandWait(cts, wait));
         return new OnDispose(() =>
         {
             waitScope.Dispose();
@@ -262,24 +262,27 @@ internal partial class InferpalToolWindowData
     private ChatMessageItem? _commandStatus;
 
     /// <summary>The wait a model call of the command is saying, or <c>null</c>.</summary>
-    private string? _commandWait;
+    private Services.Inference.ModelWait? _commandWait;
 
     /// <summary>A wait said by a model call of the command whose turn is <paramref name="owner"/>
-    /// (<see cref="ModelWaitScope"/>): the line while the server reads, then the step it covered — never into another
+    /// (<see cref="ModelWaitScope"/>): its card while the server reads, under the step it covers — never into another
     /// command's bubble, when this one was cancelled and is still unwinding.</summary>
-    private void SayCommandWait(CancellationTokenSource owner, string? line) => Post(() =>
+    private void SayCommandWait(CancellationTokenSource owner, Services.Inference.ModelWait? wait) => Post(() =>
     {
         if (!ReferenceEquals(_commandOwner, owner)) return;
-        _commandWait = line is null ? null : "⏳ " + line;
+        _commandWait = wait;
         ShowCommandStatus();
     });
 
-    /// <summary>Draws the running command's status bubble — its wait, else its step — or removes it once neither is
-    /// said or the command has ended. VM context only.</summary>
+    /// <summary>Draws the running command's status bubble — its step, with its wait as a card — or removes it once
+    /// neither is said or the command has ended. VM context only.</summary>
     private void ShowCommandStatus()
     {
         var shows = _commandOwner is not null && ReferenceEquals(_commandOwner, _currentCts);
-        var text  = shows ? _commandWait ?? _currentStep : string.Empty;
+        // ⚠ A command's step is "" between steps, never null: a wait said then still needs a line to hang under.
+        var text  = !shows ? string.Empty
+                  : !string.IsNullOrEmpty(_currentStep) ? _currentStep
+                  : _commandWait is not null ? Strings.StatusThinking : string.Empty;
         if (string.IsNullOrEmpty(text))
         {
             if (_commandStatus is not null) Messages.Remove(_commandStatus);
@@ -289,12 +292,14 @@ internal partial class InferpalToolWindowData
         if (_commandStatus is null)
         {
             _commandStatus = ChatMessageItem.StatusMsg(text);
+            _commandStatus.ShowWait(_commandWait);
             ApplyItemTheme(_commandStatus);
             Messages.Insert(Messages.Count - 2, _commandStatus);
             ScrollToBottom();
             return;
         }
         _commandStatus.Content = text;
+        _commandStatus.ShowWait(_commandWait);
         // Kept last, above the anchors: a command that writes results as it goes (/tdd's test reports) would leave its
         // step above them, away from where the person reads — and put back when the conversation was cleared under it.
         // ⚠ No ScrollToBottom: it would pull back down someone who scrolled up to read a report; following, the

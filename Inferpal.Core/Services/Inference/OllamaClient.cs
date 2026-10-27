@@ -95,12 +95,12 @@ internal class OllamaClient : InferenceProviderBase
         TaskComplexity complexity = TaskComplexity.Normal,
         string? toolChoice = null,
         Action<string>? onThinking = null,
-        Action<string?>? onWaiting = null)
+        Action<ModelWait?>? onWaiting = null)
         => ChatAsync(model, messages, tools, onToken, ct, complexity, toolChoice, onThinking, onWaiting);
 
     private async Task<ChatTurnResult> ChatAsync(
         string model, List<ChatMessageDto> messages, IToolRegistry tools, Action<string>? onToken, CancellationToken ct,
-        TaskComplexity complexity, string? toolChoice, Action<string>? onThinking, Action<string?>? onWaiting)
+        TaskComplexity complexity, string? toolChoice, Action<string>? onThinking, Action<ModelWait?>? onWaiting)
     {
         var base_ = ServerUrl.TrimEnd('/');
         if (string.IsNullOrWhiteSpace(base_))
@@ -154,7 +154,7 @@ internal class OllamaClient : InferenceProviderBase
         var reading   = PrefillRates.Shared.Describe(base_, model, size.Total);
         var firstWait = PrefillDeadline.For(deadline, reading.ColdRead);
         var toRead    = reading.Tokens;
-        using var wait = new PrefillWait(onWaiting, toRead, reading.Measured);
+        using var wait = new PrefillWait(onWaiting, toRead, reading.Measured, firstWait);
         TimeSpan? firstUseful = null;
         // No first token when the wait ran out — never before the connection deadline (PrefillDeadline.AfterConnect): the
         // server was reached and as far as anyone can tell still reading. Said so, kept as "slower than this" so the next

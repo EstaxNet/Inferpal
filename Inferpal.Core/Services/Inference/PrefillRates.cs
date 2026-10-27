@@ -318,30 +318,31 @@ internal sealed class PrefillWait : IDisposable
     /// <summary>How often the line is said again.</summary>
     internal static TimeSpan Beat { get; set; } = TimeSpan.FromSeconds(5);
 
-    private readonly Action<string?>? _onWaiting;
+    private readonly Action<ModelWait?>? _onWaiting;
     private readonly System.Diagnostics.Stopwatch _clock = System.Diagnostics.Stopwatch.StartNew();
     private readonly CancellationTokenSource _stop = new();
     private readonly object _gate = new();
     private bool _stopped, _said, _disposed;
 
-    /// <param name="onWaiting">The line, or <c>null</c> when it gives its place back; <c>null</c> for the open
+    /// <param name="onWaiting">The wait, or <c>null</c> when it gives its place back; <c>null</c> for the open
     /// <see cref="ModelWaitScope"/>'s, and nothing said without one. ⚠ It must not block (the editors post it): it is
     /// called under the lock that keeps a line from following its withdrawal.</param>
     /// <param name="tokens">The tokens to read, as the server counts them.</param>
     /// <param name="coldRead">The measured cold read of a request this size, said with the line; <c>null</c> when not
     /// measured.</param>
+    /// <param name="bound">When the request is given up if the server stays silent: said from the start.</param>
     /// <param name="firstSaid">The silence before the first line; <see cref="FirstSaid"/> when <c>null</c> (tests).</param>
-    public PrefillWait(Action<string?>? onWaiting, int tokens, TimeSpan? coldRead, TimeSpan? firstSaid = null)
+    public PrefillWait(Action<ModelWait?>? onWaiting, int tokens, TimeSpan? coldRead, TimeSpan bound, TimeSpan? firstSaid = null)
     {
         // Every call reaches this line, so the scope is read here once for both clients.
         _onWaiting = onWaiting ?? ModelWaitScope.Current;
-        if (_onWaiting is not null) _ = SayAsync(tokens, coldRead, firstSaid ?? FirstSaid, _stop.Token);
+        if (_onWaiting is not null) _ = SayAsync(tokens, coldRead, bound, firstSaid ?? FirstSaid, _stop.Token);
     }
 
     /// <summary>The time since the request was sent.</summary>
     public TimeSpan Elapsed => _clock.Elapsed;
 
-    private async Task SayAsync(int tokens, TimeSpan? coldRead, TimeSpan firstSaid, CancellationToken ct)
+    private async Task SayAsync(int tokens, TimeSpan? coldRead, TimeSpan bound, TimeSpan firstSaid, CancellationToken ct)
     {
         try
         {
@@ -352,7 +353,7 @@ internal sealed class PrefillWait : IDisposable
                 {
                     if (_stopped) return;
                     _said = true;
-                    _onWaiting!(Strings.StatusReadingPrompt(tokens, coldRead, _clock.Elapsed));
+                    _onWaiting!(new ModelWait(tokens, _clock.Elapsed, coldRead, bound));
                 }
                 await Task.Delay(Beat, ct).ConfigureAwait(false);
             }
