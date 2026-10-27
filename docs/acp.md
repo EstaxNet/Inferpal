@@ -241,6 +241,8 @@ With a local Ollama already running, there is nothing to set up: Inferpal finds 
   has installed. Both appear as the session's options in your client. The model shown is the one that answers: in
   *Agent* mode, the model set for the agent's role when you set one; a model you pick answers in every mode. While the
   agent works through its plan, what the model writes is shown as its thinking, and the answer once, at the end.
+- **A slow server says so**: while the server reads a long prompt and sends nothing yet, the thinking says what it
+  reads and when Inferpal stops waiting if the server stays silent — and once more if it runs longer than usual.
 - **Every change asks first**, with the real diff of each file shown before anything is written — the same approval
   rules, deny lists and session grants as in Visual Studio and VS Code. A file you are editing with unsaved changes is
   never written over: Inferpal asks your editor for its buffer, and refuses.

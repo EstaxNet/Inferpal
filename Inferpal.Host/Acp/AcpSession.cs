@@ -85,6 +85,8 @@ internal sealed class AcpSession : IAsyncDisposable
     /// showed it twice; the session, which saved everything sent, reloaded it twice too.</remarks>
     private bool _provisional;
     private bool _actBreak;
+    /// <summary>What the current wait has said as a thought: 0 nothing, 1 that it reads, 2 that it runs longer.</summary>
+    private int _waitSaid;
     private bool _turnOpen;
     private bool _cancelRequested;
     /// <summary>The calls drawn by <c>chat/toolStart</c> that ended in this turn, whose report from the loop has not come
@@ -439,6 +441,7 @@ internal sealed class AcpSession : IAsyncDisposable
         {
             if (_turnOpen) throw AcpRpc.Error(AcpRpc.InvalidParams, "A prompt is already running in this session.");
             _turnOpen = true;
+            _waitSaid = 0;
             _idle = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             _cancelRequested = stopped;
             _stream = new AcpShownStream();
@@ -1105,9 +1108,24 @@ internal sealed class AcpSession : IAsyncDisposable
     // the step pause are covered by chat/reasoning and by /agent-step not being offered.
     [JsonRpcMethod("chat/thinking")]     public void ChatThinking() { }
     [JsonRpcMethod("chat/step")]         public void ChatStep() { }
-    // The wait card, as the status line: ACP has no wire for a card, and how a client should show a request still
-    // reading its prompt is not settled.
-    [JsonRpcMethod("chat/wait")]         public void ChatWait() { }
+    /// <summary>
+    /// The model's wait, as a thought: a client draws thoughts as they come and never updates them, so it is said once
+    /// when it shows (what the server reads, then the detail with its bound) and once more when it runs longer than
+    /// usual. Nothing that goes stale is written — no time, no "Stop ends it now" — since the line stays in the thread
+    /// once the wait is over, while the client animates its own "working" and shows its own Stop.
+    /// </summary>
+    [JsonRpcMethod("chat/wait", UseSingleObjectParameterDeserialization = true)]
+    public void ChatWait(WaitNote note)
+    {
+        var stage = note.Wait is null ? 0 : note.Wait.Longer ? 2 : 1;
+        lock (_gate)
+        {
+            if (!_turnOpen || (stage != 0 && stage <= _waitSaid)) return;
+            _waitSaid = stage;
+        }
+        if (note.Wait is { } wait)
+            Update(new { sessionUpdate = "agent_thought_chunk", content = Text($"\n\n{wait.Title}\n\n{wait.DetailWithoutStop}\n\n") });
+    }
     /// <summary>What the model wrote so far in this act is not the answer: the next act's thinking starts a paragraph.</summary>
     [JsonRpcMethod("chat/streamReset")]  public void ChatStreamReset() => _actBreak = _provisional;
     [JsonRpcMethod("chat/stepPaused")]   public void ChatStepPaused() { }
@@ -1416,6 +1434,7 @@ internal sealed class AcpSession : IAsyncDisposable
     public sealed record StepUpdateNote(int Index, string? Status);
     public sealed record ToolStartNote(string CallId, string Name, string? Input);
     public sealed record ToolEndNote(string CallId, string? Output);
+    public sealed record WaitNote(ModelWaitDto? Wait);
     public sealed record PathNote(string? Path);
     public sealed record CardNote(string? Title, string? Subject, string? RuleLabel = null);
     public sealed record DiffNote(string? Path, string? OldText, string? NewText);

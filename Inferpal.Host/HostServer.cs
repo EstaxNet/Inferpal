@@ -363,6 +363,9 @@ internal sealed partial class HostServer : IDisposable
         // The reasoning as it streams, for an adapter that shows it (an ACP client): batched, and flushed before the
         // first token of the answer so the two never interleave on screen.
         var reasoning = s.ReasoningChunks ? new ReasoningBatch(text => Notify("chat/reasoning", new { text })) : null;
+        // A wait comes between two requests, after the reasoning the first one held back: sent before the wait's line,
+        // or that line lands inside the model's sentence on an adapter that appends both. Closed before the turn is.
+        var waitsAfterReasoning = reasoning is null ? null : ModelWaitScope.Open(w => { reasoning.Flush(); SayWait(w); });
 
         // Mirror of the streamed text: returned as the partial answer on cancellation.
         var streamed = new StringBuilder();
@@ -675,6 +678,7 @@ internal sealed partial class HostServer : IDisposable
             // attaches to it and /undo-run reverts that write along with the turn we just watched.
             s.Tools.History.EndRun();   // `s`, not Session(): nothing may throw inside this finally
             reasoning?.Flush();
+            waitsAfterReasoning?.Dispose();
             // Before the slot is released, so no other request sees the question without its notes.
             EndSteering(s, steering, notes, questionKept);
             ReleaseTurn(cts);

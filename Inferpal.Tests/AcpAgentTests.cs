@@ -1559,6 +1559,68 @@ public sealed class AcpAgentTests : IDisposable
         Assert.DoesNotContain(saved.Messages, m => m.Content.Split(Answer).Length > 2);
     }
 
+    /// <summary>
+    /// A client draws thoughts as they come and never updates them: the model's wait is said once when it shows and
+    /// once more when it runs longer than usual — with its bound, never a time that would stay frozen — and a new wait
+    /// in the same turn is said again.
+    /// </summary>
+    [Fact]
+    public async Task TheModelsWait_IsAThought_SaidWhenItShowsAndWhenItRunsLonger()
+    {
+        var reading = new ModelWait(18_400, TimeSpan.FromSeconds(9), TimeSpan.FromSeconds(40), TimeSpan.FromMinutes(10));
+        var later   = reading with { Elapsed = TimeSpan.FromSeconds(20) };
+        var longer  = reading with { Elapsed = TimeSpan.FromSeconds(55) };
+        await using var h = await StartAsync(fake: f => f.DriveWaiting = waiting =>
+        {
+            waiting(reading); waiting(later); waiting(longer); waiting(longer with { Elapsed = TimeSpan.FromSeconds(70) });
+            waiting(null);
+            waiting(reading);   // the next request of the turn waits too
+            waiting(null);
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, sid, "what does OrderService do?")));
+
+        var thoughts = h.Client.Updates(sid, "agent_thought_chunk")
+                               .Select(u => u.GetProperty("content").GetProperty("text").GetString()!).ToList();
+        Assert.Equal(3, thoughts.Count);
+        Assert.Contains(reading.Title, thoughts[0], StringComparison.Ordinal);
+        Assert.Contains(reading.DetailWithoutStop, thoughts[0], StringComparison.Ordinal);   // the bound, from the start
+        Assert.Contains(longer.Title, thoughts[1], StringComparison.Ordinal);
+        // The line stays once the wait is over: no "Stop ends it now", no time — they would go stale.
+        Assert.Contains(longer.DetailWithoutStop, thoughts[1], StringComparison.Ordinal);
+        Assert.DoesNotContain(longer.Detail, thoughts[1], StringComparison.Ordinal);
+        Assert.Contains(reading.Title, thoughts[2], StringComparison.Ordinal);
+        foreach (var times in new[] { reading.Times, later.Times, longer.Times })
+            Assert.All(thoughts, t => Assert.DoesNotContain(times, t, StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// A reasoning model's last words before a tool call are still held back (sent in batches) when the next request
+    /// starts waiting: they go out before the wait's line, never after it — or the line lands inside the sentence.
+    /// </summary>
+    [Fact]
+    public async Task TheReasoningHeldBack_GoesOutBeforeTheWaitsLine()
+    {
+        var reading = new ModelWait(18_400, TimeSpan.FromSeconds(9), TimeSpan.FromSeconds(40), TimeSpan.FromMinutes(10));
+        await using var h = await StartAsync(fake: f =>
+        {
+            f.OnChatRequest = (_, _, _, _) => Task.FromResult(new ChatTurnResult("The answer.", null, 0, 0));
+            f.DriveWaiting = waiting => { waiting(reading); waiting(null); };
+            // Two pieces within the batch's interval: the second is held back when the wait starts.
+            f.DriveThinking = onThinking => { onThinking("so I should read Order"); onThinking("Service.cs first."); };
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, sid, "what does OrderService do?")));
+
+        var thought = string.Concat(h.Client.Updates(sid, "agent_thought_chunk")
+                                            .Select(u => u.GetProperty("content").GetProperty("text").GetString()));
+        Assert.Contains("so I should read OrderService.cs first.", thought, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task APlannedEditTheUserRefused_StaysPending_AndSaysItWasSkipped()
     {

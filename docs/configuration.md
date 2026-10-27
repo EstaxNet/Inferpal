@@ -149,11 +149,13 @@ runs, the long commands (`/check`, `/commit`, `/tdd`…) and the in-place action
 of waiting a card says so under the status line:
 the time waited against the measured read, with a bar, the tokens to read, how long they take when nothing is cached,
 and when the wait stops if the server stays silent. Past the measured read, the card turns into a warning measured
-against that stop. It is an estimate from earlier reads: Ollama and the OpenAI-compatible routes send nothing while
-they read a prompt. A turn stopped there says why, says when its steps wrote nothing, and offers **Open time limits**
-(this page of the settings) beside its **Regenerate**. A request given up while the server was still reading a long prompt says so (and the next
-one to that model waits longer, twice at most in a row, since a server that never answers looks the same); those two
-are not counted against the server's reachability.
+against that stop. In an ACP client (Zed, JetBrains…), the same wait is said as the agent's thinking: once when it
+shows, with its stop, and once more when it runs longer than usual. It is an estimate from earlier reads: Ollama and
+the OpenAI-compatible routes send nothing while they read a prompt. A turn stopped there says why, says when its
+steps wrote nothing, and offers **Open time limits** (this page of the settings) beside its **Regenerate**. A
+request given up while the server was still reading a long prompt says so (and the next one to that model waits
+longer, twice at most in a row, since a server that never answers looks the same); those two are not counted against
+the server's reachability.
 
 Connecting to the backend has its own fixed budget of 15 s: a backend that never
 answers the connection (machine switched off, firewall, Ollama not started under WSL's mirrored networking) is
