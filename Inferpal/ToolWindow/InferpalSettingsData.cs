@@ -745,9 +745,13 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     /// </summary>
     private void OnAgentModeConfigChanged(bool enabled) => Post(() => AgentModeEnabled = enabled);
 
+    /// <summary>Called when this window's control goes: the chat stops asking it for pages.</summary>
+    internal Action? OnDetached { get; set; }
+
     /// <summary>Detaches config event handlers; called when the settings control is disposed.</summary>
     internal void Detach()
     {
+        OnDetached?.Invoke();
         _config.AgentModeEnabledChanged -= OnAgentModeConfigChanged;
         _config.Saved -= OnConfigSavedForToolList;
         // The window is opened and closed repeatedly: each instance's theme subscription outlived it.

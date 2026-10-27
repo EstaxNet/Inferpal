@@ -1080,6 +1080,18 @@
                                     AutomationProperties.Name="{Binding BtnContinue}"
                                     Visibility="{Binding IsContinuable, Converter={StaticResource b2v}}"/>
 
+                            <!-- A turn cut at its bound, the server silent: what it wrote, and the way to the time limits -->
+                            <StackPanel Margin="0,6,0,0" Visibility="{Binding HasCut, Converter={StaticResource b2v}}">
+                                <TextBlock Text="{Binding CutNote}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,6"
+                                           Foreground="{Binding ThemeSubtleText}"
+                                           Visibility="{Binding HasCutNote, Converter={StaticResource b2v}}"/>
+                                <Button Style="{StaticResource LineBtn}" HorizontalAlignment="Left"
+                                        BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                        Command="{Binding CutOpenLimitsCommand}" AutomationProperties.Name="{Binding BtnCutOpenLimits}">
+                                    <TextBlock Text="{Binding BtnCutOpenLimits}" FontSize="13" Foreground="{Binding ThemeText}"/>
+                                </Button>
+                            </StackPanel>
+
                             <!-- Time, copy and, on the last answer, regenerate: a quiet line under the answer -->
                             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                                 <StackPanel.Style>

@@ -673,7 +673,8 @@ internal abstract class InferenceProviderBase : IInferenceProvider
             catch (OperationCanceledException) { throw; } // propagate user-initiated cancel
             catch (AgentHttpException ex)
             {
-                return new AgentResult(ex.Message, executions, messages, totalTokens, lastPromptEval, Failed: true);
+                return new AgentResult(ex.Message, executions, messages, totalTokens, lastPromptEval, Failed: true,
+                                       WaitRanOut: ex.PrefillOverran);
             }
 
             totalTokens   += turn.TokensUsed;

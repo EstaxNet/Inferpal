@@ -253,6 +253,8 @@
   <data name="WaitDetail" xml:space="preserve"><value>约 {0:N0} 个令牌；若无缓存最多约 {1}。若服务器一直没有响应，将在 {2} 时停止。</value></data>
   <data name="WaitDetailUnmeasured" xml:space="preserve"><value>约 {0:N0} 个令牌。若服务器一直没有响应，将在 {1} 时停止。</value></data>
   <data name="WaitDetailLonger" xml:space="preserve"><value>这里通常最多约 {0}。若服务器一直没有响应，将在 {1} 时停止并说明原因——点“停止”可立即结束。</value></data>
+  <data name="CutNothingWritten" xml:space="preserve"><value>没有写入任何内容：上面的步骤只读取了文件。</value></data>
+  <data name="CutOpenTimeLimits" xml:space="preserve"><value>打开时间限制</value></data>
   <data name="MsgPrefillOverran" xml:space="preserve"><value>{1} 后仍未收到 {0} 的回复：它还在读取约 {2:N0} 个令牌的提示。慢速服务器读取长提示可能需要数分钟：对此模型的下一个请求会等待更久，最短等待时间由“{3}”设置（{4} → {5}）。</value></data>
   <data name="MsgPrefillNoAnswer" xml:space="preserve"><value>{1} 后仍未收到 {0} 的回复：它还在读取约 {2:N0} 个令牌的提示，或者没有响应。Inferpal 等待第一个词的时间由“{3}”设置（{4} → {5}）。</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>无法连接到 {0} 的后端。请在设置中检查 URL。</value></data>

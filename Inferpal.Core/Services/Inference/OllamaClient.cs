@@ -864,6 +864,8 @@ internal class OllamaClient : InferenceProviderBase
 /// <param name="AnswerIsReasoning">The final answer is the model's promoted reasoning, no answer written
 /// (<see cref="ChatTurnResult.AnswerIsReasoning"/>): fine for a bubble, never content — a recap folded into every
 /// following system prompt, a commit message, a name.</param>
+/// <param name="WaitRanOut">Failed because the wait for a first word ran out, the server silent
+/// (<see cref="AgentHttpException.PrefillOverran"/>): the screens offer the time limits.</param>
 /// <param name="ReachedIterationLimit">The loop stopped at its iteration cap, the task not carried to its end: the answer
 /// is the limit message, and every reader adds the notice that says so
 /// (<see cref="Agent.ChatTurnPolicy.EndNotice"/>).</param>
@@ -878,7 +880,8 @@ internal record AgentResult(
     bool                 Failed          = false,
     bool                 AnswerRepeating = false,
     bool                 AnswerIsReasoning = false,
-    bool                 ReachedIterationLimit = false);
+    bool                 ReachedIterationLimit = false,
+    bool                 WaitRanOut = false);
 
 /// <summary>A single tool invocation within an agentic loop run.</summary>
 /// <param name="HasErrors"><c>true</c> when the tool is <c>get_diagnostics</c> and the output contains build errors

@@ -55,6 +55,15 @@ internal class InferpalSettingsToolWindow : VsToolWindow
             ToolList: async () => _context.ToolList is { } list ? await list() : null,
             SetTool: async (key, off) => _context.SetTool is { } set ? await set(key, off) : null);
         var data = new InferpalSettingsData(_config, _client, Extensibility, _mcp, () => _index.RootDir, live);
+        // A page asked for before the window existed (a cut turn's "Open time limits"), and the way to ask it later.
+        if (_context.SettingsPage is { } asked)
+        {
+            _context.SettingsPage = null;
+            data.ShowPage(asked.Page, asked.Section);
+        }
+        _context.ShowSettingsPage = data.ShowPage;
+        // Gone with its window: a later "Open time limits" then builds the next one on its page.
+        data.OnDetached = () => { if (_context.ShowSettingsPage == data.ShowPage) _context.ShowSettingsPage = null; };
         return Task.FromResult<IRemoteUserControl>(new InferpalSettingsContent(data));
     }
 

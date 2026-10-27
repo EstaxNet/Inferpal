@@ -3,7 +3,7 @@
 // destroyed on hide: everything re-renders from the 'hydrate' message.
 // No literal user-visible English here — strings go through t() (window.__l10n).
 import type {
-  ApprovalCard, InputCard, InputCardField, InputFormAnswer, ModelWait, RewindCard, RunReview, RunReviewLine, RunSummary, SetupPlace, SetupPlan,
+  ApprovalCard, CutCard, InputCard, InputCardField, InputFormAnswer, ModelWait, RewindCard, RunReview, RunReviewLine, RunSummary, SetupPlace, SetupPlan,
 } from '../protocol';
 import type {
   ExtToWebview,
@@ -525,6 +525,25 @@ function setStatus(text: string): void {
   if (turn && busy) {
     turn.when.textContent = text;
   }
+}
+
+/** Under the cause of a turn cut at its bound: what it wrote, and the way to the time limits (the host's words). Asking
+ *  again is the turn's own Regenerate. */
+function renderCut(bubble: HTMLElement, cut: CutCard): void {
+  const box = document.createElement('div');
+  box.className = 'cut-card';
+  if (cut.note) {
+    const note = document.createElement('div');
+    note.className = 'cut-note';
+    note.textContent = cut.note;
+    box.appendChild(note);
+  }
+  const open = document.createElement('button');
+  open.className = 'cut-open';
+  open.textContent = cut.openLimits;
+  open.addEventListener('click', () => post({ type: 'openSettingsPage', page: cut.page, section: cut.section }));
+  box.appendChild(open);
+  (bubble.querySelector('.bubble-body') ?? bubble).appendChild(box);
 }
 
 /** The turn's wait card: what the server is doing, how long against what, and when it stops — gone with null. The
@@ -3039,7 +3058,10 @@ function renderTranscript(transcript: WvTranscriptItem[], running = false): void
     } else if (item.role === 'user' && item.note) {
       addNoteLine(item.noteId, item.text, item.note, item.noteAfter);
     } else if (item.role === 'user' || item.role === 'assistant' || item.role === 'error') {
-      addBubble(item.role, item);
+      const drawn = addBubble(item.role, item);
+      if (item.role === 'error' && item.cut && drawn) {
+        renderCut(drawn, item.cut);
+      }
       // An answer of this session keeps its model, duration and run; a saved one comes back without them.
       if (item.role === 'assistant' && turn) {
         const view: TurnView = turn;
@@ -3335,7 +3357,10 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
         });
       }
       if (msg.error) {
-        addBubble('error', { role: 'error', text: msg.error, timestamp: msg.timestamp });
+        const failed = addBubble('error', { role: 'error', text: msg.error, timestamp: msg.timestamp });
+        if (failed && msg.cut) {
+          renderCut(failed, msg.cut);
+        }
       }
       if (msg.cancelled) {
         addBubble('error', { role: 'error', text: t('cancelled'), timestamp: msg.timestamp });

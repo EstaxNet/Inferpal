@@ -2,7 +2,7 @@
 // chat webview (src/webview/main.ts). Both sides are bundled from this repo, so the
 // types are shared instead of mirrored. No 'vscode' import — the webview bundle uses it.
 import type {
-  ApprovalCard, ImportCard, InputCard, InputFormAnswer, ModelWait, RewindCard, RunReview, RunSummary, SavedMessage, SetupPlace,
+  ApprovalCard, CutCard, ImportCard, InputCard, InputFormAnswer, ModelWait, RewindCard, RunReview, RunSummary, SavedMessage, SetupPlace,
   SetupPlan,
   XRayPanel,
 } from './protocol';
@@ -70,6 +70,8 @@ export interface WvTranscriptItem {
   /** Screen only, never saved: this end notice offers Continue (ChatTurnPolicy.OffersContinue). Taken off when the next
    *  turn starts; kept across a redraw of the view, which rebuilds it from the transcript. */
   continues?: boolean;
+  /** Screen only, never saved: under this error, a turn cut at its bound — kept across a redraw of the view. */
+  cut?: CutCard | null;
   /** The `/import` preview this notice is: drawn as a card with a box per item instead of its text (the text, its
    *  Markdown, is what a saved conversation keeps). */
   importCard?: WvImportCard;
@@ -224,7 +226,7 @@ export type ExtToWebview =
   | { type: 'streamReset' }
   // notice: the turn's text is a notice no answer of the model (a slash command, a code action's outcome) — drawn as the
   // transcript keeps it, under no model's name.
-  | { type: 'turnEnded'; text: string; error: string | null; cancelled: boolean; tokens: number; promptTokens: number; timestamp: string; endNotice?: string | null; offersContinue?: boolean; contextWindow?: number; run?: RunSummary | null; duration?: string | null; model?: string | null; canRegenerate?: boolean; notice?: boolean }
+  | { type: 'turnEnded'; text: string; error: string | null; cancelled: boolean; tokens: number; promptTokens: number; timestamp: string; endNotice?: string | null; offersContinue?: boolean; contextWindow?: number; run?: RunSummary | null; duration?: string | null; model?: string | null; canRegenerate?: boolean; notice?: boolean; cut?: CutCard | null }
   | { type: 'editorContext'; file: string | null; problems: number }
   /** A build task failed (the banner), or passed (null: the banner goes). */
   | { type: 'buildBanner'; banner: WvBuildBanner | null }
@@ -294,6 +296,8 @@ export type WebviewToExt =
   | { type: 'runFile'; runId: string; path: string; action: 'undo' | 'redo' | 'keep'; piece?: number }
   | { type: 'copyText'; text: string }
   | { type: 'regenerate' }
+  /** A cut turn's "Open time limits": the settings panel, on the page that holds them. */
+  | { type: 'openSettingsPage'; page: string; section: string }
   | { type: 'continue' }
   | { type: 'retryConnection' }
   /** The model picker opened: re-read the server's list. */

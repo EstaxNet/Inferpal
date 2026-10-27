@@ -521,7 +521,9 @@ internal sealed partial class HostServer : IDisposable
                     s.History = durable;
                     return new ChatSendResult(streamed.ToString(), false, result.TokensUsed, result.PromptTokens,
                                               result.FinalResponse, ContextWindow: ctxDecision.Window,
-                                              RunId: ChangedRun(s, turnRunId));
+                                              RunId: ChangedRun(s, turnRunId),
+                                              Cut: CutCardDto.Of(result.WaitRanOut, [.. result.Executions.Select(e => e.Name)],
+                                                                 s.Tools.History.CurrentRunFileCount ?? 0));
                 }
                 // How the run ended, when not because the model had finished — iteration limit, repeat,
                 // an answer cut at the length limit, or edits that changed nothing. One policy for both front-ends.
@@ -581,7 +583,10 @@ internal sealed partial class HostServer : IDisposable
                 {
                     s.History = durable;
                     return new ChatSendResult(streamed.ToString(), false, run.TokensUsed, run.PromptTokens,
-                                              run.FinalResponse, ContextWindow: ctxDecision.Window);
+                                              run.FinalResponse, ContextWindow: ctxDecision.Window,
+                                              RunId: ChangedRun(s, turnRunId),
+                                              Cut: CutCardDto.Of(run.WaitRanOut, [.. run.Executions.Select(e => e.Name)],
+                                                                 s.Tools.History.CurrentRunFileCount ?? 0));
                 }
                 var runEndNotice = NoticeOrNull(ChatTurnPolicy.EndNotice(run.ReachedIterationLimit, run.WasLoopDetected, run.AnswerCut,
                     ChatTurnPolicy.EditsWithoutEffect(run.Executions, s.Tools.History.CurrentRunFileCount),
@@ -660,7 +665,8 @@ internal sealed partial class HostServer : IDisposable
             // through the History setter. Left as it was — or 0 after a compaction earlier in this turn — the measure
             // described the conversation before this question.
             s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
-            return new ChatSendResult(streamed.ToString(), false, 0, 0, ex.Message, RunId: ChangedRun(s, turnRunId));
+            return new ChatSendResult(streamed.ToString(), false, 0, 0, ex.Message, RunId: ChangedRun(s, turnRunId),
+                                      Cut: CutCardDto.Of(ex is AgentHttpException { PrefillOverran: true }, [], 0));
         }
         finally
         {

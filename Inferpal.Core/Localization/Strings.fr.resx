@@ -253,6 +253,8 @@ Pour chaque problème, cite la ligne ou le symbole, explique le risque et propos
   <data name="WaitDetail" xml:space="preserve"><value>Environ {0:N0} {0:jeton|jetons} ; jusqu'à environ {1} si rien n'est en cache. S'arrête à {2} si le serveur reste muet.</value></data>
   <data name="WaitDetailUnmeasured" xml:space="preserve"><value>Environ {0:N0} {0:jeton|jetons}. S'arrête à {1} si le serveur reste muet.</value></data>
   <data name="WaitDetailLonger" xml:space="preserve"><value>Cela prend d'habitude au plus environ {0} ici. Si le serveur reste muet, l'attente s'arrête à {1} et dit pourquoi — Arrêter y met fin maintenant.</value></data>
+  <data name="CutNothingWritten" xml:space="preserve"><value>Rien n'a été écrit : les étapes ci-dessus n'ont fait que lire des fichiers.</value></data>
+  <data name="CutOpenTimeLimits" xml:space="preserve"><value>Ouvrir les délais</value></data>
   <data name="MsgPrefillOverran" xml:space="preserve"><value>Pas de réponse de {0} après {1} : il lisait encore un prompt d'environ {2:N0} {2:jeton|jetons}. Un serveur lent peut lire un long prompt pendant des minutes : la prochaine requête à ce modèle attendra plus longtemps, et « {3} » fixe l'attente la plus courte ({4} → {5}).</value></data>
   <data name="MsgPrefillNoAnswer" xml:space="preserve"><value>Pas de réponse de {0} après {1} : il lisait encore un prompt d'environ {2:N0} {2:jeton|jetons}, ou il ne répond pas. « {3} » fixe combien de temps Inferpal attend un premier mot ({4} → {5}).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>Impossible de joindre le backend à {0}. Vérifiez l'URL dans les paramètres.</value></data>

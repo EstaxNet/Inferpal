@@ -145,6 +145,8 @@ public class AgentPlan
 /// <c>AgentResult.Failed</c>: shown, never kept as the answer the model gave.</param>
 /// <param name="AnswerRepeating">The cut answer was stopped because the model was repeating itself
 /// (<see cref="ChatTurnResult.StoppedRepeating"/>).</param>
+/// <param name="WaitRanOut">Failed because the wait for a first word ran out, the server silent
+/// (<see cref="AgentHttpException.PrefillOverran"/>): the screens offer the time limits.</param>
 internal record OrchestratorResult(
     string               FinalResponse,
     AgentPlan?           Plan,
@@ -156,11 +158,12 @@ internal record OrchestratorResult(
     bool                 ReachedIterationLimit,
     bool                 AnswerCut = false,
     bool                 Failed    = false,
-    bool                 AnswerRepeating = false)
+    bool                 AnswerRepeating = false,
+    bool                 WaitRanOut = false)
 {
     /// <summary>Creates an error result (no plan, no executions).</summary>
-    internal static OrchestratorResult Error(string message, List<ChatMessageDto> history) =>
-        new(message, null, [], history, 0, 0, false, false, Failed: true);
+    internal static OrchestratorResult Error(string message, List<ChatMessageDto> history, bool waitRanOut = false) =>
+        new(message, null, [], history, 0, 0, false, false, Failed: true, WaitRanOut: waitRanOut);
 }
 
 // ── Low-level HTTP primitives ─────────────────────────────────────────────────

@@ -9,6 +9,8 @@ declare function acquireVsCodeApi(): {
 // and the single acquired VS Code API (acquireVsCodeApi can only be called once).
 interface Window {
   __l10n?: Record<string, string>;
+  /** The settings page, and the section of it, asked for when the panel opened (a cut turn's "Open time limits"). */
+  __settingsPage?: { page: string; section?: string } | null;
   __vsapi?: {
     postMessage(message: unknown): void;
     getState(): unknown;

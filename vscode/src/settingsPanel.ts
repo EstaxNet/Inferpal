@@ -27,6 +27,8 @@ export class SettingsPanel {
     private readonly onLanguageChanged: () => void,
     private readonly openXray: () => void,
     private readonly log: (line: string) => void,
+    // Asked once: the panel renders again on a language change, and must not jump back there.
+    private initialPage: { page: string; section?: string } | undefined,
   ) {
     this.bridge = new SettingsBridge({
       host: () => this.getHost(),
@@ -61,9 +63,14 @@ export class SettingsPanel {
     onLanguageChanged: () => void,
     openXray: () => void,
     log: (line: string) => void,
+    page?: string,
+    section?: string,
   ): void {
     if (SettingsPanel.current) {
       SettingsPanel.current.panel.reveal();
+      if (page) {
+        SettingsPanel.current.post({ type: 'showPage', page, section });
+      }
       return;
     }
     const panel = vscode.window.createWebviewPanel(
@@ -78,7 +85,8 @@ export class SettingsPanel {
         retainContextWhenHidden: true,
       },
     );
-    SettingsPanel.current = new SettingsPanel(panel, extensionUri, getHost, onSaved, onLanguageChanged, openXray, log);
+    SettingsPanel.current = new SettingsPanel(panel, extensionUri, getHost, onSaved, onLanguageChanged, openXray, log,
+      page ? { page, section } : undefined);
   }
 
   /** Called by the activator just before it spawns the host. */
@@ -163,6 +171,9 @@ export class SettingsPanel {
     const style = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'settings.css'));
     const nonce = crypto.randomBytes(16).toString('base64');
     const l10n = JSON.stringify(SettingsPanel.strings()).replace(/</g, '\\u003c');
+    // A page asked for by name: read before the bundle, so the form renders on it rather than after a message.
+    const page = JSON.stringify(this.initialPage ?? null).replace(/</g, '\\u003c');
+    this.initialPage = undefined;
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -175,7 +186,7 @@ export class SettingsPanel {
 </head>
 <body>
 <div id="app"></div>
-<script nonce="${nonce}">window.__l10n = ${l10n};</script>
+<script nonce="${nonce}">window.__l10n = ${l10n}; window.__settingsPage = ${page};</script>
 <script nonce="${nonce}" src="${script}"></script>
 </body>
 </html>`;

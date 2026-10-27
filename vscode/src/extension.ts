@@ -103,7 +103,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('inferpal.loadSession', () => chatView.loadSessionCommand()),
     vscode.commands.registerCommand('inferpal.deleteSession', () => chatView.deleteSessionCommand()),
     vscode.commands.registerCommand('inferpal.exportChat', () => chatView.exportCommand()),
-    vscode.commands.registerCommand('inferpal.openSettings', () =>
+    // `page` and `section`: what to show (a cut turn's "Open time limits"); the palette passes nothing.
+    vscode.commands.registerCommand('inferpal.openSettings', (page?: unknown, section?: unknown) =>
       SettingsPanel.open(
         context.extensionUri,
         () => host,
@@ -111,6 +112,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         () => chatView.relocalize(),
         () => void chatView.revealXray(),
         log,
+        typeof page === 'string' ? page : undefined,
+        typeof section === 'string' ? section : undefined,
       )),
     // The "?" beside the gear: this version's documentation, in the browser; not opened, its address is said.
     vscode.commands.registerCommand('inferpal.openDocs', async () => {

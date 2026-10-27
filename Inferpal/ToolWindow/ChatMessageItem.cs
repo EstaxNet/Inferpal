@@ -436,6 +436,7 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
         ResumeCommand       = new AsyncCommand(ResumeAsync);
         ContinueCommand     = new AsyncCommand((_, _) => { if (IsContinuable) _onContinue?.Invoke(); return Task.CompletedTask; });
         RegenerateCommand   = new AsyncCommand(RegenerateAsync);
+        CutOpenLimitsCommand = new AsyncCommand((_, _) => { _onCutOpenLimits?.Invoke(); return Task.CompletedTask; });
         UndoCommand         = new AsyncCommand((_, _) => { _onUndo?.Invoke(); return Task.CompletedTask; });
         ReviewCommand       = new AsyncCommand((_, _) => { _onReview?.Invoke(); return Task.CompletedTask; });
         CloseReviewCommand  = new AsyncCommand((_, _) => { _onCloseReview?.Invoke(); return Task.CompletedTask; });
@@ -510,6 +511,29 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
         _onFixWithAi    = onFixWithAi;
         BtnFixWithAi    = Strings.BtnFixWithAi;
         IsFixable       = true;
+    }
+
+    // ── A turn cut at its bound (CutCard): what it wrote, and the way to the time limits ──
+    private Action? _onCutOpenLimits;
+    private bool _hasCut, _hasCutNote;
+    private string _cutNote = string.Empty, _btnCutOpenLimits = string.Empty;
+    [DataMember] public bool   HasCut           { get => _hasCut;           private set => SetProperty(ref _hasCut, value); }
+    [DataMember] public bool   HasCutNote       { get => _hasCutNote;       private set => SetProperty(ref _hasCutNote, value); }
+    [DataMember] public string CutNote          { get => _cutNote;          private set => SetProperty(ref _cutNote, value); }
+    [DataMember] public string BtnCutOpenLimits { get => _btnCutOpenLimits; private set => SetProperty(ref _btnCutOpenLimits, value); }
+    [DataMember] public AsyncCommand CutOpenLimitsCommand { get; }
+
+    /// <summary>Draws <paramref name="cut"/> under this failure notice; <paramref name="openLimits"/> opens the settings on
+    /// the page that holds the time limits. Asking again is the notice's own Regenerate.</summary>
+    internal ChatMessageItem WithCut(Services.Presentation.CutCard? cut, Action openLimits)
+    {
+        if (cut is null) return this;
+        _onCutOpenLimits = openLimits;
+        CutNote          = cut.Note ?? string.Empty;
+        HasCutNote       = cut.Note is not null;
+        BtnCutOpenLimits = cut.OpenLimits;
+        HasCut           = true;
+        return this;
     }
 
     internal void InitRegenerateCallback(Action onRegenerate)

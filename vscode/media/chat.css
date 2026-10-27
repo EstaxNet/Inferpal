@@ -1172,6 +1172,29 @@ kbd {
   color: var(--ip-muted);
 }
 
+/* Under the cause of a turn cut at its bound: what it wrote, and the way to the time limits. */
+.cut-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.cut-note {
+  font-size: 12px;
+  color: var(--ip-muted);
+}
+
+.cut-open {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid var(--ip-line);
+  background: transparent;
+  color: var(--vscode-foreground);
+}
+
 /* A request waiting on a server that reads its prompt: what, how long against what, when it stops. */
 .wait-card {
   display: flex;

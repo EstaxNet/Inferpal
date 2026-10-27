@@ -253,6 +253,8 @@
   <data name="WaitDetail" xml:space="preserve"><value>約 {0:N0} トークン。キャッシュがなければ最大で約 {1}。サーバーが応答しないままなら {2} で停止します。</value></data>
   <data name="WaitDetailUnmeasured" xml:space="preserve"><value>約 {0:N0} トークン。サーバーが応答しないままなら {1} で停止します。</value></data>
   <data name="WaitDetailLonger" xml:space="preserve"><value>ここでは通常、最大で約 {0} かかります。サーバーが応答しないままなら {1} で停止して理由を示します。停止ですぐに終了できます。</value></data>
+  <data name="CutNothingWritten" xml:space="preserve"><value>何も書き込まれていません。上の手順はファイルを読んだだけです。</value></data>
+  <data name="CutOpenTimeLimits" xml:space="preserve"><value>制限時間を開く</value></data>
   <data name="MsgPrefillOverran" xml:space="preserve"><value>{1} 経っても {0} から応答がありません。約 {2:N0} トークンのプロンプトをまだ読み込んでいました。遅いサーバーは長いプロンプトを何分もかけて読みます。このモデルへの次のリクエストはもっと長く待ちます。最短の待ち時間は「{3}」で設定します（{4} → {5}）。</value></data>
   <data name="MsgPrefillNoAnswer" xml:space="preserve"><value>{1} 経っても {0} から応答がありません。約 {2:N0} トークンのプロンプトをまだ読み込んでいるか、応答していません。Inferpal が最初の語を待つ時間は「{3}」で設定します（{4} → {5}）。</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>{0} のバックエンドに接続できません。設定で URL を確認してください。</value></data>

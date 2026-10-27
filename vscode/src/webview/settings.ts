@@ -59,7 +59,10 @@ let unsavedEl: HTMLElement | null = null;
 let saveBtn: HTMLButtonElement | null = null;
 /** The status line of each Test button, by the role whose server it probes ('' = the chat's). */
 const testStatusEls = new Map<string, HTMLElement>();
-let currentPage = '';
+// The page asked for when the panel opened, else the first one once the form renders; and the folded section of it to
+// open (the time limits).
+let currentPage = window.__settingsPage?.page ?? '';
+let sectionToOpen = window.__settingsPage?.section ?? '';
 /** Per page: whether its "Show advanced settings" box is checked. */
 const foldOpen = new Map<string, boolean>();
 const navButtons = new Map<string, HTMLButtonElement>();
@@ -115,6 +118,7 @@ function render(): void {
   app.appendChild(modelPopup);
 
   showPage(currentPage, true);
+  revealSectionToOpen();
   refreshForm();
 }
 
@@ -317,9 +321,24 @@ function departsFromDefault(field: Field): boolean {
     : String(value ?? '').trim() !== factory.trim();
 }
 
+/** The folded section asked for (the time limits), opened and brought into view — once: a later render (Cancel, a
+ *  host restart) leaves the folds as the person left them. */
+function revealSectionToOpen(): void {
+  if (!sectionToOpen) {
+    return;
+  }
+  const fold = [...app.querySelectorAll<HTMLDetailsElement>('details.block')].find((d) => d.dataset.section === sectionToOpen);
+  sectionToOpen = '';
+  if (fold) {
+    fold.open = true;
+    fold.scrollIntoView({ block: 'start' });
+  }
+}
+
 function renderSection(section: Section, pageKey: string): HTMLElement {
   const wrap = document.createElement(section.collapsible ? 'details' : 'section');
   wrap.className = 'block';
+  wrap.dataset.section = section.title ?? '';
   if (section.title) {
     const heading = document.createElement(section.collapsible ? 'summary' : 'h2');
     heading.textContent = res(section.title);
@@ -1169,7 +1188,7 @@ window.addEventListener('message', (event: MessageEvent) => {
   const msg = event.data as {
     type: string; configJson?: string; models?: string[]; embeddingModels?: string[]; strings?: Record<string, string>;
     schema?: Schema; message?: string; ok?: boolean; rulesIgnored?: number; provider?: string | null;
-    refused?: string | null; op?: string; server?: string;
+    refused?: string | null; op?: string; server?: string; page?: string; section?: string;
   };
   // The live blocks and the structured editors take the answers to their own requests (cards, rules table, index…).
   // Every widget sees a message before an editor may consume it: the agent page's rules card counts the table the
@@ -1182,6 +1201,17 @@ window.addEventListener('message', (event: MessageEvent) => {
     return;
   }
   switch (msg.type) {
+    case 'showPage':
+      // A page asked for by name, the panel already open: shown now, its folded section opened — or as the form renders.
+      sectionToOpen = msg.section ?? '';
+      if (msg.page && SCHEMA.tabs.some((tab) => tab.key === msg.page)) {
+        showPage(msg.page);
+        revealSectionToOpen();
+      } else if (msg.page && SCHEMA.tabs.length === 0) {
+        // Not rendered yet: the form opens on it. Rendered, a key that names no page changes nothing.
+        currentPage = msg.page;
+      }
+      break;
     case 'init':
       try {
         config = JSON.parse(msg.configJson ?? '{}') as Record<string, unknown>;

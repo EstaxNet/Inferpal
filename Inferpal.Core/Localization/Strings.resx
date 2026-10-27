@@ -254,6 +254,8 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="WaitDetail" xml:space="preserve"><value>About {0:N0} {0:token|tokens}; up to about {1} if none of it is cached. Stops at {2} if the server stays silent.</value></data>
   <data name="WaitDetailUnmeasured" xml:space="preserve"><value>About {0:N0} {0:token|tokens}. Stops at {1} if the server stays silent.</value></data>
   <data name="WaitDetailLonger" xml:space="preserve"><value>It usually takes up to about {0} here. If the server stays silent, it stops at {1} and says why — Stop ends it now.</value></data>
+  <data name="CutNothingWritten" xml:space="preserve"><value>Nothing was written: the steps above only read files.</value></data>
+  <data name="CutOpenTimeLimits" xml:space="preserve"><value>Open time limits</value></data>
   <data name="MsgPrefillOverran" xml:space="preserve"><value>No answer from {0} after {1}: it was still reading a prompt of about {2:N0} {2:token|tokens}. A slow server can read a long prompt for minutes: the next request to this model waits longer, and “{3}” sets the shortest wait ({4} → {5}).</value></data>
   <data name="MsgPrefillNoAnswer" xml:space="preserve"><value>No answer from {0} after {1}: it was still reading a prompt of about {2:N0} {2:token|tokens}, or it does not answer. “{3}” sets how long Inferpal waits for a first word ({4} → {5}).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>Cannot reach the backend at {0}. Check the URL in Settings.</value></data>

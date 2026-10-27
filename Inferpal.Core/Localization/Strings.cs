@@ -844,6 +844,8 @@ internal static class Strings
     public static string WaitDetail(int tokens, string cold, string bound) => Format(Get(nameof(WaitDetail)), tokens, cold, bound);
     public static string WaitDetailUnmeasured(int tokens, string bound) => Format(Get(nameof(WaitDetailUnmeasured)), tokens, bound);
     public static string WaitDetailLonger(string cold, string bound) => Format(Get(nameof(WaitDetailLonger)), cold, bound);
+    public static string CutNothingWritten => Get(nameof(CutNothingWritten));
+    public static string CutOpenTimeLimits => Get(nameof(CutOpenTimeLimits));
 
     /// <summary>A request with no first token when its wait ran out, the server still reading: not an unreachable one.
     /// <paramref name="quick"/> names the short wait's setting, the turn's otherwise; <paramref name="waitsLonger"/> says

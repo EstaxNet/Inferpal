@@ -872,7 +872,7 @@ internal sealed class AgentOrchestrator
         catch (OperationCanceledException) { throw; }
         catch (AgentHttpException ex)
         {
-            return OrchestratorResult.Error(ex.Message, messages);
+            return OrchestratorResult.Error(ex.Message, messages, ex.PrefillOverran);
         }
 
         totalTokens      += planTurn.TokensUsed;
@@ -967,7 +967,7 @@ internal sealed class AgentOrchestrator
             {
                 return new OrchestratorResult(
                     ex.Message, plan, executions, messages,
-                    totalTokens, lastPromptTokens, false, false, Failed: true);
+                    totalTokens, lastPromptTokens, false, false, Failed: true, WaitRanOut: ex.PrefillOverran);
             }
 
             totalTokens      += turn.TokensUsed;

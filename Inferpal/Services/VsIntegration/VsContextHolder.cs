@@ -55,6 +55,14 @@ internal class VsContextHolder
     /// <summary>Opens the chat window's X-Ray panel — the settings' "Open Context X-Ray". Set by the chat window.</summary>
     public Func<Task>? OpenXray { get; set; }
 
+    /// <summary>The page the settings window opens on (a cut turn's "Open time limits"): taken by the window it builds.
+    /// Set by the chat window.</summary>
+    public (string Page, string Section)? SettingsPage { get; set; }
+
+    /// <summary>Shows a page, and opens a section of it, in the settings window already open. Set by that window,
+    /// cleared when it is gone.</summary>
+    public Action<string, string>? ShowSettingsPage { get; set; }
+
     /// <summary>The chat's tools as the settings' Tools page lists them (what <c>/tools</c> prints). Set by the chat
     /// window; <c>null</c> while none exists.</summary>
     public Func<Task<Services.Presentation.ToolListModel>>? ToolList { get; set; }

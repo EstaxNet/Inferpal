@@ -253,6 +253,8 @@
   <data name="WaitDetail" xml:space="preserve"><value>Около {0:N0} {0:токен|токена|токенов}; до примерно {1}, если ничего нет в кэше. Остановится через {2}, если сервер будет молчать.</value></data>
   <data name="WaitDetailUnmeasured" xml:space="preserve"><value>Около {0:N0} {0:токен|токена|токенов}. Остановится через {1}, если сервер будет молчать.</value></data>
   <data name="WaitDetailLonger" xml:space="preserve"><value>Обычно здесь это занимает не больше примерно {0}. Если сервер будет молчать, ожидание остановится через {1} и скажет почему — «Стоп» прервёт его сейчас.</value></data>
+  <data name="CutNothingWritten" xml:space="preserve"><value>Ничего не записано: шаги выше только читали файлы.</value></data>
+  <data name="CutOpenTimeLimits" xml:space="preserve"><value>Открыть ограничения времени</value></data>
   <data name="MsgPrefillOverran" xml:space="preserve"><value>Нет ответа от {0} через {1}: он ещё читал промпт примерно из {2:N0} {2:токена|токенов|токенов}. Медленный сервер может читать длинный промпт несколько минут: следующий запрос к этой модели будет ждать дольше, а «{3}» задаёт самое короткое ожидание ({4} → {5}).</value></data>
   <data name="MsgPrefillNoAnswer" xml:space="preserve"><value>Нет ответа от {0} через {1}: он ещё читал промпт примерно из {2:N0} {2:токена|токенов|токенов} или не отвечает. «{3}» задаёт, сколько Inferpal ждёт первого слова ({4} → {5}).</value></data>
   <data name="MsgUnreachable" xml:space="preserve"><value>Не удаётся подключиться к бэкенду по адресу {0}. Проверьте URL в настройках.</value></data>

@@ -490,6 +490,8 @@ internal partial class InferpalToolWindowData
             int                  agentTokensUsed    = 0;
             // The run FAILED and agentFinalResponse is the error: shown, never kept as the answer the model gave.
             bool                 agentFailed        = false;
+            // Failed because the wait for a first word ran out: the failure offers the time limits.
+            bool                 agentWaitRanOut    = false;
 
             // Set true once tool bubbles have been streamed live (below), so the final
             // render pass skips re-inserting them and avoids duplicates.
@@ -612,6 +614,7 @@ internal partial class InferpalToolWindowData
 
                 agentFinalResponse = orchResult.FinalResponse;
                 agentFailed        = orchResult.Failed;
+                agentWaitRanOut    = orchResult.WaitRanOut;
                 agentExecutions    = orchResult.Executions;
                 agentTokensUsed    = orchResult.TokensUsed;
                 agentEndNotice     = ChatTurnPolicy.EndNotice(
@@ -642,6 +645,7 @@ internal partial class InferpalToolWindowData
 
                 agentFinalResponse = result.FinalResponse;
                 agentFailed        = result.Failed;
+                agentWaitRanOut    = result.WaitRanOut;
                 agentEndNotice     = ChatTurnPolicy.EndNotice(result.ReachedIterationLimit, result.WasLoopDetected, result.AnswerCut,
                     ChatTurnPolicy.EditsWithoutEffect(result.Executions, _tools.History.CurrentRunFileCount),
                     answerRepeating: result.AnswerRepeating,
@@ -693,7 +697,9 @@ internal partial class InferpalToolWindowData
                 {
                     _turnFailed = true;
                     KeepAsNotice(streamingMsg);
-                    var failedMsg = ChatMessageItem.NoticeMsg(agentFinalResponse).WithRun(ChangedRun(turnRunId));
+                    var failedMsg = ChatMessageItem.NoticeMsg(agentFinalResponse).WithRun(ChangedRun(turnRunId))
+                        .WithCut(Services.Presentation.CutCard.Of(agentWaitRanOut, [.. agentExecutions.Select(e => e.Name)],
+                                                                  _tools.History.CurrentRunFileCount ?? 0), OpenTimeLimits);
                     ApplyItemTheme(failedMsg);
                     Messages.Insert(Messages.Count - 2, failedMsg);
                     lastAssistant = failedMsg;   // still regenerable: that is the retry
@@ -820,6 +826,7 @@ internal partial class InferpalToolWindowData
         catch (Exception ex)
         {
             var msg = ex.Message;
+            var waitRanOut = ex is AgentHttpException { PrefillOverran: true };
             await RunOnVMContextAsync(() =>
             {
                 _turnFailed = true;
@@ -827,7 +834,8 @@ internal partial class InferpalToolWindowData
                 RemoveStatusBubble();
                 streamingMsg = FinalizeStreamingBubble(streamingMsg);
                 KeepAsNotice(streamingMsg);
-                var errItem = ChatMessageItem.NoticeMsg(Strings.MsgError(msg)).WithRun(ChangedRun(turnRunId));
+                var errItem = ChatMessageItem.NoticeMsg(Strings.MsgError(msg)).WithRun(ChangedRun(turnRunId))
+                    .WithCut(Services.Presentation.CutCard.Of(waitRanOut, [], 0), OpenTimeLimits);
                 ApplyItemTheme(errItem);
                 Messages.Insert(Messages.Count - 2, errItem);
                 ScrollToBottom();

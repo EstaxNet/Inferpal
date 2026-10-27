@@ -146,6 +146,8 @@ export interface ChatSendResult {
   run?: RunSummary | null;
   /** The run of changes the turn made, whatever way it ended: saved with its last message. */
   runId?: string | null;
+  /** A turn cut at its bound, the server silent: drawn under its cause. */
+  cut?: CutCard | null;
   /** How long the turn took ("21 s"), localized by the host. */
   duration?: string | null;
   /** The model that answered. */
@@ -196,6 +198,17 @@ export interface ModelWait {
 
 export interface WaitNote {
   wait: ModelWait | null;
+}
+
+/** Under the cause of a turn cut at its bound (`CutCardDto`): what it wrote, and the way to the time limits. */
+export interface CutCard {
+  /** "Nothing was written" when the turn ran steps and none wrote; null otherwise. */
+  note: string | null;
+  openLimits: string;
+  /** The settings page the button opens. */
+  page: string;
+  /** The section of that page it opens (folded by default). */
+  section: string;
 }
 
 /** `chat/thinking` — the throttled reasoning tail, or no text at all when the host only means

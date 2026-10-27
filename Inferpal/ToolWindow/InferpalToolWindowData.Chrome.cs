@@ -146,6 +146,24 @@ internal partial class InferpalToolWindowData
     /// <summary>A wait past its measured read: a warning, not a failure.</summary>
     [DataMember] public string ThemeWarn       { get => _themeWarn;       set => SetProperty(ref _themeWarn,       value); }
 
+    /// <summary>A cut turn's "Open time limits": the settings window, on the page that holds them — the open window shows
+    /// it, else the one built next opens on it.</summary>
+    private void OpenTimeLimits() => _ = OpenSettingsPageAsync(
+        Services.Presentation.CutCard.TimeLimitsPage, Services.Presentation.CutCard.TimeLimitsSection);
+
+    private async Task OpenSettingsPageAsync(string page, string section)
+    {
+        if (_contextHolder.ShowSettingsPage is { } show) show(page, section);
+        else _contextHolder.SettingsPage = (page, section);
+        try { await _vs.Shell().ShowToolWindowAsync<InferpalSettingsToolWindow>(activate: true, CancellationToken.None); }
+        catch (Exception ex)
+        {
+            // Not opened: a later plain open must not land on this page.
+            _contextHolder.SettingsPage = null;
+            Diagnostics.Swallow("Chat.OpenSettingsPage", ex);
+        }
+    }
+
     /// <summary>Builds the chrome's commands; called by the constructor.</summary>
     private void InitChrome()
     {

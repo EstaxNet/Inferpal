@@ -1658,6 +1658,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       case 'regenerate':
         await this.regenerate();
         return;
+      case 'openSettingsPage':
+        try {
+          await vscode.commands.executeCommand('inferpal.openSettings', msg.page, msg.section);
+        } catch (err) {
+          this.gestureFailed('open settings', err);
+        }
+        return;
       case 'continue':
         await this.continueTurn();
         return;
@@ -3005,7 +3012,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         // which keeps it (like the Visual Studio window), so Regenerate must take it back. Marked a notice, it was
         // resent on top of itself, and a reload dropped what the live history still held.
         this.keepFailedPartial(finalText);
-        this.append({ role: 'error', text: result.error, timestamp: ChatViewProvider.now() });
+        this.append({ role: 'error', text: result.error, timestamp: ChatViewProvider.now(), cut: result.cut ?? null });
       } else if (result.cancelled) {
         // Stopped before the question entered the host's history (during the context build): a notice, like a refused
         // request — Regenerate resends it without taking back the exchange before it, which the screen still shows.
@@ -3065,6 +3072,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         duration: result.duration ?? null,
         model: result.model ?? null,
         canRegenerate: this.canRegenerate(),
+        cut: result.error ? result.cut ?? null : null,
       });
       const normal = !result.error && !result.cancelled;
       this.settleNotes(result.appliedNotes, normal);

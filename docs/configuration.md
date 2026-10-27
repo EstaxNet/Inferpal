@@ -148,7 +148,8 @@ runs and the long commands (`/check`, `/commit`, `/tdd`…) — after 8 s of wai
 the time waited against the measured read, with a bar, the tokens to read, how long they take when nothing is cached,
 and when the wait stops if the server stays silent. Past the measured read, the card turns into a warning measured
 against that stop. It is an estimate from earlier reads: Ollama and the OpenAI-compatible routes send nothing while
-they read a prompt. A request given up while the server was still reading a long prompt says so (and the next
+they read a prompt. A turn stopped there says why, says when its steps wrote nothing, and offers **Open time limits**
+(this page of the settings) beside its **Regenerate**. A request given up while the server was still reading a long prompt says so (and the next
 one to that model waits longer, twice at most in a row, since a server that never answers looks the same); those two
 are not counted against the server's reachability.
 

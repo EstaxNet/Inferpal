@@ -159,7 +159,21 @@ internal sealed record ChatSendResult(
     List<TurnNoteDto>? UnappliedNotes = null,
     bool    OffersContinue = false,
     bool    AnnounceEnd = false,
-    string? RunId = null);
+    string? RunId = null,
+    CutCardDto? Cut = null);
+
+/// <summary>Under the cause of a turn cut at its bound (<see cref="Services.Presentation.CutCard"/>): what it wrote, and the
+/// way to the time limits.</summary>
+/// <param name="Page">The settings page the button opens.</param>
+/// <param name="Section">The section of that page it opens (folded by default).</param>
+internal sealed record CutCardDto(string? Note, string OpenLimits, string Page, string Section)
+{
+    public static CutCardDto? Of(bool waitRanOut, IReadOnlyCollection<string> toolsRun, int filesChanged) =>
+        Services.Presentation.CutCard.Of(waitRanOut, toolsRun, filesChanged) is { } card
+            ? new(card.Note, card.OpenLimits, Services.Presentation.CutCard.TimeLimitsPage,
+                  Services.Presentation.CutCard.TimeLimitsSection)
+            : null;
+}
 
 /// <summary>One agent run as the chat shows it (<see cref="Services.Presentation.RunSummaryModel"/>).</summary>
 /// <param name="Check"><c>none</c>, <c>buildPassed</c>, <c>buildFailed</c>, <c>testsPassed</c> or <c>testsFailed</c>.</param>

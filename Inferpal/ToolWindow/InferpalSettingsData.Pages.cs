@@ -224,6 +224,18 @@ internal partial class InferpalSettingsData
 
     // ── Navigation and search ──────────────────────────────────────────────────
 
+    /// <summary>Shows the page <paramref name="key"/> (a schema tab) and opens its folded <paramref name="section"/>,
+    /// asked for from outside the window — the chat's "Open time limits"; a key that names no page is ignored.</summary>
+    internal void ShowPage(string key, string section)
+    {
+        if (!PageKeys.Contains(key)) return;
+        SynchronizationContext.Post(_ =>
+        {
+            SelectPage(key);
+            if (section == Services.Presentation.CutCard.TimeLimitsSection) TimeLimitsExpanded = true;
+        }, null);
+    }
+
     private void SelectPage(string key)
     {
         _page = key;
