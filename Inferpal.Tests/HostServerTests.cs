@@ -31,6 +31,7 @@ public partial class HostServerTests
 
     /// <summary>A <c>chat/wait</c> notification: the card, or none.</summary>
     private sealed record WaitNote(Host.ModelWaitDto? Wait);
+    private sealed record CodeActionWaitNote(int? Id, Host.ModelWaitDto? Wait);
 
     /// <summary>The wait a fake call says: the card it draws is the Core's, read back by its title.</summary>
     private static readonly ModelWait TestWait = new ModelWait(1_000, TimeSpan.FromSeconds(9), null, TimeSpan.FromMinutes(5));
@@ -90,6 +91,13 @@ public partial class HostServerTests
 
         [JsonRpcMethod("chat/wait", UseSingleObjectParameterDeserialization = true)]
         public void ChatWait(WaitNote note) => Waits.Enqueue(note.Wait?.Title);
+
+        /// <summary>Every <c>codeAction/wait</c> received, in order: an in-place action's own wait, by its call's id and
+        /// its title.</summary>
+        public readonly System.Collections.Concurrent.ConcurrentQueue<(int? Id, string? Title)> CodeActionWaits = new();
+
+        [JsonRpcMethod("codeAction/wait", UseSingleObjectParameterDeserialization = true)]
+        public void CodeActionWait(CodeActionWaitNote note) => CodeActionWaits.Enqueue((note.Id, note.Wait?.Title));
 
         /// <summary>Every <c>chat/tool</c> notice received, in order (filled by the RPC dispatch thread).</summary>
         public readonly System.Collections.Concurrent.ConcurrentQueue<ToolNote> ToolNotes = new();
@@ -3073,10 +3081,10 @@ public partial class HostServerTests
         Assert.Equal("int y = 2;\n", edit.NewText);
     }
 
-    /// <summary>An in-place action's label is the editor's own ("Running /fix on …"): the host says no wait over it — on
-    /// the turn's line it would come back as a generic one. Its wait is said with that screen.</summary>
+    /// <summary>An in-place action's label is the editor's own ("Running /fix on …"): the host says no wait over it on the
+    /// chat's card — its wait goes to the gesture's own progress (<c>codeAction/wait</c>), which the editor draws.</summary>
     [Fact]
-    public async Task CodeActionRun_SaysNoWait_OverTheEditorsOwnLabel()
+    public async Task CodeActionRun_SaysItsWaitOnItsOwnProgress_NeverOverTheChatsCard()
     {
         using var h = CreateHarness();
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
@@ -3085,7 +3093,7 @@ public partial class HostServerTests
         h.Fake.DriveWaiting = waiting => { driven++; waiting(TestWait); waiting(null); };
 
         await h.Client.InvokeWithParameterObjectAsync<Host.CodeActionResultDto>(
-            "codeAction/run", new { kind = "fix", text = "int x = 1;", selStart = 0, selEnd = 0 })
+            "codeAction/run", new { kind = "fix", text = "int x = 1;", selStart = 0, selEnd = 0, waitId = 7 })
             .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
         // Reference arm: a command that does take the line, in the same harness.
         await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
@@ -3093,8 +3101,10 @@ public partial class HostServerTests
         await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { })
             .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
-        Assert.Equal(1, driven);   // only the command's call had a place to say it
-        Assert.Single(h.Target.Waits, w => w is not null);
+        Assert.Equal(2, driven);
+        Assert.Single(h.Target.Waits, w => w is not null);                 // the command's, on the chat's card
+        // The action's, on its own progress, under its call's id: a gesture refused meanwhile cannot take them over.
+        Assert.Equal([(7, TestWait.Title), (7, null)], h.Target.CodeActionWaits);
     }
 
     /// <summary>

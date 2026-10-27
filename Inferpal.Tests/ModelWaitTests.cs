@@ -54,6 +54,20 @@ public sealed class ModelWaitTests : IDisposable
         Assert.Equal(0.25, wait.Fraction);
     }
 
+    /// <summary>A surface with no Stop button (Visual Studio's in-place window, VS Code's progress notification) gets a
+    /// longer wait that names no Stop, and still the bound; the chat's card, which has the button, keeps it.</summary>
+    [Fact]
+    public void WithoutAStopButton_TheLongerWait_NamesNoStop()
+    {
+        var longer = new ModelWait(18_400, TimeSpan.FromSeconds(150), TimeSpan.FromSeconds(80), TimeSpan.FromMinutes(10));
+        var within = new ModelWait(18_400, TimeSpan.FromSeconds(40), TimeSpan.FromSeconds(80), TimeSpan.FromMinutes(10));
+
+        Assert.Contains("Stop", longer.Detail, StringComparison.Ordinal);              // reference arm: the card's button
+        Assert.DoesNotContain("Stop", longer.DetailWithoutStop, StringComparison.Ordinal);
+        Assert.Contains(D(600), longer.DetailWithoutStop, StringComparison.Ordinal);    // the bound stays
+        Assert.Equal(within.Detail, within.DetailWithoutStop);                          // nothing to drop before it
+    }
+
     [Fact]
     public void TheBar_NeverRunsPastItsEnd()
     {

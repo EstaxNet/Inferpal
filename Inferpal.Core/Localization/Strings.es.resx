@@ -253,6 +253,7 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
   <data name="WaitDetail" xml:space="preserve"><value>Unos {0:N0} {0:token|tokens}; hasta unos {1} si nada está en caché. Se detiene a los {2} si el servidor no responde.</value></data>
   <data name="WaitDetailUnmeasured" xml:space="preserve"><value>Unos {0:N0} {0:token|tokens}. Se detiene a los {1} si el servidor no responde.</value></data>
   <data name="WaitDetailLonger" xml:space="preserve"><value>Aquí suele tardar como mucho unos {0}. Si el servidor no responde, se detiene a los {1} y dice por qué; Detener lo termina ahora.</value></data>
+  <data name="WaitDetailLongerNoStop" xml:space="preserve"><value>Aquí suele tardar como mucho unos {0}. Si el servidor no responde, se detiene a los {1} y dice por qué.</value></data>
   <data name="CutNothingWritten" xml:space="preserve"><value>No se escribió nada: los pasos de arriba solo leyeron archivos.</value></data>
   <data name="CutOpenTimeLimits" xml:space="preserve"><value>Abrir los límites de tiempo</value></data>
   <data name="MsgPrefillOverran" xml:space="preserve"><value>Sin respuesta de {0} tras {1}: aún leía un prompt de unos {2:N0} {2:token|tokens}. Un servidor lento puede leer un prompt largo durante minutos: la próxima solicitud a este modelo esperará más, y «{3}» fija la espera más corta ({4} → {5}).</value></data>

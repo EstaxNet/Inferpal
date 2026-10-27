@@ -190,10 +190,11 @@ internal sealed record RunSummaryDto(
 /// <summary>`chat/wait` — the card of a request waiting on a server that reads its prompt (<see cref="ModelWait"/>).</summary>
 /// <param name="Fraction">How far along, 0 to 1; <c>null</c> with nothing measured: no bar.</param>
 /// <param name="Longer">Past the measured read: drawn as a warning, measured against the bound.</param>
-internal sealed record ModelWaitDto(string Title, string Times, string Detail, double? Fraction, bool Longer)
+internal sealed record ModelWaitDto(
+    string Title, string Times, string Detail, double? Fraction, bool Longer, string DetailWithoutStop)
 {
     public static ModelWaitDto? Of(ModelWait? wait) =>
-        wait is null ? null : new(wait.Title, wait.Times, wait.Detail, wait.Fraction, wait.Longer);
+        wait is null ? null : new(wait.Title, wait.Times, wait.Detail, wait.Fraction, wait.Longer, wait.DetailWithoutStop);
 }
 
 /// <summary>`run/review` — the review card of a run (<see cref="Services.Presentation.RunReviewModel"/>).</summary>
@@ -627,7 +628,9 @@ internal sealed record CodeActionParams(
     // Optional on the wire — an older adapter simply gets the unenriched prompt.
     string? Path  = null,
     // What the user typed after the command (/fix the off-by-one in the loop): given to the model first.
-    string? Request = null);
+    string? Request = null,
+    // Echoed on this call's codeAction/wait notes: a second gesture the host refuses meanwhile cannot take them over.
+    int? WaitId = null);
 
 /// <summary>One accepted-or-rejected-independently hunk of a code action rewrite, as a
 /// character-offset edit against the submitted text (mirror of the Core's <c>DiffEdit</c>).</summary>

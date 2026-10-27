@@ -80,9 +80,11 @@ internal static class InPlaceCodeEdit
         {
             try
             {
-                run = await CodeActionPipeline.RunAsync(
-                    client, model, systemPrompt, instruction,
-                    docText, sel.Start.Offset, sel.End.Offset, sel.IsEmpty, generation.Token);
+                // The model's wait in the spinner window while the server reads the prompt.
+                using (ModelWaitScope.Open(dlg.ShowWait))
+                    run = await CodeActionPipeline.RunAsync(
+                        client, model, systemPrompt, instruction,
+                        docText, sel.Start.Offset, sel.End.Offset, sel.IsEmpty, generation.Token);
             }
             catch (OperationCanceledException)
             {

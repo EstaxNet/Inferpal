@@ -61,7 +61,9 @@ internal static class TestGenerationEdit
         {
             try
             {
-                // The result replaces the open buffer, so it is planned from that buffer, unsaved tests included.
+                // The result replaces the open buffer, so it is planned from that buffer, unsaved tests included; the
+                // model's wait in the spinner window while the server reads the prompt.
+                using var waits = ModelWaitScope.Open(dlg.ShowWait);
                 plan = await Services.CodeActions.TestGenerationPlanner.PlanAsync(
                     client, model, sourcePath, sourceCode, generation.Token,
                     openText: async (path, token) =>

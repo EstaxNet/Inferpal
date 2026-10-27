@@ -1015,6 +1015,9 @@ internal sealed partial class HostServer : IDisposable
 
             // The pick is the CHAT model: a configured code-actions (or inline-edit) model wins over it, as in Visual Studio.
             var model = ModelRouter.Resolve(s.Config, edit ? ModelRole.InlineEdit : ModelRole.CodeActions, p.Model);
+            // The model's wait on the gesture's own progress (codeAction/wait), never on the chat's line: the editor
+            // draws its own label for an in-place action.
+            using var waits = ModelWaitScope.Open(wait => Notify("codeAction/wait", new { id = p.WaitId, wait = ModelWaitDto.Of(wait) }));
             run = await CodeActionPipeline.RunAsync(
                 s.Client, model, system, instruction,
                 p.Text, selStart, selEnd, selectionEmpty: selStart == selEnd, cts.Token,

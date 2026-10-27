@@ -367,6 +367,8 @@ export class HostClient {
     conn.onNotification('chat/thinking', (n: ThinkingNote) => this.events.onThinking?.(n.text ?? null));
     conn.onNotification('chat/step', (n: TextNote) => this.events.onStep?.(n.text));
     conn.onNotification('chat/wait', (n: WaitNote) => this.events.onWait?.(n.wait));
+    conn.onNotification('codeAction/wait', (n: WaitNote & { id?: number }) =>
+      n.id === undefined ? undefined : this.codeActionWaits.get(n.id)?.(n.wait));
     conn.onNotification('chat/plan', (n: PlanNotice) => this.events.onPlan?.(n));
     conn.onNotification('chat/stepUpdate', (n: StepUpdateNotice) => this.events.onStepUpdate?.(n));
     conn.onNotification('chat/tool', (n: ToolNotice) => this.events.onTool?.(n));
@@ -523,9 +525,22 @@ export class HostClient {
   /** In-place code action (fix / refactor / doc / edit): the host runs the model step and returns
    * per-hunk offset edits; previewing and applying stay editor-side. Flagged as chat-busy
    * so FIM requests skip instead of queueing behind the rewrite on the shared GPU. */
-  codeActionRun(params: CodeActionParams, token?: CancellationToken): Promise<CodeActionResult> {
-    return this.whileChatBusy(() => this.connection().sendRequest<CodeActionResult>('codeAction/run', ...HostClient.withToken(params, token)));
+  codeActionRun(
+    params: CodeActionParams, token?: CancellationToken, onWait?: (wait: ModelWait | null) => void,
+  ): Promise<CodeActionResult> {
+    // The model's wait goes to THIS call's surface: a second gesture refused meanwhile has its own id.
+    const waitId = ++this.lastCodeActionWait;
+    if (onWait) {
+      this.codeActionWaits.set(waitId, onWait);
+    }
+    return this.whileChatBusy(() => this.connection().sendRequest<CodeActionResult>(
+      'codeAction/run', ...HostClient.withToken({ ...params, waitId }, token)))
+      .finally(() => this.codeActionWaits.delete(waitId));
   }
+
+  /** The surfaces of the in-place actions running, by the id their `codeAction/wait` notes carry. */
+  private readonly codeActionWaits = new Map<number, (wait: ModelWait | null) => void>();
+  private lastCodeActionWait = 0;
 
   /**
    * A request's arguments, its token last only when there is one.

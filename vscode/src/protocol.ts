@@ -194,6 +194,8 @@ export interface ModelWait {
   fraction: number | null;
   /** Past the measured read: drawn as a warning, measured against the bound. */
   longer: boolean;
+  /** The detail for a surface with no Stop button: the longer wait names no Stop. */
+  detailWithoutStop: string;
 }
 
 export interface WaitNote {
@@ -426,6 +428,8 @@ export interface CodeActionParams {
   path?: string;
   /** What the user typed after the command (`/fix the off-by-one in the loop`): given to the model first. */
   request?: string;
+  /** Set by `HostClient.codeActionRun`: echoed on this call's `codeAction/wait` notes. */
+  waitId?: number;
 }
 
 /** One independently acceptable hunk: replace [start, end) of the submitted text. */

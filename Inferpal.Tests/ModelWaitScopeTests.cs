@@ -117,6 +117,28 @@ public class ModelWaitScopeTests
         }
     }
 
+    /// <summary>The in-place actions say the model's wait where the person waits for them: Visual Studio's spinner
+    /// window (Edit with AI, the actions, the tests it writes), VS Code's chat card for /fix and the like, and its
+    /// progress notification for Edit with AI.</summary>
+    [Fact]
+    public void TheInPlaceActions_SayTheModelsWait_WhereThePersonWaits()
+    {
+        var commands = Path.Combine(ConversationPersistenceSilenceTests.RepoRoot(), "Inferpal", "Commands");
+        foreach (var file in new[] { "InlineEditSelectionCommand.cs", "InPlaceCodeEdit.cs", "TestGenerationEdit.cs" })
+            Assert.Contains("ModelWaitScope.Open(dlg.ShowWait)", ConventionCoverageTests.CodeOnly(Path.Combine(commands, file)),
+                            StringComparison.Ordinal);
+        var window = ConventionCoverageTests.CodeOnly(Path.Combine(commands, "InlineEditInputWindow.cs"));
+        Assert.Matches(@"public void ShowWait\(Services\.Inference\.ModelWait\? wait\)[\s\S]*?Dispatcher\.InvokeAsync", window);
+
+        // Each call carries its own surface, by the id its notes echo: never one slot two gestures share.
+        var client = WebviewRebuildTests.TsCode("hostClient.ts");
+        Assert.Contains("this.codeActionWaits.get(n.id)?.(n.wait)", client, StringComparison.Ordinal);
+        Assert.Contains("{ ...params, waitId }", client, StringComparison.Ordinal);
+        var provider = WebviewRebuildTests.TsCode("chatViewProvider.ts");
+        Assert.Contains("}, undefined, (wait) => this.post({ type: 'wait', wait }));", provider, StringComparison.Ordinal);
+        Assert.Matches(@"\}, token, \(wait\) => progress\.report\(", provider);
+    }
+
     /// <summary>
     /// Every gesture of the Visual Studio window that takes the turn has a place where its steps and its model's waits
     /// are drawn: the status-bubble envelope (<c>OwnCommandStatus</c>) or a wait scope of its own (the chat turn, the

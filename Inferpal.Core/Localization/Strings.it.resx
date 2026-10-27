@@ -253,6 +253,7 @@ Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una 
   <data name="WaitDetail" xml:space="preserve"><value>Circa {0:N0} {0:token|token}; fino a circa {1} se nulla è in cache. Si ferma a {2} se il server resta muto.</value></data>
   <data name="WaitDetailUnmeasured" xml:space="preserve"><value>Circa {0:N0} {0:token|token}. Si ferma a {1} se il server resta muto.</value></data>
   <data name="WaitDetailLonger" xml:space="preserve"><value>Di solito qui ci vuole al massimo circa {0}. Se il server resta muto, si ferma a {1} e dice perché — Interrompi lo termina ora.</value></data>
+  <data name="WaitDetailLongerNoStop" xml:space="preserve"><value>Di solito qui ci vuole al massimo circa {0}. Se il server resta muto, si ferma a {1} e dice perché.</value></data>
   <data name="CutNothingWritten" xml:space="preserve"><value>Non è stato scritto nulla: i passaggi sopra hanno solo letto file.</value></data>
   <data name="CutOpenTimeLimits" xml:space="preserve"><value>Apri i limiti di tempo</value></data>
   <data name="MsgPrefillOverran" xml:space="preserve"><value>Nessuna risposta da {0} dopo {1}: stava ancora leggendo un prompt di circa {2:N0} {2:token|token}. Un server lento può leggere un prompt lungo per minuti: la prossima richiesta a questo modello attenderà di più, e «{3}» fissa l'attesa più breve ({4} → {5}).</value></data>

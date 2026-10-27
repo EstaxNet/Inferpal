@@ -3712,10 +3712,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         model: this.model || undefined,
         path: document.uri.fsPath,
         request,
-      });
+      // The model's wait as the chat's wait card, under the status line.
+      }, undefined, (wait) => this.post({ type: 'wait', wait }));
     } catch (err) {
       finish('error', ChatViewProvider.errorText(err));
       return;
+    } finally {
+      this.post({ type: 'wait', wait: null });
     }
 
     if (result.outcome === 'cancelled') {
@@ -3816,15 +3819,20 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     try {
       result = await vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: t('Inferpal is editing the code…'), cancellable: true },
-        (_progress, token) => (cancel = token, host.codeActionRun({
-          kind: 'edit',
-          text: before,
-          selStart: document.offsetAt(editor.selection.start),
-          selEnd: document.offsetAt(editor.selection.end),
-          model: this.model || undefined,
-          path: document.uri.fsPath,
-          request: instruction,
-        }, token)));
+        (progress, token) => {
+          cancel = token;
+          return host.codeActionRun({
+            kind: 'edit',
+            text: before,
+            selStart: document.offsetAt(editor.selection.start),
+            selEnd: document.offsetAt(editor.selection.end),
+            model: this.model || undefined,
+            path: document.uri.fsPath,
+            request: instruction,
+          // The model's wait on the notification while the server reads the prompt: what, how long, when it stops.
+          // An empty message puts the notification back on its title.
+          }, token, (wait) => progress.report({ message: wait ? `${wait.title} · ${wait.times} — ${wait.detailWithoutStop}` : '' }));
+        });
     } catch (err) {
       // The notification's Cancel comes back as the request's cancellation error: the person's own stop, nothing to say.
       if (!cancel?.isCancellationRequested) {

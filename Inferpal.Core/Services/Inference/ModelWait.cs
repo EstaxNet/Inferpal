@@ -38,6 +38,12 @@ internal sealed record ModelWait(int Tokens, TimeSpan Elapsed, TimeSpan? ColdRea
                           : Measured is { } cold ? Strings.WaitDetail(Tokens, RunSummary.Duration(cold), RunSummary.Duration(Bound))
                           : Strings.WaitDetailUnmeasured(Tokens, RunSummary.Duration(Bound));
 
+    /// <summary>The detail for a surface with no Stop button (Visual Studio's in-place window, VS Code's progress
+    /// notification): the longer wait does not name a gesture that is not there.</summary>
+    public string DetailWithoutStop => Longer
+        ? Strings.WaitDetailLongerNoStop(RunSummary.Duration(Measured!.Value), RunSummary.Duration(Bound))
+        : Detail;
+
     /// <summary>The title and the times, for a step line or a label that has no room for the rest.</summary>
     public string Short => $"{Title} · {Times}";
 }

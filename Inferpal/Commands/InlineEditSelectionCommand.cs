@@ -107,8 +107,10 @@ internal class InlineEditSelectionCommand : Command
         {
             try
             {
-                result = await _client.SendChatAsync(
-                    model, messages, EmptyToolRegistry.Instance, onToken: null, generation.Token, TaskComplexity.Quick);
+                // The model's wait in the spinner window while the server reads the prompt.
+                using (ModelWaitScope.Open(dlg.ShowWait))
+                    result = await _client.SendChatAsync(
+                        model, messages, EmptyToolRegistry.Instance, onToken: null, generation.Token, TaskComplexity.Quick);
             }
             catch (OperationCanceledException)
             {

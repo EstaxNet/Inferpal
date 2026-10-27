@@ -144,7 +144,9 @@ word, a server reads the prompt and sends nothing — minutes for a long prompt 
 fast each server reads, per model, from the requests that went through (kept in
 `%AppData%\Inferpal\prefill-rates.json`), and waits for a first word twice as long as a cold read of the request is
 measured to take — never less than these settings, nor than 20 s. In Visual Studio and VS Code — questions, agent
-runs and the long commands (`/check`, `/commit`, `/tdd`…) — after 8 s of waiting a card says so under the status line:
+runs, the long commands (`/check`, `/commit`, `/tdd`…) and the in-place actions (Edit with AI, `/fix`, `/refactor`,
+`/doc`, generated tests: in Visual Studio their own window, in VS Code Edit with AI's progress notification) — after 8 s
+of waiting a card says so under the status line:
 the time waited against the measured read, with a bar, the tokens to read, how long they take when nothing is cached,
 and when the wait stops if the server stays silent. Past the measured read, the card turns into a warning measured
 against that stop. It is an estimate from earlier reads: Ollama and the OpenAI-compatible routes send nothing while

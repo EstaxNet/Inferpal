@@ -253,6 +253,7 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
   <data name="WaitDetail" xml:space="preserve"><value>Około {0:N0} {0:token|tokeny|tokenów}; do około {1}, jeśli nic nie jest w pamięci podręcznej. Przerywa po {2}, jeśli serwer milczy.</value></data>
   <data name="WaitDetailUnmeasured" xml:space="preserve"><value>Około {0:N0} {0:token|tokeny|tokenów}. Przerywa po {1}, jeśli serwer milczy.</value></data>
   <data name="WaitDetailLonger" xml:space="preserve"><value>Zwykle trwa to tu najwyżej około {0}. Jeśli serwer milczy, przerwie po {1} i powie dlaczego — Zatrzymaj kończy to teraz.</value></data>
+  <data name="WaitDetailLongerNoStop" xml:space="preserve"><value>Zwykle trwa to tu najwyżej około {0}. Jeśli serwer milczy, przerwie po {1} i powie dlaczego.</value></data>
   <data name="CutNothingWritten" xml:space="preserve"><value>Nic nie zapisano: powyższe kroki tylko czytały pliki.</value></data>
   <data name="CutOpenTimeLimits" xml:space="preserve"><value>Otwórz limity czasu</value></data>
   <data name="MsgPrefillOverran" xml:space="preserve"><value>Brak odpowiedzi od {0} po {1}: wciąż wczytywał prompt o długości około {2:N0} {2:token|tokeny|tokenów}. Wolny serwer może wczytywać długi prompt przez minuty: następne żądanie do tego modelu poczeka dłużej, a „{3}” ustala najkrótsze oczekiwanie ({4} → {5}).</value></data>

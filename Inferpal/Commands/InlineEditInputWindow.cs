@@ -28,6 +28,7 @@ internal sealed class InlineEditInputWindow : Window
     private static readonly SolidColorBrush _accent = Freeze(new SolidColorBrush(Color.FromRgb(0x00, 0x7A, 0xCC)));
     private static readonly SolidColorBrush _fg     = Freeze(new SolidColorBrush(Color.FromRgb(0xCC, 0xCC, 0xCC)));
     private static readonly SolidColorBrush _dim    = Freeze(new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88)));
+    private static readonly SolidColorBrush _warn   = Freeze(new SolidColorBrush(Color.FromRgb(0xD7, 0xBA, 0x7D)));
 
     private static T Freeze<T>(T b) where T : Freezable { b.Freeze(); return b; }
 
@@ -40,6 +41,14 @@ internal sealed class InlineEditInputWindow : Window
     private readonly StackPanel  _loadingPanel;
     private readonly TextBlock   _spinnerBlock;
     private DispatcherTimer?     _spinnerTimer;
+
+    // ── The model's wait (ModelWait): what it reads, how long against what, when it stops ──
+    private readonly TextBlock   _workingText;
+    private readonly TextBlock   _waitTimes;
+    private readonly Border      _waitBar;
+    private readonly Border      _waitFill;
+    private readonly ScaleTransform _waitScale = new(0, 1);
+    private readonly TextBlock   _waitDetail;
 
     // ── Async result ───────────────────────────────────────────────────────────
     private readonly TaskCompletionSource<string?> _instructionTcs =
@@ -154,22 +163,51 @@ internal sealed class InlineEditInputWindow : Window
             VerticalAlignment = VerticalAlignment.Center,
             Margin            = new Thickness(0, 0, 10, 0),
         };
-        var workingText = new TextBlock
+        _workingText = new TextBlock
         {
             Text              = Strings.InlineEditWorking,
             Foreground        = _fg,
             FontSize          = 13,
             VerticalAlignment = VerticalAlignment.Center,
         };
+        _waitTimes = new TextBlock
+        {
+            Foreground        = _dim,
+            FontSize          = 12,
+            Margin            = new Thickness(12, 0, 0, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        var spinnerRow = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
+        spinnerRow.Children.Add(_spinnerBlock);
+        spinnerRow.Children.Add(_workingText);
+        spinnerRow.Children.Add(_waitTimes);
+        // A bar only when a read was measured; the detail says the tokens and when the wait stops.
+        // A band scaled from the left, not a ProgressBar: outside Visual Studio's theme its fill draws nothing.
+        _waitFill = new Border { Background = _accent, RenderTransform = _waitScale };
+        _waitBar = new Border
+        {
+            Height = 3, Margin = new Thickness(0, 8, 0, 0), Background = _border, Child = _waitFill,
+            Visibility = Visibility.Collapsed,
+        };
+        _waitDetail = new TextBlock
+        {
+            Foreground   = _dim,
+            FontSize     = 12,
+            TextWrapping = TextWrapping.Wrap,
+            Width        = 440,   // a fixed width: the window keeps its size as the times and the detail change
+            Margin       = new Thickness(0, 8, 0, 0),
+            Visibility   = Visibility.Collapsed,
+        };
         _loadingPanel = new StackPanel
         {
-            Orientation         = Orientation.Horizontal,
+            Orientation         = Orientation.Vertical,
             HorizontalAlignment = HorizontalAlignment.Center,
             Margin              = new Thickness(0, 12, 0, 12),
             Visibility          = Visibility.Collapsed,
         };
-        _loadingPanel.Children.Add(_spinnerBlock);
-        _loadingPanel.Children.Add(workingText);
+        _loadingPanel.Children.Add(spinnerRow);
+        _loadingPanel.Children.Add(_waitBar);
+        _loadingPanel.Children.Add(_waitDetail);
 
         // ── Root layout ───────────────────────────────────────────────────────
         var root = new StackPanel { Orientation = Orientation.Vertical };
@@ -235,6 +273,27 @@ internal sealed class InlineEditInputWindow : Window
     {
 #pragma warning disable VSTHRD001, VSTHRD110 // Intentional: marshalling to WPF Dispatcher (STA), not VS JoinableTaskFactory
         _ = Dispatcher.InvokeAsync(SwitchToLoadingCore);
+#pragma warning restore VSTHRD001, VSTHRD110
+    }
+
+    /// <summary>
+    /// The model's wait while the server reads the prompt (<see cref="Services.Inference.ModelWait"/>), or <c>null</c>
+    /// when it gives its place back: from any thread, never blocking — it is called under the wait's own lock.
+    /// </summary>
+    public void ShowWait(Services.Inference.ModelWait? wait)
+    {
+#pragma warning disable VSTHRD001, VSTHRD110 // Intentional: marshalling to WPF Dispatcher (STA), not VS JoinableTaskFactory
+        _ = Dispatcher.InvokeAsync(() =>
+        {
+            _workingText.Text      = wait?.Title ?? Strings.InlineEditWorking;
+            _waitTimes.Text        = wait?.Times ?? string.Empty;
+            _waitDetail.Text       = wait?.DetailWithoutStop ?? string.Empty;   // no Stop button here: closing stops
+            _waitDetail.Visibility = wait is null ? Visibility.Collapsed : Visibility.Visible;
+            _waitScale.ScaleX      = wait?.Fraction ?? 0;
+            _waitFill.Background   = wait?.Longer == true ? _warn : _accent;
+            _workingText.Foreground = wait?.Longer == true ? _warn : _fg;
+            _waitBar.Visibility    = wait?.Fraction is null ? Visibility.Collapsed : Visibility.Visible;
+        });
 #pragma warning restore VSTHRD001, VSTHRD110
     }
 
