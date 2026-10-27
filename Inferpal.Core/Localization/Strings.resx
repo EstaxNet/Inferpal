@@ -1866,6 +1866,24 @@ What you save there applies from your next question, in this thread and the othe
   <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>Not redone: {0} was changed after the undo, and redoing it would lose that change.</value></data>
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>undone, then changed — Redo would lose that change</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>no copy from before the run — it cannot be undone</value></data>
+  <data name="RunPieceUndone" xml:space="preserve"><value>Change {0} of {1} is back as it was before the run. What the file held is saved first.</value></data>
+  <data name="RunPieceRedone" xml:space="preserve"><value>Change {0} of {1} has the run's version again. What the file held is saved first.</value></data>
+  <data name="RunPieceKept" xml:space="preserve"><value>Change {0} of {1} is kept: Undo run leaves it as the run made it.</value></data>
+  <data name="RunPieceUnchanged" xml:space="preserve"><value>Change {0} of {1} already stands that way: nothing was written.</value></data>
+  <data name="RunPieceKeepGivenBack" xml:space="preserve"><value>Change {0} of {1} is given back: Redo it first to keep the run's version.</value></data>
+  <data name="RunPieceChangedSince" xml:space="preserve"><value>Not changed: {0} was edited after the run and its given-back changes, and writing change {1} would lose that edit.</value></data>
+  <data name="RunPieceGivenBackWhole" xml:space="preserve"><value>{0} was undone whole: Redo it first, then give its changes back one by one.</value></data>
+  <data name="RunPieceNoSuch" xml:space="preserve"><value>{0} has no change {1}: `/undo-run review` numbers them.</value></data>
+  <data name="RunPieceWholeOnly" xml:space="preserve"><value>{0} goes back whole only: {1}</value></data>
+  <data name="RunPiecesWholeCreated" xml:space="preserve"><value>the run created or deleted it.</value></data>
+  <data name="RunPiecesWholeBinary" xml:space="preserve"><value>it is not a text file.</value></data>
+  <data name="RunPiecesWholeTooLarge" xml:space="preserve"><value>more than {0:N0} lines differ.</value></data>
+  <data name="RunPiecesWholeNotRebuilt" xml:space="preserve"><value>its changes cannot be given back exactly — the run changed how it is encoded.</value></data>
+  <data name="RunPieceNoCopy" xml:space="preserve"><value>{0}: a copy its changes are cut from is gone, so they can no longer be given back one by one.</value></data>
+  <data name="UndoRunLeftPieces" xml:space="preserve"><value>Left as the run made them — you kept them: changes in {0}</value></data>
+  <data name="RunReviewHowToPieces" xml:space="preserve"><value>Undo one change: `/undo-run #{0}:&lt;n&gt; &lt;file&gt;`; redo it: `/undo-run redo #{0}:&lt;n&gt; &lt;file&gt;`.</value></data>
+  <data name="RunPiecesWholeLabel" xml:space="preserve"><value>whole only — {0}</value></data>
+  <data name="RunPieceLine" xml:space="preserve"><value>line {0}</value></data>
   <data name="RewindButton" xml:space="preserve"><value>Go back here</value></data>
   <data name="RewindButtonTip" xml:space="preserve"><value>Go back here — the conversation and its files</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>Go back to “{0}”?</value></data>

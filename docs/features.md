@@ -203,6 +203,13 @@ sequenceDiagram
   not undone — undoing it would put back the state before the run and lose that change. Where
   there is no card (an agent thread), `/undo-run review` lists the files and where each stands,
   and `/undo-run #<run> <file>` undoes one.
+- **Give back one change of a file** — a file the run changed in several places has its changes
+  numbered by `/undo-run review`; `/undo-run #<run>:<n> <file>` gives change *n* back as it was
+  before the run and leaves the others exactly as the run made them, and
+  `/undo-run redo #<run>:<n> <file>` gives it the run's version again. Each write saves what the
+  file held first, and a file edited since is never rewritten. A file the run created or deleted,
+  that is not text, or whose changes span more than 1,000 lines goes back whole only, and the
+  review says why.
 - **Go back to a question, with its files** *(both editors)* — **Go back here**, under a question
   you asked, opens a card: the runs that followed it are undone (each file put back, or deleted if
   a run created it — its current version saved first), the conversation resumes from that

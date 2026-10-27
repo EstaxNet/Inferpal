@@ -1862,6 +1862,24 @@
   <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>未重做：{0} 在撤销后被修改过，重做会丢失这些修改。</value></data>
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>已撤销，之后又被修改 — 重做会丢失这些修改</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>没有运行前的副本 — 无法撤销</value></data>
+  <data name="RunPieceUndone" xml:space="preserve"><value>{1} 的第 {0} 处更改已恢复到运行前的状态。文件之前的内容会先保存。</value></data>
+  <data name="RunPieceRedone" xml:space="preserve"><value>{1} 的第 {0} 处更改已重新应用本次运行的版本。文件之前的内容会先保存。</value></data>
+  <data name="RunPieceKept" xml:space="preserve"><value>已保留 {1} 的第 {0} 处更改：撤销运行会保持本次运行做出的样子。</value></data>
+  <data name="RunPieceUnchanged" xml:space="preserve"><value>{1} 的第 {0} 处更改已经是这个状态：没有写入任何内容。</value></data>
+  <data name="RunPieceKeepGivenBack" xml:space="preserve"><value>{1} 的第 {0} 处更改已撤销：要保留本次运行的版本，请先重做。</value></data>
+  <data name="RunPieceChangedSince" xml:space="preserve"><value>未更改：{0} 在运行及撤销的更改之后被编辑过，写入第 {1} 处更改会丢失这些编辑。</value></data>
+  <data name="RunPieceGivenBackWhole" xml:space="preserve"><value>{0} 已整体撤销：请先重做，再逐处撤销其更改。</value></data>
+  <data name="RunPieceNoSuch" xml:space="preserve"><value>{0} 没有第 {1} 处更改：`/undo-run review` 会列出编号。</value></data>
+  <data name="RunPieceWholeOnly" xml:space="preserve"><value>{0} 只能整体撤销：{1}</value></data>
+  <data name="RunPiecesWholeCreated" xml:space="preserve"><value>本次运行创建或删除了它。</value></data>
+  <data name="RunPiecesWholeBinary" xml:space="preserve"><value>它不是文本文件。</value></data>
+  <data name="RunPiecesWholeTooLarge" xml:space="preserve"><value>超过 {0:N0} 行不同。</value></data>
+  <data name="RunPiecesWholeNotRebuilt" xml:space="preserve"><value>无法精确撤销其更改——本次运行改变了它的编码。</value></data>
+  <data name="RunPieceNoCopy" xml:space="preserve"><value>{0}：其更改所依据的副本已不存在，无法再逐处撤销。</value></data>
+  <data name="UndoRunLeftPieces" xml:space="preserve"><value>保持本次运行做出的样子——你选择保留它们：{0} 中的更改</value></data>
+  <data name="RunReviewHowToPieces" xml:space="preserve"><value>只撤销一处更改：`/undo-run #{0}:&lt;n&gt; &lt;文件&gt;`；重做：`/undo-run redo #{0}:&lt;n&gt; &lt;文件&gt;`。</value></data>
+  <data name="RunPiecesWholeLabel" xml:space="preserve"><value>仅能整体撤销——{0}</value></data>
+  <data name="RunPieceLine" xml:space="preserve"><value>第 {0} 行</value></data>
   <data name="RewindButton" xml:space="preserve"><value>回到这里</value></data>
   <data name="RewindButtonTip" xml:space="preserve"><value>回到这里 — 对话及其文件</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>回到“{0}”？</value></data>

@@ -1862,6 +1862,24 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>Nicht wiederholt: {0} wurde nach dem Rückgängigmachen geändert, und Wiederholen würde diese Änderung verlieren.</value></data>
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>rückgängig gemacht, dann geändert — Wiederholen würde diese Änderung verlieren</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>keine Kopie von vor dem Lauf — nicht rückgängig zu machen</value></data>
+  <data name="RunPieceUndone" xml:space="preserve"><value>Änderung {0} von {1} ist wieder wie vor dem Lauf. Der vorherige Inhalt der Datei wird zuerst gesichert.</value></data>
+  <data name="RunPieceRedone" xml:space="preserve"><value>Änderung {0} von {1} hat wieder die Version des Laufs. Der vorherige Inhalt der Datei wird zuerst gesichert.</value></data>
+  <data name="RunPieceKept" xml:space="preserve"><value>Änderung {0} von {1} wird behalten: Lauf rückgängig machen lässt sie, wie der Lauf sie gemacht hat.</value></data>
+  <data name="RunPieceUnchanged" xml:space="preserve"><value>Änderung {0} von {1} ist bereits in diesem Zustand: Es wurde nichts geschrieben.</value></data>
+  <data name="RunPieceKeepGivenBack" xml:space="preserve"><value>Änderung {0} von {1} ist rückgängig gemacht: Stellen Sie sie zuerst wieder her, um die Version des Laufs zu behalten.</value></data>
+  <data name="RunPieceChangedSince" xml:space="preserve"><value>Nicht geändert: {0} wurde nach dem Lauf und den rückgängig gemachten Änderungen bearbeitet, und Änderung {1} zu schreiben würde diese Bearbeitung verlieren.</value></data>
+  <data name="RunPieceGivenBackWhole" xml:space="preserve"><value>{0} wurde vollständig rückgängig gemacht: Stellen Sie die Datei zuerst wieder her und machen Sie dann ihre Änderungen einzeln rückgängig.</value></data>
+  <data name="RunPieceNoSuch" xml:space="preserve"><value>{0} hat keine Änderung {1}: `/undo-run review` nummeriert sie.</value></data>
+  <data name="RunPieceWholeOnly" xml:space="preserve"><value>{0} kann nur vollständig rückgängig gemacht werden: {1}</value></data>
+  <data name="RunPiecesWholeCreated" xml:space="preserve"><value>der Lauf hat sie erstellt oder gelöscht.</value></data>
+  <data name="RunPiecesWholeBinary" xml:space="preserve"><value>es ist keine Textdatei.</value></data>
+  <data name="RunPiecesWholeTooLarge" xml:space="preserve"><value>mehr als {0:N0} Zeilen unterscheiden sich.</value></data>
+  <data name="RunPiecesWholeNotRebuilt" xml:space="preserve"><value>ihre Änderungen lassen sich nicht exakt rückgängig machen — der Lauf hat ihre Kodierung geändert.</value></data>
+  <data name="RunPieceNoCopy" xml:space="preserve"><value>{0}: Eine Kopie, aus der ihre Änderungen stammen, fehlt; sie lassen sich nicht mehr einzeln rückgängig machen.</value></data>
+  <data name="UndoRunLeftPieces" xml:space="preserve"><value>So gelassen, wie der Lauf sie gemacht hat — Sie haben sie behalten: Änderungen in {0}</value></data>
+  <data name="RunReviewHowToPieces" xml:space="preserve"><value>Eine einzelne Änderung rückgängig machen: `/undo-run #{0}:&lt;n&gt; &lt;Datei&gt;`; wiederherstellen: `/undo-run redo #{0}:&lt;n&gt; &lt;Datei&gt;`.</value></data>
+  <data name="RunPiecesWholeLabel" xml:space="preserve"><value>nur vollständig — {0}</value></data>
+  <data name="RunPieceLine" xml:space="preserve"><value>Zeile {0}</value></data>
   <data name="RewindButton" xml:space="preserve"><value>Hierher zurück</value></data>
   <data name="RewindButtonTip" xml:space="preserve"><value>Hierher zurück — die Unterhaltung und ihre Dateien</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>Zurück zu „{0}“?</value></data>

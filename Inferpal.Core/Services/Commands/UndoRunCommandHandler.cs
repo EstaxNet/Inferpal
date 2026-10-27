@@ -44,11 +44,29 @@ internal static class UndoRunCommandHandler
         // now — /fix-build, /tdd, /task apply open runs without a bar of their own — and undoing it in this bar's name
         // reverted the wrong files. Named, only that run is undone, and only while no later run changed files after it:
         // its snapshots predate the later run's writes, which the undo would overwrite.
+        // `/undo-run redo #<id>[:<n>] <file>`: the card's Redo where there is no card (an ACP client) — a file, or one change.
+        var redo = parts.Length >= 4 && parts[1].Equals("redo", StringComparison.OrdinalIgnoreCase) && parts[2].StartsWith('#');
+        if (redo) parts = [parts[0], .. parts[2..]];
         var named = parts.Length >= 2 && parts[1].StartsWith('#') ? parts[1][1..] : null;
+        // `#<id>:<n>`: change n of the file — a run id never holds a colon (yyyy-MM-dd_HH-mm-ss-fff…).
+        int? change = null;
+        if (named?.LastIndexOf(':') is int colon and >= 0)
+        {
+            if (parts.Length < 3 || !int.TryParse(named[(colon + 1)..], System.Globalization.NumberStyles.None,
+                                                  System.Globalization.CultureInfo.InvariantCulture, out var n) || n < 1)
+                return Strings.SlashUsage("/undo-run [list|review]");
+            (named, change) = (named[..colon], n);
+        }
         // `/undo-run #<id> <file>`: that one file of that run, as the review card's Undo.
         if (named is not null && parts.Length >= 3)
-            return (await FileActionAsync(history, named, string.Join(' ', parts[2..]).Trim('"'), RunFileAction.Undo, root,
-                                          busy: false, ct)).Message;
+        {
+            var file = string.Join(' ', parts[2..]).Trim('"');
+            return change is { } number
+                ? (await PieceActionAsync(history, named, file, number, redo ? PieceAction.Redo : PieceAction.Undo, root,
+                                          busy: false, ct)).Message
+                : (await FileActionAsync(history, named, file, redo ? RunFileAction.Redo : RunFileAction.Undo, root,
+                                         busy: false, ct)).Message;
+        }
         // Only a bare `/undo-run` (or a bar's) reverts. An argument it does not know — a typo of `list`, or a number
         // read as picking a run from the listing — must not revert the most recent run instead.
         if (parts.Length >= 2 && named is null) return Strings.SlashUsage("/undo-run [list|review]");
@@ -94,6 +112,8 @@ internal static class UndoRunCommandHandler
             sb.AppendLine(Strings.UndoRunLeftChanged(string.Join(", ", changed.Select(f => Relativise(f, root)))));
         if (result.Kept is { Count: > 0 } kept)
             sb.AppendLine(Strings.UndoRunLeftKept(string.Join(", ", kept.Select(f => Relativise(f, root)))));
+        if (result.PiecesKept is { Count: > 0 } piecesKept)
+            sb.AppendLine(Strings.UndoRunLeftPieces(string.Join(", ", piecesKept.Select(f => Relativise(f, root)))));
         if (run.CutShort) sb.AppendLine(Strings.UndoRunCutShort);
         sb.Append(NotCovered(said, root));
         return sb.ToString().TrimEnd();
@@ -112,10 +132,7 @@ internal static class UndoRunCommandHandler
         FileHistoryService history, string runId, string path, RunFileAction action, string? root, bool busy,
         CancellationToken ct)
     {
-        if (history.Runs.FirstOrDefault(r => r.Id == runId && r.FileCount > 0) is not { } run) return (Strings.UndoRunNone, null);
-        // Still recorded into here or by the other editor: changed now, the agent writes on top.
-        if (busy || run.OpenElsewhere) return (Strings.UndoRunWhileBusy, Presentation.RunReview.Build(history, run));
-        var full = Path.IsPathFullyQualified(path) || string.IsNullOrEmpty(root) ? path : Path.GetFullPath(Path.Combine(root, path));
+        if (Refused(history, runId, path, root, busy, out var run, out var full) is { } refused) return refused;
         var outcome = action switch
         {
             RunFileAction.Undo => await history.UndoFileAsync(run, full, ct),
@@ -139,6 +156,55 @@ internal static class UndoRunCommandHandler
         return (message, Presentation.RunReview.Build(history, run));
     }
 
+    /// <summary>
+    /// Change <paramref name="number"/> (1-based) of one file of a run's review given back, given the run's version again,
+    /// or kept: the sentence both editors show, and the review as it stands after.
+    /// </summary>
+    public static async Task<(string Message, Presentation.RunReviewModel? Review)> PieceActionAsync(
+        FileHistoryService history, string runId, string path, int number, PieceAction action, string? root, bool busy,
+        CancellationToken ct)
+    {
+        if (Refused(history, runId, path, root, busy, out var run, out var full) is { } refused) return refused;
+        var (outcome, why) = await history.PieceActionAsync(run, full, number - 1, action, ct);
+        var name = Relativise(full, root);
+        var message = outcome switch
+        {
+            PieceOutcome.Undone         => Strings.RunPieceUndone(number, name),
+            PieceOutcome.Redone         => Strings.RunPieceRedone(number, name),
+            PieceOutcome.Kept           => Strings.RunPieceKept(number, name),
+            PieceOutcome.Unchanged      => Strings.RunPieceUnchanged(number, name),
+            PieceOutcome.KeepGivenBack  => Strings.RunPieceKeepGivenBack(number, name),
+            PieceOutcome.ChangedSince   => Strings.RunPieceChangedSince(name, number),
+            PieceOutcome.GivenBackWhole => Strings.RunPieceGivenBackWhole(name),
+            PieceOutcome.NoSuchPiece    => Strings.RunPieceNoSuch(name, number),
+            PieceOutcome.WholeOnly      => Strings.RunPieceWholeOnly(name, WholeReason(why)),
+            PieceOutcome.NoCopy         => Strings.RunPieceNoCopy(name),
+            PieceOutcome.NotInRun       => Strings.RunFileNotInRun(name),
+            _                           => Strings.RunFileFailed(name),
+        };
+        return (message, Presentation.RunReview.Build(history, run));
+    }
+
+    /// <summary>The run a review gesture names and its file in full; the answer instead when the run is gone or busy.</summary>
+    private static (string Message, Presentation.RunReviewModel? Review)? Refused(
+        FileHistoryService history, string runId, string path, string? root, bool busy, out HistoryRun run, out string full)
+    {
+        full = Path.IsPathFullyQualified(path) || string.IsNullOrEmpty(root) ? path : Path.GetFullPath(Path.Combine(root, path));
+        run = history.Runs.FirstOrDefault(r => r.Id == runId && r.FileCount > 0)!;
+        if (run is null) return (Strings.UndoRunNone, null);
+        // Still recorded into here or by the other editor: changed now, the agent writes on top.
+        return busy || run.OpenElsewhere ? (Strings.UndoRunWhileBusy, Presentation.RunReview.Build(history, run)) : null;
+    }
+
+    /// <summary>Why a file goes back whole only, in the words of the card and the text.</summary>
+    internal static string WholeReason(RunPieces.Whole why) => why switch
+    {
+        RunPieces.Whole.Binary     => Strings.RunPiecesWholeBinary,
+        RunPieces.Whole.TooLarge   => Strings.RunPiecesWholeTooLarge(RunPieces.MaxDifferingLines),
+        RunPieces.Whole.NotRebuilt => Strings.RunPiecesWholeNotRebuilt,
+        _                          => Strings.RunPiecesWholeCreated,
+    };
+
     /// <summary><c>/undo-run review [#id]</c>: the review card as text — where there is no card (an ACP client).</summary>
     private static string Review(FileHistoryService history, IReadOnlyList<HistoryRun> runs, string? id, string? root)
     {
@@ -153,9 +219,18 @@ internal static class UndoRunCommandHandler
             sb.Append("  - ").Append(Relativise(file.Path, root)).Append($" +{file.Added} −{file.Removed}");
             if (file.Created) sb.Append(" · ").Append(Strings.RunFileNew);
             if (Presentation.RunReview.StateLabel(file) is { Length: > 0 } state) sb.Append(" · ").Append(state);
+            if (file.WholeOnly != RunPieces.Whole.None) sb.Append(" · ").Append(Strings.RunPiecesWholeLabel(WholeReason(file.WholeOnly)));
             sb.AppendLine();
+            foreach (var piece in file.Pieces ?? [])
+            {
+                sb.Append($"      {piece.Number}. ").Append(Strings.RunPieceLine(piece.Line)).Append($" +{piece.Added} −{piece.Removed}");
+                if (piece.State != Presentation.RunPieceState.Pending)
+                    sb.Append(" · ").Append(piece.State == Presentation.RunPieceState.Kept ? Strings.RunFileKeptLabel : Strings.RunFileUndoneLabel);
+                sb.AppendLine();
+            }
         }
         sb.Append(Strings.RunReviewHowTo(run.Id));
+        if (review.Files.Any(f => f.Pieces is { Count: > 0 })) sb.AppendLine().Append(Strings.RunReviewHowToPieces(run.Id));
         return sb.ToString();
     }
 

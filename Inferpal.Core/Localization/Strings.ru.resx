@@ -1862,6 +1862,24 @@
   <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>Не повторено: {0} изменён после отмены, и повтор потерял бы это изменение.</value></data>
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>отменён, затем изменён — «Повторить» потеряло бы это изменение</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>нет копии до запуска — отменить нельзя</value></data>
+  <data name="RunPieceUndone" xml:space="preserve"><value>Изменение {0} в {1} возвращено к состоянию до запуска. Прежнее содержимое файла сначала сохраняется.</value></data>
+  <data name="RunPieceRedone" xml:space="preserve"><value>У изменения {0} в {1} снова версия запуска. Прежнее содержимое файла сначала сохраняется.</value></data>
+  <data name="RunPieceKept" xml:space="preserve"><value>Изменение {0} в {1} сохранено: отмена запуска оставит его таким, каким его сделал запуск.</value></data>
+  <data name="RunPieceUnchanged" xml:space="preserve"><value>Изменение {0} в {1} уже в этом состоянии: ничего не записано.</value></data>
+  <data name="RunPieceKeepGivenBack" xml:space="preserve"><value>Изменение {0} в {1} отменено: сначала верните его, чтобы сохранить версию запуска.</value></data>
+  <data name="RunPieceChangedSince" xml:space="preserve"><value>Не изменено: {0} отредактирован после запуска и отменённых изменений, и запись изменения {1} потеряла бы эту правку.</value></data>
+  <data name="RunPieceGivenBackWhole" xml:space="preserve"><value>{0} отменён целиком: сначала верните его, затем отменяйте изменения по одному.</value></data>
+  <data name="RunPieceNoSuch" xml:space="preserve"><value>В {0} нет изменения {1}: `/undo-run review` нумерует их.</value></data>
+  <data name="RunPieceWholeOnly" xml:space="preserve"><value>{0} отменяется только целиком: {1}</value></data>
+  <data name="RunPiecesWholeCreated" xml:space="preserve"><value>запуск создал или удалил его.</value></data>
+  <data name="RunPiecesWholeBinary" xml:space="preserve"><value>это не текстовый файл.</value></data>
+  <data name="RunPiecesWholeTooLarge" xml:space="preserve"><value>различается больше {0:N0} строк.</value></data>
+  <data name="RunPiecesWholeNotRebuilt" xml:space="preserve"><value>его изменения нельзя отменить точно — запуск изменил его кодировку.</value></data>
+  <data name="RunPieceNoCopy" xml:space="preserve"><value>{0}: пропала копия, из которой берутся его изменения; их больше нельзя отменять по одному.</value></data>
+  <data name="UndoRunLeftPieces" xml:space="preserve"><value>Оставлены такими, какими их сделал запуск, — вы их сохранили: изменения в {0}</value></data>
+  <data name="RunReviewHowToPieces" xml:space="preserve"><value>Отменить одно изменение: `/undo-run #{0}:&lt;n&gt; &lt;файл&gt;`; вернуть его: `/undo-run redo #{0}:&lt;n&gt; &lt;файл&gt;`.</value></data>
+  <data name="RunPiecesWholeLabel" xml:space="preserve"><value>только целиком — {0}</value></data>
+  <data name="RunPieceLine" xml:space="preserve"><value>строка {0}</value></data>
   <data name="RewindButton" xml:space="preserve"><value>Вернуться сюда</value></data>
   <data name="RewindButtonTip" xml:space="preserve"><value>Вернуться сюда — к разговору и его файлам</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>Вернуться к «{0}»?</value></data>

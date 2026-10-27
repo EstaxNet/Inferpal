@@ -112,8 +112,15 @@ internal static class Rewind
                                    PathComparer.Default.Equals(c.OriginalPath, path))))
                                .Where(t => t.Change is not null && !marks[t.Run.Id].GivenBack.Contains(path))
                                .Select(t => (t.Run, Change: t.Change!)).ToList();
-            // Kept from any of their reviews: every one of them leaves it (ApplyAsync).
-            if (touching.Any(t => marks[t.Run.Id].Kept.Contains(path))) { files.Add(new RewindFile(path, RewindFileKind.Kept)); continue; }
+            // Kept from any of their reviews — whole, or one of its changes: every one of them leaves it (ApplyAsync).
+            // ⚠ A kept change is left whole too: given back run by run, the older run's undo would find the file changed
+            // by the newer one's and refuse it half-way, the conversation not moved back.
+            if (touching.Any(t => marks[t.Run.Id].Kept.Contains(path)
+                                  || marks[t.Run.Id].Pieces.TryGetValue(path, out var pieces) && pieces.Kept.Count > 0))
+            {
+                files.Add(new RewindFile(path, RewindFileKind.Kept));
+                continue;
+            }
             if (touching.Any(t => t.Change.SnapshotFailed || t.Change.SnapshotPath is { } copy && !File.Exists(copy)))
                 return new RewindPlan(turn, question, runs, files, RewindRefusal.NoCopy, path);
             if (history.ChangedSinceRun(touching[0].Run, path, new HashSet<string>()))

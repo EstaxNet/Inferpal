@@ -1862,6 +1862,24 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>Nie ponowiono: {0} zmieniono po cofnięciu, a ponowienie utraciłoby tę zmianę.</value></data>
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>cofnięty, potem zmieniony — Ponów utraciłoby tę zmianę</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>brak kopii sprzed uruchomienia — nie można cofnąć</value></data>
+  <data name="RunPieceUndone" xml:space="preserve"><value>Zmiana {0} w {1} wróciła do stanu sprzed uruchomienia. Poprzednia zawartość pliku jest najpierw zapisywana.</value></data>
+  <data name="RunPieceRedone" xml:space="preserve"><value>Zmiana {0} w {1} znów ma wersję z uruchomienia. Poprzednia zawartość pliku jest najpierw zapisywana.</value></data>
+  <data name="RunPieceKept" xml:space="preserve"><value>Zmiana {0} w {1} zachowana: Cofnij uruchomienie pozostawi ją taką, jaką zrobiło uruchomienie.</value></data>
+  <data name="RunPieceUnchanged" xml:space="preserve"><value>Zmiana {0} w {1} już jest w tym stanie: nic nie zapisano.</value></data>
+  <data name="RunPieceKeepGivenBack" xml:space="preserve"><value>Zmiana {0} w {1} jest cofnięta: najpierw ją przywróć, aby zachować wersję z uruchomienia.</value></data>
+  <data name="RunPieceChangedSince" xml:space="preserve"><value>Nie zmieniono: {0} edytowano po uruchomieniu i cofniętych zmianach, a zapisanie zmiany {1} utraciłoby tę edycję.</value></data>
+  <data name="RunPieceGivenBackWhole" xml:space="preserve"><value>{0} cofnięto w całości: najpierw go przywróć, potem cofaj jego zmiany pojedynczo.</value></data>
+  <data name="RunPieceNoSuch" xml:space="preserve"><value>{0} nie ma zmiany {1}: `/undo-run review` je numeruje.</value></data>
+  <data name="RunPieceWholeOnly" xml:space="preserve"><value>{0} można cofnąć tylko w całości: {1}</value></data>
+  <data name="RunPiecesWholeCreated" xml:space="preserve"><value>uruchomienie go utworzyło lub usunęło.</value></data>
+  <data name="RunPiecesWholeBinary" xml:space="preserve"><value>to nie jest plik tekstowy.</value></data>
+  <data name="RunPiecesWholeTooLarge" xml:space="preserve"><value>różni się ponad {0:N0} wierszy.</value></data>
+  <data name="RunPiecesWholeNotRebuilt" xml:space="preserve"><value>jego zmian nie da się cofnąć dokładnie — uruchomienie zmieniło jego kodowanie.</value></data>
+  <data name="RunPieceNoCopy" xml:space="preserve"><value>{0}: brakuje kopii, z której pochodzą jego zmiany; nie można ich już cofać pojedynczo.</value></data>
+  <data name="UndoRunLeftPieces" xml:space="preserve"><value>Pozostawione tak, jak zrobiło je uruchomienie — zachowano je: zmiany w {0}</value></data>
+  <data name="RunReviewHowToPieces" xml:space="preserve"><value>Cofnij jedną zmianę: `/undo-run #{0}:&lt;n&gt; &lt;plik&gt;`; przywróć ją: `/undo-run redo #{0}:&lt;n&gt; &lt;plik&gt;`.</value></data>
+  <data name="RunPiecesWholeLabel" xml:space="preserve"><value>tylko w całości — {0}</value></data>
+  <data name="RunPieceLine" xml:space="preserve"><value>wiersz {0}</value></data>
   <data name="RewindButton" xml:space="preserve"><value>Wróć tutaj</value></data>
   <data name="RewindButtonTip" xml:space="preserve"><value>Wróć tutaj — rozmowa i jej pliki</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>Wrócić do „{0}”?</value></data>

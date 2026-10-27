@@ -435,7 +435,8 @@ internal class FileHistoryService
 
     /// <summary>The copies a run needs: its pre-run backups, and what its undos replaced (what a redo puts back).</summary>
     private static IEnumerable<string> HeldCopies(HistoryRun run) =>
-        run.Changes.Select(c => c.SnapshotPath).OfType<string>().Concat(run.RedoSources.Values);
+        run.Changes.Select(c => c.SnapshotPath).OfType<string>().Concat(run.RedoSources.Values)
+           .Concat(run.Pieces.Values.Select(p => p.RunCopy));
 
     /// <summary>Prunes, once per history folder, the old snapshots of the files a batch backed up.</summary>
     /// <remarks>⚠ One snapshot at a time, each pruning lists the folder and rewrites the list of held snapshots: a checkout
@@ -1135,12 +1136,40 @@ internal class FileHistoryService
         var later = TouchedLater(run);
         var changedSince = pending.Where(c => ChangedSinceRun(run, c.OriginalPath, later)).Select(c => c.OriginalPath).ToList();
         pending.RemoveAll(c => changedSince.Contains(c.OriginalPath, PathComparer.Default));
+        // A file with changes the person kept: every other change given back, those left as the run made them.
+        List<RunChange> partly;
+        lock (_runLock) partly = pending.Where(c => run.PiecesOf(c.OriginalPath) is { Kept.Count: > 0 }).ToList();
+        pending.RemoveAll(partly.Contains);
 
         var result = await UndoChangesAsync(run, pending, ct);
+        var piecesKept = new List<string>();
+        var savedFirst = 0;
+        foreach (var change in partly)
+        {
+            var (outcome, _) = await ApplyPiecesAsync(run, change, (pieces, undone, keep) =>
+            {
+                var before = undone.Count;
+                undone.UnionWith(Enumerable.Range(0, pieces.Pieces.Count).Where(i => !keep.Contains(i)));
+                return undone.Count > before ? PieceOutcome.Undone : PieceOutcome.Unchanged;
+            }, ct);
+            if (outcome == PieceOutcome.ChangedSince) changedSince.Add(change.OriginalPath);
+            else if (outcome is PieceOutcome.Undone or PieceOutcome.Unchanged)
+            {
+                piecesKept.Add(change.OriginalPath);
+                // Written, and saved first: counted with the files put back, and named apart for what it keeps.
+                if (outcome == PieceOutcome.Undone)
+                {
+                    result.Restored.Add(change.OriginalPath);
+                    savedFirst++;
+                }
+            }
+            else result.Failed.Add(change.OriginalPath);
+        }
         lock (_runLock)
             if (result.Failed.Count == 0) run.MarkUndone();
         Persist(run, open: false);   // undone stays undone after a restart, and a retry gives back only what failed
-        return result with { ChangedSince = changedSince, Kept = kept };
+        return result with { ChangedSince = changedSince, Kept = kept, PiecesKept = piecesKept,
+                             SavedFirst = result.SavedFirst + savedFirst };
     }
 
     /// <summary>Puts <paramref name="path"/> back as it was before <paramref name="run"/>: one file of the run's review.</summary>
@@ -1175,7 +1204,26 @@ internal class FileHistoryService
     {
         if (ChangeOf(run, path) is not { } change) return FileUndoOutcome.NotInRun;
         string? copy;
-        lock (_runLock) copy = run.IsGivenBack(change.OriginalPath) ? run.RedoSourceOf(change.OriginalPath) : null;
+        bool piecesUndone;
+        lock (_runLock)
+        {
+            copy = run.IsGivenBack(change.OriginalPath) ? run.RedoSourceOf(change.OriginalPath) : null;
+            piecesUndone = !run.IsGivenBack(change.OriginalPath) && run.PiecesOf(change.OriginalPath) is { Undone.Count: > 0 };
+        }
+        // Changes given back one by one (or by an undo of the run that left kept ones): each given the run's version again.
+        if (piecesUndone)
+            return await ApplyPiecesAsync(run, change, (_, undone, _) =>
+            {
+                undone.Clear();
+                return PieceOutcome.Redone;
+            }, ct) switch
+            {
+                (PieceOutcome.Redone, _)       => FileUndoOutcome.Redone,
+                (PieceOutcome.ChangedSince, _) => FileUndoOutcome.ChangedSinceUndo,
+                // The run's copy the changes are cut from is gone: nothing left to redo from.
+                (PieceOutcome.NoCopy, _)       => FileUndoOutcome.NothingToRedo,
+                _                              => FileUndoOutcome.Failed,
+            };
         if (copy is null) return FileUndoOutcome.NothingToRedo;
         // ⚠ The redo writes the run's version over what the undo left: changed since, that change would be lost.
         if (!AsTheUndoLeft(change)) return FileUndoOutcome.ChangedSinceUndo;
@@ -1220,6 +1268,113 @@ internal class FileHistoryService
         lock (_runLock) run.NoteKept(change.OriginalPath);
         Persist(run, open: false);
         return FileUndoOutcome.Kept;
+    }
+
+    /// <summary>
+    /// One change of <paramref name="path"/> (<see cref="RunPiece.Index"/>) given back, given the run's version again, or
+    /// kept: the file is rewritten as <see cref="RunPieces.Compose"/> of its marks, what it held saved first.
+    /// </summary>
+    internal async Task<(PieceOutcome Outcome, RunPieces.Whole Why)> PieceActionAsync(
+        HistoryRun run, string path, int index, PieceAction action, CancellationToken ct)
+    {
+        if (ChangeOf(run, path) is not { } change) return (PieceOutcome.NotInRun, RunPieces.Whole.None);
+        lock (_runLock)
+            if (run.IsGivenBack(change.OriginalPath)) return (PieceOutcome.GivenBackWhole, RunPieces.Whole.None);
+        return await ApplyPiecesAsync(run, change, (pieces, undone, kept) =>
+        {
+            if (index < 0 || index >= pieces.Pieces.Count) return PieceOutcome.NoSuchPiece;
+            switch (action)
+            {
+                case PieceAction.Undo:
+                    if (!undone.Add(index)) return PieceOutcome.Unchanged;
+                    kept.Remove(index);
+                    return PieceOutcome.Undone;
+                case PieceAction.Redo:
+                    return undone.Remove(index) ? PieceOutcome.Redone : PieceOutcome.Unchanged;
+                default:
+                    // Given back, it holds the state before the run: "kept as the run made it" would be false.
+                    if (undone.Contains(index)) return PieceOutcome.KeepGivenBack;
+                    return kept.Add(index) ? PieceOutcome.Kept : PieceOutcome.Unchanged;
+            }
+        }, ct);
+    }
+
+    // One piece gesture at a time in this process: two read the same marks, and the second write dropped the first.
+    private readonly SemaphoreSlim _pieceGate = new(1, 1);
+
+    /// <summary>
+    /// Cuts the file into its changes, lets <paramref name="decide"/> change which are given back and kept, and writes what
+    /// they compose — after checking the file holds what its marks compose now, and saving it.
+    /// </summary>
+    private async Task<(PieceOutcome Outcome, RunPieces.Whole Why)> ApplyPiecesAsync(
+        HistoryRun run, RunChange change, Func<RunPieces, HashSet<int>, HashSet<int>, PieceOutcome> decide, CancellationToken ct)
+    {
+        var path = change.OriginalPath;
+        // Created by the run: one change by nature, given back whole.
+        if (change.SnapshotPath is null && !change.SnapshotFailed) return (PieceOutcome.WholeOnly, RunPieces.Whole.Created);
+        if (change.SnapshotFailed || !File.Exists(change.SnapshotPath)) return (PieceOutcome.NoCopy, RunPieces.Whole.None);
+        await _pieceGate.WaitAsync(ct);
+        var pruneLater = new List<(string Dir, string Suffix)>();
+        try
+        {
+            // ⚠ Judged first, then the marks read: Runs brings in what the other editor marked on disk, its end hash with
+            // its marks — marks read before would cut the changes from a file that is no longer the run's version.
+            if (ChangedSinceRun(run, path, TouchedLater(run))) return (PieceOutcome.ChangedSince, RunPieces.Whole.None);
+            // Not changed since, and gone: the run deleted it.
+            if (!File.Exists(path)) return (PieceOutcome.WholeOnly, RunPieces.Whole.Created);
+            PieceMarks? marks;
+            lock (_runLock) marks = run.PiecesOf(path);
+            if (marks is not null && !File.Exists(marks.RunCopy)) return (PieceOutcome.NoCopy, RunPieces.Whole.None);
+            var now = await File.ReadAllBytesAsync(path, ct);
+            var runVersion = marks is null ? now : await File.ReadAllBytesAsync(marks.RunCopy, ct);
+            if (RunPieces.Of(await File.ReadAllBytesAsync(change.SnapshotPath!, ct), runVersion, out var whole) is not { } pieces)
+                return (PieceOutcome.WholeOnly, whole);
+            var undone = (marks?.Undone ?? []).ToHashSet();
+            var kept   = (marks?.Kept ?? []).ToHashSet();
+            // ⚠ The file must hold what its marks compose: else it changed since — by hand, or by the other editor's
+            // gesture not read yet — and the write would lose that change.
+            // shortcut: two editors making a first gesture on the same file in the same moment both write generation 1, and
+            // the one that loses on disk is refused here until a restart; serialize across processes if that is ever seen.
+            if (!pieces.Compose(undone).AsSpan().SequenceEqual(now)) return (PieceOutcome.ChangedSince, RunPieces.Whole.None);
+            var was = undone.ToHashSet();
+            var outcome = decide(pieces, undone, kept);
+            if (outcome is not (PieceOutcome.Undone or PieceOutcome.Redone or PieceOutcome.Kept)) return (outcome, RunPieces.Whole.None);
+            var write = !undone.SetEquals(was);
+            var runCopy = marks?.RunCopy;
+            if (runCopy is null || write)
+            {
+                // The bytes just checked: the run's version the changes are cut from on the first gesture, and the backup
+                // of a write — no backup, no write. Read again, a save in between would make the copy another file.
+                if (await SnapshotBytesAsync(path, now, ct, pruneLater) is not { Length: > 0 } saved)
+                    return (PieceOutcome.Failed, RunPieces.Whole.None);
+                runCopy ??= saved;
+            }
+            var bytes = pieces.Compose(undone);
+            // Backed up: a stop asked now must not leave the file half written.
+            if (write) await File.WriteAllBytesAsync(path, bytes, CancellationToken.None);
+            bool open;
+            lock (_runLock)
+            {
+                run.NotePieces(path, new PieceMarks((marks?.Generation ?? 0) + 1, runCopy, [.. undone.Order()],
+                                                    [.. kept.Order()], Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes))));
+                // A change given the run's version again: the run is no longer wholly undone.
+                if (outcome == PieceOutcome.Redone) run.ReopenUndo();
+                open = ReferenceEquals(run, _currentRun);
+            }
+            Persist(run, open);
+            return (outcome, RunPieces.Whole.None);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Diagnostics.Swallow("FileHistoryService.ApplyPieces", ex);
+            return (PieceOutcome.Failed, RunPieces.Whole.None);
+        }
+        finally
+        {
+            PruneBatch(pruneLater);
+            _pieceGate.Release();
+        }
     }
 
     private RunChange? ChangeOf(HistoryRun run, string path)
@@ -1285,7 +1440,8 @@ internal class FileHistoryService
                 run.Changes.Select(c => c.OriginalPath).Where(run.IsGivenBack).ToHashSet(PathComparer.Default),
                 run.Changes.Select(c => c.OriginalPath).Where(run.IsKept).ToHashSet(PathComparer.Default),
                 run.Changes.Where(c => run.RedoSourceOf(c.OriginalPath) is { } copy && File.Exists(copy))
-                           .Select(c => c.OriginalPath).ToHashSet(PathComparer.Default));
+                           .Select(c => c.OriginalPath).ToHashSet(PathComparer.Default),
+                run.Pieces.ToDictionary(p => p.Key, p => p.Value, PathComparer.Default));
     }
 
     /// <summary>Notes what each file of <paramref name="run"/> holds as it ends (<see cref="HistoryRun.AfterOf"/>).</summary>
@@ -1579,8 +1735,10 @@ internal sealed record ToolCallRecord(int Seq, string Tool, string? Subject, lon
 /// <param name="SavedFirst">Files whose current state was snapshotted before being reverted.</param>
 /// <param name="ChangedSince">Files left as they are: changed after the run ended, so the undo would lose that change.</param>
 /// <param name="Kept">Files left as they are: the person kept them.</param>
+/// <param name="PiecesKept">Files given back but for the changes the person kept.</param>
 internal sealed record RunUndoResult(List<string> Restored, List<string> Deleted, List<string> Failed,
-                                     int SavedFirst = 0, List<string>? ChangedSince = null, List<string>? Kept = null);
+                                     int SavedFirst = 0, List<string>? ChangedSince = null, List<string>? Kept = null,
+                                     List<string>? PiecesKept = null);
 
 /// <summary>What became of one file of a run's review (<see cref="FileHistoryService.UndoFileAsync"/> and the others).</summary>
 internal enum FileUndoOutcome
@@ -1590,8 +1748,37 @@ internal enum FileUndoOutcome
 
 /// <summary>A run's files and marks as one review reads them (<see cref="FileHistoryService.MarksOf"/>).</summary>
 /// <param name="Redoable">Files given back whose copy to redo from is still on disk.</param>
+/// <param name="Pieces">Files whose changes were kept or given back one by one.</param>
 internal sealed record RunMarks(
-    IReadOnlyList<RunChange> Changes, IReadOnlySet<string> GivenBack, IReadOnlySet<string> Kept, IReadOnlySet<string> Redoable);
+    IReadOnlyList<RunChange> Changes, IReadOnlySet<string> GivenBack, IReadOnlySet<string> Kept, IReadOnlySet<string> Redoable,
+    IReadOnlyDictionary<string, PieceMarks> Pieces);
+
+/// <summary>The changes of one file of a run kept or given back one by one (<see cref="RunPieces"/>).</summary>
+/// <param name="Generation">Grows with each gesture: the newer marks win when two editors share the run.</param>
+/// <param name="RunCopy">The file as the run left it, copied at the first gesture: the changes are cut from it.</param>
+/// <param name="Undone">The changes given back, by <see cref="RunPiece.Index"/>.</param>
+/// <param name="Kept">The changes the person kept: an undo of the run leaves them.</param>
+/// <param name="After">The hash of what the file holds after the last gesture.</param>
+internal sealed record PieceMarks(int Generation, string RunCopy, IReadOnlyList<int> Undone, IReadOnlyList<int> Kept, string After);
+
+/// <summary>What a gesture on one change of a file did (<see cref="FileHistoryService.PieceActionAsync"/>).</summary>
+internal enum PieceOutcome
+{
+    Undone, Redone, Kept,
+    /// <summary>The change already stood that way: nothing written.</summary>
+    Unchanged,
+    /// <summary>Created, deleted or not text, or its changes cannot be given back exactly: the file goes whole.</summary>
+    WholeOnly,
+    /// <summary>The file was given back whole: Redo first.</summary>
+    GivenBackWhole,
+    /// <summary>The file holds something else than the run and its gestures left: a write would lose that change.</summary>
+    ChangedSince,
+    /// <summary>Keep asked for a change given back: it holds the state before the run, not the run's.</summary>
+    KeepGivenBack,
+    NoSuchPiece, NoCopy, NotInRun, Failed,
+}
+
+internal enum PieceAction { Undo, Redo, Keep }
 
 /// <summary>The lines of one file the model has seen, as merged ranges.</summary>
 internal sealed class LinesSeen(int total)
@@ -1749,6 +1936,27 @@ internal sealed class HistoryRun
     public void NoteRedoSource(string path, string copy) => _redoSources[path] = copy;
 
     public IReadOnlyDictionary<string, string> RedoSources => _redoSources;
+
+    // Files whose changes were kept or given back one by one: what each holds is RunPieces.Compose of its marks.
+    private readonly Dictionary<string, PieceMarks> _pieces = new(PathComparer.Default);
+
+    public PieceMarks? PiecesOf(string path) => _pieces.TryGetValue(path, out var marks) ? marks : null;
+
+    /// <summary>A piece gesture landed: the file now holds <see cref="PieceMarks.After"/>, the end a later gesture or an
+    /// undo is judged against.</summary>
+    public void NotePieces(string path, PieceMarks marks)
+    {
+        _pieces[path] = marks;
+        _after[path] = marks.After;
+    }
+
+    /// <summary>Takes <paramref name="other"/> when it is newer: the marks of both editors only grow by generation.</summary>
+    public void MergePieces(string path, PieceMarks other)
+    {
+        if (other.Generation > (PiecesOf(path)?.Generation ?? 0)) NotePieces(path, other);
+    }
+
+    public IReadOnlyDictionary<string, PieceMarks> Pieces => _pieces;
 
     // Of a file read in part (a page, a range): the lines seen so far, promoted to _read once they cover the file.
     private readonly Dictionary<string, LinesSeen> _partial = new(PathComparer.Default);

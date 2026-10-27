@@ -1862,6 +1862,24 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>다시 실행하지 않았습니다: {0}은(는) 되돌린 후에 변경되어, 다시 실행하면 그 변경이 사라집니다.</value></data>
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>되돌린 후 변경됨 — 다시 실행하면 그 변경이 사라집니다</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>실행 전 사본 없음 — 되돌릴 수 없습니다</value></data>
+  <data name="RunPieceUndone" xml:space="preserve"><value>{1}의 변경 {0}을(를) 실행 전 상태로 되돌렸습니다. 이전 파일 내용은 먼저 저장됩니다.</value></data>
+  <data name="RunPieceRedone" xml:space="preserve"><value>{1}의 변경 {0}에 실행 후 버전을 다시 적용했습니다. 이전 파일 내용은 먼저 저장됩니다.</value></data>
+  <data name="RunPieceKept" xml:space="preserve"><value>{1}의 변경 {0}을(를) 유지합니다: 실행 취소가 이 변경을 실행 후 그대로 둡니다.</value></data>
+  <data name="RunPieceUnchanged" xml:space="preserve"><value>{1}의 변경 {0}은(는) 이미 그 상태입니다: 아무것도 쓰지 않았습니다.</value></data>
+  <data name="RunPieceKeepGivenBack" xml:space="preserve"><value>{1}의 변경 {0}은(는) 되돌려져 있습니다: 실행 후 버전을 유지하려면 먼저 다시 적용하세요.</value></data>
+  <data name="RunPieceChangedSince" xml:space="preserve"><value>변경하지 않았습니다: {0}은(는) 실행 및 되돌린 변경 이후에 편집되어, 변경 {1}을(를) 쓰면 그 편집이 사라집니다.</value></data>
+  <data name="RunPieceGivenBackWhole" xml:space="preserve"><value>{0}은(는) 파일 전체가 되돌려졌습니다: 먼저 다시 실행한 다음 변경을 하나씩 되돌리세요.</value></data>
+  <data name="RunPieceNoSuch" xml:space="preserve"><value>{0}에는 변경 {1}이(가) 없습니다: `/undo-run review`가 번호를 매깁니다.</value></data>
+  <data name="RunPieceWholeOnly" xml:space="preserve"><value>{0}은(는) 파일 전체로만 되돌릴 수 있습니다: {1}</value></data>
+  <data name="RunPiecesWholeCreated" xml:space="preserve"><value>실행이 만들거나 삭제한 파일입니다.</value></data>
+  <data name="RunPiecesWholeBinary" xml:space="preserve"><value>텍스트 파일이 아닙니다.</value></data>
+  <data name="RunPiecesWholeTooLarge" xml:space="preserve"><value>{0:N0}줄이 넘게 다릅니다.</value></data>
+  <data name="RunPiecesWholeNotRebuilt" xml:space="preserve"><value>변경을 정확히 되돌릴 수 없습니다 — 실행이 인코딩을 바꿨습니다.</value></data>
+  <data name="RunPieceNoCopy" xml:space="preserve"><value>{0}: 변경의 기준이 되는 사본이 없어, 더 이상 변경을 하나씩 되돌릴 수 없습니다.</value></data>
+  <data name="UndoRunLeftPieces" xml:space="preserve"><value>실행 후 그대로 두었습니다 — 유지하기로 한 변경입니다: {0}의 변경</value></data>
+  <data name="RunReviewHowToPieces" xml:space="preserve"><value>변경 하나만 되돌리기: `/undo-run #{0}:&lt;n&gt; &lt;파일&gt;`, 다시 적용: `/undo-run redo #{0}:&lt;n&gt; &lt;파일&gt;`.</value></data>
+  <data name="RunPiecesWholeLabel" xml:space="preserve"><value>파일 전체로만 — {0}</value></data>
+  <data name="RunPieceLine" xml:space="preserve"><value>{0}번째 줄</value></data>
   <data name="RewindButton" xml:space="preserve"><value>여기로 돌아가기</value></data>
   <data name="RewindButtonTip" xml:space="preserve"><value>여기로 돌아가기 — 대화와 파일</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>“{0}”(으)로 돌아갈까요?</value></data>

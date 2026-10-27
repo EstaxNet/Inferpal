@@ -1862,6 +1862,24 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>Non rétabli : {0} a été modifié après l'annulation, et le rétablir perdrait cette modification.</value></data>
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>annulé, puis modifié — Rétablir perdrait cette modification</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>aucune copie d'avant le run — impossible à annuler</value></data>
+  <data name="RunPieceUndone" xml:space="preserve"><value>Le changement {0} de {1} est revenu tel qu'il était avant le run. Ce que le fichier contenait est d'abord sauvegardé.</value></data>
+  <data name="RunPieceRedone" xml:space="preserve"><value>Le changement {0} de {1} a de nouveau la version du run. Ce que le fichier contenait est d'abord sauvegardé.</value></data>
+  <data name="RunPieceKept" xml:space="preserve"><value>Le changement {0} de {1} est gardé : Annuler le run le laisse tel que le run l'a fait.</value></data>
+  <data name="RunPieceUnchanged" xml:space="preserve"><value>Le changement {0} de {1} est déjà dans cet état : rien n'a été écrit.</value></data>
+  <data name="RunPieceKeepGivenBack" xml:space="preserve"><value>Le changement {0} de {1} est rendu : rétablissez-le d'abord pour garder la version du run.</value></data>
+  <data name="RunPieceChangedSince" xml:space="preserve"><value>Rien d'écrit : {0} a été modifié après le run et ses changements rendus, et écrire le changement {1} perdrait cette modification.</value></data>
+  <data name="RunPieceGivenBackWhole" xml:space="preserve"><value>{0} a été annulé en entier : rétablissez-le d'abord, puis rendez ses changements un par un.</value></data>
+  <data name="RunPieceNoSuch" xml:space="preserve"><value>{0} n'a pas de changement {1} : `/undo-run review` les numérote.</value></data>
+  <data name="RunPieceWholeOnly" xml:space="preserve"><value>{0} ne se rend qu'en entier : {1}</value></data>
+  <data name="RunPiecesWholeCreated" xml:space="preserve"><value>le run l'a créé ou supprimé.</value></data>
+  <data name="RunPiecesWholeBinary" xml:space="preserve"><value>ce n'est pas un fichier texte.</value></data>
+  <data name="RunPiecesWholeTooLarge" xml:space="preserve"><value>plus de {0:N0} lignes diffèrent.</value></data>
+  <data name="RunPiecesWholeNotRebuilt" xml:space="preserve"><value>ses changements ne peuvent pas être rendus exactement — le run a changé son encodage.</value></data>
+  <data name="RunPieceNoCopy" xml:space="preserve"><value>{0} : une copie d'où ses changements sont tirés a disparu ; ils ne peuvent plus être rendus un par un.</value></data>
+  <data name="UndoRunLeftPieces" xml:space="preserve"><value>Laissés tels que le run les a faits — vous les avez gardés : des changements dans {0}</value></data>
+  <data name="RunReviewHowToPieces" xml:space="preserve"><value>Annuler un seul changement : `/undo-run #{0}:&lt;n&gt; &lt;fichier&gt;` ; le rétablir : `/undo-run redo #{0}:&lt;n&gt; &lt;fichier&gt;`.</value></data>
+  <data name="RunPiecesWholeLabel" xml:space="preserve"><value>en entier seulement — {0}</value></data>
+  <data name="RunPieceLine" xml:space="preserve"><value>ligne {0}</value></data>
   <data name="RewindButton" xml:space="preserve"><value>Revenir ici</value></data>
   <data name="RewindButtonTip" xml:space="preserve"><value>Revenir ici — la conversation et ses fichiers</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>Revenir à « {0} » ?</value></data>

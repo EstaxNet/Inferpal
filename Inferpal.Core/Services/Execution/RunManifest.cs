@@ -37,6 +37,13 @@ internal static class RunManifest
         [property: JsonPropertyName("reason")] string? Reason,
         [property: JsonPropertyName("file")] string? File);
 
+    private sealed record PieceDto(
+        [property: JsonPropertyName("generation")] int Generation,
+        [property: JsonPropertyName("runCopy")] string? RunCopy,
+        [property: JsonPropertyName("undone")] List<int>? Undone,
+        [property: JsonPropertyName("kept")] List<int>? Kept,
+        [property: JsonPropertyName("after")] string? After);
+
     // "undone" and "givenBack" are the marks of the first runs written: read as generation 1, never written again.
     private sealed record Dto(
         [property: JsonPropertyName("id")] string? Id,
@@ -52,7 +59,8 @@ internal static class RunManifest
         [property: JsonPropertyName("redo")] Dictionary<string, string>? Redo,
         [property: JsonPropertyName("uncovered")] List<NoteDto>? Uncovered,
         [property: JsonPropertyName("undone"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] bool Undone = false,
-        [property: JsonPropertyName("givenBack"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] List<string>? GivenBack = null);
+        [property: JsonPropertyName("givenBack"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] List<string>? GivenBack = null,
+        [property: JsonPropertyName("pieces"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] Dictionary<string, PieceDto>? Pieces = null);
 
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
 
@@ -123,7 +131,10 @@ internal static class RunManifest
             run.AfterHashes.ToDictionary(p => p.Key, p => p.Value),
             run.Kept.ToList(),
             run.RedoSources.ToDictionary(p => p.Key, p => p.Value),
-            run.Uncovered.Select(u => new NoteDto(u.Call, u.Note.Reason.ToString(), u.Note.File)).ToList()), Options);
+            run.Uncovered.Select(u => new NoteDto(u.Call, u.Note.Reason.ToString(), u.Note.File)).ToList(),
+            Pieces: run.Pieces.Count == 0 ? null : run.Pieces.ToDictionary(
+                p => p.Key, p => new PieceDto(p.Value.Generation, p.Value.RunCopy, [.. p.Value.Undone], [.. p.Value.Kept], p.Value.After))),
+            Options);
         return Header + Sign(json, key) + "\n" + json;
     }
 
@@ -177,6 +188,14 @@ internal static class RunManifest
                 refusal = $"names a copy to redo outside this workspace's history: {path}";
                 return null;
             }
+        // A change given back or redone writes from the run's copy too.
+        foreach (var (path, piece) in dto.Pieces ?? [])
+            if (!dto.Changes.Any(c => PathComparer.Default.Equals(c.Path, path))
+                || piece.RunCopy is not { } copy || !System.IO.Path.IsPathFullyQualified(copy) || !accepts(path, copy))
+            {
+                refusal = $"names a copy of a run's changes outside this workspace's history: {path}";
+                return null;
+            }
 
         var run = new HistoryRun(dto.Id, dto.Started.ToLocalTime());
         foreach (var change in dto.Changes) run.RecordFirst(change.Path!, change.Snapshot, change.Failed);
@@ -210,6 +229,9 @@ internal static class RunManifest
         foreach (var (path, copy) in dto.Redo ?? [])
             if (run.RedoSourceOf(path) is null) run.NoteRedoSource(path, copy);
         foreach (var path in dto.Kept ?? []) run.NoteKept(path);
+        foreach (var (path, piece) in dto.Pieces ?? [])
+            if (piece is { RunCopy: { } copy, After: { } after })
+                run.MergePieces(path, new PieceMarks(piece.Generation, copy, piece.Undone ?? [], piece.Kept ?? [], after));
         run.MergeUndoneGeneration(Math.Max(dto.UndoneGeneration, dto.Undone ? 1 : 0));
     }
 }

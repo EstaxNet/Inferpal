@@ -1862,6 +1862,24 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="RunFileChangedSinceUndo" xml:space="preserve"><value>やり直していません: {0} は元に戻した後に変更されており、やり直すとその変更が失われます。</value></data>
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>元に戻した後に変更あり — やり直すとその変更が失われます</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>実行前のコピーがありません — 元に戻せません</value></data>
+  <data name="RunPieceUndone" xml:space="preserve"><value>{1} の変更 {0} を実行前の状態に戻しました。それまでのファイルの内容は先に保存されています。</value></data>
+  <data name="RunPieceRedone" xml:space="preserve"><value>{1} の変更 {0} を再び実行後の内容にしました。それまでのファイルの内容は先に保存されています。</value></data>
+  <data name="RunPieceKept" xml:space="preserve"><value>{1} の変更 {0} を保持します: 実行の取り消しでも実行後の内容のまま残ります。</value></data>
+  <data name="RunPieceUnchanged" xml:space="preserve"><value>{1} の変更 {0} はすでにその状態です: 何も書き込んでいません。</value></data>
+  <data name="RunPieceKeepGivenBack" xml:space="preserve"><value>{1} の変更 {0} は元に戻されています: 実行後の内容を保持するには、先にやり直してください。</value></data>
+  <data name="RunPieceChangedSince" xml:space="preserve"><value>変更していません: {0} は実行と元に戻した変更の後に編集されており、変更 {1} を書き込むとその編集が失われます。</value></data>
+  <data name="RunPieceGivenBackWhole" xml:space="preserve"><value>{0} はファイル全体を元に戻しています: 先にやり直してから、変更を 1 つずつ元に戻してください。</value></data>
+  <data name="RunPieceNoSuch" xml:space="preserve"><value>{0} に変更 {1} はありません: `/undo-run review` で番号を確認できます。</value></data>
+  <data name="RunPieceWholeOnly" xml:space="preserve"><value>{0} はファイル全体でのみ元に戻せます: {1}</value></data>
+  <data name="RunPiecesWholeCreated" xml:space="preserve"><value>実行で作成または削除されたファイルです。</value></data>
+  <data name="RunPiecesWholeBinary" xml:space="preserve"><value>テキストファイルではありません。</value></data>
+  <data name="RunPiecesWholeTooLarge" xml:space="preserve"><value>{0:N0} 行を超える差分があります。</value></data>
+  <data name="RunPiecesWholeNotRebuilt" xml:space="preserve"><value>変更を正確に元に戻せません — 実行でエンコーディングが変わりました。</value></data>
+  <data name="RunPieceNoCopy" xml:space="preserve"><value>{0}: 変更の元になるコピーがありません。変更を 1 つずつ元に戻すことはできなくなりました。</value></data>
+  <data name="UndoRunLeftPieces" xml:space="preserve"><value>実行後の内容のまま残しました — 保持を選んだ変更です: {0} 内の変更</value></data>
+  <data name="RunReviewHowToPieces" xml:space="preserve"><value>1 つの変更だけを元に戻す: `/undo-run #{0}:&lt;n&gt; &lt;ファイル&gt;`、やり直す: `/undo-run redo #{0}:&lt;n&gt; &lt;ファイル&gt;`。</value></data>
+  <data name="RunPiecesWholeLabel" xml:space="preserve"><value>ファイル全体のみ — {0}</value></data>
+  <data name="RunPieceLine" xml:space="preserve"><value>{0} 行目</value></data>
   <data name="RewindButton" xml:space="preserve"><value>ここに戻る</value></data>
   <data name="RewindButtonTip" xml:space="preserve"><value>ここに戻る — 会話とファイル</value></data>
   <data name="RewindTitle" xml:space="preserve"><value>「{0}」に戻りますか？</value></data>
