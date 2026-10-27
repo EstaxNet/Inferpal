@@ -143,9 +143,10 @@ These budgets wait for the model, and measure silence: a model that keeps writin
 word, a server reads the prompt and sends nothing — minutes for a long prompt on a slow machine. Inferpal learns how
 fast each server reads, per model, from the requests that went through (kept in
 `%AppData%\Inferpal\prefill-rates.json`), and waits for a first word twice as long as a cold read of the request is
-measured to take — never less than these settings, nor than 20 s. In the chat of Visual Studio and VS Code (questions
-and agent runs), after 8 s of waiting the status line says so: the tokens to read, how long they take when nothing is
-cached, and the time waited. A request given up while the server was still reading a long prompt says so (and the next
+measured to take — never less than these settings, nor than 20 s. In Visual Studio and VS Code — questions, agent
+runs and the long commands (`/check`, `/commit`, `/tdd`…) — after 8 s of waiting the status line says so: the tokens
+to read, how long they take when nothing is cached, and the time waited. It is an estimate from earlier reads: Ollama
+and the OpenAI-compatible routes send nothing while they read a prompt. A request given up while the server was still reading a long prompt says so (and the next
 one to that model waits longer, twice at most in a row, since a server that never answers looks the same); those two
 are not counted against the server's reachability.
 
