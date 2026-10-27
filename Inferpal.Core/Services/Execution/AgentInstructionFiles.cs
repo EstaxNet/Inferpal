@@ -78,6 +78,9 @@ internal static class AgentInstructionFiles
             // A file of a skill — its SKILL.md, a script it runs, a template it fills: the catalog's own folders.
             if (RepoSkills.IsInASkill(segments)) return true;
 
+            // A mode's file — its instructions become the system prompt when it is picked: the reader's own folders.
+            if (ChatModes.IsModeFile(segments)) return true;
+
             for (int i = 0; i < segments.Length - 1; i++)
             {
                 if (!segments[i].Equals(Dir, StringComparison.OrdinalIgnoreCase)) continue;

@@ -28,6 +28,19 @@ internal static class MiniYaml
     {
         private readonly Dictionary<string, JsonNode?> _anchors = new(StringComparer.Ordinal);
 
+        /// <summary>How deep lists and maps may nest, in blocks or inline. ⚠ Every level is a call: a file of one
+        /// line of 20,000 dashes or brackets overflowed the stack, and nothing catches that — the host died.</summary>
+        private const int MaxDepth = 64;
+        private int _depth;
+
+        private Depth Deeper(int number) =>
+            ++_depth > MaxDepth ? throw new FormatException($"line {number}: nested more than {MaxDepth} levels deep") : new Depth(this);
+
+        private readonly struct Depth(Parser parser) : IDisposable
+        {
+            public void Dispose() => parser._depth--;
+        }
+
         public JsonNode? Parse(string text)
         {
             var raw = text.Replace("\r\n", "\n").Split('\n');
@@ -66,6 +79,7 @@ internal static class MiniYaml
 
         private JsonArray List(List<Line> lines, ref int at, int indent)
         {
+            using var _ = Deeper(lines[at].Number);
             var list = new JsonArray();
             while (at < lines.Count && lines[at].Indent == indent && IsItem(lines[at].Text))
             {
@@ -79,6 +93,15 @@ internal static class MiniYaml
                              : at < lines.Count && lines[at].Indent > indent ? Block(lines, ref at, lines[at].Indent)
                              : null;
                     list.Add(Anchor(anchor, node));
+                    continue;
+                }
+                if (IsItem(rest))
+                {
+                    // "- - item" opens a list inside the list, whose other items sit under the second dash — Roo's
+                    // "- - edit" then "- fileRegex: …".
+                    var column = indent + (line.Text.Length - rest.Length);
+                    lines[at] = line with { Indent = column, Text = rest };
+                    list.Add(Anchor(anchor, List(lines, ref at, column)));
                     continue;
                 }
                 if (KeyOf(rest) is not null)
@@ -97,6 +120,7 @@ internal static class MiniYaml
 
         private JsonObject Map(List<Line> lines, ref int at, int indent)
         {
+            using var _ = Deeper(lines[at].Number);
             var map = new JsonObject();
             var merges = new List<JsonObject>();
             while (at < lines.Count && lines[at].Indent == indent)
@@ -252,6 +276,7 @@ internal static class MiniYaml
             if (value.StartsWith('['))
             {
                 if (!value.EndsWith(']')) throw new FormatException($"line {number}: an unclosed list");
+                using var _ = Deeper(number);
                 var array = new JsonArray();
                 foreach (var item in SplitInline(value[1..^1]))
                     array.Add(Scalar(item, number));
@@ -260,6 +285,7 @@ internal static class MiniYaml
             if (value.StartsWith('{'))
             {
                 if (!value.EndsWith('}')) throw new FormatException($"line {number}: an unclosed map");
+                using var _ = Deeper(number);
                 var map = new JsonObject();
                 foreach (var item in SplitInline(value[1..^1]))
                 {

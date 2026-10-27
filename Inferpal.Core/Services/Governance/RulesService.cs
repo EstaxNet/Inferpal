@@ -88,6 +88,29 @@ internal static class RulesService
     }
 
     /// <summary>
+    /// The text between a leading <c>---</c> line and the next one, and the body after it — line breaks normalized to
+    /// <c>\n</c>; no front matter = <c>null</c> and the whole text. The one reader of the fences, for every file a
+    /// front matter heads (rules, prompts, checks, modes).
+    /// </summary>
+    internal static (string? FrontMatter, string Body) SplitFrontMatter(string text)
+    {
+        // Normalize newlines so the fences read the same on CRLF, LF and lone CR.
+        var normalized = text.Replace("\r\n", "\n").Replace('\r', '\n');
+        if (normalized.StartsWith('﻿')) normalized = normalized[1..];
+        if (!normalized.StartsWith("---\n", StringComparison.Ordinal)) return (null, normalized);
+
+        var end = normalized.IndexOf("\n---", 3, StringComparison.Ordinal);
+        if (end < 0) return (null, normalized);
+
+        // An EMPTY front matter ("---" then "---") puts the closing fence at index 3: Substring(4, -1)
+        // threw, and every reader lost all its rules, checks and templates at once.
+        var block = end > 4 ? normalized.Substring(4, end - 4) : string.Empty;
+        // Body starts after the closing fence line ("\n---" + optional trailing chars up to newline).
+        var afterFence = normalized.IndexOf('\n', end + 1);
+        return (block, afterFence >= 0 ? normalized[(afterFence + 1)..] : string.Empty);
+    }
+
+    /// <summary>
     /// Splits a leading <c>---</c>…<c>---</c> frontmatter block (if any) into a key/value map plus
     /// the remaining body. When no frontmatter is present, the map is empty and the body is the
     /// whole text. Lightweight by design: flat <c>key: value</c> lines, and a YAML block list under a key with no value
@@ -97,21 +120,8 @@ internal static class RulesService
     {
         var fm = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         if (text is null) return (fm, string.Empty);
-
-        // Normalize newlines so the fence regex behaves the same on CRLF and LF.
-        var normalized = text.Replace("\r\n", "\n").Replace('\r', '\n');
-        if (!normalized.StartsWith("---\n", StringComparison.Ordinal))
-            return (fm, normalized);
-
-        var end = normalized.IndexOf("\n---", 3, StringComparison.Ordinal);
-        if (end < 0) return (fm, normalized);
-
-        // An EMPTY front matter ("---" then "---") puts the closing fence at index 3: Substring(4, -1)
-        // threw, and every reader lost all its rules, checks and templates at once.
-        var block = end > 4 ? normalized.Substring(4, end - 4) : string.Empty;
-        // Body starts after the closing fence line ("\n---" + optional trailing chars up to newline).
-        var afterFence = normalized.IndexOf('\n', end + 1);
-        var body = afterFence >= 0 ? normalized[(afterFence + 1)..] : string.Empty;
+        var (fenced, body) = SplitFrontMatter(text);
+        if (fenced is not { } block) return (fm, body);
 
         string? listKey   = null;   // the key a block list's "- item" lines belong to
         string? scalarKey = null;   // the key whose value an indented line continues (YAML folds it)
