@@ -422,14 +422,22 @@ internal sealed partial class HostServer : IDisposable
             // The session-scoped `/tools off` switch forces plain chat, like the VS VM.
             // ⚠ A code action answers from the code it was given, without tools — as in Visual Studio. Sent with
             // them, `/explain` planned, called tools and raised approval prompts.
-            var agentMode = TurnIsAgent(s, p.CodeAction, p.AgentMode);
+            // The mode the person picked for the conversation: its tools, model, effort and instructions — never with a
+            // code action, and it excludes Agent and Plan (one selector).
+            var mode      = p.CodeAction ? null : TurnMode(s);
+            var agentMode = mode is null && TurnIsAgent(s, p.CodeAction, p.AgentMode);
             var useTools  = !p.CodeAction && s.ToolsEnabled;
             // The reasoning tail is step progress only on the orchestrated path.
             showReasoningTail = agentMode;
             // The model picked in the chat is the CHAT model: the agent loop and the code actions still route to their
             // configured model first, as in Visual Studio. Resolved BEFORE the context check, which needs the window
             // the server really loaded this model with.
-            var model = TurnModel(s, p.CodeAction, agentMode, p.Model, p.ModelOverridesRoles);
+            var (model, modeNotice) = await AnsweringModelAsync(s, mode, p.CodeAction, agentMode, p.Model, p.ModelOverridesRoles, cts.Token);
+            if (mode is not null && modeNotice is not null && s.ModeModelNoticeSaid != mode.Name)
+            {
+                s.ModeModelNoticeSaid = mode.Name;
+                Notify("host/notice", new { text = modeNotice, severity = "warning" });
+            }
 
             // Pre-send context check.
             // It did not exist here. The history was never bounded: it grew until it went past the
@@ -442,7 +450,7 @@ internal sealed partial class HostServer : IDisposable
                 s.History, s.Config, s.Client, s.LastPromptTokens,
                 onStep: Step,
                 ct: cts.Token, model: model,
-                toolTokens: Services.Agent.ContextManager.NextTurnToolTokens(s.Tools, useTools, s.PlanMode));
+                toolTokens: Services.Agent.ContextManager.NextTurnToolTokens(s.Tools, useTools, s.PlanMode, mode));
             s.LastContextWindow = ctxDecision.Window;
             // The prompt was built above, against the window known then: when this check reveals another one — the
             // first question, a model loaded smaller since — its files are re-budgeted before anything is sent.
@@ -561,7 +569,7 @@ internal sealed partial class HostServer : IDisposable
             {
                 // Chat mode keeps its tools, as in Visual Studio: the basic tool loop, without the
                 // plan. Only `/tools off` and a code action are chat without tools.
-                IToolRegistry chatTools = s.Tools;
+                IToolRegistry chatTools = ChatModes.ToolsFor(s.Tools, mode, RootOf(s));
                 if (s.PlanMode) chatTools = new PlanModeToolRegistry(chatTools);
                 if (s.ToolEvents) chatTools = Announced(chatTools);
                 if (s.StepMode) chatTools = new StepModeToolRegistry(chatTools, tok => PauseForStepAsync(s, tok));
@@ -578,7 +586,7 @@ internal sealed partial class HostServer : IDisposable
                     complexity:     ChatTurnPolicy.TurnComplexity(codeAction: false),
                     onToolExecuted: te => Notify("chat/tool", ToolNotice.Of(te)),
                     onThinking:     OnThinking,
-                    effort:         ChatTurnPolicy.TurnEffort(s.Config, codeAction: false),
+                    effort:         ChatTurnPolicy.TurnEffort(s.Config, codeAction: false, mode),
                     steering:       steering);
 
                 // A FAILED run: the error, not an answer — see the agent path above.
@@ -616,7 +624,7 @@ internal sealed partial class HostServer : IDisposable
 
             var turn = await s.Client.SendChatAsync(
                 model, s.History, EmptyToolRegistry.Instance, OnToken,
-                ChatTurnPolicy.TurnEffort(s.Config, p.CodeAction), cts.Token,
+                ChatTurnPolicy.TurnEffort(s.Config, p.CodeAction, mode), cts.Token,
                 // While the server reads the prompt the turn's scope draws its wait card, gone at the first word.
                 complexity: ChatTurnPolicy.TurnComplexity(p.CodeAction), onThinking: OnThinking);
             // The answer the user saw, as on the two paths above and in Visual Studio: without the model's reasoning.
@@ -936,8 +944,24 @@ internal sealed partial class HostServer : IDisposable
         !codeAction && (agentMode ?? s.Config.AgentModeEnabled) && s.ToolsEnabled;
 
     /// <summary>
+    /// The model a turn answers with — one decision for <c>chat/send</c> and for the excerpt sized for it: the mode's, when
+    /// one is held and the server has one of its models, unless the turn's model was picked in this very thread (an ACP
+    /// selector); else the role's (<see cref="TurnModel"/>). With the sentence to say when the mode's models are all
+    /// missing.
+    /// </summary>
+    private static async Task<(string Model, string? Notice)> AnsweringModelAsync(
+        HostSession s, ChatMode? mode, bool codeAction, bool agentMode, string? picked, bool overridesRoles, CancellationToken ct)
+    {
+        var model = TurnModel(s, codeAction, agentMode, picked, overridesRoles);
+        if (mode is null || overridesRoles) return (model, null);
+        var (modeModel, notice) = await ChatModes.PickModelAsync(s.Client, mode, model, ct);
+        return (modeModel ?? model, notice);
+    }
+
+    /// <summary>
     /// The model a turn asks: the one picked for the thread when it overrides the roles, else the role's — code actions,
-    /// the agent, the chat. What <c>chat/send</c> asks, and what <c>code/excerpt</c> sizes the code for.
+    /// the agent, the chat — before a held mode's own model (<see cref="AnsweringModelAsync"/>, what <c>chat/send</c> asks and
+    /// <c>code/excerpt</c> sizes the code for).
     /// </summary>
     /// <remarks>⚠ Two copies drift: the excerpt was sized for the code-actions model while an ACP thread's attachments
     /// were read by its chat or agent model — cut for a big window and sent to a small one, which the server refused or
@@ -966,7 +990,9 @@ internal sealed partial class HostServer : IDisposable
         // from the setting (100 000 under LM Studio loading 4 096) the budget sent whole files that were then refused.
         // The model is the one chat/send resolves for that turn — the same call, or the excerpt is sized for one
         // model and read by another.
-        var model   = TurnModel(s, p.CodeAction, TurnIsAgent(s, p.CodeAction, p.AgentMode), p.Model, p.ModelOverridesRoles);
+        var mode    = p.CodeAction ? null : CurrentMode(s);
+        var (model, _) = await AnsweringModelAsync(s, mode, p.CodeAction, mode is null && TurnIsAgent(s, p.CodeAction, p.AgentMode),
+                                                   p.Model, p.ModelOverridesRoles, ct);
         var window  = await Services.Agent.ContextManager.EffectiveWindowAsync(s.Config, s.Client, model, ct);
         var excerpt = CodeExcerpt.Of(p.Code ?? string.Empty, CodeExcerpt.BudgetFor(window));
         return new(excerpt.Text, excerpt.Label(CodeExcerpt.SourceLabel(p.FileName ?? string.Empty, p.Selection)),
@@ -1216,13 +1242,68 @@ internal sealed partial class HostServer : IDisposable
         var s = Session();
         return WithTurnSlotFunc("plan/mode", () =>
         {
-            if (s.PlanMode != p.Enabled)
+            if (s.PlanMode != p.Enabled || p.Enabled && s.ModeName is not null)
             {
                 s.PlanMode = p.Enabled;
+                if (p.Enabled) s.ModeName = null;   // one selector: Plan leaves the mode
                 RefreshSystemMessage(s);
             }
             return s.PlanMode;
         });
+    }
+
+    /// <summary>`mode/list` — the modes found for this workspace and the person (read now), the files set aside, and the
+    /// mode the conversation is held in.</summary>
+    [JsonRpcMethod("mode/list")]
+    public ModeListResult ModeList()
+    {
+        var s = Session();
+        var catalog = ChatModes.For(s.Config, RootOf(s));
+        return new ModeListResult([.. catalog.Modes.Select(ModeDto.Of)],
+                                  [.. catalog.Notes.Select(n => $"{n.Source}: {Services.Commands.ModesCommandHandler.Note(n)}")],
+                                  catalog.Find(s.ModeName)?.Name);
+    }
+
+    /// <summary>`mode/set` — the mode the person picked for the conversation, or none: it leaves Plan, and its
+    /// instructions take the system message now. Answers the mode held and the model it answers with.</summary>
+    /// <remarks>Slot-held, as <c>plan/mode</c>: it rewrites the system message a running loop reads.</remarks>
+    [JsonRpcMethod("mode/set", UseSingleObjectParameterDeserialization = true)]
+    public async Task<ModeSetResult> ModeSetAsync(ModeSetParams p, CancellationToken ct)
+    {
+        var s = Session();
+        var name = string.IsNullOrWhiteSpace(p.Name) ? null : p.Name.Trim();
+        var mode = name is null ? null : ChatModes.For(s.Config, RootOf(s)).Find(name);
+        if (name is not null && mode is null) return new ModeSetResult(null, Refused: Strings.ModeUnknown(name));
+        WithTurnSlotFunc("mode/set", () =>
+        {
+            s.ModeName = mode?.Name;
+            s.ModeModelNoticeSaid = null;
+            if (mode is not null) s.PlanMode = false;
+            RefreshSystemMessage(s);
+            return true;
+        });
+        if (mode is null) return new ModeSetResult(null);
+        var (model, _) = await ChatModes.PickModelAsync(s.Client, mode, string.Empty, ct);
+        return new ModeSetResult(ModeDto.Of(mode), model);
+    }
+
+    private static string? RootOf(HostSession s) => string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir;
+
+    /// <summary>The mode the conversation is held in, read from its file now; <c>null</c> without one, in Plan, or when
+    /// its file is gone (<see cref="TurnMode"/> says so).</summary>
+    private static ChatMode? CurrentMode(HostSession s) =>
+        s.ModeName is null || s.PlanMode ? null : ChatModes.For(s.Config, RootOf(s)).Find(s.ModeName);
+
+    /// <summary>The mode a question runs in: <see cref="CurrentMode"/>, and a mode whose file is gone said and left —
+    /// the question is answered without it rather than as another assistant.</summary>
+    private ChatMode? TurnMode(HostSession s)
+    {
+        if (s.ModeName is not { } name || s.PlanMode) return null;
+        if (CurrentMode(s) is { } mode) return mode;
+        s.ModeName = null;
+        RefreshSystemMessage(s);
+        Notify("host/notice", new { text = Strings.ModeGone(name), severity = "warning" });
+        return null;
     }
 
     /// <summary>Connection badge for the adapter's header: reachability + the compact VRAM line
@@ -1675,7 +1756,8 @@ internal sealed partial class HostServer : IDisposable
         await s.Store.SaveAsync(p.Name, p.Messages.Select(ToSaved), ct,
                                 workspaceRoot: s.RootDir, parent: lineage?.Parent, forkTurn: lineage?.ForkTurn,
                                 currentName: currentName,
-                                templateSuffix: p.Archive ? s.DiscardedTemplateSuffix : s.TemplateSuffix);
+                                templateSuffix: p.Archive ? s.DiscardedTemplateSuffix : s.TemplateSuffix,
+                                mode: p.Archive ? s.DiscardedModeName : s.ModeName);
     }
 
     /// <summary>Wire message → stored message (empty optional fields stay out of the JSON).</summary>
@@ -1726,13 +1808,19 @@ internal sealed partial class HostServer : IDisposable
             if (data is null) return null;
 
             s.TemplateSuffix     = data.TemplateSuffix;   // the mode the conversation was held in, its greeting with it
+            // The mode the person picked for it, held again — or none, for a conversation held in Chat, Agent or Plan. A
+            // mode whose file is gone is said, and the conversation comes back without it.
+            var held = data.Mode is null ? null : ChatModes.For(s.Config, RootOf(s)).Find(data.Mode);
+            s.ModeName           = held?.Name;
+            if (held is not null) s.PlanMode = false;
+            else if (data.Mode is not null) Notify("host/notice", new { text = Strings.ModeGone(data.Mode), severity = "warning" });
             ForgetConversationState(s);
             s.History            = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), data.Messages);
             s.CurrentSessionName = p.Name == "last_session" ? data.CurrentName : p.Name;
             return new SessionLoadResult(
                 p.Name,
                 data.Messages.Select(m => new SavedMessageDto(m.Role, m.Content, m.ToolName, m.Timestamp, m.Run)).ToList(),
-                NextTurnTokens(s));
+                NextTurnTokens(s), s.ModeName);
         });
 
     /// <summary>
@@ -1742,7 +1830,7 @@ internal sealed partial class HostServer : IDisposable
     /// the next question, where Visual Studio shows the restored conversation's fill at once.
     /// </summary>
     private static int NextTurnTokens(HostSession s) =>
-        ContextManager.NextTurnLoad(s.LastPromptTokens, ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode));
+        ContextManager.NextTurnLoad(s.LastPromptTokens, ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s)));
 
     [JsonRpcMethod("session/delete", UseSingleObjectParameterDeserialization = true)]
     public bool SessionDelete(SessionRefParams p) => Session().Store.Delete(p.Name);
@@ -1772,14 +1860,16 @@ internal sealed partial class HostServer : IDisposable
         // The parent is rewritten with the conversation as it stands now (it may have moved on
         // since it was loaded), keeping its own parent link when it is itself a branch.
         await s.Store.SaveAsync(plan.ParentName, plan.ParentMessages, token, workspaceRoot: s.RootDir,
-                                parent: plan.ParentParent, forkTurn: plan.ParentForkTurn, templateSuffix: s.TemplateSuffix);
+                                parent: plan.ParentParent, forkTurn: plan.ParentForkTurn, templateSuffix: s.TemplateSuffix,
+                                mode: s.ModeName);
 
         // The branch is the same conversation, cut: it keeps the mode its turns were held in. Cut before every question
         // (going back to the first one), it is a new conversation: no empty session is written for it.
         var keepsAQuestion = plan.BranchMessages.Any(SessionManager.IsQuestion);
         if (keepsAQuestion)
             await s.Store.SaveAsync(plan.BranchName, plan.BranchMessages, token, workspaceRoot: s.RootDir,
-                                    parent: plan.ParentName, forkTurn: plan.ForkTurn, templateSuffix: s.TemplateSuffix);
+                                    parent: plan.ParentName, forkTurn: plan.ForkTurn, templateSuffix: s.TemplateSuffix,
+                                    mode: s.ModeName);
 
         ForgetConversationState(s);
         s.History            = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), plan.BranchMessages);
@@ -2114,7 +2204,9 @@ internal sealed partial class HostServer : IDisposable
     /// <summary>Layered system prompt (same builder as the VS VM), honouring the sections
     /// switched off from the Context X-Ray panel, the active `/template` suffix and the
     /// plan-mode instructions.</summary>
-    private static string BuildSystemPromptText(HostSession s)
+    /// <param name="withMode">The held mode's instructions as its last layer — <c>false</c> for a command's own run
+    /// (<c>/task</c>, <c>/tdd</c>), whose tools the mode does not narrow.</param>
+    private static string BuildSystemPromptText(HostSession s, bool withMode = true)
     {
         var root   = string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir;
         // The /template suffix is a builder layer, as in the Visual Studio view model: appended after the build it
@@ -2126,7 +2218,8 @@ internal sealed partial class HostServer : IDisposable
             projectRoot:        root,
             activeFileRelPath:  SystemPromptBuilder.RelativeActivePath(root, s.ActiveFilePath),
             disabledSectionIds: s.XrayDisabledSections,
-            activeFilePath:     s.ActiveFilePath);
+            activeFilePath:     s.ActiveFilePath,
+            mode:               withMode ? CurrentMode(s) : null);
         if (s.PlanMode)                              prompt += PlanModeToolRegistry.SystemPromptSuffix;
         if (!string.IsNullOrEmpty(s.RecapInSystem))  prompt += "\n\n## Session Summary\n\n" + s.RecapInSystem;
         return prompt;
@@ -2153,7 +2246,8 @@ internal sealed partial class HostServer : IDisposable
             projectRoot:       root,
             activeFileRelPath: SystemPromptBuilder.RelativeActivePath(root, s.ActiveFilePath),
             disabledSectionIds: s.XrayDisabledSections,
-            activeFilePath:    s.ActiveFilePath);
+            activeFilePath:    s.ActiveFilePath,
+            mode:              CurrentMode(s));
     }
 
     /// <summary>The X-Ray of the prompt the next question sends — what <c>xray/panel</c> renders.</summary>
@@ -2161,10 +2255,10 @@ internal sealed partial class HostServer : IDisposable
         XRayPanelPresenter.Build(
             BuildPromptSections(s), s.XrayDisabledSections,
             AgentOrchestrator.EstimateConversationTokens(SnapshotHistory(s)), s.ContextWindowInUse,
-            toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode),
+            toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s)),
             questionLayersInHistory: QuestionLayersInHistory(s),
-            toolsOnDemand: ContextManager.NextTurnToolsOnDemand(s.Tools, s.ToolsEnabled, s.PlanMode),
-            turnedOff: ContextManager.NextTurnTurnedOff(s.Tools, s.ToolsEnabled, s.PlanMode));
+            toolsOnDemand: ContextManager.NextTurnToolsOnDemand(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s)),
+            turnedOff: ContextManager.NextTurnTurnedOff(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s)));
 
     /// <summary>Whether the history already carries the active-file block the next question would send — its layers
     /// are then counted in the history, not again (<see cref="XRayPanelPresenter.Build"/>).</summary>
@@ -2215,6 +2309,7 @@ internal sealed partial class HostServer : IDisposable
         s.RecapInSystem         = null;
         s.ConversationTurnCount = 0;
         s.WorkspaceContextSent  = false;
+        s.ModeModelNoticeSaid   = null;
         s.Tools.ForgetLoadedTools();
     }
 
@@ -2235,6 +2330,7 @@ internal sealed partial class HostServer : IDisposable
     private async Task StartNewConversationAsync(HostSession s, string? templateSuffix = null)
     {
         s.DiscardedTemplateSuffix = s.TemplateSuffix;
+        s.DiscardedModeName = s.ModeName;
         s.TemplateSuffix = templateSuffix;
         ResetHistory(s);
         if (await ArchiveTheSlotAsync(s)) await ForgetAutoSaveAsync(s);
@@ -2261,7 +2357,7 @@ internal sealed partial class HostServer : IDisposable
             var at   = DateTime.Now;
             var name = ConversationArchive.FirstName(s.Store, at, ConversationArchive.FirstQuestion(slot.Messages));
             await s.Store.SaveAsync(name, slot.Messages, CancellationToken.None, s.RootDir,
-                                    templateSuffix: s.DiscardedTemplateSuffix);
+                                    templateSuffix: s.DiscardedTemplateSuffix, mode: slot.Mode);
             s.PendingArchive = (name, at);
             return true;
         }
@@ -2285,7 +2381,8 @@ internal sealed partial class HostServer : IDisposable
         var first = ConversationArchive.FirstQuestion(saved);
         var (name, at) = s.PendingArchive ?? (ConversationArchive.FirstName(s.Store, DateTime.Now, first), DateTime.Now);
         s.PendingArchive = null;
-        await s.Store.SaveAsync(name, saved, CancellationToken.None, s.RootDir, templateSuffix: s.DiscardedTemplateSuffix);
+        await s.Store.SaveAsync(name, saved, CancellationToken.None, s.RootDir, templateSuffix: s.DiscardedTemplateSuffix,
+                                mode: s.DiscardedModeName);
         _ = RetitleArchiveAsync(s, name, at, first);
         return new SessionArchiveResult(name);
     }

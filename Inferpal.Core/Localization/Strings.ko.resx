@@ -942,6 +942,30 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="XrayLabelCustom" xml:space="preserve"><value>사용자 지정 시스템 프롬프트</value></data>
   <data name="XrayLabelTemplate" xml:space="preserve"><value>세션 템플릿</value></data>
   <data name="XrayLabelRules" xml:space="preserve"><value>규칙(적용 {0}개)</value></data>
+  <data name="XrayLabelMode" xml:space="preserve"><value>모드: {0}</value></data>
+  <data name="ModeModelMissing" xml:space="preserve"><value>{0}은(는) {1}을(를) 요청하지만 이 서버에는 하나도 없습니다. {2}(으)로 답합니다.</value></data>
+  <data name="ModeGone" xml:space="preserve"><value>이 대화는 '{0}' 모드였지만 더 이상 찾을 수 없습니다. 모드 없이 계속합니다.</value></data>
+  <data name="ModeUnknown" xml:space="preserve"><value>'{0}'라는 모드가 없습니다. /modes에서 찾은 모드를 볼 수 있습니다.</value></data>
+  <data name="ModesHeader" xml:space="preserve"><value>**모드** — 모드 선택기에서 고르세요. 모드는 도구를 제한할 뿐이며, 모든 변경은 여전히 먼저 확인을 받습니다.</value></data>
+  <data name="ModesNone" xml:space="preserve"><value>모드를 찾지 못했습니다. 모드는 .inferpal/modes/의 Markdown 파일, .github/agents/의 GitHub Copilot 에이전트 또는 .roomodes의 Roo Code 모드입니다.</value></data>
+  <data name="ModesModel" xml:space="preserve"><value>모델: {0}</value></data>
+  <data name="ModesModelFirst" xml:space="preserve"><value>모델: {0} 중 처음 설치된 것</value></data>
+  <data name="ModesModelChat" xml:space="preserve"><value>모델: 대화의 모델</value></data>
+  <data name="ModesTools" xml:space="preserve"><value>도구: {0}</value></data>
+  <data name="ModesToolsAll" xml:space="preserve"><value>도구: 전부</value></data>
+  <data name="ModesToolsNone" xml:space="preserve"><value>도구: 없음</value></data>
+  <data name="ModesEditsOnly" xml:space="preserve"><value>{0}에 맞는 파일만 편집</value></data>
+  <data name="ModesNotCarried" xml:space="preserve"><value>적용되지 않음: {0}</value></data>
+  <data name="ModesSetAside" xml:space="preserve"><value>제외됨:</value></data>
+  <data name="ModeNoteUnreadable" xml:space="preserve"><value>읽지 못함: {0}</value></data>
+  <data name="ModeNoteDuplicate" xml:space="preserve"><value>'{0}'라는 모드가 먼저 발견되었습니다</value></data>
+  <data name="ModeNoteReservedName" xml:space="preserve"><value>'{0}'은(는) Inferpal 자체 모드의 이름입니다</value></data>
+  <data name="ModeNoteSubAgentOnly" xml:space="preserve"><value>하위 에이전트 전용 (user-invocable: false)</value></data>
+  <data name="ModeNoteNoSlug" xml:space="preserve"><value>slug가 없는 Roo 모드</value></data>
+  <data name="ModeNoteLeaves" xml:space="preserve"><value>저장소 밖을 가리키는 링크: 읽지 않음</value></data>
+  <data name="ModeNoteUnlistable" xml:space="preserve"><value>폴더를 나열할 수 없습니다: {0}</value></data>
+  <data name="ModeNoteNoModes" xml:space="preserve"><value>customModes 목록이 없습니다</value></data>
+  <data name="ModeNoteRulesCut" xml:space="preserve"><value>모드 규칙이 256KB를 넘습니다: {0} 이후 파일은 읽지 않습니다</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>대화 기록: {0} 토큰(추정)</value></data>
   <data name="XrayTools" xml:space="preserve"><value>매 턴마다 전송되는 도구 정의: {0} 토큰(추정)</value></data>
   <data name="XrayToolsOnDemand" xml:space="preserve"><value>요청 시 불러오는 MCP 도구 {0}개(tool_search가 불러올 때까지 전송되지 않음): {1}</value></data>
@@ -1501,6 +1525,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="RepoInstructionStateNotRead" xml:space="preserve"><value>읽을 수 없음</value></data>
   <data name="RepoInstructionStateFamilyOff" xml:space="preserve"><value>읽지 않음: 이 도구는 설정에서 꺼져 있습니다</value></data>
   <data name="SlashHintInstructions" xml:space="preserve"><value>코딩 에이전트를 위한 저장소 지침과 이 질문이 보내는 내용을 나열합니다</value></data>
+  <data name="SlashHintModes" xml:space="preserve"><value>찾은 모드(Copilot 에이전트, Roo 모드, .inferpal/modes)와 각 모드가 유지하는 것을 나열</value></data>
   <data name="SettingsSectionRepoInstructions" xml:space="preserve"><value>저장소 지침</value></data>
   <data name="SettingsSectionRepoInstructionsDesc" xml:space="preserve"><value>이 저장소가 코딩 에이전트에게 제공하는 지침 파일로, 질문과 함께 읽혀 전송됩니다: 항상, 또는 활성 파일이 일치할 때. Inferpal 자체 프로젝트 파일은 그 뒤에 오며 충돌 시 우선합니다.</value></data>
   <data name="LabelRepoInstructionFamilies" xml:space="preserve"><value>파일을 읽을 도구</value></data>

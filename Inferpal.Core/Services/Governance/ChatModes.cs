@@ -1,6 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using Inferpal.Config;
+using Inferpal.Localization;
 using Inferpal.Services.Mcp;
 using Inferpal.Services.Tools;
 
@@ -28,7 +30,7 @@ internal enum ChatModeOrigin
 /// </summary>
 /// <param name="Name">What the picker shows, and what the conversation keeps.</param>
 /// <param name="Description">One line under the name.</param>
-/// <param name="Instructions">What goes to the system prompt under <see cref="PromptSection"/>.</param>
+/// <param name="Instructions">What goes to the system prompt, its last layer (<see cref="SystemPromptBuilder"/>).</param>
 /// <param name="Models">The models the file asks for, in order of preference; empty = the chat's.</param>
 /// <param name="Tools">The tools it keeps; <c>null</c> = every tool the conversation has.</param>
 /// <param name="Effort">The reasoning effort it asks for; <c>null</c> = the chat's setting.</param>
@@ -48,9 +50,6 @@ internal sealed record ChatMode(
             if (have.FirstOrDefault(m => ModelCatalog.SameModelName(m, wanted)) is { } found) return found;
         return null;
     }
-
-    /// <summary>The mode's section of the system prompt (model-facing, English).</summary>
-    public string PromptSection => $"## Mode: {Name}\n\n{Instructions}";
 }
 
 /// <summary>Why a file that could hold a mode gave none, or gave one that was set aside.</summary>
@@ -115,6 +114,38 @@ internal static class ChatModes
     internal const int MaxFileBytes = 256 * 1024;
 
     private const string InferpalDir = ".inferpal/modes";
+
+    /// <summary>The person's own modes, in every workspace: <c>%AppData%\Inferpal\modes</c> (where <c>/import roo</c> puts a
+    /// Roo user's global modes).</summary>
+    internal static string UserDir => Path.Combine(UserFolders.Of(Environment.SpecialFolder.ApplicationData), "Inferpal", "modes");
+
+    /// <summary>The modes of this workspace and of the person, with the repository formats the settings read, read now —
+    /// a mode file edited between two questions is the one the next question uses.</summary>
+    public static ChatModeCatalog For(InferpalConfig config, string? root) =>
+        Discover(root, UserDir, RepoInstructionFormats.Families(config.RepoInstructionFamilies).On);
+
+    /// <summary>The registry a turn in <paramref name="mode"/> offers: the mode's tools only, or <paramref name="inner"/>
+    /// itself when no mode is picked or the mode keeps every tool.</summary>
+    public static IToolRegistry ToolsFor(IToolRegistry inner, ChatMode? mode, string? root) =>
+        mode?.Tools is null ? inner : new ModeToolRegistry(inner, mode, root);
+
+    /// <summary>
+    /// The model a turn in <paramref name="mode"/> asks: the first of its models the server lists for chat, and when it
+    /// names some and the server has none of them, <c>null</c> with the sentence that says so (<paramref name="answering"/>
+    /// is the model that answers instead). Nothing is ever downloaded for a mode.
+    /// </summary>
+    /// <remarks>Judged on the CHAT models the server lists: an embedding model named by a mode would end the turn on the
+    /// server's refusal. A server that lists nothing (unreachable) says nothing here — the turn says why it fails.</remarks>
+    public static async Task<(string? Model, string? Notice)> PickModelAsync(
+        IInferenceProvider client, ChatMode mode, string answering, CancellationToken ct)
+    {
+        if (mode.Models.Count == 0) return (null, null);
+        var listed = await client.ListModelsByKindAsync(ct).ConfigureAwait(false);
+        if (listed.Listed.Count == 0) return (null, null);
+        return mode.PickModel(listed.Chat) is { } model
+            ? (model, null)
+            : (null, Strings.ModeModelMissing(mode.Name, string.Join(", ", mode.Models), answering));
+    }
     private const string CopilotDir  = ".github/agents";
     private const string RooFile     = ".roomodes";
 

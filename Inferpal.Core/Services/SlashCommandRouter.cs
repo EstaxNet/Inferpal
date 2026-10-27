@@ -90,7 +90,7 @@ internal enum SlashCommandId
     Commit, CommitExec, Pr, FixBuild, History, PHistory, Models, AgentStep, Resume,
     Note, Notes, Snippets, Template, Docs, Check, Rules, Checks, Plan, Prompts,
     Hardware, Setup, Diagnostics, UndoRun, Replay, Xray, Bench, Arena, Tdd, Branch, Task,
-    Onboard, Debug, Permissions, Instructions, Skill, Import, Settings, TestCoverage,
+    Onboard, Debug, Permissions, Instructions, Skill, Import, Settings, TestCoverage, Modes,
 }
 
 /// <summary>A command the user or the repository wrote: <c>/name</c> → a prompt, from the config
@@ -206,6 +206,7 @@ internal static class SlashCommandRouter
         ("/agent-step", Strings.SlashHintAgentStep, SlashCategory.Agent),
         ("/resume",     Strings.SlashHintResume,    SlashCategory.Agent),
         ("/plan",       Strings.SlashHintPlan,      SlashCategory.Agent),
+        ("/modes",      Strings.SlashHintModes,     SlashCategory.Agent),
         ("/task",       Strings.SlashHintTask,      SlashCategory.Agent),
         ("/debug",      Strings.SlashHintDebug,     SlashCategory.Agent),
 
@@ -404,6 +405,7 @@ internal static class SlashCommandRouter
             case "/replay":            return new SlashDelegatedAction(SlashCommandId.Replay,          parts);
             case "/xray":              return new SlashDelegatedAction(SlashCommandId.Xray,            parts);
             case "/instructions":      return new SlashDelegatedAction(SlashCommandId.Instructions,    parts);
+            case "/modes":             return new SlashDelegatedAction(SlashCommandId.Modes,           parts);
             case "/skill":             return new SlashDelegatedAction(SlashCommandId.Skill,           parts);
             case "/bench":
             case "/benchmark":         return new SlashDelegatedAction(SlashCommandId.Bench,           parts);

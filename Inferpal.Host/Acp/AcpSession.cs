@@ -189,6 +189,7 @@ internal sealed class AcpSession : IAsyncDisposable
                 await link.InvokeWithParameterObjectAsync("mcp/sessionServers", new { servers = mcpServers }, ct);
             session._mode = await session.ConfiguredModeAsync(ct);
             await session.RefreshModelsAsync(ct);
+            await session.RefreshModesAsync(ct);
             return session;
         }
         catch
@@ -278,6 +279,27 @@ internal sealed class AcpSession : IAsyncDisposable
         }
     }
 
+    /// <summary>The modes found for the workspace (<c>mode/list</c>), offered beside Inferpal's own.</summary>
+    private IReadOnlyList<AcpModes.Found> _found = [];
+
+    /// <summary>The workspace's modes, read again: <c>true</c> when the list changed.</summary>
+    private async Task<bool> RefreshModesAsync(CancellationToken ct)
+    {
+        try
+        {
+            var r = await _link.InvokeWithCancellationAsync<ModeListResult>("mode/list", cancellationToken: ct);
+            var found = r.Modes.Select(AcpModes.Found.Of).ToList();
+            if (found.SequenceEqual(_found)) return false;
+            _found = found;
+            return true;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Diagnostics.Swallow("AcpSession.Modes", ex);
+            return false;
+        }
+    }
+
     // ── Modes and options ───────────────────────────────────────────────────────
 
     /// <summary>The model set for the agent's role (<c>agentModel</c>); empty when the chat model does the agent's work.</summary>
@@ -292,21 +314,35 @@ internal sealed class AcpSession : IAsyncDisposable
     /// </summary>
     /// <remarks>⚠ The host routes an Agent-mode turn to the agent's role model, over the chat model: the selector showed
     /// the chat model while another answered, and a model picked in it changed nothing in Agent mode.</remarks>
-    private string CurrentModel => _model ?? (_mode == AcpModes.Agent && _agentRoleModel.Length > 0 ? _agentRoleModel : _defaultModel);
+    private string CurrentModel =>
+        _model ?? (_found.FirstOrDefault(f => f.Id == _mode)?.ModelAmong(_models) is { } modeModel ? modeModel
+                   : _mode == AcpModes.Agent && _agentRoleModel.Length > 0 ? _agentRoleModel : _defaultModel);
 
-    public object ModeState() => AcpModes.State(_mode);
+    public object ModeState() => AcpModes.State(_mode, _found);
 
     /// <summary>The options as the client is about to show them: the model they name is the one it now shows.</summary>
     public List<object> ConfigOptions()
     {
         _announcedModel  = CurrentModel;
         _announcedModels = [.. _models];
-        return AcpModes.ConfigOptions(_mode, _announcedModel, _models);
+        return AcpModes.ConfigOptions(_mode, _announcedModel, _models, _found);
     }
 
     public async Task SetModeAsync(string modeId, CancellationToken ct)
     {
+        if (AcpModes.IsFound(modeId))
+        {
+            // A mode found for the workspace: the host holds it (leaving Plan), and says the model it answers with.
+            var set = await _link.InvokeWithParameterObjectAsync<ModeSetResult>(
+                "mode/set", new { name = modeId[AcpModes.FoundPrefix.Length..] }, ct);
+            if (set.Mode is null) throw AcpRpc.Error(AcpRpc.InvalidParams, set.Refused ?? $"Unknown mode '{modeId}'.");
+            _mode = AcpModes.FoundPrefix + set.Mode.Name;   // its name as found, whatever case was asked
+            await RefreshModesAsync(ct);
+            return;
+        }
         if (!AcpModes.Ids.Contains(modeId)) throw AcpRpc.Error(AcpRpc.InvalidParams, $"Unknown mode '{modeId}'.");
+        if (AcpModes.IsFound(_mode))
+            await _link.InvokeWithParameterObjectAsync<ModeSetResult>("mode/set", new { name = (string?)null }, ct);
         await _link.InvokeWithParameterObjectAsync<bool>("plan/mode", new { enabled = modeId == AcpModes.Plan }, ct);
         _mode = modeId;
     }
@@ -383,7 +419,7 @@ internal sealed class AcpSession : IAsyncDisposable
     /// ran with the write tools, in a thread the user believed read-only.</remarks>
     internal async Task RestoreAsync(Kept kept, CancellationToken ct)
     {
-        if (kept.Mode != _mode) await SetModeAsync(kept.Mode, ct);
+        if (kept.Mode != _mode) await HoldAgainAsync(kept.Mode, ct);
         if (kept.Model is not null && kept.Model != _model)
         {
             await _link.InvokeWithParameterObjectAsync("models/useForSession", new { model = kept.Model }, ct);
@@ -391,6 +427,18 @@ internal sealed class AcpSession : IAsyncDisposable
         }
         lock (_gate) _pending.AddRange(kept.Pending);
         _announcedModel = CurrentModel;
+    }
+
+    /// <summary>A mode the thread was in, taken again (a reopened or reloaded thread): one whose file is gone since leaves
+    /// the thread in Default — never a thread that cannot open.</summary>
+    private async Task HoldAgainAsync(string modeId, CancellationToken ct)
+    {
+        try { await SetModeAsync(modeId, ct); }
+        catch (Exception ex) when (AcpModes.IsFound(modeId) && ex is not OperationCanceledException)
+        {
+            Diagnostics.Swallow("AcpSession.HoldAgain", ex);
+            await SetModeAsync(AcpModes.Default, ct);
+        }
     }
 
     /// <summary>A mode changed from inside the conversation (<c>/plan</c>): the client is told both ways.</summary>
@@ -455,6 +503,13 @@ internal sealed class AcpSession : IAsyncDisposable
         {
             await AnnounceCommandsOnceAsync(CancellationToken.None);
             await ReadModelsAgainAsync();
+            // The workspace's modes, read again: a mode file added or removed since shows in the client's list — and a
+            // held mode whose file is gone leaves the selector (the host says so as the question runs).
+            if (await RefreshModesAsync(CancellationToken.None))
+            {
+                if (AcpModes.IsFound(_mode) && !_found.Any(f => f.Id == _mode)) ModeChanged(AcpModes.Default);
+                else Update(new { sessionUpdate = "config_option_update", configOptions = ConfigOptions() });
+            }
             if (Interlocked.Exchange(ref _startNotice, null) is { Length: > 0 } notice) Notice("warning", notice, notice + "\n\n");
             await FollowSettingsAsync();
             await AskAgainWhatWasAskedTooEarlyAsync();
@@ -951,6 +1006,11 @@ internal sealed class AcpSession : IAsyncDisposable
     {
         var loaded = await _link.InvokeWithParameterObjectAsync<SessionLoadResult?>("session/load", new { name = Id }, ct);
         if (loaded is null) return false;
+        // What the host said while loading (a held mode whose file is gone) reaches the client before the load answers.
+        await DrainLinkAsync();
+        // The mode the thread was held in, held again — and the client's selectors follow it. Gone, the host said so.
+        if (loaded.Mode is { } held) await HoldAgainAsync(AcpModes.FoundPrefix + held, ct);
+        else if (AcpModes.IsFound(_mode)) _mode = AcpModes.Default;
         lock (_gate) { _transcript.Clear(); _transcript.AddRange(loaded.Messages); }
         if (replay) Replay(loaded.Messages);
         await _agent.FlushAsync();

@@ -42,6 +42,29 @@ public sealed class ChatModesTests : IDisposable
         File.WriteAllText(path, text);
     }
 
+    /// <summary>The mode's instructions are the system message's last layer — they win a conflict —, named in the X-Ray,
+    /// and switched off there like any other; the conversation's saved file keeps the mode.</summary>
+    [Fact]
+    public async Task AModesInstructions_AreThePromptsLastLayer_NamedInTheXRay_AndSavedWithTheConversation()
+    {
+        var mode = new ChatMode("Review", "", "MODE-INSTRUCTIONS", [], null, null, ".inferpal/modes/review.md", ChatModeOrigin.Inferpal, []);
+        var builder = new SystemPromptBuilder(new InferpalConfig { CustomSystemPrompt = "CUSTOM" });
+
+        var sections = builder.BuildSections("BASE", mode: mode);
+        var last = sections.Last(s => s.Placement == PromptPlacement.System);
+        Assert.Equal(PromptSectionKind.Mode, last.Kind);
+        Assert.Equal("\n\n## Mode: Review\n\nMODE-INSTRUCTIONS", last.Content);
+        Assert.Equal("Mode|Review", Services.Presentation.XRayPanelPresenter.SectionId(last));
+        Assert.Contains("Review", Services.Presentation.XRayPanelPresenter.Label(last), StringComparison.Ordinal);
+        Assert.DoesNotContain("MODE-INSTRUCTIONS",
+                              builder.Build("BASE", disabledSectionIds: new HashSet<string> { "Mode|Review" }, mode: mode), StringComparison.Ordinal);
+        Assert.DoesNotContain("## Mode", builder.Build("BASE"), StringComparison.Ordinal);   // reference arm: no mode, no layer
+
+        var store = new Services.Persistence.ConversationStore(Path.Combine(_root, "sessions"));
+        await store.SaveAsync("held", [new Services.Persistence.SavedMessage("user", "hello")], CancellationToken.None, _root, mode: "Review");
+        Assert.Equal("Review", (await store.LoadAsync("held", CancellationToken.None))!.Mode);
+    }
+
     [Fact]
     public void ARealCopilotAgent_IsReadWithEveryFieldInferpalCarries()
     {
@@ -143,7 +166,7 @@ public sealed class ChatModesTests : IDisposable
         Assert.Contains("handoffs", mode.NotCarried);
         Assert.Equal("devstral-small-2", mode.PickModel(["Devstral-Small-2", "llama3.1"]) is { } m ? m.ToLowerInvariant() : null);
         Assert.Equal("qwen3.8:27b", mode.PickModel(["devstral-small-2", "qwen3.8:27b"]));
-        Assert.Equal("## Mode: Team Review\n\nReview the change against the repository's conventions. Never edit a file.", mode.PromptSection);
+        Assert.Equal("Review the change against the repository's conventions. Never edit a file.", mode.Instructions);
     }
 
     /// <summary>The person's own mode is read first: a repository's mode of the same name never takes its place, and no

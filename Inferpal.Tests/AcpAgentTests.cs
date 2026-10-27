@@ -1806,6 +1806,80 @@ public sealed class AcpAgentTests : IDisposable
     }
 
     /// <summary>
+    /// A mode the repository defines is one more session mode, beside Inferpal's three: picked, its instructions go with
+    /// the question, and the model selector names the model it answers with.
+    /// </summary>
+    [Fact]
+    public async Task ARepositorysMode_IsASessionMode_AndTheSelectorNamesItsModel()
+    {
+        Directory.CreateDirectory(Path.Combine(_root, ".inferpal", "modes"));
+        File.WriteAllText(Path.Combine(_root, ".inferpal", "modes", "review.md"),
+            "---\nname: Review\ndescription: Reads the change\nmodel: [gpt-5, other-model]\ntools: [read]\n---\nREVIEW-INSTRUCTIONS\n");
+        await using var h = await StartAsync(fake: f => f.ModelNames = ["test-model", "other-model"]);
+        await h.Client.RequestAsync("initialize", Init());
+        var created = (await h.Client.RequestAsync("session/new", new { cwd = _root, mcpServers = Array.Empty<object>() })).GetProperty("result");
+        var sid = created.GetProperty("sessionId").GetString();
+        var modes = created.GetProperty("modes").GetProperty("availableModes").EnumerateArray().ToList();
+        Assert.Contains(modes, m => m.GetProperty("id").GetString() == "mode:Review"
+                                    && m.GetProperty("description").GetString()!.Contains(".inferpal/modes/review.md", StringComparison.Ordinal));
+        Assert.Equal(4, modes.Count);
+
+        var set = await h.Client.RequestAsync("session/set_mode", new { sessionId = sid, modeId = "mode:Review" });
+        Assert.False(set.TryGetProperty("error", out _), set.GetRawText());
+        var options = (await h.Client.RequestAsync("session/set_config_option", new { sessionId = sid, configId = "mode", value = "mode:Review" }))
+            .GetProperty("result").GetProperty("configOptions");
+        Assert.Equal("other-model", options.EnumerateArray().Single(o => o.GetProperty("id").GetString() == "model")
+                                           .GetProperty("currentValue").GetString());
+
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, sid, "review it")));
+
+        var (model, history) = h.Fake.AgentRuns[^1];
+        Assert.Equal("other-model", model);
+        Assert.Contains("REVIEW-INSTRUCTIONS", history[0].Content, StringComparison.Ordinal);
+    }
+
+    /// <summary>A thread held in a mode reopens in it — and when the mode's file is gone since, it still opens, in Default,
+    /// the cause said; never a thread that cannot be loaded.</summary>
+    [Fact]
+    public async Task AThreadHeldInAModeWhoseFileIsGone_StillOpens_InDefault()
+    {
+        var file = Path.Combine(_root, ".inferpal", "modes", "review.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+        File.WriteAllText(file, "---\nname: Review\ntools: [read]\n---\nREVIEW-INSTRUCTIONS\n");
+        string sid;
+        await using (var first = await StartAsync(fake: f => f.ChatResult = new ChatTurnResult("Saved answer.", null, 0, 0)))
+        {
+            await first.Client.RequestAsync("initialize", Init());
+            sid = await NewSessionAsync(first);
+            await first.Client.RequestAsync("session/set_mode", new { sessionId = sid, modeId = "mode:Review" });
+            await PromptAsync(first, sid, "remember this question");
+        }
+
+        await using (var kept = await StartAsync())
+        {
+            await kept.Client.RequestAsync("initialize", Init());
+            var reopened = (await kept.Client.RequestAsync("session/load", new { sessionId = sid, cwd = _root, mcpServers = Array.Empty<object>() }))
+                .GetProperty("result");
+            Assert.Equal("mode:Review", reopened.GetProperty("modes").GetProperty("currentModeId").GetString());   // reference arm
+        }
+
+        File.Delete(file);
+        await using var second = await StartAsync();
+        await second.Client.RequestAsync("initialize", Init());
+        var loaded = await second.Client.RequestAsync("session/load", new { sessionId = sid, cwd = _root, mcpServers = Array.Empty<object>() });
+
+        Assert.True(loaded.TryGetProperty("result", out var result), loaded.GetRawText());
+        Assert.Equal("default", result.GetProperty("modes").GetProperty("currentModeId").GetString());
+        // Said in the thread, in the person's language, as a notice or a line.
+        var said = string.Concat(second.Client.Lines.Select(l => JsonDocument.Parse(l).RootElement)
+            .Where(e => e.TryGetProperty("params", out var p) && p.TryGetProperty("update", out _))
+            .Select(e => e.GetProperty("params").GetProperty("update"))
+            .Select(u => (u.TryGetProperty("content", out var c) && c.TryGetProperty("text", out var t) ? t.GetString() : null)
+                         ?? (u.TryGetProperty("title", out var title) ? title.GetString() : null)));
+        Assert.Contains(Localization.Strings.ModeGone("Review").TrimEnd('.'), said, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// The thread's model selector names the model that answers: in Agent mode, the one set for the agent's role — the
     /// host routes the turn to it —, and a model picked in the selector answers in every mode, Agent included.
     /// </summary>

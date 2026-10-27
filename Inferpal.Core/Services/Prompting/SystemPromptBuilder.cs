@@ -8,7 +8,7 @@ using Inferpal.Localization;
 namespace Inferpal.Services.Prompting;
 
 /// <summary>Origin of one layer of the composed system prompt (for <c>/xray</c>).</summary>
-internal enum PromptSectionKind { Base, Persona, Custom, Template, Pinned, ProjectContext, Memory, Notes, Rules, RepoInstructions, Skills }
+internal enum PromptSectionKind { Base, Persona, Custom, Template, Pinned, ProjectContext, Memory, Notes, Rules, RepoInstructions, Skills, Mode }
 
 /// <summary>One layer of the composed system prompt. <see cref="Content"/> includes the layer's own
 /// leading separator so concatenating all sections reproduces the exact prompt text.
@@ -192,6 +192,8 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     /// AGENTS.md down to its folder, the rules its globs name). ⚠ Not <paramref name="activeFileRelPath"/>: a file
     /// outside the root (a test project beside Visual Studio's solution folder) has none, and its closest AGENTS.md
     /// would be skipped.</param>
+    /// <param name="mode">The mode the person picked for the conversation (<see cref="Governance.ChatMode"/>): its
+    /// instructions are the last layer, so they win a conflict; <c>null</c> for Chat, Agent and Plan.</param>
     public string Build(
         string  basePrompt,
         string? language          = null,
@@ -199,9 +201,10 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
         string? projectRoot       = null,
         string? activeFileRelPath = null,
         IReadOnlySet<string>? disabledSectionIds = null,
-        string? activeFilePath    = null)
+        string? activeFilePath    = null,
+        Governance.ChatMode? mode = null)
         => string.Concat(BuildSections(basePrompt, language, templateSuffix, projectRoot, activeFileRelPath, disabledSectionIds,
-                                       activeFilePath)
+                                       activeFilePath, mode)
                          .Where(s => s.Placement == PromptPlacement.System
                                      && (disabledSectionIds is null
                                          || !disabledSectionIds.Contains(Presentation.XRayPanelPresenter.SectionId(s))))
@@ -245,6 +248,7 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     /// <param name="disabledSectionIds">Sections switched off from the X-Ray panel: they are still returned (the panel
     /// lists them), but they take no part of the budget the file-backed sections share — switching one off is how
     /// the user makes room for the others.</param>
+    /// <param name="mode">The mode the person picked, as for <see cref="Build"/>.</param>
     public IReadOnlyList<PromptSection> BuildSections(
         string  basePrompt,
         string? language          = null,
@@ -252,7 +256,8 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
         string? projectRoot       = null,
         string? activeFileRelPath = null,
         IReadOnlySet<string>? disabledSectionIds = null,
-        string? activeFilePath    = null)
+        string? activeFilePath    = null,
+        Governance.ChatMode? mode = null)
     {
         var sections = new List<PromptSection> { new(PromptSectionKind.Base, null, basePrompt + EnvironmentFacts()) };
 
@@ -364,6 +369,11 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
             }
             catch (Exception ex) { Diagnostics.Swallow("SystemPromptBuilder.Rules", ex); }
         }
+
+        // The mode the person picked: its file's instructions, last so they win a conflict, in the files' one budget. Not
+        // tied to the active file — the prefix a caching server keeps stays the same while the mode does.
+        if (mode is not null && !string.IsNullOrWhiteSpace(mode.Instructions))
+            files.Add(new(PromptSectionKind.Mode, mode.Name, $"\n\n## Mode: {mode.Name}\n\n", mode.Instructions, mode.Source));
 
         // ⚠ The window the prompt is SENT into: configured 100 000 with a model loaded at 8 192, a budget read from the
         // setting kept every request over the loaded window — the files are the one part compaction never shrinks.

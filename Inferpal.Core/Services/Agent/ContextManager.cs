@@ -181,27 +181,33 @@ internal static class ContextManager
 
     /// <summary>
     /// The tool definitions the next chat turn carries, in tokens: none with tools off, the read-only subset in plan
-    /// mode, every offered tool otherwise (MCP and custom tools included) — the registry each front-end then sends.
+    /// mode, the mode's tools in a mode the person picked, every offered tool otherwise (MCP and custom tools included) —
+    /// the registry each front-end then sends.
     /// </summary>
-    internal static int NextTurnToolTokens(IToolRegistry tools, bool toolsEnabled, bool planMode) =>
+    internal static int NextTurnToolTokens(IToolRegistry tools, bool toolsEnabled, bool planMode, Governance.ChatMode? mode = null) =>
         !toolsEnabled ? 0
-        : RequestSize.ToolTokens((planMode ? new PlanModeToolRegistry(tools) : tools).Definitions);
+        : RequestSize.ToolTokens((planMode ? new PlanModeToolRegistry(tools) : Governance.ChatModes.ToolsFor(tools, mode, null)).Definitions);
 
     /// <summary>
     /// The MCP tools the next chat turn leaves out until <c>tool_search</c> loads them, by server: none with tools off
     /// or in plan mode (which sends no MCP tool at all), the registry's waiting ones otherwise.
     /// </summary>
-    internal static IReadOnlyList<(string Server, int Tools)> NextTurnToolsOnDemand(ToolRegistry tools, bool toolsEnabled, bool planMode) =>
-        !toolsEnabled || planMode ? [] : tools.ToolsOnDemand;
+    internal static IReadOnlyList<(string Server, int Tools)> NextTurnToolsOnDemand(ToolRegistry tools, bool toolsEnabled, bool planMode,
+                                                                                   Governance.ChatMode? mode = null) =>
+        !toolsEnabled || planMode ? []
+        : mode?.Tools is { } kept ? [.. tools.ToolsOnDemand.Where(e => kept.MayUseServer(e.Server))]
+        : tools.ToolsOnDemand;
 
     /// <summary>
     /// The tools the next chat turn does not send because they are turned off, by the name they are turned off by: none
     /// with tools off for the conversation (nothing is sent at all), in plan mode only those plan mode would have sent
     /// (the same request <see cref="NextTurnToolTokens"/> weighs), the registry's otherwise.
     /// </summary>
-    internal static IReadOnlyList<string> NextTurnTurnedOff(ToolRegistry tools, bool toolsEnabled, bool planMode) =>
+    internal static IReadOnlyList<string> NextTurnTurnedOff(ToolRegistry tools, bool toolsEnabled, bool planMode,
+                                                          Governance.ChatMode? mode = null) =>
         !toolsEnabled ? []
         : planMode ? [.. tools.TurnedOffKeys().Where(PlanModeToolRegistry.IsAllowed)]
+        : mode?.Tools is { } kept ? [.. tools.TurnedOffKeys().Where(kept.AllowsKey)]
         : tools.TurnedOffKeys();
 
     /// <summary>

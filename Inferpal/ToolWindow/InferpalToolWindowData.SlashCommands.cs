@@ -265,6 +265,9 @@ internal partial class InferpalToolWindowData
             case SlashCommandId.Instructions:
                 await ShowInfoAsync(RepoInstructionsReport.Markdown(await CurrentRepoInstructionRowsAsync()));
                 break;
+            case SlashCommandId.Modes:
+                await ShowInfoAsync(Services.Commands.ModesCommandHandler.Handle(ChatModes.For(_config, FindProjectRoot())));
+                break;
             case SlashCommandId.Skill:
             {
                 // The root read_skill_file reads (ToolRegistry.SkillsRoot): /skill, the tool and the prompt see one catalog.

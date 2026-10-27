@@ -55,13 +55,14 @@ internal static class ChatTurnPolicy
         codeAction ? TaskComplexity.Quick : TaskComplexity.Normal;
 
     /// <summary>
-    /// The reasoning effort of a chat turn: the chat's for a question — with tools or without —, the server's for a code
-    /// action sent through the chat. One decision for both front-ends, as <see cref="TurnComplexity"/>.
+    /// The reasoning effort of a chat turn: the chat's for a question — with tools or without —, the mode's when the
+    /// person picked one that sets it, the server's for a code action sent through the chat. One decision for both
+    /// front-ends, as <see cref="TurnComplexity"/>.
     /// </summary>
     /// <remarks>⚠ A code action keeps the server's effort: its answer becomes an edit or a verdict, and no measure says
     /// it survives a lower one.</remarks>
-    public static ReasoningEffort TurnEffort(InferpalConfig config, bool codeAction) =>
-        codeAction ? ReasoningEffort.Server : ReasoningEffortSetting.Chat(config);
+    public static ReasoningEffort TurnEffort(InferpalConfig config, bool codeAction, ChatMode? mode = null) =>
+        codeAction ? ReasoningEffort.Server : mode?.Effort ?? ReasoningEffortSetting.Chat(config);
 
     /// <summary>
     /// Triple guard against visually empty assistant bubbles (see bug history): content

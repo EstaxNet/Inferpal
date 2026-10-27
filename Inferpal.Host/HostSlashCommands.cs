@@ -81,7 +81,7 @@ internal sealed partial class HostServer
 
             var history = new List<Inferpal.Models.ChatMessageDto>
             {
-                new("system", BuildSystemPromptText(s) + suffix),
+                new("system", BuildSystemPromptText(s, withMode: false) + suffix),
                 new("user",   ChatTurnPolicy.WithInjectedContext(task.Objective, task.Context)),
             };
 
@@ -322,6 +322,9 @@ internal sealed partial class HostServer
                 case SlashCommandId.Instructions:
                     return new SlashCommandResult(true, RepoInstructionsReport.Markdown(RepoInstructionRows(s)));
 
+                case SlashCommandId.Modes:
+                    return new SlashCommandResult(true, ModesCommandHandler.Handle(ChatModes.For(s.Config, RootOf(s))));
+
                 case SlashCommandId.Skill:
                 {
                     // The workspace read_skill_file reads, so /skill and the tool see one catalog. The skill is joined
@@ -345,10 +348,10 @@ internal sealed partial class HostServer
                         AgentOrchestrator.EstimateConversationTokens(s.History),
                         s.ContextWindowInUse,
                         s.Config,
-                        toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode),
+                        toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s)),
                         questionLayersInHistory: QuestionLayersInHistory(s),
-                        toolsOnDemand: ContextManager.NextTurnToolsOnDemand(s.Tools, s.ToolsEnabled, s.PlanMode),
-                        turnedOff: ContextManager.NextTurnTurnedOff(s.Tools, s.ToolsEnabled, s.PlanMode)));
+                        toolsOnDemand: ContextManager.NextTurnToolsOnDemand(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s)),
+                        turnedOff: ContextManager.NextTurnTurnedOff(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s))));
                 }
 
                 case SlashCommandId.Bench:
@@ -380,7 +383,7 @@ internal sealed partial class HostServer
                     var activeFile = BuildActiveFileBlock(s);
                     var result = await TddCommandHandler.HandleAsync(
                         s.Client, s.Config, s.Tools,
-                        BuildSystemPromptText(s), parts,
+                        BuildSystemPromptText(s, withMode: false), parts,
                         string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir,
                         onProgress:   Step,
                         onTestReport: (output, green) => Notify("chat/tool", new ToolNotice("run_tests", string.Empty, output, !green)),
@@ -457,6 +460,7 @@ internal sealed partial class HostServer
                     if (result.ToggleMode)
                     {
                         s.PlanMode = !s.PlanMode;
+                        if (s.PlanMode) s.ModeName = null;   // one selector: Plan leaves the mode
                         RefreshSystemMessage(s);
                         return new SlashCommandResult(true,
                             s.PlanMode ? Strings.PlanModeOn : Strings.PlanModeOff,

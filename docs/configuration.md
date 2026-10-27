@@ -208,6 +208,36 @@ mistakes a backup for the file it copies. A history folder made by an earlier ve
 once the folder carries its own, that line is no longer needed and can be removed — with the whole
 folder ignored, the overlays above are not committed.
 
+### Modes
+
+A mode is a way of working you pick for a conversation, beside Chat, Agent and Plan: its own instructions, a model, the tools it keeps and a reasoning effort. Inferpal reads them from four places, in this order — a mode named like one found before it is set aside, so a repository never takes the place of a mode you wrote:
+
+| Where | Format |
+|---|---|
+| `%AppData%\Inferpal\modes\*.md` | Your own, in every workspace — the format below. |
+| `.inferpal/modes/*.md` | The repository's — the format below. |
+| `.github/agents/*.agent.md` | GitHub Copilot's custom agents, as they are: `name`, `description`, `tools`, `model` (a name or a list: the first one the server has) and `reasoning-effort`; the body is the instructions. `handoffs`, `agents`, `hooks`, `mcp-servers` and the rest are not carried, and `/modes` names them. |
+| `.roomodes` | Roo Code's custom modes (YAML or JSON): `roleDefinition` then `customInstructions` then the files of `.roo/rules-<slug>/` as instructions; `groups` as tools (`read`, `edit` with its `fileRegex`, `command`, `mcp`). Roo keeps no model in this file. |
+
+A mode file is a Markdown file with a front matter:
+
+```markdown
+---
+name: Review
+description: Reads the change and comments; never writes
+model: [qwen3.8:27b, devstral-small-2]
+tools: [read, search, get_git_status]
+reasoning-effort: high
+---
+Review the change against the repository's conventions. Never edit a file.
+```
+
+`tools` names families (`read`, `search`, `edit`, `execute`, `web`), Inferpal's own tool names, Copilot's tool names (`codebase`, `editFiles`, `runInTerminal`…), and MCP tools as `server/*` or `server/tool`. Left out, the mode keeps every tool. A name Inferpal does not know is named by `/modes` and dropped — it never widens anything.
+
+**A mode only narrows.** A tool outside it is neither offered to the model nor run; an edit outside its `fileRegex` is refused before the approval card; and every change still asks first — a mode adds no rule, no grant and no auto-approval. Writing a mode's file (by the agent) always shows the approval card, like the repository's other instructions, and a mode file reached through a link that leaves the repository is not read.
+
+**Its model** is the first of its list the server has — never downloaded. When the server has none of them (a Copilot agent asks for `GPT-5`), the conversation's model answers and the thread says so once. Its instructions are the system message's last layer (they win a conflict) and show in the Context X-Ray. The mode is kept with the conversation and comes back with it; a mode whose file is gone is said, and the conversation continues without it. The repository formats follow `repoInstructionFamilies`: without `copilot`, `.github/agents` is not read, without `roo`, `.roomodes`. In an ACP client (Zed, JetBrains…), each mode found is one more session mode.
+
 ### The project profile (`.inferpal/project.json`)
 
 ```jsonc

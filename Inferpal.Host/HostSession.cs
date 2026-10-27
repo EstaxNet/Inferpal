@@ -208,6 +208,17 @@ internal sealed class HostSession : IDisposable
     /// <summary>Plan mode (`/plan`): read-only tool registry + plan-mode prompt suffix.</summary>
     public bool PlanMode { get; set; }
 
+    /// <summary>The mode the person picked for the conversation (<see cref="Services.Governance.ChatMode.Name"/>), read
+    /// from its file at each question; <c>null</c> for Chat, Agent and Plan, which it excludes.</summary>
+    public string? ModeName { get; set; }
+
+    /// <summary>The mode of the conversation just discarded: the adapter archives it AFTER the reset, when the person may
+    /// have picked another (see <see cref="DiscardedTemplateSuffix"/>).</summary>
+    public string? DiscardedModeName { get; set; }
+
+    /// <summary>The mode whose missing model the thread was told about: said once per conversation and mode.</summary>
+    public string? ModeModelNoticeSaid { get; set; }
+
     /// <summary>Plan the session is working on (mirror of the VS VM's <c>_activePlan</c>), so
     /// `/plan next` and `/plan done n` need no argument. Session state: the file is what
     /// persists, not which one happened to be open.</summary>

@@ -942,6 +942,30 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="XrayLabelCustom" xml:space="preserve"><value>Prompt di sistema personalizzato</value></data>
   <data name="XrayLabelTemplate" xml:space="preserve"><value>Modello di sessione</value></data>
   <data name="XrayLabelRules" xml:space="preserve"><value>Regole ({0} applicate)</value></data>
+  <data name="XrayLabelMode" xml:space="preserve"><value>Modalità: {0}</value></data>
+  <data name="ModeModelMissing" xml:space="preserve"><value>{0} chiede {1}; nessuno è su questo server. Risponde con {2}.</value></data>
+  <data name="ModeGone" xml:space="preserve"><value>Questa conversazione era nella modalità «{0}», che non si trova più: continua senza di essa.</value></data>
+  <data name="ModeUnknown" xml:space="preserve"><value>Nessuna modalità chiamata «{0}». /modes elenca le modalità trovate.</value></data>
+  <data name="ModesHeader" xml:space="preserve"><value>**Modalità** — scegline una nel selettore di modalità. Una modalità limita solo gli strumenti; ogni modifica chiede sempre prima.</value></data>
+  <data name="ModesNone" xml:space="preserve"><value>Nessuna modalità trovata. Una modalità è un file Markdown in .inferpal/modes/, un agente di GitHub Copilot in .github/agents/ o una modalità di Roo Code in .roomodes.</value></data>
+  <data name="ModesModel" xml:space="preserve"><value>modello: {0}</value></data>
+  <data name="ModesModelFirst" xml:space="preserve"><value>modello: il primo installato tra {0}</value></data>
+  <data name="ModesModelChat" xml:space="preserve"><value>modello: quello della conversazione</value></data>
+  <data name="ModesTools" xml:space="preserve"><value>strumenti: {0}</value></data>
+  <data name="ModesToolsAll" xml:space="preserve"><value>strumenti: tutti</value></data>
+  <data name="ModesToolsNone" xml:space="preserve"><value>strumenti: nessuno</value></data>
+  <data name="ModesEditsOnly" xml:space="preserve"><value>modifica solo i file che corrispondono a {0}</value></data>
+  <data name="ModesNotCarried" xml:space="preserve"><value>non applicati: {0}</value></data>
+  <data name="ModesSetAside" xml:space="preserve"><value>Messi da parte:</value></data>
+  <data name="ModeNoteUnreadable" xml:space="preserve"><value>non letto: {0}</value></data>
+  <data name="ModeNoteDuplicate" xml:space="preserve"><value>una modalità chiamata «{0}» è stata trovata prima</value></data>
+  <data name="ModeNoteReservedName" xml:space="preserve"><value>«{0}» è il nome di una delle modalità di Inferpal</value></data>
+  <data name="ModeNoteSubAgentOnly" xml:space="preserve"><value>solo un sotto-agente (user-invocable: false)</value></data>
+  <data name="ModeNoteNoSlug" xml:space="preserve"><value>una modalità Roo senza slug</value></data>
+  <data name="ModeNoteLeaves" xml:space="preserve"><value>un collegamento che esce dal repository: non letto</value></data>
+  <data name="ModeNoteUnlistable" xml:space="preserve"><value>impossibile elencare la cartella: {0}</value></data>
+  <data name="ModeNoteNoModes" xml:space="preserve"><value>nessuna lista customModes</value></data>
+  <data name="ModeNoteRulesCut" xml:space="preserve"><value>le regole della modalità superano 256 KB: {0} e i file successivi non vengono letti</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>Cronologia della conversazione: {0} token (stima)</value></data>
   <data name="XrayTools" xml:space="preserve"><value>Definizioni degli strumenti inviate a ogni turno: {0} token (stima)</value></data>
   <data name="XrayToolsOnDemand" xml:space="preserve"><value>{0} {0:strumento|strumenti} MCP su richiesta — invio solo dopo il caricamento con tool_search: {1}</value></data>
@@ -1501,6 +1525,7 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="RepoInstructionStateNotRead" xml:space="preserve"><value>illeggibile</value></data>
   <data name="RepoInstructionStateFamilyOff" xml:space="preserve"><value>non letta: questo strumento è disattivato nelle impostazioni</value></data>
   <data name="SlashHintInstructions" xml:space="preserve"><value>Elenca le istruzioni del repository per gli agenti di codice e cosa invia questa domanda</value></data>
+  <data name="SlashHintModes" xml:space="preserve"><value>Elenca le modalità trovate — agenti di Copilot, modalità di Roo, .inferpal/modes — e cosa mantiene ciascuna</value></data>
   <data name="SettingsSectionRepoInstructions" xml:space="preserve"><value>Istruzioni del repository</value></data>
   <data name="SettingsSectionRepoInstructionsDesc" xml:space="preserve"><value>File di istruzioni che questo repository fornisce agli agenti di codice, letti e inviati con le tue domande: sempre, o quando il file attivo corrisponde. I file di progetto di Inferpal vengono dopo e prevalgono in caso di conflitto.</value></data>
   <data name="LabelRepoInstructionFamilies" xml:space="preserve"><value>Strumenti di cui si leggono i file</value></data>

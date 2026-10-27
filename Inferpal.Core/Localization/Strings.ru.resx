@@ -942,6 +942,30 @@
   <data name="XrayLabelCustom" xml:space="preserve"><value>Пользовательский системный промпт</value></data>
   <data name="XrayLabelTemplate" xml:space="preserve"><value>Шаблон сессии</value></data>
   <data name="XrayLabelRules" xml:space="preserve"><value>Правила (применено: {0})</value></data>
+  <data name="XrayLabelMode" xml:space="preserve"><value>Режим: {0}</value></data>
+  <data name="ModeModelMissing" xml:space="preserve"><value>{0} запрашивает {1}; ни одной из них нет на этом сервере. Отвечает {2}.</value></data>
+  <data name="ModeGone" xml:space="preserve"><value>Этот разговор шёл в режиме «{0}», который больше не найден: он продолжается без него.</value></data>
+  <data name="ModeUnknown" xml:space="preserve"><value>Нет режима с именем «{0}». /modes показывает найденные режимы.</value></data>
+  <data name="ModesHeader" xml:space="preserve"><value>**Режимы** — выберите в переключателе режима. Режим только сужает инструменты; каждое изменение по-прежнему сначала спрашивает.</value></data>
+  <data name="ModesNone" xml:space="preserve"><value>Режимов не найдено. Режим — это файл Markdown в .inferpal/modes/, агент GitHub Copilot в .github/agents/ или режим Roo Code в .roomodes.</value></data>
+  <data name="ModesModel" xml:space="preserve"><value>модель: {0}</value></data>
+  <data name="ModesModelFirst" xml:space="preserve"><value>модель: первая установленная из {0}</value></data>
+  <data name="ModesModelChat" xml:space="preserve"><value>модель: модель разговора</value></data>
+  <data name="ModesTools" xml:space="preserve"><value>инструменты: {0}</value></data>
+  <data name="ModesToolsAll" xml:space="preserve"><value>инструменты: все</value></data>
+  <data name="ModesToolsNone" xml:space="preserve"><value>инструменты: нет</value></data>
+  <data name="ModesEditsOnly" xml:space="preserve"><value>редактирует только файлы, подходящие под {0}</value></data>
+  <data name="ModesNotCarried" xml:space="preserve"><value>не переносится: {0}</value></data>
+  <data name="ModesSetAside" xml:space="preserve"><value>Отложено:</value></data>
+  <data name="ModeNoteUnreadable" xml:space="preserve"><value>не прочитан: {0}</value></data>
+  <data name="ModeNoteDuplicate" xml:space="preserve"><value>режим с именем «{0}» уже найден раньше</value></data>
+  <data name="ModeNoteReservedName" xml:space="preserve"><value>«{0}» — имя одного из собственных режимов Inferpal</value></data>
+  <data name="ModeNoteSubAgentOnly" xml:space="preserve"><value>только субагент (user-invocable: false)</value></data>
+  <data name="ModeNoteNoSlug" xml:space="preserve"><value>режим Roo без slug</value></data>
+  <data name="ModeNoteLeaves" xml:space="preserve"><value>ссылка за пределы репозитория: не прочитана</value></data>
+  <data name="ModeNoteUnlistable" xml:space="preserve"><value>не удаётся получить список папки: {0}</value></data>
+  <data name="ModeNoteNoModes" xml:space="preserve"><value>нет списка customModes</value></data>
+  <data name="ModeNoteRulesCut" xml:space="preserve"><value>правила режима превышают 256 КБ: {0} и следующие файлы не прочитаны</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>История разговора: {0} токенов (оценка)</value></data>
   <data name="XrayTools" xml:space="preserve"><value>Определения инструментов, отправляемые с каждым ходом: {0} токенов (оценка)</value></data>
   <data name="XrayToolsOnDemand" xml:space="preserve"><value>{0} {0:инструмент|инструмента|инструментов} MCP по запросу — отправка только после загрузки через tool_search: {1}</value></data>
@@ -1501,6 +1525,7 @@
   <data name="RepoInstructionStateNotRead" xml:space="preserve"><value>не читается</value></data>
   <data name="RepoInstructionStateFamilyOff" xml:space="preserve"><value>не прочитано: этот инструмент отключён в настройках</value></data>
   <data name="SlashHintInstructions" xml:space="preserve"><value>Перечисляет инструкции репозитория для агентов кода и то, что отправляет этот вопрос</value></data>
+  <data name="SlashHintModes" xml:space="preserve"><value>Показывает найденные режимы — агенты Copilot, режимы Roo, .inferpal/modes — и что оставляет каждый</value></data>
   <data name="SettingsSectionRepoInstructions" xml:space="preserve"><value>Инструкции репозитория</value></data>
   <data name="SettingsSectionRepoInstructionsDesc" xml:space="preserve"><value>Файлы инструкций, которые этот репозиторий даёт агентам кода, читаются и отправляются с вашими вопросами: всегда или когда подходит активный файл. Собственные файлы проекта Inferpal идут после них и имеют приоритет при конфликте.</value></data>
   <data name="LabelRepoInstructionFamilies" xml:space="preserve"><value>Инструменты, чьи файлы читаются</value></data>

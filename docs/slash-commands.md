@@ -122,6 +122,7 @@ editor with tools disabled).
 | `/agent-step` | Toggle agent step mode (pause between tool calls) |
 | `/resume` | Resume the agent after a step-mode pause |
 | `/plan` | Toggle plan mode — read-only: the agent explores and proposes a plan without editing files |
+| `/modes` | List the modes found — `.inferpal/modes/`, GitHub Copilot agents (`.github/agents/`), Roo Code modes (`.roomodes`) and your own — with each one's model, tools and file, what its file sets that Inferpal does not carry, and the files set aside with why ([Modes](configuration.md#modes)) |
 | `/plan save [name]` | Save the plan from the last answer to `.inferpal/plans/<name>.md` — committed with the code, so it survives `/clear`, a restart and a colleague's clone |
 | `/plan list` | List this repository's plans with their progress |
 | `/plan <name>` | Open a plan and make it the active one |

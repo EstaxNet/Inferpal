@@ -942,6 +942,30 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="XrayLabelCustom" xml:space="preserve"><value>Niestandardowy prompt systemowy</value></data>
   <data name="XrayLabelTemplate" xml:space="preserve"><value>Szablon sesji</value></data>
   <data name="XrayLabelRules" xml:space="preserve"><value>Reguły (zastosowano: {0})</value></data>
+  <data name="XrayLabelMode" xml:space="preserve"><value>Tryb: {0}</value></data>
+  <data name="ModeModelMissing" xml:space="preserve"><value>{0} prosi o {1}; żadnego z nich nie ma na tym serwerze. Odpowiada {2}.</value></data>
+  <data name="ModeGone" xml:space="preserve"><value>Ta rozmowa była prowadzona w trybie „{0}”, którego już nie ma: toczy się dalej bez niego.</value></data>
+  <data name="ModeUnknown" xml:space="preserve"><value>Nie ma trybu o nazwie „{0}”. /modes wyświetla znalezione tryby.</value></data>
+  <data name="ModesHeader" xml:space="preserve"><value>**Tryby** — wybierz jeden w przełączniku trybu. Tryb tylko zawęża narzędzia; każda zmiana nadal najpierw pyta.</value></data>
+  <data name="ModesNone" xml:space="preserve"><value>Nie znaleziono trybu. Tryb to plik Markdown w .inferpal/modes/, agent GitHub Copilot w .github/agents/ lub tryb Roo Code w .roomodes.</value></data>
+  <data name="ModesModel" xml:space="preserve"><value>model: {0}</value></data>
+  <data name="ModesModelFirst" xml:space="preserve"><value>model: pierwszy zainstalowany z {0}</value></data>
+  <data name="ModesModelChat" xml:space="preserve"><value>model: ten z rozmowy</value></data>
+  <data name="ModesTools" xml:space="preserve"><value>narzędzia: {0}</value></data>
+  <data name="ModesToolsAll" xml:space="preserve"><value>narzędzia: wszystkie</value></data>
+  <data name="ModesToolsNone" xml:space="preserve"><value>narzędzia: brak</value></data>
+  <data name="ModesEditsOnly" xml:space="preserve"><value>edytuje tylko pliki pasujące do {0}</value></data>
+  <data name="ModesNotCarried" xml:space="preserve"><value>nieprzeniesione: {0}</value></data>
+  <data name="ModesSetAside" xml:space="preserve"><value>Pominięte:</value></data>
+  <data name="ModeNoteUnreadable" xml:space="preserve"><value>nie odczytano: {0}</value></data>
+  <data name="ModeNoteDuplicate" xml:space="preserve"><value>wcześniej znaleziono tryb o nazwie „{0}”</value></data>
+  <data name="ModeNoteReservedName" xml:space="preserve"><value>„{0}” to nazwa jednego z trybów Inferpal</value></data>
+  <data name="ModeNoteSubAgentOnly" xml:space="preserve"><value>tylko podagent (user-invocable: false)</value></data>
+  <data name="ModeNoteNoSlug" xml:space="preserve"><value>tryb Roo bez slug</value></data>
+  <data name="ModeNoteLeaves" xml:space="preserve"><value>dowiązanie wychodzące poza repozytorium: nie odczytano</value></data>
+  <data name="ModeNoteUnlistable" xml:space="preserve"><value>nie można wyświetlić folderu: {0}</value></data>
+  <data name="ModeNoteNoModes" xml:space="preserve"><value>brak listy customModes</value></data>
+  <data name="ModeNoteRulesCut" xml:space="preserve"><value>reguły trybu przekraczają 256 KB: {0} i kolejne pliki nie są odczytywane</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>Historia rozmowy: {0} tokenów (szacunkowo)</value></data>
   <data name="XrayTools" xml:space="preserve"><value>Definicje narzędzi wysyłane w każdej turze: {0} tokenów (szacunkowo)</value></data>
   <data name="XrayToolsOnDemand" xml:space="preserve"><value>{0} {0:narzędzie|narzędzia|narzędzi} MCP na żądanie — wysyłka dopiero po wczytaniu przez tool_search: {1}</value></data>
@@ -1501,6 +1525,7 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="RepoInstructionStateNotRead" xml:space="preserve"><value>nie można odczytać</value></data>
   <data name="RepoInstructionStateFamilyOff" xml:space="preserve"><value>nieodczytana: to narzędzie jest wyłączone w ustawieniach</value></data>
   <data name="SlashHintInstructions" xml:space="preserve"><value>Wyświetla instrukcje repozytorium dla agentów kodu i to, co wysyła to pytanie</value></data>
+  <data name="SlashHintModes" xml:space="preserve"><value>Wyświetla znalezione tryby — agenty Copilot, tryby Roo, .inferpal/modes — i to, co każdy zachowuje</value></data>
   <data name="SettingsSectionRepoInstructions" xml:space="preserve"><value>Instrukcje repozytorium</value></data>
   <data name="SettingsSectionRepoInstructionsDesc" xml:space="preserve"><value>Pliki instrukcji, które to repozytorium daje agentom kodu, odczytywane i wysyłane z Twoimi pytaniami: zawsze lub gdy pasuje aktywny plik. Własne pliki projektu Inferpal idą po nich i mają pierwszeństwo w razie konfliktu.</value></data>
   <data name="LabelRepoInstructionFamilies" xml:space="preserve"><value>Narzędzia, których pliki są odczytywane</value></data>

@@ -942,6 +942,30 @@
   <data name="XrayLabelCustom" xml:space="preserve"><value>自定义系统提示词</value></data>
   <data name="XrayLabelTemplate" xml:space="preserve"><value>会话模板</value></data>
   <data name="XrayLabelRules" xml:space="preserve"><value>规则（应用 {0} 条）</value></data>
+  <data name="XrayLabelMode" xml:space="preserve"><value>模式：{0}</value></data>
+  <data name="ModeModelMissing" xml:space="preserve"><value>{0} 要求使用 {1}，但此服务器上都没有。改用 {2} 回答。</value></data>
+  <data name="ModeGone" xml:space="preserve"><value>此对话原使用模式“{0}”，现已找不到：将不使用该模式继续。</value></data>
+  <data name="ModeUnknown" xml:space="preserve"><value>没有名为“{0}”的模式。/modes 会列出找到的模式。</value></data>
+  <data name="ModesHeader" xml:space="preserve"><value>**模式** — 在模式选择器中选择。模式只会收窄工具；每次更改仍会先征求确认。</value></data>
+  <data name="ModesNone" xml:space="preserve"><value>未找到模式。模式可以是 .inferpal/modes/ 中的 Markdown 文件、.github/agents/ 中的 GitHub Copilot 代理，或 .roomodes 中的 Roo Code 模式。</value></data>
+  <data name="ModesModel" xml:space="preserve"><value>模型：{0}</value></data>
+  <data name="ModesModelFirst" xml:space="preserve"><value>模型：{0} 中第一个已安装的</value></data>
+  <data name="ModesModelChat" xml:space="preserve"><value>模型：对话所用的模型</value></data>
+  <data name="ModesTools" xml:space="preserve"><value>工具：{0}</value></data>
+  <data name="ModesToolsAll" xml:space="preserve"><value>工具：全部</value></data>
+  <data name="ModesToolsNone" xml:space="preserve"><value>工具：无</value></data>
+  <data name="ModesEditsOnly" xml:space="preserve"><value>只编辑匹配 {0} 的文件</value></data>
+  <data name="ModesNotCarried" xml:space="preserve"><value>未沿用：{0}</value></data>
+  <data name="ModesSetAside" xml:space="preserve"><value>已搁置：</value></data>
+  <data name="ModeNoteUnreadable" xml:space="preserve"><value>未读取：{0}</value></data>
+  <data name="ModeNoteDuplicate" xml:space="preserve"><value>之前已找到名为“{0}”的模式</value></data>
+  <data name="ModeNoteReservedName" xml:space="preserve"><value>“{0}”是 Inferpal 自带模式的名称</value></data>
+  <data name="ModeNoteSubAgentOnly" xml:space="preserve"><value>仅为子代理（user-invocable: false）</value></data>
+  <data name="ModeNoteNoSlug" xml:space="preserve"><value>没有 slug 的 Roo 模式</value></data>
+  <data name="ModeNoteLeaves" xml:space="preserve"><value>指向仓库之外的链接：未读取</value></data>
+  <data name="ModeNoteUnlistable" xml:space="preserve"><value>无法列出该文件夹：{0}</value></data>
+  <data name="ModeNoteNoModes" xml:space="preserve"><value>没有 customModes 列表</value></data>
+  <data name="ModeNoteRulesCut" xml:space="preserve"><value>该模式的规则超过 256 KB：{0} 及其后的文件未读取</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>会话历史：{0} 个 token（估算）</value></data>
   <data name="XrayTools" xml:space="preserve"><value>每轮发送的工具定义：{0} 个 token（估算）</value></data>
   <data name="XrayToolsOnDemand" xml:space="preserve"><value>按需提供的 MCP 工具 {0} 个（tool_search 加载后才发送）：{1}</value></data>
@@ -1501,6 +1525,7 @@
   <data name="RepoInstructionStateNotRead" xml:space="preserve"><value>无法读取</value></data>
   <data name="RepoInstructionStateFamilyOff" xml:space="preserve"><value>未读取：此工具已在设置中关闭</value></data>
   <data name="SlashHintInstructions" xml:space="preserve"><value>列出仓库为编码代理提供的指令，以及本次提问发送的内容</value></data>
+  <data name="SlashHintModes" xml:space="preserve"><value>列出找到的模式（Copilot 代理、Roo 模式、.inferpal/modes）及各自保留的内容</value></data>
   <data name="SettingsSectionRepoInstructions" xml:space="preserve"><value>仓库指令</value></data>
   <data name="SettingsSectionRepoInstructionsDesc" xml:space="preserve"><value>此仓库为编码代理提供的指令文件，会随您的问题一起读取并发送：始终发送，或在当前文件匹配时发送。Inferpal 自己的项目文件排在其后，发生冲突时以其为准。</value></data>
   <data name="LabelRepoInstructionFamilies" xml:space="preserve"><value>读取其文件的工具</value></data>

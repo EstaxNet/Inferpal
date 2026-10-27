@@ -85,6 +85,7 @@ internal sealed class ModeTools
     private readonly HashSet<string> _builtIn = new(StringComparer.Ordinal);
     private readonly List<string> _mcpServers = [];
     private readonly HashSet<string> _mcpTools = new(StringComparer.Ordinal);
+    private readonly List<string> _mcpToolsWritten = [];
     private readonly List<string> _loose = [];
     private readonly List<string> _notCarried = [];
     private bool _allMcp;
@@ -122,11 +123,41 @@ internal sealed class ModeTools
         _builtIn.Any(t => !Families["read"].Contains(t) && !Families["search"].Contains(t) && !Families["web"].Contains(t))
         || _ownTools || _allMcp || _mcpServers.Count > 0 || _mcpTools.Count > 0 || _loose.Count > 0;
 
-    /// <summary>The families the mode keeps whole, in the order they are listed — the mode's tools in words.</summary>
-    public IReadOnlyList<string> WholeFamilies =>
-        [.. Families.Where(f => f.Value.All(_builtIn.Contains)).Select(f => f.Key)];
+    /// <summary>The mode's tools in words, as a list shows them: the families it keeps whole, then single tools, MCP (all,
+    /// a server's, one tool) and the names it lists as written.</summary>
+    public IReadOnlyList<string> Words
+    {
+        get
+        {
+            var words = new List<string>();
+            var covered = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var (family, members) in Families)
+                if (members.All(_builtIn.Contains)) { words.Add(family); covered.UnionWith(members); }
+            words.AddRange(_builtIn.Where(t => !covered.Contains(t)).Order(StringComparer.Ordinal));
+            if (_allMcp) words.Add("MCP");
+            words.AddRange(_mcpServers.Select(s => s + "/*"));
+            words.AddRange(_mcpToolsWritten);
+            words.AddRange(_loose);
+            return words;
+        }
+    }
 
     internal static bool IsBuiltIn(string toolName) => Families.Values.Any(f => f.Contains(toolName, StringComparer.Ordinal));
+
+    /// <summary>Whether the mode keeps any tool of this MCP server — what decides whether its tools waiting on demand count.</summary>
+    /// <remarks>A name the mode lists loose may be a tool of any server (<see cref="Allows"/> takes it so): it counts for
+    /// every server, as one tool of a server counts the server.</remarks>
+    public bool MayUseServer(string server) =>
+        _allMcp || _loose.Count > 0 || _mcpServers.Any(s => McpTool.ToolNamesOf(s) == McpTool.ToolNamesOf(server))
+        || _mcpTools.Any(t => McpTool.BelongsTo(t, server));
+
+    /// <summary>Whether a tool switch's key names a tool the mode keeps: a tool's own name, or <c>server/tool</c> for an MCP
+    /// tool (<c>ToolSwitches.KeyOf</c>).</summary>
+    public bool AllowsKey(string key)
+    {
+        var slash = key.IndexOf('/');
+        return slash > 0 ? Allows(McpTool.BuildName(key[..slash], key[(slash + 1)..])) : Allows(key);
+    }
 
     /// <summary>The paths of the files a call to an edit tool writes, read as the tool reads them (<see cref="ToolArgs"/>:
     /// a number is a name too, a list may come as text); <c>null</c> when the call writes but this cannot name every file
@@ -178,7 +209,11 @@ internal sealed class ModeTools
                 if (tool == "*" ? !tools.TakeCopilotName(group) : !tools.TakeCopilotName(tool)) tools._notCarried.Add(name);
             }
             else if (tool == "*") tools._mcpServers.Add(group);
-            else tools._mcpTools.Add(McpTool.BuildName(group, tool));
+            else
+            {
+                tools._mcpTools.Add(McpTool.BuildName(group, tool));
+                tools._mcpToolsWritten.Add(name);
+            }
         }
         return tools;
     }

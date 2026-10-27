@@ -942,6 +942,30 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="XrayLabelCustom" xml:space="preserve"><value>Benutzerdefinierter System-Prompt</value></data>
   <data name="XrayLabelTemplate" xml:space="preserve"><value>Sitzungsvorlage</value></data>
   <data name="XrayLabelRules" xml:space="preserve"><value>Regeln ({0} angewendet)</value></data>
+  <data name="XrayLabelMode" xml:space="preserve"><value>Modus: {0}</value></data>
+  <data name="ModeModelMissing" xml:space="preserve"><value>{0} verlangt {1}; keines davon ist auf diesem Server. Antwort mit {2}.</value></data>
+  <data name="ModeGone" xml:space="preserve"><value>Dieses Gespräch lief im Modus „{0}“, der nicht mehr gefunden wird: Es geht ohne ihn weiter.</value></data>
+  <data name="ModeUnknown" xml:space="preserve"><value>Kein Modus namens „{0}“. /modes listet die gefundenen Modi.</value></data>
+  <data name="ModesHeader" xml:space="preserve"><value>**Modi** — im Modusauswähler wählen. Ein Modus schränkt nur die Werkzeuge ein; jede Änderung fragt weiterhin zuerst.</value></data>
+  <data name="ModesNone" xml:space="preserve"><value>Kein Modus gefunden. Ein Modus ist eine Markdown-Datei in .inferpal/modes/, ein GitHub-Copilot-Agent in .github/agents/ oder ein Roo-Code-Modus in .roomodes.</value></data>
+  <data name="ModesModel" xml:space="preserve"><value>Modell: {0}</value></data>
+  <data name="ModesModelFirst" xml:space="preserve"><value>Modell: das erste installierte von {0}</value></data>
+  <data name="ModesModelChat" xml:space="preserve"><value>Modell: das des Gesprächs</value></data>
+  <data name="ModesTools" xml:space="preserve"><value>Werkzeuge: {0}</value></data>
+  <data name="ModesToolsAll" xml:space="preserve"><value>Werkzeuge: alle</value></data>
+  <data name="ModesToolsNone" xml:space="preserve"><value>Werkzeuge: keine</value></data>
+  <data name="ModesEditsOnly" xml:space="preserve"><value>bearbeitet nur Dateien, die auf {0} passen</value></data>
+  <data name="ModesNotCarried" xml:space="preserve"><value>nicht übernommen: {0}</value></data>
+  <data name="ModesSetAside" xml:space="preserve"><value>Beiseitegelegt:</value></data>
+  <data name="ModeNoteUnreadable" xml:space="preserve"><value>nicht gelesen: {0}</value></data>
+  <data name="ModeNoteDuplicate" xml:space="preserve"><value>ein Modus namens „{0}“ wurde schon vorher gefunden</value></data>
+  <data name="ModeNoteReservedName" xml:space="preserve"><value>„{0}“ ist der Name eines eigenen Modus von Inferpal</value></data>
+  <data name="ModeNoteSubAgentOnly" xml:space="preserve"><value>nur ein Sub-Agent (user-invocable: false)</value></data>
+  <data name="ModeNoteNoSlug" xml:space="preserve"><value>ein Roo-Modus ohne slug</value></data>
+  <data name="ModeNoteLeaves" xml:space="preserve"><value>ein Link, der aus dem Repository führt: nicht gelesen</value></data>
+  <data name="ModeNoteUnlistable" xml:space="preserve"><value>der Ordner kann nicht aufgelistet werden: {0}</value></data>
+  <data name="ModeNoteNoModes" xml:space="preserve"><value>keine customModes-Liste</value></data>
+  <data name="ModeNoteRulesCut" xml:space="preserve"><value>die Regeln des Modus überschreiten 256 KB: {0} und die folgenden Dateien werden nicht gelesen</value></data>
   <data name="XrayHistory" xml:space="preserve"><value>Konversationsverlauf: {0} Token (Schätzung)</value></data>
   <data name="XrayTools" xml:space="preserve"><value>Mit jeder Runde gesendete Tool-Definitionen: {0} Token (Schätzung)</value></data>
   <data name="XrayToolsOnDemand" xml:space="preserve"><value>{0} {0:MCP-Tool|MCP-Tools} auf Abruf – Versand erst nach dem Laden durch tool_search: {1}</value></data>
@@ -1501,6 +1525,7 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="RepoInstructionStateNotRead" xml:space="preserve"><value>nicht lesbar</value></data>
   <data name="RepoInstructionStateFamilyOff" xml:space="preserve"><value>nicht gelesen: dieses Werkzeug ist in den Einstellungen deaktiviert</value></data>
   <data name="SlashHintInstructions" xml:space="preserve"><value>Listet die Anweisungen des Repositorys für Coding-Agenten auf und was diese Frage sendet</value></data>
+  <data name="SlashHintModes" xml:space="preserve"><value>Listet die gefundenen Modi — Copilot-Agenten, Roo-Modi, .inferpal/modes — und was jeder behält</value></data>
   <data name="SettingsSectionRepoInstructions" xml:space="preserve"><value>Repository-Anweisungen</value></data>
   <data name="SettingsSectionRepoInstructionsDesc" xml:space="preserve"><value>Anweisungsdateien, die dieses Repository Coding-Agenten gibt, gelesen und mit Ihren Fragen gesendet: immer oder wenn die aktive Datei passt. Inferpals eigene Projektdateien folgen danach und haben bei einem Konflikt Vorrang.</value></data>
   <data name="LabelRepoInstructionFamilies" xml:space="preserve"><value>Werkzeuge, deren Dateien gelesen werden</value></data>

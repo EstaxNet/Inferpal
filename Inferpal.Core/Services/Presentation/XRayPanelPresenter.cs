@@ -96,6 +96,7 @@ internal static class XRayPanelPresenter
         PromptSectionKind.Persona  => Strings.XrayLabelPersona + (s.Detail is null ? "" : $" ({s.Detail})"),
         PromptSectionKind.Custom   => Strings.XrayLabelCustom,
         PromptSectionKind.Template => Strings.XrayLabelTemplate,
+        PromptSectionKind.Mode     => Strings.XrayLabelMode(s.Detail ?? "?"),
         PromptSectionKind.Pinned   => "📌 " + s.Detail,
         PromptSectionKind.Rules    => Strings.XrayLabelRules(s.Detail ?? "?"),
         PromptSectionKind.Skills   => Strings.XrayLabelSkills(s.Detail ?? "?"),

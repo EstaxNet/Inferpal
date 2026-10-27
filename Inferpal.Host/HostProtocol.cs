@@ -729,7 +729,9 @@ internal sealed record SessionListResult(List<SessionSummaryDto> Sessions, List<
 
 /// <summary>`session/load` answer: the transcript to re-render (host history already rebuilt), and what the next
 /// question will send — the context gauge's fill (see <see cref="ChatSendResult"/>'s <c>NextTurnTokens</c>).</summary>
-internal sealed record SessionLoadResult(string Name, List<SavedMessageDto> Messages, int NextTurnTokens = 0);
+/// <param name="Mode">The mode the conversation was held in and is held in again (<c>null</c>: none) — the adapter's
+/// selector follows it.</param>
+internal sealed record SessionLoadResult(string Name, List<SavedMessageDto> Messages, int NextTurnTokens = 0, string? Mode = null);
 
 /// <summary>`session/branch` — fork the adapter's transcript at 1-based <paramref name="Turn"/>.</summary>
 internal sealed record SessionBranchParams(int Turn, List<SavedMessageDto> Messages);
@@ -853,6 +855,32 @@ internal sealed record McpServerNameParams(string Name);
 internal sealed record PermissionsTableParams(string? Rules);
 
 internal sealed record PlanModeParams(bool Enabled);
+
+/// <summary>`mode/set` — the mode the person picked for the conversation by its name; <c>null</c> for none.</summary>
+internal sealed record ModeSetParams(string? Name);
+
+/// <summary>A mode as the picker shows it (<see cref="Services.Governance.ChatMode"/>).</summary>
+/// <param name="Origin"><c>inferpal</c>, <c>copilot</c>, <c>roo</c> or <c>user</c>.</param>
+/// <param name="Models">The models it asks for, in order; empty = the conversation's.</param>
+/// <param name="Tools">Its tools in words; <c>null</c> = all.</param>
+/// <param name="EditPattern">The pattern its edits must match, when it narrows them.</param>
+/// <param name="MayWrite">Whether it keeps any tool that can change something.</param>
+/// <param name="Line">The mode on one line, as <c>/modes</c> lists it.</param>
+internal sealed record ModeDto(
+    string Name, string Description, string Source, string Origin, IReadOnlyList<string> Models, IReadOnlyList<string>? Tools,
+    string? EditPattern, bool MayWrite, IReadOnlyList<string> NotCarried, string Line)
+{
+    public static ModeDto Of(Services.Governance.ChatMode m) => new(
+        m.Name, m.Description, m.Source, m.Origin.ToString().ToLowerInvariant(), m.Models, m.Tools?.Words, m.Tools?.EditPatternText,
+        m.Tools?.MayWrite ?? true, m.NotCarried, Services.Commands.ModesCommandHandler.Line(m));
+}
+
+/// <summary>`mode/list` answer: the modes found, the files set aside (each a line, with why), the mode held now.</summary>
+internal sealed record ModeListResult(IReadOnlyList<ModeDto> Modes, IReadOnlyList<string> SetAside, string? Current);
+
+/// <summary>`mode/set` answer: the mode now held (<c>null</c>: none) and the model it answers with when it names one the
+/// server has — or why nothing changed.</summary>
+internal sealed record ModeSetResult(ModeDto? Mode, string? Model = null, string? Refused = null);
 
 /// <summary>One approval rule. <c>Source</c>: team | machine. <c>Status</c>: inForce | ignoredAllow | unreadable.</summary>
 internal sealed record ApprovalRuleRowDto(

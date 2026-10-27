@@ -75,16 +75,18 @@ internal class ConversationStore
     /// aloud: a branch and Visual Studio's archives were written without it, and no ACP client ever listed them.</param>
     /// <param name="currentName">The named session the conversation lives in; recorded for the auto-save slot.</param>
     /// <param name="templateSuffix">The <c>/template</c> mode the conversation is held in, restored with it.</param>
+    /// <param name="mode">The mode the person picked for the conversation (<see cref="ChatMode.Name"/>), restored with it.</param>
     public async Task SaveAsync(string sessionName, IEnumerable<SavedMessage> messages, CancellationToken ct,
                                 string? workspaceRoot, string? parent = null, int? forkTurn = null,
-                                string? currentName = null, string? templateSuffix = null)
+                                string? currentName = null, string? templateSuffix = null, string? mode = null)
     {
         var file = sessionName == AutoSaveSlot ? AutoSaveFile(workspaceRoot) : SessionPath(sessionName);
         Directory.CreateDirectory(Path.GetDirectoryName(file)!);
         var payload = new SessionData(DateTime.UtcNow, messages.ToList(), parent, forkTurn,
                                       string.IsNullOrWhiteSpace(workspaceRoot) ? null : workspaceRoot,
                                       string.IsNullOrWhiteSpace(currentName) ? null : currentName,
-                                      string.IsNullOrWhiteSpace(templateSuffix) ? null : templateSuffix);
+                                      string.IsNullOrWhiteSpace(templateSuffix) ? null : templateSuffix,
+                                      string.IsNullOrWhiteSpace(mode) ? null : mode);
 
         // Write-then-rename: a crash (or a full disk) mid-write must not leave a truncated
         // session behind. It matters more since /branch rewrites the parent file on every fork —
@@ -97,9 +99,9 @@ internal class ConversationStore
 
     /// Auto-saves the current session to "last_session.json".
     public Task AutoSaveAsync(IEnumerable<SavedMessage> messages, CancellationToken ct, string? workspaceRoot = null,
-                              string? currentName = null, string? templateSuffix = null) =>
+                              string? currentName = null, string? templateSuffix = null, string? mode = null) =>
         SaveAsync("last_session", messages, ct, workspaceRoot: workspaceRoot, currentName: currentName,
-                  templateSuffix: templateSuffix);
+                  templateSuffix: templateSuffix, mode: mode);
 
     /// <summary>
     /// <see cref="ForgetAutoSaveAsync"/>, or — when the slot could not be emptied — the notice that says so.
@@ -423,7 +425,10 @@ internal record SessionData(
     [property: JsonPropertyName("current_name")]   string? CurrentName   = null,
     // ⚠ The /template mode the conversation was held in: its greeting ("Code Review mode active") is in the messages, so
     // a load that drops the mode shows a mode no answer follows — a restart of VS Code's host reloads every time.
-    [property: JsonPropertyName("template_suffix")] string? TemplateSuffix = null);
+    [property: JsonPropertyName("template_suffix")] string? TemplateSuffix = null,
+    // The mode the person picked for the conversation: its instructions and tools are the conversation's, and a load
+    // that dropped it would answer the next question as another assistant.
+    [property: JsonPropertyName("mode")]            string? Mode = null);
 
 /// <param name="Run">The run of agent changes the turn this message closes made (<c>HistoryRun.Id</c>); absent when it
 /// changed no file, and from the sessions written before it existed. The only link from a question to the runs that
