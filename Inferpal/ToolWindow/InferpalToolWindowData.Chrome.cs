@@ -244,6 +244,8 @@ internal partial class InferpalToolWindowData
         HintCommands         = Strings.WelcomeHintCommands;
         HintNewLine          = Strings.WelcomeHintNewLine;
         ChatMode             = CurrentMode();
+        RefreshModesSegment();
+        _ = RefreshModesQuietlyAsync();
         RefreshModelButton();
         RefreshWelcome();
         UpdateContextBudget();
@@ -253,6 +255,7 @@ internal partial class InferpalToolWindowData
     {
         IsModelMenuOpen = false;
         IsMoreMenuOpen  = false;
+        IsModeMenuOpen  = false;
     }
 
     /// <summary>The model button, from what is known now: the model, the server, the last check, the VRAM line.</summary>
@@ -375,7 +378,9 @@ internal partial class InferpalToolWindowData
         await RunOnVMContextAsync(() => ActiveModelLabel = model);
     }
 
-    private string CurrentMode() => _planMode ? "plan" : _agentMode ? "agent" : "chat";
+    /// <summary>The composer's switch: "found" while a mode found for the workspace holds the conversation (the
+    /// fourth segment), else Chat, Agent or Plan.</summary>
+    private string CurrentMode() => _heldMode is not null ? "found" : _planMode ? "plan" : _agentMode ? "agent" : "chat";
 
     /// <summary>
     /// Chat, Agent or Plan, as the composer's switch sets them: agent mode is on for Agent and Plan, plan mode for Plan
@@ -388,8 +393,10 @@ internal partial class InferpalToolWindowData
         var plan  = mode == "plan";
         await RunOnVMContextAsync(() =>
         {
+            // Chat, Agent and Plan leave a held mode: one selector.
+            var leftMode = LeaveHeldMode();
             ChatMode = mode;
-            if (IsPlanMode != plan)
+            if (IsPlanMode != plan || leftMode)
             {
                 IsPlanMode = plan;
                 RefreshSystemPrompt();

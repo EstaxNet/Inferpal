@@ -204,6 +204,7 @@ internal partial class InferpalToolWindowData
         string firstUserContent = string.Empty;
         List<SavedMessage> snapshot = [];
         var templateSuffix = string.Empty;
+        string? modeName = null;
         string? root = null;
         var inASlot = false;
 
@@ -220,6 +221,7 @@ internal partial class InferpalToolWindowData
             hasMessages = snapshot.Count > 0;
             if (!hasMessages) return;
             templateSuffix = _activeTemplateSuffix;
+            modeName       = _heldMode?.Name;
             firstUserContent = ConversationArchive.FirstQuestion(snapshot);
         });
 
@@ -233,7 +235,8 @@ internal partial class InferpalToolWindowData
             try
             {
                 var name = ConversationArchive.FirstName(_store, at, firstUserContent);
-                await _store.SaveAsync(name, snapshot, CancellationToken.None, root, templateSuffix: templateSuffix);
+                await _store.SaveAsync(name, snapshot, CancellationToken.None, root, templateSuffix: templateSuffix,
+                                       mode: modeName);
                 _ = RetitleArchiveAsync(name, at, firstUserContent);
             }
             catch (Exception ex)
@@ -259,6 +262,7 @@ internal partial class InferpalToolWindowData
             _sessionStartTime         = null;
             _lastRegenerableMsg       = null;
             _lastContinuableMsg       = null;
+            _modeModelNoticeSaid      = null;   // a new conversation is told again when its mode's models are missing
             _baseSystemPrompt         = BuildSystemPrompt();
             _history               = [new("system", _baseSystemPrompt)];
             _oodaSummary           = string.Empty;
@@ -329,7 +333,7 @@ internal partial class InferpalToolWindowData
                 // The auto-save slot carries the named session it continues: /branch keeps writing to that one.
                 RestoreConversation(session.Messages,
                                     name == "last_session" && !string.IsNullOrEmpty(session.CurrentName) ? session.CurrentName : name,
-                                    session.TemplateSuffix);
+                                    session.TemplateSuffix, session.Mode);
                 // Loaded here, it is this workspace's conversation from now on — whatever solution is opened next.
                 _conversationRoot.Restored(here);
                 IsSessionPanelOpen = false;
@@ -347,10 +351,14 @@ internal partial class InferpalToolWindowData
     /// </summary>
     /// <param name="templateSuffix">The <c>/template</c> mode the conversation was held in — its greeting is among the
     /// messages, so a restore without it shows a mode no answer follows.</param>
-    private void RestoreConversation(IReadOnlyList<SavedMessage> messages, string sessionName, string? templateSuffix)
+    /// <param name="mode">The mode found for the workspace the conversation was held in, held again; <c>null</c> for one
+    /// held in Chat, Agent or Plan.</param>
+    private void RestoreConversation(IReadOnlyList<SavedMessage> messages, string sessionName, string? templateSuffix,
+                                     string? mode)
     {
         Messages.Clear();
         _activeTemplateSuffix     = templateSuffix ?? string.Empty;
+        var modeGone              = HoldRestoredMode(mode);
         _workspaceContextInjected = false;
         _sessionStartTime         = null;
         _lastRegenerableMsg       = null;
@@ -379,6 +387,8 @@ internal partial class InferpalToolWindowData
 
         Messages.Add(_anchor0);
         Messages.Add(_anchor1);
+        // Said after the thread, which shows nothing of the mode it was held in.
+        if (modeGone is not null) InsertThemed(ChatMessageItem.NoticeMsg(modeGone));
     }
 
 
@@ -401,6 +411,7 @@ internal partial class InferpalToolWindowData
         await RunOnVMContextAsync(() =>
         {
             IsPlanMode = !IsPlanMode;   // marshalled like the history it drives
+            if (IsPlanMode) LeaveHeldMode();   // one selector: Plan leaves the mode
             ChatMode   = CurrentMode();
             RefreshSystemPrompt();
         });

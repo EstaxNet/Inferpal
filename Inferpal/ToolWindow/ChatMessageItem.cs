@@ -672,6 +672,11 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     internal static ChatMessageItem TurnMsg(string model) =>
         new() { Role = "turn", Label = model, TurnState = Strings.TurnWorking(1) };
 
+    /// <summary>Where a mode found for the workspace starts holding the conversation: its line, between two rules. Screen
+    /// only — the selector says the mode of a restored conversation.</summary>
+    internal static ChatMessageItem ModeLineMsg(string text) =>
+        new() { Role = "mode", Content = text };
+
     /// <summary>A run line: "N steps · …", folded unless the user keeps tool calls open.</summary>
     internal static ChatMessageItem RunMsg(bool open) =>
         new() { Role = "run", IsExpanded = open };

@@ -946,7 +946,7 @@
   <data name="ModeModelMissing" xml:space="preserve"><value>{0} 要求使用 {1}，但此服务器上都没有。改用 {2} 回答。</value></data>
   <data name="ModeGone" xml:space="preserve"><value>此对话原使用模式“{0}”，现已找不到：将不使用该模式继续。</value></data>
   <data name="ModeUnknown" xml:space="preserve"><value>没有名为“{0}”的模式。/modes 会列出找到的模式。</value></data>
-  <data name="ModesHeader" xml:space="preserve"><value>**模式** — 在模式选择器中选择。模式只会收窄工具；每次更改仍会先征求确认。</value></data>
+  <data name="ModesHeader" xml:space="preserve"><value>**模式** — 在模式选择器中选择。模式只会收窄工具；不会增加任何权限。</value></data>
   <data name="ModesNone" xml:space="preserve"><value>未找到模式。模式可以是 .inferpal/modes/ 中的 Markdown 文件、.github/agents/ 中的 GitHub Copilot 代理，或 .roomodes 中的 Roo Code 模式。</value></data>
   <data name="ModesModel" xml:space="preserve"><value>模型：{0}</value></data>
   <data name="ModesModelFirst" xml:space="preserve"><value>模型：{0} 中第一个已安装的</value></data>
@@ -957,6 +957,14 @@
   <data name="ModesEditsOnly" xml:space="preserve"><value>只编辑匹配 {0} 的文件</value></data>
   <data name="ModesNotCarried" xml:space="preserve"><value>未沿用：{0}</value></data>
   <data name="ModesSetAside" xml:space="preserve"><value>已搁置：</value></data>
+  <data name="ModesSegment" xml:space="preserve"><value>模式</value></data>
+  <data name="ModesSegmentTip" xml:space="preserve"><value>更多模式：此处找到 {0} 个</value></data>
+  <data name="ModesFoundHeader" xml:space="preserve"><value>在此找到</value></data>
+  <data name="ModesFooter" xml:space="preserve"><value>模式只会收窄工具；不会增加任何权限。</value></data>
+  <data name="ModeHeldLine" xml:space="preserve"><value>模式：{0} — 从这个问题起 · {1}</value></data>
+  <data name="ModeReadsOnly" xml:space="preserve"><value>只读取和搜索，不写入</value></data>
+  <data name="ModeMayWrite" xml:space="preserve"><value>可能修改文件 — 每次更改都会先确认</value></data>
+  <data name="ModePickerChatModel" xml:space="preserve"><value>对话所用的模型</value></data>
   <data name="ModeNoteUnreadable" xml:space="preserve"><value>未读取：{0}</value></data>
   <data name="ModeNoteDuplicate" xml:space="preserve"><value>之前已找到名为“{0}”的模式</value></data>
   <data name="ModeNoteReservedName" xml:space="preserve"><value>“{0}”是 Inferpal 自带模式的名称</value></data>

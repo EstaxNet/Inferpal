@@ -96,6 +96,8 @@ internal partial class InferpalToolWindowData
             if (action == RootPinAction.Pin)
             {
                 _indexService.SetRoot(root!);
+                // Another workspace has its own modes: the composer's segment follows.
+                _ = RefreshModesQuietlyAsync();
                 // The repository's MCP servers are read from the root: a new one has its own to ask about — once the turn
                 // that pinned it has ended (a refresh tears every server down, InferpalSettingsData says why).
                 _ = _tools.Mcp.RefreshWhenIdleAsync(() => _sendStarting || IsLoading || GpuScheduler.IsChatActive,
@@ -399,7 +401,7 @@ internal partial class InferpalToolWindowData
     /// <summary>The tool definitions the next chat turn carries — added to the conversation by the pre-send check, the
     /// context gauge and the X-Ray, which otherwise all measured a request half the size of the one sent.</summary>
     private int NextTurnToolTokens() =>
-        Services.Agent.ContextManager.NextTurnToolTokens(_tools, _toolsEnabled, _planMode);
+        Services.Agent.ContextManager.NextTurnToolTokens(_tools, _toolsEnabled, _planMode, _heldMode);
 
     /// <param name="onStep">Where the turn shows its steps (its status bubble).</param>
     private async Task CompactOrTruncateAsync(string model, int toolTokens, Action<string> onStep, CancellationToken ct)
@@ -455,10 +457,18 @@ internal partial class InferpalToolWindowData
     }
 
     // Prompt layering itself lives in SystemPromptBuilder (unit-tested); the VM only
-    // gathers its inputs: project root, active-file relative path, template suffix.
+    // gathers its inputs: project root, active-file relative path, template suffix, the held mode.
     private string BuildSystemPrompt()
     {
         var dir = FindProjectRoot();
+        return LayeredPrompt(dir, _heldMode);
+    }
+
+    /// <summary>The layered system prompt for the project root <paramref name="dir"/>.</summary>
+    /// <param name="mode">The mode the conversation is held in — its instructions, last; <c>null</c> for <c>/task</c> and
+    /// <c>/tdd</c>, whose tools the mode does not narrow.</param>
+    private string LayeredPrompt(string dir, ChatMode? mode)
+    {
         var prompt = new SystemPromptBuilder(_config, EditorName, ContextWindowInUse, _indexService.RootDir).Build(
             ModelPrompts.SystemPrompt,
             PersonaLanguage,
@@ -466,7 +476,8 @@ internal partial class InferpalToolWindowData
             dir,
             ActiveFileRelativeTo(dir),
             _xrayDisabledSections,    // sections switched off from the Context X-Ray panel
-            _activeFilePath);         // scopes the repository's instructions, even outside the solution's folder
+            _activeFilePath,          // scopes the repository's instructions, even outside the solution's folder
+            mode);
         return _planMode ? prompt + PlanModeToolRegistry.SystemPromptSuffix : prompt;
     }
 
@@ -496,11 +507,20 @@ internal partial class InferpalToolWindowData
     private void ApplySystemPrompt()
     {
         if (_history.Count == 0 || _history[0].Role != "system") return;
-        var content = string.IsNullOrEmpty(_recapInSystem)
-            ? _baseSystemPrompt
-            : _baseSystemPrompt + "\n\n## Session Summary\n\n" + _recapInSystem;
-        _history[0] = new ChatMessageDto("system", content);
+        _history[0] = new ChatMessageDto("system", WithRecap(_baseSystemPrompt));
     }
+
+    /// <summary>A system prompt with the session's recap, as the system message carries it.</summary>
+    private string WithRecap(string prompt) =>
+        string.IsNullOrEmpty(_recapInSystem) ? prompt : prompt + "\n\n## Session Summary\n\n" + _recapInSystem;
+
+    /// <summary>The system message as a turn sends it, without the held mode's instructions — <c>/task</c> and
+    /// <c>/tdd</c> keep their own tools, and a mode's ("never edit a file") must not steer them. <c>null</c> without a
+    /// system message.</summary>
+    private string? SystemPromptWithoutMode() =>
+        _history.Count == 0 || _history[0].Role != "system" ? null
+        : _heldMode is null ? _history[0].Content
+        : WithRecap(LayeredPrompt(FindProjectRoot(), mode: null));
 
     // Active editor file path relative to the project root (forward slashes), or null when no file
     // is active or it lives outside the root. Used to scope project rules by glob.

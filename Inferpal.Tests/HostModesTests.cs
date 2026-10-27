@@ -154,6 +154,29 @@ public partial class HostServerTests
     }
 
     [Fact]
+    public async Task TheSelectorsList_SaysEachModesModelAndFile_InTheSelectorsWords()
+    {
+        using var h = CreateHarness();
+        WriteMode(h, "review.md", ReviewMode);
+        h.Fake.ModelNames = ["devstral-small-2", "qwen3.8:27b"];
+        await h.InitializeAsync();
+
+        var list = await Call<ModeListResult>(h, "mode/list", new { models = true });
+        var review = Assert.Single(list.Modes, m => m.Name == "Review");
+        Assert.Equal($"qwen3.8:27b · {Localization.Strings.ModeReadsOnly} · .inferpal/modes/review.md", review.Summary);
+        Assert.Equal(Localization.Strings.ModesSegment, list.Labels!.Segment);
+        Assert.Equal(Localization.Strings.ModesFooter, list.Labels.Footer);
+
+        // Without the server's list, the conversation's model: one question to the server only when the selector asks.
+        var plain = await Call<ModeListResult>(h, "mode/list", new { });
+        Assert.StartsWith(Localization.Strings.ModePickerChatModel, plain.Modes.Single(m => m.Name == "Review").Summary,
+                          StringComparison.Ordinal);
+
+        var set = await Call<ModeSetResult>(h, "mode/set", new { name = "Review" });
+        Assert.Equal(Localization.Strings.ModeHeldLine("Review", Localization.Strings.ModeReadsOnly), set.Mode!.HeldLine);
+    }
+
+    [Fact]
     public async Task TheModesCommand_ListsEachModeAndWhatWasSetAside()
     {
         using var h = CreateHarness();

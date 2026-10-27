@@ -1914,6 +1914,14 @@ internal static class Strings
     public static string ModesEditsOnly(string pattern) => Format(Get(nameof(ModesEditsOnly)), pattern);
     public static string ModesNotCarried(string fields) => Format(Get(nameof(ModesNotCarried)), fields);
     public static string ModesSetAside => Get(nameof(ModesSetAside));
+    public static string ModesSegment => Get(nameof(ModesSegment));
+    public static string ModesSegmentTip(int count) => Format(Get(nameof(ModesSegmentTip)), count);
+    public static string ModesFoundHeader => Get(nameof(ModesFoundHeader));
+    public static string ModesFooter => Get(nameof(ModesFooter));
+    public static string ModeHeldLine(string name, string what) => Format(Get(nameof(ModeHeldLine)), name, what);
+    public static string ModeReadsOnly => Get(nameof(ModeReadsOnly));
+    public static string ModeMayWrite => Get(nameof(ModeMayWrite));
+    public static string ModePickerChatModel => Get(nameof(ModePickerChatModel));
     public static string ModeNoteUnreadable(string detail) => Format(Get(nameof(ModeNoteUnreadable)), detail);
     public static string ModeNoteDuplicate(string name) => Format(Get(nameof(ModeNoteDuplicate)), name);
     public static string ModeNoteReservedName(string name) => Format(Get(nameof(ModeNoteReservedName)), name);

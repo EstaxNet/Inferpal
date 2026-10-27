@@ -3,7 +3,8 @@
 // destroyed on hide: everything re-renders from the 'hydrate' message.
 // No literal user-visible English here — strings go through t() (window.__l10n).
 import type {
-  ApprovalCard, CutCard, InputCard, InputCardField, InputFormAnswer, ModelWait, RewindCard, RunReview, RunReviewLine, RunSummary, SetupPlace, SetupPlan,
+  ApprovalCard, CutCard, InputCard, InputCardField, InputFormAnswer, ModeInfo, ModeLabels, ModelWait, RewindCard, RunReview, RunReviewLine,
+  RunSummary, SetupPlace, SetupPlan,
 } from '../protocol';
 import type {
   ExtToWebview,
@@ -138,6 +139,7 @@ function closeMenus(): void {
   modelPop.hidden = true;
   moreMenu.hidden = true;
   plusMenu.hidden = true;
+  modeMenu.hidden = true;
 }
 
 function renderModelMenu(): void {
@@ -198,7 +200,7 @@ moreBtn.addEventListener('click', () => {
 
 document.addEventListener('mousedown', (e) => {
   const target = e.target as Node;
-  if (![modelBtn, moreBtn, plusBtn, modelPop, moreMenu, plusMenu].some((el) => el.contains(target))) {
+  if (![modelBtn, moreBtn, plusBtn, modelPop, moreMenu, plusMenu, foundBtn, modeMenu].some((el) => el.contains(target))) {
     closeMenus();
   }
 });
@@ -306,12 +308,168 @@ for (const [mode, label, tip] of [
   b.setAttribute('role', 'radio');
   b.textContent = label;
   b.title = tip;
-  b.addEventListener('click', () => {
-    applyModeTo(mode);
-    post({ type: 'setMode', mode });
-  });
+  b.addEventListener('click', () => pickOwnMode(mode));
   modeButtons.set(mode, b);
   modeGroup.appendChild(b);
+}
+
+function pickOwnMode(mode: 'chat' | 'agent' | 'plan'): void {
+  heldMode = null;
+  updateFoundModes();
+  applyModeTo(mode);
+  post({ type: 'setMode', mode });
+}
+
+/** The modes found for the workspace (`mode/list`), the one held for the conversation, and the selector's words — all
+ *  from the host, in the person's language. */
+let foundModes: ModeInfo[] = [];
+let heldMode: string | null = null;
+let modeLabels: ModeLabels | null = null;
+
+/** The fourth segment: the held mode's name, or "Modes" opening the list of the modes found — there only when there
+ *  are some (or one is held). Its own group, drawn joined to the first: a long name gives way without wrapping the
+ *  toolbar. */
+const foundGroup = document.createElement('div');
+foundGroup.id = 'foundgroup';
+foundGroup.hidden = true;
+const foundBtn = document.createElement('button');
+foundBtn.id = 'foundmodes';
+foundBtn.setAttribute('aria-haspopup', 'menu');
+const foundLabel = document.createElement('span');
+foundBtn.append(foundLabel, icon('chevronUp', 11));
+foundGroup.appendChild(foundBtn);
+
+const modeMenu = document.createElement('div');
+modeMenu.id = 'modemenu';
+modeMenu.className = 'menu';
+modeMenu.setAttribute('role', 'menu');
+modeMenu.hidden = true;
+document.body.appendChild(modeMenu);
+
+foundBtn.addEventListener('click', () => {
+  const open = modeMenu.hidden;
+  closeMenus();
+  if (!open) {
+    return;
+  }
+  renderModeMenu();
+  // Read again as it opens: a mode file added or edited since shows here.
+  post({ type: 'modesOpen' });
+  // The keyboard picks too: the list takes the focus on the mode held, or its first row.
+  setTimeout(() => (modeMenu.querySelector<HTMLElement>('.mode-item.checked') ?? modeMenu.querySelector<HTMLElement>('.mode-item'))?.focus(), 0);
+  // The composer is at the bottom: the list opens upwards, over the conversation, the width of the panel.
+  const r = foundBtn.getBoundingClientRect();
+  modeMenu.style.left = '10px';
+  modeMenu.style.right = '10px';
+  modeMenu.style.top = '';
+  modeMenu.style.bottom = `${document.documentElement.clientHeight - r.top + 4}px`;
+  modeMenu.hidden = false;
+});
+
+function updateFoundModes(): void {
+  foundGroup.hidden = foundModes.length === 0 && heldMode === null;
+  foundLabel.textContent = heldMode ?? modeLabels?.segment ?? '';
+  const held = foundModes.find((m) => m.name === heldMode);
+  foundBtn.title = held ? `${held.name} — ${held.summary}` : modeLabels?.segmentTip ?? '';
+  foundBtn.setAttribute('aria-label', foundBtn.title || foundLabel.textContent);
+  foundBtn.classList.toggle('on', heldMode !== null);
+  foundBtn.setAttribute('aria-expanded', String(!modeMenu.hidden));
+  applyModeTo(currentMode());
+  if (!modeMenu.hidden) {
+    renderModeMenu();
+  }
+}
+
+/** Inferpal's three modes, then the modes found here — each with what it may do and its file —, then the rule that
+ *  holds for all of them. */
+function renderModeMenu(): void {
+  modeMenu.textContent = '';
+  for (const [mode, label, tip] of [
+    ['chat', t('modeChat'), t('modeChatTip')],
+    ['agent', t('modeAgent'), t('modeAgentTip')],
+    ['plan', t('modePlan'), t('modePlanTip')],
+  ] as const) {
+    modeMenu.appendChild(modeItem(label, tip, null, heldMode === null && currentMode() === mode, () => pickOwnMode(mode)));
+  }
+  if (foundModes.length > 0) {
+    const header = document.createElement('div');
+    header.className = 'menu-section';
+    header.textContent = modeLabels?.header ?? '';
+    modeMenu.appendChild(header);
+    for (const m of foundModes) {
+      modeMenu.appendChild(modeItem(m.name, m.description, m.summary, heldMode === m.name, () => {
+        heldMode = m.name;
+        updateFoundModes();
+        post({ type: 'setFoundMode', name: m.name });
+      }));
+    }
+  }
+  if (modeLabels?.footer) {
+    const foot = document.createElement('div');
+    foot.className = 'menu-foot';
+    foot.textContent = modeLabels.footer;
+    modeMenu.appendChild(foot);
+  }
+}
+
+/** One mode of the list: its name and what it is for, and — for a mode found here — its model, tools and file. */
+function modeItem(name: string, description: string, summary: string | null, checked: boolean, onPick: () => void): HTMLElement {
+  const item = document.createElement('div');
+  item.className = 'menu-item mode-item' + (checked ? ' checked' : '');
+  item.setAttribute('role', 'menuitemradio');
+  item.setAttribute('aria-checked', String(checked));
+  item.tabIndex = 0;
+  const mark = document.createElement('span');
+  mark.className = 'menu-mark';
+  if (checked) {
+    mark.appendChild(icon('check', 12));
+  }
+  const text = document.createElement('span');
+  text.className = 'mode-text';
+  const first = document.createElement('span');
+  const strong = document.createElement('strong');
+  strong.textContent = name;
+  first.appendChild(strong);
+  if (description) {
+    const desc = document.createElement('span');
+    desc.className = 'mode-desc';
+    desc.textContent = ` — ${description}`;
+    first.appendChild(desc);
+  }
+  text.appendChild(first);
+  if (summary) {
+    const sum = document.createElement('span');
+    sum.className = 'mode-sum';
+    sum.textContent = summary;
+    text.appendChild(sum);
+  }
+  item.append(mark, text);
+  item.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    closeMenus();
+    onPick();
+  });
+  item.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      closeMenus();
+      foundBtn.focus();
+      onPick();
+    }
+  });
+  return item;
+}
+
+/** Where a mode starts in the thread: its line, between two rules. */
+function addModeLine(text: string): void {
+  const line = document.createElement('div');
+  line.className = 'mode-line';
+  line.setAttribute('role', 'note');
+  const words = document.createElement('span');
+  words.textContent = text;
+  line.appendChild(words);
+  messagesEl.appendChild(line);
+  turn = null;
 }
 
 function currentMode(): 'chat' | 'agent' | 'plan' {
@@ -319,9 +477,11 @@ function currentMode(): 'chat' | 'agent' | 'plan' {
 }
 
 function applyModeTo(mode: 'chat' | 'agent' | 'plan'): void {
+  // A held mode is the fourth segment's: none of Inferpal's three is on then.
   for (const [m, b] of modeButtons) {
-    b.setAttribute('aria-checked', String(m === mode));
-    b.classList.toggle('on', m === mode);
+    const on = heldMode === null && m === mode;
+    b.setAttribute('aria-checked', String(on));
+    b.classList.toggle('on', on);
   }
 }
 
@@ -373,7 +533,7 @@ sendBtn.addEventListener('click', () => {
 });
 const toolSpacer = document.createElement('span');
 toolSpacer.className = 'spacer';
-toolbarEl.append(plusBtn, modeGroup, toolSpacer, ring, sendBtn);
+toolbarEl.append(plusBtn, modeGroup, foundGroup, toolSpacer, ring, sendBtn);
 
 /** No end notice offers Continue any more: another turn starts, or the gesture was used. */
 function forgetContinue(): void {
@@ -3053,6 +3213,8 @@ function renderTranscript(transcript: WvTranscriptItem[], running = false): void
   for (const item of transcript) {
     if (item.role === 'tool') {
       addToolBubble(item, toolBubblesExpanded);
+    } else if (item.role === 'status' && item.modeLine) {
+      addModeLine(item.text);
     } else if (item.role === 'input') {
       ensureTurn().body.appendChild(inputReceiptElement(item.text));
     } else if (item.role === 'user' && item.note) {
@@ -3266,6 +3428,15 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       break;
     case 'density':
       document.body.classList.toggle('ip-compact', msg.compact);
+      break;
+    case 'modes':
+      foundModes = msg.modes;
+      heldMode = msg.current;
+      modeLabels = msg.labels;
+      updateFoundModes();
+      break;
+    case 'modeLine':
+      addModeLine(msg.text);
       break;
     case 'planMode':
       applyPlanMode(msg.enabled);

@@ -866,17 +866,30 @@ internal sealed record ModeSetParams(string? Name);
 /// <param name="EditPattern">The pattern its edits must match, when it narrows them.</param>
 /// <param name="MayWrite">Whether it keeps any tool that can change something.</param>
 /// <param name="Line">The mode on one line, as <c>/modes</c> lists it.</param>
+/// <param name="Summary">The selector's second line: the model it answers with, what it may do, its file.</param>
+/// <param name="HeldLine">The line the thread shows where the mode starts.</param>
 internal sealed record ModeDto(
     string Name, string Description, string Source, string Origin, IReadOnlyList<string> Models, IReadOnlyList<string>? Tools,
-    string? EditPattern, bool MayWrite, IReadOnlyList<string> NotCarried, string Line)
+    string? EditPattern, bool MayWrite, IReadOnlyList<string> NotCarried, string Line, string Summary, string HeldLine)
 {
-    public static ModeDto Of(Services.Governance.ChatMode m) => new(
+    /// <param name="answering">The model it answers with on this server, when known.</param>
+    public static ModeDto Of(Services.Governance.ChatMode m, string? answering = null) => new(
         m.Name, m.Description, m.Source, m.Origin.ToString().ToLowerInvariant(), m.Models, m.Tools?.Words, m.Tools?.EditPatternText,
-        m.Tools?.MayWrite ?? true, m.NotCarried, Services.Commands.ModesCommandHandler.Line(m));
+        m.Tools?.MayWrite ?? true, m.NotCarried, Services.Commands.ModesCommandHandler.Line(m),
+        ModePresenter.Summary(m, answering), ModePresenter.HeldLine(m));
 }
 
-/// <summary>`mode/list` answer: the modes found, the files set aside (each a line, with why), the mode held now.</summary>
-internal sealed record ModeListResult(IReadOnlyList<ModeDto> Modes, IReadOnlyList<string> SetAside, string? Current);
+/// <summary>`mode/list` — <paramref name="Models"/> asks the server which model each mode answers with (the selector
+/// shows it); without, nothing is asked of the server.</summary>
+internal sealed record ModeListParams(bool Models = false);
+
+/// <summary>The selector's own words, in the person's language: the segment, its tooltip, the list's heading and foot.</summary>
+internal sealed record ModeLabelsDto(string Segment, string SegmentTip, string Header, string Footer);
+
+/// <summary>`mode/list` answer: the modes found, the files set aside (each a line, with why), the mode held now, and the
+/// selector's words.</summary>
+internal sealed record ModeListResult(IReadOnlyList<ModeDto> Modes, IReadOnlyList<string> SetAside, string? Current,
+                                      ModeLabelsDto? Labels = null);
 
 /// <summary>`mode/set` answer: the mode now held (<c>null</c>: none) and the model it answers with when it names one the
 /// server has — or why nothing changed.</summary>

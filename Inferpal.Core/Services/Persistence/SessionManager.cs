@@ -115,7 +115,8 @@ internal static class SessionManager
     /// receipt (<see cref="Presentation.InputCard.ReceiptRole"/>), which is saved.
     /// </summary>
     public static readonly IReadOnlySet<string> ScreenOnlyRoles =
-        new HashSet<string>(StringComparer.Ordinal) { "anchor", "status", "turn", "run", "result", "review", "rewind", "approval", Presentation.InputCard.CardRole };
+        new HashSet<string>(StringComparer.Ordinal) { "anchor", "status", "turn", "run", "result", "review", "rewind", "approval", "mode",
+          Presentation.InputCard.CardRole };
 
     /// <summary>
     /// Maps the chat list to persistable messages: drops what only the screen holds (<see cref="ScreenOnlyRoles"/>),

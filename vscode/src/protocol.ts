@@ -673,6 +673,42 @@ export interface SessionLoadResult {
   messages: SavedMessage[];
   /** What the next question will send: the context gauge's fill for the conversation just loaded. */
   nextTurnTokens?: number;
+  /** The mode the conversation is held in again (`null`: none) — the selector follows it. */
+  mode?: string | null;
+}
+
+/** A mode found for the workspace (`ModeDto`): what the selector shows of it. */
+export interface ModeInfo {
+  name: string;
+  description: string;
+  source: string;
+  /** The model it answers with, what it may do, its file — in the person's language. */
+  summary: string;
+  /** The line the thread shows where the mode starts. */
+  heldLine: string;
+}
+
+/** The selector's own words, in the person's language (`ModeLabelsDto`). */
+export interface ModeLabels {
+  segment: string;
+  segmentTip: string;
+  header: string;
+  footer: string;
+}
+
+/** `mode/list` answer: the modes found, the files set aside, the mode held, the selector's words. */
+export interface ModeListResult {
+  modes: ModeInfo[];
+  setAside: string[];
+  current?: string | null;
+  labels?: ModeLabels | null;
+}
+
+/** `mode/set` answer: the mode now held (`null`: none), or why nothing changed. */
+export interface ModeSetResult {
+  mode?: ModeInfo | null;
+  model?: string | null;
+  refused?: string | null;
 }
 
 /** session/branch answer: the new branch, its parent and the truncated transcript to render. */

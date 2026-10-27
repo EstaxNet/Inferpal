@@ -46,14 +46,14 @@ internal partial class InferpalToolWindowData
         var root     = FindProjectRoot();
         var sections = new SystemPromptBuilder(_config, EditorName, ContextWindowInUse, _indexService.RootDir).BuildSections(
             ModelPrompts.SystemPrompt, PersonaLanguage, _activeTemplateSuffix, root, ActiveFileRelativeTo(root),
-            _xrayDisabledSections, _activeFilePath);
+            _xrayDisabledSections, _activeFilePath, _heldMode);
         return XRayPanelPresenter.Build(
             sections, _xrayDisabledSections,
             AgentOrchestrator.EstimateConversationTokens(_history), ContextWindowInUse,
             toolTokens: NextTurnToolTokens(),
             questionLayersInHistory: ActiveFileContext.ToSend(BuildActiveFileBlock(), _history) is null,
-            toolsOnDemand: Services.Agent.ContextManager.NextTurnToolsOnDemand(_tools, _toolsEnabled, _planMode),
-            turnedOff: Services.Agent.ContextManager.NextTurnTurnedOff(_tools, _toolsEnabled, _planMode));
+            toolsOnDemand: Services.Agent.ContextManager.NextTurnToolsOnDemand(_tools, _toolsEnabled, _planMode, _heldMode),
+            turnedOff: Services.Agent.ContextManager.NextTurnTurnedOff(_tools, _toolsEnabled, _planMode, _heldMode));
     }
 
     /// <summary>The tools as the settings' Tools page lists them, read on the VM context.</summary>

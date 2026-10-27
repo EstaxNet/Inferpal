@@ -18,7 +18,7 @@
   <a href="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml"><img src="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/tests-7447%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-7452%20passing-brightgreen" alt="Tests">
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/Visual%20Studio-install-5C2D91" alt="Install for Visual Studio"></a>
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><img src="https://img.shields.io/badge/VS%20Code-install-007ACC" alt="Install for VS Code"></a>
 </p>
@@ -161,6 +161,9 @@ or `/import roo` brings your models, rules, prompts and MCP servers over — [ho
   **@Docs** to index a documentation site.
 - **Your repository's setup, read as it is** — `AGENTS.md`, `CLAUDE.md`, the Copilot, Cursor, Cline, Roo and Continue
   instruction files, and `.aiignore`-style files, honoured by everything that reads for the model.
+- **Modes, yours or your repository's** — beside Chat, Agent and Plan, pick a mode found for the workspace: your own,
+  GitHub Copilot's custom agents or Roo Code's custom modes, read as they are. It brings its instructions, model, tools
+  and effort, and adds no permission. [Modes](docs/configuration.md#modes)
 - **Work beside you** — `/task` investigates in the background while you code; `/debug` drives a real debug session
   once you approve it.
 - **See what the model sees** — a gauge shows how full its window is, and `/xray` what fills it, layer by layer.

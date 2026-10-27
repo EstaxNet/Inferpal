@@ -946,7 +946,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="ModeModelMissing" xml:space="preserve"><value>{0} prosi o {1}; żadnego z nich nie ma na tym serwerze. Odpowiada {2}.</value></data>
   <data name="ModeGone" xml:space="preserve"><value>Ta rozmowa była prowadzona w trybie „{0}”, którego już nie ma: toczy się dalej bez niego.</value></data>
   <data name="ModeUnknown" xml:space="preserve"><value>Nie ma trybu o nazwie „{0}”. /modes wyświetla znalezione tryby.</value></data>
-  <data name="ModesHeader" xml:space="preserve"><value>**Tryby** — wybierz jeden w przełączniku trybu. Tryb tylko zawęża narzędzia; każda zmiana nadal najpierw pyta.</value></data>
+  <data name="ModesHeader" xml:space="preserve"><value>**Tryby** — wybierz jeden w przełączniku trybu. Tryb tylko zawęża narzędzia; nie nadaje żadnych uprawnień.</value></data>
   <data name="ModesNone" xml:space="preserve"><value>Nie znaleziono trybu. Tryb to plik Markdown w .inferpal/modes/, agent GitHub Copilot w .github/agents/ lub tryb Roo Code w .roomodes.</value></data>
   <data name="ModesModel" xml:space="preserve"><value>model: {0}</value></data>
   <data name="ModesModelFirst" xml:space="preserve"><value>model: pierwszy zainstalowany z {0}</value></data>
@@ -957,6 +957,14 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="ModesEditsOnly" xml:space="preserve"><value>edytuje tylko pliki pasujące do {0}</value></data>
   <data name="ModesNotCarried" xml:space="preserve"><value>nieprzeniesione: {0}</value></data>
   <data name="ModesSetAside" xml:space="preserve"><value>Pominięte:</value></data>
+  <data name="ModesSegment" xml:space="preserve"><value>Tryby</value></data>
+  <data name="ModesSegmentTip" xml:space="preserve"><value>Więcej trybów: znaleziono tu {0} {0:tryb|tryby|trybów}</value></data>
+  <data name="ModesFoundHeader" xml:space="preserve"><value>Znalezione tutaj</value></data>
+  <data name="ModesFooter" xml:space="preserve"><value>Tryb tylko zawęża narzędzia; nie nadaje żadnych uprawnień.</value></data>
+  <data name="ModeHeldLine" xml:space="preserve"><value>Tryb: {0} — od tego pytania · {1}</value></data>
+  <data name="ModeReadsOnly" xml:space="preserve"><value>czyta i szuka, nic nie zapisuje</value></data>
+  <data name="ModeMayWrite" xml:space="preserve"><value>może zmieniać pliki — każda zmiana najpierw pyta</value></data>
+  <data name="ModePickerChatModel" xml:space="preserve"><value>model rozmowy</value></data>
   <data name="ModeNoteUnreadable" xml:space="preserve"><value>nie odczytano: {0}</value></data>
   <data name="ModeNoteDuplicate" xml:space="preserve"><value>wcześniej znaleziono tryb o nazwie „{0}”</value></data>
   <data name="ModeNoteReservedName" xml:space="preserve"><value>„{0}” to nazwa jednego z trybów Inferpal</value></data>

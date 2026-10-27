@@ -27,7 +27,8 @@ public class StartupNoticeKeepsLastSessionTests
         Assert.Contains("this.transcript.push(...startNotices);", ready, StringComparison.Ordinal);
 
         var has = WebviewRebuildTests.Body(Provider(), "private hasConversation(");
-        Assert.Contains("this.transcript.some((m) => !m.notice)", has, StringComparison.Ordinal);
+        // A mode's line, never saved, is no conversation either.
+        Assert.Contains("this.transcript.some((m) => !m.notice && !m.modeLine)", has, StringComparison.Ordinal);
     }
 
     [Fact]

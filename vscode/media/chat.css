@@ -596,7 +596,9 @@ body.vscode-high-contrast-light {
 body.vscode-high-contrast .bubble.user,
 body.vscode-high-contrast-light .bubble.user,
 body.vscode-high-contrast #modes button.on,
-body.vscode-high-contrast-light #modes button.on {
+body.vscode-high-contrast-light #modes button.on,
+body.vscode-high-contrast #foundmodes.on,
+body.vscode-high-contrast-light #foundmodes.on {
   outline: 1px solid var(--vscode-contrastBorder, var(--vscode-focusBorder));
 }
 
@@ -1870,7 +1872,8 @@ kbd {
   color: var(--vscode-foreground);
 }
 
-#modes {
+#modes,
+#foundgroup {
   display: flex;
   height: 28px;
   padding: 2px;
@@ -1879,7 +1882,8 @@ kbd {
   background: var(--vscode-sideBar-background);
 }
 
-#modes button {
+#modes button,
+#foundmodes {
   padding: 0 10px;
   border: 0;
   border-radius: 5px;
@@ -1887,10 +1891,113 @@ kbd {
   color: var(--ip-muted);
 }
 
-#modes button.on {
+#modes button.on,
+#foundmodes.on {
   background: var(--ip-chip);
   color: var(--vscode-foreground);
   font-weight: 600;
+}
+
+/* The fourth segment, joined to the first: the held mode's name, or "Modes" opening the list of the modes found. A
+   long name never pushes the send button to a second line: the group's basis is its chevron (only that wraps the
+   toolbar), it takes the free space before the spacer does, up to its content, and the name gives way. */
+#modes:has(+ #foundgroup:not([hidden])) {
+  border-right: 0;
+  border-radius: 7px 0 0 7px;
+}
+
+#foundgroup {
+  flex: 1000 1 0;
+  box-sizing: border-box;
+  min-width: 36px;
+  max-width: max-content;
+  margin-left: -8px;
+  border-left: 0;
+  border-radius: 0 7px 7px 0;
+}
+
+#foundmodes {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 116px;
+}
+
+#foundmodes svg {
+  flex: none;
+}
+
+#foundmodes span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#modemenu .mode-item {
+  align-items: flex-start;
+  white-space: normal;
+}
+
+#modemenu .mode-item:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+#modemenu .mode-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+#modemenu .mode-desc,
+#modemenu .mode-sum {
+  color: var(--ip-muted);
+}
+
+#modemenu .mode-sum {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+#modemenu .menu-section {
+  margin-top: 4px;
+  padding: 6px 8px 2px;
+  border-top: 1px solid var(--ip-line);
+  color: var(--ip-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+#modemenu .menu-foot {
+  margin-top: 4px;
+  padding: 6px 8px 4px;
+  border-top: 1px solid var(--ip-line);
+  color: var(--ip-muted);
+  font-size: 12px;
+  white-space: normal;
+}
+
+/* Where a mode starts in the thread: its line, between two rules. */
+.mode-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0;
+  color: var(--ip-muted);
+  font-size: 12px;
+}
+
+.mode-line::before,
+.mode-line::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--ip-line);
 }
 
 #ring {
@@ -1938,8 +2045,15 @@ kbd {
     gap: 6px;
   }
 
-  #modes button {
+  #modes button,
+  #foundmodes {
     padding: 0 7px;
+  }
+
+  /* The toolbar's gap, which the joined group takes back. */
+  #foundgroup {
+    min-width: 30px;
+    margin-left: -6px;
   }
 
   #ring > span {

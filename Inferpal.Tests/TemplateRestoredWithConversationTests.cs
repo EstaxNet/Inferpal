@@ -110,13 +110,22 @@ public partial class HostServerTests
         var pending    = Code("InferpalToolWindowData.PendingPrompt.cs");
         var history    = Code("InferpalToolWindowData.PromptHistory.cs");
 
-        // Restored with its mode, at every door that restores one.
+        // Restored with its mode — the /template one and the mode found for the workspace —, at every door that restores
+        // one.
         Assert.Contains("_activeTemplateSuffix     = templateSuffix ?? string.Empty;", connection);
-        Assert.Contains("session.TemplateSuffix);", connection);                       // a session loaded
-        Assert.Contains("RestoreConversation(session.Messages, target, session.TemplateSuffix);", history);   // a branch switched to
+        Assert.Contains("var modeGone              = HoldRestoredMode(mode);", connection);
+        Assert.Contains("session.TemplateSuffix, session.Mode);", connection);                       // a session loaded
+        Assert.Contains("RestoreConversation(session.Messages, target, session.TemplateSuffix, session.Mode);", history);   // a branch switched to
+        Assert.Contains("RestoreConversation(plan.BranchMessages, keepsAQuestion ? plan.BranchName : string.Empty, templateSuffix, modeName);",
+                        history);   // a branch made
         // Saved with its mode: the auto-save slot, the archive of /clear (read with the snapshot), a branch.
-        Assert.Contains("templateSuffix: templateSuffix);", pending);
-        Assert.Contains("await _store.SaveAsync(name, snapshot, CancellationToken.None, root, templateSuffix: templateSuffix);", connection);
-        Assert.Contains("forkTurn: plan.ForkTurn, templateSuffix: templateSuffix);", history);
+        Assert.Contains("templateSuffix: templateSuffix, mode: modeName);", pending);
+        Assert.Contains("await _store.SaveAsync(name, snapshot, CancellationToken.None, root, templateSuffix: templateSuffix,", connection);
+        Assert.Contains("forkTurn: plan.ForkTurn, templateSuffix: templateSuffix,", history);
+        Assert.Equal(1, CountOf(connection, "mode: modeName);"));
+        Assert.Equal(2, CountOf(history, "mode: modeName);"));
     }
+
+    private static int CountOf(string text, string what) =>
+        (text.Length - text.Replace(what, string.Empty, StringComparison.Ordinal).Length) / what.Length;
 }

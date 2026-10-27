@@ -110,7 +110,7 @@ internal partial class InferpalToolWindowData
 
             await RunOnVMContextAsync(() =>
             {
-                RestoreConversation(session.Messages, target, session.TemplateSuffix);
+                RestoreConversation(session.Messages, target, session.TemplateSuffix, session.Mode);
                 RefreshSessionsList();
                 ScrollToBottom();
             });
@@ -136,18 +136,21 @@ internal partial class InferpalToolWindowData
         // The parent goes to disk first — with the conversation as it stands now, which may have
         // moved on since it was loaded: forking must never be what loses the discarded half.
         var templateSuffix = _activeTemplateSuffix;   // the branch is the same conversation, cut: same mode
+        var modeName       = _heldMode?.Name;
         await _store.SaveAsync(plan.ParentName, plan.ParentMessages, ct, root,
-                               parent: plan.ParentParent, forkTurn: plan.ParentForkTurn, templateSuffix: templateSuffix);
+                               parent: plan.ParentParent, forkTurn: plan.ParentForkTurn, templateSuffix: templateSuffix,
+                               mode: modeName);
 
         // Cut before every question (going back to the first one), it is a new conversation: no empty session is written.
         var keepsAQuestion = plan.BranchMessages.Any(SessionManager.IsQuestion);
         if (keepsAQuestion)
             await _store.SaveAsync(plan.BranchName, plan.BranchMessages, ct, root,
-                                   parent: plan.ParentName, forkTurn: plan.ForkTurn, templateSuffix: templateSuffix);
+                                   parent: plan.ParentName, forkTurn: plan.ForkTurn, templateSuffix: templateSuffix,
+                                   mode: modeName);
 
         await RunOnVMContextAsync(() =>
         {
-            RestoreConversation(plan.BranchMessages, keepsAQuestion ? plan.BranchName : string.Empty, templateSuffix);
+            RestoreConversation(plan.BranchMessages, keepsAQuestion ? plan.BranchName : string.Empty, templateSuffix, modeName);
             RefreshSessionsList();
             ScrollToBottom();
         });

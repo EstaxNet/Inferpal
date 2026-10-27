@@ -9,7 +9,8 @@ import { WvTranscriptItem } from './webviewMessages';
 
 /** Persistable view of a transcript (the shape the VS extension saves). */
 export function toSavedMessages(transcript: readonly WvTranscriptItem[]): SavedMessage[] {
-  return transcript.map((item) =>
+  // The line where a mode starts is screen only, as in Visual Studio: the selector says a restored conversation's mode.
+  return transcript.filter((item) => !item.modeLine).map((item) =>
     item.savedAs
       ? item.savedAs
       : item.role === 'tool'

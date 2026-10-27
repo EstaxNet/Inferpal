@@ -93,10 +93,12 @@ public sealed class SilentGestureTests
     /// take with it, and with no host there is nothing to keep.
     /// <c>draftChanged</c> runs at each keystroke, and nobody waits on it: the chips it may find are a suggestion, and
     /// with no host there is none — as in Visual Studio with the search off. The message typed says its own refusal.
+    /// <c>refreshModes</c> runs at the host's start, after a turn, a load or a reloaded view, and as the mode list opens:
+    /// nobody waits on it — the list is drawn from what the view holds, and picking a mode goes through the funnel.
     /// </remarks>
     private static readonly string[] BackgroundPaths =
         ["onHostReady", "configSaved", "pollBackendStatus", "refreshModelList", "refreshCommandList",
-         "autoSaveLast", "archiveConversation", "refreshRunningWork", "draftChanged"];
+         "autoSaveLast", "archiveConversation", "refreshRunningWork", "draftChanged", "refreshModes"];
 
     [Fact]
     public void EveryGestureThatNeedsTheHost_SaysWhenItCannotRun()

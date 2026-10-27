@@ -79,7 +79,7 @@ public sealed class CrossEditorSessionRolesTests
         Assert.Contains("} else if (m.role !== 'status') {", restore, StringComparison.Ordinal);
         Assert.Contains("notice: true, timestamp: m.timestamp ?? undefined, savedAs: m", restore, StringComparison.Ordinal);
         // …written back first, before the rule that would rewrite it as a notice.
-        Assert.Matches(@"transcript\.map\(\(item\) =>\s*item\.savedAs\s*\?\s*item\.savedAs", restore);
+        Assert.Matches(@"\.map\(\(item\) =>\s*item\.savedAs\s*\?\s*item\.savedAs", restore);
     }
 
     [Fact]

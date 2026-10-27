@@ -90,7 +90,7 @@ public sealed class ReasoningEffortSettingTests
     /// <summary>Each chat turn's call, and the code-action flag it passes: a question is not a code action. The host's
     /// carry the mode the person picked, whose effort wins over the chat's.</summary>
     [Theory]
-    [InlineData("Inferpal/ToolWindow/InferpalToolWindowData.ChatTurn.cs", "ChatTurnPolicy.TurnEffort(_config, codeAction: oneTimeModel is not null)")]
+    [InlineData("Inferpal/ToolWindow/InferpalToolWindowData.ChatTurn.cs", "ChatTurnPolicy.TurnEffort(_config, codeAction: oneTimeModel is not null, turnMode)")]
     [InlineData("Inferpal.Host/HostServer.cs", "ChatTurnPolicy.TurnEffort(s.Config, codeAction: false, mode)|ChatTurnPolicy.TurnEffort(s.Config, p.CodeAction, mode)")]
     public void EveryChatTurnCall_SaysWhetherItIsACodeAction(string file, string expected)
     {

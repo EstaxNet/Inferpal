@@ -946,7 +946,7 @@
   <data name="ModeModelMissing" xml:space="preserve"><value>{0} запрашивает {1}; ни одной из них нет на этом сервере. Отвечает {2}.</value></data>
   <data name="ModeGone" xml:space="preserve"><value>Этот разговор шёл в режиме «{0}», который больше не найден: он продолжается без него.</value></data>
   <data name="ModeUnknown" xml:space="preserve"><value>Нет режима с именем «{0}». /modes показывает найденные режимы.</value></data>
-  <data name="ModesHeader" xml:space="preserve"><value>**Режимы** — выберите в переключателе режима. Режим только сужает инструменты; каждое изменение по-прежнему сначала спрашивает.</value></data>
+  <data name="ModesHeader" xml:space="preserve"><value>**Режимы** — выберите в переключателе режима. Режим только сужает инструменты; он не даёт никаких разрешений.</value></data>
   <data name="ModesNone" xml:space="preserve"><value>Режимов не найдено. Режим — это файл Markdown в .inferpal/modes/, агент GitHub Copilot в .github/agents/ или режим Roo Code в .roomodes.</value></data>
   <data name="ModesModel" xml:space="preserve"><value>модель: {0}</value></data>
   <data name="ModesModelFirst" xml:space="preserve"><value>модель: первая установленная из {0}</value></data>
@@ -957,6 +957,14 @@
   <data name="ModesEditsOnly" xml:space="preserve"><value>редактирует только файлы, подходящие под {0}</value></data>
   <data name="ModesNotCarried" xml:space="preserve"><value>не переносится: {0}</value></data>
   <data name="ModesSetAside" xml:space="preserve"><value>Отложено:</value></data>
+  <data name="ModesSegment" xml:space="preserve"><value>Режимы</value></data>
+  <data name="ModesSegmentTip" xml:space="preserve"><value>Другие режимы: здесь найдено {0} {0:режим|режима|режимов}</value></data>
+  <data name="ModesFoundHeader" xml:space="preserve"><value>Найдено здесь</value></data>
+  <data name="ModesFooter" xml:space="preserve"><value>Режим только сужает инструменты; он не даёт никаких разрешений.</value></data>
+  <data name="ModeHeldLine" xml:space="preserve"><value>Режим: {0} — с этого вопроса · {1}</value></data>
+  <data name="ModeReadsOnly" xml:space="preserve"><value>читает и ищет, ничего не пишет</value></data>
+  <data name="ModeMayWrite" xml:space="preserve"><value>может менять файлы — каждое изменение сначала спрашивает</value></data>
+  <data name="ModePickerChatModel" xml:space="preserve"><value>модель разговора</value></data>
   <data name="ModeNoteUnreadable" xml:space="preserve"><value>не прочитан: {0}</value></data>
   <data name="ModeNoteDuplicate" xml:space="preserve"><value>режим с именем «{0}» уже найден раньше</value></data>
   <data name="ModeNoteReservedName" xml:space="preserve"><value>«{0}» — имя одного из собственных режимов Inferpal</value></data>

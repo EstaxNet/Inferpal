@@ -287,7 +287,7 @@ internal sealed class AcpSession : IAsyncDisposable
     {
         try
         {
-            var r = await _link.InvokeWithCancellationAsync<ModeListResult>("mode/list", cancellationToken: ct);
+            var r = await _link.InvokeWithParameterObjectAsync<ModeListResult>("mode/list", new { }, ct);
             var found = r.Modes.Select(AcpModes.Found.Of).ToList();
             if (found.SequenceEqual(_found)) return false;
             _found = found;

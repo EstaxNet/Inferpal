@@ -946,7 +946,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ModeModelMissing" xml:space="preserve"><value>{0} は {1} を指定していますが、どれもこのサーバーにありません。{2} で応答します。</value></data>
   <data name="ModeGone" xml:space="preserve"><value>この会話はモード「{0}」で行われていましたが、見つからなくなりました。モードなしで続けます。</value></data>
   <data name="ModeUnknown" xml:space="preserve"><value>「{0}」という名前のモードはありません。/modes で見つかったモードを一覧できます。</value></data>
-  <data name="ModesHeader" xml:space="preserve"><value>**モード** — モード選択で選びます。モードはツールを絞り込むだけで、変更はすべて引き続き事前に確認されます。</value></data>
+  <data name="ModesHeader" xml:space="preserve"><value>**モード** — モード選択で選びます。モードはツールを絞り込むだけで、権限を追加することはありません。</value></data>
   <data name="ModesNone" xml:space="preserve"><value>モードが見つかりません。モードは .inferpal/modes/ の Markdown ファイル、.github/agents/ の GitHub Copilot エージェント、または .roomodes の Roo Code モードです。</value></data>
   <data name="ModesModel" xml:space="preserve"><value>モデル: {0}</value></data>
   <data name="ModesModelFirst" xml:space="preserve"><value>モデル: {0} のうち最初にインストールされているもの</value></data>
@@ -957,6 +957,14 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ModesEditsOnly" xml:space="preserve"><value>{0} に一致するファイルのみ編集</value></data>
   <data name="ModesNotCarried" xml:space="preserve"><value>未対応: {0}</value></data>
   <data name="ModesSetAside" xml:space="preserve"><value>除外:</value></data>
+  <data name="ModesSegment" xml:space="preserve"><value>モード</value></data>
+  <data name="ModesSegmentTip" xml:space="preserve"><value>その他のモード: ここで {0} 件見つかりました</value></data>
+  <data name="ModesFoundHeader" xml:space="preserve"><value>ここで見つかったモード</value></data>
+  <data name="ModesFooter" xml:space="preserve"><value>モードはツールを絞り込むだけで、権限を追加することはありません。</value></data>
+  <data name="ModeHeldLine" xml:space="preserve"><value>モード: {0} — この質問から · {1}</value></data>
+  <data name="ModeReadsOnly" xml:space="preserve"><value>読み取りと検索のみ、書き込みなし</value></data>
+  <data name="ModeMayWrite" xml:space="preserve"><value>ファイルを変更できます — 変更ごとに事前確認</value></data>
+  <data name="ModePickerChatModel" xml:space="preserve"><value>会話のモデル</value></data>
   <data name="ModeNoteUnreadable" xml:space="preserve"><value>読み込めません: {0}</value></data>
   <data name="ModeNoteDuplicate" xml:space="preserve"><value>「{0}」という名前のモードが先に見つかっています</value></data>
   <data name="ModeNoteReservedName" xml:space="preserve"><value>「{0}」は Inferpal 自身のモード名です</value></data>

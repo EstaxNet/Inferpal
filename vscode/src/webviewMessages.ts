@@ -2,7 +2,8 @@
 // chat webview (src/webview/main.ts). Both sides are bundled from this repo, so the
 // types are shared instead of mirrored. No 'vscode' import — the webview bundle uses it.
 import type {
-  ApprovalCard, CutCard, ImportCard, InputCard, InputFormAnswer, ModelWait, RewindCard, RunReview, RunSummary, SavedMessage, SetupPlace,
+  ApprovalCard, CutCard, ImportCard, InputCard, InputFormAnswer, ModeInfo, ModeLabels, ModelWait, RewindCard, RunReview, RunSummary,
+  SavedMessage, SetupPlace,
   SetupPlan,
   XRayPanel,
 } from './protocol';
@@ -70,6 +71,8 @@ export interface WvTranscriptItem {
   /** Screen only, never saved: this end notice offers Continue (ChatTurnPolicy.OffersContinue). Taken off when the next
    *  turn starts; kept across a redraw of the view, which rebuilds it from the transcript. */
   continues?: boolean;
+  /** Screen only, never saved: a 'status' entry that is the line where a mode starts, drawn as a rule. */
+  modeLine?: boolean;
   /** Screen only, never saved: under this error, a turn cut at its bound — kept across a redraw of the view. */
   cut?: CutCard | null;
   /** The `/import` preview this notice is: drawn as a card with a box per item instead of its text (the text, its
@@ -231,6 +234,10 @@ export type ExtToWebview =
   /** A build task failed (the banner), or passed (null: the banner goes). */
   | { type: 'buildBanner'; banner: WvBuildBanner | null }
   | { type: 'planMode'; enabled: boolean }
+  /** The modes found for the workspace, the one held (`null`: Chat, Agent or Plan), the selector's words. */
+  | { type: 'modes'; modes: ModeInfo[]; current: string | null; labels: ModeLabels | null }
+  /** Where a mode starts in the thread: its line, drawn as a rule. */
+  | { type: 'modeLine'; text: string }
   | { type: 'backendStatus'; status: WvBackendStatus }
   | { type: 'agentMode'; enabled: boolean }
   | { type: 'density'; compact: boolean }
@@ -321,6 +328,10 @@ export type WebviewToExt =
   | { type: 'menu'; action: 'export' | 'settings' }
   /** The composer's mode switch: chat (no tools), agent, or read-only plan. */
   | { type: 'setMode'; mode: 'chat' | 'agent' | 'plan' }
+  /** A mode found for the workspace, picked in the selector. */
+  | { type: 'setFoundMode'; name: string }
+  /** The selector's list opens: the modes are read again. */
+  | { type: 'modesOpen' }
   /** A file of a run's result bar. */
   | { type: 'openFile'; path: string }
   /** An `/import` card's Apply: the numbers of the boxes left ticked (none is a choice too). */

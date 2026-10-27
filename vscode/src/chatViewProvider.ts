@@ -676,6 +676,24 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           t('The assistant restarted and could not return to plan mode: the agent can edit files again.'));
       }
     }
+    // The held mode goes back to a restarted host too — gone since, the selector shows what the host really holds.
+    if (this.heldMode) {
+      let refused: string | null | undefined;
+      try {
+        const set = await host.modeSet(this.heldMode);
+        refused = set.mode ? null : set.refused ?? this.heldMode;
+        this.heldMode = set.mode?.name ?? null;
+      } catch (err) {
+        this.log(`[chat] mode not restored after a host restart: ${String(err)}`);
+        refused = String(err);
+        this.heldMode = null;
+      }
+      if (refused !== null) {
+        // Its tools and model no longer hold: said, as for Plan above.
+        void vscode.window.showWarningMessage(refused ?? '');
+      }
+    }
+    void this.refreshModes();
 
     this.startStatusPolling();
     await this.pollBackendStatus();
@@ -960,13 +978,17 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   /** The whole conversation's index of the `ordinal`-th question bubble of the view (notices included, notes not);
-   *  -1 when there is none. One saved message per transcript entry, so it is the saved messages' index too. */
+   *  -1 when there is none. One saved message per transcript entry — but a mode's line, screen only, which the count
+   *  skips —, so it is the saved messages' index too. */
   private questionIndex(ordinal: number): number {
     let seen = -1;
+    let lines = this.hiddenEntries.filter((m) => m.modeLine).length;
     for (let i = 0; i < this.transcript.length; i++) {
       const item = this.transcript[i];
-      if (item.role === 'user' && !item.note && ++seen === ordinal) {
-        return this.hiddenEntries.length + (this.droppedEntries > 0 ? i - 1 : i);
+      if (item.modeLine) {
+        lines++;
+      } else if (item.role === 'user' && !item.note && ++seen === ordinal) {
+        return this.hiddenEntries.length + (this.droppedEntries > 0 ? i - 1 : i) - lines;
       }
     }
     return -1;
@@ -1027,6 +1049,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.sessionTokens = 0;
     this.sessionStart = null;
     this.hydrate();
+    // The conversation comes back in the mode it was held in (or none): the selector follows the host.
+    void this.refreshModes();
   }
 
   /** Set when the auto-save last failed and the user was told; cleared by the next one that works. */
@@ -1035,7 +1059,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** Is a conversation on screen — a question or an answer, not only notices? A thread of notices alone (backend
    *  unreachable, a slash command's output) is saved over nothing: the last conversation is worth more. */
   private hasConversation(): boolean {
-    return this.transcript.some((m) => !m.notice);
+    return this.transcript.some((m) => !m.notice && !m.modeLine);
   }
 
   private autoSaveLast(): void {
@@ -1161,7 +1185,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    */
   private archiveConversation(): void {
     const host = this.getHost();
-    if (!host?.isRunning || this.transcript.length === 0) {
+    // A mode's line alone, never saved, is no conversation to archive.
+    if (!host?.isRunning || this.transcript.every((m) => m.modeLine)) {
       return;
     }
     const messages = this.snapshot();
@@ -1436,6 +1461,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         // The webview is fresh, so the notice above is worth saying again if it breaks anew.
         this.saidOnce.delete('webviewError');
         this.hydrate();
+        // A view made after the host started (or reloaded for another language) has no mode selector yet.
+        void this.refreshModes();
         // A reloaded webview draws the first-run card again where it was.
         if (this.setupFlow.current) {
           this.post({ type: 'setup', view: this.setupFlow.current });
@@ -1691,6 +1718,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         return;
       case 'setMode':
         await this.setMode(msg.mode);
+        return;
+      case 'setFoundMode':
+        await this.holdMode(msg.name);
+        return;
+      case 'modesOpen':
+        await this.refreshModes();
         return;
       case 'openFile':
         try {
@@ -2818,6 +2851,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           if (e.name === 'planMode') {
             this.planMode = e.value === 'on';
             this.post({ type: 'planMode', enabled: this.planMode });
+            // Plan leaves a held mode on the host: the selector follows.
+            if (this.planMode && this.heldMode) {
+              void this.refreshModes();
+            }
           }
           if (e.name === 'model' && e.value) {
             this.model = e.value;
@@ -3080,6 +3117,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       this.announceRunEnd(result.announceEnd === true, result.error ? 'failed' : result.cancelled ? 'stopped' : 'normal',
                           [result.duration, result.run?.detail].filter((part) => !!part).join(' · '));
       void this.pollBackendStatus(); // the turn may have loaded a model — refresh the VRAM badge
+      if (this.heldMode) {
+        void this.refreshModes(); // a mode whose file is gone was left by the turn
+      }
     } catch (err) {
       // The request itself failed. Host gone (crashed or restarted): no one waits for these cards any more. Refused by a
       // host still there: the cards belong to what holds its slot, and wait.
@@ -4064,8 +4104,78 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     );
   }
 
+  /** The mode found for the workspace the conversation is held in (`mode/set`); `null` for Chat, Agent and Plan. */
+  private heldMode: string | null = null;
+
+  /** The modes found for the workspace and the one the host holds, sent to the selector. */
+  private async refreshModes(): Promise<void> {
+    const host = this.getHost();
+    if (!host?.isRunning) {
+      return;
+    }
+    try {
+      const list = await host.modeList(true);
+      this.heldMode = list.current ?? null;
+      // A mode the host holds is not Plan (a conversation loaded in its mode left it): the switch must not say Plan,
+      // or picking Plan would skip turning it on.
+      if (this.heldMode && this.planMode) {
+        this.planMode = false;
+        this.post({ type: 'planMode', enabled: false });
+      }
+      this.post({ type: 'modes', modes: list.modes, current: this.heldMode, labels: list.labels ?? null });
+    } catch (err) {
+      this.log(`[chat] mode/list failed: ${String(err)}`);
+    }
+  }
+
+  /** A mode found for the workspace, picked in the selector: held for the conversation (it leaves Plan), and the
+   *  thread says where it starts. */
+  private async holdMode(name: string): Promise<void> {
+    if (name === this.heldMode) {
+      return; // already held: no second line, the missing-model notice is not said again
+    }
+    const host = this.hostForGesture();
+    if (!host) {
+      return;
+    }
+    try {
+      const set = await host.modeSet(name);
+      if (!set.mode) {
+        void vscode.window.showWarningMessage(set.refused ?? name);
+      } else {
+        this.heldMode = set.mode.name;
+        if (this.planMode) {
+          this.planMode = false;
+          this.post({ type: 'planMode', enabled: false });
+        }
+        this.append({ role: 'status', text: set.mode.heldLine, modeLine: true, timestamp: ChatViewProvider.now() });
+        this.post({ type: 'modeLine', text: set.mode.heldLine });
+      }
+    } catch (err) {
+      this.gestureFailed('mode/set', err);
+    }
+    await this.refreshModes();
+  }
+
   /** The mode switch: agent mode is this window's, plan mode is the host's — Plan is agent mode, read-only. */
   private async setMode(mode: 'chat' | 'agent' | 'plan'): Promise<void> {
+    // Chat, Agent or Plan leave a held mode: one selector.
+    if (this.heldMode) {
+      const host = this.hostForGesture();
+      if (!host) {
+        return;
+      }
+      try {
+        await host.modeSet(null);
+        this.heldMode = null;
+      } catch (err) {
+        // Refused (a turn holds the slot): nothing changes, and the selector shows what the host still holds.
+        this.gestureFailed('mode/set', err);
+        void this.refreshModes();
+        return;
+      }
+      void this.refreshModes();
+    }
     const agent = mode !== 'chat';
     if (this.windowAgentMode() !== agent) {
       await this.setWindowAgentMode(agent);

@@ -950,7 +950,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="ModeModelMissing" xml:space="preserve"><value>{0} demande {1} ; aucun n'est sur ce serveur. Réponse avec {2}.</value></data>
   <data name="ModeGone" xml:space="preserve"><value>Cette conversation était en mode « {0} », introuvable maintenant : elle continue sans lui.</value></data>
   <data name="ModeUnknown" xml:space="preserve"><value>Aucun mode nommé « {0} ». /modes liste les modes trouvés.</value></data>
-  <data name="ModesHeader" xml:space="preserve"><value>**Modes** — à choisir dans le sélecteur de mode. Un mode ne fait que restreindre les outils ; chaque changement demande toujours d'abord.</value></data>
+  <data name="ModesHeader" xml:space="preserve"><value>**Modes** — à choisir dans le sélecteur de mode. Un mode ne fait que restreindre les outils ; il n'accorde aucune permission.</value></data>
   <data name="ModesNone" xml:space="preserve"><value>Aucun mode trouvé. Un mode est un fichier Markdown dans .inferpal/modes/, un agent GitHub Copilot dans .github/agents/ ou un mode Roo Code dans .roomodes.</value></data>
   <data name="ModesModel" xml:space="preserve"><value>modèle : {0}</value></data>
   <data name="ModesModelFirst" xml:space="preserve"><value>modèle : le premier installé parmi {0}</value></data>
@@ -961,6 +961,14 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="ModesEditsOnly" xml:space="preserve"><value>n'édite que les fichiers qui répondent à {0}</value></data>
   <data name="ModesNotCarried" xml:space="preserve"><value>non portés : {0}</value></data>
   <data name="ModesSetAside" xml:space="preserve"><value>Mis de côté :</value></data>
+  <data name="ModesSegment" xml:space="preserve"><value>Modes</value></data>
+  <data name="ModesSegmentTip" xml:space="preserve"><value>Autres modes : {0} {0:mode trouvé|modes trouvés} ici</value></data>
+  <data name="ModesFoundHeader" xml:space="preserve"><value>Trouvés ici</value></data>
+  <data name="ModesFooter" xml:space="preserve"><value>Un mode ne fait que restreindre les outils ; il n'accorde aucune permission.</value></data>
+  <data name="ModeHeldLine" xml:space="preserve"><value>Mode : {0} — dès cette question · {1}</value></data>
+  <data name="ModeReadsOnly" xml:space="preserve"><value>lit et cherche, n'écrit rien</value></data>
+  <data name="ModeMayWrite" xml:space="preserve"><value>peut modifier des fichiers — chaque changement demande d'abord</value></data>
+  <data name="ModePickerChatModel" xml:space="preserve"><value>le modèle de la conversation</value></data>
   <data name="ModeNoteUnreadable" xml:space="preserve"><value>non lu : {0}</value></data>
   <data name="ModeNoteDuplicate" xml:space="preserve"><value>un mode nommé « {0} » a été trouvé avant</value></data>
   <data name="ModeNoteReservedName" xml:space="preserve"><value>« {0} » est le nom d'un des modes d'Inferpal</value></data>

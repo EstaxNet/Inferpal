@@ -1254,14 +1254,20 @@ internal sealed partial class HostServer : IDisposable
 
     /// <summary>`mode/list` — the modes found for this workspace and the person (read now), the files set aside, and the
     /// mode the conversation is held in.</summary>
-    [JsonRpcMethod("mode/list")]
-    public ModeListResult ModeList()
+    [JsonRpcMethod("mode/list", UseSingleObjectParameterDeserialization = true)]
+    public async Task<ModeListResult> ModeListAsync(ModeListParams? p, CancellationToken ct)
     {
         var s = Session();
         var catalog = ChatModes.For(s.Config, RootOf(s));
-        return new ModeListResult([.. catalog.Modes.Select(ModeDto.Of)],
-                                  [.. catalog.Notes.Select(n => $"{n.Source}: {Services.Commands.ModesCommandHandler.Note(n)}")],
-                                  catalog.Find(s.ModeName)?.Name);
+        // The model each mode answers with, for a selector that shows it: one listing of the server for all.
+        IReadOnlyList<string> chat = p?.Models == true && catalog.Modes.Any(m => m.Models.Count > 0)
+            ? (await s.Client.ListModelsByKindAsync(ct)).Chat : [];
+        return new ModeListResult(
+            [.. catalog.Modes.Select(m => ModeDto.Of(m, m.PickModel(chat)))],
+            [.. catalog.Notes.Select(n => $"{n.Source}: {Services.Commands.ModesCommandHandler.Note(n)}")],
+            catalog.Find(s.ModeName)?.Name,
+            new ModeLabelsDto(Strings.ModesSegment, Strings.ModesSegmentTip(catalog.Modes.Count), Strings.ModesFoundHeader,
+                              Strings.ModesFooter));
     }
 
     /// <summary>`mode/set` — the mode the person picked for the conversation, or none: it leaves Plan, and its
@@ -1284,7 +1290,7 @@ internal sealed partial class HostServer : IDisposable
         });
         if (mode is null) return new ModeSetResult(null);
         var (model, _) = await ChatModes.PickModelAsync(s.Client, mode, string.Empty, ct);
-        return new ModeSetResult(ModeDto.Of(mode), model);
+        return new ModeSetResult(ModeDto.Of(mode, model), model);
     }
 
     private static string? RootOf(HostSession s) => string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir;

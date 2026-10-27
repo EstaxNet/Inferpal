@@ -168,6 +168,9 @@ internal partial class InferpalToolWindowData
         var                      sendStart    = DateTime.UtcNow;
         // The notes typed while this turn runs — a turn with steps only: a code action answers without tools.
         RunSteering?             steering     = null;
+        // The mode the person picked for the conversation: its tools, model and effort — never with a code action, and it
+        // excludes Agent and Plan (one selector).
+        ChatMode?                turnMode     = null;
 
         try
         {
@@ -264,7 +267,10 @@ internal partial class InferpalToolWindowData
                 // the user and the agent edit — pinned files ("injected before each request", says the
                 // setting), .inferpal/context.md, memory.md, the rules — and rebuilt only on a few
                 // gestures (a toggle, /note, a change of active file when rules are glob-scoped), an
-                // edited file reached the model in its OLD version for the rest of the session.
+                // edited file reached the model in its OLD version for the rest of the session. The held mode too: its
+                // file is read again, and a mode whose file is gone leaves the conversation, said.
+                RereadHeldMode();
+                turnMode = oneTimeModel is null ? _heldMode : null;
                 RefreshSystemPrompt();
                 // What follows the active file rides with the question, when the history does not already say it — judged
                 // here, on the history the question joins (ActiveFileContext).
@@ -385,6 +391,7 @@ internal partial class InferpalToolWindowData
             // engaged AND no one-time model overrides this turn. Computed here so model selection and
             // the execution path below share one source of truth.
             var useOrchestrator = _config.AgentModeEnabled
+                && turnMode is null
                 && oneTimeModel is null
                 && _toolsEnabled;
 
@@ -396,6 +403,18 @@ internal partial class InferpalToolWindowData
                 !string.IsNullOrEmpty(oneTimeModel)
                     ? oneTimeModel
                     : ModelRouter.Resolve(_config, useOrchestrator ? ModelRole.Agent : ModelRole.Chat);
+            // The held mode answers with its own model when the server has one of them; when it has none, the turn goes on
+            // with the chat's, said once for the conversation.
+            if (turnMode is not null)
+            {
+                var (modeModel, modeNotice) = await ChatModes.PickModelAsync(_client, turnMode, effectiveModel, localCts!.Token);
+                effectiveModel = modeModel ?? effectiveModel;
+                if (modeNotice is not null && _modeModelNoticeSaid != turnMode.Name)
+                {
+                    _modeModelNoticeSaid = turnMode.Name;
+                    await RunOnVMContextAsync(() => InsertThemed(ChatMessageItem.NoticeMsg(modeNotice)));
+                }
+            }
 
             // The turn's header line names the model that answers, then what the turn is doing, then how long it took.
             await RunOnVMContextAsync(() =>
@@ -473,7 +492,8 @@ internal partial class InferpalToolWindowData
             {
                 // Start a change-tracking run so this turn's file writes can be reverted via /undo-run.
                 turnRunId = _tools.History.BeginRun();
-                if (_planMode)      effectiveTools = new Services.Execution.PlanModeToolRegistry(_tools);
+                effectiveTools = ChatModes.ToolsFor(_tools, turnMode, _indexService.RootDir);
+                if (_planMode)      effectiveTools = new Services.Execution.PlanModeToolRegistry(effectiveTools);
                 if (_agentStepMode) effectiveTools = new Services.Execution.StepModeToolRegistry(effectiveTools, PauseForStepAsync);
             }
 
@@ -640,7 +660,7 @@ internal partial class InferpalToolWindowData
                     complexity: loopComplexity,
                     onToolExecuted: StreamToolBubble,
                     onThinking: OnThinking,
-                    effort:     ChatTurnPolicy.TurnEffort(_config, codeAction: oneTimeModel is not null),
+                    effort:     ChatTurnPolicy.TurnEffort(_config, codeAction: oneTimeModel is not null, turnMode),
                     steering:   steering);
 
                 agentFinalResponse = result.FinalResponse;

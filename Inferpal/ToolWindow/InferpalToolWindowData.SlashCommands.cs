@@ -443,9 +443,7 @@ internal partial class InferpalToolWindowData
             // the VM context: _history is replaced wholesale there (ClearAsync/restore), and this
             // runner is a background thread.
             string? systemPrompt = null;
-            await RunOnVMContextAsync(() =>
-                systemPrompt = _history.Count > 0 && _history[0].Role == "system"
-                    ? _history[0].Content : null);
+            await RunOnVMContextAsync(() => systemPrompt = SystemPromptWithoutMode());
 
             // Proposal mode: the editing tools become available, but against a registry whose
             // approval service records (in the queue's recorder, kept if the task is stopped) instead of granting — so the
@@ -498,8 +496,7 @@ internal partial class InferpalToolWindowData
 
         try
         {
-            var systemPrompt = _history.Count > 0 && _history[0].Role == "system"
-                ? _history[0].Content : null;
+            var systemPrompt = SystemPromptWithoutMode();
             // The active file's instructions ride with each fix request (the system prompt has none) — read on the VM
             // context, where the X-Ray switches live.
             var activeFile = string.Empty;

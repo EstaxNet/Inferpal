@@ -82,6 +82,8 @@ import {
   SetupApplyParams,
   SetupPlace,
   SetupPlan,
+  ModeListResult,
+  ModeSetResult,
   SetupPullProgress,
   SetupReason,
   TypingChip,
@@ -749,6 +751,16 @@ export class HostClient {
   /** Read-only plan mode on or off (the chat's Plan segment); answers the state now. */
   planMode(enabled: boolean): Promise<boolean> {
     return this.connection().sendRequest<boolean>('plan/mode', { enabled });
+  }
+
+  /** The modes found for the workspace and the one held; `models` asks the server which model each answers with. */
+  modeList(models: boolean): Promise<ModeListResult> {
+    return this.connection().sendRequest<ModeListResult>('mode/list', { models });
+  }
+
+  /** Holds a mode found for the workspace for the conversation (it leaves Plan), or none with `null`. */
+  modeSet(name: string | null): Promise<ModeSetResult> {
+    return this.connection().sendRequest<ModeSetResult>('mode/set', { name });
   }
 
   /** The code index as the settings' Code search page shows it. */
