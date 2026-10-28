@@ -559,6 +559,8 @@ internal sealed class ProjectIndexService : IDisposable
             var unsaved = new List<(string FilePath, IReadOnlyList<RagChunk> Chunks)>();
             // Files the pass could not read: kept as they were, then read again with the backlog.
             var unread = new List<string>();
+            var applied     = 0;       // newChunks[..applied] are in the in-memory index already
+            var askedServer = false;   // an embedding was asked since the last throttle point
 
             for (int fi = 0; fi < files.Count; fi++)
             {
@@ -599,6 +601,7 @@ internal sealed class ProjectIndexService : IDisposable
                         {
                             // Yield the machine's graphics card to any in-flight interactive request — not a server elsewhere.
                             if (_client.SharesGpuWithChat) await GpuScheduler.WaitForChatIdleAsync(ct);
+                            askedServer = true;
                             var emb = await EmbeddingModels.EmbedCodeDocumentAsync(_client, embModel, chunk.Content, ct);
                             chunk.Embedding = emb; // null if model unavailable
                             embedded |= emb is { Length: > 0 };
@@ -624,8 +627,14 @@ internal sealed class ProjectIndexService : IDisposable
 
                 // Refresh the in-memory index every 20 files (merge — keep the boot-loaded
                 // entries for files not yet verified); the authoritative replace happens below.
+                // ⚠ Only the chunks added since the last refresh: each file is read once, so the earlier ones are already
+                // in place, and handing the whole list over every 20 files makes the pass quadratic (on a repository of
+                // 140 000 files it falls from 48 to 30 files a second within the hour).
                 if (fi % 20 == 0 || fi == files.Count - 1)
-                    await ApplyChunksAsync(newChunks, replaceAll: false, ct);
+                {
+                    await ApplyChunksAsync(newChunks.GetRange(applied, newChunks.Count - applied), replaceAll: false, ct);
+                    applied = newChunks.Count;
+                }
 
                 if (unsaved.Count >= CheckpointFiles)
                 {
@@ -633,9 +642,13 @@ internal sealed class ProjectIndexService : IDisposable
                     unsaved.Clear();
                 }
 
-                // Small throttle every 5 files to avoid flooding Ollama
+                // Small throttle every 5 files to avoid flooding the embedding server — only when it was asked: on the
+                // keyword half nothing leaves the machine, and the pause is most of the time a file takes.
                 if (fi % 5 == 4)
-                    await Task.Delay(80, ct);
+                {
+                    if (askedServer) await Task.Delay(80, ct);
+                    askedServer = false;
+                }
             }
 
             // ── Persist final index ───────────────────────────────────────────
