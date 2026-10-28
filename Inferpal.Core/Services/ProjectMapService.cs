@@ -125,17 +125,19 @@ internal sealed class ProjectMapService
         }
 
         // ── 2. Cross-file ref counts (over the pass-1 contents, no second disk walk) ──
-        // Each file is tokenised ONCE into its identifiers: a substring search per (file, stem) pair was
-        // O(files² × size) on every regeneration, and every file counted its own name as a reference.
-        var stems = refCounts.Keys.ToList();
+        // Each file is tokenised ONCE into its identifiers, and each identifier is looked up among the stems: every stem
+        // tried against every file is files × stems lookups, half an hour on a repository of 140 000 files. A file never
+        // counts its own name as a reference; stems that differ only by case are all counted, as identifiers ignore case.
+        var stemsByWord = refCounts.Keys
+            .GroupBy(stem => stem, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
         foreach (var (path, src) in contents)
         {
             ct.ThrowIfCancellationRequested();
-            var words = IdentifiersOf(src);
-            var own   = Path.GetFileNameWithoutExtension(path);
-            foreach (var stem in stems)
-                if (!stem.Equals(own, StringComparison.OrdinalIgnoreCase) && words.Contains(stem))
-                    refCounts[stem]++;
+            var own = Path.GetFileNameWithoutExtension(path);
+            foreach (var word in IdentifiersOf(src))
+                if (!word.Equals(own, StringComparison.OrdinalIgnoreCase) && stemsByWord.TryGetValue(word, out var stems))
+                    foreach (var stem in stems) refCounts[stem]++;
         }
 
         // ── 3. Render ─────────────────────────────────────────────────────────

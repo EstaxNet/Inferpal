@@ -213,12 +213,15 @@ internal class GetSolutionInfoTool : ITool
         //    when none is reachable) — we then pick the .sln inside it.
         //    The search starts from the workspace root: the process's current directory is only a
         //    stand-in when no root is known — the out-of-process host under VS never sits there.
+        //    ⚠ The search near the root climbs five levels and looks into the sub-folders of each: from a root that holds
+        //    no solution of its own (a folder opened in VS Code, a Python or Node project), it reaches a NEIGHBOUR
+        //    project's solution, and the workspace block hands that project to the model as this one.
         var root    = _workspaceRoot();
         var liveDir = new ProjectRootLocator().LocateReliable(
             _editor.GetOpenDocumentPaths(),
             activeSolutionDir: null,                 // step 0 already handled the signal above
             string.IsNullOrWhiteSpace(root) ? Directory.GetCurrentDirectory() : root);
-        if (liveDir is not null && SolutionFiles.FirstIn(liveDir) is { } liveSln)
+        if (liveDir is not null && SolutionFiles.FirstIn(liveDir) is { } liveSln && BelongsToWorkspace(liveSln, root))
             return liveSln;
 
         // 2. Durable last resort: the last solution Inferpal resolved this/previous session. Covers
@@ -226,22 +229,23 @@ internal class GetSolutionInfoTool : ITool
         //    active-solution signal is absent — every live source above then comes up empty.
         //    ⚠ The cache is machine-wide: under a known root, a solution recorded elsewhere is another
         //    project's, and "no solution" is the true answer.
-        return LastKnownSolutionFile.TryReadSolutionPath() is { } known && LastKnownApplies(known, root)
+        return LastKnownSolutionFile.TryReadSolutionPath() is { } known && BelongsToWorkspace(known, root)
             ? known
             : null;
     }
 
     /// <summary>
-    /// Whether the machine-wide last-known solution may stand for this workspace.
+    /// Whether a solution found by searching — near the root, or the machine-wide last-known one — may stand for this
+    /// workspace.
     /// </summary>
     /// <remarks>
     /// <c>last_solution.json</c> means "the last solution Inferpal knew about", on any project and in
-    /// either editor. Under a known workspace root, a solution recorded outside it belongs to another
-    /// project: reporting it would describe that project as this one. The comparison is the
+    /// either editor, and the search near the root climbs out of it. Under a known workspace root, a solution outside it
+    /// belongs to another project: reporting it would describe that project as this one. The comparison is the
     /// sandbox's own (<see cref="PathSanitizer.AssertUnderRoot"/>, links and case included); a path
     /// that cannot be resolved counts as outside. An unknown root keeps the fallback it exists for.
     /// </remarks>
-    internal static bool LastKnownApplies(string solutionPath, string? workspaceRoot) =>
+    internal static bool BelongsToWorkspace(string solutionPath, string? workspaceRoot) =>
         string.IsNullOrWhiteSpace(workspaceRoot) || PathSanitizer.IsUnderRoot(solutionPath, workspaceRoot);
 
     // ── Types ─────────────────────────────────────────────────────────────────

@@ -63,12 +63,32 @@ public class SolutionFallbackTests : IDisposable
         var root  = Path.Combine(_base, "ws");
         var other = Path.Combine(_base, "other", "Other.sln");
 
-        Assert.False(GetSolutionInfoTool.LastKnownApplies(other, root));
+        Assert.False(GetSolutionInfoTool.BelongsToWorkspace(other, root));
 
         // Witnesses: a solution under the root stays valid, and an unknown root keeps the fallback.
-        Assert.True(GetSolutionInfoTool.LastKnownApplies(Path.Combine(root, "src", "Mine.sln"), root));
-        Assert.True(GetSolutionInfoTool.LastKnownApplies(other, null));
-        Assert.True(GetSolutionInfoTool.LastKnownApplies(other, ""));
+        Assert.True(GetSolutionInfoTool.BelongsToWorkspace(Path.Combine(root, "src", "Mine.sln"), root));
+        Assert.True(GetSolutionInfoTool.BelongsToWorkspace(other, null));
+        Assert.True(GetSolutionInfoTool.BelongsToWorkspace(other, ""));
+    }
+
+    [Fact]
+    public async Task ANeighbourProjectsSolution_IsNotDescribedAsTheWorkspaces()
+    {
+        // The search near the root climbs and looks into each level's sub-folders: from a root without a solution of
+        // its own, it reaches the project next door.
+        var root  = Directory.CreateDirectory(Path.Combine(_base, "ws", "root")).FullName;
+        WriteSolution(Path.Combine(_base, "neighbour"), "Neighbour.sln");
+        Assert.NotNull(new ProjectRootLocator().FindSlnDirNearCwd(root));   // reference arm: the search does reach it
+
+        var result = await new GetSolutionInfoTool(new NullEditorSurface(), () => root)
+            .ExecuteAsync(NoArgs(), CancellationToken.None);
+        Assert.DoesNotContain("Solution :", result, StringComparison.Ordinal);
+
+        // Witness: a solution in a sub-folder of the root is still found by that same search.
+        WriteSolution(Path.Combine(root, "src"), "Mine.sln");
+        var mine = await new GetSolutionInfoTool(new NullEditorSurface(), () => root)
+            .ExecuteAsync(NoArgs(), CancellationToken.None);
+        Assert.Contains("Solution : Mine.sln", mine, StringComparison.Ordinal);
     }
 
     [Fact]

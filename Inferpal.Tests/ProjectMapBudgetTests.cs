@@ -63,4 +63,24 @@ public sealed class ProjectMapBudgetTests : IDisposable
             Assert.Contains($"Contoso.Enterprise.Module{i:D3}.Services", map);
         Assert.DoesNotContain("not listed", map);
     }
+
+    [Fact]
+    public async Task TheHotspots_CountTheFilesThatNameAStem_OncePerFile_NeverTheFileItself()
+    {
+        Directory.CreateDirectory(_root);
+        File.WriteAllText(Path.Combine(_root, "Alpha.cs"), "class Alpha { Beta b; Beta c; Alpha self; }\n");
+        File.WriteAllText(Path.Combine(_root, "Beta.cs"), "class Beta { Alpha a; Gamma g; }\n");
+        File.WriteAllText(Path.Combine(_root, "Gamma.cs"), "class Gamma { beta lower; Alpha a; }\n");
+        File.WriteAllText(Path.Combine(_root, "Delta.cs"), "class Delta { Alpha a; BetaFactory f; }\n");
+        var index = new ProjectIndexService(new FakeInferenceProvider(), new InferpalConfig(), new LspSemanticProvider());
+        index.SetRoot(_root);
+
+        var map = await new ProjectMapService(new NullEditorSurface(), index).GenerateMapAsync(CancellationToken.None);
+
+        // Alpha: named by Beta, Gamma and Delta (its own mention left out). Beta: by Alpha (twice, counted once) and
+        // Gamma ("beta": identifiers ignore case), never by "BetaFactory". Gamma: by Beta only, below the list.
+        Assert.Matches(@"Alpha\s+3 refs", map);
+        Assert.Matches(@"Beta\s+2 refs", map);
+        Assert.DoesNotMatch(@"Gamma\s+\d+ refs", map);
+    }
 }
