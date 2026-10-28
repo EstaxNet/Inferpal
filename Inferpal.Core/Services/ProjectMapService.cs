@@ -60,20 +60,30 @@ internal sealed class ProjectMapService
     /// tool result in the context.</summary>
     internal const int SectionBudgetChars = 2_400;
 
+    /// <summary>The source files a map reads at most.</summary>
+    /// <remarks>⚠ Reading every file of a repository of 140 000 C# files takes minutes, with the model or the person
+    /// waiting, for a map that shows a summary of it. Past the budget the shallowest files are read first (every
+    /// project's top files before the deep generated ones), and the header says how many of how many.</remarks>
+    internal const int ReadBudgetFiles = 10_000;
+
     // ── Core builder ──────────────────────────────────────────────────────────
 
-    private static async Task<string> BuildMapAsync(string root, CancellationToken ct)
+    private static async Task<string> BuildMapAsync(string root, CancellationToken ct) =>
+        await BuildMapAsync(root, ReadBudgetFiles, ct);
+
+    internal static async Task<string> BuildMapAsync(string root, int readBudget, CancellationToken ct)
     {
         // ── 1. Scan ───────────────────────────────────────────────────────────
         // Counted here, not by the call: the map is cached, and @tree builds it outside any tool call — its own line says
         // what the workspace's ignore files kept out of it, every time it is shown.
-        var files = Governance.ContentExclusions.Counting(() => EnumerateSourceFiles(root).ToList(), out var ignored);
+        var walked = Governance.ContentExclusions.Counting(() => EnumerateSourceFiles(root).ToList(), out var ignored);
+        var files  = walked.Count <= readBudget ? walked : WorkspaceScan.ShallowestFirst(walked).Take(readBudget).ToList();
         // ⚠ The header below is literally labelled "Scanned: N source files", and N is what the walk
-        // TOOK. Two holes never reach that number: a file taken and then unreadable (counted here,
-        // skipped by the catch below) and a folder the walk never listed or would not follow, whose
+        // TOOK. Three holes never reach that number: the files past the read budget, a file taken and then unreadable
+        // (counted here, skipped by the catch below) and a folder the walk never listed or would not follow, whose
         // files are absent from the list altogether. An inventory read as exhaustive is how a model
         // concludes a namespace, a type or a whole layer does not exist in this project.
-        var coverage   = new ScanCoverage(files.Count, files.Count)
+        var coverage   = new ScanCoverage(walked.Count, files.Count)
                              .WithGap(WorkspaceScan.FirstWalkGap(root, root));
         var unreadable = 0;
 
@@ -128,7 +138,11 @@ internal sealed class ProjectMapService
         // Each file is tokenised ONCE into its identifiers, and each identifier is looked up among the stems: every stem
         // tried against every file is files × stems lookups, half an hour on a repository of 140 000 files. A file never
         // counts its own name as a reference; stems that differ only by case are all counted, as identifiers ignore case.
+        // A stem spelled like a C# keyword (Class.cs, If.cs) would be "referenced" by every file that writes the keyword —
+        // with case ignored the two cannot be told apart —, so it is left out of the hotspots.
         var stemsByWord = refCounts.Keys
+            .Where(stem => Microsoft.CodeAnalysis.CSharp.SyntaxFacts.GetKeywordKind(stem.ToLowerInvariant())
+                           == Microsoft.CodeAnalysis.CSharp.SyntaxKind.None)
             .GroupBy(stem => stem, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
         foreach (var (path, src) in contents)

@@ -1,5 +1,6 @@
 using System.IO;
 using Inferpal.Config;
+using Inferpal.Localization;
 using Inferpal.Services;
 using Inferpal.Services.Agent;
 using Inferpal.Services.Lsp;
@@ -82,5 +83,40 @@ public sealed class ProjectMapBudgetTests : IDisposable
         Assert.Matches(@"Alpha\s+3 refs", map);
         Assert.Matches(@"Beta\s+2 refs", map);
         Assert.DoesNotMatch(@"Gamma\s+\d+ refs", map);
+    }
+
+    [Fact]
+    public async Task PastTheReadBudget_TheShallowestFilesAreRead_AndTheHeaderSaysHowManyOfHowMany()
+    {
+        var deep = Directory.CreateDirectory(Path.Combine(_root, "src", "Generated", "Models")).FullName;
+        File.WriteAllText(Path.Combine(_root, "Program.cs"), "namespace Top;\nclass Program { }\n");
+        File.WriteAllText(Path.Combine(_root, "Startup.cs"), "namespace Top;\nclass Startup { }\n");
+        for (var i = 0; i < 3; i++)
+            File.WriteAllText(Path.Combine(deep, $"Model{i}.cs"), $"namespace Top.Generated.Models;\nclass Model{i} {{ }}\n");
+
+        var whole = await ProjectMapService.BuildMapAsync(_root, readBudget: 10, CancellationToken.None);
+        Assert.Contains("Scanned: 5 source files", whole);                       // reference arm: under the budget
+        Assert.DoesNotContain(Strings.ScanPartial(2, 5), whole);
+
+        var cut = await ProjectMapService.BuildMapAsync(_root, readBudget: 2, CancellationToken.None);
+        Assert.Contains("Scanned: 2 source files", cut);
+        Assert.Contains(Strings.ScanPartial(2, 5), cut);
+        Assert.Contains("Top ", cut);                                             // the two shallow files
+        Assert.DoesNotContain("Top.Generated.Models", cut);
+    }
+
+    [Fact]
+    public async Task AFileNamedLikeAKeyword_IsNotAHotspot_OfEveryFileThatWritesTheKeyword()
+    {
+        Directory.CreateDirectory(_root);
+        File.WriteAllText(Path.Combine(_root, "Class.cs"), "class Class { }\n");
+        File.WriteAllText(Path.Combine(_root, "Widget.cs"), "class Widget { }\n");
+        File.WriteAllText(Path.Combine(_root, "A.cs"), "class A { Widget w; }\n");
+        File.WriteAllText(Path.Combine(_root, "B.cs"), "class B { Widget w; }\n");
+
+        var map = await ProjectMapService.BuildMapAsync(_root, readBudget: 10, CancellationToken.None);
+
+        Assert.Matches(@"Widget\s+2 refs", map);                                  // witness: the hotspots are counted
+        Assert.DoesNotMatch(@"Class\s+\d+ refs", map);
     }
 }
