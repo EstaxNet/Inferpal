@@ -1226,8 +1226,11 @@ internal sealed partial class HostServer : IDisposable
         // The key in the FORM, like the URL: probing a new server with the saved key answered
         // "unreachable" for a server that only refused that key. Null (not sent) keeps the saved one.
         var (detected, refusal) = await ProviderProbe.DetectWithRefusalAsync(url, p.ApiKey ?? SavedKeyFor(s, url), ct);
+        // The line the panel shows instead of its own "unreachable": a refusal, or the proxy the probe went through.
+        var proxy = detected is null ? Services.NetworkProxy.Through(url) : null;
         return new ConnectionCheckResult(detected is not null, detected,
-                                         refusal is null ? null : Strings.StatusRefused(refusal));
+            refusal is null && proxy is null ? null
+            : Strings.StatusNotReached(refusal is null ? Strings.StatusUnreachable : Strings.StatusRefused(refusal), proxy));
     }
 
     /// <summary>The file-history run a turn opened, by the id <c>BeginRun</c> gave it.</summary>

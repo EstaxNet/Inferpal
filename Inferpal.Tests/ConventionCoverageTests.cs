@@ -2726,4 +2726,58 @@ public class ConventionCoverageTests
             + "path built on it lands in the current directory. Ask through UserFolders.Of. Files:"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
+
+    // ── 38. A request to this machine never goes through a proxy ──────────────
+
+    [Fact]
+    public void EveryHttpHandler_TakesTheProductsProxy()
+    {
+        // .NET sends a request to localhost through HTTP_PROXY like any other, and a corporate proxy cannot reach the
+        // person's machine: the local model server, a local MCP server, a local documentation site are said unreachable
+        // while they run. NetworkProxy.Shared keeps the system's proxy and goes direct to the loopback. A handler that
+        // does not set it, or a client built on the default handler, takes the bare system proxy.
+        // ⚠ The subject is the CREATION of a handler or a client, whatever its shape: `new T {…}`, an implicit `new()`.
+        string[] handlers = ["HttpClientHandler", "SocketsHttpHandler"];
+        var offenders = new List<string>();
+        var created   = 0;
+        foreach (var file in new[] { "Inferpal.Core", "Inferpal", "Inferpal.Host", "Inferpal.Fim" }.SelectMany(ProjectSources))
+        {
+            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+            foreach (var creation in root.DescendantNodes().OfType<BaseObjectCreationExpressionSyntax>())
+            {
+                var type = creation is ObjectCreationExpressionSyntax oc ? oc.Type.ToString() : DeclaredTypeOf(creation);
+                var line = creation.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                if (handlers.Contains(type))
+                {
+                    created++;
+                    var setsProxy = creation.Initializer?.Expressions.OfType<AssignmentExpressionSyntax>().Any(a =>
+                        a.Left.ToString() == "Proxy" && a.Right.ToString() == "NetworkProxy.Shared") == true;
+                    if (!setsProxy) offenders.Add($"{Rel(file)}:{line}  {Squash(creation.ToString())}");
+                }
+                else if (type == "HttpClient" && creation.ArgumentList is not { Arguments.Count: > 0 })
+                    offenders.Add($"{Rel(file)}:{line}  {Squash(creation.ToString())}  (default handler)");
+            }
+        }
+
+        // Witness: the handlers really are read (eight today), otherwise "no offender" means that nothing was read.
+        Assert.True(created >= 5, $"Only {created} HTTP handler creation(s) read: the scan measures nothing any more.");
+        Assert.True(offenders.Count == 0,
+            "These HTTP handlers take the bare system proxy, which .NET applies to localhost too: behind a corporate proxy "
+            + "the person's local servers are said unreachable. Set Proxy = NetworkProxy.Shared, and build every HttpClient "
+            + "on such a handler. Sites:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
+    /// <summary>The type an implicit <c>new()</c> builds when it is the very value a field, variable or property is
+    /// initialized with (nullable or not); <c>null</c> elsewhere — an argument's type is not the declaration's.</summary>
+    private static string? DeclaredTypeOf(SyntaxNode node)
+    {
+        var declared = node.Parent is not EqualsValueClauseSyntax value ? null : value.Parent switch
+        {
+            VariableDeclaratorSyntax { Parent: VariableDeclarationSyntax v } => v.Type,
+            PropertyDeclarationSyntax p => p.Type,
+            _ => null,
+        };
+        return declared is NullableTypeSyntax nullable ? nullable.ElementType.ToString() : declared?.ToString();
+    }
 }

@@ -35,7 +35,7 @@ internal sealed class ConnectDeadline : DelegatingHandler
         TimeSpan timeout,
         Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? connect = null)
     {
-        var sockets = new SocketsHttpHandler { ConnectTimeout = timeout };
+        var sockets = new SocketsHttpHandler { ConnectTimeout = timeout, Proxy = NetworkProxy.Shared };
         if (connect is not null) sockets.ConnectCallback = connect;
         return new ConnectDeadline(sockets, timeout);
     }

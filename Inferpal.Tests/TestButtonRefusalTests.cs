@@ -53,10 +53,12 @@ public class TestButtonRefusalTests
     {
         var vs = ConventionCoverageTests.CodeOnly(Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalSettingsData.cs"));
         Assert.Contains("ProviderProbe.DetectWithRefusalAsync(", vs, StringComparison.Ordinal);
-        Assert.Contains("Strings.StatusRefused(", vs, StringComparison.Ordinal);
+        // The refusal's line, with the proxy the probe went through (NetworkProxyTests).
+        Assert.Contains("Strings.StatusNotReached(url, refusal)", vs, StringComparison.Ordinal);
 
         var host = ConventionCoverageTests.CodeOnly(Path.Combine(RepoRoot(), "Inferpal.Host", "HostServer.cs"));
         Assert.Contains("ProviderProbe.DetectWithRefusalAsync(", host, StringComparison.Ordinal);
+        Assert.Contains("Strings.StatusNotReached(", host, StringComparison.Ordinal);
 
         var webview = SettingsSchemaDriftTests.NeutralizeTypeScriptComments(
             File.ReadAllText(Path.Combine(RepoRoot(), "vscode", "src", "webview", "settings.ts")));

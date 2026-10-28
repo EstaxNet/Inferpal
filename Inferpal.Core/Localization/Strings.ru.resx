@@ -210,6 +210,8 @@
   <data name="StatusConnected" xml:space="preserve"><value>✓ Подключено</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ Недоступно</value></data>
   <data name="StatusRefused" xml:space="preserve"><value>✗ Отклонено — {0}</value></data>
+  <data name="ProxyNote" xml:space="preserve"><value>Этот запрос идёт через прокси {0} (задан переменной HTTP_PROXY или настройками прокси Windows). Если {1} работает в сети этого компьютера, прокси может не достучаться до него: добавьте адрес сервера в NO_PROXY или в исключения прокси Windows, затем перезапустите редактор.</value></data>
+  <data name="StatusViaProxy" xml:space="preserve"><value>{0} — через прокси {1}</value></data>
   <data name="StatusThinking" xml:space="preserve"><value>Обработка…</value></data>
   <data name="StatusCallingTool" xml:space="preserve"><value>→ {0}</value></data>
 

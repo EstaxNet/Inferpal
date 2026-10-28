@@ -2112,13 +2112,13 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         var detectedName = detected is not null
             ? ProviderOptions.FirstOrDefault(p => p.Code == detected).Name
             : null;
+        // A server that refused the probe (a wrong API key: 401) is up — the very thing this button checks. Resolved
+        // here, off the view-model's context: a system proxy's PAC lookup can block.
+        var notReached = ok ? null : Strings.StatusNotReached(url, refusal);
 
         await RunOnVMContextAsync(() =>
         {
-            // A server that refused the probe (a wrong API key: 401) is up — the very thing this button checks.
-            ConnectionStatus = ok                        ? $"{Strings.StatusConnected} — {detectedName}"
-                             : refusal is not null       ? Strings.StatusRefused(refusal)
-                             :                             Strings.StatusUnreachable;
+            ConnectionStatus = notReached ?? $"{Strings.StatusConnected} — {detectedName}";
             // Auto-select the detected backend; the user can still change it before saving.
             if (!string.IsNullOrEmpty(detectedName)) SelectedProvider = detectedName!;
         });

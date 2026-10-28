@@ -27,7 +27,7 @@ internal class WebSearchTool : ITool
         //    risk, but the cost of closing it is a flag, and the cost of leaving it is that the
         //    next reader of these three files cannot tell which of the two rules is the real one.
         //  · A response ceiling. Without it the whole body is buffered before any truncation.
-        var handler = new HttpClientHandler { AllowAutoRedirect = false };
+        var handler = new HttpClientHandler { AllowAutoRedirect = false, Proxy = NetworkProxy.Shared };
         var client  = new HttpClient(handler)
         {
             Timeout = TimeSpan.FromSeconds(20),

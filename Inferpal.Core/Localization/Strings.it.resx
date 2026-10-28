@@ -210,6 +210,8 @@ Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una 
   <data name="StatusConnected" xml:space="preserve"><value>✓ Connesso</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ Non raggiungibile</value></data>
   <data name="StatusRefused" xml:space="preserve"><value>✗ Rifiutato — {0}</value></data>
+  <data name="ProxyNote" xml:space="preserve"><value>Questa richiesta passa per il proxy {0} (impostato da HTTP_PROXY o dalle impostazioni proxy di Windows). Se {1} è in esecuzione sulla rete di questo computer, il proxy potrebbe non raggiungerlo: aggiungi l'indirizzo del server a NO_PROXY, o alle eccezioni del proxy di Windows, poi riavvia l'editor.</value></data>
+  <data name="StatusViaProxy" xml:space="preserve"><value>{0} — tramite il proxy {1}</value></data>
   <data name="StatusThinking" xml:space="preserve"><value>Elaborazione…</value></data>
   <data name="StatusCallingTool" xml:space="preserve"><value>→ {0}</value></data>
 

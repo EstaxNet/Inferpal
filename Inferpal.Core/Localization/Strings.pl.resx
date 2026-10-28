@@ -210,6 +210,8 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
   <data name="StatusConnected" xml:space="preserve"><value>✓ Połączono</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ Niedostępny</value></data>
   <data name="StatusRefused" xml:space="preserve"><value>✗ Odrzucono — {0}</value></data>
+  <data name="ProxyNote" xml:space="preserve"><value>To żądanie przechodzi przez serwer proxy {0} (ustawiony przez HTTP_PROXY lub ustawienia proxy systemu Windows). Jeśli {1} działa w sieci tego komputera, proxy może do niego nie docierać: dodaj adres serwera do NO_PROXY lub do wyjątków proxy systemu Windows, a następnie uruchom ponownie edytor.</value></data>
+  <data name="StatusViaProxy" xml:space="preserve"><value>{0} — przez proxy {1}</value></data>
   <data name="StatusThinking" xml:space="preserve"><value>Przetwarzanie…</value></data>
   <data name="StatusCallingTool" xml:space="preserve"><value>→ {0}</value></data>
 

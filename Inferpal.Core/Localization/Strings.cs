@@ -903,8 +903,29 @@ internal static class Strings
     /// <param name="remoteName">Where the host runs (VS Code's <c>remoteName</c>): from WSL, an SSH server or a container,
     /// a <c>localhost</c> that does not answer is the other machine's, and "start it" is the wrong remedy.</param>
     public static string MsgConnectionLost(string url, string backend, string? refusal, string? remoteName = null) =>
-        refusal is not null ? MsgConnectionRefused(url, backend, refusal)
-        : Services.Inference.RemoteSide.Unreachable(remoteName, url, backend) ?? MsgConnectionGuardFailed(url, backend);
+        WithProxyNote(
+            refusal is not null ? MsgConnectionRefused(url, backend, refusal)
+            : Services.Inference.RemoteSide.Unreachable(remoteName, url, backend) ?? MsgConnectionGuardFailed(url, backend),
+            backend, Services.NetworkProxy.Through(url));
+
+    /// <summary>
+    /// ⚠ A request that went through a proxy reads, when the proxy cannot reach the server (502) or filters it (403), as
+    /// the server's own silence or refusal: the person looks for a server that runs. The note names the proxy and the
+    /// gesture (<c>NO_PROXY</c>) without claiming it is the cause: a 401 through a proxy is still the server's key check.
+    /// </summary>
+    internal static string WithProxyNote(string text, string backend, Uri? proxy) =>
+        proxy is null ? text : text + "\n\n" + ProxyNote(proxy, backend);
+
+    internal static string ProxyNote(Uri proxy, string backend) => Format(Get(nameof(ProxyNote)), proxy, backend);
+
+    /// <summary>The Test button's line when nothing was detected at <paramref name="url"/>, the proxy it went through
+    /// named (<see cref="WithProxyNote"/>).</summary>
+    public static string StatusNotReached(string url, string? refusal) =>
+        StatusNotReached(refusal is null ? StatusUnreachable : StatusRefused(refusal), Services.NetworkProxy.Through(url));
+
+    internal static string StatusNotReached(string status, Uri? proxy) => proxy is null ? status : StatusViaProxy(status, proxy);
+
+    internal static string StatusViaProxy(string status, Uri proxy) => Format(Get(nameof(StatusViaProxy)), status, proxy);
 
     public static string RemoteLocalhostWsl(string url, string backend) => Format(Get(nameof(RemoteLocalhostWsl)), url, backend);
     public static string RemoteLocalhostSsh(string url, string backend, int port) => Format(Get(nameof(RemoteLocalhostSsh)), url, backend, port);

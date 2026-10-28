@@ -205,6 +205,7 @@ both sides. Visual Studio has no remote mode for extensions — Inferpal always 
 | First completion is slow, then fast | Cold model load on the remote host. With Ollama the model stays resident per its `keep_alive`; with LM Studio it stays resident until unloaded. Subsequent calls are fast. |
 | LM Studio: model unloads itself unexpectedly | Check the app's auto-unload / JIT settings; LM Studio can evict idle models depending on configuration. |
 | AMD GPU: driver crashes or corrupted output | Some ROCm builds are unstable on certain AMD cards. Check your backend's GPU / AMD documentation for supported cards, and keep both the backend and the GPU driver up to date. |
+| Behind a corporate proxy: the message says the request "goes through the proxy" | Inferpal uses the system proxy (`HTTP_PROXY` / `HTTPS_PROXY`, otherwise the Windows proxy settings), and a proxy usually cannot reach a server on your own network. Add the server's address to `NO_PROXY` (an exact host or IP: a CIDR range such as `192.168.1.0/24` is not understood), or to the proxy exceptions in Windows, then restart the editor so it reads the variable again. A server on this machine (`localhost`, `127.0.0.1`) never goes through a proxy set by these variables. |
 
 ---
 

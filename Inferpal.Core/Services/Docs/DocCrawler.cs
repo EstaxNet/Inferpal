@@ -64,7 +64,7 @@ internal sealed class DocCrawler
         // Redirects are followed by hand (see FetchPageAsync): an automatic redirect would let a
         // public documentation URL bounce the crawler onto 127.0.0.1 or 169.254.169.254 without
         // ever passing the SSRF guard again — the exact hole FetchUrlTool closes by hand.
-        var handler = new HttpClientHandler { AllowAutoRedirect = false };
+        var handler = new HttpClientHandler { AllowAutoRedirect = false, Proxy = NetworkProxy.Shared };
         var client  = new HttpClient(handler)
         {
             Timeout = TimeSpan.FromSeconds(30),

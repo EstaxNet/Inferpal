@@ -23,7 +23,7 @@ internal class FetchUrlTool : ITool
         // Redirects are followed MANUALLY (see ExecuteAsync) so each hop is re-checked
         // against IsPrivateOrLoopback — automatic redirects would let a public URL
         // bounce the request to 127.0.0.1 / 192.168.x.x and bypass the SSRF guard.
-        var handler = new HttpClientHandler { AllowAutoRedirect = false };
+        var handler = new HttpClientHandler { AllowAutoRedirect = false, Proxy = NetworkProxy.Shared };
         var client  = new HttpClient(handler)
         {
             Timeout = TimeSpan.FromSeconds(30),

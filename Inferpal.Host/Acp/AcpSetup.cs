@@ -97,7 +97,10 @@ internal static class AcpSetup
             }
             else
             {
-                output.WriteLine(refusal is null ? Strings.AcpSetupNotReached(url) : Strings.StatusRefused(refusal));
+                // The proxy the probe went through named, as on the Test buttons.
+                output.WriteLine(Strings.StatusNotReached(
+                    refusal is null ? Strings.AcpSetupNotReached(url) : Strings.StatusRefused(refusal),
+                    Services.NetworkProxy.Through(url)));
                 suggested = url;
             }
         }

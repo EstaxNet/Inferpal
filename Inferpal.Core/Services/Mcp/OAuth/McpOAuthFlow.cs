@@ -35,7 +35,7 @@ internal sealed class McpOAuthFlow
         // loopback) precisely because "this value comes from the remote server"; a redirect walks
         // around that check, since the guard only ever sees the address before the bounce.
         _http     = handler is null
-            ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false })
+            ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, Proxy = NetworkProxy.Shared })
             : new HttpClient(handler, disposeHandler: false);
 
         // Metadata documents and token responses are small by specification and remote by nature;

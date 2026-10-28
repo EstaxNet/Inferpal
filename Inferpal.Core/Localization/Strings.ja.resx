@@ -210,6 +210,8 @@
   <data name="StatusConnected" xml:space="preserve"><value>✓ 接続済み</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ 接続不可</value></data>
   <data name="StatusRefused" xml:space="preserve"><value>✗ 拒否 — {0}</value></data>
+  <data name="ProxyNote" xml:space="preserve"><value>このリクエストはプロキシ {0} を経由します（HTTP_PROXY または Windows のプロキシ設定によるもの）。{1} がこのマシンのネットワーク上で動作している場合、プロキシからは到達できない可能性があります。サーバーのアドレスを NO_PROXY または Windows のプロキシ例外に追加してから、エディターを再起動してください。</value></data>
+  <data name="StatusViaProxy" xml:space="preserve"><value>{0} — プロキシ {1} 経由</value></data>
   <data name="StatusThinking" xml:space="preserve"><value>処理中…</value></data>
   <data name="StatusCallingTool" xml:space="preserve"><value>→ {0}</value></data>
 

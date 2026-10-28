@@ -68,7 +68,7 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
         // custom `X-Api-Key` would ride along to whatever host the server redirects to. Same
         // stance as FetchUrlTool, which validates every hop by hand.
         _http = handler is null
-            ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false })
+            ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, Proxy = NetworkProxy.Shared })
             : new HttpClient(handler, disposeHandler: false);
         // Applies to the buffered JSON path (ReadAsStringAsync); the SSE path reads the stream
         // itself and is bounded by MaxSseEventChars below. Both exist for the same reason: the

@@ -325,13 +325,13 @@ internal partial class InferpalSettingsData
 
         var (detected, refusal) = await ProviderProbe.DetectWithRefusalAsync(url, key, ct);
         var name = detected is null ? null : ProviderOptions.FirstOrDefault(p => p.Code == detected).Name;
+        // A server that refused the probe (a wrong key) is up — the very thing this button checks. Resolved here, off
+        // the view-model's context: a system proxy's PAC lookup can block.
+        var notReached = name is null ? Strings.StatusNotReached(url, refusal) : null;
         InferpalConfig draft = null!;
         await RunOnVMContextAsync(() =>
         {
-            // A server that refused the probe (a wrong key) is up — the very thing this button checks.
-            var status = name is not null    ? $"{Strings.StatusConnected} — {name}"
-                       : refusal is not null ? Strings.StatusRefused(refusal)
-                       :                       Strings.StatusUnreachable;
+            var status = notReached ?? $"{Strings.StatusConnected} — {name}";
             if (completion) { CompletionStatus = status; if (name is not null) CompletionProvider = name; }
             else            { SearchStatus     = status; if (name is not null) SearchProvider     = name; }
             draft = RoleDraft();

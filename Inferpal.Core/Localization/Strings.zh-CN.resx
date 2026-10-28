@@ -210,6 +210,8 @@
   <data name="StatusConnected" xml:space="preserve"><value>✓ 已连接</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ 无法连接</value></data>
   <data name="StatusRefused" xml:space="preserve"><value>✗ 已拒绝 — {0}</value></data>
+  <data name="ProxyNote" xml:space="preserve"><value>此请求经过代理 {0}（由 HTTP_PROXY 或 Windows 代理设置指定）。如果 {1} 运行在本机所在的网络中，代理可能无法访问它：请将服务器地址添加到 NO_PROXY 或 Windows 代理例外中，然后重启编辑器。</value></data>
+  <data name="StatusViaProxy" xml:space="preserve"><value>{0} — 经由代理 {1}</value></data>
   <data name="StatusThinking" xml:space="preserve"><value>思考中…</value></data>
   <data name="StatusCallingTool" xml:space="preserve"><value>→ {0}</value></data>
 

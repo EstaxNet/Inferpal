@@ -47,7 +47,7 @@ internal sealed class PackageManagerLookup : IPackageLookup
     private static readonly TimeSpan MatchTimeout = RegexBudget.Default;
 
     // ⚠ No redirect is followed by any client of this code base: a redirect is an answer, not an instruction.
-    private static readonly HttpClient Http = new(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(10) };
+    private static readonly HttpClient Http = new(new HttpClientHandler { AllowAutoRedirect = false, Proxy = NetworkProxy.Shared }) { Timeout = TimeSpan.FromSeconds(10) };
 
     public Task<PackageLookupResult> LookUpAsync(AddedPackage package, CancellationToken ct) => package.Ecosystem switch
     {

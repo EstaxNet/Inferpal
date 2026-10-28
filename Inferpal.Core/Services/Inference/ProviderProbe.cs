@@ -16,7 +16,10 @@ namespace Inferpal.Services.Inference;
 /// </remarks>
 internal static class ProviderProbe
 {
-    private static readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(5) };
+    private static readonly HttpClient _http = new(new HttpClientHandler { Proxy = NetworkProxy.Shared })
+    {
+        Timeout = TimeSpan.FromSeconds(5),
+    };
 
     /// <summary>
     /// Returns the detected provider code (<see cref="InferenceProviderFactory.Ollama"/>,

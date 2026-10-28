@@ -211,6 +211,8 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="StatusConnected" xml:space="preserve"><value>✓ Connected</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ Unreachable</value></data>
   <data name="StatusRefused" xml:space="preserve"><value>✗ Refused — {0}</value></data>
+  <data name="ProxyNote" xml:space="preserve"><value>This request goes through the proxy {0} (set by HTTP_PROXY or the Windows proxy settings). If {1} runs on this machine's network, the proxy may not reach it: add the server's address to NO_PROXY, or to the proxy exceptions in Windows, then restart the editor.</value></data>
+  <data name="StatusViaProxy" xml:space="preserve"><value>{0} — through the proxy {1}</value></data>
   <data name="StatusThinking" xml:space="preserve"><value>Thinking…</value></data>
   <data name="StatusCallingTool" xml:space="preserve"><value>→ {0}</value></data>
 
