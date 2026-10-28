@@ -1299,7 +1299,7 @@ internal class FileHistoryService
         }, ct);
     }
 
-    // One piece gesture at a time in this process: two read the same marks, and the second write dropped the first.
+    // One piece gesture at a time in this process: two would read the same marks, and the second write drop the first.
     private readonly SemaphoreSlim _pieceGate = new(1, 1);
 
     /// <summary>

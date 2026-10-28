@@ -159,6 +159,7 @@
   "Review my uncommitted changes: point out bugs, risks and anything missing, such as tests.": "审查我未提交的更改：指出错误、风险以及缺失的内容（例如测试）。",
   "Open a file to explain it, write its tests or find its usages.": "打开一个文件即可解释它、为其编写测试或查找其用法。",
   "{0} (first {1} of {2} characters)": "{0}（共 {2} 个字符中的前 {1} 个）",
+  "{0} (its end only)": "{0}（仅结尾）",
   "{0} (not attached: at most {1} files per question)": "{0}（未附加：每个问题最多 {1} 个文件）",
   "The assistant restarted and could not return to plan mode: the agent can edit files again.": "助手已重新启动，但无法返回计划模式：代理可以再次编辑文件。",
   "Full documentation (in English): {0}": "完整文档（英文）：{0}",

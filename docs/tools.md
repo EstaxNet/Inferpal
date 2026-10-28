@@ -105,8 +105,8 @@ card:
   the **actual diff** so you confirm the change, not just a path.
 - An edit that would **leave a syntax error** (`write_file`, `apply_diff`, `apply_edits`) is refused
   before the prompt, and the model is told the file, the line and the error: C# by the compiler's
-  parser (your project's symbols aside), Razor by its braces, Python by the Python installed on your machine (never the
-  repository's own environment, which this check would run before your approval), `.mjs` and
+  parser (your project's symbols aside), Razor by its braces, Python by the Python of the environment you activated, else the first on your PATH (never a
+  `.venv` found in the repository, which this check would run before your approval), `.mjs` and
   `.cjs` files by `node --check`. Only an error the file did not have is refused, never one the
   code only shows once compiled (a type not found yet). A file that did not parse before, a `.js`
   file (whether it parses depends on your project: modules, JSX), and a check that cannot run (no

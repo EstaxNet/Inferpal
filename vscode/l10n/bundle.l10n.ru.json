@@ -159,6 +159,7 @@
   "Review my uncommitted changes: point out bugs, risks and anything missing, such as tests.": "Проверь мои незакоммиченные изменения: укажи ошибки, риски и чего не хватает, например тестов.",
   "Open a file to explain it, write its tests or find its usages.": "Откройте файл, чтобы объяснить его, написать для него тесты или найти, где он используется.",
   "{0} (first {1} of {2} characters)": "{0} (первые {1} из {2} символов)",
+  "{0} (its end only)": "{0} (только конец)",
   "{0} (not attached: at most {1} files per question)": "{0} (не прикреплено: не более {1} файлов на вопрос)",
   "The assistant restarted and could not return to plan mode: the agent can edit files again.": "Ассистент перезапустился и не смог вернуться в режим плана: агент снова может изменять файлы.",
   "Full documentation (in English): {0}": "Полная документация (на английском): {0}",

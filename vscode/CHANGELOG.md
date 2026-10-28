@@ -3,6 +3,25 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.8.7
+
+Your own modes and your repository's, a slow server that says how long it will be, an edit that breaks the syntax
+refused before it is written, one change of a file kept or undone, and your terminal in a question.
+
+- **Modes**: beside Chat, Agent and Plan, the message box offers your own modes, the repository's `.inferpal/modes/`,
+  GitHub Copilot's custom agents (`.github/agents/`) and Roo Code's custom modes (`.roomodes`). A mode held for the
+  conversation brings its instructions, its model when your server has it, the tools it keeps and its reasoning
+  effort; it never adds a permission. `/modes` lists them; `/import roo` writes Roo's custom modes as your own.
+- **`@terminal`** attaches the last command the active terminal finished: the command, its folder, its output (the end
+  kept when it is long) and its exit code. The first time in a terminal, it asks you to run the command again.
+- **A slow server says how long, and when Inferpal stops waiting**: a card under the status line shows the time waited
+  against the time that server usually takes, the tokens it reads, and when Inferpal stops waiting — from the start.
+  Edit with AI says it on its progress notification. A turn stopped there offers **Open time limits**.
+- **Keep or undo one change of a file**: **Review changes** opens a file the run changed in several places on its
+  changes, each with **Keep** and **Undo**; the others stay as the run made them.
+- **An edit that breaks the syntax is no longer written**: C#, Razor, Python and `.mjs`/`.cjs` files are checked before
+  the approval card, and the model is told the line and the error.
+
 ## 1.8.6
 
 Take back part of a run, go back to a question with its files, attach a web page or a commit, and know what a long

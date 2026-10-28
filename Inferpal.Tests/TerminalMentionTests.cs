@@ -32,6 +32,9 @@ public class TerminalMentionTests
         Assert.DoesNotContain("from 'vscode'", text, StringComparison.Ordinal);   // pure, as attachmentCap.ts
         Assert.Contains("the start of the output is cut", text, StringComparison.Ordinal);
         Assert.Contains("this.text.slice(over)", text, StringComparison.Ordinal);   // the END is kept
+        // The cut said to both readers: on the chip too, and one long line kept rather than the marker alone.
+        Assert.Contains("chip: command.cut ? t('{0} (its end only)', chip) : chip,", history, StringComparison.Ordinal);
+        Assert.Contains("if (firstBreak >= 0 && firstBreak < output.trimEnd().length) {", text, StringComparison.Ordinal);
     }
 
     [Fact]

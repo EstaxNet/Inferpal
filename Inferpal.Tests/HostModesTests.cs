@@ -68,6 +68,32 @@ public partial class HostServerTests
         Assert.Equal("Review", (await Call<ModeListResult>(h, "mode/list", new { })).Current);
     }
 
+    /// <summary>A code action runs without the held mode — its instructions too, not only its tools and model; the next
+    /// question has them again.</summary>
+    [Fact]
+    public async Task ACodeAction_IsSentWithoutTheHeldModesInstructions()
+    {
+        using var h = CreateHarness();
+        WriteMode(h, "review.md", ReviewMode);
+        h.Fake.ModelNames = ["devstral-small-2"];
+        string? codeActionSystem = null;
+        h.Fake.OnChatRequest = (_, messages, _, _) =>
+        {
+            codeActionSystem ??= messages[0].Content;
+            return Task.FromResult(new ChatTurnResult("explained", null, 1, 1));
+        };
+        h.Fake.OnAgentRun = (history, _, _, _) => Task.FromResult(new AgentResult("ok", [], history));
+        await h.InitializeAsync();
+        await Call<ModeSetResult>(h, "mode/set", new { name = "Review" });
+
+        await Call<ChatSendResult>(h, "chat/send", new { prompt = "Explain the following code", model = "devstral-small-2", codeAction = true });
+        await Call<ChatSendResult>(h, "chat/send", new { prompt = "review it", agentMode = false, model = "devstral-small-2" });
+
+        Assert.NotNull(codeActionSystem);
+        Assert.DoesNotContain("REVIEW-INSTRUCTIONS", codeActionSystem, StringComparison.Ordinal);
+        Assert.Contains("REVIEW-INSTRUCTIONS", h.Fake.AgentRuns[^1].History[0].Content, StringComparison.Ordinal);   // witness
+    }
+
     [Fact]
     public async Task AModeWhoseModelTheServerLacks_IsSaidOnce_AndTheChatModelAnswers()
     {

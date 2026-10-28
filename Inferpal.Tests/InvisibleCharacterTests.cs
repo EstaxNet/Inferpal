@@ -45,13 +45,15 @@ public class InvisibleCharacterTests
             var lines = File.ReadAllLines(file);
             for (var i = 0; i < lines.Length; i++)
             {
-                var bad = lines[i].FirstOrDefault(c => char.IsControl(c) && c != '\t');
+                // Format characters too (U+200B, U+FEFF past the byte order mark, bidi marks): as invisible.
+                var bad = lines[i].FirstOrDefault(c => (char.IsControl(c) && c != '\t')
+                                                     || char.GetUnicodeCategory(c) == System.Globalization.UnicodeCategory.Format);
                 if (bad != default)
                     found.Add($"{Path.GetFileName(file)}:{i + 1} (U+{(int)bad:X4})");
             }
         }
 
         Assert.True(found.Count == 0,
-            "Raw control character(s) — invisible in the source; write them as an escape (\\u0001):\n" + string.Join("\n", found));
+            "Raw control or format character(s) — invisible in the source; write them as an escape (\\u0001, \\u200B):\n" + string.Join("\n", found));
     }
 }

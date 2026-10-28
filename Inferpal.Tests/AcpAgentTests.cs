@@ -923,6 +923,29 @@ public sealed class AcpAgentTests : IDisposable
         }
     }
 
+    /// <summary>A thread closed to make room whose mode's file is gone since comes back in Default — and the client's
+    /// selector is told: no load response carries it there.</summary>
+    [Fact]
+    public async Task ASessionClosedToMakeRoom_WhoseModesFileIsGone_TellsTheClientItIsInDefault()
+    {
+        var file = Path.Combine(_root, ".inferpal", "modes", "review.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+        File.WriteAllText(file, "---\nname: Review\ntools: [read]\n---\nREVIEW-INSTRUCTIONS\n");
+        await using var h = await StartAsync(fake: f => f.ChatResult = new ChatTurnResult("ok", null, 0, 0));
+        await h.Client.RequestAsync("initialize", Init());
+        var first = await NewSessionAsync(h);
+        await h.Client.RequestAsync("session/set_mode", new { sessionId = first, modeId = "mode:Review" });
+        await PromptAsync(h, first, "remember this question");
+        for (var i = 0; i < AcpAgent.MaxLiveSessions; i++) await NewSessionAsync(h);   // the first is closed for room
+        File.Delete(file);
+        var before = h.Client.Lines.Count;
+
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, first, "and now?")));
+
+        Assert.Contains(h.Client.Lines.Skip(before), l => l.Contains("\"current_mode_update\"", StringComparison.Ordinal)
+                                                          && l.Contains("\"currentModeId\":\"default\"", StringComparison.Ordinal));
+    }
+
     [Fact]
     public async Task ASessionNeverOpened_IsStillUnknown()
     {

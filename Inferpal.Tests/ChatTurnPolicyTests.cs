@@ -59,7 +59,7 @@ public class ChatTurnPolicyTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   \t\n")]
-    [InlineData("​﻿‌")]                       // invisible Unicode only
+    [InlineData("\u200B\uFEFF\u200C")]                       // invisible Unicode only
     [InlineData("<think>long reasoning</think>")]            // think-only output
     [InlineData("<think>reasoning</think>---")]              // the Qwen final-agent-answer artefact
     [InlineData("<think>unfinished reasoning")]              // a turn stopped mid-reasoning

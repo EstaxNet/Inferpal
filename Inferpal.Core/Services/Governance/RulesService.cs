@@ -96,7 +96,7 @@ internal static class RulesService
     {
         // Normalize newlines so the fences read the same on CRLF, LF and lone CR.
         var normalized = text.Replace("\r\n", "\n").Replace('\r', '\n');
-        if (normalized.StartsWith('﻿')) normalized = normalized[1..];
+        if (normalized.StartsWith('\uFEFF')) normalized = normalized[1..];
         if (!normalized.StartsWith("---\n", StringComparison.Ordinal)) return (null, normalized);
 
         var end = normalized.IndexOf("\n---", 3, StringComparison.Ordinal);

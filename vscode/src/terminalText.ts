@@ -72,7 +72,11 @@ export function terminalAttachment(command: string, cwd: string | undefined, out
   const lines = [`$ ${command || '(the command line was not reported)'}` + (cwd ? `    (in ${cwd})` : '')];
   if (cut) {
     lines.push('…(the start of the output is cut: only its end is attached)');
-    output = output.slice(output.indexOf('\n') + 1);
+    // Dropped only when a line follows it: one long line is kept whole, never a chip with the marker alone.
+    const firstBreak = output.indexOf('\n');
+    if (firstBreak >= 0 && firstBreak < output.trimEnd().length) {
+      output = output.slice(firstBreak + 1);
+    }
   }
   lines.push(output.trimEnd() || '(no output)');
   lines.push(exitCode === undefined ? '[exit code: not reported by the shell]' : `[exit code: ${exitCode}]`);

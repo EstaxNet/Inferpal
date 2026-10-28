@@ -438,6 +438,8 @@ internal sealed class AcpSession : IAsyncDisposable
         {
             Diagnostics.Swallow("AcpSession.HoldAgain", ex);
             await SetModeAsync(AcpModes.Default, ct);
+            // The client's selector still shows the mode it asked for: told, or it keeps it after a reopen.
+            ModeChanged(AcpModes.Default);
         }
     }
 

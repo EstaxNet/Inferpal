@@ -465,8 +465,8 @@ internal partial class InferpalToolWindowData
     }
 
     /// <summary>The layered system prompt for the project root <paramref name="dir"/>.</summary>
-    /// <param name="mode">The mode the conversation is held in — its instructions, last; <c>null</c> for <c>/task</c> and
-    /// <c>/tdd</c>, whose tools the mode does not narrow.</param>
+    /// <param name="mode">The mode the conversation is held in — its instructions, last; <c>null</c> for <c>/task</c>,
+    /// <c>/tdd</c> and a code action, which the mode does not steer.</param>
     private string LayeredPrompt(string dir, ChatMode? mode)
     {
         var prompt = new SystemPromptBuilder(_config, EditorName, ContextWindowInUse, _indexService.RootDir).Build(
@@ -494,9 +494,11 @@ internal partial class InferpalToolWindowData
     private string? PersonaLanguage => _config.PersonaAutoSwitch ? _personaLanguage : null;
 
     /// <summary>Rebuilds the base prompt and writes the system message. VM context only.</summary>
-    private void RefreshSystemPrompt()
+    /// <param name="withMode">The held mode's instructions as its last layer — <c>false</c> for a code action, which
+    /// runs without the mode.</param>
+    private void RefreshSystemPrompt(bool withMode = true)
     {
-        _baseSystemPrompt = BuildSystemPrompt();
+        _baseSystemPrompt = withMode ? BuildSystemPrompt() : LayeredPrompt(FindProjectRoot(), mode: null);
         ApplySystemPrompt();
     }
 

@@ -131,6 +131,25 @@ public class OllamaClientAgentLoopTests
         Assert.Equal(1, registry.ExecuteCount);   // the repeat was never executed
     }
 
+    /// <summary>The syntax guard asks for the same edit again when the code is valid for the project (a language version
+    /// its checker does not know): that repeat runs and is written, never stopped as a loop — and a third identical
+    /// batch is one.</summary>
+    [Fact]
+    public async Task AnEditTheSyntaxGuardRefused_SentAgain_IsExecuted_NotALoop()
+    {
+        var calls    = 0;
+        var registry = new StubToolRegistry("write_file", () => ++calls == 1
+            ? Inferpal.Services.Tools.SyntaxGuard.RefusalMarker + "a.cs at line 3 (CS1513: } expected). Send the same edit again."
+            : "written");
+        var write  = ToolCallReply("write_file", """{"path":"a.cs","content":"x"}""");
+        var client = new ScriptedOllamaClient(Config(), [write, write, write, TextReply("done")]);
+
+        var result = await RunAsync(client, registry);
+
+        Assert.Equal(2, registry.ExecuteCount);   // the resend ran
+        Assert.True(result.WasLoopDetected);      // the third, after it was written, is a loop
+    }
+
     /// <summary>The basic loop returns the same history as the orchestrated one: no unanswered call
     /// after a detected loop (otherwise the next turn is refused by an OpenAI-compatible server).</summary>
     [Fact]

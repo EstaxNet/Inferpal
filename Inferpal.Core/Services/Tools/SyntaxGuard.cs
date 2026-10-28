@@ -38,6 +38,13 @@ internal static class SyntaxGuard
     // wait for it (on Windows, the Store's "python" alias can hang without a byte).
     private static volatile bool _pythonUnavailable, _nodeUnavailable;
 
+    /// <summary>What every refusal says, in whatever a tool wraps it (<c>apply_edits</c>'s localized "no changes").</summary>
+    internal const string RefusalMarker = "Refused: this edit leaves a syntax error in ";
+
+    /// <summary>Whether a tool's result is this guard's refusal: the same call sent again is then what the refusal asks
+    /// for when the code is valid for the project, never a loop (<c>AgentLoopPolicy.Forgive</c>).</summary>
+    internal static bool Refused(string toolResult) => toolResult.Contains(RefusalMarker, StringComparison.Ordinal);
+
     /// <summary>Forgets the refusals and the checkers found unavailable (tests).</summary>
     internal static void ResetForTests()
     {
@@ -61,7 +68,7 @@ internal static class SyntaxGuard
         if (RefusedOnce.TryRemove(key, out _)) return null;
         if (RefusedOnce.Count > 256) RefusedOnce.Clear();
         RefusedOnce[key] = 0;
-        return $"Refused: this edit leaves a syntax error in {Shown(path, root)} at line {error.Line} ({error.Message}). "
+        return $"{RefusalMarker}{Shown(path, root)} at line {error.Line} ({error.Message}). "
                + "Nothing was written: correct the edit and send it again. If the code is valid for this project (a newer "
                + "language version than the check knows), send the same edit again and it will be written.";
     }

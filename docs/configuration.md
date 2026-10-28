@@ -214,9 +214,9 @@ A mode is a way of working you pick for a conversation, beside Chat, Agent and P
 
 | Where | Format |
 |---|---|
-| `%AppData%\Inferpal\modes\*.md` | Your own, in every workspace — the format below. |
+| `%AppData%\Inferpal\modes\*.md` | Your own, in every workspace — the format below. Beside Inferpal's settings: `~/.config/Inferpal/modes` on Linux, `~/Library/Application Support/Inferpal/modes` on macOS. |
 | `.inferpal/modes/*.md` | The repository's — the format below. |
-| `.github/agents/*.agent.md` | GitHub Copilot's custom agents, as they are: `name`, `description`, `tools`, `model` (a name or a list: the first one the server has) and `reasoning-effort`; the body is the instructions. `handoffs`, `agents`, `hooks`, `mcp-servers` and the rest are not carried, and `/modes` names them. |
+| `.github/agents/*.md` | GitHub Copilot's custom agents (`*.agent.md`, as Copilot writes them), as they are: `name`, `description`, `tools`, `model` (a name or a list: the first one the server has) and `reasoning-effort`; the body is the instructions. `handoffs`, `agents`, `hooks`, `mcp-servers` and the rest are not carried, and `/modes` names them. |
 | `.roomodes` | Roo Code's custom modes (YAML or JSON): `roleDefinition` then `customInstructions` then the files of `.roo/rules-<slug>/` as instructions; `groups` as tools (`read`, `edit` with its `fileRegex`, `command`, `mcp`). Roo keeps no model in this file. |
 
 A mode file is a Markdown file with a front matter:

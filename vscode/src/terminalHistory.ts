@@ -164,8 +164,10 @@ export class TerminalHistory implements vscode.Disposable {
         : { notice: t('No command has finished in this terminal since Inferpal began following it: run it again, then use @terminal.') };
     }
     const short = command.command.length > 40 ? command.command.slice(0, 39) + '…' : command.command;
+    const chip = short ? `⌨ terminal: ${short}` : '⌨ terminal';
     return {
-      chip: short ? `⌨ terminal: ${short}` : '⌨ terminal',
+      // The cut said to the person too, on the chip: the model reads it in the marker.
+      chip: command.cut ? t('{0} (its end only)', chip) : chip,
       content: terminalAttachment(command.command, command.cwd, command.output, command.cut, command.exitCode),
     };
   }

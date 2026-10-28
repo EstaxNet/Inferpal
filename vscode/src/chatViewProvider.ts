@@ -687,7 +687,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         this.heldMode = set.mode?.name ?? null;
       } catch (err) {
         this.log(`[chat] mode not restored after a host restart: ${String(err)}`);
-        refused = String(err);
+        refused = hostErrorText(err);
         this.heldMode = null;
       }
       if (refused !== null) {
@@ -1218,7 +1218,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       promptOpenFolder();
       return;
     }
-    if (this.transcript.length === 0) {
+    // A mode's line alone, never saved, is no conversation to save — as for the archive.
+    if (this.transcript.every((m) => m.modeLine)) {
       return;
     }
     const first = this.transcript.find((m) => m.role === 'user' && !m.notice && !m.note)?.text ?? '';

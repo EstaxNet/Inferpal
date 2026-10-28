@@ -55,12 +55,14 @@ public class ModeSelectorTests
 
         // Read again with the question, before the system prompt it joins.
         Assert.True(turn.IndexOf("RereadHeldMode();", StringComparison.Ordinal) is var reread and > 0
-                    && reread < turn.IndexOf("RefreshSystemPrompt();", reread, StringComparison.Ordinal));
+                    && reread < turn.IndexOf("RefreshSystemPrompt(", reread, StringComparison.Ordinal));
         // Its tools, its model, its effort; never the agent loop.
         Assert.Contains("&& turnMode is null", turn);
         Assert.Contains("ChatModes.PickModelAsync(_client, turnMode, effectiveModel, localCts!.Token)", turn);
         Assert.Contains("effectiveTools = ChatModes.ToolsFor(_tools, turnMode, _indexService.RootDir);", turn);
         Assert.Contains("ChatTurnPolicy.TurnEffort(_config, codeAction: oneTimeModel is not null, turnMode)", turn);
+        // A code action: without its instructions either.
+        Assert.Contains("RefreshSystemPrompt(withMode: oneTimeModel is null);", turn);
         // Its instructions, and what its tools weigh.
         var rag = Code("InferpalToolWindowData.Rag.cs");
         Assert.Contains("_heldMode);", rag);
@@ -105,6 +107,9 @@ public class ModeSelectorTests
         Assert.Contains("this.gestureFailed('mode/set', err);\n        void this.refreshModes();\n        return;",
                         provider.Replace("\r\n", "\n"));
         Assert.Contains("transcript.filter((item) => !item.modeLine)", sessions);
+        // A mode's line alone is no conversation: neither archived nor saved under a name.
+        Assert.Contains("this.transcript.every((m) => m.modeLine)", WebviewRebuildTests.Body(provider, "async saveSessionCommand("));
+        Assert.Contains("this.transcript.every((m) => m.modeLine)", WebviewRebuildTests.Body(provider, "private archiveConversation("));
         // The line is never saved, so "Go back here" does not count it among the saved messages either.
         Assert.Contains("return this.hiddenEntries.length + (this.droppedEntries > 0 ? i - 1 : i) - lines;", provider);
     }

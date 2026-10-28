@@ -149,7 +149,7 @@ public sealed class OutputMentionTests : IDisposable
         Assert.Contains("await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();", watcher, StringComparison.Ordinal);
         Assert.Contains("is EnvDTE80.DTE2 dte", watcher, StringComparison.Ordinal);
         Assert.DoesNotContain("dynamic", watcher, StringComparison.Ordinal);
-        Assert.Contains("cut = doc.EndPoint.AbsoluteCharOffset > OutputPaneSignal.MaxChars;", watcher, StringComparison.Ordinal);
+        Assert.Contains("cut = doc.EndPoint.AbsoluteCharOffset - 1 > OutputPaneSignal.MaxChars;", watcher, StringComparison.Ordinal);
         Assert.Contains("await Task.Run(() => OutputPaneSignal.Answer(answer));", watcher, StringComparison.Ordinal);
     }
 

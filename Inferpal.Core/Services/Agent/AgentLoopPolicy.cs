@@ -90,10 +90,8 @@ internal static class AgentLoopPolicy
     /// identical <c>run_tests</c> of an edit → verify cycle stopped the run as a loop.</remarks>
     internal static bool IsLoop(Dictionary<string, int> counts, IReadOnlyList<ToolCallDto> calls)
     {
-        var counted = calls.Where(c => !Advances(c)).ToList();
-        if (counted.Count == 0) return false;
-        bool readOnlyBatch = counted.All(RepeatsAsACheck);
-        var sig  = (readOnlyBatch ? ReadOnlyKey : string.Empty) + Signature(counted);
+        if (Key(calls) is not { } sig) return false;
+        bool readOnlyBatch = sig.StartsWith(ReadOnlyKey, StringComparison.Ordinal);
         int seen = counts[sig] = counts.GetValueOrDefault(sig) + 1;
 
         if (readOnlyBatch) return seen >= 3;
@@ -102,5 +100,25 @@ internal static class AgentLoopPolicy
         foreach (var key in counts.Keys.Where(k => k.StartsWith(ReadOnlyKey, StringComparison.Ordinal)).ToList())
             counts.Remove(key);
         return false;
+    }
+
+    /// <summary>
+    /// Forgets <paramref name="calls"/> in <paramref name="counts"/> when the syntax guard refused one of them
+    /// (<paramref name="results"/>): the refusal asks for the same edit again when the code is valid for the project,
+    /// and that repeat, stopped as a loop before it ran, would never be written.
+    /// </summary>
+    /// <remarks>Never a loop for all that: the guard lets an edit through once it was refused, so the repeat is written
+    /// or refused for another reason, and a third identical batch counts as a repeat again.</remarks>
+    internal static void Forgive(Dictionary<string, int> counts, IReadOnlyList<ToolCallDto> calls, IEnumerable<string> results)
+    {
+        if (results.Any(SyntaxGuard.Refused) && Key(calls) is { } sig) counts.Remove(sig);
+    }
+
+    /// <summary>The batch's key in the counts — <c>null</c> when every call advances.</summary>
+    private static string? Key(IReadOnlyList<ToolCallDto> calls)
+    {
+        var counted = calls.Where(c => !Advances(c)).ToList();
+        if (counted.Count == 0) return null;
+        return (counted.All(RepeatsAsACheck) ? ReadOnlyKey : string.Empty) + Signature(counted);
     }
 }

@@ -159,6 +159,7 @@
   "Review my uncommitted changes: point out bugs, risks and anything missing, such as tests.": "커밋하지 않은 변경 사항을 검토해 주세요. 버그, 위험, 테스트처럼 빠진 것을 지적해 주세요.",
   "Open a file to explain it, write its tests or find its usages.": "파일을 열면 설명, 테스트 작성, 사용처 찾기를 할 수 있습니다.",
   "{0} (first {1} of {2} characters)": "{0}({2}자 중 처음 {1}자)",
+  "{0} (its end only)": "{0}(끝부분만)",
   "{0} (not attached: at most {1} files per question)": "{0}(첨부되지 않음: 질문당 최대 {1}개 파일)",
   "The assistant restarted and could not return to plan mode: the agent can edit files again.": "어시스턴트가 다시 시작되었지만 계획 모드로 돌아가지 못했습니다. 에이전트가 다시 파일을 편집할 수 있습니다.",
   "Full documentation (in English): {0}": "전체 문서(영어): {0}",

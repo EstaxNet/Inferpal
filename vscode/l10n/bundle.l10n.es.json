@@ -159,6 +159,7 @@
   "Review my uncommitted changes: point out bugs, risks and anything missing, such as tests.": "Revisa mis cambios sin confirmar: señala errores, riesgos y lo que falte, como pruebas.",
   "Open a file to explain it, write its tests or find its usages.": "Abra un archivo para explicarlo, escribir sus pruebas o encontrar sus usos.",
   "{0} (first {1} of {2} characters)": "{0} (los primeros {1} de {2} caracteres)",
+  "{0} (its end only)": "{0} (solo el final)",
   "{0} (not attached: at most {1} files per question)": "{0} (no adjuntado: como máximo {1} archivos por pregunta)",
   "The assistant restarted and could not return to plan mode: the agent can edit files again.": "El asistente se reinició y no pudo volver al modo plan: el agente puede volver a editar archivos.",
   "Full documentation (in English): {0}": "Documentación completa (en inglés): {0}",

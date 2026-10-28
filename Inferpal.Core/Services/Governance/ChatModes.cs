@@ -251,7 +251,7 @@ internal static class ChatModes
         var notCarried = new List<string>(fm.Where(p => !CarriedKeys.Contains(p.Key)).Select(p => p.Key));
         var name = CleanName(Scalar(Key(fm, "name").Value)) is { Length: > 0 } n ? n : StemOf(fileName);
         ModeTools? tools = null;
-        // ⚠ Read case aside: `Tools:` read as no key at all left every tool to a mode written as read-only.
+        // ⚠ Read case aside: `Tools:` read as no key at all would leave every tool to a mode written as read-only.
         var groups = Key(fm, "groups");
         if (Key(fm, "tools") is { Present: true } listed)
         {
@@ -464,7 +464,7 @@ internal static class ChatModes
     }
 
     /// <summary>A name as the picker shows it: no control or invisible format characters, no surrounding spaces — so that
-    /// <c>"Agent "</c> or <c>"Agent​"</c> is Inferpal's own name, refused.</summary>
+    /// <c>"Agent "</c> or <c>"Agent\u200B"</c> is Inferpal's own name, refused.</summary>
     internal static string? CleanName(string? name) =>
         name is null ? null
         : new string(name.Where(c => !char.IsControl(c)

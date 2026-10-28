@@ -182,6 +182,29 @@ public class AgentLoopRegressionTests
         Assert.False(ToolBlockBoundary.HasOrphanedToolMessage(next));
     }
 
+    /// <summary>The syntax guard asks for the same edit again when the code is valid for the project: in the orchestrated
+    /// loop too, that repeat runs instead of ending the run as a loop.</summary>
+    [Fact]
+    public async Task AnEditTheSyntaxGuardRefused_SentAgain_IsExecuted_NotALoop()
+    {
+        var runs = 0;
+        var tools = new StubRegistry("write_file", () => Task.FromResult(++runs == 1
+            ? Inferpal.Services.Tools.SyntaxGuard.RefusalMarker + "a.cs at line 3 (CS1513: } expected). Send the same edit again."
+            : "written"));
+        var client = new RecordingClient(
+        [
+            Plan(1),
+            Call("write_file", """{"path":"a.cs","content":"x"}"""),
+            Call("write_file", """{"path":"a.cs","content":"x"}"""),   // what the refusal asks for
+            Text("done"),
+        ]);
+
+        var result = await RunAsync(client, tools, [new("system", "sys"), new("user", "question")]);
+
+        Assert.Equal(2, runs);
+        Assert.False(result.WasLoopDetected);
+    }
+
     /// <summary>
     /// The synthesized answer is the one the user read: it must be the one the model reads back on
     /// the next turn, not the empty turn it replaced.

@@ -142,7 +142,7 @@ internal static class OutputPaneWatcher
             // Only the end is read: a detailed build log runs to megabytes, copied on this thread for 40,000 characters.
             // Moved back only from a pane longer than that: a short one is read from its start.
             var doc = pane.TextDocument;
-            cut = doc.EndPoint.AbsoluteCharOffset > OutputPaneSignal.MaxChars;
+            cut = doc.EndPoint.AbsoluteCharOffset - 1 > OutputPaneSignal.MaxChars;   // offsets start at 1
             var start = cut ? doc.EndPoint.CreateEditPoint() : doc.StartPoint.CreateEditPoint();
             if (cut) start.CharLeft(OutputPaneSignal.MaxChars);
             text = start.GetText(doc.EndPoint);

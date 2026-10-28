@@ -168,9 +168,13 @@ internal sealed class ApplyEditsTool : ITool
         if (changed.Count == 0) return Strings.ApplyEditsOk(edits.Count, 0);
         foreach (var p in changed)
             if (FileTarget.EncodingRefusal(p, current[p]) is { } cannotHold) return Strings.ApplyEditsAborted(cannotHold);
-        // All or nothing, like every other refusal of the batch: one file left unparsable refuses them all.
+        // All or nothing, like every other refusal of the batch: one file left unparsable refuses them all. ⚠ Every file
+        // is judged, never up to the first refusal: each refusal is let through once sent again, so the same batch sent
+        // again passes whole instead of being refused file after file.
+        var broken = new List<string>();
         foreach (var p in changed)
-            if (await SyntaxGuard.RefusalAsync(p, original[p], current[p], root, ct) is { } broken) return Strings.ApplyEditsAborted(broken);
+            if (await SyntaxGuard.RefusalAsync(p, original[p], current[p], root, ct) is { } refusal) broken.Add(refusal);
+        if (broken.Count > 0) return Strings.ApplyEditsAborted(string.Join("\n", broken));
 
         // ── Approval: one prompt with the combined diff across files ───────────
         var details = BuildApprovalDetails(root, changed, original, current);

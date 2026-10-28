@@ -700,6 +700,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
                                            WasLoopDetected: true);
                 }
 
+                var batchStart = executions.Count;
                 // A batch of independent, GPU-free, prompt-free read tools runs concurrently
                 // (same policy as the orchestrator); everything else stays sequential. Read-only
                 // tools never produce a diff, so the parallel path records DiffInfo = null.
@@ -734,6 +735,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
                     // Size-capped copy for the model context; the UI bubble keeps the full output.
                     messages.Add(new ChatMessageDto("tool", AgentOrchestrator.CapForContext(result)));
                 }
+                AgentLoopPolicy.Forgive(sigCounts, calls, executions.Skip(batchStart).Select(e => e.Output));
             }
             else
             {

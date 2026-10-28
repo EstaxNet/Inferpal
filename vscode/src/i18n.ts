@@ -28,7 +28,7 @@ export function setLanguage(language: string | undefined, extensionUri: vscode.U
   } else {
     const file = vscode.Uri.joinPath(extensionUri, 'l10n', `bundle.l10n.${code.toLowerCase()}.json`).fsPath;
     try {
-      bundle = JSON.parse(fs.readFileSync(file, 'utf8').replace(/^﻿/, '')) as Record<string, string>;
+      bundle = JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, '')) as Record<string, string>;
     } catch {
       // No bundle for that code: the editor's language is the best fallback left.
       bundle = undefined;

@@ -496,7 +496,9 @@ internal partial class InferpalToolWindowData
 
         try
         {
-            var systemPrompt = SystemPromptWithoutMode();
+            // Read on the VM context: it rebuilds the layered prompt from the VM's fields when a mode is held.
+            string? systemPrompt = null;
+            await RunOnVMContextAsync(() => systemPrompt = SystemPromptWithoutMode());
             // The active file's instructions ride with each fix request (the system prompt has none) — read on the VM
             // context, where the X-Ray switches live.
             var activeFile = string.Empty;

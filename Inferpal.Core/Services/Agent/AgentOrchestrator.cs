@@ -1080,6 +1080,8 @@ internal sealed class AgentOrchestrator
                     messages.Add(new ChatMessageDto("tool", CapForContext(forContext)));
                 }
 
+                AgentLoopPolicy.Forgive(sigCounts, calls, iterExecs.Select(e => e.Output));
+
                 // ⚠ An edit that wrote nothing is not a step done: an apply_edits refused whole, an old_content not
                 // found, a write declined. Telling the model its plan is complete then — "answer now, without
                 // calling any more tools" — is what made it end the run, claiming a change no file received.

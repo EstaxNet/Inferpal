@@ -6,6 +6,8 @@ namespace Inferpal.Tests;
 
 /// <summary>An edit that ADDS a parse error is refused before it is written — never a semantic error, never an error the
 /// file already had, and never twice: the same edit sent again is the model insisting, and is written.</summary>
+// One collection: both classes reset the guard's refusals, which a run in parallel would clear between two calls.
+[Collection("SyntaxGuard")]
 public class SyntaxGuardTests
 {
     private const string Ok = "class A\n{\n    void M() { }\n}\n";
@@ -146,6 +148,7 @@ public class SyntaxGuardTests
 }
 
 /// <summary>The guard where the model meets it: each writing tool refuses before the approval card, and writes nothing.</summary>
+[Collection("SyntaxGuard")]
 public sealed class SyntaxGuardToolsTests : IDisposable
 {
     private readonly string _ws = Directory.CreateTempSubdirectory("inferpal-syntax-tools").FullName;
@@ -230,5 +233,34 @@ public sealed class SyntaxGuardToolsTests : IDisposable
         Assert.Equal(0, approval.Asked);
         Assert.Equal(Clean, File.ReadAllText(path));
         Assert.Equal("class B { }\n", File.ReadAllText(other));   // all or nothing
+    }
+
+    /// <summary>Two files of one batch left unparsable: both refusals said at once, so the batch sent again is written
+    /// whole — never refused file after file, a refusal already given coming back.</summary>
+    [Fact]
+    public async Task ApplyEdits_WithTwoBrokenFiles_PassesWholeOnceSentAgain()
+    {
+        var path = FileWith(Clean);
+        var other = Path.Combine(_ws, "B.cs");
+        File.WriteAllText(other, "class B { }\n");
+        var approval = new CountingApproval();
+        var tool = new ApplyEditsTool(approval, new Inferpal.Services.Execution.FileHistoryService(), () => _ws);
+        var batch = Args(new
+        {
+            edits = new object[]
+            {
+                new { path = other, old_content = "class B { }", new_content = "class B {" },
+                new { path, old_content = "void M() { }", new_content = "void M() {" },
+            },
+        });
+
+        var first = await tool.ExecuteAsync(batch, CancellationToken.None);
+        Assert.Contains("B.cs at line", first, StringComparison.Ordinal);
+        Assert.Contains("A.cs at line", first, StringComparison.Ordinal);
+        Assert.Equal(0, approval.Asked);
+
+        await tool.ExecuteAsync(batch, CancellationToken.None);
+        Assert.Equal(1, approval.Asked);
+        Assert.Equal("class B {\n", File.ReadAllText(other));
     }
 }

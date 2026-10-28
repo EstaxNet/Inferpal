@@ -18,7 +18,7 @@
   <a href="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml"><img src="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/tests-7476%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-7481%20passing-brightgreen" alt="Tests">
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/Visual%20Studio-install-5C2D91" alt="Install for Visual Studio"></a>
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><img src="https://img.shields.io/badge/VS%20Code-install-007ACC" alt="Install for VS Code"></a>
 </p>
@@ -58,9 +58,11 @@ flowchart LR
 
 - **Every write, delete and command waits for you**, with the real diff. Enter allows, Esc denies — or pick a narrow
   rule such as *commands that start with `dotnet test`* (never a chain, a launcher or a program that deletes).
-- **Every file is backed up before it changes.** **Undo run** puts the whole run back in one click.
+- **Every file is backed up before it changes.** **Undo run** puts the whole run back in one click — or **Review
+  changes** keeps or undoes each change of a file on its own.
 - **Steer it while it works.** Type a correction and press Enter: the agent reads it before its next step.
-- **It checks its own work.** A build or typecheck after each edit (.NET, TypeScript, Rust, Go) feeds the errors
+- **It checks its own work.** An edit that would break a file's syntax (C#, Razor, Python, JavaScript modules) is
+  refused before you are asked; a build or typecheck after each edit (.NET, TypeScript, Rust, Go) feeds the errors
   straight back.
 - **Invented packages are refused before you are asked.** Local models make up package names; each one is looked up
   on nuget.org, npm or PyPI first.

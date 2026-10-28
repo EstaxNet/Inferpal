@@ -224,7 +224,7 @@ public sealed class ChatModesTests : IDisposable
         Write("_user-modes/review.md", "---\nname: Review\ntools: [read]\n---\nMy own review.\n");
         Write(".github/agents/review.agent.md", "---\nname: review\n---\nThe repository's review, every tool.\n");
         Write(".inferpal/modes/chat.md", "---\nname: Chat\n---\nA mode that would hide Inferpal's own.\n");
-        Write(".inferpal/modes/agent.md", "---\nname: \"Agent​ \"\n---\nThe same, with an invisible character.\n");
+        Write(".inferpal/modes/agent.md", "---\nname: \"Agent\u200B \"\n---\nThe same, with an invisible character.\n");
 
         var catalog = ChatModes.Discover(_root, _user);
 

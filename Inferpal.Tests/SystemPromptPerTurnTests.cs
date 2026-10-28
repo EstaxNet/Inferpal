@@ -43,10 +43,10 @@ public class SystemPromptPerTurnTests
         foreach (var (code, append, steps) in new[]
                  {
                      (vm,   "_history.Add(new ChatMessageDto(\"user\", historyText));",
-                      "RefreshSystemPrompt();var activeFile = ActiveFileContext.ToSend(BuildActiveFileBlock(), _history);"
+                      "RefreshSystemPrompt(withMode: oneTimeModel is null);var activeFile = ActiveFileContext.ToSend(BuildActiveFileBlock(), _history);"
                       + "historyText = Services.Agent.ChatTurnPolicy.WithInjectedContext(historyText, autoCtx, workspaceCtx, activeFile);"),
                      (host, "s.History.Add(new ChatMessageDto(\"user\", promptText));",
-                      "RefreshSystemPrompt(s);var activeFile = ActiveFileContext.ToSend(BuildActiveFileBlock(s), s.History);"
+                      "RefreshSystemPrompt(s, withMode: !p.CodeAction);var activeFile = ActiveFileContext.ToSend(BuildActiveFileBlock(s), s.History);"
                       + "var promptText = ChatTurnPolicy.WithInjectedContext(ChatTurnPolicy.WithUserNotes(p.Prompt, p.Notes ?? []),"
                       + "autoCtx, workspace, activeFile);"),
                  })

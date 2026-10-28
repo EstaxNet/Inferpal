@@ -29,7 +29,7 @@ internal static class MiniYaml
         private readonly Dictionary<string, JsonNode?> _anchors = new(StringComparer.Ordinal);
 
         /// <summary>How deep lists and maps may nest, in blocks or inline. ⚠ Every level is a call: a file of one
-        /// line of 20,000 dashes or brackets overflowed the stack, and nothing catches that — the host died.</summary>
+        /// line of 20,000 dashes or brackets would overflow the stack, which nothing catches: the host dies.</summary>
         private const int MaxDepth = 64;
         private int _depth;
 

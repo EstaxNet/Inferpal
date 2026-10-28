@@ -271,7 +271,8 @@ internal partial class InferpalToolWindowData
                 // file is read again, and a mode whose file is gone leaves the conversation, said.
                 RereadHeldMode();
                 turnMode = oneTimeModel is null ? _heldMode : null;
-                RefreshSystemPrompt();
+                // A code action runs without the held mode, its instructions included.
+                RefreshSystemPrompt(withMode: oneTimeModel is null);
                 // What follows the active file rides with the question, when the history does not already say it — judged
                 // here, on the history the question joins (ActiveFileContext).
                 var activeFile = ActiveFileContext.ToSend(BuildActiveFileBlock(), _history);

@@ -407,8 +407,8 @@ internal sealed partial class HostServer : IDisposable
                                                             p.AttachedPaths, cts.Token);
             // The system prompt is rebuilt here, inside the turn slot, never from the active-file notification itself;
             // what follows the active file rides with the question, when the history does not already say it
-            // (ActiveFileContext).
-            RefreshSystemPrompt(s);
+            // (ActiveFileContext). A code action runs without the held mode, its instructions included.
+            RefreshSystemPrompt(s, withMode: !p.CodeAction);
             var activeFile = ActiveFileContext.ToSend(BuildActiveFileBlock(s), s.History);
             // Asked again (Regenerate), the question carries the notes its first answer read, as the history kept it.
             var promptText = ChatTurnPolicy.WithInjectedContext(ChatTurnPolicy.WithUserNotes(p.Prompt, p.Notes ?? []),
@@ -2435,9 +2435,10 @@ internal sealed partial class HostServer : IDisposable
 
     /// <summary>Rebuilds the system prompt of the SAME conversation (settings saved, model picked):
     /// the turns stay, as in the VS view model. Only a new conversation starts from nothing.</summary>
-    private static void RefreshSystemPrompt(HostSession s)
+    /// <param name="withMode">The held mode's instructions as its last layer — <c>false</c> for a code action.</param>
+    private static void RefreshSystemPrompt(HostSession s, bool withMode = true)
     {
-        var prompt = new ChatMessageDto("system", BuildSystemPromptText(s));
+        var prompt = new ChatMessageDto("system", BuildSystemPromptText(s, withMode));
         if (s.History.Count > 0 && s.History[0].Role == "system") s.History[0] = prompt;
         else s.History.Insert(0, prompt);
     }
