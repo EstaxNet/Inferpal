@@ -60,7 +60,7 @@ internal static class ApprovalRuleProposal
     private const string Arguments = @"([ \t]+[^;&|`$<>(){}\r\n\v\f\u0085\u2028\u2029]*)?[ \t]*$";
 
     /// <summary>A command with any of these is not one plain command.</summary>
-    private static readonly char[] Metacharacters =
+    internal static readonly char[] Metacharacters =
         [';', '&', '|', '`', '$', '<', '>', '(', ')', '{', '}', '\r', '\n', '\v', '\f', '\u0085', '\u2028', '\u2029'];
 
     /// <summary>Programs that run whatever code they are given — a script, an option (<c>find -exec</c>): no rule on their

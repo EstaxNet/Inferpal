@@ -65,7 +65,13 @@ internal class RestoreFileTool : ITool
             // history lives at the git root, or outside the project, and every write hands the model
             // that path); any other source file must be inside the workspace.
             if (!_history.IsSnapshotOf(snapPath, path))
+            {
                 PathSanitizer.AssertUnderRoot(snapPath, root);
+                // ⚠ Another file of the workspace as the source copies ITS content into the target: one the ignore files
+                // keep out of AI tools would be read back through the file it was restored into.
+                if (Governance.ContentExclusions.Of(snapPath) is { } excluded)
+                    return excluded.ForModel(snapPath);
+            }
         }
 
         snapPath ??= await _history.FindRestoreCandidateAsync(path, ct);

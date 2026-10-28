@@ -104,6 +104,18 @@ internal sealed class McpTool : ITool
     /// </summary>
     internal static string ToolNamesOf(string serverName) => BuildName(serverName, string.Empty);
 
+    /// <summary>
+    /// Whether a tool of one server could carry the name of a tool of the other: the same names, one inside the other
+    /// (<c>GitHub (work)</c> serves <c>mcp__GitHub__work___*</c>, and <c>GitHub</c>'s tool <c>work___create_issue</c> is
+    /// <c>mcp__GitHub__work___create_issue</c>), or names that differ only by case — which the permission rules, matched
+    /// without case, do not tell apart.
+    /// </summary>
+    internal static bool ToolNamesClash(string serverA, string serverB)
+    {
+        var (a, b) = (ToolNamesOf(serverA), ToolNamesOf(serverB));
+        return a.StartsWith(b, StringComparison.OrdinalIgnoreCase) || b.StartsWith(a, StringComparison.OrdinalIgnoreCase);
+    }
+
     /// <summary>True when <paramref name="toolName"/> is a tool served by an MCP server — whose schema a third party
     /// wrote, free-form objects included.</summary>
     internal static bool IsMcpName(string toolName) => toolName.StartsWith(Prefix, StringComparison.Ordinal);

@@ -436,8 +436,8 @@ flowchart LR
   after, per file, and why each file was set aside; `/undo-run` gives the whole command back.
 - **`/debug [hypothesis]`** — settle a question about runtime behaviour by observing it: the
   agent starts a **real debug session** (after asking you first), sets breakpoints, steps, and
-  reads locals and the call stack through two read-only tools (`debug_control`,
-  `debug_inspect`). Before launching, the target is built through the automation, so a solution
+  reads locals and the call stack through two tools (`debug_control`, `debug_inspect`); evaluating
+  an expression asks you first, since it can call your program's code. Before launching, the target is built through the automation, so a solution
   that does not compile is refused instead of freezing the IDE on a modal. Visual Studio drives
   its own debugger in-process; VS Code goes through a DAP bridge — same command, either editor.
   `/debug` alone reports the current break state; `/debug stop` ends the session.

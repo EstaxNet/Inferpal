@@ -325,6 +325,8 @@
   <data name="RunCancelled" xml:space="preserve"><value>命令已被用户取消。</value></data>
   <data name="DebugStartConfirm" xml:space="preserve"><value>为以下项启动调试会话：{0}</value></data>
   <data name="DebugStartCancelled" xml:space="preserve"><value>未启动调试会话（用户已拒绝）。</value></data>
+  <data name="DebugEvaluateConfirm" xml:space="preserve"><value>在已暂停的程序中求值（可能会运行程序的代码）：{0}</value></data>
+  <data name="DebugEvaluateCancelled" xml:space="preserve"><value>表达式未求值（用户已拒绝）。</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>应用更改到：{0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>用户已取消更改。</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>在 {0} 中未找到 old_content。请检查空格、换行和缩进。</value></data>

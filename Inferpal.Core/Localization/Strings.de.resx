@@ -325,6 +325,8 @@ Fortfahren?</value></data>
   <data name="RunCancelled" xml:space="preserve"><value>Befehl vom Benutzer abgebrochen.</value></data>
   <data name="DebugStartConfirm" xml:space="preserve"><value>Debugsitzung starten für: {0}</value></data>
   <data name="DebugStartCancelled" xml:space="preserve"><value>Debugsitzung nicht gestartet (vom Benutzer abgelehnt).</value></data>
+  <data name="DebugEvaluateConfirm" xml:space="preserve"><value>Im angehaltenen Programm auswerten – dabei kann sein Code ausgeführt werden: {0}</value></data>
+  <data name="DebugEvaluateCancelled" xml:space="preserve"><value>Ausdruck nicht ausgewertet (vom Benutzer abgelehnt).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Änderung anwenden auf: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Änderung vom Benutzer abgebrochen.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content in {0} nicht gefunden. Überprüfen Sie Leerzeichen, Zeilenumbrüche und Einrückung.</value></data>

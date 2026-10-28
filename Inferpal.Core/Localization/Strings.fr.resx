@@ -325,6 +325,8 @@ Continuer ?</value></data>
   <data name="RunCancelled" xml:space="preserve"><value>Commande annulée par l'utilisateur.</value></data>
   <data name="DebugStartConfirm" xml:space="preserve"><value>Démarrer une session de débogage pour : {0}</value></data>
   <data name="DebugStartCancelled" xml:space="preserve"><value>Session de débogage non démarrée (refusée par l'utilisateur).</value></data>
+  <data name="DebugEvaluateConfirm" xml:space="preserve"><value>Évaluer dans le programme en pause — cela peut exécuter son code : {0}</value></data>
+  <data name="DebugEvaluateCancelled" xml:space="preserve"><value>Expression non évaluée (refusée par l'utilisateur).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Appliquer la modification à : {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Modification annulée par l'utilisateur.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content introuvable dans {0}. Vérifiez espaces, retours à la ligne et indentation.</value></data>

@@ -77,6 +77,39 @@ public class PermissionRuleCommentAndChainTests
         Assert.Equal(PermissionDecision.Allow,  policy.Evaluate("run_command", "dotnet test"));
     }
 
+    [Theory]
+    [InlineData("git status\rRemove-Item -Recurse -Force src")]   // a lone carriage return ends a PowerShell statement
+    [InlineData("git log $(Remove-Item -Recurse -Force src)")]    // a subexpression runs first
+    [InlineData("git log (Remove-Item -Recurse -Force src)")]     // so does a grouping, in argument mode
+    [InlineData("git log `rm -rf build`")]                         // POSIX command substitution
+    [InlineData("git log \"$(Remove-Item src)\"")]                 // expanded inside double quotes too
+    [InlineData("git log > src/Program.cs")]                       // a redirection writes a file no rule saw
+    public void ACommandHiddenInsideAnAllowedOne_IsNeverAutoApproved(string command)
+    {
+        var policy = FromDsl("allow run_command ^\\s*(dotnet|git)\\b");
+        Assert.Equal(PermissionDecision.Prompt, policy.Evaluate("run_command", command));
+        // Reference arm: the same rule still allows the plain command.
+        Assert.Equal(PermissionDecision.Allow, policy.Evaluate("run_command", "git log --oneline"));
+    }
+
+    [Theory]
+    [InlineData("git commit -m \"feat(ui): x\"")]                  // a parenthesis inside double quotes is text
+    [InlineData("dotnet test --filter \"Name~Foo(1)\"")]
+    [InlineData("git log --format='%h $(not run)'")]               // single quotes expand nothing
+    [InlineData("git log --format=\"%h > %s\"")]                   // nor is a quoted '>' a redirection
+    public void QuotedText_ThatOnlyLooksLikeACommand_IsStillAllowed(string command)
+    {
+        var policy = FromDsl("allow run_command ^\\s*(dotnet|git)\\b");
+        Assert.Equal(PermissionDecision.Allow, policy.Evaluate("run_command", command));
+    }
+
+    [Fact]
+    public void ADeniedCommand_AfterALoneCarriageReturn_IsDenied()
+    {
+        var policy = FromDsl("allow run_command ^\\s*(dotnet|git)\\b\ndeny run_command ^\\s*Remove-Item");
+        Assert.Equal(PermissionDecision.Deny, policy.Evaluate("run_command", "git status\rRemove-Item -Recurse src"));
+    }
+
     [Fact]
     public void ARuleWrittenForTheWholeLine_StillDecides()
     {

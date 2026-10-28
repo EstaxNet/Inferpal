@@ -325,6 +325,8 @@ Kontynuować?</value></data>
   <data name="RunCancelled" xml:space="preserve"><value>Polecenie anulowane przez użytkownika.</value></data>
   <data name="DebugStartConfirm" xml:space="preserve"><value>Rozpocząć sesję debugowania dla: {0}</value></data>
   <data name="DebugStartCancelled" xml:space="preserve"><value>Sesja debugowania nie została uruchomiona (odrzucona przez użytkownika).</value></data>
+  <data name="DebugEvaluateConfirm" xml:space="preserve"><value>Oblicz w wstrzymanym programie — może to uruchomić jego kod: {0}</value></data>
+  <data name="DebugEvaluateCancelled" xml:space="preserve"><value>Wyrażenie nie zostało obliczone (odrzucone przez użytkownika).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Zastosuj zmianę do: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Zmiana anulowana przez użytkownika.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content nie znaleziony w {0}. Sprawdź spacje, podziały wierszy i wcięcia.</value></data>

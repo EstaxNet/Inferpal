@@ -331,16 +331,15 @@ internal sealed class McpToolService : IAsyncDisposable
             ForgetSignInsOfRemovedServers(servers, rejected, [.. repository.Names, .. given.Select(g => g.Name)]);
             // The editor's servers come last, and a name already taken is the user's own server: said, not started twice.
             // Taken by the names its tools would carry, like a repository's server (see RepositoryServersAsync).
-            var taken = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var name in servers.Select(s => s.Name).Concat(rejected.Select(r => r.Name)).Concat(repository.Names))
-                taken.TryAdd(McpTool.ToolNamesOf(name), name);
-            var fromEditor = given.Where(g => !taken.ContainsKey(McpTool.ToolNamesOf(g.Name))).ToList();
-            var shadowed = given.Where(g => taken.ContainsKey(McpTool.ToolNamesOf(g.Name)))
-                                .Select(g => taken[McpTool.ToolNamesOf(g.Name)] is var own && own == g.Name
+            var taken = servers.Select(s => s.Name).Concat(rejected.Select(r => r.Name)).Concat(repository.Names).ToList();
+            string? TakenBy(string name) => taken.FirstOrDefault(t => McpTool.ToolNamesClash(t, name));
+            var fromEditor = given.Where(g => TakenBy(g.Name) is null).ToList();
+            var shadowed = given.Where(g => TakenBy(g.Name) is not null)
+                                .Select(g => TakenBy(g.Name) is var own && own == g.Name
                                     ? new McpServerStatus(g.Name, false, 0,
                                         "the editor passes a server of this name, and Inferpal's own server of the same name runs instead")
                                     : new McpServerStatus(g.Name, false, 0,
-                                        $"the editor passes a server whose tools would carry the same names as those of '{own}', which runs instead"))
+                                        $"the editor passes a server whose tools could carry the same names as those of '{own}', which runs instead"))
                                 .ToList();
             // ⚠ In PARALLEL, keeping the configured order. Each start has its own handshake budget:
             // serially, an unreachable server made every later one pay it, lock held — and so did
@@ -489,21 +488,20 @@ internal sealed class McpToolService : IAsyncDisposable
         // the same tool names, and the snapshot gives the bare one to whichever server has tools at the moment — while
         // the user's server reconnects or fails, the repository's tool answered to the name the user had said "Always"
         // to, and ran unasked.
-        var taken = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var name in configured) taken.TryAdd(McpTool.ToolNamesOf(name), name);
+        var taken = new List<string>(configured);
         foreach (var declared in scan.Servers)
         {
             var server = declared;
             names.Add(server.Name);
-            if (!taken.TryAdd(McpTool.ToolNamesOf(server.Name), server.Name))
+            if (taken.FirstOrDefault(t => McpTool.ToolNamesClash(t, server.Name)) is { } earlier)
             {
-                var earlier = taken[McpTool.ToolNamesOf(server.Name)];
                 notStarted.Add(new McpServerStatus(server.Name, false, 0, earlier == server.Name
                     ? $"{server.Source}: not started — a server named '{server.Name}' is declared earlier, and that one runs"
-                    : $"{server.Source}: not started — its tools would carry the same names as those of '{earlier}', " +
+                    : $"{server.Source}: not started — its tools could carry the same names as those of '{earlier}', " +
                       "declared earlier, which runs instead"));
                 continue;
             }
+            taken.Add(server.Name);
             // The files it runs, looked at only for a server that reaches its question: off the caller's thread, since the
             // Save button waits for this refresh.
             try { server = await Task.Run(() => RepoMcpServers.CoverAsync(server, root, CoveredFilesCap)).ConfigureAwait(false); }

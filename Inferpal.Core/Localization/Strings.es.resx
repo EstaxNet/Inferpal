@@ -325,6 +325,8 @@ Haga clic en ↻ Reintentar en la cabecera una vez corregido.</value></data>
   <data name="RunCancelled" xml:space="preserve"><value>Comando cancelado por el usuario.</value></data>
   <data name="DebugStartConfirm" xml:space="preserve"><value>Iniciar una sesión de depuración para: {0}</value></data>
   <data name="DebugStartCancelled" xml:space="preserve"><value>Sesión de depuración no iniciada (rechazada por el usuario).</value></data>
+  <data name="DebugEvaluateConfirm" xml:space="preserve"><value>Evaluar en el programa en pausa: puede ejecutar su código: {0}</value></data>
+  <data name="DebugEvaluateCancelled" xml:space="preserve"><value>Expresión no evaluada (rechazada por el usuario).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Aplicar cambio a: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Cambio cancelado por el usuario.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content no encontrado en {0}. Verifique espacios, saltos de línea y sangría.</value></data>

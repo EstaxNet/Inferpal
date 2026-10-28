@@ -55,6 +55,10 @@ public class AgentInstructionWriteTests
     [InlineData(@"C:\repo\.Inferpal\Memory.md")]
     // apply_edits joins several paths with newlines -- one is enough.
     [InlineData("C:\\repo\\src\\A.cs\nC:\\repo\\.inferpal\\memory.md")]
+    // A raw path an MCP tool writes: `.` and `..` resolved, as the file system resolves them.
+    [InlineData(".inferpal/./memory.md")]
+    [InlineData(".inferpal/x/../memory.md")]
+    [InlineData("docs/../.inferpal/rules/./team.md")]
     public void AWriteAtTheSystemPrompt_IsRecognised(string subject) =>
         Assert.True(AgentInstructionFiles.Targets(subject));
 
@@ -70,6 +74,8 @@ public class AgentInstructionWriteTests
     [InlineData(@"C:\repo\memory.md")]
     // Sessions and snapshots live under .inferpal but are never read back as instructions.
     [InlineData(@"C:\repo\.inferpal\history\2026-05-17_Strings.fr.resx")]
+    // Reference arm of the resolution: `..` that leaves .inferpal names an ordinary file.
+    [InlineData(".inferpal/../memory.md")]
     [InlineData("")]
     [InlineData(null)]
     public void AnOrdinaryWrite_IsNot(string? subject) =>

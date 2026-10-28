@@ -978,6 +978,7 @@ internal static class Strings
     public static string DeleteCancelled   => Get(nameof(DeleteCancelled));
     public static string RunCancelled      => Get(nameof(RunCancelled));
     public static string DebugStartCancelled => Get(nameof(DebugStartCancelled));
+    public static string DebugEvaluateCancelled => Get(nameof(DebugEvaluateCancelled));
     public static string DiagNoProject     => Get(nameof(DiagNoProject));
     public static string DiagFromEditor    => Get(nameof(DiagFromEditor));
     public static string CodeExcerptLabel(string label, int shown, int total) =>
@@ -1086,6 +1087,9 @@ internal static class Strings
 
     public static string DebugStartConfirm(string workspace) =>
         Format(Get(nameof(DebugStartConfirm)), workspace);
+
+    public static string DebugEvaluateConfirm(string expression) =>
+        Format(Get(nameof(DebugEvaluateConfirm)), expression);
 
     // ── /debug ───────────────────────────────────────────────
     public static string DebugUnavailable         => Get(nameof(DebugUnavailable));

@@ -39,6 +39,32 @@ public sealed class UserShellToolArgsAndFolderTests : IDisposable
         }
     }
 
+    private sealed class Refuse : IApprovalService
+    {
+        public bool? Forced { get; private set; }
+        public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct,
+                                               string? subject = null, DiffInfo? diff = null, bool forcePrompt = false)
+        {
+            Forced = forcePrompt;
+            return Task.FromResult(false);
+        }
+    }
+
+    [Theory]
+    [InlineData("; Start-Process calc", true)]
+    [InlineData("$(Remove-Item -Recurse src)", true)]
+    [InlineData("src | sh", true)]
+    [InlineData("--fix src/App.ts", false)]   // reference arm: plain arguments keep the rules and grants
+    public async Task ArgumentsThatAddACommand_AreAskedEveryTime(string extra, bool forced)
+    {
+        var approval = new Refuse();
+        var output = await new UserShellTool("lint", "npm run lint {args}", approval, new InferpalConfig(), () => _root)
+            .ExecuteAsync(Args(extra), CancellationToken.None);
+
+        Assert.Equal("Cancelled.", output);   // refused: nothing ran
+        Assert.Equal(forced, approval.Forced);
+    }
+
     private static JsonElement Args(string? args) =>
         JsonDocument.Parse(args is null ? "{}" : JsonSerializer.Serialize(new { args })).RootElement.Clone();
 

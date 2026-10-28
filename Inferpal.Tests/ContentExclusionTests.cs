@@ -99,6 +99,36 @@ public sealed class ContentExclusionTests : IDisposable
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
+    public async Task AnExcludedFile_IsNeverTheSourceOfARestore(bool excluded)
+    {
+        Workspace(excluded);
+        var result = await Registry().ExecuteAsync("restore_file",
+            Args(new { path = "src/App.cs", snapshot = "keys.txt" }), default);
+        var restored = File.ReadAllText(Path.Combine(_root, "src", "App.cs"));
+
+        if (!excluded)
+        {
+            // Reference arm: another workspace file as the source is copied — the arm the exclusion has to stop.
+            Assert.Contains(Marker, restored);
+            return;
+        }
+        Assert.Contains(".aiignore, line 3", result);
+        Assert.DoesNotContain(Marker, restored);
+    }
+
+    [Fact]
+    public void AUrl_IsNotTheFileItsPathEndsLike_UnlessItLeavesItsScheme()
+    {
+        Workspace(excluded: true);
+        // A page to fetch whose path ends like an excluded file is not that file (fetch_url is not refused)…
+        Assert.Null(ToolRegistry.ExcludedNamedFile(Args(new { url = "https://example.com/keys.txt" }), _root));
+        // …one that leaves its scheme folder when resolved as a path is.
+        Assert.NotNull(ToolRegistry.ExcludedNamedFile(Args(new { url = "ab://../keys.txt" }), _root));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
     public async Task TheTools_NeverShowAnExcludedFile_AndSayWhy(bool excluded)
     {
         Workspace(excluded);
@@ -116,6 +146,10 @@ public sealed class ContentExclusionTests : IDisposable
             Assert.Contains(Marker, keys);
             Assert.Contains(Marker, search);
             Assert.Contains("vault.cs", listed);
+            // The two spellings the excluded arm refuses do read the file: refused there for the file, not the spelling.
+            Assert.Contains(Marker, await tools.ExecuteAsync("read_file", Args(new { path = "ab://../keys.txt" }), default));
+            Assert.Contains(Marker, await tools.ExecuteAsync("read_file",
+                Args(new { path = string.Concat(Enumerable.Repeat("a/../", 1000)) + "keys.txt" }), default));
             var refBackup = Path.Combine(_root, ".inferpal", "history", "20261018_000000_1a2b3c4d_keys.txt.bak");
             Directory.CreateDirectory(Path.GetDirectoryName(refBackup)!);
             File.WriteAllText(refBackup, Marker);
@@ -140,6 +174,10 @@ public sealed class ContentExclusionTests : IDisposable
         // A path written with a trailing newline or a leading space is the file the tool reads: refused alike.
         Assert.Contains(".aiignore, line 3", await tools.ExecuteAsync("read_file", Args(new { path = "keys.txt\n" }), default));
         Assert.Contains(".aiignore, line 3", await tools.ExecuteAsync("read_file", Args(new { path = " keys.txt" }), default));
+        // Written so a look at the TEXT misses it, resolved to the same file: a "scheme" its `..` leaves, a path too long.
+        Assert.Contains(".aiignore, line 3", await tools.ExecuteAsync("read_file", Args(new { path = "ab://../keys.txt" }), default));
+        Assert.Contains(".aiignore, line 3", await tools.ExecuteAsync("read_file",
+            Args(new { path = string.Concat(Enumerable.Repeat("a/../", 1000)) + "keys.txt" }), default));
         // The 70th edit of a batch is seen as well as the first.
         var edits = Enumerable.Range(0, 69)
             .Select(i => (object)new { path = "src/App.cs", old_content = $"absent {i}", new_content = "x" })

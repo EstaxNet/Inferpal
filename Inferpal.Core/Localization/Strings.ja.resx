@@ -325,6 +325,8 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="RunCancelled" xml:space="preserve"><value>ユーザーによってコマンドがキャンセルされました。</value></data>
   <data name="DebugStartConfirm" xml:space="preserve"><value>デバッグ セッションを開始しますか: {0}</value></data>
   <data name="DebugStartCancelled" xml:space="preserve"><value>デバッグ セッションは開始されませんでした (ユーザーが拒否)。</value></data>
+  <data name="DebugEvaluateConfirm" xml:space="preserve"><value>一時停止中のプログラムで評価します（プログラムのコードが実行される場合があります）: {0}</value></data>
+  <data name="DebugEvaluateCancelled" xml:space="preserve"><value>式は評価されませんでした（ユーザーが拒否しました）。</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>変更を適用：{0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>ユーザーによって変更がキャンセルされました。</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>{0} で old_content が見つかりません。スペース、改行、インデントを確認してください。</value></data>

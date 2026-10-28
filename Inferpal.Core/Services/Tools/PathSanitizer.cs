@@ -48,6 +48,10 @@ internal static class PathSanitizer
 
         if (string.IsNullOrEmpty(cleaned))
             throw new ArgumentException(Strings.ToolPathRequired);
+        // ⚠ A Windows path on Linux or macOS names nothing there: resolved anyway, against the process's folder, it named a
+        // file literally called `C:\x\y.cs` — inside the workspace for the VS Code host, which runs in it.
+        if (!OperatingSystem.IsWindows() && IsForeignAbsolute(cleaned))
+            throw new ArgumentException(Strings.ToolPathInvalid(cleaned, "a Windows path, on a system without drives or shares"));
 
         string full;
         try

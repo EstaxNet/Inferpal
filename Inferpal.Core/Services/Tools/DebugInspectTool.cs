@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Inferpal.Localization;
 using Inferpal.Services.Debugging;
 
 namespace Inferpal.Services.Tools;
@@ -8,11 +9,12 @@ namespace Inferpal.Services.Tools;
 /// Everything that <i>observes</i>; <see cref="DebugControlTool"/> is everything that acts.
 /// </summary>
 /// <remarks>
-/// No approval, by the debugger's consent rule: the execution being observed was already approved when
-/// the session started, and reading it changes nothing. No budget either — reading does not advance
-/// the program, so it cannot loop forever the way stepping can.
+/// Reading the state asks nothing, by the debugger's consent rule: the execution being observed was already
+/// approved when the session started, and reading it changes nothing. ⚠ Evaluating asks: an expression can CALL —
+/// <c>os.system(…)</c>, <c>File.Delete(…)</c> run in the program as a command would, and every debugger evaluates
+/// calls. No budget either — neither advances the program, so neither can loop forever the way stepping can.
 /// </remarks>
-internal sealed class DebugInspectTool(IDebugSession session, Func<string> root) : ITool
+internal sealed class DebugInspectTool(IDebugSession session, IApprovalService approval, Func<string> root) : ITool
 {
     public const string ToolName = "debug_inspect";
 
@@ -48,6 +50,13 @@ internal sealed class DebugInspectTool(IDebugSession session, Func<string> root)
             if (args.Str("expression") is not { Length: > 0 } expression)
                 return "Error: 'expression' is required for action='evaluate'.";
 
+            if (await session.GetStateAsync(ct) is null) return NotPaused;
+
+            // The expression itself is the subject the permission rules match, as run_command's command is.
+            if (!await approval.RequestApprovalAsync(ToolName, Strings.DebugEvaluateConfirm(expression), ct, subject: expression))
+                return Strings.DebugEvaluateCancelled;
+            // ⚠ Read again after the card: while it waited, a step or a continue moved the program, and the frame read
+            // before is gone or another one.
             var state = await session.GetStateAsync(ct);
             if (state is null) return NotPaused;
 

@@ -391,7 +391,7 @@ public class DebugToolsTests
     public async Task Inspect_Evaluate_ScopesToTheTopFrame()
     {
         var session = new FakeDebugSession();
-        var tool    = new DebugInspectTool(session, () => @"C:\ws");
+        var tool    = new DebugInspectTool(session, new StubApproval(true), () => @"C:\ws");
 
         var result = await tool.ExecuteAsync(
             Args("""{"action":"evaluate","expression":"total * 2"}"""), CancellationToken.None);
@@ -420,7 +420,7 @@ public class DebugToolsTests
                 Exception: null,
                 LocalsFrameId: 2),
         };
-        var tool = new DebugInspectTool(session, () => @"C:\ws");
+        var tool = new DebugInspectTool(session, new StubApproval(true), () => @"C:\ws");
 
         await tool.ExecuteAsync(
             Args("""{"action":"evaluate","expression":"total * 2"}"""), CancellationToken.None);
@@ -428,11 +428,32 @@ public class DebugToolsTests
         Assert.Equal(2, session.LastFrameId);
     }
 
+    /// <summary>An expression can call into the program (<c>os.system(…)</c>, <c>File.Delete(…)</c>): evaluating asks
+    /// first, the expression as the subject the rules match, and a refusal sends nothing to the debugger.</summary>
+    [Fact]
+    public async Task Inspect_Evaluate_AsksFirst_AndARefusalEvaluatesNothing()
+    {
+        var session  = new FakeDebugSession();
+        var approval = new StubApproval(false);
+        var tool     = new DebugInspectTool(session, approval, () => @"C:\ws");
+
+        var result = await tool.ExecuteAsync(
+            Args("""{"action":"evaluate","expression":"__import__('os').system('calc')"}"""), CancellationToken.None);
+
+        Assert.Equal(1, approval.Calls);
+        Assert.Equal("__import__('os').system('calc')", approval.LastSubject);
+        Assert.Null(session.LastExpression);
+        Assert.Equal(Strings.DebugEvaluateCancelled, result);
+        // Reading the state still asks nothing.
+        await tool.ExecuteAsync(Args("""{}"""), CancellationToken.None);
+        Assert.Equal(1, approval.Calls);
+    }
+
     [Fact]
     public async Task Inspect_WhenNotPaused_SaysSoInsteadOfPretending()
     {
         var session = new FakeDebugSession { State = null };
-        var tool    = new DebugInspectTool(session, () => @"C:\ws");
+        var tool    = new DebugInspectTool(session, new StubApproval(true), () => @"C:\ws");
 
         var result = await tool.ExecuteAsync(Args("""{}"""), CancellationToken.None);
 
@@ -446,7 +467,7 @@ public class DebugToolsTests
 
         var control = await Control(session, new StubApproval(true))
             .ExecuteAsync(Args("""{"action":"start"}"""), CancellationToken.None);
-        var inspect = await new DebugInspectTool(session, () => @"C:\ws")
+        var inspect = await new DebugInspectTool(session, new StubApproval(true), () => @"C:\ws")
             .ExecuteAsync(Args("""{}"""), CancellationToken.None);
 
         Assert.Equal(0, session.Starts);

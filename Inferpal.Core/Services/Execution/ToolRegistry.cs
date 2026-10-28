@@ -149,7 +149,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         {
             var budget = new DebugStepBudget();
             Register(new DebugControlTool(_debug, approval, budget, () => indexService.RootDir));
-            Register(new DebugInspectTool(_debug, () => indexService.RootDir));
+            Register(new DebugInspectTool(_debug, approval, () => indexService.RootDir));
             // Same gate, and it was missing here. `get_debugger_state` was registered
             // unconditionally, ten lines above the comment forbidding exactly that: with no
             // debugger of any kind its every answer is "no paused debug session".
@@ -732,10 +732,13 @@ internal class ToolRegistry : IToolRegistry, IDisposable
                     break;
                 case JsonValueKind.String when key is null || !TextArguments.Contains(key):
                     var s = e.GetString();
-                    if (string.IsNullOrWhiteSpace(s) || s.Length > 4096 || s.Contains("://", StringComparison.Ordinal)) return;
+                    if (string.IsNullOrWhiteSpace(s)) return;
                     string full;
                     try { full = PathSanitizer.Sanitize(s, root); }
                     catch (ArgumentException) { return; }   // not a path at all
+                    // ⚠ Judged on the path it RESOLVES to, never on how it is written: `ab://../.env`, or `a/../` a
+                    // thousand times, IS `.env` to the tool that reads it.
+                    if (full.Length > 4096 || StaysAUrl(s, root, full)) return;
                     // ⚠ A path that does not exist yet is judged too: a write that CREATES a file where the ignore files
                     // exclude it (`secrets/new.key`, an excluded `.env`) is a change to an excluded file. A folder is
                     // judged by the walk that lists it.
@@ -746,6 +749,23 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         }
         Walk(args, null, 0);
         return hit;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="raw"/> is a URL that, resolved as a path, stays inside its <c>scheme:</c> folder — a URL to
+    /// fetch, not a file: <c>https://site/.env</c> is not the workspace's <c>.env</c>, <c>ab://../.env</c> is.
+    /// </summary>
+    private static bool StaysAUrl(string raw, string? root, string full)
+    {
+        var text   = raw.Trim();
+        var scheme = text.IndexOf("://", StringComparison.Ordinal);
+        if (scheme <= 0 || string.IsNullOrEmpty(root)) return false;
+        try
+        {
+            var folder = Path.GetFullPath(text[..(scheme + 1)], Path.GetFullPath(root)).TrimEnd(Path.DirectorySeparatorChar);
+            return full.StartsWith(folder + Path.DirectorySeparatorChar, PathComparer.Comparison);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException) { return false; }
     }
 
     private void Register(ITool tool)

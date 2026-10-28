@@ -202,6 +202,13 @@ internal static class RepoMcpServers
         foreach (var (name, node) in entries)
         {
             if (node is not JsonObject definition) { problems.Add(new(source, name, "its entry is not an object")); continue; }
+            // ⚠ Both transports in one entry: the card would show the command while the url is the one reached (a url
+            // wins the transport), with the variables of its headers filled — what runs is never what was agreed to.
+            if (Declares(definition, "command") && Declares(definition, "url"))
+            {
+                problems.Add(new(source, name, "it declares both a \"command\" (stdio) and a \"url\" (HTTP)"));
+                continue;
+            }
             // Continue's requestOptions.headers and apiKey become the headers they are: before the agreement card, which
             // shows what runs, and before Prepare, which fills their variables.
             var copy = McpServerConfig.LiftContinueFields(definition);
@@ -213,6 +220,10 @@ internal static class RepoMcpServers
             servers.Add(new RepoMcpServer(name.Trim(), source, format.Origin, copy, Fingerprint(source, name, text), used));
         }
     }
+
+    /// <summary>Whether the definition gives <paramref name="key"/> a non-blank text value.</summary>
+    private static bool Declares(JsonObject definition, string key) =>
+        definition[key] is JsonValue v && v.TryGetValue<string>(out var s) && !string.IsNullOrWhiteSpace(s);
 
     /// <summary>The definition as an agreement holds it: the file, the name and the text, hashed.</summary>
     internal static string Fingerprint(string source, string name, string definition) =>

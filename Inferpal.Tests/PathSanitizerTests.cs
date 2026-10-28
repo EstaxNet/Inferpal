@@ -93,14 +93,19 @@ public class PathSanitizerTests : IDisposable
     [Fact]
     public void AWindowsAbsolutePath_IsNeverResolvedInsideTheRoot()
     {
-        // On Linux and macOS "C:\elsewhere\a.cs" is not fully qualified: without a guard it would
-        // resolve UNDER the root and be accepted, where it has always been refused. On Windows this
-        // test is green by construction; the POSIX CI legs are what make it bite.
-        var sanitized = PathSanitizer.Sanitize(@"C:\elsewhere\a.cs", _root);
-        Assert.False(sanitized.StartsWith(_root, StringComparison.OrdinalIgnoreCase), sanitized);
-
-        var unc = PathSanitizer.Sanitize(@"\\server\share\a.cs", _root);
-        Assert.False(unc.StartsWith(_root, StringComparison.OrdinalIgnoreCase), unc);
+        // On Linux and macOS "C:\elsewhere\a.cs" is not fully qualified: resolved anyway — against the root, or against
+        // the process's folder, which is the workspace for the VS Code host — it names a file INSIDE the workspace. It is
+        // refused there; on Windows it is the drive's own file, outside. The POSIX CI legs are what make this bite.
+        foreach (var path in new[] { @"C:\elsewhere\a.cs", @"\\server\share\a.cs" })
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                Assert.Throws<ArgumentException>(() => PathSanitizer.Sanitize(path, _root));
+                continue;
+            }
+            var sanitized = PathSanitizer.Sanitize(path, _root);
+            Assert.False(sanitized.StartsWith(_root, StringComparison.OrdinalIgnoreCase), sanitized);
+        }
     }
 
     [Fact]

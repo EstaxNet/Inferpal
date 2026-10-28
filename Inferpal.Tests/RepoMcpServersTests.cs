@@ -183,6 +183,20 @@ public sealed class RepoMcpServersTests : IDisposable
         Assert.Contains(problems, p => p.Source == ".continue/mcpServers/bad.yaml" && p.Reason.Contains("names no anchor"));
     }
 
+    [Fact]
+    public void AnEntryDeclaringBothACommandAndAUrl_IsNotOffered_AndSaysWhy()
+    {
+        Write(".mcp.json", """
+            { "mcpServers": {
+                "both": { "command": "echo", "args": ["hi"], "url": "https://elsewhere.example/mcp", "headers": { "X": "${env:TOKEN}" } },
+                "stdio": { "command": "srv" } } }
+            """);
+
+        var scan = RepoMcpServers.Read(_repo);
+        Assert.Equal(["stdio"], scan.Servers.Select(s => s.Name));   // witness: the file was read
+        Assert.Contains(scan.Problems, p => p.Name == "both" && p.Reason.Contains("both a \"command\""));
+    }
+
     // ── Variables and folder ────────────────────────────────────────────────
 
     [Fact]
@@ -377,6 +391,24 @@ public sealed class RepoMcpServersTests : IDisposable
         await service.DisposeAsync();
     }
 
+    [Theory]
+    [InlineData("GitHub", "github")]          // the permission rules match tool names without case
+    [InlineData("GitHub", "GitHub (work)")]   // GitHub's tool `work___create_issue` IS the user's `create_issue`
+    [InlineData("GitHub (work)", "GitHub")]   // and the other way round
+    public async Task ARepositoryServerWhoseToolsCouldCarryTheUsersNames_IsNotStarted(string repository, string users)
+    {
+        Write(".mcp.json", $$"""{ "mcpServers": { "{{repository}}": { "command": "repo-server" } } }""");
+        var config = new InferpalConfig { McpServersJson = $$"""{ "{{users}}": { "command": "my-server" } }""" };
+        var (service, approval, started) = Service(config);
+
+        await service.RefreshAsync();
+
+        Assert.Equal(0, approval.Prompts);
+        Assert.Equal(["my-server"], started.Select(s => s.Command));   // witness: the user's server started
+        Assert.Contains(service.Status, s => s.Name == repository && s.Error?.Contains(users) == true);
+        await service.DisposeAsync();
+    }
+
     [Fact]
     public async Task ARepositoryServerWhoseToolsWouldCarryTheUsersNames_IsNotStarted()
     {
@@ -392,6 +424,22 @@ public sealed class RepoMcpServersTests : IDisposable
         Assert.Equal(0, approval.Prompts);
         Assert.Equal(["my-server"], started.Select(s => s.Command));
         Assert.Contains(service.Status, s => s.Name == "my.server" && s.Error?.Contains("my-server") == true);
+        await service.DisposeAsync();
+    }
+
+    [Theory]
+    [InlineData("github", "GitHub")]
+    [InlineData("GitHub", "GitHub (work)")]
+    public async Task AnEditorServerWhoseToolsCouldCarryTheUsersNames_IsNotStarted(string editors, string users)
+    {
+        var config = new InferpalConfig { McpServersJson = $$"""{ "{{users}}": { "command": "my-server" } }""" };
+        var (service, _, started) = Service(config);
+        service.SessionServers = [new McpServerConfig(editors, "editor-server", [], new Dictionary<string, string>())];
+
+        await service.RefreshAsync();
+
+        Assert.Equal(["my-server"], started.Select(s => s.Command));
+        Assert.Contains(service.Status, s => s.Name == editors && s.Error?.Contains(users) == true);
         await service.DisposeAsync();
     }
 

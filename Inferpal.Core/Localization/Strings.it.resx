@@ -325,6 +325,8 @@ Continuare?</value></data>
   <data name="RunCancelled" xml:space="preserve"><value>Comando annullato dall'utente.</value></data>
   <data name="DebugStartConfirm" xml:space="preserve"><value>Avviare una sessione di debug per: {0}</value></data>
   <data name="DebugStartCancelled" xml:space="preserve"><value>Sessione di debug non avviata (rifiutata dall'utente).</value></data>
+  <data name="DebugEvaluateConfirm" xml:space="preserve"><value>Valutare nel programma in pausa: può eseguire il suo codice: {0}</value></data>
+  <data name="DebugEvaluateCancelled" xml:space="preserve"><value>Espressione non valutata (rifiutata dall'utente).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Applica modifica a: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Modifica annullata dall'utente.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content non trovato in {0}. Controlla spazi, interruzioni di riga e indentazione.</value></data>

@@ -316,8 +316,34 @@ internal sealed class PermissionPolicy
                 case PermissionDecision.Prompt: sawPrompt = true; break;
             }
         }
+        // ⚠ A command inside a command (`$(…)`, `(…)`, a backtick) runs before the one a rule allowed, and a redirection
+        // writes a file no rule saw: `git log $(Remove-Item -Recurse src)` and `git log > src/App.cs` are allowed by
+        // `^git`, and no split shows either. Such a line goes to the card; nothing is blocked.
+        if (!sawPrompt && IsCommand(toolName) && HidesACommand(subject)) sawPrompt = true;
         return sawPrompt ? PermissionDecision.Prompt : PermissionDecision.Allow;
     }
+
+    /// <summary>
+    /// Whether a command line runs or writes more than its split shows: a subexpression or grouping, a backtick, a
+    /// redirection — outside quotes. Inside double quotes only <c>$(</c> and the backtick count (both shells still expand
+    /// them there); inside single quotes nothing does: <c>git commit -m "feat(ui): x"</c> is one plain command.
+    /// </summary>
+    internal static bool HidesACommand(string line)
+    {
+        var quote = '\0';
+        for (var i = 0; i < line.Length; i++)
+        {
+            var c = line[i];
+            if (quote == '\'') { if (c == '\'') quote = '\0'; continue; }
+            if (c == '`' || (c == '$' && i + 1 < line.Length && line[i + 1] == '(')) return true;
+            if (quote == '"') { if (c == '"') quote = '\0'; continue; }
+            if (c is '\'' or '"') { quote = c; continue; }
+            if (c is '(' or '>') return true;
+        }
+        return false;
+    }
+
+    private static bool IsCommand(string toolName) => toolName.Equals(CommandTool, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>The tool whose subject is a command line, judged command by command.</summary>
     private const string CommandTool = "run_command";
@@ -336,12 +362,13 @@ internal sealed class PermissionPolicy
     /// </remarks>
     private static List<string>? PartsOf(string toolName, string subject)
     {
-        var isCommand = toolName.Equals(CommandTool, StringComparison.OrdinalIgnoreCase);
+        var isCommand = IsCommand(toolName);
         if (!isCommand && !subject.Contains('\n')) return null;
 
         var parts = new List<string>();
         if (isCommand) parts.Add(subject);
-        foreach (var line in subject.Split('\n'))
+        // ⚠ A lone carriage return ends a statement for PowerShell too: `git status\rRemove-Item …` is two commands.
+        foreach (var line in subject.Split(isCommand ? ['\n', '\r'] : ['\n']))
         {
             IEnumerable<string> pieces = [line];
             if (isCommand)

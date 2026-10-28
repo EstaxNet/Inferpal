@@ -325,6 +325,8 @@
   <data name="RunCancelled" xml:space="preserve"><value>Команда отменена пользователем.</value></data>
   <data name="DebugStartConfirm" xml:space="preserve"><value>Запустить сеанс отладки для: {0}</value></data>
   <data name="DebugStartCancelled" xml:space="preserve"><value>Сеанс отладки не запущен (отклонено пользователем).</value></data>
+  <data name="DebugEvaluateConfirm" xml:space="preserve"><value>Вычислить в приостановленной программе — это может выполнить её код: {0}</value></data>
+  <data name="DebugEvaluateCancelled" xml:space="preserve"><value>Выражение не вычислено (отклонено пользователем).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Применить изменение к: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Изменение отменено пользователем.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content не найден в {0}. Проверьте пробелы, переносы строк и отступы.</value></data>

@@ -133,7 +133,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
                        || alertsOff
                        || Granted(toolName)))
             Diagnostics.Record("Permission",
-                $"Force-prompt ({(forcePrompt ? "repository-authored"
+                $"Force-prompt ({(forcePrompt ? "the call asks for it"
                                  : instructions ? "agent instructions"
                                  : unreadableDeny ? "a deny rule could not be evaluated"
                                  : "opaque execution")}) {toolName}: {matchOn}");

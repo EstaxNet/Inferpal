@@ -69,35 +69,55 @@ internal static class AgentInstructionFiles
             var path = token.Trim().Replace('\\', '/');
             if (path.Length == 0) continue;
 
-            var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries).Select(AsWritten).ToArray();
-
-            // A file the repository gives agents as instructions — AGENTS.md, CLAUDE.md, Copilot's, Cursor's… The
-            // table's own reader, never a second list: a row added there is a write that asks here.
-            if (RepoInstructionFormats.AnyEndsAt(segments)) return true;
-
-            // A file of a skill — its SKILL.md, a script it runs, a template it fills: the catalog's own folders.
-            if (RepoSkills.IsInASkill(segments)) return true;
-
-            // A mode's file — its instructions become the system prompt when it is picked: the reader's own folders.
-            if (ChatModes.IsModeFile(segments)) return true;
-
-            for (int i = 0; i < segments.Length - 1; i++)
-            {
-                if (!segments[i].Equals(Dir, StringComparison.OrdinalIgnoreCase)) continue;
-
-                // .inferpal/<name>
-                var rest = segments[(i + 1)..];
-                if (rest.Length == 1 && Injected.Contains(rest[0], StringComparer.OrdinalIgnoreCase))
-                    return true;
-
-                // .inferpal/rules/**/*.md — a rule file anywhere under the rules directory.
-                if (rest.Length >= 2
-                    && rest[0].Equals(RulesDir, StringComparison.OrdinalIgnoreCase)
-                    && Path.GetExtension(rest[^1]).Equals(".md", StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
+            var raw = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            // ⚠ Read as written AND as resolved: `.inferpal/./memory.md` and `.inferpal/x/../memory.md` write memory.md,
+            // and an MCP tool's subject carries the path raw. Either reading that lands on the system prompt asks.
+            if (IsInstructionFile([.. raw.Select(AsWritten)]) || IsInstructionFile(Resolved(raw))) return true;
         }
         return false;
+    }
+
+    private static bool IsInstructionFile(string[] segments)
+    {
+        // A file the repository gives agents as instructions — AGENTS.md, CLAUDE.md, Copilot's, Cursor's… The
+        // table's own reader, never a second list: a row added there is a write that asks here.
+        if (RepoInstructionFormats.AnyEndsAt(segments)) return true;
+
+        // A file of a skill — its SKILL.md, a script it runs, a template it fills: the catalog's own folders.
+        if (RepoSkills.IsInASkill(segments)) return true;
+
+        // A mode's file — its instructions become the system prompt when it is picked: the reader's own folders.
+        if (ChatModes.IsModeFile(segments)) return true;
+
+        for (int i = 0; i < segments.Length - 1; i++)
+        {
+            if (!segments[i].Equals(Dir, StringComparison.OrdinalIgnoreCase)) continue;
+
+            // .inferpal/<name>
+            var rest = segments[(i + 1)..];
+            if (rest.Length == 1 && Injected.Contains(rest[0], StringComparer.OrdinalIgnoreCase))
+                return true;
+
+            // .inferpal/rules/**/*.md — a rule file anywhere under the rules directory.
+            if (rest.Length >= 2
+                && rest[0].Equals(RulesDir, StringComparison.OrdinalIgnoreCase)
+                && Path.GetExtension(rest[^1]).Equals(".md", StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>The segments with <c>.</c> dropped and <c>..</c> taking its parent off, each as Windows writes it.</summary>
+    private static string[] Resolved(IEnumerable<string> raw)
+    {
+        var kept = new List<string>();
+        foreach (var segment in raw)
+        {
+            if (segment.TrimEnd(' ') == "..") { if (kept.Count > 0) kept.RemoveAt(kept.Count - 1); continue; }
+            var written = AsWritten(segment);
+            if (written.Length > 0) kept.Add(written);   // ".", "..." name the folder they are in
+        }
+        return [.. kept];
     }
 
     /// <summary>The name of the file a path segment writes, as Windows resolves it.</summary>
