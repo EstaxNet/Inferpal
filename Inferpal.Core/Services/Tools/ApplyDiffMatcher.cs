@@ -119,6 +119,7 @@ internal static class ApplyDiffMatcher
             chosen.Add(s);
         }
 
+        var deletes = newContent.Length == 0;   // before the trim below: "\n" replaces the block with a blank line
         // The line structure already provides the break after the block: drop the one new_content ends with.
         if (endsWithNewline)
         {
@@ -132,13 +133,44 @@ internal static class ApplyDiffMatcher
         foreach (var start in chosen)
         {
             lines.AddRange(fileLines[at..start]);
-            // Split on '\n', a CRLF line keeps its "\r": the last replaced line must end the same way.
-            lines.Add(fileLines[start + k - 1].EndsWith('\r') && !newContent.EndsWith('\r') ? newContent + "\r" : newContent);
             at = start + k;
+            // A deletion leaves no line behind, as the exact pass does.
+            if (endsWithNewline && deletes) continue;
+            var block = Rebased(newContent, fileLines[start], target[0]);
+            // Split on '\n', a CRLF line keeps its "\r": the last replaced line must end the same way.
+            lines.Add(fileLines[start + k - 1].EndsWith('\r') && !block.EndsWith('\r') ? block + "\r" : block);
         }
         lines.AddRange(fileLines[at..]);
 
         return new Result(string.Join("\n", lines), chosen.Count, true);
+    }
+
+    /// <summary>
+    /// <paramref name="newContent"/> moved by what separates the indentation the block was found at from the one
+    /// old_content gave it — when new_content begins at that same indentation, the sign both are in the model's frame.
+    /// </summary>
+    /// <remarks>⚠ Pasted as written, the block lands at the model's indentation — in Python, out of its function, still
+    /// valid and meaning something else. A new_content that begins elsewhere (already at the file's indentation) and
+    /// mixed tabs and spaces that neither prefix the other are left as written.</remarks>
+    private static string Rebased(string newContent, string foundLine, string oldFirstLine)
+    {
+        static string Indent(string line) => line[..(line.Length - line.TrimStart().Length)];
+        if (oldFirstLine.Trim().Length == 0) return newContent;
+        string at = Indent(foundLine), was = Indent(oldFirstLine);
+        if (at == was || newContent.Split('\n').FirstOrDefault(l => l.Trim().Length > 0) is not { } first || Indent(first) != was)
+            return newContent;
+        if (!at.StartsWith(was, StringComparison.Ordinal) && !was.StartsWith(at, StringComparison.Ordinal)) return newContent;
+        string Shift(string line)
+        {
+            if (line.Trim().Length == 0) return line;
+            if (at.Length > was.Length) return at[was.Length..] + line;
+            // Dedent by what the line has of the extra indentation: one written further left keeps its place relative to it.
+            var extra = was[at.Length..];
+            var n = 0;
+            while (n < extra.Length && n < line.Length && line[n] == extra[n]) n++;
+            return line[n..];
+        }
+        return string.Join('\n', newContent.Split('\n').Select(Shift));
     }
 
     /// <summary>Above this many line comparisons, <see cref="Closest"/> says nothing rather than stall the reply.</summary>

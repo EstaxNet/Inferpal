@@ -52,10 +52,15 @@ internal class ReplaceSelectionTool : ITool
         if (!gate.MayProceed) return gate.Refusal!;
 
         text = gate.Text!;
-        var result = await _editor.ReplaceSelectionAsync(text, gate.Document!.Path, ct);
+        EditorEditResult? result;
+        try { result = await _editor.ReplaceSelectionAsync(text, gate.Document!.Path, ct); }
+        catch (Exception ex) when (ex is not OperationCanceledException) { gate.NotApplied?.Invoke(); throw; }
         // ⚠ See InsertAtCursorTool: past the gate, null means "the edit did not apply".
         if (result is null)
+        {
+            gate.NotApplied?.Invoke();
             return Strings.EditNotApplied(gate.Document!.Path);
+        }
 
         return result.ReplacedSelection
             ? Strings.ReplaceOk(result.Path, text.Length)

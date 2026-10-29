@@ -28,6 +28,19 @@ public sealed class InstructionFileStreamNameTests
     }
 
     [Theory]
+    // A separator of the subject's list inside ONE file name: its parts alone name no instruction file.
+    [InlineData(@"C:\repo\.inferpal\rules\style,v2.md")]
+    [InlineData(@"C:\repo\.inferpal\modes\a;b.md")]
+    [InlineData(@"C:\repo\.claude\skills\x,y\SKILL.md")]
+    // …and joined on one line to another path by that same separator.
+    [InlineData(@"src/a.cs,.inferpal/rules/style,v2.md")]
+    [InlineData(@".inferpal/rules/a;b.md;src/c.cs")]
+    public void AnInstructionFileWhoseNameHoldsAListSeparator_ForcesThePrompt(string subject)
+    {
+        Assert.True(AgentInstructionFiles.Targets(subject), subject);
+    }
+
+    [Theory]
     // Reference arms: other files stay ordinary writes.
     [InlineData(@"C:\repo\.inferpal\memory.md.bak")]
     [InlineData(@"C:\repo\.inferpal\project.json")]

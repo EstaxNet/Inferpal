@@ -24,7 +24,8 @@ internal sealed class ModeToolRegistry(IToolRegistry inner, ChatMode mode, strin
 
     public int? WritesInRun => inner.WritesInRun;
 
-    public string? TurnedOffRefusal(string name) => inner.TurnedOffRefusal(name);
+    // A tool the mode refuses gets the mode's refusal, never "turn it back on": turned on, the mode still refuses it.
+    public string? TurnedOffRefusal(string name) => _tools.Allows(name) ? inner.TurnedOffRefusal(name) : null;
 
     /// <summary>The inner registry's names this mode keeps, tools turned off included — so a call written as text to one
     /// is refused with its cause rather than shown as the answer.</summary>

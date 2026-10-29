@@ -26,11 +26,25 @@ public class PlanModeToolRegistryTests
 
         public DiffInfo? ConsumeDiff() => Diff;
 
+        public HashSet<string> TurnedOff { get; } = [];
+
+        public string? TurnedOffRefusal(string name) => TurnedOff.Contains(name) ? $"turned off: {name}" : null;
+
         private static ToolDefinition Def(string name) =>
             new("function", new ToolFunction(name, "d", new { }));
     }
 
     private static JsonElement NoArgs() => JsonSerializer.Deserialize<JsonElement>("{}");
+
+    [Fact]
+    public void ATurnedOffToolThePlanRefuses_GetsThePlansRefusal_NotTheRemedyToTurnItOn()
+    {
+        // Turned back on, run_command is still refused in plan mode: "/tools on run_command" is a remedy that does nothing.
+        IToolRegistry plan = new PlanModeToolRegistry(new FakeRegistry { TurnedOff = { "run_command", "read_file" } });
+
+        Assert.Null(plan.TurnedOffRefusal("run_command"));   // the plan refuses it itself, at ExecuteAsync
+        Assert.Equal("turned off: read_file", plan.TurnedOffRefusal("read_file"));   // reference arm: a tool the plan keeps
+    }
 
     [Fact]
     public void Definitions_KeepOnlyReadOnlyTools()

@@ -31,6 +31,14 @@ internal sealed class BackgroundShellRegistry : IDisposable
         public volatile bool Exited;
         public int? ExitCode;
         public readonly object Lock = new();
+        // Set once both redirected streams have delivered their last line (a null line ends each).
+        public readonly CountdownEvent StreamsEnded = new(2);
+
+        public void StreamEnded()
+        {
+            // On a pool thread: a signal after the poll gave up and disposed must not throw there.
+            try { StreamsEnded.Signal(); } catch (Exception ex) when (ex is ObjectDisposedException or InvalidOperationException) { }
+        }
     }
 
     private readonly Dictionary<string, Job> _jobs = new();
@@ -63,8 +71,16 @@ internal sealed class BackgroundShellRegistry : IDisposable
         }
         var job = new Job { Id = id, Process = process, Command = command };
 
-        process.OutputDataReceived += (_, e) => Append(job, e.Data?.TrimEnd(' ', '\t'));   // a widened buffer pads tables
-        process.ErrorDataReceived  += (_, e) => Append(job, PowerShellStderr.DecodeLine(e.Data));   // CLIXML → text
+        process.OutputDataReceived += (_, e) =>
+        {
+            if (e.Data is null) job.StreamEnded();
+            else Append(job, e.Data.TrimEnd(' ', '\t'));   // a widened buffer pads tables
+        };
+        process.ErrorDataReceived += (_, e) =>
+        {
+            if (e.Data is null) job.StreamEnded();
+            else Append(job, PowerShellStderr.DecodeLine(e.Data));   // CLIXML → text
+        };
         process.Exited += (_, _) =>
         {
             lock (job.Lock)
@@ -115,11 +131,12 @@ internal sealed class BackgroundShellRegistry : IDisposable
         var exited = job.Exited;
 
         // The Exited event can fire before the async stdout/stderr callbacks have delivered the
-        // last lines: wait for those redirected streams to drain, or the tail of the output is lost.
-        // ⚠ Bounded: a background process the job started holds the pipes open for as long as it
-        // lives, and the parameterless WaitForExit() blocked this poll — synchronously — until then.
+        // last lines: wait for those redirected streams to END, or the tail of the output is lost.
+        // ⚠ Not WaitForExit(2000): with a timeout it returns at once for an exited process, the streams not waited
+        // for. ⚠ Bounded: a background process the job started holds the pipes open for as long as it lives, and the
+        // parameterless WaitForExit() blocked this poll — synchronously — until then.
         if (exited)
-            try { job.Process.WaitForExit(2000); } catch { }
+            try { job.StreamsEnded.Wait(2000); } catch (ObjectDisposedException) { }
 
         string chunk;
         int? exit;
@@ -133,6 +150,7 @@ internal sealed class BackgroundShellRegistry : IDisposable
         {
             lock (_lock) _jobs.Remove(id);
             try { job.Process.Dispose(); } catch { }
+            job.StreamsEnded.Dispose();
         }
 
         return new PollResult(true, chunk, !exited, exit);
@@ -152,6 +170,7 @@ internal sealed class BackgroundShellRegistry : IDisposable
 
         lock (_lock) _jobs.Remove(id);
         try { job!.Process.Dispose(); } catch { }
+        job.StreamsEnded.Dispose();
         return true;
     }
 
@@ -184,6 +203,7 @@ internal sealed class BackgroundShellRegistry : IDisposable
             }
             catch (Exception ex) { Diagnostics.Swallow($"BackgroundShellRegistry.Dispose({job.Id})", ex); }
             try { job.Process.Dispose(); } catch { }
+            job.StreamsEnded.Dispose();
         }
     }
 }

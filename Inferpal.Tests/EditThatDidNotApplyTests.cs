@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text.Json;
 using Inferpal.Localization;
 using Inferpal.Services.Editor;
@@ -150,6 +151,104 @@ public class EditThatDidNotApplyTests
             .ExecuteAsync(Args(new { text = "hello" }), CancellationToken.None);
 
         Assert.Equal(Strings.InsertOk(editor.Path, 5), said);
+    }
+
+    /// <summary>
+    /// ⚠ The backup enters the file in the run before the edit; an edit the editor then refuses changed nothing, and the
+    /// run must not say "1 file changed" with Undo offered.
+    /// </summary>
+    [Fact]
+    public async Task AnEditTheEditorRefused_LeavesTheRun()
+    {
+        var root = Directory.CreateTempSubdirectory("inferpal-refused-edit").FullName;
+        try
+        {
+            var editor = new EditRefusingEditor();
+            File.WriteAllText(editor.Path, "before");
+            var history = new FileHistoryService { WorkspaceRoot = () => root };
+            history.BeginRun();
+
+            await new InsertAtCursorTool(editor, new Approves(), history).ExecuteAsync(Args(new { text = "x" }), CancellationToken.None);
+            await new ReplaceSelectionTool(editor, new Approves(), history).ExecuteAsync(Args(new { text = "x" }), CancellationToken.None);
+
+            Assert.Equal(0, history.CurrentRunWriteCount);
+            Assert.Equal(0, history.CurrentRunFileCount);
+        }
+        finally { try { Directory.Delete(root, recursive: true); } catch { /* best-effort cleanup */ } }
+    }
+
+    /// <summary>A surface that fails the edit with an exception: the edit did not land either.</summary>
+    private sealed class ThrowingEditor : IEditorSurface
+    {
+        public string Path { get; } =
+            System.IO.Path.Combine(System.IO.Path.GetTempPath(), "inferpal-tests-throwing.cs");
+
+        public bool IsAvailable => true;
+        public string? ActiveDocumentPath => Path;
+        public IReadOnlyList<string> GetOpenDocumentPaths() => [Path];
+        public Task<ActiveDocument?> GetActiveDocumentAsync(CancellationToken ct) =>
+            Task.FromResult<ActiveDocument?>(new ActiveDocument(Path, "before"));
+        public Task<string?> InsertAtCursorAsync(string text, string path, CancellationToken ct) =>
+            throw new InvalidOperationException("the view was disposed");
+        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, CancellationToken ct) =>
+            throw new InvalidOperationException("the view was disposed");
+        public Task<string?> GetEditorDiagnosticsAsync(CancellationToken ct) => Task.FromResult<string?>(null);
+    }
+
+    [Fact]
+    public async Task AnEditThatThrew_LeavesTheRunToo()
+    {
+        var root = Directory.CreateTempSubdirectory("inferpal-thrown-edit").FullName;
+        try
+        {
+            var editor = new ThrowingEditor();
+            File.WriteAllText(editor.Path, "before");
+            var history = new FileHistoryService { WorkspaceRoot = () => root };
+            history.BeginRun();
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                new InsertAtCursorTool(editor, new Approves(), history).ExecuteAsync(Args(new { text = "x" }), CancellationToken.None));
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                new ReplaceSelectionTool(editor, new Approves(), history).ExecuteAsync(Args(new { text = "x" }), CancellationToken.None));
+
+            Assert.Equal(0, history.CurrentRunWriteCount);
+            Assert.Equal(0, history.CurrentRunFileCount);
+        }
+        finally { try { Directory.Delete(root, recursive: true); } catch { /* best-effort cleanup */ } }
+    }
+
+    private sealed class RecordsForcing : IApprovalService
+    {
+        public readonly List<bool> Forced = [];
+
+        public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct,
+                                               string? subject = null, Services.CodeActions.DiffInfo? diff = null,
+                                               bool forcePrompt = false)
+        {
+            Forced.Add(forcePrompt);
+            return Task.FromResult(true);
+        }
+    }
+
+    /// <summary>The editor writes wherever its document lives: outside the workspace, never under a rule or "Always".</summary>
+    [Fact]
+    public async Task ADocumentOutsideTheWorkspace_AlwaysShowsTheCard()
+    {
+        var editor   = new AppliesEditor();   // a file of %TEMP%
+        var inside   = Path.GetDirectoryName(editor.Path)!;
+        var outside  = Directory.CreateTempSubdirectory("inferpal-elsewhere").FullName;
+        var approval = new RecordsForcing();
+        try
+        {
+            await new InsertAtCursorTool(editor, approval, new FileHistoryService { WorkspaceRoot = () => outside })
+                .ExecuteAsync(Args(new { text = "x" }), CancellationToken.None);
+            // Reference arm: the same document, inside the workspace.
+            await new InsertAtCursorTool(editor, approval, new FileHistoryService { WorkspaceRoot = () => inside })
+                .ExecuteAsync(Args(new { text = "x" }), CancellationToken.None);
+
+            Assert.Equal([true, false], approval.Forced);
+        }
+        finally { try { Directory.Delete(outside, recursive: true); } catch { /* best-effort cleanup */ } }
     }
 
     private sealed class AppliesEditor : IEditorSurface

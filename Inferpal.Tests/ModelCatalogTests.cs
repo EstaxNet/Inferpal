@@ -43,6 +43,20 @@ public class ModelCatalogTests
         Assert.Equal("qwen3:8b", ModelCatalog.PickBestChatModel(["llama3.1:8b", "qwen3:8b"]));
 
     [Fact]
+    public void AReranker_IsInNoChatList_EvenPublishedAsAbleToComplete()
+    {
+        Assert.False(ModelCatalog.IsChatModel("qwen3-reranker-4b"));
+        Assert.False(ModelCatalog.IsChatModel(new InstalledModelInfo("qwen3-reranker-4b", 0, ["completion"])));
+        // Reference arm: a chat model published the same way.
+        Assert.True(ModelCatalog.IsChatModel(new InstalledModelInfo("qwen3:8b", 0, ["completion"])));
+    }
+
+    [Fact]
+    public void PickBestChatModel_NeverAdoptsAReranker_NamedAfterAProfiledFamily() =>
+        // A server may list it as able to complete; it answers no chat turn.
+        Assert.Equal("llama3.1:8b", ModelCatalog.PickBestChatModel(["qwen3-reranker-4b", "llama3.1:8b"]));
+
+    [Fact]
     public void PickBestChatModel_PutsACodeModelMeasuredToFailAsTheAgent_AfterAGeneralOne() =>
         // The first-run model is the agent's too, and Qwen2.5 Coder completes 3 agent tasks in 14.
         Assert.Equal("llama3.1:8b", ModelCatalog.PickBestChatModel(

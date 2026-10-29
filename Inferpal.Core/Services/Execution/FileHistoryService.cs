@@ -287,6 +287,37 @@ internal class FileHistoryService
         return (snapshot.Length > 0, snapshot);
     }
 
+    /// <summary>
+    /// Backs up a document an editor tool is about to change, and returns what takes that write back out of the run when
+    /// the editor then refuses the edit.
+    /// </summary>
+    /// <remarks>⚠ The edit goes to the editor's buffer, not to the disk: the check of <see cref="CallScope"/> (the file
+    /// against its backup) cannot tell whether it landed, and without this a refused edit says "1 file changed" with Undo
+    /// offered.</remarks>
+    internal async Task<Action> SnapshotBeforeEditorWriteAsync(string filePath, CancellationToken ct)
+    {
+        bool firstInRun;
+        lock (_runLock) firstInRun = Run is { } run && !run.Has(filePath);
+        var counted = (await SnapshotAsync(filePath, ct)).Length > 0;   // a failed backup enters the run uncounted
+        return () =>
+        {
+            HistoryRun? forgotten;
+            lock (_runLock) forgotten = WithdrawLocked(filePath, counted, firstInRun);
+            PersistAsItGrows(forgotten);
+        };
+    }
+
+    /// <summary>Takes a write that did not land back out of the run, as if never attempted; the run when the file left it.</summary>
+    /// <param name="counted">The write was counted (a failed backup enters the run uncounted).</param>
+    /// <param name="firstInRun">The write entered the file in the run.</param>
+    private HistoryRun? WithdrawLocked(string path, bool counted, bool firstInRun)
+    {
+        if (counted) Run?.UncountWrite();
+        if (!firstInRun || Run is not { } run) return null;
+        run.Forget(path);
+        return run;
+    }
+
     /// <summary>A backup taken for a write of the tool call in flight, checked when the call ends.</summary>
     internal sealed record PendingWrite(string Path, string? Snapshot, bool Failed, bool FirstInRun);
 
@@ -326,12 +357,7 @@ internal class FileHistoryService
             foreach (var write in writes)
             {
                 if (Landed(write)) continue;
-                lock (owner._runLock)
-                {
-                    // A failed backup was entered in the run without being counted as a write.
-                    if (!write.Failed) owner.Run?.UncountWrite();
-                    if (write.FirstInRun && owner.Run is { } run) (forgotten = run).Forget(write.Path);
-                }
+                lock (owner._runLock) forgotten = owner.WithdrawLocked(write.Path, !write.Failed, write.FirstInRun) ?? forgotten;
             }
             // Out of its file too: kept there, the write that did not land is one an undo would "give back".
             owner.PersistAsItGrows(forgotten);

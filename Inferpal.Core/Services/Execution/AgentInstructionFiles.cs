@@ -1,4 +1,6 @@
 using System.IO;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Inferpal.Services.Execution;
 
@@ -65,7 +67,9 @@ internal static class AgentInstructionFiles
     {
         if (string.IsNullOrWhiteSpace(subject)) return false;
 
-        foreach (var token in subject.Split('\n', ';', ','))
+        // Every run of consecutive parts, the whole line included: `rules/style,v2.md` is ONE file name, which its parts
+        // alone never name — and a line may join it to another path with the same separator.
+        foreach (var token in subject.Split('\n').SelectMany(Runs))
         {
             // Separators are normalised BEFORE any path reading, for the reason TestFileWriteGuard
             // documents: under POSIX a backslash is an ordinary character, and the subject is
@@ -80,6 +84,18 @@ internal static class AgentInstructionFiles
             if (IsInstructionFile([.. raw.Select(AsWritten)]) || IsInstructionFile(Resolved(raw))) return true;
         }
         return false;
+    }
+
+    /// <summary>Each run of consecutive <c>;</c>/<c>,</c>-separated parts of <paramref name="line"/>, joined as written.</summary>
+    private static IEnumerable<string> Runs(string line)
+    {
+        var pieces = Regex.Split(line, "(?<=[;,])", RegexOptions.None, RegexBudget.Default);   // each keeps its separator
+        if (pieces.Length > 64) { yield return line; foreach (var p in pieces) yield return p.TrimEnd(';', ','); yield break; }
+        for (var i = 0; i < pieces.Length; i++)
+        {
+            var run = new StringBuilder();
+            for (var j = i; j < pieces.Length; j++) yield return run.Append(pieces[j]).ToString().TrimEnd(';', ',');
+        }
     }
 
     private static bool IsInstructionFile(string[] segments)

@@ -45,7 +45,9 @@ internal static class EditorWriteGate
     /// endings <c>apply_diff</c>, <c>write_file</c> and the code actions convert away. A document without a line
     /// break says nothing about its convention: the text is kept as given.
     /// </param>
-    internal readonly record struct Decision(ActiveDocument? Document, string? Refusal, string? Text = null)
+    /// <param name="NotApplied">Called when the editor then refuses the edit: takes the write back out of the run, which
+    /// counted it at the backup.</param>
+    internal readonly record struct Decision(ActiveDocument? Document, string? Refusal, string? Text = null, Action? NotApplied = null)
     {
         internal bool MayProceed => Document is not null;
     }
@@ -75,7 +77,11 @@ internal static class EditorWriteGate
         if (Governance.ContentExclusions.Of(document.Path) is { } excluded)
             return new(null, excluded.ForModel(document.Path));
 
-        if (!await approval.RequestApprovalAsync(toolName, $"{document.Path}\n\n{text}", ct, subject: document.Path))
+        // ⚠ The editor writes wherever the document lives — a settings file, another repository: outside the workspace,
+        // never under a rule or an "Always" (the confinement every other write gets).
+        var outside = !PathSanitizer.IsUnderRoot(document.Path, history.WorkspaceRoot?.Invoke());
+        if (!await approval.RequestApprovalAsync(toolName, $"{document.Path}\n\n{text}", ct, subject: document.Path,
+                                                 forcePrompt: outside))
             return new(null, Strings.RunCancelled);
 
         // ⚠ The edit goes to the document active WHEN IT IS APPLIED, and the card can wait for minutes while the user
@@ -89,8 +95,8 @@ internal static class EditorWriteGate
         // Best-effort, and deliberately of the file on disk: an unsaved buffer's previous state
         // lives in the editor's own undo stack, which is where the user looks for it. What the
         // snapshot buys is /undo-run, which reads the disk copy.
-        await history.SnapshotAsync(document.Path, ct);
+        var notApplied = await history.SnapshotBeforeEditorWriteAsync(document.Path, ct);
         return new(document, null,
-            document.Text.Contains('\n') ? LineEndings.ToEol(text, LineEndings.Dominant(document.Text)) : text);
+            document.Text.Contains('\n') ? LineEndings.ToEol(text, LineEndings.Dominant(document.Text)) : text, notApplied);
     }
 }

@@ -196,9 +196,9 @@ A name the registry does not have is **refused before you are asked**, and the m
 
 - **Only public registries are ever sent a name.** The lookup happens before the card, and the name is the model's, so
   it never goes to a server a configuration chose. Each tool is first asked offline which sources apply
-  (`dotnet nuget list source`, `npm config get registry`, the pip and uv configuration): a project or a machine that
-  restores from another source — a company feed, a scope registry, a private index — is not checked at all, and its
-  calls go to the card as before.
+  (`dotnet nuget list source`, `npm config get registry`, the yarn and bun files, the pip and uv configuration — in the
+  workspace and above it, up to its git repository's root): a project or a machine that restores from another source
+  — a company feed, a scope registry, a private index — is not checked at all, and its calls go to the card as before.
 - Only a certain "absent" refuses. A registry that does not answer, a tool that is not installed, a lookup slower than
   20 seconds, a command that picks its own source (`--index-url`, `--registry`, `--source`) or changes it (a `PIP_*` or
   `npm_config_*` variable, `dotnet nuget add source`, `npm config set`), a call that also writes a source (`nuget.config`,

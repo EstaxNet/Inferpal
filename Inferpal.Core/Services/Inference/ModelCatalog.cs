@@ -217,7 +217,7 @@ internal static class ModelCatalog
     public static bool IsEmbeddingModel(string name) => NamedLikeAnEmbedding(name);
 
     /// <summary>By the name alone: any name that is not an embedding model's (<see cref="IsEmbeddingModel(string)"/>).</summary>
-    public static bool IsChatModel(string name) => !NamedLikeAnEmbedding(name);
+    public static bool IsChatModel(string name) => !NamedLikeAnEmbedding(name) && !IsReranker(name);
 
     /// <summary>
     /// What the server publishes the model can do (Ollama's <c>capabilities</c>), when it publishes anything; else the
@@ -235,7 +235,8 @@ internal static class ModelCatalog
     /// <remarks>⚠ Not "not an embedding model": a decision model (Ollama publishes it with <c>decision</c> alone) or an
     /// embedding model whose name says nothing of it is neither, and picked as the chat model every turn ends on the
     /// server's refusal.</remarks>
-    public static bool IsChatModel(InstalledModelInfo model) => Can(model, "completion", !NamedLikeAnEmbedding(model.Name));
+    public static bool IsChatModel(InstalledModelInfo model) =>
+        !IsReranker(model.Name) && Can(model, "completion", !NamedLikeAnEmbedding(model.Name));
 
     /// <summary>
     /// The listed names a question can be asked of, by name (<see cref="IsChatModel(string)"/>) — for a listing that
@@ -284,12 +285,12 @@ internal static class ModelCatalog
     /// ⚠ A profile names a FAMILY, and its measured fit was measured on its newest release: within one family, the
     /// release the profile lists first comes first (Qwen3.8 before a Qwen3.5 4B), never the server's list order — the
     /// notice that announces the choice says "the best of the installed models". Size does not decide: within Gemma 4
-    /// the 12B did better than the 26B. A base model is not trained to chat: it comes after every other.
+    /// the 12B did better than the 26B. A base model is not trained to chat, nor a reranker: they come after every other.
     /// </para>
     /// </remarks>
     public static string PickBestChatModel(IReadOnlyList<string> models)
     {
-        var chat = models.Where(m => !IsBaseModel(m)).ToList();
+        var chat = models.Where(m => !IsBaseModel(m) && !IsReranker(m)).ToList();
         if (chat.Count == 0) chat = [.. models];
 
         var profiled = chat
@@ -308,6 +309,11 @@ internal static class ModelCatalog
     /// (<c>qwen3.5-2b-base</c>, <c>ministral-3-8b-base-2512</c>) — never <c>database-coder</c>.</summary>
     public static bool IsBaseModel(string name) =>
         name.ToLowerInvariant().Split(NameSeparators, StringSplitOptions.RemoveEmptyEntries).Contains("base");
+
+    /// <summary>A reranker (<c>qwen3-reranker-4b</c>, <c>bge-reranker-v2-m3</c>): a classifier a server may list as able to
+    /// complete, which answers no chat turn — and named after a chat family, it would carry that family's profile.</summary>
+    public static bool IsReranker(string name) =>
+        name.ToLowerInvariant().Split(NameSeparators, StringSplitOptions.RemoveEmptyEntries).Any(w => w is "rerank" or "reranker");
 
     private static readonly char[] NameSeparators = ['-', '_', '.', ':', '/', ' '];
 

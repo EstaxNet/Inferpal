@@ -194,6 +194,8 @@ internal sealed class PackageManagerLookup : IPackageLookup
     private static async Task<PackageLookupResult> NpmAsync(AddedPackage package, CancellationToken ct)
     {
         if (NpmWorkspacePackage(package.Name, package.Directory, package.Root) is { } member) return PackageLookupResult.Unknown(member);
+        if (OtherClientRegistry(package.Directory, package.Root, UserFolders.Of(Environment.SpecialFolder.UserProfile)) is { } client)
+            return PackageLookupResult.Unknown($"{client} chooses a registry npm does not read, and it is not asked");
         if (RunTestsTool.ResolveNpm(OperatingSystem.IsWindows(), Shell.ShellLauncher.FindOnPath, File.Exists) is not { } npm)
             return PackageLookupResult.Unknown("npm could not be started without a shell");
         // Offline: the registry the configuration chooses for this name. Any other than the public one is never sent it.
@@ -229,6 +231,32 @@ internal sealed class PackageManagerLookup : IPackageLookup
     }
 
     private static readonly string[] PublicNpmHosts = ["registry.npmjs.org", "registry.yarnpkg.com"];
+
+    /// <summary>The yarn and bun files that may choose a registry, and the words that do.</summary>
+    private static readonly (string File, string[] Keys)[] OtherClientConfigs =
+    [
+        (".yarnrc.yml", ["npmRegistryServer", "npmScopes"]),
+        (".yarnrc", ["registry"]),
+        ("bunfig.toml", ["registry", "install.scopes"]),
+        (".bunfig.toml", ["registry", "install.scopes"]),
+    ];
+
+    /// <summary>
+    /// A yarn or bun configuration — at or above <paramref name="directory"/>, or in <paramref name="home"/> — that may choose a
+    /// registry; <c>null</c> when none does.
+    /// </summary>
+    /// <remarks>⚠ <c>npm config get</c> reads none of them: a scope yarn installs from a company registry looked public, the
+    /// name was looked up on npmjs.org — the internal name sent there — and the package refused as absent.</remarks>
+    internal static string? OtherClientRegistry(string directory, string root, string? home)
+    {
+        var folders = FoldersUpTo(directory, root).ToList();
+        if (!string.IsNullOrEmpty(home) && !folders.Contains(home, PathComparer.Default)) folders.Add(home);
+        foreach (var folder in folders)
+            foreach (var (file, keys) in OtherClientConfigs)
+                if (Read(Path.Combine(folder, file)) is { } text && keys.Any(k => text.Contains(k, StringComparison.Ordinal)))
+                    return Path.Combine(folder, file);
+        return null;
+    }
 
     /// <summary>The registry an <c>npm config get registry [@scope:registry]</c> chose for a name of <paramref name="scope"/>, when
     /// it is not the public one; <c>null</c> when it is.</summary>
@@ -403,14 +431,18 @@ internal sealed class PackageManagerLookup : IPackageLookup
 
     // ── shared ───────────────────────────────────────────────────────────────
 
-    /// <summary><paramref name="directory"/> and each folder above it, up to <paramref name="root"/> — the folder alone when it is
-    /// not under the root.</summary>
+    /// <summary><paramref name="directory"/> and each folder above it, up to the git work tree that holds <paramref name="root"/>
+    /// — else <paramref name="root"/> — the folder alone when it is not under it.</summary>
+    /// <remarks>⚠ Above the workspace too: VS Code opened on <c>repo/src/Api</c> restores from <c>repo/Directory.Build.props</c>,
+    /// and a pnpm or uv workspace is declared at <c>repo/</c>. Read here, never shown to the model; what is found only ever
+    /// makes a lookup unknown, never absent.</remarks>
     private static IEnumerable<string> FoldersUpTo(string directory, string root)
     {
+        var top = GitProcess.WorkTreeOf(root) ?? root;
         for (var dir = new DirectoryInfo(directory); dir is not null; dir = dir.Parent)
         {
             yield return dir.FullName;
-            if (PathComparer.SameDirectory(dir.FullName, root) || !PathSanitizer.IsUnderRoot(dir.FullName, root)) yield break;
+            if (PathComparer.SameDirectory(dir.FullName, top) || !PathSanitizer.IsUnderRoot(dir.FullName, top)) yield break;
         }
     }
 

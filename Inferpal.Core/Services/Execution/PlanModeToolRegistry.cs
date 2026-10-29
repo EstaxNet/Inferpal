@@ -41,7 +41,8 @@ internal sealed class PlanModeToolRegistry(IToolRegistry inner) : IToolRegistry
 
     public DiffInfo? ConsumeDiff() => inner.ConsumeDiff();
 
-    public string? TurnedOffRefusal(string name) => inner.TurnedOffRefusal(name);
+    // A tool the mode refuses gets the mode's refusal, never "turn it back on": turned on, the mode still refuses it.
+    public string? TurnedOffRefusal(string name) => IsAllowed(name) ? inner.TurnedOffRefusal(name) : null;
 
     /// <summary>The inner registry's names this mode allows — a read-only tool turned off included, so that a call written
     /// as text to it is refused with its cause rather than shown as the answer.</summary>

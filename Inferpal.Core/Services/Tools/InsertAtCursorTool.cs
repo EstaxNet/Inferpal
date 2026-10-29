@@ -52,14 +52,19 @@ internal class InsertAtCursorTool : ITool
         if (!gate.MayProceed) return gate.Refusal!;
 
         text = gate.Text!;
-        var path = await _editor.InsertAtCursorAsync(text, gate.Document!.Path, ct);
+        string? path;
+        try { path = await _editor.InsertAtCursorAsync(text, gate.Document!.Path, ct); }
+        catch (Exception ex) when (ex is not OperationCanceledException) { gate.NotApplied?.Invoke(); throw; }
         // ⚠ Past the gate a file IS open — it just resolved one, and refuses without it. A null
         // here can therefore no longer mean "no file", it means "the edit did not apply": saying
         // otherwise makes this tool assert the opposite of what get_active_document answers on the
         // same session, and sends the reader looking for a file to open instead of a document that
         // changed or is read-only.
         if (path is null)
+        {
+            gate.NotApplied?.Invoke();
             return Strings.EditNotApplied(gate.Document!.Path);
+        }
 
         return Strings.InsertOk(path, text.Length);
     }

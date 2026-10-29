@@ -639,6 +639,26 @@ public class PackageCheckTests : IDisposable
     }
 
     [Fact]
+    public void ASeparatorInsideQuotes_IsPartOfTheArgument()
+    {
+        // A direct reference names no registry package: split at its `&egg=`, it became a bare `mypkg` asked of PyPI.
+        Assert.Empty(PackageCheck.Added("run_command",
+            Args(new { command = "pip install \"mypkg @ git+https://host/repo.git#subdirectory=a&egg=mypkg\"" }), _root));
+        Assert.Equal(["npm i lodash ", " npm i other"], PackageCheck.Steps("npm i lodash & npm i other"));
+        Assert.Equal(["echo 'a;b'", " npm i x"], PackageCheck.Steps("echo 'a;b'; npm i x"));
+    }
+
+    [Fact]
+    public void AnInstallAfterALoneAmpersand_IsCheckedToo()
+    {
+        // pwsh 7 and bash run both commands: the second is an install like the first, never one the check skips.
+        var names = PackageCheck.Added("run_command", Args(new { command = "npm i lodash & npm i fake-pkg-xyz" }), _root)
+                                .Select(p => p.Name);
+
+        Assert.Equal(["lodash", "fake-pkg-xyz"], names);
+    }
+
+    [Fact]
     public void AFolderThatCannotBeResolved_LeavesTheRestUnknown()
     {
         Directory.CreateDirectory(Path.Combine(_root, "web"));
@@ -826,6 +846,39 @@ public class PackageCheckTests : IDisposable
 
         Assert.Equal(["pdf-lib", "@pdf-lib/upng"],
             PackageManagerLookup.NpmNames("""[{"name":"pdf-lib","version":"1.17.1"},{"name":"@pdf-lib/upng","version":"1.0.1"}]"""));
+    }
+
+    [Fact]
+    public async Task AScopeYarnInstallsFromAnotherRegistry_IsNeverSentToNpm()
+    {
+        // npm reads no yarn or bun file: asked, it named the public registry, and the internal name went to npmjs.org.
+        Write(".yarnrc.yml", "npmScopes:\n  acme:\n    npmRegistryServer: https://npm.acme.internal\n");
+        var package = new AddedPackage(PackageEcosystem.Npm, "@acme/ui", _root, _root, new Dictionary<string, string>());
+
+        var answer = await new PackageManagerLookup().LookUpAsync(package, CancellationToken.None);
+
+        Assert.Equal(PackageAnswer.Unknown, answer.Answer);
+        Assert.Contains(Path.Combine(_root, ".yarnrc.yml"), answer.Cause, StringComparison.Ordinal);
+        // The person's own configuration counts too; a yarn file that chooses no registry does not.
+        var home = Write(Path.Combine("home", ".bunfig.toml"), "[install.scopes]\nacme = \"https://npm.acme.internal\"\n");
+        File.WriteAllText(Path.Combine(_root, ".yarnrc.yml"), "nodeLinker: node-modules\n");
+        Assert.Equal(home, PackageManagerLookup.OtherClientRegistry(_root, _root, Path.GetDirectoryName(home)));
+        Assert.Null(PackageManagerLookup.OtherClientRegistry(_root, _root, home: null));
+    }
+
+    [Fact]
+    public void AWorkspaceOpenedOnASubFolder_ReadsItsRepositorysConfiguration()
+    {
+        // VS Code opened on repo/src/Api: the restore source is declared at repo/, above the workspace.
+        Write("Directory.Build.props", "<Project><PropertyGroup><RestoreAdditionalProjectSources>https://feed.acme.internal/v3/index.json</RestoreAdditionalProjectSources></PropertyGroup></Project>");
+        Write("src/Api/Api.csproj", "<Project><ItemGroup><PackageReference Include=\"Acme.Logging\" /></ItemGroup></Project>");
+        var api = Path.Combine(_root, "src", "Api");
+        // Reference arm: outside a git repository, the workspace is where the reading stops.
+        Assert.Null(PackageManagerLookup.MSBuildRestoreSource(api, api));
+
+        Directory.CreateDirectory(Path.Combine(_root, ".git"));
+
+        Assert.NotNull(PackageManagerLookup.MSBuildRestoreSource(api, api));
     }
 
     [Fact]

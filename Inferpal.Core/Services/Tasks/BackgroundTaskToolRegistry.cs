@@ -104,7 +104,8 @@ internal sealed class BackgroundTaskToolRegistry(
 
     public DiffInfo? ConsumeDiff() => inner.ConsumeDiff();
 
-    public string? TurnedOffRefusal(string name) => inner.TurnedOffRefusal(name);
+    // A tool a task may not call gets the task's refusal, never "turn it back on": turned on, it is still refused.
+    public string? TurnedOffRefusal(string name) => Permits(name) ? inner.TurnedOffRefusal(name) : null;
 
     /// <summary>The inner registry's names a task may call — a tool turned off included, so that a call written as text to
     /// it is refused with its cause rather than shown as the report.</summary>
