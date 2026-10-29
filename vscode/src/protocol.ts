@@ -419,6 +419,8 @@ export interface TestsGenerateResult {
   content?: string | null;
   extended?: boolean;
   cancelled?: boolean;
+  /** The test file's text the plan extends, as the host read it. */
+  extends?: string | null;
 }
 
 /** `codeAction/run` — headless in-place code action over the active document. */

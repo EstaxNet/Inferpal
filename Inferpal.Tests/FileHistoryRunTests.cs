@@ -92,6 +92,39 @@ public class FileHistoryRunTests
 
     // ── Undo integration (real temp files) ──────────────────────────────────────
 
+    /// <summary>
+    /// ⚠ A Stop during /undo-run keeps the record of what it gave back: the file written back is given back, with the copy
+    /// to redo from. Unrecorded, the review showed it not undone, and a retry saved its pre-run content as the copy to redo.
+    /// </summary>
+    [Fact]
+    public async Task AStopDuringUndoRun_KeepsWhatItGaveBack()
+    {
+        using var tmp  = new TempDir();
+        var a = tmp.File("a.txt", "a-original");
+        var b = tmp.File("b.txt", "b-original");
+        using var stop = new CancellationTokenSource();
+        var armed = false;
+        var stamps = 0;
+        // The clock is read once per backup: the second backup of the undo — b's — is where the person stops.
+        var svc = new FileHistoryService { UtcNow = () => { if (armed && ++stamps == 2) stop.Cancel(); return DateTime.UtcNow; } };
+        svc.BeginRun();
+        await svc.SnapshotAsync(a, CancellationToken.None);
+        await File.WriteAllTextAsync(a, "a-run");
+        await svc.SnapshotAsync(b, CancellationToken.None);
+        await File.WriteAllTextAsync(b, "b-run");
+        svc.EndRun();
+        var run = svc.Runs.First(r => r.FileCount > 0);
+
+        armed = true;
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => svc.UndoRunAsync(run, stop.Token));
+
+        Assert.Equal("a-original", await File.ReadAllTextAsync(a));   // witness: a was written back before the stop
+        Assert.Equal("b-run", await File.ReadAllTextAsync(b));
+        Assert.True(run.IsGivenBack(a));
+        Assert.NotNull(run.RedoSourceOf(a));
+        Assert.False(run.IsGivenBack(b));
+    }
+
     [Fact]
     public async Task UndoRun_RestoresModifiedFile()
     {

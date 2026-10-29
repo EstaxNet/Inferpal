@@ -148,9 +148,12 @@ internal abstract class ApprovalServiceBase : IApprovalService
         }
 
         var message = Strings.ApprovalMessage(toolName, details);
+        // The workspace the card is asked in: an "Always" answered after another solution opened is trust given to this
+        // one, never to the next.
+        var cardRoot = _rootDir();
         // A narrow rule to offer beside "Always this session" — never for a call the prompt is forced for: the rule
         // would not apply to it, and the card would promise what the next identical call does not get.
-        var rule = opaque ? null : ApprovalRuleProposal.For(toolName, matchOn, _rootDir());
+        var rule = opaque ? null : ApprovalRuleProposal.For(toolName, matchOn, cardRoot);
 
         ApprovalDecision promptDecision;
         try
@@ -168,7 +171,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
             throw;
         }
         if (promptDecision == ApprovalDecision.Always)
-            Grant(toolName);
+            Grant(toolName, cardRoot);
         if (promptDecision == ApprovalDecision.Rule)
         {
             // ⚠ Offered by this card only: a Rule answer to a card that offered none comes from a peer that answers what
@@ -278,12 +281,17 @@ internal abstract class ApprovalServiceBase : IApprovalService
         }
     }
 
-    private void Grant(string toolName)
+    /// <remarks>⚠ Filed under <paramref name="cardRoot"/>, the root the card was asked in: filed under the root of the
+    /// moment, an "Always" clicked on repository A's card after solution B opened let every call in B run unasked.</remarks>
+    private void Grant(string toolName, string? cardRoot)
     {
         lock (_grantsLock)
         {
+            // Answered after another workspace opened: trust for one no longer open, which the next read would forget —
+            // kept, it would only have cleared the grants of the workspace open now. This call alone is approved.
+            if (!PathComparer.SameDirectory(cardRoot, _rootDir())) return;
             ForgetGrantsOfAnotherRoot();
-            _grantsRoot = _rootDir();
+            _grantsRoot = cardRoot;
             _sessionAllowed[toolName] = 0;
         }
     }

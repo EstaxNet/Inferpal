@@ -25,7 +25,7 @@ namespace Inferpal.Services.Debugging;
 /// <see cref="DebuggerNotAnsweringException"/> (a start and a resume say it in their result instead).
 /// </para>
 /// </remarks>
-internal sealed class SignalDebugSession : IDebugSession
+internal sealed class SignalDebugSession : IDebugSession, IDebugRefusals
 {
     // Operation names on the wire. Kept as constants because the driver lives in another
     // assembly *and* another process: a typo here is a runtime no-op, not a compile error.
@@ -132,14 +132,18 @@ internal sealed class SignalDebugSession : IDebugSession
         // No state = not paused (running, ended, or never started): an ordinary answer.
         (await AskAsync(new(Id: string.Empty, Pid: 0, Ts: 0, Op: OpState), QueryTimeout, ct)).State;
 
-    public async Task<string?> EvaluateAsync(string expression, int? frameId, CancellationToken ct)
+    public async Task<string?> EvaluateAsync(string expression, int? frameId, CancellationToken ct) =>
+        (await EvaluateWithCauseAsync(expression, frameId, ct)).Value;
+
+    /// <inheritdoc/>
+    public async Task<(string? Value, string? Refusal)> EvaluateWithCauseAsync(string expression, int? frameId, CancellationToken ct)
     {
         var (response, silence) = await SendAsync(
             new(Id: string.Empty, Pid: 0, Ts: 0, Op: OpEvaluate, Expression: expression, FrameId: frameId),
             QueryTimeout, ct);
         if (response is null) throw new DebuggerNotAnsweringException(silence!);
-        // A refused evaluation is the ordinary answer to an invalid expression.
-        return response.Ok ? response.Text : null;
+        // A refused evaluation is the ordinary answer to an invalid expression — with the debugger's words.
+        return response.Ok ? (response.Text, null) : (null, response.Error);
     }
 
     public async Task StopAsync(CancellationToken ct) =>

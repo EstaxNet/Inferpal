@@ -42,9 +42,9 @@ internal static class ActiveSolutionSignal
     /// <summary>
     /// Records the full path of the currently open <c>.sln</c> file, overwriting any previous value.
     /// </summary>
-    internal static void Write(string solutionPath)
+    internal static bool Write(string solutionPath)
     {
-        SignalFile.Write(FilePath,
+        return SignalFile.Write(FilePath,
             new { solutionPath, pid = SignalFile.CurrentPid, ts = SignalFile.Now.ToUnixTimeMilliseconds() },
             "ActiveSolutionSignal.Write");
     }
@@ -56,9 +56,9 @@ internal static class ActiveSolutionSignal
     /// The same file as the solution: one thing is open at a time, and the scripts that prove the in-process package
     /// loaded test that file's existence. A folder is never read as a solution (<see cref="TryReadSolutionPath"/>).
     /// </remarks>
-    internal static void WriteFolder(string folderPath)
+    internal static bool WriteFolder(string folderPath)
     {
-        SignalFile.Write(FilePath,
+        return SignalFile.Write(FilePath,
             new { folderPath, pid = SignalFile.CurrentPid, ts = SignalFile.Now.ToUnixTimeMilliseconds() },
             "ActiveSolutionSignal.WriteFolder");
     }
@@ -111,7 +111,7 @@ internal static class ActiveSolutionSignal
         try
         {
             if (!File.Exists(FilePath)) return null;
-            var obj  = JsonSerializer.Deserialize<JsonElement>(File.ReadAllText(FilePath));
+            var obj  = JsonSerializer.Deserialize<JsonElement>(SignalFile.ReadShared(FilePath));
             var path = obj.TryGetProperty(field, out var p) ? p.GetString() : null;
             // Its writer, when it said who it is (an older version did not): an earlier devenv's under the same PID is no
             // answer about this one.

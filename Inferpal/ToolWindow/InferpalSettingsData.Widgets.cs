@@ -342,8 +342,9 @@ internal partial class InferpalSettingsData
                 ApplyDocsSites(sites);
             });
             // While a pass runs — an index or a crawl — the page follows it, only while it is the one shown.
-            if (_page == "search" && (card.State == "indexing" || sites.Any(s => s.Busy)))
-                _livePoll = new System.Threading.Timer(_ => { if (_page == "search") _ = RefreshSearchPageAsync(); }, null, 1500, Timeout.Infinite);
+            if (!_detached && _page == "search" && (card.State == "indexing" || sites.Any(s => s.Busy)))
+                _livePoll = new System.Threading.Timer(_ => { if (!_detached && _page == "search") _ = RefreshSearchPageAsync(); },
+                                                       null, 1500, Timeout.Infinite);
         }
         catch (Exception ex) { Services.Diagnostics.Swallow("Settings.RefreshSearchPage", ex); }
     }

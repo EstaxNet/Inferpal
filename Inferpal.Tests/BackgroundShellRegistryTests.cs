@@ -59,6 +59,24 @@ public class BackgroundShellRegistryTests
         Assert.Equal(3, result.ExitCode);
     }
 
+    /// <summary>⚠ A job that ended unpolled is kept among the most recent only: unbounded, each kept its process handle and
+    /// its output until the session ended.</summary>
+    [Fact]
+    public async Task JobsThatEndedUnpolled_AreKeptAmongTheMostRecentOnly()
+    {
+        if (!PowerShellAvailable) return;
+        using var registry = new BackgroundShellRegistry { MaxEndedKept = 0 };
+        var first = registry.Start("Write-Output 'first'", "echo first", Path.GetTempPath());
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (registry.List().Any(j => j.Id == first && j.Running) && DateTime.UtcNow < deadline) await Task.Delay(25);
+        Assert.Contains(registry.List(), j => j.Id == first && !j.Running);   // witness: ended, never polled, still kept
+
+        var second = registry.Start("Start-Sleep -Seconds 5", "sleep", Path.GetTempPath());
+
+        Assert.DoesNotContain(registry.List(), j => j.Id == first);
+        Assert.Contains(registry.List(), j => j.Id == second);   // a running job is never let go
+    }
+
     [Fact]
     public async Task Job_RunsAndReportsItsOutputThenDisappears()
     {

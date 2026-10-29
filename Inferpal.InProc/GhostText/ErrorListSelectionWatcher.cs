@@ -114,7 +114,8 @@ internal static class ErrorListSelectionWatcher
             Diagnostics.Swallow("ErrorList.Selection", ex);
             answer = new ErrorListAnswer(ask.Id, new List<ProblemEntry>(), $"{ex.GetType().Name}: {ex.Message}");
         }
-        ErrorListSelectionSignal.Answer(answer);
+        // Written off the UI thread, as the Output pane's: a read, a delete and a rename.
+        await Task.Run(() => ErrorListSelectionSignal.Answer(answer));
     }
 
     private static ErrorListAnswer Read(string id)

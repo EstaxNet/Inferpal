@@ -59,7 +59,7 @@ internal sealed class AgentBreakpoints
 /// The front-end's debugger, with one difference: stopping it first removes the breakpoints the assistant set — through
 /// the tool's <c>stop</c> and through <c>/debug stop</c> alike, since both reach the session through the tool registry.
 /// </summary>
-internal sealed class AgentCleaningDebugSession(IDebugSession inner, AgentBreakpoints agent) : IDebugSession
+internal sealed class AgentCleaningDebugSession(IDebugSession inner, AgentBreakpoints agent) : IDebugSession, IDebugRefusals
 {
     public AgentBreakpoints Agent => agent;
 
@@ -94,6 +94,10 @@ internal sealed class AgentCleaningDebugSession(IDebugSession inner, AgentBreakp
     }
     public Task<DebugStopState?> GetStateAsync(CancellationToken ct) => inner.GetStateAsync(ct);
     public Task<string?> EvaluateAsync(string expression, int? frameId, CancellationToken ct) => inner.EvaluateAsync(expression, frameId, ct);
+    /// <inheritdoc/>
+    public async Task<(string? Value, string? Refusal)> EvaluateWithCauseAsync(string expression, int? frameId, CancellationToken ct) =>
+        inner is IDebugRefusals said ? await said.EvaluateWithCauseAsync(expression, frameId, ct)
+                                     : (await inner.EvaluateAsync(expression, frameId, ct), null);
 
     public async Task StopAsync(CancellationToken ct)
     {

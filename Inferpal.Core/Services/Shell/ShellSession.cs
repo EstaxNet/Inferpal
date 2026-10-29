@@ -67,11 +67,14 @@ internal sealed class ShellSession
     /// Where a command starts: the folder asked for, else the session's — and when that folder no longer exists (deleted
     /// under the session), the workspace root, with the folder that is gone (<c>Vanished</c>) so the output can say so.
     /// </summary>
-    internal (string Directory, string? Vanished) StartDirectory(string? workDirOverride)
+    internal (string Directory, string? Vanished) StartDirectory(string? workDirOverride) => StartDirectory(workDirOverride, out _);
+
+    /// <param name="root">The workspace root the command starts under, read once.</param>
+    private (string Directory, string? Vanished) StartDirectory(string? workDirOverride, out string root)
     {
         // ⚠ No workspace, no command — an explicit folder included: "." resolves against no root, lands in the host's
         // own folder, and that folder exists. Checked first, before the card asks anything.
-        var root = _root();
+        root = _root();
         if (string.IsNullOrEmpty(root)) throw new Tools.NoWorkspaceRootException();
         string dir;
         lock (_lock) { DropIfRootMoved(); dir = workDirOverride ?? _cwd ?? root; }
@@ -121,7 +124,7 @@ internal sealed class ShellSession
     {
         IReadOnlyDictionary<string, string> env;
         lock (_lock) { DropIfRootMoved(); env = new Dictionary<string, string>(_overrides, ShellStateProtocol.EnvNameComparer); }
-        var (startCwd, vanished) = StartDirectory(workDirOverride);
+        var (startCwd, vanished) = StartDirectory(workDirOverride, out var startRoot);
         var note = vanished is null ? "" : VanishedNote(vanished, startCwd);
 
         var (dialect, shell) = ShellLauncher.Resolve();
@@ -170,7 +173,7 @@ internal sealed class ShellSession
         var drained = await ChildProcess.DrainAfterExitAsync(stdout, stderr, ct);
 
         var state = ShellStateProtocol.ParseForeground(stdout.Snapshot(), marker);
-        ApplyState(state, keepFolder: workDirOverride is not null);
+        ApplyState(state, keepFolder: workDirOverride is not null, startRoot);
 
         var output = WithStderr(ShellStateProtocol.TrimLineEnds(state.Output), stderr.Snapshot());   // a widened buffer pads tables
         // The wrapper's own shell always exits 0 (a finally, a trailing printf): the command's code
@@ -197,14 +200,17 @@ internal sealed class ShellSession
 
     /// <param name="keepFolder">The command ran in a <c>working_directory</c> of its own: "for this command", as the
     /// parameter says — taken as the session's folder, every later command runs there, under a prompt that names none.</param>
-    private void ApplyState(ShellRunState state, bool keepFolder)
+    /// <param name="startRoot">The root the command started under: the state it leaves is that root's. ⚠ Read at its end,
+    /// a long command spanning a solution switch filed its folder under the new root, and every later command ran in the
+    /// old solution's folder.</param>
+    private void ApplyState(ShellRunState state, bool keepFolder, string startRoot)
     {
         if (!state.StateCaptured) return;
         lock (_lock)
         {
             if (state.Cwd is not null && !keepFolder) _cwd = state.Cwd;
             _overrides = ShellStateProtocol.ComputeOverrides(_baselineEnv, state.EnvFull);
-            _stateRoot = _root();
+            _stateRoot = startRoot;
         }
     }
 

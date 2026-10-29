@@ -29,6 +29,9 @@ internal sealed class VsSolutionTracker : IVsSolutionEvents, IVsSolutionEvents7,
         PublishCurrent();
     }
 
+    /// <summary>What was last published, the solution or the folder: one write per solution, not per project.</summary>
+    private string? _published;
+
     /// <summary>
     /// Reads the open solution from VS and writes the signal. UI-thread only.
     /// <para>
@@ -45,6 +48,8 @@ internal sealed class VsSolutionTracker : IVsSolutionEvents, IVsSolutionEvents7,
     {
         try
         {
+            // ⚠ Published once per solution: re-published for each project it loads, a 300-project solution made some
+            // 600 staged writes on devenv's UI thread for the same path.
 #pragma warning disable VSTHRD010  // called from UI-thread contexts (ctor / solution events)
             _solution.GetSolutionInfo(out var dir, out var file, out _);
             // ⚠ A folder opened without a solution is the workspace too: published as a folder, whatever file name VS
@@ -52,7 +57,9 @@ internal sealed class VsSolutionTracker : IVsSolutionEvents, IVsSolutionEvents7,
             if (_solution.GetProperty((int)__VSPROPID7.VSPROPID_IsInOpenFolderMode, out var folderMode) == VSConstants.S_OK
                 && folderMode is true)
             {
-                if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir)) ActiveSolutionSignal.WriteFolder(dir);
+                // Remembered once written only: a write that failed is tried again at the next project.
+                if (!string.IsNullOrEmpty(dir) && dir != _published && Directory.Exists(dir) && ActiveSolutionSignal.WriteFolder(dir))
+                    _published = dir;
                 return;
             }
 #pragma warning restore VSTHRD010
@@ -61,9 +68,9 @@ internal sealed class VsSolutionTracker : IVsSolutionEvents, IVsSolutionEvents7,
                 var full = Path.Combine(dir, file);
                 // Only publish once the .sln actually exists on disk — avoids recording a path the
                 // OOP reader would reject (it validates File.Exists) for a not-yet-saved solution.
-                if (File.Exists(full))
+                if (full != _published && File.Exists(full))
                 {
-                    ActiveSolutionSignal.Write(full);
+                    if (ActiveSolutionSignal.Write(full)) _published = full;
                     // Also seed the durable last-known cache so detection survives this signal being
                     // cleared on close (or the package not loading in a later session).
                     LastKnownSolutionFile.Record(full);
@@ -89,6 +96,7 @@ internal sealed class VsSolutionTracker : IVsSolutionEvents, IVsSolutionEvents7,
 
     int IVsSolutionEvents.OnAfterCloseSolution(object pUnkReserved)
     {
+        _published = null;
         ActiveSolutionSignal.Clear();
         return VSConstants.S_OK;
     }
@@ -112,12 +120,16 @@ internal sealed class VsSolutionTracker : IVsSolutionEvents, IVsSolutionEvents7,
 
     void IVsSolutionEvents7.OnAfterOpenFolder(string folderPath)
     {
-        try { if (!string.IsNullOrEmpty(folderPath) && Directory.Exists(folderPath)) ActiveSolutionSignal.WriteFolder(folderPath); }
+        try
+        {
+            if (!string.IsNullOrEmpty(folderPath) && Directory.Exists(folderPath) && ActiveSolutionSignal.WriteFolder(folderPath))
+                _published = folderPath;
+        }
         catch (Exception ex) { Services.Diagnostics.Swallow("Solution.OpenFolder", ex); }
     }
 
-    void IVsSolutionEvents7.OnBeforeCloseFolder(string folderPath) => ActiveSolutionSignal.Clear();
-    void IVsSolutionEvents7.OnAfterCloseFolder(string folderPath)  => ActiveSolutionSignal.Clear();
+    void IVsSolutionEvents7.OnBeforeCloseFolder(string folderPath) { _published = null; ActiveSolutionSignal.Clear(); }
+    void IVsSolutionEvents7.OnAfterCloseFolder(string folderPath)  { _published = null; ActiveSolutionSignal.Clear(); }
     void IVsSolutionEvents7.OnQueryCloseFolder(string folderPath, ref int pfCancel) { }
     void IVsSolutionEvents7.OnAfterLoadAllDeferredProjects() { }
 

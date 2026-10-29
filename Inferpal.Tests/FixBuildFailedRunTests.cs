@@ -47,6 +47,29 @@ public class FixBuildFailedRunTests
         Assert.Contains("ChatMessageItem.NoticeMsg(result.FinalResponse)", branch, StringComparison.Ordinal);
     }
 
+    /// <summary>⚠ The typed in-place actions and /test own the turn, and an editor action waits for a claimed send: run
+    /// outside the turn there was no Stop, and an action posted while a send was being claimed ran beside it.</summary>
+    [Fact]
+    public void TypedCodeActions_OwnTheTurn_AndAnEditorActionWaitsForAClaimedSend()
+    {
+        static string Vm(string file)
+        {
+            var dir = new DirectoryInfo(AppContext.BaseDirectory);
+            while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Inferpal.sln"))) dir = dir.Parent;
+            return ConventionCoverageTests.CodeOnly(Path.Combine(dir!.FullName, "Inferpal", "ToolWindow", file));
+        }
+
+        var slash = Vm("InferpalToolWindowData.SlashCommands.cs");
+        Assert.Contains("await RunOwnedCommandAsync(tok => RunInPlaceCodeActionAsync(kind, tok, request), ct);", slash, StringComparison.Ordinal);
+        Assert.Contains("await RunOwnedCommandAsync(tok => RunGenerateTestsAsync(tok, request), ct);", slash, StringComparison.Ordinal);
+
+        // A claim not yet a turn is waited for: become a turn, the action waits in the queue; released, it runs.
+        var pending = Vm("InferpalToolWindowData.PendingPrompt.cs");
+        Assert.Contains("if (await ClaimBecameATurnAsync())", pending, StringComparison.Ordinal);
+        // And a queued message waits for the claim of the send that just ended, rather than going back for good.
+        Assert.Contains("var turn  = await ClaimBecameATurnAsync();", Vm("InferpalToolWindowData.Steering.cs"), StringComparison.Ordinal);
+    }
+
     [Fact]
     public void TheFixLoop_RunsOnTheAgentModel()
     {

@@ -29,6 +29,36 @@ public class SnapshotGitIgnoreTests : IDisposable
         return output;
     }
 
+    /// <summary>⚠ A history's ignore file left empty (a write that failed after the file was made) is written again: it
+    /// ignored nothing, and was never rewritten — every later snapshot an untracked file.</summary>
+    [Fact]
+    public async Task AnEmptyIgnoreFileInTheHistory_IsWrittenAgain()
+    {
+        await GitAsync("init -q");
+        var history = Directory.CreateDirectory(Path.Combine(_repo, ".inferpal", "history")).FullName;
+        File.WriteAllText(Path.Combine(history, ".gitignore"), "");
+        var source = Path.Combine(_repo, "a.txt");
+        await File.WriteAllTextAsync(source, "secret");
+
+        await new FileHistoryService().SnapshotAsync(source, CancellationToken.None);
+
+        Assert.Equal(FileHistoryService.GitIgnoreContent, File.ReadAllText(Path.Combine(history, ".gitignore")));
+        Assert.DoesNotContain(".inferpal", await GitAsync("status --porcelain --untracked-files=all"));
+    }
+
+    /// <summary>⚠ A run key left short is made again: read as unreadable, no run was ever kept on disk again.</summary>
+    [Fact]
+    public void AShortRunKey_IsMadeAgain()
+    {
+        File.WriteAllBytes(Path.Combine(_repo, ".run-key"), []);
+
+        var key = RunManifest.KeyIn(_repo);
+
+        Assert.Equal(32, key?.Length);
+        Assert.Equal(key, File.ReadAllBytes(Path.Combine(_repo, ".run-key")));
+        Assert.Equal(key, RunManifest.KeyIn(_repo));   // and kept: the next process reads the same one
+    }
+
     [Fact]
     public async Task ASnapshotAtTheRepositoryRoot_IsNotAnUntrackedFile_WhenTheSolutionLivesBelowIt()
     {

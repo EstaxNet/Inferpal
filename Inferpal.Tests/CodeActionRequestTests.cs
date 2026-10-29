@@ -88,8 +88,9 @@ public sealed class CodeActionRequestTests
         var root = ConventionCoverageTests.RepoRoot();
         var vm = ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal", "ToolWindow", "InferpalToolWindowData.SlashCommands.cs"));
         Assert.Contains("RunCodeActionCommandAsync(code.Kind, code.Request, ct)", vm, StringComparison.Ordinal);
-        Assert.Contains("RunInPlaceCodeActionAsync(kind, ct, request)", vm, StringComparison.Ordinal);
-        Assert.Contains("RunGenerateTestsAsync(ct, request)", vm, StringComparison.Ordinal);
+        // Under the turn's own token: the action owns the turn (RunOwnedCommandAsync).
+        Assert.Contains("RunInPlaceCodeActionAsync(kind, tok, request)", vm, StringComparison.Ordinal);
+        Assert.Contains("RunGenerateTestsAsync(tok, request)", vm, StringComparison.Ordinal);
         Assert.Contains("CodeActionRequest.InTheQuestion(", vm, StringComparison.Ordinal);
 
         var host = ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal.Host", "HostServer.cs"));

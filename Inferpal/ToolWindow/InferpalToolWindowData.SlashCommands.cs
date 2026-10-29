@@ -88,15 +88,17 @@ internal partial class InferpalToolWindowData
     /// <param name="request">What the user typed after the command, given with the action (<see cref="CodeActionRequest"/>).</param>
     private async Task RunCodeActionCommandAsync(SlashCodeActionKind kind, string? request, CancellationToken ct)
     {
+        // ⚠ The turn is theirs while the model works (often a minute): run outside it, there was no Stop, Enter on a typed
+        // question did nothing, and a message queued meanwhile waited for some later turn. The other actions send a turn.
         if (kind is SlashCodeActionKind.Refactor or SlashCodeActionKind.Fix or SlashCodeActionKind.Doc)
         {
-            await RunInPlaceCodeActionAsync(kind, ct, request);
+            await RunOwnedCommandAsync(tok => RunInPlaceCodeActionAsync(kind, tok, request), ct);
             return;
         }
 
         if (kind == SlashCodeActionKind.Test)
         {
-            await RunGenerateTestsAsync(ct, request);
+            await RunOwnedCommandAsync(tok => RunGenerateTestsAsync(tok, request), ct);
             return;
         }
 

@@ -215,9 +215,23 @@ internal static class SignalFile
     {
         try
         {
-            return File.Exists(path) ? JsonSerializer.Deserialize<T>(File.ReadAllText(path)) : null;
+            return File.Exists(path) ? JsonSerializer.Deserialize<T>(ReadShared(path)) : null;
         }
         catch { return null; }
+    }
+
+    /// <summary>How every signal reader opens a file: a writer may replace it, or delete it, while it is read.</summary>
+    /// <remarks>⚠ Opened as <c>File.ReadAllText</c> opens it, a reader made the other side's replace or delete fail — and
+    /// that failure is swallowed: a withdrawal of the debugger's request lost (the program launched anyway), a "paused"
+    /// state left behind over a running program.</remarks>
+    internal const FileShare ReaderShare = FileShare.ReadWrite | FileShare.Delete;
+
+    /// <summary>The text of <paramref name="path"/>, read without refusing a writer (<see cref="ReaderShare"/>).</summary>
+    internal static string ReadShared(string path)
+    {
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, ReaderShare);
+        using var reader = new StreamReader(stream, System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        return reader.ReadToEnd();
     }
 
     /// <summary>Removes a signal file. Safe if absent, silent on failure.</summary>

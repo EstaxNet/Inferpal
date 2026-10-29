@@ -232,13 +232,6 @@ internal sealed class ProjectIndexService : IDisposable
     /// </remarks>
     public void StartIndexing(string rootDir)
     {
-        var previousCts  = _cts;
-        var previousPass = _indexingPass;
-        try { previousCts?.Cancel(); } catch (ObjectDisposedException) { }
-
-        var cts   = new CancellationTokenSource();
-        var token = cts.Token;   // captured now: the task must not read a field a later call replaces
-        _cts    = cts;
         // ⚠ Pinned as SetRoot pins it: a front-end may start a pass on a root it never set, and a root whose ignore files
         // were never declared excludes nothing — everything under it read for the model.
         Pin(rootDir);
@@ -246,19 +239,35 @@ internal sealed class ProjectIndexService : IDisposable
         // Language servers started for another workspace would otherwise run until the editor closes.
         _lsp.ReleaseSessionsExcept(rootDir);
 
-        _indexingPass = Task.Run(async () =>
+        // ⚠ The pass before and the pass started are swapped as one: two callers at once (the start's retry, a send's pin)
+        // each saw no pass before them, and two passes ran together — the first one's end said "stopped" mid-way through
+        // the second, and the watcher stopped deferring to it.
+        lock (_passGate)
         {
-            // ⚠ The cancelled pass must END first: its finally resets IsIndexing (the watcher then stops
-            // deferring to the new pass) and its final replaceAll would publish content read earlier.
-            if (previousPass is not null)
+            var previousCts  = _cts;
+            var previousPass = _indexingPass;
+            try { previousCts?.Cancel(); } catch (ObjectDisposedException) { }
+
+            var cts   = new CancellationTokenSource();
+            var token = cts.Token;   // captured now: the task must not read a field a later call replaces
+            _cts    = cts;
+            _indexingPass = Task.Run(async () =>
             {
-                try { await previousPass.ConfigureAwait(false); }
-                catch (Exception ex) { Diagnostics.Swallow("ProjectIndexService.PreviousPass", ex); }
-            }
-            previousCts?.Dispose();
-            await RunIndexingAsync(rootDir, token).ConfigureAwait(false);
-        });
+                // ⚠ The cancelled pass must END first: its finally resets IsIndexing (the watcher then stops
+                // deferring to the new pass) and its final replaceAll would publish content read earlier.
+                if (previousPass is not null)
+                {
+                    try { await previousPass.ConfigureAwait(false); }
+                    catch (Exception ex) { Diagnostics.Swallow("ProjectIndexService.PreviousPass", ex); }
+                }
+                previousCts?.Dispose();
+                await RunIndexingAsync(rootDir, token).ConfigureAwait(false);
+            });
+        }
     }
+
+    /// <summary>Held while a pass replaces the one before it (<see cref="StartIndexing"/>).</summary>
+    private readonly object _passGate = new();
 
     /// <summary>The indexing pass in flight (or last run); a new pass waits for it to end.</summary>
     private Task? _indexingPass;

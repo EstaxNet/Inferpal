@@ -67,11 +67,14 @@ internal sealed class DebugInspectTool(IDebugSession session, IApprovalService a
             // turns `total * 2` into "unknown symbol" on a symbol it was just shown, and the tool's
             // own description promised one frame for both.
             var frameId = state.LocalsFrameId ?? (state.Frames.Count > 0 ? state.Frames[0].Id : (int?)null);
-            var value   = await session.EvaluateAsync(expression, frameId, ct);
-            return value is null
-                ? $"The debugger could not evaluate `{expression}` in this frame (unknown symbol, or not "
-                + "in scope here). Check the locals before retrying with another expression."
-                : $"`{expression}` = {DebugStateFormatter.Cap(value)}";
+            var (value, refusal) = session is IDebugRefusals said
+                ? await said.EvaluateWithCauseAsync(expression, frameId, ct)
+                : (await session.EvaluateAsync(expression, frameId, ct), null);
+            return value is not null ? $"`{expression}` = {DebugStateFormatter.Cap(value)}"
+                 : refusal is { Length: > 0 }
+                     ? $"The debugger did not evaluate `{expression}`: {refusal.Trim()}"
+                     : $"The debugger could not evaluate `{expression}` in this frame (unknown symbol, or not "
+                       + "in scope here). Check the locals before retrying with another expression.";
         }
 
         if (!string.IsNullOrEmpty(action) && action != "state")

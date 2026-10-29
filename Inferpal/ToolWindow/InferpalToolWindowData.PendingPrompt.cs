@@ -86,7 +86,6 @@ internal partial class InferpalToolWindowData
                 Enqueue(new QueuedMessage(p, m, atts));
                 return;
             }
-            // A send claimed but not yet a turn (its context being built): its end is waited for, as before.
             var previousTurn = _turnDone?.Task;
             _ = RunPendingTurnAsync(previousTurn, p, m, atts);
         });
@@ -108,6 +107,14 @@ internal partial class InferpalToolWindowData
             // opened the window must not start its turn underneath it. LoadSessionAsync never throws.
             await _startupSessionLoad;
 #pragma warning restore VSTHRD003
+            // ⚠ A send claimed but not yet a turn (a rewind settling, /explain measuring the window) is waited for: started
+            // beside it, the action ran a second turn whose questions landed interleaved. Become a turn, the action waits
+            // in the queue for it; released (a command that took no turn), the action runs now.
+            if (await ClaimBecameATurnAsync())
+            {
+                await RunOnVMContextAsync(() => Enqueue(new QueuedMessage(p, m, atts)));
+                return;
+            }
             // Alt+M posts "/map": a slash command goes to the router, never to the model as chat text.
             if (SlashCommandRouter.LooksLikeCommand(p))
             {

@@ -122,6 +122,37 @@ public sealed class McpToolsOnDemandTests : IDisposable
     private static Task<string> Search(ToolRegistry tools, string query) =>
         tools.ExecuteAsync("tool_search", JsonSerializer.SerializeToElement(new { query }), CancellationToken.None);
 
+    /// <summary>
+    /// ⚠ Under a mode that keeps one MCP server, tool_search names, finds and loads that server's tools only: it named
+    /// the tools of every server on demand, loaded them, and the model's next calls went to tools the mode refuses.
+    /// </summary>
+    [Fact]
+    public async Task UnderAModeThatKeepsOneServer_ToolSearchSeesThatServerOnly()
+    {
+        var (tools, _) = await Build(16_384, ("ide", Heavy(93)), ("other", Heavy(60)));
+        var mode = new Inferpal.Services.Governance.ChatMode("IDE", "", "", [],
+            Inferpal.Services.Governance.ModeTools.FromCopilot(["ide/*"]), null, ".github/agents/ide.agent.md",
+            Inferpal.Services.Governance.ChatModeOrigin.Copilot, []);
+        IToolRegistry inMode = new ModeToolRegistry(tools, mode, null);
+
+        var all = tools.Definitions.Single(d => d.Function.Name == "tool_search").Function.Description;
+        Assert.Contains("mcp__other__tool_001", all);   // witness: both servers wait on demand
+
+        var described = inMode.Definitions.Single(d => d.Function.Name == "tool_search").Function.Description;
+        Assert.Contains("mcp__ide__tool_001", described);
+        Assert.DoesNotContain("mcp__other__", described);
+
+        var answer = await inMode.ExecuteAsync("tool_search", JsonSerializer.SerializeToElement(new { query = "select:mcp__other__tool_001" }),
+                                               CancellationToken.None);
+        // Said as left out by the mode — "no tool is named" would read as no such tool.
+        Assert.Contains("'mcp__other__tool_001' is not available in the mode in use", answer);
+        Assert.DoesNotContain("mcp__other__tool_001", Names(tools));   // not loaded, even outside the mode
+        // Reference arm: the mode's own tools load.
+        await inMode.ExecuteAsync("tool_search", JsonSerializer.SerializeToElement(new { query = "select:mcp__ide__tool_001" }),
+                                  CancellationToken.None);
+        Assert.Contains("mcp__ide__tool_001", Names(tools));
+    }
+
     [Fact]
     public async Task UnderTheBudget_EveryMcpToolIsDeclared_AndToolSearchIsNotOffered()
     {

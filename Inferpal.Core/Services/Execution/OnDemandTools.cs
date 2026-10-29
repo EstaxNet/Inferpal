@@ -61,7 +61,17 @@ internal sealed class OnDemandTools(Func<IReadOnlyList<ITool>> mcpTools, Func<in
             Deferred = deferred;
             Waiting = deferred.SelectMany(d => d.Tools).ToDictionary(t => t.Name, StringComparer.Ordinal);
             Description = Describe(deferred, budgetChars);
+            _budgetChars = budgetChars;
         }
+
+        private readonly int _budgetChars;
+
+        /// <summary>This plan with only the tools <paramref name="allows"/> keeps.</summary>
+        public Plan KeepingOnly(Func<string, bool> allows) =>
+            new([.. Declared.Where(t => allows(t.Name))],
+                [.. Deferred.Select(d => (d.Server, (IReadOnlyList<McpTool>)[.. d.Tools.Where(t => allows(t.Name))]))
+                            .Where(d => d.Item2.Count > 0)],
+                _budgetChars);
 
         public IReadOnlyList<ITool> Declared { get; }
         public IReadOnlyList<(string Server, IReadOnlyList<McpTool> Tools)> Deferred { get; }
@@ -75,18 +85,52 @@ internal sealed class OnDemandTools(Func<IReadOnlyList<ITool>> mcpTools, Func<in
     /// <summary>The window the budget is a share of: the one in use, else <see cref="UnknownWindow"/>.</summary>
     private int Window => windowInUse() is > 0 and var w ? w : UnknownWindow;
 
-    /// <summary>The split for the tools served now, recomputed only when the tools or the window change.</summary>
+    /// <summary>The split for the tools served now, recomputed only when the tools or the window change — narrowed to
+    /// the tools of the mode the call is made under (<see cref="Narrow"/>).</summary>
     internal Plan Current()
     {
         var tools = mcpTools();
         var window = Window;
+        Plan plan;
         lock (_gate)
         {
-            if (_cache is { } c && ReferenceEquals(c.Tools, tools) && c.Window == window) return c.Plan;
-            var plan = Split(tools, window);
-            _cache = (tools, window, plan);
-            return plan;
+            if (_cache is { } c && ReferenceEquals(c.Tools, tools) && c.Window == window) plan = c.Plan;
+            else
+            {
+                plan = Split(tools, window);
+                _cache = (tools, window, plan);
+            }
         }
+        return Narrowing.Value is { } allows ? plan.KeepingOnly(allows) : plan;
+    }
+
+    /// <summary>The plan as served, whatever mode the call is made under.</summary>
+    private Plan Unnarrowed()
+    {
+        var previous = Narrowing.Value;
+        Narrowing.Value = null;
+        try { return Current(); }
+        finally { Narrowing.Value = previous; }
+    }
+
+    private static readonly AsyncLocal<Func<string, bool>?> Narrowing = new();
+
+    /// <summary>
+    /// Narrows what <c>tool_search</c> describes, finds and loads to the tools <paramref name="allows"/> keeps, for what
+    /// runs within the scope — its awaited calls included.
+    /// </summary>
+    /// <remarks>⚠ A mode that keeps one MCP server's tools still offers <c>tool_search</c>: unnarrowed, it named the
+    /// tools of every server on demand and loaded them, and the model's next calls went to tools the mode refuses.</remarks>
+    internal static IDisposable Narrow(Func<string, bool> allows)
+    {
+        var previous = Narrowing.Value;
+        Narrowing.Value = allows;
+        return new Restore(previous);
+    }
+
+    private sealed class Restore(Func<string, bool>? previous) : IDisposable
+    {
+        public void Dispose() => Narrowing.Value = previous;
     }
 
     /// <summary>Whether a server is on demand right now — <c>tool_search</c> is offered only then.</summary>
@@ -225,6 +269,9 @@ internal sealed class OnDemandTools(Func<IReadOnlyList<ITool>> mcpTools, Func<in
             else if (byLocal.Count > 1)
                 apart.Add($"'{a}' names several tools on demand: {string.Join(", ", byLocal.Select(t => t.Name))} — select one by its full name.");
             else if (turnedOff?.Invoke(a) is { } off) apart.Add(off);
+            // ⚠ Left out by the mode the call is made under: said so — "no tool is named" would read as no such tool.
+            else if (Narrowing.Value is not null && Unnarrowed().Waiting.ContainsKey(a))
+                apart.Add($"'{a}' is not available in the mode in use.");
             else missing.Add(a);
         }
 

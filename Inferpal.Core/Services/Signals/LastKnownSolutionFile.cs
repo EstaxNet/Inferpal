@@ -57,7 +57,7 @@ internal static class LastKnownSolutionFile
         try
         {
             if (!File.Exists(FilePath)) return null;
-            var obj  = JsonSerializer.Deserialize<JsonElement>(File.ReadAllText(FilePath));
+            var obj  = JsonSerializer.Deserialize<JsonElement>(SignalFile.ReadShared(FilePath));
             var path = obj.TryGetProperty("solutionPath", out var p) ? p.GetString() : null;
             return !string.IsNullOrEmpty(path) && File.Exists(path) ? path : null;
         }

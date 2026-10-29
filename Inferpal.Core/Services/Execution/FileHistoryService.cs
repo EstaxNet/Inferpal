@@ -108,16 +108,29 @@ internal class FileHistoryService
     private static void IgnoreInGit(string historyDir)
     {
         var path = Path.Combine(historyDir, ".gitignore");
-        if (File.Exists(path)) return;
+        // ⚠ Present is not enough: one left empty (a write that failed after the file was made — disk full, a process
+        // killed) ignores nothing, and was never written again.
+        if (HoldsTheRule(path)) return;
+        var temp = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
         {
-            using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-            stream.Write(System.Text.Encoding.ASCII.GetBytes(GitIgnoreContent));
+            // Written whole elsewhere, then moved in: a write that fails leaves no file that looks done.
+            File.WriteAllBytes(temp, System.Text.Encoding.ASCII.GetBytes(GitIgnoreContent));
+            File.Move(temp, path, overwrite: true);
         }
-        catch (IOException) when (File.Exists(path)) { }   // written meanwhile by another snapshot
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            Diagnostics.Swallow("FileHistoryService.IgnoreInGit", ex);
+            if (!HoldsTheRule(path)) Diagnostics.Swallow("FileHistoryService.IgnoreInGit", ex);   // else written meanwhile
+        }
+        finally
+        {
+            try { File.Delete(temp); } catch { }
+        }
+
+        static bool HoldsTheRule(string path)
+        {
+            try { return File.Exists(path) && File.ReadAllLines(path).Any(l => l.Trim() == "*"); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return true; }   // unreadable: left
         }
     }
 
@@ -1183,33 +1196,41 @@ internal class FileHistoryService
         lock (_runLock) partly = pending.Where(c => run.PiecesOf(c.OriginalPath) is { Kept.Count: > 0 }).ToList();
         pending.RemoveAll(partly.Contains);
 
-        var result = await UndoChangesAsync(run, pending, ct);
+        RunUndoResult result;
         var piecesKept = new List<string>();
         var savedFirst = 0;
-        foreach (var change in partly)
+        try
         {
-            var (outcome, _) = await ApplyPiecesAsync(run, change, (pieces, undone, keep) =>
+            result = await UndoChangesAsync(run, pending, ct);
+            foreach (var change in partly)
             {
-                var before = undone.Count;
-                undone.UnionWith(Enumerable.Range(0, pieces.Pieces.Count).Where(i => !keep.Contains(i)));
-                return undone.Count > before ? PieceOutcome.Undone : PieceOutcome.Unchanged;
-            }, ct);
-            if (outcome == PieceOutcome.ChangedSince) changedSince.Add(change.OriginalPath);
-            else if (outcome is PieceOutcome.Undone or PieceOutcome.Unchanged)
-            {
-                piecesKept.Add(change.OriginalPath);
-                // Written, and saved first: counted with the files put back, and named apart for what it keeps.
-                if (outcome == PieceOutcome.Undone)
+                var (outcome, _) = await ApplyPiecesAsync(run, change, (pieces, undone, keep) =>
                 {
-                    result.Restored.Add(change.OriginalPath);
-                    savedFirst++;
+                    var before = undone.Count;
+                    undone.UnionWith(Enumerable.Range(0, pieces.Pieces.Count).Where(i => !keep.Contains(i)));
+                    return undone.Count > before ? PieceOutcome.Undone : PieceOutcome.Unchanged;
+                }, ct);
+                if (outcome == PieceOutcome.ChangedSince) changedSince.Add(change.OriginalPath);
+                else if (outcome is PieceOutcome.Undone or PieceOutcome.Unchanged)
+                {
+                    piecesKept.Add(change.OriginalPath);
+                    // Written, and saved first: counted with the files put back, and named apart for what it keeps.
+                    if (outcome == PieceOutcome.Undone)
+                    {
+                        result.Restored.Add(change.OriginalPath);
+                        savedFirst++;
+                    }
                 }
+                else result.Failed.Add(change.OriginalPath);
             }
-            else result.Failed.Add(change.OriginalPath);
+            lock (_runLock)
+                if (result.Failed.Count == 0) run.MarkUndone();
         }
-        lock (_runLock)
-            if (result.Failed.Count == 0) run.MarkUndone();
-        Persist(run, open: false);   // undone stays undone after a restart, and a retry gives back only what failed
+        finally
+        {
+            // Undone stays undone after a restart, and a retry gives back only what failed — a Stop included.
+            Persist(run, open: false);
+        }
         return result with { ChangedSince = changedSince, Kept = kept, PiecesKept = piecesKept,
                              SavedFirst = result.SavedFirst + savedFirst };
     }
@@ -1506,6 +1527,7 @@ internal class FileHistoryService
         var restored = new List<string>();
         var deleted  = new List<string>();
         var failed   = new List<string>();
+        var done     = new List<string>();   // every change dealt with, failed or not, before a Stop
         var savedFirst = 0;
         var redo = new Dictionary<string, string>(PathComparer.Default);
 
@@ -1576,19 +1598,21 @@ internal class FileHistoryService
                 }
                 catch (OperationCanceledException) { throw; }
                 catch { failed.Add(change.OriginalPath); }
+                done.Add(change.OriginalPath);
             }
         }
         finally
         {
             PruneBatch(pruneLater);
-        }
-
-        lock (_runLock)
-        {
-            // Given back: restored, deleted, or a created file already gone — everything that did not fail.
-            foreach (var change in pending.Where(c => !failed.Contains(c.OriginalPath, PathComparer.Default)))
-                run.NoteGivenBack(change.OriginalPath);
-            foreach (var (path, copy) in redo) run.NoteRedoSource(path, copy);
+            // ⚠ Recorded on a Stop too: the files already written back are given back, with the copy to redo from —
+            // unrecorded, the review showed them not undone, and a retry saved their pre-run content as the copy to redo.
+            lock (_runLock)
+            {
+                // Given back: restored, deleted, or a created file already gone — everything dealt with that did not fail.
+                foreach (var path in done.Where(p => !failed.Contains(p, PathComparer.Default)))
+                    run.NoteGivenBack(path);
+                foreach (var (path, copy) in redo) run.NoteRedoSource(path, copy);
+            }
         }
         return new RunUndoResult(restored, deleted, failed, savedFirst);
     }

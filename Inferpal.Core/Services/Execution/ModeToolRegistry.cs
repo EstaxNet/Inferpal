@@ -17,8 +17,15 @@ internal sealed class ModeToolRegistry(IToolRegistry inner, ChatMode mode, strin
 {
     private readonly ModeTools _tools = mode.Tools ?? throw new ArgumentException("A mode that keeps every tool needs no wrapper.", nameof(mode));
 
-    public IReadOnlyList<ToolDefinition> Definitions =>
-        inner.Definitions.Where(d => _tools.Allows(d.Function.Name)).ToList();
+    public IReadOnlyList<ToolDefinition> Definitions
+    {
+        get
+        {
+            // tool_search's description names the tools on demand: only the mode's (OnDemandTools.Narrow).
+            using (OnDemandTools.Narrow(_tools.Allows))
+                return inner.Definitions.Where(d => _tools.Allows(d.Function.Name)).ToList();
+        }
+    }
 
     public DiffInfo? ConsumeDiff() => inner.ConsumeDiff();
 
@@ -41,6 +48,10 @@ internal sealed class ModeToolRegistry(IToolRegistry inner, ChatMode mode, strin
                 $"Error: tool '{name}' is not part of the '{mode.Name}' mode. Do not retry it; do what the mode allows, " +
                 "or tell the user what this step would need.");
         if (!inner.Knows(name)) return ToolRegistry.AnswerUnknownAsync(inner, name, args, Definitions, ct);
+        // tool_search finds and loads the mode's tools only: the scope flows into the call's awaited continuations.
+        if (name == Tools.ToolSearchTool.ToolName)
+            using (OnDemandTools.Narrow(_tools.Allows))
+                return inner.ExecuteAsync(name, args, ct);
         if (_tools.EditPattern is { } pattern && ModeTools.IsBuiltIn(name) && ModeTools.Families["edit"].Contains(name)
             && OutsidePattern(name, args, pattern) is { } refusal)
             return Task.FromResult(refusal);

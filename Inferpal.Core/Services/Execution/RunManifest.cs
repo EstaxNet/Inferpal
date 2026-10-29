@@ -73,21 +73,54 @@ internal static class RunManifest
         var path = System.IO.Path.Combine(folder, ".run-key");
         try
         {
-            if (File.Exists(path)) return ReadKey(path);
+            if (File.Exists(path)) return ReadKey(path) ?? Remake(path);
             Directory.CreateDirectory(folder);
-            var key = RandomNumberGenerator.GetBytes(32);
-            try
-            {
-                using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-                stream.Write(key);
-                return key;
-            }
-            catch (IOException) when (File.Exists(path)) { return ReadKey(path); }   // made meanwhile
+            return Make(path, replace: false);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             Diagnostics.Swallow("RunManifest.KeyIn", ex);
             return null;
+        }
+    }
+
+    /// <summary>Makes again a key left short, under a lock: two processes finding it so agree on one.</summary>
+    /// <remarks>⚠ Unlocked, each moved its own key in and kept what it read back: two keys, and the runs one process signed
+    /// failed the other's check — and every later process's.</remarks>
+    private static byte[]? Remake(string path)
+    {
+        for (var attempt = 0; attempt < KeyReadAttempts; attempt++)
+        {
+            try
+            {
+                using var held = new FileStream(path + ".lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None,
+                                                bufferSize: 1, FileOptions.DeleteOnClose);
+                // Made meanwhile by the process that held the lock first: that one is the key.
+                var now = File.Exists(path) ? File.ReadAllBytes(path) : [];
+                return now.Length == 32 ? now : Make(path, replace: true);
+            }
+            catch (IOException) { Thread.Sleep(20); }
+        }
+        return null;
+    }
+
+    /// <summary>Makes the key at <paramref name="path"/> — written whole elsewhere, then moved in — and answers the one on
+    /// disk after: two processes making it at once agree on the one that stayed.</summary>
+    /// <remarks>⚠ <paramref name="replace"/>: a key file left short (a write that failed after the file was made) signs
+    /// nothing, and read as unreadable, no run was ever kept on disk again, in any later process.</remarks>
+    private static byte[]? Make(string path, bool replace)
+    {
+        var temp = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        try
+        {
+            File.WriteAllBytes(temp, RandomNumberGenerator.GetBytes(32));
+            try { File.Move(temp, path, overwrite: replace); }
+            catch (IOException) when (!replace && File.Exists(path)) { }   // made meanwhile: that one is the key
+            return ReadKey(path);
+        }
+        finally
+        {
+            try { File.Delete(temp); } catch { }
         }
     }
 

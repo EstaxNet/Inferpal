@@ -97,7 +97,9 @@ public class EditorGesturesParityTests
         Assert.Contains("vscode.workspace.applyEdit(edit)", run, StringComparison.Ordinal);
         Assert.DoesNotContain("writeFile", run, StringComparison.Ordinal);
         // A test file edited while the model works is not replaced under the edit.
-        Assert.Contains("if (seen !== undefined && seen !== tests.version)", run, StringComparison.Ordinal);
+        // A file open at the start: its version; one closed then, opened and typed in meanwhile: its unsaved edits.
+        Assert.Contains("if (seen !== undefined ? seen !== tests.version : tests.isDirty || (result.extends != null && tests.getText() !== result.extends))",
+                        run, StringComparison.Ordinal);
     }
 }
 

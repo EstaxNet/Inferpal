@@ -176,6 +176,12 @@ public partial class HostServerTests
             return StartAnswer;
         }
 
+        /// <summary>What VS Code's debugger answers an evaluation.</summary>
+        public object? EvaluateAnswer = new { value = (string?)null, refusal = "Evaluation timed out: function evaluation disabled." };
+
+        [JsonRpcMethod("debug/evaluate")]
+        public object? DebugEvaluate(string expression, int? frameId) => EvaluateAnswer;
+
         [JsonRpcMethod("debug/stop")]
         public void DebugStop() => DebugCalls.Add("stop");
 
@@ -2267,6 +2273,37 @@ public partial class HostServerTests
         var ready = provider.IndexOf("this.switches = await host.sessionSwitches(", StringComparison.Ordinal);
         Assert.True(ready > provider.IndexOf("this.planMode = await host.planMode(true);", StringComparison.Ordinal),
                     "the switches are given back with the plan mode, when the host is ready again");
+    }
+
+    /// <summary>⚠ The page rebuilt for another language (at the first start) gives the composer back what was being typed:
+    /// the new page started empty, and the draft was gone.</summary>
+    [Fact]
+    public void VsCode_KeepsTheDraft_AcrossAPageRebuiltForAnotherLanguage()
+    {
+        var provider = WebviewRebuildTests.TsCode("chatViewProvider.ts");
+        var relocalize = provider.IndexOf("relocalize(): void {", StringComparison.Ordinal);
+        Assert.True(relocalize > 0, "relocalize moved: the rule measures nothing");   // WITNESS
+        Assert.Contains("this.draftToRestore = this.lastDraft;", provider[relocalize..(relocalize + 600)], StringComparison.Ordinal);
+        Assert.Contains("this.post({ type: 'restoreDraft', text: this.draftToRestore });", provider, StringComparison.Ordinal);
+        Assert.Contains("this.lastDraft = msg.text;", provider, StringComparison.Ordinal);
+        // A draft sent is no longer one: every typed send empties the record.
+        Assert.Equal(3, provider.Split("this.lastDraft = '';").Length - 1);
+    }
+
+    /// <summary>⚠ VS Code's debugger says why it refused an evaluation, as Visual Studio's does: the tool guessed "unknown
+    /// symbol", and the model kept rewriting its expression.</summary>
+    [Fact]
+    public async Task VsCodesDebugger_SaysWhyItRefusedAnEvaluation()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+        Inferpal.Services.Debugging.IDebugRefusals session = new RpcDebugSession(h.ServerRpc, declared: true);
+
+        var (value, refusal) = await session.EvaluateWithCauseAsync("total * 2", null, CancellationToken.None)
+                                            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.Null(value);
+        Assert.Equal("Evaluation timed out: function evaluation disabled.", refusal);
     }
 
     /// <summary>Visual Studio applies an import's MCP servers and language too, after saving.</summary>

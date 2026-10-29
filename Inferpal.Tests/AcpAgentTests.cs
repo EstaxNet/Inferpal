@@ -995,7 +995,10 @@ public sealed class AcpAgentTests : IDisposable
         await using var h = await StartAsync();
         await h.Client.RequestAsync("initialize", Init());
         var closed = await NewSessionAsync(h);
+        Assert.Equal(1, h.Agent.ThreadsKeptToReopen);   // witness: what reopening it needs is kept while it lives
         await h.Client.RequestAsync("session/close", new { sessionId = closed });
+        // ⚠ And forgotten once closed: one entry per thread ever opened, in a process that lives as long as the client.
+        Assert.Equal(0, h.Agent.ThreadsKeptToReopen);
 
         foreach (var id in new[] { "acp-never-opened", closed })
             Assert.Equal(AcpRpc.InvalidParams, (await PromptAsync(h, id, "hello")).GetProperty("error").GetProperty("code").GetInt32());

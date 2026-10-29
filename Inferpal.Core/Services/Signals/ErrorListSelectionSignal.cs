@@ -102,7 +102,12 @@ internal static class ErrorListSelectionSignal
 
     internal static void Answer(ErrorListAnswer answer)
     {
-        SignalFile.Delete(RequestPath);
+        // Only its own request: a late answer must not take away a newer one before it is served.
+        try
+        {
+            if (SignalFile.TryRead<ErrorListAsk>(RequestPath)?.Id == answer.Id) SignalFile.Delete(RequestPath);
+        }
+        catch (Exception ex) { Diagnostics.Swallow("ErrorListSelectionSignal.Answer", ex); }
         SignalFile.Write(AnswerPath, answer, "ErrorListSelectionSignal.Answer");
     }
 }

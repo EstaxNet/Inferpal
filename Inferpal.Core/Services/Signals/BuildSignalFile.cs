@@ -86,7 +86,7 @@ internal static class BuildSignalFile
         try
         {
             if (!File.Exists(FilePath)) return default;
-            var obj = JsonSerializer.Deserialize<JsonElement>(File.ReadAllText(FilePath));
+            var obj = JsonSerializer.Deserialize<JsonElement>(SignalFile.ReadShared(FilePath));
             var ts  = obj.GetProperty("ts").GetInt64();
             // One clock shared by both sides: this channel held the only pair that read
             // DateTimeOffset.UtcNow directly, so its 30 s rule was the only untestable one.

@@ -33,7 +33,7 @@ public class DebugToolsTests
         }
     }
 
-    private sealed class FakeDebugSession : IDebugSession
+    private sealed class FakeDebugSession : IDebugSession, IDebugRefusals
     {
         public bool IsAvailable { get; set; } = true;
         public int Starts { get; private set; }
@@ -107,6 +107,12 @@ public class DebugToolsTests
             LastFrameId = frameId;
             return Task.FromResult<string?>("42");
         }
+
+        /// <summary>Set to refuse every evaluation with these words, as the debugger gives them.</summary>
+        public string? Refusal { get; set; }
+
+        public async Task<(string? Value, string? Refusal)> EvaluateWithCauseAsync(string expression, int? frameId, CancellationToken ct) =>
+            Refusal is { } words ? (null, words) : (await EvaluateAsync(expression, frameId, ct), null);
 
         public Task StopAsync(CancellationToken ct) { Stops++; return Task.CompletedTask; }
     }
@@ -763,6 +769,23 @@ public class DebugToolsTests
 
         Assert.Single(editor.Breakpoints);                                // not added twice, not removed at stop
         Assert.Contains("already set", reply);
+    }
+
+    /// <summary>
+    /// ⚠ An evaluation the debugger refused says the debugger's words: the tool guessed "unknown symbol", and after one
+    /// evaluation timed out every next one was refused — the model kept rewriting its expression instead of continuing.
+    /// </summary>
+    [Fact]
+    public async Task ARefusedEvaluation_SaysTheDebuggersWords()
+    {
+        var session = new FakeDebugSession { Refusal = "Function evaluation disabled because a previous function evaluation timed out." };
+        var tool    = new DebugInspectTool(session, new StubApproval(true), () => @"C:\ws");
+
+        var reply = await tool.ExecuteAsync(
+            JsonSerializer.SerializeToElement(new { action = "evaluate", expression = "total * 2" }), CancellationToken.None);
+
+        Assert.Contains("Function evaluation disabled because a previous function evaluation timed out", reply);
+        Assert.DoesNotContain("unknown symbol", reply);
     }
 
     [Fact]

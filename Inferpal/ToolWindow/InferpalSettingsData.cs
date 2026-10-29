@@ -758,6 +758,9 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         // Exchanged, because InitThemeAsync may assign it concurrently (see there).
         _detached = true;
         Interlocked.Exchange(ref _themeSubscription, null)?.Dispose();
+        // ⚠ And the page that follows a pass: its own context outlives the window, and each closed window kept asking
+        // the index for its count — under its lock — every 1.5 s until the pass ended.
+        Interlocked.Exchange(ref _livePoll, null)?.Dispose();
     }
 
     // ── VM context helpers ─────────────────────────────────────────────────────

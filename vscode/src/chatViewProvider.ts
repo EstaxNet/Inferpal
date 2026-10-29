@@ -110,6 +110,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private readonly pendingInputs = new Map<string, { card: InputCard; resolve: (answer: InputFormAnswer | null) => void }>();
   /** Read-only plan mode, as the host holds it (the Plan segment of the mode switch). */
   private planMode = false;
+  /** What the composer holds, as the webview last said it: a page rebuilt for another language gets it back. */
+  private lastDraft = '';
+  private draftToRestore = '';
   /** The conversation's own switches (`/tools off`, step mode, X-Ray sections off): a restarted host gets them back. */
   private switches: SessionSwitches = { toolsOff: false, stepMode: false, xrayOff: [] };
   /** Whether the editor listeners feeding the welcome screen are set (once per extension life). */
@@ -256,6 +259,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    */
   relocalize(): void {
     if (this.view) {
+      // ⚠ The new page starts with an empty composer: what was being typed — at the first start, as the language
+      // changes — goes back into it once it is ready.
+      this.draftToRestore = this.lastDraft;
       this.view.webview.html = renderChatHtml(this.view.webview, this.context.extensionUri);
     }
   }
@@ -1489,17 +1495,26 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         if (this.failedBuild !== null) {
           this.postBuildBanner();
         }
+        if (this.draftToRestore) {
+          this.post({ type: 'restoreDraft', text: this.draftToRestore });
+          this.draftToRestore = '';
+        }
         return;
       case 'setupAction':
         await this.setupFlow.onAction(msg);
         return;
       case 'send':
+        if (msg.typed === true) {
+          this.lastDraft = '';   // the composer was emptied as it sent
+        }
         await this.send(msg.text, msg.typed === true);
         return;
       case 'steer':
+        this.lastDraft = '';
         await this.steer(msg.text);
         return;
       case 'queue':
+        this.lastDraft = '';
         await this.enqueue(msg.text);
         return;
       case 'unqueue':
@@ -1790,6 +1805,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         }
         return;
       case 'draft':
+        this.lastDraft = msg.text;
         this.draftChanged(msg.text);
         return;
       case 'removeChip':
@@ -3997,7 +4013,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     if (result.extended) {
       const tests = await vscode.workspace.openTextDocument(uri);
       const seen = versions.get(tests.uri.fsPath);
-      if (seen !== undefined && seen !== tests.version) {
+      // Open when the model started: its version. Closed then: the text the plan read — a test added and saved, or a
+      // checkout, while the model worked would otherwise be replaced by the plan's extension of the old text.
+      if (seen !== undefined ? seen !== tests.version : tests.isDirty || (result.extends != null && tests.getText() !== result.extends)) {
         this.finishTurn('', t('The test file changed while the model was working — run /test again.'), false, 0);
         return;
       }

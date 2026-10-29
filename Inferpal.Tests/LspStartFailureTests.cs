@@ -26,6 +26,32 @@ public sealed class LspStartFailureTests : IDisposable
         ? ("echo", "ModuleNotFoundError: No module named pylsp_marker 1>&2 & exit 3")
         : ("/bin/sh", "-c \"echo 'ModuleNotFoundError: No module named pylsp_marker' >&2; exit 3\"");
 
+    // A server that starts and never answers: what a caller's cancellation meets while it waits for `initialize`.
+    private static (string name, string args) NeverAnswers() => OperatingSystem.IsWindows()
+        ? ("ping", "-n 30 127.0.0.1 >NUL")
+        : ("/bin/sh", "-c \"sleep 30\"");
+
+    /// <summary>
+    /// ⚠ A caller that stops while the server starts (a pass cancelled by a rebuild, a root switch) is no failure of the
+    /// server's: counted, three of them turned the language server off for the session, under a cause it never had.
+    /// </summary>
+    [Fact]
+    public async Task ACallerStoppingWhileTheServerStarts_IsNoFailureOfTheServer()
+    {
+        Diagnostics.Clear();
+        using var session = new LspSemanticProvider.LspServerSession("python", _dir, () => NeverAnswers());
+        var file = Path.Combine(_dir, "a.py");
+
+        for (var i = 0; i < 3; i++)
+        {
+            using var stop = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
+            try { await session.GetSymbolsAsync(file, "x = 1\n", stop.Token); }
+            catch (OperationCanceledException) { }
+        }
+
+        Assert.DoesNotContain(Diagnostics.Snapshot(), e => e.Context == "Lsp" && e.Detail.Contains("failed to start three times"));
+    }
+
     [Fact]
     public async Task AServerThatDiesAtStartup_IsReportedWithWhatItWroteAndItsExitCode()
     {

@@ -742,7 +742,7 @@ internal sealed partial class HostServer
         finally { ReleaseTurn(cts); }
 
         if (TestsNotWritten(plan) is { } why) return new(why);
-        return new(TestsWritten(plan), plan.TestPath, plan.Content, plan.Extended);
+        return new(TestsWritten(plan), plan.TestPath, plan.Content, plan.Extended, Extends: plan.Extends);
     }
 
     /// <summary>Why a plan writes no tests, or <c>null</c> when it writes them — one sentence per outcome for both

@@ -27,7 +27,7 @@ export interface DebugDelegate {
   continue(): Promise<DebugResumeDto>;
   step(p: DebugStepParams): Promise<DebugResumeDto>;
   state(): Promise<DebugStopStateDto | null>;
-  evaluate(p: DebugEvaluateParams): Promise<string | null>;
+  evaluate(p: DebugEvaluateParams): Promise<DebugEvaluateDto>;
   stop(): Promise<void>;
   captureTest(p: DebugCaptureTestParams): Promise<DebugStopStateDto | null>;
 }
@@ -44,6 +44,12 @@ type Transition = 'stopped' | 'ended' | 'timeout';
 
 /** The text tabs open and the editor in front, noted before a capture so they can be put back after it. */
 type ShownEditors = { open: Set<string>; active: vscode.Uri | undefined };
+
+/** What an evaluation answers: the value, or the adapter's words for why there is none. */
+export interface DebugEvaluateDto {
+  value: string | null;
+  refusal: string | null;
+}
 
 /** The DAP requests that set a paused program running. */
 const RESUMING_REQUESTS = new Set(['continue', 'next', 'stepIn', 'stepOut', 'stepBack', 'reverseContinue', 'goto', 'restartFrame', 'restart']);
@@ -514,10 +520,11 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
     return this.stoppedThreadId === undefined || !vscode.debug.activeDebugSession ? null : this.capture();
   }
 
-  async evaluate(p: DebugEvaluateParams): Promise<string | null> {
+  /** The value, or the adapter's words for why there is none — said to the model instead of a guess. */
+  async evaluate(p: DebugEvaluateParams): Promise<DebugEvaluateDto> {
     const session = vscode.debug.activeDebugSession;
     if (!session || this.stoppedThreadId === undefined) {
-      return null;
+      return { value: null, refusal: 'the program is not paused (it resumed or ended): nothing to evaluate in.' };
     }
 
     const frameId = p.frameId ?? (await this.frames(session))[0]?.id;
@@ -527,11 +534,11 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
         frameId,
         context: 'watch',
       })) as { result?: string } | undefined;
-      // An unevaluable expression is an ordinary answer, not an error — null, and the tool says so.
-      return answer?.result ?? null;
+      // An unevaluable expression is an ordinary answer, not an error — no value, and the tool says so.
+      return { value: answer?.result ?? null, refusal: null };
     } catch (err) {
       this.log?.(`[debug] evaluate failed: ${String(err)}`);
-      return null;
+      return { value: null, refusal: err instanceof Error ? err.message : String(err) };
     }
   }
 

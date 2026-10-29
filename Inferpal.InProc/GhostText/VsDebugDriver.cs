@@ -261,10 +261,10 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
             case DebugOps.Evaluate:
             {
                 await Jtf.SwitchToMainThreadAsync(ct);
-                var text = Evaluate(request.Expression ?? string.Empty, request.FrameId);
+                var (text, refusal) = Evaluate(request.Expression ?? string.Empty, request.FrameId);
                 await TaskScheduler.Default.SwitchTo();
                 return text is null
-                    ? new(request.Id, Ok: false, Error: "The expression could not be evaluated.")
+                    ? new(request.Id, Ok: false, Error: refusal ?? "The expression could not be evaluated.")
                     : new(request.Id, Ok: true, Text: text);
             }
 
@@ -496,6 +496,9 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
                 ct.ThrowIfCancellationRequested();
                 if (Volatile.Read(ref _modeGen) != generation &&
                     (DBGMODE)Volatile.Read(ref _mode) == DBGMODE.DBGMODE_Break) break;
+                // ⚠ A runner that ended (a test that passes alone) stops nowhere: waited for, each /tdd round lost the
+                // whole budget before saying it could not capture.
+                if (runner.HasExited) break;
                 await Task.Delay(150, ct);
             }
             if ((DBGMODE)Volatile.Read(ref _mode) != DBGMODE.DBGMODE_Break) return null;
@@ -716,10 +719,12 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
         return new DebugStopState(reason, threadId, frames, locals, exception, localsFrameId);
     }
 
-    private string? Evaluate(string expression, int? frameId)
+    /// <returns>The value, or the debugger's words for why there is none (<c>Refusal</c>, null when it gave none).</returns>
+    private (string? Value, string? Refusal) Evaluate(string expression, int? frameId)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
-        if (string.IsNullOrWhiteSpace(expression) || !IsPaused) return null;
+        if (string.IsNullOrWhiteSpace(expression)) return (null, null);
+        if (!IsPaused) return (null, "the program is not paused (it resumed or ended): nothing to evaluate in.");
 
         var dbg = _dte.Debugger;
         if (frameId is > 0)
@@ -738,15 +743,15 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
         try
         {
             var value = dbg.GetExpression(expression, false, EvalTimeoutMs);
-            // An invalid expression is an ordinary answer: VS returns the diagnostic in Value.
-            return value is null ? null
-                 : value.IsValidValue ? value.Value
-                 : null;
+            // An invalid expression is an ordinary answer: VS returns the diagnostic in Value — given as the refusal.
+            return value is null ? (null, null)
+                 : value.IsValidValue ? (value.Value, null)
+                 : (null, value.Value);
         }
         catch (Exception ex)
         {
             Services.Diagnostics.Swallow("VsDebugDriver.Evaluate", ex);
-            return null;
+            return (null, ex.Message);
         }
     }
 

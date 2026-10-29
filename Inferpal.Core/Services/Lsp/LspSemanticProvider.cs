@@ -254,6 +254,13 @@ internal sealed class LspSemanticProvider : IDisposable
                 _initialized  = true;
                 return true;
             }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                // The caller stopped (a pass cancelled by a rebuild or a root switch): no failure of the server's. Counted,
+                // three of them turned the language server off for the session, under a cause it never had.
+                CleanupProcess();
+                throw;
+            }
             catch (Exception ex)
             {
                 // Transient crash / pipe error - allow up to 3 retries before giving up.

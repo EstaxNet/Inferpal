@@ -27,7 +27,7 @@ namespace Inferpal.Host;
 /// included (a start and a resume say it in their result instead).
 /// </para>
 /// </remarks>
-internal sealed class RpcDebugSession(JsonRpc rpc, bool declared) : IDebugSession
+internal sealed class RpcDebugSession(JsonRpc rpc, bool declared) : IDebugSession, IDebugRefusals
 {
     /// <summary>
     /// Whether the adapter said it serves <c>debug/*</c> in its `initialize` handshake.
@@ -92,8 +92,15 @@ internal sealed class RpcDebugSession(JsonRpc rpc, bool declared) : IDebugSessio
 
     public Task<DebugStopState?> GetStateAsync(CancellationToken ct) => StateAsync("debug/state", null, ct);
 
-    public Task<string?> EvaluateAsync(string expression, int? frameId, CancellationToken ct) =>
-        CallAsync<string?>("debug/evaluate", new DebugEvaluateParams(expression, frameId), ct);
+    public async Task<string?> EvaluateAsync(string expression, int? frameId, CancellationToken ct) =>
+        (await EvaluateWithCauseAsync(expression, frameId, ct)).Value;
+
+    /// <inheritdoc/>
+    public async Task<(string? Value, string? Refusal)> EvaluateWithCauseAsync(string expression, int? frameId, CancellationToken ct)
+    {
+        var answer = await CallAsync<DebugEvaluateDto?>("debug/evaluate", new DebugEvaluateParams(expression, frameId), ct);
+        return (answer?.Value, answer?.Refusal);
+    }
 
     public Task StopAsync(CancellationToken ct) => CallAsync<object?>("debug/stop", null, ct);
 

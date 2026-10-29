@@ -131,7 +131,8 @@ internal sealed class RunCommandTool : ITool, IDisposable
                 var id = GetId(args);
                 if (id is null) return "Error: action='poll' requires 'id'.";
                 var r = _background.Poll(id);
-                if (!r.Found) return $"Error: no background job '{id}' (it may have finished and been drained already).";
+                if (!r.Found) return $"Error: no background job '{id}' (it may have finished and been drained already, or ended "
+                                   + "unpolled among too many others: the oldest are let go).";
                 var status = r.Running ? "still running" : $"finished (exit code {r.ExitCode?.ToString() ?? "unknown"})";
                 var body   = string.IsNullOrEmpty(r.NewOutput) ? "(no new output)" : r.NewOutput.TrimEnd();
                 return $"[job '{id}' — {status}]\n{body}";

@@ -612,10 +612,16 @@ internal sealed record PinsResult(List<string> Pins, string? Notice = null);
 /// after <c>/test</c>.</summary>
 internal sealed record TestsGenerateParams(string Path, string Code, string? Request = null);
 
+/// <summary>What VS Code's debugger answers an evaluation: the value, or the adapter's words for why there is none.</summary>
+internal sealed record DebugEvaluateDto(string? Value, string? Refusal);
+
 /// <summary>`tests/generate` answer: the sentence to show, and — when tests were written — the test file, its new
 /// content, and whether it extends an existing file (replaced in its buffer) or creates one.</summary>
+/// <param name="Extends">The test file's text the plan extends, as the host read it: the editor refuses a file that no
+/// longer holds it (edited, saved or checked out while the model worked).</param>
 internal sealed record TestsGenerateResult(
-    string? Message, string? TestPath = null, string? Content = null, bool Extended = false, bool Cancelled = false);
+    string? Message, string? TestPath = null, string? Content = null, bool Extended = false, bool Cancelled = false,
+    string? Extends = null);
 
 /// <summary>`codeAction/run` — headless in-place code action (<paramref name="Kind"/> =
 /// <c>fix</c> | <c>refactor</c> | <c>doc</c> | <c>edit</c>, Edit with AI, whose instruction is the request) over the

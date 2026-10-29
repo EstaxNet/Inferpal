@@ -42,7 +42,11 @@ internal sealed class AcpAgent : IAsyncDisposable
     /// <summary>The live session <paramref name="id"/> names, or null.</summary>
     internal AcpSession? Live(string id) => _sessions.TryGetValue(id, out var s) ? s : null;
 
-    /// <summary>What opening a session needs (its folder, its MCP servers), kept for the sessions closed to make room.</summary>
+    /// <summary>How many threads this agent keeps what reopening them needs for.</summary>
+    internal int ThreadsKeptToReopen => _opened.Count;
+
+    /// <summary>What opening a session needs (its folder, its MCP servers), kept for the sessions closed to make room —
+    /// forgotten when the client closes or deletes one.</summary>
     private readonly ConcurrentDictionary<string, (string Cwd, IReadOnlyList<McpSessionServerDto> Servers)> _opened =
         new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, AcpSession.Kept> _evicted = new(StringComparer.Ordinal);
@@ -306,6 +310,7 @@ internal sealed class AcpAgent : IAsyncDisposable
         _evicted.TryRemove(id, out _);   // closed by the client: never reopened behind its back
         await ReopeningSettledAsync(id);
         await CloseAsync(id);
+        _opened.TryRemove(id, out _);    // nor kept to reopen: one entry per thread ever opened, in a long-lived process
         return new { };
     }
 
@@ -317,6 +322,7 @@ internal sealed class AcpAgent : IAsyncDisposable
         _evicted.TryRemove(id, out _);
         await ReopeningSettledAsync(id);
         await CloseAsync(id);
+        _opened.TryRemove(id, out _);
         try { new Services.Persistence.ConversationStore().Delete(id); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Diagnostics.Swallow("AcpAgent.Delete", ex); }
         return new { };

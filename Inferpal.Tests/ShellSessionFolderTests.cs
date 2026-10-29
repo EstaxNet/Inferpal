@@ -75,6 +75,19 @@ public sealed class ShellSessionFolderTests : IDisposable
         Assert.Contains("only-here", approval.Last, StringComparison.Ordinal);
     }
 
+    /// <summary>⚠ A command that spans a solution switch leaves the state of the root it STARTED under: filed under the
+    /// new root, its folder became the next solution's, and every later command ran in the old one.</summary>
+    [Fact]
+    public async Task ACommandSpanningASolutionSwitch_LeavesItsStateToTheRootItStartedUnder()
+    {
+        var reads   = 0;
+        var session = new ShellSession(() => reads++ == 0 ? _root : _other, new InferpalConfig());   // switched mid-command
+
+        await session.RunAsync("echo hi", null, CancellationToken.None);
+
+        Assert.True(ShellSession.SameFolder(_other, session.CurrentDirectory), session.CurrentDirectory);
+    }
+
     [Fact]
     public async Task AnotherWorkspaceRoot_StartsFromThatRoot()
     {

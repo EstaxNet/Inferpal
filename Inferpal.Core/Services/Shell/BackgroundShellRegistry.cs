@@ -24,6 +24,7 @@ internal sealed class BackgroundShellRegistry : IDisposable
     private sealed class Job
     {
         public required string Id;
+        public required int Sequence;
         public required Process Process;
         public required string Command;
         public readonly StringBuilder Buffer = new();
@@ -45,6 +46,11 @@ internal sealed class BackgroundShellRegistry : IDisposable
     private readonly object _lock = new();
     private int _seq;
 
+    /// <summary>How many jobs that ended without being polled are kept, the most recent ones.</summary>
+    /// <remarks>⚠ Unbounded, each kept its process handle and up to <see cref="MaxBufferChars"/> of output until the
+    /// session ended.</remarks>
+    internal int MaxEndedKept { get; init; } = 20;
+
     /// <summary>Result of a <c>poll</c>: the output produced since the previous poll, plus status.</summary>
     public readonly record struct PollResult(bool Found, string NewOutput, bool Running, int? ExitCode);
 
@@ -65,11 +71,13 @@ internal sealed class BackgroundShellRegistry : IDisposable
         var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
 
         string id;
+        int sequence;
         lock (_lock)
         {
-            id = "bg" + (++_seq);
+            sequence = ++_seq;
+            id = "bg" + sequence;
         }
-        var job = new Job { Id = id, Process = process, Command = command };
+        var job = new Job { Id = id, Sequence = sequence, Process = process, Command = command };
 
         process.OutputDataReceived += (_, e) =>
         {
@@ -96,7 +104,18 @@ internal sealed class BackgroundShellRegistry : IDisposable
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
-        lock (_lock) _jobs[id] = job;
+        lock (_lock)
+        {
+            _jobs[id] = job;
+            // Its readers done only: one whose grandchild still holds the pipes stays where Poll and Stop reach it.
+            var ended = _jobs.Values.Where(j => j.Exited && j.StreamsEnded.IsSet).OrderBy(j => j.Sequence).ToList();
+            foreach (var old in ended.Take(Math.Max(0, ended.Count - MaxEndedKept)))
+            {
+                _jobs.Remove(old.Id);
+                try { old.Process.Dispose(); } catch { }
+                old.StreamsEnded.Dispose();
+            }
+        }
         return id;
     }
 

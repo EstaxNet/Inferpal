@@ -59,6 +59,17 @@ public class SettingsSaveMergeTests
         Assert.Contains("\"disabled\"", merged, StringComparison.Ordinal);
     }
 
+    /// <summary>⚠ A closed window stops following a pass: its own context outlives it, and each closed window kept asking
+    /// the index for its count every 1.5 s until the pass ended.</summary>
+    [Fact]
+    public void AClosedWindow_StopsFollowingAPass()
+    {
+        var main    = File.ReadAllText(Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalSettingsData.cs"));
+        var widgets = File.ReadAllText(Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalSettingsData.Widgets.cs"));
+        Assert.Contains("Interlocked.Exchange(ref _livePoll, null)?.Dispose();", Body(main, "internal void Detach()"), StringComparison.Ordinal);
+        Assert.Contains("if (!_detached && _page == \"search\" && (card.State == \"indexing\"", widgets, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void TheWindowSave_OnlyAppliesWhatTheFormChanged()
     {

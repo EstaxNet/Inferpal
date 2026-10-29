@@ -207,13 +207,34 @@ internal partial class InferpalToolWindowData
     /// the claim is still its own — the turn it ended can have started a queued send that claimed after it.</summary>
     private int _sendClaim;
 
+    /// <summary>
+    /// Waits for a send claimed but not yet a turn to settle: <c>true</c> when it became one (the caller waits in the queue
+    /// for it), <c>false</c> once nothing holds the claim. Bounded: a claim held longer is taken for a turn.
+    /// </summary>
+    private async Task<bool> ClaimBecameATurnAsync()
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(15);
+        while (true)
+        {
+            bool turn = false, claimed = false;
+            await RunOnVMContextAsync(() => { turn = IsLoading; claimed = _sendStarting; });
+            if (turn) return true;
+            if (!claimed) return false;
+            if (DateTime.UtcNow >= deadline) return true;
+            await Task.Delay(50);
+        }
+    }
+
     /// <summary>Sends a queued message as its own turn — claimed like a typed send, and put back first if one started.</summary>
+    /// <remarks>⚠ A claim still held by the send that just ended (a typed command whose turn ended before its claim was
+    /// released) is waited for: put back at once, the message waited for some later turn, unsent.</remarks>
     private async Task SendQueuedAsync(QueuedMessage message)
     {
         var claim = 0;
+        var turn  = await ClaimBecameATurnAsync();
         await RunOnVMContextAsync(() =>
         {
-            if (_sendStarting || IsLoading)
+            if (turn || _sendStarting || IsLoading)
             {
                 _queue.Insert(0, message);
                 RefreshQueue();
