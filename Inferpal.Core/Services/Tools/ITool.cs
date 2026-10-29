@@ -59,6 +59,10 @@ internal interface ITool
     /// MCP tool keep the default: what they change has no other way into <c>/undo-run</c>.</remarks>
     bool NeedsWorkTreeWatch => true;
 
+    /// <summary>Whether this call, with <paramref name="args"/>, has to be watched: <see cref="NeedsWorkTreeWatch"/>,
+    /// unless the tool knows better from what the call names.</summary>
+    bool NeedsWorkTreeWatchFor(JsonElement args) => NeedsWorkTreeWatch;
+
     /// <summary>
     /// Executes the tool and returns a human-readable result string.
     /// The result is appended to the conversation and fed back to the model.

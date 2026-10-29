@@ -218,5 +218,6 @@
   "Inferpal follows this terminal's commands from now on: run the command again, then use @terminal.": "이제부터 Inferpal이 이 터미널의 명령을 추적합니다. 명령을 다시 실행한 뒤 @terminal을 사용하세요.",
   "A command is still running in this terminal: use @terminal again once it has finished.": "이 터미널에서 명령이 아직 실행 중입니다. 끝나면 @terminal을 다시 사용하세요.",
   "No command has finished in this terminal; the last one finished in “{0}”: switch to it, then use @terminal.": "이 터미널에서 끝난 명령이 없습니다. 마지막 명령은 '{0}'에서 끝났습니다. 그쪽으로 전환한 뒤 @terminal을 사용하세요.",
-  "No command has finished in this terminal since Inferpal began following it: run it again, then use @terminal.": "Inferpal이 이 터미널을 추적한 뒤로 끝난 명령이 없습니다. 다시 실행한 뒤 @terminal을 사용하세요."
+  "No command has finished in this terminal since Inferpal began following it: run it again, then use @terminal.": "Inferpal이 이 터미널을 추적한 뒤로 끝난 명령이 없습니다. 다시 실행한 뒤 @terminal을 사용하세요.",
+  "{0} more @-mentions not looked at (at most {1} per question)": "@ 멘션 {0}개는 확인되지 않았습니다 (질문당 최대 {1}개)"
 }

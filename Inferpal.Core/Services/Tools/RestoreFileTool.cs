@@ -80,21 +80,20 @@ internal class RestoreFileTool : ITool
             return Strings.RestoreNotFound(path);
 
         // Show the actual change in the approval prompt (best-effort for binary snapshots).
-        var details = Strings.DiffConfirm(path);
         var shown   = ApprovedFile.Unread(path);
+        DiffInfo? change = null;
         try
         {
             var exists   = File.Exists(path);
             var current  = exists ? await TextFileEncoding.ReadTextAsync(path, ct) : string.Empty;
             shown        = exists ? new ApprovedFile(path, current) : ApprovedFile.Absent(path);
-            var restored = await TextFileEncoding.ReadTextAsync(snapPath, ct);
-            var diffText = DiffComputer.ComputeText(current, restored);
-            if (diffText is not null) details += "\n\n" + diffText;
+            if (!TextFileEncoding.IsBinaryFile(snapPath) && !(exists && TextFileEncoding.IsBinaryFile(path)))
+                change = new DiffInfo(current, await TextFileEncoding.ReadTextAsync(snapPath, ct), path);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex) { Diagnostics.Swallow("RestorePreviewDiff", ex); }
 
-        if (!await _approval.RequestApprovalAsync("restore_file", details, ct, subject: path))
+        if (!await _approval.RequestApprovalAsync("restore_file", Strings.DiffConfirm(path), ct, subject: path, diff: change))
             return Strings.DiffCancelled;
         if (await FileTarget.ChangedSinceApprovalAsync(_overlay, shown, ct) is { } changedMeanwhile) return changedMeanwhile;
 

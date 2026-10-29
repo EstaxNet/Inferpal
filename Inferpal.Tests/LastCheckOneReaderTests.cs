@@ -59,6 +59,18 @@ public class LastCheckOneReaderTests
     }
 
     [Fact]
+    public void ABuildCheckThatFailedWithoutAWord_IsTheLastCheck_AndItIsRed()
+    {
+        // ⚠ Unread, the later edit's check was no check at all: the earlier green stood, and the bar said the build passed.
+        var silent = Inferpal.Services.CodeActions.SmartFixValidator.Interpret(1, "", dotnetFilter: false)!;
+        var turn = new[] { Edit(Strings.SmartFixBuildOk), Edit(silent) };
+
+        Assert.Equal(Strings.SmartFixBuildFailedNoErrors, silent);             // witness: the note it writes
+        Assert.True(ChatTurnPolicy.LastCheckFailed(turn, filesChangedInRun: 1));
+        Assert.Equal(RunCheck.BuildFailed, RunSummary.LastCheck(turn));
+    }
+
+    [Fact]
     public void ATestRunThroughTheShell_IsTheBarsLastCheckToo()
     {
         var turn = new[] { Edit(Strings.SmartFixBuildOk), Shell("dotnet test", 1) };

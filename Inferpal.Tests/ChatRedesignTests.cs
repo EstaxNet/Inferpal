@@ -203,14 +203,12 @@ public sealed class ChatRedesignTests : IDisposable
     }
 
     /// <summary>
-    /// ⚠ apply_edits, rename_symbol, delete_file and restore_file render their change INTO their details: read as plain
-    /// lines, the card drew "-" and "+" as text and coloured nothing, in both editors.
+    /// ⚠ apply_edits and rename_symbol render their change INTO their details: read as plain lines, the card drew "-" and
+    /// "+" as text and coloured nothing, in both editors.
     /// </summary>
     [Theory]
     [InlineData("apply_edits")]
     [InlineData("rename_symbol")]
-    [InlineData("delete_file")]
-    [InlineData("restore_file")]
     public void AChangeRenderedInTheDetails_IsDrawnAsAChange(string tool)
     {
         var path    = Path.Combine(_dir, "A.cs");

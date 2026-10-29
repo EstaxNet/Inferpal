@@ -222,11 +222,12 @@ internal sealed class SmartFixValidator
                                     .Replace(CountSentinel.ToString(), @"\d+") + "$";
         var okLine     = Strings.SmartFixBuildOk.Trim();
         var failedLine = Strings.SmartFixBuildFailed(string.Empty).Split('\n')[0].TrimEnd('\r').Trim();
+        var silentLine = Strings.SmartFixBuildFailedNoErrors.Trim();
         bool? verdict = null;
         foreach (var raw in toolOutput.Split('\n'))
         {
             var line = raw.TrimEnd('\r').Trim();
-            if (line == failedLine) return true;                                                          // failed, uncounted: red
+            if (line == failedLine || line == silentLine) return true;                                   // failed, uncounted: red
             try
             {
                 if (Regex.IsMatch(line, errorsLine, RegexOptions.None, RegexBudget.Default)) return true;   // one project red: red
@@ -312,6 +313,30 @@ internal sealed class SmartFixValidator
     {
         try { return Directory.GetFiles(dir, glob, SearchOption.TopDirectoryOnly).Order(StringComparer.Ordinal).FirstOrDefault(); }
         catch { return null; }
+    }
+
+    /// <summary>
+    /// Whether the write <paramref name="toolName"/> makes with <paramref name="args"/> may make Smart Fix run a command of
+    /// the repository's own (<c>.inferpal/validators.json</c>), which can change files beyond the one written — an
+    /// <c>eslint --fix</c>.
+    /// </summary>
+    /// <remarks>⚠ What it changes enters <c>/undo-run</c> only through the work tree watch, which the writing tools ask for
+    /// then (<c>ITool.NeedsWorkTreeWatchFor</c>): without it, the undo gives back the written file and leaves the rest,
+    /// unsaid. Only for a file such a command checks: watched around every write, a workspace outside git would note each
+    /// backed-up write as not covered. The built-in checks only build, into folders git ignores.</remarks>
+    internal bool MayRunWorkspaceCommandFor(string toolName, System.Text.Json.JsonElement args)
+    {
+        if (!_config.SmartFixEnabled || LoadOverlay().Count == 0) return false;
+        // A call that does not name every file it writes: the check may run for any of them.
+        if (Governance.ModeTools.EditedPaths(toolName, args) is not { } paths) return true;
+        foreach (var path in paths)
+        {
+            string full;
+            try { full = PathSanitizer.Sanitize(path, _getWorkspaceRoot()); }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException) { return true; }
+            if (ResolveTarget(full) is { Validator.FromWorkspace: true }) return true;
+        }
+        return false;
     }
 
     /// <summary>Overlay text whose rejections were last recorded.</summary>

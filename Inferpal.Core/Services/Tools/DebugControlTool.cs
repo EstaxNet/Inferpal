@@ -112,9 +112,18 @@ internal sealed class DebugControlTool(
         if (error is not null) return error;
 
         // A breakpoint already there is used as it is: added again it is a duplicate, and adopted it would be removed
-        // with the assistant's own when the session stops.
-        if (await ExistingAtAsync(file!, line, ct))
-            return $"A breakpoint is already set at {file}:{line}; it will be hit as it is, and it stays when the session stops.";
+        // with the assistant's own when the session stops. ⚠ A disabled one never stops the program: told it "will be hit",
+        // the model reads a run that goes past it as the line never running.
+        if (await ExistingAtAsync(file!, line, ct) is { } existing)
+        {
+            var whose = _agent.Owns(file!, line)
+                ? "It is yours, and it is removed when the session stops."
+                : "It is the user's, and it stays when the session stops.";
+            return existing.Enabled
+                ? $"A breakpoint is already set at {file}:{line}; it will be hit as it is. {whose}"
+                : $"A breakpoint is already set at {file}:{line}, but it is DISABLED: the program will not stop there. {whose} "
+                  + "Ask the user to enable it. A run that does not stop there says nothing about whether the line runs.";
+        }
 
         var bp = await session.AddBreakpointAsync(file!, line, ct);
         if (bp is null)
@@ -130,7 +139,7 @@ internal sealed class DebugControlTool(
         if (error is not null) return error;
 
         if (!_agent.Owns(file!, line))
-            return await ExistingAtAsync(file!, line, ct)
+            return await ExistingAtAsync(file!, line, ct) is not null
                 ? $"The breakpoint at {file}:{line} was not set by you — it is the user's, and it stays."
                 : $"No breakpoint at {file}:{line}.";
 
@@ -140,8 +149,10 @@ internal sealed class DebugControlTool(
             : $"No breakpoint at {file}:{line}.";
     }
 
-    private async Task<bool> ExistingAtAsync(string file, int line, CancellationToken ct) =>
-        (await session.ListBreakpointsAsync(ct)).Any(b => AgentBreakpoints.Same(b.File, b.Line, file, line));
+    /// <summary>The breakpoint at the line — an enabled one first: an editor may hold several on one line (columns).</summary>
+    private async Task<DebugBreakpointInfo?> ExistingAtAsync(string file, int line, CancellationToken ct) =>
+        (await session.ListBreakpointsAsync(ct)).Where(b => AgentBreakpoints.Same(b.File, b.Line, file, line))
+            .OrderByDescending(b => b.Enabled).FirstOrDefault();
 
     private async Task<string> ListBreakpointsAsync(CancellationToken ct)
     {

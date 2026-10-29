@@ -45,6 +45,9 @@ type Transition = 'stopped' | 'ended' | 'timeout';
 /** The text tabs open and the editor in front, noted before a capture so they can be put back after it. */
 type ShownEditors = { open: Set<string>; active: vscode.Uri | undefined };
 
+/** The DAP requests that set a paused program running. */
+const RESUMING_REQUESTS = new Set(['continue', 'next', 'stepIn', 'stepOut', 'stepBack', 'reverseContinue', 'goto', 'restartFrame', 'restart']);
+
 export class DebugBridge implements DebugDelegate, vscode.Disposable {
   private readonly disposables: vscode.Disposable[] = [];
 
@@ -61,6 +64,14 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
     this.disposables.push(
       vscode.debug.registerDebugAdapterTrackerFactory('*', {
         createDebugAdapterTracker: () => ({
+          // ⚠ An adapter need not send `continued` after a request that resumes: a pause kept until then is read later
+          // as "paused at a breakpoint", over a program that runs. The request itself ends it — the agent's, or the
+          // toolbar's.
+          onWillReceiveMessage: (m: { type?: string; command?: string }) => {
+            if (m.type === 'request' && RESUMING_REQUESTS.has(m.command ?? '')) {
+              this.stoppedThreadId = undefined;
+            }
+          },
           onDidSendMessage: (m: { type?: string; event?: string; body?: { threadId?: number } }) => {
             if (m.type !== 'event') {
               return;
@@ -271,6 +282,10 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
     try {
       await issue(session, threadId);
     } catch (err) {
+      // Refused, the program is still where it stopped — while its session lasts.
+      if (vscode.debug.activeDebugSession === session) {
+        this.stoppedThreadId ??= threadId;
+      }
       this.release('ended');
       this.log?.(`[debug] resume failed: ${String(err)}`);
       return { state: null, outcome: null, failure: `The debug adapter refused to resume: ${String(err)}` };

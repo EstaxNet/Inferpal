@@ -218,5 +218,6 @@
   "Inferpal follows this terminal's commands from now on: run the command again, then use @terminal.": "Теперь Inferpal отслеживает команды этого терминала: запустите команду снова, затем используйте @terminal.",
   "A command is still running in this terminal: use @terminal again once it has finished.": "В этом терминале ещё выполняется команда: снова используйте @terminal, когда она завершится.",
   "No command has finished in this terminal; the last one finished in “{0}”: switch to it, then use @terminal.": "В этом терминале не завершилась ни одна команда; последняя завершилась в «{0}»: переключитесь туда, затем используйте @terminal.",
-  "No command has finished in this terminal since Inferpal began following it: run it again, then use @terminal.": "С тех пор как Inferpal отслеживает этот терминал, в нём не завершилась ни одна команда: запустите её снова, затем используйте @terminal."
+  "No command has finished in this terminal since Inferpal began following it: run it again, then use @terminal.": "С тех пор как Inferpal отслеживает этот терминал, в нём не завершилась ни одна команда: запустите её снова, затем используйте @terminal.",
+  "{0} more @-mentions not looked at (at most {1} per question)": "Ещё упоминаний @ не проверено: {0} (не более {1} на вопрос)"
 }

@@ -853,12 +853,34 @@ internal sealed class AcpSession : IAsyncDisposable
                 labels.Add(Strings.ExcludedFromAi(shown, why.File, why.Line, why.Pattern));
                 continue;
             }
-            string body;
-            try { body = given ?? await TextFileEncoding.ReadTextAsync(path!, CancellationToken.None); }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            // ⚠ A linked file is read as every @file reads it: a binary file's bytes decoded as text spend the window on
+            // garbage the model reads as code, and a file of a gigabyte would be read whole into the process every thread
+            // shares. The client's buffer first, unsaved changes included, as read_file reads it here; else the disk.
+            var body = given;
+            if (body is null)
             {
-                labels.Add(Strings.AcpAttachmentUnreadable(name, ex.Message));
-                continue;
+                string? notAttached = null, reason = null;
+                try
+                {
+                    if (MentionController.BinaryRefusal(path!) is { } binary) (notAttached, reason) = (binary, "a binary file");
+                    else if ((body = new FileInfo(path!).Length > MentionController.MaxAttachedFileSize ? null
+                                 : await EditorBuffer(new PathNote(path), CancellationToken.None) is { } buffered
+                                     ? (buffered.Length > MentionController.MaxAttachedFileSize ? null : buffered)
+                                     : await MentionController.FileMentionTextAsync(path!, null, CancellationToken.None)) is null)
+                        (notAttached, reason) = (Strings.AcpAttachmentUnreadable(name, Strings.AttachFileTooLarge),
+                                                $"over {MentionController.MaxAttachedFileSize / 1024} KB");
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    labels.Add(Strings.AcpAttachmentUnreadable(name, ex.Message));
+                    continue;
+                }
+                if (notAttached is not null)
+                {
+                    prompt.Append("\n\n### ").Append(Relative(path!)).Append("\n(not attached: ").Append(reason).Append(')');
+                    labels.Add(notAttached);
+                    continue;
+                }
             }
             taken++;
             var shownName = path is null ? name : Relative(path);
@@ -1405,7 +1427,10 @@ internal sealed class AcpSession : IAsyncDisposable
             : note.Message.Split('\n', 2)[0];
         // The changes themselves when there are some (the client draws them), else the question as the card words it —
         // the command, the URL, the summary of a rename: what the human reads before answering.
-        var content = diffs.Count > 0 ? diffs : [TextContent(note.Message)];
+        // ⚠ A deletion's diff reads as a file emptied: the question that says the file goes comes first.
+        List<object> content = diffs.Count == 0 ? [TextContent(note.Message)]
+                             : note.Tool == "delete_file" ? [TextContent(note.Message), .. diffs]
+                             : diffs;
         // ⚠ The card the client already draws for the call gets the diffs first (same queue: on screen before the
         // question). Qt Creator keeps that card and ignores what the request carries: without this update the user
         // approves a change the card does not show. Diffs only — a question written on the card would stay there if the

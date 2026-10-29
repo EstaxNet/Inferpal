@@ -30,6 +30,8 @@ internal sealed class StepModeToolRegistry(IToolRegistry inner, Func<Cancellatio
 
     public string? TurnedOffRefusal(string name) => inner.TurnedOffRefusal(name);
 
+    public bool Knows(string name) => inner.Knows(name);
+
 
     public async Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct)
     {

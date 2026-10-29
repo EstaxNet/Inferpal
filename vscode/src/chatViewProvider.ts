@@ -2123,8 +2123,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // ⚠ The cap counts files ATTACHED, not tokens seen: five `@property` in pasted code used up the
     // budget before a real `@src/app.py` was even tried — and the file was silently left out.
     // The attempts themselves stay bounded.
-    const MAX_ATTEMPTS = 25;
-    const tokens = mentionTokens(prompt).slice(0, MAX_ATTEMPTS);
+    const MAX_ATTEMPTS = 100;
+    const all = mentionTokens(prompt);
+    const tokens = all.slice(0, MAX_ATTEMPTS);
+    // Files attached, whole or cut: a file sent in part is one of the five too.
+    let attached = 0;
 
     let attachments = '';
     const paths: string[] = [];
@@ -2138,7 +2141,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         break;
       }
       const uri = vscode.Uri.joinPath(target.folder.target, target.relative);
-      if (paths.length >= MAX_FILES) {
+      if (attached >= MAX_FILES) {
         try {
           if ((await vscode.workspace.fs.stat(uri)).type & vscode.FileType.File) {
             notAttached.push(token);
@@ -2170,6 +2173,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         const doc = await vscode.workspace.openTextDocument(uri);
         const capped = capAttachment(doc.getText(), MAX_CHARS);
         attachments += `\n\n## Attached file: ${token}\n\`\`\`\n${capped.text}\n\`\`\``;
+        attached++;
         if (capped.cut) {
           labels.push(ChatViewProvider.cutLabel(token, capped));
         } else {
@@ -2185,6 +2189,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       attachments += `\n\n## Not attached: ${notAttached.join(', ')}\n`
         + `(at most ${MAX_FILES} files are attached to a question; read_file reads the others)`;
       labels.push(t('{0} (not attached: at most {1} files per question)', notAttached.join(', '), MAX_FILES));
+    }
+    // ⚠ Past the attempts, a file the person named would be left out unsaid: what was not looked at is said.
+    if (all.length > MAX_ATTEMPTS) {
+      const unread = all.length - MAX_ATTEMPTS;
+      attachments += `\n\n## Not looked at: ${unread} more @-mentions\n(at most ${MAX_ATTEMPTS} are looked at per question; read_file reads a file)`;
+      labels.push(t('{0} more @-mentions not looked at (at most {1} per question)', unread, MAX_ATTEMPTS));
     }
     return { text: prompt + attachments, paths, labels };
   }
@@ -3798,13 +3808,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       return;
     }
     // The offsets were computed against the text we sent; a buffer that moved meanwhile
-    // would misplace every hunk (same freshness guard as the VS renderer).
+    // would misplace every hunk (same freshness guard as the VS renderer). ⚠ Nothing is awaited between the check and
+    // the edit: a keystroke or a format-on-save during an await moves the offsets the check just vouched for.
+    const preview = await this.inlineDiffPreviewEnabled(host);
     if (document.getText() !== before) {
       finish('error', t('The document changed while the model was working — run /{0} again.', kind));
       return;
     }
-
-    const preview = await this.inlineDiffPreviewEnabled(host);
     const applied = await this.applyRewrite(document, result.edits, preview, (index) => t('Inferpal /{0} — change {1}', kind, index));
     if (!applied) {
       finish('assistant', t('Rewrite discarded — no changes were applied.'));
@@ -3911,12 +3921,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         result.outcome === 'refused' ? result.failureDetail ?? base : result.failureDetail ? `${base}\n\n${result.failureDetail}` : base);
       return;
     }
-    // The offsets were computed against the text sent: a buffer that moved meanwhile would misplace every hunk.
+    // The offsets were computed against the text sent: a buffer that moved meanwhile would misplace every hunk. Nothing
+    // is awaited between the check and the edit.
+    const preview = await this.inlineDiffPreviewEnabled(host);
     if (document.getText() !== before) {
       void vscode.window.showWarningMessage(t('The document changed while the model was working — run Edit with AI again.'));
       return;
     }
-    const preview = await this.inlineDiffPreviewEnabled(host);
     if (!(await this.applyRewrite(document, result.edits, preview, (index) => t('Inferpal Edit with AI — change {0}', index), false))) {
       void vscode.window.showInformationMessage(t('Rewrite discarded — no changes were applied.'));
     }

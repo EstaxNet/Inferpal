@@ -53,7 +53,7 @@ internal static class ApprovalCard
     /// of it. A tool missing here shows its change uncoloured, never altered.</remarks>
     private static readonly HashSet<string> RenderTheirChange = new(StringComparer.Ordinal)
     {
-        "apply_edits", "rename_symbol", "delete_file", "restore_file",
+        "apply_edits", "rename_symbol",
     };
 
     public static ApprovalCardModel Build(ApprovalPrompt prompt, string? root)
@@ -100,8 +100,9 @@ internal static class ApprovalCard
                 var (added, removed) = RunSummary.LineDelta(diff.OldText, diff.NewText);
                 meta = $"+{added} −{removed}";
                 var diffLines = DiffComputer.Compute(diff.OldText.Replace("\r\n", "\n"), diff.NewText.Replace("\r\n", "\n"));
-                preview.AddRange(diffLines.Take(PreviewLines).Select(l => new ApprovalPreviewLine(
-                    l.Prefix switch { "+" => "add", "-" => "del", "…" => "gap", _ => "ctx" }, l.Text)));
+                preview.AddRange(diffLines.Take(PreviewLines).Select(l => l.Prefix == "…"
+                    ? new ApprovalPreviewLine("gap", l.Text.Trim())
+                    : new ApprovalPreviewLine(l.Prefix switch { "+" => "add", "-" => "del", _ => "ctx" }, l.Text)));
                 more = Math.Max(0, diffLines.Count - PreviewLines);
             }
         }

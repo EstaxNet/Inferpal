@@ -41,6 +41,11 @@ internal static class InlineEditReindenter
         var baseIndent = GetLeadingWhitespace(original);
         var (unit, unitWidth) = DetectIndent(original, edited, baseIndent);
         var braceBased = edited.IndexOf('{') >= 0 || edited.IndexOf('}') >= 0;
+        // ⚠ A selection may end shallower than it starts — the rest of a Python function after an if body, the brace that
+        // closes the block: the original's levels below its first line are how far the reply may go down. Held at the
+        // first line, `return 0` would move INTO the if (another program, no error), and an unchanged echo would come out
+        // changed — applied as an edit.
+        var lowest = LowestLevel(original, unitWidth);
 
         var editFirst      = GetLeadingWhitespace(edited);
         var editFirstWidth = VisualWidth(editFirst, unitWidth);
@@ -75,7 +80,7 @@ internal static class InlineEditReindenter
 
             // Structural floor: how deep this line sits given the running brace depth,
             // accounting for any leading closers (minPrefix <= 0).
-            var floorUnits = Math.Max(0, depth + minPrefix);
+            var floorUnits = Math.Max(lowest, depth + minPrefix);
 
             // Model's own relative indent, re-anchored to the original's first line.
             // The first non-empty line always anchors to the base (relative 0).
@@ -83,9 +88,7 @@ internal static class InlineEditReindenter
             if (i > 0)
             {
                 var relWidth = VisualWidth(ws, unitWidth) - editFirstWidth;
-                modelUnits = relWidth <= 0
-                    ? 0
-                    : (int)Math.Round(relWidth / (double)unitWidth, MidpointRounding.AwayFromZero);
+                modelUnits = Math.Max(lowest, (int)Math.Round(relWidth / (double)unitWidth, MidpointRounding.AwayFromZero));
             }
 
             // Brace code: never go below the structural floor, but keep deeper model
@@ -93,14 +96,37 @@ internal static class InlineEditReindenter
             // Brace-less code: trust the re-anchored model indentation only.
             var units = braceBased ? Math.Max(modelUnits, floorUnits) : modelUnits;
 
-            sb.Append(baseIndent);
-            for (var u = 0; u < units; u++) sb.Append(unit);
+            sb.Append(Indent(baseIndent, unit, unitWidth, units));
             sb.Append(trimmed);
 
-            depth = Math.Max(0, depth + net);
+            depth = Math.Max(lowest, depth + net);
         }
 
         return sb.ToString();
+    }
+
+    /// <summary>The level, in units relative to its first line, of the original's shallowest line: 0 or below.</summary>
+    private static int LowestLevel(string original, int unitWidth)
+    {
+        var widths = Lines(original).Select(l => VisualWidth(LeadingWhitespace(l), unitWidth)).ToList();
+        if (widths.Count == 0) return 0;
+        var below = widths[0] - widths.Min();
+        return below <= 0 ? 0 : -(int)Math.Round(below / (double)unitWidth, MidpointRounding.AwayFromZero);
+    }
+
+    /// <summary><paramref name="baseIndent"/> moved by <paramref name="units"/> levels: units added, or taken off its end.</summary>
+    private static string Indent(string baseIndent, string unit, int unitWidth, int units)
+    {
+        if (units >= 0) return units == 0 ? baseIndent : baseIndent + string.Concat(Enumerable.Repeat(unit, units));
+        var indent = baseIndent;
+        for (var u = units; u < 0; u++)
+        {
+            if (indent.EndsWith(unit, StringComparison.Ordinal)) { indent = indent[..^unit.Length]; continue; }
+            // A mixed indentation ("\t  ", or spaces in a file indented with tabs): a level of its trailing spaces at most.
+            var spaces = indent.Length - indent.TrimEnd(' ').Length;
+            indent = indent[..^Math.Min(indent.Length, spaces > 0 ? Math.Min(spaces, unitWidth) : 1)];
+        }
+        return indent;
     }
 
     /// <summary>

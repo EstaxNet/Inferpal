@@ -61,6 +61,42 @@ public sealed class TestWithoutATestProjectTests : IDisposable
     }
 
     [Fact]
+    public async Task ATestProjectOfAProjectWhoseNameEndsTheSame_IsNotItsTestProject()
+    {
+        // "Data.Core.csproj" contains "Core.csproj": read as a substring, Core's tests were written into Data.Core's.
+        Write("App.sln");
+        Write("src/Core/Core.csproj", """<Project Sdk="Microsoft.NET.Sdk" />""");
+        Write("src/Data.Core/Data.Core.csproj", """<Project Sdk="Microsoft.NET.Sdk" />""");
+        Write("tests/Data.Core.Tests/Data.Core.Tests.csproj", """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <ItemGroup>
+                <PackageReference Include="xunit" Version="2.9.0" />
+                <ProjectReference Include="..\..\src\Data.Core\Data.Core.csproj" />
+              </ItemGroup>
+            </Project>
+            """);
+        var source = Write("src/Core/Parser.cs", Code);
+
+        var (plan, asked) = await PlanAsync(source);
+
+        Assert.False(plan.Ok);
+        Assert.False(asked);
+        Assert.Contains("dotnet new xunit", plan.Refusal);
+
+        // Nor that of a project of the same NAME in another folder: a reference is to a file.
+        Write("lib/Core/Core.csproj", """<Project Sdk="Microsoft.NET.Sdk" />""");
+        Write("tests/Lib.Tests/Lib.Tests.csproj", """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <ItemGroup>
+                <PackageReference Include="xunit" Version="2.9.0" />
+                <ProjectReference Include="..\..\lib\Core\Core.csproj" />
+              </ItemGroup>
+            </Project>
+            """);
+        Assert.False((await PlanAsync(source)).Plan.Ok);
+    }
+
+    [Fact]
     public async Task WithATestProject_TheTestsAreWrittenThere()
     {
         // Reference arm: the same source, a test project that references its project.

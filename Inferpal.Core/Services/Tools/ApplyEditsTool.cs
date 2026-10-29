@@ -40,6 +40,11 @@ internal sealed class ApplyEditsTool : ITool
     /// <remarks>Each file is backed up before it is written: its writes are in the run already.</remarks>
     public bool NeedsWorkTreeWatch => false;
 
+    /// <inheritdoc/>
+    /// <remarks>⚠ Not what the repository's own check, run after the write, changes (<see
+    /// cref="SmartFixValidator.MayRunWorkspaceCommandFor"/>): that call is watched.</remarks>
+    public bool NeedsWorkTreeWatchFor(JsonElement args) => _smartFix?.MayRunWorkspaceCommandFor(Name, args) == true;
+
     public string Description =>
         "Applies multiple edits across one or more files atomically (all-or-nothing): each edit " +
         "replaces old_content with new_content in its file (whitespace-tolerant, like apply_diff). " +

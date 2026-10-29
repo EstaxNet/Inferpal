@@ -862,8 +862,49 @@ public class PackageCheckTests : IDisposable
         // The person's own configuration counts too; a yarn file that chooses no registry does not.
         var home = Write(Path.Combine("home", ".bunfig.toml"), "[install.scopes]\nacme = \"https://npm.acme.internal\"\n");
         File.WriteAllText(Path.Combine(_root, ".yarnrc.yml"), "nodeLinker: node-modules\n");
-        Assert.Equal(home, PackageManagerLookup.OtherClientRegistry(_root, _root, Path.GetDirectoryName(home)));
-        Assert.Null(PackageManagerLookup.OtherClientRegistry(_root, _root, home: null));
+        Assert.Equal(home, PackageManagerLookup.OtherClientRegistry(_root, _root, Path.GetDirectoryName(home), "@acme/ui"));
+        Assert.Null(PackageManagerLookup.OtherClientRegistry(_root, _root, home: null, "@acme/ui"));
+    }
+
+    [Fact]
+    public void AYarnScope_LeavesTheOtherNamesChecked()
+    {
+        // ⚠ Read as a whole, one scope in the person's ~/.yarnrc.yml left every npm package of the machine unchecked.
+        const string scopes = "npmScopes:\n  acme:\n    npmRegistryServer: \"https://npm.acme.internal\"\n  \"@corp\":\n    npmAlwaysAuth: true\n";
+        bool Yaml(string text, string? scope) => PackageManagerLookup.ChoosesRegistry(".yarnrc.yml", text, scope);
+        Assert.True(Yaml(scopes, "acme"));
+        Assert.True(Yaml(scopes, "corp"));
+        Assert.False(Yaml(scopes, "types"));
+        Assert.False(Yaml(scopes, scope: null));
+
+        // A registry for every name chooses every name's — unless it is the public one; a scope map inline, every scope's.
+        Assert.True(Yaml("npmRegistryServer: https://npm.acme.internal\n", null));
+        Assert.False(Yaml("npmRegistryServer: \"https://registry.yarnpkg.com\"  # public\n", null));
+        Assert.True(Yaml("npmScopes: { acme: { npmRegistryServer: x } }\n", "types"));
+        Assert.True(Yaml("npmScopes:\n  { acme: { npmRegistryServer: x } }\n", "acme"));
+        Assert.False(Yaml("npmScopes: { acme: { npmRegistryServer: x } }\n", null));
+
+        // The same reading in yarn 1's and bun's files.
+        Assert.True(PackageManagerLookup.ChoosesRegistry(".yarnrc", "\"@acme:registry\" \"https://npm.acme.internal\"\n", "acme"));
+        Assert.False(PackageManagerLookup.ChoosesRegistry(".yarnrc", "\"@acme:registry\" \"https://npm.acme.internal\"\n", null));
+        Assert.True(PackageManagerLookup.ChoosesRegistry(".yarnrc", "registry \"https://npm.acme.internal\"\n", null));
+        Assert.False(PackageManagerLookup.ChoosesRegistry(".yarnrc", "registry \"https://registry.yarnpkg.com\"\n", null));
+        const string bun = "[install.scopes]\nacme = { url = \"https://npm.acme.internal\" }\n";
+        Assert.True(PackageManagerLookup.ChoosesRegistry("bunfig.toml", bun, "acme"));
+        Assert.False(PackageManagerLookup.ChoosesRegistry("bunfig.toml", bun, "types"));
+        Assert.False(PackageManagerLookup.ChoosesRegistry("bunfig.toml", bun, null));
+        Assert.True(PackageManagerLookup.ChoosesRegistry("bunfig.toml", "[install]\nregistry = \"https://npm.acme.internal\"\n", null));
+        Assert.False(PackageManagerLookup.ChoosesRegistry("bunfig.toml", "[install]\nregistry = \"https://registry.npmjs.org\"\n", null));
+        // Sub-tables and dotted keys say the same.
+        Assert.True(PackageManagerLookup.ChoosesRegistry("bunfig.toml", "[install.registry]\nurl = \"https://npm.acme.internal\"\n", null));
+        Assert.True(PackageManagerLookup.ChoosesRegistry("bunfig.toml", "[install.scopes.acme]\nurl = \"https://npm.acme.internal\"\n", "acme"));
+        Assert.False(PackageManagerLookup.ChoosesRegistry("bunfig.toml", "[install.scopes.acme]\nurl = \"https://npm.acme.internal\"\n", "types"));
+        Assert.True(PackageManagerLookup.ChoosesRegistry("bunfig.toml", "[install]\nscopes.acme = \"https://npm.acme.internal\"\n", "acme"));
+
+        Write(".yarnrc.yml", scopes);
+        Assert.Null(PackageManagerLookup.OtherClientRegistry(_root, _root, home: null, "lodash"));
+        Assert.Null(PackageManagerLookup.OtherClientRegistry(_root, _root, home: null, "@types/node"));
+        Assert.Equal(Path.Combine(_root, ".yarnrc.yml"), PackageManagerLookup.OtherClientRegistry(_root, _root, home: null, "@acme/ui"));
     }
 
     [Fact]

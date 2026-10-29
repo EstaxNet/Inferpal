@@ -34,6 +34,11 @@ internal class ApplyDiffTool : ITool
     /// <remarks>Each file is backed up before it is written: its writes are in the run already.</remarks>
     public bool NeedsWorkTreeWatch => false;
 
+    /// <inheritdoc/>
+    /// <remarks>⚠ Not what the repository's own check, run after the write, changes (<see
+    /// cref="SmartFixValidator.MayRunWorkspaceCommandFor"/>): that call is watched.</remarks>
+    public bool NeedsWorkTreeWatchFor(JsonElement args) => _smartFix?.MayRunWorkspaceCommandFor(Name, args) == true;
+
     public string Description =>
         "Modifies a file by replacing old_content with new_content. More precise than write_file for " +
         "targeted changes. old_content should match the existing text; if an exact match fails, a " +

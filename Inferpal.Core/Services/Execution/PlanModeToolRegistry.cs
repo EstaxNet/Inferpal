@@ -48,9 +48,13 @@ internal sealed class PlanModeToolRegistry(IToolRegistry inner) : IToolRegistry
     /// as text to it is refused with its cause rather than shown as the answer.</summary>
     public IEnumerable<string> CallableNames => inner.CallableNames.Where(IsAllowed);
 
+    public bool Knows(string name) => inner.Knows(name);
+
+    // ⚠ The mode's check comes first: a name it refuses never reaches the registry it wraps, known or not.
     public Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct) =>
         IsAllowed(name)
-            ? inner.ExecuteAsync(name, args, ct)
+            ? inner.Knows(name) ? inner.ExecuteAsync(name, args, ct) : ToolRegistry.AnswerUnknownAsync(inner, name, args, Definitions, ct)
+            : !inner.Knows(name) ? Task.FromResult(ToolRegistry.UnknownTool(name, Definitions))
             : Task.FromResult(
                 $"Error: tool '{name}' is not available in plan mode (read-only analysis). " +
                 "Do not retry it; describe the change as a step of your plan instead.");

@@ -10,7 +10,8 @@ namespace Inferpal.Services.Tasks;
 /// <param name="Tool">Tool that asked — <c>write_file</c>, <c>apply_diff</c>, <c>delete_file</c>…</param>
 /// <param name="Subject">Absolute path the change targets; the key a later application uses.</param>
 /// <param name="Details">The sentence the approval prompt would have shown.</param>
-/// <param name="Diff">Old→new content when the tool supplied one; null for a deletion.</param>
+/// <param name="Diff">Old→new content when the tool supplied one — a deletion's is the file, then nothing; null when it
+/// could show none (a binary file).</param>
 internal sealed record TaskProposal(string Tool, string Subject, string Details, DiffInfo? Diff);
 
 /// <summary>
@@ -141,7 +142,10 @@ internal sealed class ProposalRecorder : IApprovalService
 
     private static (TaskProposal Kept, ProposalOutcome Outcome) Supersede(TaskProposal earlier, TaskProposal later)
     {
-        if (earlier.Diff is not { } first || later.Diff is not { } second || first.OldText != second.OldText)
+        // ⚠ A deletion's diff is the file, then nothing: an edit merged into it would become a write of the edit's lines
+        // alone. A deletion and anything else replace each other; two deletions are one.
+        if (earlier.Diff is not { } first || later.Diff is not { } second || first.OldText != second.OldText
+            || IsDeletion(earlier) != IsDeletion(later))
             return (later, ProposalOutcome.Replaced);
 
         if (first.NewText == second.NewText)
@@ -154,6 +158,9 @@ internal sealed class ProposalRecorder : IApprovalService
 
         return (later, ProposalOutcome.Replaced);
     }
+
+    private static bool IsDeletion(TaskProposal proposal) =>
+        proposal.Tool.Equals("delete_file", StringComparison.OrdinalIgnoreCase);
 
     private static StringComparison PathComparison => Services.PathComparer.Comparison;
 }
@@ -275,8 +282,12 @@ internal static class TaskProposalApplication
         var deleting = proposal.Tool.Equals("delete_file", StringComparison.OrdinalIgnoreCase);
         var exists   = currentContent is not null;
 
+        // ⚠ A file changed since the task saw it is not the file it proposed to delete: what was written since would go.
         if (deleting)
-            return new(exists ? ProposalVerdict.Ready : ProposalVerdict.Missing,
+            return new(!exists ? ProposalVerdict.Missing
+                       : proposal.Diff is { } seen && !string.Equals(currentContent, seen.OldText, StringComparison.Ordinal)
+                           ? ProposalVerdict.Stale
+                           : ProposalVerdict.Ready,
                        proposal.Subject, null, Delete: true);
 
         // No diff means nothing was reviewed, so there is nothing to reproduce faithfully.

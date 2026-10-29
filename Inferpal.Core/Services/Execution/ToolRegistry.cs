@@ -402,8 +402,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// <inheritdoc/>
     public string? TurnedOffRefusal(string name)
     {
-        var tool = _tools.TryGetValue(name, out var builtIn) ? builtIn
-            : UserTools.FirstOrDefault(t => t.Name == name) ?? _mcp.Tools.FirstOrDefault(t => t.Name == name);
+        var tool = Served(name);
         return tool is not null && TurnedOff(tool) ? "Error: " + TurnedOffSentence(tool) + " The call was NOT executed." : null;
     }
 
@@ -508,11 +507,33 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// <remarks>
     /// ⚠ An invented name is recoverable only if the answer says what to call instead. Bare, it is a dead end for a
     /// small model reaching for a name from another assistant (<c>edit_file</c>): it re-reads the file, then says it
-    /// changed it — with no write. Only this registry's own list: the decorators (plan mode, background tasks)
-    /// answer the names they do not expose before a call reaches here.
+    /// changed it — with no write. The list is that of the registry the model talks to: a decorator answers an invented
+    /// name with its own tools (<see cref="IToolRegistry.Knows"/>).
     /// </remarks>
-    private string UnknownTool(string name) =>
-        $"Unknown tool: {name}. The tools you can call are: {string.Join(", ", Definitions.Select(d => d.Function.Name))}.";
+    internal static string UnknownTool(string name, IEnumerable<ToolDefinition> offered) =>
+        $"{UnknownToolPrefix}{name}. The tools you can call are: {string.Join(", ", offered.Select(d => d.Function.Name))}.";
+
+    private const string UnknownToolPrefix = "Unknown tool: ";
+
+    /// <summary>A call to a name <paramref name="inner"/> does not know, as a decorator that narrows the tools answers it:
+    /// run through <paramref name="inner"/> — the call recorded, an MCP server's own cause kept —, its list of tools
+    /// replaced by <paramref name="offered"/>, the decorator's.</summary>
+    internal static async Task<string> AnswerUnknownAsync(IToolRegistry inner, string name, JsonElement args,
+                                                          IEnumerable<ToolDefinition> offered, CancellationToken ct)
+    {
+        var answer = await inner.ExecuteAsync(name, args, ct);
+        return answer.StartsWith(UnknownToolPrefix, StringComparison.Ordinal) ? UnknownTool(name, offered) : answer;
+    }
+
+    /// <summary>The tool a name resolves to, built-in first, as served — not yet bound to this registry's approval.</summary>
+    private ITool? Served(string name) =>
+        _tools.TryGetValue(name, out var builtIn) ? builtIn
+        : UserTools.FirstOrDefault(t => t.Name == name) ?? _mcp.Tools.FirstOrDefault(t => t.Name == name);
+
+    /// <inheritdoc/>
+    /// <remarks>A tool of an MCP server that is not connected is known: its call says why it is gone. A name a connected
+    /// server does not serve is not.</remarks>
+    public bool Knows(string name) => Served(name) is not null || _mcp.IsOfAServerNotConnected(name);
 
     public async Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct)
     {
@@ -526,7 +547,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             // ⚠ "Unknown tool" means "you invented this name". A tool served by an MCP server that
             // went away mid-run was not invented: the model READ it in its own tool list, and the
             // reason it is gone sits one field away from here.
-            return _mcp.DescribeMissingTool(name) ?? UnknownTool(name);
+            return _mcp.DescribeMissingTool(name) ?? UnknownTool(name, Definitions);
         }
 
         // An editor that answers on demand (Visual Studio) is asked now which buffers hold unsaved changes: what the
@@ -565,7 +586,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             // here, what they change enters the run like a write — /undo-run gives it back, the result bar counts it.
             // Every call plan mode does not list as read-only, so a tool added tomorrow is watched without being named — but
             // one that backs up its own writes or writes the editor's buffer says so (NeedsWorkTreeWatch), and is spared it.
-            if (!PlanModeToolRegistry.IsAllowed(name) && tool.NeedsWorkTreeWatch && _fileHistory.IsTracking)
+            if (!PlanModeToolRegistry.IsAllowed(name) && tool.NeedsWorkTreeWatchFor(args) && _fileHistory.IsTracking)
                 WorkTreeBracket.Enter(watch = await WorkTreeBracket.OpenAsync(_indexService.RootDir, UnsavedNow(), ct));
             var result = await tool.ExecuteAsync(args, ct);
             _fileHistory.RecordToolCall(name, ExtractSubject(args), sw.ElapsedMilliseconds, error: false);

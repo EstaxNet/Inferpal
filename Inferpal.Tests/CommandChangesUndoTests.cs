@@ -14,6 +14,7 @@ using Inferpal.Services.Execution;
 using Inferpal.Services.Lsp;
 using Inferpal.Services.Mcp;
 using Inferpal.Services.Rag;
+using Inferpal.Services.Tools;
 using Xunit;
 
 namespace Inferpal.Tests;
@@ -129,6 +130,52 @@ public class CommandChangesUndoTests : IDisposable
         UndoRunCommandHandler.HandleAsync(tools.History, ["/undo-run"], root, CancellationToken.None);
 
     // ── the commands ────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// ⚠ A write whose Smart Fix may run the repository's own check (an <c>eslint --fix</c> rewriting other files) is
+    /// watched like a command: unwatched, <c>/undo-run</c> gave back the written file and left the rest, unsaid.
+    /// </summary>
+    [Fact]
+    public void AWriteThatMayRunTheRepositorysCheck_IsWatched()
+    {
+        var config   = new InferpalConfig();
+        var smartFix = new SmartFixValidator(config, () => _root);
+        var history  = new FileHistoryService();
+        ITool write  = new WriteFileTool(new NoopApproval(), history, () => _root, smartFix);
+        var ts = Args(new { path = "src/a.ts", content = "x" });
+        File.WriteAllText(Path.Combine(_root, "package.json"), "{}");
+        Assert.False(write.NeedsWorkTreeWatchFor(ts));   // the built-in checks only build
+
+        Directory.CreateDirectory(Path.Combine(_root, ".inferpal"));
+        File.WriteAllText(Path.Combine(_root, ".inferpal", "validators.json"),
+                          """{ ".ts": { "command": "npx eslint --fix .", "marker": "package.json" } }""");
+
+        Assert.True(write.NeedsWorkTreeWatchFor(ts));
+        Assert.False(write.NeedsWorkTreeWatchFor(Args(new { path = "src/A.cs", content = "x" })));   // not a file it checks
+        Assert.True(((ITool)new ApplyDiffTool(new NoopApproval(), history, () => _root, smartFix)).NeedsWorkTreeWatchFor(ts));
+        Assert.True(((ITool)new ApplyEditsTool(new NoopApproval(), history, () => _root, smartFix))
+            .NeedsWorkTreeWatchFor(Args(new { edits = new[] { new { path = "src/a.ts", old_content = "x", new_content = "y" } } })));
+        config.SmartFixEnabled = false;
+        Assert.False(write.NeedsWorkTreeWatchFor(ts));
+    }
+
+    /// <summary>
+    /// ⚠ Where the file system folds case, <c>git mv Foo.txt foo.txt</c> renames a file that was there before the call:
+    /// read as created, <c>/undo-run</c> would delete it.
+    /// </summary>
+    [Fact]
+    public async Task ACaseOnlyRename_IsNoCreation()
+    {
+        if (OperatingSystem.IsLinux()) return;   // a file system that keeps both names: two files, and the rule is Ordinal
+        var root   = Repository();
+        var before = await WorkTreeWatch.ReadAsync(root, null, CancellationToken.None);
+        Assert.True(Git(root, "mv", "a.txt", "A.txt"), "`git mv` failed: this test is UNDECIDED, not green.");
+
+        var (changes, _) = await WorkTreeWatch.CompareAsync(before, CancellationToken.None);
+
+        Assert.DoesNotContain(changes, c => c.Kind == WorkTreeChangeKind.Created);
+        Assert.True(File.Exists(Path.Combine(root, "A.txt")));
+    }
 
     [Fact]
     public async Task WhatACommandChanged_IsGivenBackByUndoRun_ByteForByte()
@@ -581,11 +628,17 @@ public class CommandChangesUndoTests : IDisposable
             @"BackUpBeforeChangeAsync|RestoreWithBackupAsync|WriteAllOrRollBackAsync|BackedUpFileWriter");
         foreach (var (file, code) in tools)
         {
+            // Spared but for what the repository's own check changes after the write (MayRunWorkspaceCommandFor).
+            var sparedButForTheCheck = code.Contains("NeedsWorkTreeWatchFor(JsonElement args) => _smartFix?.MayRunWorkspaceCommandFor(Name, args) == true",
+                                                     StringComparison.Ordinal);
             var spared   = code.Contains("NeedsWorkTreeWatch => false", StringComparison.Ordinal);
             var backsUp  = backups.IsMatch(code);
             var buffer   = code.Contains("EditorWriteGate", StringComparison.Ordinal);
             var name     = Path.GetFileName(file);
             Assert.False(backsUp && !spared, $"{name} backs up its writes but is watched too (NeedsWorkTreeWatch).");
+            // ⚠ A write that runs Smart Fix may run the repository's command, which changes files no backup covers.
+            Assert.False(code.Contains("_smartFix", StringComparison.Ordinal) && !sparedButForTheCheck,
+                         $"{name} runs Smart Fix but is spared the watch even when the repository's check may run.");
             // Named exemption: tool_search loads definitions and writes nothing at all — no file, no buffer.
             if (name == "ToolSearchTool.cs") continue;
             Assert.False(spared && !backsUp && !buffer,

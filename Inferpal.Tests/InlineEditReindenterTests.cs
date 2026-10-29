@@ -241,6 +241,34 @@ public class InlineEditReindenterTests
         Assert.Equal("", lines[3]); // the blank line carries no whitespace
     }
 
+    /// <summary>
+    /// ⚠ A selection that ends shallower than it starts keeps its levels: held at the first line, Python's <c>return 0</c>
+    /// moved into the <c>if</c> above it — another program, no error — and a closing brace four columns right.
+    /// </summary>
+    [Fact]
+    public void ASelectionThatEndsShallower_KeepsItsLowerLevels()
+    {
+        Assert.Equal("        return 2\n    return 0",
+                     R("        return 1\n    return 0", "        return 2\n    return 0"));
+        Assert.Equal("        x = 2;\n    }\n    y();",
+                     R("        x = 1;\n    }\n    y();", "        x = 2;\n    }\n    y();"));
+        // An echo comes back unchanged: the pipeline then sees "nothing to change" instead of applying an edit.
+        Assert.Equal("        x = 1;\n    }", R("        x = 1;\n    }", "        x = 1;\n    }"));
+        // Spaces in a file indented with tabs lose one level of them, never all.
+        Assert.Equal("    b = 1", R("        a = 1\n    b = 1\n\tc", "        a = 2\n    b = 1").Split('\n')[1]);
+        // A mixed indentation (a tab and two spaces) loses its spaces for the level below.
+        Assert.Equal("\t  return 2\n\treturn 0", R("\t  return 1\n\treturn 0", "\t  return 2\n\treturn 0"));
+        // Never below the original's own lowest level: a line the reply flushed to column 0 is raised to it.
+        Assert.Equal("        return 2\n    return 0", R("        return 1\n    return 0", "        return 2\nreturn 0"));
+    }
+
+    [Fact]
+    public void ASelectionThatNeverGoesBelowItsFirstLine_StillRaisesAFlushLeftLine()
+    {
+        // Reference arm: without a lower level in the original, a reply's shallower line is the model's slip, raised.
+        Assert.Equal("    a = 1\n    b = 2", R("    a = 1\n    b = 1", "    a = 1\nb = 2"));
+    }
+
     [Fact]
     public void EmptyOrWhitespaceEdited_ReturnedAsIs()
     {

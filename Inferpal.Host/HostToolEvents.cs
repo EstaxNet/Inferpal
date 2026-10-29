@@ -36,6 +36,7 @@ internal sealed class ToolEventRegistry(
     public int? WritesInRun => inner.WritesInRun;
     public IEnumerable<string> CallableNames => inner.CallableNames;
     public string? TurnedOffRefusal(string name) => inner.TurnedOffRefusal(name);
+    public bool Knows(string name) => inner.Knows(name);
 
     public async Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct)
     {

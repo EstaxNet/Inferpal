@@ -371,6 +371,68 @@ public sealed class ChatModesTests : IDisposable
         Assert.False(github.Allows("list_files"));      // read/readFile is one tool, never the family
     }
 
+    /// <summary>
+    /// ⚠ A name the model invents under a mode is answered with the tools of the MODE: answered by the registry it wraps,
+    /// the list named tools the mode refuses (the next call went to one of them), and plan mode called an invented read
+    /// tool "not available in plan mode", as if it wrote.
+    /// </summary>
+    [Fact]
+    public async Task AnInventedName_IsAnsweredWithTheToolsOfTheMode()
+    {
+        var config   = new InferpalConfig();
+        var client   = new FakeInferenceProvider();
+        var editor   = new NullEditorSurface();
+        var approval = new NoopApproval();
+        var registry = new ToolRegistry(editor, approval, config, new ProjectIndexService(client, config, new LspSemanticProvider()),
+                                        client, new ProjectMapService(editor), new McpToolService(config, approval),
+                                        new DocsIndexService(client, config), new OpenDocumentOverlay(), new NullDebugSession());
+        var github = new ChatMode("GitHub", "", "", [], ModeTools.FromCopilot(["github/*", "read/readFile"]), null,
+                                  ".github/agents/github.agent.md", ChatModeOrigin.Copilot, []);
+
+        Assert.True(registry.Knows("tool_search"));   // registered, offered only while a server is on demand
+        Assert.False(registry.Knows("mcp__github__list_issuez"));
+
+        var inMode = await new ModeToolRegistry(registry, github, _root).ExecuteAsync("mcp__github__list_issuez", Args(new { }), default);
+        Assert.StartsWith("Unknown tool: mcp__github__list_issuez. The tools you can call are: read_file", inMode);
+        Assert.DoesNotContain("write_file", inMode);
+
+        var inPlan = await new PlanModeToolRegistry(registry).ExecuteAsync("read_files", Args(new { }), default);
+        Assert.StartsWith("Unknown tool: read_files.", inPlan);
+        Assert.Contains("read_file", inPlan);
+        Assert.DoesNotContain("write_file", inPlan);
+    }
+
+    /// <summary>⚠ The mode's check comes first: a name it refuses never reaches the registry it wraps — read as unknown
+    /// there a moment before a server served it, it would run in plan mode.</summary>
+    [Fact]
+    public async Task ANameTheModeRefuses_NeverReachesTheRegistry_KnownOrNot()
+    {
+        var inner = new ForgetfulRegistry();
+
+        var answer = await new PlanModeToolRegistry(inner).ExecuteAsync("write_file", Args(new { }), default);
+        await new ModeToolRegistry(inner, RooDocs(), _root).ExecuteAsync("run_command", Args(new { }), default);
+
+        Assert.StartsWith("Unknown tool: write_file.", answer);
+        Assert.Empty(inner.Executed);
+        // Reference arm: a name the mode allows goes through, for the registry's own answer.
+        await new PlanModeToolRegistry(inner).ExecuteAsync("read_file", Args(new { }), default);
+        Assert.Equal(["read_file"], inner.Executed);
+    }
+
+    /// <summary>A registry that knows no name — as one does while its servers restart — and runs whatever it is given.</summary>
+    private sealed class ForgetfulRegistry : IToolRegistry
+    {
+        public List<string> Executed { get; } = [];
+        public IReadOnlyList<ToolDefinition> Definitions => [new("function", new ToolFunction("read_file", "d", new { }))];
+        public bool Knows(string name) => false;
+        public Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct)
+        {
+            Executed.Add(name);
+            return Task.FromResult($"ran:{name}");
+        }
+        public DiffInfo? ConsumeDiff() => null;
+    }
+
     [Fact]
     public void EveryRegisteredBuiltInTool_IsInAFamily()
     {

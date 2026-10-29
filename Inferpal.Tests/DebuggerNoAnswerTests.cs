@@ -257,6 +257,28 @@ public sealed class DebuggerNoAnswerTests : IDisposable
     }
 
     /// <summary>
+    /// ⚠ An adapter need not send <c>continued</c> after a request that resumes: the pause kept until then was read as
+    /// "paused at a breakpoint" over a running program, and an evaluation sent to it. The request ends it, whoever sends
+    /// it; refused, the pause stands.
+    /// </summary>
+    [Fact]
+    public void ARequestThatResumes_EndsThePause_InVsCode()
+    {
+        var bridge = WebviewRebuildTests.TsCode("debugBridge.ts");
+        Assert.Contains("this.stoppedThreadId = body?.threadId ?? 0;", bridge, StringComparison.Ordinal);   // WITNESS
+        var tracker = bridge.IndexOf("onWillReceiveMessage:", StringComparison.Ordinal);
+        Assert.True(tracker > 0, "no tracker reads the requests the adapter receives");
+        var end = bridge.IndexOf("onDidSendMessage:", tracker, StringComparison.Ordinal);
+        Assert.Contains("RESUMING_REQUESTS.has(", bridge[tracker..end], StringComparison.Ordinal);
+        Assert.Contains("this.stoppedThreadId = undefined;", bridge[tracker..end], StringComparison.Ordinal);
+        Assert.Contains("const RESUMING_REQUESTS = new Set(['continue', 'next', 'stepIn', 'stepOut'", bridge, StringComparison.Ordinal);
+
+        var refused = bridge.IndexOf("[debug] resume failed", StringComparison.Ordinal);
+        Assert.Contains("this.stoppedThreadId ??= threadId;", bridge[bridge.LastIndexOf("catch (err)", refused, StringComparison.Ordinal)..refused],
+                        StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// The in-process driver cannot run without Visual Studio: its answers are read from its source. A resume that did
     /// not stop answers WHY — ended, still running, not paused — never an empty state.
     /// </summary>

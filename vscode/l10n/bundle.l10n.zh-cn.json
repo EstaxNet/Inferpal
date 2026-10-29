@@ -218,5 +218,6 @@
   "Inferpal follows this terminal's commands from now on: run the command again, then use @terminal.": "Inferpal 从现在起跟踪此终端的命令：请重新运行该命令，然后使用 @terminal。",
   "A command is still running in this terminal: use @terminal again once it has finished.": "此终端中仍有命令在运行：命令结束后请再次使用 @terminal。",
   "No command has finished in this terminal; the last one finished in “{0}”: switch to it, then use @terminal.": "此终端中没有已结束的命令；最后一条命令在“{0}”中结束：请切换过去，然后使用 @terminal。",
-  "No command has finished in this terminal since Inferpal began following it: run it again, then use @terminal.": "自 Inferpal 开始跟踪此终端以来，没有命令结束：请重新运行，然后使用 @terminal。"
+  "No command has finished in this terminal since Inferpal began following it: run it again, then use @terminal.": "自 Inferpal 开始跟踪此终端以来，没有命令结束：请重新运行，然后使用 @terminal。",
+  "{0} more @-mentions not looked at (at most {1} per question)": "另有 {0} 个 @ 提及未检查（每个问题最多 {1} 个）"
 }

@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace Inferpal.Services.CodeActions;
 
@@ -330,8 +331,37 @@ internal static class TestFilePathResolver
         return TestFrameworkMarkers.Any(m => text.Contains(m, StringComparison.OrdinalIgnoreCase));
     }
 
-    private static bool References(string testCsproj, string projectCsproj) =>
-        File.ReadAllText(testCsproj).Contains(Path.GetFileName(projectCsproj), StringComparison.OrdinalIgnoreCase);
+    private static readonly Regex ProjectReference = new(
+        @"<ProjectReference\b[^>]*?\bInclude\s*=\s*[""'](?<path>[^""']+)[""']", RegexOptions.IgnoreCase, RegexBudget.Default);
+
+    /// <summary>Whether <paramref name="testCsproj"/> references <paramref name="projectCsproj"/> — the FILE: each
+    /// <c>ProjectReference</c> resolved from the test project's folder; one built on an MSBuild property, by its name.</summary>
+    /// <remarks>⚠ As a substring, <c>Data.Core.csproj</c> names <c>Core.csproj</c>, and by its name alone a
+    /// <c>Core.csproj</c> in another folder is it: the tests of one project would land in the tests of another, where
+    /// nothing compiles them against it.</remarks>
+    private static bool References(string testCsproj, string projectCsproj)
+    {
+        var dir    = Path.GetDirectoryName(testCsproj)!;
+        var name   = Path.GetFileName(projectCsproj);
+        var target = Path.GetFullPath(projectCsproj);
+        foreach (Match m in ProjectReference.Matches(File.ReadAllText(testCsproj)))
+        {
+            var include = m.Groups["path"].Value.Trim();
+            if (include.Contains("$(", StringComparison.Ordinal))
+            {
+                if (include.Length > name.Length && include.EndsWith(name, StringComparison.OrdinalIgnoreCase)
+                    && include[^(name.Length + 1)] is '\\' or '/' or ')') return true;
+                continue;
+            }
+            try
+            {
+                var relative = include.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
+                if (PathComparer.Default.Equals(Path.GetFullPath(Path.Combine(dir, relative)), target)) return true;
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException) { }
+        }
+        return false;
+    }
 
     /// <summary>The first file <paramref name="matches"/> accepts in <paramref name="dir"/> or a parent.</summary>
     private static string? FindUp(string? dir, Func<string, bool> matches, int levels)

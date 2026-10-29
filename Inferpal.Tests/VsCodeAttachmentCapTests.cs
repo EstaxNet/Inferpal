@@ -52,7 +52,17 @@ public class VsCodeAttachmentCapTests
     public void AFilePastTheCap_IsNamedToBothReaders()
     {
         var typed = Method(WebviewRebuildTests.TsCode("chatViewProvider.ts"), "private async expandMentions(");
-        Assert.Contains("paths.length >= MAX_FILES", typed, StringComparison.Ordinal);   // WITNESS: the cap is still there
+        // ⚠ Counted on every file attached: counted on the paths, which a file sent in part never joins, eight cut files
+        // were all attached and the cap never spoke.
+        Assert.Contains("attached >= MAX_FILES", typed, StringComparison.Ordinal);   // WITNESS: the cap is still there
+        Assert.DoesNotContain("paths.length >= MAX_FILES", typed, StringComparison.Ordinal);
+        var cut     = typed.IndexOf("const capped = capAttachment(", StringComparison.Ordinal);
+        var counted = cut > 0 ? typed.IndexOf("attached++", cut, StringComparison.Ordinal) : -1;
+        Assert.True(counted > cut && counted < typed.IndexOf("if (capped.cut)", cut, StringComparison.Ordinal),
+                    "a file is counted only when sent whole");
+        // ⚠ And a token past the attempts is said, never dropped.
+        Assert.Contains("## Not looked at:", typed, StringComparison.Ordinal);
+        Assert.Contains("t('{0} more @-mentions not looked at (at most {1} per question)'", typed, StringComparison.Ordinal);
         Assert.Contains("## Not attached:", typed, StringComparison.Ordinal);
         Assert.Contains("t('{0} (not attached: at most {1} files per question)'", typed, StringComparison.Ordinal);
 

@@ -218,5 +218,6 @@
   "Inferpal follows this terminal's commands from now on: run the command again, then use @terminal.": "Inferpal suit désormais les commandes de ce terminal : relancez la commande, puis utilisez @terminal.",
   "A command is still running in this terminal: use @terminal again once it has finished.": "Une commande tourne encore dans ce terminal : utilisez de nouveau @terminal une fois qu'elle est terminée.",
   "No command has finished in this terminal; the last one finished in “{0}”: switch to it, then use @terminal.": "Aucune commande ne s'est terminée dans ce terminal ; la dernière s'est terminée dans « {0} » : passez-y, puis utilisez @terminal.",
-  "No command has finished in this terminal since Inferpal began following it: run it again, then use @terminal.": "Aucune commande ne s'est terminée dans ce terminal depuis qu'Inferpal le suit : relancez-la, puis utilisez @terminal."
+  "No command has finished in this terminal since Inferpal began following it: run it again, then use @terminal.": "Aucune commande ne s'est terminée dans ce terminal depuis qu'Inferpal le suit : relancez-la, puis utilisez @terminal.",
+  "{0} more @-mentions not looked at (at most {1} per question)": "{0} autres mentions @ non examinées ({1} au plus par question)"
 }

@@ -1464,6 +1464,51 @@ public sealed class AcpAgentTests : IDisposable
         Assert.False(Inferpal.Services.SlashCommandRouter.LooksLikeCommand("// why does this loop?"));
     }
 
+    /// <summary>
+    /// ⚠ A linked file is read as every <c>@file</c> reads it: a binary file's bytes were decoded into the question as
+    /// code, and a file of any size was read whole. Both are named to the model instead, the next file still attached.
+    /// </summary>
+    [Fact]
+    public async Task ALinkedBinaryOrHugeFile_IsNamed_NeverReadIntoTheQuestion()
+    {
+        var blob = Path.Combine(_root, "app.dll");
+        File.WriteAllBytes(blob, [0x4D, 0x5A, 0x00, 0x00, .. "BINARY-BODY"u8.ToArray(), 0x00]);
+        var huge = Path.Combine(_root, "big.log");
+        File.WriteAllText(huge, "HUGE-BODY\n" + new string('x', 600_000));
+        var small = Path.Combine(_root, "ok.cs");
+        File.WriteAllText(small, "SMALL-BODY");
+        var asked = new List<string>();
+        await using var h = await StartAsync(fake: f => f.OnChatRequest = (_, history, _, _) =>
+        {
+            lock (asked) asked.Add(string.Join("\n", history.Where(m => m.Role == "user").Select(m => m.Content)));
+            return Task.FromResult(new ChatTurnResult("ok", null, 0, 0));
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+
+        await h.Client.RequestAsync("session/prompt", new
+        {
+            sessionId = sid,
+            prompt = new object[]
+            {
+                new { type = "text", text = "what is in these?" },
+                new { type = "resource_link", uri = new Uri(blob).AbsoluteUri, name = "app.dll" },
+                new { type = "resource_link", uri = new Uri(huge).AbsoluteUri, name = "big.log" },
+                new { type = "resource_link", uri = new Uri(small).AbsoluteUri, name = "ok.cs" },
+            },
+        });
+
+        lock (asked)
+        {
+            var question = Assert.Single(asked);
+            Assert.Contains("SMALL-BODY", question);                                 // witness: attachments are read
+            Assert.Contains("### app.dll\n(not attached: a binary file)", question);
+            Assert.Contains("### big.log\n(not attached: over 500 KB)", question);
+            Assert.DoesNotContain("BINARY-BODY", question);
+            Assert.DoesNotContain("HUGE-BODY", question);
+        }
+    }
+
     [Fact]
     public async Task ACommandThatBecomesAPrompt_KeepsWhatTheClientAttached()
     {

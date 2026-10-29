@@ -48,20 +48,19 @@ internal class DeleteFileTool : ITool
         if (!File.Exists(path))
             return Strings.ToolFileNotFound(path);
 
-        // Show what is being removed in the approval prompt (best-effort: skip for binary/locked files).
-        var details = Strings.DeleteConfirm(path);
+        // Show what is being removed in the approval prompt, as the change it is (best-effort: skip for binary/locked files).
         var shown   = ApprovedFile.Unread(path);
+        DiffInfo? removes = null;
         try
         {
             var text = await TextFileEncoding.ReadTextAsync(path, ct);
-            shown = new ApprovedFile(path, text);
-            var diffText = DiffComputer.ComputeText(text, string.Empty);
-            if (diffText is not null) details += "\n\n" + diffText;
+            shown   = new ApprovedFile(path, text);
+            if (!TextFileEncoding.IsBinaryFile(path)) removes = new DiffInfo(text, string.Empty, path);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex) { Diagnostics.Swallow("DeletePreviewDiff", ex); }
 
-        if (!await _approval.RequestApprovalAsync("delete_file", details, ct, subject: path))
+        if (!await _approval.RequestApprovalAsync("delete_file", Strings.DeleteConfirm(path), ct, subject: path, diff: removes))
             return Strings.DeleteCancelled;
         if (await FileTarget.ChangedSinceApprovalAsync(_overlay, shown, ct) is { } changedMeanwhile) return changedMeanwhile;
 

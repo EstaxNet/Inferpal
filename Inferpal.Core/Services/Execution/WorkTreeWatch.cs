@@ -253,6 +253,17 @@ internal static class WorkTreeWatch
 
         var notes = new List<UncoveredNote>();
         var plans = new List<(string Full, Kind Now, byte[]? Was, IndexEntry? Fetch)>();
+        // The paths of the reading before, by the shared rule for "same file?": built once, when a path is new to git.
+        Dictionary<string, string>? beforeByFile = null;
+        string? SameFileBefore(string path)
+        {
+            if (beforeByFile is null)
+            {
+                beforeByFile = new Dictionary<string, string>(PathComparer.Default);
+                foreach (var known in before.Index.Keys.Concat(before.Copies.Keys)) beforeByFile.TryAdd(known, known);
+            }
+            return beforeByFile.TryGetValue(path, out var twin) && twin != path ? twin : null;
+        }
         foreach (var path in candidates)
         {
             var full = FullPath(root, path);
@@ -281,6 +292,16 @@ internal static class WorkTreeWatch
                 if (entry.Mode == "120000") { notes.Add(new UncoveredNote(UncoveredReason.SymbolicLink, full)); continue; }
                 if (entry.Mode is not ("100644" or "100755")) continue;   // a submodule: never recorded, said by /undo-run
                 plans.Add((full, now, null, entry));
+            }
+            else if (SameFileBefore(path) is { } twin)
+            {
+                // ⚠ The same file under another case (`git mv Foo.cs foo.cs`) where the file system folds case: read as
+                // created, the undo would delete the file that was there before the run. Its bytes from before stand in.
+                if (before.Copies.TryGetValue(twin, out var twinCopy)) { plans.Add((full, now, twinCopy, null)); continue; }
+                var twinEntry = before.Index[twin];
+                if (twinEntry.Mode == "120000") { notes.Add(new UncoveredNote(UncoveredReason.SymbolicLink, full)); continue; }
+                if (twinEntry.Mode is not ("100644" or "100755")) continue;   // a submodule: as under its own name
+                plans.Add((full, now, null, twinEntry));
             }
             else
             {

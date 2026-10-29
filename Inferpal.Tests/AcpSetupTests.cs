@@ -129,6 +129,38 @@ public sealed class AcpSetupTests
         Assert.Equal("http://localhost:9931", Assert.Single(saved).BaseUrl);
     }
 
+    /// <summary>⚠ An LM Studio that refuses for want of a key is asked for one: without the question, the setup asked for
+    /// the address again, forever. Never Ollama, whose client sends none.</summary>
+    [Fact]
+    public async Task AnLmStudioThatWantsAKey_IsAskedForOne_AndOllamaNever()
+    {
+        var saved = new List<InferpalConfig>();
+        var keys  = new List<string?>();
+        // LM Studio, its address, refused; its address again, a key; the first model.
+        var code = await AcpSetup.RunAsync(new StringReader("2\n\n\nsecret\n\n"), new StringWriter(), CancellationToken.None,
+            probe: (_, key, _) =>
+            {
+                keys.Add(key);
+                return Task.FromResult<(string?, string?)>(key is null ? (null, "HTTP 401 (Unauthorized)") : ("lmstudio", null));
+            },
+            listModels: (_, _) => Task.FromResult(ModelsByKind.ByName(["devstral"])),
+            load: () => new InferpalConfig(),
+            save: saved.Add,
+            scan: (_, _) => Task.FromResult<IReadOnlyList<ServerPlace>>([]));
+
+        Assert.Equal(0, code);
+        Assert.Equal([null, "secret"], keys);
+        Assert.Equal(("lmstudio", "secret"), (saved.Single().Provider, saved.Single().ApiKey));
+
+        // Reference arm: Ollama's client sends no key — asked for one, the setup would save a server every request refuses.
+        var output = new StringWriter();
+        // Ollama, its address refused, its address again: the key question would come now.
+        var ollama = await RunAsync("1\n\n\n", output, saved, _ => (null, "HTTP 401 (Unauthorized)"), ["devstral"]);
+        Assert.NotEqual(0, ollama);
+        Assert.Contains(Localization.Strings.AcpSetupAddressQuestion("http://localhost:11434"), output.ToString());   // witness
+        Assert.DoesNotContain(Localization.Strings.AcpSetupKeyQuestion, output.ToString());
+    }
+
     [Fact]
     public async Task ATerminalClosedMidway_SavesNothing_AndFails()
     {

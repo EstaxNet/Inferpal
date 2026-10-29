@@ -24,7 +24,8 @@ public class TaskProposalMergeTests
     {
         public IReadOnlyList<ToolDefinition> Definitions =>
             [new("function", new ToolFunction("apply_diff", "", new { })),
-             new("function", new ToolFunction("write_file", "", new { }))];
+             new("function", new ToolFunction("write_file", "", new { })),
+             new("function", new ToolFunction("delete_file", "", new { }))];
 
         public DiffInfo? ConsumeDiff() => null;
 
@@ -59,6 +60,38 @@ public class TaskProposalMergeTests
         Assert.Equal("a\nB\nc\nD\ne\n", proposal.Diff.NewText);  // both intentions
         Assert.Contains("Recorded as a proposal", second);
         Assert.Contains("combined with your earlier", second);
+    }
+
+    [Fact]
+    public async Task AnEditAfterADeletion_ReplacesIt_NeverMergesIntoTheEmptiedFile()
+    {
+        // ⚠ A deletion carries its change (the file, then nothing): merged with a line added at the end, the proposal
+        // became a write of that one line — a file neither call asked for.
+        var (recorder, second) = await TwoCalls("delete_file", "", "apply_diff", "a\nb\nc\nd\ne\nf\n");
+
+        var proposal = Assert.Single(recorder.Proposals);
+        Assert.Equal("apply_diff", proposal.Tool);
+        Assert.Equal("a\nb\nc\nd\ne\nf\n", proposal.Diff!.NewText);
+        Assert.Contains("REPLACES your earlier proposal", second);
+
+        // Reference arm: the same deletion twice is one, and nothing is said to be dropped.
+        var (twice, again) = await TwoCalls("delete_file", "", "delete_file", "");
+        Assert.Equal("delete_file", Assert.Single(twice.Proposals).Tool);
+        Assert.Contains("Recorded as a proposal", again);
+        Assert.DoesNotContain("REPLACES", again);
+    }
+
+    /// <summary>⚠ A deletion applied to a file changed since the task saw it would take what was written since.</summary>
+    [Fact]
+    public void ADeletionOfAFileChangedSinceTheTaskSawIt_IsStale()
+    {
+        var proposal = new TaskProposal("delete_file", "/p/a.cs", "Delete: /p/a.cs", new DiffInfo("seen\n", "", "/p/a.cs"));
+
+        Assert.Equal(ProposalVerdict.Stale, TaskProposalApplication.Decide(proposal, "written since\n").Verdict);
+        Assert.Equal(ProposalVerdict.Ready, TaskProposalApplication.Decide(proposal, "seen\n").Verdict);
+        Assert.Equal(ProposalVerdict.Missing, TaskProposalApplication.Decide(proposal, null).Verdict);
+        // Nothing to compare (a binary file): as before, the deletion stands.
+        Assert.Equal(ProposalVerdict.Ready, TaskProposalApplication.Decide(proposal with { Diff = null }, "anything\n").Verdict);
     }
 
     [Fact]

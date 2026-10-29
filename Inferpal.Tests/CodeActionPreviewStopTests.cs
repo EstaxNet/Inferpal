@@ -32,6 +32,24 @@ public sealed class CodeActionPreviewStopTests
         Assert.Contains("executeCommand('refactorPreview.discard')", before, StringComparison.Ordinal);
     }
 
+    /// <summary>⚠ Nothing is awaited between the freshness check and the edit: a keystroke or a format-on-save during an
+    /// await moves the offsets the check vouched for, and every hunk lands at the wrong place.</summary>
+    [Theory]
+    [InlineData("private async runCodeAction(")]
+    [InlineData("async editWithAi(")]
+    public void NothingIsAwaited_BetweenTheFreshnessCheckAndTheEdit(string method)
+    {
+        var body  = SettingsSchemaDriftTests.NeutralizeTypeScriptComments(ConversationPersistenceSilenceTests.TsMethodBody(Provider(), method));
+        var check = body.IndexOf("document.getText() !== before", StringComparison.Ordinal);
+        Assert.True(check >= 0, "the freshness check was not found: this test would have measured nothing.");
+        var apply = body.IndexOf("this.applyRewrite(", check, StringComparison.Ordinal);
+        Assert.True(apply > check, "the edit was not found after the check.");
+
+        var between = body[check..apply];
+        Assert.Equal(1, between.Split("await").Length - 1);              // the edit's own
+        Assert.EndsWith("await", between.TrimEnd(), StringComparison.Ordinal);
+    }
+
     [Fact]
     public void ThePreviewFlag_CoversTheWait_AndIsClearedOnEveryExit()
     {

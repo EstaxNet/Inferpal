@@ -766,6 +766,23 @@ public class DebugToolsTests
     }
 
     [Fact]
+    public async Task ADisabledBreakpointWhereTheModelWantsOne_IsSaidNotToStop()
+    {
+        var (editor, _, tool) = WithUsersBreakpoint();
+        editor.Breakpoints[0] = editor.Breakpoints[0] with { Enabled = false };
+
+        var reply = await tool.ExecuteAsync(Location("set_breakpoint", @"src\A.cs", 5), CancellationToken.None);
+
+        Assert.Contains("DISABLED: the program will not stop there", reply);
+        Assert.DoesNotContain("will be hit", reply);
+        Assert.Single(editor.Breakpoints);
+
+        // An enabled one on the same line (another column) stops the program: it answers.
+        editor.Breakpoints.Add(editor.Breakpoints[0] with { Enabled = true });
+        Assert.Contains("will be hit", await tool.ExecuteAsync(Location("set_breakpoint", @"src\A.cs", 5), CancellationToken.None));
+    }
+
+    [Fact]
     public async Task ClearingItsOwnBreakpoint_Works()
     {
         // Reference arm: the assistant's own breakpoint is still its to clear.

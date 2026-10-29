@@ -194,12 +194,12 @@ internal sealed class PackageManagerLookup : IPackageLookup
     private static async Task<PackageLookupResult> NpmAsync(AddedPackage package, CancellationToken ct)
     {
         if (NpmWorkspacePackage(package.Name, package.Directory, package.Root) is { } member) return PackageLookupResult.Unknown(member);
-        if (OtherClientRegistry(package.Directory, package.Root, UserFolders.Of(Environment.SpecialFolder.UserProfile)) is { } client)
+        if (OtherClientRegistry(package.Directory, package.Root, UserFolders.Of(Environment.SpecialFolder.UserProfile), package.Name) is { } client)
             return PackageLookupResult.Unknown($"{client} chooses a registry npm does not read, and it is not asked");
         if (RunTestsTool.ResolveNpm(OperatingSystem.IsWindows(), Shell.ShellLauncher.FindOnPath, File.Exists) is not { } npm)
             return PackageLookupResult.Unknown("npm could not be started without a shell");
         // Offline: the registry the configuration chooses for this name. Any other than the public one is never sent it.
-        var scope = package.Name.StartsWith('@') && package.Name.IndexOf('/') is > 1 and var slash ? package.Name[..slash] : null;
+        var scope = NpmScope(package.Name);
         var config = await RunAsync("npm", npm.FileName, npm.Prefix, ["config", "get", "registry", .. scope is null ? Array.Empty<string>() : [scope + ":registry"]], package, ct);
         if (config.Unknown is { } configCause) return PackageLookupResult.Unknown(configCause);
         if (config.Result.ExitCode != 0) return PackageLookupResult.Unknown($"npm config get did not answer (exit code {config.Result.ExitCode})");
@@ -232,30 +232,106 @@ internal sealed class PackageManagerLookup : IPackageLookup
 
     private static readonly string[] PublicNpmHosts = ["registry.npmjs.org", "registry.yarnpkg.com"];
 
-    /// <summary>The yarn and bun files that may choose a registry, and the words that do.</summary>
-    private static readonly (string File, string[] Keys)[] OtherClientConfigs =
-    [
-        (".yarnrc.yml", ["npmRegistryServer", "npmScopes"]),
-        (".yarnrc", ["registry"]),
-        ("bunfig.toml", ["registry", "install.scopes"]),
-        (".bunfig.toml", ["registry", "install.scopes"]),
-    ];
+    /// <summary>The scope of an npm package name, <c>@</c> included (<c>@acme</c> for <c>@acme/ui</c>); <c>null</c> when
+    /// unscoped.</summary>
+    private static string? NpmScope(string name) =>
+        name.StartsWith('@') && name.IndexOf('/') is > 1 and var slash ? name[..slash] : null;
+
+    /// <summary>The yarn and bun files that may choose a registry.</summary>
+    private static readonly string[] OtherClientConfigs = [".yarnrc.yml", ".yarnrc", "bunfig.toml", ".bunfig.toml"];
 
     /// <summary>
-    /// A yarn or bun configuration — at or above <paramref name="directory"/>, or in <paramref name="home"/> — that may choose a
-    /// registry; <c>null</c> when none does.
+    /// A yarn or bun configuration — at or above <paramref name="directory"/>, or in <paramref name="home"/> — that may choose
+    /// the registry of <paramref name="name"/>; <c>null</c> when none does.
     /// </summary>
-    /// <remarks>⚠ <c>npm config get</c> reads none of them: a scope yarn installs from a company registry looked public, the
-    /// name was looked up on npmjs.org — the internal name sent there — and the package refused as absent.</remarks>
-    internal static string? OtherClientRegistry(string directory, string root, string? home)
+    /// <remarks>⚠ <c>npm config get</c> reads none of them: a scope yarn installs from a company registry looks public, and
+    /// without this the name goes to npmjs.org — the internal name sent there — and the package is refused as absent.</remarks>
+    internal static string? OtherClientRegistry(string directory, string root, string? home, string name)
     {
+        var scope = NpmScope(name)?[1..];
         var folders = FoldersUpTo(directory, root).ToList();
         if (!string.IsNullOrEmpty(home) && !folders.Contains(home, PathComparer.Default)) folders.Add(home);
         foreach (var folder in folders)
-            foreach (var (file, keys) in OtherClientConfigs)
-                if (Read(Path.Combine(folder, file)) is { } text && keys.Any(k => text.Contains(k, StringComparison.Ordinal)))
+            foreach (var file in OtherClientConfigs)
+                if (Read(Path.Combine(folder, file)) is { } text && ChoosesRegistry(file, text, scope))
                     return Path.Combine(folder, file);
         return null;
+    }
+
+    /// <summary>
+    /// Whether a yarn or bun configuration chooses the registry of a name of <paramref name="scope"/> (without its <c>@</c>;
+    /// <c>null</c> for an unscoped name): a registry for every name other than the public one, or an entry for that scope —
+    /// <c>.yarnrc.yml</c>'s <c>npmRegistryServer</c> and <c>npmScopes</c>, <c>.yarnrc</c>'s <c>registry</c> and
+    /// <c>"@scope:registry"</c>, bunfig's <c>[install] registry</c> and <c>[install.scopes]</c>.
+    /// </summary>
+    /// <remarks>⚠ Read as a whole, one scope in the person's own file would leave every npm package of the machine
+    /// unchecked. What a line does not say plainly counts — a scope map written inline (every scope), a registry that is
+    /// no address of the public one: unknown is the safe answer, an internal name sent to npmjs.org is not.</remarks>
+    internal static bool ChoosesRegistry(string file, string text, string? scope)
+    {
+        var yaml = file == ".yarnrc.yml";
+        var toml = file is "bunfig.toml" or ".bunfig.toml";
+        var section = string.Empty;
+        var inScopes = false;
+        foreach (var raw in text.Replace("\r\n", "\n").Split('\n'))
+        {
+            var line = WithoutComment(raw);
+            if (line.Trim().Length == 0) continue;
+            var nested = char.IsWhiteSpace(line[0]);
+            if (yaml)
+            {
+                var (key, value) = KeyValue(line, ':');
+                if (!nested)
+                {
+                    inScopes = key == "npmScopes";
+                    if (key == "npmRegistryServer" && !IsPublicNpm(value)) return true;
+                    if (inScopes && scope is not null && value.Length > 0) return true;
+                }
+                else if (inScopes && scope is not null && (key.TrimStart('@') == scope || line.TrimStart().StartsWith('{'))) return true;
+            }
+            else if (toml)
+            {
+                var trimmed = line.Trim();
+                if (trimmed.StartsWith('[')) { section = trimmed.Trim('[', ']', ' ', '\t'); continue; }
+                var (key, value) = KeyValue(line, '=');
+                // A table, a sub-table or a dotted key: `[install] registry`, `[install.registry] url`, `install.scopes.acme`.
+                var qualified = section.Length == 0 ? key : section + "." + key;
+                if ((qualified == "install.registry" || qualified.StartsWith("install.registry.", StringComparison.Ordinal))
+                    && !IsPublicNpm(value)) return true;
+                if (scope is not null && qualified == "install.scopes") return true;   // an inline table: every scope
+                if (scope is not null && qualified.StartsWith("install.scopes.", StringComparison.Ordinal)
+                    && qualified["install.scopes.".Length..].Split('.')[0].Trim('"', '\'').TrimStart('@') == scope) return true;
+            }
+            else
+            {
+                // .yarnrc: `registry "https://…"` for every name, `"@acme:registry" "https://…"` for one scope.
+                var trimmed = line.Trim();
+                var close = trimmed.StartsWith('"') ? trimmed.IndexOf('"', 1) : -1;
+                var key = close > 0 ? trimmed[1..close] : trimmed.Split([' ', '\t'], 2)[0].TrimEnd(':');
+                var value = close > 0 ? trimmed[(close + 1)..] : trimmed[Math.Min(trimmed.Length, key.Length + 1)..];
+                if (key == "registry" && !IsPublicNpm(value)) return true;
+                if (scope is not null && key == "@" + scope + ":registry") return true;
+            }
+        }
+        return false;
+
+        static (string Key, string Value) KeyValue(string line, char separator) =>
+            line.IndexOf(separator) is >= 0 and var at
+                ? (line[..at].Trim().Trim('"', '\''), line[(at + 1)..].Trim())
+                : (line.Trim().Trim('"', '\''), string.Empty);
+
+        // A comment starts the line or follows a space: "#" inside an address or a token is no comment.
+        static string WithoutComment(string line)
+        {
+            for (var i = 0; i < line.Length; i++)
+                if (line[i] == '#' && (i == 0 || char.IsWhiteSpace(line[i - 1]))) return line[..i];
+            return line;
+        }
+
+        static bool IsPublicNpm(string value) =>
+            Regex.Match(value, @"https?://[^\s""'},]+", RegexOptions.None, MatchTimeout) is { Success: true } url
+            && Uri.TryCreate(url.Value, UriKind.Absolute, out var u)
+            && PublicNpmHosts.Contains(u.Host, StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>The registry an <c>npm config get registry [@scope:registry]</c> chose for a name of <paramref name="scope"/>, when

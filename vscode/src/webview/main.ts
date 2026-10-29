@@ -1825,7 +1825,7 @@ function addApprovalCard(id: number, message: string, card?: ApprovalCard | null
     for (const line of card.preview) {
       const span = document.createElement('span');
       span.className = 'pl ' + line.kind;
-      span.textContent = (line.kind === 'add' ? '+ ' : line.kind === 'del' ? '- ' : '  ') + line.text;
+      span.textContent = (line.kind === 'add' ? '+ ' : line.kind === 'del' ? '- ' : line.kind === 'gap' ? '… ' : '  ') + line.text;
       preview.appendChild(span);
     }
     if (card.more) {

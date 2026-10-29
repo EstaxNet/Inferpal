@@ -51,4 +51,14 @@ internal interface IToolRegistry
     /// of the user that runs a tool itself (<c>/diff</c>, <c>@problems</c>, <c>/tdd</c>'s test run) is not a call of the
     /// model. A decorator forwards it — answered by default, a tool turned off would run in plan mode.</remarks>
     string? TurnedOffRefusal(string name) => null;
+
+    /// <summary>
+    /// Whether <paramref name="name"/> is a tool this registry holds — offered right now or not, turned off or not;
+    /// <c>false</c> only for a name the model invented.
+    /// </summary>
+    /// <remarks>⚠ A decorator that narrows the tools forwards it, and answers an invented name with ITS tools
+    /// (<see cref="ToolRegistry.UnknownTool(string, IEnumerable{ToolDefinition})"/>): answered by the registry it wraps, the
+    /// list would name the tools the mode refuses, and the model's next call would go to one of them. By default every name
+    /// is known, and the registry's own answer stands.</remarks>
+    bool Knows(string name) => true;
 }

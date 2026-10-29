@@ -111,10 +111,13 @@ internal sealed class BackgroundTaskToolRegistry(
     /// it is refused with its cause rather than shown as the report.</summary>
     public IEnumerable<string> CallableNames => inner.CallableNames.Where(Permits);
 
+    public bool Knows(string name) => inner.Knows(name);
+
     public async Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct)
     {
+        // ⚠ The task's check comes first: a name it refuses never reaches the registry it wraps, known or not.
         if (!Permits(name))
-            return $"Error: tool '{name}' is not available to a background task "
+            return !inner.Knows(name) ? Execution.ToolRegistry.UnknownTool(name, Definitions) : $"Error: tool '{name}' is not available to a background task "
                  + (ProposalMode
                         ? "(it can propose file changes, but cannot run commands or reach the network). "
                         : "(read-only, no approval prompts). ")

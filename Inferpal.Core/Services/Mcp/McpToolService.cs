@@ -245,6 +245,11 @@ internal sealed class McpToolService : IAsyncDisposable
       : s.Error is { Length: > 0 } e ? e
       : "no reason reported";
 
+    /// <summary>Whether <paramref name="toolName"/> belongs to a configured server that is not connected now — a name the
+    /// model may have read before its server went away (<see cref="DescribeMissingTool"/> says why).</summary>
+    public bool IsOfAServerNotConnected(string toolName) =>
+        Status.Any(s => McpTool.BelongsTo(toolName, s.Name) && NotConnectedReason(s) is not null);
+
     /// <summary>
     /// What to tell the <b>model</b> when it calls a tool name no registry holds — <c>null</c> when no
     /// configured server claims that name, which is the only case that really is an unknown tool.

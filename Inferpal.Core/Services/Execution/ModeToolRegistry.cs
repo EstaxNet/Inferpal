@@ -31,12 +31,16 @@ internal sealed class ModeToolRegistry(IToolRegistry inner, ChatMode mode, strin
     /// is refused with its cause rather than shown as the answer.</summary>
     public IEnumerable<string> CallableNames => inner.CallableNames.Where(_tools.Allows);
 
+    public bool Knows(string name) => inner.Knows(name);
+
     public Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct)
     {
+        // ⚠ The mode's check comes first: a name it refuses never reaches the registry it wraps, known or not.
         if (!_tools.Allows(name))
-            return Task.FromResult(
+            return Task.FromResult(!inner.Knows(name) ? ToolRegistry.UnknownTool(name, Definitions) :
                 $"Error: tool '{name}' is not part of the '{mode.Name}' mode. Do not retry it; do what the mode allows, " +
                 "or tell the user what this step would need.");
+        if (!inner.Knows(name)) return ToolRegistry.AnswerUnknownAsync(inner, name, args, Definitions, ct);
         if (_tools.EditPattern is { } pattern && ModeTools.IsBuiltIn(name) && ModeTools.Families["edit"].Contains(name)
             && OutsidePattern(name, args, pattern) is { } refusal)
             return Task.FromResult(refusal);

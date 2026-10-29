@@ -69,6 +69,9 @@ internal static class AcpSetup
 
         string? found = null;
         string url = string.Empty, key = config.ApiKey;
+        // ⚠ LM Studio may want a key too (authentication on, a proxy in front): refused for want of one, it is asked for —
+        // without the question, the address would be asked again, forever.
+        var askKey = server.Code == InferenceProviderFactory.OpenAiCompatible;
         var suggested = answering is not null && server.Code == InferenceProviderFactory.Canonical(answering.Provider) ? answering.Url
                       : server.Code == InferenceProviderFactory.Canonical(config.Provider) ? config.BaseUrl
                       : server.Url;
@@ -81,7 +84,7 @@ internal static class AcpSetup
             // ⚠ The saved key belongs to the saved address: probed and saved with another, it reached a server it was
             // never given to.
             key = ServerScan.SameAddress(url, config.BaseUrl) ? config.ApiKey : "";
-            if (server.Code == InferenceProviderFactory.OpenAiCompatible)
+            if (askKey)
             {
                 var typedKey = await AskAsync(input, output, Strings.AcpSetupKeyQuestion, ct);
                 if (typedKey is null) return Stopped(output);
@@ -102,6 +105,9 @@ internal static class AcpSetup
                     refusal is null ? Strings.AcpSetupNotReached(url) : Strings.StatusRefused(refusal),
                     Services.NetworkProxy.Through(url)));
                 suggested = url;
+                // Ollama's client sends none: a key saved for it would answer the probe, then every request would be refused.
+                askKey |= server.Code == InferenceProviderFactory.LmStudio && refusal is { } r
+                          && (r.StartsWith("HTTP 401", StringComparison.Ordinal) || r.StartsWith("HTTP 403", StringComparison.Ordinal));
             }
         }
 
