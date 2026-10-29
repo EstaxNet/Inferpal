@@ -14,7 +14,7 @@ replaced with the corresponding attachment.
 | `@problems` | The current build errors |
 | `@debugger` | The live debugger break state (via `get_debugger_state`) |
 | `@clipboard` | The clipboard contents |
-| `@tree` | The solution tree |
+| `@tree` | The solution's C# tree |
 | `@url` | A web page's text — type or paste the address after the token |
 | `@terminal` | *VS Code:* the last command a terminal finished — the command, its folder, its output (its end, when it is long) and its exit code |
 | `@output` | *Visual Studio:* the Output window's pane — the one shown, else Build — its end when it is long |

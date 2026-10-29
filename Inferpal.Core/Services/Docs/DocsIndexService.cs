@@ -29,6 +29,8 @@ internal sealed class DocsIndexService : IDisposable
 
     private readonly SemaphoreSlim _chunkLock = new(1, 1);
     private readonly SemaphoreSlim _indexLock = new(1, 1);
+    // Holds a reload from its read of the database to its publication (ReloadFromDbAsync).
+    private readonly SemaphoreSlim _reloadLock = new(1, 1);
 
     // The source the running pass indexes, and how to stop it. Guarded by _passGate.
     private readonly object _passGate = new();
@@ -155,10 +157,7 @@ internal sealed class DocsIndexService : IDisposable
     {
         try
         {
-            var db = new DocsDatabase();
-            var (sites, chunks) = await ReadFromDbAsync(db, ct);
-
-            await PublishAsync(sites, chunks, ct);
+            var (sites, chunks) = await ReloadFromDbAsync(new DocsDatabase(), ct);
 
             LoadFailure = null;
             Status = chunks.Count > 0
@@ -566,10 +565,20 @@ internal sealed class DocsIndexService : IDisposable
         return (sites, chunks);
     }
 
-    private async Task ReloadFromDbAsync(DocsDatabase db, CancellationToken ct)
+    /// <summary>Reads the database and publishes what it read, as one step.</summary>
+    /// <remarks>⚠ Two reloads interleaved — a pass ending while a source is removed — can publish the older read last: the
+    /// removed source comes back where search serves it, and <c>/docs</c> lists it, until the next reload.</remarks>
+    private async Task<(List<(DocSite Site, int PageCount, int ChunkCount)> Sites, List<DocChunk> Chunks)>
+        ReloadFromDbAsync(DocsDatabase db, CancellationToken ct)
     {
-        var (sites, chunks) = await ReadFromDbAsync(db, ct);
-        await PublishAsync(sites, chunks, ct);
+        await _reloadLock.WaitAsync(ct);
+        try
+        {
+            var read = await ReadFromDbAsync(db, ct);
+            await PublishAsync(read.Sites, read.Chunks, ct);
+            return read;
+        }
+        finally { _reloadLock.Release(); }
     }
 
     /// <summary>

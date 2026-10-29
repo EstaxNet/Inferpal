@@ -60,6 +60,49 @@ public class DocsRemoveDuringIndexTests : IDisposable
         Assert.DoesNotContain(await new DocsDatabase().LoadSitesAsync(CancellationToken.None), s => s.Site.Id == site.Id);
     }
 
+    /// <summary>
+    /// ⚠ Another source removed while a pass ends: the pass's reload had read the database with that source still in it,
+    /// and published it after the removal's own reload — the source came back in memory, served by search.
+    /// </summary>
+    [Fact]
+    public async Task ASourceRemovedWhileAnotherPassEnds_DoesNotComeBackInMemory()
+    {
+        var fake = new FakeInferenceProvider();
+        var docs = new DocsIndexService(fake, new InferpalConfig())
+        {
+            CrawlForTests = (_, _) => Task.FromResult<List<DocCrawler.Page>>(
+                [new DocCrawler.Page("https://docs.example.com/a", "A", "Some documentation text.")]),
+        };
+        var gone = DocSite.Create("https://gone.example.com/", "Gone");
+        var next = DocSite.Create("https://next.example.com/", "Next");
+        await docs.AddOrReindexAsync(gone, progress: null, CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(30));
+
+        // The pass of "next" stops in its reload, after reading the database ("next" saved, "gone" still there).
+        var reached = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var once = 0;
+        fake.BeforeListModels = async () =>
+        {
+            if (Volatile.Read(ref once) == 1) return;
+            var saved = await new DocsDatabase().LoadSitesAsync(CancellationToken.None);
+            if (!saved.Any(s => s.Site.Id == next.Id) || Interlocked.Exchange(ref once, 1) == 1) return;
+            reached.TrySetResult();
+            await release.Task;
+        };
+        var pass = docs.AddOrReindexAsync(next, progress: null, CancellationToken.None);
+        await reached.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+        var remove = docs.RemoveAsync(gone.Id, CancellationToken.None);
+        await Task.WhenAny(remove, Task.Delay(TimeSpan.FromSeconds(2)));   // unguarded, the removal ends here
+        release.TrySetResult();
+        await remove.WaitAsync(TimeSpan.FromSeconds(30));
+        await pass.WaitAsync(TimeSpan.FromSeconds(30));
+
+        var sites = await docs.SitesAsync();
+        Assert.Contains(sites, s => s.Site.Id == next.Id);         // witness: the pass did publish
+        Assert.DoesNotContain(sites, s => s.Site.Id == gone.Id);
+    }
+
     /// <summary>Witness: without a removal the same pass does save the source — the harness indexes.</summary>
     [Fact]
     public async Task ASourceNobodyRemoves_IsSaved()

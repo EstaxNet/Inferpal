@@ -99,7 +99,8 @@ public class SlashCommandRouterTests
         Assert.Equal("📊 git diff", bare.AttachAs);
 
         var withPath = Assert.IsType<SlashToolAction>(Route("/diff src/My Project"));
-        Assert.Equal("""{"path":"src/My Project","include_diff":true}""", Json(withPath.Args));
+        // The path restricts the diff (diff_path), not only the repository it is read in (path).
+        Assert.Equal("""{"path":"src/My Project","diff_path":"src/My Project","include_diff":true}""", Json(withPath.Args));
     }
 
     [Fact]

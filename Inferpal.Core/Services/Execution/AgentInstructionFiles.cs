@@ -82,8 +82,20 @@ internal static class AgentInstructionFiles
             // ⚠ Read as written AND as resolved: `.inferpal/./memory.md` and `.inferpal/x/../memory.md` write memory.md,
             // and an MCP tool's subject carries the path raw. Either reading that lands on the system prompt asks.
             if (IsInstructionFile([.. raw.Select(AsWritten)]) || IsInstructionFile(Resolved(raw))) return true;
+            // ⚠ A Windows short name (`INFERP~1`) is `.inferpal` too, and only the file system knows it: an MCP tool's
+            // subject is raw. Rooted, it is read in its long form.
+            if (LongForm(token.Trim()) is { } full && IsInstructionFile(Resolved(full.Replace('\\', '/').Split('/', StringSplitOptions.RemoveEmptyEntries))))
+                return true;
         }
         return false;
+    }
+
+    /// <summary>A rooted Windows path holding a short name, in its long form; <c>null</c> for any other.</summary>
+    private static string? LongForm(string path)
+    {
+        if (!OperatingSystem.IsWindows() || !path.Contains('~') || !Path.IsPathRooted(path)) return null;
+        try { return Path.GetFullPath(path); }   // .NET expands the short names of what exists
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException or IOException) { return null; }
     }
 
     /// <summary>Each run of consecutive <c>;</c>/<c>,</c>-separated parts of <paramref name="line"/>, joined as written.</summary>

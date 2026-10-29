@@ -56,8 +56,9 @@ Inferpal is local-first and runs untrusted model output, so several mitigations 
   can auto-approve them — a human reads the raw command first. Treat the denylist as an
   accident guard; the approval prompt is the boundary.
 - **`fetch_url` and `web_search` are approval-gated** (they are the outbound channel of the
-  *lethal trifecta*) and outbound fetches pass a hardened SSRF guard (blocks DNS rebinding,
-  IPv4-mapped IPv6, `0.0.0.0/8`, loopback/private ranges, with a ReDoS-safe timeout).
+  *lethal trifecta*) and outbound fetches pass a hardened SSRF guard (IPv4-mapped IPv6, `0.0.0.0/8`,
+  loopback/private ranges, the resolved address checked too — best-effort against DNS rebinding, the approval card
+  being the boundary — with a ReDoS-safe timeout).
 - **MCP servers run arbitrary external code** you choose to enable; each MCP tool call is
   approval-gated, and "always allow" grants are session-scoped and never persisted.
 - **Secrets** — MCP OAuth tokens are encrypted at rest: DPAPI on Windows, the editor's secret

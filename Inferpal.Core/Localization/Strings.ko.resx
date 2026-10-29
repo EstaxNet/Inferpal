@@ -127,8 +127,8 @@
 각 문제에 대해 줄 또는 기호를 인용하고 위험을 설명하며 구체적인 수정 사항을 제안하세요.
 
 {1}</value></data>
-  <data name="LabelCommandTimeout" xml:space="preserve"><value>명령 또는 빌드</value></data>
-  <data name="HintCommandTimeout" xml:space="preserve"><value>도구 호출 한 번에 허용되는 최대 시간. 빌드가 더 오래 걸리면 늘리세요.</value></data>
+  <data name="LabelCommandTimeout" xml:space="preserve"><value>셸 명령</value></data>
+  <data name="HintCommandTimeout" xml:space="preserve"><value>셸 명령(run_command, 사용자 도구) 한 번에 허용되는 최대 시간이며, 이렇게 시작한 빌드도 포함합니다. 기본 제공 오류 검사는 90초에 멈춥니다.</value></data>
   <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>각 단계를 펼쳐서 표시</value></data>
   <data name="HintToolBubblesExpanded" xml:space="preserve"><value>끄면 단계마다 한 줄. 누르면 들어간 것과 나온 것을 볼 수 있습니다. 실패한 단계는 항상 열립니다.</value></data>
   <data name="LabelRunEndSound" xml:space="preserve"><value>긴 실행이 끝나면 알림</value></data>
@@ -377,7 +377,7 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
   <data name="MentionCodeHint" xml:space="preserve"><value>검색할 내용을 입력하세요…</value></data>
   <data name="MentionFolderDesc" xml:space="preserve"><value>폴더의 파일 첨부</value></data>
   <data name="MentionClipboardDesc" xml:space="preserve"><value>클립보드 첨부</value></data>
-  <data name="MentionTreeDesc" xml:space="preserve"><value>프로젝트 트리 첨부</value></data>
+  <data name="MentionTreeDesc" xml:space="preserve"><value>C# 프로젝트 트리 첨부</value></data>
   <data name="MentionDiffDesc" xml:space="preserve"><value>현재 git diff 첨부</value></data>
   <data name="MentionProblemsDesc" xml:space="preserve"><value>빌드 진단 첨부</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>디버거 상태 첨부(스택, 변수, 예외)</value></data>
@@ -778,7 +778,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="SlashHintSearchCode" xml:space="preserve"><value>코드베이스 시맨틱 검색</value></data>
   <data name="SlashHintCommit" xml:space="preserve"><value>커밋 메시지 제안</value></data>
   <data name="SlashHintGit" xml:space="preserve"><value>git status, log 및 diff 요약</value></data>
-  <data name="SlashHintMap" xml:space="preserve"><value>프로젝트 아키텍처 맵 표시 (네임스페이스, 타입, 핫스팟)</value></data>
+  <data name="SlashHintMap" xml:space="preserve"><value>C# 아키텍처 맵 표시 (네임스페이스, 타입, 핫스팟)</value></data>
   <data name="SlashHintSolution" xml:space="preserve"><value>솔루션 구조 표시</value></data>
   <data name="SlashHintBuild" xml:space="preserve"><value>컴파일하고 오류 표시</value></data>
   <data name="SlashHintFixBuild" xml:space="preserve"><value>컴파일 → AI 수정 → 오류가 없어질 때까지 재컴파일</value></data>
@@ -1249,7 +1249,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="ReasoningEffortMedium" xml:space="preserve"><value>중간</value></data>
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>높음</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>파일 변경, 명령 실행, 온라인 접근 전에 묻기</value></data>
-  <data name="HintAskBeforeActions" xml:space="preserve"><value>실제 diff나 정확한 명령을 보여 줍니다. 끄면 모든 것이 조용히 승인됩니다. 치명적인 명령은 여전히 거부됩니다.</value></data>
+  <data name="HintAskBeforeActions" xml:space="preserve"><value>실제 diff나 정확한 명령을 보여 줍니다. 끄면 묻지 않고 승인됩니다. 단, 지침 파일 쓰기와 효과를 읽을 수 없는 명령은 계속 묻습니다. 치명적인 명령은 여전히 거부됩니다.</value></data>
   <data name="LabelPackageCheck" xml:space="preserve"><value>패키지를 추가하기 전에 존재하는지 확인</value></data>
   <data name="HintPackageCheck" xml:space="preserve"><value>추가하는 이름만, 공개 레지스트리(nuget.org, npm, PyPI)로만 보냅니다. 지어낸 이름은 확인을 요청하기 전에 거부되며, 비공개 피드나 응답하지 않는 레지스트리는 확인하지 않습니다.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>적용하기 전에 변경 내용 보기</value></data>

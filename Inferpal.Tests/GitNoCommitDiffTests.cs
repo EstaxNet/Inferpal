@@ -69,6 +69,24 @@ public sealed class GitNoCommitDiffTests : IDisposable
         Assert.Contains("+world", Section(report, "=== git diff"));
     }
 
+    /// <summary>⚠ A new file is in no diff: named above it, or "review my changes" never saw it.</summary>
+    [Fact]
+    public async Task ANewFile_IsNamedAboveTheDiff_ThatLeavesItOut()
+    {
+        Assert.True(Git("init -q ."), "`git init` failed: UNDECIDED, not green.");
+        File.WriteAllText(Path.Combine(_root, "a.txt"), "hello\n");
+        Assert.True(Git("add a.txt"), "`git add` failed: UNDECIDED, not green.");
+        Assert.True(Git("-c user.email=t@t -c user.name=t commit -q -m one"), "`git commit` failed: UNDECIDED, not green.");
+        File.WriteAllText(Path.Combine(_root, "a.txt"), "hello again\n");
+        File.WriteAllText(Path.Combine(_root, "NewService.cs"), "class NewService {}\n");
+
+        var diff = Section(await StatusAsync(includeDiff: true), "=== git diff");
+
+        Assert.Contains("Not in this diff: 1 new file(s) or folder(s) git does not track yet", diff);
+        Assert.Contains("NewService.cs", diff);
+        Assert.Contains("+hello again", diff);   // witness: the diff itself is there
+    }
+
     [Fact]
     public async Task ACleanRepositoryWithCommits_StillHasNothingToDiff()
     {

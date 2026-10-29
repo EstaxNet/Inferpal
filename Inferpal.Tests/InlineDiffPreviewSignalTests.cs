@@ -104,15 +104,82 @@ public class InlineDiffPreviewSignalTests : IDisposable
     }
 
     [Fact]
-    public void Acknowledge_SatisfiesPickup_AndConsumesTheRequest()
+    public void Acknowledge_SatisfiesPickup_AndTakeConsumesTheRequest()
     {
         var id = InlineDiffPreviewSignal.WriteRequest(FilePath, "old", "new");
 
         Assert.False(InlineDiffPreviewSignal.IsPickedUp(id));
+        Assert.True(InlineDiffPreviewSignal.Take(id));
         InlineDiffPreviewSignal.Acknowledge(id);
 
         Assert.True(InlineDiffPreviewSignal.IsPickedUp(id));
         Assert.Null(InlineDiffPreviewSignal.TryReadRequestFor(FilePath));   // consumed
+        Assert.False(InlineDiffPreviewSignal.Take(id));                     // a second view of the document gets nothing
+    }
+
+    /// <summary>⚠ A request the renderer took at the window's last instant is not withdrawn behind it: the host waits for
+    /// its answer instead of applying directly under the preview it shows.</summary>
+    [Fact]
+    public async Task ARequestTakenAtTheLastInstant_IsNotWithdrawn_AndTheRenderersAnswerDecides()
+    {
+        var id = InlineDiffPreviewSignal.WriteRequest(FilePath, "old", "new");
+
+        Assert.True(InlineDiffPreviewSignal.Take(id));
+        Assert.False(InlineDiffPreviewSignal.Withdraw());
+        InlineDiffPreviewSignal.Acknowledge(id);
+
+        Assert.True(await InlineDiffPreviewSignal.WaitForPickupAsync(id, TimeSpan.FromSeconds(30), CancellationToken.None));
+    }
+
+    /// <summary>Reference arm: withdrawn while waiting, the request is never shown.</summary>
+    [Fact]
+    public void AWithdrawnRequest_CannotBeTaken()
+    {
+        var id = InlineDiffPreviewSignal.WriteRequest(FilePath, "old", "new");
+
+        Assert.True(InlineDiffPreviewSignal.Withdraw());
+        Assert.False(InlineDiffPreviewSignal.Take(id));
+    }
+
+    /// <summary>A request declined (the buffer drifted) ends the wait at once: the direct apply does not wait the window.</summary>
+    [Fact]
+    public async Task ADeclinedRequest_EndsTheWaitAtOnce()
+    {
+        var id = InlineDiffPreviewSignal.WriteRequest(FilePath, "old", "new");
+        Assert.True(InlineDiffPreviewSignal.Take(id));
+        InlineDiffPreviewSignal.Acknowledge(id, shown: false);
+
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        Assert.False(await InlineDiffPreviewSignal.WaitForPickupAsync(id, TimeSpan.FromSeconds(30), CancellationToken.None));
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(20), $"waited {watch.Elapsed}");
+    }
+
+    /// <summary>A renderer that read one request never takes a newer one written since: it is left for its own answer.</summary>
+    [Fact]
+    public void ARendererThatReadAnOlderRequest_LeavesTheNewerOne()
+    {
+        var older = InlineDiffPreviewSignal.WriteRequest(FilePath, "old", "new");
+        Assert.True(InlineDiffPreviewSignal.Withdraw());
+        var newer = InlineDiffPreviewSignal.WriteRequest(FilePath, "old2", "new2");
+
+        Assert.False(InlineDiffPreviewSignal.Take(older));
+        Assert.True(InlineDiffPreviewSignal.TryReadRequestFor(FilePath) is { } r && r.Id == newer);   // put back
+    }
+
+    /// <summary>The editor ends of the protocol, which no test runs: the renderer takes before it shows or declines, and
+    /// the host withdraws before it applies directly.</summary>
+    [Fact]
+    public void BothEnds_TakeAndWithdraw_BeforeActing()
+    {
+        var root = ConventionCoverageTests.RepoRoot();
+        var controller = ConventionCoverageTests.CodeOnly(System.IO.Path.Combine(root, "Inferpal.InProc", "GhostText", "InlineDiffController.cs"));
+        var take = controller.IndexOf("if (!InlineDiffPreviewSignal.Take(request.Id)) return;", StringComparison.Ordinal);
+        Assert.True(take > 0, "the renderer shows a request it did not take");
+        Assert.True(controller.IndexOf("InlineDiffPreviewSignal.Acknowledge(request.Id", StringComparison.Ordinal) > take);
+        Assert.DoesNotContain("InlineDiffPreviewSignal.DiscardRequest()", controller, StringComparison.Ordinal);
+
+        var host = ConventionCoverageTests.CodeOnly(System.IO.Path.Combine(root, "Inferpal", "Commands", "InPlaceCodeEdit.cs"));
+        Assert.Contains("return !Services.Signals.InlineDiffPreviewSignal.Withdraw()", host, StringComparison.Ordinal);
     }
 
     [Fact]

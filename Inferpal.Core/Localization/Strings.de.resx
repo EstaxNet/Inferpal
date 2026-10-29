@@ -127,8 +127,8 @@ Diese Aktion kann nicht rückgängig gemacht werden.</value></data>
 Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schlage eine konkrete Lösung vor.
 
 {1}</value></data>
-  <data name="LabelCommandTimeout" xml:space="preserve"><value>Ein Befehl oder ein Build</value></data>
-  <data name="HintCommandTimeout" xml:space="preserve"><value>Die längste Dauer eines Werkzeugaufrufs. Erhöhen, wenn Ihre Builds länger brauchen.</value></data>
+  <data name="LabelCommandTimeout" xml:space="preserve"><value>Ein Shell-Befehl</value></data>
+  <data name="HintCommandTimeout" xml:space="preserve"><value>Die längste Dauer eines Shell-Befehls (run_command, eigene Werkzeuge), auch eines so gestarteten Builds. Die eingebaute Fehlerprüfung endet nach 90 s.</value></data>
   <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>Jeden Schritt geöffnet anzeigen</value></data>
   <data name="HintToolBubblesExpanded" xml:space="preserve"><value>Aus: eine Zeile pro Schritt; ein Klick zeigt, was hinein- und herauskam. Ein fehlgeschlagener Schritt öffnet sich immer.</value></data>
   <data name="LabelRunEndSound" xml:space="preserve"><value>Ende eines langen Laufs melden</value></data>
@@ -377,7 +377,7 @@ Sicherung: {0}</value></data>
   <data name="MentionCodeHint" xml:space="preserve"><value>Suchbegriff eingeben…</value></data>
   <data name="MentionFolderDesc" xml:space="preserve"><value>Dateien eines Ordners anhängen</value></data>
   <data name="MentionClipboardDesc" xml:space="preserve"><value>Zwischenablage anhängen</value></data>
-  <data name="MentionTreeDesc" xml:space="preserve"><value>Projektbaum anhängen</value></data>
+  <data name="MentionTreeDesc" xml:space="preserve"><value>C#-Projektbaum anhängen</value></data>
   <data name="MentionDiffDesc" xml:space="preserve"><value>aktuellen Git-Diff anhängen</value></data>
   <data name="MentionProblemsDesc" xml:space="preserve"><value>Build-Diagnose anhängen</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>Debugger-Zustand anhängen (Stack, Variablen, Ausnahme)</value></data>
@@ -778,7 +778,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="SlashHintSearchCode" xml:space="preserve"><value>semantische Codebasis-Suche</value></data>
   <data name="SlashHintCommit" xml:space="preserve"><value>Commit-Nachricht vorschlagen</value></data>
   <data name="SlashHintGit" xml:space="preserve"><value>Zusammenfassung von git status, log und diff</value></data>
-  <data name="SlashHintMap" xml:space="preserve"><value>Projekt-Architekturkarte anzeigen (Namespaces, Typen, Hotspots)</value></data>
+  <data name="SlashHintMap" xml:space="preserve"><value>C#-Architekturkarte anzeigen (Namespaces, Typen, Hotspots)</value></data>
   <data name="SlashHintSolution" xml:space="preserve"><value>Projektmappenstruktur anzeigen</value></data>
   <data name="SlashHintBuild" xml:space="preserve"><value>kompilieren und Fehler anzeigen</value></data>
   <data name="SlashHintFixBuild" xml:space="preserve"><value>kompilieren → KI korrigiert → neu kompilieren bis fehlerfrei</value></data>
@@ -1249,7 +1249,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="ReasoningEffortMedium" xml:space="preserve"><value>Mittel</value></data>
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>Hoch</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Vor dem Ändern von Dateien, dem Ausführen von Befehlen oder Online-Zugriffen fragen</value></data>
-  <data name="HintAskBeforeActions" xml:space="preserve"><value>Sie sehen den echten Diff oder den genauen Befehl. Aus: Alles wird stillschweigend freigegeben — katastrophale Befehle werden weiterhin abgelehnt.</value></data>
+  <data name="HintAskBeforeActions" xml:space="preserve"><value>Sie sehen den echten Diff oder den genauen Befehl. Aus: ohne Nachfrage freigegeben, außer Schreibzugriffe auf Anweisungsdateien und Befehle, deren Wirkung nicht lesbar ist — diese fragen weiterhin; katastrophale Befehle werden weiterhin abgelehnt.</value></data>
   <data name="LabelPackageCheck" xml:space="preserve"><value>Prüfen, ob ein Paket existiert, bevor es hinzugefügt wird</value></data>
   <data name="HintPackageCheck" xml:space="preserve"><value>Nur der hinzugefügte Name wird gesendet, und nur an die öffentliche Registry (nuget.org, npm, PyPI). Ein erfundener Name wird abgelehnt, bevor Sie gefragt werden; ein privater Feed oder eine Registry, die nicht antwortet, wird nicht geprüft.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Die Änderung vor dem Anwenden zeigen</value></data>

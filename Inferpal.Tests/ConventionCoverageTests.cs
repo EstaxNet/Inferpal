@@ -989,7 +989,31 @@ public class ConventionCoverageTests
             "These tools resolve a path against the process's working directory, which in Visual "
             + "Studio is not the project. Pass the base to PathSanitizer.Sanitize(path, root). Sites:"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+
+        // ⚠ And a tool that reads a path argument without calling Sanitize at all is a site too: get_solution_info read
+        // its `path` as given — "not found" under VS for a solution that exists, and any solution on the machine read.
+        var unresolved = new List<string>();
+        var pathReaders = 0;
+        // read_skill_file: confined to the skill's folder, which it resolves against itself (AssertUnderRoot).
+        var exempt = new HashSet<string> { "ReadSkillFileTool.cs" };
+        foreach (var file in ToolsSources())
+        {
+            var code = CodeOnly(file);
+            if (!PathArgument.IsMatch(code)) continue;
+            pathReaders++;
+            if (!exempt.Contains(Path.GetFileName(file)) && !code.Contains("PathSanitizer.Sanitize(", StringComparison.Ordinal))
+                unresolved.Add(Rel(file));
+        }
+        Assert.True(pathReaders >= 12, $"Only {pathReaders} tool(s) read a path argument: the scan measures nothing any more.");
+        Assert.True(unresolved.Count == 0,
+            "These tools read a path argument and never resolve it against the workspace "
+            + "(PathSanitizer.Sanitize(path, root), then AssertUnderRoot). Sites:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", unresolved));
     }
+
+    /// <summary>An argument read by name whose name says it is a path (<c>args.Str("path")</c>, <c>"diff_path"</c>…).</summary>
+    private static readonly Regex PathArgument =
+        new(@"args\.\w+\(""[a-z_]*(path|file|dir|folder|root)[a-z_]*""", RegexOptions.Compiled);
 
     // ── 26. A property bound to SelectedItem is declared nullable ─────────────
 

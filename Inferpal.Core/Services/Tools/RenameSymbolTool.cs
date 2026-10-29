@@ -81,7 +81,7 @@ internal sealed class RenameSymbolTool : ITool
             dry_run = new
             {
                 type        = "boolean",
-                description = "true (default) = preview only, no changes written. false = apply after approval."
+                description = "false (default) = apply after approval. true = preview only, no changes written."
             },
             declaring_file = new
             {

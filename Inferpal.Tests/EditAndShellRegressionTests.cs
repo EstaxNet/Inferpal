@@ -196,6 +196,32 @@ public sealed class EditLineEndingAndRestoreTests : IDisposable
         await RestoreAsync(tool, new { path = file });
         Assert.Equal("v0", File.ReadAllText(file));
     }
+
+    /// <summary>
+    /// ⚠ A restore names the backup it took first: without it, a model that restored the wrong version could only step
+    /// further back — the next call skips that backup — and the content it replaced was out of reach.
+    /// </summary>
+    [Fact]
+    public async Task RestoreFile_NamesTheBackupItTook_WhichGivesTheContentBack()
+    {
+        var file    = Path.Combine(_base, "a.txt");
+        var history = new FileHistoryService();
+        File.WriteAllText(file, "v1");
+        await history.SnapshotAsync(file, CancellationToken.None);
+        File.WriteAllText(file, "v2");
+        var tool = new RestoreFileTool(new Approve(), history, () => _base);
+
+        await Task.Delay(20);
+        var result = await RestoreAsync(tool, new { path = file });
+        Assert.Equal("v1", File.ReadAllText(file));
+
+        // The note in the language the suite runs in: "Backup: {0}", "Sauvegarde : {0}"…
+        var label = Inferpal.Localization.Strings.HistoryNote("").Trim();
+        var named = result.Split(label, 2) is [_, var rest] ? rest.Trim().Split('\n')[0].Trim() : null;
+        Assert.False(string.IsNullOrEmpty(named), $"no backup named in: {result}");
+        await RestoreAsync(tool, new { path = file, snapshot = named });
+        Assert.Equal("v2", File.ReadAllText(file));
+    }
 }
 
 /// <summary>

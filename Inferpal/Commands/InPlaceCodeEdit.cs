@@ -156,12 +156,16 @@ internal static class InPlaceCodeEdit
         var requestId = Services.Signals.InlineDiffPreviewSignal.WriteRequest(filePath, docText, newDocText, notices);
         try
         {
-            return await Services.Signals.InlineDiffPreviewSignal.WaitForPickupAsync(requestId, TimeSpan.FromSeconds(2), ct);
+            if (await Services.Signals.InlineDiffPreviewSignal.WaitForPickupAsync(requestId, TimeSpan.FromSeconds(2), ct))
+                return true;
+            // Withdrawn while still waiting, the request was never seen: direct apply. Taken at the window's last instant,
+            // the renderer's answer decides — written once it has planned the preview, which takes longer on a large file.
+            return !Services.Signals.InlineDiffPreviewSignal.Withdraw()
+                && await Services.Signals.InlineDiffPreviewSignal.WaitForPickupAsync(requestId, TimeSpan.FromSeconds(30), ct);
         }
         finally
         {
-            // Claimed requests were consumed by the renderer; unclaimed ones must not
-            // linger and pop up on a later unrelated view of the same file.
+            // A wait stopped leaves no request to pop up on a later unrelated view of the same file.
             Services.Signals.InlineDiffPreviewSignal.DiscardRequest();
         }
     }

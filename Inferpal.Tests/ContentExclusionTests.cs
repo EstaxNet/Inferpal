@@ -96,6 +96,41 @@ public sealed class ContentExclusionTests : IDisposable
 
     // ── the tools ───────────────────────────────────────────────────────────────
 
+    /// <summary>A link to <paramref name="target"/> at <paramref name="link"/>: a symbolic link, else (Windows without
+    /// Developer Mode) a junction; <c>false</c> when neither can be made — nothing to measure then.</summary>
+    private static bool LinkFolder(string link, string target)
+    {
+        try { Directory.CreateSymbolicLink(link, target); return true; }
+        catch (Exception) when (OperatingSystem.IsWindows())
+        {
+            using var p = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("cmd", $"/c mklink /J \"{link}\" \"{target}\"")
+            { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, CreateNoWindow = true })!;
+            p.WaitForExit(30_000);
+            return Directory.Exists(link);
+        }
+        catch (Exception) { return false; }
+    }
+
+    /// <summary>⚠ An excluded folder reached through a link is still excluded: judged on the link's spelling alone, a
+    /// file read through it, and a search started inside it, read what the ignore files keep out.</summary>
+    [Fact]
+    public async Task AnExcludedFolder_ReachedThroughALink_StaysOut()
+    {
+        Workspace(excluded: true);
+        var link = Path.Combine(_root, "src", "mirror");
+        if (!LinkFolder(link, Path.Combine(_root, "secret"))) return;
+        var tools = Registry();
+
+        var read   = await tools.ExecuteAsync("read_file", Args(new { path = "src/mirror/vault.cs" }), default);
+        var search = await tools.ExecuteAsync("search_in_files", Args(new { query = Marker, path = "src/mirror" }), default);
+
+        Assert.DoesNotContain(Marker, read);
+        Assert.Contains(".aiignore", read);
+        Assert.DoesNotContain(Marker, search);
+        // Reference arm: a file outside the excluded folder, read through no link, is read.
+        Assert.Contains("nothing to hide", await tools.ExecuteAsync("read_file", Args(new { path = "src/App.cs" }), default));
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]

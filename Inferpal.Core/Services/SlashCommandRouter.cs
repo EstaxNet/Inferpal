@@ -481,10 +481,10 @@ internal static class SlashCommandRouter
 
             case "/diff":
             {
-                // /diff [path] — attaches full diff as a context chip
+                // /diff [path] — attaches the diff as a context chip: of that path's changes only, in its repository.
                 var diffPath = parts.Length >= 2 ? RestOf(prompt) : null;
                 var diffArgs = diffPath is not null
-                    ? (object)new { path = diffPath, include_diff = true }
+                    ? (object)new { path = diffPath, diff_path = diffPath, include_diff = true }
                     : new { include_diff = true };
                 return new SlashToolAction("get_git_status", diffArgs, AttachAs: "📊 git diff");
             }

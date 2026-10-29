@@ -72,8 +72,9 @@ internal sealed class ReadSkillFileTool(Func<string?> getWorkspaceRoot, Inferpal
 
         if (TextFileEncoding.IsBinaryFile(full)) return Task.FromResult($"'{relative}' is a binary file: it has no text to read.");
         var content = TextFileEncoding.ReadText(full);
-        var start = args.Int("start_line", 1);
-        var end   = args.Int("end_line", int.MaxValue);
+        // 0 = not asked, as read_file reads them: an explicit end turns paging off, and a long SKILL.md loses its middle.
+        var start = args.Int("start_line", 0);
+        var end   = args.Int("end_line", 0);
         return Task.FromResult(ReadFileTool.Page(content, relative, start, end));
     }
 }

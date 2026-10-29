@@ -56,6 +56,20 @@ public class ProjectMapRootTests : IDisposable
         Assert.Contains($"Root   : {root}{Environment.NewLine}", map, StringComparison.Ordinal);
     }
 
+    /// <summary>⚠ A workspace without C# is not an empty project: the map says it reads C# only.</summary>
+    [Fact]
+    public async Task AWorkspaceWithoutCSharp_IsSaidOutOfTheMapsReach_NotEmpty()
+    {
+        var root = Directory.CreateDirectory(Path.Combine(_base, "ts")).FullName;
+        File.WriteAllText(Path.Combine(root, "app.ts"), "export const answer = 42;\n");
+        var index = new ProjectIndexService(new FakeInferenceProvider(), new InferpalConfig(), new LspSemanticProvider());
+        index.SetRoot(root);
+
+        var map = await new ProjectMapService(new NullEditorSurface(), index).GenerateMapAsync(CancellationToken.None);
+
+        Assert.Contains(ProjectMapService.NoCSharp, map, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task ALegacyEncodedFile_IsMappedWithTheNamesItDeclares()
     {

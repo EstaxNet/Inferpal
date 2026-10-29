@@ -127,8 +127,8 @@ Questa azione non può essere annullata.</value></data>
 Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una correzione concreta.
 
 {1}</value></data>
-  <data name="LabelCommandTimeout" xml:space="preserve"><value>Un comando o una build</value></data>
-  <data name="HintCommandTimeout" xml:space="preserve"><value>La durata massima di una chiamata a strumento. Aumentatela se le build durano di più.</value></data>
+  <data name="LabelCommandTimeout" xml:space="preserve"><value>Un comando di shell</value></data>
+  <data name="HintCommandTimeout" xml:space="preserve"><value>La durata massima di un comando di shell (run_command, i vostri strumenti), compresa una build avviata così. Il controllo degli errori integrato si ferma a 90 s.</value></data>
   <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>Mostrare ogni passaggio aperto</value></data>
   <data name="HintToolBubblesExpanded" xml:space="preserve"><value>Disattivato: una riga per passaggio; cliccate per vedere cosa è entrato e uscito. Un passaggio non riuscito si apre sempre.</value></data>
   <data name="LabelRunEndSound" xml:space="preserve"><value>Segnala la fine di un'esecuzione lunga</value></data>
@@ -377,7 +377,7 @@ Backup: {0}</value></data>
   <data name="MentionCodeHint" xml:space="preserve"><value>digita cosa cercare…</value></data>
   <data name="MentionFolderDesc" xml:space="preserve"><value>allega i file di una cartella</value></data>
   <data name="MentionClipboardDesc" xml:space="preserve"><value>allega gli appunti</value></data>
-  <data name="MentionTreeDesc" xml:space="preserve"><value>allega l'albero del progetto</value></data>
+  <data name="MentionTreeDesc" xml:space="preserve"><value>allega l'albero del progetto C#</value></data>
   <data name="MentionDiffDesc" xml:space="preserve"><value>allega il diff git corrente</value></data>
   <data name="MentionProblemsDesc" xml:space="preserve"><value>allega le diagnostiche di build</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>allega lo stato del debugger (stack, variabili, eccezione)</value></data>
@@ -778,7 +778,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="SlashHintSearchCode" xml:space="preserve"><value>ricerca semantica nel codice</value></data>
   <data name="SlashHintCommit" xml:space="preserve"><value>proporre un messaggio di commit</value></data>
   <data name="SlashHintGit" xml:space="preserve"><value>riepilogo di git status, log e diff</value></data>
-  <data name="SlashHintMap" xml:space="preserve"><value>mostrare la mappa dell'architettura del progetto (namespace, tipi, hotspot)</value></data>
+  <data name="SlashHintMap" xml:space="preserve"><value>mostrare la mappa dell'architettura C# (namespace, tipi, hotspot)</value></data>
   <data name="SlashHintSolution" xml:space="preserve"><value>mostrare la struttura della soluzione</value></data>
   <data name="SlashHintBuild" xml:space="preserve"><value>compilare e mostrare gli errori</value></data>
   <data name="SlashHintFixBuild" xml:space="preserve"><value>compilare → l'IA corregge → ricompilare fino a zero errori</value></data>
@@ -1249,7 +1249,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="ReasoningEffortMedium" xml:space="preserve"><value>Medio</value></data>
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>Alto</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Chiedermi prima di modificare file, eseguire comandi o andare online</value></data>
-  <data name="HintAskBeforeActions" xml:space="preserve"><value>Vedete il diff reale o il comando esatto. Disattivato: tutto viene approvato in silenzio — i comandi catastrofici restano rifiutati.</value></data>
+  <data name="HintAskBeforeActions" xml:space="preserve"><value>Vedete il diff reale o il comando esatto. Disattivato: approvato senza chiedere, tranne la scrittura dei file di istruzioni e i comandi il cui effetto non si legge, che chiedono ancora — i comandi catastrofici restano rifiutati.</value></data>
   <data name="LabelPackageCheck" xml:space="preserve"><value>Verificare che un pacchetto esista prima di aggiungerlo</value></data>
   <data name="HintPackageCheck" xml:space="preserve"><value>Viene inviato solo il nome aggiunto, e solo al registro pubblico (nuget.org, npm, PyPI). Un nome inventato viene rifiutato prima di chiederle conferma; un feed privato o un registro che non risponde non viene verificato.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Mostrare la modifica prima di applicarla</value></data>

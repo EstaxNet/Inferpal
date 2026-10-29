@@ -162,6 +162,8 @@ internal sealed class ProjectMapService
         sb.AppendLine($"🗺️  PROJECT MAP  —  {Path.GetFileName(root)}");
         sb.AppendLine($"    Root   : {root}");
         sb.AppendLine($"    Scanned: {files.Count} source files  |  {typeList.Count} types  |  {nsFiles.Count} namespaces");
+        // ⚠ Said, never left as a zero: a TypeScript or Python workspace would read as an empty project.
+        if (files.Count == 0) sb.AppendLine($"    {NoCSharp}");
         // Right under the count it qualifies, not at the far end of a sixty-line report.
         coverage = coverage.WithUnreadable(unreadable);
         if (coverage.IsIncomplete) sb.AppendLine($"    {coverage.Warning().Replace("\n", "\n    ")}");
@@ -335,6 +337,9 @@ internal sealed class ProjectMapService
         }
         return words;
     }
+
+    /// <summary>What the map says when the root holds no C# file.</summary>
+    internal const string NoCSharp = "This map reads C# (.cs) files only, and none was found under the root: it says nothing about code in other languages.";
 
     private static IEnumerable<string> EnumerateSourceFiles(string root) =>
         WorkspaceScan.EnumerateFiles(root, "*.cs");

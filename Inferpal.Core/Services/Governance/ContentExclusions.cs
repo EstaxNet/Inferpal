@@ -226,7 +226,8 @@ internal static class ContentExclusions
     /// </summary>
     internal static bool SkipInWalk(string file)
     {
-        if (Of(file) is not { } why) return false;
+        // A file that is itself a link is judged where it leads too (the walk never descends a linked folder).
+        if ((Of(file) ?? (AnyRules() && IsLink(file) ? OfLinked(file) : null)) is not { } why) return false;
         _tally.Value?.Add(file, why);
         return true;
     }
@@ -257,6 +258,25 @@ internal static class ContentExclusions
     internal static async Task<string?> DiffWorkTreeAsync(GitRunner git, CancellationToken ct) =>
         AnyRules() && await git("rev-parse --show-toplevel", ct) is { ExitCode: 0 } top ? top.Output.Trim() : null;
 
+    /// <summary>What excludes the file or folder <paramref name="full"/> leads to through a link on its way; <c>null</c> when
+    /// nothing does, or no link is on the way.</summary>
+    /// <remarks>⚠ Judged on its own spelling alone, <c>apps/web/secrets → ../../secrets</c> reads what <c>/secrets/</c>
+    /// excludes.</remarks>
+    internal static Exclusion? OfLinked(string full, bool isFolder = false)
+    {
+        if (Roots.IsEmpty || !AnyRules()) return null;
+        var resolved = Tools.PathSanitizer.Resolved(full);
+        if (resolved.Length == 0 || string.Equals(resolved, Path.TrimEndingDirectorySeparator(full), PathComparer.Comparison)) return null;
+        List<(string Root, string Resolved)>? roots = null;
+        return OfThroughLinks(full, ref roots, isFolder);
+    }
+
+    private static bool IsLink(string path)
+    {
+        try { return File.GetAttributes(path).HasFlag(FileAttributes.ReparsePoint); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException) { return false; }
+    }
+
     /// <summary>
     /// What excludes <paramref name="full"/> once the links are resolved on both sides, judged in the spelling of each
     /// declared root that holds it then. ⚠ git names a work tree with its links resolved (macOS's <c>/var</c> is
@@ -265,13 +285,13 @@ internal static class ContentExclusions
     /// </summary>
     /// <param name="full">A path that no root holds as written.</param>
     /// <param name="roots">The roots with their links resolved: computed on the first call, then reused.</param>
-    private static Exclusion? OfThroughLinks(string full, ref List<(string Root, string Resolved)>? roots)
+    private static Exclusion? OfThroughLinks(string full, ref List<(string Root, string Resolved)>? roots, bool isFolder = false)
     {
         // A root of the file system resolves to an empty string and holds everything: never one to re-spell into.
         roots ??= Roots.Keys.Select(r => (r, Tools.PathSanitizer.Resolved(r))).Where(r => r.Item2.Length > 0).ToList();
         var resolved = Tools.PathSanitizer.Resolved(full);
         foreach (var (root, resolvedRoot) in roots)
-            if (Under(resolvedRoot, resolved) && Of(Path.Join(root, Path.GetRelativePath(resolvedRoot, resolved))) is { } why)
+            if (Under(resolvedRoot, resolved) && Of(Path.Join(root, Path.GetRelativePath(resolvedRoot, resolved)), isFolder) is { } why)
                 return why;
         return null;
     }

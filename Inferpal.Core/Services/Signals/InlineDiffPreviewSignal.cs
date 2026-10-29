@@ -34,10 +34,11 @@ internal sealed record InlineDiffRequest(
     [property: JsonPropertyName("new")]  string NewText,
     [property: JsonPropertyName("notices")] InlineDiffNotices? Notices = null);
 
-/// <summary>Pickup receipt written by the renderer when it starts showing a request.</summary>
+/// <summary>The renderer's answer to a request it took: shown, or declined (the buffer drifted, nothing to show).</summary>
 internal sealed record InlineDiffAck(
-    [property: JsonPropertyName("id")] string Id,
-    [property: JsonPropertyName("ts")] long   Ts);
+    [property: JsonPropertyName("id")]    string Id,
+    [property: JsonPropertyName("ts")]    long   Ts,
+    [property: JsonPropertyName("shown")] bool   Shown = true);
 
 /// <summary>
 /// File-based IPC channel carrying an inline-diff preview request from the out-of-process
@@ -75,25 +76,31 @@ internal static class InlineDiffPreviewSignal
         return id;
     }
 
-    /// <summary>Polls for the renderer's pickup receipt of <paramref name="id"/>.</summary>
+    /// <summary>Polls for the renderer's answer to <paramref name="id"/>: <c>true</c> once shown, <c>false</c> at once when
+    /// declined, or when nothing answered within <paramref name="timeout"/>.</summary>
     internal static async Task<bool> WaitForPickupAsync(string id, TimeSpan timeout, CancellationToken ct)
     {
         var deadline = SignalFile.Now + timeout;
         while (SignalFile.Now < deadline)
         {
             ct.ThrowIfCancellationRequested();
-            if (IsPickedUp(id)) return true;
+            if (AnswerTo(id) is { } ack) return ack.Shown;
             await Task.Delay(100, ct);
         }
         return IsPickedUp(id);
     }
 
-    internal static bool IsPickedUp(string id)
-    {
-        return SignalFile.TryRead<InlineDiffAck>(AckPath)?.Id == id;
-    }
+    internal static bool IsPickedUp(string id) => AnswerTo(id)?.Shown == true;
 
-    /// <summary>Withdraws an unclaimed request (no renderer picked it up — direct apply follows).</summary>
+    private static InlineDiffAck? AnswerTo(string id) =>
+        SignalFile.TryRead<InlineDiffAck>(AckPath) is { } ack && ack.Id == id ? ack : null;
+
+    /// <summary>Withdraws the request still waiting: <c>false</c> when the renderer took it first — its answer decides.</summary>
+    /// <remarks>⚠ Deleted without knowing, a request the renderer takes at the window's last instant is shown AND applied
+    /// directly: the buffer changes under the preview, which then says the rewrite was dropped although it is applied.</remarks>
+    internal static bool Withdraw() => MoveAside(null);
+
+    /// <summary>Removes the request, whoever holds it (the wait was stopped).</summary>
     internal static void DiscardRequest()
     {
         SignalFile.Delete(RequestPath);
@@ -121,12 +128,36 @@ internal static class InlineDiffPreviewSignal
         catch { return null; }
     }
 
-    /// <summary>Claims a request: writes the pickup receipt and consumes the request file, so a
-    /// second view of the same document cannot show the preview twice.</summary>
-    internal static void Acknowledge(string id)
+    /// <summary>Takes the pending request <paramref name="id"/>: <c>false</c> when the host withdrew it, or another view of
+    /// the document took it, first. Taken, the renderer answers it (<see cref="Acknowledge"/>), shown or not.</summary>
+    internal static bool Take(string id) => MoveAside(id);
+
+    /// <summary>Answers a request taken: shown, or declined — the host then applies directly, at once.</summary>
+    internal static void Acknowledge(string id, bool shown = true)
     {
-        SignalFile.Write(AckPath, new InlineDiffAck(id, SignalFile.Now.ToUnixTimeMilliseconds()),
+        SignalFile.Write(AckPath, new InlineDiffAck(id, SignalFile.Now.ToUnixTimeMilliseconds(), shown),
                          "InlineDiffPreviewSignal.Acknowledge");
-        SignalFile.Delete(RequestPath);
+    }
+
+    /// <summary>Moves the request file away, atomically: of a host withdrawing and renderers taking, one wins. With
+    /// <paramref name="id"/>, only that request: a newer one, written since it was read, is put back.</summary>
+    private static bool MoveAside(string? id)
+    {
+        var aside = $"{RequestPath}.{Guid.NewGuid():N}";
+        try { File.Move(RequestPath, aside); }
+        catch (FileNotFoundException) { return false; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Diagnostics.Swallow("InlineDiffPreviewSignal.MoveAside", ex);
+            return false;
+        }
+        if (id is not null && SignalFile.TryRead<InlineDiffRequest>(aside)?.Id != id)
+        {
+            try { File.Move(aside, RequestPath); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Diagnostics.Swallow("InlineDiffPreviewSignal.PutBack", ex); }
+            return false;
+        }
+        SignalFile.Delete(aside);
+        return true;
     }
 }

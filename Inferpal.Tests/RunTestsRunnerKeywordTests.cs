@@ -39,6 +39,19 @@ public sealed class RunTestsRunnerKeywordTests : IDisposable
         Assert.DoesNotContain("No test runner detected", report);
     }
 
+    /// <summary>⚠ A cargo filter that starts with '-' is one of cargo's options, and <c>--config</c> can name a program
+    /// cargo runs: refused before anything starts — this tool asks no approval.</summary>
+    [Fact]
+    public async Task ACargoFilterThatReadsAsAnOption_IsRefused_BeforeCargoStarts()
+    {
+        File.WriteAllText(Path.Combine(_dir, "Cargo.toml"), "[package]\nname = \"x\"\nversion = \"0.1.0\"\n");
+
+        var report = await RunAsync(new { runner = "cargo", filter = "--config=target.'cfg(all())'.runner=\"calc\"" });
+
+        Assert.Contains(RunTestsTool.FilterRejected, report);
+        Assert.Contains("cannot start with '-'", report);
+    }
+
     [Theory]
     [InlineData("jest", "npm")]
     [InlineData("vitest", "npm")]

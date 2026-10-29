@@ -31,8 +31,10 @@ internal class RestoreFileTool : ITool
     /// nothing and answers that no backup exists. This tool finds them itself, wherever they are.</remarks>
     public string Description =>
         "Restores a file from a backup snapshot Inferpal saved before changing it — every write takes one and names " +
-        "it in its result. If no snapshot path is provided, uses the most recent backup: you do not need to find it, " +
-        "and the backups may be kept outside the workspace, where other tools cannot list them. " +
+        "it in its result. If no snapshot path is provided, uses the most recent backup that differs from the file — a " +
+        "second call steps back once more; you do not need to find it, and the backups may be kept outside the " +
+        "workspace, where other tools cannot list them. To undo a restore, pass the backup it took, named LAST in its " +
+        "result. " +
         "Use this to undo changes made by write_file or apply_diff.";
 
     public object Parameters => new
@@ -103,6 +105,6 @@ internal class RestoreFileTool : ITool
         // The next restore without an explicit snapshot must step back past this one, not undo this restore.
         if (preRestore.Length > 0) _history.MarkTakenByRestore(preRestore);
 
-        return Strings.RestoreOk(path, snapPath);
+        return Strings.RestoreOk(path, snapPath) + (preRestore.Length > 0 ? Strings.HistoryNote(preRestore) : string.Empty);
     }
 }

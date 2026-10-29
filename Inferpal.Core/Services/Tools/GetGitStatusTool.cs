@@ -204,6 +204,8 @@ internal class GetGitStatusTool : ITool
 
             var shownBase = hasHead ? "HEAD" : "(no commit yet: vs nothing)";
             sb.AppendLine($"=== git diff {shownBase}{pathSpec} ===");
+            // Above the diff, which it qualifies: git diffs what it tracks, and a new file is not in it.
+            if (diff.Ok && await UntrackedNoteAsync(root, pathSpec, ct) is { } untracked) sb.AppendLine(untracked);
             if (!diff.Ok)
             {
                 refusal = Strings.GitCommandFailed("diff", diff.Detail);
@@ -234,6 +236,24 @@ internal class GetGitStatusTool : ITool
         }
 
         return new Report(sb.ToString().TrimEnd(), outcome, refusal, diffShown, diffTotal);
+    }
+
+    /// <summary>The new files and folders the diff leaves out, named, or <c>null</c> when there are none.</summary>
+    /// <remarks>⚠ Unsaid, "review my changes" describes the edits and never a new file: its content is in no diff. A new
+    /// folder is named once (<c>--directory</c>), and what the ignore files exclude is counted, never named.</remarks>
+    private static async Task<string?> UntrackedNoteAsync(string root, string pathSpec, CancellationToken ct)
+    {
+        var listed = await GitAsync($"ls-files --others --exclude-standard --directory{pathSpec}", root, ct);
+        if (!listed.Ok || listed.Output.Length == 0) return null;
+        var entries = listed.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(l => l.TrimEnd('\r')).ToList();
+        var readable = entries.Where(e => Governance.ContentExclusions.Of(Path.Combine(root, e), isFolder: e.EndsWith('/')) is null).ToList();
+        var excluded = entries.Count - readable.Count;
+        const int named = 20;
+        var excludedNote = excluded > 0 ? $" ({excluded} more that the workspace's ignore files exclude)" : "";
+        if (readable.Count == 0) return $"Not in this diff: {excluded} new file(s) or folder(s) git does not track yet{excludedNote}.";
+        return $"Not in this diff: {readable.Count} new file(s) or folder(s) git does not track yet — read them with "
+             + "read_file or list_files: " + string.Join(", ", readable.Take(named))
+             + (readable.Count > named ? $", and {readable.Count - named} more" : "") + $"{excludedNote}.";
     }
 
     /// <summary>The diff without the files the workspace's ignore files exclude, and the note that names them (empty

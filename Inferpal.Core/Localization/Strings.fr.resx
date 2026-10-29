@@ -130,8 +130,8 @@ Cette action est irréversible.</value></data>
 Pour chaque problème, cite la ligne ou le symbole, explique le risque et propose une correction concrète.
 
 {1}</value></data>
-  <data name="LabelCommandTimeout" xml:space="preserve"><value>Une commande ou un build</value></data>
-  <data name="HintCommandTimeout" xml:space="preserve"><value>Le temps maximal d'un appel d'outil. Augmentez-le si vos builds durent plus.</value></data>
+  <data name="LabelCommandTimeout" xml:space="preserve"><value>Une commande shell</value></data>
+  <data name="HintCommandTimeout" xml:space="preserve"><value>Le temps maximal d'une commande shell (run_command, vos propres outils), build lancé ainsi compris. La vérification d'erreurs intégrée s'arrête à 90 s.</value></data>
   <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>Afficher chaque étape ouverte</value></data>
   <data name="HintToolBubblesExpanded" xml:space="preserve"><value>Désactivé : une ligne par étape ; cliquez dessus pour voir ce qui est entré et sorti. Une étape en échec s'ouvre toujours.</value></data>
   <data name="LabelRunEndSound" xml:space="preserve"><value>Signaler la fin d'une longue exécution</value></data>
@@ -377,7 +377,7 @@ Sauvegarde : {0}</value></data>
   <data name="MentionCodeHint" xml:space="preserve"><value>tapez ce que vous cherchez…</value></data>
   <data name="MentionFolderDesc" xml:space="preserve"><value>attacher les fichiers d'un dossier</value></data>
   <data name="MentionClipboardDesc" xml:space="preserve"><value>attacher le presse-papier</value></data>
-  <data name="MentionTreeDesc" xml:space="preserve"><value>attacher l'arbre du projet</value></data>
+  <data name="MentionTreeDesc" xml:space="preserve"><value>attacher l'arbre du projet C#</value></data>
   <data name="MentionDiffDesc" xml:space="preserve"><value>attacher le diff git courant</value></data>
   <data name="MentionProblemsDesc" xml:space="preserve"><value>attacher les diagnostics du build</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>attacher l'état du débogueur (pile, variables, exception)</value></data>
@@ -782,7 +782,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="SlashHintSearchCode" xml:space="preserve"><value>recherche sémantique dans le code</value></data>
   <data name="SlashHintCommit" xml:space="preserve"><value>proposer un message de commit</value></data>
   <data name="SlashHintGit" xml:space="preserve"><value>résumé git status, log et diff</value></data>
-  <data name="SlashHintMap" xml:space="preserve"><value>afficher la carte d'architecture du projet (espaces de noms, types, points chauds)</value></data>
+  <data name="SlashHintMap" xml:space="preserve"><value>afficher la carte d'architecture C# (espaces de noms, types, points chauds)</value></data>
   <data name="SlashHintSolution" xml:space="preserve"><value>afficher la structure de la solution</value></data>
   <data name="SlashHintBuild" xml:space="preserve"><value>compiler et afficher les erreurs</value></data>
   <data name="SlashHintFixBuild" xml:space="preserve"><value>compiler → l'IA corrige → recompiler jusqu'à zéro erreur</value></data>
@@ -1249,7 +1249,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="ReasoningEffortMedium" xml:space="preserve"><value>Moyenne</value></data>
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>Élevée</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Me demander avant de modifier des fichiers, de lancer des commandes ou d'aller en ligne</value></data>
-  <data name="HintAskBeforeActions" xml:space="preserve"><value>Vous voyez le vrai diff ou la commande exacte. Désactivé : tout est approuvé sans bruit — les commandes catastrophiques restent refusées.</value></data>
+  <data name="HintAskBeforeActions" xml:space="preserve"><value>Vous voyez le vrai diff ou la commande exacte. Désactivé : approuvé sans demander, sauf l'écriture des fichiers de consignes et les commandes dont l'effet ne se lit pas, qui demandent toujours — les commandes catastrophiques restent refusées.</value></data>
   <data name="LabelPackageCheck" xml:space="preserve"><value>Vérifier qu'un paquet existe avant de l'ajouter</value></data>
   <data name="HintPackageCheck" xml:space="preserve"><value>Seul le nom ajouté est envoyé, et seulement au registre public (nuget.org, npm, PyPI). Un nom inventé est refusé avant qu'on vous demande ; un flux privé ou un registre qui ne répond pas n'est pas vérifié.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Montrer la modification avant de l'appliquer</value></data>

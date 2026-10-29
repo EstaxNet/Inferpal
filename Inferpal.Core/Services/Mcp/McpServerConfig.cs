@@ -151,6 +151,17 @@ internal sealed record McpServerConfig(
     /// </summary>
     public static IReadOnlyList<McpServerConfig> Parse(string? json) => Parse(json, out _);
 
+    /// <summary>The server <paramref name="name"/> that <paramref name="definition"/> defines, or <c>null</c> (and why) when
+    /// it is not one.</summary>
+    /// <remarks>⚠ Wrapped by its name alone, a server named <c>mcpServers</c> reads as the WRAPPER of a list: an entry nested
+    /// in its definition starts in its place, under the card that shows the outer one.</remarks>
+    internal static McpServerConfig? ParseOne(string name, System.Text.Json.Nodes.JsonNode definition, out string? rejected)
+    {
+        var parsed = Parse(new System.Text.Json.Nodes.JsonObject { ["mcpServers"] = new System.Text.Json.Nodes.JsonObject { [name] = definition } }.ToJsonString(), out var problems);
+        rejected = problems.FirstOrDefault()?.Reason;
+        return parsed is [var one] && one.Name == name ? one : null;
+    }
+
     /// <summary>The name a rejection carries when it is the WHOLE list that could not be read, not one entry.</summary>
     internal const string WholeList = "mcpServers";
 

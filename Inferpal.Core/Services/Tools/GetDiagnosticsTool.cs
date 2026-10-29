@@ -31,7 +31,8 @@ internal class GetDiagnosticsTool : ITool
         "Returns current errors and warnings. When the editor's live diagnostics report an " +
         "error, returns those instead (instant, but only the files the editor has analyzed, " +
         "and nothing is compiled); otherwise compiles the .NET project or solution — .NET only: for another " +
-        "language, call it without path for the editor's diagnostics, or run that language's checker with run_command. " +
+        "language, run that language's checker with run_command (where the editor reports live diagnostics, a call " +
+        "without path returns them). " +
         "If path is omitted, looks for the first .sln or .csproj in the workspace root. " +
         "Timeout: 90 seconds.";
 
@@ -246,8 +247,8 @@ internal class GetDiagnosticsTool : ITool
         // that is fine.
         if (File.Exists(path) && !SolutionFiles.IsSolution(path) && !IsProjectFile(path))
             return $"{NotADotnetProject}: {Path.GetFileName(path)}. It compiles .sln, .slnx and project files only. " +
-                   "For another language, call it without 'path' for the editor's live diagnostics, or run that " +
-                   "language's own checker with run_command (tsc, mypy, cargo check, go vet…).";
+                   "For another language, run that language's own checker with run_command (tsc, mypy, cargo check, " +
+                   "go vet…); where the editor reports live diagnostics, a call without 'path' returns them.";
 
         // ⚠ Arguments as a list: quoted into a string, a folder ending with a separator escapes its own closing quote
         // under Windows and dotnet answers MSB1009 "Project file does not exist" for a folder that exists.
@@ -311,8 +312,8 @@ internal class GetDiagnosticsTool : ITool
     private static bool IsProjectFile(string path) =>
         Path.GetExtension(path).ToLowerInvariant() is ".csproj" or ".fsproj" or ".vbproj" or ".proj";
 
-    /// <summary>The budget of one build, after which the tree is killed.</summary>
-    private const int BudgetSeconds = 90;
+    /// <summary>The budget of one build, after which the tree is killed — named by the command deadline's settings hint.</summary>
+    internal const int BudgetSeconds = 90;
 
     /// <summary>What one build answers — <b>including</b> when there was no build to speak of.</summary>
     /// <remarks>

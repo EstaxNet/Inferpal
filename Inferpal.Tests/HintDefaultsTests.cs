@@ -67,6 +67,17 @@ public class HintDefaultsTests
         Assert.True(wrong.Count == 0, string.Join("\n", wrong));
     }
 
+    /// <summary>⚠ The command deadline bounds a shell command, not the error check: labelled "a command or a build", a
+    /// user with a long build raised it, and the error check still stopped at its own budget.</summary>
+    [Fact]
+    public void TheCommandDeadline_NamesWhatItBounds_AndTheBudgetItDoesNot()
+    {
+        var resources = EnglishResources();
+
+        Assert.DoesNotContain("build", resources["LabelCommandTimeout"], StringComparison.OrdinalIgnoreCase);
+        Assert.Contains($"{Inferpal.Services.Tools.GetDiagnosticsTool.BudgetSeconds} s", resources["HintCommandTimeout"]);
+    }
+
     [Fact]
     public void TheContextWindowHint_DoesNotSendTheUserToMatchAValueTheSettingSets()
     {

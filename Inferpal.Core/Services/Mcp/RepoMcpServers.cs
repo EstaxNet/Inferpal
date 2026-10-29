@@ -325,10 +325,10 @@ internal static class RepoMcpServers
 
         if (missing.Count > 0) return (null, missing.Distinct(StringComparer.Ordinal).ToList(), null);
 
-        var parsed = McpServerConfig.Parse(new JsonObject { [server.Name] = expanded }.ToJsonString(), out var rejected);
-        if (parsed.Count == 0) return (null, [], rejected.FirstOrDefault()?.Reason ?? "it cannot be read");
         var folder = expanded["cwd"]?.ToString() is { Length: > 0 } cwd ? Path.GetFullPath(Path.Combine(root, cwd)) : root;
-        return (parsed[0] with { WorkingDirectory = folder }, [], null);
+        if (McpServerConfig.ParseOne(server.Name, expanded, out var rejected) is not { } parsed)
+            return (null, [], rejected ?? "it cannot be read");
+        return (parsed with { WorkingDirectory = folder }, [], null);
     }
 
     /// <summary>Claude Code's <c>${NAME}</c> and <c>${NAME:-default}</c>: the environment, else the default.</summary>

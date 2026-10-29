@@ -25,6 +25,30 @@ public sealed class SolutionInfoBudgetTests : IDisposable
         _scratch.Dispose();
     }
 
+    private async Task<string> InfoAsync(object args)
+    {
+        using var json = JsonDocument.Parse(JsonSerializer.Serialize(args));
+        return await new GetSolutionInfoTool(new NullEditorSurface(), () => _root).ExecuteAsync(json.RootElement, CancellationToken.None);
+    }
+
+    /// <summary>⚠ A path is read against the workspace, like every path-taking tool's: against the process's folder, VS
+    /// answered "not found" for a solution that exists — and any solution on the machine was read.</summary>
+    [Fact]
+    public async Task APath_IsReadAgainstTheWorkspace_AndKeptInsideIt()
+    {
+        var dir = Directory.CreateDirectory(Path.Combine(_root, "src")).FullName;
+        File.WriteAllText(Path.Combine(dir, "App.sln"), "Microsoft Visual Studio Solution File, Format Version 12.00\n");
+        var outside = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"slnout-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(outside);
+        File.WriteAllText(Path.Combine(outside, "Other.sln"), "Microsoft Visual Studio Solution File, Format Version 12.00\n");
+        try
+        {
+            Assert.Contains("App", await InfoAsync(new { path = "src/App.sln" }));
+            await Assert.ThrowsAsync<ArgumentException>(() => InfoAsync(new { path = Path.Combine(outside, "Other.sln") }));
+        }
+        finally { try { Directory.Delete(outside, recursive: true); } catch { /* best-effort cleanup */ } }
+    }
+
     private async Task<string> SolutionOfAsync(int projects)
     {
         var sln = new StringBuilder("Microsoft Visual Studio Solution File, Format Version 12.00\n");

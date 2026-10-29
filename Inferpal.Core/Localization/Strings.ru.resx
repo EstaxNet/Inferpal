@@ -127,8 +127,8 @@
 Для каждой проблемы укажи строку или символ, объясни риск и предложи конкретное исправление.
 
 {1}</value></data>
-  <data name="LabelCommandTimeout" xml:space="preserve"><value>Команда или сборка</value></data>
-  <data name="HintCommandTimeout" xml:space="preserve"><value>Максимальная длительность одного вызова инструмента. Увеличьте, если сборки идут дольше.</value></data>
+  <data name="LabelCommandTimeout" xml:space="preserve"><value>Команда оболочки</value></data>
+  <data name="HintCommandTimeout" xml:space="preserve"><value>Максимальная длительность одной команды оболочки (run_command, ваши инструменты), включая запущенную так сборку. Встроенная проверка ошибок останавливается через 90 с.</value></data>
   <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>Показывать каждый шаг раскрытым</value></data>
   <data name="HintToolBubblesExpanded" xml:space="preserve"><value>Выключено: одна строка на шаг; нажмите, чтобы увидеть входные и выходные данные. Неудачный шаг всегда раскрывается.</value></data>
   <data name="LabelRunEndSound" xml:space="preserve"><value>Сообщать об окончании долгого запуска</value></data>
@@ -377,7 +377,7 @@
   <data name="MentionCodeHint" xml:space="preserve"><value>введите, что искать…</value></data>
   <data name="MentionFolderDesc" xml:space="preserve"><value>прикрепить файлы папки</value></data>
   <data name="MentionClipboardDesc" xml:space="preserve"><value>прикрепить буфер обмена</value></data>
-  <data name="MentionTreeDesc" xml:space="preserve"><value>прикрепить дерево проекта</value></data>
+  <data name="MentionTreeDesc" xml:space="preserve"><value>прикрепить дерево проекта C#</value></data>
   <data name="MentionDiffDesc" xml:space="preserve"><value>прикрепить текущий git diff</value></data>
   <data name="MentionProblemsDesc" xml:space="preserve"><value>прикрепить диагностику сборки</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>прикрепить состояние отладчика (стек, переменные, исключение)</value></data>
@@ -776,7 +776,7 @@
   <data name="SlashHintSearchCode" xml:space="preserve"><value>семантический поиск по коду</value></data>
   <data name="SlashHintCommit" xml:space="preserve"><value>предложить сообщение коммита</value></data>
   <data name="SlashHintGit" xml:space="preserve"><value>сводка git status, log и diff</value></data>
-  <data name="SlashHintMap" xml:space="preserve"><value>показать карту архитектуры проекта (пространства имён, типы, горячие точки)</value></data>
+  <data name="SlashHintMap" xml:space="preserve"><value>показать карту архитектуры C# (пространства имён, типы, горячие точки)</value></data>
   <data name="SlashHintSolution" xml:space="preserve"><value>показать структуру решения</value></data>
   <data name="SlashHintBuild" xml:space="preserve"><value>скомпилировать и показать ошибки</value></data>
   <data name="SlashHintFixBuild" xml:space="preserve"><value>компиляция → ИИ исправляет → перекомпиляция до отсутствия ошибок</value></data>
@@ -1249,7 +1249,7 @@
   <data name="ReasoningEffortMedium" xml:space="preserve"><value>Среднее</value></data>
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>Высокое</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Спрашивать перед изменением файлов, запуском команд или выходом в сеть</value></data>
-  <data name="HintAskBeforeActions" xml:space="preserve"><value>Вы видите настоящий diff или точную команду. Выключено: всё одобряется молча — катастрофические команды по-прежнему отклоняются.</value></data>
+  <data name="HintAskBeforeActions" xml:space="preserve"><value>Вы видите настоящий diff или точную команду. Выключено: одобряется без вопроса, кроме записи файлов инструкций и команд, чьё действие нельзя прочитать, — они по-прежнему спрашивают; катастрофические команды по-прежнему отклоняются.</value></data>
   <data name="LabelPackageCheck" xml:space="preserve"><value>Проверять, что пакет существует, перед его добавлением</value></data>
   <data name="HintPackageCheck" xml:space="preserve"><value>Отправляется только добавляемое имя и только в публичный реестр (nuget.org, npm, PyPI). Выдуманное имя отклоняется до того, как вас спросят; частный источник или реестр, который не отвечает, не проверяется.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Показывать изменение перед применением</value></data>

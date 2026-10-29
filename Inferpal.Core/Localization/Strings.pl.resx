@@ -127,8 +127,8 @@ Tej operacji nie można cofnąć.</value></data>
 Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj konkretną poprawkę.
 
 {1}</value></data>
-  <data name="LabelCommandTimeout" xml:space="preserve"><value>Polecenie lub kompilacja</value></data>
-  <data name="HintCommandTimeout" xml:space="preserve"><value>Najdłuższy czas jednego wywołania narzędzia. Zwiększ, jeśli kompilacje trwają dłużej.</value></data>
+  <data name="LabelCommandTimeout" xml:space="preserve"><value>Polecenie powłoki</value></data>
+  <data name="HintCommandTimeout" xml:space="preserve"><value>Najdłuższy czas jednego polecenia powłoki (run_command, własne narzędzia), także uruchomionej tak kompilacji. Wbudowane sprawdzanie błędów kończy się po 90 s.</value></data>
   <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>Pokazuj każdy krok rozwinięty</value></data>
   <data name="HintToolBubblesExpanded" xml:space="preserve"><value>Wyłączone: jeden wiersz na krok; kliknij, by zobaczyć wejście i wyjście. Krok, który się nie powiódł, zawsze się otwiera.</value></data>
   <data name="LabelRunEndSound" xml:space="preserve"><value>Sygnalizuj koniec długiego uruchomienia</value></data>
@@ -377,7 +377,7 @@ Kopia zapasowa: {0}</value></data>
   <data name="MentionCodeHint" xml:space="preserve"><value>wpisz, czego szukać…</value></data>
   <data name="MentionFolderDesc" xml:space="preserve"><value>dołącz pliki folderu</value></data>
   <data name="MentionClipboardDesc" xml:space="preserve"><value>dołącz schowek</value></data>
-  <data name="MentionTreeDesc" xml:space="preserve"><value>dołącz drzewo projektu</value></data>
+  <data name="MentionTreeDesc" xml:space="preserve"><value>dołącz drzewo projektu C#</value></data>
   <data name="MentionDiffDesc" xml:space="preserve"><value>dołącz bieżący diff git</value></data>
   <data name="MentionProblemsDesc" xml:space="preserve"><value>dołącz diagnostykę kompilacji</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>dołącz stan debugera (stos, zmienne, wyjątek)</value></data>
@@ -778,7 +778,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="SlashHintSearchCode" xml:space="preserve"><value>wyszukiwanie semantyczne w kodzie</value></data>
   <data name="SlashHintCommit" xml:space="preserve"><value>zaproponuj komunikat commita</value></data>
   <data name="SlashHintGit" xml:space="preserve"><value>podsumowanie git status, log i diff</value></data>
-  <data name="SlashHintMap" xml:space="preserve"><value>pokaż mapę architektury projektu (przestrzenie nazw, typy, punkty zapalne)</value></data>
+  <data name="SlashHintMap" xml:space="preserve"><value>pokaż mapę architektury C# (przestrzenie nazw, typy, punkty zapalne)</value></data>
   <data name="SlashHintSolution" xml:space="preserve"><value>pokaż strukturę rozwiązania</value></data>
   <data name="SlashHintBuild" xml:space="preserve"><value>skompiluj i pokaż błędy</value></data>
   <data name="SlashHintFixBuild" xml:space="preserve"><value>kompilacja → AI poprawia → ponowna kompilacja aż do braku błędów</value></data>
@@ -1249,7 +1249,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="ReasoningEffortMedium" xml:space="preserve"><value>Średnie</value></data>
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>Wysokie</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Pytaj przed zmianą plików, uruchomieniem poleceń lub wyjściem do sieci</value></data>
-  <data name="HintAskBeforeActions" xml:space="preserve"><value>Widzisz prawdziwy diff lub dokładne polecenie. Wyłączone: wszystko jest zatwierdzane bez pytania — katastrofalne polecenia nadal są odrzucane.</value></data>
+  <data name="HintAskBeforeActions" xml:space="preserve"><value>Widzisz prawdziwy diff lub dokładne polecenie. Wyłączone: zatwierdzane bez pytania, poza zapisem plików instrukcji i poleceniami, których skutku nie da się odczytać — te nadal pytają; katastrofalne polecenia nadal są odrzucane.</value></data>
   <data name="LabelPackageCheck" xml:space="preserve"><value>Sprawdzaj, czy pakiet istnieje, zanim zostanie dodany</value></data>
   <data name="HintPackageCheck" xml:space="preserve"><value>Wysyłana jest tylko dodawana nazwa i tylko do publicznego rejestru (nuget.org, npm, PyPI). Zmyślona nazwa jest odrzucana, zanim zostaniesz zapytany; prywatny feed lub rejestr, który nie odpowiada, nie jest sprawdzany.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Pokaż zmianę przed jej zastosowaniem</value></data>

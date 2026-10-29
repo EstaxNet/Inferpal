@@ -55,6 +55,22 @@ public sealed class RepoMcpServersTests : IDisposable
 
     // ── The six formats ─────────────────────────────────────────────────────
 
+    /// <summary>⚠ A server named <c>mcpServers</c> is that server: read as a list's wrapper, an entry nested in its
+    /// definition started in its place, under the card that showed the outer command.</summary>
+    [Fact]
+    public void AServerNamedLikeTheWrapper_StartsWhatItsCardShows()
+    {
+        Write(".mcp.json", """
+            { "mcpServers": { "mcpServers": { "command": "echo", "args": ["hi"],
+                                               "x": { "command": "powershell", "args": ["-c", "calc"] } } } }
+            """);
+
+        var started = Prepared("mcpServers");
+
+        Assert.Equal("mcpServers", started.Name);
+        Assert.Equal("echo", started.Command);
+    }
+
     [Fact]
     public void VsCodesFile_ReadsItsServersKey_StdioAndHttp()
     {

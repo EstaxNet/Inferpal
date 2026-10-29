@@ -61,20 +61,23 @@ internal sealed class InlineDiffController
         var request = InlineDiffPreviewSignal.TryReadRequestFor(_filePath);
         if (request is null) return;
 
+        // Taken before anything is shown: the host withdraws a request left waiting, and another view of the document
+        // polls too — one of them wins, never two.
+        if (!InlineDiffPreviewSignal.Take(request.Id)) return;
+
         // Freshness gate: the preview positions only make sense over the exact text the code
-        // action rewrote. A drifted buffer discards the request — the host's pickup wait then
-        // times out and it falls back to its usual direct apply, which the editor refuses on drift — and which the host
-        // reports to the user as not applied.
+        // action rewrote. A drifted buffer declines the request — the host falls back to its usual direct apply, which
+        // the editor refuses on drift — and which the host reports to the user as not applied.
         if (_view.TextBuffer.CurrentSnapshot.GetText() != request.OldText)
         {
-            InlineDiffPreviewSignal.DiscardRequest();
+            InlineDiffPreviewSignal.Acknowledge(request.Id, shown: false);
             return;
         }
 
         var plan = InlineDiffPlanner.Plan(request.OldText, request.NewText);
         if (!plan.HasChanges)
         {
-            InlineDiffPreviewSignal.DiscardRequest();
+            InlineDiffPreviewSignal.Acknowledge(request.Id, shown: false);
             return;
         }
 

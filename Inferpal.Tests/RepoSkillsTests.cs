@@ -191,6 +191,20 @@ public sealed class RepoSkillsTests : IDisposable
 
     private static JsonElement Args(object o) => JsonSerializer.SerializeToElement(o);
 
+    /// <summary>⚠ A long SKILL.md is paged like read_file: read whole, its middle was cut by the loop with no way on.</summary>
+    [Fact]
+    public async Task ReadSkillFile_PagesALongFile_AndSaysWhereToGoOn()
+    {
+        var body = string.Join("\n", Enumerable.Range(1, 600).Select(i => $"Step {i}: do the thing carefully, then check it."));
+        Write(_repo, ".claude/skills/long/SKILL.md", SkillMd("long", "A long skill", body));
+
+        var text = await Tool().ExecuteAsync(Args(new { skill = "long", path = "SKILL.md" }), default);
+
+        Assert.Contains("start_line=", text);
+        Assert.DoesNotContain("Step 600:", text);
+        Assert.True(text.Length < body.Length, $"read whole: {text.Length} characters");
+    }
+
     [Fact]
     public async Task ReadSkillFile_ReadsAFileOfTheSkill_AUserSkillOutsideTheWorkspaceIncluded()
     {

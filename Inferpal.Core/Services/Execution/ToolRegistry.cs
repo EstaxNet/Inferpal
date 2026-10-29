@@ -763,7 +763,11 @@ internal class ToolRegistry : IToolRegistry, IDisposable
                     // ⚠ A path that does not exist yet is judged too: a write that CREATES a file where the ignore files
                     // exclude it (`secrets/new.key`, an excluded `.env`) is a change to an excluded file. A folder is
                     // judged by the walk that lists it.
-                    if (!Directory.Exists(full) && Governance.ContentExclusions.Of(full) is { } why)
+                    // ⚠ And judged where it LEADS: through a linked folder, the excluded file reads as another path —
+                    // a folder too, which a walk started inside it lists without a rule ever seeing the link.
+                    var folder = Directory.Exists(full);
+                    if ((folder ? Governance.ContentExclusions.OfLinked(full, isFolder: true)
+                                : Governance.ContentExclusions.Of(full) ?? Governance.ContentExclusions.OfLinked(full)) is { } why)
                         hit = (full, why);
                     break;
             }

@@ -17,7 +17,7 @@ internal sealed class GenerateProjectMapTool : ITool
     public string Name => "generate_project_map";
 
     public string Description =>
-        "Generate a compact architectural map of the project: namespace distribution, " +
+        "Generate a compact architectural map of the project's C# code: namespace distribution, " +
         "class/interface/record inventory, internal dependency edges between namespaces, " +
         "and cross-reference hotspots. Use this to understand the codebase layout before " +
         "diving into specific files.";

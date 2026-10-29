@@ -130,8 +130,8 @@ Esta acción no se puede deshacer.</value></data>
 Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere una solución concreta.
 
 {1}</value></data>
-  <data name="LabelCommandTimeout" xml:space="preserve"><value>Un comando o una compilación</value></data>
-  <data name="HintCommandTimeout" xml:space="preserve"><value>Lo máximo que puede durar una llamada a herramienta. Auméntelo si sus compilaciones tardan más.</value></data>
+  <data name="LabelCommandTimeout" xml:space="preserve"><value>Un comando de shell</value></data>
+  <data name="HintCommandTimeout" xml:space="preserve"><value>Lo máximo que puede durar un comando de shell (run_command, sus propias herramientas), incluida una compilación lanzada así. La comprobación de errores integrada se detiene a los 90 s.</value></data>
   <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>Mostrar cada paso abierto</value></data>
   <data name="HintToolBubblesExpanded" xml:space="preserve"><value>Desactivado: una línea por paso; haga clic para ver qué entró y qué salió. Un paso que ha fallado siempre se abre.</value></data>
   <data name="LabelRunEndSound" xml:space="preserve"><value>Avisar al terminar una ejecución larga</value></data>
@@ -377,7 +377,7 @@ Copia de seguridad: {0}</value></data>
   <data name="MentionCodeHint" xml:space="preserve"><value>escribe qué buscar…</value></data>
   <data name="MentionFolderDesc" xml:space="preserve"><value>adjuntar los archivos de una carpeta</value></data>
   <data name="MentionClipboardDesc" xml:space="preserve"><value>adjuntar el portapapeles</value></data>
-  <data name="MentionTreeDesc" xml:space="preserve"><value>adjuntar el árbol del proyecto</value></data>
+  <data name="MentionTreeDesc" xml:space="preserve"><value>adjuntar el árbol del proyecto C#</value></data>
   <data name="MentionDiffDesc" xml:space="preserve"><value>adjuntar el diff de git actual</value></data>
   <data name="MentionProblemsDesc" xml:space="preserve"><value>adjuntar diagnósticos de compilación</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>adjuntar el estado del depurador (pila, variables, excepción)</value></data>
@@ -778,7 +778,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="SlashHintSearchCode" xml:space="preserve"><value>búsqueda semántica en el código</value></data>
   <data name="SlashHintCommit" xml:space="preserve"><value>proponer un mensaje de commit</value></data>
   <data name="SlashHintGit" xml:space="preserve"><value>resumen de git status, log y diff</value></data>
-  <data name="SlashHintMap" xml:space="preserve"><value>mostrar el mapa de arquitectura del proyecto (espacios de nombres, tipos, puntos críticos)</value></data>
+  <data name="SlashHintMap" xml:space="preserve"><value>mostrar el mapa de arquitectura C# (espacios de nombres, tipos, puntos críticos)</value></data>
   <data name="SlashHintSolution" xml:space="preserve"><value>mostrar la estructura de la solución</value></data>
   <data name="SlashHintBuild" xml:space="preserve"><value>compilar y mostrar errores</value></data>
   <data name="SlashHintFixBuild" xml:space="preserve"><value>compilar → la IA corrige → recompilar hasta que no haya errores</value></data>
@@ -1249,7 +1249,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="ReasoningEffortMedium" xml:space="preserve"><value>Medio</value></data>
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>Alto</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Preguntarme antes de cambiar archivos, ejecutar comandos o conectarse a internet</value></data>
-  <data name="HintAskBeforeActions" xml:space="preserve"><value>Ve el diff real o el comando exacto. Desactivado: todo se aprueba en silencio — los comandos catastróficos se siguen rechazando.</value></data>
+  <data name="HintAskBeforeActions" xml:space="preserve"><value>Ve el diff real o el comando exacto. Desactivado: se aprueba sin preguntar, salvo la escritura de archivos de instrucciones y los comandos cuyo efecto no se puede leer, que siguen preguntando — los comandos catastróficos se siguen rechazando.</value></data>
   <data name="LabelPackageCheck" xml:space="preserve"><value>Comprobar que un paquete existe antes de añadirlo</value></data>
   <data name="HintPackageCheck" xml:space="preserve"><value>Solo se envía el nombre añadido, y solo al registro público (nuget.org, npm, PyPI). Un nombre inventado se rechaza antes de preguntarle; un feed privado o un registro que no responde no se comprueba.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Mostrar el cambio antes de aplicarlo</value></data>

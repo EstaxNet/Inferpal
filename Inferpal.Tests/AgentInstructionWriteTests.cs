@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text.Json;
 using Inferpal.Config;
 using Inferpal.Services;
@@ -84,6 +85,30 @@ public class AgentInstructionWriteTests
         Assert.False(AgentInstructionFiles.Targets(subject));
 
     // ── The three auto-approval paths, each neutralised ───────────────────────
+
+    /// <summary>⚠ A Windows short name of <c>.inferpal</c> (<c>INFERP~1</c>) names the system prompt too: an MCP tool's
+    /// subject is raw, and judged as written it was no instruction file.</summary>
+    [Fact]
+    public void AShortNameOfTheInstructionFolder_IsAnInstructionFile()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var root = Directory.CreateTempSubdirectory("inferpal-short").FullName;
+        try
+        {
+            var memory = Path.Combine(root, ".inferpal", "memory.md");
+            Directory.CreateDirectory(Path.GetDirectoryName(memory)!);
+            File.WriteAllText(memory, "x");
+            var buffer = new System.Text.StringBuilder(1024);
+            // No short name on this volume (8.3 names off): nothing to measure.
+            if (GetShortPathNameW(memory, buffer, buffer.Capacity) == 0 || !buffer.ToString().Contains('~')) return;
+
+            Assert.True(AgentInstructionFiles.Targets(buffer.ToString()));
+        }
+        finally { try { Directory.Delete(root, recursive: true); } catch { /* best-effort cleanup */ } }
+    }
+
+    [System.Runtime.InteropServices.DllImport("kernel32", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern uint GetShortPathNameW(string longPath, System.Text.StringBuilder shortPath, int size);
 
     private const string Memory = @"C:\repo\.inferpal\memory.md";
     private const string Source = @"C:\repo\src\Program.cs";

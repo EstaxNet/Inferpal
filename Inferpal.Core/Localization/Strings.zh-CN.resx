@@ -130,8 +130,8 @@
 对每个问题请引用行号或符号，解释风险，并提出具体的修复方案。
 
 {1}</value></data>
-  <data name="LabelCommandTimeout" xml:space="preserve"><value>命令或构建</value></data>
-  <data name="HintCommandTimeout" xml:space="preserve"><value>单次工具调用最多可用的时间。若构建耗时更长，请调大。</value></data>
+  <data name="LabelCommandTimeout" xml:space="preserve"><value>Shell 命令</value></data>
+  <data name="HintCommandTimeout" xml:space="preserve"><value>单条 shell 命令（run_command、自定义工具）最多可用的时间，以此方式启动的构建也算在内。内置错误检查在 90 秒时停止。</value></data>
   <data name="LabelToolBubblesExpanded" xml:space="preserve"><value>展开显示每个步骤</value></data>
   <data name="HintToolBubblesExpanded" xml:space="preserve"><value>关闭时每个步骤一行；点击即可查看输入和输出。失败的步骤始终会展开。</value></data>
   <data name="LabelRunEndSound" xml:space="preserve"><value>长时间运行结束时提醒</value></data>
@@ -377,7 +377,7 @@
   <data name="MentionCodeHint" xml:space="preserve"><value>输入要搜索的内容…</value></data>
   <data name="MentionFolderDesc" xml:space="preserve"><value>附加文件夹中的文件</value></data>
   <data name="MentionClipboardDesc" xml:space="preserve"><value>附加剪贴板</value></data>
-  <data name="MentionTreeDesc" xml:space="preserve"><value>附加项目树</value></data>
+  <data name="MentionTreeDesc" xml:space="preserve"><value>附加 C# 项目树</value></data>
   <data name="MentionDiffDesc" xml:space="preserve"><value>附加当前 git diff</value></data>
   <data name="MentionProblemsDesc" xml:space="preserve"><value>附加构建诊断</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>附加调试器状态（调用堆栈、局部变量、异常）</value></data>
@@ -778,7 +778,7 @@
   <data name="SlashHintSearchCode" xml:space="preserve"><value>代码库语义搜索</value></data>
   <data name="SlashHintCommit" xml:space="preserve"><value>建议提交信息</value></data>
   <data name="SlashHintGit" xml:space="preserve"><value>git status、log 和 diff 摘要</value></data>
-  <data name="SlashHintMap" xml:space="preserve"><value>显示项目架构图（命名空间、类型、热点）</value></data>
+  <data name="SlashHintMap" xml:space="preserve"><value>显示 C# 架构图（命名空间、类型、热点）</value></data>
   <data name="SlashHintSolution" xml:space="preserve"><value>显示解决方案结构</value></data>
   <data name="SlashHintBuild" xml:space="preserve"><value>编译并显示错误</value></data>
   <data name="SlashHintFixBuild" xml:space="preserve"><value>编译 → AI 修复 → 重新编译直到无错误</value></data>
@@ -1249,7 +1249,7 @@
   <data name="ReasoningEffortMedium" xml:space="preserve"><value>中</value></data>
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>高</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>在修改文件、运行命令或联网前先询问我</value></data>
-  <data name="HintAskBeforeActions" xml:space="preserve"><value>您会看到真实的 diff 或确切的命令。关闭后一切将被静默批准——灾难性命令仍会被拒绝。</value></data>
+  <data name="HintAskBeforeActions" xml:space="preserve"><value>您会看到真实的 diff 或确切的命令。关闭后无需询问即批准，但写入指令文件和无法读出效果的命令仍会询问——灾难性命令仍会被拒绝。</value></data>
   <data name="LabelPackageCheck" xml:space="preserve"><value>添加软件包前检查它是否存在</value></data>
   <data name="HintPackageCheck" xml:space="preserve"><value>只把要添加的名称发送到公共注册表（nuget.org、npm、PyPI）。虚构的名称会在询问你之前被拒绝；私有源或不响应的注册表不会被检查。</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>应用前先显示修改</value></data>

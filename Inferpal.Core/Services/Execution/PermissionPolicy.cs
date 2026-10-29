@@ -319,7 +319,8 @@ internal sealed class PermissionPolicy
         // ⚠ A command inside a command (`$(…)`, `(…)`, a backtick) runs before the one a rule allowed, and a redirection
         // writes a file no rule saw: `git log $(Remove-Item -Recurse src)` and `git log > src/App.cs` are allowed by
         // `^git`, and no split shows either. Such a line goes to the card; nothing is blocked.
-        if (!sawPrompt && IsCommand(toolName) && HidesACommand(subject)) sawPrompt = true;
+        if (!sawPrompt && IsCommand(toolName) && HidesACommand(subject, Shell.ShellLauncher.Resolve().Dialect != Shell.ShellDialect.PowerShell))
+            sawPrompt = true;
         return sawPrompt ? PermissionDecision.Prompt : PermissionDecision.Allow;
     }
 
@@ -327,14 +328,21 @@ internal sealed class PermissionPolicy
     /// Whether a command line runs or writes more than its split shows: a subexpression or grouping, a backtick, a
     /// redirection — outside quotes. Inside double quotes only <c>$(</c> and the backtick count (both shells still expand
     /// them there); inside single quotes nothing does: <c>git commit -m "feat(ui): x"</c> is one plain command.
+    /// ⚠ And whatever makes the quotes read otherwise than this scan reads them counts too: a typographic quote
+    /// (PowerShell takes <c>‘ ’ “ ”</c> for quotes) and, under a POSIX shell (<paramref name="posix"/>), a backslash before
+    /// a quote and <c>$'…'</c> — bash reads <c>\' $(rm -rf src) \'</c> with the <c>$(</c> outside quotes. Under PowerShell
+    /// a backslash is no escape: <c>"C:\repo\"</c> is a plain folder.
     /// </summary>
-    internal static bool HidesACommand(string line)
+    internal static bool HidesACommand(string line, bool posix)
     {
         var quote = '\0';
         for (var i = 0; i < line.Length; i++)
         {
             var c = line[i];
+            if (c is >= '\u2018' and <= '\u201E') return true;
             if (quote == '\'') { if (c == '\'') quote = '\0'; continue; }
+            if (posix && i + 1 < line.Length && (c == '\\' && line[i + 1] is '\'' or '"' || c == '$' && line[i + 1] == '\''))
+                return true;
             if (c == '`' || (c == '$' && i + 1 < line.Length && line[i + 1] == '(')) return true;
             if (quote == '"') { if (c == '"') quote = '\0'; continue; }
             if (c is '\'' or '"') { quote = c; continue; }

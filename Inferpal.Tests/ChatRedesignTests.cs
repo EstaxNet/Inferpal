@@ -279,6 +279,24 @@ public sealed class ChatRedesignTests : IDisposable
         Assert.Equal("", card.More);
     }
 
+    /// <summary>⚠ Shown whole is also shown in VIEW: VS Code's card kept each line on one row behind a horizontal scroll, so
+    /// <c>git status</c> padded with spaces hid what followed, approved unseen. The card wraps, as VS's does.</summary>
+    [Fact]
+    public void VsCodesCard_WrapsItsText_NeverScrollsItSideways()
+    {
+        var css = File.ReadAllText(Path.Combine(ConversationPersistenceSilenceTests.RepoRoot(), "vscode", "media", "chat.css"));
+        foreach (var selector in new[] { ".approval-text {", ".approval-preview {", ".approval-preview .pl {", ".approval-subject {" })
+        {
+            var start = css.IndexOf(selector, StringComparison.Ordinal);
+            Assert.True(start >= 0, $"{selector} is gone from chat.css");
+            var rule = css[start..css.IndexOf('}', start)];
+            Assert.DoesNotContain("white-space: pre;", rule, StringComparison.Ordinal);
+            Assert.DoesNotContain("nowrap", rule, StringComparison.Ordinal);
+            Assert.DoesNotContain("overflow-x: auto", rule, StringComparison.Ordinal);
+            Assert.DoesNotContain("ellipsis", rule, StringComparison.Ordinal);
+        }
+    }
+
     [Fact]
     public void AToolsLongArguments_AreShownWhole_NeverCutInTheHeader()
     {

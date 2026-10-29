@@ -85,6 +85,7 @@ public class PermissionRuleCommentAndChainTests
     [InlineData("git log `rm -rf build`")]                         // POSIX command substitution
     [InlineData("git log \"$(Remove-Item src)\"")]                 // expanded inside double quotes too
     [InlineData("git log > src/Program.cs")]                       // a redirection writes a file no rule saw
+    [InlineData("git log \u2018a' $(Remove-Item -Recurse src) 'b\u2019")]   // PowerShell reads typographic quotes as quotes
     public void ACommandHiddenInsideAnAllowedOne_IsNeverAutoApproved(string command)
     {
         var policy = FromDsl("allow run_command ^\\s*(dotnet|git)\\b");
@@ -92,6 +93,21 @@ public class PermissionRuleCommentAndChainTests
         // Reference arm: the same rule still allows the plain command.
         Assert.Equal(PermissionDecision.Allow, policy.Evaluate("run_command", "git log --oneline"));
     }
+
+    /// <summary>⚠ Under a POSIX shell the quotes are read as bash reads them: an escaped quote does not close, and
+    /// <c>$'…'</c> is a quote of its own — read otherwise, the <c>$(</c> that follows looked quoted.</summary>
+    [Theory]
+    [InlineData("git log \\' $(rm -rf src) \\'")]
+    [InlineData("git log \"\\\"\" >(rm -rf src)")]
+    [InlineData("git log $'\\'' $(rm -rf src) ''")]
+    public void UnderAPosixShell_QuotesAreReadAsBashReadsThem(string command) =>
+        Assert.True(PermissionPolicy.HidesACommand(command, posix: true));
+
+    /// <summary>Reference arm: under PowerShell a backslash is no escape — a quoted folder ending in a separator is a plain
+    /// argument, allowed by the rule that allows its command.</summary>
+    [Fact]
+    public void UnderPowerShell_AFolderEndingInABackslash_IsAPlainArgument() =>
+        Assert.False(PermissionPolicy.HidesACommand("dotnet build \"C:\\src\\App\\\"", posix: false));
 
     [Theory]
     [InlineData("git commit -m \"feat(ui): x\"")]                  // a parenthesis inside double quotes is text

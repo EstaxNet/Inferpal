@@ -557,6 +557,11 @@ internal class RunTestsTool : ITool
     {
         // cargo searches up for Cargo.toml, but run from the crate/workspace root for predictability.
         var root = FindUp(workDir, "Cargo.toml") ?? workDir;
+        // ⚠ cargo reads an argument that starts with '-' as one of its options, and `--config=…runner="…"` names a program
+        // it runs — this tool asks no approval. Refused before anything starts.
+        if (filter is ['-', ..])
+            return FilterRejected + "\n" + $"a cargo filter cannot start with '-' ({filter}): cargo would read it as one of "
+                 + "its own options. Give a test name, or a part of one.";
         List<string> args = ["test", "--quiet"];
         if (!string.IsNullOrWhiteSpace(filter)) args.Add(filter);
 

@@ -93,8 +93,7 @@ internal sealed class McpToolService : IAsyncDisposable
     /// </summary>
     private McpServerConfig AsWritten(McpServerConfig started) =>
         _agreedRepository.TryGetValue(started, out var from)
-        && McpServerConfig.Parse(new JsonObject { [from.Server.Name] = from.Server.Definition.DeepClone() }.ToJsonString(), out _)
-            is [var written]
+        && McpServerConfig.ParseOne(from.Server.Name, from.Server.Definition.DeepClone(), out _) is { } written
             ? written
             : started;
 

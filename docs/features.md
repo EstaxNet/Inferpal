@@ -949,8 +949,9 @@ for the model — each exclusion said, never silent. Writing one of these files 
   `.github/copilot-instructions.md`, `.github/instructions/`, `.claude/rules/`, `.cursor/rules/`,
   `.cursorrules`, `.clinerules`, `.roo/rules/`, `.continue/rules/`). A silent edit there would
   change what every later session — and every other agent in the repository — is told to do.
-- **Hardened SSRF guard** on outbound fetches (DNS rebinding, IPv4-mapped IPv6, `0.0.0.0/8`,
-  loopback/private ranges, ReDoS-safe timeout).
+- **Hardened SSRF guard** on outbound fetches (IPv4-mapped IPv6, `0.0.0.0/8`, loopback/private ranges, the
+  resolved address checked too — best-effort against DNS rebinding, the approval card being the boundary — ReDoS-safe
+  timeout).
 - **Circuit breaker** on backend failures and **loop detection** to stop infinite agent loops.
 - **Local diagnostics, transparent export** — `/diagnostics` lists background errors swallowed
   best-effort (in-memory ring buffer, zero telemetry), and `/diagnostics export` copies a

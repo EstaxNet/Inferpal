@@ -71,15 +71,17 @@ code {
   border: 1px solid var(--vscode-inputValidation-errorBorder, transparent);
 }
 
+/* Wrapped, never scrolled sideways: scrolled, a command padded with spaces hides its second half behind the scroll,
+   approved unseen. */
 .approval-text {
   background: var(--vscode-textCodeBlock-background);
   padding: 6px 8px;
   border-radius: 4px;
-  overflow-x: auto;
   max-height: 260px;
   overflow-y: auto;
   margin: 0;
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .approval-text .diff-add {
@@ -1442,9 +1444,7 @@ kbd {
   flex: 1 1 auto;
   min-width: 0;
   color: var(--ip-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
 .approval-head .linkbtn {
@@ -1459,13 +1459,13 @@ kbd {
   font-size: 12px;
   line-height: 1.55;
   background: var(--ip-code);
-  overflow-x: auto;
 }
 
 .approval-preview .pl {
   display: block;
   padding: 0 12px;
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .pl.add { background: var(--ip-add-bg); }

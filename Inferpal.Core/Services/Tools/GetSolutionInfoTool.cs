@@ -47,8 +47,12 @@ internal class GetSolutionInfoTool : ITool
     {
         string? slnPath = null;
 
-        if (args.Trimmed("path") is { } provided)
+        if (args.Trimmed("path") is { } given)
         {
+            // Like every path-taking tool: against the workspace (VS's host does not start there), and inside it.
+            var workspace = _workspaceRoot();
+            var provided  = PathSanitizer.Sanitize(given, workspace);
+            PathSanitizer.AssertUnderRoot(provided, workspace);
             if (Directory.Exists(provided))
                 slnPath = SolutionFiles.FirstIn(provided);
             else if (File.Exists(provided) && SolutionFiles.IsSolution(provided))
