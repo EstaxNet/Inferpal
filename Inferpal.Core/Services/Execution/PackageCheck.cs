@@ -100,6 +100,9 @@ internal sealed class PackageCheck(IPackageLookup lookup, TimeSpan? budget = nul
 
     private static readonly AsyncLocal<bool> ByThePerson = new();
 
+    /// <summary>Whether the call running now is one the person typed (<see cref="ThePersonsOwnCalls"/>).</summary>
+    internal static bool IsThePersonsOwnCall => ByThePerson.Value;
+
     /// <summary>Marks the calls made until it is disposed as the person's own (a <c>/run</c> they typed): no name of theirs
     /// is asked or refused.</summary>
     /// <remarks>

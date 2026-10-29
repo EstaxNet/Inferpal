@@ -150,7 +150,7 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
   <data name="HintContextWindowSize" xml:space="preserve"><value>Ollama carga el modelo con este tamaño. Pasado el 80 %, los mensajes antiguos se resumen. 0: el valor del modelo.</value></data>
   <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>Cuenta la ventana que cargó su servidor cuando es más pequeña. Pasado el 80 %, los mensajes antiguos se resumen. 0: el valor del modelo.</value></data>
   <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>Conservar siempre completos</value></data>
-  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Los últimos turnos, nunca resumidos ni quitados.</value></data>
+  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Los últimos turnos, conservados enteros al resumir la conversación — como máximo: los turnos demasiado largos se resumen con el resto.</value></data>
   <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ Ventana de contexto: se eliminaron {0} mensaje(s) antiguo(s) — se conservan los últimos {1} turno(s). El contexto anterior se ha perdido.</value></data>
   <data name="LabelCompactionEnabled" xml:space="preserve"><value>Resumir los mensajes antiguos en lugar de quitarlos</value></data>
   <data name="HintCompactionEnabled" xml:space="preserve"><value>A partir del 80 % de la ventana. Si no se puede resumir, se quitan y el chat lo indica.</value></data>
@@ -329,6 +329,7 @@ Haga clic en ↻ Reintentar en la cabecera una vez corregido.</value></data>
   <data name="DebugEvaluateCancelled" xml:space="preserve"><value>Expresión no evaluada (rechazada por el usuario).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Aplicar cambio a: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Cambio cancelado por el usuario.</value></data>
+  <data name="ProjectCodeConsent" xml:space="preserve"><value>¿Ejecutar el propio código de este espacio de trabajo ({0})? Una compilación o una ejecución de pruebas ejecuta lo que escribió el repositorio: sus objetivos de compilación, sus scripts de prueba, su propio entorno de Python. Se pregunta una vez para este espacio de trabajo.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content no encontrado en {0}. Verifique espacios, saltos de línea y sangría.</value></data>
   <data name="DiffAmbiguous" xml:space="preserve"><value>old_content encontrado {0} veces en {1}. Proporcione más contexto para que la coincidencia sea única.</value></data>
   <data name="DiffOk" xml:space="preserve"><value>Cambio aplicado en {0}.</value></data>
@@ -1249,7 +1250,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="ReasoningEffortMedium" xml:space="preserve"><value>Medio</value></data>
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>Alto</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Preguntarme antes de cambiar archivos, ejecutar comandos o conectarse a internet</value></data>
-  <data name="HintAskBeforeActions" xml:space="preserve"><value>Ve el diff real o el comando exacto. Desactivado: se aprueba sin preguntar, salvo la escritura de archivos de instrucciones y los comandos cuyo efecto no se puede leer, que siguen preguntando — los comandos catastróficos se siguen rechazando.</value></data>
+  <data name="HintAskBeforeActions" xml:space="preserve"><value>Ve el diff real o el comando exacto. Desactivado: se aprueba sin preguntar, salvo la escritura de archivos de instrucciones, los comandos cuyo efecto no se puede leer y la primera compilación o ejecución de pruebas que lanza el asistente en un espacio de trabajo, que siguen preguntando — los comandos catastróficos se siguen rechazando.</value></data>
   <data name="LabelPackageCheck" xml:space="preserve"><value>Comprobar que un paquete existe antes de añadirlo</value></data>
   <data name="HintPackageCheck" xml:space="preserve"><value>Solo se envía el nombre añadido, y solo al registro público (nuget.org, npm, PyPI). Un nombre inventado se rechaza antes de preguntarle; un feed privado o un registro que no responde no se comprueba.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Mostrar el cambio antes de aplicarlo</value></data>

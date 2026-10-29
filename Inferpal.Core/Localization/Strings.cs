@@ -1105,6 +1105,8 @@ internal static class Strings
         Format(Get(nameof(DebugStatusPaused)), location);
 
     public static string DiffCancelled => Get(nameof(DiffCancelled));
+    public static string ProjectCodeConsent(string workspace) =>
+        Format(Get(nameof(ProjectCodeConsent)), workspace);
 
     public static string DiffOldNotFound(string path) =>
         Format(Get(nameof(DiffOldNotFound)), path);

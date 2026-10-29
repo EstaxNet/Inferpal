@@ -150,7 +150,7 @@ Pour chaque problème, cite la ligne ou le symbole, explique le risque et propos
   <data name="HintContextWindowSize" xml:space="preserve"><value>Ollama charge le modèle avec cette taille. Au-delà de 80 %, les anciens messages sont résumés. 0 : la valeur du modèle.</value></data>
   <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>La fenêtre chargée par votre serveur compte quand elle est plus petite. Au-delà de 80 %, les anciens messages sont résumés. 0 : la valeur du modèle.</value></data>
   <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>Toujours garder entiers</value></data>
-  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Les derniers tours, jamais résumés ni retirés.</value></data>
+  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Les derniers tours, gardés entiers quand la conversation est résumée — au plus : les tours trop longs sont résumés avec le reste.</value></data>
   <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ Fenêtre de contexte : {0} ancien(s) message(s) supprimé(s) — conservation des {1} derniers tours. Le contexte plus ancien est perdu.</value></data>
   <data name="LabelCompactionEnabled" xml:space="preserve"><value>Résumer les anciens messages au lieu de les retirer</value></data>
   <data name="HintCompactionEnabled" xml:space="preserve"><value>Au-delà de 80 % de la fenêtre. Quand un résumé n'est pas possible, ils sont retirés et le chat le dit.</value></data>
@@ -329,6 +329,7 @@ Continuer ?</value></data>
   <data name="DebugEvaluateCancelled" xml:space="preserve"><value>Expression non évaluée (refusée par l'utilisateur).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Appliquer la modification à : {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Modification annulée par l'utilisateur.</value></data>
+  <data name="ProjectCodeConsent" xml:space="preserve"><value>Exécuter le code propre à cet espace de travail ({0}) ? Un build ou un lancement de tests exécute ce que le dépôt a écrit : ses cibles de build, ses scripts de test, son propre environnement Python. Demandé une fois pour cet espace de travail.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content introuvable dans {0}. Vérifiez espaces, retours à la ligne et indentation.</value></data>
   <data name="DiffAmbiguous" xml:space="preserve"><value>old_content trouvé {0} fois dans {1}. Fournissez un contexte plus large pour rendre la correspondance unique.</value></data>
   <data name="DiffOk" xml:space="preserve"><value>Modification appliquée dans {0}.</value></data>
@@ -1249,7 +1250,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="ReasoningEffortMedium" xml:space="preserve"><value>Moyenne</value></data>
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>Élevée</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Me demander avant de modifier des fichiers, de lancer des commandes ou d'aller en ligne</value></data>
-  <data name="HintAskBeforeActions" xml:space="preserve"><value>Vous voyez le vrai diff ou la commande exacte. Désactivé : approuvé sans demander, sauf l'écriture des fichiers de consignes et les commandes dont l'effet ne se lit pas, qui demandent toujours — les commandes catastrophiques restent refusées.</value></data>
+  <data name="HintAskBeforeActions" xml:space="preserve"><value>Vous voyez le vrai diff ou la commande exacte. Désactivé : approuvé sans demander, sauf l'écriture des fichiers de consignes, les commandes dont l'effet ne se lit pas et le premier build ou lancement de tests de l'assistant dans un espace de travail, qui demandent toujours — les commandes catastrophiques restent refusées.</value></data>
   <data name="LabelPackageCheck" xml:space="preserve"><value>Vérifier qu'un paquet existe avant de l'ajouter</value></data>
   <data name="HintPackageCheck" xml:space="preserve"><value>Seul le nom ajouté est envoyé, et seulement au registre public (nuget.org, npm, PyPI). Un nom inventé est refusé avant qu'on vous demande ; un flux privé ou un registre qui ne répond pas n'est pas vérifié.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Montrer la modification avant de l'appliquer</value></data>

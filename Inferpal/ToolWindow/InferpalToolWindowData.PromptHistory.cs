@@ -206,7 +206,8 @@ internal partial class InferpalToolWindowData
                 try
                 {
                     var argsElem = JsonDocument.Parse(diagArgsJson).RootElement.Clone();
-                    buildOutput  = await _tools.ExecuteAsync(GetDiagnosticsTool.ToolName, argsElem, tok);
+                    using (Services.Execution.PackageCheck.ThePersonsOwnCalls())   // the person's /fix-build
+                        buildOutput = await _tools.ExecuteAsync(GetDiagnosticsTool.ToolName, argsElem, tok);
                 }
                 catch (Exception ex) { buildOutput = Strings.MsgError(ex.Message); }
 

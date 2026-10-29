@@ -371,7 +371,10 @@ internal partial class InferpalToolWindowData
                 }
                 case MentionKind.Problems:
                 {
-                    var diags    = await _tools.ExecuteAsync("get_diagnostics", MentionArgs(), ct);
+                    // The person's own build: theirs, never the assistant's card.
+                    string diags;
+                    using (Services.Execution.PackageCheck.ThePersonsOwnCalls())
+                        diags = await _tools.ExecuteAsync("get_diagnostics", MentionArgs(), ct);
                     var problems = MentionController.ProblemsMention(diags, "⚠ @problems");
                     if (problems.Notice is not null)
                     {

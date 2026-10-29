@@ -59,7 +59,7 @@ internal sealed class SearchDocsTool : ITool
             top_k = new
             {
                 type        = "integer",
-                description = "Number of passages to return (1–10). Defaults to the configured ragTopK setting."
+                description = "Number of passages to return (1–20). Defaults to the configured ragTopK setting."
             }
         },
         required = new[] { "query" }
@@ -77,8 +77,8 @@ internal sealed class SearchDocsTool : ITool
         // Same reason as `search_codebase`: a number the model asked for and did not get is an
         // instruction overridden, and the report it shapes carries no trace of it.
         var (topK, topKNotice) = args.Has("top_k")
-            ? ClampedArgument.Read(args, "top_k", _config.RagTopK, 1, 10)
-            : (Math.Max(1, _config.RagTopK), null);
+            ? ClampedArgument.Read(args, "top_k", _config.RagTopK, 1, SemanticSearchTool.MaxTopK)
+            : (Math.Clamp(_config.RagTopK, 1, SemanticSearchTool.MaxTopK), null);
 
         if (_docs.ChunkCount == 0)
             return Strings.DocsNotReady(_docs.Status);

@@ -117,7 +117,7 @@ public sealed class ClampedSearchArgumentTests : IDisposable
         Assert.Contains("## Codebase search", report, StringComparison.Ordinal);
 
         Assert.Contains("'top_k' was 25", report, StringComparison.Ordinal);
-        Assert.Contains("top_k=10", report, StringComparison.Ordinal);
+        Assert.Contains($"top_k={SemanticSearchTool.MaxTopK}", report, StringComparison.Ordinal);
 
         // ⚠ ABOVE the report, not under it: a caveat below a result is read after the result has
         // been believed.
@@ -189,7 +189,7 @@ public sealed class ClampedSearchArgumentTests : IDisposable
 
         Assert.Contains("## Documentation search", report, StringComparison.Ordinal);
         Assert.Contains("'top_k' was 25", report, StringComparison.Ordinal);
-        Assert.Contains("top_k=10", report, StringComparison.Ordinal);
+        Assert.Contains($"top_k={SemanticSearchTool.MaxTopK}", report, StringComparison.Ordinal);
         Assert.True(report.IndexOf("'top_k' was 25", StringComparison.Ordinal)
                   < report.IndexOf("## Documentation search", StringComparison.Ordinal),
                     "the notice must qualify the report it sits above, not trail it.");

@@ -77,7 +77,8 @@ internal static class TestFailureExplain
         var args = new Dictionary<string, string> { ["filter"] = filter };
         if (RunPath(file, rootDir) is { } path) args["path"] = path;
         using (tools.History.OutsideRun())
-            return await tools.ExecuteAsync("run_tests", JsonSerializer.SerializeToElement(args), ct);
+            using (PackageCheck.ThePersonsOwnCalls())   // the person's click runs the test, not the assistant
+                return await tools.ExecuteAsync("run_tests", JsonSerializer.SerializeToElement(args), ct);
     }
 
     /// <summary>

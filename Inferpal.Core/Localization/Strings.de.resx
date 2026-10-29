@@ -147,7 +147,7 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <data name="HintContextWindowSize" xml:space="preserve"><value>Ollama lädt das Modell mit dieser Größe. Ab 80 % werden ältere Nachrichten zusammengefasst. 0: die Vorgabe des Modells.</value></data>
   <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>Das vom Server geladene Fenster zählt, wenn es kleiner ist. Ab 80 % werden ältere Nachrichten zusammengefasst. 0: die Vorgabe des Modells.</value></data>
   <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>Immer vollständig behalten</value></data>
-  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Die letzten Durchgänge, nie zusammengefasst oder entfernt.</value></data>
+  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Die letzten Durchgänge, beim Zusammenfassen ganz behalten — höchstens: zu lange Durchgänge werden mit dem Rest zusammengefasst.</value></data>
   <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ Kontextfenster: {0} alte Nachricht(en) entfernt – letzte {1} Runde(n) behalten. Älterer Kontext ist verloren.</value></data>
   <data name="LabelCompactionEnabled" xml:space="preserve"><value>Ältere Nachrichten zusammenfassen statt sie zu entfernen</value></data>
   <data name="HintCompactionEnabled" xml:space="preserve"><value>Ab 80 % des Fensters. Gelingt keine Zusammenfassung, werden sie entfernt, und der Chat sagt es.</value></data>
@@ -329,6 +329,7 @@ Fortfahren?</value></data>
   <data name="DebugEvaluateCancelled" xml:space="preserve"><value>Ausdruck nicht ausgewertet (vom Benutzer abgelehnt).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Änderung anwenden auf: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Änderung vom Benutzer abgebrochen.</value></data>
+  <data name="ProjectCodeConsent" xml:space="preserve"><value>Den eigenen Code dieses Arbeitsbereichs ausführen ({0})? Ein Build oder Testlauf führt aus, was das Repository geschrieben hat: seine Build-Ziele, seine Testskripte, seine eigene Python-Umgebung. Wird einmal für diesen Arbeitsbereich gefragt.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content in {0} nicht gefunden. Überprüfen Sie Leerzeichen, Zeilenumbrüche und Einrückung.</value></data>
   <data name="DiffAmbiguous" xml:space="preserve"><value>old_content {0}-mal in {1} gefunden. Geben Sie mehr Kontext an, um die Übereinstimmung eindeutig zu machen.</value></data>
   <data name="DiffOk" xml:space="preserve"><value>Änderung in {0} angewendet.</value></data>
@@ -1249,7 +1250,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="ReasoningEffortMedium" xml:space="preserve"><value>Mittel</value></data>
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>Hoch</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Vor dem Ändern von Dateien, dem Ausführen von Befehlen oder Online-Zugriffen fragen</value></data>
-  <data name="HintAskBeforeActions" xml:space="preserve"><value>Sie sehen den echten Diff oder den genauen Befehl. Aus: ohne Nachfrage freigegeben, außer Schreibzugriffe auf Anweisungsdateien und Befehle, deren Wirkung nicht lesbar ist — diese fragen weiterhin; katastrophale Befehle werden weiterhin abgelehnt.</value></data>
+  <data name="HintAskBeforeActions" xml:space="preserve"><value>Sie sehen den echten Diff oder den genauen Befehl. Aus: ohne Nachfrage freigegeben, außer Schreibzugriffe auf Anweisungsdateien, Befehle, deren Wirkung nicht lesbar ist, und der erste Build oder Testlauf des Assistenten in einem Arbeitsbereich — diese fragen weiterhin; katastrophale Befehle werden weiterhin abgelehnt.</value></data>
   <data name="LabelPackageCheck" xml:space="preserve"><value>Prüfen, ob ein Paket existiert, bevor es hinzugefügt wird</value></data>
   <data name="HintPackageCheck" xml:space="preserve"><value>Nur der hinzugefügte Name wird gesendet, und nur an die öffentliche Registry (nuget.org, npm, PyPI). Ein erfundener Name wird abgelehnt, bevor Sie gefragt werden; ein privater Feed oder eine Registry, die nicht antwortet, wird nicht geprüft.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Die Änderung vor dem Anwenden zeigen</value></data>

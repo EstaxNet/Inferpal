@@ -31,14 +31,20 @@ Inferpal is local-first and runs untrusted model output, so several mitigations 
   (recursive root deletes, disk formatting, fork bombs, …) is always enforced — even with
   security alerts disabled, and including commands sourced from `.inferpal/validators.json`.
   Blocked calls are recorded in `/diagnostics`.
+- **A build or a test run the assistant starts asks you first, once per workspace.** Both execute what the
+  repository wrote — a project file's build targets, a `package.json` test script, the project's own Python
+  environment — so a cloned repository's code never runs on a model's call alone. The card is forced (no `allow`
+  rule, session grant or *Disable security alerts* skips it); a `/build` or `/tdd` you run is yours, and a
+  background `/task` builds nothing.
 - **Anything the repository authored is force-prompted.** `.inferpal/validators.json` lets a
   project define the build command Smart Fix runs by itself after a write — and that file
   ships with every clone. Such a command is therefore never run unattended: it goes through
   the approval prompt with **no** auto-approval path (no `allow` rule, no session grant, not
   even *Disable security alerts*), asked once per session per command, and refused outright
-  if no approval surface is available. The built-in .NET / TypeScript / Rust / Go validators
-  are ours, not the repository's, and keep running silently. The consent you give your own
-  agent is not consent to a stranger's command.
+  if no approval surface is available. The built-in .NET / TypeScript / Rust / Go validators'
+  commands are ours, but what they build is the repository's: they are asked for once per
+  workspace, like every build the assistant starts. The consent you give your own agent is not
+  consent to a stranger's command.
 - **What a repository may decide for you is enumerated, not filtered.** The committable project
   profile (`.inferpal/project.json`) describes preferences and grants nothing. One key is applied
   — `indexExclude`, and only additively: a clone can keep files out of the semantic index, never

@@ -33,6 +33,10 @@ internal sealed class SemanticSearchTool : ITool
         _config   = config;
     }
 
+    /// <summary>The most results a search returns, asked for or set — one range for <c>ragTopK</c>,
+    /// <c>search_codebase</c> and <c>search_docs</c>: a default above what a call may ask is a request nobody can repeat.</summary>
+    internal const int MaxTopK = 20;
+
     public string Name => "search_codebase";
 
     /// <summary>Offered while the index has something to search or is writing it: with semantic search turned off
@@ -64,7 +68,7 @@ internal sealed class SemanticSearchTool : ITool
             top_k = new
             {
                 type        = "integer",
-                description = "Number of results to return (1–10). Defaults to the configured ragTopK setting."
+                description = "Number of results to return (1–20). Defaults to the configured ragTopK setting."
             }
         },
         required = new[] { "query" }
@@ -94,8 +98,8 @@ internal sealed class SemanticSearchTool : ITool
         // concludes "this symbol appears in ten places". `ClampedArgument` says what it changed.
         // The absent case is NOT reported: `ragTopK` is the user's setting, nothing was asked for.
         var (topK, topKNotice) = args.Has("top_k")
-            ? ClampedArgument.Read(args, "top_k", _config.RagTopK, 1, 10)
-            : (Math.Max(1, _config.RagTopK), null);
+            ? ClampedArgument.Read(args, "top_k", _config.RagTopK, 1, MaxTopK)
+            : (Math.Clamp(_config.RagTopK, 1, MaxTopK), null);
 
         // ── Guard: index not ready ────────────────────────────────────────────
         if (_index.ChunkCount == 0)

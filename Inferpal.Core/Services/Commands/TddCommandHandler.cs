@@ -78,7 +78,8 @@ internal static class TddCommandHandler
             onProgress?.Invoke(Strings.TddRunningTests(round, MaxRounds));
 
             string output;
-            try { output = await tools.ExecuteAsync("run_tests", runTestsArgs, ct); }
+            // The person's /tdd runs their tests: theirs, never the assistant's card.
+            try { using (PackageCheck.ThePersonsOwnCalls()) output = await tools.ExecuteAsync("run_tests", runTestsArgs, ct); }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex) { return new(Strings.MsgError(ex.Message)); }
 
@@ -244,7 +245,8 @@ internal static class TddCommandHandler
      || output.Contains(Tools.RunTestsTool.DotnetCommandRejected, StringComparison.Ordinal)
      || output.Contains(Tools.RunTestsTool.RunnerNotStarted,    StringComparison.Ordinal)
      || output.Contains(Tools.RunTestsTool.NpmNotRunnable,      StringComparison.Ordinal)
-     || output.Contains(Tools.RunTestsTool.PathNotFound,        StringComparison.Ordinal);
+     || output.Contains(Tools.RunTestsTool.PathNotFound,        StringComparison.Ordinal)
+     || output.Contains(Execution.WorkspaceCodeConsent.Refusal, StringComparison.Ordinal);
 
     /// <summary>
     /// The runner was <b>killed at its budget</b> — the state that can carry a green summary and

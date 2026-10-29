@@ -14,12 +14,18 @@ internal class RunTestsTool : ITool
     private const int MaxRawChars           = 6000;
 
     private readonly Func<string?> _getRoot;
+    private readonly WorkspaceCodeConsent? _consent;
 
     /// <param name="getRoot">The workspace root: where tests run when no path is given, and what a
     /// relative path resolves against. ⚠ Never the process's working directory, which in Visual
     /// Studio is the out-of-process host's folder — "No test runner detected" on a solution full of
     /// tests, which the model reads as "there are no tests".</param>
-    public RunTestsTool(Func<string?>? getRoot = null) => _getRoot = getRoot ?? (() => null);
+    /// <param name="consent">Asked before a model's run executes the workspace's code; <c>null</c> runs without asking.</param>
+    public RunTestsTool(Func<string?>? getRoot = null, WorkspaceCodeConsent? consent = null)
+    {
+        _getRoot = getRoot ?? (() => null);
+        _consent = consent;
+    }
 
     public string Name => "run_tests";
 
@@ -64,8 +70,8 @@ internal class RunTestsTool : ITool
         var root    = _getRoot();
         var rawPath = args.Trimmed("path");
         var path    = string.IsNullOrWhiteSpace(rawPath) ? null : PathSanitizer.Sanitize(rawPath, root);
-        // ⚠ Confined like every path-taking tool: a test run builds and runs the project's code, and this tool asks no
-        // approval (background /task runs offer it).
+        // ⚠ Confined like every path-taking tool: a test run builds and runs the project's code, asked once per workspace
+        // (WorkspaceCodeConsent), never per file.
         if (path is not null) PathSanitizer.AssertUnderRoot(path, root);
         var filter  = args.Trimmed("filter");
         var forced  = args.Keyword("runner");
@@ -89,6 +95,11 @@ internal class RunTestsTool : ITool
             return $"Unknown runner '{forced}'. Use one of: auto, dotnet, pytest, npm, cargo, go — jest, vitest, mocha "
                  + "and node --test run through npm.";
         var runner  = (forced is null or "auto") ? DetectRunner(workDir, path, root) : ForcedRunner(forced)!;
+
+        // Asked before anything of the workspace runs — and only when a runner would.
+        if (runner is "dotnet" or "pytest" or "npm" or "cargo" or "go"
+            && _consent is not null && await _consent.RefusalAsync(Name, ct) is { } refused)
+            return refused;
 
         // ⚠ The budget is decorated HERE, after the parser, never inside the log it reads: the
         // parsers compose their verdict line from summaries, so a sentence buried in the raw text

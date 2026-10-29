@@ -147,7 +147,7 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
   <data name="HintContextWindowSize" xml:space="preserve"><value>Ollama ładuje model z tym rozmiarem. Powyżej 80 % starsze wiadomości są streszczane. 0: wartość modelu.</value></data>
   <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>Liczy się okno wczytane przez serwer, jeśli jest mniejsze. Powyżej 80 % starsze wiadomości są streszczane. 0: wartość modelu.</value></data>
   <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>Zawsze zachowuj w całości</value></data>
-  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Ostatnie tury, nigdy nie streszczane ani usuwane.</value></data>
+  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Ostatnie tury, zachowywane w całości przy streszczaniu rozmowy — co najwyżej: zbyt długie tury są streszczane z resztą.</value></data>
   <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ Okno kontekstu: usunięto {0} stare(ych) wiadomości — zachowano ostatnie {1} tur(y). Starszy kontekst jest utracony.</value></data>
   <data name="LabelCompactionEnabled" xml:space="preserve"><value>Streszczaj starsze wiadomości zamiast je usuwać</value></data>
   <data name="HintCompactionEnabled" xml:space="preserve"><value>Po przekroczeniu 80 % okna. Gdy streszczenie się nie uda, są usuwane, a czat to mówi.</value></data>
@@ -329,6 +329,7 @@ Kontynuować?</value></data>
   <data name="DebugEvaluateCancelled" xml:space="preserve"><value>Wyrażenie nie zostało obliczone (odrzucone przez użytkownika).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Zastosuj zmianę do: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Zmiana anulowana przez użytkownika.</value></data>
+  <data name="ProjectCodeConsent" xml:space="preserve"><value>Uruchomić własny kod tego obszaru roboczego ({0})? Kompilacja lub uruchomienie testów wykonuje to, co napisało repozytorium: jego cele kompilacji, skrypty testowe, własne środowisko Python. Pytanie pada raz dla tego obszaru roboczego.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content nie znaleziony w {0}. Sprawdź spacje, podziały wierszy i wcięcia.</value></data>
   <data name="DiffAmbiguous" xml:space="preserve"><value>old_content znaleziony {0} razy w {1}. Podaj więcej kontekstu, aby dopasowanie było unikalne.</value></data>
   <data name="DiffOk" xml:space="preserve"><value>Zmiana zastosowana w {0}.</value></data>
@@ -1249,7 +1250,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="ReasoningEffortMedium" xml:space="preserve"><value>Średnie</value></data>
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>Wysokie</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Pytaj przed zmianą plików, uruchomieniem poleceń lub wyjściem do sieci</value></data>
-  <data name="HintAskBeforeActions" xml:space="preserve"><value>Widzisz prawdziwy diff lub dokładne polecenie. Wyłączone: zatwierdzane bez pytania, poza zapisem plików instrukcji i poleceniami, których skutku nie da się odczytać — te nadal pytają; katastrofalne polecenia nadal są odrzucane.</value></data>
+  <data name="HintAskBeforeActions" xml:space="preserve"><value>Widzisz prawdziwy diff lub dokładne polecenie. Wyłączone: zatwierdzane bez pytania, poza zapisem plików instrukcji, poleceniami, których skutku nie da się odczytać, oraz pierwszą kompilacją lub uruchomieniem testów przez asystenta w obszarze roboczym — te nadal pytają; katastrofalne polecenia nadal są odrzucane.</value></data>
   <data name="LabelPackageCheck" xml:space="preserve"><value>Sprawdzaj, czy pakiet istnieje, zanim zostanie dodany</value></data>
   <data name="HintPackageCheck" xml:space="preserve"><value>Wysyłana jest tylko dodawana nazwa i tylko do publicznego rejestru (nuget.org, npm, PyPI). Zmyślona nazwa jest odrzucana, zanim zostaniesz zapytany; prywatny feed lub rejestr, który nie odpowiada, nie jest sprawdzany.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Pokaż zmianę przed jej zastosowaniem</value></data>

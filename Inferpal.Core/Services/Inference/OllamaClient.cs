@@ -469,7 +469,13 @@ internal class OllamaClient : InferenceProviderBase
     /// </summary>
     /// <param name="text">Text to embed (typically a code chunk of up to ~1 000 tokens).</param>
     /// <param name="model">Embedding model name (e.g. <c>"nomic-embed-text"</c>).</param>
-    public override async Task<float[]?> GetEmbeddingAsync(string text, string model, CancellationToken ct)
+    public override Task<float[]?> GetEmbeddingAsync(string text, string model, CancellationToken ct) =>
+        EmbedAsync(text, model, ct, depth: 0);
+
+    /// <summary>How many times a text too long for the model is halved before it is given up on (up to 256 parts).</summary>
+    private const int MaxSplitDepth = 8;
+
+    private async Task<float[]?> EmbedAsync(string text, string model, CancellationToken ct, int depth)
     {
         var base_ = ServerUrl.TrimEnd('/');
         // Use the dedicated embedding circuit breaker (independent of chat breaker).
@@ -486,6 +492,16 @@ internal class OllamaClient : InferenceProviderBase
             // pass otherwise wait on the finalizer.
             using var http = await _http.PostAsJsonAsync(
                 $"{base_}/api/embeddings", requestBody, _jsonOpts, sendCts.Token);
+            // ⚠ Ollama refuses a text longer than the model's window ("the input length exceeds the context length")
+            // instead of truncating it — and the window it applies can be below the one the model announces. Unsplit, an
+            // indexed chunk past it gets no vector, and a run of them opens the embedding breaker: search falls back to
+            // keywords for the whole index. The text is embedded in halves instead, and the halves averaged.
+            if (!http.IsSuccessStatusCode && depth < MaxSplitDepth && text.Length > 1
+                && (await http.Content.ReadAsStringAsync(sendCts.Token)).Contains("exceeds the context length", StringComparison.OrdinalIgnoreCase))
+            {
+                http.Dispose();   // its connection goes back before the parts are asked for
+                return await EmbedInPartsAsync(text, model, ct, depth);
+            }
             http.EnsureSuccessStatusCode();
 
             using var stream = await http.Content.ReadAsStreamAsync(sendCts.Token);
@@ -516,6 +532,58 @@ internal class OllamaClient : InferenceProviderBase
             NoteEmbeddingFailure(model, ex is OperationCanceledException ? "no answer within 30 s" : Diagnostics.RootMessage(ex));
             return null;
         }
+    }
+
+    /// <summary>The two halves of <paramref name="text"/>, embedded apart and averaged by their length — or <c>null</c> when
+    /// one of them gets no vector.</summary>
+    private async Task<float[]?> EmbedInPartsAsync(string text, string model, CancellationToken ct, int depth)
+    {
+        var (first, second) = Halves(text);
+        var a = await EmbedAsync(first, model, ct, depth + 1);
+        if (a is null) return null;
+        var b = await EmbedAsync(second, model, ct, depth + 1);
+        if (b is null) return null;
+        if (b.Length != a.Length)
+        {
+            RecordEmbeddingFailure();
+            NoteEmbeddingFailure(model, "the parts of a long text came back with vectors of different lengths");
+            return null;
+        }
+        return Pooled(a, first.Length, b, second.Length);
+    }
+
+    /// <summary><paramref name="text"/> cut at the line break nearest its middle when one lies in its middle half — at its
+    /// middle otherwise: a cut far from it takes off almost nothing, and spends a level of the split.</summary>
+    internal static (string First, string Second) Halves(string text)
+    {
+        var middle  = text.Length / 2;
+        var quarter = text.Length / 4;
+        var before  = text.LastIndexOf('\n', middle);
+        var after   = text.IndexOf('\n', middle);
+        var cut     = middle;
+        if (before >= quarter && before + 1 < text.Length) cut = before + 1;
+        if (after >= 0 && after < text.Length - quarter && after + 1 < text.Length
+            && (cut == middle || after - middle < middle - before)) cut = after + 1;
+        if (cut > 0 && cut < text.Length && char.IsLowSurrogate(text[cut])) cut--;   // never inside one character
+        return (text[..cut], text[cut..]);
+    }
+
+    /// <summary>The mean of two vectors weighted by the length of the text each stands for, unit-length again.</summary>
+    internal static float[] Pooled(float[] a, int aWeight, float[] b, int bWeight)
+    {
+        var pooled = new float[a.Length];
+        double norm = 0;
+        for (var i = 0; i < a.Length; i++)
+        {
+            pooled[i] = (float)(((double)a[i] * aWeight + (double)b[i] * bWeight) / (aWeight + bWeight));
+            norm += (double)pooled[i] * pooled[i];
+        }
+        if (norm > 0)
+        {
+            var scale = 1 / Math.Sqrt(norm);
+            for (var i = 0; i < pooled.Length; i++) pooled[i] = (float)(pooled[i] * scale);
+        }
+        return pooled;
     }
 
     // ── VRAM / running-model monitoring ───────────────────────────────────────

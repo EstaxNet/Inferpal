@@ -147,7 +147,7 @@
   <data name="HintContextWindowSize" xml:space="preserve"><value>Ollama はこのサイズでモデルを読み込みます。80 % を超えると古いメッセージを要約します。0 はモデル既定値。</value></data>
   <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>サーバーが読み込んだウィンドウのほうが小さければ、そちらが使われます。80 % を超えると古いメッセージを要約します。0 はモデル既定値。</value></data>
   <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>常にそのまま残す</value></data>
-  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>直近のターン。要約も削除もされません。</value></data>
+  <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>直近のターン。会話を要約するときもそのまま残します (最大数。長すぎるターンは残りと一緒に要約されます)。</value></data>
   <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ コンテキストウィンドウ：古いメッセージ {0} 件を削除 — 最後の {1} ターンを保持。古いコンテキストは失われました。</value></data>
   <data name="LabelCompactionEnabled" xml:space="preserve"><value>古いメッセージを削除せずに要約する</value></data>
   <data name="HintCompactionEnabled" xml:space="preserve"><value>ウィンドウの 80 % を超えたとき。要約できなければ削除し、チャットでそう伝えます。</value></data>
@@ -329,6 +329,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="DebugEvaluateCancelled" xml:space="preserve"><value>式は評価されませんでした（ユーザーが拒否しました）。</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>変更を適用：{0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>ユーザーによって変更がキャンセルされました。</value></data>
+  <data name="ProjectCodeConsent" xml:space="preserve"><value>このワークスペース自身のコードを実行しますか ({0})? ビルドやテストの実行は、リポジトリが書いたもの (ビルドターゲット、テストスクリプト、独自の Python 環境) を実行します。このワークスペースでは一度だけ確認します。</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>{0} で old_content が見つかりません。スペース、改行、インデントを確認してください。</value></data>
   <data name="DiffAmbiguous" xml:space="preserve"><value>old_content が {1} で {0} 回見つかりました。一致を一意にするためにより多くのコンテキストを提供してください。</value></data>
   <data name="DiffOk" xml:space="preserve"><value>{0} で変更を適用しました。</value></data>
@@ -1249,7 +1250,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ReasoningEffortMedium" xml:space="preserve"><value>中</value></data>
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>高</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>ファイルの変更、コマンドの実行、オンライン アクセスの前に確認する</value></data>
-  <data name="HintAskBeforeActions" xml:space="preserve"><value>実際の差分や正確なコマンドを確認できます。オフにすると確認なしで承認されます。ただし指示ファイルへの書き込みと、効果を読み取れないコマンドは引き続き確認します (壊滅的なコマンドは引き続き拒否されます)。</value></data>
+  <data name="HintAskBeforeActions" xml:space="preserve"><value>実際の差分や正確なコマンドを確認できます。オフにすると確認なしで承認されます。ただし指示ファイルへの書き込み、効果を読み取れないコマンド、アシスタントがワークスペースで最初に行うビルドやテスト実行は引き続き確認します (壊滅的なコマンドは引き続き拒否されます)。</value></data>
   <data name="LabelPackageCheck" xml:space="preserve"><value>パッケージを追加する前に存在を確認する</value></data>
   <data name="HintPackageCheck" xml:space="preserve"><value>送信されるのは追加する名前だけで、送信先は公開レジストリ（nuget.org、npm、PyPI）のみです。架空の名前は確認を求める前に拒否されます。プライベートフィードや応答しないレジストリは確認されません。</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>適用する前に変更を表示する</value></data>

@@ -419,7 +419,7 @@ internal static class SettingsSchema
             new("",
             [
                 new("ragTopK",                SettingKind.Int,   "LabelRagTopK",                "HintRagTopK",                Unit: "UnitChunks",
-                    Min: 1, Max: 20),
+                    Min: 1, Max: Tools.SemanticSearchTool.MaxTopK),
                 // ⚠ A cosine similarity is at most 1: above it no semantic hit ever passes, and search falls back to
                 // keywords without a word.
                 new("ragSimilarityThreshold", SettingKind.Float, "LabelRagSimilarityThreshold", "HintRagSimilarityThreshold", Unit: "UnitRangeZeroToOne",

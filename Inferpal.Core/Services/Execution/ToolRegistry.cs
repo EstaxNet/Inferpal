@@ -108,7 +108,9 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         // The approval service is passed so a build command coming from the workspace's
         // `.inferpal/validators.json` — i.e. written by the repository — is shown to the user
         // before it runs, instead of running by itself after a write.
-        var smartFix = new SmartFixValidator(config, () => indexService.RootDir, approval);
+        // One agreement for the builds and the test runs of a workspace.
+        var codeConsent = new WorkspaceCodeConsent(approval, () => indexService.RootDir);
+        var smartFix = new SmartFixValidator(config, () => indexService.RootDir, approval, codeConsent);
         var setDiff  = (DiffInfo? d) => { _pendingDiff = d; };
 
         Register(new ReadFileTool(() => indexService.RootDir, overlay, history));
@@ -120,14 +122,14 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new ApplyEditsTool(approval, history, () => indexService.RootDir, smartFix, overlay) { RenameOffered = RenameOffered });
         Register(new RestoreFileTool(approval, history, () => indexService.RootDir, overlay));
         Register(new DeleteFileTool(approval, history, () => indexService.RootDir, overlay));
-        Register(new GetDiagnosticsTool(editor, () => indexService.RootDir));
+        Register(new GetDiagnosticsTool(editor, () => indexService.RootDir, codeConsent));
         Register(new GetActiveDocumentTool(editor));
         Register(new FetchUrlTool(approval));
         Register(new WebSearchTool(approval));
         Register(new GetSolutionInfoTool(editor, () => indexService.RootDir));
         Register(new GetOpenEditorsTool(editor));
         Register(new GetGitStatusTool(editor, () => indexService.RootDir));
-        Register(new RunTestsTool(() => indexService.RootDir));
+        Register(new RunTestsTool(() => indexService.RootDir, codeConsent));
         Register(new InsertAtCursorTool(editor, approval, _fileHistory));
         Register(new ReplaceSelectionTool(editor, approval, _fileHistory));
         Register(new UpdateMemoryTool(approval, _fileHistory, () => indexService.RootDir));

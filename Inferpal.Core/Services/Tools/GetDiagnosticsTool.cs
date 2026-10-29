@@ -21,11 +21,17 @@ internal class GetDiagnosticsTool : ITool
     /// <param name="getRoot">The workspace root: where the project file is looked for, and what a
     /// relative path resolves against. ⚠ Never the process's working directory, which in Visual
     /// Studio is the out-of-process host's folder, not the project.</param>
-    public GetDiagnosticsTool(Services.Editor.IEditorSurface? editor = null, Func<string?>? getRoot = null)
+    /// <param name="consent">Asked before a model's build executes the workspace's code; <c>null</c> builds without
+    /// asking.</param>
+    public GetDiagnosticsTool(Services.Editor.IEditorSurface? editor = null, Func<string?>? getRoot = null,
+                              WorkspaceCodeConsent? consent = null)
     {
         _editor  = editor;
         _getRoot = getRoot ?? (() => null);
+        _consent = consent;
     }
+
+    private readonly WorkspaceCodeConsent? _consent;
 
     public string Description =>
         "Returns current errors and warnings. When the editor's live diagnostics report an " +
@@ -176,7 +182,7 @@ internal class GetDiagnosticsTool : ITool
         // the /fix-build loop patching a fragment of a build that never finished.
         if (FirstLineIs(Strings.DiagBuildStopped(CountSentinel))) return BuildVerdict.NotBuilt;
         // And before the error lines too: a refused command line carries the MSB1xxx line that says why.
-        if (firstLine == CommandLineRefused) return BuildVerdict.NotBuilt;
+        if (firstLine == CommandLineRefused || firstLine == WorkspaceCodeConsent.Refusal) return BuildVerdict.NotBuilt;
         // ⚠ The editor panel's errors are errors too: its answer is only ever served when it lists one, and with the
         // source between the severity and the code (`error ts 2304:`) it read as "not built" — no end-of-turn notice,
         // and a ✓ on the run of a turn that ended on a broken file.
@@ -214,8 +220,8 @@ internal class GetDiagnosticsTool : ITool
         if (!string.IsNullOrWhiteSpace(rawPath))
         {
             path = PathSanitizer.Sanitize(rawPath, root);
-            // ⚠ Confined like every path-taking tool: a build runs the project's MSBuild targets — code — and this tool
-            // asks no approval (plan mode and background /task runs offer it as a read).
+            // ⚠ Confined like every path-taking tool: a build runs the project's MSBuild targets — code — asked once per
+            // workspace (WorkspaceCodeConsent), and plan mode offers it as a read.
             PathSanitizer.AssertUnderRoot(path, root);
         }
         var chosen = path is null;   // built by choice, not as asked: what it leaves out is named
@@ -249,6 +255,9 @@ internal class GetDiagnosticsTool : ITool
             return $"{NotADotnetProject}: {Path.GetFileName(path)}. It compiles .sln, .slnx and project files only. " +
                    "For another language, run that language's own checker with run_command (tsc, mypy, cargo check, " +
                    "go vet…); where the editor reports live diagnostics, a call without 'path' returns them.";
+
+        // A build runs the project's own targets: asked first, when a model asks for it.
+        if (_consent is not null && await _consent.RefusalAsync(Name, ct) is { } refused) return refused;
 
         // ⚠ Arguments as a list: quoted into a string, a folder ending with a separator escapes its own closing quote
         // under Windows and dotnet answers MSB1009 "Project file does not exist" for a folder that exists.

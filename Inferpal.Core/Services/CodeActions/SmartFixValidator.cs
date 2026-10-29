@@ -36,13 +36,18 @@ internal sealed class SmartFixValidator
     /// Required to run a command coming from <c>.inferpal/validators.json</c>. When absent, such a
     /// command is <b>refused</b> rather than run unattended: no approval surface, no execution.
     /// </param>
+    /// <param name="consent">Asked before a built-in validator builds the workspace; <c>null</c> builds without asking.</param>
     public SmartFixValidator(
-        InferpalConfig config, Func<string?>? getWorkspaceRoot = null, IApprovalService? approval = null)
+        InferpalConfig config, Func<string?>? getWorkspaceRoot = null, IApprovalService? approval = null,
+        WorkspaceCodeConsent? consent = null)
     {
         _config           = config;
         _getWorkspaceRoot = getWorkspaceRoot ?? (() => null);
         _approval         = approval;
+        _consent          = consent;
     }
+
+    private readonly WorkspaceCodeConsent? _consent;
 
     /// <summary>Asks once per session for a repository-authored build command.</summary>
     private async Task<bool> ApproveWorkspaceCommandAsync(string command, CancellationToken ct)
@@ -178,9 +183,12 @@ internal sealed class SmartFixValidator
         // here: it matches text, and obfuscation walks around it by construction. The frontier is
         // the approval prompt, where the human reads the raw command, so that is where this goes —
         // force-prompted, because no consent the user gave their own agent covers a stranger's
-        // command. Built-in validators (dotnet, tsc, cargo, go) are ours and keep running silently.
+        // command. ⚠ The built-in validators' commands are ours (dotnet, tsc, cargo, go), but what they build is not: a
+        // project file's targets, a build.rs — asked once per workspace, like every build the assistant starts.
         if (validator.FromWorkspace && !await ApproveWorkspaceCommandAsync(command, ct))
             return null;
+        if (!validator.FromWorkspace && _consent is not null && await _consent.RefusalAsync("smart_fix_validator", ct) is { } refused)
+            return refused;
 
         try
         {
