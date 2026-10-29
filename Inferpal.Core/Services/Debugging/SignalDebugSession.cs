@@ -9,9 +9,8 @@ namespace Inferpal.Services.Debugging;
 /// <remarks>
 /// <para>
 /// The out-of-process extension host cannot touch <c>EnvDTE</c>, and the out-of-process debugger API
-/// is not the channel either — while the MEF package already holds a real <c>DTE</c> and already
-/// publishes break snapshots the other way (<see cref="DebuggerStateSignal"/>). This class is the
-/// reverse leg of that same transport.
+/// is not the channel either — while the MEF package already holds a real <c>DTE</c>. This class carries the
+/// requests to it over the signal files, the break state included (<c>State</c>), captured when asked.
 /// </para>
 /// <para>
 /// <b>One request at a time, enforced here.</b> A debugger is a single stateful machine: two
@@ -130,7 +129,11 @@ internal sealed class SignalDebugSession : IDebugSession, IDebugRefusals
 
     public async Task<DebugStopState?> GetStateAsync(CancellationToken ct) =>
         // No state = not paused (running, ended, or never started): an ordinary answer.
-        (await AskAsync(new(Id: string.Empty, Pid: 0, Ts: 0, Op: OpState), QueryTimeout, ct)).State;
+        (await AskAsync(new(Id: string.Empty, Pid: 0, Ts: 0, Op: OpState), QueryTimeout, ct, StateLockWait)).State;
+
+    /// <summary>How long a state question waits for the channel: one request at a time goes through it, and the
+    /// assistant's start or continue holds it for minutes — the question is answered as busy instead.</summary>
+    internal static TimeSpan StateLockWait { get; set; } = TimeSpan.FromSeconds(2);
 
     public async Task<string?> EvaluateAsync(string expression, int? frameId, CancellationToken ct) =>
         (await EvaluateWithCauseAsync(expression, frameId, ct)).Value;
@@ -177,9 +180,10 @@ internal sealed class SignalDebugSession : IDebugSession, IDebugRefusals
     /// A question the driver must answer: its answer, or <see cref="DebuggerNotAnsweringException"/> when it did not —
     /// no answer at all, or the request failed on its side.
     /// </summary>
-    private async Task<DebugCommandResponse> AskAsync(DebugCommandRequest template, TimeSpan timeout, CancellationToken ct)
+    private async Task<DebugCommandResponse> AskAsync(DebugCommandRequest template, TimeSpan timeout, CancellationToken ct,
+                                                      TimeSpan? lockWait = null)
     {
-        var (response, silence) = await SendAsync(template, timeout, ct);
+        var (response, silence) = await SendAsync(template, timeout, ct, lockWait);
         if (response is null) throw new DebuggerNotAnsweringException(silence!);
         if (!response.Ok)
             throw new DebuggerNotAnsweringException(
@@ -193,13 +197,15 @@ internal sealed class SignalDebugSession : IDebugSession, IDebugRefusals
     /// (<c>Silence</c>), in the model's words.
     /// </summary>
     private async Task<(DebugCommandResponse? Response, string? Silence)> SendAsync(
-        DebugCommandRequest template, TimeSpan timeout, CancellationToken ct)
+        DebugCommandRequest template, TimeSpan timeout, CancellationToken ct, TimeSpan? lockWait = null)
     {
         if (!DebugCommandSignal.IsDriverReady())
             return (null, "The debugger did not answer: Inferpal's in-process half is not running in Visual Studio, "
                         + "so nothing can reach its debugger.");
 
-        await _oneAtATime.WaitAsync(ct);
+        if (!await _oneAtATime.WaitAsync(lockWait ?? Timeout.InfiniteTimeSpan, ct))
+            return (null, "The debugger did not answer: it is busy with the assistant's debugging command (a start, a step "
+                        + "or a continue), which holds it until that command ends. Ask again once it has.");
         try
         {
             var request = template with

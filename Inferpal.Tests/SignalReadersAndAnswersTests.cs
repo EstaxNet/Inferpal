@@ -76,4 +76,33 @@ public sealed class SignalReadersAndAnswersTests : IDisposable
         var loop = driver[wait..driver.IndexOf("await Task.Delay(150, ct);", wait, StringComparison.Ordinal)];
         Assert.Contains("if (runner.HasExited) break;", loop, StringComparison.Ordinal);
     }
+
+    /// <summary>
+    /// ⚠ Visual Studio's break state is captured when asked, never at each stop: captured on every mode change, the stack,
+    /// up to twenty locals and the exception were read on the UI thread at each step of the user's own debugging session.
+    /// </summary>
+    [Fact]
+    public void TheBreakState_IsCapturedWhenAsked_NeverAtEachStop()
+    {
+        var inProc = Path.Combine(ConventionCoverageTests.RepoRoot(), "Inferpal.InProc");
+        var listeners = Directory.EnumerateFiles(inProc, "*.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}"))
+            .Where(f => ConventionCoverageTests.CodeOnly(f).Contains("IVsDebuggerEvents", StringComparison.Ordinal))
+            .Select(Path.GetFileName).ToList();
+        Assert.Equal(["VsDebugDriver.cs"], listeners);   // the one listener left: the driver, which serves requests
+
+        // No other break event is listened to either (EnvDTE's DebuggerEvents.OnEnterBreakMode).
+        Assert.DoesNotContain(Directory.EnumerateFiles(inProc, "*.cs", SearchOption.AllDirectories),
+            f => ConventionCoverageTests.CodeOnly(f).Contains("OnEnterBreakMode", StringComparison.Ordinal));
+
+        // The mode handler records the mode, and calls nothing else — no capture, directly or through a helper.
+        var driver = ConventionCoverageTests.CodeOnly(Path.Combine(inProc, "GhostText", "VsDebugDriver.cs"));
+        var onMode = driver.IndexOf("int IVsDebuggerEvents.OnModeChange", StringComparison.Ordinal);
+        Assert.True(onMode > 0, "the driver's mode handler is gone: the rule measures nothing");   // witness
+        var body = driver[onMode..driver.IndexOf("\n    }", onMode, StringComparison.Ordinal)];
+        var calls = System.Text.RegularExpressions.Regex.Matches(body[body.IndexOf('{')..], @"([A-Za-z_][\w.]*)\s*\(")
+            .Select(m => m.Groups[1].Value).ToList();
+        Assert.True(calls.Count > 0, "no call read in the mode handler: the rule measures nothing");   // witness
+        Assert.All(calls, c => Assert.Contains(c, new[] { "Volatile.Write", "Interlocked.Increment" }));
+    }
 }

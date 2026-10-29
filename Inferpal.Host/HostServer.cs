@@ -79,8 +79,7 @@ internal sealed partial class HostServer : IDisposable
 
         // This host talks to its editor over RPC, never to a Visual Studio in-process package —
         // yet the signal folder under %TEMP% is machine-wide, so without this declaration
-        // `get_solution_info` answered with the solution open in Visual Studio and
-        // `get_debugger_state` with Visual Studio's break state. Declared, not inferred: a process
+        // `get_solution_info` would answer with the solution open in Visual Studio. Declared, not inferred: a process
         // that guesses its own role guesses wrong the day a third front-end appears.
         SignalScope.DeclareNoVsInProcessPeer();
     }

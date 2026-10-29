@@ -182,8 +182,7 @@ IPC channels:
 | Signal | Direction | Scope | Purpose |
 |---|---|---|---|
 | `ChatBusySignal` | host → devenv | machine-wide, one marker file per writer | FIM yields to an active chat anywhere on the box (one GPU) |
-| `DebuggerStateSignal` | devenv → host | per VS instance (`<name>.<devenv pid>.json`) | `VsDebuggerTracker` publishes the break state for `get_debugger_state` / `@debugger` |
-| `DebugCommandSignal` | host → devenv | per VS instance (`<name>.<devenv pid>.json`) | carries `/debug` operations (breakpoints, step, continue…) to the in-process EnvDTE driver |
+| `DebugCommandSignal` | host → devenv | per VS instance (`<name>.<devenv pid>.json`) | carries `/debug` operations (breakpoints, step, continue…) to the in-process EnvDTE driver, and the break state `get_debugger_state` / `@debugger` ask for, captured when asked |
 | `BuildSignalFile` | devenv → host | per VS instance (`<name>.<devenv pid>.json`) | `VsBuildMonitor` surfaces VS build failures as the "Build Failed" banner |
 | `ActiveSolutionSignal` | devenv → host | per VS instance (`<name>.<devenv pid>.json`) | authoritative open solution for `/solution`, `/map`, RAG — its root is the folder holding the solution and its projects (`SolutionExtent`) |
 | `InlineDiffPreviewSignal` | host → devenv | per VS instance (`<name>.<devenv pid>.json`) | carries inline-diff preview requests to the in-editor renderer |

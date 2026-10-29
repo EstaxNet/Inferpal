@@ -92,6 +92,39 @@ public sealed class DebuggerNoAnswerTests : IDisposable
         Assert.Contains("did not answer", answer, StringComparison.Ordinal);
     }
 
+    /// <summary>⚠ Under Visual Studio there is always a debugger: a driver that is not running is one that cannot be
+    /// reached, never "nothing is paused" to a user stopped at a breakpoint.</summary>
+    [Fact]
+    public async Task AVisualStudioDriverThatIsNotRunning_IsNotReadAsNothingPaused()
+    {
+        var session = new SignalDebugSession();
+        Assert.False(session.IsAvailable);   // WITNESS: no driver advertised itself
+
+        var answer = await RunAsync(new GetDebuggerStateTool(session, () => _root), new { });
+
+        Assert.DoesNotContain("No paused debug session", answer, StringComparison.Ordinal);
+        Assert.Contains("in-process half is not running", answer, StringComparison.Ordinal);
+    }
+
+    /// <summary>⚠ A state question does not wait behind the assistant's start or continue, which hold the channel for
+    /// minutes: answered at once, as busy.</summary>
+    [Fact]
+    public async Task AStateQuestion_DoesNotWaitBehindTheAssistantsCommand()
+    {
+        DebugCommandSignal.MarkReady(Environment.ProcessId);
+        await DebugCommandSignal.ChannelLock.WaitAsync();   // the assistant's continue, still running
+        try
+        {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            var ex = await Assert.ThrowsAsync<DebuggerNotAnsweringException>(
+                () => new SignalDebugSession().GetStateAsync(CancellationToken.None));
+
+            Assert.Contains("busy with the assistant's debugging command", ex.Message, StringComparison.Ordinal);
+            Assert.True(watch.Elapsed < TimeSpan.FromSeconds(20), $"waited {watch.Elapsed}");
+        }
+        finally { DebugCommandSignal.ChannelLock.Release(); }
+    }
+
     // ── VS Code: the extension's request fails ──────────────────────────────
 
     /// <summary>The extension side: the breakpoint list answers (empty), every other debug request fails, as an adapter

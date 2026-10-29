@@ -49,7 +49,7 @@ internal static class DebugStateFormatter
         sb.Append("Stop reason: ").Append(state.Reason).Append('\n');
 
         if (!string.IsNullOrEmpty(state.Exception))
-            sb.Append("\n### Exception\n").Append(state.Exception).Append('\n');
+            sb.Append("\n### Exception\n").Append(Cap(state.Exception, 2 * MaxValueChars)).Append('\n');
 
         var frames = UserFrames(state.Frames, rootDir);
         if (frames.Count > 0)
@@ -113,6 +113,9 @@ internal static class DebugStateFormatter
     }
 
     /// <summary>Truncates an adapter-rendered value without pretending to understand it.</summary>
+    internal static string Cap(string? value, int max) =>
+        value is null ? string.Empty : value.Length <= max ? value : value[..max] + "…";
+
     internal static string Cap(string? value) =>
         value is null ? string.Empty :
         value.Length <= MaxValueChars ? value :

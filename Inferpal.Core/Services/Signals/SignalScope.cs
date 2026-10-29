@@ -7,11 +7,11 @@ namespace Inferpal.Services.Signals;
 /// <remarks>
 /// <para>
 /// The signal directory is <b>machine-wide</b>: one folder, one fixed file name per channel, shared
-/// by every Inferpal process on the box. The readers of <see cref="ActiveSolutionSignal"/> and
-/// <see cref="DebuggerStateSignal"/> live in <c>Inferpal.Core</c>, so they serve <em>both</em>
-/// front-ends — and a <c>Inferpal.Host</c> driving VS Code therefore answered with the solution
-/// open in <b>Visual Studio</b>, and with the break state of <b>Visual Studio's</b> debugger. It
-/// does not take two Visual Studio instances: one VS plus one VS Code is enough.
+/// by every Inferpal process on the box. The reader of <see cref="ActiveSolutionSignal"/> lives in
+/// <c>Inferpal.Core</c>, so it serves <em>both</em> front-ends — and a <c>Inferpal.Host</c> driving VS
+/// Code would answer with the solution open in <b>Visual Studio</b>. It does not take two Visual Studio
+/// instances: one VS plus one VS Code is enough. (The debugger is reached through the session each
+/// front-end builds — VS Code's never touches these files.)
 /// </para>
 /// <para>
 /// The first half is a <b>read policy</b>: a process with no in-process VS peer does not consult

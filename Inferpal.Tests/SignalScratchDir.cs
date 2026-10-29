@@ -38,8 +38,7 @@ public class SignalCollection
 ///         <c>ChatBusySignal.Clear()</c> — which, before the busy markers became per-writer,
 ///         deleted the single shared file whoever wrote it: the busy marker of a chat in flight
 ///         elsewhere vanished and its ghost-text FIM resumed against a busy GPU.</item>
-///   <item><c>DebuggerStateSignalTests</c> clears the break snapshot, and
-///         <c>InlineDiffPreviewSignalTests</c> fires preview requests at the in-process renderer.</item>
+///   <item><c>InlineDiffPreviewSignalTests</c> fires preview requests at the in-process renderer.</item>
 /// </list>
 /// <para>
 /// The seam is inert at runtime: production code never sets an override, so the paths resolve to

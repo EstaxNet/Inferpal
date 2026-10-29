@@ -67,7 +67,7 @@
     <Reference Include="System.Xaml" />
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Net.Http" />
-    <!-- EnvDTE is driven through `dynamic` (VsDebugDriver, VsDebuggerTracker): the C# late
+    <!-- EnvDTE is driven through `dynamic` (VsDebugDriver): the C# late
          binder lives in Microsoft.CSharp, which is not referenced by default on net472. -->
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
@@ -114,7 +114,6 @@
     <Compile Include="..\Inferpal.Core\Services\Signals\ActiveSolutionSignal.cs"     Link="Shared\Signals\ActiveSolutionSignal.cs" />
     <Compile Include="..\Inferpal.Core\Services\Signals\InProcAliveSignal.cs"        Link="Shared\Signals\InProcAliveSignal.cs" />
     <Compile Include="..\Inferpal.Core\Services\Signals\BuildSignalFile.cs"          Link="Shared\Signals\BuildSignalFile.cs" />
-    <Compile Include="..\Inferpal.Core\Services\Signals\DebuggerStateSignal.cs"      Link="Shared\Signals\DebuggerStateSignal.cs" />
     <Compile Include="..\Inferpal.Core\Services\Signals\DebugCommandSignal.cs"       Link="Shared\Signals\DebugCommandSignal.cs" />
     <Compile Include="..\Inferpal.Core\Services\Signals\InlineDiffPreviewSignal.cs"  Link="Shared\Signals\InlineDiffPreviewSignal.cs" />
     <Compile Include="..\Inferpal.Core\Services\Signals\CompletionAskSignal.cs"      Link="Shared\Signals\CompletionAskSignal.cs" />

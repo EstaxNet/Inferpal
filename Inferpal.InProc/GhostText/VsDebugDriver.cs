@@ -12,9 +12,8 @@ namespace Inferpal.GhostText;
 
 /// <summary>
 /// Serves the out-of-process host's debugger commands by driving EnvDTE automation from inside
-/// devenv. The mirror image of <see cref="VsDebuggerTracker"/>, which publishes break snapshots
-/// outwards: this one takes requests inwards, over
-/// <see cref="Services.Signals.DebugCommandSignal"/>.
+/// devenv, over <see cref="Services.Signals.DebugCommandSignal"/> — the break state included, captured when asked
+/// (<c>State</c>), never at each stop.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -67,9 +66,8 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
         debugger.AdviseDebuggerEvents(this, out _cookie);
 
         // Advertised last: the host must never find a marker for a driver that is not yet looping.
-        // ⚠ One marker per machine, so a second devenv overwrites the first. Acceptable and not
-        // silently wrong — the host talks to whichever devenv advertised last, and a request from a
-        // dead host is refused by the PID guard.
+        // One marker per devenv (the channel is scoped to the instance), and a request from a dead host is refused by
+        // the PID guard.
         Services.Signals.DebugCommandSignal.MarkReady(System.Diagnostics.Process.GetCurrentProcess().Id);
         _loop = Task.Run(() => ServeAsync(_cts.Token));
     }

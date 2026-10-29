@@ -63,6 +63,9 @@ internal sealed class AgentCleaningDebugSession(IDebugSession inner, AgentBreakp
 {
     public AgentBreakpoints Agent => agent;
 
+    /// <summary>The editor's session this one forwards to.</summary>
+    public IDebugSession Inner => inner;
+
     public bool IsAvailable => inner.IsAvailable;
     public Task<DebugBreakpointInfo?> AddBreakpointAsync(string file, int line, CancellationToken ct) => inner.AddBreakpointAsync(file, line, ct);
     public Task<bool> RemoveBreakpointAsync(string file, int line, CancellationToken ct) => inner.RemoveBreakpointAsync(file, line, ct);

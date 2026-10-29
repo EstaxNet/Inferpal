@@ -8,13 +8,10 @@ namespace Inferpal.Services.Debugging;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Two channels, and they are not interchangeable.</b> Visual Studio <i>pushes</i> its break
-/// state cross-process (<c>VsDebuggerTracker</c> → <see cref="DebuggerStateSignal"/>), so a
-/// snapshot is already on disk when the question is asked; every other front-end answers on demand
-/// through <see cref="IDebugSession"/> (VS Code drives the Debug Adapter Protocol). The pushed
-/// snapshot is consulted first where it exists: it costs no round trip and survives a command
-/// driver that never advertised itself, which is what a devenv whose in-process package failed to
-/// load degrades to.
+/// <b>Asked, never pushed</b>: every front-end answers through <see cref="IDebugSession"/> — Visual Studio's in-process
+/// driver captures the state when the question comes (<see cref="SignalDebugSession"/>), VS Code drives the Debug
+/// Adapter Protocol. ⚠ Captured at every stop instead, the stack, the locals and the exception are read on Visual
+/// Studio's UI thread at each step of the user's debugging session, whether anyone asks or not.
 /// </para>
 /// <para>
 /// ⚠ <b>One reader, never two.</b> Three call sites ask this question — the tool, the VS mention and
@@ -34,14 +31,17 @@ internal static class DebuggerStateReader
     /// <param name="rootDir">Workspace root, used to keep the stack to the user's own frames.</param>
     internal static async Task<string?> TryReadAsync(
         IDebugSession? session, string? rootDir, CancellationToken ct) =>
-        // ⚠ rootDir for BOTH channels, or the two answer the same question with two different stacks.
         await TryReadStateAsync(session, ct) is { } state ? DebugStateFormatter.Format(state, rootDir) : null;
 
-    /// <summary>The paused debugger as the port shapes it — the pushed snapshot first — or <c>null</c> when nothing is
-    /// paused: what a caller that also needs the frames' files reads, through the same two channels.</summary>
-    internal static async Task<DebugStopState?> TryReadStateAsync(IDebugSession? session, CancellationToken ct)
-    {
-        if (DebuggerStateSignal.TryRead() is { } pushed) return DebuggerStateSignal.ToStopState(pushed);
-        return session is { IsAvailable: true } live ? await live.GetStateAsync(ct) : null;
-    }
+    /// <summary>The paused debugger as the port shapes it, or <c>null</c> when nothing is paused: what a caller that also
+    /// needs the frames' files reads.</summary>
+    /// <exception cref="DebuggerNotAnsweringException">The debugger did not answer — Visual Studio's in-process driver
+    /// not running included: under Visual Studio there is always a debugger, and one that cannot be reached is never one
+    /// that is not paused.</exception>
+    internal static async Task<DebugStopState?> TryReadStateAsync(IDebugSession? session, CancellationToken ct) =>
+        session is { IsAvailable: true } || IsVisualStudios(session) ? await session!.GetStateAsync(ct) : null;
+
+    /// <summary>Whether <paramref name="session"/> is Visual Studio's, whose driver may be the one thing not running.</summary>
+    private static bool IsVisualStudios(IDebugSession? session) =>
+        session is SignalDebugSession or AgentCleaningDebugSession { Inner: SignalDebugSession };
 }

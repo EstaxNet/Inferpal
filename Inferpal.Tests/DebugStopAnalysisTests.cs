@@ -7,15 +7,13 @@ namespace Inferpal.Tests;
 
 /// <summary>
 /// "Analyze with Inferpal" on a debugger stop: what reaches the chat is the stop as <c>@debugger</c> renders it and the
-/// code around the user's frames — read through the same two channels as <c>@debugger</c>, from the workspace only, and
+/// code around the user's frames — read through the same reader as <c>@debugger</c>, from the workspace only, and
 /// sized for the answering model — or nothing, with its cause.
 /// </summary>
-[Collection(SignalCollection.Name)]
 public sealed class DebugStopAnalysisTests : IDisposable
 {
     private const int Budget = 60_000;
 
-    private readonly SignalScratchDir _signals = new();   // the pushed snapshot is a signal: never the real folder
     private readonly string _root = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"stop-{Guid.NewGuid():N}");
     private readonly string _elsewhere = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"elsewhere-{Guid.NewGuid():N}");
 
@@ -27,7 +25,6 @@ public sealed class DebugStopAnalysisTests : IDisposable
 
     public void Dispose()
     {
-        _signals.Dispose();
         try { Directory.Delete(_root, recursive: true); } catch { /* best-effort cleanup */ }
         try { Directory.Delete(_elsewhere, recursive: true); } catch { /* best-effort cleanup */ }
     }
@@ -140,19 +137,4 @@ public sealed class DebugStopAnalysisTests : IDisposable
         Assert.StartsWith(Strings.AnalyzeStopChip, asked.Chip);
     }
 
-    [Fact]
-    public async Task VisualStudiosPushedStop_IsReadFirst_LikeTheMention()
-    {
-        var program = WriteFile(_root, "Worker.cs", 400);
-        DebuggerStateSignal.Write(new DebuggerSnapshot("breakpoint", null,
-            [new DebuggerFrame("Worker.Run", program, 120)], [new DebuggerLocal("count", "int", "3")],
-            SignalFile.CurrentPid, SignalFile.Now.ToUnixTimeMilliseconds()));
-        var live = new DebugStopState("step", 1, [new DebugFrame(0, "Other.Place", program, 10)], []);
-
-        var asked = await DebugStopAnalysis.ForAsync(new PausedSession(live), _root, overlay: null, Budget, CancellationToken.None);
-
-        Assert.Contains("Worker.Run", asked.Content);
-        Assert.Contains("var line120 = 120;", asked.Content);
-        Assert.DoesNotContain("Other.Place", asked.Content);
-    }
 }

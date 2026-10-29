@@ -27,7 +27,6 @@ internal sealed class GhostTextPackage : AsyncPackage
     internal const string PackageGuid = "6a7b2c3d-4e5f-4a8b-9c0d-1e2f3a4b5c6d";
 
     private VsSolutionTracker?   _solutionTracker;
-    private VsDebuggerTracker?   _debuggerTracker;
     private VsDebugDriver?       _debugDriver;
 
     protected override async Task InitializeAsync(CancellationToken ct, IProgress<ServiceProgressData> progress)
@@ -98,15 +97,7 @@ internal sealed class GhostTextPackage : AsyncPackage
 
         try
         {
-            // Publishes break-mode snapshots to DebuggerStateSignal for the OOP host.
-            if (shellDbg is not null)
-                _debuggerTracker = new VsDebuggerTracker(shellDbg, dte);
-        }
-        catch { /* non-critical */ }
-
-        try
-        {
-            // The reverse leg: serves the host's debugger commands so `/debug` can
+            // Serves the host's debugger requests so `/debug` can
             // set breakpoints, run and step. Requires the DTE — without it there is nothing to
             // drive.
             //
@@ -142,7 +133,7 @@ internal sealed class GhostTextPackage : AsyncPackage
     protected override void Dispose(bool disposing)
     {
         if (disposing && (BuildEventsBootstrap.IsCreated || _solutionTracker is not null
-                          || _debuggerTracker is not null || _debugDriver is not null))
+                          || _debugDriver is not null))
         {
             try
             {
@@ -155,8 +146,6 @@ internal sealed class GhostTextPackage : AsyncPackage
                     BuildEventsBootstrap.DisposeHandler();
                     _solutionTracker?.Dispose();
                     _solutionTracker = null;
-                    _debuggerTracker?.Dispose();
-                    _debuggerTracker = null;
                     _debugDriver?.Dispose();
                     _debugDriver = null;
                 });

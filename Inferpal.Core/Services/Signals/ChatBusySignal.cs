@@ -13,8 +13,8 @@ internal sealed record ChatBusyState(
 /// File-based IPC channel publishing "a chat/agent request is in flight" from the out-of-process
 /// extension host (where <see cref="GpuScheduler"/> lives) to the in-process ghost-text in
 /// devenv (<c>GhostTextController</c>), so FIM yields the shared GPU
-/// to the chat. This is <see cref="DebuggerStateSignal"/> in reverse: there devenv writes and the
-/// host reads; here the host writes and devenv reads.
+/// to the chat. The host writes and devenv reads, as <see cref="DebugCommandSignal"/> carries the host's debugger
+/// requests.
 /// </summary>
 /// <remarks>
 /// <para>

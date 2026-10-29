@@ -45,12 +45,6 @@ public class SignalScopeTests : IDisposable
         _scratch.Dispose();
     }
 
-    private static DebuggerSnapshot Snapshot() => new(
-        "Breakpoint", null,
-        Frames: [new DebuggerFrame("Program.Main", @"C:\app\Program.cs", 42)],
-        Locals: [new DebuggerLocal("count", "int", "3")],
-        Pid: 1234, Ts: 1718000000000);
-
     // ── The reference arm: with a VS peer, nothing changes (G5) ─────────────────────
 
     [Fact]
@@ -85,14 +79,6 @@ public class SignalScopeTests : IDisposable
         Assert.Equal(_slnPath, ActiveSolutionSignal.TryReadSolutionPath());
     }
 
-    [Fact]
-    public void WithVsPeer_DebuggerState_IsRead()
-    {
-        DebuggerStateSignal.Write(Snapshot());
-
-        Assert.NotNull(DebuggerStateSignal.TryRead());
-    }
-
     // ── The guard ──────────────────────────────────────────────────────────────────
 
     [Fact]
@@ -105,33 +91,6 @@ public class SignalScopeTests : IDisposable
         Assert.True(File.Exists(ActiveSolutionSignal.FilePath));
         Assert.Null(ActiveSolutionSignal.TryReadSolutionPath());
         Assert.Null(SolutionExtent.OfActiveSolution());
-    }
-
-    [Fact]
-    public void WithoutVsPeer_DebuggerState_IsNotRead()
-    {
-        DebuggerStateSignal.Write(Snapshot());
-        SignalScope.DeclareNoVsInProcessPeer();
-
-        Assert.True(File.Exists(DebuggerStateSignal.FilePath));
-        Assert.Null(DebuggerStateSignal.TryRead());
-    }
-
-    /// <summary>
-    /// The tool answers "no session" rather than handing the model another editor's call stack —
-    /// and it says so in the string it already had, so this costs no new localisation key.
-    /// </summary>
-    [Fact]
-    public async Task WithoutVsPeer_GetDebuggerStateTool_ReportsNoSession()
-    {
-        DebuggerStateSignal.Write(Snapshot());
-        SignalScope.DeclareNoVsInProcessPeer();
-
-        var text = await new GetDebuggerStateTool()
-            .ExecuteAsync(JsonDocument.Parse("{}").RootElement, CancellationToken.None);
-
-        Assert.StartsWith("No paused debug session", text);
-        Assert.DoesNotContain("Program.Main", text);
     }
 
     // ── The declaration itself ─────────────────────────────────────────────────────
@@ -262,16 +221,4 @@ public class SignalScopeTests : IDisposable
         Assert.True(DebugCommandSignal.IsDriverReady());
     }
 
-    [Fact]
-    public void TwoInstances_DebuggerState_EachReadsItsOwn()
-    {
-        SignalScope.DeclareVsInstance(111);
-        DebuggerStateSignal.Write(Snapshot());
-
-        SignalScope.DeclareVsInstance(222);
-        Assert.Null(DebuggerStateSignal.TryRead());
-
-        SignalScope.DeclareVsInstance(111);
-        Assert.NotNull(DebuggerStateSignal.TryRead());
-    }
 }

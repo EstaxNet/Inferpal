@@ -37,8 +37,7 @@ internal sealed record DebugCommandResponse(
 /// </summary>
 /// <remarks>
 /// <para>
-/// The state direction already existed (<see cref="DebuggerStateSignal"/>: the in-process tracker
-/// publishes break snapshots). This is the reverse leg. Same transport family as
+/// The host asks, the in-process driver answers — the break state included, captured when asked. Same transport family as
 /// <see cref="InlineDiffPreviewSignal"/> — request file, answer file, PID guard, expiry — with
 /// correlation ids added because, unlike a preview, several operations follow one another and a
 /// stale answer must never be mistaken for the current one.

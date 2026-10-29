@@ -298,6 +298,34 @@ public class DebugToolsTests
         Assert.Contains(value, text);
     }
 
+    /// <summary>An exception whose message is a whole payload is cut, and said cut, like a value: read whole, it filled
+    /// the attachment and the model's context.</summary>
+    [Fact]
+    public void Formatter_CapsALongException_AndSaysSo()
+    {
+        var message = "`System.AggregateException` — " + new string('x', 5_000);
+        var state   = new DebugStopState("exception", 0, [], [], Exception: message);
+
+        var text = DebugStateFormatter.Format(state);
+
+        Assert.Contains("`System.AggregateException` — xxx", text);
+        Assert.DoesNotContain(message, text);
+        Assert.Contains("…", text);
+    }
+
+    /// <summary>Reference arm: a short exception is shown whole.</summary>
+    [Fact]
+    public void Formatter_KeepsAShortException_Whole()
+    {
+        var state = new DebugStopState("exception", 0, [], [],
+                                       Exception: "`System.InvalidOperationException` — Sequence contains no elements");
+
+        var text = DebugStateFormatter.Format(state);
+
+        Assert.Contains("`System.InvalidOperationException` — Sequence contains no elements", text);
+        Assert.DoesNotContain("…", text);
+    }
+
     // ── Frame filtering: measured need, not a preference ──
 
     [Fact]
@@ -546,11 +574,8 @@ public class DebugToolsTests
     [Fact]
     public async Task GetDebuggerState_AsksThePort_WhenNoSnapshotWasPushed()
     {
-        // The Visual Studio front-end PUSHES its break state to a signal file; every other
-        // front-end answers on demand through IDebugSession. The tool read the pushed snapshot and
-        // nothing else, so under VS Code — which drives a real debugger over the DAP — it replied
-        // "No paused debug session" to a user stopped at a breakpoint. Not a missing capability:
-        // a wrong answer, and one the model has no way to detect.
+        // Every front-end answers on demand through IDebugSession: a tool that reads anything else replies "No paused
+        // debug session" to a user stopped at a breakpoint — a wrong answer the model has no way to detect.
         var session = new FakeDebugSession { State = FakeDebugSession.Paused() };
         var tool    = new GetDebuggerStateTool(session, () => @"C:\ws");
 
