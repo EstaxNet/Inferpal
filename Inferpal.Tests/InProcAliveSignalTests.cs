@@ -1,4 +1,5 @@
-﻿using Inferpal.Services.Signals;
+﻿using System.IO;
+using Inferpal.Services.Signals;
 using Xunit;
 
 namespace Inferpal.Tests;
@@ -73,6 +74,41 @@ public sealed class InProcAliveSignalTests : IDisposable
         InProcAliveSignal.Record(InProcAliveSignal.ComponentMef);
 
         Assert.Equal(new[] { InProcAliveSignal.ComponentMef }, InProcAliveSignal.TryRead()!.Components);
+    }
+
+    /// <summary>⚠ A door already on disk is not written again: the MEF door is recorded at every editor opened, on the UI
+    /// thread, and a solution reopening its tabs read and rewrote the file once per tab.</summary>
+    [Fact]
+    public void Record_ADoorAlreadyOnDisk_IsNotWrittenAgain()
+    {
+        SignalScope.DeclareVsInstance(SignalFile.CurrentPid);
+        InProcAliveSignal.Record(InProcAliveSignal.ComponentMef);
+        var old = new DateTime(2001, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        File.SetLastWriteTimeUtc(InProcAliveSignal.FilePath, old);
+
+        InProcAliveSignal.Record(InProcAliveSignal.ComponentMef);
+
+        Assert.Equal(old, File.GetLastWriteTimeUtc(InProcAliveSignal.FilePath));
+        // Reference arm: a new door is written.
+        InProcAliveSignal.Record(InProcAliveSignal.ComponentPackage);
+        Assert.NotEqual(old, File.GetLastWriteTimeUtc(InProcAliveSignal.FilePath));
+    }
+
+    /// <summary>⚠ A heartbeat deleted since is written again, and a later door never drops one the file lost: the doors
+    /// live in this process, not in a file read back.</summary>
+    [Fact]
+    public void Record_AfterTheFileWasDeleted_WritesEveryDoorAgain()
+    {
+        SignalScope.DeclareVsInstance(SignalFile.CurrentPid);
+        InProcAliveSignal.Record(InProcAliveSignal.ComponentMef);
+        File.Delete(InProcAliveSignal.FilePath);
+
+        InProcAliveSignal.Record(InProcAliveSignal.ComponentPackage);   // another door, after the loss
+        Assert.True(InProcAliveSignal.TryRead() is { HasMef: true, HasPackage: true });
+
+        File.Delete(InProcAliveSignal.FilePath);
+        InProcAliveSignal.Record(InProcAliveSignal.ComponentMef);       // the next editor
+        Assert.True(InProcAliveSignal.TryRead() is { HasMef: true, HasPackage: true });
     }
 
     [Fact]

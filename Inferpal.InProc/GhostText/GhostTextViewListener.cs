@@ -57,7 +57,7 @@ internal sealed class GhostTextViewListener : IWpfTextViewCreationListener
         // The heartbeat of the MEF door: composed, and instantiated on a real editor - that is
         // what makes ghost text live. Here and not in the static constructor: MEF can build the
         // part without ever using it, and "discovered" is not "alive" (exactly the confusion the
-        // ComponentModelCache kept alive for three days).
+        // ComponentModelCache kept alive for three days). Written once: the heartbeat skips what it already holds.
         Services.Signals.InProcAliveSignal.Record(Services.Signals.InProcAliveSignal.ComponentMef);
 
         _ = new GhostTextController(textView, CompletionBroker);

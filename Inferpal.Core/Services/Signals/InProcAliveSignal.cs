@@ -68,6 +68,20 @@ internal static class InProcAliveSignal
     /// </summary>
     private static readonly object Gate = new();
 
+    /// <summary>What this process recorded, per heartbeat file: every write copies it whole.</summary>
+    /// <remarks>⚠ Rebuilt from the file instead (read, modify, write), a door is lost whenever the file cannot be read
+    /// back — deleted from <c>%TEMP%</c>, read during a replace — and the next write drops it for good.</remarks>
+    private static readonly Dictionary<string, Heartbeat> Recorded = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>The doors and reasons of one heartbeat file, and whether its last write reached the disk.</summary>
+    private sealed class Heartbeat
+    {
+        public readonly List<string> Doors = new();
+        public string? DebuggerReason;
+        public string? FimReason;
+        public bool Written;
+    }
+
     // ── In-process side (Inferpal.InProc) ──────────────────────────────────────
 
     /// <summary>
@@ -94,36 +108,40 @@ internal static class InProcAliveSignal
     {
         lock (Gate)
         {
-            var known = new List<string>();
-            string? priorDebuggerReason = null;
-            string? priorFimReason = null;
-            var prior = SignalFile.TryRead<Payload>(FilePath);
-            // Previous state is only carried over when it came from THIS process: a file left by a
-            // dead devenv that happened to hold the same PID would advertise components that are
-            // not there.
-            if (prior?.pid == SignalFile.CurrentPid)
-            {
-                if (prior.components is not null) known.AddRange(prior.components);
-                priorDebuggerReason = prior.debuggerReason;
-                priorFimReason      = prior.fimReason;
-            }
-            if (component is not null && !known.Contains(component)) known.Add(component);
+            var path = FilePath;
+            if (!Recorded.TryGetValue(path, out var beat)) Recorded[path] = beat = new Heartbeat();
+
+            var changed = false;
+            if (component is not null && !beat.Doors.Contains(component)) { beat.Doors.Add(component); changed = true; }
 
             // A door and its reason cannot both be true, and the LATEST has the last word, both ways:
             // recording the door clears the reason, recording a reason closes the door. ⚠ The FIM
             // sidecar answers, then can die, be recycled or stop answering: a door kept open by its
             // first answer made the bundle say "answering" forever, its reason written and never read.
-            if (debuggerReason is not null) known.Remove(ComponentDebugger);
-            if (fimReason is not null) known.Remove(ComponentFim);
-            var finalDebuggerReason = component == ComponentDebugger ? null : debuggerReason ?? priorDebuggerReason;
-            var finalFimReason      = component == ComponentFim      ? null : fimReason      ?? priorFimReason;
+            if (debuggerReason is not null)
+            {
+                changed |= beat.Doors.Remove(ComponentDebugger) || beat.DebuggerReason != debuggerReason;
+                beat.DebuggerReason = debuggerReason;
+            }
+            if (fimReason is not null)
+            {
+                changed |= beat.Doors.Remove(ComponentFim) || beat.FimReason != fimReason;
+                beat.FimReason = fimReason;
+            }
+            if (component == ComponentDebugger && beat.DebuggerReason is not null) { beat.DebuggerReason = null; changed = true; }
+            if (component == ComponentFim && beat.FimReason is not null) { beat.FimReason = null; changed = true; }
 
-            SignalFile.Write(FilePath, new Payload
+            // ⚠ Nothing new, and on disk: not written again. The MEF door is recorded at every editor opened, on the UI
+            // thread — rewritten each time, a solution reopening thirty tabs reads and writes the file thirty times. A
+            // write that failed, or a file deleted since, is written again.
+            if (!changed && beat.Written && System.IO.File.Exists(path)) return;
+
+            beat.Written = SignalFile.Write(path, new Payload
             {
                 pid            = SignalFile.CurrentPid,
-                components     = known.ToArray(),
-                debuggerReason = finalDebuggerReason,
-                fimReason      = finalFimReason,
+                components     = beat.Doors.ToArray(),
+                debuggerReason = beat.DebuggerReason,
+                fimReason      = beat.FimReason,
                 version        = typeof(InProcAliveSignal).Assembly.GetName().Version?.ToString(3),
                 ts             = SignalFile.Now.ToUnixTimeMilliseconds(),
             }, "InProcAliveSignal.Record");
