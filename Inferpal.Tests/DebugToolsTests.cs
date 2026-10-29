@@ -118,10 +118,11 @@ public class DebugToolsTests
     }
 
     private static JsonElement Args(string json) => JsonDocument.Parse(json).RootElement;
+    private static JsonElement Args(object args) => JsonSerializer.SerializeToElement(args);
 
     private static DebugControlTool Control(FakeDebugSession session, IApprovalService approval,
                                             DebugStepBudget? budget = null) =>
-        new(session, approval, budget ?? new DebugStepBudget(), () => @"C:\ws");
+        new(session, approval, budget ?? new DebugStepBudget(), () => TestPaths.P(@"C:\ws"));
 
     // ── Consent: the session, not the step ──────────────────────────────────────────
 
@@ -213,7 +214,8 @@ public class DebugToolsTests
         var approval = new StubApproval(approve: true);
         var tool     = Control(session, approval);
 
-        await tool.ExecuteAsync(Args("""{"action":"set_breakpoint","file":"C:\\ws\\src\\Program.cs","line":14}"""), CancellationToken.None);
+        await tool.ExecuteAsync(Args(new { action = "set_breakpoint", file = TestPaths.P(@"C:\ws\src\Program.cs"), line = 14 }),
+                                CancellationToken.None);
         await tool.ExecuteAsync(Args("""{"action":"step_over"}"""), CancellationToken.None);
         await tool.ExecuteAsync(Args("""{"action":"continue"}"""), CancellationToken.None);
         await tool.ExecuteAsync(Args("""{"action":"stop"}"""), CancellationToken.None);
@@ -515,7 +517,7 @@ public class DebugToolsTests
         var session = new FakeDebugSession();
 
         var result = await Control(session, new StubApproval(true)).ExecuteAsync(
-            Args("""{"action":"set_breakpoint","file":"C:\\elsewhere\\Other.cs","line":3}"""),
+            Args(new { action = "set_breakpoint", file = TestPaths.P(@"C:\elsewhere\Other.cs"), line = 3 }),
             CancellationToken.None);
 
         Assert.StartsWith("Error:", result);

@@ -232,6 +232,9 @@ public class PathCaseFoldingTests
 
             await history.BackUpBeforeChangeAsync(upper, CancellationToken.None);
             await history.BackUpBeforeChangeAsync(lower, CancellationToken.None);   // the newer backup
+            // Then both change, as a backup is taken for: a backup identical to its file restores nothing, and is not offered.
+            File.WriteAllText(upper, "upper v2");
+            File.WriteAllText(lower, "lower v2");
 
             var candidate = await history.FindRestoreCandidateAsync(upper, CancellationToken.None);
             Assert.NotNull(candidate);
