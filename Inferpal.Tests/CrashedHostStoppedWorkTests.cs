@@ -17,6 +17,15 @@ namespace Inferpal.Tests;
 public partial class HostServerTests
 {
     [Fact]
+    public void StoppingAHostASignalEnded_DoesNotWaitForItsExit()
+    {
+        // ⚠ Ended by a signal, the process has no exit code and its 'exit' has already fired: waiting for it costs the
+        // whole grace period before a kill of a process that is gone.
+        var stop = WebviewRebuildTests.Body(WebviewRebuildTests.TsCode("hostClient.ts"), "async stop(): Promise<void>");
+        Assert.Contains("proc.exitCode === null && proc.signalCode === null", stop, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void StoppedWork_HasACrashWording()
     {
         var crashed = StoppedWork.Notice([ATask("t1", BackgroundTaskState.Running)], [], null, crashed: true);

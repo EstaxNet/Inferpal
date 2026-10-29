@@ -28,13 +28,13 @@ public class EditorWriteApprovalTests
         public Task<ActiveDocument?> GetActiveDocumentAsync(CancellationToken ct) =>
             Task.FromResult<ActiveDocument?>(new ActiveDocument(Path, "before"));
 
-        public Task<string?> InsertAtCursorAsync(string text, CancellationToken ct)
+        public Task<string?> InsertAtCursorAsync(string text, string path, CancellationToken ct)
         {
             Writes++;
             return Task.FromResult<string?>(Path);
         }
 
-        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, CancellationToken ct)
+        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, CancellationToken ct)
         {
             Writes++;
             return Task.FromResult<EditorEditResult?>(new EditorEditResult(Path, ReplacedSelection: true));

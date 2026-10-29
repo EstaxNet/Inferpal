@@ -42,9 +42,9 @@ public class EditorSurfaceAvailabilityTests
         public IReadOnlyList<string> GetOpenDocumentPaths() => [];
         public Task<ActiveDocument?> GetActiveDocumentAsync(CancellationToken ct) =>
             Task.FromResult<ActiveDocument?>(null);
-        public Task<string?> InsertAtCursorAsync(string text, CancellationToken ct) =>
+        public Task<string?> InsertAtCursorAsync(string text, string path, CancellationToken ct) =>
             Task.FromResult<string?>(null);
-        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, CancellationToken ct) =>
+        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, CancellationToken ct) =>
             Task.FromResult<EditorEditResult?>(null);
         public Task<string?> GetEditorDiagnosticsAsync(CancellationToken ct) => Task.FromResult<string?>(null);
     }
@@ -57,9 +57,9 @@ public class EditorSurfaceAvailabilityTests
         public IReadOnlyList<string> GetOpenDocumentPaths() => [];
         public Task<ActiveDocument?> GetActiveDocumentAsync(CancellationToken ct) =>
             Task.FromResult<ActiveDocument?>(null);
-        public Task<string?> InsertAtCursorAsync(string text, CancellationToken ct) =>
+        public Task<string?> InsertAtCursorAsync(string text, string path, CancellationToken ct) =>
             Task.FromResult<string?>(null);
-        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, CancellationToken ct) =>
+        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, CancellationToken ct) =>
             Task.FromResult<EditorEditResult?>(null);
         public Task<string?> GetEditorDiagnosticsAsync(CancellationToken ct) => Task.FromResult<string?>(null);
     }

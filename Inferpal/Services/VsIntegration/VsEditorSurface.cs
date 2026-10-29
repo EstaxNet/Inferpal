@@ -33,29 +33,29 @@ internal sealed class VsEditorSurface : IEditorSurface
             : new ActiveDocument(view.Document.Uri.LocalPath, view.Document.Text.CopyToString());
     }
 
-    public async Task<string?> InsertAtCursorAsync(string text, CancellationToken ct)
+    public async Task<string?> InsertAtCursorAsync(string text, string path, CancellationToken ct)
     {
         var view = await GetActiveViewAsync(ct);
-        if (view is null) return null;
+        if (view is null || !PathComparer.Default.Equals(view.Document.Uri.LocalPath, path)) return null;
 
         var insertionPoint = view.Selection.InsertionPosition;
-        var path           = view.FilePath ?? view.Document.Uri.LocalPath;
+        var written        = view.FilePath ?? view.Document.Uri.LocalPath;
 
         var response = await _vs.Editor().EditAsync(
             batch => view.Document.AsEditable(batch).Insert(insertionPoint, text),
             ct);
 
         // null = the edit did not apply (the port's contract): the editor refuses rather than throws.
-        return VsEditResult.Applied(response) ? path : null;
+        return VsEditResult.Applied(response) ? written : null;
     }
 
-    public async Task<EditorEditResult?> ReplaceSelectionAsync(string text, CancellationToken ct)
+    public async Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, CancellationToken ct)
     {
         var view = await GetActiveViewAsync(ct);
-        if (view is null) return null;
+        if (view is null || !PathComparer.Default.Equals(view.Document.Uri.LocalPath, path)) return null;
 
         var selection = view.Selection;
-        var path      = view.FilePath ?? view.Document.Uri.LocalPath;
+        var written   = view.FilePath ?? view.Document.Uri.LocalPath;
 
         var response = await _vs.Editor().EditAsync(
             batch =>
@@ -69,7 +69,7 @@ internal sealed class VsEditorSurface : IEditorSurface
             ct);
 
         // null = the edit did not apply (the port's contract): the editor refuses rather than throws.
-        return VsEditResult.Applied(response) ? new EditorEditResult(path, ReplacedSelection: !selection.IsEmpty) : null;
+        return VsEditResult.Applied(response) ? new EditorEditResult(written, ReplacedSelection: !selection.IsEmpty) : null;
     }
 
     // VS has no cheap cross-language diagnostics query in the out-of-proc SDK; the tool's

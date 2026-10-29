@@ -32,6 +32,10 @@ internal sealed class BackgroundTaskQueue : IDisposable
     /// (<see cref="BackgroundTaskSnapshot.StepsTaken"/>).</summary>
     internal const int MaxSteps = 200;
 
+    /// <summary>Finished tasks kept; past it the oldest that proposed nothing is forgotten. A task that proposed changes
+    /// is never forgotten to make room: they are the person's to apply (<c>/task clear</c> forgets them).</summary>
+    internal const int MaxFinished = 50;
+
     /// <summary>What a completed run hands back: its report, and the changes it proposed.</summary>
     /// <param name="Report">Final markdown answer.</param>
     /// <param name="Proposals">
@@ -426,6 +430,9 @@ internal sealed class BackgroundTaskQueue : IDisposable
         // also finishes here, and it was never _current.
         if (ReferenceEquals(_current, job)) _current = null;
         _finished.Add(job);
+        // Never the task that just finished: its report has not been read yet.
+        if (_finished.Count > MaxFinished && _finished.FindIndex(0, _finished.Count - 1, j => j.Proposals.Count == 0) is var oldest and >= 0)
+            _finished.RemoveAt(oldest);
     }
 
     private BackgroundTaskSnapshot SnapshotLocked(Job job)

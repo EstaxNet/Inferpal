@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import { t } from './i18n';
 import type { CancellationToken } from 'vscode-jsonrpc';
 import { HostClient, EditorDelegate } from './hostClient';
+import { samePath } from './debugBridge';
 import { ActiveDocumentDto, ApprovalAnswer, ApprovalNote, EditResultDto, InputCard, InputFormAnswer, InputRequest } from './protocol';
 
 /** Documents above this size are not mirrored (the host reads them from disk instead). */
@@ -420,9 +421,9 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
    * reaching it means a refused edit: reporting it as "no file open" made the tool contradict
    * `get_active_document` on the same session.
    */
-  async insertAtCursor(text: string): Promise<string | null> {
+  async insertAtCursor(text: string, path?: string): Promise<string | null> {
     const editor = this.currentEditor();
-    if (!editor || editor.document.uri.scheme !== 'file') {
+    if (!editor || editor.document.uri.scheme !== 'file' || !this.isApproved(editor, path)) {
       return null;
     }
     try {
@@ -433,9 +434,9 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
     }
   }
 
-  async replaceSelection(text: string): Promise<EditResultDto> {
+  async replaceSelection(text: string, path?: string): Promise<EditResultDto> {
     const editor = this.currentEditor();
-    if (!editor || editor.document.uri.scheme !== 'file') {
+    if (!editor || editor.document.uri.scheme !== 'file' || !this.isApproved(editor, path)) {
       return { path: null, replacedSelection: false };
     }
     const hadSelection = !editor.selection.isEmpty;
@@ -453,6 +454,14 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
     } catch {
       return { path: null, replacedSelection: false }; // disposed editor — best-effort contract
     }
+  }
+
+  /**
+   * The editor that takes the edit is the document it was approved for. ⚠ The host's idea of the active document can lag:
+   * the focus moves while the card waits, and its notifications reach the host out of order.
+   */
+  private isApproved(editor: vscode.TextEditor, path: string | undefined): boolean {
+    return path === undefined || samePath(editor.document.uri.fsPath, path);
   }
 
   async editorDiagnostics(): Promise<string | null> {

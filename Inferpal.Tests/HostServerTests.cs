@@ -1812,6 +1812,30 @@ public partial class HostServerTests
     }
 
     [Fact]
+    public async Task AnInitializeRefusedDuringATurn_BuildsNothing()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+        h.Fake.OnChat = async (onToken, ct) =>
+        {
+            onToken?.Invoke("par");
+            await Task.Delay(Timeout.Infinite, ct);
+            return new ChatTurnResult(string.Empty, null, 0, 0);
+        };
+        var sendTask = h.Client.InvokeWithParameterObjectAsync<ChatSendResult>(
+            "chat/send", new { prompt = "hi", agentMode = false });
+        await h.Target.FirstToken.Task.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var built = h.ProviderConfigs.Count;
+
+        await Assert.ThrowsAsync<RemoteInvocationException>(() => h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs)));
+
+        // No client, index, MCP service or docs load of a session that never replaced the running one.
+        Assert.Equal(built, h.ProviderConfigs.Count);
+        await h.Client.InvokeAsync("chat/cancel");
+        await sendTask.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+    }
+
+    [Fact]
     public async Task ChatSend_ProviderFailure_ReturnsStructuredErrorNotRpcFault()
     {
         using var h = CreateHarness();

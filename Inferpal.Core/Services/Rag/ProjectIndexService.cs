@@ -817,11 +817,13 @@ internal sealed class ProjectIndexService : IDisposable
             {
                 IncludeSubdirectories = true,
                 NotifyFilter          = NotifyFilters.LastWrite | NotifyFilters.FileName,
+                InternalBufferSize    = WatcherBufferBytes,
                 EnableRaisingEvents   = true,
             };
             foreach (var ext in CodeChunker.SupportedExtensions)
                 _watcher.Filters.Add($"*{ext}");
 
+            _watcher.Error   += OnWatcherError;
             _watcher.Changed += OnFileChanged;
             _watcher.Created += OnFileChanged;
             _watcher.Deleted += OnFileChanged;
@@ -839,8 +841,10 @@ internal sealed class ProjectIndexService : IDisposable
             {
                 IncludeSubdirectories = true,
                 NotifyFilter          = NotifyFilters.DirectoryName,
+                InternalBufferSize    = WatcherBufferBytes,
                 EnableRaisingEvents   = true,
             };
+            _dirWatcher.Error   += OnWatcherError;
             _dirWatcher.Created += (_, e) => OnDirectoryChangedCore(e.FullPath);
             _dirWatcher.Deleted += (_, e) => OnDirectoryChangedCore(e.FullPath);
             _dirWatcher.Renamed += (_, e) =>
@@ -857,6 +861,7 @@ internal sealed class ProjectIndexService : IDisposable
                 NotifyFilter          = NotifyFilters.LastWrite | NotifyFilters.FileName,
                 EnableRaisingEvents   = true,
             };
+            _rootWatcher.Error   += OnWatcherError;
             _rootWatcher.Changed += (_, e) => OnRootFileChanged(e.FullPath);
             _rootWatcher.Created += (_, e) => OnRootFileChanged(e.FullPath);
             _rootWatcher.Deleted += (_, e) => OnRootFileChanged(e.FullPath);
@@ -915,6 +920,35 @@ internal sealed class ProjectIndexService : IDisposable
     }
 
     private void OnFileChanged(object _, FileSystemEventArgs e) => OnFileChangedCore(e.FullPath);
+
+    // The 8 KB default holds about sixty paths, fewer than a checkout or a build changes at once.
+    private const int WatcherBufferBytes = 64 * 1024;
+
+    private void OnWatcherError(object _, ErrorEventArgs e) => OnEventsLost(e.GetException());
+
+    /// <summary>
+    /// A watcher lost events — its buffer overflowed, or it failed — and no event says which files changed: both indexes
+    /// read the whole root again (the search index keeps every vector whose chunk did not change).
+    /// </summary>
+    /// <remarks>⚠ Without it, a <c>git checkout</c> that changes a few hundred files leaves deleted files served as current
+    /// and new ones never indexed, and <c>rename_symbol</c> refuses "index out of date" until the process ends.</remarks>
+    internal void OnEventsLost(Exception cause)
+    {
+        Diagnostics.Swallow("ProjectIndexService.Watcher", cause);
+        if (_watchedRoot is not { } root) return;
+        // A watcher that FAILED raises nothing more (one that overflowed goes on): the next SetRoot arms a new one.
+        if (cause is not InternalBufferOverflowException) _watchedRoot = null;
+        // One reading at a time: a checkout overflows the buffers several times, and each would read the whole root.
+        if (Interlocked.Exchange(ref _rereadQueued, 1) == 1) return;
+        _ = Task.Run(async () =>
+        {
+            Volatile.Write(ref _rereadQueued, 0);   // what is lost from here on needs a reading of its own
+            Lsp.CSharpSemanticIndex.NotifyExclusionsChanged(root);   // re-reads every file of the root
+            if (!string.IsNullOrEmpty(IndexedRoot)) await QueueDirectoryAsync(root).ConfigureAwait(false);
+        });
+    }
+
+    private int _rereadQueued;
 
     /// <summary>
     /// When <paramref name="path"/> is an ignore file of the workspace, every file is judged again — the indexed ones it now

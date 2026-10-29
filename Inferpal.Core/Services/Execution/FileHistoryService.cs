@@ -881,10 +881,17 @@ internal class FileHistoryService
     /// </summary>
     private void TrimRuns(byte[] key)
     {
-        foreach (var old in RunFiles().Where(f => ReadRunFile(f, key) is not null)
-                                      .OrderByDescending(Path.GetFileName, StringComparer.Ordinal)
-                                      .Skip(MaxRetainedRuns))
+        var files = RunFiles();
+        // The runs parsed follow the folder: a file the other editor's process trimmed, or one deleted by hand, leaves too.
+        lock (_runFileCache)
+            foreach (var gone in _runFileCache.Keys.Except(files, PathComparer.Default).ToList()) _runFileCache.Remove(gone);
+        foreach (var old in files.Where(f => ReadRunFile(f, key) is not null)
+                                 .OrderByDescending(Path.GetFileName, StringComparer.Ordinal)
+                                 .Skip(MaxRetainedRuns))
+        {
             try { File.Delete(old); } catch { }
+            if (!File.Exists(old)) lock (_runFileCache) _runFileCache.Remove(old);
+        }
     }
 
     /// <summary>The anchor of the workspace root — its git work tree, else the root itself — or <c>null</c> without one.</summary>

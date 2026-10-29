@@ -44,9 +44,9 @@ public class EditThatDidNotApplyTests
         public Task<ActiveDocument?> GetActiveDocumentAsync(CancellationToken ct) =>
             Task.FromResult<ActiveDocument?>(new ActiveDocument(Path, "before"));
 
-        public Task<string?> InsertAtCursorAsync(string text, CancellationToken ct) =>
+        public Task<string?> InsertAtCursorAsync(string text, string path, CancellationToken ct) =>
             Task.FromResult<string?>(null);
-        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, CancellationToken ct) =>
+        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, CancellationToken ct) =>
             Task.FromResult<EditorEditResult?>(null);
         public Task<string?> GetEditorDiagnosticsAsync(CancellationToken ct) => Task.FromResult<string?>(null);
     }
@@ -59,9 +59,9 @@ public class EditThatDidNotApplyTests
         public IReadOnlyList<string> GetOpenDocumentPaths() => [];
         public Task<ActiveDocument?> GetActiveDocumentAsync(CancellationToken ct) =>
             Task.FromResult<ActiveDocument?>(null);
-        public Task<string?> InsertAtCursorAsync(string text, CancellationToken ct) =>
+        public Task<string?> InsertAtCursorAsync(string text, string path, CancellationToken ct) =>
             Task.FromResult<string?>(null);
-        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, CancellationToken ct) =>
+        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, CancellationToken ct) =>
             Task.FromResult<EditorEditResult?>(null);
         public Task<string?> GetEditorDiagnosticsAsync(CancellationToken ct) => Task.FromResult<string?>(null);
     }
@@ -162,9 +162,9 @@ public class EditThatDidNotApplyTests
         public IReadOnlyList<string> GetOpenDocumentPaths() => [Path];
         public Task<ActiveDocument?> GetActiveDocumentAsync(CancellationToken ct) =>
             Task.FromResult<ActiveDocument?>(new ActiveDocument(Path, "before"));
-        public Task<string?> InsertAtCursorAsync(string text, CancellationToken ct) =>
+        public Task<string?> InsertAtCursorAsync(string text, string path, CancellationToken ct) =>
             Task.FromResult<string?>(Path);
-        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, CancellationToken ct) =>
+        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, CancellationToken ct) =>
             Task.FromResult<EditorEditResult?>(new EditorEditResult(Path, ReplacedSelection: true));
         public Task<string?> GetEditorDiagnosticsAsync(CancellationToken ct) => Task.FromResult<string?>(null);
     }

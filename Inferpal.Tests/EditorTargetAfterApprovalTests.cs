@@ -28,13 +28,13 @@ public class EditorTargetAfterApprovalTests
         public Task<ActiveDocument?> GetActiveDocumentAsync(CancellationToken ct) =>
             Task.FromResult<ActiveDocument?>(new ActiveDocument(Active, "text\n"));
 
-        public Task<string?> InsertAtCursorAsync(string text, CancellationToken ct)
+        public Task<string?> InsertAtCursorAsync(string text, string path, CancellationToken ct)
         {
             Writes++;
             return Task.FromResult<string?>(Active);
         }
 
-        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, CancellationToken ct)
+        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, CancellationToken ct)
         {
             Writes++;
             return Task.FromResult<EditorEditResult?>(new EditorEditResult(Active, ReplacedSelection: true));
@@ -97,5 +97,46 @@ public class EditorTargetAfterApprovalTests
             .ExecuteAsync(Args(new { text = "hello" }), CancellationToken.None);
 
         Assert.Equal(1, editor.Writes);
+    }
+
+    private sealed record EditNote(string Text, string? Path);
+
+    /// <summary>VS Code's side of the edit: records the document each edit was approved for.</summary>
+    private sealed class EditorThatRecords
+    {
+        public readonly List<string?> ApprovedFor = [];
+
+        [StreamJsonRpc.JsonRpcMethod("editor/insertAtCursor", UseSingleObjectParameterDeserialization = true)]
+        public string? Insert(EditNote note) { ApprovedFor.Add(note.Path); return null; }
+
+        [StreamJsonRpc.JsonRpcMethod("editor/replaceSelection", UseSingleObjectParameterDeserialization = true)]
+        public Host.EditResultDto Replace(EditNote note) { ApprovedFor.Add(note.Path); return new Host.EditResultDto(null, false); }
+    }
+
+    /// <summary>
+    /// ⚠ The host's idea of VS Code's active document lags the editor's (its notifications arrive out of order, the focus
+    /// moves while the card waits): the editor is told which document the edit was approved for, and checks it where the
+    /// edit is applied.
+    /// </summary>
+    [Fact]
+    public async Task VsCode_IsToldTheApprovedDocument_AndChecksItWhereTheEditIsApplied()
+    {
+        var (hostSide, editorSide) = Nerdbank.Streams.FullDuplexStream.CreatePair();
+        var editor = new EditorThatRecords();
+        using var editorRpc = Host.HostRpc.Create(editorSide, editorSide, editor);
+        using var hostRpc   = Host.HostRpc.Create(hostSide, hostSide);
+        editorRpc.StartListening();
+        hostRpc.StartListening();
+        var surface = new Host.RpcEditorSurface(hostRpc, new OpenDocumentOverlay());
+
+        await surface.InsertAtCursorAsync("x", Approved, CancellationToken.None);
+        await surface.ReplaceSelectionAsync("x", Approved, CancellationToken.None);
+
+        Assert.Equal([Approved, Approved], editor.ApprovedFor);
+        var bridge = WebviewRebuildTests.TsCode("editorBridge.ts");
+        foreach (var method in new[] { "async insertAtCursor(", "async replaceSelection(" })
+            Assert.Contains("!this.isApproved(editor, path)", WebviewRebuildTests.Body(bridge, method), StringComparison.Ordinal);
+        Assert.Contains("samePath(editor.document.uri.fsPath, path)",
+                        WebviewRebuildTests.Body(bridge, "private isApproved("), StringComparison.Ordinal);
     }
 }

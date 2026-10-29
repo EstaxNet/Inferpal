@@ -69,8 +69,8 @@ internal interface IEditorSurface
     Task<ActiveDocument?> GetActiveDocumentAsync(CancellationToken ct);
 
     /// <summary>
-    /// Inserts <paramref name="text"/> at the caret of the active document, and returns the file
-    /// path.
+    /// Inserts <paramref name="text"/> at the caret of the active document when it is <paramref name="path"/> — the one
+    /// the edit was approved for — and returns the file path; <c>null</c> when another document is active.
     /// </summary>
     /// <remarks>
     /// ⚠ <c>null</c> means <b>the edit did not apply</b> — the document changed under it, it is
@@ -79,13 +79,16 @@ internal interface IEditorSurface
     /// refuses when there is none. Reporting it as "no file open" made this tool contradict
     /// <c>get_active_document</c> on the same session.
     /// </remarks>
-    Task<string?> InsertAtCursorAsync(string text, CancellationToken ct);
+    Task<string?> InsertAtCursorAsync(string text, string path, CancellationToken ct);
 
     /// <summary>
     /// Replaces the current selection with <paramref name="text"/> (inserts at the caret when
-    /// the selection is empty). Returns <c>null</c> when no editor is active.
+    /// the selection is empty) when the active document is <paramref name="path"/>, the one the edit was approved for.
+    /// Returns <c>null</c> when no editor, or another document, is active.
     /// </summary>
-    Task<EditorEditResult?> ReplaceSelectionAsync(string text, CancellationToken ct);
+    /// <remarks>⚠ Checked where the edit is applied: the adapter's idea of the active document can lag the editor's
+    /// (VS Code's notifications reach the host out of order), and the edit would land in a file nobody approved.</remarks>
+    Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, CancellationToken ct);
 
     /// <summary>
     /// Live diagnostics from the editor's language services (Problems panel), pre-formatted

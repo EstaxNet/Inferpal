@@ -357,6 +357,48 @@ public class BackgroundTaskQueueTests
         Assert.NotNull(queue.Get(second));
     }
 
+    [Fact]
+    public async Task FinishedTasks_AreCapped_ButOneThatProposedChangesIsNeverForgotten()
+    {
+        var proposal = new TaskProposal("write_file", "a.cs", "write a.cs", Diff: null);
+        using var queue = new BackgroundTaskQueue((task, _, _) => Task.FromResult(task.Id == "t1"
+            ? new BackgroundTaskQueue.TaskRunOutcome("proposed", [proposal])
+            : BackgroundTaskQueue.TaskRunOutcome.Of("done")));
+
+        for (var i = 0; i < BackgroundTaskQueue.MaxFinished + 2; i++)
+        {
+            var id = queue.Submit($"task {i}")!;
+            await WaitUntil(() => queue.Get(id)?.IsFinished == true, $"{id} to finish");
+        }
+
+        Assert.Equal(BackgroundTaskQueue.MaxFinished, queue.List().Count);
+        Assert.NotNull(queue.Get("t1"));   // its proposal is still there to apply
+        Assert.Null(queue.Get("t2"));      // the oldest that proposed nothing made room
+        Assert.Null(queue.Get("t3"));
+        Assert.NotNull(queue.Get("t4"));
+    }
+
+    [Fact]
+    public async Task TheTaskThatJustFinished_IsNeverTheOneForgotten()
+    {
+        // Every older task proposed changes: the only one without is the task whose report nobody has read yet.
+        var proposal = new TaskProposal("write_file", "a.cs", "write a.cs", Diff: null);
+        using var queue = new BackgroundTaskQueue((task, _, _) => Task.FromResult(
+            int.Parse(task.Id[1..]) <= BackgroundTaskQueue.MaxFinished
+                ? new BackgroundTaskQueue.TaskRunOutcome("proposed", [proposal])
+                : BackgroundTaskQueue.TaskRunOutcome.Of("read-only report")));
+
+        string? last = null;
+        for (var i = 0; i <= BackgroundTaskQueue.MaxFinished; i++)
+        {
+            last = queue.Submit($"task {i}")!;
+            var id = last;
+            await WaitUntil(() => queue.Get(id)?.IsFinished == true || queue.List().All(t => t.Id != id), $"{id} to finish");
+        }
+
+        Assert.Equal("read-only report", queue.Get(last!)?.Result);
+    }
+
     /// <summary>
     /// A task still QUEUED at shutdown never reached a terminal state: the worker saw
     /// <c>_disposed</c> and left, and the task stayed "waiting" forever.

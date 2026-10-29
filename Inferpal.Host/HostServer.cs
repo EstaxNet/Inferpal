@@ -98,8 +98,12 @@ internal sealed partial class HostServer : IDisposable
 
     // ── Lifecycle ──────────────────────────────────────────────────────────────
 
+    // Slot-held from the start: a re-entrant initialize would otherwise dispose MCP/shells/tools under a running agent
+    // loop — and one refused after building its services would leave them running (the index's watcher, the docs load).
     [JsonRpcMethod("initialize", UseSingleObjectParameterDeserialization = true)]
-    public InitializeResult Initialize(InitializeParams p)
+    public InitializeResult Initialize(InitializeParams p) => WithTurnSlotFunc("initialize", () => InitializeHeld(p));
+
+    private InitializeResult InitializeHeld(InitializeParams p)
     {
         var rpc = _rpc ?? throw new InvalidOperationException("RPC connection not attached.");
         _editorLocale = NormalizeLocale(p.Locale);
@@ -167,9 +171,7 @@ internal sealed partial class HostServer : IDisposable
         // once the session exists (below).
         index.SetRoot(p.RootDir);
 
-        // Slot-held: a re-entrant initialize would otherwise dispose MCP/shells/tools under a
-        // running agent loop. The invariant belongs here, not in the adapter's good manners.
-        WithTurnSlot("initialize", () => _session?.Dispose());
+        _session?.Dispose();
         _session = new HostSession
         {
             Config       = config,

@@ -792,8 +792,8 @@ public sealed class ContentExclusionTests : IDisposable
         public bool IsAvailable => true;
         public string? ActiveDocumentPath => document.Path;
         public Task<ActiveDocument?> GetActiveDocumentAsync(CancellationToken ct) => Task.FromResult<ActiveDocument?>(document);
-        public Task<string?> InsertAtCursorAsync(string text, CancellationToken ct) { Inserted = text; return Task.FromResult<string?>("inserted"); }
-        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, CancellationToken ct) => Task.FromResult<EditorEditResult?>(null);
+        public Task<string?> InsertAtCursorAsync(string text, string path, CancellationToken ct) { Inserted = text; return Task.FromResult<string?>("inserted"); }
+        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, CancellationToken ct) => Task.FromResult<EditorEditResult?>(null);
         public Task<string?> GetEditorDiagnosticsAsync(CancellationToken ct) => Task.FromResult<string?>(null);
         public IReadOnlyList<string> GetOpenDocumentPaths() => [document.Path];
     }

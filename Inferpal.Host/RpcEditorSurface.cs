@@ -74,13 +74,13 @@ internal sealed class RpcEditorSurface : IEditorSurface
         }
     }
 
-    public async Task<string?> InsertAtCursorAsync(string text, CancellationToken ct)
+    public async Task<string?> InsertAtCursorAsync(string text, string path, CancellationToken ct)
     {
         if (!_hasEditor) return null;
         try
         {
             return await _rpc.InvokeWithParameterObjectAsync<string?>(
-                "editor/insertAtCursor", new { text }, ct);
+                "editor/insertAtCursor", new { text, path }, ct);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
@@ -106,13 +106,13 @@ internal sealed class RpcEditorSurface : IEditorSurface
         }
     }
 
-    public async Task<EditorEditResult?> ReplaceSelectionAsync(string text, CancellationToken ct)
+    public async Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, CancellationToken ct)
     {
         if (!_hasEditor) return null;
         try
         {
             var result = await _rpc.InvokeWithParameterObjectAsync<EditResultDto?>(
-                "editor/replaceSelection", new { text }, ct);
+                "editor/replaceSelection", new { text, path }, ct);
             return string.IsNullOrEmpty(result?.Path)
                 ? null
                 : new EditorEditResult(result!.Path!, result.ReplacedSelection);

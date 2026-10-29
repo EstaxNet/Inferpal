@@ -115,4 +115,47 @@ public sealed class FolderMoveReindexTests : IDisposable
         Assert.Contains("New", declaration!.RelPath);
         Assert.Equal(1, index.FileCount);
     }
+
+    [Fact]
+    public async Task ChangesAWatcherLost_AreReadFromTheDisk_ByBothIndexes()
+    {
+        var svc = IndexedService();
+        await WaitUntilAsync(async () => await ChunksOf(svc, OldFile) > 0, "the initial pass indexed the file");
+        CSharpSemanticIndex.ResetCacheForTests();
+        var index = CSharpSemanticIndex.ForWorkspace(_root);
+        index.Build();
+
+        // A buffer that overflowed: the file below is written and no event names it.
+        foreach (var name in new[] { "_watcher", "_dirWatcher", "_rootWatcher" })
+            if (typeof(ProjectIndexService).GetField(name, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+                    .GetValue(svc) is FileSystemWatcher watcher)
+                watcher.EnableRaisingEvents = false;
+        var added = Path.Combine(_root, "src", "Old", "Gadget.cs");
+        File.WriteAllText(added, string.Join('\n', "public class Gadget", "{", "    public int One() => 1;", "    public int Two() => 2;", "}"));
+
+        svc.OnEventsLost(new InternalBufferOverflowException());
+
+        await WaitUntilAsync(async () => await ChunksOf(svc, added) > 0, "the search index read the file no event named");
+        await WaitUntilAsync(() => Task.FromResult(index.FindReferences("Gadget").Declaration is not null), "the C# index read it too");
+    }
+
+    [Fact]
+    public async Task AWatcherThatFailed_IsArmedAgain_AndOneThatOverflowedIsKept()
+    {
+        var svc = IndexedService();
+        await WaitUntilAsync(async () => await ChunksOf(svc, OldFile) > 0, "the initial pass indexed the file");
+        var field = typeof(ProjectIndexService).GetField("_watcher", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+
+        // Reference arm: a watcher whose buffer overflowed still raises events.
+        var watcher = field.GetValue(svc);
+        svc.OnEventsLost(new InternalBufferOverflowException());
+        svc.SetRoot(_root);
+        Assert.Same(watcher, field.GetValue(svc));
+
+        // A watcher that failed (a network share gone for a moment) raises nothing more: the next SetRoot replaces it.
+        svc.OnEventsLost(new IOException("the share went away"));
+        svc.SetRoot(_root);
+        Assert.NotNull(field.GetValue(svc));
+        Assert.NotSame(watcher, field.GetValue(svc));
+    }
 }

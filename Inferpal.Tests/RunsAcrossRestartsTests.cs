@@ -322,6 +322,18 @@ public sealed class RunsAcrossRestartsTests : IDisposable
 
         Assert.Equal(16, RunFiles().Length);   // fifteen runs, and the stranger
         Assert.True(System.IO.File.Exists(stranger));
+        // What a run file parsed to is not kept past its file: a long session would hold every run it ever wrote.
+        var cache = (System.Collections.ICollection)typeof(FileHistoryService)
+            .GetField("_runFileCache", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .GetValue(history)!;
+        Assert.InRange(cache.Count, 1, 16);
+
+        // Nor past a file another process trimmed, or someone deleted.
+        foreach (var gone in RunFiles().Where(f => f != stranger).Take(5)) System.IO.File.Delete(gone);
+        history.BeginRun();
+        await Edit(history, File("after.txt", "v0"), "v1");
+        history.EndRun();
+        Assert.InRange(cache.Count, 1, RunFiles().Length);
     }
 
     [Fact]

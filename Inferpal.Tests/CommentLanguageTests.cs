@@ -92,11 +92,16 @@ public sealed class CommentLanguageTests
                 var line = raw.TrimStart();
                 if (!(line.StartsWith("//", StringComparison.Ordinal) || line.StartsWith('*')))
                 {
-                    // ⚠ And a comment that ENDS a line of code — a cleanup catch's block comment — which a reader of comment
-                    // lines alone never sees. Taken from its opening on, the code before it left out.
-                    var block = line.IndexOf("/*", StringComparison.Ordinal);
-                    if (block < 0) continue;
-                    line = line[block..];
+                    // ⚠ And a comment that ENDS a line of code — a cleanup catch's block comment, a `//` after a
+                    // statement — which a reader of comment lines alone never sees. Taken from its opening on, the code
+                    // before it left out; string and character literals first, where "//" is a URL or a path.
+                    var code  = Regex.Replace(line, @"@?\$?""(?:[^""\\]|\\.)*""|'(?:[^'\\]|\\.)*'|`[^`]*`", "\"\"",
+                                              RegexOptions.None, TimeSpan.FromSeconds(5));
+                    var block = code.IndexOf("/*", StringComparison.Ordinal);
+                    var slash = code.IndexOf("//", StringComparison.Ordinal);
+                    var start = block < 0 ? slash : slash < 0 ? block : Math.Min(block, slash);
+                    if (start < 0) continue;
+                    line = code[start..];
                 }
 
                 // ⚠ Quoted text is the product's own, in whatever language it ships — and a

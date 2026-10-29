@@ -94,8 +94,9 @@ export interface EditorDelegate {
   /** The token relays the host's `$/cancelRequest` (turn cancelled) — honour it: deny and retire the card. */
   approvalRequest(note: ApprovalNote, token?: CancellationToken): Promise<number>;
   activeDocument(): Promise<ActiveDocumentDto>;
-  insertAtCursor(text: string): Promise<string | null>;
-  replaceSelection(text: string): Promise<EditResultDto>;
+  /** `path`: the document the edit was approved for — another one active refuses (null), it never takes the edit. */
+  insertAtCursor(text: string, path?: string): Promise<string | null>;
+  replaceSelection(text: string, path?: string): Promise<EditResultDto>;
   /** Formatted Problems-panel diagnostics, or null when clean (host builds instead). */
   editorDiagnostics(): Promise<string | null>;
   /** Stores an opaque payload in the editor's secret store and echoes back what to keep. */
@@ -334,8 +335,9 @@ export class HostClient {
     conn.onRequest('approval/request', (note: ApprovalNote, token: CancellationToken) =>
       this.delegate.approvalRequest(note, token));
     conn.onRequest('editor/activeDocument', () => this.delegate.activeDocument());
-    conn.onRequest('editor/insertAtCursor', (p: { text: string }) => this.delegate.insertAtCursor(p.text));
-    conn.onRequest('editor/replaceSelection', (p: { text: string }) => this.delegate.replaceSelection(p.text));
+    conn.onRequest('editor/insertAtCursor', (p: { text: string; path?: string }) => this.delegate.insertAtCursor(p.text, p.path));
+    conn.onRequest('editor/replaceSelection', (p: { text: string; path?: string }) =>
+      this.delegate.replaceSelection(p.text, p.path));
     conn.onRequest('editor/diagnostics', () => this.delegate.editorDiagnostics());
     // Non-Windows hosts have no DPAPI: MCP OAuth tokens are encrypted by the editor's own
     // secret store (OS keychain) instead of being written in clear text.
@@ -423,7 +425,8 @@ export class HostClient {
       // connection already dead — kill below
     }
     this.teardown();
-    if (proc && proc.exitCode === null) {
+    // A process a signal ended has no exit code, and its 'exit' has already fired.
+    if (proc && proc.exitCode === null && proc.signalCode === null) {
       await new Promise<void>((resolve) => {
         const timer = setTimeout(() => {
           proc.kill();
