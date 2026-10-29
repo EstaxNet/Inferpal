@@ -350,6 +350,9 @@ internal sealed record TabsParams(IReadOnlyList<string>? Paths);
 /// <summary>Reverse `editor/activeDocument` answer from the adapter.</summary>
 internal sealed record ActiveDocumentDto(string? Path, string? Text);
 
+/// <summary>Answer to <c>editor/selection</c>: the active file editor's selection, with its path.</summary>
+internal sealed record SelectionDto(string? Path, string? Text);
+
 /// <summary>Reverse `editor/replaceSelection` answer from the adapter.</summary>
 internal sealed record EditResultDto(string? Path, bool ReplacedSelection);
 

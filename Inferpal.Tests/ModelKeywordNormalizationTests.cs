@@ -173,7 +173,7 @@ public class UpdateMemoryKeywordTests
             Task.FromResult<ActiveDocument?>(new ActiveDocument(path, string.Empty));
         public Task<string?> InsertAtCursorAsync(string text, string path, CancellationToken ct) =>
             Task.FromResult<string?>(path);
-        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, CancellationToken ct) =>
+        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, string? selection, CancellationToken ct) =>
             Task.FromResult<EditorEditResult?>(new EditorEditResult(path, ReplacedSelection: true));
         public Task<string?> GetEditorDiagnosticsAsync(CancellationToken ct) => Task.FromResult<string?>(null);
     }

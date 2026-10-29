@@ -48,18 +48,18 @@ internal class ReplaceSelectionTool : ITool
 
         // This one DESTROYS the selected text, so the prompt is the more load-bearing of the two —
         // see EditorWriteGate for what running without it bypassed.
-        var gate = await EditorWriteGate.AuthorizeAsync(_editor, _approval, _history, Name, text, ct);
+        var gate = await EditorWriteGate.AuthorizeAsync(_editor, _approval, _history, Name, text, ct, replacesSelection: true);
         if (!gate.MayProceed) return gate.Refusal!;
 
         text = gate.Text!;
         EditorEditResult? result;
-        try { result = await _editor.ReplaceSelectionAsync(text, gate.Document!.Path, ct); }
+        try { result = await _editor.ReplaceSelectionAsync(text, gate.Document!.Path, gate.Selection, ct); }
         catch (Exception ex) when (ex is not OperationCanceledException) { gate.NotApplied?.Invoke(); throw; }
         // ⚠ See InsertAtCursorTool: past the gate, null means "the edit did not apply".
         if (result is null)
         {
             gate.NotApplied?.Invoke();
-            return Strings.EditNotApplied(gate.Document!.Path);
+            return await EditorWriteGate.SelectionChangedAsync(_editor, gate, ct) ?? Strings.EditNotApplied(gate.Document!.Path);
         }
 
         return result.ReplacedSelection

@@ -49,27 +49,47 @@ internal sealed class VsEditorSurface : IEditorSurface
         return VsEditResult.Applied(response) ? written : null;
     }
 
-    public async Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, CancellationToken ct)
+    public async Task<EditorSelection?> GetSelectionAsync(CancellationToken ct)
+    {
+        // Best-effort: what the card shows besides the new text, never a reason for the call to fail.
+        try
+        {
+            var view = await GetActiveViewAsync(ct);
+            return view is null
+                ? null
+                : new EditorSelection(view.Document.Uri.LocalPath, new TextRange(view.Selection.Start, view.Selection.End).CopyToString());
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("VsEditorSurface.GetSelection", ex);
+            return null;
+        }
+    }
+
+    public async Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, string? selection, CancellationToken ct)
     {
         var view = await GetActiveViewAsync(ct);
         if (view is null || !PathComparer.Default.Equals(view.Document.Uri.LocalPath, path)) return null;
+        // The selection the card showed, or nothing: one changed while the card waited was never approved.
+        if (selection is not null && new TextRange(view.Selection.Start, view.Selection.End).CopyToString() != selection) return null;
 
-        var selection = view.Selection;
+        var current = view.Selection;
         var written   = view.FilePath ?? view.Document.Uri.LocalPath;
 
         var response = await _vs.Editor().EditAsync(
             batch =>
             {
                 var docEditor = view.Document.AsEditable(batch);
-                if (selection.IsEmpty)
-                    docEditor.Insert(selection.InsertionPosition, text);
+                if (current.IsEmpty)
+                    docEditor.Insert(current.InsertionPosition, text);
                 else
-                    docEditor.Replace(new TextRange(selection.Start, selection.End), text);
+                    docEditor.Replace(new TextRange(current.Start, current.End), text);
             },
             ct);
 
         // null = the edit did not apply (the port's contract): the editor refuses rather than throws.
-        return VsEditResult.Applied(response) ? new EditorEditResult(written, ReplacedSelection: !selection.IsEmpty) : null;
+        return VsEditResult.Applied(response) ? new EditorEditResult(written, ReplacedSelection: !current.IsEmpty) : null;
     }
 
     // VS has no cheap cross-language diagnostics query in the out-of-proc SDK; the tool's

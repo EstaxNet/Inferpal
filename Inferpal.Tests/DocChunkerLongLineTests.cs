@@ -49,6 +49,20 @@ public sealed class DocChunkerLongLineTests
     }
 
     [Fact]
+    public void AChunkOfOrdinaryLines_StaysWithinItsTarget()
+    {
+        // 500 estimated tokens at four characters each, lines of 17 that do not divide it: the line that would carry a chunk
+        // past the target starts the next one.
+        var text   = string.Join('\n', Enumerable.Range(0, 120).Select(i => $"Line {i:D3} " + new string('x', 58)));
+        var chunks = DocChunker.Chunk("site", "https://docs.example.com/a", "A", text);
+
+        Assert.True(chunks.Count > 3, $"only {chunks.Count} chunk(s)");   // witness: the page needs several
+        Assert.All(chunks, c => Assert.True(c.Content.Split('\n').Sum(l => (l.Length + 1) / 4) <= 500,
+            $"a chunk of {c.Content.Length} characters passes the target."));
+        Assert.Contains("Line 119", string.Join("\n", chunks.Select(c => c.Content)));   // nothing lost at the end
+    }
+
+    [Fact]
     public void CuttingAPage_LosesNoWord()
     {
         // ⚠ The half that matters: a cut that drops the tail is the defect the code chunker already

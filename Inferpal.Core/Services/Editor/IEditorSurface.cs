@@ -3,6 +3,9 @@ namespace Inferpal.Services.Editor;
 /// <summary>Editor-agnostic snapshot of the document that currently has focus.</summary>
 internal sealed record ActiveDocument(string Path, string Text);
 
+/// <summary>The text selected in a document (empty with none), with the document it was read in.</summary>
+internal sealed record EditorSelection(string Path, string Text);
+
 /// <summary>Result of a caret/selection edit: the file touched and whether a selection was replaced.</summary>
 internal sealed record EditorEditResult(string Path, bool ReplacedSelection);
 
@@ -81,14 +84,19 @@ internal interface IEditorSurface
     /// </remarks>
     Task<string?> InsertAtCursorAsync(string text, string path, CancellationToken ct);
 
+    /// <summary>The selection of the active document, with its path, or <c>null</c> when the surface cannot say (the card
+    /// then shows the new text alone).</summary>
+    Task<EditorSelection?> GetSelectionAsync(CancellationToken ct) => Task.FromResult<EditorSelection?>(null);
+
     /// <summary>
     /// Replaces the current selection with <paramref name="text"/> (inserts at the caret when
-    /// the selection is empty) when the active document is <paramref name="path"/>, the one the edit was approved for.
-    /// Returns <c>null</c> when no editor, or another document, is active.
+    /// the selection is empty) when the active document is <paramref name="path"/>, the one the edit was approved for,
+    /// and its selection still <paramref name="selection"/>, the one the card showed (<c>null</c>: not checked).
+    /// Returns <c>null</c> when no editor, another document or another selection is active.
     /// </summary>
     /// <remarks>⚠ Checked where the edit is applied: the adapter's idea of the active document can lag the editor's
     /// (VS Code's notifications reach the host out of order), and the edit would land in a file nobody approved.</remarks>
-    Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, CancellationToken ct);
+    Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, string? selection, CancellationToken ct);
 
     /// <summary>
     /// Live diagnostics from the editor's language services (Problems panel), pre-formatted

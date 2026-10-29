@@ -231,6 +231,12 @@ export interface ActiveDocumentDto {
   text: string | null;
 }
 
+/** The active file editor's selection ('' with none), with its path. */
+export interface SelectionDto {
+  path: string;
+  text: string;
+}
+
 export interface EditResultDto {
   path: string | null;
   replacedSelection: boolean;

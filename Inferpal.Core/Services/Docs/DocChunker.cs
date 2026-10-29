@@ -34,8 +34,16 @@ internal static class DocChunker
             int tokens = 0;
             int j      = start;
 
-            while (j < lines.Length && tokens < TargetChunkTokens)
-                tokens += Rag.ChunkText.EstimateLineTokens(lines[j++]);
+            // ⚠ A line that would carry the chunk past its target starts the next one (unless it is the chunk's first):
+            // added anyway, a chunk reached twice the target, past the window of a 512-token embedding model, whose
+            // vector then describes its beginning only.
+            while (j < lines.Length)
+            {
+                var lineTokens = Rag.ChunkText.EstimateLineTokens(lines[j]);
+                if (j > start && tokens + lineTokens > TargetChunkTokens) break;
+                tokens += lineTokens;
+                j++;
+            }
 
             int end = Math.Min(j - 1, lines.Length - 1);
 

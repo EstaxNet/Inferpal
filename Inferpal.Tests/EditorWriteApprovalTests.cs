@@ -34,7 +34,7 @@ public class EditorWriteApprovalTests
             return Task.FromResult<string?>(Path);
         }
 
-        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, CancellationToken ct)
+        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, string? selection, CancellationToken ct)
         {
             Writes++;
             return Task.FromResult<EditorEditResult?>(new EditorEditResult(Path, ReplacedSelection: true));

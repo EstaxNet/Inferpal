@@ -226,6 +226,24 @@ public sealed class ChatRedesignTests : IDisposable
         Assert.Equal(details.Split('\n').Length, card.Preview.Count);   // nothing dropped
     }
 
+    [Theory]
+    [InlineData("insert_at_cursor")]
+    [InlineData("replace_selection")]
+    [InlineData("update_memory")]
+    public void TheTextAnEditorToolWrites_IsShownAsWritten_NeverAsDiffMarks(string tool)
+    {
+        // The card is the only view of that text: read as diff marks, a YAML list shows as removals without its "- ".
+        var path    = Path.Combine(_dir, "ci.yaml");
+        var details = $"{path}\n\n- run: build\n+ not a mark\n  indented: two";
+
+        var card = ApprovalCard.Build(new ApprovalPrompt(tool, details, path, null, "m"), _dir);
+
+        Assert.All(card.Preview, l => Assert.Equal("ctx", l.Kind));
+        Assert.Contains(card.Preview, l => l.Text == "- run: build");
+        Assert.Contains(card.Preview, l => l.Text == "+ not a mark");
+        Assert.Contains(card.Preview, l => l.Text == "  indented: two");
+    }
+
     [Fact]
     public void ACommandsLeadingDash_IsWhatRuns_NeverARemoval()
     {

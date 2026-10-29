@@ -86,6 +86,7 @@ import {
   ModeSetResult,
   SetupPullProgress,
   SetupReason,
+  SelectionDto,
   TypingChip,
 } from './protocol';
 
@@ -96,7 +97,9 @@ export interface EditorDelegate {
   activeDocument(): Promise<ActiveDocumentDto>;
   /** `path`: the document the edit was approved for — another one active refuses (null), it never takes the edit. */
   insertAtCursor(text: string, path?: string): Promise<string | null>;
-  replaceSelection(text: string, path?: string): Promise<EditResultDto>;
+  replaceSelection(text: string, path?: string, selection?: string | null): Promise<EditResultDto>;
+  /** The active file editor's selection, with its path, or null without one. */
+  selection(): Promise<SelectionDto | null>;
   /** Formatted Problems-panel diagnostics, or null when clean (host builds instead). */
   editorDiagnostics(): Promise<string | null>;
   /** Stores an opaque payload in the editor's secret store and echoes back what to keep. */
@@ -336,8 +339,9 @@ export class HostClient {
       this.delegate.approvalRequest(note, token));
     conn.onRequest('editor/activeDocument', () => this.delegate.activeDocument());
     conn.onRequest('editor/insertAtCursor', (p: { text: string; path?: string }) => this.delegate.insertAtCursor(p.text, p.path));
-    conn.onRequest('editor/replaceSelection', (p: { text: string; path?: string }) =>
-      this.delegate.replaceSelection(p.text, p.path));
+    conn.onRequest('editor/replaceSelection', (p: { text: string; path?: string; selection?: string | null }) =>
+      this.delegate.replaceSelection(p.text, p.path, p.selection));
+    conn.onRequest('editor/selection', () => this.delegate.selection());
     conn.onRequest('editor/diagnostics', () => this.delegate.editorDiagnostics());
     // Non-Windows hosts have no DPAPI: MCP OAuth tokens are encrypted by the editor's own
     // secret store (OS keychain) instead of being written in clear text.

@@ -5,7 +5,7 @@ import { t } from './i18n';
 import type { CancellationToken } from 'vscode-jsonrpc';
 import { HostClient, EditorDelegate } from './hostClient';
 import { samePath } from './debugBridge';
-import { ActiveDocumentDto, ApprovalAnswer, ApprovalNote, EditResultDto, InputCard, InputFormAnswer, InputRequest } from './protocol';
+import { ActiveDocumentDto, ApprovalAnswer, ApprovalNote, EditResultDto, InputCard, InputFormAnswer, InputRequest, SelectionDto } from './protocol';
 
 /** Documents above this size are not mirrored (the host reads them from disk instead). */
 const MAX_MIRRORED_BYTES = 1024 * 1024;
@@ -434,9 +434,20 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
     }
   }
 
-  async replaceSelection(text: string, path?: string): Promise<EditResultDto> {
+  async selection(): Promise<SelectionDto | null> {
+    const editor = this.currentEditor();
+    return editor && editor.document.uri.scheme === 'file'
+      ? { path: editor.document.uri.fsPath, text: editor.document.getText(editor.selection) }
+      : null;
+  }
+
+  async replaceSelection(text: string, path?: string, selection?: string | null): Promise<EditResultDto> {
     const editor = this.currentEditor();
     if (!editor || editor.document.uri.scheme !== 'file' || !this.isApproved(editor, path)) {
+      return { path: null, replacedSelection: false };
+    }
+    // The selection the card showed, or nothing: one changed while the card waited was never approved.
+    if (typeof selection === 'string' && editor.document.getText(editor.selection) !== selection) {
       return { path: null, replacedSelection: false };
     }
     const hadSelection = !editor.selection.isEmpty;

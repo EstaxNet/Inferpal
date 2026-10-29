@@ -47,7 +47,10 @@ internal static class EditorWriteGate
     /// </param>
     /// <param name="NotApplied">Called when the editor then refuses the edit: takes the write back out of the run, which
     /// counted it at the backup.</param>
-    internal readonly record struct Decision(ActiveDocument? Document, string? Refusal, string? Text = null, Action? NotApplied = null)
+    /// <param name="Selection">The selection the card showed as replaced, for the editor to replace that one only;
+    /// <c>null</c> when not asked or not known.</param>
+    internal readonly record struct Decision(ActiveDocument? Document, string? Refusal, string? Text = null, Action? NotApplied = null,
+                                             string? Selection = null)
     {
         internal bool MayProceed => Document is not null;
     }
@@ -64,9 +67,10 @@ internal static class EditorWriteGate
     /// </summary>
     /// <param name="toolName">Tool name, as the rules and the prompt will show it.</param>
     /// <param name="text">The text about to be written, shown in the prompt.</param>
+    /// <param name="replacesSelection">The edit replaces the selection: the card shows it, as the diff it makes.</param>
     internal static async Task<Decision> AuthorizeAsync(
         IEditorSurface editor, IApprovalService approval, FileHistoryService history,
-        string toolName, string text, CancellationToken ct)
+        string toolName, string text, CancellationToken ct, bool replacesSelection = false)
     {
         if (!editor.IsAvailable) return new(null, Strings.ActiveDocNoContext);
 
@@ -80,7 +84,15 @@ internal static class EditorWriteGate
         // ⚠ The editor writes wherever the document lives — a settings file, another repository: outside the workspace,
         // never under a rule or an "Always" (the confinement every other write gets).
         var outside = !PathSanitizer.IsUnderRoot(document.Path, history.WorkspaceRoot?.Invoke());
-        if (!await approval.RequestApprovalAsync(toolName, $"{document.Path}\n\n{text}", ct, subject: document.Path,
+        var written = document.Text.Contains('\n') ? LineEndings.ToEol(text, LineEndings.Dominant(document.Text)) : text;
+        // ⚠ The selection it replaces, on the card: without it the card shows the new text alone, and a Ctrl+A made while
+        // it waits replaces the whole document under "selection replaced". Read with its path: the focus may have moved
+        // since the document was.
+        var selection = replacesSelection ? await editor.GetSelectionAsync(ct) : null;
+        if (selection is not null && !PathComparer.Default.Equals(selection.Path, document.Path))
+            return new(null, Switched(document.Path));
+        DiffInfo? diff = selection is { Text.Length: > 0 } ? new DiffInfo(selection.Text, written, document.Path) : null;
+        if (!await approval.RequestApprovalAsync(toolName, $"{document.Path}\n\n{text}", ct, subject: document.Path, diff: diff,
                                                  forcePrompt: outside))
             return new(null, Strings.RunCancelled);
 
@@ -88,15 +100,24 @@ internal static class EditorWriteGate
         // keeps working: applied to whatever is active after the approval, it lands in a file nobody approved — one the
         // rules may deny (the subject judged was this path), at its own caret or over its own selection.
         if (await editor.GetActiveDocumentAsync(ct) is not { } now || !PathComparer.Default.Equals(now.Path, document.Path))
-            return new(null, $"'{document.Path}' is no longer the active document: the user switched documents while the " +
-                             "approval was pending, so nothing was written. Ask the user to go back to that file, then try " +
-                             "again.");
+            return new(null, Switched(document.Path));
 
         // Best-effort, and deliberately of the file on disk: an unsaved buffer's previous state
         // lives in the editor's own undo stack, which is where the user looks for it. What the
         // snapshot buys is /undo-run, which reads the disk copy.
         var notApplied = await history.SnapshotBeforeEditorWriteAsync(document.Path, ct);
-        return new(document, null,
-            document.Text.Contains('\n') ? LineEndings.ToEol(text, LineEndings.Dominant(document.Text)) : text, notApplied);
+        return new(document, null, written, notApplied, selection?.Text);
     }
+
+    private static string Switched(string path) =>
+        $"'{path}' is no longer the active document: the user switched documents while the approval was pending, so " +
+        "nothing was written. Ask the user to go back to that file, then try again.";
+
+    /// <summary>What to say when the editor refused a replacement whose selection the card showed: the selection changed
+    /// while the card waited, or <c>null</c> when it did not (another cause).</summary>
+    internal static async Task<string?> SelectionChangedAsync(IEditorSurface editor, Decision gate, CancellationToken ct) =>
+        gate.Selection is { } shown && await editor.GetSelectionAsync(ct) is { } now && now.Text != shown
+            ? $"The selection in '{gate.Document!.Path}' changed while the approval was pending, so nothing was written. " +
+              "Ask the user to select the code to replace again, then try again."
+            : null;
 }

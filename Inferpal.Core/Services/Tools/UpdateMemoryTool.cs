@@ -107,7 +107,20 @@ internal class UpdateMemoryTool : ITool
         // Asked on the path, like every other file tool, so a rule or a force-prompt written for
         // a path covers this write too.
         var details = string.Join(Environment.NewLine, $"{memPath} ({mode})", string.Empty, content);
-        if (!await _approval.RequestApprovalAsync(Name, details, ct, subject: memPath))
+        // ⚠ What "replace" and "clear" remove, on the card as the change they make: the details show the new text alone,
+        // and memory.md is the file every later system prompt carries. Best-effort: unreadable, the card goes without.
+        DiffInfo? removes = null;
+        if (mode != "append" && File.Exists(memPath))
+        {
+            try
+            {
+                var before = await TextFileEncoding.ReadTextAsync(memPath, ct);
+                if (before.Length > 0) removes = new DiffInfo(before, mode == "clear" ? string.Empty : content, memPath);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex) { Diagnostics.Swallow("UpdateMemoryTool.PreviewDiff", ex); }
+        }
+        if (!await _approval.RequestApprovalAsync(Name, details, ct, subject: memPath, diff: removes))
             return Strings.RunCancelled;
 
         // Before the write, so /undo-run can put back a memory that "clear" or "replace" removed.

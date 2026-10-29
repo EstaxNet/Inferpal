@@ -36,19 +36,40 @@ public sealed class UpdateMemoryEmptyContentTests : IDisposable
         public IReadOnlyList<string> GetOpenDocumentPaths() => [];
         public Task<ActiveDocument?> GetActiveDocumentAsync(CancellationToken ct) => Task.FromResult<ActiveDocument?>(null);
         public Task<string?> InsertAtCursorAsync(string text, string path, CancellationToken ct) => Task.FromResult<string?>(null);
-        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, CancellationToken ct) => Task.FromResult<EditorEditResult?>(null);
+        public Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, string? selection, CancellationToken ct) => Task.FromResult<EditorEditResult?>(null);
         public Task<string?> GetEditorDiagnosticsAsync(CancellationToken ct) => Task.FromResult<string?>(null);
     }
 
     private sealed class Counting : IApprovalService
     {
         public int Asked;
+        public DiffInfo? Diff;
         public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct,
                                                string? subject = null, DiffInfo? diff = null, bool forcePrompt = false)
         {
             Asked++;
+            Diff = diff;
             return Task.FromResult(true);
         }
+    }
+
+    /// <summary>⚠ "clear" and "replace" remove what memory.md holds — the file every later system prompt carries: the card
+    /// shows it, as the change they make.</summary>
+    [Theory]
+    [InlineData("clear", "")]
+    [InlineData("replace", "Use spaces.")]
+    public async Task WhatAWriteRemovesFromMemory_IsOnItsCard(string mode, string content)
+    {
+        var memory = Path.Combine(_root, ".inferpal", "memory.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(memory)!);
+        File.WriteAllText(memory, "Never push to main.\n");
+        var approval = new Counting();
+
+        await new UpdateMemoryTool(approval, new FileHistoryService(), () => _root)
+            .ExecuteAsync(Args(new { mode, content }), CancellationToken.None);
+
+        Assert.Equal("Never push to main.\n", approval.Diff?.OldText);
+        Assert.Equal(content, approval.Diff?.NewText);
     }
 
     private static JsonElement Args(object value) =>

@@ -44,6 +44,18 @@ internal static class ApprovalCard
         "write_file", "apply_diff", "apply_edits", "restore_file", "update_memory", "insert_at_cursor", "replace_selection",
     };
 
+    /// <summary>
+    /// The tools whose details carry their change as <c>DiffComputer.ComputeText</c> rendered it — named, never inferred
+    /// from a path subject.
+    /// </summary>
+    /// <remarks>⚠ Inferred, the text <c>insert_at_cursor</c>, <c>replace_selection</c> or <c>update_memory</c> writes is
+    /// read as diff marks: a YAML list shown as removals, indented code one space short — on the card that is the only view
+    /// of it. A tool missing here shows its change uncoloured, never altered.</remarks>
+    private static readonly HashSet<string> RenderTheirChange = new(StringComparer.Ordinal)
+    {
+        "apply_edits", "rename_symbol", "delete_file", "restore_file",
+    };
+
     public static ApprovalCardModel Build(ApprovalPrompt prompt, string? root)
     {
         // A file tool's subject is its path; any other tool's is the string its rules match (an MCP call's raw JSON plus
@@ -102,11 +114,11 @@ internal static class ApprovalCard
             var lines = prompt.Details.Replace("\r\n", "\n").TrimEnd('\n').Split('\n');
             if (prompt.ToolName == "run_command" || lines.Length > 1 || lines[0].Length > SubjectChars)
             {
-                // ⚠ A file tool without a structured diff (apply_edits, rename_symbol, delete_file, restore_file) has
-                // its change RENDERED in its details by DiffComputer.ComputeText. Read as plain lines, every one was
-                // context: the card showed "-" and "+" as text, the change uncoloured. A command's lines stay as
-                // written — a "-" there is a character of what runs, not a removal.
-                preview.AddRange(pathSubject || prompt.ToolName == "rename_symbol"
+                // ⚠ The tools that render their change into their details (RenderTheirChange) are drawn as a change:
+                // read as plain lines, "-" and "+" show as text, the change uncoloured. Every other tool's lines stay as
+                // written — a "-" in a command, or in the text an editor tool inserts (a YAML list), is a character of
+                // what runs or is written, never a removal.
+                preview.AddRange(RenderTheirChange.Contains(prompt.ToolName)
                     ? RenderedDiff(lines)
                     : lines.Select(l => new ApprovalPreviewLine("ctx", l)));
                 if (!pathSubject) subject = string.Empty;

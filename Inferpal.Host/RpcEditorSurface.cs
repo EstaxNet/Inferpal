@@ -106,13 +106,29 @@ internal sealed class RpcEditorSurface : IEditorSurface
         }
     }
 
-    public async Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, CancellationToken ct)
+    public async Task<EditorSelection?> GetSelectionAsync(CancellationToken ct)
+    {
+        if (!_hasEditor) return null;
+        try
+        {
+            var dto = await _rpc.InvokeWithCancellationAsync<SelectionDto?>("editor/selection", cancellationToken: ct);
+            return dto is { Path: { Length: > 0 } path, Text: { } text } ? new EditorSelection(path, text) : null;
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("RpcEditorSurface.GetSelection", ex);
+            return null;   // an adapter without the handler: the card shows the new text alone
+        }
+    }
+
+    public async Task<EditorEditResult?> ReplaceSelectionAsync(string text, string path, string? selection, CancellationToken ct)
     {
         if (!_hasEditor) return null;
         try
         {
             var result = await _rpc.InvokeWithParameterObjectAsync<EditResultDto?>(
-                "editor/replaceSelection", new { text, path }, ct);
+                "editor/replaceSelection", new { text, path, selection }, ct);
             return string.IsNullOrEmpty(result?.Path)
                 ? null
                 : new EditorEditResult(result!.Path!, result.ReplacedSelection);

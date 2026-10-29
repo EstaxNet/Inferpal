@@ -107,7 +107,7 @@ public class McpToolServiceTests
         public IReadOnlyList<string> GetOpenDocumentPaths() => [];
         public Task<Inferpal.Services.Editor.ActiveDocument?> GetActiveDocumentAsync(CancellationToken ct) => Task.FromResult<Inferpal.Services.Editor.ActiveDocument?>(null);
         public Task<string?> InsertAtCursorAsync(string text, string path, CancellationToken ct) => Task.FromResult<string?>(null);
-        public Task<Inferpal.Services.Editor.EditorEditResult?> ReplaceSelectionAsync(string text, string path, CancellationToken ct) => Task.FromResult<Inferpal.Services.Editor.EditorEditResult?>(null);
+        public Task<Inferpal.Services.Editor.EditorEditResult?> ReplaceSelectionAsync(string text, string path, string? selection, CancellationToken ct) => Task.FromResult<Inferpal.Services.Editor.EditorEditResult?>(null);
         public Task<string?> GetEditorDiagnosticsAsync(CancellationToken ct) => Task.FromResult<string?>(null);
     }
 
