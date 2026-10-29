@@ -17,6 +17,40 @@ public class ClipboardAnnouncedOnlyWhenCopiedTests
     private static string ToolWindow(string file) => ConventionCoverageTests.CodeOnly(Path.Combine(
         ConversationPersistenceSilenceTests.RepoRoot(), "Inferpal", "ToolWindow", file));
 
+    /// <summary>
+    /// ⚠ The clipboard is touched in one file, on its own STA thread: read from the view-model's context (a pool thread),
+    /// WPF threw, and @clipboard said "Clipboard is empty" whatever had just been copied.
+    /// </summary>
+    [Fact]
+    public void TheClipboard_IsReadAndWritten_OnlyThroughTheHelper()
+    {
+        var dir = Path.Combine(ConversationPersistenceSilenceTests.RepoRoot(), "Inferpal");
+        var sources = Directory.EnumerateFiles(dir, "*.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                        && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .ToList();
+        Assert.True(sources.Count > 50, $"only {sources.Count} sources read: the scan is blind.");   // WITNESS
+        foreach (var file in sources.Where(f => Path.GetFileName(f) != "ClipboardHelper.cs"))
+            Assert.DoesNotContain("Clipboard.GetText(", ConventionCoverageTests.CodeOnly(file), StringComparison.Ordinal);
+        var helper = ToolWindow("ClipboardHelper.cs");
+        Assert.Contains("public static async Task<(string? Text, string? Error)> TryGetAsync(", helper, StringComparison.Ordinal);
+        var mentions = ToolWindow("InferpalToolWindowData.Mentions.cs");
+        Assert.Contains("await ClipboardHelper.TryGetAsync(", mentions, StringComparison.Ordinal);
+        Assert.Contains("Strings.MentionClipboardUnreadable(unread)", mentions, StringComparison.Ordinal);
+    }
+
+    /// <summary>⚠ VS Code's code-block copy announces nothing either: its "Copied!" came before the extension had copied,
+    /// and over a refused clipboard write the person pasted what the clipboard held before.</summary>
+    [Fact]
+    public void VsCodesCodeBlockCopy_AnnouncesNothing()
+    {
+        var markdown = WebviewRebuildTests.TsCode(Path.Combine("webview", "markdown.ts"));
+        Assert.Contains("dispatchCopy(", markdown, StringComparison.Ordinal);   // WITNESS
+        Assert.DoesNotContain("t('copied')", markdown, StringComparison.Ordinal);
+        Assert.DoesNotContain("copied: t(", WebviewRebuildTests.TsCode(Path.Combine("webview", "chatWebviewHtml.ts")),
+                              StringComparison.Ordinal);
+    }
+
     [Fact]
     public void TheHelper_SaysWhetherTheCopyLanded()
     {

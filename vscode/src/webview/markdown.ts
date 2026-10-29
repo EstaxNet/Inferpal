@@ -53,11 +53,11 @@ function decorateCodeBlock(pre: HTMLElement): void {
   copy.className = 'codeblock-copy';
   copy.textContent = t('copy');
   copy.title = t('copy');
+  // ⚠ Announces nothing, as in Visual Studio: the copy is the extension's, and a "Copied!" said before it is known would
+  // have the person paste what the clipboard held before. A copy that fails is said by the extension.
   copy.addEventListener('click', () => {
     const code = pre.querySelector('code');
     dispatchCopy(code ? code.textContent ?? '' : pre.textContent ?? '');
-    copy.textContent = t('copied');
-    setTimeout(() => { copy.textContent = t('copy'); }, 1500);
   });
   wrapper.appendChild(copy);
 }

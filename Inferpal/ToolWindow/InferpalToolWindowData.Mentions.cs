@@ -329,11 +329,13 @@ internal partial class InferpalToolWindowData
             {
                 case MentionKind.Clipboard:
                 {
-                    var clip = string.Empty;
-                    await RunOnVMContextAsync(() =>
+                    // ⚠ Read on its own STA thread: a failure is said, never shown as an empty clipboard.
+                    var (clip, unread) = await ClipboardHelper.TryGetAsync("Clipboard.ReadForMention");
+                    if (unread is not null)
                     {
-                        try { clip = System.Windows.Clipboard.GetText() ?? string.Empty; } catch (Exception ex) { Diagnostics.Swallow("Clipboard.ReadForMention", ex); }
-                    });
+                        await NotifyMentionAsync(Strings.MentionClipboardUnreadable(unread));
+                        return;
+                    }
                     if (string.IsNullOrWhiteSpace(clip))
                     {
                         await NotifyMentionAsync(Strings.MentionClipboardEmpty);

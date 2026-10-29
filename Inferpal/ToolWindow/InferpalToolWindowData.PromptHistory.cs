@@ -355,7 +355,18 @@ internal partial class InferpalToolWindowData
 
             streamItem = FinalizeStreamingBubble(streamItem);
 
-            if (streamItem is null)
+            // ⚠ A FAILED run returns its error as its answer: said whatever it streamed first ("I'll fix Foo.cs", then the
+            // request refused), as the chat turn says it — shown only over an empty bubble, the partial text stood as the
+            // fix and the loop ended without a word. The partial text is a notice, never an answer; the turn failed.
+            if (result.Failed)
+            {
+                _turnFailed = true;
+                KeepAsNotice(streamItem);
+                var failed = ChatMessageItem.NoticeMsg(result.FinalResponse);
+                ApplyItemTheme(failed);
+                Messages.Insert(Messages.Count - 2, failed);
+            }
+            else if (streamItem is null)
             {
                 var visibleFinal = Services.Presentation.MarkdownParser.StripThinkTags(result.FinalResponse);
                 if (Services.Presentation.MarkdownParser.HasPrintableText(visibleFinal))

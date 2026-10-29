@@ -1225,6 +1225,7 @@ internal static class Strings
     public static string DocsNotLoaded(string reason) => Format(Get(nameof(DocsNotLoaded)), reason);
     public static string ApprovalDiffNotOpened(string reason) => Format(Get(nameof(ApprovalDiffNotOpened)), reason);
     public static string MentionClipboardEmpty => Get(nameof(MentionClipboardEmpty));
+    public static string MentionClipboardUnreadable(string cause) => Format(Get(nameof(MentionClipboardUnreadable)), cause);
     public static string MentionNothingToAttach(string category) =>
         Format(Get(nameof(MentionNothingToAttach)), category);
     public static string BrowseError(string msg)              => Format(Get(nameof(BrowseError)),              msg);

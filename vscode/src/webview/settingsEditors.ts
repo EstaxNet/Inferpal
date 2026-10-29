@@ -673,6 +673,9 @@ function approvalRulesEditor(area: HTMLTextAreaElement, host: EditorHost): Struc
   let tableText: string | null = null;
   let askedText = '';
   let request = 0;
+  // Its own counter: drawn from the table's, an Add before the first answer made that answer stale, and the table
+  // stayed unknown.
+  let addRequest = 0;
   let pendingAdd = 0;
   let addError = '';
   const draft = { allow: false, tool: '', pattern: '' };
@@ -690,8 +693,12 @@ function approvalRulesEditor(area: HTMLTextAreaElement, host: EditorHost): Struc
       view.appendChild(el('p', 'warn', host.res('RulesTeamUnusable')));
     }
     const rows = table?.rows ?? [];
+    // ⚠ "No rule yet" only over a table the host read: unknown (the host down, a refusal), it would stand over a text
+    // box that holds rules.
     if (rows.length === 0) {
-      view.appendChild(el('p', 'lempty', host.res('RulesEmpty')));
+      if (table !== null) {
+        view.appendChild(el('p', 'lempty', host.res('RulesEmpty')));
+      }
     } else {
       const t = el('table', 'rules');
       const head = el('tr');
@@ -764,7 +771,7 @@ function approvalRulesEditor(area: HTMLTextAreaElement, host: EditorHost): Struc
     const add = addButton(host.res('RulesAddRule'));
     add.addEventListener('click', () => {
       keep();
-      pendingAdd = ++request;
+      pendingAdd = ++addRequest;
       host.post({ type: 'newRule', allow: draft.allow, tool: draft.tool, pattern: draft.pattern, requestId: pendingAdd });
     });
     form.append(effect, tool, pattern, add);

@@ -40,6 +40,8 @@ internal static class TestGenerationEdit
         string?                   request = null)
     {
         var sourcePath = sourceView.Document.Uri.LocalPath;
+        // The workspace's ignore files, before the planner judges the source and the test file by them.
+        WorkspaceExclusions.Follow();
 
         var sel        = sourceView.Selection;
         var sourceCode = !sel.IsEmpty
@@ -95,12 +97,18 @@ internal static class TestGenerationEdit
 
         try
         {
+            // ⚠ Written only over the file the plan was made for: one that changed or appeared while the model worked holds
+            // tests the plan never saw — replaced, they were gone (a new file, with no undo).
             if (!plan.Extended)
             {
                 // Brand-new file: write it to disk, then open it in the editor.
                 var dir = Path.GetDirectoryName(plan.TestPath);
                 if (!string.IsNullOrEmpty(dir))
                     Directory.CreateDirectory(dir);
+                if (File.Exists(plan.TestPath)
+                    && !plan.StillFits(await Services.Tools.TextFileEncoding.ReadTextAsync(plan.TestPath, ct)))
+                    return new Result(false, plan.TestFileName, plan.Extended,
+                                      Refusal: Localization.Strings.CodeActionDocumentChanged);
                 await File.WriteAllTextAsync(plan.TestPath, plan.Content, ct);
                 await vs.Documents().OpenTextDocumentAsync(new Uri(plan.TestPath), ct);
             }
@@ -109,6 +117,13 @@ internal static class TestGenerationEdit
                 // Existing file: open it and replace its whole content via an undoable edit.
                 var doc      = await vs.Documents().OpenTextDocumentAsync(new Uri(plan.TestPath), ct);
                 var fullText = doc.Text.CopyToString();
+                // The buffer, or the disk read as the plan read it: a file in a legacy encoding that Visual Studio decodes
+                // otherwise would never fit, and refused for good. A buffer edited since is given back by Ctrl+Z.
+                if (!plan.StillFits(fullText)
+                    && !(File.Exists(plan.TestPath)
+                         && plan.StillFits(await Services.Tools.TextFileEncoding.ReadTextAsync(plan.TestPath, ct))))
+                    return new Result(false, plan.TestFileName, plan.Extended,
+                                      Refusal: Localization.Strings.CodeActionDocumentChanged);
                 var range    = new TextRange(
                     new TextPosition(doc, 0),
                     new TextPosition(doc, fullText.Length));

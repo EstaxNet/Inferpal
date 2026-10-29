@@ -1945,6 +1945,82 @@ public partial class HostServerTests
     // ── sessions ───────────────────────────────────────────────────────────────
 
     /// <summary>
+    /// ⚠ A host started again (a crash, a restart) keeps the conversation's session name and its <c>/template</c>: VS Code
+    /// saves the screen to the slot, then loads it back, and the first save recorded what a fresh process knows —
+    /// nothing. <c>/branch</c> then wrote a new dated parent, and the template's prompt was gone from every question.
+    /// </summary>
+    [Fact]
+    public async Task AHostStartedAgain_KeepsTheSessionNameAndTheTemplate()
+    {
+        var root  = Directory.CreateTempSubdirectory("inferpal-restart-").FullName;
+        // VS Code's slot, the one this host reads and writes.
+        var store = new Inferpal.Services.Persistence.ConversationStore(
+            slotOwner: Inferpal.Services.Persistence.ConversationStore.VsCodeSlot);
+        const string template = "## Template\nAnswer as a code reviewer.";
+        try
+        {
+            // What the host before the restart left in the slot.
+            await store.SaveAsync("last_session", [new("user", "review this")], CancellationToken.None,
+                                  workspaceRoot: root, currentName: "feature-x", templateSuffix: template);
+
+            using var h = CreateHarness();
+            await h.InitializeAsync(rootDir: root).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            await h.Client.InvokeWithParameterObjectAsync<object?>("session/save", new
+            {
+                name     = "last_session",
+                messages = new object[] { new { role = "user", content = "review this, from the screen" } },
+            }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            var slot = await store.LoadAutoSaveAsync(root, CancellationToken.None);
+            Assert.Equal("review this, from the screen", slot!.Messages[0].Content);   // witness: the host's save is read
+            Assert.Equal("feature-x", slot.CurrentName);
+            Assert.Equal(template, slot.TemplateSuffix);
+        }
+        finally
+        {
+            try { await store.ForgetAutoSaveAsync(root, CancellationToken.None); } catch { }
+            try { Directory.Delete(root, true); } catch { }
+        }
+    }
+
+    /// <summary>
+    /// Reference arm: a start whose restore found nothing knows its conversation is a new one — its first auto-save never
+    /// takes a name or a <c>/template</c> from a slot written since by another window.
+    /// </summary>
+    [Fact]
+    public async Task AStartThatRestoredNothing_TakesNoNameFromTheSlot()
+    {
+        var root  = Directory.CreateTempSubdirectory("inferpal-fresh-").FullName;
+        var store = new Inferpal.Services.Persistence.ConversationStore(
+            slotOwner: Inferpal.Services.Persistence.ConversationStore.VsCodeSlot);
+        try
+        {
+            using var h = CreateHarness();
+            await h.InitializeAsync(rootDir: root).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            Assert.Null(await h.Client.InvokeWithParameterObjectAsync<SessionLoadResult?>(
+                "session/load", new { name = "last_session" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs)));
+
+            await store.SaveAsync("last_session", [new("user", "elsewhere")], CancellationToken.None,
+                                  workspaceRoot: root, currentName: "feature-x", templateSuffix: "## Template");
+            await h.Client.InvokeWithParameterObjectAsync<object?>("session/save", new
+            {
+                name     = "last_session",
+                messages = new object[] { new { role = "user", content = "a new question" } },
+            }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            var slot = await store.LoadAutoSaveAsync(root, CancellationToken.None);
+            Assert.Equal("a new question", slot!.Messages[0].Content);   // witness
+            Assert.Null(slot.CurrentName);
+            Assert.Null(slot.TemplateSuffix);
+        }
+        finally
+        {
+            try { await store.ForgetAutoSaveAsync(root, CancellationToken.None); } catch { }
+            try { Directory.Delete(root, true); } catch { }
+        }
+    }
+
+    /// <summary>
     /// The auto-save is one file for every project: VS Code reloads it at start-up, and it must come
     /// back only in the workspace that wrote it.
     /// </summary>
@@ -2143,6 +2219,54 @@ public partial class HostServerTests
 
         // Started (here it cannot: no such program) — tried, and its card says why.
         Assert.Contains(session.Mcp.Status, st => st.Name == "imported-tool");
+    }
+
+    /// <summary>
+    /// ⚠ The conversation's own switches are the editor's to give back to a host started again: <c>/tools off</c> says
+    /// itself, and <c>session/switches</c> puts them back — without it, a restart turned the tools back on behind a person
+    /// who had turned them off, stopped pausing a run in step mode, and put an unchecked X-Ray section back in every prompt.
+    /// </summary>
+    [Fact]
+    public async Task TheConversationsSwitches_AreSaid_AndGivenBackToAHostStartedAgain()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+        var session = h.Server.CurrentSession!;
+
+        var off = await h.Client.InvokeWithParameterObjectAsync<SlashCommandResult>(
+            "command/slash", new { text = "/tools off" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.Contains(off.Effects ?? [], e => e is { Kind: "stateChange", Name: "tools", Value: "off" });
+        Assert.False(session.ToolsEnabled);
+
+        using var again = CreateHarness();
+        await again.InitializeAsync();
+        var fresh = again.Server.CurrentSession!;
+        Assert.True(fresh.ToolsEnabled);   // witness: a host starts with them on
+        var answer = await again.Client.InvokeWithParameterObjectAsync<SessionSwitchesDto>(
+            "session/switches", new { toolsOff = true, stepMode = true, xrayOff = new[] { "memory" } })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.False(fresh.ToolsEnabled);
+        Assert.True(fresh.StepMode);
+        Assert.Contains("memory", fresh.XrayDisabledSections);
+        Assert.Equal((true, true), (answer.ToolsOff, answer.StepMode));
+    }
+
+    /// <summary>The extension records them as they change, and gives them back when the host is ready again.</summary>
+    [Fact]
+    public void VsCode_GivesTheSwitchesBack_WhenItsHostIsReadyAgain()
+    {
+        var provider = WebviewRebuildTests.TsCode("chatViewProvider.ts");
+        Assert.Contains("this.switches = await host.sessionSwitches(this.switches);", provider, StringComparison.Ordinal);
+        Assert.Contains("this.switches.toolsOff = e.value === 'off';", provider, StringComparison.Ordinal);
+        Assert.Contains("this.switches.stepMode = e.value === 'on';", provider, StringComparison.Ordinal);
+        // By the toggle, never rebuilt from the panel, which lists only the sections present now.
+        Assert.Contains("this.switches.xrayOff = this.switches.xrayOff.filter((id) => id !== msg.id).concat(msg.enabled ? [] : [msg.id]);",
+                        provider, StringComparison.Ordinal);
+        Assert.DoesNotContain("panel.sections.filter((s) => !s.enabled)", provider, StringComparison.Ordinal);
+        var ready = provider.IndexOf("this.switches = await host.sessionSwitches(", StringComparison.Ordinal);
+        Assert.True(ready > provider.IndexOf("this.planMode = await host.planMode(true);", StringComparison.Ordinal),
+                    "the switches are given back with the plan mode, when the host is ready again");
     }
 
     /// <summary>Visual Studio applies an import's MCP servers and language too, after saving.</summary>

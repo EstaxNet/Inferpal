@@ -87,6 +87,7 @@ import {
   SetupPullProgress,
   SetupReason,
   SelectionDto,
+  SessionSwitches,
   TypingChip,
 } from './protocol';
 
@@ -753,6 +754,11 @@ export class HostClient {
   /** The line for a new machine rule, or null when the host would not read it. */
   permissionsNewRule(allow: boolean, tool: string, pattern: string): Promise<string | null> {
     return this.connection().sendRequest<string | null>('permissions/newRule', { allow, tool, pattern });
+  }
+
+  /** The conversation's own switches given back to a host started again; answers them as the host holds them. */
+  sessionSwitches(switches: SessionSwitches): Promise<SessionSwitches> {
+    return this.connection().sendRequest<SessionSwitches>('session/switches', switches);
   }
 
   /** Read-only plan mode on or off (the chat's Plan segment); answers the state now. */

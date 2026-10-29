@@ -132,6 +132,40 @@ public sealed class TestGenerationClobberTests : IDisposable
         Assert.Null(plan.Refusal);
     }
 
+    /// <summary>
+    /// ⚠ The plan carries the test file's text it extends, and a test file that changed — or appeared — while the model
+    /// worked is not written over: Visual Studio replaced it whole, and the tests written meanwhile were gone (a new file,
+    /// with no undo). VS Code refuses the same two cases on its buffers' versions.
+    /// </summary>
+    [Fact]
+    public async Task ATestFileChangedWhileTheModelWorked_IsNotWrittenOver()
+    {
+        const string existing = "public class WidgetTests { [Fact] public void One() { } }\n";
+        var (source, test) = Fixture(existing);
+
+        var plan = await TestGenerationPlanner.PlanAsync(Model("public class WidgetTests { [Fact] public void Two() { } }"), "m",
+                                                         source, "public class Widget { }", CancellationToken.None);
+
+        Assert.True(plan is { Ok: true, Extended: true });
+        Assert.True(plan.StillFits(existing));
+        Assert.False(plan.StillFits(existing + "// written meanwhile\n"));
+        Assert.False(plan.StillFits(null));
+
+        // A new file: nothing there, or blanks, fits; a file that appeared does not.
+        File.Delete(test);
+        var created = await TestGenerationPlanner.PlanAsync(Model("public class WidgetTests { }"), "m", source,
+                                                            "public class Widget { }", CancellationToken.None);
+        Assert.True(created is { Ok: true, Extended: false });
+        Assert.True(created.StillFits(null));
+        Assert.False(created.StillFits("public class WidgetTests { [Fact] public void Mine() { } }"));
+
+        // And Visual Studio's writer asks, in both branches.
+        var writer = ConventionCoverageTests.CodeOnly(Path.Combine(ConversationPersistenceSilenceTests.RepoRoot(),
+                                                                   "Inferpal", "Commands", "TestGenerationEdit.cs"));
+        // The new file's branch, and the existing file's: its buffer, else the disk read as the plan read it.
+        Assert.Equal(3, writer.Split("plan.StillFits(").Length - 1);
+    }
+
     // ── The defect ───────────────────────────────────────────────────────────
 
     [Fact]

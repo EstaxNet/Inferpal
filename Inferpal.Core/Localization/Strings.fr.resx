@@ -383,6 +383,7 @@ Sauvegarde : {0}</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>attacher l'état du débogueur (pile, variables, exception)</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ Aucune session de débogage en pause. Atteins d'abord un point d'arrêt ou une exception, puis utilise @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Presse-papier vide.</value></data>
+  <data name="MentionClipboardUnreadable" xml:space="preserve"><value>⚠ Le presse-papier n'a pas pu être lu : {0}</value></data>
   <data name="ApprovalDiffNotOpened" xml:space="preserve"><value>⚠ Le diff n’a pas pu être ouvert ({0}). Le changement attend toujours votre réponse — regardez-le dans le fichier avant de l’approuver.</value></data>
   <data name="DocsNotLoaded" xml:space="preserve"><value>⚠ La documentation indexée n’a pas pu être chargée ({0}) : ses sources affichent 0 page et @Docs ne peut pas y chercher. `/docs reindex` les reconstruit.</value></data>
   <data name="AutoSaveNotForgotten" xml:space="preserve"><value>⚠ La conversation que vous venez de quitter n’a pas pu être retirée de la sauvegarde automatique ({0}) : elle peut revenir au prochain démarrage d’Inferpal. Si c’est le cas, recommencez une nouvelle conversation.</value></data>

@@ -19,6 +19,19 @@ public sealed class ApprovalRulesTableStalenessTests
         Path.Combine(ConversationPersistenceSilenceTests.RepoRoot(), "vscode", "src", "webview", "settingsEditors.ts"),
         "function approvalRulesEditor(");
 
+    /// <summary>⚠ "No rule yet" only over a table the host read: unknown (host down, refused, an Add that made the first
+    /// answer stale), it stood over a text box holding rules.</summary>
+    [Fact]
+    public void NoRuleYet_IsSaidOnlyOverATableTheHostRead()
+    {
+        var body  = Editor();
+        var empty = body.IndexOf("host.res('RulesEmpty')", StringComparison.Ordinal);
+        Assert.True(empty >= 0, "the empty line was not found: this test would have measured nothing.");
+        Assert.True(body.LastIndexOf("if (table !== null)", empty, StringComparison.Ordinal) > body.LastIndexOf("rows.length === 0", empty, StringComparison.Ordinal),
+                    "\"No rule yet\" is drawn over an unknown table");
+        Assert.Contains("pendingAdd = ++addRequest;", body, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void ADelete_ChecksTheTableStillDescribesTheText_BeforeRemovingALine()
     {

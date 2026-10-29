@@ -36,6 +36,29 @@ public class SettingsSaveMergeTests
         return string.Empty;
     }
 
+    /// <summary>
+    /// ⚠ A server row changed in a window opened before an <c>/import</c> is merged into the live list, server by server:
+    /// written whole, the rows — built at the opening — dropped the imported server from the file and stopped it.
+    /// </summary>
+    [Fact]
+    public void AServerRowChanged_IsMergedIntoTheLiveList_NeverWrittenOverIt()
+    {
+        var code = Body(File.ReadAllText(Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalSettingsData.cs")),
+                        "private void PersistMcpServers()");
+        Assert.Contains("CollectionMerge.Merge(CollectionShape.JsonObjectByName, opened, _config.McpServersJson, McpServersJson)",
+                        code, StringComparison.Ordinal);
+        Assert.Contains("_opened[\"mcpServersJson\"]", code, StringComparison.Ordinal);
+        Assert.DoesNotContain("_config.McpServersJson = McpServersJson;", code, StringComparison.Ordinal);
+
+        // And the merge keeps it: opened without X, the live list with it, the rows turn Y off.
+        const string opened = """{ "y": { "command": "y" } }""";
+        const string live   = """{ "y": { "command": "y" }, "x": { "command": "x" } }""";
+        const string rows   = """{ "y": { "command": "y", "disabled": true } }""";
+        var merged = Inferpal.Config.CollectionMerge.Merge(Inferpal.Config.CollectionShape.JsonObjectByName, opened, live, rows)!;
+        Assert.Contains("\"x\"", merged, StringComparison.Ordinal);
+        Assert.Contains("\"disabled\"", merged, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void TheWindowSave_OnlyAppliesWhatTheFormChanged()
     {

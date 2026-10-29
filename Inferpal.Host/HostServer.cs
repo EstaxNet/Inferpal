@@ -1257,6 +1257,29 @@ internal sealed partial class HostServer : IDisposable
         });
     }
 
+    /// <summary>
+    /// `session/switches` — the conversation's own switches, given back to a host started again: <c>/tools off</c>, step
+    /// mode, the X-Ray sections turned off. Answers them as the host holds them now.
+    /// </summary>
+    /// <remarks>⚠ Without it, a restart turned the tools back on behind a person who had turned them off, stopped pausing
+    /// a run in step mode, and put back into every prompt a section unchecked in X-Ray — nothing said. Slot-held: it
+    /// rewrites the system message a running loop reads.</remarks>
+    [JsonRpcMethod("session/switches", UseSingleObjectParameterDeserialization = true)]
+    public SessionSwitchesDto SessionSwitches(SessionSwitchesDto p)
+    {
+        var s = Session();
+        return WithTurnSlotFunc("session/switches", () =>
+        {
+            s.ToolsEnabled = !p.ToolsOff;
+            s.StepMode     = p.StepMode;
+            s.XrayDisabledSections.Clear();
+            foreach (var id in p.XrayOff ?? []) s.XrayDisabledSections.Add(id);
+            if (s.History.Count > 0 && s.History[0].Role == "system")
+                s.History[0] = new ChatMessageDto("system", BuildSystemPromptText(s));
+            return new SessionSwitchesDto(!s.ToolsEnabled, s.StepMode, [.. s.XrayDisabledSections]);
+        });
+    }
+
     /// <summary>`mode/list` — the modes found for this workspace and the person (read now), the files set aside, and the
     /// mode the conversation is held in.</summary>
     [JsonRpcMethod("mode/list", UseSingleObjectParameterDeserialization = true)]
@@ -1751,7 +1774,7 @@ internal sealed partial class HostServer : IDisposable
         // neither is the archive of the conversation just left: /branch rewrites the current file.
         if (p.Name != "last_session" && !p.Archive) s.CurrentSessionName = ConversationStore.StoredName(p.Name);
 
-        string? currentName = null;
+        string? currentName = null, slotTemplate = null;
         if (p.Name == "last_session")
         {
             SessionData? slot = null;
@@ -1761,13 +1784,17 @@ internal sealed partial class HostServer : IDisposable
                 catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("HostServer.SessionSave.Slot", ex); }
             }
             currentName = SessionManager.AutoSaveName(s.SessionNameKnown, s.CurrentSessionName, slot, s.RootDir);
+            // ⚠ The template too: a host started again saves the screen to the slot before loading it back, and its own
+            // null would erase the /template the conversation runs under.
+            if (s.TemplateSuffix is null && slot is not null && SessionManager.AutoSaveBelongsHere(slot, s.RootDir))
+                slotTemplate = slot.TemplateSuffix;
         }
         // The workspace for every save, not only the auto-save slot's: an Agent Client Protocol client lists the sessions
         // of the folder it has open (session/list's cwd), and a session with no folder is listed in none.
         await s.Store.SaveAsync(p.Name, p.Messages.Select(ToSaved), ct,
                                 workspaceRoot: s.RootDir, parent: lineage?.Parent, forkTurn: lineage?.ForkTurn,
                                 currentName: currentName,
-                                templateSuffix: p.Archive ? s.DiscardedTemplateSuffix : s.TemplateSuffix,
+                                templateSuffix: p.Archive ? s.DiscardedTemplateSuffix : s.TemplateSuffix ?? slotTemplate,
                                 mode: p.Archive ? s.DiscardedModeName : s.ModeName);
     }
 
@@ -1813,10 +1840,25 @@ internal sealed partial class HostServer : IDisposable
         {
             var s    = Session();
             // The auto-save slot is the workspace's: another workspace's conversation is not this one's to restore.
-            var data = p.Name == ConversationStore.AutoSaveSlot
-                ? await s.Store.LoadAutoSaveAsync(s.RootDir, token)
-                : await s.Store.LoadAsync(p.Name, token);
-            if (data is null) return null;
+            SessionData? data;
+            try
+            {
+                data = p.Name == ConversationStore.AutoSaveSlot
+                    ? await s.Store.LoadAutoSaveAsync(s.RootDir, token)
+                    : await s.Store.LoadAsync(p.Name, token);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException && p.Name == ConversationStore.AutoSaveSlot)
+            {
+                s.CurrentSessionName = null;   // what the screen shows next is not the slot's conversation
+                throw;
+            }
+            // ⚠ Nothing restored: the conversation that follows is new, and known so — left unknown, its first auto-save
+            // would take the old slot's name and /template.
+            if (data is null)
+            {
+                if (p.Name == ConversationStore.AutoSaveSlot) s.CurrentSessionName = null;
+                return null;
+            }
 
             s.TemplateSuffix     = data.TemplateSuffix;   // the mode the conversation was held in, its greeting with it
             // The mode the person picked for it, held again — or none, for a conversation held in Chat, Agent or Plan. A
@@ -2325,11 +2367,13 @@ internal sealed partial class HostServer : IDisposable
     }
 
     /// <summary>Reseeds the history with the layered system prompt.</summary>
+    /// <remarks>⚠ The session name is left to the callers: a host that starts knows nothing of it yet, and marked known
+    /// (null) here, its first save to the slot erased the name the slot held — <see cref="SessionManager.AutoSaveName"/>
+    /// never ran.</remarks>
     private static void ResetHistory(HostSession s)
     {
         ForgetConversationState(s);
-        s.History            = [new ChatMessageDto("system", BuildSystemPromptText(s))];
-        s.CurrentSessionName = null;   // the archived conversation keeps its own file
+        s.History = [new ChatMessageDto("system", BuildSystemPromptText(s))];
     }
 
     /// <summary>A new conversation leaves the <c>/template</c> mode behind, as the VS view model does
@@ -2344,6 +2388,7 @@ internal sealed partial class HostServer : IDisposable
         s.DiscardedModeName = s.ModeName;
         s.TemplateSuffix = templateSuffix;
         ResetHistory(s);
+        s.CurrentSessionName = null;   // the archived conversation keeps its own file
         if (await ArchiveTheSlotAsync(s)) await ForgetAutoSaveAsync(s);
     }
 

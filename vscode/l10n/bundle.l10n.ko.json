@@ -53,7 +53,6 @@
   "Thinking…": "생각 중…",
   "Cancelled.": "취소되었습니다.",
   "Copy": "복사",
-  "Copied!": "복사됨!",
   "Regenerate": "다시 생성",
   "Deny": "거부",
   "See all commands": "모든 명령 보기",
@@ -219,5 +218,6 @@
   "A command is still running in this terminal: use @terminal again once it has finished.": "이 터미널에서 명령이 아직 실행 중입니다. 끝나면 @terminal을 다시 사용하세요.",
   "No command has finished in this terminal; the last one finished in “{0}”: switch to it, then use @terminal.": "이 터미널에서 끝난 명령이 없습니다. 마지막 명령은 '{0}'에서 끝났습니다. 그쪽으로 전환한 뒤 @terminal을 사용하세요.",
   "No command has finished in this terminal since Inferpal began following it: run it again, then use @terminal.": "Inferpal이 이 터미널을 추적한 뒤로 끝난 명령이 없습니다. 다시 실행한 뒤 @terminal을 사용하세요.",
-  "{0} more @-mentions not looked at (at most {1} per question)": "@ 멘션 {0}개는 확인되지 않았습니다 (질문당 최대 {1}개)"
+  "{0} more @-mentions not looked at (at most {1} per question)": "@ 멘션 {0}개는 확인되지 않았습니다 (질문당 최대 {1}개)",
+  "The assistant restarted and could not restore /tools off, step mode or the X-Ray sections turned off.": "어시스턴트가 다시 시작되어 /tools off, 단계 모드, 꺼 둔 X-Ray 섹션을 복원하지 못했습니다."
 }

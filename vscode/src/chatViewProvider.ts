@@ -20,7 +20,7 @@ import { samePath } from './debugBridge';
 import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
 import {
   ApprovalCard, CodeActionResult, InputCard, InputFormAnswer, ProblemEntry, GestureQuestion, CommitMessageProposal,
-  SavedMessage, SlashEffect, TestsGenerateResult, TurnNote,
+  SavedMessage, SessionSwitches, SlashEffect, TestsGenerateResult, TurnNote,
 } from './protocol';
 import {
   WebviewToExt,
@@ -110,6 +110,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private readonly pendingInputs = new Map<string, { card: InputCard; resolve: (answer: InputFormAnswer | null) => void }>();
   /** Read-only plan mode, as the host holds it (the Plan segment of the mode switch). */
   private planMode = false;
+  /** The conversation's own switches (`/tools off`, step mode, X-Ray sections off): a restarted host gets them back. */
+  private switches: SessionSwitches = { toolsOff: false, stepMode: false, xrayOff: [] };
   /** Whether the editor listeners feeding the welcome screen are set (once per extension life). */
   private editorWatch = false;
   private editorContextTimer: NodeJS.Timeout | undefined;
@@ -676,6 +678,19 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       if (!this.planMode) {
         void vscode.window.showWarningMessage(
           t('The assistant restarted and could not return to plan mode: the agent can edit files again.'));
+      }
+    }
+    // ⚠ The conversation's own switches go back too: without them, the tools came back on behind a person who had turned
+    // them off, a run in step mode stopped pausing, and a section unchecked in X-Ray went back into every prompt.
+    const { toolsOff, stepMode, xrayOff } = this.switches;
+    if (toolsOff || stepMode || xrayOff.length > 0) {
+      try {
+        this.switches = await host.sessionSwitches(this.switches);
+      } catch (err) {
+        // Kept: a host that refused (its turn slot held) gets them at its next start.
+        this.log(`[chat] session switches not restored after a host restart: ${String(err)}`);
+        void vscode.window.showWarningMessage(
+          t('The assistant restarted and could not restore /tools off, step mode or the X-Ray sections turned off.'));
       }
     }
     // The held mode goes back to a restarted host too — gone since, the selector shows what the host really holds.
@@ -1612,6 +1627,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         }
         try {
           const panel = await host.xrayToggle(msg.id, msg.enabled);
+          // By the toggle, never from the panel: a section absent from it now (another active file) stays off on the host.
+          this.switches.xrayOff = this.switches.xrayOff.filter((id) => id !== msg.id).concat(msg.enabled ? [] : [msg.id]);
           this.post({ type: 'xrayPanel', panel });
         } catch (err) {
           // The checkbox already flipped in the webview, and the host refuses while a turn runs: put its panel
@@ -2878,6 +2895,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             if (this.planMode && this.heldMode) {
               void this.refreshModes();
             }
+          }
+          if (e.name === 'tools') {
+            this.switches.toolsOff = e.value === 'off';
+          }
+          if (e.name === 'stepMode') {
+            this.switches.stepMode = e.value === 'on';
           }
           if (e.name === 'model' && e.value) {
             this.model = e.value;

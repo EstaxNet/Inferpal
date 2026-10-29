@@ -177,7 +177,13 @@ internal sealed partial class HostServer
                 case SlashCommandId.Tools:
                 {
                     var result = ToolsCommandHandler.Handle(parts, s.Tools, s.Config, s.ToolsEnabled);
-                    if (result.SessionTools is { } on) s.ToolsEnabled = on;
+                    // The conversation's switch is the editor's to give back to a host started again: it is said.
+                    if (result.SessionTools is { } on)
+                    {
+                        s.ToolsEnabled = on;
+                        return new SlashCommandResult(true, result.Message,
+                            [new SlashEffectDto("stateChange", on ? "on" : "off", "tools")]);
+                    }
                     if (!result.SaveConfig) return new SlashCommandResult(true, result.Message);
                     await SaveAndApplyAsync(s, (s.Config.McpEnabled, s.Config.McpServersJson), cts.Token);
                     return new SlashCommandResult(true, result.Message, [new SlashEffectDto("configSaved")]);

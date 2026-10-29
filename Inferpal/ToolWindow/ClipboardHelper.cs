@@ -37,6 +37,52 @@ internal static class ClipboardHelper
     }
 
     /// <summary>
+    /// The clipboard's text, read on a dedicated STA thread like a copy; <c>Text</c> null and the cause in <c>Error</c>
+    /// when it could not be read.
+    /// </summary>
+    /// <remarks>⚠ Read from the view-model's context — a pool thread, not STA — WPF throws: a failure read as an empty
+    /// clipboard tells the person there is nothing to attach while they just copied something.</remarks>
+    public static async Task<(string? Text, string? Error)> TryGetAsync(string context)
+    {
+        var read = new TaskCompletionSource<(string? Text, string? Error)>(TaskCreationOptions.RunContinuationsAsynchronously);
+        try
+        {
+            StartSta(() =>
+            {
+                try { read.TrySetResult((System.Windows.Clipboard.GetText() ?? string.Empty, null)); }
+                catch (Exception ex) { Diagnostics.Swallow(context, ex); read.TrySetResult((null, ex.Message)); }
+            });
+            // Awaited, never joined: a held clipboard parks no thread of the caller's.
+            return await read.Task.WaitAsync(JoinBudget);
+        }
+        catch (TimeoutException)
+        {
+            Diagnostics.Record(context, $"The clipboard was still held after {JoinBudget.TotalSeconds:0}s; it was not read.");
+            return (null, $"held by another process after {JoinBudget.TotalSeconds:0}s");
+        }
+        catch (Exception ex) { Diagnostics.Swallow(context, ex); return (null, ex.Message); }
+    }
+
+    /// <summary>Runs <paramref name="body"/> on a new STA thread — WPF's clipboard requires one — that never keeps Visual
+    /// Studio from exiting.</summary>
+    private static Thread StartSta(Action body)
+    {
+        var thread = new Thread(() => body())
+        {
+            // ⚠ BACKGROUND, and the exemption this file holds is what hid it: it is exempt from
+            // the shared STA funnel because it owns its thread for another reason — which
+            // exempts it from the FUNNEL, not from the property the funnel carries. A
+            // foreground thread blocked on a clipboard another process is holding keeps
+            // Visual Studio itself from exiting: the user closes the IDE and the process stays.
+            IsBackground = true,
+            Name         = "inferpal-clipboard",
+        };
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        return thread;
+    }
+
+    /// <summary>
     /// Raised when a copy did not land, whoever asked: the window says it in the conversation.
     /// </summary>
     /// <remarks>⚠ A copy button announces nothing and gives no other sign: the user went on to paste what the clipboard
@@ -50,22 +96,11 @@ internal static class ClipboardHelper
         var copied  = false;
         try
         {
-            var thread = new Thread(() =>
+            var thread = StartSta(() =>
             {
                 try { System.Windows.Clipboard.SetText(payload); copied = true; }
                 catch (Exception ex) { Diagnostics.Swallow(context, ex); }
-            })
-            {
-                // ⚠ BACKGROUND, and the exemption this file holds is what hid it: it is exempt from
-                // the shared STA funnel because it owns its thread for another reason — which
-                // exempts it from the FUNNEL, not from the property the funnel carries. A
-                // foreground thread blocked on a clipboard another process is holding keeps
-                // Visual Studio itself from exiting: the user closes the IDE and the process stays.
-                IsBackground = true,
-                Name         = "inferpal-clipboard",
-            };
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
+            });
 
             // ⚠ And the wait is BOUNDED. `Clipboard.SetText` blocks while another process holds the
             // clipboard (the CLIPBRD_E_CANT_OPEN this method already swallows), and an unbounded

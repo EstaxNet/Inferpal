@@ -93,7 +93,11 @@ internal partial class InferpalToolWindowData
                 string.IsNullOrEmpty(current) ? FindReliableProjectRoot() : null,
                 _indexService.IndexedRoot);
 
-            if (action == RootPinAction.Pin)
+            // ⚠ A solution switch with RAG on answers Index: the new root is pinned as well — its modes, its MCP servers —
+            // before its pass starts (the pass declares its ignore files). The same root, indexed because RAG was just
+            // turned on, is not pinned again: a refresh tears every MCP server down.
+            if (action == RootPinAction.Pin
+                || action == RootPinAction.Index && !PathComparer.SameDirectory(root, current))
             {
                 _indexService.SetRoot(root!);
                 // Another workspace has its own modes: the composer's segment follows.
@@ -103,7 +107,7 @@ internal partial class InferpalToolWindowData
                 _ = _tools.Mcp.RefreshWhenIdleAsync(() => _sendStarting || IsLoading || GpuScheduler.IsChatActive,
                                                     TimeSpan.FromMilliseconds(500));
             }
-            else if (action == RootPinAction.Index) _indexService.StartIndexing(root!);
+            if (action == RootPinAction.Index) _indexService.StartIndexing(root!);
         }
         catch (Exception ex) { Diagnostics.Swallow("Rag.PinWorkspaceRoot", ex); }
     }

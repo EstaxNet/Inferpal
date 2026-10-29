@@ -53,7 +53,6 @@
   "Thinking…": "思考中…",
   "Cancelled.": "キャンセルされました。",
   "Copy": "コピー",
-  "Copied!": "コピーしました！",
   "Regenerate": "再生成",
   "Deny": "拒否",
   "See all commands": "すべてのコマンドを表示",
@@ -219,5 +218,6 @@
   "A command is still running in this terminal: use @terminal again once it has finished.": "このターミナルでコマンドがまだ実行中です。終了したら、もう一度 @terminal を使ってください。",
   "No command has finished in this terminal; the last one finished in “{0}”: switch to it, then use @terminal.": "このターミナルでは終了したコマンドがありません。最後のコマンドは「{0}」で終了しました。そちらに切り替えてから @terminal を使ってください。",
   "No command has finished in this terminal since Inferpal began following it: run it again, then use @terminal.": "Inferpal が追跡を始めてから、このターミナルで終了したコマンドはありません。もう一度実行してから @terminal を使ってください。",
-  "{0} more @-mentions not looked at (at most {1} per question)": "さらに {0} 件の @ メンションは未確認です (質問ごとに最大 {1} 件)"
+  "{0} more @-mentions not looked at (at most {1} per question)": "さらに {0} 件の @ メンションは未確認です (質問ごとに最大 {1} 件)",
+  "The assistant restarted and could not restore /tools off, step mode or the X-Ray sections turned off.": "アシスタントが再起動し、/tools off、ステップ モード、無効にした X-Ray セクションを復元できませんでした。"
 }

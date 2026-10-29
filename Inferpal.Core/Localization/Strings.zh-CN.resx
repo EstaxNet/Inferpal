@@ -383,6 +383,7 @@
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>附加调试器状态（调用堆栈、局部变量、异常）</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ 没有暂停的调试会话。请先在断点或异常处暂停，然后使用 @debugger。</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ 剪贴板为空。</value></data>
+  <data name="MentionClipboardUnreadable" xml:space="preserve"><value>⚠ 无法读取剪贴板：{0}</value></data>
   <data name="ApprovalDiffNotOpened" xml:space="preserve"><value>⚠ 无法打开差异（{0}）。该更改仍在等待你的答复——批准前请在文件中查看。</value></data>
   <data name="DocsNotLoaded" xml:space="preserve"><value>⚠ 无法加载已索引的文档（{0}）：其来源显示 0 页，@Docs 无法搜索。`/docs reindex` 可重建。</value></data>
   <data name="AutoSaveNotForgotten" xml:space="preserve"><value>⚠ 无法从自动保存中移除刚离开的对话（{0}）：下次启动 Inferpal 时它可能会再次出现。如果出现，请重新开始一个新对话。</value></data>

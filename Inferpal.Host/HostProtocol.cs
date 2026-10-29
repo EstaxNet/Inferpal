@@ -860,6 +860,10 @@ internal sealed record PermissionsTableParams(string? Rules);
 
 internal sealed record PlanModeParams(bool Enabled);
 
+/// <summary>The conversation's own switches, as the editor holds them: <c>/tools off</c>, step mode, the X-Ray sections
+/// turned off.</summary>
+internal sealed record SessionSwitchesDto(bool ToolsOff, bool StepMode, List<string>? XrayOff);
+
 /// <summary>`mode/set` — the mode the person picked for the conversation by its name; <c>null</c> for none.</summary>
 internal sealed record ModeSetParams(string? Name);
 

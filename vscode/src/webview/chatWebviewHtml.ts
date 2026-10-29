@@ -20,7 +20,6 @@ export function webviewStrings(): Record<string, string> {
     thinking: t('Thinking…'),
     cancelled: t('Cancelled.'),
     copy: t('Copy'),
-    copied: t('Copied!'),
     regenerate: t('Regenerate'),
     continueTurn: t('Continue'),
     deny: t('Deny'),

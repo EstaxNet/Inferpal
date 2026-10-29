@@ -30,6 +30,23 @@ public class FixBuildFailedRunTests
         Assert.Contains("return !result.Failed;", code, StringComparison.Ordinal);
     }
 
+    /// <summary>⚠ A failed run SAYS its error, whatever it streamed first: shown only over an empty bubble, a partial
+    /// "I'll fix Foo.cs" stood as the fix and the loop ended without a word.</summary>
+    [Fact]
+    public void AFailedRun_SaysItsError_WhateverItStreamedFirst()
+    {
+        var code  = Source();
+        var start = code.IndexOf("private async Task<bool> RunFixIterationAsync(", StringComparison.Ordinal);
+        Assert.True(start > 0, "RunFixIterationAsync moved: the rule measures nothing");   // WITNESS
+        var body  = code[start..code.IndexOf("return !result.Failed;", start, StringComparison.Ordinal)];
+        var failed = body.IndexOf("if (result.Failed)", StringComparison.Ordinal);
+        Assert.True(failed > 0, "a failed run is not told apart from a streamed answer");
+        var branch = body[failed..body.IndexOf("else if (streamItem is null)", failed, StringComparison.Ordinal)];
+        Assert.Contains("_turnFailed = true;", branch, StringComparison.Ordinal);
+        Assert.Contains("KeepAsNotice(streamItem);", branch, StringComparison.Ordinal);
+        Assert.Contains("ChatMessageItem.NoticeMsg(result.FinalResponse)", branch, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void TheFixLoop_RunsOnTheAgentModel()
     {

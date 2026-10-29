@@ -383,6 +383,7 @@ Backup: {0}</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>allega lo stato del debugger (stack, variabili, eccezione)</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ Nessuna sessione di debug in pausa. Raggiungi prima un breakpoint o un'eccezione, poi usa @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Appunti vuoti.</value></data>
+  <data name="MentionClipboardUnreadable" xml:space="preserve"><value>⚠ Impossibile leggere gli appunti: {0}</value></data>
   <data name="ApprovalDiffNotOpened" xml:space="preserve"><value>⚠ Impossibile aprire il diff ({0}). La modifica attende ancora la tua risposta — guardala nel file prima di approvarla.</value></data>
   <data name="DocsNotLoaded" xml:space="preserve"><value>⚠ Impossibile caricare la documentazione indicizzata ({0}): le sue fonti mostrano 0 pagine e @Docs non può cercarvi. `/docs reindex` le ricostruisce.</value></data>
   <data name="AutoSaveNotForgotten" xml:space="preserve"><value>⚠ Non è stato possibile rimuovere dal salvataggio automatico la conversazione appena lasciata ({0}): potrebbe ricomparire al prossimo avvio di Inferpal. In tal caso, avvia di nuovo una nuova conversazione.</value></data>

@@ -69,6 +69,7 @@ internal class InlineEditSelectionCommand : Command
         var originalCode = docText[editStart..editEnd];
         var editRange    = new TextRange(new TextPosition(view.Document, editStart), new TextPosition(view.Document, editEnd));
         // Excluded by the workspace's ignore files: the code never reaches the model, and the reason is said.
+        WorkspaceExclusions.Follow();
         if (Services.Governance.ContentExclusions.NoticeFor(view.Document.Uri.LocalPath, null) is { } excluded)
         {
             await ShowInfoAsync(excluded, ct);

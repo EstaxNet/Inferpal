@@ -453,6 +453,48 @@ public sealed class ContentExclusionTests : IDisposable
         Assert.Contains("excluded from AI tools were skipped", report);
     }
 
+    /// <summary>⚠ A pass started on a root never set (Visual Studio on a solution switch, its first retry) declares the
+    /// root's ignore files: with nothing declared, a root excludes nothing.</summary>
+    [Fact]
+    public void APassStartedOnARootNeverSet_DeclaresItsIgnoreFiles()
+    {
+        // Not Workspace(): it declares the root itself.
+        File.WriteAllText(Path.Combine(_root, ".aiignore"), "keys.txt\n");
+        File.WriteAllText(Path.Combine(_root, "keys.txt"), $"api-key = {Marker}\n");
+        Directory.CreateDirectory(Path.Combine(_root, "src"));
+        File.WriteAllText(Path.Combine(_root, "src", "App.cs"), SampleClass("App", "nothing to hide"));
+        Assert.Null(ContentExclusions.Of(Path.Combine(_root, "keys.txt")));   // witness: nothing declared yet
+        using var index = new ProjectIndexService(new FakeInferenceProvider(), new InferpalConfig(), new LspSemanticProvider());
+
+        index.StartIndexing(_root);
+
+        Assert.NotNull(ContentExclusions.Of(Path.Combine(_root, "keys.txt")));
+        Assert.Null(ContentExclusions.Of(Path.Combine(_root, "src", "App.cs")));   // witness: the rule, not everything
+    }
+
+    /// <summary>
+    /// ⚠ A Visual Studio command that reads a document for the model declares the workspace's ignore files first: the chat
+    /// window declares them, and it may never have been opened — with nothing declared, an excluded file is read.
+    /// </summary>
+    [Fact]
+    public void EveryVisualStudioCommandThatJudgesAFile_DeclaresTheIgnoreFilesFirst()
+    {
+        var dir = Path.Combine(ConversationPersistenceSilenceTests.RepoRoot(), "Inferpal", "Commands");
+        var judging = Directory.EnumerateFiles(dir, "*.cs")
+            .Select(f => (Name: Path.GetFileName(f), Code: ConventionCoverageTests.CodeOnly(f)))
+            .Where(f => f.Code.Contains("ContentExclusions.NoticeFor(", StringComparison.Ordinal)
+                        || f.Code.Contains("TestGenerationPlanner.PlanAsync(", StringComparison.Ordinal))
+            .ToList();
+        Assert.True(judging.Count >= 4, $"only {judging.Count} commands judge a file: the scan is blind.");   // WITNESS
+        foreach (var (name, code) in judging)
+        {
+            var judged = Math.Max(code.IndexOf("ContentExclusions.NoticeFor(", StringComparison.Ordinal),
+                                  code.IndexOf("TestGenerationPlanner.PlanAsync(", StringComparison.Ordinal));
+            var follow = code.IndexOf("WorkspaceExclusions.Follow()", StringComparison.Ordinal);
+            Assert.True(follow >= 0 && follow < judged, $"{name} judges a file before declaring the workspace's ignore files.");
+        }
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]

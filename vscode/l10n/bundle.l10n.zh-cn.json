@@ -53,7 +53,6 @@
   "Thinking…": "思考中…",
   "Cancelled.": "已取消。",
   "Copy": "复制",
-  "Copied!": "已复制！",
   "Regenerate": "重新生成",
   "Deny": "拒绝",
   "See all commands": "查看所有命令",
@@ -219,5 +218,6 @@
   "A command is still running in this terminal: use @terminal again once it has finished.": "此终端中仍有命令在运行：命令结束后请再次使用 @terminal。",
   "No command has finished in this terminal; the last one finished in “{0}”: switch to it, then use @terminal.": "此终端中没有已结束的命令；最后一条命令在“{0}”中结束：请切换过去，然后使用 @terminal。",
   "No command has finished in this terminal since Inferpal began following it: run it again, then use @terminal.": "自 Inferpal 开始跟踪此终端以来，没有命令结束：请重新运行，然后使用 @terminal。",
-  "{0} more @-mentions not looked at (at most {1} per question)": "另有 {0} 个 @ 提及未检查（每个问题最多 {1} 个）"
+  "{0} more @-mentions not looked at (at most {1} per question)": "另有 {0} 个 @ 提及未检查（每个问题最多 {1} 个）",
+  "The assistant restarted and could not restore /tools off, step mode or the X-Ray sections turned off.": "助手已重启，无法恢复 /tools off、单步模式或已关闭的 X-Ray 部分。"
 }

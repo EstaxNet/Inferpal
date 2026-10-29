@@ -383,6 +383,7 @@
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>прикрепить состояние отладчика (стек, переменные, исключение)</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ Нет приостановленной сессии отладки. Сначала остановитесь на точке останова или исключении, затем используйте @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Буфер обмена пуст.</value></data>
+  <data name="MentionClipboardUnreadable" xml:space="preserve"><value>⚠ Не удалось прочитать буфер обмена: {0}</value></data>
   <data name="ApprovalDiffNotOpened" xml:space="preserve"><value>⚠ Не удалось открыть различия ({0}). Изменение всё ещё ждёт вашего ответа — посмотрите его в файле, прежде чем одобрить.</value></data>
   <data name="DocsNotLoaded" xml:space="preserve"><value>⚠ Не удалось загрузить проиндексированную документацию ({0}): её источники показывают 0 страниц, и @Docs не может по ним искать. `/docs reindex` перестроит их.</value></data>
   <data name="AutoSaveNotForgotten" xml:space="preserve"><value>⚠ Не удалось удалить из автосохранения только что оставленный разговор ({0}): он может вернуться при следующем запуске Inferpal. В этом случае снова начните новый разговор.</value></data>

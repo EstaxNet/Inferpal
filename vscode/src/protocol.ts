@@ -486,6 +486,13 @@ export interface XRaySection {
   canToggle: boolean;
 }
 
+/** The conversation's own switches a host started again gets back (`session/switches`). */
+export interface SessionSwitches {
+  toolsOff: boolean;
+  stepMode: boolean;
+  xrayOff: string[];
+}
+
 /** Full X-Ray panel model, ready to render in the webview. */
 export interface XRayPanel {
   sections: XRaySection[];

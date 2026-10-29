@@ -198,12 +198,7 @@ internal sealed class ProjectIndexService : IDisposable
     /// </summary>
     public void SetRoot(string rootDir)
     {
-        RootDir          = rootDir;
-        _profileExcludes = ProjectProfile.Load(rootDir).IndexExcludes;
-        // The workspace's ignore files apply below it, to everything that reads for the model (ContentExclusions). Both
-        // front-ends and every ACP thread set their root here: one declaration per workspace.
-        ContentExclusions.Declare(rootDir, () => _config.IgnoreFiles);
-        FileHistoryService.IgnoreExistingHistory(rootDir);
+        Pin(rootDir);
         // ⚠ The watcher is armed HERE too, not only by the indexing pass, because it has a second
         // consumer that has nothing to do with RAG: the C# semantic index is cached per workspace
         // and this watcher is the only thing that invalidates it. Armed from the pass alone, it did
@@ -212,6 +207,17 @@ internal sealed class ProjectIndexService : IDisposable
         // ones, from a compilation frozen at the first C# analysis of the session. `SetRoot` is
         // what both front-ends call with RAG on or off, which is exactly the property needed.
         SetupFileWatcher(rootDir);
+    }
+
+    /// <summary>What pinning a root is, for <see cref="SetRoot"/> and <see cref="StartIndexing"/> alike.</summary>
+    private void Pin(string rootDir)
+    {
+        RootDir          = rootDir;
+        _profileExcludes = ProjectProfile.Load(rootDir).IndexExcludes;
+        // The workspace's ignore files apply below it, to everything that reads for the model (ContentExclusions). Both
+        // front-ends and every ACP thread set their root here: one declaration per workspace.
+        ContentExclusions.Declare(rootDir, () => _config.IgnoreFiles);
+        FileHistoryService.IgnoreExistingHistory(rootDir);
     }
 
     /// <summary>
@@ -233,10 +239,10 @@ internal sealed class ProjectIndexService : IDisposable
         var cts   = new CancellationTokenSource();
         var token = cts.Token;   // captured now: the task must not read a field a later call replaces
         _cts    = cts;
-        RootDir = rootDir;
+        // ⚠ Pinned as SetRoot pins it: a front-end may start a pass on a root it never set, and a root whose ignore files
+        // were never declared excludes nothing — everything under it read for the model.
+        Pin(rootDir);
         IndexedRoot = rootDir;
-        _profileExcludes = ProjectProfile.Load(rootDir).IndexExcludes;
-        FileHistoryService.IgnoreExistingHistory(rootDir);
         // Language servers started for another workspace would otherwise run until the editor closes.
         _lsp.ReleaseSessionsExcept(rootDir);
 

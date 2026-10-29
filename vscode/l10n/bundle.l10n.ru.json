@@ -53,7 +53,6 @@
   "Thinking…": "Думаю…",
   "Cancelled.": "Отменено.",
   "Copy": "Копировать",
-  "Copied!": "Скопировано!",
   "Regenerate": "Сгенерировать заново",
   "Deny": "Отклонить",
   "See all commands": "Все команды",
@@ -219,5 +218,6 @@
   "A command is still running in this terminal: use @terminal again once it has finished.": "В этом терминале ещё выполняется команда: снова используйте @terminal, когда она завершится.",
   "No command has finished in this terminal; the last one finished in “{0}”: switch to it, then use @terminal.": "В этом терминале не завершилась ни одна команда; последняя завершилась в «{0}»: переключитесь туда, затем используйте @terminal.",
   "No command has finished in this terminal since Inferpal began following it: run it again, then use @terminal.": "С тех пор как Inferpal отслеживает этот терминал, в нём не завершилась ни одна команда: запустите её снова, затем используйте @terminal.",
-  "{0} more @-mentions not looked at (at most {1} per question)": "Ещё упоминаний @ не проверено: {0} (не более {1} на вопрос)"
+  "{0} more @-mentions not looked at (at most {1} per question)": "Ещё упоминаний @ не проверено: {0} (не более {1} на вопрос)",
+  "The assistant restarted and could not restore /tools off, step mode or the X-Ray sections turned off.": "Ассистент перезапустился и не смог восстановить /tools off, пошаговый режим и отключённые разделы X-Ray."
 }

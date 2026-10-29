@@ -60,6 +60,7 @@ internal static class InPlaceCodeEdit
         if (string.IsNullOrWhiteSpace(originalCode)) return new(InPlaceEditOutcome.Failed);
         // Excluded by the workspace's ignore files: the document never reaches the model (the slash commands and the
         // context menu both come here).
+        WorkspaceExclusions.Follow();
         if (Services.Governance.ContentExclusions.NoticeFor(view.Document.Uri.LocalPath, null) is { } excluded)
             return new(InPlaceEditOutcome.Excluded, excluded);
 

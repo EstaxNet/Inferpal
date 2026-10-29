@@ -383,6 +383,7 @@ Sicherung: {0}</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>Debugger-Zustand anhängen (Stack, Variablen, Ausnahme)</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ Keine angehaltene Debugsitzung. Erreiche zuerst einen Haltepunkt oder eine Ausnahme, dann nutze @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ Zwischenablage ist leer.</value></data>
+  <data name="MentionClipboardUnreadable" xml:space="preserve"><value>⚠ Die Zwischenablage konnte nicht gelesen werden: {0}</value></data>
   <data name="ApprovalDiffNotOpened" xml:space="preserve"><value>⚠ Der Diff konnte nicht geöffnet werden ({0}). Die Änderung wartet weiter auf Ihre Antwort — sehen Sie sie in der Datei an, bevor Sie zustimmen.</value></data>
   <data name="DocsNotLoaded" xml:space="preserve"><value>⚠ Die indizierte Dokumentation konnte nicht geladen werden ({0}): Ihre Quellen zeigen 0 Seiten und @Docs kann sie nicht durchsuchen. `/docs reindex` baut sie neu auf.</value></data>
   <data name="AutoSaveNotForgotten" xml:space="preserve"><value>⚠ Die gerade verlassene Unterhaltung konnte nicht aus der automatischen Sicherung entfernt werden ({0}): Sie kann beim nächsten Start von Inferpal zurückkehren. Beginnen Sie dann erneut eine neue Unterhaltung.</value></data>

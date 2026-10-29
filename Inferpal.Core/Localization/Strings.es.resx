@@ -383,6 +383,7 @@ Copia de seguridad: {0}</value></data>
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>adjuntar el estado del depurador (pila, variables, excepción)</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ No hay sesión de depuración en pausa. Alcanza primero un punto de interrupción o una excepción y luego usa @debugger.</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ El portapapeles está vacío.</value></data>
+  <data name="MentionClipboardUnreadable" xml:space="preserve"><value>⚠ No se pudo leer el portapapeles: {0}</value></data>
   <data name="ApprovalDiffNotOpened" xml:space="preserve"><value>⚠ No se pudo abrir el diff ({0}). El cambio sigue esperando su respuesta: revíselo en el archivo antes de aprobarlo.</value></data>
   <data name="DocsNotLoaded" xml:space="preserve"><value>⚠ No se pudo cargar la documentación indexada ({0}): sus fuentes muestran 0 páginas y @Docs no puede buscar en ellas. `/docs reindex` las reconstruye.</value></data>
   <data name="AutoSaveNotForgotten" xml:space="preserve"><value>⚠ No se pudo quitar de la copia automática la conversación que acaba de dejar ({0}): puede volver la próxima vez que se inicie Inferpal. Si ocurre, vuelva a empezar una conversación nueva.</value></data>

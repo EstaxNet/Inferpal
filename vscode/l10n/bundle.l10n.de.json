@@ -53,7 +53,6 @@
   "Thinking…": "Denkt nach…",
   "Cancelled.": "Abgebrochen.",
   "Copy": "Kopieren",
-  "Copied!": "Kopiert!",
   "Regenerate": "Neu generieren",
   "Deny": "Ablehnen",
   "See all commands": "Alle Befehle anzeigen",
@@ -219,5 +218,6 @@
   "A command is still running in this terminal: use @terminal again once it has finished.": "In diesem Terminal läuft noch ein Befehl: Verwenden Sie @terminal erneut, sobald er beendet ist.",
   "No command has finished in this terminal; the last one finished in “{0}”: switch to it, then use @terminal.": "In diesem Terminal wurde kein Befehl beendet; der letzte wurde in „{0}“ beendet: Wechseln Sie dorthin und verwenden Sie dann @terminal.",
   "No command has finished in this terminal since Inferpal began following it: run it again, then use @terminal.": "Seit Inferpal dieses Terminal verfolgt, wurde hier kein Befehl beendet: Führen Sie ihn erneut aus und verwenden Sie dann @terminal.",
-  "{0} more @-mentions not looked at (at most {1} per question)": "{0} weitere @-Erwähnungen nicht geprüft (höchstens {1} pro Frage)"
+  "{0} more @-mentions not looked at (at most {1} per question)": "{0} weitere @-Erwähnungen nicht geprüft (höchstens {1} pro Frage)",
+  "The assistant restarted and could not restore /tools off, step mode or the X-Ray sections turned off.": "Der Assistent wurde neu gestartet und konnte /tools off, den Schrittmodus und die deaktivierten X-Ray-Abschnitte nicht wiederherstellen."
 }

@@ -43,6 +43,7 @@ internal abstract class SelectionCommandBase : Command
                     ?? await Extensibility.Editor().GetActiveTextViewAsync(context, ct);
 
             // Excluded by the workspace's ignore files: no pending prompt, and the reason said — the menu did something.
+            WorkspaceExclusions.Follow();
             if (view is not null
                 && Services.Governance.ContentExclusions.NoticeFor(view.Document.Uri.LocalPath, null) is { } excluded)
             {

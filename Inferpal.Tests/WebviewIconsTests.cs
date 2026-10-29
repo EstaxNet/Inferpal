@@ -25,6 +25,39 @@ public class WebviewIconsTests
     private static readonly Regex IconLike = new(@"[⌀-⏿■-◿☀-➿]|\p{Cs}",
                                                  RegexOptions.CultureInvariant);
 
+    /// <summary>⚠ A skipped plan step is no failure: drawn with the failed cross, a plan that skipped a step it did not
+    /// need read as a plan that broke (Visual Studio draws its own glyph).</summary>
+    [Fact]
+    public void ASkippedPlanStep_HasItsOwnGlyph_NeverTheFailedOne()
+    {
+        var main = File.ReadAllText(Path.Combine(Webview(), "main.ts"));
+        Assert.Contains(": s.includes('skip') ? 'skipped'", main, StringComparison.Ordinal);
+        Assert.DoesNotContain("s.includes('skip') ? 'failed'", main, StringComparison.Ordinal);
+        Assert.Contains("state === 'skipped' ? 'skipped'", main, StringComparison.Ordinal);
+        Assert.Contains("  skipped: [", File.ReadAllText(Path.Combine(Webview(), "icons.ts")), StringComparison.Ordinal);
+    }
+
+    /// <summary>⚠ "Fix with AI" on a failed step writes above a draft typed meanwhile, never over it — as a question put
+    /// back does.</summary>
+    [Fact]
+    public void FixWithAi_WritesAboveTheDraft_NeverOverIt()
+    {
+        var main  = File.ReadAllText(Path.Combine(Webview(), "main.ts"));
+        var start = main.IndexOf("const fixText = t('fixPrompt')", StringComparison.Ordinal);
+        Assert.True(start > 0, "Fix with AI's text was not found: the rule measures nothing");   // WITNESS
+        Assert.Contains("setPrompt(promptEl.value.trim() ? `${fixText}\\n\\n${promptEl.value}` : fixText);",
+                        main[start..(start + 400)], StringComparison.Ordinal);
+    }
+
+    /// <summary>Each render of the theme grid makes a new one: the observer of a grid that left the page lets go.</summary>
+    [Fact]
+    public void TheThemeGridsObserver_LetsGoOnceItsGridLeftThePage()
+    {
+        var widgets = File.ReadAllText(Path.Combine(Webview(), "settingsWidgets.ts"));
+        Assert.Contains("themes.disconnect();", widgets, StringComparison.Ordinal);
+        Assert.Contains("if (grid.isConnected)", widgets, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void TheWebviewDrawsItsIcons_NoEmojiOrSymbolCharacterStandsInForOne()
     {

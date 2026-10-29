@@ -99,7 +99,15 @@ function themeCards(host: WidgetHost): LiveWidget {
     }
   };
   draw();
-  new MutationObserver(draw).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  // Each render makes a new grid: the observer of one that left the page lets go, or every redraw adds one for good.
+  const themes = new MutationObserver(() => {
+    if (grid.isConnected) {
+      draw();
+    } else {
+      themes.disconnect();
+    }
+  });
+  themes.observe(document.body, { attributes: true, attributeFilter: ['class'] });
   return { el: grid };
 }
 

@@ -28,10 +28,17 @@ namespace Inferpal.Services.CodeActions;
 /// The model's reply is not a test file, and the sentence that says why — the three screens of <c>/test</c> print it
 /// as is, so a new reason is one factory here, not three branches.
 /// </param>
+/// <param name="Extends">The test file's text the plan extends, as it was read; <c>null</c> for a new file. ⚠ The writer
+/// replaces the whole file: it refuses when the file no longer holds this text — tests written meanwhile would go.</param>
 internal sealed record TestGenerationPlan(
     bool Ok, string TestPath, string TestFileName, bool Extended, bool NoChange, string Content,
-    bool Unreadable = false, string? Refusal = null)
+    bool Unreadable = false, string? Refusal = null, string? Extends = null)
 {
+    /// <summary>Whether the test file, holding <paramref name="current"/> now (<c>null</c>: absent), is still the one this
+    /// plan was made for: the text it extends, or — for a new file — nothing but blanks.</summary>
+    public bool StillFits(string? current) =>
+        Extended ? string.Equals(current, Extends, StringComparison.Ordinal) : string.IsNullOrWhiteSpace(current);
+
     public static TestGenerationPlan Failed(string testPath = "", bool extended = false) =>
         new(false, testPath, Path.GetFileName(testPath), extended, false, string.Empty);
 
@@ -220,6 +227,6 @@ internal static class TestGenerationPlanner
         if (extend && existing!.Contains('\n'))
             content = LineEndings.WithFinalBreakOf(existing, LineEndings.ToEol(content, LineEndings.Dominant(existing)));
 
-        return new TestGenerationPlan(true, testPath, testName, extend, false, content);
+        return new TestGenerationPlan(true, testPath, testName, extend, false, content, Extends: extend ? existing : null);
     }
 }

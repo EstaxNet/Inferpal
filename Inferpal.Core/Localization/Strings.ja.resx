@@ -383,6 +383,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="MentionDebuggerDesc" xml:space="preserve"><value>デバッガーの状態を添付（スタック、変数、例外）</value></data>
   <data name="MentionDebuggerNone" xml:space="preserve"><value>⚠ 一時停止中のデバッグセッションがありません。まずブレークポイントまたは例外で停止してから @debugger を使用してください。</value></data>
   <data name="MentionClipboardEmpty" xml:space="preserve"><value>⚠ クリップボードが空です。</value></data>
+  <data name="MentionClipboardUnreadable" xml:space="preserve"><value>⚠ クリップボードを読み取れませんでした: {0}</value></data>
   <data name="ApprovalDiffNotOpened" xml:space="preserve"><value>⚠ 差分を開けませんでした ({0})。変更はまだ応答を待っています — 承認する前にファイルで確認してください。</value></data>
   <data name="DocsNotLoaded" xml:space="preserve"><value>⚠ インデックス済みのドキュメントを読み込めませんでした ({0}): ソースは 0 ページと表示され、@Docs で検索できません。`/docs reindex` で再構築できます。</value></data>
   <data name="AutoSaveNotForgotten" xml:space="preserve"><value>⚠ 終了した会話を自動保存から削除できませんでした ({0}): 次回 Inferpal の起動時に戻ってくる可能性があります。その場合は、もう一度新しい会話を始めてください。</value></data>

@@ -1706,10 +1706,19 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     {
         if (!_mcpListRebuildable) { McpStatusText = BuildMcpStatus(); return; }
         SyncJsonFromRows();
-        _config.McpServersJson = McpServersJson;
+        // ⚠ Server by server, never the whole list: the chat may have added one since this window opened (/import), and
+        // the rows, built at the opening, do not hold it — written whole, the list would drop it from the file and stop it.
+        var opened = _opened["mcpServersJson"]?.GetValue<string>() ?? string.Empty;
+        _config.McpServersJson = CollectionMerge.Merge(CollectionShape.JsonObjectByName, opened, _config.McpServersJson, McpServersJson)
+                                 ?? McpServersJson;
         // Saved or not, the servers are reconnected from the in-memory config: the change applies to this
-        // session, and a failed save is said.
-        TrySaveConfig("PersistMcpServers");
+        // session, and a failed save is said. Unsaved, the edit still counts as a change for the next Save.
+        if (TrySaveConfig("PersistMcpServers")) _opened["mcpServersJson"] = _config.McpServersJson;
+        if (_config.McpServersJson != McpServersJson)
+        {
+            McpServersJson = _config.McpServersJson;
+            BuildRowsFromConfig();
+        }
         _ = ReconnectMcpAsync();
     }
 

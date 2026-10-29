@@ -291,6 +291,11 @@ div.with-icon {
   color: var(--vscode-errorForeground, #f44747);
 }
 
+.plan-step.skipped {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+
 /* ── Code blocks with copy button ───────────────────────────────────────────── */
 .codeblock {
   position: relative;

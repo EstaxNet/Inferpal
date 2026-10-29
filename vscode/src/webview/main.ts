@@ -768,11 +768,15 @@ function renderPlan(plan: WvPlan | null): void {
   for (const step of plan.steps) {
     const row = document.createElement('div');
     const s = step.status.toLowerCase();
+    // A skipped step is no failure: drawn as one, a plan that skipped a step it did not need read as a plan that broke
+    // (Visual Studio draws its own glyph).
     const state = s.includes('done') || s.includes('completed') ? 'done'
       : s.includes('running') || s.includes('progress') || s.includes('active') ? 'running'
-      : s.includes('fail') || s.includes('error') || s.includes('skip') ? 'failed'
+      : s.includes('skip') ? 'skipped'
+      : s.includes('fail') || s.includes('error') ? 'failed'
       : 'pending';
-    const glyph: IconName = state === 'done' ? 'check' : state === 'running' ? 'running' : state === 'failed' ? 'failed' : 'pending';
+    const glyph: IconName = state === 'done' ? 'check' : state === 'running' ? 'running' : state === 'failed' ? 'failed'
+      : state === 'skipped' ? 'skipped' : 'pending';
     row.className = 'plan-step ' + state;
     setIcon(row, glyph, step.text, 13);
     target.appendChild(row);
@@ -1266,7 +1270,9 @@ function addToolBubble(item: WvTranscriptItem, expanded: boolean): void {
     fix.className = 'bubble-action';
     setIcon(fix, 'tool', t('fixWithAi'), 13);
     fix.addEventListener('click', () => {
-      setPrompt(t('fixPrompt') + '\n\n```\n' + (item.toolOutput ?? '') + '\n```');
+      // Above a draft typed meanwhile, never over it.
+      const fixText = t('fixPrompt') + '\n\n```\n' + (item.toolOutput ?? '') + '\n```';
+      setPrompt(promptEl.value.trim() ? `${fixText}\n\n${promptEl.value}` : fixText);
       promptEl.focus();
     });
     step.appendChild(fix);
