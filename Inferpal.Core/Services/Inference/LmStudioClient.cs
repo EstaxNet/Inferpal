@@ -64,10 +64,12 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     /// <paramref name="MaxContextLength"/> is the model's capability; <paramref name="LoadedContextLength"/>
     /// (only meaningful while <paramref name="Loaded"/>) is the n_ctx the running instance was loaded with —
     /// the window a request actually has to fit into. <paramref name="ReasoningOptions"/> are the reasoning settings the
-    /// server publishes for the model (<c>off</c>, <c>low</c>, <c>on</c>…), <c>null</c> when it publishes none.</summary>
+    /// server publishes for the model (<c>off</c>, <c>low</c>, <c>on</c>…), <c>null</c> when it publishes none;
+    /// <paramref name="TrainedForToolUse"/> whether it publishes the model as trained for tool use, <c>null</c> when it does
+    /// not say.</summary>
     private readonly record struct NativeModel(
         string Id, bool Loaded, int? LoadedContextLength, int? MaxContextLength, long SizeBytes,
-        IReadOnlyList<string>? ReasoningOptions = null);
+        IReadOnlyList<string>? ReasoningOptions = null, bool? TrainedForToolUse = null);
 
     // Queries the native models endpoint, tolerating both LM Studio shapes: the 0.4.0+ v1 payload
     // ({"models":[{"key",...}]}) first, then the legacy v0 payload ({"data":[{"id",...}]}). Whichever
@@ -93,7 +95,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
                         .Select(m => new NativeModel(
                             m.Key!, m.LoadedInstances is { Count: > 0 },
                             LoadedContextFromInstances(m.LoadedInstances), m.MaxContextLength, m.SizeBytes ?? 0,
-                            ReasoningOptionsOf(m.Capabilities)))
+                            ReasoningOptionsOf(m.Capabilities), TrainedForToolUseOf(m.Capabilities)))
                         .ToList();
             }
         }
@@ -127,6 +129,14 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
             return null;
         return [.. options.EnumerateArray().Where(o => o.ValueKind == JsonValueKind.String).Select(o => o.GetString()!)];
     }
+
+    /// <summary>Whether a v1 entry publishes the model as trained for tool use (<c>capabilities.trained_for_tool_use</c>),
+    /// or <c>null</c> when it publishes nothing.</summary>
+    internal static bool? TrainedForToolUseOf(JsonElement? capabilities) =>
+        capabilities is { ValueKind: JsonValueKind.Object } c && c.TryGetProperty("trained_for_tool_use", out var flag)
+        && flag.ValueKind is JsonValueKind.True or JsonValueKind.False
+            ? flag.GetBoolean()
+            : null;
 
     // Digs the loaded context window out of a v1 entry's loaded_instances. LM Studio nests the
     // running instance's n_ctx under loaded_instances[].config.context_length; tolerate a couple of
@@ -268,6 +278,28 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
         }
 
         return options.Contains(published, StringComparer.OrdinalIgnoreCase) ? value : null;
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// ⚠ A model LM Studio publishes as not trained for tool use has no call format the server reads back: forced, it
+    /// switches to LM Studio's own <c>[TOOL_REQUEST]</c> form inside its reasoning, which nothing reads, while unforced it
+    /// keeps the form it writes in the chat, which Inferpal reads. Not known — no native list, no flag, a list that cannot
+    /// be read — keeps the call forced.
+    /// </remarks>
+    private protected override async Task<bool> ForcesToolCallAsync(string model, CancellationToken ct)
+    {
+        try
+        {
+            var entry = (await NativeSnapshotAsync(ct)).FirstOrDefault(m => IdMatches(m.Id, model));
+            return entry.TrainedForToolUse != false;
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("LmStudio.ForcesToolCall", ex);
+            return true;
+        }
     }
 
     // LM Studio model keys can carry a quantization/variant suffix (e.g. "qwen/qwen3-27b" vs the

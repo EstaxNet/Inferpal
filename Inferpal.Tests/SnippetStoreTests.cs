@@ -160,4 +160,21 @@ public class SnippetStoreTests : IDisposable
         Assert.Contains($"`{new string('z', 60)}…`", listing);                 // 60-char cap
         Assert.DoesNotContain("#2 (", listing);                                // no empty language parens
     }
+
+    /// <summary>A save into a library that could not be read writes a NEW library, the old one set aside — and says so:
+    /// the listing now shows one snippet where there were many.</summary>
+    [Fact]
+    public async Task ASaveIntoAnUnreadableLibrary_SetsItAside_AndSaysSo()
+    {
+        File.WriteAllText(_tempFile, "{ not json");
+
+        var result = await SnippetStore.SaveAsync("cs", "var x = 1;", CancellationToken.None);
+
+        Assert.Equal(SnippetSaveResult.SavedAside, result);
+        var aside = Assert.Single(Directory.GetFiles(Path.GetDirectoryName(_tempFile)!, Path.GetFileName(_tempFile) + ".unreadable-*"));
+        Assert.Equal("{ not json", File.ReadAllText(aside));
+        File.Delete(aside);
+        // Reference arm: the next save, into the library just written, is an ordinary one.
+        Assert.Equal(SnippetSaveResult.Saved, await SnippetStore.SaveAsync("cs", "var y = 2;", CancellationToken.None));
+    }
 }

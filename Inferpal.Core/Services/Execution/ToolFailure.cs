@@ -29,6 +29,9 @@ namespace Inferpal.Services.Execution;
 /// </remarks>
 internal static class ToolFailure
 {
+    /// <summary>What a tool returns when the person refused its approval card.</summary>
+    internal const string CancelledByUser = "Cancelled by user.";
+
     /// <summary>The model-facing sentence for <paramref name="ex"/> thrown by <paramref name="toolName"/>.</summary>
     internal static string Describe(string toolName, Exception ex)
     {

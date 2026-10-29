@@ -40,7 +40,7 @@ public sealed class RagWorkspaceSwitchTests : IDisposable
     public void Dispose()
     {
         foreach (var s in _services) s.Dispose();
-        try { Directory.Delete(_base, recursive: true); } catch { /* nettoyage best-effort */ }
+        try { Directory.Delete(_base, recursive: true); } catch { /* best-effort cleanup */ }
     }
 
     /// <summary>A C# class large enough to pass the chunkers' MinChunkLines threshold.</summary>

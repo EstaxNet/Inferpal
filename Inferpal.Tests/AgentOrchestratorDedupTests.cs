@@ -35,7 +35,7 @@ public class AgentOrchestratorDedupTests
     }
 
     // ── Counting registry: one named tool, counts real executions ─────────────
-    private sealed class CountingToolRegistry(string toolName) : IToolRegistry
+    private sealed class CountingToolRegistry(string toolName, Func<int, string>? answer = null) : IToolRegistry
     {
         public int ExecuteCount { get; private set; }
 
@@ -47,7 +47,7 @@ public class AgentOrchestratorDedupTests
         public Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct)
         {
             ExecuteCount++;
-            return Task.FromResult($"result #{ExecuteCount}");
+            return Task.FromResult(answer?.Invoke(ExecuteCount) ?? $"result #{ExecuteCount}");
         }
     }
 
@@ -91,6 +91,20 @@ public class AgentOrchestratorDedupTests
         Assert.Equal(1, registry.ExecuteCount);          // second call reused the cached result
         Assert.Equal(2, result.Executions.Count);        // but both executions are reported to the UI
         Assert.Equal("done", result.FinalResponse);
+    }
+
+    /// <summary>A refused card, a failure or a refusing search engine is not what the next try gets: served from the
+    /// cache, the person who said "fetch it now" got "Cancelled by user." again, with no card.</summary>
+    [Theory]
+    [InlineData("Cancelled by user.")]
+    [InlineData("Error: the 'fetch_url' call timed out before it finished.")]
+    public async Task ARefusalOrAFailure_IsNeverServedFromTheCache(string first)
+    {
+        var registry = new CountingToolRegistry("fetch_url", n => n == 1 ? first : "the page");
+
+        await RunAsync("fetch_url", registry);
+
+        Assert.Equal(2, registry.ExecuteCount);          // the repeat really ran
     }
 
     [Fact]

@@ -238,8 +238,18 @@ internal sealed class AcpAgent : IAsyncDisposable
     {
         var id  = Str(p, "sessionId") ?? throw new ArgumentException("'sessionId' is required.");
         var cwd = Cwd(p);
-        if (_sessions.TryGetValue(id, out var live))
+        AcpSession live;
+        // ⚠ A thread closed to make room, or reopening right now, comes back through its reopening — in its mode, on its
+        // model, with what it had attached — never loaded bare beside it: a second host and its MCP servers, the state it
+        // kept lost, and a load that fails closing the session a prompt is using.
+        if (_evicted.ContainsKey(id) || _reopening.ContainsKey(id))
         {
+            live = await LiveAsync(p, ct);
+            if (replay) { live.ReplayLive(); await FlushAsync(); }
+        }
+        else if (_sessions.TryGetValue(id, out var open))
+        {
+            live = open;
             if (replay) { live.ReplayLive(); await FlushAsync(); }
         }
         else

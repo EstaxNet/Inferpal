@@ -316,7 +316,7 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
             if (!_host.IsOfferedToOpen(target)) return Error(403, $"'{target}' is not a file the settings form lists.");
             if (!File.Exists(target) && !Directory.Exists(target)) return Error(404, Strings.SettingsWindowNotFound(target));
             // The application the system gives the file outlives this server: never bound to it.
-            using var _ = Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
+            Services.SystemOpener.Open(target);
             return (200, "{\"result\":null}");
         }
         if (!FormMethods.Contains(method)) return Error(403, $"'{method}' is not a call of the settings form.");
@@ -419,7 +419,7 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
         // The browser outlives this process: never bound to it.
         try
         {
-            using var _ = Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            Services.SystemOpener.Open(url);
             return true;
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)

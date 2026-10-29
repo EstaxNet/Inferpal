@@ -93,4 +93,26 @@ public class SnapshotNameTests
         }
         finally { try { Directory.Delete(root, recursive: true); } catch { } }
     }
+
+    /// <summary>A backup whose write stopped holds less than the file: left under its name, it is the newest one
+    /// restore_file would pick.</summary>
+    [Fact]
+    public async Task ABackupStoppedWhileWritten_LeavesNoBackupBehind()
+    {
+        var root = NewRoot();
+        try
+        {
+            var file = Path.Combine(root, "a.txt");
+            File.WriteAllText(file, "now");
+            using var stopped = new CancellationTokenSource();
+            stopped.Cancel();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                () => new FileHistoryService().SnapshotBytesAsync(file, "before"u8.ToArray(), stopped.Token));
+
+            Assert.True(Directory.Exists(Path.Combine(root, ".inferpal", "history")));   // witness: the write was reached
+            Assert.Empty(Directory.EnumerateFiles(root, "*" + FileHistoryService.SnapshotExtension, SearchOption.AllDirectories));
+        }
+        finally { try { Directory.Delete(root, recursive: true); } catch { } }
+    }
 }

@@ -274,6 +274,10 @@ internal sealed class HostSession : IDisposable
         try { Index.Dispose(); }
         catch (Exception ex) { Diagnostics.Swallow("HostSession.DisposeIndex", ex); }
 
+        // A documentation crawl runs detached from its command: it stops with the session.
+        try { Docs.Dispose(); }
+        catch (Exception ex) { Diagnostics.Swallow("HostSession.DisposeDocs", ex); }
+
         // Detached agent runs must not survive the window that started them either.
         try { _tasks?.Dispose(); }
         catch (Exception ex) { Diagnostics.Swallow("HostSession.DisposeTasks", ex); }

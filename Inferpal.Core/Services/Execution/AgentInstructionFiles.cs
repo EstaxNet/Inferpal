@@ -36,9 +36,13 @@ namespace Inferpal.Services.Execution;
 /// ⚠ <b>Bounds, stated rather than implied.</b> This matches a <i>path</i>, so it covers the tools
 /// whose approval subject is a path. It does <b>not</b> cover a shell command that writes the same
 /// file — <c>run_command</c>'s subject is the raw command line, and the repository is explicit that
-/// text matching is an anti-accident guard, not a security boundary. It also deliberately leaves out
-/// <c>.inferpal/permissions.json</c>: the workspace overlay is <b>deny-only</b>, so a write there can
-/// only ever restrict what the agent may do.
+/// text matching is an anti-accident guard, not a security boundary.
+/// </para>
+/// <para>
+/// ⚠ <b>And the files that RESTRICT the agent</b>: <c>.inferpal/permissions.json</c> (the repository's deny rules) and
+/// the ignore files (<c>.inferpalignore</c>, <c>.aiignore</c>…). Their content can only restrict, but a write REPLACES
+/// it: <c>{"rules":[]}</c>, or an emptied ignore file, lifts every restriction the repository wrote, under an
+/// "Always" given to <c>write_file</c>.
 /// </para>
 /// </remarks>
 internal static class AgentInstructionFiles
@@ -51,6 +55,7 @@ internal static class AgentInstructionFiles
 
     /// <summary>Sub-directory whose <c>*.md</c> are injected, glob-scoped to the active file.</summary>
     private const string RulesDir = "rules";
+
 
     /// <summary>
     /// Does this approval subject aim at a file that becomes the system prompt? The subject may
@@ -79,6 +84,15 @@ internal static class AgentInstructionFiles
 
     private static bool IsInstructionFile(string[] segments)
     {
+        if (segments.Length == 0) return false;
+
+        // The files that restrict the agent: the repository's deny rules, and the ignore files (the names the settings
+        // give; anywhere — one prompt more, never one less).
+        if (segments.Length >= 2 && segments[^2].Equals(Dir, StringComparison.OrdinalIgnoreCase)
+            && segments[^1].Equals("permissions.json", StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (Governance.ContentExclusions.IsIgnoreFileName(segments[^1])) return true;
+
         // A file the repository gives agents as instructions — AGENTS.md, CLAUDE.md, Copilot's, Cursor's… The
         // table's own reader, never a second list: a row added there is a write that asks here.
         if (RepoInstructionFormats.AnyEndsAt(segments)) return true;

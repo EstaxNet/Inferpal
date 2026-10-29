@@ -84,7 +84,8 @@ internal static class InPlaceCodeEdit
                 using (ModelWaitScope.Open(dlg.ShowWait))
                     run = await CodeActionPipeline.RunAsync(
                         client, model, systemPrompt, instruction,
-                        docText, sel.Start.Offset, sel.End.Offset, sel.IsEmpty, generation.Token);
+                        docText, sel.Start.Offset, sel.End.Offset, sel.IsEmpty, generation.Token,
+                        path: view.Document.Uri.LocalPath);
             }
             catch (OperationCanceledException)
             {

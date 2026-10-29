@@ -46,7 +46,7 @@ namespace System
         public override int GetHashCode() => _value;
     }
 
-    /// <summary>Support des plages <c>a..b</c>.</summary>
+    /// <summary>Support for <c>a..b</c> ranges.</summary>
     internal readonly struct Range : IEquatable<Range>
     {
         public Index Start { get; }

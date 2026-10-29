@@ -32,9 +32,12 @@ internal static class WebPage
     internal static async Task<string> ReadTextAsync(HttpContent content, CancellationToken ct) =>
         (await ReadAsync(content, ct)).Text;
 
+    /// <summary>The most a page is read to: past it, the read is refused (<see cref="BoundedReads"/>).</summary>
+    internal const int MaxBytes = 8 * 1024 * 1024;
+
     internal static async Task<WebText> ReadAsync(HttpContent content, CancellationToken ct)
     {
-        var bytes = await content.ReadAsByteArrayAsync(ct);
+        var bytes = await BoundedReads.BytesAsync(content, MaxBytes, ct);
         return new WebText(Decode(bytes, content.Headers.ContentType?.CharSet), content.Headers.ContentType?.MediaType,
                            bytes.Length, TextFileEncoding.IsBinary(bytes));
     }

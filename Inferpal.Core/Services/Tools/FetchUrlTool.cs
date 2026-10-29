@@ -74,7 +74,7 @@ internal class FetchUrlTool : ITool
         // Outbound network = exfiltration channel. Gate it like the other side-effecting tools so a
         // prompt-injected model can't silently ship workspace data off-machine (session "always allow").
         if (!await _approval.RequestApprovalAsync("fetch_url", url, ct))
-            return "Cancelled by user.";
+            return Execution.ToolFailure.CancelledByUser;
 
         var page = await GetStringCheckingRedirectsAsync(url, ct);
         return Window(Readable(page), start, maxChars);

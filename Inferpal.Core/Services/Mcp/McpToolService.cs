@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Inferpal.Config;
 using Inferpal.Services.Mcp.OAuth;
 using Inferpal.Services.Tools;
@@ -83,7 +84,19 @@ internal sealed class McpToolService : IAsyncDisposable
     /// The servers outside the user's list — the repository's and the editor's — that the last refresh started or tried,
     /// as they were started: their cards are drawn from these (<see cref="McpServerCards"/>).
     /// </summary>
-    public IReadOnlyList<McpServerConfig> OtherServers => _others;
+    public IReadOnlyList<McpServerConfig> OtherServers => [.. _others.Select(AsWritten)];
+
+    /// <summary>
+    /// A repository's server as its file writes it — the variables of its command, URL and headers NOT filled — for the
+    /// card. ⚠ Started, they hold the environment's values: <c>?key=${env:API_KEY}</c> shows the key itself in the
+    /// settings, and in every screenshot of them. Any other server is shown as it was started.
+    /// </summary>
+    private McpServerConfig AsWritten(McpServerConfig started) =>
+        _agreedRepository.TryGetValue(started, out var from)
+        && McpServerConfig.Parse(new JsonObject { [from.Server.Name] = from.Server.Definition.DeepClone() }.ToJsonString(), out _)
+            is [var written]
+            ? written
+            : started;
 
     /// <summary>The <c>${input:…}</c> values given in this process, per repository, server and input: asked once per
     /// session, never written anywhere.</summary>

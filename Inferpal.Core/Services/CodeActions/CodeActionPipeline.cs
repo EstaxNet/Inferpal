@@ -93,7 +93,8 @@ internal static class CodeActionPipeline
         int                selEnd,
         bool               selectionEmpty,
         CancellationToken  ct,
-        Func<string, string>? userMessage = null)
+        Func<string, string>? userMessage = null,
+        string?            path = null)
     {
         var (originalCode, start, end, hasSelection) =
             ResolveTarget(docText, selStart, selEnd, selectionEmpty);
@@ -120,7 +121,7 @@ internal static class CodeActionPipeline
             return new CodeActionRun(CodeActionOutcome.Failed, FailureDetail: ex.Message);
         }
 
-        var finished = Finish(result, originalCode, docText, hasSelection, model, client.ServerAddress);
+        var finished = Finish(result, originalCode, docText, hasSelection, model, client.ServerAddress, path);
         if (finished.Outcome != CodeActionOutcome.Edited)
             return finished;
 
@@ -150,7 +151,7 @@ internal static class CodeActionPipeline
     /// </remarks>
     internal static CodeActionRun Finish(
         ChatTurnResult reply, string originalCode, string docText, bool reindent,
-        string model, string serverAddress)
+        string model, string serverAddress, string? path = null)
     {
         // ⚠ An answer that stopped at the length limit is the FIRST part of the rewrite — the window
         // fills up exactly when the whole file goes in and the whole file is expected out. Applied, it
@@ -162,7 +163,7 @@ internal static class CodeActionPipeline
         if (reply.AnswerIsReasoning)
             return new CodeActionRun(CodeActionOutcome.Failed, FailureDetail: Strings.MsgOnlyReasoningFrom(model));
 
-        var cleaned = InlineEditResponse.Clean(reply.TextContent ?? string.Empty);
+        var cleaned = InlineEditResponse.Clean(reply.TextContent ?? string.Empty, InlineEditResponse.HasOwnFences(path, docText));
 
         // The model signalled the action would bring nothing — leave the document untouched.
         if (CodeActionSentinel.IsNoChange(cleaned))

@@ -44,7 +44,10 @@ internal static class ArenaStore
     }
 
     /// <returns><c>false</c> when nothing was written.</returns>
-    public static Task<bool> SaveAsync(ArenaSavedState state) => _file.SaveAsync(state);
+    /// <param name="state">The state to write.</param>
+    /// <param name="fromUnreadable">The state was built on a read that failed: the file is set aside first.</param>
+    public static Task<bool> SaveAsync(ArenaSavedState state, bool fromUnreadable = false) =>
+        _file.SaveAsync(state, fromUnreadable: fromUnreadable);
 
     // `Battles: not null` is the shape check, not a formality: a hand-edited or truncated file can
     // deserialise into a state whose list is null, and every caller enumerates it.

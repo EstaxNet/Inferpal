@@ -11,8 +11,9 @@ internal record Snippet(
     string Code,
     string CreatedAt);
 
-/// <summary>What saving a snippet did.</summary>
-internal enum SnippetSaveResult { Saved, Full, NotWritten }
+/// <summary>What saving a snippet did: <see cref="SavedAside"/> is saved into a NEW library, the one that could not be
+/// read set aside first — said, since the listing now shows one snippet where there were many.</summary>
+internal enum SnippetSaveResult { Saved, Full, NotWritten, SavedAside }
 
 internal static class SnippetStore
 {
@@ -35,7 +36,7 @@ internal static class SnippetStore
     /// </remarks>
     public static async Task<SnippetSaveResult> SaveAsync(string language, string code, CancellationToken ct)
     {
-        var snippets = await LoadAllAsync(ct);
+        var (snippets, unreadable) = await ReadAllAsync(ct);
         if (snippets.Count >= MaxSnippets) return SnippetSaveResult.Full;
         snippets.Add(new Snippet(
             Guid.NewGuid().ToString("N")[..8],
@@ -43,7 +44,8 @@ internal static class SnippetStore
             code,
             DateTime.Now.ToString("s")));
 
-        return await _file.SaveAsync(snippets, ct) ? SnippetSaveResult.Saved : SnippetSaveResult.NotWritten;
+        if (!await _file.SaveAsync(snippets, ct, fromUnreadable: unreadable)) return SnippetSaveResult.NotWritten;
+        return unreadable ? SnippetSaveResult.SavedAside : SnippetSaveResult.Saved;
     }
 
     public static Task<List<Snippet>> LoadAllAsync(CancellationToken ct) =>
@@ -63,10 +65,10 @@ internal static class SnippetStore
     /// <returns><c>true</c> when written, or when the index names no snippet (nothing to write).</returns>
     public static async Task<bool> DeleteAsync(int index, CancellationToken ct)
     {
-        var snippets = await LoadAllAsync(ct);
+        var (snippets, unreadable) = await ReadAllAsync(ct);
         if (index < 0 || index >= snippets.Count) return true;
         snippets.RemoveAt(index);
-        return await _file.SaveAsync(snippets, ct);
+        return await _file.SaveAsync(snippets, ct, fromUnreadable: unreadable);
     }
 
     public static Task<bool> ClearAsync(CancellationToken ct) => _file.SaveAsync([], ct);

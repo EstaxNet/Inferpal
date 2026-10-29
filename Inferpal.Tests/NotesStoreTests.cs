@@ -56,6 +56,20 @@ public class NotesStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task AppendAsync_KeepsTheFilesLineBreaks_AndWhatWasThere()
+    {
+        // notes.md checked out with CRLF (git autocrlf on Windows), its last line without a break.
+        var path = NotesStore.NotesPath(_root);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, "- [2026-06-11 09:00] old\r\n- [2026-06-11 09:30] older");
+
+        await NotesStore.AppendAsync(_root, "new", new DateTime(2026, 6, 12, 10, 0, 0), CancellationToken.None);
+
+        Assert.Equal("- [2026-06-11 09:00] old\r\n- [2026-06-11 09:30] older\r\n- [2026-06-12 10:00] new\r\n",
+                     File.ReadAllText(path));
+    }
+
+    [Fact]
     public async Task ReadAsync_MissingFile_ReturnsNull()
     {
         Assert.Null(await NotesStore.ReadAsync(_root, CancellationToken.None));

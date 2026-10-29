@@ -34,6 +34,13 @@ internal static class SafeFileWriter
         return File.WriteAllTextAsync(path, content, encoding, CancellationToken.None);
     }
 
+    /// <summary>Whether <paramref name="path"/> holds <paramref name="bytes"/>; <c>false</c> when it cannot be read.</summary>
+    private static bool HoldsExactly(string path, byte[] bytes)
+    {
+        try { return File.ReadAllBytes(path).AsSpan().SequenceEqual(bytes); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return false; }
+    }
+
     /// <summary>A write refused because the file's encoding cannot hold one of the characters.</summary>
     internal sealed class UnrepresentableTextException(string message) : IOException(message);
 
@@ -64,20 +71,33 @@ internal static class SafeFileWriter
     internal static async Task<MultiWriteResult> WriteAllOrRollBackAsync(
         IReadOnlyList<(string Path, string Content, string Original)> files)
     {
-        var written = new List<(string Path, string Original)>();
+        // ⚠ Put back as the BYTES it held: re-encoded from text, a legacy file rewritten as plain ASCII is detected as
+        // UTF-8 on the way back, and its "é" comes back as two bytes — changed by the write that promised no change.
+        var written = new List<(string Path, string Original, byte[]? Before)>();
         foreach (var (path, content, original) in files)
         {
+            byte[]? before = null;
             try
             {
+                before = File.Exists(path) ? await File.ReadAllBytesAsync(path).ConfigureAwait(false) : null;
                 await WritePreservingAsync(path, content, CancellationToken.None).ConfigureAwait(false);
-                written.Add((path, original));
+                written.Add((path, original, before));
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
+                // ⚠ The failing write truncates before it writes: its own file is put back as well.
+                if (before is not null) written.Add((path, original, before));
                 var stuck = new List<string>();
-                foreach (var (done, original0) in written)
+                foreach (var (done, original0, held) in written)
                 {
-                    try { await WritePreservingAsync(done, original0, CancellationToken.None).ConfigureAwait(false); }
+                    try
+                    {
+                        if (held is null) await WritePreservingAsync(done, original0, CancellationToken.None).ConfigureAwait(false);
+                        // Unchanged — a write refused before it opened the file (read-only, a character its code page
+                        // lacks) — is not put back: rewriting a read-only file would name it as one that could not be.
+                        else if (!HoldsExactly(done, held))
+                            await File.WriteAllBytesAsync(done, held, CancellationToken.None).ConfigureAwait(false);
+                    }
                     catch (Exception rollback) when (rollback is IOException or UnauthorizedAccessException)
                     {
                         Diagnostics.Swallow("SafeFileWriter.RollBack", rollback);

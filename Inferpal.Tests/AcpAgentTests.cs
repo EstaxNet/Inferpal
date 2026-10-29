@@ -923,6 +923,48 @@ public sealed class AcpAgentTests : IDisposable
         }
     }
 
+    /// <summary>The same thread asked back by <c>session/resume</c> rather than by a prompt comes back the same way: loaded
+    /// bare, it ran in the configured mode on the default model, its attachment gone.</summary>
+    [Fact]
+    public async Task ASessionClosedToMakeRoom_ResumedByTheClient_ComesBackInItsModeOnItsModel_WithItsAttachment()
+    {
+        File.WriteAllText(Path.Combine(_root, "notes.txt"), "the word is teal\n");
+        var offered = new List<string>();
+        var seen = new List<string>();
+        await using var h = await StartAsync(fake: f =>
+        {
+            f.ModelNames = ["test-model", "other-model"];
+            f.OnChatRequest = (_, history, tools, _) =>
+            {
+                lock (seen)
+                {
+                    offered.Clear();
+                    offered.AddRange(tools.Definitions.Select(d => d.Function.Name));
+                    seen.AddRange(history.Where(m => m.Role == "user").Select(m => m.Content ?? ""));
+                }
+                return Task.FromResult(new ChatTurnResult("ok", null, 0, 0));
+            };
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var first = await NewSessionAsync(h);
+        await h.Client.RequestAsync("session/set_config_option", new { sessionId = first, configId = "mode", value = "plan" });
+        await h.Client.RequestAsync("session/set_config_option", new { sessionId = first, configId = "model", value = "other-model" });
+        await PromptAsync(h, first, "/read notes.txt");   // attached to the next prompt
+        for (var i = 0; i < AcpAgent.MaxLiveSessions; i++) await NewSessionAsync(h);   // the first is closed for room
+
+        await h.Client.RequestAsync("session/resume", new { sessionId = first, cwd = _root, mcpServers = Array.Empty<object>() });
+        h.Fake.ChatModels.Clear();
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, first, "which word?")));
+
+        Assert.Equal("other-model", h.Fake.ChatModels.Last());
+        lock (seen)
+        {
+            Assert.Contains("read_file", offered);   // WITNESS: the tools were read
+            Assert.DoesNotContain("write_file", offered);
+            Assert.Contains(seen, q => q.Contains("the word is teal", StringComparison.Ordinal));
+        }
+    }
+
     /// <summary>A thread closed to make room whose mode's file is gone since comes back in Default — and the client's
     /// selector is told: no load response carries it there.</summary>
     [Fact]

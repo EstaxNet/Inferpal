@@ -129,4 +129,22 @@ public sealed class LegacyEncodingLanguagesTests : IDisposable
         Assert.Equal("int y = 1;\n", File.ReadAllText(utf8));                                 // put back
         Assert.Equal(legacyBefore, File.ReadAllBytes(legacy));
     }
+
+    [Fact]
+    public async Task ALegacyFileAlreadyWritten_ComesBackAsItsOwnBytes_WhenALaterOneFails()
+    {
+        // Rewritten as plain ASCII, the file reads as UTF-8: put back from TEXT, its "é" came back as two bytes.
+        var legacy = LegacyFile();
+        var legacyBefore = File.ReadAllBytes(legacy);
+        var unreachable = Path.Combine(_ws, "no-such-folder", "B.cs");
+
+        var outcome = await SafeFileWriter.WriteAllOrRollBackAsync([
+            (legacy, "int x = 2;\r\n", File.ReadAllText(legacy, TextFileEncoding.LegacyEncoding)),
+            (unreachable, "class B { }\n", ""),
+        ]);
+
+        Assert.Equal(unreachable, outcome.FailedPath);
+        Assert.Empty(outcome.Stuck);
+        Assert.Equal(legacyBefore, File.ReadAllBytes(legacy));
+    }
 }

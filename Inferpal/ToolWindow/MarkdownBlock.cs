@@ -116,9 +116,11 @@ internal sealed class MarkdownBlock : NotifyPropertyChangedObject
     {
         if (string.IsNullOrWhiteSpace(Text)) return;
         var result = await Inferpal.Services.Persistence.SnippetStore.SaveAsync(Language, Text, ct);
-        SaveSnippetGlyph = result == Inferpal.Services.Persistence.SnippetSaveResult.Saved ? GlyphSaved : GlyphNotSaved;
+        SaveSnippetGlyph = result is Inferpal.Services.Persistence.SnippetSaveResult.Saved
+                                   or Inferpal.Services.Persistence.SnippetSaveResult.SavedAside ? GlyphSaved : GlyphNotSaved;
         SaveSnippetTip   = result switch
         {
+            Inferpal.Services.Persistence.SnippetSaveResult.SavedAside => Strings.SnippetsUnreadable(Inferpal.Services.Persistence.SnippetStore.FilePath),
             Inferpal.Services.Persistence.SnippetSaveResult.Full       => Strings.SnippetsFull(Inferpal.Services.Persistence.SnippetStore.MaxSnippets),
             Inferpal.Services.Persistence.SnippetSaveResult.NotWritten => Strings.SnippetsWriteFailed,
             _                                                          => Strings.TooltipSaveSnippet,

@@ -116,6 +116,18 @@ public sealed class ContentExclusionTests : IDisposable
         Assert.DoesNotContain(Marker, restored);
     }
 
+    /// <summary>An ignore file the SETTINGS name forces the card like the default ones: protected by the default names
+    /// alone, a custom one could be emptied under "Always", lifting every exclusion it holds.</summary>
+    [Fact]
+    public void AnIgnoreFileTheSettingsName_ForcesTheCardLikeTheDefaultOnes()
+    {
+        ContentExclusions.Declare(_root, () => ".secretsignore");
+
+        Assert.True(AgentInstructionFiles.Targets(Path.Combine(_root, ".secretsignore")));
+        Assert.True(AgentInstructionFiles.Targets(Path.Combine(_root, ".aiignore")));      // a default name, still
+        Assert.False(AgentInstructionFiles.Targets(Path.Combine(_root, "notes.txt")));     // reference arm
+    }
+
     [Fact]
     public void AUrl_IsNotTheFileItsPathEndsLike_UnlessItLeavesItsScheme()
     {

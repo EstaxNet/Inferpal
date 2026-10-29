@@ -97,6 +97,38 @@ public class InlineEditResponseTests
         Assert.Equal("var x = 1;", C(raw));
     }
 
+    [Fact]
+    public void ClosingFenceAlone_StripsOnlyClosing()
+    {
+        Assert.Equal("var x = 1;", C("var x = 1;\n```"));
+    }
+
+    [Theory]
+    [InlineData("Here is the fix:\n```csharp\nvar x = 1;\n```")]                                // prose before
+    [InlineData("```csharp\nvar x = 1;\n```\nThis version no longer throws.")]                  // prose after
+    [InlineData("Sure! Here it is:\n\n```csharp\nvar x = 1;\n```\n\nLet me know if…")]          // both
+    public void TheModelsProse_AroundTheBlock_IsNeverWrittenIntoTheFile(string raw)
+    {
+        Assert.Equal("var x = 1;", InlineEditResponse.Clean(raw).Replace("\r\n", "\n"));
+    }
+
+    [Fact]
+    public void FencesTheOriginalHasItself_AreTheContent_NotTheWrapping()
+    {
+        // Reference arm: a Markdown file has its own fences — its rewrite keeps them, only a wrapping pair goes.
+        var reply = "# Usage\n\n```bash\nnpm run test\n```";
+        Assert.Equal(reply, InlineEditResponse.Clean(reply, ownFences: true).Replace("\r\n", "\n"));
+    }
+
+    [Theory]
+    [InlineData(@"C:\ws\README.md", "A paragraph without any code.", true)]   // judged by the FILE: its rewrite may add one
+    [InlineData(@"C:\ws\notes.txt", "plain", true)]
+    [InlineData(@"C:\ws\Program.cs", "var s = \"\"\"\n```\nx\n```\n\"\"\";", true)]   // a document holding fences
+    [InlineData(@"C:\ws\Program.cs", "class P { }", false)]
+    [InlineData(null, "class P { }", false)]
+    public void TheTextsOwnFences_AreJudgedOnTheFileAndTheDocument(string? path, string document, bool expected) =>
+        Assert.Equal(expected, InlineEditResponse.HasOwnFences(path, document));
+
     [Theory]
     [InlineData("")]
     [InlineData("   \n  ")]

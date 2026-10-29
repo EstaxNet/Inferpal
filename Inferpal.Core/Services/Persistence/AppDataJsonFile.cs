@@ -106,6 +106,20 @@ internal sealed class AppDataJsonFile<T>
     /// </remarks>
     public async Task<(T Value, bool Unreadable)> ReadAsync(T fallback, CancellationToken ct = default)
     {
+        var read = await ReadOnceAsync(fallback, ct);
+        // ⚠ What the user wrote (preserveUnreadable) is read again before anyone decides from the fallback: another
+        // process replacing the file holds it a moment, and an entry added to that empty read, then saved, erases the
+        // rest — by then the save's own check finds the file readable again and sets nothing aside.
+        for (var retry = 0; read.Unreadable && _preserveUnreadable && retry < 3; retry++)
+        {
+            await Task.Delay(50, ct);
+            read = await ReadOnceAsync(fallback, ct);
+        }
+        return read;
+    }
+
+    private async Task<(T Value, bool Unreadable)> ReadOnceAsync(T fallback, CancellationToken ct)
+    {
         try
         {
             if (!File.Exists(Path)) return (fallback, false);
@@ -178,11 +192,13 @@ internal sealed class AppDataJsonFile<T>
     public T Load(T fallback) => Read(fallback).Value;
 
     /// <summary>Synchronous <see cref="SaveAsync"/>: same set-aside of an unreadable file, same atomic write.</summary>
-    public bool Save(T value)
+    /// <param name="value">The document to write.</param>
+    /// <param name="fromUnreadable">See <see cref="SaveAsync"/>.</param>
+    public bool Save(T value, bool fromUnreadable = false)
     {
         try
         {
-            PreserveIfUnreadable();
+            PreserveIfUnreadable(fromUnreadable);
             AtomicFile.WriteAllText(Path, JsonSerializer.Serialize(value, _opts));
             return true;
         }
@@ -191,11 +207,15 @@ internal sealed class AppDataJsonFile<T>
 
     /// <summary>Writes the document atomically. Best effort: a failure is traced, never thrown.</summary>
     /// <returns><c>false</c> when nothing was written — a caller that announces the save must check it.</returns>
-    public async Task<bool> SaveAsync(T value, CancellationToken ct = default)
+    /// <param name="value">The document to write.</param>
+    /// <param name="ct">Cancels before the write.</param>
+    /// <param name="fromUnreadable">The document was built on a read that FAILED: the file on disk is set aside before
+    /// the write whatever it reads now — readable again a moment later, it still holds what the write would erase.</param>
+    public async Task<bool> SaveAsync(T value, CancellationToken ct = default, bool fromUnreadable = false)
     {
         try
         {
-            PreserveIfUnreadable();
+            PreserveIfUnreadable(fromUnreadable);
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Path)!);
             await AtomicFile.WriteAllTextAsync(Path, JsonSerializer.Serialize(value, _opts), ct);
             return true;
@@ -214,25 +234,29 @@ internal sealed class AppDataJsonFile<T>
     /// The state is judged <b>at the moment it matters</b>, by re-reading, rather than through a
     /// flag set at load time: a flag would be stale as soon as the user repairs the file by hand,
     /// and it would not cover a save coming from another path. The cost is one re-read per save, on
-    /// documents that are written rarely.
+    /// documents that are written rarely. The one exception is the caller's own word: a document built on a read that
+    /// failed (<paramref name="fromUnreadable"/>) sets the file aside without asking it again.
     /// </remarks>
-    private void PreserveIfUnreadable()
+    /// <param name="fromUnreadable">The document about to be written was built on a read that failed.</param>
+    private void PreserveIfUnreadable(bool fromUnreadable)
     {
         if (!_preserveUnreadable || !File.Exists(Path)) return;
 
-        try
-        {
-            var value = JsonSerializer.Deserialize<T>(File.ReadAllText(Path), _opts);
-            if (value is not null && Readable(value)) return;
-        }
-        catch (Exception ex)
-        {
-            Diagnostics.Swallow($"{_diagnosticName}.PreserveCheck", ex);
-        }
+        if (!fromUnreadable)
+            try
+            {
+                var value = JsonSerializer.Deserialize<T>(File.ReadAllText(Path), _opts);
+                if (value is not null && Readable(value)) return;
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.Swallow($"{_diagnosticName}.PreserveCheck", ex);
+            }
 
-        var aside = AtomicFile.PreserveAside(Path);
-        if (aside is not null)
-            Diagnostics.Record($"{_diagnosticName}.Save",
-                $"{Path} was unreadable: its bytes are kept in {aside} before being overwritten.");
+        // ⚠ Not set aside, not overwritten: the copy is the only place the user's entries survive the write.
+        var aside = AtomicFile.PreserveAside(Path)
+                    ?? throw new IOException($"{Path} cannot be read and could not be set aside: it is not overwritten.");
+        Diagnostics.Record($"{_diagnosticName}.Save",
+            $"{Path} was unreadable: its bytes are kept in {aside} before being overwritten.");
     }
 }

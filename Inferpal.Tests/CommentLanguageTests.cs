@@ -35,6 +35,8 @@ public sealed class CommentLanguageTests
         "avec", "dans", "sinon", "donc", "ainsi", "chaque", "fichier", "fichiers", "aucun",
         "aucune", "lorsque", "puisque", "afin", "toujours", "sont", "elle", "vers le", "entre les",
         "le fichier", "la ligne", "les lignes", "du modele", "de la", "de ligne", "recopie",
+        // A lone word in a section heading or a cleanup catch, where two stop words never meet.
+        "nettoyage", "cadrage", "plages", "discipline de",
     ];
 
     /// <summary>
@@ -88,8 +90,14 @@ public sealed class CommentLanguageTests
             {
                 n++;
                 var line = raw.TrimStart();
-                if (!(line.StartsWith("//", StringComparison.Ordinal) ||
-                      line.StartsWith('*'))) continue;
+                if (!(line.StartsWith("//", StringComparison.Ordinal) || line.StartsWith('*')))
+                {
+                    // ⚠ And a comment that ENDS a line of code — a cleanup catch's block comment — which a reader of comment
+                    // lines alone never sees. Taken from its opening on, the code before it left out.
+                    var block = line.IndexOf("/*", StringComparison.Ordinal);
+                    if (block < 0) continue;
+                    line = line[block..];
+                }
 
                 // ⚠ Quoted text is the product's own, in whatever language it ships — and a
                 // comment quotes French precisely when it documents a defect about French. Three

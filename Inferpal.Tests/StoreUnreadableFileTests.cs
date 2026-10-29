@@ -104,4 +104,24 @@ public class StoreUnreadableFileTests : IDisposable
 
         Assert.Single(Directory.GetFiles(_dir).Where(f => Path.GetFileName(f).StartsWith("jetable")));
     }
+
+    /// <summary>A read that failed for a moment (another process replacing the file), then a save built on its empty
+    /// fallback: re-judged at the save, the file reads fine again and nothing was set aside — the entries were gone.
+    /// The caller's own word now sets it aside.</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]   // reference arm: a document built on a GOOD read replaces a readable file, nothing aside
+    public async Task ADocumentBuiltOnAFailedRead_SetsTheFileAside_ThoughItReadsAgainNow(bool fromUnreadable)
+    {
+        var path = Path.Combine(_dir, "kept.json");
+        var file = new AppDataJsonFile<List<string>>("kept.json", "Test", preserveUnreadable: true) { PathOverride = path };
+        await File.WriteAllTextAsync(path, "[\"one\",\"two\"]");
+
+        Assert.True(await file.SaveAsync(["three"], CancellationToken.None, fromUnreadable));
+
+        var aside = Directory.GetFiles(_dir, "kept.json.unreadable-*");
+        if (!fromUnreadable) { Assert.Empty(aside); return; }
+        Assert.Contains("two", await File.ReadAllTextAsync(Assert.Single(aside)));
+        Assert.Contains("three", await File.ReadAllTextAsync(path));
+    }
 }

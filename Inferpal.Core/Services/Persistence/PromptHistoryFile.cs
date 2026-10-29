@@ -20,8 +20,8 @@ internal static class PromptHistoryFile
     /// </remarks>
     public static void Append(AppDataJsonFile<List<string>> store, PromptHistoryNavigator history, string prompt)
     {
-        var (onDisk, unreadable) = store.Read([]);
+        var (onDisk, unreadable) = store.ReadSettled([]);
         if (!unreadable) history.Load(onDisk);
-        if (history.Append(prompt)) store.Save([.. history.Entries]);
+        if (history.Append(prompt)) store.Save([.. history.Entries], fromUnreadable: unreadable);
     }
 }

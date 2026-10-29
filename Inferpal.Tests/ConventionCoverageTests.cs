@@ -2529,8 +2529,8 @@ public class ConventionCoverageTests
         {
             // The binder itself: its watchdog IS the mechanism, it must not be a member of what it kills.
             ["ProcessLifetime.cs"] = "starts the group watchdog",
-            // The browser a sign-in opens by shell execute must outlive the host.
-            ["LoopbackAuthCodeReceiver.cs"] = "the browser outlives us",
+            // The browser or the editor the system opens a page or a file in must outlive the host.
+            ["SystemOpener.cs"] = "what it opens outlives us",
         };
 
         var offenders = new List<string>();

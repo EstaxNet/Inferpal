@@ -215,6 +215,31 @@ public class PathCaseFoldingTests
         Assert.Contains("PathComparer", code, StringComparison.Ordinal);
     }
 
+    /// <summary>Under Linux, <c>xt_DSCP.c</c> and <c>xt_dscp.c</c> are two files of one folder (the kernel's netfilter has
+    /// both): each one's restore offers its own backup, never the other's newer one.</summary>
+    [Fact]
+    public async Task OnLinux_TwoFilesThatDifferOnlyByCase_KeepTheirOwnBackups()
+    {
+        if (!OperatingSystem.IsLinux()) return;   // a volume that folds case holds ONE such file: nothing to tell apart
+        var root = Directory.CreateTempSubdirectory("inferpal-case").FullName;
+        try
+        {
+            var upper = Path.Combine(root, "xt_DSCP.c");
+            var lower = Path.Combine(root, "xt_dscp.c");
+            File.WriteAllText(upper, "upper v1");
+            File.WriteAllText(lower, "lower v1");
+            var history = new Services.Execution.FileHistoryService();
+
+            await history.BackUpBeforeChangeAsync(upper, CancellationToken.None);
+            await history.BackUpBeforeChangeAsync(lower, CancellationToken.None);   // the newer backup
+
+            var candidate = await history.FindRestoreCandidateAsync(upper, CancellationToken.None);
+            Assert.NotNull(candidate);
+            Assert.Equal("upper v1", File.ReadAllText(candidate!));
+        }
+        finally { try { Directory.Delete(root, recursive: true); } catch { } }
+    }
+
     private static string RepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);

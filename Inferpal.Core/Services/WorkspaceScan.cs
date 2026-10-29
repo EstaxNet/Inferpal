@@ -269,7 +269,8 @@ internal static class WorkspaceScan
         {
             // A file the workspace's ignore files keep out of AI tools is skipped — and counted, for the note the tool call
             // puts above its result (ContentExclusions.SkipInWalk): skipped in silence, it would read "not there".
-            return Walk(start, safePattern).Where(f => !IsExcludedPath(f, judgedBelow) && !Governance.ContentExclusions.SkipInWalk(f));
+            return Walk(start, safePattern, skipExcluded: true)
+                .Where(f => !IsExcludedPath(f, judgedBelow) && !Governance.ContentExclusions.SkipInWalk(f));
         }
         catch (Exception ex)
         {
@@ -451,13 +452,18 @@ internal static class WorkspaceScan
     /// <c>search_in_files</c>.
     /// </para>
     /// </remarks>
-    private static IEnumerable<string> Walk(string start, string pattern)
+    /// <param name="start">The folder walked.</param>
+    /// <param name="pattern">The file-name pattern, as <see cref="NormalizeFilePattern"/> passed it.</param>
+    /// <param name="skipExcluded">Not descending into an excluded folder at all (<see cref="IsExcludedDirName"/>):
+    /// its files are dropped afterwards anyway, and listing a <c>node_modules</c> of 300 000 files on every search costs
+    /// the search. The same answer, judged below the start like the per-file filter.</param>
+    private static IEnumerable<string> Walk(string start, string pattern, bool skipExcluded = false)
     {
         var expression = FileSystemName.TranslateWin32Expression(pattern);
         return new FileSystemEnumerable<string>(start, static (ref FileSystemEntry e) => e.ToSpecifiedFullPath(), WalkOptions)
         {
-            ShouldRecursePredicate = static (ref FileSystemEntry e) =>
-                (e.Attributes & FileAttributes.ReparsePoint) == 0,
+            ShouldRecursePredicate = (ref FileSystemEntry e) =>
+                (e.Attributes & FileAttributes.ReparsePoint) == 0 && !(skipExcluded && IsExcludedDirName(e.ToFullPath())),
             ShouldIncludePredicate = (ref FileSystemEntry e) =>
                 !e.IsDirectory && FileSystemName.MatchesWin32Expression(expression, e.FileName, IgnoreCaseHere),
         };

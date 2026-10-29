@@ -84,7 +84,7 @@ internal static class ArenaCommandHandler
             var pendingSaved = await ArenaStore.SaveAsync(state with
             {
                 Pending = new ArenaPending(DateTime.UtcNow, prompt, modelA, modelB, id),
-            });
+            }, fromUnreadable: unreadable);
             if (pendingSaved) shown.Id = id;
 
             var sb = new System.Text.StringBuilder();

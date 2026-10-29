@@ -16,7 +16,7 @@ namespace Inferpal.Services.Docs;
 /// <see cref="SearchAsync"/>. Mirrors the embedding throttle and circuit-breaker handling of
 /// <see cref="Rag.ProjectIndexService"/> so docs indexing never floods the shared Ollama backend.
 /// </remarks>
-internal sealed class DocsIndexService
+internal sealed class DocsIndexService : IDisposable
 {
     /// <summary>The client of code search, asked at each use: the embedding server can change in the settings.</summary>
     private readonly Func<IInferenceProvider> _clientOf;
@@ -33,6 +33,7 @@ internal sealed class DocsIndexService
     // The source the running pass indexes, and how to stop it. Guarded by _passGate.
     private readonly object _passGate = new();
     private (string SiteId, CancellationTokenSource Cts)? _pass;
+    private bool _disposed;   // guarded by _passGate
 
     private List<DocChunk> _chunks = [];
     private List<(DocSite Site, int PageCount, int ChunkCount)> _sites = [];
@@ -300,7 +301,11 @@ internal sealed class DocsIndexService
 
         IsIndexing = true;
         using var passCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        lock (_passGate) _pass = (site.Id, passCts);
+        lock (_passGate)
+        {
+            _pass = (site.Id, passCts);
+            if (_disposed) passCts.Cancel();   // a pass queued behind the one that was running ends at once
+        }
         ct = passCts.Token;
         try
         {
@@ -457,6 +462,20 @@ internal sealed class DocsIndexService
             _indexLock.Release();
             try { PassFinished?.Invoke(Status); }
             catch (Exception ex) { Diagnostics.Swallow("DocsIndexService.PassFinished", ex); }
+        }
+    }
+
+    /// <summary>
+    /// Stops the running pass and every later one. ⚠ A crawl runs detached from the command that started it: kept after its
+    /// session closes (an ACP thread closed, a settings page gone), it goes on crawling and embedding pages no one will
+    /// search, and tells its end to a connection that no longer exists.
+    /// </summary>
+    public void Dispose()
+    {
+        lock (_passGate)
+        {
+            _disposed = true;
+            try { _pass?.Cts.Cancel(); } catch (ObjectDisposedException) { /* the pass already ended */ }
         }
     }
 

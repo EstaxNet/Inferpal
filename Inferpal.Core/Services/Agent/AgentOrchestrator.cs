@@ -85,6 +85,16 @@ internal sealed class AgentOrchestrator
     /// <summary>Whether a repeat of <paramref name="toolName"/> may be served from the intra-run cache.</summary>
     internal static bool IsCacheable(string toolName) => CacheableTools.Contains(toolName);
 
+    /// <summary>
+    /// Whether a cacheable tool's result may be served to a repeat: an answer. ⚠ A failure ("Error: …", a timeout), the
+    /// person's refusal of the card, or a search engine that refused is not what the next try gets — served from the
+    /// cache, the person who says "fetch it now" gets "Cancelled by user." again, with no card.
+    /// </summary>
+    internal static bool IsAnAnswer(string result) =>
+        !result.StartsWith("Error:", StringComparison.Ordinal)
+        && result != ToolFailure.CancelledByUser
+        && result != Strings.WebSearchRefused;
+
     /// <summary>The plan request, followed by the names of the tools the run can call.</summary>
     /// <remarks>
     /// ⚠ The plan's JSON asks for a "tool" per step, and the planning call carries no tools: without the names a
@@ -937,6 +947,8 @@ internal sealed class AgentOrchestrator
             if (steering is not null && steering.AddTo(messages, executions.Count) > 0)
             {
                 sigCounts.Clear();
+                // And "fetch it now" after a refused card means the call, not its cached refusal.
+                toolCache.Clear();
                 // ⚠ A note that came after the answer-now prompt was chosen (during a summary, a stream reset) was read under
                 // "WITHOUT calling any more tools": that prompt becomes the generic one, which leaves them open.
                 if (answerNowObserve is { } observe
@@ -1044,8 +1056,10 @@ internal sealed class AgentOrchestrator
                     // re-executing. DiffInfo is intentionally null for a reuse: no new mutation
                     // happened, so we must not re-trigger restore/diff UI for it.
                     var cacheKey  = ToolCallKey(toolName, call.Function.Arguments);
-                    // A call whose arguments never parsed is refused, never cached nor served from cache.
-                    var cacheable = IsCacheable(toolName) && call.Function.UnparsedArguments is null;
+                    // A call whose arguments never parsed, or that was stopped while it streamed, is refused: never
+                    // cached nor served from cache — its refusal tells the model to send it again.
+                    var cacheable = IsCacheable(toolName) && call.Function.UnparsedArguments is null
+                                    && call.Function.BrokenShape is null && !call.Function.StoppedRepeating;
                     string? cached = null;
                     var fromCache = cacheable && toolCache.TryGetValue(cacheKey, out cached);
 
@@ -1060,7 +1074,7 @@ internal sealed class AgentOrchestrator
                     {
                         result = await ExecuteToolSafeAsync(tools, call.Function, turn.CutAtLimit, ct);
                         diff   = tools.ConsumeDiff();
-                        if (cacheable)
+                        if (cacheable && IsAnAnswer(result))
                             toolCache[cacheKey] = result;
                     }
 

@@ -575,8 +575,8 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
             });
             killer?.WaitForExit(5000);
         }
-        catch { /* nettoyage */ }
-        try { if (!process.HasExited) process.Kill(); } catch { /* nettoyage */ }
+        catch { /* cleanup */ }
+        try { if (!process.HasExited) process.Kill(); } catch { /* cleanup */ }
     }
 
     // ── EnvDTE automation (UI thread only) ──────────────────────────────────────────

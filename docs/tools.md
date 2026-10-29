@@ -143,7 +143,7 @@ unattended without either prompting on every step or opening the door to anythin
 allow run_command ^\s*(dotnet|git|npm|cargo|go)\b   # auto-approve common dev commands
 deny  run_command (Remove-Item|rm\s+-rf)            # block these outright
 allow write_file \.(cs|ts|js|py)$                   # auto-approve edits to source files
-deny  * \.env$                                       # never touch secrets, any tool
+deny  * \.env$                                       # never write secrets (reads: .inferpalignore)
 ```
 
 - Format: `allow|deny <tool|*> <regex>`, one per line. The regex is matched against the raw
@@ -154,6 +154,9 @@ deny  * \.env$                                       # never touch secrets, any 
   `git status; Remove-Item -Recurse src` is not approved by a rule written for `git`.
 - `allow` auto-approves (no prompt); `deny` blocks the call outright (recorded in
   `/diagnostics`); no match falls back to the prompt.
+- Rules judge the calls that ask for approval — writes, commands, fetches, MCP tools. **Reading never asks**, so a
+  `deny` rule does not hide a file from `read_file` or a search: to keep a file away from every tool, reads included,
+  list it in `.inferpalignore` (or another ignore file).
 - Sources, evaluated in order: the committable workspace overlay `.inferpal/permissions.json`
   (`{ "rules": ["deny …", …] }`), then the per-machine **Permission rules** setting — where the
   narrow rule an approval card offers is written.
@@ -161,7 +164,8 @@ deny  * \.env$                                       # never touch secrets, any 
   `allow` rules found there are ignored (and recorded in `/diagnostics`): a cloned project must
   never be able to switch off your approval prompt. Only the per-machine setting can
   auto-approve. `deny` rules from the overlay are honoured — a project tightening its own
-  restrictions is always safe.
+  restrictions is always safe. **Writing the overlay or an ignore file always asks**, even after "Always": a rewrite
+  that empties one lifts every restriction it held.
 - A built-in denylist of catastrophic shell commands (recursive root deletes, disk
   formatting, fork bombs, …) always applies — even with approvals switched off. It is an
   **accident guard, not a security boundary**: it matches submitted text, so obfuscation

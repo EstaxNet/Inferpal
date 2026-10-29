@@ -206,4 +206,15 @@ public class OAuthCallbackCauseTests
         Assert.True(uri.Port > 1024, $"Port inattendu : {uri.Port}");
         Assert.Equal(Uri.UriSchemeHttp, uri.Scheme);
     }
+
+    /// <summary>Only the redirect's own path is the callback: a stray local request taken as it failed the sign-in on a
+    /// state that does not match. The rule, without a listener.</summary>
+    [Theory]
+    [InlineData("http://127.0.0.1:5000/callback?code=abc&state=s", true)]
+    [InlineData("http://127.0.0.1:5000/callback", true)]
+    [InlineData("http://127.0.0.1:5000/favicon.ico", false)]
+    [InlineData("http://127.0.0.1:5000/", false)]
+    [InlineData("http://127.0.0.1:5000/callbackx", false)]
+    public void OnlyTheRedirectsOwnPath_IsTheCallback(string requested, bool expected) =>
+        Assert.Equal(expected, LoopbackAuthCodeReceiver.IsCallback(new Uri(requested), "http://127.0.0.1:5000/callback"));
 }

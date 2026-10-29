@@ -70,11 +70,8 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
         _http = handler is null
             ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, Proxy = NetworkProxy.Shared })
             : new HttpClient(handler, disposeHandler: false);
-        // Applies to the buffered JSON path (ReadAsStringAsync); the SSE path reads the stream
-        // itself and is bounded by MaxSseEventChars below. Both exist for the same reason: the
-        // body is written by the server, and "the user configured it" is not "the user vouches
-        // for every byte it will ever send".
-        _http.MaxResponseContentBufferSize = 32 * 1024 * 1024;
+        // Every body is read under a ceiling (BoundedReads: MaxResponseBytes, MaxSseEventChars): it is written by the
+        // server, and "the user configured it" is not "the user vouches for every byte it will ever send".
         // ⚠ No client-wide timeout: every call carries its own budget (20 s handshake, 120 s tool call),
         // and HttpClient's default 100 s cut a legitimate tool call short before its budget ran out.
         _http.Timeout = System.Threading.Timeout.InfiniteTimeSpan;
@@ -289,7 +286,7 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
         if (resp.IsSuccessStatusCode) return;
 
         var body = string.Empty;
-        try { body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false); }
+        try { body = await BoundedReads.StringAsync(resp.Content, MaxRefusalBytes, ct).ConfigureAwait(false); }
         catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("McpHttpClient.RefusalBody", ex); }
         var detail = RefusalDetail(body);
         var (code, data) = RefusalRpcError(body);
@@ -429,7 +426,7 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
             throw new InvalidOperationException("MCP HTTP: event stream ended without a matching response.");
         }
 
-        var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+        var body = await BoundedReads.StringAsync(resp.Content, MaxResponseBytes, ct).ConfigureAwait(false);
         using var doc = JsonDocument.Parse(body);
         var root = doc.RootElement;
         if (root.ValueKind == JsonValueKind.Array)
@@ -582,20 +579,33 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
     /// <summary>Ceiling on one accumulated SSE event; past it the event is dropped, not buffered.</summary>
     private const int MaxSseEventChars = 32 * 1024 * 1024;
 
+    /// <summary>Ceiling on a JSON response body, and on a refusal's (only a slice of it is shown).</summary>
+    private const int MaxResponseBytes = 32 * 1024 * 1024, MaxRefusalBytes = 1024 * 1024;
+
     /// <summary>Yields the <c>data</c> payload of each SSE event from <paramref name="stream"/> (multiple
     /// <c>data:</c> lines joined by newline); non-data fields and comments are ignored.</summary>
     private static async IAsyncEnumerable<string> ReadSseEventsAsync(
         Stream stream, [EnumeratorCancellation] CancellationToken ct)
     {
         using var reader = new StreamReader(stream, Encoding.UTF8);
+        var lines = new BoundedLineReader(reader, MaxSseEventChars);
         var data = new StringBuilder();
         // ⚠ The cap was declared and never applied: data lines without a blank separator grew this buffer
         // without limit in the host process. Past it the event is dropped, up to its end.
         var dropping = false;
-        string? line;
-        while ((line = await reader.ReadLineAsync(ct).ConfigureAwait(false)) is not null)
+        while (true)
         {
-            if (line.Length == 0)
+            // ⚠ A line under its own ceiling: ReadLineAsync keeps a line that never ends whole in memory first.
+            var (line, overlong) = await lines.ReadLineAsync(ct).ConfigureAwait(false);
+            if (line is null) break;
+            if (overlong && !dropping)
+            {
+                Diagnostics.Record("Mcp", $"An event stream message over {MaxSseEventChars / (1024 * 1024)} MB was dropped.");
+                data.Clear();
+                dropping = true;
+                continue;
+            }
+            if (line.Length == 0 && !overlong)
             {
                 if (data.Length > 0 && !dropping) yield return data.ToString();
                 data.Clear();

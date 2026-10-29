@@ -889,7 +889,8 @@ flowchart TB
 
 A committable `.inferpal/permissions.json` can only **deny**: a cloned repository can never approve anything on your
 behalf. And `.aiignore`, `.cursorignore` and the other tools' ignore files keep files away from everything that reads
-for the model — each exclusion said, never silent.
+for the model — each exclusion said, never silent. Writing one of these files always asks you first, even after
+"Always": emptied, it would lift every restriction it holds.
 
 <details>
 <summary><b>In detail: the sandbox, approvals, rules, ignore files, diagnostics</b></summary>

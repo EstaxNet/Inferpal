@@ -2,14 +2,12 @@ using Inferpal.Host;
 using Inferpal.Host.Acp;
 using Inferpal.Services;
 
-// ── Children die with the host ───────────────────────────────────────────────
-// First, before anything starts a child: on Linux and macOS the host leads a process group of its own, and a watchdog
-// kills that group when the host ends, crash included (Windows binds each child to a job instead).
-ProcessLifetime.LeadOwnProcessGroup();
-
 // ── The setup an ACP client runs in a terminal ───────────────────────────────
 // `--acp --setup` (the client appends the method's args to its own launch): an interactive prompt on the real console,
 // nothing else. It owns stdout, so it runs before the discipline below.
+// ⚠ And before the process group below: it starts no child, and a process that leaves the terminal's foreground group
+// is stopped (SIGTTIN) at its first read of the terminal: the setup freezes on its first question under a shell without
+// job control (`sh -c "Inferpal.Host --acp --setup"`).
 if (args.Contains("--setup", StringComparer.Ordinal))
 {
     // ⚠ UTF-8 both ways: a Windows console writes in its OEM code page, and every accented word of a localized question
@@ -18,6 +16,11 @@ if (args.Contains("--setup", StringComparer.Ordinal))
     Console.InputEncoding  = new System.Text.UTF8Encoding(false);
     return await AcpSetup.RunAsync(Console.In, Console.Out, CancellationToken.None);
 }
+
+// ── Children die with the host ───────────────────────────────────────────────
+// Before anything starts a child: on Linux and macOS the host leads a process group of its own, and a watchdog kills
+// that group when the host ends, crash included (Windows binds each child to a job instead).
+ProcessLifetime.LeadOwnProcessGroup();
 
 // ── The settings window ──────────────────────────────────────────────────────
 // `--settings [folder]` (and `--acp --settings`, the ACP client's settings method): the settings form VS Code

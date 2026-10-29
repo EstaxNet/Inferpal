@@ -206,7 +206,7 @@ internal static class TestGenerationPlanner
         if (result.AnswerIsReasoning)
             return TestGenerationPlan.OnlyReasoning(testPath, extend, model);
 
-        var content = InlineEditResponse.Clean(result.TextContent);
+        var content = InlineEditResponse.Clean(result.TextContent, InlineEditResponse.HasOwnFences(testPath, existing ?? string.Empty));
 
         if (CodeActionSentinel.IsNoChange(content))
             return new TestGenerationPlan(false, testPath, testName, extend, NoChange: true, string.Empty);

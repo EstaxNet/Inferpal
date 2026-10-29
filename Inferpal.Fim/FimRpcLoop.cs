@@ -67,7 +67,7 @@ internal sealed class FimRpcLoop
         // Nobody must stay in flight behind a loop that is stopping.
         lock (_gate)
         {
-            foreach (var cts in _inflight.Values) { try { cts.Cancel(); } catch { /* nettoyage */ } }
+            foreach (var cts in _inflight.Values) { try { cts.Cancel(); } catch { /* cleanup */ } }
             _inflight.Clear();
         }
     }
@@ -126,7 +126,7 @@ internal sealed class FimRpcLoop
         try { cts?.Cancel(); } catch (Exception ex) { Diagnostics.Swallow("FimRpcLoop.Cancel", ex); }
     }
 
-    // ── Cadrage ───────────────────────────────────────────────────────────────
+    // ── Framing ───────────────────────────────────────────────────────────────
 
     private void WriteResult(int id, string text, bool failing = false)
     {

@@ -63,7 +63,7 @@ internal class WebSearchTool : ITool
         // The query string is sent to an external search engine — a covert exfiltration channel for
         // a prompt-injected model. Gate it like fetch_url (session "always allow" keeps it unobtrusive).
         if (!await _approval.RequestApprovalAsync("web_search", query, ct))
-            return "Cancelled by user.";
+            return Execution.ToolFailure.CancelledByUser;
 
         var url            = $"https://html.duckduckgo.com/html/?q={Uri.EscapeDataString(query)}&kl=wt-wt";
         var (status, html) = await GetFollowingSameHostRedirectsAsync(new Uri(url), ct);

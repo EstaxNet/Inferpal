@@ -270,6 +270,12 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
     private protected virtual Task<string?> ReasoningEffortFieldAsync(string model, ReasoningEffort effort, CancellationToken ct)
         => Task.FromResult<string?>(null);
 
+    /// <summary>
+    /// Whether <c>tool_choice: "required"</c> reaches this server for <paramref name="model"/> when the caller forces a
+    /// call — the generic server's answer: yes, since it says nothing about how the model writes its calls.
+    /// </summary>
+    private protected virtual Task<bool> ForcesToolCallAsync(string model, CancellationToken ct) => Task.FromResult(true);
+
     /// <inheritdoc/>
     public override async Task<ChatTurnResult> SendChatAsync(
         string model,
@@ -317,6 +323,9 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // A model whose chat template the server cannot render with tools gets them in its system prompt (PromptedTools).
         var promptedKey = base_ + "|" + model;
         var prompted    = defs is not null && PromptedTools.Models.ContainsKey(promptedKey);
+        // A call the caller forces is forced only where this server says the model writes calls it can read back.
+        if (toolChoice == "required" && defs is not null && !prompted && !await ForcesToolCallAsync(model, ct))
+            toolChoice = null;
         // ⚠ The refusal comes through any of the three doors a server refuses by — an HTTP status, an error event in
         // the stream (LM Studio answers 200 and streams "event: error"), a bare error object — and nothing has been
         // generated yet in any of them, so each one retries.

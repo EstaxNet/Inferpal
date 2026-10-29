@@ -30,7 +30,7 @@ public sealed class InstructionFileStreamNameTests
     [Theory]
     // Reference arms: other files stay ordinary writes.
     [InlineData(@"C:\repo\.inferpal\memory.md.bak")]
-    [InlineData(@"C:\repo\.inferpal\permissions.json")]
+    [InlineData(@"C:\repo\.inferpal\project.json")]
     [InlineData(@"C:\repo\src\memory.md")]
     public void AnOrdinaryFile_DoesNot(string subject)
     {

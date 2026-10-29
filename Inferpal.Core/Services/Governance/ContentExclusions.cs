@@ -50,6 +50,15 @@ internal static class ContentExclusions
 
     private static readonly ConcurrentDictionary<string, RootRules> Roots = new(PathComparer.Default);
 
+    /// <summary>Whether <paramref name="fileName"/> names an ignore file: one of the default names, or one a declared
+    /// workspace's setting names — the setting is the list, never the defaults alone.</summary>
+    internal static bool IsIgnoreFileName(string fileName) =>
+        Split(DefaultFiles).Contains(fileName, StringComparer.OrdinalIgnoreCase)
+        || Roots.Values.Any(r => r.Names().Contains(fileName, StringComparer.OrdinalIgnoreCase));
+
+    private static string[] Split(string setting) =>
+        setting.Split([',', ';', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
     /// <summary>
     /// Declares <paramref name="root"/> a workspace whose ignore files apply below it; <paramref name="files"/> is read at
     /// each recheck, so a settings change follows without a new declaration.

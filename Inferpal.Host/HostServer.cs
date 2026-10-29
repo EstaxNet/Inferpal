@@ -1052,7 +1052,7 @@ internal sealed partial class HostServer : IDisposable
                 s.Client, model, system, instruction,
                 p.Text, selStart, selEnd, selectionEmpty: selStart == selEnd, cts.Token,
                 // Edit with AI words its message as Visual Studio's command does: the code, then the instruction.
-                userMessage: edit ? code => InlineEditPrompt.UserMessage(code, p.Request!) : null);
+                userMessage: edit ? code => InlineEditPrompt.UserMessage(code, p.Request!) : null, path: p.Path);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {

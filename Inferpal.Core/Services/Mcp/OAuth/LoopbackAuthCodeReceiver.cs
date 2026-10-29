@@ -66,6 +66,21 @@ internal sealed class LoopbackAuthCodeReceiver : IAuthCodeReceiver
             using (cts.Token.Register(() => { try { listener.Stop(); } catch { /* the wait is ending anyway */ } }))
             {
                 var context = await AwaitCallbackAsync(contextTask, ct, cts.Token).ConfigureAwait(false);
+                // ⚠ Only the redirect's own path is the callback: any other local request (a scanner, a page's favicon)
+                // taken as it fails the sign-in on a state that does not match. Answered 404, and the wait goes on.
+                while (!IsCallback(context.Request.Url, RedirectUri))
+                {
+                    try { context.Response.StatusCode = 404; context.Response.Close(); }
+                    catch (Exception ex) when (ex is HttpListenerException or ObjectDisposedException or InvalidOperationException)
+                    { /* the stray client is gone: nothing to answer */ }
+                    // The next wait goes through the same classification: a deadline that stopped the listener here is a
+                    // timeout said as one, never the listener's own error.
+                    Task<HttpListenerContext> next;
+                    try { next = listener.GetContextAsync(); }
+                    catch (Exception ex) when (ex is HttpListenerException or ObjectDisposedException or InvalidOperationException)
+                    { next = Task.FromException<HttpListenerContext>(ex); }
+                    context = await AwaitCallbackAsync(next, ct, cts.Token).ConfigureAwait(false);
+                }
                 var query   = context.Request.QueryString;
                 var error   = query["error"];
 
@@ -83,6 +98,11 @@ internal sealed class LoopbackAuthCodeReceiver : IAuthCodeReceiver
             Release(listener);
         }
     }
+
+    /// <summary>Whether <paramref name="requested"/> is the redirect itself: the same path as <paramref name="redirectUri"/>,
+    /// whatever its query.</summary>
+    internal static bool IsCallback(Uri? requested, string redirectUri) =>
+        requested is not null && string.Equals(requested.AbsolutePath, new Uri(redirectUri).AbsolutePath, StringComparison.Ordinal);
 
     /// <summary>Closes the listener, once; cleanup, which never replaces the outcome.</summary>
     /// <remarks>
@@ -176,9 +196,9 @@ internal sealed class LoopbackAuthCodeReceiver : IAuthCodeReceiver
     /// Opens <paramref name="url"/> in the default browser — after checking it is one.
     /// </summary>
     /// <remarks>
-    /// <c>UseShellExecute = true</c> is what makes "open in the user's browser" work, and it is also
-    /// what makes this line dangerous: ShellExecute runs whatever the scheme is registered to, so a
-    /// non-web URL here is a program launch. The string is built from the authorization server's
+    /// Opening by the system (<see cref="SystemOpener"/>: shell execute, <c>xdg-open</c>, <c>open</c>) is what makes
+    /// "open in the user's browser" work, and it is also what makes this line dangerous: the system runs whatever the
+    /// scheme is registered to, so a non-web URL here is a program launch. The string is built from the authorization server's
     /// advertised <c>authorization_endpoint</c>, i.e. it comes from the far end. The flow validates
     /// it at discovery (<c>McpOAuthMetadata.RequireWebEndpoint</c>); this second check is here
     /// because the dangerous call is <b>here</b>, and a future caller reaching this class by another
@@ -196,7 +216,7 @@ internal sealed class LoopbackAuthCodeReceiver : IAuthCodeReceiver
 
         try
         {
-            using var _ = Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
+            SystemOpener.Open(uri.AbsoluteUri);
             return null;
         }
         catch (Exception ex)

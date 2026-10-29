@@ -391,6 +391,29 @@ public sealed class RepoMcpServersTests : IDisposable
         await service.DisposeAsync();
     }
 
+    /// <summary>A repository server's card shows its definition as the file writes it: started, its variables hold the
+    /// environment's values, and the key itself was in the settings.</summary>
+    [Fact]
+    public async Task ARepositoryServersCard_ShowsItsDefinitionAsWritten_NeverTheValueFilledIn()
+    {
+        var variable = "INFERPAL_TEST_KEY_" + Guid.NewGuid().ToString("N")[..8];
+        Environment.SetEnvironmentVariable(variable, "s3cret-value");
+        try
+        {
+            Write(".mcp.json", $$"""{ "mcpServers": { "remote": { "url": "http://127.0.0.1:9/mcp?key=${env:{{variable}}}" } } }""");
+            var (service, _, started) = Service();
+
+            await service.RefreshAsync();
+
+            Assert.Contains(started, s => s.Url?.Contains("s3cret-value") == true);   // WITNESS: started with the value
+            var shown = Assert.Single(service.OtherServers, s => s.Name == "remote");
+            Assert.Contains("${env:" + variable + "}", shown.Url);
+            Assert.DoesNotContain("s3cret-value", shown.Url);
+            await service.DisposeAsync();
+        }
+        finally { Environment.SetEnvironmentVariable(variable, null); }
+    }
+
     [Theory]
     [InlineData("GitHub", "github")]          // the permission rules match tool names without case
     [InlineData("GitHub", "GitHub (work)")]   // GitHub's tool `work___create_issue` IS the user's `create_issue`

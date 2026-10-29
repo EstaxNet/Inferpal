@@ -59,14 +59,16 @@ public class AgentInstructionWriteTests
     [InlineData(".inferpal/./memory.md")]
     [InlineData(".inferpal/x/../memory.md")]
     [InlineData("docs/../.inferpal/rules/./team.md")]
+    // The files that RESTRICT the agent: a write replaces their content, and an emptied one lifts every restriction.
+    [InlineData(@"C:\repo\.inferpal\permissions.json")]
+    [InlineData(@"C:\repo\.inferpalignore")]
+    [InlineData("/home/dev/repo/.aiignore")]
     public void AWriteAtTheSystemPrompt_IsRecognised(string subject) =>
         Assert.True(AgentInstructionFiles.Targets(subject));
 
     [Theory]
     [InlineData(@"C:\repo\src\Program.cs")]
     [InlineData("/home/dev/repo/README.md")]
-    // Not injected: the overlay is deny-only, so writing it can only ever restrict the agent.
-    [InlineData(@"C:\repo\.inferpal\permissions.json")]
     [InlineData(@"C:\repo\.inferpal\project.json")]
     // A rules directory that is not .inferpal's.
     [InlineData(@"C:\repo\docs\rules\style.md")]

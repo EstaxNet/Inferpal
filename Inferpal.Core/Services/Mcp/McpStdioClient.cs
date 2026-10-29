@@ -490,9 +490,11 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
         catch { /* already gone */ }
 
         if (_readLoop is not null)
-            // Awaiting our own background read loop to drain it before disposing the process.
+            // Awaiting our own background read loop to drain it before disposing the process — for a bounded time: a
+            // process that exited is not a closed pipe, and a child it left holding stdout (`sh -c "server &"`) keeps the
+            // loop reading forever, while the caller holds the MCP service's lock.
 #pragma warning disable VSTHRD003 // intentional: _readLoop is started by this instance in StartAsync
-            try { await _readLoop.ConfigureAwait(false); } catch { }
+            try { await _readLoop.WaitAsync(ExitGrace).ConfigureAwait(false); } catch { }
 #pragma warning restore VSTHRD003
 
         _process?.Dispose();

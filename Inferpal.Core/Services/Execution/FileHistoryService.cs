@@ -54,8 +54,9 @@ internal class FileHistoryService
         var bn = Path.GetFileName(snapshotPath);
         if (bn.Length <= TimestampPrefixLength) return false;
         var rest = bn.AsSpan(TimestampPrefixLength);
-        return rest.Equals(suffix + SnapshotExtension, StringComparison.OrdinalIgnoreCase)
-            || rest.Equals(suffix, StringComparison.OrdinalIgnoreCase);
+        // The original name keeps its case in the suffix: on Linux, xt_DSCP.c and xt_dscp.c are two files with one hash.
+        return rest.Equals(suffix + SnapshotExtension, PathComparer.Comparison)
+            || rest.Equals(suffix, PathComparer.Comparison);
     }
 
     // History folders whose snapshots from before SnapshotExtension were renamed in this process.
@@ -217,7 +218,14 @@ internal class FileHistoryService
                 try { stream = new FileStream(snapPath, FileMode.CreateNew, FileAccess.Write, FileShare.None); }
                 catch (IOException) when (attempt < 1000 && File.Exists(snapPath)) { continue; }
 
-                await using (stream) await stream.WriteAsync(bytes, ct);
+                try { await using (stream) await stream.WriteAsync(bytes, ct); }
+                catch
+                {
+                    // ⚠ A claimed name holding less than the file — a full disk, a Stop mid-write — is the backup
+                    // restore_file would pick as the newest: given back before the error goes on.
+                    try { File.Delete(snapPath); } catch { }
+                    throw;
+                }
                 break;
             }
 
@@ -400,7 +408,7 @@ internal class FileHistoryService
             held.UnionWith(HeldByOthers(historyDir));
 
             // The folder listed once, each snapshot under the suffixes its name can carry (MatchesSuffix reads both forms).
-            var bySuffix = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            var bySuffix = new Dictionary<string, List<string>>(PathComparer.Default);
             foreach (var file in Directory.EnumerateFiles(historyDir))
             {
                 var name = Path.GetFileName(file);
@@ -444,7 +452,7 @@ internal class FileHistoryService
     private void PruneBatch(IEnumerable<(string Dir, string Suffix)> pruneLater)
     {
         foreach (var folder in pruneLater.GroupBy(p => p.Dir, PathComparer.Default))
-            PruneOldSnapshots(folder.Key, [.. folder.Select(p => p.Suffix).Distinct(StringComparer.OrdinalIgnoreCase)]);
+            PruneOldSnapshots(folder.Key, [.. folder.Select(p => p.Suffix).Distinct(PathComparer.Default)]);
     }
 
     /// <summary>The snapshots a process's runs hold, one file per service instance: <c>.held-&lt;pid&gt;-&lt;id&gt;</c>.</summary>
@@ -608,7 +616,8 @@ internal class FileHistoryService
         var bytes = await File.ReadAllBytesAsync(snapPath, ct);
         var (saved, preRestore) = await BackUpBeforeChangeAsync(targetPath, ct);
         if (!saved) return (false, string.Empty);
-        await File.WriteAllBytesAsync(targetPath, bytes, ct);
+        // Past the backup, a Stop asked now must not leave the file half written: the write ends.
+        await File.WriteAllBytesAsync(targetPath, bytes, CancellationToken.None);
         return (true, preRestore);
     }
 

@@ -304,7 +304,7 @@ internal static class FimSidecar
         _stdin   = null;
         if (proc is null) return;
 
-        try { if (!proc.HasExited) proc.Kill(); } catch { /* nettoyage */ }
+        try { if (!proc.HasExited) proc.Kill(); } catch { /* cleanup */ }
         try { proc.Dispose(); } catch { /* cleanup */ }
     }
 
@@ -370,7 +370,7 @@ internal static class FimSidecar
         catch (Exception ex) { Diagnostics.Swallow("FimSidecar.Cancel", ex); }
     }
 
-    // ── Cadrage ───────────────────────────────────────────────────────────────
+    // ── Framing ───────────────────────────────────────────────────────────────
 
     private static void Send(Stream stdin, string json)
     {

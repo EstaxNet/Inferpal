@@ -34,7 +34,8 @@ public class PermissionRuleCommentAndChainTests
         Assert.Equal(PermissionDecision.Deny,  policy.Evaluate("run_command", "rm -rf build"));
         Assert.Equal(PermissionDecision.Allow, policy.Evaluate("write_file", @"C:\ws\src\Program.cs"));
         Assert.Equal(PermissionDecision.Deny,  policy.Evaluate("write_file", @"C:\ws\.env"));
-        Assert.Equal(PermissionDecision.Deny,  policy.Evaluate("read_file",  @"C:\ws\.env"));
+        // Reads never ask, so no rule is consulted for them: the comment sends them to .inferpalignore.
+        Assert.Contains(".inferpalignore", DocumentedRules());
     }
 
     [Fact]

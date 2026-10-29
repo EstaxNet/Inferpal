@@ -45,8 +45,11 @@ internal static class NotesStore
             return (bad.Character, encoding.WebName);
 
         var existing = await Tools.TextFileEncoding.ReadTextAsync(path, ct);
-        var separator = existing.Length == 0 || existing.EndsWith('\n') ? "" : "\n";
-        await Tools.SafeFileWriter.WritePreservingAsync(path, existing + separator + line, ct);
+        var eol = LineEndings.Dominant(existing);
+        var separator = existing.Length == 0 || existing.EndsWith('\n') ? "" : eol;
+        // ⚠ Appended, never rewritten: a rewrite empties the file first, and a process killed meanwhile — or a note from
+        // another editor at the same moment — loses the notes. In the file's own line breaks: a CRLF file stays CRLF.
+        await File.AppendAllTextAsync(path, separator + LineEndings.ToEol(line, eol), encoding, ct);
         return null;
     }
 

@@ -77,7 +77,7 @@ internal static class CodeChunker
 
         // Whole-file chunk for tiny files
         if (lines.Length <= MinChunkLines * 2)
-            return MakeChunks(lines, [(0, lines.Length - 1, null)], filePath, relPath);
+            return MakeChunks(lines, [(0, lines.Length - 1, null)], filePath, relPath, minLines: 1);
 
         var blocks = ext == ".cs"
             ? FindCSharpBlocks(lines)
@@ -213,14 +213,17 @@ internal static class CodeChunker
         string[] lines,
         IEnumerable<(int start, int end, string? typeName)> blocks,
         string filePath,
-        string relPath)
+        string relPath,
+        int minLines = MinChunkLines)
     {
         var chunks = new List<RagChunk>();
 
         foreach (var (start, end, typeName) in blocks)
         {
             int lineCount = end - start + 1;
-            if (lineCount < MinChunkLines) continue;
+            // ⚠ A block under the minimum is a fragment of a bigger file — but a file that small IS the whole file
+            // (an __init__.py, a barrel index.ts): dropped, it is never indexed, and nothing says so.
+            if (lineCount < minLines) continue;
 
             var text = string.Join('\n', lines, start, lineCount).Trim();
             if (string.IsNullOrWhiteSpace(text)) continue;

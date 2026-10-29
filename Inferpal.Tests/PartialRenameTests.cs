@@ -67,7 +67,7 @@ public class PartialRenameTests
 
     private static void MakeWritable(string path)
     {
-        try { File.SetAttributes(path, FileAttributes.Normal); } catch { /* nettoyage */ }
+        try { File.SetAttributes(path, FileAttributes.Normal); } catch { /* cleanup */ }
     }
 
     [Fact]

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using Inferpal.Services;
 using Xunit;
 
@@ -138,6 +139,18 @@ public sealed class ProcessLifetimeTests
             try { watchdog?.Kill(); } catch { }
             watchdog?.Dispose();
         }
+    }
+
+    /// <summary>The terminal setup an ACP client runs reads the terminal and starts no child: it runs BEFORE the host leaves
+    /// the terminal's foreground group, or its first read stops it (SIGTTIN) under a shell without job control.</summary>
+    [Fact]
+    public void TheTerminalSetup_RunsBeforeTheHostLeadsItsOwnProcessGroup()
+    {
+        var code  = ConventionCoverageTests.CodeOnly(Path.Combine(ConventionCoverageTests.RepoRoot(), "Inferpal.Host", "Program.cs"));
+        var setup = code.IndexOf("AcpSetup.RunAsync", StringComparison.Ordinal);
+        var group = code.IndexOf("ProcessLifetime.LeadOwnProcessGroup()", StringComparison.Ordinal);
+        Assert.True(setup > 0 && group > 0, "Program.cs no longer reads as the test expects");   // WITNESS
+        Assert.True(setup < group, "the host leads its own process group before the terminal setup reads the terminal");
     }
 
     /// <summary>Running, and not a zombie waiting for a parent that is gone: what <c>ps</c> says.</summary>
