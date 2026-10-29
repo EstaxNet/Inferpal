@@ -19,7 +19,9 @@ public class RunWindowCompactionTests
     private const string Elided = "[Older tool result elided";
 
     /// <summary>The production client's agent loop, with its model turns and its loaded window scripted.</summary>
-    private sealed class Scripted(int? loaded, int toolTurns, InferpalConfig config) : OpenAiCompatibleClient(config)
+    /// <param name="countFactor">When above 0, the server counts each request at this many times its chars/4 estimate
+    /// (about 2 for Japanese or Chinese text); 0, it counts nothing.</param>
+    private sealed class Scripted(int? loaded, int toolTurns, InferpalConfig config, double countFactor = 0) : OpenAiCompatibleClient(config)
     {
         private int _calls;
         public List<int> ElidedPerRequest { get; } = [];
@@ -32,12 +34,15 @@ public class RunWindowCompactionTests
         {
             ElidedPerRequest.Add(messages.Count(m => m.Content?.StartsWith(Elided, StringComparison.Ordinal) == true));
             _calls++;
+            var counted = countFactor > 0
+                ? (int)(countFactor * (AgentOrchestrator.EstimateTokens(messages) + RequestSize.ToolTokens(tools.Definitions)))
+                : 0;
             if (_calls == 1 && tools.Definitions.Count > 0 && messages.Any(m => m.Content?.Contains("\"steps\"") == true))
-                return Task.FromResult(new ChatTurnResult("{\"goal\":\"g\",\"steps\":[{\"i\":1,\"desc\":\"read\"}]}", null, 0, 0));
+                return Task.FromResult(new ChatTurnResult("{\"goal\":\"g\",\"steps\":[{\"i\":1,\"desc\":\"read\"}]}", null, 0, counted));
             return Task.FromResult(_calls <= toolTurns
                 ? new ChatTurnResult(string.Empty,
-                    [new ToolCallDto(new ToolCallFunction("read_file", JsonDocument.Parse($"{{\"path\":\"f{_calls}.cs\"}}").RootElement.Clone()))], 0, 0)
-                : new ChatTurnResult("done", null, 0, 0));
+                    [new ToolCallDto(new ToolCallFunction("read_file", JsonDocument.Parse($"{{\"path\":\"f{_calls}.cs\"}}").RootElement.Clone()))], 0, counted)
+                : new ChatTurnResult("done", null, 0, counted));
         }
 
         public override Task<int?> GetLoadedContextWindowAsync(string model, CancellationToken ct) => Task.FromResult(loaded);
@@ -140,6 +145,43 @@ public class RunWindowCompactionTests
         AgentOrchestrator.CompactRunContext(messages, anchorCount: 2, budget: 8_192, toolTokens: 4_200);
         Assert.Contains(messages, m => m.Content?.StartsWith(Elided, StringComparison.Ordinal) == true);
     }
+
+    /// <summary>
+    /// ⚠ The run's estimate is chars/4, and Japanese or Chinese text weighs about twice that: a run whose estimate stays
+    /// under 80 % of the window is past it for the server — cut at the head by Ollama, refused by LM Studio. The server's
+    /// count of the last request scales the next measure.
+    /// </summary>
+    /// <remarks>Six model calls of ~1,000-token reads stay under 80 % of 8,192 by their estimate (the reference arm, a
+    /// server that counts exactly the estimate, elides nothing); counted twice, they pass it by the third read.</remarks>
+    [Theory]
+    [InlineData(false, 2.0, true)]
+    [InlineData(true, 2.0, true)]
+    [InlineData(false, 1.0, false)]
+    [InlineData(true, 1.0, false)]
+    public async Task ARunTheServerCountsTwiceItsEstimate_IsElidedByWhatTheServerCounts(bool orchestrator, double countFactor,
+                                                                                      bool elides)
+    {
+        var client = new Scripted(loaded: null, toolTurns: 6, Config(), countFactor);
+        if (orchestrator)
+            await new AgentOrchestrator(client, Config()).RunAsync(
+                model: "m", history: [new ChatMessageDto("system", "s"), new ChatMessageDto("user", "read")],
+                tools: new BigReads(), onStep: _ => { }, onToken: null, onPlanReady: null, onStepUpdate: null,
+                onToolExecuted: null, onStreamReset: null, ct: CancellationToken.None);
+        else
+            await client.RunAgentAsync("m", [new ChatMessageDto("system", "s"), new ChatMessageDto("user", "read")],
+                                       new BigReads(), onStep: _ => { }, onToken: null, CancellationToken.None);
+
+        Assert.True(client.ElidedPerRequest.Count >= 6, $"only {client.ElidedPerRequest.Count} model turn(s)");   // witness
+        Assert.Equal(elides, client.ElidedPerRequest.Max() > 0);
+    }
+
+    [Theory]
+    [InlineData(2000, 1000, 2.0)]
+    [InlineData(1000, 1000, 1.0)]
+    [InlineData(600, 1000, 1.0)]    // a server that counts only what its cache did not serve: the estimate stands
+    [InlineData(5000, 0, 1.0)]
+    public void TheServerScale_NeverLowersTheEstimate(int counted, int estimated, double expected) =>
+        Assert.Equal(expected, AgentOrchestrator.ServerScale(counted, estimated));
 
     [Fact]
     public async Task TheOrchestrator_ElidesAgainstTheLoadedWindow()

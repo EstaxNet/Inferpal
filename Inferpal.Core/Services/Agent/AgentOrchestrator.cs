@@ -363,26 +363,42 @@ internal sealed class AgentOrchestrator
     /// ⚠ Counted like the conversation, as the check between turns counts them: they weigh about half of an 8 192-token
     /// window, so a run measured on its messages alone elided only once the backend had already refused the request
     /// (LM Studio) or cut its head (Ollama).</param>
-    internal static void CompactRunContext(List<ChatMessageDto> messages, int anchorCount, int budget, int toolTokens = 0)
+    /// <param name="scale">How much the server's count of the last request exceeded its estimate (<see cref="ServerScale"/>).</param>
+    internal static void CompactRunContext(List<ChatMessageDto> messages, int anchorCount, int budget, int toolTokens = 0,
+                                           double scale = 1.0)
     {
         if (budget <= 0) return;
         // Counted once, then kept current as results are elided: re-estimating the whole list for
         // every message examined was quadratic on a long run.
         var chars = EstimateChars(messages);
-        if (chars / 4 + toolTokens <= budget * 8 / 10) return;     // under 80% — nothing to do
+        int Weighed() => (int)((chars / 4 + toolTokens) * scale);
+        if (Weighed() <= budget * 8 / 10) return;                  // under 80% — nothing to do
 
         var target          = budget * 7 / 10;                     // compact down to ~70%
         var lastCompactable = messages.Count - KeepRecentMessages; // keep the recent tail verbatim
 
         for (int i = anchorCount; i < lastCompactable; i++)
         {
-            if (chars / 4 + toolTokens <= target) break;
+            if (Weighed() <= target) break;
             var m = messages[i];
             if (m.Role != "tool" || m.Content == ElidedToolResult) continue;
             chars -= (m.Content?.Length ?? 0) - ElidedToolResult.Length;
             messages[i] = m with { Content = ElidedToolResult };
         }
     }
+
+    /// <summary>
+    /// How much the server's count of the last request exceeds this estimate of it: <c>1</c> when it does not, or when
+    /// it said nothing.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <c>chars / 4</c> holds for code and English prose, not for Japanese or Chinese text, which weighs about twice its
+    /// estimate: unscaled, a run in those languages elides only once the request is past the window — Ollama cuts the head
+    /// of the prompt in silence, LM Studio refuses it. Never below 1: a server that counts only the tokens it evaluated
+    /// (its cache served the rest) under-counts, and the estimate stands.
+    /// </remarks>
+    internal static double ServerScale(int counted, int estimated) =>
+        estimated > 0 && counted > estimated ? (double)counted / estimated : 1.0;
 
     /// <summary>The window this run is measured against: <see cref="ContextManager.EffectiveWindowAsync"/>
     /// when the client can report a loaded window, else the configured one.</summary>
@@ -401,36 +417,36 @@ internal sealed class AgentOrchestrator
     /// </summary>
     internal async Task<bool> CompactRunContextAsync(
         List<ChatMessageDto> messages, int anchorCount, string model,
-        bool alreadySummarized, Action<string> onStep, CancellationToken ct, int toolTokens = 0)
+        bool alreadySummarized, Action<string> onStep, CancellationToken ct, int toolTokens = 0, double scale = 1.0)
     {
         // ⚠ The window the model is really loaded with when the server reports a smaller one: measured
         // against the configured window alone, a run was refused mid-way while elision waited.
         var budget = await RunWindowAsync(model, ct);
         if (budget <= 0) return alreadySummarized;
-        if (EstimateTokens(messages) + toolTokens <= budget * 8 / 10) return alreadySummarized;
+        if ((EstimateTokens(messages) + toolTokens) * scale <= budget * 8 / 10) return alreadySummarized;
 
         // ⚠ A summary that cannot bring the run under the target is not asked for. When the anchored head and the tool
         // definitions alone fill the 70 % target — the default 8K window with the built-in tools — the summary is a whole
         // extra inference call, rewrites the context, and elision follows anyway.
-        var cannotFit = EstimateTokens(messages.Take(anchorCount)) + toolTokens >= budget * 7 / 10;
+        var cannotFit = (EstimateTokens(messages.Take(anchorCount)) + toolTokens) * scale >= budget * 7 / 10;
 
         if (!alreadySummarized && _config.CompactionEnabled && !cannotFit)
         {
-            switch (await TrySummarizeOldTurnsAsync(messages, anchorCount, model, onStep, ct))
+            switch (await TrySummarizeOldTurnsAsync(messages, anchorCount, model, onStep, ct, scale))
             {
                 case RunSummaryOutcome.Summarized:
                     // A summary can still leave the run over budget (a large recent tail): elide on top.
-                    CompactRunContext(messages, anchorCount, budget, toolTokens);
+                    CompactRunContext(messages, anchorCount, budget, toolTokens, scale);
                     return true;
                 case RunSummaryOutcome.NothingToSummarize:
                     // ⚠ Not spent: a later overflow, with more old turns, is worth the one summary.
-                    CompactRunContext(messages, anchorCount, budget, toolTokens);
+                    CompactRunContext(messages, anchorCount, budget, toolTokens, scale);
                     return false;
             }
         }
 
         // No summary (disabled, already spent, or it failed/timed out) → elide.
-        CompactRunContext(messages, anchorCount, budget, toolTokens);
+        CompactRunContext(messages, anchorCount, budget, toolTokens, scale);
         return true;
     }
 
@@ -443,7 +459,8 @@ internal sealed class AgentOrchestrator
     /// fails/times out, so the caller can fall back to elision. Re-throws on user cancellation.
     /// </summary>
     private async Task<RunSummaryOutcome> TrySummarizeOldTurnsAsync(
-        List<ChatMessageDto> messages, int anchorCount, string model, Action<string> onStep, CancellationToken ct)
+        List<ChatMessageDto> messages, int anchorCount, string model, Action<string> onStep, CancellationToken ct,
+        double scale = 1.0)
     {
         // Snap both ends to a tool-block boundary: removing half of an assistant(tool_calls)+tool
         // group leaves a structurally invalid history that OpenAI-compatible backends reject
@@ -473,7 +490,7 @@ internal sealed class AgentOrchestrator
             // where the agent model would burn its own GPU time. Its request is bounded by ITS window.
             var utility = await ModelRouter.ResolveUtilityAsync(_config, _client, cts.Token);
             var window  = await RunWindowAsync(utility, cts.Token);
-            var request = HistoryCompaction.BuildSummarizeRequest(range, HistoryCompaction.SummaryInputBudgetChars(window));
+            var request = HistoryCompaction.BuildSummarizeRequest(range, HistoryCompaction.SummaryInputBudgetChars(window, scale));
             // The fuse now that the size to READ is known (restarts the countdown), rearmed by every streamed chunk.
             var fuse = new SummaryFuse(cts, _config.CompactionTimeoutSeconds);
             fuse.Arm(request, PrefillRates.Shared.Estimate(_config.BaseUrl, utility, RequestSize.Of(request.Messages, null).Total));
@@ -555,10 +572,11 @@ internal sealed class AgentOrchestrator
         string model, List<ChatMessageDto> messages, int anchorCount,
         IReadOnlyList<ToolExecution> executions, string userTask, string fallback,
         Action<string>? onToken, Action? onStreamReset, Action<string> onStep, ReasoningEffort effort, CancellationToken ct,
-        Action<string>? onThinking = null)
+        Action<string>? onThinking = null, double scale = 1.0)
     {
         var (answer, synthesized, cut, repeating) = await TrySynthesizeAsync(
-            model, messages, anchorCount, executions, userTask, fallback, onToken, onStreamReset, onStep, effort, ct, onThinking);
+            model, messages, anchorCount, executions, userTask, fallback, onToken, onStreamReset, onStep, effort, ct, onThinking,
+            scale);
 
         // The synthesized answer is what the user read: it must also be what the model reads next
         // turn (the host keeps this history), not the empty or refused turn it replaced.
@@ -576,7 +594,7 @@ internal sealed class AgentOrchestrator
         string model, List<ChatMessageDto> messages, int anchorCount,
         IReadOnlyList<ToolExecution> executions, string userTask, string fallback,
         Action<string>? onToken, Action? onStreamReset, Action<string> onStep, ReasoningEffort effort, CancellationToken ct,
-        Action<string>? onThinking)
+        Action<string>? onThinking, double scale)
     {
         // Clear any think-only / partial tokens from the stalled final ACT so they don't pollute
         // the synthesised answer that streams next.
@@ -598,7 +616,7 @@ internal sealed class AgentOrchestrator
         // leaves after the head (SynthesisDigestBudget).
         var window      = await RunWindowAsync(model, ct);
         var instruction = ModelPrompts.AgentSynthesizePrompt(userTask);
-        var digest = BuildToolDigest(executions, SynthesisDigestBudget(window, EstimateChars(synth), instruction.Length));
+        var digest = BuildToolDigest(executions, SynthesisDigestBudget(window, EstimateChars(synth), instruction.Length, scale));
         var prompt = digest.Length > 0
             ? digest + "\n\n" + instruction
             : instruction;
@@ -633,10 +651,12 @@ internal sealed class AgentOrchestrator
     /// one plus a full digest go past the window — refused by LM Studio, cut at its head by Ollama — and the synthesis
     /// falls back without a word, on exactly the runs that gathered the most.
     /// </remarks>
-    internal static int SynthesisDigestBudget(int window, int headChars, int instructionChars)
+    /// <param name="scale">How much the server counts above four characters per token (<see cref="ServerScale"/>): Japanese
+    /// or Chinese text holds about half as many characters in the same window.</param>
+    internal static int SynthesisDigestBudget(int window, int headChars, int instructionChars, double scale = 1.0)
     {
         if (window <= 0) return 24000;
-        var windowChars = window * 4;
+        var windowChars = (int)(window * 4 / Math.Max(1.0, scale));
         return Math.Clamp(windowChars - windowChars / 4 - headChars - instructionChars, 0, windowChars * 6 / 10);
     }
 
@@ -829,6 +849,8 @@ internal sealed class AgentOrchestrator
         // the wasted tokens. Restricted to idempotent tools — see CacheableTools / ToolCallKey.
         var toolCache   = new Dictionary<string, string>(StringComparer.Ordinal);
         int totalTokens = 0, lastPromptTokens = 0;
+        // The server's count of the last request against its estimate (ServerScale): what the next compaction scales by.
+        var serverScale = 1.0;
         // Set to true after the one-shot nudge so we never inject it twice.
         bool nudgedOnce = false;
         // Set once the plan is exhausted and the observe-complete prompt asked the model to
@@ -887,6 +909,8 @@ internal sealed class AgentOrchestrator
 
         totalTokens      += planTurn.TokensUsed;
         lastPromptTokens  = planTurn.PromptTokens;
+        // The plan's request carries the run's head: its count sets the first compaction's measure.
+        serverScale       = ServerScale(planTurn.PromptTokens, EstimateTokens(planMessages));
 
         // Parse JSON plan; fall back to a single-step "execute" plan if parsing fails.
         var plan = AgentPlan.TryParse(planTurn.TextContent)
@@ -937,8 +961,9 @@ internal sealed class AgentOrchestrator
 
             // Keep the running context under num_ctx so Ollama never truncates the head. First
             // overflow → one LLM summary of the old turns; later overflows → deterministic elision.
+            var toolTokens = RequestSize.ToolTokens(tools.Definitions);
             runSummarized = await CompactRunContextAsync(messages, anchorCount, model, runSummarized, onStep, ct,
-                                                         RequestSize.ToolTokens(tools.Definitions));
+                                                         toolTokens, serverScale);
 
             // ── The user's notes, the last text read before acting ───────────
             // ⚠ A note restarts the loop count: told "not that file", the model sends the call it was refused again with
@@ -962,6 +987,7 @@ internal sealed class AgentOrchestrator
             onStep(Strings.StatusThinking);
 
             ChatTurnResult turn;
+            var sentEstimate = 0;
             try
             {
                 // Force a tool call on the first ACT iteration and on every stall-retry: small
@@ -971,6 +997,7 @@ internal sealed class AgentOrchestrator
                 // real mitigation.) Other iterations stay on "auto" so the model can still finish.
                 var toolChoice = (iteration == 0 || retryForcesTool) ? "required" : null;
                 retryForcesTool = false;
+                sentEstimate = EstimateTokens(messages) + toolTokens;
                 turn = await _client.SendChatAsync(model, messages, tools, onToken, runEffort, ct, TaskComplexity.Normal, toolChoice, onThinking,
                                                    ModelWaitScope.OrStep(onStep, Strings.StatusThinking));
             }
@@ -984,6 +1011,7 @@ internal sealed class AgentOrchestrator
 
             totalTokens      += turn.TokensUsed;
             lastPromptTokens  = turn.PromptTokens;
+            serverScale       = ServerScale(turn.PromptTokens, sentEstimate);
 
             // Append the assistant message (may contain tool calls).
             var assistantMsg = new ChatMessageDto("assistant", turn.TextContent, turn.ToolCalls);
@@ -1010,7 +1038,7 @@ internal sealed class AgentOrchestrator
                     var (loopMsg, loopCut, loopRepeating) = executions.Count > 0
                         ? await SynthesizeFinalAnswerAsync(
                             model, messages, anchorCount, executions, userTask, string.Empty, onToken, onStreamReset, onStep,
-                            runEffort, ct, onThinking)
+                            runEffort, ct, onThinking, serverScale)
                         : (Strings.MsgLoopDetected, false, false);
                     return new OrchestratorResult(
                         loopMsg, plan, executions, messages,
@@ -1238,7 +1266,7 @@ internal sealed class AgentOrchestrator
                     (finalText, finalCut, finalRepeating) = await SynthesizeFinalAnswerAsync(
                         model, messages, anchorCount, executions, userTask,
                         degenerate ? string.Empty : finalText,   // never keep a refusal or a plan as the fallback
-                        onToken, onStreamReset, onStep, runEffort, ct, onThinking);
+                        onToken, onStreamReset, onStep, runEffort, ct, onThinking, serverScale);
                 }
 
                 return new OrchestratorResult(
@@ -1253,7 +1281,7 @@ internal sealed class AgentOrchestrator
         var (capFinal, capCut, capRepeating) = executions.Count > 0
             ? await SynthesizeFinalAnswerAsync(
                 model, messages, anchorCount, executions, userTask, Strings.MsgIterationLimit(maxIter), onToken, onStreamReset, onStep,
-                runEffort, ct, onThinking)
+                runEffort, ct, onThinking, serverScale)
             : (Strings.MsgIterationLimit(maxIter), false, false);
         return new OrchestratorResult(
             capFinal, plan, executions, messages,

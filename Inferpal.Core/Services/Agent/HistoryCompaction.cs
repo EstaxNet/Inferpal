@@ -125,8 +125,11 @@ internal static class HistoryCompaction
     /// two per token, so half the window at the usual four characters per token, and still two thirds of it for code,
     /// which runs closer to three. The rest is the instruction's and the summary's. No window known → no bound.
     /// </summary>
-    public static int SummaryInputBudgetChars(int windowTokens) =>
-        windowTokens <= 0 ? int.MaxValue : (int)Math.Min(int.MaxValue, 2L * windowTokens);
+    /// <param name="windowTokens">The summarizer's window.</param>
+    /// <param name="scale">How much the server counts above four characters per token (<c>AgentOrchestrator.ServerScale</c>):
+    /// Japanese or Chinese text, about two characters per token, fills the whole window at two characters per token.</param>
+    public static int SummaryInputBudgetChars(int windowTokens, double scale = 1.0) =>
+        windowTokens <= 0 ? int.MaxValue : (int)Math.Min(int.MaxValue, 2.0 * windowTokens / Math.Max(1.0, scale));
 
     /// <summary>
     /// The reading speed the summarizing call's fuse allows for when the summarizer's own is not measured yet

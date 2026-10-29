@@ -641,6 +641,8 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         // The window the model is really loaded with when the server reports a smaller one — measured
         // against the configured window alone, a run was refused mid-way while elision waited.
         var window = await Agent.ContextManager.EffectiveWindowAsync(_config, this, model, ct);
+        // The server's count of the last request against its estimate (AgentOrchestrator.ServerScale).
+        var scale = 1.0;
 
         for (int i = 0; i < maxIterations; i++)
         {
@@ -649,7 +651,8 @@ internal abstract class InferenceProviderBase : IInferenceProvider
             // Keep the running context under num_ctx: deterministically elide the oldest tool
             // results so the model never silently truncates the head (system prompt + task).
             // No LLM summary on this basic path — that extra call is the orchestrator's.
-            AgentOrchestrator.CompactRunContext(messages, anchorCount, window, RequestSize.ToolTokens(tools.Definitions));
+            var toolTokens = RequestSize.ToolTokens(tools.Definitions);
+            AgentOrchestrator.CompactRunContext(messages, anchorCount, window, toolTokens, scale);
 
             // The user's notes, the last text read before the next request; a note restarts the loop count (see the
             // orchestrator: the call it corrects is sent again).
@@ -661,6 +664,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
             // ── One model turn — SendChatAsync owns HTTP, streaming, timeout policy,
             //    circuit breaker, and inline tool-call recovery.
             ChatTurnResult turn;
+            var sentEstimate = AgentOrchestrator.EstimateTokens(messages) + toolTokens;
             try
             {
                 // While the server reads the prompt the line says so, then gives the step back.
@@ -679,6 +683,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
 
             totalTokens   += turn.TokensUsed;
             lastPromptEval = turn.PromptTokens;
+            scale          = AgentOrchestrator.ServerScale(turn.PromptTokens, sentEstimate);
 
             messages.Add(new ChatMessageDto("assistant", turn.TextContent, turn.ToolCalls));
 
