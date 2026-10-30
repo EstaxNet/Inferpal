@@ -138,7 +138,7 @@ public class DebugToolsTests
         Assert.Equal(Strings.DebugStartCancelled, result);
         Assert.Equal(1, approval.Calls);
         Assert.Equal("debug_control", approval.LastTool);
-        Assert.Equal(@"C:\ws", approval.LastSubject);   // matchable by permission rules
+        Assert.Equal(TestPaths.P(@"C:\ws"), approval.LastSubject);   // matchable by permission rules
     }
 
     [Fact]
