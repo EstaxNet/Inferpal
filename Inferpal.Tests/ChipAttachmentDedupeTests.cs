@@ -35,6 +35,21 @@ public class ChipAttachmentDedupeTests
         Assert.DoesNotContain("attachedPaths.push(a.name)", chat, StringComparison.Ordinal);
     }
 
+    /// <summary>The same file attached twice is one chip in VS Code too, by the rule Visual Studio's
+    /// <c>AttachmentItem.Repeats</c> applies (<c>ChipRepeatTests</c>): the same whole file, or the same text under the
+    /// same name.</summary>
+    [Fact]
+    public void AChipAttachedAgain_IsNotAddedTwice()
+    {
+        var chat = Chat().Replace("\r\n", "\n");
+        Assert.Contains("private addChip(name: string, content: string, sourcePath?: string, origin?: string): void {", chat, StringComparison.Ordinal);   // witness
+
+        Assert.Contains("const repeated = this.pendingAttachments.some((a) => a.sourcePath && chip.sourcePath\n"
+                      + "      ? samePath(a.sourcePath, chip.sourcePath)\n"
+                      + "      : a.name === chip.name && a.content === chip.content);", chat, StringComparison.Ordinal);
+        Assert.Contains("if (!repeated) {\n      this.pendingAttachments.push(chip);", chat, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void OnlyWholeFileChips_ClaimAPath()
     {

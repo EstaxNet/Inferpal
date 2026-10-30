@@ -424,6 +424,9 @@ Copia de seguridad: {0}</value></data>
   <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — primeros {1} de {2} caracteres</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>No se pudo adjuntar nada para @{0}.</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>«{0}» es un archivo, no una carpeta: adjúntalo con @file.</value></data>
+  <data name="DropToAttach" xml:space="preserve"><value>Suelta para adjuntar</value></data>
+  <data name="DropHint" xml:space="preserve"><value>Se adjunta a tu mensaje, como con @. No se envía nada hasta que lo envíes.</value></data>
+  <data name="DropProjectRefused" xml:space="preserve"><value>No se adjuntó nada: '{0}' es un proyecto, y un proyecto no se puede adjuntar soltándolo — suelta sus archivos o adjunta su carpeta con @folder.</value></data>
   <data name="SlashToolNoOutput" xml:space="preserve"><value>Hecho — sin salida.</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ Error al explorar: {0}</value></data>
 

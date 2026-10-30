@@ -424,6 +424,9 @@ Sauvegarde : {0}</value></data>
   <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — {1} premiers caractères sur {2}</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Rien n'a pu être joint pour @{0}.</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>« {0} » est un fichier, pas un dossier — joins-le avec @file.</value></data>
+  <data name="DropToAttach" xml:space="preserve"><value>Déposer pour joindre</value></data>
+  <data name="DropHint" xml:space="preserve"><value>Joint à votre message, comme avec @. Rien ne part avant que vous l'envoyiez.</value></data>
+  <data name="DropProjectRefused" xml:space="preserve"><value>Rien n'a été joint : '{0}' est un projet, et un projet ne se joint pas en le déposant — déposez ses fichiers, ou joignez son dossier avec @folder.</value></data>
   <data name="SlashToolNoOutput" xml:space="preserve"><value>Terminé — aucune sortie.</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ Erreur lors de la navigation : {0}</value></data>
 

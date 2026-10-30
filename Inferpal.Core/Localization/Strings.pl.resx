@@ -424,6 +424,9 @@ Kopia zapasowa: {0}</value></data>
   <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — pierwsze {1} z {2} znaków</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Nie udało się niczego dołączyć dla @{0}.</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>„{0}” to plik, nie folder — dołącz go przez @file.</value></data>
+  <data name="DropToAttach" xml:space="preserve"><value>Upuść, aby dołączyć</value></data>
+  <data name="DropHint" xml:space="preserve"><value>Dołączone do wiadomości, tak jak przez @. Nic nie zostanie wysłane, dopóki jej nie wyślesz.</value></data>
+  <data name="DropProjectRefused" xml:space="preserve"><value>Nic nie dołączono: '{0}' to projekt, a projektu nie można dołączyć przez upuszczenie — upuść jego pliki lub dołącz jego folder przez @folder.</value></data>
   <data name="SlashToolNoOutput" xml:space="preserve"><value>Gotowe — brak wyjścia.</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ Błąd przeglądania: {0}</value></data>
 

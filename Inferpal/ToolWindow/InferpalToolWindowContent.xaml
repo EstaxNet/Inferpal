@@ -159,7 +159,8 @@
     </DataTemplate.Resources>
 
 
-    <Grid x:Name="root" Background="{Binding ThemeWindowBg}">
+    <!-- Tag: the in-process ChatDropTarget takes a file dropped here (ChatDropTarget.RootTag). -->
+    <Grid x:Name="root" Tag="InferpalChatRoot" Background="{Binding ThemeWindowBg}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />  <!-- 0: Header -->
             <RowDefinition Height="Auto" />  <!-- 1: Search bar / conversations -->
@@ -3389,6 +3390,28 @@
             </Grid>
         </Border>
         </Border>
+
+        <!-- ── A file dragged over the window: shown, named and hidden by the in-process ChatDropTarget (its Tags), which
+             takes the drop; the texts are the view model's, in the interface language. Collapsed and never bound: a
+             binding would put it back. ── -->
+        <Grid Grid.Row="0" Grid.RowSpan="6" Tag="InferpalDropOverlay" Visibility="Collapsed"
+              Background="{Binding ThemeWindowBg}">
+            <Rectangle Margin="6" RadiusX="10" RadiusY="10" StrokeThickness="2" StrokeDashArray="4 3"
+                       Stroke="{Binding ThemeAccentText}"/>
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24">
+                <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE723;" FontSize="30" HorizontalAlignment="Center"
+                           Foreground="{Binding ThemeAccentText}"/>
+                <TextBlock Text="{Binding LabelDropToAttach}" FontSize="16" FontWeight="SemiBold" Margin="0,12,0,0"
+                           HorizontalAlignment="Center" Foreground="{Binding ThemeText}"/>
+                <Border Background="{Binding ThemeChip}" CornerRadius="6" Padding="10,4" Margin="0,12,0,0"
+                        HorizontalAlignment="Center">
+                    <TextBlock Tag="InferpalDropName" FontSize="12" MaxWidth="320" TextTrimming="CharacterEllipsis"
+                               Foreground="{Binding ThemeText}"/>
+                </Border>
+                <TextBlock Text="{Binding LabelDropHint}" FontSize="12" MaxWidth="300" Margin="0,12,0,0"
+                           TextWrapping="Wrap" TextAlignment="Center" Foreground="{Binding ThemeSubtleText}"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 
 </DataTemplate>

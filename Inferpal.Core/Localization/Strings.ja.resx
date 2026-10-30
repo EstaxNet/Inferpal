@@ -424,6 +424,9 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — {2} 文字中の先頭 {1} 文字</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>@{0} に添付できるものがありませんでした。</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>「{0}」はフォルダーではなくファイルです。@file で添付してください。</value></data>
+  <data name="DropToAttach" xml:space="preserve"><value>ドロップして添付</value></data>
+  <data name="DropHint" xml:space="preserve"><value>@ と同じようにメッセージに添付されます。送信するまで何も送られません。</value></data>
+  <data name="DropProjectRefused" xml:space="preserve"><value>何も添付されていません: '{0}' はプロジェクトで、プロジェクトはドロップでは添付できません — そのファイルをドロップするか、@folder でフォルダーを添付してください。</value></data>
   <data name="SlashToolNoOutput" xml:space="preserve"><value>完了 — 出力はありません。</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ 参照エラー：{0}</value></data>
 

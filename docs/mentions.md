@@ -61,6 +61,13 @@ replaced with the corresponding attachment.
 > said, never attached empty.
 
 > [!NOTE]
+> **Visual Studio: drag a file or a folder onto the chat** — from Solution Explorer or Windows Explorer — and it becomes
+> the chip `@file` or `@folder` makes, with the same refusals; nothing is sent until you send your message. A project
+> node is not attached (it carries no file to attach): a notice says so — drop its files, or attach its folder with
+> `@folder`. **VS Code does not offer it:** it hands a drop from its own Explorer to no extension view, and one from
+> outside VS Code only with Shift held and without the file's path.
+
+> [!NOTE]
 > **VS Code:** typed mentions work there too (since 1.2.0) — the eleven categories from
 > `@file` to `@terminal` are offered in a two-level popup, and resolved mentions appear as
 > context chips in the composer, alongside a "+" attach menu (active file, selection, file

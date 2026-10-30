@@ -71,6 +71,16 @@ internal sealed class GhostTextPackage : AsyncPackage
         // Chat auto-scroll: the tool window is Remote UI (XAML lives in devenv's visual
         // tree), so only this in-process side can call BringIntoView/ScrollToEnd on it.
         try { ChatAutoScroller.Initialize(); } catch { /* non-critical */ }
+        // A file dropped on the chat window: only this side sees the drop, for the same reason.
+        try
+        {
+            ChatDropTarget.Initialize(() =>
+            {
+                try { return dte?.Solution?.FullName is { Length: > 0 } sln ? System.IO.Path.GetDirectoryName(sln) : null; }
+                catch (Exception ex) { Diagnostics.Swallow("ChatDrop.Solution", ex); return null; }
+            });
+        }
+        catch (Exception ex) { Diagnostics.Swallow("ChatDrop.Init", ex); }
 
         // The Error List's "Fix with Inferpal" asks this side for the lines chosen in the list.
         ErrorListSelectionWatcher.Start();

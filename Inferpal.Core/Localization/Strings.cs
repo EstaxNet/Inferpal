@@ -995,6 +995,12 @@ internal static class Strings
     public static string SlashToolNoOutput => Get(nameof(SlashToolNoOutput));
     public static string MentionFolderIsFile(string name) =>
         Format(Get(nameof(MentionFolderIsFile)), name);
+    /// <summary>The overlay of a file dragged over Visual Studio's chat window.</summary>
+    public static string DropToAttach => Get(nameof(DropToAttach));
+    public static string DropHint     => Get(nameof(DropHint));
+    /// <summary>A Solution Explorer project dropped on the chat: it carries no path to attach.</summary>
+    public static string DropProjectRefused(string project) =>
+        Format(Get(nameof(DropProjectRefused)), project);
     public static string DirNotFound(string path) =>
         Format(Get(nameof(DirNotFound)), path);
     public static string ExcludedFromAi(string name, string file, int line, string pattern) =>

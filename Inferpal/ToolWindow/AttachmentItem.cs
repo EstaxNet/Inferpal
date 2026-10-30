@@ -38,6 +38,10 @@ internal sealed class AttachmentItem : NotifyPropertyChangedObject
     /// workspace's ignore files when the question leaves.</summary>
     public string? Origin       { get; }
 
+    /// <summary>Whether a chip about to be added would repeat this one (<see cref="ChipRepeat.Repeats"/>).</summary>
+    internal bool Repeats(string label, string content, string? sourcePath) =>
+        ChipRepeat.Repeats(label, content, sourcePath, Label, Content, SourcePath);
+
     public AttachmentItem(string label, string content, Action onRemove,
         bool isAutoAttach = false, string? sourcePath = null, Action? onPin = null, bool isCut = false, string? origin = null)
     {

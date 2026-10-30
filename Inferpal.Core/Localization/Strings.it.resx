@@ -424,6 +424,9 @@ Backup: {0}</value></data>
   <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — primi {1} di {2} caratteri</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Non è stato possibile allegare nulla per @{0}.</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>«{0}» è un file, non una cartella: allegalo con @file.</value></data>
+  <data name="DropToAttach" xml:space="preserve"><value>Rilascia per allegare</value></data>
+  <data name="DropHint" xml:space="preserve"><value>Allegato al tuo messaggio, come con @. Non viene inviato nulla finché non lo invii.</value></data>
+  <data name="DropProjectRefused" xml:space="preserve"><value>Nessun allegato: '{0}' è un progetto, e un progetto non si può allegare rilasciandolo — rilascia i suoi file oppure allega la sua cartella con @folder.</value></data>
   <data name="SlashToolNoOutput" xml:space="preserve"><value>Fatto — nessun output.</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ Errore navigazione: {0}</value></data>
 

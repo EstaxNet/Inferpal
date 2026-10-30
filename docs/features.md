@@ -599,7 +599,7 @@ flowchart LR
 | `@problems fix these` | The current build errors go with it |
 | `/docs add https://learn.microsoft.com/ef/core` | The site is indexed; from then on the agent searches it when you ask about EF Core |
 
-Mentions: `@file` `@folder` `@code` `@diff` `@commit` `@problems` `@debugger` `@clipboard` `@tree` `@url`, `@output` in Visual Studio and `@terminal` in VS Code — [what each attaches](mentions.md).
+Mentions: `@file` `@folder` `@code` `@diff` `@commit` `@problems` `@debugger` `@clipboard` `@tree` `@url`, `@output` in Visual Studio and `@terminal` in VS Code — [what each attaches](mentions.md). In Visual Studio, a file or folder dragged onto the chat is attached the same way.
 
 <details>
 <summary><b>In detail: indexing, @Docs, MCP, mentions</b></summary>

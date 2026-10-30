@@ -56,6 +56,11 @@ internal partial class InferpalToolWindowData
     [DataMember] public string LabelMenuStepMode    { get => _labelMenuStepMode;    set => SetProperty(ref _labelMenuStepMode,    value); }
     [DataMember] public string LabelDocumentation   { get => _labelDocumentation;   set => SetProperty(ref _labelDocumentation,   value); }
 
+    private string _labelDropToAttach = string.Empty, _labelDropHint = string.Empty;
+    /// <summary>The overlay of a file dragged over the window (shown by the in-process <c>ChatDropTarget</c>).</summary>
+    [DataMember] public string LabelDropToAttach    { get => _labelDropToAttach;    set => SetProperty(ref _labelDropToAttach,    value); }
+    [DataMember] public string LabelDropHint        { get => _labelDropHint;        set => SetProperty(ref _labelDropHint,        value); }
+
     [DataMember] public AsyncCommand ToggleModelMenuCommand { get; private set; } = null!;
     [DataMember] public AsyncCommand ToggleMoreMenuCommand  { get; private set; } = null!;
     [DataMember] public AsyncCommand CloseMenusCommand      { get; private set; } = null!;
@@ -222,6 +227,8 @@ internal partial class InferpalToolWindowData
         LabelMenuSettings    = Strings.ChatMenuSettings;
         LabelMenuStepMode    = Strings.ChatMenuStepMode;
         LabelDocumentation   = Strings.ChatDocumentation;
+        LabelDropToAttach    = Strings.DropToAttach;
+        LabelDropHint        = Strings.DropHint;
         LabelModeChat        = Strings.ModeChat;
         LabelModeAgent       = Strings.ModeAgent;
         LabelModePlan        = Strings.ModePlan;

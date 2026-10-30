@@ -1910,14 +1910,22 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private addChip(name: string, content: string, sourcePath?: string, origin?: string): void {
     // A chip that holds part of its file says how much, on the chip and under the question.
     const capped = capAttachment(content, 60_000);
-    this.pendingAttachments.push({
+    const chip = {
       name: capped.cut ? ChatViewProvider.cutLabel(name, capped) : name,
       // ⚠ Part of a file is not the file: named as attached, its code past the cut was ALSO kept out of the relevant
       // code the host adds (it skips an attached file's chunks, "already in the prompt").
       sourcePath: capped.cut ? undefined : sourcePath,
       content: capped.text,
       origin,
-    });
+    };
+    // Attached again: the same whole file, or the same text under the same name, is one chip, not two — a second one
+    // would send it twice (Visual Studio's AttachmentItem.Repeats).
+    const repeated = this.pendingAttachments.some((a) => a.sourcePath && chip.sourcePath
+      ? samePath(a.sourcePath, chip.sourcePath)
+      : a.name === chip.name && a.content === chip.content);
+    if (!repeated) {
+      this.pendingAttachments.push(chip);
+    }
     this.postChips();
   }
 

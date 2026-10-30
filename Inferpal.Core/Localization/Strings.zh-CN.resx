@@ -424,6 +424,9 @@
   <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — 前 {1} 个字符（共 {2} 个）</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>无法为 @{0} 附加任何内容。</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>“{0}”是文件，不是文件夹。请使用 @file 附加。</value></data>
+  <data name="DropToAttach" xml:space="preserve"><value>放下以附加</value></data>
+  <data name="DropHint" xml:space="preserve"><value>像 @ 一样附加到你的消息。在你发送之前不会发送任何内容。</value></data>
+  <data name="DropProjectRefused" xml:space="preserve"><value>未附加任何内容：'{0}' 是一个项目，项目无法通过拖放来附加 — 请拖放其中的文件，或用 @folder 附加其文件夹。</value></data>
   <data name="SlashToolNoOutput" xml:space="preserve"><value>完成 — 没有输出。</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ 浏览文件时出错：{0}</value></data>
 

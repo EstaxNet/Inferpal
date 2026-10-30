@@ -58,6 +58,7 @@
     <Compile Remove="TestFilePathResolverTests.cs" />
     <Compile Remove="VsThemeDetectorTests.cs" />
     <Compile Remove="ChatAutoScrollerTests.cs" />
+    <Compile Remove="ChatDropTargetTests.cs" />
     <Compile Remove="BuildEventsBootstrapTests.cs" />
     <Compile Remove="GhostTextKeysTests.cs" />
     <Compile Remove="VsEditResultTests.cs" />

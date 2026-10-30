@@ -424,6 +424,9 @@ Sicherung: {0}</value></data>
   <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — die ersten {1} von {2} Zeichen</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Für @{0} konnte nichts angehängt werden.</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>„{0}“ ist eine Datei, kein Ordner — hänge sie mit @file an.</value></data>
+  <data name="DropToAttach" xml:space="preserve"><value>Zum Anhängen ablegen</value></data>
+  <data name="DropHint" xml:space="preserve"><value>Wird Ihrer Nachricht angehängt, wie mit @. Nichts wird gesendet, bevor Sie sie senden.</value></data>
+  <data name="DropProjectRefused" xml:space="preserve"><value>Nichts angehängt: '{0}' ist ein Projekt, und ein Projekt lässt sich nicht durch Ablegen anhängen — legen Sie seine Dateien ab oder hängen Sie seinen Ordner mit @folder an.</value></data>
   <data name="SlashToolNoOutput" xml:space="preserve"><value>Fertig — keine Ausgabe.</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ Durchsuchungsfehler: {0}</value></data>
 

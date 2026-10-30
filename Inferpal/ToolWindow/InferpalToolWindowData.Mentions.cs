@@ -527,6 +527,20 @@ internal partial class InferpalToolWindowData
             : SelectFileMentionAsync(path, CancellationToken.None, typed: false);
     }
 
+    private IDisposable? _chatDrops;
+
+    /// <summary>Files and folders dropped on the window: each the chip <c>@file</c> or <c>@folder</c> makes, with their
+    /// refusals, in the order dropped — nothing sent. A Solution Explorer project is said after them, never attached.</summary>
+    private async Task AttachDroppedAsync(ChatDrop drop)
+    {
+        foreach (var path in drop.Paths)
+            await (Directory.Exists(path)
+                ? SelectFolderMentionAsync(path, CancellationToken.None, typed: false)
+                : SelectFileMentionAsync(path, CancellationToken.None, typed: false));
+        foreach (var project in drop.Projects)
+            await NotifyMentionAsync(Strings.DropProjectRefused(project));
+    }
+
     /// <param name="typed"><c>false</c> for a chip asked from elsewhere (the Explorer): the draft holds no mention token
     /// to take off.</param>
     private async Task SelectFileMentionAsync(string filePath, CancellationToken ct, bool typed = true)

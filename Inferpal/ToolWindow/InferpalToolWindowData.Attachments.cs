@@ -277,6 +277,9 @@ internal partial class InferpalToolWindowData
         var capped = Services.Agent.AttachmentCap.Of(content);
         if (capped.Cut) label = Strings.AttachmentCutLabel(label, capped.Shown, capped.Total);
         content = capped.Text;
+        // Attached again — dropped twice, picked again with @: the chip already there is the file, a second one would
+        // send it twice.
+        if (Attachments.Any(a => !a.IsAutoAttach && a.Repeats(label, content, sourcePath))) return;
         AttachmentItem? item = null;
         Action? onPin = sourcePath is null ? null : () => Post(() =>
         {

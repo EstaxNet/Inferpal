@@ -424,6 +424,9 @@
   <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — первые {1} из {2} символов</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Для @{0} не удалось ничего прикрепить.</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>«{0}» — это файл, а не папка: прикрепите его через @file.</value></data>
+  <data name="DropToAttach" xml:space="preserve"><value>Отпустите, чтобы прикрепить</value></data>
+  <data name="DropHint" xml:space="preserve"><value>Прикрепляется к сообщению, как через @. Ничего не отправится, пока вы его не отправите.</value></data>
+  <data name="DropProjectRefused" xml:space="preserve"><value>Ничего не прикреплено: '{0}' — это проект, а проект нельзя прикрепить перетаскиванием — перетащите его файлы или прикрепите его папку через @folder.</value></data>
   <data name="SlashToolNoOutput" xml:space="preserve"><value>Готово — вывода нет.</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ Ошибка обзора: {0}</value></data>
 

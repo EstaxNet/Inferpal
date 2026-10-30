@@ -104,6 +104,8 @@ internal partial class InferpalToolWindowData
         // The Explorer's "Attach to Chat", asked before this window existed or while it is open.
         _contextHolder.PendingAttachAvailable += (_, _) => ConsumePendingAttach();
         ConsumePendingAttach();
+        // Files dropped on this window, taken by the in-process half. Kept in a field: a watcher nobody holds is collected.
+        _chatDrops = ChatDropSignal.Watch(drop => _ = AttachDroppedAsync(drop));
 
         _ = StartHeartbeatAsync();
         _ = StartRagIndexingAsync();

@@ -425,6 +425,9 @@ Backup: {0}</value></data>
   <data name="MentionDiffCutLabel" xml:space="preserve"><value>{0} — first {1} of {2} characters</value></data>
   <data name="MentionNothingToAttach" xml:space="preserve"><value>Nothing could be attached for @{0}.</value></data>
   <data name="MentionFolderIsFile" xml:space="preserve"><value>'{0}' is a file, not a folder — attach it with @file.</value></data>
+  <data name="DropToAttach" xml:space="preserve"><value>Drop to attach</value></data>
+  <data name="DropHint" xml:space="preserve"><value>Attached to your message, like @. Nothing is sent until you send it.</value></data>
+  <data name="DropProjectRefused" xml:space="preserve"><value>Nothing attached: '{0}' is a project, and a project cannot be attached by dropping it — drop its files, or attach its folder with @folder.</value></data>
   <data name="SlashToolNoOutput" xml:space="preserve"><value>Done — no output.</value></data>
   <data name="BrowseError" xml:space="preserve"><value>⚠ Browse error: {0}</value></data>
 
