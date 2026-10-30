@@ -176,10 +176,25 @@ public sealed class AcpSetupTests
     {
         var saved = new List<InferpalConfig>();
         var output = new StringWriter();
-        var code = await RunAsync("1\n\n", output, saved, _ => ("ollama", null), ["nomic-embed-text"]);
+        var code = await RunAsync("1\n\n", output, saved, _ => ("ollama", null), []);
 
         Assert.NotEqual(0, code);
         Assert.Empty(saved);
         Assert.Contains(Localization.Strings.AcpSetupNoModel("Ollama"), output.ToString());
+    }
+
+    /// <summary>A server that lists only models that cannot chat is said as such: "no model installed" sent the person
+    /// to check what they have, and they have models.</summary>
+    [Fact]
+    public async Task AServerWithOnlyAnEmbeddingModel_SaysItHasNoChatModel()
+    {
+        var saved = new List<InferpalConfig>();
+        var output = new StringWriter();
+        var code = await RunAsync("1\n\n", output, saved, _ => ("ollama", null), ["nomic-embed-text"]);
+
+        Assert.NotEqual(0, code);
+        Assert.Empty(saved);
+        Assert.Contains(Localization.Strings.NoChatModelListed, output.ToString());
+        Assert.DoesNotContain(Localization.Strings.AcpSetupNoModel("Ollama"), output.ToString());
     }
 }

@@ -93,6 +93,7 @@
   "Refresh models": "Обновить модели",
   "Show all models": "Показать все модели",
   "No model listed — is the backend reachable?": "Модели не перечислены — доступен ли бэкенд?",
+  "The server lists no chat model — only models that cannot answer (embedding, reranking). Install a chat model.": "Сервер не перечисляет ни одной модели чата — только модели, которые не могут отвечать (эмбеддинг, переранжирование). Установите модель чата.",
   "Export failed: {0}": "Не удалось экспортировать: {0}",
   "A turn is still running — stop it before starting a new conversation.": "Ход ещё выполняется — остановите его, прежде чем начинать новый разговор.",
   "A session named {0} already exists. Replace it?": "Сеанс с именем {0} уже существует. Заменить его?",

@@ -47,6 +47,11 @@ internal enum RepoInstructionNoteKind
 
     /// <summary>The front matter scopes the rule to no file at all.</summary>
     NeverApplies,
+
+    /// <summary>A link written as text (a symbolic link cloned without links) not followed: its target is missing, outside
+    /// the repository, not an instruction file, or past <see cref="RepoInstructionReader.MaxImportHops"/> links. Nothing of
+    /// it is sent — never its one line.</summary>
+    LinkNotFollowed,
 }
 
 /// <summary>One thing not taken; <paramref name="Subject"/> = the file or the key it is about.</summary>
@@ -59,6 +64,7 @@ internal sealed record RepoInstructionImport(string Path, string Text);
 /// One repository instruction file, read: its text without its front matter, when it applies, what it imports, and
 /// what could not be taken from it.
 /// </summary>
+/// <param name="ReadFrom">The file the text was read from: the source, or the target its one-line link names.</param>
 internal sealed record RepoInstruction(
     RepoInstructionSource Source,
     string Body,
@@ -66,7 +72,8 @@ internal sealed record RepoInstruction(
     IReadOnlyList<string> Globs,
     string? Description,
     IReadOnlyList<RepoInstructionImport> Imports,
-    IReadOnlyList<RepoInstructionNote> Notes)
+    IReadOnlyList<RepoInstructionNote> Notes,
+    string? ReadFrom = null)
 {
     /// <summary>
     /// Whether it applies to a question asked with <paramref name="activeRelativePath"/> open — relative to the search
@@ -113,16 +120,49 @@ internal static class RepoInstructionReader
     private static readonly Regex InlineCode = new(@"(`+)[^\n]*?\1", RegexOptions.None, RegexBudget);
     private static readonly Regex HtmlComment = new(@"<!--.*?-->", RegexOptions.Singleline, RegexBudget);
 
-    /// <summary>Every source of <paramref name="discovery"/>, read, in its order.</summary>
-    public static IReadOnlyList<RepoInstruction> ReadAll(RepoInstructionDiscovery discovery) =>
-        discovery.SearchRoot is { } root ? discovery.Sources.Select(s => Read(s, root)).ToList() : [];
+    /// <summary>Every source of <paramref name="discovery"/> that <paramref name="include"/> takes (all by default), read,
+    /// in its order — a one-line link to another source taken adds nothing; to one left out, it is read through.</summary>
+    public static IReadOnlyList<RepoInstruction> ReadAll(RepoInstructionDiscovery discovery,
+                                                         Func<RepoInstructionSource, bool>? include = null)
+    {
+        if (discovery.SearchRoot is not { } root) return [];
+        var taken = discovery.Sources.Where(s => include?.Invoke(s) ?? true).ToList();
+        var paths = taken.Select(s => Path.GetFullPath(s.Path)).ToHashSet(PathComparer.Default);
+        return taken.Select(s => Read(s, root, paths)).ToList();
+    }
 
     /// <summary>Reads <paramref name="source"/>, whose repository starts at <paramref name="searchRoot"/>.</summary>
-    public static RepoInstruction Read(RepoInstructionSource source, string searchRoot)
+    /// <param name="otherSources">The files read as sources of their own: a link to one of them adds nothing.</param>
+    public static RepoInstruction Read(RepoInstructionSource source, string searchRoot, IReadOnlySet<string>? otherSources = null)
     {
         var notes = new List<RepoInstructionNote>();
-        var text  = ReadFile(source.Path, notes);
-        if (text is null) return new RepoInstruction(source, string.Empty, RepoInstructionScope.Always, [], null, [], notes);
+        var readFrom = source.Path;
+        var text  = ReadFile(readFrom, notes);
+        // ⚠ A symbolic link cloned where links are not made (Windows without the right, an archive) is a one-line file
+        // naming its target: read as is, the model is handed "AGENTS.md" as the repository's instructions. Followed link
+        // by link, as far as imports go, under the repository only, and only to another instruction file — whose writing
+        // forces the approval card (AgentInstructionFiles), and which the ignore files never exclude (ContentExclusions):
+        // any other .md read through would become the system prompt that a write could change unasked. Not at all when a
+        // target is read as a source of its own. A link that cannot be followed is said, and its one line never sent.
+        var followed = new HashSet<string>(PathComparer.Default) { Path.GetFullPath(readFrom) };
+        while (text is not null && Persistence.RepoCommandFiles.ShapedLikeALink(text))
+        {
+            var target = Persistence.RepoCommandFiles.LinkWrittenAsText(readFrom, text);
+            if (target is not null && otherSources?.Contains(target) == true)
+                return new RepoInstruction(source, string.Empty, RepoInstructionScope.Always, [], null, [], notes, target);
+            if (target is null || !followed.Add(target) || followed.Count > MaxImportHops + 1
+                || !Tools.PathSanitizer.IsUnderRoot(target, searchRoot) || !Execution.AgentInstructionFiles.Targets(target))
+            {
+                notes.Add(new RepoInstructionNote(RepoInstructionNoteKind.LinkNotFollowed, target ?? text.Trim()));
+                text = null;
+            }
+            else
+            {
+                readFrom = target;
+                text = ReadFile(readFrom, notes);
+            }
+        }
+        if (text is null) return new RepoInstruction(source, string.Empty, RepoInstructionScope.Always, [], null, [], notes, readFrom);
 
         var format = source.Format;
         var (scope, globs, description, body) = format.ScopeKey is null
@@ -133,11 +173,12 @@ internal static class RepoInstructionReader
         if (format.Family == RepoInstructionFamily.Claude && format.Role == RepoInstructionRole.Context)
         {
             body = WithoutHtmlComments(body);
-            var seen = new HashSet<string>(PathComparer.Default) { Path.GetFullPath(source.Path) };
-            Import(body, source.Path, searchRoot, hop: 1, seen, imports, notes);
+            // Imports are relative to the file the text was read from: a link's target, not the link.
+            var seen = new HashSet<string>(followed, PathComparer.Default);
+            Import(body, readFrom, searchRoot, hop: 1, seen, imports, notes);
         }
 
-        return new RepoInstruction(source, body.Trim(), scope, globs, description, imports, notes);
+        return new RepoInstruction(source, body.Trim(), scope, globs, description, imports, notes, readFrom);
     }
 
     /// <summary>The scope the format's own front matter gives, and the text after it.</summary>

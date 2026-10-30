@@ -1303,6 +1303,11 @@ kbd {
   font-size: 12px;
 }
 
+/* A gesture's sentence can carry a second paragraph (a file that no longer parses): kept apart, as in Visual Studio. */
+.run-review-status {
+  white-space: pre-line;
+}
+
 .run-review-note {
   color: var(--ip-muted);
 }

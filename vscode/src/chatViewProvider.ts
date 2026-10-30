@@ -20,7 +20,7 @@ import { samePath } from './debugBridge';
 import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
 import {
   ApprovalCard, CodeActionResult, InputCard, InputFormAnswer, ProblemEntry, GestureQuestion, CommitMessageProposal,
-  SavedMessage, SessionSwitches, SlashEffect, TestsGenerateResult, TurnNote,
+  ModelsByKind, SavedMessage, SessionSwitches, SlashEffect, TestsGenerateResult, TurnNote,
 } from './protocol';
 import {
   WebviewToExt,
@@ -84,6 +84,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private view: vscode.WebviewView | undefined;
   private readonly transcript: WvTranscriptItem[] = [];
   private models: string[] = [];
+  /** The server answers with models, none of which can chat (embedding, reranking): the menu says so, not "unreachable?". */
+  private onlyOtherModels = false;
   private model = '';
   private busy = false;
   /** Ids for the `/import` cards of this session: an Apply names the card it came from. */
@@ -615,7 +617,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
     try {
       // The chat models only: a question goes to the model picked here, and an embedding model answers none.
-      this.models = (await host.modelsListByKind()).chat;
+      this.takeChatListing(await host.modelsListByKind());
     } catch (err) {
       // ⚠ This is NOT the unreachable-backend path: all three providers swallow the HTTP failure
       // and return an EMPTY list, so `models/list` SUCCEEDS. This catch only ever sees a host or
@@ -832,14 +834,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // keep the previous autocomplete list
     }
     try {
-      const listed = (await host.modelsListByKind()).chat;
-      // ⚠ An empty list must not REPLACE the previous one: it arrives through the success path,
-      // not the catch (see bootstrap), so saving the settings with the backend down would silently
-      // empty the picker. The previous list is kept only when the new one is empty — a backend that
-      // REALLY lost models must still be able to remove them.
-      if (listed.length > 0) {
-        this.models = listed;
-      }
+      this.takeChatListing(await host.modelsListByKind());
     } catch {
       // host or RPC failure: keep the previous list (see bootstrap for why this is not the
       // "backend unreachable" case).
@@ -920,10 +915,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       return;
     }
     try {
-      const listed = (await host.modelsListByKind()).chat;
-      if (listed.length > 0 && listed.join('\n') !== this.models.join('\n')) {
-        this.models = listed;
-        this.post({ type: 'models', models: listed });
+      if (this.takeChatListing(await host.modelsListByKind())) {
+        this.post({ type: 'models', models: this.models, onlyOtherModels: this.onlyOtherModels });
       }
     } catch (err) {
       this.log(`[chat] models/list on opening the model picker failed: ${String(err)}`);
@@ -950,12 +943,24 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  /**
+   * Takes a listing for the chat picker — its chat half, the one reader of every refresh. ⚠ An empty list must not
+   * REPLACE the previous one: a backend that is down answers empty through the success path (see bootstrap), and the
+   * picker would empty itself. Unless the server listed models none of which can chat: then it really holds none, and
+   * the menu says why. Returns whether the picker changed.
+   */
+  private takeChatListing(byKind: ModelsByKind): boolean {
+    const onlyOthers = byKind.chat.length === 0 && (byKind.listed?.length ?? 0) > 0;
+    const models = byKind.chat.length > 0 || onlyOthers ? byKind.chat : this.models;
+    const changed = onlyOthers !== this.onlyOtherModels || models.join('\n') !== this.models.join('\n');
+    this.models = models;
+    this.onlyOtherModels = onlyOthers;
+    return changed;
+  }
+
   private async refreshModelsAfterReconnect(host: HostClient): Promise<void> {
     try {
-      const listed = (await host.modelsListByKind()).chat;
-      if (listed.length > 0) {
-        this.models = listed;
-      }
+      this.takeChatListing(await host.modelsListByKind());
     } catch (err) {
       this.log(`[chat] models/list after reconnection failed: ${String(err)}`);
     }
@@ -4069,6 +4074,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       type: 'hydrate',
       transcript: this.transcript,
       models: this.models,
+      onlyOtherModels: this.onlyOtherModels,
       model: this.model,
       busy: this.busy,
       canRegenerate: this.canRegenerate(),

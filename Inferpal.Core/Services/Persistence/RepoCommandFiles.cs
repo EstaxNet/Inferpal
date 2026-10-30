@@ -197,6 +197,16 @@ internal static class RepoCommandFiles
                                      notRun.Distinct(StringComparer.Ordinal).ToList());
     }
 
+    /// <summary>Whether <paramref name="text"/> has the shape of a link checked out as text — one token naming a
+    /// <c>.md</c>, never an <c>@</c> import — whether or not its target exists (a broken link, a submodule not checked
+    /// out).</summary>
+    internal static bool ShapedLikeALink(string text)
+    {
+        var target = text.Trim();
+        return target.Length is > 0 and <= 260 && !target.Any(char.IsWhiteSpace) && !target.StartsWith('@')
+               && target.EndsWith(".md", StringComparison.OrdinalIgnoreCase);
+    }
+
     /// <summary>
     /// The file a git symbolic link points to, when the link was checked out as a text file holding its target —
     /// what git does without <c>core.symlinks</c>, the default of Git for Windows; <c>null</c> for any other file.
@@ -206,8 +216,7 @@ internal static class RepoCommandFiles
     internal static string? LinkWrittenAsText(string file, string text)
     {
         var target = text.Trim();
-        if (target.Length == 0 || target.Length > 260 || target.Any(char.IsWhiteSpace)
-            || Path.IsPathRooted(target) || !target.EndsWith(".md", StringComparison.OrdinalIgnoreCase)) return null;
+        if (!ShapedLikeALink(target) || Path.IsPathRooted(target)) return null;
         try
         {
             var full = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(file)!, target));

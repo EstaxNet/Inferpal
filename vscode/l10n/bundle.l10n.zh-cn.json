@@ -93,6 +93,7 @@
   "Refresh models": "刷新模型",
   "Show all models": "显示所有模型",
   "No model listed — is the backend reachable?": "未列出任何模型 — 后端可访问吗?",
+  "The server lists no chat model — only models that cannot answer (embedding, reranking). Install a chat model.": "服务器未列出任何聊天模型 — 只有无法回答的模型（嵌入、重排序）。请安装一个聊天模型。",
   "Export failed: {0}": "导出失败：{0}",
   "A turn is still running — stop it before starting a new conversation.": "仍有一个回合正在运行——请先停止，再开始新对话。",
   "A session named {0} already exists. Replace it?": "已存在名为 {0} 的会话。要替换它吗？",

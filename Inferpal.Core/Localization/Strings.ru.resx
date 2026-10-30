@@ -1481,7 +1481,7 @@
   <data name="ModelRoleDocsSearch" xml:space="preserve"><value>поиск по документации</value></data>
   <data name="SuggestReview" xml:space="preserve"><value>Предложенные модели внесены в форму: проверьте их и сохраните.</value></data>
   <data name="SuggestNoChange" xml:space="preserve"><value>Это уже лучшие из установленных моделей.</value></data>
-  <data name="SuggestOnlyEmbedding" xml:space="preserve"><value>Сервер перечисляет только модели эмбеддингов: сначала установите модель для чата.</value></data>
+  <data name="NoChatModelListed" xml:space="preserve"><value>Сервер не перечисляет ни одной модели чата — только модели, которые не могут отвечать (эмбеддинг, переранжирование). Установите модель чата.</value></data>
   <data name="SuggestNothingListed" xml:space="preserve"><value>Сервер не перечисляет ни одной модели: предложить нечего.</value></data>
   <data name="SuggestChatRecommended" xml:space="preserve"><value>Модель чата: {0} — рекомендована тестами Inferpal.</value></data>
   <data name="SuggestChatUsable" xml:space="preserve"><value>Модель чата: {0} — лучшая из установленных; пригодна для работы агента в тестах Inferpal.</value></data>
@@ -1926,6 +1926,7 @@
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>отменён, затем изменён — «Повторить» потеряло бы это изменение</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>нет копии до запуска — отменить нельзя</value></data>
   <data name="RunPieceUndone" xml:space="preserve"><value>Изменение {0} в {1} возвращено к состоянию до запуска. Прежнее содержимое файла сначала сохраняется.</value></data>
+  <data name="RunPieceBrokeSyntax" xml:space="preserve"><value>⚠ Файл больше не разбирается: строка {0} ({1}). Если это изменение связано с другим, примените «Отменить» или «Повторить» к обоим сразу.</value></data>
   <data name="RunPieceRedone" xml:space="preserve"><value>У изменения {0} в {1} снова версия запуска. Прежнее содержимое файла сначала сохраняется.</value></data>
   <data name="RunPieceKept" xml:space="preserve"><value>Изменение {0} в {1} сохранено: отмена запуска оставит его таким, каким его сделал запуск.</value></data>
   <data name="RunPieceUnchanged" xml:space="preserve"><value>Изменение {0} в {1} уже в этом состоянии: ничего не записано.</value></data>

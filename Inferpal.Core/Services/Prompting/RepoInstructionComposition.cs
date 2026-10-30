@@ -77,7 +77,15 @@ internal sealed record RepoInstructionComposition(IReadOnlyList<RepoInstructionS
 
         foreach (var instruction in read)
         {
-            if (instruction.Body.Length == 0) { left.Add(new(instruction, RepoInstructionLeftReason.NothingRead)); continue; }
+            if (instruction.Body.Length == 0)
+            {
+                // A one-line link to another source read on its own: that source's text, said as such — "could not be read"
+                // would send the reader looking for a fault.
+                left.Add(LinkedSource(instruction, read) is { } linked
+                    ? new(instruction, RepoInstructionLeftReason.Duplicate, linked)
+                    : new(instruction, RepoInstructionLeftReason.NothingRead));
+                continue;
+            }
             if (!instruction.AppliesTo(activeRelativePath))
             {
                 left.Add(new(instruction, instruction.Scope switch
@@ -134,6 +142,16 @@ internal sealed record RepoInstructionComposition(IReadOnlyList<RepoInstructionS
                 .Append(import.Text);
         }
         return text.ToString();
+    }
+
+    /// <summary>The other source <paramref name="instruction"/>'s one-line link names, when it is one of
+    /// <paramref name="read"/>; <c>null</c> otherwise.</summary>
+    private static string? LinkedSource(RepoInstruction instruction, IReadOnlyList<RepoInstruction> read)
+    {
+        if (instruction.ReadFrom is not { } to || PathComparer.Default.Equals(Full(to), Full(instruction.Source.Path))) return null;
+        return read.Any(o => PathComparer.Default.Equals(Full(o.Source.Path), Full(to))) ? to : null;
+
+        static string Full(string path) => Path.GetFullPath(path);
     }
 
     private static string Normalized(string text)

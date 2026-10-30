@@ -683,18 +683,19 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
                     "family:" + name.ToLowerInvariant(), name);
 
             var off  = discovery.Sources.Where(s => !families.Contains(s.Format.Family)).ToList();
-            var read = discovery.Sources.Where(s => families.Contains(s.Format.Family))
-                                        .Select(s => RepoInstructionReader.Read(s, searchRoot)).ToList();
+            var read = RepoInstructionReader.ReadAll(discovery, s => families.Contains(s.Format.Family)).ToList();
             foreach (var instruction in read)
             {
                 foreach (var note in instruction.Notes)
                     Diagnostics.RecordOnce(RepoInstructionsContext, Describe(instruction, note),
                                            $"{note.Kind}|{PinKey(note.Subject)}");
-                // Read whole now: the next time it cannot be, it is said again — the condition is the file's content.
+                // Read whole now: the next time it cannot be, it is said again — the condition is the file's content, the
+                // source's or the target its one-line link names.
                 if (instruction.Body.Length > 0)
                     foreach (var kind in new[] { RepoInstructionNoteKind.Unreadable, RepoInstructionNoteKind.Binary,
-                                                 RepoInstructionNoteKind.TooLarge })
-                        Diagnostics.Forget(RepoInstructionsContext, $"{kind}|{PinKey(instruction.Source.Path)}");
+                                                 RepoInstructionNoteKind.TooLarge, RepoInstructionNoteKind.LinkNotFollowed })
+                        foreach (var file in new[] { instruction.Source.Path, instruction.ReadFrom }.OfType<string>().Distinct())
+                            Diagnostics.Forget(RepoInstructionsContext, $"{kind}|{PinKey(file)}");
             }
             return new RepoInstructionPlan(discovery, read, off,
                                            RepoInstructionComposition.Compose(read, RelativeActivePath(searchRoot, activeFile)));
@@ -732,6 +733,10 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
             $"{instruction.Source.Path} imports past {RepoInstructionReader.MaxImportHops} levels; not read: {note.Subject}",
         RepoInstructionNoteKind.KeyNotApplied =>
             $"'{note.Subject}' in {instruction.Source.Path} is not applied by Inferpal; the rule is scoped by its other keys.",
+        RepoInstructionNoteKind.LinkNotFollowed =>
+            $"{instruction.Source.Path} is a link written as text that is not followed (its target is missing, outside the "
+            + $"repository, not an instruction file, or past {RepoInstructionReader.MaxImportHops} links), so nothing of it "
+            + $"is sent: {note.Subject}",
         _ => $"{instruction.Source.Path} scopes itself to no file ({note.Subject}: []), so it is never sent.",
     };
 }

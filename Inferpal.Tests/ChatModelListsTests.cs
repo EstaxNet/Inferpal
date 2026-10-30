@@ -107,10 +107,13 @@ public class ChatModelListsTests
             .ToList();
         Assert.Empty(offenders);
 
-        // The chat picker takes the chat half, at each of its four reads.
+        // The chat picker takes the chat half, at each of its four reads, through one reader (takeChatListing) whose other
+        // half only says why the menu is empty (models listed, none that can chat).
         var chat = WebviewRebuildTests.TsCode("chatViewProvider.ts");
-        Assert.Equal(4, CountOf(chat, "(await host.modelsListByKind()).chat"));
-        Assert.Equal(CountOf(chat, "modelsListByKind("), CountOf(chat, "(await host.modelsListByKind()).chat"));
+        Assert.Equal(4, CountOf(chat, "this.takeChatListing(await host.modelsListByKind())"));
+        Assert.Equal(CountOf(chat, "modelsListByKind("), CountOf(chat, "this.takeChatListing(await host.modelsListByKind())"));
+        var reader = WebviewRebuildTests.Body(chat, "private takeChatListing(");
+        Assert.Contains("? byKind.chat : this.models", reader, StringComparison.Ordinal);
     }
 
     /// <summary>Visual Studio's two lists — the settings boxes and the chat header's menu — go through the catalog.</summary>

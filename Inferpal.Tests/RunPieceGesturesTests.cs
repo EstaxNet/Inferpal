@@ -57,6 +57,72 @@ public sealed class RunPieceGesturesTests : IDisposable
 
     private int Copies() => Directory.EnumerateFiles(Path.Combine(_dir, ".inferpal", "history")).Count(f => !Path.GetFileName(f).StartsWith('.'));
 
+    /// <summary>
+    /// Two changes that belong together (a brace opened in one, closed in the other): giving back one alone leaves a file
+    /// that no longer parses, and the sentence says so with the line — never "back as it was" alone. A change that stands
+    /// on its own says nothing more.
+    /// </summary>
+    [Fact]
+    public async Task GivingBackOneOfTwoChangesThatGoTogether_SaysTheFileNoLongerParses()
+    {
+        var before = Bytes("class A\n{\n    int a;\n    int b;\n    int c;\n}\n");
+        var byRun  = Bytes("class A\n{\n    void M() {\n    int b;\n    }\n}\n");
+        var (history, run, path) = await ARun(before, byRun);
+
+        var said = await PieceAsync(history, run, path, 2, Inferpal.Services.Commands.UndoRunCommandHandler.RunFileAction.Undo);
+
+        Assert.Contains(Localization.Strings.RunPieceUndone(2, "Orders.cs"), said);                         // witness: given back
+        Assert.Equal("class A\n{\n    void M() {\n    int b;\n    int c;\n}\n", File.ReadAllText(path));     // the file broken
+        Assert.Contains(await BrokenSentenceAsync(path), said);
+
+        var redone = await PieceAsync(history, run, path, 2, Inferpal.Services.Commands.UndoRunCommandHandler.RunFileAction.Redo);
+        Assert.DoesNotContain("⚠", redone);                                                                    // reference arm
+        Assert.Equal(byRun, Read(path));
+    }
+
+    /// <summary>Redo breaks the file the same way when its partner stays given back: said too.</summary>
+    [Fact]
+    public async Task RedoingOneOfTwoChangesThatGoTogether_SaysTheFileNoLongerParses()
+    {
+        var before = Bytes("class A\n{\n    int a;\n    int b;\n    int c;\n}\n");
+        var byRun  = Bytes("class A\n{\n    void M() {\n    int b;\n    }\n}\n");
+        var (history, run, path) = await ARun(before, byRun);
+        await PieceAsync(history, run, path, 1, Inferpal.Services.Commands.UndoRunCommandHandler.RunFileAction.Undo);
+        await PieceAsync(history, run, path, 2, Inferpal.Services.Commands.UndoRunCommandHandler.RunFileAction.Undo);
+        Assert.Equal(before, Read(path));                                                                     // witness: both back
+
+        var said = await PieceAsync(history, run, path, 2, Inferpal.Services.Commands.UndoRunCommandHandler.RunFileAction.Redo);
+
+        Assert.Contains(await BrokenSentenceAsync(path), said);
+    }
+
+    /// <summary>A file that did not parse before the gesture is not this gesture's doing: nothing more is said.</summary>
+    [Fact]
+    public async Task AFileThatDidNotParseBeforeTheGesture_GetsNoSyntaxSentence()
+    {
+        var before = Bytes("class A\n{\n    int a;\n    int b;\n    int c;\n");      // no closing brace, before the run
+        var byRun  = Bytes("class A\n{\n    int x;\n    int b;\n    int z;\n");
+        var (history, run, path) = await ARun(before, byRun);
+
+        var said = await PieceAsync(history, run, path, 2, Inferpal.Services.Commands.UndoRunCommandHandler.RunFileAction.Undo);
+
+        Assert.Contains(Localization.Strings.RunPieceUndone(2, "Orders.cs"), said);                         // witness: given back
+        Assert.DoesNotContain("⚠", said);
+    }
+
+    private async Task<string> PieceAsync(FileHistoryService history, HistoryRun run, string path, int number,
+                                          Inferpal.Services.Commands.UndoRunCommandHandler.RunFileAction action) =>
+        (await Inferpal.Services.Commands.UndoRunCommandHandler.PieceActionAsync(
+            history, run.Id, path, number, action, _dir, busy: false, CancellationToken.None)).Message;
+
+    /// <summary>The sentence for the parse error <paramref name="path"/> holds now.</summary>
+    private static async Task<string> BrokenSentenceAsync(string path)
+    {
+        var broken = await Inferpal.Services.Tools.SyntaxGuard.FirstErrorAsync(path, File.ReadAllText(path), CancellationToken.None);
+        Assert.NotNull(broken);
+        return Localization.Strings.RunPieceBrokeSyntax(broken.Value.Line, broken.Value.Message);
+    }
+
     [Fact]
     public async Task OneChangeGivenBack_TheOthersStay_AndARedoGivesTheRunsBytesBack()
     {

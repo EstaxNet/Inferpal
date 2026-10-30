@@ -1481,7 +1481,7 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="ModelRoleDocsSearch" xml:space="preserve"><value>ricerca nella documentazione</value></data>
   <data name="SuggestReview" xml:space="preserve"><value>I modelli suggeriti sono nel modulo: controllali, poi salva.</value></data>
   <data name="SuggestNoChange" xml:space="preserve"><value>Sono già i migliori modelli installati.</value></data>
-  <data name="SuggestOnlyEmbedding" xml:space="preserve"><value>Il server elenca solo modelli di embedding: installa prima un modello di chat.</value></data>
+  <data name="NoChatModelListed" xml:space="preserve"><value>Il server non elenca alcun modello di chat — solo modelli che non possono rispondere (embedding, reranking). Installa un modello di chat.</value></data>
   <data name="SuggestNothingListed" xml:space="preserve"><value>Il server non elenca alcun modello: niente da suggerire.</value></data>
   <data name="SuggestChatRecommended" xml:space="preserve"><value>Modello di chat: {0} — consigliato dai test di Inferpal.</value></data>
   <data name="SuggestChatUsable" xml:space="preserve"><value>Modello di chat: {0} — il migliore installato; utilizzabile come agente nei test di Inferpal.</value></data>
@@ -1926,6 +1926,7 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>annullato, poi modificato — Ripristina perderebbe quella modifica</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>nessuna copia di prima del run — non si può annullare</value></data>
   <data name="RunPieceUndone" xml:space="preserve"><value>La modifica {0} di {1} è tornata com'era prima del run. Il contenuto precedente del file viene prima salvato.</value></data>
+  <data name="RunPieceBrokeSyntax" xml:space="preserve"><value>⚠ Il file non si analizza più: riga {0} ({1}). Se questa modifica va con un'altra, usa Annulla o Ripristina su entrambe insieme.</value></data>
   <data name="RunPieceRedone" xml:space="preserve"><value>La modifica {0} di {1} ha di nuovo la versione del run. Il contenuto precedente del file viene prima salvato.</value></data>
   <data name="RunPieceKept" xml:space="preserve"><value>La modifica {0} di {1} è tenuta: Annulla run la lascia come l'ha fatta il run.</value></data>
   <data name="RunPieceUnchanged" xml:space="preserve"><value>La modifica {0} di {1} è già così: non è stato scritto nulla.</value></data>

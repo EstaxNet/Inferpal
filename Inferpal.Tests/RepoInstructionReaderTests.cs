@@ -54,6 +54,139 @@ public sealed class RepoInstructionReaderTests : IDisposable
         Assert.True(i.AppliesTo(null));
     }
 
+    // ── A symbolic link cloned as a one-line file ───────────────────────────
+
+    /// <summary>Discovers, then reads the sources <paramref name="include"/> takes, and returns the one at
+    /// <paramref name="relative"/>.</summary>
+    private RepoInstruction ReadTaking(string relative, Func<RepoInstructionSource, bool> include)
+    {
+        var path = Path.Combine(_repo, relative.Replace('/', Path.DirectorySeparatorChar));
+        return RepoInstructionReader.ReadAll(RepoInstructionDiscovery.Discover(_repo, null), include).Single(i => i.Source.Path == path);
+    }
+
+    private static bool ClaudeOnly(RepoInstructionSource s) => s.Format.Family == RepoInstructionFamily.Claude;
+
+    private static bool AgentsOnly(RepoInstructionSource s) => s.Format.Family == RepoInstructionFamily.Agents;
+
+    /// <summary>CLAUDE.md → AGENTS.md cloned without links: AGENTS.md is read once, and CLAUDE.md adds nothing — never
+    /// "AGENTS.md" handed to the model as the repository's instructions.</summary>
+    [Fact]
+    public void ALinkToAFileReadOnItsOwn_AddsNothing()
+    {
+        Write("AGENTS.md", "Use xUnit.\n");
+        Write("CLAUDE.md", "AGENTS.md");
+
+        Assert.Equal(string.Empty, Read("CLAUDE.md").Body);
+        Assert.Equal("Use xUnit.", Read("AGENTS.md").Body);
+    }
+
+    /// <summary>The same link with the AGENTS family turned off: AGENTS.md is read through CLAUDE.md.</summary>
+    [Fact]
+    public void ALinkToAnInstructionFileLeftOut_IsReadThrough()
+    {
+        Write("AGENTS.md", "Use xUnit.\n");
+        Write("CLAUDE.md", "AGENTS.md");
+
+        Assert.Equal("Use xUnit.", ReadTaking("CLAUDE.md", ClaudeOnly).Body);
+    }
+
+    /// <summary>A link whose target links again is followed to the text — never the second link's one line.</summary>
+    [Fact]
+    public void AChainOfLinks_IsFollowedToTheText()
+    {
+        Write(".github/copilot-instructions.md", "Keep methods short.\n");
+        Write("AGENTS.md", ".github/copilot-instructions.md");
+        Write("CLAUDE.md", "AGENTS.md");
+
+        Assert.Equal("Keep methods short.", ReadTaking("CLAUDE.md", ClaudeOnly).Body);
+    }
+
+    /// <summary>A target that is not an instruction file is not followed: read through, it would become the system prompt
+    /// while a write to it does not force the approval card. Said, and its one line never sent.</summary>
+    [Fact]
+    public void ALinkToAFileThatIsNotAnInstructionFile_IsNotFollowed_AndSaysSo()
+    {
+        Write("docs/ai.md", "Run the tests with dotnet test.\n");
+        Write("AGENTS.md", "docs/ai.md");
+
+        var i = Read("AGENTS.md");
+        Assert.Equal(string.Empty, i.Body);
+        Assert.Contains(i.Notes, n => n.Kind == RepoInstructionNoteKind.LinkNotFollowed);
+    }
+
+    /// <summary>A broken link (its target missing, a submodule not checked out) sends nothing either.</summary>
+    [Fact]
+    public void ABrokenLink_SendsNothing_AndSaysSo()
+    {
+        Write("AGENTS.md", "docs/missing.md");
+
+        var i = Read("AGENTS.md");
+        Assert.Equal(string.Empty, i.Body);
+        Assert.Contains(i.Notes, n => n.Kind == RepoInstructionNoteKind.LinkNotFollowed);
+    }
+
+    [Fact]
+    public void ALinkLeavingTheRepository_ReadsNothing_AndSaysSo()
+    {
+        File.WriteAllText(Path.Combine(_outside, "AGENTS.md"), "never read\n");
+        var relative = Path.GetRelativePath(_repo, Path.Combine(_outside, "AGENTS.md")).Replace('\\', '/');
+        Write("CLAUDE.md", relative);
+
+        var i = ReadTaking("CLAUDE.md", ClaudeOnly);
+        Assert.Equal(string.Empty, i.Body);
+        Assert.Contains(i.Notes, n => n.Kind == RepoInstructionNoteKind.LinkNotFollowed);
+    }
+
+    /// <summary>A link leads only to an instruction file, which the ignore files never exclude (instructions are exempt,
+    /// as when the file is found directly): read through as it would be read, and nothing else is reachable that way —
+    /// an excluded file that is not an instruction file is not followed at all.</summary>
+    [Fact]
+    public void ALinkReachesOnlyInstructionFiles_WhichTheIgnoreFilesExemptAsUsual()
+    {
+        Write(".aiignore", "private/\n");
+        Write("private/CLAUDE.md", "Use the staging database.\n");
+        Write("private/notes.md", "the client's names\n");
+        Write("AGENTS.md", "private/CLAUDE.md");
+        Write("CLAUDE.md", "private/notes.md");
+        Inferpal.Services.Governance.ContentExclusions.Declare(_repo, () => Inferpal.Services.Governance.ContentExclusions.DefaultFiles);
+        try
+        {
+            Assert.Equal("Use the staging database.", ReadTaking("AGENTS.md", AgentsOnly).Body);
+            var notFollowed = ReadTaking("CLAUDE.md", ClaudeOnly);
+            Assert.Equal(string.Empty, notFollowed.Body);
+            Assert.Contains(notFollowed.Notes, n => n.Kind == RepoInstructionNoteKind.LinkNotFollowed);
+        }
+        finally { Inferpal.Services.Governance.ContentExclusions.ForgetForTests(_repo); }
+    }
+
+    /// <summary>A CLAUDE.md read through its link imports relative to the target, as the file would if it were there.</summary>
+    [Fact]
+    public void ALinkedClaudeFile_ImportsRelativeToItsTarget()
+    {
+        Write("notes/style.md", "Tabs, not spaces.\n");
+        Write("notes/CLAUDE.md", "See @./style.md\n");
+        Write("CLAUDE.md", "notes/CLAUDE.md");
+        var root = Path.Combine(_repo, "CLAUDE.md");
+
+        var i = ReadTaking("CLAUDE.md", s => s.Path == root);
+        Assert.Contains(i.Imports, imp => imp.Text.Contains("Tabs, not spaces.", StringComparison.Ordinal));
+    }
+
+    /// <summary>The page that lists the instructions says a link to another source is that source — never "could not
+    /// be read".</summary>
+    [Fact]
+    public void ALinkToAnotherSource_IsListedAsItsDuplicate()
+    {
+        Write("AGENTS.md", "Use xUnit.\n");
+        Write("CLAUDE.md", "AGENTS.md");
+        var read = RepoInstructionReader.ReadAll(RepoInstructionDiscovery.Discover(_repo, null));
+
+        var left = Assert.Single(RepoInstructionComposition.Compose(read, null).Left,
+                                 l => l.Instruction.Source.Path == Path.Combine(_repo, "CLAUDE.md"));
+        Assert.Equal(RepoInstructionLeftReason.Duplicate, left.Reason);
+        Assert.Equal(Path.Combine(_repo, "AGENTS.md"), left.DuplicateOf);
+    }
+
     // ── Copilot: applyTo ────────────────────────────────────────────────────
 
     [Fact]

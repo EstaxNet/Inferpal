@@ -1485,7 +1485,7 @@ What you save there applies from your next question, in this thread and the othe
   <data name="ModelRoleDocsSearch" xml:space="preserve"><value>documentation search</value></data>
   <data name="SuggestReview" xml:space="preserve"><value>The suggested models are in the form: review them, then Save.</value></data>
   <data name="SuggestNoChange" xml:space="preserve"><value>These are already the best installed models.</value></data>
-  <data name="SuggestOnlyEmbedding" xml:space="preserve"><value>The server lists only embedding models: install a chat model first.</value></data>
+  <data name="NoChatModelListed" xml:space="preserve"><value>The server lists no chat model — only models that cannot answer (embedding, reranking). Install a chat model.</value></data>
   <data name="SuggestNothingListed" xml:space="preserve"><value>The server lists no model: nothing to suggest.</value></data>
   <data name="SuggestChatRecommended" xml:space="preserve"><value>Chat model: {0} — recommended by Inferpal's tests.</value></data>
   <data name="SuggestChatUsable" xml:space="preserve"><value>Chat model: {0} — the best installed; usable for agent work in Inferpal's tests.</value></data>
@@ -1930,6 +1930,7 @@ What you save there applies from your next question, in this thread and the othe
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>undone, then changed — Redo would lose that change</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>no copy from before the run — it cannot be undone</value></data>
   <data name="RunPieceUndone" xml:space="preserve"><value>Change {0} of {1} is back as it was before the run. What the file held is saved first.</value></data>
+  <data name="RunPieceBrokeSyntax" xml:space="preserve"><value>⚠ The file no longer parses: line {0} ({1}). If this change goes with another one, Undo or Redo them together.</value></data>
   <data name="RunPieceRedone" xml:space="preserve"><value>Change {0} of {1} has the run's version again. What the file held is saved first.</value></data>
   <data name="RunPieceKept" xml:space="preserve"><value>Change {0} of {1} is kept: Undo run leaves it as the run made it.</value></data>
   <data name="RunPieceUnchanged" xml:space="preserve"><value>Change {0} of {1} already stands that way: nothing was written.</value></data>

@@ -165,6 +165,10 @@ internal static class UndoRunCommandHandler
         CancellationToken ct)
     {
         if (Refused(history, runId, path, root, busy, out var run, out var full) is { } refused) return refused;
+        // Judged in process only (C#, Razor): a language the guard does not judge without an interpreter is said nothing.
+        var before = action is RunFileAction.Undo or RunFileAction.Redo && Tools.SyntaxGuard.ChecksInProcess(full)
+            ? await TextOfAsync(full, ct)
+            : null;
         var (outcome, why) = await history.PieceActionAsync(run, full, number - 1, action switch
         {
             RunFileAction.Undo => PieceAction.Undo,
@@ -189,7 +193,37 @@ internal static class UndoRunCommandHandler
             PieceOutcome.NotInRun       => Strings.RunFileNotInRun(name),
             _                           => Strings.RunFileFailed(name),
         };
+        if (outcome is PieceOutcome.Undone or PieceOutcome.Redone && await BrokenByTheGestureAsync(full, before) is { } broken)
+            message += "\n\n" + Strings.RunPieceBrokeSyntax(broken.Line, broken.Message);
         return (message, Presentation.RunReview.Build(history, run));
+    }
+
+    /// <summary>
+    /// The parse error a piece gesture left in a file that parsed before it, or <c>null</c>. Said, never refused: the
+    /// gesture is the person's. ⚠ Two pieces can belong together (a brace opened in one, closed in the other): giving back
+    /// one alone leaves a file that no longer parses, the card said "back as it was", and from then on the syntax guard
+    /// lets every edit of that file through (it judges only what an edit adds).
+    /// </summary>
+    /// <remarks>Not cancellable: the file is already written, and a stop here would lose the sentence that says so and
+    /// the review as it stands. The checker's own deadline bounds it. The state before is parsed only when the state
+    /// after is broken.</remarks>
+    private static async Task<Tools.SyntaxGuard.ParseError?> BrokenByTheGestureAsync(string path, string? before)
+    {
+        if (before is null || await TextOfAsync(path, CancellationToken.None) is not { } after
+            || await Tools.SyntaxGuard.FirstErrorAsync(path, after, CancellationToken.None) is not { } broken)
+            return null;
+        return await Tools.SyntaxGuard.FirstErrorAsync(path, before, CancellationToken.None) is null ? broken : null;
+    }
+
+    /// <summary>The text of <paramref name="path"/>, or <c>null</c> when it is gone or cannot be read.</summary>
+    private static async Task<string?> TextOfAsync(string path, CancellationToken ct)
+    {
+        try { return File.Exists(path) ? await Tools.TextFileEncoding.ReadTextAsync(path, ct) : null; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Diagnostics.Swallow("UndoRunCommandHandler.TextOf", ex);
+            return null;
+        }
     }
 
     /// <summary>The run a review gesture names and its file in full; the answer instead when the run is gone or busy.</summary>

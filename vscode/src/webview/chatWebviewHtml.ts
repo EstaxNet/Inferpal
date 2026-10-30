@@ -14,6 +14,7 @@ export function webviewStrings(): Record<string, string> {
     searchPlaceholder: t('Search in the conversation…'),
     statusUnreachable: t('Backend unreachable'),
     noModelListed: t('No model listed — is the backend reachable?'),
+    noChatModelListed: t('The server lists no chat model — only models that cannot answer (embedding, reranking). Install a chat model.'),
     modeAgent: t('Agent'),
     modeChat: t('Chat'),
     tokensInfo: t('{0} tokens'),

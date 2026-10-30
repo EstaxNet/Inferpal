@@ -93,6 +93,7 @@
   "Refresh models": "Aggiorna modelli",
   "Show all models": "Mostra tutti i modelli",
   "No model listed — is the backend reachable?": "Nessun modello elencato: il backend è raggiungibile?",
+  "The server lists no chat model — only models that cannot answer (embedding, reranking). Install a chat model.": "Il server non elenca alcun modello di chat — solo modelli che non possono rispondere (embedding, reranking). Installa un modello di chat.",
   "Export failed: {0}": "Esportazione non riuscita: {0}",
   "A turn is still running — stop it before starting a new conversation.": "Un turno è ancora in corso: interrompilo prima di iniziare una nuova conversazione.",
   "A session named {0} already exists. Replace it?": "Esiste già una sessione chiamata {0}. Sostituirla?",

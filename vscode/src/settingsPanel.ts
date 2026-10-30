@@ -163,6 +163,8 @@ export class SettingsPanel {
       'Refresh models': t('Refresh models'),
       'Show all models': t('Show all models'),
       'No model listed — is the backend reachable?': t('No model listed — is the backend reachable?'),
+      'The server lists no chat model — only models that cannot answer (embedding, reranking). Install a chat model.':
+        t('The server lists no chat model — only models that cannot answer (embedding, reranking). Install a chat model.'),
     };
   }
 

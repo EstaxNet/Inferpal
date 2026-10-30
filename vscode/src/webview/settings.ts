@@ -621,7 +621,11 @@ function renderModelPopup(): void {
     // as a backend serving nothing. An optional model's empty entry is still offered.
     const empty = document.createElement('div');
     empty.className = 'modelrow empty';
-    empty.textContent = t('No model listed — is the backend reachable?');
+    // A chat box on a server that answered with models none of which can chat says so: "reachable?" blames a server
+    // that answered.
+    empty.textContent = listed !== embedding && embedding.length > 0
+      ? t('The server lists no chat model — only models that cannot answer (embedding, reranking). Install a chat model.')
+      : t('No model listed — is the backend reachable?');
     modelPopup.appendChild(empty);
   }
 

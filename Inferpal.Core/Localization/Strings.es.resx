@@ -1481,7 +1481,7 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="ModelRoleDocsSearch" xml:space="preserve"><value>búsqueda en la documentación</value></data>
   <data name="SuggestReview" xml:space="preserve"><value>Los modelos sugeridos están en el formulario: revíselos y luego guarde.</value></data>
   <data name="SuggestNoChange" xml:space="preserve"><value>Ya son los mejores modelos instalados.</value></data>
-  <data name="SuggestOnlyEmbedding" xml:space="preserve"><value>El servidor solo lista modelos de embeddings: instale primero un modelo de chat.</value></data>
+  <data name="NoChatModelListed" xml:space="preserve"><value>El servidor no lista ningún modelo de chat — solo modelos que no pueden responder (embedding, reranking). Instale un modelo de chat.</value></data>
   <data name="SuggestNothingListed" xml:space="preserve"><value>El servidor no lista ningún modelo: nada que sugerir.</value></data>
   <data name="SuggestChatRecommended" xml:space="preserve"><value>Modelo de chat: {0} — recomendado por las pruebas de Inferpal.</value></data>
   <data name="SuggestChatUsable" xml:space="preserve"><value>Modelo de chat: {0} — el mejor instalado; utilizable como agente en las pruebas de Inferpal.</value></data>
@@ -1926,6 +1926,7 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>deshecho y luego modificado — Rehacer perdería ese cambio</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>sin copia de antes del run — no se puede deshacer</value></data>
   <data name="RunPieceUndone" xml:space="preserve"><value>El cambio {0} de {1} vuelve a estar como antes del run. Lo que contenía el archivo se guarda primero.</value></data>
+  <data name="RunPieceBrokeSyntax" xml:space="preserve"><value>⚠ El archivo ya no se analiza: línea {0} ({1}). Si este cambio va con otro, use Deshacer o Rehacer en los dos juntos.</value></data>
   <data name="RunPieceRedone" xml:space="preserve"><value>El cambio {0} de {1} vuelve a tener la versión del run. Lo que contenía el archivo se guarda primero.</value></data>
   <data name="RunPieceKept" xml:space="preserve"><value>El cambio {0} de {1} se conserva: Deshacer run lo deja como lo hizo el run.</value></data>
   <data name="RunPieceUnchanged" xml:space="preserve"><value>El cambio {0} de {1} ya está así: no se escribió nada.</value></data>

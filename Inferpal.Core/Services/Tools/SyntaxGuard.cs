@@ -103,7 +103,7 @@ internal static class SyntaxGuard
     /// <summary>The first parse error of <paramref name="text"/> as <paramref name="path"/>'s language reads it, or
     /// <c>null</c>: none, a language not checked, or no answer from its parser.</summary>
     internal static async Task<ParseError?> FirstErrorAsync(string path, string text, CancellationToken ct) =>
-        Path.GetExtension(path).ToLowerInvariant() switch
+        !Checks(path) ? null : Path.GetExtension(path).ToLowerInvariant() switch
         {
             ".cs"                 => CSharpError(text),
             ".razor" or ".cshtml" => RazorBraceError(text),
@@ -111,6 +111,18 @@ internal static class SyntaxGuard
             ".mjs" or ".cjs"      => await NodeErrorAsync(Path.GetExtension(path).ToLowerInvariant(), text, ct),
             _                     => null,
         };
+
+    /// <summary>Whether <see cref="FirstErrorAsync"/> judges <paramref name="path"/>'s language at all: a caller asks
+    /// before reading a file for nothing. ⚠ The one list: it gates the switch below, so a language added there alone is
+    /// never reached.</summary>
+    internal static bool Checks(string path) =>
+        ChecksInProcess(path) || Path.GetExtension(path).ToLowerInvariant() is ".py" or ".mjs" or ".cjs";
+
+    /// <summary>Whether <paramref name="path"/>'s language is judged without starting a process (Roslyn, the Razor brace
+    /// count): what a gesture checks on a click, where an interpreter's cold start would make the click wait — and, past
+    /// the deadline, turn that interpreter off for the session.</summary>
+    internal static bool ChecksInProcess(string path) =>
+        Path.GetExtension(path).ToLowerInvariant() is ".cs" or ".razor" or ".cshtml";
 
     // File-based programs (.NET 10's `#:package`, `#:sdk`) read as the SDK reads them.
     private static readonly CSharpParseOptions CSharpOptions = new CSharpParseOptions(LanguageVersion.Preview)

@@ -1481,7 +1481,7 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="ModelRoleDocsSearch" xml:space="preserve"><value>wyszukiwanie w dokumentacji</value></data>
   <data name="SuggestReview" xml:space="preserve"><value>Sugerowane modele są w formularzu: sprawdź je, a potem zapisz.</value></data>
   <data name="SuggestNoChange" xml:space="preserve"><value>To już najlepsze zainstalowane modele.</value></data>
-  <data name="SuggestOnlyEmbedding" xml:space="preserve"><value>Serwer wymienia tylko modele embeddingów: najpierw zainstaluj model czatu.</value></data>
+  <data name="NoChatModelListed" xml:space="preserve"><value>Serwer nie wymienia żadnego modelu czatu — tylko modele, które nie mogą odpowiadać (embedding, reranking). Zainstaluj model czatu.</value></data>
   <data name="SuggestNothingListed" xml:space="preserve"><value>Serwer nie wymienia żadnego modelu: nie ma czego zasugerować.</value></data>
   <data name="SuggestChatRecommended" xml:space="preserve"><value>Model czatu: {0} — zalecany przez testy Inferpal.</value></data>
   <data name="SuggestChatUsable" xml:space="preserve"><value>Model czatu: {0} — najlepszy zainstalowany; w testach Inferpal nadaje się do pracy agenta.</value></data>
@@ -1926,6 +1926,7 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>cofnięty, potem zmieniony — Ponów utraciłoby tę zmianę</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>brak kopii sprzed uruchomienia — nie można cofnąć</value></data>
   <data name="RunPieceUndone" xml:space="preserve"><value>Zmiana {0} w {1} wróciła do stanu sprzed uruchomienia. Poprzednia zawartość pliku jest najpierw zapisywana.</value></data>
+  <data name="RunPieceBrokeSyntax" xml:space="preserve"><value>⚠ Pliku nie da się już przeanalizować: wiersz {0} ({1}). Jeśli ta zmiana idzie w parze z inną, użyj Cofnij lub Ponów dla obu razem.</value></data>
   <data name="RunPieceRedone" xml:space="preserve"><value>Zmiana {0} w {1} znów ma wersję z uruchomienia. Poprzednia zawartość pliku jest najpierw zapisywana.</value></data>
   <data name="RunPieceKept" xml:space="preserve"><value>Zmiana {0} w {1} zachowana: Cofnij uruchomienie pozostawi ją taką, jaką zrobiło uruchomienie.</value></data>
   <data name="RunPieceUnchanged" xml:space="preserve"><value>Zmiana {0} w {1} już jest w tym stanie: nic nie zapisano.</value></data>

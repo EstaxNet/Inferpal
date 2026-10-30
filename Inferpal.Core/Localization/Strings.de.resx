@@ -1481,7 +1481,7 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="ModelRoleDocsSearch" xml:space="preserve"><value>Dokumentationssuche</value></data>
   <data name="SuggestReview" xml:space="preserve"><value>Die vorgeschlagenen Modelle stehen im Formular: prüfen Sie sie und speichern Sie dann.</value></data>
   <data name="SuggestNoChange" xml:space="preserve"><value>Das sind bereits die besten installierten Modelle.</value></data>
-  <data name="SuggestOnlyEmbedding" xml:space="preserve"><value>Der Server listet nur Embedding-Modelle: installieren Sie zuerst ein Chat-Modell.</value></data>
+  <data name="NoChatModelListed" xml:space="preserve"><value>Der Server listet kein Chat-Modell — nur Modelle, die nicht antworten können (Embedding, Reranking). Installieren Sie ein Chat-Modell.</value></data>
   <data name="SuggestNothingListed" xml:space="preserve"><value>Der Server listet kein Modell: nichts vorzuschlagen.</value></data>
   <data name="SuggestChatRecommended" xml:space="preserve"><value>Chat-Modell: {0} — von den Tests von Inferpal empfohlen.</value></data>
   <data name="SuggestChatUsable" xml:space="preserve"><value>Chat-Modell: {0} — das beste installierte; in den Tests von Inferpal als Agent brauchbar.</value></data>
@@ -1926,6 +1926,7 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>rückgängig gemacht, dann geändert — Wiederholen würde diese Änderung verlieren</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>keine Kopie von vor dem Lauf — nicht rückgängig zu machen</value></data>
   <data name="RunPieceUndone" xml:space="preserve"><value>Änderung {0} von {1} ist wieder wie vor dem Lauf. Der vorherige Inhalt der Datei wird zuerst gesichert.</value></data>
+  <data name="RunPieceBrokeSyntax" xml:space="preserve"><value>⚠ Die Datei lässt sich nicht mehr parsen: Zeile {0} ({1}). Gehört diese Änderung zu einer anderen, verwenden Sie Rückgängig oder Wiederholen für beide zusammen.</value></data>
   <data name="RunPieceRedone" xml:space="preserve"><value>Änderung {0} von {1} hat wieder die Version des Laufs. Der vorherige Inhalt der Datei wird zuerst gesichert.</value></data>
   <data name="RunPieceKept" xml:space="preserve"><value>Änderung {0} von {1} wird behalten: Lauf rückgängig machen lässt sie, wie der Lauf sie gemacht hat.</value></data>
   <data name="RunPieceUnchanged" xml:space="preserve"><value>Änderung {0} von {1} ist bereits in diesem Zustand: Es wurde nichts geschrieben.</value></data>

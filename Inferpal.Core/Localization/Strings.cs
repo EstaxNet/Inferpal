@@ -1750,6 +1750,7 @@ internal static class Strings
     public static string RunFileChangedSinceUndoLabel => Get(nameof(RunFileChangedSinceUndoLabel));
     public static string RunFileNoCopyLabel => Get(nameof(RunFileNoCopyLabel));
     public static string RunPieceUndone(int change, string file) => Format(Get(nameof(RunPieceUndone)), change, file);
+    public static string RunPieceBrokeSyntax(int line, string error) => Format(Get(nameof(RunPieceBrokeSyntax)), line, error);
     public static string RunPieceRedone(int change, string file) => Format(Get(nameof(RunPieceRedone)), change, file);
     public static string RunPieceKept(int change, string file) => Format(Get(nameof(RunPieceKept)), change, file);
     public static string RunPieceUnchanged(int change, string file) => Format(Get(nameof(RunPieceUnchanged)), change, file);
@@ -2291,7 +2292,9 @@ internal static class Strings
     public static string ModelRoleDocsSearch => Get(nameof(ModelRoleDocsSearch));
     public static string SuggestReview => Get(nameof(SuggestReview));
     public static string SuggestNoChange => Get(nameof(SuggestNoChange));
-    public static string SuggestOnlyEmbedding => Get(nameof(SuggestOnlyEmbedding));
+    // A server that answers and lists models, none of which can chat: said as such on every screen, never "unreachable?",
+    // "only embeddings" (a reranker is listed too) or "no model installed".
+    public static string NoChatModelListed => Get(nameof(NoChatModelListed));
     public static string SuggestNothingListed => Get(nameof(SuggestNothingListed));
     public static string SuggestChatRecommended(string a) =>
         Format(Get(nameof(SuggestChatRecommended)), a);

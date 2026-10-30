@@ -165,6 +165,8 @@ export interface WvHydrate {
   /** A question meant for the model is in the thread: Regenerate is offered only then. */
   canRegenerate?: boolean;
   models: string[];
+  /** The server lists models, none of which can chat (embedding, reranking). */
+  onlyOtherModels?: boolean;
   model: string;
   busy: boolean;
   stream: string;
@@ -262,7 +264,7 @@ export type ExtToWebview =
   | { type: 'restoreDraft'; text: string }
   /** The model picker's list, re-read from the server when the menu opened; `model`: the window's model, when its
    *  setting changed outside the picker. */
-  | { type: 'models'; models: string[]; model?: string }
+  | { type: 'models'; models: string[]; model?: string; onlyOtherModels?: boolean }
   /** The slash commands, re-read when a command starts being typed. */
   | { type: 'commands'; commands: WvSlashCommand[] }
   /** The first-run card, or null to take it away. */

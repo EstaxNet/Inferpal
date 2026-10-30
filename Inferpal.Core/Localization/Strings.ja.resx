@@ -1481,7 +1481,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ModelRoleDocsSearch" xml:space="preserve"><value>ドキュメント検索</value></data>
   <data name="SuggestReview" xml:space="preserve"><value>提案されたモデルをフォームに入力しました。確認してから保存してください。</value></data>
   <data name="SuggestNoChange" xml:space="preserve"><value>すでにインストール済みの中で最適なモデルです。</value></data>
-  <data name="SuggestOnlyEmbedding" xml:space="preserve"><value>サーバーには埋め込みモデルしかありません。まずチャットモデルをインストールしてください。</value></data>
+  <data name="NoChatModelListed" xml:space="preserve"><value>サーバーにチャットモデルがありません — 応答できないモデル (埋め込み、リランキング) だけです。チャットモデルをインストールしてください。</value></data>
   <data name="SuggestNothingListed" xml:space="preserve"><value>サーバーにモデルがありません。提案できるものはありません。</value></data>
   <data name="SuggestChatRecommended" xml:space="preserve"><value>チャットモデル: {0} — Inferpal のテストで推奨。</value></data>
   <data name="SuggestChatUsable" xml:space="preserve"><value>チャットモデル: {0} — インストール済みで最良。Inferpal のテストではエージェントとして使用可能。</value></data>
@@ -1926,6 +1926,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>元に戻した後に変更あり — やり直すとその変更が失われます</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>実行前のコピーがありません — 元に戻せません</value></data>
   <data name="RunPieceUndone" xml:space="preserve"><value>{1} の変更 {0} を実行前の状態に戻しました。それまでのファイルの内容は先に保存されています。</value></data>
+  <data name="RunPieceBrokeSyntax" xml:space="preserve"><value>⚠ ファイルが解析できなくなりました: {0} 行目 ({1})。この変更が別の変更と対になっている場合は、両方まとめて「元に戻す」か「やり直し」を使ってください。</value></data>
   <data name="RunPieceRedone" xml:space="preserve"><value>{1} の変更 {0} を再び実行後の内容にしました。それまでのファイルの内容は先に保存されています。</value></data>
   <data name="RunPieceKept" xml:space="preserve"><value>{1} の変更 {0} を保持します: 実行の取り消しでも実行後の内容のまま残ります。</value></data>
   <data name="RunPieceUnchanged" xml:space="preserve"><value>{1} の変更 {0} はすでにその状態です: 何も書き込んでいません。</value></data>

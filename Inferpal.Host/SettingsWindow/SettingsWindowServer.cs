@@ -353,6 +353,8 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
             ["Refresh models"]     = Strings.SettingsWindowRefreshModels,
             ["Show all models"]    = Strings.SettingsWindowShowAllModels,
             ["No model listed — is the backend reachable?"] = Strings.ChatNoModelListed,
+            ["The server lists no chat model — only models that cannot answer (embedding, reranking). Install a chat model."] =
+                Strings.NoChatModelListed,
         });
         var page = JsonSerializer.Serialize(new
         {

@@ -68,6 +68,8 @@ let contextWindow = 0;
 // ── Header: model and server · new conversation · conversations · more ──────
 // One button names the model and the server it runs on, with the connection's dot; it opens the model list.
 let models: string[] = [];
+// The server answers with models, none of which can chat: the empty menu says that, not "unreachable?".
+let onlyOtherModels = false;
 let connection: WvBackendStatus | null = null;
 let planMode = false;
 let editorFile: string | null = null;
@@ -150,7 +152,7 @@ function renderModelMenu(): void {
   if (models.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'menu-note';
-    empty.textContent = t('noModelListed');
+    empty.textContent = t(onlyOtherModels ? 'noChatModelListed' : 'noModelListed');
     modelPop.appendChild(empty);
   }
   for (const name of models) {
@@ -3276,6 +3278,9 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
     }
     case 'models': {
       models = msg.models ?? models;
+      if (msg.onlyOtherModels !== undefined) {
+        onlyOtherModels = msg.onlyOtherModels === true;
+      }
       if (msg.model !== undefined) {
         currentModel = msg.model;
         renderModelButton();
@@ -3295,6 +3300,7 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       historyEntries = msg.history ?? [];
       currentModel = msg.model ?? '';
       models = msg.models ?? [];
+      onlyOtherModels = msg.onlyOtherModels === true;
       canRegenerate = msg.canRegenerate === true;
       planMode = msg.planMode === true;
       editorFile = msg.editorFile ?? null;

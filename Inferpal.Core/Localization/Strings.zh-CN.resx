@@ -1481,7 +1481,7 @@
   <data name="ModelRoleDocsSearch" xml:space="preserve"><value>文档搜索</value></data>
   <data name="SuggestReview" xml:space="preserve"><value>建议的模型已填入表单：请检查后保存。</value></data>
   <data name="SuggestNoChange" xml:space="preserve"><value>这些已经是已安装模型中最好的。</value></data>
-  <data name="SuggestOnlyEmbedding" xml:space="preserve"><value>服务器只列出嵌入模型：请先安装一个聊天模型。</value></data>
+  <data name="NoChatModelListed" xml:space="preserve"><value>服务器未列出任何聊天模型 — 只有无法回答的模型（嵌入、重排序）。请安装一个聊天模型。</value></data>
   <data name="SuggestNothingListed" xml:space="preserve"><value>服务器没有列出任何模型：无可建议。</value></data>
   <data name="SuggestChatRecommended" xml:space="preserve"><value>聊天模型：{0} — Inferpal 测试推荐。</value></data>
   <data name="SuggestChatUsable" xml:space="preserve"><value>聊天模型：{0} — 已安装中最好的；在 Inferpal 测试中可用于智能体。</value></data>
@@ -1926,6 +1926,7 @@
   <data name="RunFileChangedSinceUndoLabel" xml:space="preserve"><value>已撤销，之后又被修改 — 重做会丢失这些修改</value></data>
   <data name="RunFileNoCopyLabel" xml:space="preserve"><value>没有运行前的副本 — 无法撤销</value></data>
   <data name="RunPieceUndone" xml:space="preserve"><value>{1} 的第 {0} 处更改已恢复到运行前的状态。文件之前的内容会先保存。</value></data>
+  <data name="RunPieceBrokeSyntax" xml:space="preserve"><value>⚠ 文件已无法解析：第 {0} 行（{1}）。如果此更改与另一处更改相关，请对两者一起使用“撤销”或“重做”。</value></data>
   <data name="RunPieceRedone" xml:space="preserve"><value>{1} 的第 {0} 处更改已重新应用本次运行的版本。文件之前的内容会先保存。</value></data>
   <data name="RunPieceKept" xml:space="preserve"><value>已保留 {1} 的第 {0} 处更改：撤销运行会保持本次运行做出的样子。</value></data>
   <data name="RunPieceUnchanged" xml:space="preserve"><value>{1} 的第 {0} 处更改已经是这个状态：没有写入任何内容。</value></data>

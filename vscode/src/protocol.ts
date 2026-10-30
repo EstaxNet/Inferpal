@@ -854,6 +854,8 @@ export interface SettingsOption {
 
 /** `models/listByKind`: the listed models, split by what each can be picked for. */
 export interface ModelsByKind {
+  /** Every model the server lists, whatever it does (absent from an older host). */
+  listed?: string[];
   /** The chat and every task model: the models a question can be asked of. */
   chat: string[];
   /** Code search: the models recognised as embedding models. */

@@ -358,8 +358,9 @@ internal partial class InferpalToolWindowData
                 ModelChoices.Add(new ModelChoiceItem(name, current: name == ActiveModelLabel, PickModelAsync));
             if (ModelChoices.Count == 0)
             {
-                // Nothing listed: the server is unreachable, or holds no model — never an empty menu that says nothing.
-                ModelMenuNote    = Strings.ChatNoModelListed;
+                // Nothing to chat with: the server is unreachable or holds no model — or answers with models none of which
+                // can chat (embedding, reranking), said as such. Never an empty menu that says nothing.
+                ModelMenuNote    = listed.Listed.Count > 0 ? Strings.NoChatModelListed : Strings.ChatNoModelListed;
                 HasModelMenuNote = true;
             }
         });

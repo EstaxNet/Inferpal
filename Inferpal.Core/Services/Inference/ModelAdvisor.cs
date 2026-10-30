@@ -157,7 +157,7 @@ internal static class ModelAdvisor
         var byKind     = ModelsByKind.Of(installed);
         var chatModels = byKind.Chat;
         var embedding  = byKind.Embedding;
-        if (chatModels.Count == 0) return new([], [], Strings.SuggestOnlyEmbedding);
+        if (chatModels.Count == 0) return new([], [], Strings.NoChatModelListed);
 
         string Current(string key) => current.TryGetValue(key, out var v) ? v?.Trim() ?? "" : "";
         long SizeOf(string? name) =>

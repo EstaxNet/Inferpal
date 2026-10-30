@@ -120,7 +120,10 @@ internal static class AcpSetup
         var models = listed.Chat.ToList();
         if (models.Count == 0)
         {
-            output.WriteLine(Strings.AcpSetupNoModel(InferenceProviderFactory.DisplayName(found)));
+            // Models listed, none that can chat: "no model installed" would send the person to check what they have.
+            output.WriteLine(listed.Listed.Count > 0
+                ? Strings.NoChatModelListed
+                : Strings.AcpSetupNoModel(InferenceProviderFactory.DisplayName(found)));
             return 1;
         }
 

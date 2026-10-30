@@ -207,7 +207,7 @@ public class ModelAdvisorTests
     public void NothingToSuggestFrom_IsSaid()
     {
         Assert.Equal("nothing listed", Suggest([]).Summary);
-        Assert.Equal(Strings.SuggestOnlyEmbedding, Suggest([M("embeddinggemma:300m")]).Summary);
+        Assert.Equal(Strings.NoChatModelListed, Suggest([M("embeddinggemma:300m")]).Summary);
     }
 
     [Fact]
