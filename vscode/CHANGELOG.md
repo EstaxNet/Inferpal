@@ -3,6 +3,25 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.8.8
+
+What you approve is what runs, and the assistant asks before it runs your project's own code.
+
+- **The assistant asks once per workspace before its first build or test run**: both execute what the repository
+  wrote. A `/build` or `/tdd` you run does not ask; a refusal holds for the workspace.
+- **The approval card wraps long lines**, so a command padded with spaces cannot hide its second half off-screen.
+- **An allowed command cannot carry a hidden one**, a repository's MCP server starts what its card shows, writing the
+  files that steer the assistant always asks you, and files your ignore files exclude stay out of reach through a link.
+- **`insert_at_cursor` and `replace_selection` write only into the file you approved**, with the text the card showed.
+- **Edit with AI, `/fix`, `/refactor` and `/doc` apply their change at the right place**, and no longer write the
+  model's sentences into your file.
+- **Your draft survives a change of display language**, a restarted assistant keeps the conversation's session name
+  and its `/template`, and a test file you edit while `/test` works is not replaced.
+- **Semantic search keeps the long pieces of code with a small embedding model**, and a long agent run in Japanese or
+  Chinese no longer overflows the model's context.
+- **Large repositories**: the first index is built in minutes, and searching a JavaScript repository no longer walks
+  `node_modules`.
+
 ## 1.8.7
 
 Your own modes and your repository's, a slow server that says how long it will be, an edit that breaks the syntax

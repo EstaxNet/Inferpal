@@ -158,6 +158,147 @@ public sealed class WorkspaceCodeConsentTests : IDisposable
         Assert.Equal(GetDiagnosticsTool.BuildVerdict.NotBuilt, GetDiagnosticsTool.ReadVerdict(report));
     }
 
+    /// <summary>Answers each card from <paramref name="answer"/>, given the subject and the card's number.</summary>
+    private sealed class Scripted(Func<string?, int, Task<bool>> answer) : IApprovalService
+    {
+        public int Cards;
+        public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null,
+                                               DiffInfo? diff = null, bool forcePrompt = false) =>
+            answer(subject, ++Cards);
+    }
+
+    /// <summary>Refuses every card, through the portable approval base.</summary>
+    private sealed class Refusing(Func<string?> root) : ApprovalServiceBase(new InferpalConfig(), root)
+    {
+        public int Cards;
+        protected override Task<ApprovalDecision> PromptUserAsync(string message, DiffInfo? diff, CancellationToken ct)
+        {
+            Cards++;
+            return Task.FromResult(ApprovalDecision.Deny);
+        }
+    }
+
+    /// <summary>The card a steering note takes away, through the portable approval base.</summary>
+    private sealed class Withdrawing(Func<string?> root) : ApprovalServiceBase(new InferpalConfig(), root)
+    {
+        public int Cards;
+        protected override Task<ApprovalDecision> PromptUserAsync(string message, DiffInfo? diff, CancellationToken ct) =>
+            Task.FromResult(++Cards == 1 ? ApprovalDecision.Withdrawn : ApprovalDecision.Once);
+    }
+
+    /// <summary>⚠ A card a note took away is no answer: remembered as a "No", every later build of the workspace was
+    /// refused for the rest of the session.</summary>
+    [Fact]
+    public async Task AWithdrawnCard_IsNoRefusal_TheNextRunAsksAgain()
+    {
+        var approval = new Withdrawing(() => _current);
+        var consent  = new WorkspaceCodeConsent(approval, () => _current);
+
+        Assert.Equal(WorkspaceCodeConsent.Refusal, await consent.RefusalAsync("run_tests", CancellationToken.None));
+        Assert.Null(await consent.RefusalAsync("run_tests", CancellationToken.None));
+        Assert.Equal(2, approval.Cards);
+    }
+
+    /// <summary>⚠ A rule that denies the card is a refusal, never an exception thrown after a write that happened.</summary>
+    [Fact]
+    public async Task ARuleThatDeniesTheCard_IsARefusal_NotAnException()
+    {
+        var consent = new WorkspaceCodeConsent(
+            new Scripted((_, _) => throw new PermissionDeniedException("denied by rule")), () => _current);
+
+        Assert.Equal(WorkspaceCodeConsent.Refusal, await consent.RefusalAsync("smart_fix_validator", CancellationToken.None));
+    }
+
+    /// <summary>⚠ One workspace's card does not hold another's: an ACP thread on another folder reaches its own card.</summary>
+    [Fact]
+    public async Task OneWorkspacesCard_DoesNotHoldAnothers()
+    {
+        var held     = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var other    = Directory.CreateDirectory(Path.Combine(_root, "elsewhere")).FullName;
+        var approval = new Scripted((subject, n) => n == 1 ? held.Task : Task.FromResult(true));
+        var first    = new WorkspaceCodeConsent(approval, () => _root).RefusalAsync("run_tests", CancellationToken.None);
+
+        try
+        {
+            var second = await new WorkspaceCodeConsent(approval, () => other).RefusalAsync("run_tests", CancellationToken.None)
+                                                                              .WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.Null(second);
+            Assert.Equal(2, approval.Cards);
+        }
+        finally { held.TrySetResult(true); }   // released whatever happened: a held card would hold every later test
+        Assert.Null(await first);
+    }
+
+    /// <summary>⚠ Asked in the middle of a write already approved, a "No" refuses the build, never the write: marked as a
+    /// refused call, what a repository's fixer then rewrote never entered the run.</summary>
+    [Fact]
+    public async Task ANoInTheMiddleOfACall_DoesNotRefuseTheCall()
+    {
+        var approval = new Refusing(() => _current);
+        var bracket  = await WorkTreeBracket.OpenAsync(_root, null, CancellationToken.None);
+        WorkTreeBracket.Enter(bracket);
+        try
+        {
+            // The consent's card, refused, through the approval base — where a refused card marks the call.
+            var consent = new WorkspaceCodeConsent(approval, () => _current);
+            Assert.Equal(WorkspaceCodeConsent.Refusal, await consent.RefusalAsync("smart_fix_validator", CancellationToken.None));
+            Assert.Equal(1, approval.Cards);
+            Assert.False(bracket.Refused);
+
+            // Reference arm: the call's own card, refused, does mark it.
+            await approval.RequestApprovalAsync("write_file", "write", CancellationToken.None, subject: _root, forcePrompt: true);
+            Assert.True(bracket.Refused);
+        }
+        finally { WorkTreeBracket.Enter(null!); }
+    }
+
+    /// <summary>The person's own run of their tests (/test coverage) is their agreement.</summary>
+    [Fact]
+    public async Task ThePersonsOwnCoverageRun_IsTheirAgreement()
+    {
+        var approval = new Asking(() => _current, answer: false);
+        WorkspaceCodeConsent.NoteThePersonsRun(_root);
+
+        Assert.Null(await new WorkspaceCodeConsent(approval, () => _current).RefusalAsync("smart_fix_validator", CancellationToken.None));
+        Assert.Equal(0, approval.Cards);
+        Assert.Contains("WorkspaceCodeConsent.NoteThePersonsRun(root);",
+            ConventionCoverageTests.CodeOnly(Path.Combine(ConventionCoverageTests.RepoRoot(), "Inferpal.Core", "Services",
+                                                          "Commands", "TestCoverageCommandHandler.cs")), StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// ⚠ A batch asks every card before any check runs: asked between two checks, the consent card read the work tree
+    /// again after a repository's fixer had rewritten files, which then never entered the run.
+    /// </summary>
+    [Fact]
+    public async Task ABatchAsksEveryCard_BeforeAnyCheckRuns()
+    {
+        Directory.CreateDirectory(Path.Combine(_root, ".inferpal"));
+        File.WriteAllText(Path.Combine(_root, ".inferpal", "validators.json"),
+                          """{ ".ts": { "command": "echo fixed > fixed.txt", "marker": "package.json" } }""");
+        File.WriteAllText(Path.Combine(_root, "package.json"), "{}");
+        File.WriteAllText(Path.Combine(_root, "App.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\" />");
+        var ts = Path.Combine(_root, "a.ts");
+        var cs = Path.Combine(_root, "A.cs");
+        File.WriteAllText(ts, "let a = 1;");
+        File.WriteAllText(cs, "class A {}");
+        var fixedFile = Path.Combine(_root, "fixed.txt");
+        bool? fixerHadRun = null;
+        var approval = new Scripted((subject, _) =>
+        {
+            if (subject is not null && subject.Contains("echo", StringComparison.Ordinal)) return Task.FromResult(true);
+            fixerHadRun = File.Exists(fixedFile);   // the consent card: has a check already run?
+            return Task.FromResult(false);
+        });
+        var validator = new SmartFixValidator(new InferpalConfig { SmartFixEnabled = true }, () => _root, approval,
+                                              new WorkspaceCodeConsent(approval, () => _root));
+
+        await validator.ValidateManyAsync([ts, cs], CancellationToken.None);
+
+        Assert.False(fixerHadRun);                  // asked before the fixer ran
+        Assert.True(File.Exists(fixedFile));        // witness: the approved fixer did run, afterwards
+    }
+
     /// <summary>The registry the model calls through asks — what wires the card to the model's tools.</summary>
     [Fact]
     public async Task TheModelsRegistry_AsksBeforeARun()

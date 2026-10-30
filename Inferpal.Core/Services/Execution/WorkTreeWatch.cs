@@ -628,6 +628,25 @@ internal sealed class WorkTreeBracket
     /// <summary>Notes, for the call in this flow, something it cannot cover.</summary>
     public static void NoteUncovered(UncoveredReason reason) => Current?._notes.Add(new UncoveredNote(reason));
 
+    private static readonly AsyncLocal<bool> _aside = new();
+
+    /// <summary>Whether the card asked now is aside from the call's own approval (<see cref="Aside"/>).</summary>
+    public static bool IsAside => _aside.Value;
+
+    /// <summary>Marks the cards asked until it is disposed as aside from the call's own approval — a question within a call
+    /// already approved: their answer neither refuses the call nor restarts its watch.</summary>
+    public static IDisposable Aside()
+    {
+        var before = _aside.Value;
+        _aside.Value = true;
+        return new AsideScope(before);
+    }
+
+    private sealed class AsideScope(bool before) : IDisposable
+    {
+        public void Dispose() => _aside.Value = before;
+    }
+
     /// <summary>Marks the call in this flow as refused (<see cref="Refused"/>).</summary>
     public static void NoteRefused()
     {

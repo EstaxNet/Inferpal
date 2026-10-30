@@ -74,8 +74,10 @@ internal sealed class SmartFixValidator
         bool approved;
         try
         {
-            approved = await _approval.RequestApprovalAsync(
-                "smart_fix_validator", command, ct, subject: command, diff: null, forcePrompt: true);
+            // Asked within the write already approved: a "No" to the check is not a refused write.
+            using (WorkTreeBracket.Aside())
+                approved = await _approval.RequestApprovalAsync(
+                    "smart_fix_validator", command, ct, subject: command, diff: null, forcePrompt: true);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
@@ -139,14 +141,21 @@ internal sealed class SmartFixValidator
         var notes = new List<string>();
         var skipped = 0;
 
+        var targets = new List<Target>();
         foreach (var path in writtenFilePaths)
         {
             if (ResolveTarget(path) is not { } target) continue;
             if (!seen.Add(target.ProjectDir + "\n<>\n" + target.Command)) continue;
             if (seen.Count > MaxBatchTargets) { skipped++; continue; }
-
-            if (await RunTargetAsync(target, ct) is { Length: > 0 } note) notes.Add(note);
+            targets.Add(target);
         }
+
+        // ⚠ Every card before any check runs: asked between two checks, a card read the work tree again after a
+        // repository's fixer had rewritten files — and those files never entered the run.
+        var gates = new List<string?>();
+        foreach (var target in targets) gates.Add(await GateAsync(target, ct));
+        for (var i = 0; i < targets.Count; i++)
+            if ((gates[i] ?? await ExecuteAsync(targets[i], ct)) is { Length: > 0 } note) notes.Add(note);
 
         if (skipped > 0)
             notes.Add(Strings.SmartFixBatchCapped(MaxBatchTargets, skipped));
@@ -169,13 +178,18 @@ internal sealed class SmartFixValidator
         return new Target(validator, projectDir, validator.Command.Replace("{project}", projectFile));
     }
 
-    private async Task<string?> RunTargetAsync(Target target, CancellationToken ct)
+    private async Task<string?> RunTargetAsync(Target target, CancellationToken ct) =>
+        await GateAsync(target, ct) is { } instead ? (instead.Length == 0 ? null : instead) : await ExecuteAsync(target, ct);
+
+    /// <summary>Whether <paramref name="target"/> may run — <c>null</c> when it may — asking what needs asking; otherwise
+    /// what the check answers instead (empty: nothing to say).</summary>
+    private async Task<string?> GateAsync(Target target, CancellationToken ct)
     {
-        var (validator, projectDir, command) = target;
+        var (validator, _, command) = target;
 
         // Safety: never auto-run a catastrophic command sourced from a (possibly committed)
         // validators.json. Shares the built-in hard denylist with the approval policy (axe 1).
-        if (PermissionPolicy.IsHardDenied(command)) return null;
+        if (PermissionPolicy.IsHardDenied(command)) return string.Empty;
 
         // ⚠ A validator from `.inferpal/validators.json` was written by the REPOSITORY, and Smart
         // Fix runs it by itself after a write — so cloning a repository and letting the agent touch
@@ -186,10 +200,16 @@ internal sealed class SmartFixValidator
         // command. ⚠ The built-in validators' commands are ours (dotnet, tsc, cargo, go), but what they build is not: a
         // project file's targets, a build.rs — asked once per workspace, like every build the assistant starts.
         if (validator.FromWorkspace && !await ApproveWorkspaceCommandAsync(command, ct))
-            return null;
+            return string.Empty;
         if (!validator.FromWorkspace && _consent is not null && await _consent.RefusalAsync("smart_fix_validator", ct) is { } refused)
             return refused;
+        return null;
+    }
 
+    /// <summary>Runs <paramref name="target"/>'s check, its gate passed.</summary>
+    private async Task<string?> ExecuteAsync(Target target, CancellationToken ct)
+    {
+        var (validator, projectDir, command) = target;
         try
         {
             var (exitCode, output, timedOut) = await Run(command, projectDir, ct);

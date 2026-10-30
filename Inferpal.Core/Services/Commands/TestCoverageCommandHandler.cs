@@ -90,6 +90,8 @@ internal static class TestCoverageCommandHandler
         IInferenceProvider client, InferpalConfig config, IToolRegistry tools, FileHistoryService history,
         ICoverageEcosystem ecosystem, string root, string folder, string work, Action<string>? onProgress, CancellationToken ct)
     {
+        // The person's /test coverage runs their tests: their agreement, never the assistant's card in its middle.
+        WorkspaceCodeConsent.NoteThePersonsRun(root);
         var where = folder.Length == 0 ? Strings.CoverageWorkspace : $"`{folder}`";
         var header = Strings.CoverageHeader(ecosystem.Name, where);
 

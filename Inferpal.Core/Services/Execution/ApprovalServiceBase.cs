@@ -186,6 +186,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
         // ⚠ Counted only as an ANSWER: a card retired with its stopped run resolves denied, a card a note took away is
         // withdrawn, and one refusal keeps a rule out of the suggestions for good.
         var withdrawn = promptDecision == ApprovalDecision.Withdrawn;
+        if (withdrawn && WithdrawalSeen.Value is { } seen) seen.Value = true;
         if (withdrawn) promptDecision = ApprovalDecision.Deny;
         if (rule is not null && !ct.IsCancellationRequested && !withdrawn)
         {
@@ -194,11 +195,29 @@ internal abstract class ApprovalServiceBase : IApprovalService
         }
 
         // ⚠ A card can wait for minutes, and the person edits and saves meanwhile: those changes are not the call's. Its
-        // watch of the work tree starts again from the moment it was approved — here, where every approval passes.
-        if (promptDecision == ApprovalDecision.Deny) WorkTreeBracket.NoteRefused();
+        // watch of the work tree starts again from the moment it was approved — here, where every approval passes. A card
+        // asked aside from the call's own (WorkTreeBracket.Aside) changes neither.
+        if (WorkTreeBracket.IsAside) { }
+        else if (promptDecision == ApprovalDecision.Deny) WorkTreeBracket.NoteRefused();
         else if (WorkTreeBracket.Current is { } watch) await watch.ReadAgainAsync(ct);
 
         return promptDecision != ApprovalDecision.Deny;
+    }
+
+    private static readonly AsyncLocal<System.Runtime.CompilerServices.StrongBox<bool>?> WithdrawalSeen = new();
+
+    /// <summary>Marks <paramref name="seen"/> when the card asked in this flow is withdrawn — a note took it away —
+    /// rather than answered: the call reads false either way, and a caller that remembers the answer must not.</summary>
+    internal static IDisposable NotingWithdrawal(System.Runtime.CompilerServices.StrongBox<bool> seen)
+    {
+        var before = WithdrawalSeen.Value;
+        WithdrawalSeen.Value = seen;
+        return new Restoring(() => WithdrawalSeen.Value = before);
+    }
+
+    private sealed class Restoring(Action restore) : IDisposable
+    {
+        public void Dispose() => restore();
     }
 
     /// <summary>The editor draws an input card now (<see cref="IApprovalService.CanAskForInput"/>). False by default.</summary>
