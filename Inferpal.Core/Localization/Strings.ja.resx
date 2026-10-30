@@ -279,7 +279,7 @@
   <data name="ContextPartTools" xml:space="preserve"><value>ツール定義: 約 {0} トークン — 有効なツールを減らす</value></data>
   <data name="ContextPartToolsMcp" xml:space="preserve"><value>ツール定義: 約 {0} トークン（うち MCP サーバーのツール {2} 個で約 {1}）— 有効なツールを減らす（まずそれらのサーバーのツールから）</value></data>
   <data name="ContextPartSystem" xml:space="preserve"><value>システムプロンプト: 約 {0} トークン — ピン留めしたファイル、プロジェクトコンテキスト、メモリ、ルール</value></data>
-  <data name="ContextPartEarlier" xml:space="preserve"><value>これまでの会話: 約 {0} トークン — /clear で新しい会話を開始</value></data>
+  <data name="ContextPartEarlier" xml:space="preserve"><value>これまでの会話: 約 {0} トークン — 新しい会話を始めると含まれません</value></data>
   <data name="ContextPartLast" xml:space="preserve"><value>最後のメッセージ: 約 {0} トークン — 添付ファイル、貼り付けたコード</value></data>
   <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>{0} の {1} に接続できません
 
@@ -329,7 +329,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="DebugEvaluateCancelled" xml:space="preserve"><value>式は評価されませんでした（ユーザーが拒否しました）。</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>変更を適用：{0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>ユーザーによって変更がキャンセルされました。</value></data>
-  <data name="ProjectCodeConsent" xml:space="preserve"><value>このワークスペース自身のコードを実行しますか ({0})? ビルドやテストの実行は、リポジトリが書いたもの (ビルドターゲット、テストスクリプト、独自の Python 環境) を実行します。このワークスペースでは一度だけ確認します。</value></data>
+  <data name="ProjectCodeConsent" xml:space="preserve"><value>このワークスペース自身のコードを実行しますか ({0})? ビルドやテストの実行は、リポジトリが書いたもの (ビルドターゲット、テストスクリプト、独自の Python 環境) を実行します。このワークスペースでは一度確認し、再起動後にもう一度確認します。</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>{0} で old_content が見つかりません。スペース、改行、インデントを確認してください。</value></data>
   <data name="DiffAmbiguous" xml:space="preserve"><value>old_content が {1} で {0} 回見つかりました。一致を一意にするためにより多くのコンテキストを提供してください。</value></data>
   <data name="DiffOk" xml:space="preserve"><value>{0} で変更を適用しました。</value></data>
@@ -1398,7 +1398,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ApprovalUseTool" xml:space="preserve"><value>{0} を使用</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>{0} 行</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>… ほか {0} 行</value></data>
-  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>エディターを再起動するまで、確認せずに {0} を許可します。</value></data>
+  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>このワークスペースで、再起動するか別のワークスペースを開くまで、確認せずに {0} を許可します。</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>差分を開く</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>新しい会話</value></data>
   <data name="ChatConversations" xml:space="preserve"><value>会話</value></data>

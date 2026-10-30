@@ -76,7 +76,8 @@ internal sealed class AgentOrchestrator
     // read-only tools: read_file / run_tests / get_diagnostics are read-only but their results
     // DO change after an intervening write_file or apply_diff — serving a cached copy there
     // feeds the model stale state in the very edit → verify cycle the loop policy tolerates.
-    // (search_codebase qualifies because background indexing is paused during interactive runs.)
+    // (search_codebase qualifies because background indexing is paused during interactive runs on a GPU the chat shares;
+    // an answer given while the index is not ready or still being built is never cached: SemanticSearchTool.IsProvisional.)
     private static readonly HashSet<string> CacheableTools = new(StringComparer.OrdinalIgnoreCase)
     {
         "fetch_url", "web_search", "search_docs", "search_codebase",
@@ -91,9 +92,9 @@ internal sealed class AgentOrchestrator
     /// cache, the person who says "fetch it now" gets "Cancelled by user." again, with no card.
     /// </summary>
     internal static bool IsAnAnswer(string result) =>
-        !result.StartsWith("Error:", StringComparison.Ordinal)
-        && result != ToolFailure.CancelledByUser
-        && result != Strings.WebSearchRefused;
+        !ToolFailure.IsFailure(result)
+        && result != Strings.WebSearchRefused
+        && !SemanticSearchTool.IsProvisional(result);
 
     /// <summary>The plan request, followed by the names of the tools the run can call.</summary>
     /// <remarks>

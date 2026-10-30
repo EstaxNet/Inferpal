@@ -19,6 +19,27 @@ public class AgentLoopPolicyTests
         return list;
     }
 
+    /// <summary>A syntax refusal is forgiven only when it offers the pass (within a run): outside one, the same edit is
+    /// refused every time, and forgiving it would never let the repeat count as a loop.</summary>
+    [Fact]
+    public async Task ASyntaxRefusal_IsForgiven_OnlyWhenItOffersThePass()
+    {
+        Inferpal.Services.Tools.SyntaxGuard.ResetForTests();
+        var batch = Batch(("write_file", """{"path":"A.cs","content":"class A {"}"""));
+        var inRun = await Inferpal.Services.Tools.SyntaxGuard.RefusalAsync("A.cs", null, "class A {", null, "run-1", CancellationToken.None);
+        var outside = await Inferpal.Services.Tools.SyntaxGuard.RefusalAsync("A.cs", null, "class A {", null, null, CancellationToken.None);
+
+        var counts = new Dictionary<string, int>();
+        Assert.False(AgentLoopPolicy.IsLoop(counts, batch));
+        AgentLoopPolicy.Forgive(counts, batch, [inRun!]);
+        Assert.False(AgentLoopPolicy.IsLoop(counts, batch));    // forgiven: the repeat is what the refusal asked for
+
+        counts.Clear();
+        Assert.False(AgentLoopPolicy.IsLoop(counts, batch));
+        AgentLoopPolicy.Forgive(counts, batch, [outside!]);
+        Assert.True(AgentLoopPolicy.IsLoop(counts, batch));     // no pass offered: the repeat is a loop
+    }
+
     [Fact]
     public void MutatingBatch_AbortsOnFirstRepeat()
     {

@@ -46,7 +46,7 @@ internal class DeleteFileTool : ITool
         if (FileTarget.UnsavedRefusal(_overlay, path) is { } unsaved) return unsaved;
 
         if (!File.Exists(path))
-            return Strings.ToolFileNotFound(path);
+            return ToolFailure.Said(Strings.ToolFileNotFound(path));
 
         // Show what is being removed in the approval prompt, as the change it is (best-effort: skip for binary/locked files).
         var shown   = ApprovedFile.Unread(path);

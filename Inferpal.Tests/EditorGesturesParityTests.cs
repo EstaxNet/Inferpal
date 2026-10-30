@@ -65,7 +65,8 @@ public class EditorGesturesParityTests
         // No key of its own in VS Code: Ctrl/Cmd+Shift+I is already the developer tools' and another assistant's chat
         // there — Edit with AI is in the editor's menu and the palette, and anyone binds the key they want.
         Assert.False(keys.ContainsKey("inferpal.editSelection"), "Edit with AI takes a key VS Code's users already have");
-        Assert.Equal("alt+m", keys["inferpal.map"]);
+        // Nor /map: an Alt+letter is a menu's access key in some language (NoCommand_TakesAnAltLetter_InEitherEditor).
+        Assert.False(keys.ContainsKey("inferpal.map"), "/map takes a key VS Code's users already have");
 
         var extension = WebviewRebuildTests.TsCode("extension.ts");
         Assert.Contains("registerCommand('inferpal.explainSelection', () => chatView.runSlashCommand('/explain'))", extension, StringComparison.Ordinal);

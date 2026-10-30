@@ -51,7 +51,7 @@ internal class ReadFileTool : ITool
             case Target.Directory:
                 return $"'{path}' is a directory, not a file — list what it holds with list_files.";
             case Target.Missing:
-                return Strings.ToolFileNotFound(path);
+                return ToolFailure.Said(Strings.ToolFileNotFound(path));
             // Named, not dumped: read as text, a .dll was thousands of characters of NULs and noise read as content.
             case Target.Binary:
                 return $"'{Path.GetFileName(path)}' is a binary file ({new FileInfo(path).Length} bytes): its content is not "

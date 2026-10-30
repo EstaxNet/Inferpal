@@ -107,11 +107,13 @@ internal static class AgentLoopPolicy
     /// (<paramref name="results"/>): the refusal asks for the same edit again when the code is valid for the project,
     /// and that repeat, stopped as a loop before it ran, would never be written.
     /// </summary>
-    /// <remarks>Never a loop for all that: the guard lets an edit through once it was refused, so the repeat is written
-    /// or refused for another reason, and a third identical batch counts as a repeat again.</remarks>
+    /// <remarks>Never a loop for all that: within a run the guard lets an edit through once it was refused, so the repeat
+    /// is written or refused for another reason, and a third identical batch counts as a repeat again. ⚠ Only a refusal
+    /// that OFFERS the pass is forgiven: outside a run (a <c>/task</c>) the same edit is refused every time, and forgiven
+    /// it would never be counted — the task would run to its iteration limit holding the GPU.</remarks>
     internal static void Forgive(Dictionary<string, int> counts, IReadOnlyList<ToolCallDto> calls, IEnumerable<string> results)
     {
-        if (results.Any(SyntaxGuard.Refused) && Key(calls) is { } sig) counts.Remove(sig);
+        if (results.Any(SyntaxGuard.OffersPass) && Key(calls) is { } sig) counts.Remove(sig);
     }
 
     /// <summary>The batch's key in the counts — <c>null</c> when every call advances.</summary>

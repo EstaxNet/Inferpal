@@ -279,7 +279,7 @@ Verkleinern Sie den größten Teil oder laden Sie das Modell mit einem größere
   <data name="ContextPartTools" xml:space="preserve"><value>Werkzeugdefinitionen: ~{0} Tokens — weniger aktivierte Werkzeuge</value></data>
   <data name="ContextPartToolsMcp" xml:space="preserve"><value>Werkzeugdefinitionen: ~{0} Tokens, davon ~{1} für {2} {2:Werkzeug|Werkzeuge} von MCP-Servern — weniger aktivierte Werkzeuge, zuerst die dieser Server</value></data>
   <data name="ContextPartSystem" xml:space="preserve"><value>System-Prompt: ~{0} Tokens — angeheftete Dateien, Projektkontext, Gedächtnis, Regeln</value></data>
-  <data name="ContextPartEarlier" xml:space="preserve"><value>bisherige Unterhaltung: ~{0} Tokens — /clear beginnt eine neue</value></data>
+  <data name="ContextPartEarlier" xml:space="preserve"><value>bisherige Unterhaltung: ~{0} Tokens — eine neue Unterhaltung beginnen, um sie wegzulassen</value></data>
   <data name="ContextPartLast" xml:space="preserve"><value>letzte Nachricht: ~{0} Tokens — angehängte Dateien, eingefügter Code</value></data>
   <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>{1} unter {0} nicht erreichbar
 
@@ -329,7 +329,7 @@ Fortfahren?</value></data>
   <data name="DebugEvaluateCancelled" xml:space="preserve"><value>Ausdruck nicht ausgewertet (vom Benutzer abgelehnt).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Änderung anwenden auf: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Änderung vom Benutzer abgebrochen.</value></data>
-  <data name="ProjectCodeConsent" xml:space="preserve"><value>Den eigenen Code dieses Arbeitsbereichs ausführen ({0})? Ein Build oder Testlauf führt aus, was das Repository geschrieben hat: seine Build-Ziele, seine Testskripte, seine eigene Python-Umgebung. Wird einmal für diesen Arbeitsbereich gefragt.</value></data>
+  <data name="ProjectCodeConsent" xml:space="preserve"><value>Den eigenen Code dieses Arbeitsbereichs ausführen ({0})? Ein Build oder Testlauf führt aus, was das Repository geschrieben hat: seine Build-Ziele, seine Testskripte, seine eigene Python-Umgebung. Wird einmal für diesen Arbeitsbereich gefragt, nach einem Neustart erneut.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content in {0} nicht gefunden. Überprüfen Sie Leerzeichen, Zeilenumbrüche und Einrückung.</value></data>
   <data name="DiffAmbiguous" xml:space="preserve"><value>old_content {0}-mal in {1} gefunden. Geben Sie mehr Kontext an, um die Übereinstimmung eindeutig zu machen.</value></data>
   <data name="DiffOk" xml:space="preserve"><value>Änderung in {0} angewendet.</value></data>
@@ -1398,7 +1398,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="ApprovalUseTool" xml:space="preserve"><value>{0} verwenden</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>{0} {0:Zeile|Zeilen}</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>… {0} {0:weitere Zeile|weitere Zeilen}</value></data>
-  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Erlaubt {0} ohne Rückfrage bis zum Neustart des Editors.</value></data>
+  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Erlaubt {0} ohne Nachfrage in diesem Arbeitsbereich, bis zu einem Neustart oder bis ein anderer Arbeitsbereich geöffnet wird.</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>Diff öffnen</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>Neue Unterhaltung</value></data>
   <data name="ChatConversations" xml:space="preserve"><value>Unterhaltungen</value></data>

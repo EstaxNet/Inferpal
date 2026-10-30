@@ -189,7 +189,7 @@ public class AgentLoopRegressionTests
     {
         var runs = 0;
         var tools = new StubRegistry("write_file", () => Task.FromResult(++runs == 1
-            ? Inferpal.Services.Tools.SyntaxGuard.RefusalMarker + "a.cs at line 3 (CS1513: } expected). Send the same edit again."
+            ? Inferpal.Services.Tools.SyntaxGuard.RefusalMarker + "a.cs at line 3 (CS1513: } expected). Nothing was written." + Inferpal.Services.Tools.SyntaxGuard.PassOffered
             : "written"));
         var client = new RecordingClient(
         [
@@ -203,6 +203,29 @@ public class AgentLoopRegressionTests
 
         Assert.Equal(2, runs);
         Assert.False(result.WasLoopDetected);
+    }
+
+    /// <summary>The run's cache serves a repeat only when the first answer was one: a search made while the index was
+    /// not ready is asked again, and reaches the tool (SemanticSearchTool.IsProvisional).</summary>
+    [Fact]
+    public async Task ARepeatedSearch_AfterANotReadyAnswer_ReachesTheToolAgain()
+    {
+        var runs = 0;
+        var tools = new StubRegistry("search_codebase", () => Task.FromResult(++runs == 1
+            ? "Index not built.\n\nUntil the index is ready, search_in_files finds exact text or a regex across the project "
+              + "without it, and read_file reads what it finds."
+            : "OrderService.cs:3 — public int Total() => 1;"));
+        var client = new RecordingClient(
+        [
+            Plan(1),
+            Call("search_codebase", """{"query":"order total"}"""),
+            Call("search_codebase", """{"query":"order total"}"""),
+            Text("done"),
+        ]);
+
+        await RunAsync(client, tools, [new("system", "sys"), new("user", "question")]);
+
+        Assert.Equal(2, runs);
     }
 
     /// <summary>

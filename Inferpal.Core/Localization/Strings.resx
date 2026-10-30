@@ -280,7 +280,7 @@ Reduce the largest part, or load the model with a larger context (more than ~{0}
   <data name="ContextPartTools" xml:space="preserve"><value>tool definitions: ~{0} tokens — fewer enabled tools</value></data>
   <data name="ContextPartToolsMcp" xml:space="preserve"><value>tool definitions: ~{0} tokens, ~{1} of them for {2} MCP server {2:tool|tools} — fewer enabled tools, starting with those servers' tools</value></data>
   <data name="ContextPartSystem" xml:space="preserve"><value>system prompt: ~{0} tokens — pinned files, project context, memory, rules</value></data>
-  <data name="ContextPartEarlier" xml:space="preserve"><value>earlier conversation: ~{0} tokens — /clear starts a new one</value></data>
+  <data name="ContextPartEarlier" xml:space="preserve"><value>earlier conversation: ~{0} tokens — start a new conversation to leave it out</value></data>
   <data name="ContextPartLast" xml:space="preserve"><value>last message: ~{0} tokens — attached files, pasted code</value></data>
   <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>Cannot reach {1} at {0}
 
@@ -330,7 +330,7 @@ Continue?</value></data>
   <data name="DebugEvaluateCancelled" xml:space="preserve"><value>Expression not evaluated (declined by user).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Apply change to: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Change cancelled by user.</value></data>
-  <data name="ProjectCodeConsent" xml:space="preserve"><value>Run this workspace's own code ({0})? A build or a test run executes what the repository wrote: its build targets, its test scripts, its own Python environment. Asked once for this workspace.</value></data>
+  <data name="ProjectCodeConsent" xml:space="preserve"><value>Run this workspace's own code ({0})? A build or a test run executes what the repository wrote: its build targets, its test scripts, its own Python environment. Asked once for this workspace, and again after a restart.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content not found in {0}. Check spaces, line breaks and indentation.</value></data>
   <data name="DiffAmbiguous" xml:space="preserve"><value>old_content found {0} times in {1}. Provide more context to make the match unique.</value></data>
   <data name="DiffOk" xml:space="preserve"><value>Change applied in {0}.</value></data>
@@ -1402,7 +1402,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="ApprovalUseTool" xml:space="preserve"><value>Use {0}</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>{0} {0:line|lines}</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>… {0} more {0:line|lines}</value></data>
-  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Allows {0} without asking until the editor restarts.</value></data>
+  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Allows {0} without asking in this workspace, until a restart or until another workspace opens.</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>Open diff</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>New conversation</value></data>
   <data name="ChatConversations" xml:space="preserve"><value>Conversations</value></data>

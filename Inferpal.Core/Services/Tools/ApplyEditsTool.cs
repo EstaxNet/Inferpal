@@ -88,7 +88,7 @@ internal sealed class ApplyEditsTool : ITool
         if (!args.Has("edits"))
             return Strings.ApplyEditsEmpty;
         if (!args.Array("edits", out var editsEl))
-            return Strings.ApplyEditsAborted("'edits' must be an array of edit objects");
+            return ToolFailure.Said(Strings.ApplyEditsAborted("'edits' must be an array of edit objects"));
 
         var root  = _getWorkspaceRoot();
         var edits = new List<Edit>();
@@ -148,7 +148,7 @@ internal sealed class ApplyEditsTool : ITool
                 if (FileTarget.DirectoryRefusal(edit.Path) is { } isDirectory) return isDirectory;
                 if (FileTarget.UnsavedRefusal(_overlay, edit.Path) is { } unsaved) return unsaved;
                 if (GeneratedFiles.EditRefusal(edit.Path) is { } generated) return generated;
-                if (!File.Exists(edit.Path)) return Strings.ToolFileNotFound(edit.Path);
+                if (!File.Exists(edit.Path)) return ToolFailure.Said(Strings.ToolFileNotFound(edit.Path));
                 var content = await TextFileEncoding.ReadTextAsync(edit.Path, ct);
                 current[edit.Path]  = content;
                 original[edit.Path] = content;
@@ -172,14 +172,14 @@ internal sealed class ApplyEditsTool : ITool
                              .Select(kv => kv.Key).ToList();
         if (changed.Count == 0) return Strings.ApplyEditsOk(edits.Count, 0);
         foreach (var p in changed)
-            if (FileTarget.EncodingRefusal(p, current[p]) is { } cannotHold) return Strings.ApplyEditsAborted(cannotHold);
+            if (FileTarget.EncodingRefusal(p, current[p]) is { } cannotHold) return ToolFailure.Said(Strings.ApplyEditsAborted(cannotHold));
         // All or nothing, like every other refusal of the batch: one file left unparsable refuses them all. ⚠ Every file
         // is judged, never up to the first refusal: each refusal is let through once sent again, so the same batch sent
         // again passes whole instead of being refused file after file.
         var broken = new List<string>();
         foreach (var p in changed)
-            if (await SyntaxGuard.RefusalAsync(p, original[p], current[p], root, ct) is { } refusal) broken.Add(refusal);
-        if (broken.Count > 0) return Strings.ApplyEditsAborted(string.Join("\n", broken));
+            if (await SyntaxGuard.RefusalAsync(p, original[p], current[p], root, _history.CurrentRunId, ct) is { } refusal) broken.Add(refusal);
+        if (broken.Count > 0) return ToolFailure.Said(Strings.ApplyEditsAborted(string.Join("\n", broken)));
 
         // ── Approval: one prompt with the combined diff across files ───────────
         var details = BuildApprovalDetails(root, changed, original, current);
@@ -194,7 +194,7 @@ internal sealed class ApplyEditsTool : ITool
             return Strings.DiffCancelled;
         // Before the first backup: the batch stays all or nothing.
         if (await FileTarget.ChangedSinceApprovalAsync(_overlay, changed.Select(p => new ApprovedFile(p, original[p])), ct) is { } typedMeanwhile)
-            return Strings.ApplyEditsAborted(typedMeanwhile);
+            return ToolFailure.Said(Strings.ApplyEditsAborted(typedMeanwhile));
 
         // ── Phase 2: back up EVERY file, then write (all edits already validated) ─
         // A backup that cannot be saved stops the batch before anything is written.
@@ -217,7 +217,7 @@ internal sealed class ApplyEditsTool : ITool
         {
             var reason = $"writing {RelPath(root, write.FailedPath!)} failed ({write.Error})";
             return write.Stuck.Count == 0
-                ? Strings.ApplyEditsAborted(reason)
+                ? ToolFailure.Said(Strings.ApplyEditsAborted(reason))
                 : $"Error: {reason}, and {string.Join(", ", write.Stuck.Select(s => RelPath(root, s)))} "
                   + "could not be put back — restore it with restore_file.";
         }
@@ -262,10 +262,10 @@ internal sealed class ApplyEditsTool : ITool
     /// </remarks>
     private static string Aborted(int failed, int total, string reason)
     {
-        if (total <= 1) return Strings.ApplyEditsAborted(reason);
+        if (total <= 1) return ToolFailure.Said(Strings.ApplyEditsAborted(reason));
         var others = string.Join(", ", Enumerable.Range(1, total).Where(i => i != failed).Select(i => $"#{i}"));
-        return Strings.ApplyEditsAborted(
+        return ToolFailure.Said(Strings.ApplyEditsAborted(
             $"{reason}; the other {total - 1} edit(s) ({others}) were not written either. "
-            + $"Send all {total} edits again in one apply_edits call, with edit #{failed} corrected");
+            + $"Send all {total} edits again in one apply_edits call, with edit #{failed} corrected"));
     }
 }

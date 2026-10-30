@@ -246,7 +246,7 @@ internal class GetDiagnosticsTool : ITool
 
         // A folder is what `dotnet build` resolves itself — the project it holds, or an error naming the ambiguity.
         if (!File.Exists(path) && !Directory.Exists(path))
-            return Strings.ToolFileNotFound(path);
+            return ToolFailure.Said(Strings.ToolFileNotFound(path));
 
         // ⚠ `dotnet build` of anything but a solution or a project answers MSB4025 AT LINE 1 OF THAT FILE: given a
         // package.json or a pyproject.toml, the report reads "1 error(s) — package.json", an invitation to "fix" a file

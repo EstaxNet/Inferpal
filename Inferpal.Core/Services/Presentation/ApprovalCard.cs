@@ -16,7 +16,8 @@ internal sealed record ApprovalPreviewLine(string Kind, string Text);
 /// <summary>An approval as a card in the chat: what will happen, to what, and the start of the change.</summary>
 /// <param name="Meta">"12 lines" for a new file, "+4 −2" for a change, empty otherwise.</param>
 /// <param name="More">"… 6 more lines" when the preview stops before the change does; empty otherwise.</param>
-/// <param name="AlwaysTooltip">What "Always this session" grants: this tool, without asking, until the editor restarts.</param>
+/// <param name="AlwaysTooltip">What "Always this session" grants: this tool, without asking, in this workspace, until a
+/// restart or until another workspace opens.</param>
 /// <param name="RuleLabel">The button of the narrow rule ("Always: commands that start with `dotnet test`"); empty when
 /// the card offers none.</param>
 /// <param name="RuleTooltip">What that button writes, the rule spelled out; empty when none.</param>

@@ -18,8 +18,8 @@ public class SyntaxGuardTests
         SyntaxGuard.Deadline = TimeSpan.FromSeconds(30);   // a cold interpreter under the suite's load
     }
 
-    private static Task<string?> Refusal(string path, string? before, string after) =>
-        SyntaxGuard.RefusalAsync(path, before, after, root: null, CancellationToken.None);
+    private static Task<string?> Refusal(string path, string? before, string after, string? run = "run-a") =>
+        SyntaxGuard.RefusalAsync(path, before, after, root: null, run, CancellationToken.None);
 
     [Fact]
     public async Task ACSharpEditThatBreaksTheSyntax_IsRefused_WithItsLine()
@@ -40,12 +40,33 @@ public class SyntaxGuardTests
         Assert.NotNull(await Refusal("Again.cs", Ok, broken + "// another try\n"));   // a different edit is judged again
     }
 
+    /// <summary>The pass belongs to the run that was refused: a Regenerate, another thread or a task is judged again.</summary>
+    [Fact]
+    public async Task TheSameEditInAnotherRun_IsRefusedAgain()
+    {
+        const string broken = "class Other { void M() { }";
+        Assert.NotNull(await Refusal("Other.cs", Ok, broken, run: "run-a"));
+        Assert.NotNull(await Refusal("Other.cs", Ok, broken, run: "run-b"));
+        Assert.Null(await Refusal("Other.cs", Ok, broken, run: "run-a"));
+    }
+
+    /// <summary>Outside a run nothing is remembered, and the refusal does not promise a pass it will not give.</summary>
+    [Fact]
+    public async Task OutsideARun_TheSameEditIsJudgedEveryTime_AndNoPassIsPromised()
+    {
+        const string broken = "class Outside { void M() { }";
+        var first = await Refusal("Outside.cs", Ok, broken, run: null);
+        Assert.NotNull(first);
+        Assert.DoesNotContain("send the same edit again", first, StringComparison.Ordinal);
+        Assert.NotNull(await Refusal("Outside.cs", Ok, broken, run: null));
+    }
+
     [Fact]
     public async Task TheRefusal_NamesTheFileByItsPath_InTheWorkspace()
     {
         var root = Path.Combine(Path.GetTempPath(), "ws");
         var refusal = await SyntaxGuard.RefusalAsync(Path.Combine(root, "src", "App", "Program.cs"), Ok,
-                                                     "class A {", root, CancellationToken.None);
+                                                     "class A {", root, "run-a", CancellationToken.None);
         Assert.Contains("src/App/Program.cs at line", refusal, StringComparison.Ordinal);
     }
 
@@ -244,7 +265,9 @@ public sealed class SyntaxGuardToolsTests : IDisposable
         var other = Path.Combine(_ws, "B.cs");
         File.WriteAllText(other, "class B { }\n");
         var approval = new CountingApproval();
-        var tool = new ApplyEditsTool(approval, new Inferpal.Services.Execution.FileHistoryService(), () => _ws);
+        var history = new Inferpal.Services.Execution.FileHistoryService();
+        history.BeginRun();   // the pass belongs to a run, as in every turn
+        var tool = new ApplyEditsTool(approval, history, () => _ws);
         var batch = Args(new
         {
             edits = new object[]

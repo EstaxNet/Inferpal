@@ -184,6 +184,9 @@ internal static class SessionManager
             else if (IsQuestion(m))
             {
                 FoldNotes();
+                // A question the saved conversation has no answer for (a failed turn is a notice on screen, a turn stopped
+                // before any text leaves nothing): marked, as live, or the model reads the two as one request.
+                ChatTurnPolicy.CloseUnanswered(history);
                 history.Add(new ChatMessageDto(m.Role, m.Content));
                 asked = history.Count - 1;
             }
@@ -207,6 +210,7 @@ internal static class SessionManager
             // Tool bubbles (and every UI-only role) are not part of the live history: see the remarks.
         }
         FoldNotes();
+        // A last question without answer stays as it is: the next question closes it (ChatTurnPolicy.CloseUnanswered).
         return history;
     }
 

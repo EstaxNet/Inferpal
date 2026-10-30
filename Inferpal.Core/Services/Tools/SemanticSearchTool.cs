@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Inferpal.Config;
 using Inferpal.Localization;
 using Inferpal.Services.Rag;
@@ -83,6 +84,32 @@ internal sealed class SemanticSearchTool : ITool
     /// </summary>
     internal readonly record struct Answer(string Text, int Hits, string? NothingFound);
 
+    /// <summary>What the model is told to do while the index is not ready (English: it reads it).</summary>
+    private const string UntilReady =
+        "Until the index is ready, search_in_files finds exact text or a regex across the project without it, and "
+        + "read_file reads what it finds.";
+
+    /// <summary>
+    /// Whether <paramref name="result"/> is this tool's answer while the index is not ready, still being built, or behind
+    /// changed files: true for now only, so never served again from the run's cache — kept there, it answers every later
+    /// search of the run, whatever the index has become (an embedding server that does not share the GPU indexes during
+    /// the run). Read where the tool puts its notes — the end of the not-ready answer, the head of a result (under a
+    /// clamped argument's note) — never in the code a hit quotes.
+    /// </summary>
+    internal static bool IsProvisional(string result)
+    {
+        if (result.EndsWith(UntilReady, StringComparison.Ordinal)) return true;
+        var head = result.StartsWith(ClampedArgument.NotePrefix + "'", StringComparison.Ordinal)
+                   && result.IndexOf("\n\n", StringComparison.Ordinal) is var cut and >= 0
+            ? result[(cut + 2)..]
+            : result;
+        return head.StartsWith(StillBuilding, StringComparison.Ordinal) || NotReindexedHead.IsMatch(head);
+    }
+
+    // How the note on changed files not re-indexed yet begins (NotReindexedNote).
+    private static readonly Regex NotReindexedHead = new(@"\ANote: \d+ changed file\(s\) not re-indexed yet",
+                                                         RegexOptions.None, RegexBudget.Default);
+
     /// <summary>Runs the search and returns its <see cref="Answer"/>; <see cref="ExecuteAsync"/> serves its text.</summary>
     internal async Task<Answer> AnswerAsync(JsonElement args, CancellationToken ct)
     {
@@ -107,9 +134,7 @@ internal sealed class SemanticSearchTool : ITool
             var status = _index.IsIndexing ? _index.Status : "Index not built.";
             // ⚠ The remedies above are the user's to apply; the model needs the one IT can: without this line it
             // calls the tool again, or answers without having searched. Model-facing, so English.
-            return new Answer(Strings.RagIndexNotReady(status)
-                 + "\n\nUntil the index is ready, search_in_files finds exact text or a regex across the project "
-                 + "without it, and read_file reads what it finds.", 0, Strings.RagIndexNotReady(status));
+            return new Answer(Strings.RagIndexNotReady(status) + "\n\n" + UntilReady, 0, Strings.RagIndexNotReady(status));
         }
 
         // ── Embed the query (shadow cache fast path) ──────────────────────────
@@ -230,9 +255,12 @@ internal sealed class SemanticSearchTool : ITool
         if (!_index.IsIndexing) return string.Empty;
         var (done, total) = _index.PassProgress;
         var reached = total > 0 ? $" ({done} of {total} files read so far)" : string.Empty;
-        return $"Note: the index is still being built{reached} — code in the files not reached yet can be missing "
+        return $"{StillBuilding}{reached} — code in the files not reached yet can be missing "
              + "below, or shown as it was. search_in_files finds exact text across every file now.\n\n";
     }
+
+    /// <summary>How the note on an index still being built begins (<see cref="IsProvisional"/> reads it).</summary>
+    private const string StillBuilding = "Note: the index is still being built";
 
     /// <summary>What the last pass left out of the index — a folder it could not list, files over the size cap — or nothing.</summary>
     /// <remarks>

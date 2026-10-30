@@ -271,6 +271,9 @@ internal partial class InferpalToolWindowData
                 // file is read again, and a mode whose file is gone leaves the conversation, said.
                 RereadHeldMode();
                 turnMode = oneTimeModel is null ? _heldMode : null;
+                // A question never follows a question: one the last turn ended without answering (a failed request, a
+                // reload) gets its marked non-answer first, or the two merge and the model answers the earlier one again.
+                Services.Agent.ChatTurnPolicy.CloseUnanswered(_history);
                 // A code action runs without the held mode, its instructions included.
                 RefreshSystemPrompt(withMode: oneTimeModel is null);
                 // What follows the active file rides with the question, when the history does not already say it — judged

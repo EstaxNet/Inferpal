@@ -279,7 +279,7 @@ Zmniejsz największą część albo załaduj model z większym kontekstem (ponad
   <data name="ContextPartTools" xml:space="preserve"><value>definicje narzędzi: ~{0} tokenów — mniej włączonych narzędzi</value></data>
   <data name="ContextPartToolsMcp" xml:space="preserve"><value>definicje narzędzi: ~{0} tokenów, w tym ~{1} na {2} {2:narzędzie|narzędzia|narzędzi} serwerów MCP — mniej włączonych narzędzi, zaczynając od narzędzi tych serwerów</value></data>
   <data name="ContextPartSystem" xml:space="preserve"><value>prompt systemowy: ~{0} tokenów — przypięte pliki, kontekst projektu, pamięć, reguły</value></data>
-  <data name="ContextPartEarlier" xml:space="preserve"><value>wcześniejsza rozmowa: ~{0} tokenów — /clear zaczyna nową</value></data>
+  <data name="ContextPartEarlier" xml:space="preserve"><value>wcześniejsza rozmowa: ~{0} tokenów — rozpocznij nową rozmowę, aby ją pominąć</value></data>
   <data name="ContextPartLast" xml:space="preserve"><value>ostatnia wiadomość: ~{0} tokenów — załączone pliki, wklejony kod</value></data>
   <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>Nie można połączyć się z {1} pod adresem {0}
 
@@ -329,7 +329,7 @@ Kontynuować?</value></data>
   <data name="DebugEvaluateCancelled" xml:space="preserve"><value>Wyrażenie nie zostało obliczone (odrzucone przez użytkownika).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Zastosuj zmianę do: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Zmiana anulowana przez użytkownika.</value></data>
-  <data name="ProjectCodeConsent" xml:space="preserve"><value>Uruchomić własny kod tego obszaru roboczego ({0})? Kompilacja lub uruchomienie testów wykonuje to, co napisało repozytorium: jego cele kompilacji, skrypty testowe, własne środowisko Python. Pytanie pada raz dla tego obszaru roboczego.</value></data>
+  <data name="ProjectCodeConsent" xml:space="preserve"><value>Uruchomić własny kod tego obszaru roboczego ({0})? Kompilacja lub uruchomienie testów wykonuje to, co napisało repozytorium: jego cele kompilacji, skrypty testowe, własne środowisko Python. Pytanie pada raz dla tego obszaru roboczego i ponownie po restarcie.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content nie znaleziony w {0}. Sprawdź spacje, podziały wierszy i wcięcia.</value></data>
   <data name="DiffAmbiguous" xml:space="preserve"><value>old_content znaleziony {0} razy w {1}. Podaj więcej kontekstu, aby dopasowanie było unikalne.</value></data>
   <data name="DiffOk" xml:space="preserve"><value>Zmiana zastosowana w {0}.</value></data>
@@ -1398,7 +1398,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="ApprovalUseTool" xml:space="preserve"><value>Użyj {0}</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>wiersze: {0}</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>… jeszcze wierszy: {0}</value></data>
-  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Zezwala na {0} bez pytania do ponownego uruchomienia edytora.</value></data>
+  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Zezwala na {0} bez pytania w tym obszarze roboczym, do ponownego uruchomienia lub otwarcia innego obszaru roboczego.</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>Otwórz różnice</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>Nowa rozmowa</value></data>
   <data name="ChatConversations" xml:space="preserve"><value>Rozmowy</value></data>

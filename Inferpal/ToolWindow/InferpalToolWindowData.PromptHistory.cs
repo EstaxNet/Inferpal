@@ -546,8 +546,7 @@ internal partial class InferpalToolWindowData
     /// The model's most recent answer — what <c>/plan save</c> turns into a file. Anchors are
     /// excluded for the same reason the session save excludes them: they are layout, not content.
     /// </summary>
-    private string? LastAssistantText() =>
-        _history.LastOrDefault(m => m.Role == "assistant")?.Content;
+    private string? LastAssistantText() => ChatTurnPolicy.LastAnswer(_history);
 
     /// <summary>
     /// <c>/onboard</c> — the committable project profile: report it, apply the part

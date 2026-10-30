@@ -139,7 +139,7 @@ public class OllamaClientAgentLoopTests
     {
         var calls    = 0;
         var registry = new StubToolRegistry("write_file", () => ++calls == 1
-            ? Inferpal.Services.Tools.SyntaxGuard.RefusalMarker + "a.cs at line 3 (CS1513: } expected). Send the same edit again."
+            ? Inferpal.Services.Tools.SyntaxGuard.RefusalMarker + "a.cs at line 3 (CS1513: } expected). Nothing was written." + Inferpal.Services.Tools.SyntaxGuard.PassOffered
             : "written");
         var write  = ToolCallReply("write_file", """{"path":"a.cs","content":"x"}""");
         var client = new ScriptedOllamaClient(Config(), [write, write, write, TextReply("done")]);

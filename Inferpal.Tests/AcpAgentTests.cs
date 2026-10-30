@@ -1052,6 +1052,51 @@ public sealed class AcpAgentTests : IDisposable
     }
 
     /// <summary>
+    /// A call that did not do its work ends <c>failed</c>: drawn <c>completed</c>, a write that failed looked done in the
+    /// client — struck through, the plan "All Done".
+    /// </summary>
+    [Fact]
+    public async Task AToolCallThatFails_EndsFailed_NeverCompleted()
+    {
+        var outside = Path.Combine(Path.GetTempPath(), "inferpal-acp-outside-" + Guid.NewGuid().ToString("N"), "x.txt");
+        await using var h = await StartAsync(fake: f => f.OnChatRequest = async (_, _, tools, _) =>
+        {
+            await tools.ExecuteAsync("write_file", JsonSerializer.SerializeToElement(new { path = outside, content = "x\n" }), CancellationToken.None);
+            return new ChatTurnResult("Tried.", null, 0, 0);
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, sid, "write outside")));
+
+        var done = h.Client.Updates(sid, "tool_call_update").Last();
+        Assert.Equal("failed", done.GetProperty("status").GetString());
+        Assert.False(File.Exists(outside));
+    }
+
+    /// <summary>An edit that wrote nothing ends <c>failed</c> whatever its text says: write_file refuses a file the run has
+    /// not read, in a sentence that carries no failure mark — judged from the writes, not from a list of messages.</summary>
+    [Fact]
+    public async Task AnEditThatWroteNothing_EndsFailed_WhateverItsTextSays()
+    {
+        var file = Path.Combine(_root, "unread.txt");
+        File.WriteAllText(file, "kept as it is\n");
+        await using var h = await StartAsync(fake: f => f.OnChatRequest = async (_, _, tools, _) =>
+        {
+            await tools.ExecuteAsync("write_file", JsonSerializer.SerializeToElement(new { path = file, content = "replaced\n" }), CancellationToken.None);
+            return new ChatTurnResult("Tried.", null, 0, 0);
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, sid, "replace it")));
+
+        var done = h.Client.Updates(sid, "tool_call_update").Last();
+        Assert.Equal("failed", done.GetProperty("status").GetString());
+        Assert.Equal("kept as it is\n", File.ReadAllText(file));
+    }
+
+    /// <summary>
     /// ⚠ The editor's stdio MCP server is the same server with or without <c>"type": "stdio"</c>: JetBrains IDEs write
     /// the type, and a reader that only takes the untyped form refuses their server as a transport it does support.
     /// </summary>
@@ -1230,7 +1275,8 @@ public sealed class AcpAgentTests : IDisposable
         var drawn = h.Client.Updates(sid, "tool_call").ToList();
         Assert.Equal(3, drawn.Count);
         var refused = Assert.Single(drawn, d => d.GetRawText().Contains("NOT executed", StringComparison.Ordinal));
-        Assert.Equal("completed", refused.GetProperty("status").GetString());
+        // Refused before any tool ran: it did not do its work.
+        Assert.Equal("failed", refused.GetProperty("status").GetString());
         // The two that ran: drawn when they started, ended once each.
         Assert.Equal(2, drawn.Count(d => d.GetProperty("status").GetString() == "in_progress"));
         Assert.Equal(2, h.Client.Updates(sid, "tool_call_update").Count());

@@ -23,7 +23,7 @@ namespace Inferpal.Host;
 /// </para>
 /// </remarks>
 internal sealed class ToolEventRegistry(
-    IToolRegistry inner, Action<string, string, string> onStart, Action<string, string> onEnd) : IToolRegistry
+    IToolRegistry inner, Action<string, string, string> onStart, Action<string, string, bool> onEnd) : IToolRegistry
 {
     private static readonly AsyncLocal<string?> Current = new();
     private static long _next;
@@ -45,16 +45,25 @@ internal sealed class ToolEventRegistry(
         var previous = Current.Value;
         Current.Value = id;
         var output = string.Empty;
+        var failed = true;   // a call that throws (a stop mid-call) did not do its work
+        var writesBefore = inner.WritesInRun;
         try
         {
             output = await inner.ExecuteAsync(name, args, ct);
+            // ⚠ A file edit that wrote nothing did not do its work, whatever its text says: its refusals are many and
+            // most are not marked (unsaved, unread, generated, changed since the card…) — judged from what happened,
+            // never from a list of messages. A registry without writes (null) leaves it to the text.
+            failed = Services.Execution.ToolFailure.IsFailure(output)
+                     || (Services.Agent.ChatTurnPolicy.IsFileEdit(name)
+                         && writesBefore is { } before && inner.WritesInRun is { } after && after <= before);
             return output;
         }
         finally
         {
             Current.Value = previous;
-            // Every way out ends the call on screen: a stop mid-call would otherwise leave it running for ever.
-            onEnd(id, output);
+            // Every way out ends the call on screen: a stop mid-call would otherwise leave it running for ever. Whether it
+            // failed is decided here, by the Core's one reader, never by a list of prefixes read again by an adapter.
+            onEnd(id, output, failed);
         }
     }
 }

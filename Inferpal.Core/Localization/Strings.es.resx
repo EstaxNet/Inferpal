@@ -279,7 +279,7 @@ Reduce la parte más grande o carga el modelo con un contexto mayor (más de ~{0
   <data name="ContextPartTools" xml:space="preserve"><value>definiciones de herramientas: ~{0} tokens — menos herramientas activadas</value></data>
   <data name="ContextPartToolsMcp" xml:space="preserve"><value>definiciones de herramientas: ~{0} tokens, ~{1} de ellos para {2} {2:herramienta|herramientas} de servidores MCP — menos herramientas activadas, empezando por las de esos servidores</value></data>
   <data name="ContextPartSystem" xml:space="preserve"><value>prompt del sistema: ~{0} tokens — archivos fijados, contexto del proyecto, memoria, reglas</value></data>
-  <data name="ContextPartEarlier" xml:space="preserve"><value>conversación anterior: ~{0} tokens — /clear empieza una nueva</value></data>
+  <data name="ContextPartEarlier" xml:space="preserve"><value>conversación anterior: ~{0} tokens — empiece una conversación nueva para dejarla fuera</value></data>
   <data name="ContextPartLast" xml:space="preserve"><value>último mensaje: ~{0} tokens — archivos adjuntos, código pegado</value></data>
   <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>No se puede alcanzar {1} en {0}
 
@@ -329,7 +329,7 @@ Haga clic en ↻ Reintentar en la cabecera una vez corregido.</value></data>
   <data name="DebugEvaluateCancelled" xml:space="preserve"><value>Expresión no evaluada (rechazada por el usuario).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Aplicar cambio a: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Cambio cancelado por el usuario.</value></data>
-  <data name="ProjectCodeConsent" xml:space="preserve"><value>¿Ejecutar el propio código de este espacio de trabajo ({0})? Una compilación o una ejecución de pruebas ejecuta lo que escribió el repositorio: sus objetivos de compilación, sus scripts de prueba, su propio entorno de Python. Se pregunta una vez para este espacio de trabajo.</value></data>
+  <data name="ProjectCodeConsent" xml:space="preserve"><value>¿Ejecutar el propio código de este espacio de trabajo ({0})? Una compilación o una ejecución de pruebas ejecuta lo que escribió el repositorio: sus objetivos de compilación, sus scripts de prueba, su propio entorno de Python. Se pregunta una vez para este espacio de trabajo, y de nuevo tras un reinicio.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content no encontrado en {0}. Verifique espacios, saltos de línea y sangría.</value></data>
   <data name="DiffAmbiguous" xml:space="preserve"><value>old_content encontrado {0} veces en {1}. Proporcione más contexto para que la coincidencia sea única.</value></data>
   <data name="DiffOk" xml:space="preserve"><value>Cambio aplicado en {0}.</value></data>
@@ -1398,7 +1398,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="ApprovalUseTool" xml:space="preserve"><value>Usar {0}</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>{0} {0:línea|líneas}</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>… {0} {0:línea más|líneas más}</value></data>
-  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Permite {0} sin preguntar hasta que se reinicie el editor.</value></data>
+  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Permite {0} sin preguntar en este espacio de trabajo, hasta un reinicio o hasta que se abra otro espacio de trabajo.</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>Abrir diff</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>Nueva conversación</value></data>
   <data name="ChatConversations" xml:space="preserve"><value>Conversaciones</value></data>

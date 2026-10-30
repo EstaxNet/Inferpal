@@ -82,7 +82,7 @@ internal class TraceDependencyTool : ITool
         var filePath  = PathSanitizer.Sanitize(args.Str("path"), workspace);
         PathSanitizer.AssertUnderRoot(filePath, workspace);
         if (!File.Exists(filePath))
-            return Strings.ToolFileNotFound(filePath);
+            return ToolFailure.Said(Strings.ToolFileNotFound(filePath));
 
         var symbol    = args.Trimmed("symbol");
         var (depth, depthNotice) = ClampedArgument.Read(

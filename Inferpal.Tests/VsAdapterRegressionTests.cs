@@ -88,13 +88,13 @@ public class VsAdapterRegressionTests
             "The conversation search matches the raw content, the model's hidden reasoning included.");
     }
 
-    /// <summary>Alt+M posts "/map" as a pending prompt: it must reach the slash router, not the model.</summary>
+    /// <summary>The Project Map command posts "/map" as a pending prompt: it must reach the slash router, not the model.</summary>
     [Fact]
     public void APendingSlashCommand_IsRouted_NotSentToTheModel()
     {
         var run = Method(Vm + "InferpalToolWindowData.PendingPrompt.cs", "RunPendingTurnAsync");
         Assert.True(Calls(run, "HandleSlashCommandAsync"),
-            "RunPendingTurnAsync sends every pending prompt to the model — \"/map\" (Alt+M) arrives as chat text.");
+            "RunPendingTurnAsync sends every pending prompt to the model — \"/map\" (the Project Map command) arrives as chat text.");
     }
 
     /// <summary>
@@ -330,7 +330,7 @@ public class VsAdapterRegressionTests
     }
 
     /// <summary>
-    /// A code action that opens the chat window (Explain, Alt+M…) queued its turn before the last
+    /// A code action that opens the chat window (Explain, Project Map…) queued its turn before the last
     /// session was restored. The restore had already waited for the current turn — there was none yet
     /// — so RestoreConversation then replaced the conversation under the running action: its question
     /// and history gone while the answer streamed in. The pending turn waits for that startup load.

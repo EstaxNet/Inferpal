@@ -389,6 +389,45 @@ internal static class ChatTurnPolicy
     }
 
     /// <summary>
+    /// The line that answers a question the turn ended without answering — a failed request, or a turn the saved
+    /// conversation keeps no answer of. English and never translated, like <see cref="StoppedMarker"/>.
+    /// </summary>
+    public const string NoAnswerMarker = "[No answer: this turn ended before one.]";
+
+    /// <summary>
+    /// What follows a question left unanswered in the durable history (<see cref="NoAnswerMarker"/>). Never the error
+    /// text: a failed turn is not kept as an answer.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Without it the next question lands right after the unanswered one, every client merges the two consecutive
+    /// <c>user</c> messages (strict templates refuse them apart), and the model answers the earlier question again.
+    /// </remarks>
+    public static ChatMessageDto NoAnswer() => new("assistant", NoAnswerMarker);
+
+    /// <summary>
+    /// The model's most recent answer in <paramref name="history"/> — what <c>/plan save</c> writes — or <c>null</c> when
+    /// the last turn has none (<see cref="NoAnswerMarker"/>, <see cref="StoppedMarker"/> alone). One reader for both
+    /// front-ends.
+    /// </summary>
+    /// <remarks>⚠ Never an older answer in its place: saved as the latest, the plan of an earlier question reads as the
+    /// answer to the last one.</remarks>
+    public static string? LastAnswer(IEnumerable<ChatMessageDto> history) =>
+        history.LastOrDefault(m => m.Role == "assistant")?.Content is { } last && last is not (NoAnswerMarker or StoppedMarker)
+            ? last
+            : null;
+
+    /// <summary>
+    /// Closes <paramref name="history"/> with <see cref="NoAnswer"/> when its last message is still a question; returns
+    /// whether it did.
+    /// </summary>
+    public static bool CloseUnanswered(List<ChatMessageDto> history)
+    {
+        if (history.Count == 0 || history[^1].Role != "user") return false;
+        history.Add(NoAnswer());
+        return true;
+    }
+
+    /// <summary>
     /// The assistant text persisted in the durable history: the bubble actually shown to
     /// the user when there is one, the stored final response otherwise — think tags
     /// stripped in both cases. Returns an empty string when nothing is worth persisting.

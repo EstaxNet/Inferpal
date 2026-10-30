@@ -115,7 +115,7 @@ internal partial class InferpalToolWindowData
                 await RunOnVMContextAsync(() => Enqueue(new QueuedMessage(p, m, atts)));
                 return;
             }
-            // Alt+M posts "/map": a slash command goes to the router, never to the model as chat text.
+            // The Project Map command posts "/map": a slash command goes to the router, never to the model as chat text.
             if (SlashCommandRouter.LooksLikeCommand(p))
             {
                 PinWorkspaceRoot();

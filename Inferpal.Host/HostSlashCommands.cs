@@ -460,7 +460,7 @@ internal sealed partial class HostServer
                     // else works on a file under .inferpal/plans/.
                     var result = PlanCommandHandler.Handle(
                         s.RootDir, parts,
-                        s.History.LastOrDefault(m => m.Role == "assistant")?.Content,
+                        ChatTurnPolicy.LastAnswer(s.History),
                         s.ActivePlan);
 
                     if (result.ToggleMode)

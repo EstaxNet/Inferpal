@@ -463,7 +463,7 @@ public class LocalizationCompletenessTests
     // at run time - so a token with no entry fails no build, neither Debug nor Release
     // warnings-as-errors.
     //
-    // Measured: "%InferpalMapCommand%" - the Alt+M command, the one that opens the project
+    // Measured: "%InferpalMapCommand%" - the /map command, the one that opens the project
     // architecture map - had an entry in NONE of the ten files. The command works, its shortcut is
     // wired; but everywhere VS NAMES it (Tools > Options > Environment > Keyboard, feature search)
     // it had no name. Nine commands out of ten carried theirs: the tenth was the one nothing

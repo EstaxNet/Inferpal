@@ -279,7 +279,7 @@
   <data name="ContextPartTools" xml:space="preserve"><value>工具定义：约 {0} 个 token — 减少已启用的工具</value></data>
   <data name="ContextPartToolsMcp" xml:space="preserve"><value>工具定义：约 {0} 个 token，其中 MCP 服务器的 {2} 个工具约占 {1} — 减少已启用的工具，先从这些服务器的工具开始</value></data>
   <data name="ContextPartSystem" xml:space="preserve"><value>系统提示词：约 {0} 个 token — 固定的文件、项目上下文、记忆、规则</value></data>
-  <data name="ContextPartEarlier" xml:space="preserve"><value>之前的对话：约 {0} 个 token — /clear 开始新对话</value></data>
+  <data name="ContextPartEarlier" xml:space="preserve"><value>之前的对话：约 {0} 个 token — 开始新对话即可不包含它</value></data>
   <data name="ContextPartLast" xml:space="preserve"><value>最后一条消息：约 {0} 个 token — 附加的文件、粘贴的代码</value></data>
   <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>无法连接到 {0} 的 {1}
 
@@ -329,7 +329,7 @@
   <data name="DebugEvaluateCancelled" xml:space="preserve"><value>表达式未求值（用户已拒绝）。</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>应用更改到：{0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>用户已取消更改。</value></data>
-  <data name="ProjectCodeConsent" xml:space="preserve"><value>运行此工作区自身的代码 ({0})？构建或测试运行会执行仓库编写的内容：其构建目标、测试脚本、自带的 Python 环境。此工作区只询问一次。</value></data>
+  <data name="ProjectCodeConsent" xml:space="preserve"><value>运行此工作区自身的代码 ({0})？构建或测试运行会执行仓库编写的内容：其构建目标、测试脚本、自带的 Python 环境。此工作区询问一次，重启后会再次询问。</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>在 {0} 中未找到 old_content。请检查空格、换行和缩进。</value></data>
   <data name="DiffAmbiguous" xml:space="preserve"><value>old_content 在 {1} 中出现了 {0} 次。请提供更多上下文以确保匹配唯一。</value></data>
   <data name="DiffOk" xml:space="preserve"><value>已在 {0} 中应用更改。</value></data>
@@ -1398,7 +1398,7 @@
   <data name="ApprovalUseTool" xml:space="preserve"><value>使用 {0}</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>{0} 行</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>…… 另有 {0} 行</value></data>
-  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>在编辑器重启前，无需询问即允许 {0}。</value></data>
+  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>在此工作区中无需询问即允许 {0}，直到重启或打开另一个工作区。</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>打开差异</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>新对话</value></data>
   <data name="ChatConversations" xml:space="preserve"><value>对话</value></data>

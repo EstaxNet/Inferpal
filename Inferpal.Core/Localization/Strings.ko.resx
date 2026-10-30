@@ -279,7 +279,7 @@
   <data name="ContextPartTools" xml:space="preserve"><value>도구 정의: ~{0} 토큰 — 활성화된 도구 줄이기</value></data>
   <data name="ContextPartToolsMcp" xml:space="preserve"><value>도구 정의: ~{0} 토큰, 그중 MCP 서버 도구 {2}개가 ~{1} — 활성화된 도구 줄이기, 먼저 그 서버의 도구부터</value></data>
   <data name="ContextPartSystem" xml:space="preserve"><value>시스템 프롬프트: ~{0} 토큰 — 고정된 파일, 프로젝트 컨텍스트, 메모리, 규칙</value></data>
-  <data name="ContextPartEarlier" xml:space="preserve"><value>이전 대화: ~{0} 토큰 — /clear로 새 대화 시작</value></data>
+  <data name="ContextPartEarlier" xml:space="preserve"><value>이전 대화: ~{0} 토큰 — 새 대화를 시작하면 빠집니다</value></data>
   <data name="ContextPartLast" xml:space="preserve"><value>마지막 메시지: ~{0} 토큰 — 첨부 파일, 붙여 넣은 코드</value></data>
   <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>{0}의 {1}에 연결할 수 없습니다
 
@@ -329,7 +329,7 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
   <data name="DebugEvaluateCancelled" xml:space="preserve"><value>식이 평가되지 않았습니다(사용자가 거부함).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>변경 적용: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>사용자가 변경을 취소했습니다.</value></data>
-  <data name="ProjectCodeConsent" xml:space="preserve"><value>이 작업 영역의 자체 코드를 실행할까요 ({0})? 빌드나 테스트 실행은 저장소가 작성한 것(빌드 대상, 테스트 스크립트, 자체 Python 환경)을 실행합니다. 이 작업 영역에서는 한 번만 묻습니다.</value></data>
+  <data name="ProjectCodeConsent" xml:space="preserve"><value>이 작업 영역의 자체 코드를 실행할까요 ({0})? 빌드나 테스트 실행은 저장소가 작성한 것(빌드 대상, 테스트 스크립트, 자체 Python 환경)을 실행합니다. 이 작업 영역에서는 한 번 묻고, 다시 시작하면 다시 묻습니다.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>{0}에서 old_content를 찾을 수 없습니다. 공백, 줄 바꿈, 들여쓰기를 확인하세요.</value></data>
   <data name="DiffAmbiguous" xml:space="preserve"><value>old_content가 {1}에서 {0}번 발견되었습니다. 일치를 고유하게 만들기 위해 더 많은 컨텍스트를 제공하세요.</value></data>
   <data name="DiffOk" xml:space="preserve"><value>{0}에 변경이 적용되었습니다.</value></data>
@@ -1398,7 +1398,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="ApprovalUseTool" xml:space="preserve"><value>{0} 사용</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>{0}줄</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>… {0}줄 더</value></data>
-  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>편집기를 다시 시작할 때까지 묻지 않고 {0}을(를) 허용합니다.</value></data>
+  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>이 작업 영역에서 다시 시작하거나 다른 작업 영역을 열 때까지 묻지 않고 {0}을(를) 허용합니다.</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>차이 열기</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>새 대화</value></data>
   <data name="ChatConversations" xml:space="preserve"><value>대화 목록</value></data>

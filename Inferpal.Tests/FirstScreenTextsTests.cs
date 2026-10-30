@@ -117,17 +117,39 @@ public sealed class FirstScreenTextsTests
 
         // The view answers to two commands: its own focus command and its activity-bar container's.
         using var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(Root, "vscode", "package.json")));
-        var bound = manifest.RootElement.GetProperty("contributes").GetProperty("keybindings").EnumerateArray()
-            .Select(b => b.GetProperty("command").GetString()).ToList();
-        Assert.Contains("inferpal.map", bound);   // WITNESS
+        var bindings = manifest.RootElement.GetProperty("contributes").GetProperty("keybindings").EnumerateArray().ToList();
+        var bound = bindings.Select(b => b.GetProperty("command").GetString()).ToList();
+        Assert.NotEmpty(bound);   // WITNESS
         Assert.DoesNotContain("inferpal.chat.focus", bound);
         Assert.DoesNotContain("workbench.view.extension.inferpal", bound);
 
-        var keys = new Regex(@"\balt\s*\+\s*[bo]\b|\b(ctrl|cmd)\s*\+\s*alt\s*\+\s*i\b", RegexOptions.IgnoreCase);
+        var keys = new Regex(@"\balt\s*\+\s*[bmo]\b|\b(ctrl|cmd)\s*\+\s*alt\s*\+\s*i\b", RegexOptions.IgnoreCase);
         Assert.Matches(keys, "press Alt + B");   // WITNESS
         Assert.Matches(keys, "cmd+alt+i");       // WITNESS
         var docs = DocCountersTests.LivingDocs().ToList();
         Assert.Contains(docs, d => d.EndsWith("getting-started.md", StringComparison.Ordinal));   // WITNESS
         Assert.Empty(docs.Where(d => keys.IsMatch(File.ReadAllText(d))).Select(Path.GetFileName));
+    }
+
+    /// <summary>
+    /// No command takes an Alt+letter by default, in either editor: an Alt+letter is a menu's access key in some
+    /// language of Visual Studio (Alt+B the Build menu in English, Alt+O "Outils" in French), and a key taken from the
+    /// editor is a key its users lose. Alt+' (not a letter) stays.
+    /// </summary>
+    [Fact]
+    public void NoCommand_TakesAnAltLetter_InEitherEditor()
+    {
+        var commands = Directory.GetFiles(Path.Combine(Root, "Inferpal", "Commands"), "*.cs")
+            .Select(f => (Name: Path.GetFileName(f), Code: ConventionCoverageTests.CodeOnly(f))).ToList();
+        Assert.Contains(commands, c => c.Code.Contains("ModifierKey.LeftAlt", StringComparison.Ordinal));   // WITNESS: Alt+'
+        var altLetter = new Regex(@"ModifierKey\.(Left)?Alt\s*,\s*Key\.[A-Z]\b");
+        Assert.Empty(commands.Where(c => altLetter.IsMatch(c.Code)).Select(c => c.Name));
+
+        using var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(Root, "vscode", "package.json")));
+        var keys = manifest.RootElement.GetProperty("contributes").GetProperty("keybindings").EnumerateArray()
+            .SelectMany(b => new[] { "key", "mac" }.Where(k => b.TryGetProperty(k, out _)).Select(k => b.GetProperty(k).GetString()!))
+            .ToList();
+        Assert.Contains("alt+'", keys);   // WITNESS
+        Assert.Empty(keys.Where(k => Regex.IsMatch(k, @"\balt\+[a-z]$", RegexOptions.IgnoreCase)));
     }
 }

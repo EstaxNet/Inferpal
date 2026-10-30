@@ -32,6 +32,22 @@ internal static class ToolFailure
     /// <summary>What a tool returns when the person refused its approval card.</summary>
     internal const string CancelledByUser = "Cancelled by user.";
 
+    /// <summary>
+    /// Whether a tool's result says the call did not do its work: a failure marked by <see cref="Said"/> (from the
+    /// registry or the tool), or the person's refusal of the card. The one reader of that question; an edit that wrote
+    /// nothing is judged from what happened, by whoever counts the writes.
+    /// </summary>
+    internal static bool IsFailure(string result) =>
+        result.StartsWith("Error:", StringComparison.Ordinal) || result == CancelledByUser;
+
+    /// <summary>
+    /// A tool's failure in the form <see cref="IsFailure"/> reads: <paramref name="text"/> (often translated) behind the
+    /// one stable marker. A failure returned without it reads as work done — in ACP, a write that did not happen is
+    /// drawn completed.
+    /// </summary>
+    internal static string Said(string text) =>
+        text.StartsWith("Error:", StringComparison.Ordinal) ? text : "Error: " + text;
+
     /// <summary>The model-facing sentence for <paramref name="ex"/> thrown by <paramref name="toolName"/>.</summary>
     internal static string Describe(string toolName, Exception ex)
     {

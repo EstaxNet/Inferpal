@@ -279,7 +279,7 @@
   <data name="ContextPartTools" xml:space="preserve"><value>определения инструментов: ~{0} токенов — меньше включённых инструментов</value></data>
   <data name="ContextPartToolsMcp" xml:space="preserve"><value>определения инструментов: ~{0} токенов, из них ~{1} — {2} {2:инструмент|инструмента|инструментов} MCP-серверов — меньше включённых инструментов, начиная с инструментов этих серверов</value></data>
   <data name="ContextPartSystem" xml:space="preserve"><value>системный промпт: ~{0} токенов — закреплённые файлы, контекст проекта, память, правила</value></data>
-  <data name="ContextPartEarlier" xml:space="preserve"><value>предыдущий разговор: ~{0} токенов — /clear начинает новый</value></data>
+  <data name="ContextPartEarlier" xml:space="preserve"><value>предыдущий разговор: ~{0} токенов — начните новый разговор, чтобы не отправлять его</value></data>
   <data name="ContextPartLast" xml:space="preserve"><value>последнее сообщение: ~{0} токенов — прикреплённые файлы, вставленный код</value></data>
   <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>Не удаётся подключиться к {1} по адресу {0}
 
@@ -329,7 +329,7 @@
   <data name="DebugEvaluateCancelled" xml:space="preserve"><value>Выражение не вычислено (отклонено пользователем).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Применить изменение к: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Изменение отменено пользователем.</value></data>
-  <data name="ProjectCodeConsent" xml:space="preserve"><value>Запустить собственный код этой рабочей области ({0})? Сборка или запуск тестов выполняет то, что написал репозиторий: его цели сборки, тестовые скрипты, собственное окружение Python. Спрашивается один раз для этой рабочей области.</value></data>
+  <data name="ProjectCodeConsent" xml:space="preserve"><value>Запустить собственный код этой рабочей области ({0})? Сборка или запуск тестов выполняет то, что написал репозиторий: его цели сборки, тестовые скрипты, собственное окружение Python. Спрашивается один раз для этой рабочей области и снова после перезапуска.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content не найден в {0}. Проверьте пробелы, переносы строк и отступы.</value></data>
   <data name="DiffAmbiguous" xml:space="preserve"><value>old_content найден {0} раз(а) в {1}. Предоставьте больше контекста для уникальности совпадения.</value></data>
   <data name="DiffOk" xml:space="preserve"><value>Изменение применено в {0}.</value></data>
@@ -1398,7 +1398,7 @@
   <data name="ApprovalUseTool" xml:space="preserve"><value>Использовать {0}</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>строк: {0}</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>… ещё строк: {0}</value></data>
-  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Разрешает {0} без вопросов до перезапуска редактора.</value></data>
+  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Разрешает {0} без запроса в этой рабочей области до перезапуска или до открытия другой рабочей области.</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>Открыть diff</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>Новый разговор</value></data>
   <data name="ChatConversations" xml:space="preserve"><value>Разговоры</value></data>

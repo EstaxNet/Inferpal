@@ -20,7 +20,8 @@ namespace Inferpal.Services.Tools;
 /// a legitimate state. ⚠ Added only: a file that did not parse before is not this edit's doing, and is let through.
 /// ⚠ No refusal on a doubt: a checker missing, slow or answering something else lets the edit through. ⚠ Never a loop:
 /// the checker can be older than the project's language (a C# or Python version it does not know), so the same edit
-/// sent again after a refusal is written. ⚠ A <c>.js</c> file is not checked: whether it parses depends on the project
+/// sent again after a refusal IN THE SAME RUN is written; outside a run no pass is offered, and the loop policy counts
+/// the repeats (<see cref="OffersPass"/>). ⚠ A <c>.js</c> file is not checked: whether it parses depends on the project
 /// (ES modules or not, JSX, Flow), which a copy checked on its own does not carry.
 /// </remarks>
 internal static class SyntaxGuard
@@ -31,7 +32,9 @@ internal static class SyntaxGuard
     /// <summary>A parse error: its line (1-based) and what the parser says.</summary>
     internal readonly record struct ParseError(int Line, string Message);
 
-    // The edits refused, by file and content: the same one sent again is the model insisting, and is let through.
+    // The edits refused, by run, file and content: the same one sent again IN THE SAME RUN is the model insisting, and is
+    // let through. ⚠ Keyed by run: otherwise a Regenerate, another ACP thread or a /task inherits the pass and writes the
+    // broken edit unjudged. Outside a run nothing is remembered: every edit is judged.
     private static readonly ConcurrentDictionary<string, byte> RefusedOnce = new(StringComparer.Ordinal);
 
     // A checker that could not start or did not answer in time is not asked again in this process: every edit would
@@ -41,9 +44,19 @@ internal static class SyntaxGuard
     /// <summary>What every refusal says, in whatever a tool wraps it (<c>apply_edits</c>'s localized "no changes").</summary>
     internal const string RefusalMarker = "Refused: this edit leaves a syntax error in ";
 
-    /// <summary>Whether a tool's result is this guard's refusal: the same call sent again is then what the refusal asks
-    /// for when the code is valid for the project, never a loop (<c>AgentLoopPolicy.Forgive</c>).</summary>
+    /// <summary>Whether a tool's result carries this guard's refusal, alone or inside a batch's (whether the same call sent
+    /// again is what the refusal asks for: <see cref="OffersPass"/>).</summary>
     internal static bool Refused(string toolResult) => toolResult.Contains(RefusalMarker, StringComparison.Ordinal);
+
+    /// <summary>What a refusal that offers the pass says: only within a run.</summary>
+    internal const string PassOffered =
+        " If the code is valid for this project (a newer language version than the check knows), send the same edit "
+        + "again and it will be written.";
+
+    /// <summary>Whether a tool's result is a refusal that lets the same edit through when it is sent again — never outside
+    /// a run, where the loop policy must count the repeats.</summary>
+    internal static bool OffersPass(string toolResult) =>
+        Refused(toolResult) && toolResult.Contains(PassOffered, StringComparison.Ordinal);
 
     /// <summary>Forgets the refusals and the checkers found unavailable (tests).</summary>
     internal static void ResetForTests()
@@ -58,19 +71,24 @@ internal static class SyntaxGuard
     /// sent the same edit again after its refusal.
     /// </summary>
     /// <param name="root">The workspace root, to name the file by its path in the refusal.</param>
+    /// <param name="runId">The run the edit belongs to (<see cref="Execution.FileHistoryService.CurrentRunId"/>); the
+    /// same edit sent again passes only within it.</param>
     public static async Task<string?> RefusalAsync(string path, string? original, string proposed, string? root,
-                                                   CancellationToken ct)
+                                                   string? runId, CancellationToken ct)
     {
         if (await FirstErrorAsync(path, proposed, ct) is not { } error) return null;
         if (original is not null && await FirstErrorAsync(path, original, ct) is not null) return null;
 
-        var key = path + "\n" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(proposed)));
-        if (RefusedOnce.TryRemove(key, out _)) return null;
-        if (RefusedOnce.Count > 256) RefusedOnce.Clear();
-        RefusedOnce[key] = 0;
+        if (runId is not null)
+        {
+            var key = runId + "\n" + path + "\n" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(proposed)));
+            if (RefusedOnce.TryRemove(key, out _)) return null;
+            if (RefusedOnce.Count > 256) RefusedOnce.Clear();
+            RefusedOnce[key] = 0;
+        }
         return $"{RefusalMarker}{Shown(path, root)} at line {error.Line} ({error.Message}). "
-               + "Nothing was written: correct the edit and send it again. If the code is valid for this project (a newer "
-               + "language version than the check knows), send the same edit again and it will be written.";
+               + "Nothing was written: correct the edit and send it again."
+               + (runId is null ? string.Empty : PassOffered);
     }
 
     private static string Shown(string path, string? root)

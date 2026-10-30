@@ -46,7 +46,20 @@ internal static class TestConfigIsolation
         // And for the check of the packages a call adds: every registry the suite builds would start `dotnet package
         // search` or `npm view`, or ask PyPI, for each install a test runs.
         Inferpal.Services.Execution.PackageCheck.Shared = new Inferpal.Services.Execution.PackageCheck(new NoAnswerPackageLookup());
+
+        // And for the code index and the debugger's test scaffold: a test that builds a registry or an index without
+        // redirecting them itself writes an empty database in the developer's own profile at every run.
+        TestRagStore.Redirect();
+        Inferpal.Services.Debugging.TestReproScaffold.BaseDir = () => Path.Combine(root, $"testrepro-{Environment.ProcessId}");
+        RagDirAtStart      = Inferpal.Services.Rag.RagDatabase.BaseDir();
+        ScaffoldDirAtStart = Inferpal.Services.Debugging.TestReproScaffold.BaseDir();
     }
+
+    /// <summary>Where the code index points once the suite is set up, before any test moves it.</summary>
+    internal static string RagDirAtStart { get; private set; } = string.Empty;
+
+    /// <summary>Where the debugger's test scaffold points once the suite is set up, before any test moves it.</summary>
+    internal static string ScaffoldDirAtStart { get; private set; } = string.Empty;
 }
 
 /// <summary>The suite's package source: it never answers, so no call a test makes is refused or reaches a registry.</summary>

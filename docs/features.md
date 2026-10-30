@@ -295,7 +295,8 @@ The change appears in the editor in red and green; keep or drop each part.
   or extended if it already exists); only **Explain** answers in the chat window.
 - **The editor's gestures, in both** — **Edit with AI** (an instruction on the selection or the caret's line, the
   change shown before it applies), **Explain**, **Add Tests**, **Fix**, **Refactor** and **Document** in the editor's
-  menu, `/test` on the **selection** with its tests written by an edit you can undo, and `/map` on **Alt+M**.
+  menu, `/test` on the **selection** with its tests written by an edit you can undo, and `/map` from **Tools → Inferpal**
+  (Visual Studio) or the command palette's **Inferpal: Project Map** (VS Code).
 - **Inline Edit (Edit with AI)** — select code (or place the caret on a line), press
   **Ctrl+Shift+I** (or pick **Edit with AI…** from the context menu), type an instruction, and
   the model rewrites the selection **directly in the editor** (re-indented to match the
@@ -1034,14 +1035,15 @@ Studio to VS Code and back — and to any editor that speaks the [Agent Client P
 
 Opening Inferpal takes no key of its own: the keys it had open Visual Studio's Build menu in English and its Tools menu
 in French, and VS Code's own chat. **Tools → Inferpal → Inferpal Chat** and the activity-bar icon open it; in VS Code,
-Keyboard Shortcuts binds a key to `inferpal.chat.focus`. Alt+M works in both (**Ctrl+Alt+M** on macOS, where Option+M
-types µ). **Ctrl+Shift+I** is Visual Studio's: in VS Code that key already belongs to the
+Keyboard Shortcuts binds a key to `inferpal.chat.focus`. `/map` takes no key either (an Alt+letter is a menu's access
+key in some language of Visual Studio): **Tools → Inferpal → Inferpal Project Map** in Visual Studio, and in VS Code
+Keyboard Shortcuts binds a key to `inferpal.map`. **Ctrl+Shift+I** is
+Visual Studio's: in VS Code that key already belongs to the
 developer tools and to other assistants' chats, so Edit with AI has no key of its own there — it is in the editor's
 context menu and the command palette, and VS Code's Keyboard Shortcuts binds it to the key you want.
 
 | Shortcut | Action |
 |---|---|
-| **Alt+M** | Run `/map`: the project's architecture map |
 | **Ctrl+Shift+I** | Inline Edit (Edit with AI) on the selection |
 | **Enter** | Send the message |
 | **Shift+Enter** | Insert a newline in the prompt |

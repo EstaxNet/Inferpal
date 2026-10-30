@@ -409,6 +409,9 @@ internal sealed partial class HostServer : IDisposable
             // The system prompt is rebuilt here, inside the turn slot, never from the active-file notification itself;
             // what follows the active file rides with the question, when the history does not already say it
             // (ActiveFileContext). A code action runs without the held mode, its instructions included.
+            // A question never follows a question: one the last turn ended without answering (a failed request, a reload)
+            // gets its marked non-answer first, or the two merge and the model answers the earlier one again.
+            ChatTurnPolicy.CloseUnanswered(s.History);
             RefreshSystemPrompt(s, withMode: !p.CodeAction);
             var activeFile = ActiveFileContext.ToSend(BuildActiveFileBlock(s), s.History);
             // Asked again (Regenerate), the question carries the notes its first answer read, as the history kept it.
@@ -726,7 +729,7 @@ internal sealed partial class HostServer : IDisposable
     private IToolRegistry Announced(IToolRegistry tools) => new ToolEventRegistry(
         tools,
         (id, name, input) => Notify("chat/toolStart", new { callId = id, name, input }),
-        (id, output) => Notify("chat/toolEnd", new { callId = id, output }));
+        (id, output, failed) => Notify("chat/toolEnd", new { callId = id, output, failed }));
 
     [JsonRpcMethod("chat/cancel")]
     public void ChatCancel() { lock (_gate) _chatCts?.Cancel(); }

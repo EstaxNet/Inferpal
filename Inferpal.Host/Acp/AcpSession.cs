@@ -1300,7 +1300,7 @@ internal sealed class AcpSession : IAsyncDisposable
         {
             sessionUpdate = "tool_call_update",
             toolCallId    = note.CallId,
-            status        = state is { Rejected: true } ? "failed" : "completed",
+            status        = note.Failed || state is { Rejected: true } ? "failed" : "completed",
             content,
         });
         if (state is not null)
@@ -1330,14 +1330,16 @@ internal sealed class AcpSession : IAsyncDisposable
             }
         }
         var id = "note_" + Interlocked.Increment(ref _replayed).ToString(CultureInfo.InvariantCulture);
+        var output = note.Output ?? string.Empty;   // a notification read from JSON can carry none
         Update(new
         {
             sessionUpdate = "tool_call",
             toolCallId    = id,
             title         = note.Name,
             kind          = AcpToolCalls.Kind(note.Name),
-            status        = note.HasErrors ? "failed" : "completed",
-            content       = new[] { TextContent(AcpToolCalls.Block(note.Output)) },
+            // HasErrors is get_diagnostics finding build errors; a call that did not do its work is the Core's one reader's.
+            status        = note.HasErrors || Services.Execution.ToolFailure.IsFailure(output) ? "failed" : "completed",
+            content       = new[] { TextContent(AcpToolCalls.Block(output)) },
         });
     }
 
@@ -1525,7 +1527,8 @@ internal sealed class AcpSession : IAsyncDisposable
     public sealed record PlanNote(string? Goal, List<string>? Steps);
     public sealed record StepUpdateNote(int Index, string? Status);
     public sealed record ToolStartNote(string CallId, string Name, string? Input);
-    public sealed record ToolEndNote(string CallId, string? Output);
+    /// <param name="Failed">The call did not do its work (<c>ToolFailure.IsFailure</c>, decided by the host).</param>
+    public sealed record ToolEndNote(string CallId, string? Output, bool Failed = false);
     public sealed record WaitNote(ModelWaitDto? Wait);
     public sealed record PathNote(string? Path);
     public sealed record CardNote(string? Title, string? Subject, string? RuleLabel = null);

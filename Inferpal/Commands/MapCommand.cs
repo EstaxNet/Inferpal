@@ -6,7 +6,7 @@ using Inferpal.ToolWindow;
 namespace Inferpal.Commands;
 
 /// <summary>
-/// VS menu command (Alt+M) — posts "/map" into the chat window and opens it.
+/// VS menu command (Tools → Inferpal → Inferpal Project Map) — posts "/map" into the chat window and opens it.
 /// The slash-command handler in InferpalToolWindowData then invokes
 /// the <c>generate_project_map</c> tool.
 /// </summary>
@@ -23,11 +23,8 @@ internal class MapCommand : Command
 
     public override CommandConfiguration CommandConfiguration => new("%InferpalMapCommand%")
     {
+        // No key by default: Alt+letter is a menu's access key in some language of Visual Studio.
         Icon = new(ImageMoniker.KnownValues.Extension, IconSettings.IconAndText),
-        Shortcuts =
-        [
-            new CommandShortcutConfiguration(ModifierKey.LeftAlt, Key.M),
-        ],
     };
 
     public override async Task ExecuteCommandAsync(IClientContext context, CancellationToken ct)

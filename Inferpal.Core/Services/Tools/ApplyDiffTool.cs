@@ -83,22 +83,22 @@ internal class ApplyDiffTool : ITool
             return badOccurrence;
 
         if (!File.Exists(path))
-            return Strings.ToolFileNotFound(path);
+            return ToolFailure.Said(Strings.ToolFileNotFound(path));
 
         var fileContent = await TextFileEncoding.ReadTextAsync(path, ct);
 
         var resolution = ApplyDiffMatcher.Resolve(fileContent, oldContent, newContent, occurrence);
         if (resolution.Modified is null)
-            return resolution.Count > 1
+            return ToolFailure.Said(resolution.Count > 1
                 ? Strings.DiffAmbiguous(resolution.Count, path)
                 : Strings.DiffOldNotFound(path)
                   + ApplyDiffMatcher.Closest(fileContent, oldContent)
                   + (RenameOffered?.Invoke() != false && RenameIntent.Of([(oldContent, newContent)]) is { } rename
-                        ? RenameIntent.RefusalHint(rename) : string.Empty);
+                        ? RenameIntent.RefusalHint(rename) : string.Empty));
 
         var modified = resolution.Modified;
         if (FileTarget.EncodingRefusal(path, modified) is { } cannotHold) return cannotHold;
-        if (await SyntaxGuard.RefusalAsync(path, fileContent, modified, root, ct) is { } broken) return broken;
+        if (await SyntaxGuard.RefusalAsync(path, fileContent, modified, root, _history.CurrentRunId, ct) is { } broken) return ToolFailure.Said(broken);
 
         // Pass the structured change so the approval prompt shows the actual diff, not just a path
         // (colored viewer in VS; textual fallback elsewhere).

@@ -747,6 +747,12 @@ internal class FileHistoryService
         get { lock (_runLock) return Run?.FileCount; }
     }
 
+    /// <summary>The id of the run open in this flow; <c>null</c> outside one.</summary>
+    internal string? CurrentRunId
+    {
+        get { lock (_runLock) return Run?.Id; }
+    }
+
     /// <summary>Records that the model has seen the content of <paramref name="filePath"/> in the current run.</summary>
     internal void NoteRead(string filePath)
     {

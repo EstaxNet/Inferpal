@@ -279,7 +279,7 @@ Riduci la parte più grande oppure carica il modello con un contesto più ampio 
   <data name="ContextPartTools" xml:space="preserve"><value>definizioni degli strumenti: ~{0} token — meno strumenti abilitati</value></data>
   <data name="ContextPartToolsMcp" xml:space="preserve"><value>definizioni degli strumenti: ~{0} token, di cui ~{1} per {2} {2:strumento|strumenti} di server MCP — meno strumenti abilitati, a cominciare da quelli di quei server</value></data>
   <data name="ContextPartSystem" xml:space="preserve"><value>prompt di sistema: ~{0} token — file fissati, contesto del progetto, memoria, regole</value></data>
-  <data name="ContextPartEarlier" xml:space="preserve"><value>conversazione precedente: ~{0} token — /clear ne inizia una nuova</value></data>
+  <data name="ContextPartEarlier" xml:space="preserve"><value>conversazione precedente: ~{0} token — inizia una nuova conversazione per lasciarla fuori</value></data>
   <data name="ContextPartLast" xml:space="preserve"><value>ultimo messaggio: ~{0} token — file allegati, codice incollato</value></data>
   <data name="MsgConnectionGuardFailed" xml:space="preserve"><value>Impossibile raggiungere {1} su {0}
 
@@ -329,7 +329,7 @@ Continuare?</value></data>
   <data name="DebugEvaluateCancelled" xml:space="preserve"><value>Espressione non valutata (rifiutata dall'utente).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Applica modifica a: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Modifica annullata dall'utente.</value></data>
-  <data name="ProjectCodeConsent" xml:space="preserve"><value>Eseguire il codice di questo spazio di lavoro ({0})? Una build o un'esecuzione dei test esegue ciò che il repository ha scritto: i suoi target di build, i suoi script di test, il suo ambiente Python. Chiesto una volta per questo spazio di lavoro.</value></data>
+  <data name="ProjectCodeConsent" xml:space="preserve"><value>Eseguire il codice di questo spazio di lavoro ({0})? Una build o un'esecuzione dei test esegue ciò che il repository ha scritto: i suoi target di build, i suoi script di test, il suo ambiente Python. Chiesto una volta per questo spazio di lavoro, e di nuovo dopo un riavvio.</value></data>
   <data name="DiffOldNotFound" xml:space="preserve"><value>old_content non trovato in {0}. Controlla spazi, interruzioni di riga e indentazione.</value></data>
   <data name="DiffAmbiguous" xml:space="preserve"><value>old_content trovato {0} volte in {1}. Fornisci più contesto per rendere la corrispondenza univoca.</value></data>
   <data name="DiffOk" xml:space="preserve"><value>Modifica applicata in {0}.</value></data>
@@ -1398,7 +1398,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="ApprovalUseTool" xml:space="preserve"><value>Usare {0}</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>{0} {0:riga|righe}</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>… {0} {0:riga in più|righe in più}</value></data>
-  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Consente {0} senza chiedere fino al riavvio dell'editor.</value></data>
+  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Consente {0} senza chiedere in questa area di lavoro, fino a un riavvio o all’apertura di un’altra area di lavoro.</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>Apri diff</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>Nuova conversazione</value></data>
   <data name="ChatConversations" xml:space="preserve"><value>Conversazioni</value></data>
