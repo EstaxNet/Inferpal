@@ -965,7 +965,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="ModeGone" xml:space="preserve"><value>이 대화는 '{0}' 모드였지만 더 이상 찾을 수 없습니다. 모드 없이 계속합니다.</value></data>
   <data name="ModeUnknown" xml:space="preserve"><value>'{0}'라는 모드가 없습니다. /modes에서 찾은 모드를 볼 수 있습니다.</value></data>
   <data name="ModesHeader" xml:space="preserve"><value>**모드** — 모드 선택기에서 고르세요. 모드는 도구를 제한할 뿐이며, 권한을 추가하지 않습니다.</value></data>
-  <data name="ModesNone" xml:space="preserve"><value>모드를 찾지 못했습니다. 모드는 .inferpal/modes/의 Markdown 파일, .github/agents/의 GitHub Copilot 에이전트 또는 .roomodes의 Roo Code 모드입니다.</value></data>
+  <data name="ModesNone" xml:space="preserve"><value>모드를 찾지 못했습니다. 모드는 {0}(모든 작업 영역에서 쓰는 사용자 모드) 또는 .inferpal/modes/의 Markdown 파일, .github/agents/의 GitHub Copilot 에이전트 또는 .roomodes의 Roo Code 모드입니다.</value></data>
   <data name="ModesModel" xml:space="preserve"><value>모델: {0}</value></data>
   <data name="ModesModelFirst" xml:space="preserve"><value>모델: {0} 중 처음 설치된 것</value></data>
   <data name="ModesModelChat" xml:space="preserve"><value>모델: 대화의 모델</value></data>
@@ -979,6 +979,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="ModesSegmentTip" xml:space="preserve"><value>다른 모드: 여기서 {0}개 찾음</value></data>
   <data name="ModesFoundHeader" xml:space="preserve"><value>여기서 찾은 모드</value></data>
   <data name="ModesFooter" xml:space="preserve"><value>모드는 도구를 제한할 뿐이며, 권한을 추가하지 않습니다.</value></data>
+  <data name="ModesWriteOne" xml:space="preserve"><value>모드 작성하기</value></data>
   <data name="ModeHeldLine" xml:space="preserve"><value>모드: {0} — 이 질문부터 · {1}</value></data>
   <data name="ModeReadsOnly" xml:space="preserve"><value>읽고 검색만 하며 쓰지 않음</value></data>
   <data name="ModeMayWrite" xml:space="preserve"><value>파일을 바꿀 수 있음 — 변경마다 먼저 확인</value></data>

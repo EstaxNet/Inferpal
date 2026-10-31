@@ -965,7 +965,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="ModeGone" xml:space="preserve"><value>Questa conversazione era nella modalità «{0}», che non si trova più: continua senza di essa.</value></data>
   <data name="ModeUnknown" xml:space="preserve"><value>Nessuna modalità chiamata «{0}». /modes elenca le modalità trovate.</value></data>
   <data name="ModesHeader" xml:space="preserve"><value>**Modalità** — scegline una nel selettore di modalità. Una modalità limita solo gli strumenti; non concede alcun permesso.</value></data>
-  <data name="ModesNone" xml:space="preserve"><value>Nessuna modalità trovata. Una modalità è un file Markdown in .inferpal/modes/, un agente di GitHub Copilot in .github/agents/ o una modalità di Roo Code in .roomodes.</value></data>
+  <data name="ModesNone" xml:space="preserve"><value>Nessuna modalità trovata. Una modalità è un file Markdown in {0} (la sua, in ogni area di lavoro) o in .inferpal/modes/, un agente di GitHub Copilot in .github/agents/ o una modalità di Roo Code in .roomodes.</value></data>
   <data name="ModesModel" xml:space="preserve"><value>modello: {0}</value></data>
   <data name="ModesModelFirst" xml:space="preserve"><value>modello: il primo installato tra {0}</value></data>
   <data name="ModesModelChat" xml:space="preserve"><value>modello: quello della conversazione</value></data>
@@ -979,6 +979,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="ModesSegmentTip" xml:space="preserve"><value>Altre modalità: {0} {0:modalità trovata|modalità trovate} qui</value></data>
   <data name="ModesFoundHeader" xml:space="preserve"><value>Trovate qui</value></data>
   <data name="ModesFooter" xml:space="preserve"><value>Una modalità limita solo gli strumenti; non concede alcun permesso.</value></data>
+  <data name="ModesWriteOne" xml:space="preserve"><value>Scrivere una modalità</value></data>
   <data name="ModeHeldLine" xml:space="preserve"><value>Modalità: {0} — da questa domanda · {1}</value></data>
   <data name="ModeReadsOnly" xml:space="preserve"><value>legge e cerca, non scrive nulla</value></data>
   <data name="ModeMayWrite" xml:space="preserve"><value>può modificare file — ogni modifica chiede prima</value></data>

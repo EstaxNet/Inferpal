@@ -212,7 +212,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-/** The button: dot, model, then server and the models in graphics memory. */
+/** The button: dot, model, then server and what the loaded models occupy in graphics memory. */
 function renderModelButton(): void {
   const status = connection;
   modelDot.className = 'dot ' + (status === null ? '' : status.connected ? 'ok' : status.refused ? 'warn' : 'ko');
@@ -220,7 +220,7 @@ function renderModelButton(): void {
   // A server that refused the check (a wrong API key) is running: the host's sentence names it. A host that is not
   // running asked nobody: its own sentence, never "unreachable".
   const state = status && !status.connected ? (status.hostDown ?? status.refused ?? t('statusUnreachable')) : '';
-  const parts = [status?.server ?? '', state, status?.connected && status.vramBadge ? 'VRAM ' + status.vramBadge : '']
+  const parts = [status?.server ?? '', state, status?.connected && status.vramBadge ? status.vramBadge : '']
     .filter((p) => p);
   modelMeta.textContent = parts.join(' · ');
   modelBtn.title = t('chatModelButton', [currentModel, ...parts].filter((p) => p).join(' · '));
@@ -328,8 +328,8 @@ let foundModes: ModeInfo[] = [];
 let heldMode: string | null = null;
 let modeLabels: ModeLabels | null = null;
 
-/** The fourth segment: the held mode's name, or "Modes" opening the list of the modes found — there only when there
- *  are some (or one is held). Its own group, drawn joined to the first: a long name gives way without wrapping the
+/** The fourth segment: the held mode's name, or "Modes" opening the list of the modes found — always there: with none
+ *  found, the list says where one goes. Its own group, drawn joined to the first: a long name gives way without wrapping the
  *  toolbar. */
 const foundGroup = document.createElement('div');
 foundGroup.id = 'foundgroup';
@@ -369,11 +369,14 @@ foundBtn.addEventListener('click', () => {
 });
 
 function updateFoundModes(): void {
-  foundGroup.hidden = foundModes.length === 0 && heldMode === null;
+  // ⚠ Shown with or without a mode found: hidden without one, nothing in the panel said modes exist. Only before the
+  // host's words arrive is there nothing to label it with.
+  foundGroup.hidden = modeLabels === null && heldMode === null;
   foundLabel.textContent = heldMode ?? modeLabels?.segment ?? '';
   const held = foundModes.find((m) => m.name === heldMode);
   foundBtn.title = held ? `${held.name} — ${held.summary}` : modeLabels?.segmentTip ?? '';
-  foundBtn.setAttribute('aria-label', foundBtn.title || foundLabel.textContent);
+  // Named by what it shows; the longer sentence (no mode found, the held mode's model) is its tooltip.
+  foundBtn.setAttribute('aria-label', foundLabel.textContent ?? '');
   foundBtn.classList.toggle('on', heldMode !== null);
   foundBtn.setAttribute('aria-expanded', String(!modeMenu.hidden));
   applyModeTo(currentMode());
@@ -409,7 +412,24 @@ function renderModeMenu(): void {
   if (modeLabels?.footer) {
     const foot = document.createElement('div');
     foot.className = 'menu-foot';
-    foot.textContent = modeLabels.footer;
+    // No mode here: where one goes, in the foot — never under a held mode whose file has gone (the segment names it).
+    if (foundModes.length === 0 && heldMode === null && modeLabels.none) {
+      const none = document.createElement('div');
+      none.textContent = modeLabels.none;
+      foot.appendChild(none);
+    }
+    foot.append(modeLabels.footer);
+    if (modeLabels.writeOne && modeLabels.writeOneUrl) {
+      const link = document.createElement('a');
+      link.href = modeLabels.writeOneUrl;
+      link.textContent = modeLabels.writeOne;
+      // The page opens in the browser; the list closes, as in Visual Studio.
+      link.addEventListener('click', () => {
+        modeMenu.hidden = true;
+        foundBtn.setAttribute('aria-expanded', 'false');
+      });
+      foot.append(' ', link);
+    }
     modeMenu.appendChild(foot);
   }
 }

@@ -3409,7 +3409,7 @@ public partial class HostServerTests
         var status = await h.Client.InvokeAsync<Host.BackendStatusResult>("backend/status");
 
         Assert.True(status.Connected);
-        Assert.StartsWith("llama3.1 · ", status.VramBadge, StringComparison.Ordinal);
+        Assert.Equal("4.5 GB VRAM", status.VramBadge);   // 4.8e9 bytes: what the loaded models occupy, never their names
     }
 
     [Fact]

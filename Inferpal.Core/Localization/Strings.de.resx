@@ -965,7 +965,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="ModeGone" xml:space="preserve"><value>Dieses Gespräch lief im Modus „{0}“, der nicht mehr gefunden wird: Es geht ohne ihn weiter.</value></data>
   <data name="ModeUnknown" xml:space="preserve"><value>Kein Modus namens „{0}“. /modes listet die gefundenen Modi.</value></data>
   <data name="ModesHeader" xml:space="preserve"><value>**Modi** — im Modusauswähler wählen. Ein Modus schränkt nur die Werkzeuge ein; er erteilt keine Berechtigung.</value></data>
-  <data name="ModesNone" xml:space="preserve"><value>Kein Modus gefunden. Ein Modus ist eine Markdown-Datei in .inferpal/modes/, ein GitHub-Copilot-Agent in .github/agents/ oder ein Roo-Code-Modus in .roomodes.</value></data>
+  <data name="ModesNone" xml:space="preserve"><value>Kein Modus gefunden. Ein Modus ist eine Markdown-Datei in {0} (Ihre eigene, in jedem Arbeitsbereich) oder in .inferpal/modes/, ein GitHub-Copilot-Agent in .github/agents/ oder ein Roo-Code-Modus in .roomodes.</value></data>
   <data name="ModesModel" xml:space="preserve"><value>Modell: {0}</value></data>
   <data name="ModesModelFirst" xml:space="preserve"><value>Modell: das erste installierte von {0}</value></data>
   <data name="ModesModelChat" xml:space="preserve"><value>Modell: das des Gesprächs</value></data>
@@ -979,6 +979,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="ModesSegmentTip" xml:space="preserve"><value>Weitere Modi: {0} {0:Modus|Modi} hier gefunden</value></data>
   <data name="ModesFoundHeader" xml:space="preserve"><value>Hier gefunden</value></data>
   <data name="ModesFooter" xml:space="preserve"><value>Ein Modus schränkt nur die Werkzeuge ein; er erteilt keine Berechtigung.</value></data>
+  <data name="ModesWriteOne" xml:space="preserve"><value>Einen Modus schreiben</value></data>
   <data name="ModeHeldLine" xml:space="preserve"><value>Modus: {0} — ab dieser Frage · {1}</value></data>
   <data name="ModeReadsOnly" xml:space="preserve"><value>liest und sucht, schreibt nichts</value></data>
   <data name="ModeMayWrite" xml:space="preserve"><value>kann Dateien ändern — jede Änderung fragt zuerst</value></data>

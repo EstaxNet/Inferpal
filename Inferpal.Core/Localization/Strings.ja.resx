@@ -965,7 +965,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ModeGone" xml:space="preserve"><value>この会話はモード「{0}」で行われていましたが、見つからなくなりました。モードなしで続けます。</value></data>
   <data name="ModeUnknown" xml:space="preserve"><value>「{0}」という名前のモードはありません。/modes で見つかったモードを一覧できます。</value></data>
   <data name="ModesHeader" xml:space="preserve"><value>**モード** — モード選択で選びます。モードはツールを絞り込むだけで、権限を追加することはありません。</value></data>
-  <data name="ModesNone" xml:space="preserve"><value>モードが見つかりません。モードは .inferpal/modes/ の Markdown ファイル、.github/agents/ の GitHub Copilot エージェント、または .roomodes の Roo Code モードです。</value></data>
+  <data name="ModesNone" xml:space="preserve"><value>モードが見つかりません。モードは {0}（すべてのワークスペースで使えるあなた用）または .inferpal/modes/ の Markdown ファイル、.github/agents/ の GitHub Copilot エージェント、または .roomodes の Roo Code モードです。</value></data>
   <data name="ModesModel" xml:space="preserve"><value>モデル: {0}</value></data>
   <data name="ModesModelFirst" xml:space="preserve"><value>モデル: {0} のうち最初にインストールされているもの</value></data>
   <data name="ModesModelChat" xml:space="preserve"><value>モデル: 会話のモデル</value></data>
@@ -979,6 +979,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ModesSegmentTip" xml:space="preserve"><value>その他のモード: ここで {0} 件見つかりました</value></data>
   <data name="ModesFoundHeader" xml:space="preserve"><value>ここで見つかったモード</value></data>
   <data name="ModesFooter" xml:space="preserve"><value>モードはツールを絞り込むだけで、権限を追加することはありません。</value></data>
+  <data name="ModesWriteOne" xml:space="preserve"><value>モードを書く</value></data>
   <data name="ModeHeldLine" xml:space="preserve"><value>モード: {0} — この質問から · {1}</value></data>
   <data name="ModeReadsOnly" xml:space="preserve"><value>読み取りと検索のみ、書き込みなし</value></data>
   <data name="ModeMayWrite" xml:space="preserve"><value>ファイルを変更できます — 変更ごとに事前確認</value></data>

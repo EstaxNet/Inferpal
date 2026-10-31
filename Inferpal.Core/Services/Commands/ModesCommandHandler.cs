@@ -13,7 +13,7 @@ internal static class ModesCommandHandler
     public static string Handle(ChatModeCatalog catalog)
     {
         var sb = new StringBuilder();
-        if (catalog.Modes.Count == 0) sb.Append(Strings.ModesNone);
+        if (catalog.Modes.Count == 0) sb.Append(ModePresenter.None);
         else
         {
             sb.Append(Strings.ModesHeader).Append("\n\n");

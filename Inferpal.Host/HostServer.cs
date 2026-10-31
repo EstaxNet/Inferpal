@@ -1296,8 +1296,9 @@ internal sealed partial class HostServer : IDisposable
             [.. catalog.Modes.Select(m => ModeDto.Of(m, m.PickModel(chat)))],
             [.. catalog.Notes.Select(n => $"{n.Source}: {Services.Commands.ModesCommandHandler.Note(n)}")],
             catalog.Find(s.ModeName)?.Name,
-            new ModeLabelsDto(Strings.ModesSegment, Strings.ModesSegmentTip(catalog.Modes.Count), Strings.ModesFoundHeader,
-                              Strings.ModesFooter));
+            new ModeLabelsDto(Strings.ModesSegment, ModePresenter.SegmentTip(catalog.Modes.Count),
+                              Strings.ModesFoundHeader, Strings.ModesFooter, ModePresenter.None, Strings.ModesWriteOne,
+                              DocsLinks.Modes));
     }
 
     /// <summary>`mode/set` — the mode the person picked for the conversation, or none: it leaves Plan, and its

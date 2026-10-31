@@ -74,6 +74,7 @@ internal partial class InferpalToolWindowData
         PinFileCommand            = new AsyncCommand(PinFileAsync);
         ToggleAttachMenuCommand   = new AsyncCommand((_, _) => { IsAttachMenuOpen = !IsAttachMenuOpen; return Task.CompletedTask; });
         ToggleModeMenuCommand     = new AsyncCommand(ToggleModeMenuAsync);
+        WriteModeCommand          = new AsyncCommand(OpenModesDocumentationAsync);
         ClearSearchCommand         = new AsyncCommand(ClearSearchAsync);
         RunSuggestionCommand       = new AsyncCommand(RunSuggestionAsync);
         HistoryUpCommand          = new AsyncCommand(HistoryUpAsync)   { CanExecute = false };

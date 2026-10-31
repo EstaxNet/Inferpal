@@ -15,6 +15,9 @@ internal static class DocsLinks
     /// <summary>The documentation's index, for this build.</summary>
     public static string Index => For("README.md", InstalledVersion);
 
+    /// <summary>How to write a mode (the mode selector's "Write a mode"), for this build.</summary>
+    public static string Modes => For("configuration.md#modes", InstalledVersion);
+
     /// <summary><paramref name="page"/> of the <c>docs</c> folder, for <paramref name="version"/>.</summary>
     internal static string For(string page, string? version) => $"{Repository}/blob/{RefFor(version)}/docs/{page}";
 

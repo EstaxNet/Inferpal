@@ -96,7 +96,8 @@ its next step. **Ctrl+Enter** queues a message for after the turn instead.
   refusal. The conversation keeps the notes with their question: the next question, a reload and
   **Regenerate** see them. Stop is the button — Enter never stops a turn.
 - **Agent Step Mode** — pause between tool calls to inspect or override each action. Toggle
-  with the 🦶 button (or `/agent-step`); continue with **▶ Resume** (or `/resume`). A note typed
+  with *Pause after each tool call* in the chat's ⋯ menu (Visual Studio) or `/agent-step` (both editors); continue
+  with **▶ Resume** (or `/resume`). A note typed
   during the pause resumes the run, which reads it at the next step.
 - **Agent Orchestrator** — an optional Plan→Act→Observe loop: the **Agent** mode of the Chat/Agent
   switch (`agentModeEnabled`, `inferpal.agentMode` in VS Code). **Chat** mode still uses tools — the
@@ -262,7 +263,7 @@ the problem with it.
 
 | Where you are | Visual Studio | VS Code |
 |---|---|---|
-| **Build errors** | Error List → *Fix with Inferpal*; *Fix with AI* on the failed-build banner; `/fix-build` | Problems or light bulb → *Fix with Inferpal*; the banner of a failed build task |
+| **Build errors** | Error List → *Fix with Inferpal*; *Fix them* on the failed-build banner; `/fix-build` | Problems or light bulb → *Fix with Inferpal*; the banner of a failed build task |
 | **A selection** | *Edit with AI…* (**Ctrl+Shift+I**): red and green in the editor, accepted part by part | *Edit with AI*, shown in Refactor Preview first |
 | **The editor's menu** | Explain · Fix · Refactor · Add Tests · Add Docstring | Explain · Fix · Refactor · Add Tests · Document |
 | **A file or a project** | Solution Explorer → *Explain* · *Review Changes* · *Attach to Chat* | Explorer → the same three |
@@ -316,8 +317,8 @@ The change appears in the editor in red and green; keep or drop each part.
   pre-fills the prompt with the MSBuild errors **and the content of each affected file** (up
   to 5 files × 4 000 chars).
 - **Build Failed banner** — when Visual Studio finishes a solution build with errors, a banner
-  appears above the input with the first error and a one-click **Fix with AI** / `/fix-build`
-  entry point. In VS Code, a task of the *build* group that fails draws the banner over the chat: the errors of the
+  appears above the input with the first error and **Fix them**, which puts `/fix-build` in the
+  prompt. In VS Code, a task of the *build* group that fails draws the banner over the chat: the errors of the
   Problems panel as it stands (each once), the first one, the task — **Fix them** sends them to the model, **Show the
   errors** opens the panel; a build that passes takes it down.
 - **Fix with Inferpal, from the problem list** — select lines in Visual Studio's **Error List** (errors, warnings — the
@@ -740,7 +741,7 @@ saved first. `/branch` shows the family tree.</sub>
 
 - **Real-time streaming** with Markdown, code blocks to copy, a **context ring** that fills as the model writes.
 - **Sessions** auto-saved with a generated title, searchable, exportable to `.md` with their statistics.
-- **Snippets, templates, prompt history** — ⭐ keeps a code block, `/template` loads a ready context, `/phistory`
+- **Snippets, templates, prompt history** — ⭐ keeps a code block (Visual Studio), `/template` loads a ready context, `/phistory`
   finds what you asked before.
 
 <details>
@@ -766,7 +767,8 @@ saved first. `/branch` shows the family tree.</sub>
   A branch is a plain session file with a `parent` + `fork_turn` link — nothing else in the
   store, the history rebuild or the picker had to learn about branching.
 - **The end of a long run, announced** — when an answer took more than 30 seconds, Visual Studio plays an audible ping and VS Code shows a notification while you are not looking at its chat — done, or stopped on an error (**Show the answer** brings it back); turned off in Settings › Language and appearance › Agent runs, for both.
-- **Code snippet library** — ⭐ saves any code block; `/snippets` manages it across sessions.
+- **Code snippet library** — ⭐ saves any code block (Visual Studio); `/snippets` manages it across sessions, in both
+  editors.
 - **Session & prompt templates** — `/template` loads a preconfigured context; user prompt
   templates support `{args}`.
 - **Prompt history** — persistent; search with `/phistory`.
@@ -829,7 +831,8 @@ Which model for which card: **[Models](models.md#by-graphics-card)**, measured o
 <summary><b>In detail: model manager, VRAM, /bench, /arena, the Model Router</b></summary>
 
 - **Model manager** — `/models list/pull/delete/running` (streaming pull on Ollama).
-- **VRAM monitoring** — a header badge shows the models resident in VRAM;
+- **VRAM monitoring** — the header shows what the loaded models occupy in VRAM (`14.2 GB VRAM`), when the server
+  reports it; `/models running` lists them one by one;
   `ModelLifetimeService` auto-unloads idle ones.
 - **Hardware profile** — `/hardware` reports budget, loaded models, headroom, and a
   recommended `num_ctx`.
@@ -1010,7 +1013,8 @@ Studio to VS Code and back — and to any editor that speaks the [Agent Client P
   errors), live agent-plan block,
   slash-command autocomplete, Shift+↑/↓ prompt history, token counter with a clickable context gauge (opens the X-Ray
   panel), conversation search, `.md`/`.txt` export, and a localized webview (10 languages).
-- **Not in VS Code yet** — `/fix-build` is Visual Studio's alone (it answers that it is not available).
+- **Not in VS Code yet** — `/fix-build` is Visual Studio's alone (it answers that it is not available), and so is
+  the ⭐ that saves a code block to the snippet library.
 - **Headless slash commands** — nearly all the slash commands are served by the host over JSON-RPC with the
   same approval/permission pipeline; long commands are cancellable.
 - **Settings panel in VS Code** — an "Inferpal Settings" webview with the same seven pages as the

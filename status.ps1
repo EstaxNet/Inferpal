@@ -42,6 +42,7 @@ Line 'Last commit' $lastLog
 # ── Visual Studio 2026 ───────────────────────────────────────────────────────
 Write-Host "`n  [Visual Studio 2026]" -ForegroundColor DarkCyan
 $vsDll = $null
+$vsDlls = @()
 $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
 if (Test-Path $vsWhere) {
     # ⚠ No "| Select-Object -First 1" here: -First stops the pipeline as soon as it has its
@@ -49,28 +50,45 @@ if (Test-Path $vsWhere) {
     # than not. Capture everything, then index.
     $vsPath = @(& $vsWhere -all -prerelease -products * -version '[18.0,19.0)' -property installationPath 2>$null)[0]
     if ($vsPath) {
-        # Deux racines possibles : Extensions\ (modele classique, celle ou VS traite pkgdef +
-        # catalogue MEF, donc l'in-proc) et VSExtensions\ (out-of-proc pur). Apres la bascule
-        # with in-process hosting an old install can linger in the other root: taking whichever
-        # comes first would show the version of a folder VS no longer loads.
-        $vsDlls = @(Get-ChildItem "$vsPath\Common7\IDE" -Recurse -Filter 'Inferpal.dll' -ErrorAction SilentlyContinue)
-        $vsDll  = @($vsDlls | Where-Object { $_.DirectoryName -like '*\Common7\IDE\Extensions\*' } |
-                   Select-Object -First 1)[0]
-        if (-not $vsDll) { $vsDll = $vsDlls | Select-Object -First 1 }
+        # Machine roots: Extensions\ (classic model, where VS processes the pkgdef and the MEF catalog, so the
+        # in-proc) and VSExtensions\ (pure out-of-proc).
+        $vsDlls += @(Get-ChildItem "$vsPath\Common7\IDE" -Recurse -Filter 'Inferpal.dll' -ErrorAction SilentlyContinue)
     }
 }
+# ⚠ The user's own roots too, every hive (the Marketplace installs there, deploy-dev.ps1 in the Exp hive): read
+# without them, this line showed a dead machine copy while VS ran the Marketplace's.
+$vsDlls += @(Get-ChildItem "$env:LOCALAPPDATA\Microsoft\VisualStudio\18.0_*\Extensions" -Recurse `
+                 -Filter 'Inferpal.dll' -ErrorAction SilentlyContinue)
+# Which copy runs: the one a running extension host has loaded; otherwise the highest version.
+$loaded = @(Get-Process -Name 'ServiceHub.Host.Extensibility*' -ErrorAction SilentlyContinue | ForEach-Object {
+    try { $_.Modules | Where-Object { $_.ModuleName -eq 'Inferpal.dll' } | ForEach-Object { $_.FileName } } catch { }
+})
+$vsDll = @($vsDlls | Where-Object { $loaded -contains $_.FullName })[0]
+$isLoaded = [bool]$vsDll
 if (-not $vsDll) {
-    $vsDll = Get-ChildItem "$env:LOCALAPPDATA\Microsoft\VisualStudio\18.0_*Exp\Extensions" -Recurse `
-                 -Filter 'Inferpal.dll' -ErrorAction SilentlyContinue | Select-Object -First 1
+    # Highest version; on a tie, never the VSExtensions\ copy (pure out-of-proc root, where the in-proc cannot load).
+    $vsDll = @($vsDlls | Sort-Object @{ Expression = { [version][System.Diagnostics.FileVersionInfo]::GetVersionInfo($_.FullName).FileVersion }; Descending = $true },
+                                     @{ Expression = { $_.DirectoryName -like '*\Common7\IDE\VSExtensions\*' }; Descending = $false })[0]
 }
 if ($vsDll) {
     $fv = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($vsDll.FullName).FileVersion
-    Line 'Installed' "v$fv  (deployed $(Age $vsDll.LastWriteTime))" $(if ($fv -like "$version*") { 'Green' } else { 'Yellow' })
+    # Not seen loaded is not "VS is closed": the window may never have been opened, or the host's modules unreadable.
+    $how = if ($isLoaded) { 'loaded by the running VS' } else { 'highest installed; not seen loaded by a running host' }
+    Line 'Installed' "v$fv  (deployed $(Age $vsDll.LastWriteTime), $how)" $(if ($fv -like "$version*") { 'Green' } else { 'Yellow' })
     Line 'Location' $vsDll.DirectoryName
-    if ($vsDlls -and $vsDlls.Count -gt 1) {
-        Line 'Duplicate' "$($vsDlls.Count) installs under Common7\IDE - the others are dead weight" 'Yellow'
-        foreach ($d in ($vsDlls | Where-Object { $_.DirectoryName -ne $vsDll.DirectoryName })) {
-            Line ''      "stale: $($d.DirectoryName)" 'DarkGray'
+    # The root decides whether the in-proc can load at all (CLAUDE.md, "In-proc"): VSExtensions\ is out-of-proc only.
+    if ($vsDll.DirectoryName -like '*\Common7\IDE\VSExtensions\*') {
+        Line 'Root' 'VSExtensions\ - pure out-of-proc root: ghost text and the debugger driver cannot load from here' 'Yellow'
+    }
+    if ($vsDlls.Count -gt 1) {
+        # Another hive may belong to another VS instance (Preview, Exp): listed, never called dead.
+        Line 'Also installed' "$($vsDlls.Count - 1) other copies" 'Yellow'
+        foreach ($d in ($vsDlls | Where-Object { $_.FullName -ne $vsDll.FullName })) {
+            $dv = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($d.FullName).FileVersion
+            # Stale: a copy in the out-of-proc root, or a second one in the machine root in use - delete it, VS closed.
+            $tag = if ($d.DirectoryName -like '*\Common7\IDE\VSExtensions\*' -or
+                       ($d.DirectoryName -like '*\Common7\IDE\Extensions\*' -and $vsDll.DirectoryName -like '*\Common7\IDE\Extensions\*')) { 'stale: ' } else { '' }
+            Line ''      "${tag}v$dv  $($d.DirectoryName)" 'DarkGray'
         }
     }
     # Stale when any tracked source is newer than the deployed DLL.

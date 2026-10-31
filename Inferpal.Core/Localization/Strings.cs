@@ -1948,7 +1948,7 @@ internal static class Strings
     public static string ModeGone(string name) => Format(Get(nameof(ModeGone)), name);
     public static string ModeUnknown(string name) => Format(Get(nameof(ModeUnknown)), name);
     public static string ModesHeader => Get(nameof(ModesHeader));
-    public static string ModesNone => Get(nameof(ModesNone));
+    public static string ModesNone(string userDir) => Format(Get(nameof(ModesNone)), userDir);
     public static string ModesModel(string model) => Format(Get(nameof(ModesModel)), model);
     public static string ModesModelFirst(string models) => Format(Get(nameof(ModesModelFirst)), models);
     public static string ModesModelChat => Get(nameof(ModesModelChat));
@@ -1962,6 +1962,7 @@ internal static class Strings
     public static string ModesSegmentTip(int count) => Format(Get(nameof(ModesSegmentTip)), count);
     public static string ModesFoundHeader => Get(nameof(ModesFoundHeader));
     public static string ModesFooter => Get(nameof(ModesFooter));
+    public static string ModesWriteOne => Get(nameof(ModesWriteOne));
     public static string ModeHeldLine(string name, string what) => Format(Get(nameof(ModeHeldLine)), name, what);
     public static string ModeReadsOnly => Get(nameof(ModeReadsOnly));
     public static string ModeMayWrite => Get(nameof(ModeMayWrite));

@@ -238,7 +238,7 @@ Review the change against the repository's conventions. Never edit a file.
 
 **Its model** is the first of its list the server has — never downloaded. When the server has none of them (a Copilot agent asks for `GPT-5`), the conversation's model answers and the thread says so once. Its instructions are the system message's last layer (they win a conflict) and show in the Context X-Ray. The mode is kept with the conversation and comes back with it; a mode whose file is gone is said, and the conversation continues without it. The repository formats follow `repoInstructionFamilies`: without `copilot`, `.github/agents` is not read, without `roo`, `.roomodes`. In an ACP client (Zed, JetBrains…), each mode found is one more session mode.
 
-**Picking one.** In Visual Studio and VS Code, **Modes** — the fourth segment beside Chat, Agent and Plan, there when a mode is found — lists Inferpal's three, then the modes found here with the model each answers with, what it may do and its file. Picking one holds the conversation in it, and the thread shows where it starts; Chat, Agent or Plan (or a typed `/plan`) leaves it.
+**Picking one.** In Visual Studio and VS Code, **Modes** — the fourth segment beside Chat, Agent and Plan — lists Inferpal's three, then the modes found here with the model each answers with, what it may do and its file; with none found, it says where a mode goes and links this section. Picking one holds the conversation in it, and the thread shows where it starts; Chat, Agent or Plan (or a typed `/plan`) leaves it.
 
 ### The project profile (`.inferpal/project.json`)
 

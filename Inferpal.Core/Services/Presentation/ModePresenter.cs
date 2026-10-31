@@ -14,6 +14,18 @@ internal static class ModePresenter
     public static string Summary(ChatMode mode, string? answering) =>
         $"{answering ?? Strings.ModePickerChatModel} · {What(mode)} · {mode.Source}";
 
+    /// <summary>No mode found: where one goes, the person's own folder first — this machine's, as the catalog reads it.</summary>
+    public static string None => Strings.ModesNone(ChatModes.UserDir);
+
+    /// <summary>The segment's tooltip when no mode holds the conversation, one rule for Visual Studio and the host:
+    /// <c>null</c> (not read yet) never says "no mode".</summary>
+    public static string SegmentTip(int? found) => found switch
+    {
+        null  => Strings.ModesSegment,
+        0     => None,
+        { } n => Strings.ModesSegmentTip(n),
+    };
+
     /// <summary>The line the thread shows where a mode starts: its name, and what it may do.</summary>
     public static string HeldLine(ChatMode mode) =>
         Strings.ModeHeldLine(mode.Name, mode.Tools is { MayWrite: false } ? Strings.ModeReadsOnly : Strings.ModeMayWrite);

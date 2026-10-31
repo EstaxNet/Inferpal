@@ -20,12 +20,14 @@ internal partial class InferpalToolWindowData
     /// <summary>The mode whose missing models this conversation was already told about: said once, not at every turn.</summary>
     private string? _modeModelNoticeSaid;
 
-    /// <summary>How many modes the last reading found here: the fourth segment shows only when there are some.</summary>
-    private int _foundModeCount;
+    /// <summary>How many modes the last reading found here; <c>null</c> before the first reading, which never says
+    /// "no mode" for a workspace not read yet.</summary>
+    private int? _foundModeCount;
 
-    private bool   _isModeMenuOpen, _hasModesSegment, _hasFoundModes;
+    private bool   _isModeMenuOpen, _hasFoundModes, _hasNoFoundModes;
     private string _modesSegmentLabel = string.Empty, _modesSegmentTip = string.Empty,
-                   _modesHeader       = string.Empty, _modesFooter     = string.Empty;
+                   _modesHeader       = string.Empty, _modesFooter     = string.Empty,
+                   _modesNone         = string.Empty, _modesWriteOne   = string.Empty;
 
     /// <summary>Chat, Agent and Plan, at the top of the list.</summary>
     [DataMember] public ObservableCollection<ModeMenuItem> OwnModeItems   { get; } = [];
@@ -33,9 +35,11 @@ internal partial class InferpalToolWindowData
     [DataMember] public ObservableCollection<ModeMenuItem> FoundModeItems { get; } = [];
 
     [DataMember] public bool   IsModeMenuOpen    { get => _isModeMenuOpen;    set => SetProperty(ref _isModeMenuOpen,    value); }
-    /// <summary>The fourth segment shows: modes are found here, or one holds the conversation.</summary>
-    [DataMember] public bool   HasModesSegment   { get => _hasModesSegment;   set => SetProperty(ref _hasModesSegment,   value); }
     [DataMember] public bool   HasFoundModes     { get => _hasFoundModes;     set => SetProperty(ref _hasFoundModes,     value); }
+    /// <summary>No mode here: the list says where one goes instead of an empty section.</summary>
+    [DataMember] public bool   HasNoFoundModes   { get => _hasNoFoundModes;   set => SetProperty(ref _hasNoFoundModes,   value); }
+    [DataMember] public string ModesNone         { get => _modesNone;         set => SetProperty(ref _modesNone,         value); }
+    [DataMember] public string ModesWriteOne     { get => _modesWriteOne;     set => SetProperty(ref _modesWriteOne,     value); }
     /// <summary>The held mode's name, or "Modes".</summary>
     [DataMember] public string ModesSegmentLabel { get => _modesSegmentLabel; set => SetProperty(ref _modesSegmentLabel, value); }
     [DataMember] public string ModesSegmentTip   { get => _modesSegmentTip;   set => SetProperty(ref _modesSegmentTip,   value); }
@@ -44,6 +48,15 @@ internal partial class InferpalToolWindowData
 
     /// <summary>Opens the list (read again as it opens), or closes it.</summary>
     [DataMember] public AsyncCommand ToggleModeMenuCommand { get; private set; } = null!;
+    /// <summary>The "Modes" section of this version's configuration page, in the browser; not opened, its address is said.</summary>
+    [DataMember] public AsyncCommand WriteModeCommand { get; private set; } = null!;
+
+    private async Task OpenModesDocumentationAsync(object? _, CancellationToken __)
+    {
+        await RunOnVMContextAsync(() => IsModeMenuOpen = false);
+        var docs = DocsLinks.Modes;
+        if (!WebLink.Open(docs)) await ShowInfoAsync(Strings.HelpDocumentation(docs));
+    }
 
     /// <summary>The modes, read where <c>/modes</c> and the system prompt read <c>.inferpal/</c>.</summary>
     private ChatModeCatalog ModeCatalog() => ChatModes.For(_config, FindProjectRoot());
@@ -111,8 +124,6 @@ internal partial class InferpalToolWindowData
             }
             _foundModeCount = catalog.Modes.Count;
             HasFoundModes   = _foundModeCount > 0;
-            ModesHeader     = Strings.ModesFoundHeader;
-            ModesFooter     = Strings.ModesFooter;
             RefreshModesSegment();
         });
     }
@@ -127,15 +138,23 @@ internal partial class InferpalToolWindowData
         catch (Exception ex) { Diagnostics.Swallow("Modes.Refresh", ex); }
     }
 
-    /// <summary>The fourth segment, from what is held and found now. VM context only.</summary>
+    /// <summary>The fourth segment and the list's own words, from what is held and found now. VM context only; called by
+    /// <c>ApplyLabels</c> too, so the list opened before its first reading is never wordless. ⚠ The segment is always
+    /// shown, modes found or not: hidden without one, nothing in the window said modes exist — the list says where one
+    /// goes.</summary>
     private void RefreshModesSegment()
     {
-        HasModesSegment   = _foundModeCount > 0 || _heldMode is not null;
+        ModesHeader       = Strings.ModesFoundHeader;
+        ModesFooter       = Strings.ModesFooter;
+        ModesNone         = ModePresenter.None;
+        ModesWriteOne     = Strings.ModesWriteOne;
+        // "No mode found" only once read, and never under a held mode whose file has gone: the segment still names it.
+        HasNoFoundModes   = _foundModeCount == 0 && _heldMode is null;
         ModesSegmentLabel = _heldMode?.Name ?? Strings.ModesSegment;
         // The held mode's row says the model it answers with, as the server listed it at the last reading.
         ModesSegmentTip   = _heldMode is { } held
             ? $"{held.Name} — {FoundModeItems.FirstOrDefault(i => i.Name == held.Name)?.Summary ?? ModePresenter.Summary(held, null)}"
-            : Strings.ModesSegmentTip(_foundModeCount);
+            : ModePresenter.SegmentTip(_foundModeCount);
     }
 
     /// <summary>Chat, Agent or Plan, picked in the list: the composer's switch, which leaves a held mode.</summary>

@@ -34,6 +34,28 @@ public partial class HostServerTests
     private static Task<T> Call<T>(Harness h, string method, object args) =>
         h.Client.InvokeWithParameterObjectAsync<T>(method, args).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
+    /// <summary>
+    /// No mode here: the selector still has its words — where a mode goes, and the page that says how to write one —
+    /// since the segment shows anyway. One mode written, the tooltip counts it.
+    /// </summary>
+    [Fact]
+    public async Task ModeList_WithNoModeHere_SaysWhereOneGoes_AndLinksThePageOnWritingOne()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+
+        var none = (await Call<ModeListResult>(h, "mode/list", new { })).Labels!;
+        Assert.Equal(Services.Presentation.ModePresenter.None, none.None);
+        Assert.Equal(Services.Presentation.ModePresenter.None, none.SegmentTip);
+        Assert.Contains(Services.Governance.ChatModes.UserDir, none.None, StringComparison.Ordinal);   // the person's own folder
+        Assert.Equal(Localization.Strings.ModesWriteOne, none.WriteOne);
+        Assert.Equal(Services.DocsLinks.Modes, none.WriteOneUrl);
+
+        WriteMode(h, "review.md", ReviewMode);
+        var one = (await Call<ModeListResult>(h, "mode/list", new { })).Labels!;
+        Assert.Equal(Localization.Strings.ModesSegmentTip(1), one.SegmentTip);
+    }
+
     [Fact]
     public async Task AModeHeld_SendsItsInstructionsItsToolsItsEffort_AndItsModelTheServerHas()
     {

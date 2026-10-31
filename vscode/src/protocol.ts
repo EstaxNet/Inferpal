@@ -248,7 +248,7 @@ export interface IndexStatusResult {
   rootDir: string;
 }
 
-/** `backend/status` answer — connection badge + compact VRAM line ("model · X.X GB"). */
+/** `backend/status` answer — connection badge + what the loaded models occupy ("X.X GB VRAM", or empty). */
 export interface BackendStatusResult {
   connected: boolean;
   vramBadge: string;
@@ -710,6 +710,11 @@ export interface ModeLabels {
   segmentTip: string;
   header: string;
   footer: string;
+  /** Shown in the list when no mode is found: where one goes. */
+  none: string;
+  /** The link to this version's page on writing a mode, and its address. */
+  writeOne: string;
+  writeOneUrl: string;
 }
 
 /** `mode/list` answer: the modes found, the files set aside, the mode held, the selector's words. */

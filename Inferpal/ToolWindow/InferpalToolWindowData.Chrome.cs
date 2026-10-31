@@ -30,7 +30,7 @@ internal partial class InferpalToolWindowData
     private bool   _hasModelMenuNote;
 
     [DataMember] public string ModelName      { get => _modelName;      set => SetProperty(ref _modelName,      value); }
-    /// <summary>"LM Studio · VRAM 14 GB", or the server and why it does not answer.</summary>
+    /// <summary>"Ollama · 14.2 GB VRAM", or the server and why it does not answer.</summary>
     [DataMember] public string ModelMeta      { get => _modelMeta;      set => SetProperty(ref _modelMeta,      value); }
     [DataMember] public string ModelDotColor  { get => _modelDotColor;  set => SetProperty(ref _modelDotColor,  value); }
     [DataMember] public string ModelButtonTip { get => _modelButtonTip; set => SetProperty(ref _modelButtonTip, value); }
@@ -273,7 +273,7 @@ internal partial class InferpalToolWindowData
         ModelName  = string.IsNullOrEmpty(ActiveModelLabel) ? "—" : ActiveModelLabel;
         // A server that refused the check (a wrong API key) is running: its own sentence names it.
         var state = _connected == false ? (_refusal is null ? Strings.StatusUnreachable : Strings.StatusRefused(_refusal)) : string.Empty;
-        var vram  = _connected == true && HasVramStatus ? "VRAM " + VramStatus : string.Empty;
+        var vram  = _connected == true && HasVramStatus ? VramStatus : string.Empty;
         ModelMeta = string.Join(" · ", new[] { server, state, vram }.Where(s => s.Length > 0));
         ModelDotColor = _connected switch
         {

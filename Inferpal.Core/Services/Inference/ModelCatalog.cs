@@ -340,22 +340,21 @@ internal static class ModelCatalog
     }
 
     /// <summary>
-    /// Compact one-line VRAM badge for the window header: <c>name · X.X GB │ name2 · Y.Y GB</c>.
-    /// The tag suffix is dropped (<c>llama3.1:8b</c> → <c>llama3.1</c>); a model loaded on CPU
-    /// (<see cref="RunningModelInfo.SizeVram"/> == 0) or whose backend does not report it shows just
-    /// its name; an empty list → "".
+    /// The window header's VRAM figure: what the loaded models occupy together, <c>X.X GB VRAM</c>.
+    /// ⚠ A figure or nothing: a model on the CPU (<see cref="RunningModelInfo.SizeVram"/> == 0) adds nothing; one whose
+    /// backend does not say (LM Studio) leaves no badge at all, and so does a list with no VRAM in use — never the
+    /// models' names, which the header then read as "VRAM text-embedding-…" beside the chat model it already names.
+    /// <c>/models running</c> lists them one by one.
     /// </summary>
-    public static string FormatVramBadge(IReadOnlyList<RunningModelInfo> running) =>
-        string.Join(" │ ", running.Select(m =>
-        {
-            var colon     = m.Name.IndexOf(':', StringComparison.Ordinal);
-            var shortName = colon > 0 ? m.Name[..colon] : m.Name;
-            // Invariant: the badge pairs the number with an English "GB" unit, so a localized
-            // decimal comma ("2,0 GB") would read inconsistently — and keeps the format deterministic.
-            return m.SizeVram > 0
-                ? $"{shortName} · {(m.SizeVram / BytesPerGb).ToString("F1", CultureInfo.InvariantCulture)} GB"
-                : shortName;
-        }));
+    public static string FormatVramBadge(IReadOnlyList<RunningModelInfo> running)
+    {
+        // One size unknown and the sum is not what the models occupy: no figure rather than a part shown as the whole.
+        if (running.Any(m => !m.ReportsVram)) return string.Empty;
+        var bytes = running.Where(m => m.SizeVram > 0).Sum(m => m.SizeVram);
+        // Invariant: the number is paired with an English "GB" unit, so a localized decimal comma ("2,0 GB") would read
+        // inconsistently — and keeps the format deterministic.
+        return bytes > 0 ? $"{(bytes / BytesPerGb).ToString("F1", CultureInfo.InvariantCulture)} GB VRAM" : string.Empty;
+    }
 
     /// <summary>The <c>/models running</c> table (VRAM in MB).</summary>
     public static string FormatRunningModels(IReadOnlyList<RunningModelInfo> running)

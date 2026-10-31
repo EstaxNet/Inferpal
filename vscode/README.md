@@ -73,7 +73,7 @@ These were measured on one 24 GB card (LM Studio, 32K context), with its free me
 ## Also in the box
 
 - **30 built-in tools**: files, text and semantic search, build and tests, shell with background jobs, git, the editor, the debugger, compiler-backed analysis and symbol rename, web search and page fetch. Add any **MCP** server's tools and your own shell commands. See the [reference](https://github.com/EstaxNet/Inferpal/blob/master/docs/tools.md).
-- **Semantic code search** across your workspace. The most relevant code is added to each question, and suggested as chips while you type.
+- **Semantic code search** across your workspace, with an embedding model installed (keyword search without one). The most relevant code is added to each question, and suggested as chips while you type.
 - **Reviews and Git text.** `/check` reviews your diff, a branch or a commit, and anchors every finding to a line. `/commit` drafts the commit message, and `/pr-description` writes the pull request description.
 - **Typed mentions**: `@file` `@folder` `@code` `@diff` `@commit` `@problems` `@debugger` `@clipboard` `@tree` `@url` `@terminal`. **@Docs** indexes a documentation site with `/docs add <url>`.
 - **Modes, yours or your repository's.** Beside Chat, Agent and Plan, pick a mode found for the workspace: your own, GitHub Copilot's custom agents or Roo Code's custom modes. It brings its instructions, model, tools and effort, and adds no permission.
@@ -101,7 +101,7 @@ These were measured on one 24 GB card (LM Studio, 32K context), with its free me
 
 **Can the model run on another machine?** Yes. Point the server address at it, as described in [Remote inference](https://github.com/EstaxNet/Inferpal/blob/master/docs/remote-inference.md).
 
-**Does it work with Remote - WSL, Remote - SSH or Dev Containers?** Yes: Inferpal runs on the other side, next to your files. There, `localhost` is WSL, the remote machine or the container — Inferpal says so when a local address does not answer, with the address to use instead ([details](https://github.com/EstaxNet/Inferpal/blob/master/docs/remote-inference.md#5-vs-code-connected-to-wsl-ssh-or-a-container)).
+**Does it work with Remote - WSL, Remote - SSH or Dev Containers?** Yes, when the other side is x64 Linux (there is no build for ARM Linux or Alpine): Inferpal runs on the other side, next to your files. There, `localhost` is WSL, the remote machine or the container — Inferpal says so when a local address does not answer, with the address to use instead ([details](https://github.com/EstaxNet/Inferpal/blob/master/docs/remote-inference.md#5-vs-code-connected-to-wsl-ssh-or-a-container)).
 
 **Does it work offline?** Yes, with a local server. Only web search and page fetch need the internet.
 

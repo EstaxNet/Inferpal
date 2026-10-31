@@ -415,7 +415,8 @@ internal sealed record DebugCaptureTestParams(string Program, List<string> Args,
 internal sealed record IndexStatusResult(bool IsIndexing, int ChunkCount, string RootDir);
 
 /// <summary>`backend/status` answer — the adapter's connection badge. <paramref name="VramBadge"/>
-/// is the compact "model · X.X GB" line (empty when unreachable, unsupported or nothing loaded).</summary>
+/// is what the loaded models occupy, "X.X GB VRAM" (empty when unreachable, unsupported, nothing
+/// loaded, or no size reported).</summary>
 /// <param name="EdgeNotice">
 /// The sentence to put IN THE THREAD when this heartbeat just crossed an edge — went unreachable,
 /// or came back — and <c>null</c> the rest of the time, which is nearly always.
@@ -897,8 +898,10 @@ internal sealed record ModeDto(
 /// shows it); without, nothing is asked of the server.</summary>
 internal sealed record ModeListParams(bool Models = false);
 
-/// <summary>The selector's own words, in the person's language: the segment, its tooltip, the list's heading and foot.</summary>
-internal sealed record ModeLabelsDto(string Segment, string SegmentTip, string Header, string Footer);
+/// <summary>The selector's own words, in the person's language: the segment, its tooltip, the list's heading and foot,
+/// the line shown when no mode is found, and the link to the page that says how to write one.</summary>
+internal sealed record ModeLabelsDto(string Segment, string SegmentTip, string Header, string Footer, string None,
+                                     string WriteOne, string WriteOneUrl);
 
 /// <summary>`mode/list` answer: the modes found, the files set aside (each a line, with why), the mode held now, and the
 /// selector's words.</summary>

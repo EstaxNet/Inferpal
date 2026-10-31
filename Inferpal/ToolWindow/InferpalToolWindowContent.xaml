@@ -2931,8 +2931,19 @@
                             </Border>
                             <ItemsControl ItemsSource="{Binding FoundModeItems}" ItemTemplate="{StaticResource ModeMenuRow}"/>
                             <Border BorderThickness="0,1,0,0" BorderBrush="{Binding ThemeBorder}" Margin="0,4,0,0" Padding="12,6,12,2">
-                                <TextBlock Text="{Binding ModesFooter}" FontSize="11" TextWrapping="Wrap"
-                                           Foreground="{Binding ThemeSubtleText}"/>
+                                <StackPanel>
+                                    <!-- No mode here: where one goes, instead of an empty section -->
+                                    <TextBlock Text="{Binding ModesNone}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,4"
+                                               Foreground="{Binding ThemeSubtleText}"
+                                               Visibility="{Binding HasNoFoundModes, Converter={StaticResource b2v}}"/>
+                                    <TextBlock Text="{Binding ModesFooter}" FontSize="11" TextWrapping="Wrap"
+                                               Foreground="{Binding ThemeSubtleText}"/>
+                                    <Button Template="{StaticResource Flat6}" Background="Transparent" BorderThickness="0"
+                                            Padding="0,2" Margin="0,2,0,0" Cursor="Hand" HorizontalAlignment="Left"
+                                            Command="{Binding WriteModeCommand}" AutomationProperties.Name="{Binding ModesWriteOne}">
+                                        <TextBlock Text="{Binding ModesWriteOne}" FontSize="11" Foreground="{Binding ThemeAccentText}"/>
+                                    </Button>
+                                </StackPanel>
                             </Border>
                         </StackPanel>
                     </Border>
@@ -3302,11 +3313,11 @@
                                 <TextBlock Text="{Binding LabelModePlan}" FontSize="13" VerticalAlignment="Center"/>
                             </Button>
                             <!-- The fourth segment: the mode held (its name), or "Modes", opening the list of the modes found
-                                 here — shown only when there are some, or one is held -->
+                                 here — always shown: without a mode, the list says where one goes -->
                             <Button Template="{StaticResource Flat5}" Padding="10,0" BorderThickness="1" Cursor="Hand"
                                     Command="{Binding ToggleModeMenuCommand}"
-                                    ToolTip="{Binding ModesSegmentTip}" AutomationProperties.Name="{Binding ModesSegmentTip}"
-                                    Visibility="{Binding HasModesSegment, Converter={StaticResource b2v}}">
+                                    ToolTip="{Binding ModesSegmentTip}" AutomationProperties.Name="{Binding ModesSegmentLabel}"
+                                    AutomationProperties.HelpText="{Binding ModesSegmentTip}">
                                 <Button.Style>
                                     <Style TargetType="Button">
                                         <Setter Property="Background" Value="Transparent"/>
