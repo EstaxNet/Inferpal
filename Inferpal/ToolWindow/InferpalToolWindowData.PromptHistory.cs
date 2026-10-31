@@ -162,10 +162,14 @@ internal partial class InferpalToolWindowData
         await ShowInfoAsync(await Services.Commands.HistoryCommandHandler.HandleAsync(
             _store, parts, DateTime.UtcNow, ct));
 
-    // /undo-run [list|review] — logic shared with the Host (UndoRunCommandHandler).
-    private async Task HandleUndoRunCommandAsync(string[] parts, CancellationToken ct) =>
+    // /undo-run [list|review] — logic shared with the Host (UndoRunCommandHandler). Typed or from a bar's Undo, the bars
+    // then show their runs as they stand.
+    private async Task HandleUndoRunCommandAsync(string[] parts, CancellationToken ct)
+    {
         await ShowInfoAsync(await UndoOutsideAnyRunAsync(() => Services.Commands.UndoRunCommandHandler.HandleAsync(
             _tools.History, parts, FindProjectRoot(), ct)));
+        await RunOnVMContextAsync(RefreshUndoneBars);
+    }
 
     private async Task HandleMemoryCommandAsync(CancellationToken ct) =>
         await ShowInfoAsync(await Services.Commands.ProjectFileCommandHandler.HandleAsync(

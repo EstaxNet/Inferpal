@@ -209,8 +209,17 @@ internal sealed partial class HostServer
                         s.Store, parts, DateTime.UtcNow, cts.Token));
 
                 case SlashCommandId.UndoRun:
-                    return new SlashCommandResult(true, await UndoRunCommandHandler.HandleAsync(
-                        s.Tools.History, parts, s.RootDir, cts.Token));
+                {
+                    // The result bars of the runs it moved show them as they stand ("Run undone · N changes kept"): one
+                    // effect per run whose line changed, typed or from a bar's Undo.
+                    var history = s.Tools.History;
+                    var before  = history.Runs.GroupBy(r => r.Id).ToDictionary(g => g.Key, g => Services.Presentation.RunReview.UndoneBar(history, g.Last()));
+                    var text    = await UndoRunCommandHandler.HandleAsync(history, parts, s.RootDir, cts.Token);
+                    var moved   = history.Runs.GroupBy(r => r.Id).Select(g => (Id: g.Key, Line: Services.Presentation.RunReview.UndoneBar(history, g.Last())))
+                                          .Where(r => !before.TryGetValue(r.Id, out var was) || was != r.Line)
+                                          .Select(r => new SlashEffectDto("runUndone", r.Line, r.Id)).ToList();
+                    return new SlashCommandResult(true, text, moved.Count > 0 ? moved : null);
+                }
 
                 case SlashCommandId.PHistory:
                 {

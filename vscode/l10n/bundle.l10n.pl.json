@@ -39,7 +39,7 @@
   "Rewrite applied from the preview — undo with Ctrl+Z if needed.": "Przepisanie zastosowane z podglądu — w razie potrzeby cofnij za pomocą Ctrl+Z.",
   "Rewrite applied — undo with Ctrl+Z if needed.": "Przepisanie zastosowane — w razie potrzeby cofnij za pomocą Ctrl+Z.",
   "Send": "Wyślij",
-  "Cancel": "Anuluj",
+  "Stop (Esc twice)": "Zatrzymaj (dwa razy Esc)",
   "Retry the connection": "Ponów połączenie",
   "Search in the conversation": "Szukaj w rozmowie",
   "Search in the conversation…": "Szukaj w rozmowie…",

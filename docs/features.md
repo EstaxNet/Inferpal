@@ -94,7 +94,7 @@ its next step. **Ctrl+Enter** queues a message for after the turn instead.
   final answer) is sent next; after **Stop**, notes and queued messages come back to the input
   box. With an approval card waiting, Enter with text refuses the card and the text goes with the
   refusal. The conversation keeps the notes with their question: the next question, a reload and
-  **Regenerate** see them. Stop is the button — Enter never stops a turn.
+  **Regenerate** see them. Stop is the button, or Esc twice in the message box — Enter never stops a turn.
 - **Agent Step Mode** — pause between tool calls to inspect or override each action. Toggle
   with *Pause after each tool call* in the chat's ⋯ menu (Visual Studio) or `/agent-step` (both editors); continue
   with **▶ Resume** (or `/resume`). A note typed
@@ -120,7 +120,8 @@ its next step. **Ctrl+Enter** queues a message for after the turn instead.
 - **A run you can read at a glance** *(both editors)* — a run's steps show as they come, then
   fold into one line (`3 steps · read 1 file · edited 1 · build passed`, a ✗ when its last check
   failed). Under the answer, a **result bar** lists the files it changed with their lines added and
-  removed, the last build or test check, and **Undo run** (`/undo-run`), offered on the latest run.
+  removed, the last build or test check, and **Undo run** (`/undo-run`), offered on the latest run; once undone, the bar says **Run undone** and how many
+  changes you kept stay as the run made them.
 - **Approvals in the conversation** *(both editors)* — during a turn, an approval is a card under
   the steps: what will happen, to what, the first lines of the change, then **Allow once**
   (Enter), **Always this session** and **Deny** (Esc); *Open diff* shows the whole change. When a

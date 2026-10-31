@@ -148,6 +148,35 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     [DataMember] public AsyncCommand ReviewCommand { get; }
     /// <summary>The run a result bar or a review card belongs to; empty for any other item.</summary>
     internal string RunId { get; private set; } = string.Empty;
+    private string _runUndone = string.Empty;
+    private bool   _isRunUndone, _showsRunDetail = true;
+    /// <summary>Its run undone: "Run undone · N changes kept" in place of its files, its check and Undo.</summary>
+    [DataMember] public string RunUndone      { get => _runUndone;      set => SetProperty(ref _runUndone,      value); }
+    [DataMember] public bool   IsRunUndone    { get => _isRunUndone;    set => SetProperty(ref _isRunUndone,    value); }
+    [DataMember] public bool   ShowsRunDetail { get => _showsRunDetail; set => SetProperty(ref _showsRunDetail, value); }
+
+    /// <summary>The bar as its run stands now: <paramref name="undone"/> is <see cref="Services.Presentation.RunReview.UndoneBar"/>
+    /// (<c>null</c> while the run stands, so a redone run shows its files again).</summary>
+    internal void ShowRunUndone(string? undone)
+    {
+        // Undone, its Undo goes; the run standing again (a redo), the Undo it offered comes back.
+        if (undone is not null && !IsRunUndone) _undoBeforeUndone = CanUndo;
+        if (undone is null && IsRunUndone) CanUndo = _undoBeforeUndone;
+        RunUndone      = undone ?? string.Empty;
+        IsRunUndone    = undone is not null;
+        ShowsRunDetail = undone is null;
+        if (undone is not null) CanUndo = false;
+    }
+
+    /// <summary>Whether the bar offered Undo when its run was undone: given back if the run stands again.</summary>
+    private bool _undoBeforeUndone;
+
+    /// <summary>A newer run's bar takes Undo: this one never offers it again, a redo of its run included.</summary>
+    internal void RetireUndo()
+    {
+        CanUndo           = false;
+        _undoBeforeUndone = false;
+    }
 
     // ── A run's review card ("review"): each file of the run against the state before it ──
     private string _reviewStatus = string.Empty;

@@ -1209,7 +1209,12 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <WrapPanel Grid.Column="0" VerticalAlignment="Center">
+                                <!-- Its run undone: what stayed as the run made it, in place of its files and check -->
+                                <TextBlock Grid.Column="0" Text="{Binding RunUndone}" FontSize="13" Margin="4,3" VerticalAlignment="Center"
+                                           TextWrapping="Wrap" Foreground="{Binding ThemeSubtleText}"
+                                           Visibility="{Binding IsRunUndone, Converter={StaticResource b2v}}"/>
+                                <WrapPanel Grid.Column="0" VerticalAlignment="Center"
+                                           Visibility="{Binding ShowsRunDetail, Converter={StaticResource b2v}}">
                                     <ItemsControl ItemsSource="{Binding ResultFiles}">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
@@ -3207,7 +3212,7 @@
                                  falls through: a new line. Ctrl+Enter during a turn: sent once the turn ends. -->
                             <KeyBinding Key="Return" Command="{Binding SendCommand}"/>
                             <KeyBinding Key="Return" Modifiers="Control" Command="{Binding QueueCommand}"/>
-                            <!-- Esc: Deny, while an approval card waits -->
+                            <!-- Esc: Deny, while an approval card waits; otherwise twice during a turn, Stop -->
                             <KeyBinding Key="Escape" Command="{Binding DenyApprovalCommand}"/>
                             <!-- History: only fires when IsEnabled=true (single-line prompt). When IsEnabled=false,
                                  CanExecute returns false → the event reaches the TextBox → normal cursor movement. -->

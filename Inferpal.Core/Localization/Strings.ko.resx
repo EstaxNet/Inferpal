@@ -61,6 +61,7 @@
   <data name="HintChatModel" xml:space="preserve"><value>질문에 답하고 작업을 수행합니다. /model로 바꿀 수 있습니다.</value></data>
   <data name="BtnTest" xml:space="preserve"><value>테스트</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ 취소</value></data>
+  <data name="BtnStopTurn" xml:space="preserve"><value>중지 (Esc 두 번)</value></data>
   <data name="BtnSave" xml:space="preserve"><value>저장</value></data>
   <data name="SettingsFieldsIgnored" xml:space="preserve"><value>{0}개 필드 무시됨(값을 읽을 수 없음): {1}</value></data>
   <data name="SettingsPermissionRulesIgnored" xml:space="preserve"><value>⚠ 권한 규칙 {0}개를 읽지 못해 적용되지 않았습니다. /diagnostics 를 확인하세요.</value></data>
@@ -208,6 +209,7 @@
   <!-- Connection status -->
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
   <data name="StatusConnected" xml:space="preserve"><value>✓ 연결됨</value></data>
+  <data name="StatusAnswered" xml:space="preserve"><value>✓ {0} 응답함 — 모델 {1}개 설치됨</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ 연결 불가</value></data>
   <data name="StatusRefused" xml:space="preserve"><value>✗ 거부됨 — {0}</value></data>
   <data name="ProxyNote" xml:space="preserve"><value>이 요청은 프록시 {0}을(를) 거칩니다(HTTP_PROXY 또는 Windows 프록시 설정에 의해 지정됨). {1}이(가) 이 컴퓨터의 네트워크에서 실행 중이라면 프록시가 도달하지 못할 수 있습니다. 서버 주소를 NO_PROXY 또는 Windows 프록시 예외에 추가한 뒤 편집기를 다시 시작하세요.</value></data>
@@ -1920,6 +1922,9 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="RunFileNew" xml:space="preserve"><value>새 파일</value></data>
   <data name="RunFileChangedLabel" xml:space="preserve"><value>실행 후 변경됨</value></data>
   <data name="RunFileUndoneLabel" xml:space="preserve"><value>되돌림</value></data>
+  <data name="RunUndoneBar" xml:space="preserve"><value>실행을 되돌림</value></data>
+  <data name="RunUndoneBarKept" xml:space="preserve"><value>실행을 되돌림 · 유지한 변경 {0}개</value></data>
+  <data name="RunFileUndoneButKeptLabel" xml:space="preserve"><value>되돌림, 유지한 변경 {0}개 제외</value></data>
   <data name="RunFileKeptLabel" xml:space="preserve"><value>유지됨</value></data>
   <data name="RunReviewNote" xml:space="preserve"><value>되돌리기는 파일을 이 실행 이전 상태로 돌려놓습니다. 대체되는 내용은 먼저 저장되므로 되돌리기 자체도 취소할 수 있습니다.</value></data>
   <data name="RunFileChangedWhy" xml:space="preserve"><value>되돌리지 않았습니다: 이 파일은 실행 후에 변경되었습니다. 되돌리면 실행 이전 상태가 되어 그 변경이 사라집니다.</value></data>

@@ -50,6 +50,10 @@ const toolbarEl = document.getElementById('toolbar')!;
 
 // ── Local state (rebuilt from hydrate) ───────────────────────────────────────
 let busy = false;
+/** Esc twice within this stops a running turn: the Core's DoubleEscape.Window, held to it by DoubleEscapeTests. */
+const DOUBLE_ESCAPE_MS = 800;
+/** When the composer's last unanswered Esc was pressed during a turn (0: none). */
+let lastEscape = 0;
 /** The agent waits at a step pause: `/resume` typed in the composer resumes it. */
 let stepPausedNow = false;
 /** The extension's word on whether Regenerate has a question to ask again (hydrate, turnEnded). */
@@ -565,6 +569,8 @@ function forgetContinue(): void {
 }
 
 function setBusy(value: boolean): void {
+  // An Esc pressed as a turn ended never counts as the next turn's first.
+  lastEscape = busy === value ? lastEscape : 0;
   busy = value;
   if (value) {
     forgetContinue();
@@ -1526,6 +1532,27 @@ function renderRunSummary(target: TurnView, run: RunSummary | null | undefined):
   target.el.appendChild(bar);
 }
 
+/** A run's result bar as it stands: undone, "Run undone · N changes kept" in place of its files, its check and Undo
+ *  (the Core's RunReview.UndoneBar), or its files again when `line` is null. */
+function showRunUndone(runId: string, line: string | null): void {
+  const bar = [...messagesEl.querySelectorAll<HTMLElement>('.result')].find((b) => b.dataset.runId === runId);
+  if (!bar) {
+    return;
+  }
+  bar.classList.toggle('undone', line !== null);
+  let said = bar.querySelector<HTMLElement>('.result-undone');
+  if (line === null) {
+    said?.remove();
+    return;
+  }
+  if (!said) {
+    said = document.createElement('span');
+    said.className = 'result-undone';
+    bar.prepend(said);
+  }
+  said.textContent = line;
+}
+
 /**
  * A run's review card, under its result bar: each file against the state before the run, its diff folded, and Keep,
  * Undo (Delete for a file the run created) or Redo. Drawn again from each answer, the files left open stay open.
@@ -1549,6 +1576,10 @@ function renderRunReview(runId: string, review: RunReview | null | undefined, me
       said.hidden = false;
     }
     return;
+  }
+  // A change undone, redone or kept moves what the bar's "Run undone · N changes kept" counts.
+  if (review) {
+    showRunUndone(runId, review.undone ?? null);
   }
   const open = new Set([...(old?.querySelectorAll<HTMLElement>('.run-review-file.open') ?? [])].map((f) => f.dataset.path));
   const card = document.createElement('div');
@@ -3220,8 +3251,22 @@ promptEl.addEventListener('keydown', (e) => {
     send(e.ctrlKey || e.metaKey);
     return;
   }
-  if (e.key === 'Escape' && promptEl.value.trim() === '' && answerWaitingCard(0)) {
-    e.preventDefault();
+  if (e.key === 'Escape') {
+    if (promptEl.value.trim() === '' && answerWaitingCard(0)) {
+      lastEscape = 0;
+      e.preventDefault();
+    } else if (busy && approvalCards.size === 0) {
+      // Twice during a turn: Stop, as its tooltip says. One press only arms — a stray Esc never loses the turn's work;
+      // and never while a card waits (Esc answers cards, as in Visual Studio).
+      const now = Date.now();
+      if (now - lastEscape <= DOUBLE_ESCAPE_MS) {
+        lastEscape = 0;
+        e.preventDefault();
+        post({ type: 'cancel' });
+      } else {
+        lastEscape = now;
+      }
+    }
   }
 });
 
@@ -3439,6 +3484,9 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       break;
     case 'runReview':
       renderRunReview(msg.runId, msg.review, msg.message);
+      break;
+    case 'runUndone':
+      showRunUndone(msg.runId, msg.line);
       break;
     case 'streamReset':
       // The host drops what the act streamed — its narration is not the answer, and it is not in the saved thread.

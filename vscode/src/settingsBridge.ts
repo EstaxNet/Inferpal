@@ -200,7 +200,7 @@ export class SettingsBridge {
           // form, auto-selects the detected provider, then refreshes models from that URL).
           const result = await host.connectionCheck(msg.baseUrl, msg.apiKey);
           this.shell.post({ type: 'testResult', ok: result.ok, provider: result.provider, refused: result.refused ?? null,
-                            server: msg.server });
+                            answered: result.answered ?? null, server: msg.server });
         } catch (err) {
           // Same reading, one level down: an unreachable backend does not throw — it answers
           // `ok: false` through the success path. A throw here is the host, and saying "Backend

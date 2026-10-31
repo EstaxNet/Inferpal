@@ -1684,6 +1684,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         }
         try {
           const result = await host.runFile(msg.runId, msg.path, msg.action, msg.piece);
+          if (result.review) {
+            this.undoneRuns.set(msg.runId, result.review.undone ?? null);
+          }
           this.post({ type: 'runReview', runId: msg.runId, review: result.review, message: result.message });
         } catch (err) {
           // Refused while a turn runs, or failed: the card is drawn again as it stands, under the reason.
@@ -2887,6 +2890,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           break;
         case 'setPrompt':
           this.post({ type: 'setPrompt', text: e.value ?? '' });
+          break;
+        case 'runUndone':
+          // `/undo-run` moved a run: its result bar shows it as it stands (undone, or its files again).
+          if (e.name) {
+            this.undoneRuns.set(e.name, e.value ?? null);
+            this.post({ type: 'runUndone', runId: e.name, line: e.value ?? null });
+          }
           break;
         case 'attachChip':
           if (e.value) {
@@ -4108,7 +4118,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     if (this.busy && this.stepPaused) {
       this.post({ type: 'stepPaused' });
     }
+    // The transcript draws each run's bar as it ended: the runs undone since are said again.
+    for (const [runId, line] of this.undoneRuns) {
+      this.post({ type: 'runUndone', runId, line });
+    }
   }
+
+  /** The runs whose bar the host said moved (`/undo-run`, a review gesture): redrawn bars show them as they stand. */
+  private readonly undoneRuns = new Map<string, string | null>();
 
   private post(message: unknown): void {
     void this.view?.webview.postMessage(message);

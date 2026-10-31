@@ -284,7 +284,8 @@ internal partial class InferpalSettingsData
 
     /// <summary>Lists one role's server, files the listing under that server, and — still that role's server — says why a
     /// listing came back empty (stopped, refused, nothing installed): an empty box says nothing.</summary>
-    private async Task ListRoleModelsAsync(ServerRole role, InferpalConfig draft, CancellationToken ct)
+    /// <param name="answeredAs">The kind of server the role's Test just named: its line then says how many models it lists.</param>
+    private async Task ListRoleModelsAsync(ServerRole role, InferpalConfig draft, CancellationToken ct, string? answeredAs = null)
     {
         try
         {
@@ -298,9 +299,10 @@ internal partial class InferpalSettingsData
             {
                 _roleListing[server] = models;
                 var shown = role == ServerRole.Completion ? CompletionElsewhere : SearchElsewhere;
-                if (why is not null && shown && ListedServer(RoleDraft(), role) == server)
+                var line  = why ?? (answeredAs is null ? null : ConnectionStatusPresenter.Answered(answeredAs, models.Listed.Count));
+                if (line is not null && shown && ListedServer(RoleDraft(), role) == server)
                 {
-                    if (role == ServerRole.Completion) CompletionStatus = why; else SearchStatus = why;
+                    if (role == ServerRole.Completion) CompletionStatus = line; else SearchStatus = line;
                 }
                 SyncRoleModelLists();
             });
@@ -331,13 +333,13 @@ internal partial class InferpalSettingsData
         InferpalConfig draft = null!;
         await RunOnVMContextAsync(() =>
         {
-            var status = notReached ?? $"{Strings.StatusConnected} — {name}";
+            var status = notReached ?? ConnectionStatusPresenter.Answered(name!, null);
             if (completion) { CompletionStatus = status; if (name is not null) CompletionProvider = name; }
             else            { SearchStatus     = status; if (name is not null) SearchProvider     = name; }
             draft = RoleDraft();
         });
         if (name is not null && !RoleServers.OnChatServer(draft, role))
-            await ListRoleModelsAsync(role, draft, ct);
+            await ListRoleModelsAsync(role, draft, ct, answeredAs: name);
     }
 
     /// <summary>The roles' fields as Save reads them (<see cref="RoleServerSettings.Write"/>), captured on the

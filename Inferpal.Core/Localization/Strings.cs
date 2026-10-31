@@ -415,6 +415,7 @@ internal static class Strings
     /// <inheritdoc cref="SettingsFieldsIgnoredTemplate"/>
     public static string SettingsPermissionRulesIgnoredTemplate => Get(nameof(SettingsPermissionRulesIgnored));
     public static string BtnCancel            => Get(nameof(BtnCancel));
+    public static string BtnStopTurn          => Get(nameof(BtnStopTurn));
     public static string BtnSend              => Get(nameof(BtnSend));
     public static string TooltipRefreshModels => Get(nameof(TooltipRefreshModels));
     public static string TooltipCopy              => Get(nameof(TooltipCopy));
@@ -759,6 +760,7 @@ internal static class Strings
     // ── ViewModel ──────────────────────────────────────────────────────────────
     public static string StatusConnecting      => Get(nameof(StatusConnecting));
     public static string StatusConnected       => Get(nameof(StatusConnected));
+    public static string StatusAnswered(string server, int models) => Format(Get(nameof(StatusAnswered)), server, models);
     public static string StatusUnreachable     => Get(nameof(StatusUnreachable));
     public static string StatusRefused(string refusal) => Format(Get(nameof(StatusRefused)), refusal);
     public static string StatusThinking        => Get(nameof(StatusThinking));
@@ -1743,6 +1745,9 @@ internal static class Strings
     public static string RunFileNew => Get(nameof(RunFileNew));
     public static string RunFileChangedLabel => Get(nameof(RunFileChangedLabel));
     public static string RunFileUndoneLabel => Get(nameof(RunFileUndoneLabel));
+    public static string RunUndoneBar => Get(nameof(RunUndoneBar));
+    public static string RunUndoneBarKept(int kept) => Format(Get(nameof(RunUndoneBarKept)), kept);
+    public static string RunFileUndoneButKeptLabel(int kept) => Format(Get(nameof(RunFileUndoneButKeptLabel)), kept);
     public static string RunFileKeptLabel => Get(nameof(RunFileKeptLabel));
     public static string RunReviewNote => Get(nameof(RunReviewNote));
     public static string RunFileChangedWhy => Get(nameof(RunFileChangedWhy));

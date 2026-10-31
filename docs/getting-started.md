@@ -88,8 +88,8 @@ memory known, it also sets the context window for the card ([Models](models.md#m
 does. To choose by hand:
 
 1. Open **Inferpal Settings** — the first page is **Server and models**.
-2. Set the server address (Ollama default: `http://localhost:11434`) and click **Test** beside it: it reports
-   **Connected** and fills the model list. Pick the **Chat and agent** model. The kind of server (Ollama / LM Studio /
+2. Set the server address (Ollama default: `http://localhost:11434`) and click **Test** beside it: it names the server that
+   answered and how many models it lists (`✓ Ollama answered — 7 models installed`), and fills the model list. Pick the **Chat and agent** model. The kind of server (Ollama / LM Studio /
    OpenAI-compatible) and an **API key**, if it needs one, are under **Connection**, which **Show advanced settings**
    unfolds.
 3. Optionally give autocomplete and code search a model — and a server — of their own on the same page, and a model per

@@ -1094,6 +1094,18 @@ kbd {
   margin-left: 0;
 }
 
+/* Its run undone: what stayed as the run made it, in place of its files, its check and Undo — back once the run
+   stands again (showRunUndone). */
+.result.undone .result-file,
+.result.undone .result-check,
+.result.undone .undo {
+  display: none;
+}
+
+.result-undone {
+  color: var(--ip-muted);
+}
+
 /* A run's review: each file against the state before the run, undone, redone or kept on its own. */
 /* Above .approval, which comes later: nothing waits on this card. */
 .approval.run-review {
@@ -1990,6 +2002,15 @@ kbd {
   color: var(--ip-muted);
   font-size: 12px;
   white-space: normal;
+}
+
+/* "Write a mode": the theme's link colour, readable on the menu. */
+#modemenu .menu-foot a {
+  color: var(--vscode-textLink-foreground);
+}
+
+#modemenu .menu-foot > div {
+  margin-bottom: 4px;
 }
 
 /* Where a mode starts in the thread: its line, between two rules. */

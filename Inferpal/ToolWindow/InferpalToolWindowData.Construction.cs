@@ -123,7 +123,7 @@ internal partial class InferpalToolWindowData
 
     internal void ApplyLabels()
     {
-        BtnCancel            = Strings.BtnCancel;
+        BtnCancel            = Strings.BtnStopTurn;   // the Stop button of a running turn: it names Esc twice
         BtnSend              = Strings.BtnSend;
         TooltipCopy          = Strings.TooltipCopy;
         RewindHereLabel      = Strings.RewindButton;

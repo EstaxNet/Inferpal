@@ -39,7 +39,7 @@
   "Rewrite applied from the preview — undo with Ctrl+Z if needed.": "已从预览应用重写 — 如需撤销请按 Ctrl+Z。",
   "Rewrite applied — undo with Ctrl+Z if needed.": "已应用重写 — 如需撤销请按 Ctrl+Z。",
   "Send": "发送",
-  "Cancel": "取消",
+  "Stop (Esc twice)": "停止（按两次 Esc）",
   "Retry the connection": "重试连接",
   "Search in the conversation": "在对话中搜索",
   "Search in the conversation…": "在对话中搜索…",

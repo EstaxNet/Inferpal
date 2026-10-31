@@ -39,7 +39,7 @@
   "Rewrite applied from the preview — undo with Ctrl+Z if needed.": "プレビューから書き換えを適用しました — 必要なら Ctrl+Z で元に戻せます。",
   "Rewrite applied — undo with Ctrl+Z if needed.": "書き換えを適用しました — 必要なら Ctrl+Z で元に戻せます。",
   "Send": "送信",
-  "Cancel": "キャンセル",
+  "Stop (Esc twice)": "停止 (Esc を 2 回)",
   "Retry the connection": "接続を再試行",
   "Search in the conversation": "会話内を検索",
   "Search in the conversation…": "会話内を検索…",

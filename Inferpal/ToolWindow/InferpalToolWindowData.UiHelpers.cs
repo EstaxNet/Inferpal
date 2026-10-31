@@ -159,6 +159,8 @@ internal partial class InferpalToolWindowData
         var cts     = CancellationTokenSource.CreateLinkedTokenSource(ct);
         _currentCts = cts;
         IsLoading   = true;
+        // An Esc pressed as the last turn ended never counts as this turn's first.
+        _escape.Reset();
         _turnDone   = new(TaskCreationOptions.RunContinuationsAsynchronously);
         _turnFailed = false;
         // Another turn leaves: the last one's Continue is no longer the gesture it was.

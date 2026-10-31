@@ -39,7 +39,7 @@
   "Rewrite applied from the preview — undo with Ctrl+Z if needed.": "미리 보기에서 재작성을 적용했습니다 — 필요하면 Ctrl+Z로 되돌리세요.",
   "Rewrite applied — undo with Ctrl+Z if needed.": "재작성을 적용했습니다 — 필요하면 Ctrl+Z로 되돌리세요.",
   "Send": "보내기",
-  "Cancel": "취소",
+  "Stop (Esc twice)": "중지 (Esc 두 번)",
   "Retry the connection": "연결 다시 시도",
   "Search in the conversation": "대화에서 검색",
   "Search in the conversation…": "대화에서 검색…",

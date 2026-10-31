@@ -1192,7 +1192,7 @@ window.addEventListener('message', (event: MessageEvent) => {
   const msg = event.data as {
     type: string; configJson?: string; models?: string[]; embeddingModels?: string[]; strings?: Record<string, string>;
     schema?: Schema; message?: string; ok?: boolean; rulesIgnored?: number; provider?: string | null;
-    refused?: string | null; op?: string; server?: string; page?: string; section?: string;
+    refused?: string | null; answered?: string | null; op?: string; server?: string; page?: string; section?: string;
   };
   // The live blocks and the structured editors take the answers to their own requests (cards, rules table, index…).
   // Every widget sees a message before an editor may consume it: the agent page's rules card counts the table the
@@ -1275,9 +1275,11 @@ window.addEventListener('message', (event: MessageEvent) => {
           }
         }
       }
-      // A server that refused the probe (a wrong API key) is up: the very thing this button checks.
+      // A server that refused the probe (a wrong API key) is up: the very thing this button checks. One that answered
+      // says how many models it lists, in the host's words (the Visual Studio window's).
       setTestStatus(
-        msg.ok ? (named ? `${t('Connected')} — ${named}` : t('Connected')) : (msg.refused ?? t('Backend unreachable')),
+        msg.ok ? (msg.answered ?? (named ? `${t('Connected')} — ${named}` : t('Connected')))
+               : (msg.refused ?? t('Backend unreachable')),
         msg.ok, server);
       break;
     }

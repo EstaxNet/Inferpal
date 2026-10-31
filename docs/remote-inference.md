@@ -103,7 +103,7 @@ A JSON list of models means you're good.
    **LM Studio**) and set **Server URL** to the remote address:
    - Ollama → `http://192.168.1.2:11434`
    - LM Studio → `http://192.168.1.2:1234` (a trailing `/v1` is accepted and normalized)
-3. Click **Test** — it should report **Connected** and the model dropdown should populate
+3. Click **Test** — it should name the server and how many models it lists, and the model dropdown should populate
    with the remote host's models.
 4. Pick a chat model (and, optionally, a separate code-actions / FIM / embedding model).
 

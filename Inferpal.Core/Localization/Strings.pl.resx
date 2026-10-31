@@ -61,6 +61,7 @@
   <data name="HintChatModel" xml:space="preserve"><value>Odpowiada na pytania i wykonuje zadania. /model go zmienia.</value></data>
   <data name="BtnTest" xml:space="preserve"><value>Testuj</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ Anuluj</value></data>
+  <data name="BtnStopTurn" xml:space="preserve"><value>Zatrzymaj (dwa razy Esc)</value></data>
   <data name="BtnSave" xml:space="preserve"><value>Zapisz</value></data>
   <data name="SettingsFieldsIgnored" xml:space="preserve"><value>Zignorowano pola ({0}) — nieczytelna wartość: {1}</value></data>
   <data name="SettingsPermissionRulesIgnored" xml:space="preserve"><value>⚠ Nie udało się odczytać {0} reguł(y) uprawnień — nie obowiązują. Zobacz /diagnostics.</value></data>
@@ -208,6 +209,7 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
   <!-- Connection status -->
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
   <data name="StatusConnected" xml:space="preserve"><value>✓ Połączono</value></data>
+  <data name="StatusAnswered" xml:space="preserve"><value>✓ {0} odpowiedział — zainstalowano {1} {1:model|modele|modeli}</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ Niedostępny</value></data>
   <data name="StatusRefused" xml:space="preserve"><value>✗ Odrzucono — {0}</value></data>
   <data name="ProxyNote" xml:space="preserve"><value>To żądanie przechodzi przez serwer proxy {0} (ustawiony przez HTTP_PROXY lub ustawienia proxy systemu Windows). Jeśli {1} działa w sieci tego komputera, proxy może do niego nie docierać: dodaj adres serwera do NO_PROXY lub do wyjątków proxy systemu Windows, a następnie uruchom ponownie edytor.</value></data>
@@ -1920,6 +1922,9 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="RunFileNew" xml:space="preserve"><value>nowy</value></data>
   <data name="RunFileChangedLabel" xml:space="preserve"><value>zmieniony po uruchomieniu</value></data>
   <data name="RunFileUndoneLabel" xml:space="preserve"><value>cofnięty</value></data>
+  <data name="RunUndoneBar" xml:space="preserve"><value>Przebieg cofnięty</value></data>
+  <data name="RunUndoneBarKept" xml:space="preserve"><value>Przebieg cofnięty · zachowane zmiany: {0}</value></data>
+  <data name="RunFileUndoneButKeptLabel" xml:space="preserve"><value>cofnięty, poza zachowanymi zmianami: {0}</value></data>
   <data name="RunFileKeptLabel" xml:space="preserve"><value>zachowany</value></data>
   <data name="RunReviewNote" xml:space="preserve"><value>Cofnij przywraca plik do stanu sprzed tego uruchomienia. To, co zostaje zastąpione, jest najpierw zapisywane, więc samo cofnięcie też można cofnąć.</value></data>
   <data name="RunFileChangedWhy" xml:space="preserve"><value>Nie cofnięto: ten plik zmieniono po uruchomieniu. Cofnięcie przywróciłoby stan sprzed uruchomienia i utraciło tę zmianę.</value></data>

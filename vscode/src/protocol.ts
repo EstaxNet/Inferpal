@@ -289,6 +289,8 @@ export interface ConnectionCheckResult {
   /** Nothing detected, but a server refused the probe (a wrong API key: 401): the line to show instead of
    *  "unreachable", already in the user's language. */
   refused?: string | null;
+  /** A server answered: the line to show, already in the user's language — its kind and how many models it lists. */
+  answered?: string | null;
 }
 
 /** One bubble, flattened for `chat/export`. `name` is the model (assistant) or tool name. */
@@ -613,6 +615,8 @@ export interface RunReview {
   delete: string;
   redo: string;
   new: string;
+  /** The result bar's line once the run is undone; null while it stands. */
+  undone?: string | null;
 }
 
 /** `run/file`: the sentence to show, and the card as it stands after (null: the run is no longer kept). */

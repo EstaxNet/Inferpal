@@ -270,6 +270,50 @@ public sealed class RunPieceGesturesTests : IDisposable
         Assert.False(run.Undone);
     }
 
+    /// <summary>
+    /// The result bar once its run is undone says so and counts what stayed ("Run undone · 1 change kept"), and the
+    /// file reads "undone, but 1 kept change"; redone whole, the run stands again and the bar shows its files.
+    /// </summary>
+    [Fact]
+    public async Task UndoRun_WithAKeptChange_TheBarAndTheFileSayWhatStayed_UntilTheRunStandsAgain()
+    {
+        var (history, run, path) = await ARun();
+        Assert.Null(Services.Presentation.RunReview.UndoneBar(history, run));   // a run that stands: no such line
+        Assert.Equal(PieceOutcome.Kept, await Act(history, run, path, 1, PieceAction.Keep));
+
+        await history.UndoRunAsync(run, CancellationToken.None);
+
+        var review = Services.Presentation.RunReview.Build(history, run);
+        Assert.Equal(Localization.Strings.RunUndoneBarKept(1), review.Undone);
+        Assert.Equal(Localization.Strings.RunFileUndoneButKeptLabel(1),
+                     Services.Presentation.RunReview.StateLabel(Assert.Single(review.Files)));
+
+        Assert.Equal(FileUndoOutcome.Redone, await history.RedoFileAsync(run, path, CancellationToken.None));
+        Assert.Null(Services.Presentation.RunReview.UndoneBar(history, run));
+    }
+
+    /// <summary>A file kept whole counts each of its changes, as the card shows them — never one for the file.</summary>
+    [Fact]
+    public async Task UndoRun_WithAFileKeptWhole_CountsItsChanges()
+    {
+        var (history, run, path) = await ARun();
+        var changes = Assert.Single(Services.Presentation.RunReview.Build(history, run).Files).Pieces!.Count;
+        Assert.True(changes > 1);   // witness: the run made several changes to the file
+        Assert.Equal(FileUndoOutcome.Kept, history.KeepFile(run, path));
+
+        await history.UndoRunAsync(run, CancellationToken.None);
+
+        Assert.Equal(Localization.Strings.RunUndoneBarKept(changes), Services.Presentation.RunReview.UndoneBar(history, run));
+    }
+
+    [Fact]
+    public async Task UndoRun_WithNothingKept_TheBarSaysRunUndone()
+    {
+        var (history, run, _) = await ARun();
+        await history.UndoRunAsync(run, CancellationToken.None);
+        Assert.Equal(Localization.Strings.RunUndoneBar, Services.Presentation.RunReview.UndoneBar(history, run));
+    }
+
     [Fact]
     public async Task TheKeptChange_StillGoesBackOnItsOwnUndo()
     {

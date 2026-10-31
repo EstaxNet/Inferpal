@@ -61,6 +61,7 @@
   <data name="HintChatModel" xml:space="preserve"><value>質問に答え、タスクを実行します。/model で切り替えられます。</value></data>
   <data name="BtnTest" xml:space="preserve"><value>テスト</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ キャンセル</value></data>
+  <data name="BtnStopTurn" xml:space="preserve"><value>停止 (Esc を 2 回)</value></data>
   <data name="BtnSave" xml:space="preserve"><value>保存</value></data>
   <data name="SettingsFieldsIgnored" xml:space="preserve"><value>{0} 個のフィールドを無視しました（値を読み取れません）：{1}</value></data>
   <data name="SettingsPermissionRulesIgnored" xml:space="preserve"><value>⚠ 権限ルール {0} 件を読み取れず、適用されていません。/diagnostics を確認してください。</value></data>
@@ -208,6 +209,7 @@
   <!-- Connection status -->
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
   <data name="StatusConnected" xml:space="preserve"><value>✓ 接続済み</value></data>
+  <data name="StatusAnswered" xml:space="preserve"><value>✓ {0} が応答しました — {1} 個のモデルがインストール済み</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ 接続不可</value></data>
   <data name="StatusRefused" xml:space="preserve"><value>✗ 拒否 — {0}</value></data>
   <data name="ProxyNote" xml:space="preserve"><value>このリクエストはプロキシ {0} を経由します（HTTP_PROXY または Windows のプロキシ設定によるもの）。{1} がこのマシンのネットワーク上で動作している場合、プロキシからは到達できない可能性があります。サーバーのアドレスを NO_PROXY または Windows のプロキシ例外に追加してから、エディターを再起動してください。</value></data>
@@ -1920,6 +1922,9 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="RunFileNew" xml:space="preserve"><value>新規</value></data>
   <data name="RunFileChangedLabel" xml:space="preserve"><value>実行後に変更あり</value></data>
   <data name="RunFileUndoneLabel" xml:space="preserve"><value>元に戻しました</value></data>
+  <data name="RunUndoneBar" xml:space="preserve"><value>実行を元に戻しました</value></data>
+  <data name="RunUndoneBarKept" xml:space="preserve"><value>実行を元に戻しました · 保持した変更 {0} 件</value></data>
+  <data name="RunFileUndoneButKeptLabel" xml:space="preserve"><value>元に戻しました（保持した変更 {0} 件を除く）</value></data>
   <data name="RunFileKeptLabel" xml:space="preserve"><value>保持</value></data>
   <data name="RunReviewNote" xml:space="preserve"><value>元に戻すと、ファイルはこの実行の前の状態になります。置き換える内容は先に保存されるので、元に戻す操作自体も取り消せます。</value></data>
   <data name="RunFileChangedWhy" xml:space="preserve"><value>元に戻していません: このファイルは実行後に変更されています。元に戻すと実行前の状態になり、その変更が失われます。</value></data>

@@ -2130,23 +2130,27 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
 
         await RunOnVMContextAsync(() =>
         {
-            ConnectionStatus = notReached ?? $"{Strings.StatusConnected} — {detectedName}";
+            ConnectionStatus = notReached ?? ConnectionStatusPresenter.Answered(detectedName!, null);
             // Auto-select the detected backend; the user can still change it before saving.
             if (!string.IsNullOrEmpty(detectedName)) SelectedProvider = detectedName!;
         });
 
-        if (ok)
-            await RefreshModelsAsync(url, ct);
+        if (!ok) return;
+        // The listing that fills the boxes also counts what the server holds: the line says it once read.
+        var listed = await ListModelsAsync(url, ct);
+        if (listed is not null)
+            await RunOnVMContextAsync(() => ConnectionStatus = ConnectionStatusPresenter.Answered(detectedName!, listed.Listed.Count));
     }
 
     // Called with url=null from constructor (uses saved config URL),
     // or with explicit url after a successful Test.
-    private async Task RefreshModelsAsync(object? urlOrNull, CancellationToken ct)
+    private Task RefreshModelsAsync(object? urlOrNull, CancellationToken ct) => ListModelsAsync(urlOrNull as string, ct);
+
+    /// <summary>Lists the server's models into the boxes; the listing, or <c>null</c> when it failed.</summary>
+    private async Task<ModelsByKind?> ListModelsAsync(string? url, CancellationToken ct)
     {
         try
         {
-            var url = urlOrNull as string;
-
             // List models from the provider currently selected in the dropdown, not the startup
             // singleton (_client) — so switching or auto-detecting the backend populates the right
             // models before the user saves + reloads.
@@ -2198,10 +2202,11 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             });
             // Each role's own server too, again: a model pulled there since is listed like one pulled here.
             await ListRoleModelsAsync(force: true, ct);
+            return models;
         }
         // ⚠ The context names ITS OWN method, not a neighbour: this catch belongs to the model-list
         // refresh, and it announced itself as "Settings.Save". In /diagnostics, a failed refresh
         // therefore read as a failed save.
-        catch (Exception ex) { Diagnostics.Swallow("Settings.RefreshModels", ex); }
+        catch (Exception ex) { Diagnostics.Swallow("Settings.RefreshModels", ex); return null; }
     }
 }

@@ -228,6 +228,8 @@ export type ExtToWebview =
   /** A run's review card, or the card refreshed after a file's action; null: the run is no longer kept; absent: an
    * action failed with no card to draw — the card shown takes its actions back, under the message. */
   | { type: 'runReview'; runId: string; review?: RunReview | null; message?: string }
+  /** A run's result bar as it stands: undone (`line`, "Run undone · N changes kept") or its files again (null). */
+  | { type: 'runUndone'; runId: string; line: string | null }
   | { type: 'streamReset' }
   // notice: the turn's text is a notice no answer of the model (a slash command, a code action's outcome) — drawn as the
   // transcript keeps it, under no model's name.

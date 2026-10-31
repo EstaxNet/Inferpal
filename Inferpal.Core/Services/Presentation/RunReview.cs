@@ -42,7 +42,8 @@ internal sealed record RunReviewFile(
 
 /// <summary>A run's review card: each file it changed, against the state before it.</summary>
 /// <param name="Started">When the run began, as the card says it ("before 14:02").</param>
-internal sealed record RunReviewModel(string RunId, string Started, IReadOnlyList<RunReviewFile> Files);
+/// <param name="Undone">The result bar's line once the run is undone (<see cref="RunReview.UndoneBar"/>); <c>null</c> while it stands.</param>
+internal sealed record RunReviewModel(string RunId, string Started, IReadOnlyList<RunReviewFile> Files, string? Undone = null);
 
 /// <summary>Builds <see cref="RunReviewModel"/> — the same card in both editors, and the text <c>/undo-run review</c> shows.</summary>
 /// <remarks>Nothing is greyed out while a turn runs: an action is refused then, and says why, and the card is drawn again
@@ -87,7 +88,26 @@ internal static class RunReview
                                      noCopy ? [] : DiffOf(before, after), changedAfterUndo, pieces, whole);
         }).ToList();
         var started = run.StartedAt.ToString(run.StartedAt.Date == DateTime.Today ? "HH:mm" : "yyyy-MM-dd HH:mm");
-        return new RunReviewModel(run.Id, started, files);
+        return new RunReviewModel(run.Id, started, files, run.Undone ? UndoneLine(files) : null);
+    }
+
+    /// <summary>The result bar once its run is undone, the same in both editors: "Run undone", and how many changes stay
+    /// as the run made them — files and changes the person kept, which an undo leaves; <c>null</c> while the run
+    /// stands.</summary>
+    public static string? UndoneBar(FileHistoryService history, HistoryRun run) => run.Undone ? Build(history, run).Undone : null;
+
+    /// <summary>The undone run's line from its files as the card reads them: CHANGES kept, the card's own count — a
+    /// file kept whole counts each of its changes (one when it has a single one, or was created), a file partly given
+    /// back its kept changes, a file given back none.</summary>
+    private static string UndoneLine(IReadOnlyList<RunReviewFile> files)
+    {
+        var kept = files.Sum(f => f.State switch
+        {
+            RunFileState.Kept    => Math.Max(1, f.Pieces?.Count ?? 0),
+            RunFileState.Pending => f.Pieces?.Count(p => p.State == RunPieceState.Kept) ?? 0,
+            _                    => 0,
+        });
+        return kept == 0 ? Localization.Strings.RunUndoneBar : Localization.Strings.RunUndoneBarKept(kept);
     }
 
     /// <summary>What the card says of a file's state, the same words in both editors and in <c>/undo-run review</c>;
@@ -96,6 +116,12 @@ internal static class RunReview
     {
         RunFileState.Undone when file.ChangedAfterUndo => Localization.Strings.RunFileChangedSinceUndoLabel,
         RunFileState.Undone       => Localization.Strings.RunFileUndoneLabel,
+        // Every change given back but those kept (Undo run leaves them): undone, and it says what stays.
+        RunFileState.Pending when file.Pieces is { Count: > 0 } pieces
+                                  && pieces.All(p => p.State != RunPieceState.Pending)
+                                  && pieces.Any(p => p.State == RunPieceState.Undone)
+                                  && pieces.Count(p => p.State == RunPieceState.Kept) is > 0 and var kept
+            => Localization.Strings.RunFileUndoneButKeptLabel(kept),
         RunFileState.Kept         => Localization.Strings.RunFileKeptLabel,
         RunFileState.ChangedSince => Localization.Strings.RunFileChangedLabel,
         RunFileState.NoCopy       => Localization.Strings.RunFileNoCopyLabel,

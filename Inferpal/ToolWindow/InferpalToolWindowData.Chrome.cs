@@ -202,7 +202,17 @@ internal partial class InferpalToolWindowData
             _activeFilePath is { Length: > 0 } file
                 ? RunSuggestionAsync(Strings.WelcomeUsagesPrompt(Path.GetFileName(file)), ct)
                 : Task.CompletedTask);
-        DenyApprovalCommand    = new AsyncCommand((_, _) => RunOnVMContextAsync(() => _pendingApproval?.Answer(ApprovalDecision.Deny)));
+        // Esc in the composer: Deny while an approval card waits; otherwise, during a turn, the second press within
+        // DoubleEscape.Window stops it, as the Stop button's tooltip says.
+        DenyApprovalCommand    = new AsyncCommand((_, _) => RunOnVMContextAsync(() =>
+        {
+            if (_pendingApproval is { } card)
+            {
+                _escape.Reset();
+                card.Answer(ApprovalDecision.Deny);
+            }
+            else if (IsLoading && _escape.Press(DateTime.UtcNow)) _currentCts?.Cancel();
+        }));
         _contextHolder.InlineApproval = AskInlineAsync;
         _contextHolder.TurnRuns       = () => IsLoading;
         _contextHolder.InlineInput    = AskInputInlineAsync;
@@ -453,6 +463,9 @@ internal partial class InferpalToolWindowData
     /// <summary>The approval card waiting for an answer: Enter allows once, Esc denies.</summary>
     private ChatMessageItem? _pendingApproval;
 
+    /// <summary>Esc twice in the composer stops a running turn; one press only arms.</summary>
+    private readonly DoubleEscape _escape = new();
+
     [DataMember] public AsyncCommand DenyApprovalCommand { get; private set; } = null!;
 
     /// <summary>"working · step N" on the header line, once the turn moves again.</summary>
@@ -680,7 +693,7 @@ internal partial class InferpalToolWindowData
         {
             // /undo-run reverts the most recent run that changed files: only that run's bar offers it.
             foreach (var older in Messages.Where(m => m.Role == "result"))
-                older.CanUndo = false;
+                older.RetireUndo();
             var runId = summary.RunId;
             undo = () => _ = UndoFromResultBarAsync(runId);
             // Any run's files can be reviewed: a file changed since by a later run is refused its undo, and says so.
@@ -722,6 +735,8 @@ internal partial class InferpalToolWindowData
             }
             await RunOnVMContextAsync(() =>
             {
+                // A change undone, redone or kept moves what "Run undone · N changes kept" counts.
+                if (action is not null) RefreshUndoneBars();
                 var card = Messages.FirstOrDefault(m => m.Role == "review" && m.RunId == runId);
                 if (card is null)
                 {
@@ -898,6 +913,19 @@ internal partial class InferpalToolWindowData
         finally
         {
             if (claim != 0) await RunOnVMContextAsync(() => { if (_sendClaim == claim) _sendStarting = false; });
+        }
+    }
+
+    /// <summary>Each result bar shows its run as it stands: undone, with what stayed as the run made it, or its files.
+    /// VM context.</summary>
+    private void RefreshUndoneBars()
+    {
+        // Read once: Runs merges every manifest on disk at each call.
+        var runs = _tools.History.Runs;
+        foreach (var bar in Messages.Where(m => m.Role == "result" && m.RunId.Length > 0))
+        {
+            var run = runs.LastOrDefault(r => r.Id == bar.RunId);
+            bar.ShowRunUndone(run is null ? null : Services.Presentation.RunReview.UndoneBar(_tools.History, run));
         }
     }
 

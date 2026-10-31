@@ -64,6 +64,7 @@
   <data name="HintChatModel" xml:space="preserve"><value>Answers your questions and runs tasks. /model changes it.</value></data>
   <data name="BtnTest" xml:space="preserve"><value>Test</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ Cancel</value></data>
+  <data name="BtnStopTurn" xml:space="preserve"><value>Stop (Esc twice)</value></data>
   <data name="BtnSave" xml:space="preserve"><value>Save</value></data>
   <!-- Save status: what was saved is saved, and what could not be read is named — {0}=count, {1}=field labels -->
   <data name="SettingsFieldsIgnored" xml:space="preserve"><value>{0} field(s) ignored (unreadable value): {1}</value></data>
@@ -209,6 +210,7 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <!-- Connection status -->
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
   <data name="StatusConnected" xml:space="preserve"><value>✓ Connected</value></data>
+  <data name="StatusAnswered" xml:space="preserve"><value>✓ {0} answered — {1} {1:model|models} installed</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ Unreachable</value></data>
   <data name="StatusRefused" xml:space="preserve"><value>✗ Refused — {0}</value></data>
   <data name="ProxyNote" xml:space="preserve"><value>This request goes through the proxy {0} (set by HTTP_PROXY or the Windows proxy settings). If {1} runs on this machine's network, the proxy may not reach it: add the server's address to NO_PROXY, or to the proxy exceptions in Windows, then restart the editor.</value></data>
@@ -1924,6 +1926,9 @@ What you save there applies from your next question, in this thread and the othe
   <data name="RunFileNew" xml:space="preserve"><value>new</value></data>
   <data name="RunFileChangedLabel" xml:space="preserve"><value>changed since the run</value></data>
   <data name="RunFileUndoneLabel" xml:space="preserve"><value>undone</value></data>
+  <data name="RunUndoneBar" xml:space="preserve"><value>Run undone</value></data>
+  <data name="RunUndoneBarKept" xml:space="preserve"><value>Run undone · {0} {0:change|changes} kept</value></data>
+  <data name="RunFileUndoneButKeptLabel" xml:space="preserve"><value>undone, but {0} kept {0:change|changes}</value></data>
   <data name="RunFileKeptLabel" xml:space="preserve"><value>kept</value></data>
   <data name="RunReviewNote" xml:space="preserve"><value>Undo puts a file back as it was before this run. What it replaces is saved first, so an undo can itself be undone.</value></data>
   <data name="RunFileChangedWhy" xml:space="preserve"><value>Not undone: this file was changed after the run. Undoing it would put back the state before the run and lose that change.</value></data>

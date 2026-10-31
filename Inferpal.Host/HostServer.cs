@@ -1229,12 +1229,33 @@ internal sealed partial class HostServer : IDisposable
 
         // The key in the FORM, like the URL: probing a new server with the saved key answered
         // "unreachable" for a server that only refused that key. Null (not sent) keeps the saved one.
-        var (detected, refusal) = await ProviderProbe.DetectWithRefusalAsync(url, p.ApiKey ?? SavedKeyFor(s, url), ct);
+        var key = p.ApiKey ?? SavedKeyFor(s, url);
+        var (detected, refusal) = await ProviderProbe.DetectWithRefusalAsync(url, key, ct);
         // The line the panel shows instead of its own "unreachable": a refusal, or the proxy the probe went through.
         var proxy = detected is null ? Services.NetworkProxy.Through(url) : null;
         return new ConnectionCheckResult(detected is not null, detected,
             refusal is null && proxy is null ? null
-            : Strings.StatusNotReached(refusal is null ? Strings.StatusUnreachable : Strings.StatusRefused(refusal), proxy));
+            : Strings.StatusNotReached(refusal is null ? Strings.StatusUnreachable : Strings.StatusRefused(refusal), proxy),
+            detected is null ? null
+            : ConnectionStatusPresenter.Answered(InferenceProviderFactory.DisplayName(detected),
+                                                 await ListedCountAsync(detected, url, key, ct)));
+    }
+
+    /// <summary>How many models the server that answered the Test lists, with the form's address and key; <c>null</c>
+    /// when the listing fails — the line then names the server only, never a count it did not read.</summary>
+    private static async Task<int?> ListedCountAsync(string provider, string url, string? key, CancellationToken ct)
+    {
+        try
+        {
+            var client = InferenceProviderFactory.Create(new InferpalConfig { Provider = provider, BaseUrl = url, ApiKey = key ?? string.Empty });
+            return (await client.ListModelsByKindAsync(ct, url)).Listed.Count;
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("HostServer.ConnectionCheck.ListModels", ex);
+            return null;
+        }
     }
 
     /// <summary>The file-history run a turn opened, by the id <c>BeginRun</c> gave it.</summary>

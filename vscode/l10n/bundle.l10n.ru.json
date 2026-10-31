@@ -39,7 +39,7 @@
   "Rewrite applied from the preview — undo with Ctrl+Z if needed.": "Переписывание применено из предпросмотра — при необходимости отмените с помощью Ctrl+Z.",
   "Rewrite applied — undo with Ctrl+Z if needed.": "Переписывание применено — при необходимости отмените с помощью Ctrl+Z.",
   "Send": "Отправить",
-  "Cancel": "Отмена",
+  "Stop (Esc twice)": "Остановить (дважды Esc)",
   "Retry the connection": "Повторить подключение",
   "Search in the conversation": "Поиск по беседе",
   "Search in the conversation…": "Поиск по беседе…",

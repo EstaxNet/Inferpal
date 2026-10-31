@@ -30,6 +30,13 @@ internal sealed class ConnectionStatusPresenter
     private bool _previouslyConnected = true;
     private bool _firstCheck          = true;
 
+    /// <summary>A Test button's line once a server answered, the same in both editors: its kind and how many models it
+    /// lists; <paramref name="models"/> <c>null</c> (not listed) says its kind only — never a count it did not read.</summary>
+    /// <remarks>⚠ Zero says no count either: a listing that failed comes back empty (the clients log it and return
+    /// none), so "0 models installed" could be a timeout. The model box, left empty, says the rest.</remarks>
+    public static string Answered(string server, int? models) =>
+        models is > 0 and var n ? Strings.StatusAnswered(server, n) : $"{Strings.StatusConnected} — {server}";
+
     /// <param name="refusal">The status the server refused the check with, when it answered at all: the badge says
     /// "refused", not "unreachable" — a server that answers 401 is running.</param>
     public ConnectionStatus Evaluate(bool ok, string? refusal = null)

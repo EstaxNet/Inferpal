@@ -61,6 +61,7 @@
   <data name="HintChatModel" xml:space="preserve"><value>Отвечает на вопросы и выполняет задачи. /model меняет её.</value></data>
   <data name="BtnTest" xml:space="preserve"><value>Проверить</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ Отмена</value></data>
+  <data name="BtnStopTurn" xml:space="preserve"><value>Остановить (дважды Esc)</value></data>
   <data name="BtnSave" xml:space="preserve"><value>Сохранить</value></data>
   <data name="SettingsFieldsIgnored" xml:space="preserve"><value>Пропущено полей: {0} (нечитаемое значение): {1}</value></data>
   <data name="SettingsPermissionRulesIgnored" xml:space="preserve"><value>⚠ Не удалось прочитать правил доступа: {0} — они не действуют. См. /diagnostics.</value></data>
@@ -208,6 +209,7 @@
   <!-- Connection status -->
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
   <data name="StatusConnected" xml:space="preserve"><value>✓ Подключено</value></data>
+  <data name="StatusAnswered" xml:space="preserve"><value>✓ {0} ответил — установлено {1} {1:модель|модели|моделей}</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ Недоступно</value></data>
   <data name="StatusRefused" xml:space="preserve"><value>✗ Отклонено — {0}</value></data>
   <data name="ProxyNote" xml:space="preserve"><value>Этот запрос идёт через прокси {0} (задан переменной HTTP_PROXY или настройками прокси Windows). Если {1} работает в сети этого компьютера, прокси может не достучаться до него: добавьте адрес сервера в NO_PROXY или в исключения прокси Windows, затем перезапустите редактор.</value></data>
@@ -1920,6 +1922,9 @@
   <data name="RunFileNew" xml:space="preserve"><value>новый</value></data>
   <data name="RunFileChangedLabel" xml:space="preserve"><value>изменён после запуска</value></data>
   <data name="RunFileUndoneLabel" xml:space="preserve"><value>отменён</value></data>
+  <data name="RunUndoneBar" xml:space="preserve"><value>Запуск отменён</value></data>
+  <data name="RunUndoneBarKept" xml:space="preserve"><value>Запуск отменён · сохранено изменений: {0}</value></data>
+  <data name="RunFileUndoneButKeptLabel" xml:space="preserve"><value>отменён, кроме сохранённых изменений: {0}</value></data>
   <data name="RunFileKeptLabel" xml:space="preserve"><value>сохранён</value></data>
   <data name="RunReviewNote" xml:space="preserve"><value>Отмена возвращает файл к состоянию до этого запуска. Заменяемое содержимое сначала сохраняется, поэтому саму отмену тоже можно отменить.</value></data>
   <data name="RunFileChangedWhy" xml:space="preserve"><value>Не отменено: этот файл изменён после запуска. Отмена вернула бы состояние до запуска и потеряла бы это изменение.</value></data>

@@ -64,6 +64,7 @@
   <data name="HintChatModel" xml:space="preserve"><value>Responde a sus preguntas y ejecuta tareas. /model lo cambia.</value></data>
   <data name="BtnTest" xml:space="preserve"><value>Probar</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ Cancelar</value></data>
+  <data name="BtnStopTurn" xml:space="preserve"><value>Detener (Esc dos veces)</value></data>
   <data name="BtnSave" xml:space="preserve"><value>Guardar</value></data>
   <data name="SettingsFieldsIgnored" xml:space="preserve"><value>{0} campo(s) ignorado(s) (valor ilegible): {1}</value></data>
   <data name="SettingsPermissionRulesIgnored" xml:space="preserve"><value>⚠ No se pudieron leer {0} regla(s) de permisos, y no están en vigor. Consulta /diagnostics.</value></data>
@@ -208,6 +209,7 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
   <!-- Connection status -->
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
   <data name="StatusConnected" xml:space="preserve"><value>✓ Conectado</value></data>
+  <data name="StatusAnswered" xml:space="preserve"><value>✓ {0} respondió — {1} {1:modelo instalado|modelos instalados}</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ No disponible</value></data>
   <data name="StatusRefused" xml:space="preserve"><value>✗ Rechazado — {0}</value></data>
   <data name="ProxyNote" xml:space="preserve"><value>Esta solicitud pasa por el proxy {0} (definido por HTTP_PROXY o por la configuración de proxy de Windows). Si {1} se ejecuta en la red de este equipo, es posible que el proxy no lo alcance: añada la dirección del servidor a NO_PROXY, o a las excepciones del proxy de Windows, y reinicie el editor.</value></data>
@@ -1920,6 +1922,9 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="RunFileNew" xml:space="preserve"><value>nuevo</value></data>
   <data name="RunFileChangedLabel" xml:space="preserve"><value>cambiado desde el run</value></data>
   <data name="RunFileUndoneLabel" xml:space="preserve"><value>deshecho</value></data>
+  <data name="RunUndoneBar" xml:space="preserve"><value>Ejecución deshecha</value></data>
+  <data name="RunUndoneBarKept" xml:space="preserve"><value>Ejecución deshecha · {0} {0:cambio conservado|cambios conservados}</value></data>
+  <data name="RunFileUndoneButKeptLabel" xml:space="preserve"><value>deshecho, salvo {0} {0:cambio conservado|cambios conservados}</value></data>
   <data name="RunFileKeptLabel" xml:space="preserve"><value>conservado</value></data>
   <data name="RunReviewNote" xml:space="preserve"><value>Deshacer devuelve un archivo a como estaba antes de este run. Lo que se reemplaza se guarda primero, así que un deshacer también se puede deshacer.</value></data>
   <data name="RunFileChangedWhy" xml:space="preserve"><value>No deshecho: este archivo se modificó después del run. Deshacerlo devolvería el estado anterior al run y perdería ese cambio.</value></data>

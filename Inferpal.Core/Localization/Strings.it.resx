@@ -61,6 +61,7 @@
   <data name="HintChatModel" xml:space="preserve"><value>Risponde alle domande ed esegue le attività. /model lo cambia.</value></data>
   <data name="BtnTest" xml:space="preserve"><value>Testa</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ Annulla</value></data>
+  <data name="BtnStopTurn" xml:space="preserve"><value>Interrompi (Esc due volte)</value></data>
   <data name="BtnSave" xml:space="preserve"><value>Salva</value></data>
   <data name="SettingsFieldsIgnored" xml:space="preserve"><value>{0} campo/i ignorato/i (valore illeggibile): {1}</value></data>
   <data name="SettingsPermissionRulesIgnored" xml:space="preserve"><value>⚠ {0} regola/e di permessi non sono state lette e non sono attive. Vedi /diagnostics.</value></data>
@@ -208,6 +209,7 @@ Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una 
   <!-- Connection status -->
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
   <data name="StatusConnected" xml:space="preserve"><value>✓ Connesso</value></data>
+  <data name="StatusAnswered" xml:space="preserve"><value>✓ {0} ha risposto — {1} {1:modello installato|modelli installati}</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ Non raggiungibile</value></data>
   <data name="StatusRefused" xml:space="preserve"><value>✗ Rifiutato — {0}</value></data>
   <data name="ProxyNote" xml:space="preserve"><value>Questa richiesta passa per il proxy {0} (impostato da HTTP_PROXY o dalle impostazioni proxy di Windows). Se {1} è in esecuzione sulla rete di questo computer, il proxy potrebbe non raggiungerlo: aggiungi l'indirizzo del server a NO_PROXY, o alle eccezioni del proxy di Windows, poi riavvia l'editor.</value></data>
@@ -1920,6 +1922,9 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="RunFileNew" xml:space="preserve"><value>nuovo</value></data>
   <data name="RunFileChangedLabel" xml:space="preserve"><value>modificato dopo il run</value></data>
   <data name="RunFileUndoneLabel" xml:space="preserve"><value>annullato</value></data>
+  <data name="RunUndoneBar" xml:space="preserve"><value>Esecuzione annullata</value></data>
+  <data name="RunUndoneBarKept" xml:space="preserve"><value>Esecuzione annullata · {0} {0:modifica tenuta|modifiche tenute}</value></data>
+  <data name="RunFileUndoneButKeptLabel" xml:space="preserve"><value>annullato, tranne {0} {0:modifica tenuta|modifiche tenute}</value></data>
   <data name="RunFileKeptLabel" xml:space="preserve"><value>tenuto</value></data>
   <data name="RunReviewNote" xml:space="preserve"><value>Annulla riporta un file com'era prima di questo run. Ciò che viene sostituito è salvato prima, quindi anche un annullamento si può annullare.</value></data>
   <data name="RunFileChangedWhy" xml:space="preserve"><value>Non annullato: questo file è stato modificato dopo il run. Annullarlo riporterebbe lo stato precedente al run e perderebbe quella modifica.</value></data>

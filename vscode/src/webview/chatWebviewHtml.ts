@@ -9,7 +9,7 @@ import { t } from '../i18n';
 export function webviewStrings(): Record<string, string> {
   return {
     sendTitle: t('Send'),
-    cancelTitle: t('Cancel'),
+    cancelTitle: t('Stop (Esc twice)'),
     retry: t('Retry the connection'),
     searchPlaceholder: t('Search in the conversation…'),
     statusUnreachable: t('Backend unreachable'),

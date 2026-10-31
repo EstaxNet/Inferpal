@@ -64,6 +64,7 @@
   <data name="HintChatModel" xml:space="preserve"><value>回答您的问题并执行任务。/model 可切换。</value></data>
   <data name="BtnTest" xml:space="preserve"><value>测试</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ 取消</value></data>
+  <data name="BtnStopTurn" xml:space="preserve"><value>停止（按两次 Esc）</value></data>
   <data name="BtnSave" xml:space="preserve"><value>保存</value></data>
   <data name="SettingsFieldsIgnored" xml:space="preserve"><value>已忽略 {0} 个字段（值无法识别）：{1}</value></data>
   <data name="SettingsPermissionRulesIgnored" xml:space="preserve"><value>⚠ 有 {0} 条权限规则无法读取，因此未生效。请查看 /diagnostics。</value></data>
@@ -208,6 +209,7 @@
   <!-- Connection status -->
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
   <data name="StatusConnected" xml:space="preserve"><value>✓ 已连接</value></data>
+  <data name="StatusAnswered" xml:space="preserve"><value>✓ {0} 已响应 — 已安装 {1} 个模型</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ 无法连接</value></data>
   <data name="StatusRefused" xml:space="preserve"><value>✗ 已拒绝 — {0}</value></data>
   <data name="ProxyNote" xml:space="preserve"><value>此请求经过代理 {0}（由 HTTP_PROXY 或 Windows 代理设置指定）。如果 {1} 运行在本机所在的网络中，代理可能无法访问它：请将服务器地址添加到 NO_PROXY 或 Windows 代理例外中，然后重启编辑器。</value></data>
@@ -1920,6 +1922,9 @@
   <data name="RunFileNew" xml:space="preserve"><value>新建</value></data>
   <data name="RunFileChangedLabel" xml:space="preserve"><value>运行后已修改</value></data>
   <data name="RunFileUndoneLabel" xml:space="preserve"><value>已撤销</value></data>
+  <data name="RunUndoneBar" xml:space="preserve"><value>本次运行已撤销</value></data>
+  <data name="RunUndoneBarKept" xml:space="preserve"><value>本次运行已撤销 · 保留 {0} 处更改</value></data>
+  <data name="RunFileUndoneButKeptLabel" xml:space="preserve"><value>已撤销，保留的 {0} 处更改除外</value></data>
   <data name="RunFileKeptLabel" xml:space="preserve"><value>已保留</value></data>
   <data name="RunReviewNote" xml:space="preserve"><value>撤销会把文件恢复到本次运行之前的状态。被替换的内容会先保存，因此撤销本身也可以撤销。</value></data>
   <data name="RunFileChangedWhy" xml:space="preserve"><value>未撤销：此文件在运行后被修改过。撤销会恢复运行前的状态并丢失这些修改。</value></data>

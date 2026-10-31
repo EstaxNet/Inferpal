@@ -228,7 +228,7 @@ internal sealed record RunReviewLineDto(string Prefix, string Text);
 /// <summary>A run's review card, its words already in the person's language.</summary>
 internal sealed record RunReviewDto(
     string RunId, string Title, string Subtitle, string Note, string ChangedWhy, List<RunReviewFileDto> Files,
-    string Keep, string Undo, string Delete, string Redo, string New)
+    string Keep, string Undo, string Delete, string Redo, string New, string? Undone = null)
 {
     public static RunReviewDto Of(Services.Presentation.RunReviewModel m) => new(
         m.RunId, Localization.Strings.RunReviewTitle, Localization.Strings.RunReviewSubtitle(m.Files.Count, m.Started),
@@ -245,7 +245,7 @@ internal sealed record RunReviewDto(
                 [.. p.Diff.Select(l => new RunReviewLineDto(l.Prefix, l.Text))]))],
             Services.Presentation.RunReview.PiecesSummary(f), Services.Presentation.RunReview.WholeOnlyLabel(f)))],
         Localization.Strings.RunFileKeep, Localization.Strings.RunFileUndo, Localization.Strings.RunFileDelete,
-        Localization.Strings.RunFileRedo, Localization.Strings.RunFileNew);
+        Localization.Strings.RunFileRedo, Localization.Strings.RunFileNew, m.Undone);
 }
 
 /// <summary>What `run/file` answers: the sentence to show, and the card as it stands after (null: the run is gone).</summary>
@@ -463,7 +463,9 @@ internal sealed record ModelUseParams(string Model);
 /// window: read the typed value, pre-select the detected backend, then refresh the models from
 /// that url.
 /// </remarks>
-internal sealed record ConnectionCheckResult(bool Ok, string? Provider, string? Refused = null);
+/// <param name="Answered">When a server answered, the line the panel shows, in the user's language: its kind and how
+/// many models it lists (<see cref="ConnectionStatusPresenter.Answered"/>, the Visual Studio window's words).</param>
+internal sealed record ConnectionCheckResult(bool Ok, string? Provider, string? Refused = null, string? Answered = null);
 
 /// <summary>`connection/check` — the url and API key to probe. Empty = the configured ones.</summary>
 internal sealed record ConnectionCheckParams(string? BaseUrl = null, string? ApiKey = null);

@@ -61,6 +61,7 @@
   <data name="HintChatModel" xml:space="preserve"><value>Beantwortet Ihre Fragen und führt Aufgaben aus. /model wechselt es.</value></data>
   <data name="BtnTest" xml:space="preserve"><value>Testen</value></data>
   <data name="BtnCancel" xml:space="preserve"><value>✕ Abbrechen</value></data>
+  <data name="BtnStopTurn" xml:space="preserve"><value>Stopp (zweimal Esc)</value></data>
   <data name="BtnSave" xml:space="preserve"><value>Speichern</value></data>
   <data name="SettingsFieldsIgnored" xml:space="preserve"><value>{0} Feld(er) ignoriert (unlesbarer Wert): {1}</value></data>
   <data name="SettingsPermissionRulesIgnored" xml:space="preserve"><value>⚠ {0} Berechtigungsregel(n) konnten nicht gelesen werden und gelten nicht. Siehe /diagnostics.</value></data>
@@ -208,6 +209,7 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <!-- Connection status -->
   <data name="StatusConnecting" xml:space="preserve"><value>…</value></data>
   <data name="StatusConnected" xml:space="preserve"><value>✓ Verbunden</value></data>
+  <data name="StatusAnswered" xml:space="preserve"><value>✓ {0} hat geantwortet — {1} {1:Modell|Modelle} installiert</value></data>
   <data name="StatusUnreachable" xml:space="preserve"><value>✗ Nicht erreichbar</value></data>
   <data name="StatusRefused" xml:space="preserve"><value>✗ Abgelehnt — {0}</value></data>
   <data name="ProxyNote" xml:space="preserve"><value>Diese Anfrage läuft über den Proxy {0} (gesetzt durch HTTP_PROXY oder die Proxy-Einstellungen von Windows). Läuft {1} im Netzwerk dieses Rechners, erreicht der Proxy ihn möglicherweise nicht: Fügen Sie die Adresse des Servers zu NO_PROXY oder zu den Proxy-Ausnahmen von Windows hinzu und starten Sie den Editor neu.</value></data>
@@ -1920,6 +1922,9 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="RunFileNew" xml:space="preserve"><value>neu</value></data>
   <data name="RunFileChangedLabel" xml:space="preserve"><value>seit dem Lauf geändert</value></data>
   <data name="RunFileUndoneLabel" xml:space="preserve"><value>rückgängig gemacht</value></data>
+  <data name="RunUndoneBar" xml:space="preserve"><value>Lauf rückgängig gemacht</value></data>
+  <data name="RunUndoneBarKept" xml:space="preserve"><value>Lauf rückgängig gemacht · {0} {0:Änderung|Änderungen} behalten</value></data>
+  <data name="RunFileUndoneButKeptLabel" xml:space="preserve"><value>rückgängig gemacht, bis auf {0} {0:behaltene Änderung|behaltene Änderungen}</value></data>
   <data name="RunFileKeptLabel" xml:space="preserve"><value>behalten</value></data>
   <data name="RunReviewNote" xml:space="preserve"><value>Rückgängig stellt eine Datei so wieder her, wie sie vor diesem Lauf war. Was ersetzt wird, wird zuerst gesichert — ein Rückgängigmachen lässt sich selbst rückgängig machen.</value></data>
   <data name="RunFileChangedWhy" xml:space="preserve"><value>Nicht rückgängig gemacht: Diese Datei wurde nach dem Lauf geändert. Das Rückgängigmachen würde den Stand vor dem Lauf wiederherstellen und diese Änderung verlieren.</value></data>
