@@ -75,7 +75,7 @@ wins over a branch of the same name; the answer then gives the spelling that rev
 A name a branch and a tag share, or a hash prefix several objects share, is refused naming them rather than
 guessed; so is a commit at the edge of a shallow clone, whose parent was not fetched. **Review a Commit…** picks a
 recent commit — searchable by its message — or takes a branch, a tag or a range typed in the box: in VS Code,
-**Inferpal: Review a Commit…** (Command Palette); in Visual Studio, *Tools › Inferpal › Review a Commit…*, whose list
+**Inferpal: Review a Commit…** (Command Palette); in Visual Studio, the chat window's **⋯ › Review a commit…**, whose list
 holds the 50 most recent commits and searches the last 500.
 
 **Without any check**, `/check` makes the general review — any bug, regression or behaviour change — and the answer

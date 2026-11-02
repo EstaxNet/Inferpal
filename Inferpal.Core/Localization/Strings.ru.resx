@@ -1416,6 +1416,8 @@
   <data name="ChatMenuSearch" xml:space="preserve"><value>Поиск по беседе</value></data>
   <data name="ChatMenuExport" xml:space="preserve"><value>Экспортировать разговор</value></data>
   <data name="ChatMenuXray" xml:space="preserve"><value>Рентген контекста</value></data>
+  <data name="ChatMenuProjectMap" xml:space="preserve"><value>Карта архитектуры</value></data>
+  <data name="ChatMenuReviewCommit" xml:space="preserve"><value>Проверить коммит…</value></data>
   <data name="ChatMenuSettings" xml:space="preserve"><value>Настройки</value></data>
   <data name="ChatDocumentation" xml:space="preserve"><value>Документация (на английском)</value></data>
   <data name="HelpDocumentation" xml:space="preserve"><value>Полная документация (на английском): {0}</value></data>

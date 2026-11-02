@@ -1416,6 +1416,8 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="ChatMenuSearch" xml:space="preserve"><value>In der Unterhaltung suchen</value></data>
   <data name="ChatMenuExport" xml:space="preserve"><value>Unterhaltung exportieren</value></data>
   <data name="ChatMenuXray" xml:space="preserve"><value>Kontext-Röntgen</value></data>
+  <data name="ChatMenuProjectMap" xml:space="preserve"><value>Architekturkarte</value></data>
+  <data name="ChatMenuReviewCommit" xml:space="preserve"><value>Commit prüfen…</value></data>
   <data name="ChatMenuSettings" xml:space="preserve"><value>Einstellungen</value></data>
   <data name="ChatDocumentation" xml:space="preserve"><value>Dokumentation (auf Englisch)</value></data>
   <data name="HelpDocumentation" xml:space="preserve"><value>Vollständige Dokumentation (auf Englisch): {0}</value></data>

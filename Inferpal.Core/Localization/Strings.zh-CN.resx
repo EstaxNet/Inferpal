@@ -1416,6 +1416,8 @@
   <data name="ChatMenuSearch" xml:space="preserve"><value>在对话中搜索</value></data>
   <data name="ChatMenuExport" xml:space="preserve"><value>导出对话</value></data>
   <data name="ChatMenuXray" xml:space="preserve"><value>上下文透视</value></data>
+  <data name="ChatMenuProjectMap" xml:space="preserve"><value>架构图</value></data>
+  <data name="ChatMenuReviewCommit" xml:space="preserve"><value>评审提交…</value></data>
   <data name="ChatMenuSettings" xml:space="preserve"><value>设置</value></data>
   <data name="ChatDocumentation" xml:space="preserve"><value>文档（英文）</value></data>
   <data name="HelpDocumentation" xml:space="preserve"><value>完整文档（英文）：{0}</value></data>

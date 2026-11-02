@@ -297,8 +297,8 @@ The change appears in the editor in red and green; keep or drop each part.
   or extended if it already exists); only **Explain** answers in the chat window.
 - **The editor's gestures, in both** — **Edit with AI** (an instruction on the selection or the caret's line, the
   change shown before it applies), **Explain**, **Add Tests**, **Fix**, **Refactor** and **Document** in the editor's
-  menu, `/test` on the **selection** with its tests written by an edit you can undo, and `/map` from **Tools → Inferpal**
-  (Visual Studio) or the command palette's **Inferpal: Project Map** (VS Code).
+  menu, `/test` on the **selection** with its tests written by an edit you can undo, and `/map` from the chat window's
+  **⋯ › Architecture map** (Visual Studio) or the command palette's **Inferpal: Project Map** (VS Code).
 - **Inline Edit (Edit with AI)** — select code (or place the caret on a line), press
   **Ctrl+Shift+I** (or pick **Edit with AI…** from the context menu), type an instruction, and
   the model rewrites the selection **directly in the editor** (re-indented to match the
@@ -361,8 +361,8 @@ The change appears in the editor in red and green; keep or drop each part.
   exclude, a reply cut at its limit: said above the proposal. A branch with nothing beyond its base, an unknown base,
   two histories with no common commit: said. Both editors, and ACP.
 - **Review a Commit…, in both** — a commit picked from the recent ones of the current branch (searchable by its
-  message), or a branch, tag or range typed, reviewed by `/check`: VS Code's command palette, Visual Studio's
-  *Tools › Inferpal › Review a Commit…*.
+  message), or a branch, tag or range typed, reviewed by `/check`: VS Code's command palette, Visual Studio's chat
+  window, **⋯ › Review a commit…**.
 - **Analyze with Inferpal, at a debugger stop** — stopped at a breakpoint or an exception, choose **Analyze with
   Inferpal** in Visual Studio's Debug menu or in the context menu of the Call Stack, Locals, Autos or Watch window; in
   VS Code, in the context menu of the call stack or the variables, or *Inferpal: Analyze the Debugger Stop* in the
@@ -538,9 +538,8 @@ suggestion right now: with *When I ask*, nothing is ever sent until you do.
   the file excluded from AI tools, no model chosen for an OpenAI-compatible server, a chat or a task answering on the
   same machine (it keeps the graphics card), the completion server not answering or refusing, or no suggestion from
   the model. The key is free in Visual Studio, ReSharper's Visual Studio scheme and VS Code. It is a key position,
-  not a character: on another layout it is the key in that place (*²* on a French keyboard), and the menus show it.
-  Change it in *Tools › Options › Keyboard* (*Suggest or Accept a Completion*) or in VS Code's Keyboard Shortcuts
-  (*Trigger Inline Suggestion*).
+  not a character: on another layout it is the key in that place (*²* on a French keyboard). In VS Code, change it in
+  Keyboard Shortcuts (*Trigger Inline Suggestion*).
 - **When I ask** (*Autocomplete* page, or `inlineCompletionTrigger: "onDemand"`): only the key asks — nothing is sent
   after a pause in typing, so on a small card the chat never shares it with the completion.
 - Suppressed while IntelliSense triggers are active. Supported on Ollama, LM Studio, and OpenAI-compatible servers that
@@ -1045,7 +1044,7 @@ Studio to VS Code and back — and to any editor that speaks the [Agent Client P
 Opening Inferpal takes no key of its own: the keys it had open Visual Studio's Build menu in English and its Tools menu
 in French, and VS Code's own chat. **Tools → Inferpal → Inferpal Chat** and the activity-bar icon open it; in VS Code,
 Keyboard Shortcuts binds a key to `inferpal.chat.focus`. `/map` takes no key either (an Alt+letter is a menu's access
-key in some language of Visual Studio): **Tools → Inferpal → Inferpal Project Map** in Visual Studio, and in VS Code
+key in some language of Visual Studio): the chat window's **⋯ › Architecture map** in Visual Studio, and in VS Code
 Keyboard Shortcuts binds a key to `inferpal.map`. **Ctrl+Shift+I** is
 Visual Studio's: in VS Code that key already belongs to the
 developer tools and to other assistants' chats, so Edit with AI has no key of its own there — it is in the editor's

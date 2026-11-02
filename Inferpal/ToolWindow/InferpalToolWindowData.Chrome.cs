@@ -45,7 +45,8 @@ internal partial class InferpalToolWindowData
 
     private string _labelNewConversation = string.Empty, _labelConversations = string.Empty, _labelMore = string.Empty,
                    _labelMenuSearch = string.Empty, _labelMenuExport = string.Empty, _labelMenuXray = string.Empty,
-                   _labelMenuSettings = string.Empty, _labelMenuStepMode = string.Empty, _labelDocumentation = string.Empty;
+                   _labelMenuSettings = string.Empty, _labelMenuStepMode = string.Empty, _labelDocumentation = string.Empty,
+                   _labelMenuReviewCommit = string.Empty, _labelMenuProjectMap = string.Empty;
     [DataMember] public string LabelNewConversation { get => _labelNewConversation; set => SetProperty(ref _labelNewConversation, value); }
     [DataMember] public string LabelConversations   { get => _labelConversations;   set => SetProperty(ref _labelConversations,   value); }
     [DataMember] public string LabelMore            { get => _labelMore;            set => SetProperty(ref _labelMore,            value); }
@@ -54,6 +55,8 @@ internal partial class InferpalToolWindowData
     [DataMember] public string LabelMenuXray        { get => _labelMenuXray;        set => SetProperty(ref _labelMenuXray,        value); }
     [DataMember] public string LabelMenuSettings    { get => _labelMenuSettings;    set => SetProperty(ref _labelMenuSettings,    value); }
     [DataMember] public string LabelMenuStepMode    { get => _labelMenuStepMode;    set => SetProperty(ref _labelMenuStepMode,    value); }
+    [DataMember] public string LabelMenuReviewCommit { get => _labelMenuReviewCommit; set => SetProperty(ref _labelMenuReviewCommit, value); }
+    [DataMember] public string LabelMenuProjectMap  { get => _labelMenuProjectMap;  set => SetProperty(ref _labelMenuProjectMap,  value); }
     [DataMember] public string LabelDocumentation   { get => _labelDocumentation;   set => SetProperty(ref _labelDocumentation,   value); }
 
     private string _labelDropToAttach = string.Empty, _labelDropHint = string.Empty;
@@ -69,6 +72,10 @@ internal partial class InferpalToolWindowData
     [DataMember] public AsyncCommand MenuXrayCommand        { get; private set; } = null!;
     [DataMember] public AsyncCommand MenuSettingsCommand    { get; private set; } = null!;
     [DataMember] public AsyncCommand MenuStepModeCommand    { get; private set; } = null!;
+    /// <summary>⋯ › Review a commit…: the commit picked in the dialog, reviewed by <c>/check</c> as typing it does.</summary>
+    [DataMember] public AsyncCommand MenuReviewCommitCommand { get; private set; } = null!;
+    /// <summary>⋯ › Architecture map: <c>/map</c>, as typing it does.</summary>
+    [DataMember] public AsyncCommand MenuProjectMapCommand  { get; private set; } = null!;
     /// <summary>The header's "?": the documentation of this version, in the browser.</summary>
     [DataMember] public AsyncCommand OpenDocumentationCommand { get; private set; } = null!;
 
@@ -190,6 +197,19 @@ internal partial class InferpalToolWindowData
             catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("Chat.OpenSettings", ex); }
         });
         MenuStepModeCommand    = new AsyncCommand(async (_, _) => { await RunOnVMContextAsync(CloseMenus); await ToggleStepModeAsync(); });
+        // Both go the way the editor's commands go (the pending prompt): the draft in the composer is kept, and a turn
+        // running is never touched — the command waits in the queue for it.
+        MenuReviewCommitCommand = new AsyncCommand(async (_, ct) =>
+        {
+            await RunOnVMContextAsync(CloseMenus);
+            try
+            {
+                if (await Commands.ReviewCommitCommand.ChooseAsync(_vs, _contextHolder.ProjectRoot(), ct) is { } chosen)
+                    _contextHolder.SetPendingPrompt($"/check {chosen}");
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("Chat.ReviewCommit", ex); }
+        });
+        MenuProjectMapCommand  = new AsyncCommand(async (_, _) => { await RunOnVMContextAsync(CloseMenus); _contextHolder.SetPendingPrompt("/map"); });
         OpenDocumentationCommand = new AsyncCommand(async (_, _) =>
         {
             await RunOnVMContextAsync(CloseMenus);
@@ -238,6 +258,8 @@ internal partial class InferpalToolWindowData
         LabelMenuXray        = Strings.ChatMenuXray;
         LabelMenuSettings    = Strings.ChatMenuSettings;
         LabelMenuStepMode    = Strings.ChatMenuStepMode;
+        LabelMenuReviewCommit = Strings.ChatMenuReviewCommit;
+        LabelMenuProjectMap  = Strings.ChatMenuProjectMap;
         LabelDocumentation   = Strings.ChatDocumentation;
         LabelDropToAttach    = Strings.DropToAttach;
         LabelDropHint        = Strings.DropHint;

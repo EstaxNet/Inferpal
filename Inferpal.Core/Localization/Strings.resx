@@ -1420,6 +1420,8 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="ChatMenuSearch" xml:space="preserve"><value>Search in the conversation</value></data>
   <data name="ChatMenuExport" xml:space="preserve"><value>Export the conversation</value></data>
   <data name="ChatMenuXray" xml:space="preserve"><value>Context X-Ray</value></data>
+  <data name="ChatMenuProjectMap" xml:space="preserve"><value>Architecture map</value></data>
+  <data name="ChatMenuReviewCommit" xml:space="preserve"><value>Review a commit…</value></data>
   <data name="ChatMenuSettings" xml:space="preserve"><value>Settings</value></data>
   <data name="ChatDocumentation" xml:space="preserve"><value>Documentation (in English)</value></data>
   <data name="HelpDocumentation" xml:space="preserve"><value>Full documentation (in English): {0}</value></data>

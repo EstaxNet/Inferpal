@@ -1416,6 +1416,8 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ChatMenuSearch" xml:space="preserve"><value>会話内を検索</value></data>
   <data name="ChatMenuExport" xml:space="preserve"><value>会話をエクスポート</value></data>
   <data name="ChatMenuXray" xml:space="preserve"><value>コンテキスト X 線</value></data>
+  <data name="ChatMenuProjectMap" xml:space="preserve"><value>アーキテクチャマップ</value></data>
+  <data name="ChatMenuReviewCommit" xml:space="preserve"><value>コミットをレビュー…</value></data>
   <data name="ChatMenuSettings" xml:space="preserve"><value>設定</value></data>
   <data name="ChatDocumentation" xml:space="preserve"><value>ドキュメント（英語）</value></data>
   <data name="HelpDocumentation" xml:space="preserve"><value>完全なドキュメント（英語）: {0}</value></data>

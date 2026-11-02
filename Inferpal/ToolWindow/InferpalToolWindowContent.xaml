@@ -2823,7 +2823,7 @@
                 </StackPanel>
             </Border>
 
-            <!-- More: search, export, the X-Ray, step mode, settings -->
+            <!-- More: search, export, the X-Ray, review a commit, the architecture map, step mode, settings -->
             <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,10,0" MinWidth="230"
                     CornerRadius="8" BorderThickness="1" Padding="4"
                     Background="{Binding ThemeSurface}" BorderBrush="{Binding ThemeBorder}"
@@ -2848,6 +2848,20 @@
                             <TextBlock DockPanel.Dock="Left" Width="22" FontFamily="Segoe MDL2 Assets" Text="&#xE9D9;" FontSize="12"
                                        VerticalAlignment="Center" Foreground="{Binding ThemeText}"/>
                             <TextBlock Text="{Binding LabelMenuXray}" FontSize="13" Foreground="{Binding ThemeText}"/>
+                        </DockPanel>
+                    </Button>
+                    <Button Style="{StaticResource MenuBtn}" Command="{Binding MenuReviewCommitCommand}" AutomationProperties.Name="{Binding LabelMenuReviewCommit}">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Left" Width="22" FontFamily="Segoe MDL2 Assets" Text="&#xE81C;" FontSize="12"
+                                       VerticalAlignment="Center" Foreground="{Binding ThemeText}"/>
+                            <TextBlock Text="{Binding LabelMenuReviewCommit}" FontSize="13" Foreground="{Binding ThemeText}"/>
+                        </DockPanel>
+                    </Button>
+                    <Button Style="{StaticResource MenuBtn}" Command="{Binding MenuProjectMapCommand}" AutomationProperties.Name="{Binding LabelMenuProjectMap}">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Left" Width="22" FontFamily="Segoe MDL2 Assets" Text="&#xE8A9;" FontSize="12"
+                                       VerticalAlignment="Center" Foreground="{Binding ThemeText}"/>
+                            <TextBlock Text="{Binding LabelMenuProjectMap}" FontSize="13" Foreground="{Binding ThemeText}"/>
                         </DockPanel>
                     </Button>
                     <Button Style="{StaticResource MenuBtn}" Command="{Binding MenuStepModeCommand}" AutomationProperties.Name="{Binding LabelMenuStepMode}">

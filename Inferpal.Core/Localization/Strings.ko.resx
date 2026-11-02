@@ -1416,6 +1416,8 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="ChatMenuSearch" xml:space="preserve"><value>대화에서 검색</value></data>
   <data name="ChatMenuExport" xml:space="preserve"><value>대화 내보내기</value></data>
   <data name="ChatMenuXray" xml:space="preserve"><value>컨텍스트 엑스레이</value></data>
+  <data name="ChatMenuProjectMap" xml:space="preserve"><value>아키텍처 맵</value></data>
+  <data name="ChatMenuReviewCommit" xml:space="preserve"><value>커밋 검토…</value></data>
   <data name="ChatMenuSettings" xml:space="preserve"><value>설정</value></data>
   <data name="ChatDocumentation" xml:space="preserve"><value>문서(영어)</value></data>
   <data name="HelpDocumentation" xml:space="preserve"><value>전체 문서(영어): {0}</value></data>

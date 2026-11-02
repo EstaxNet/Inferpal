@@ -1416,6 +1416,8 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="ChatMenuSearch" xml:space="preserve"><value>Szukaj w rozmowie</value></data>
   <data name="ChatMenuExport" xml:space="preserve"><value>Eksportuj rozmowę</value></data>
   <data name="ChatMenuXray" xml:space="preserve"><value>Prześwietlenie kontekstu</value></data>
+  <data name="ChatMenuProjectMap" xml:space="preserve"><value>Mapa architektury</value></data>
+  <data name="ChatMenuReviewCommit" xml:space="preserve"><value>Przejrzyj commit…</value></data>
   <data name="ChatMenuSettings" xml:space="preserve"><value>Ustawienia</value></data>
   <data name="ChatDocumentation" xml:space="preserve"><value>Dokumentacja (po angielsku)</value></data>
   <data name="HelpDocumentation" xml:space="preserve"><value>Pełna dokumentacja (po angielsku): {0}</value></data>

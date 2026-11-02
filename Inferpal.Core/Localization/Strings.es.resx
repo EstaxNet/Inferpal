@@ -1416,6 +1416,8 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="ChatMenuSearch" xml:space="preserve"><value>Buscar en la conversación</value></data>
   <data name="ChatMenuExport" xml:space="preserve"><value>Exportar la conversación</value></data>
   <data name="ChatMenuXray" xml:space="preserve"><value>Radiografía del contexto</value></data>
+  <data name="ChatMenuProjectMap" xml:space="preserve"><value>Mapa de arquitectura</value></data>
+  <data name="ChatMenuReviewCommit" xml:space="preserve"><value>Revisar un commit…</value></data>
   <data name="ChatMenuSettings" xml:space="preserve"><value>Ajustes</value></data>
   <data name="ChatDocumentation" xml:space="preserve"><value>Documentación (en inglés)</value></data>
   <data name="HelpDocumentation" xml:space="preserve"><value>Documentación completa (en inglés): {0}</value></data>

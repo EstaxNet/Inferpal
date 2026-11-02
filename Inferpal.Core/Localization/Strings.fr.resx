@@ -1416,6 +1416,8 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="ChatMenuSearch" xml:space="preserve"><value>Rechercher dans la conversation</value></data>
   <data name="ChatMenuExport" xml:space="preserve"><value>Exporter la conversation</value></data>
   <data name="ChatMenuXray" xml:space="preserve"><value>Radiographie du contexte</value></data>
+  <data name="ChatMenuProjectMap" xml:space="preserve"><value>Carte d'architecture</value></data>
+  <data name="ChatMenuReviewCommit" xml:space="preserve"><value>Relire un commit…</value></data>
   <data name="ChatMenuSettings" xml:space="preserve"><value>Réglages</value></data>
   <data name="ChatDocumentation" xml:space="preserve"><value>Documentation (en anglais)</value></data>
   <data name="HelpDocumentation" xml:space="preserve"><value>Documentation complète (en anglais) : {0}</value></data>

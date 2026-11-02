@@ -6,7 +6,8 @@ using Inferpal.ToolWindow;
 namespace Inferpal.Commands;
 
 /// <summary>
-/// VS menu command (Tools → Inferpal → Inferpal Project Map) — posts "/map" into the chat window and opens it.
+/// "/map" posted into the chat window, opened — a command without a menu: the menu entry is the chat window's
+/// ⋯ › Architecture map.
 /// The slash-command handler in InferpalToolWindowData then invokes
 /// the <c>generate_project_map</c> tool.
 /// </summary>

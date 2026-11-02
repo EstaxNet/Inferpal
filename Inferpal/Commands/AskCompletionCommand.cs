@@ -12,8 +12,8 @@ namespace Inferpal.Commands;
 /// what decides: the settings read now, the chat's state, the sentences — sent along by <see cref="CompletionAskSignal"/>.
 /// </summary>
 /// <remarks>⚠ The key is the same in VS Code (<c>package.json</c>) and free in Visual Studio, ReSharper's Visual Studio
-/// scheme and VS Code — Alt+\ is Visual Studio's Go to Member and ReSharper's Go to File Member. It can be changed in
-/// Tools › Options › Keyboard.</remarks>
+/// scheme and VS Code — Alt+\ is Visual Studio's Go to Member and ReSharper's Go to File Member. The command has no menu
+/// entry: it is the key (Tools › Inferpal holds the window and the settings only).</remarks>
 [VisualStudioContribution]
 internal class AskCompletionCommand : Command
 {

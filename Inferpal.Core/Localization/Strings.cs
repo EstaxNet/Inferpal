@@ -161,6 +161,8 @@ internal static class Strings
     public static string ChatMenuSearch => Get(nameof(ChatMenuSearch));
     public static string ChatMenuExport => Get(nameof(ChatMenuExport));
     public static string ChatMenuXray => Get(nameof(ChatMenuXray));
+    public static string ChatMenuProjectMap => Get(nameof(ChatMenuProjectMap));
+    public static string ChatMenuReviewCommit => Get(nameof(ChatMenuReviewCommit));
     public static string ChatMenuSettings => Get(nameof(ChatMenuSettings));
     public static string ChatDocumentation => Get(nameof(ChatDocumentation));
     public static string HelpDocumentation(string link) => Format(Get(nameof(HelpDocumentation)), link);

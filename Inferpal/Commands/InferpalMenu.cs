@@ -5,6 +5,10 @@ namespace Inferpal.Commands;
 
 internal static class InferpalMenu
 {
+    /// <summary>
+    /// Tools › Inferpal: the window and the settings, nothing else. What runs in the chat (Review a commit…, the
+    /// architecture map) lives in the window's ⋯ menu; Alt+' is a key, not a menu entry.
+    /// </summary>
     [VisualStudioContribution]
     internal static MenuConfiguration ToolsMenuEntry { get; } = new("%InferpalMenu%")
     {
@@ -13,9 +17,6 @@ internal static class InferpalMenu
         [
             MenuChild.Command<OpenInferpalWindowCommand>(),
             MenuChild.Command<OpenSettingsCommand>(),
-            MenuChild.Command<ReviewCommitCommand>(),
-            MenuChild.Command<AskCompletionCommand>(),
-            MenuChild.Command<MapCommand>(),
         ],
     };
 

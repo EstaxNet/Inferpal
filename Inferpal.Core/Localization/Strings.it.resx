@@ -1416,6 +1416,8 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="ChatMenuSearch" xml:space="preserve"><value>Cerca nella conversazione</value></data>
   <data name="ChatMenuExport" xml:space="preserve"><value>Esporta la conversazione</value></data>
   <data name="ChatMenuXray" xml:space="preserve"><value>Radiografia del contesto</value></data>
+  <data name="ChatMenuProjectMap" xml:space="preserve"><value>Mappa dell'architettura</value></data>
+  <data name="ChatMenuReviewCommit" xml:space="preserve"><value>Revisiona un commit…</value></data>
   <data name="ChatMenuSettings" xml:space="preserve"><value>Impostazioni</value></data>
   <data name="ChatDocumentation" xml:space="preserve"><value>Documentazione (in inglese)</value></data>
   <data name="HelpDocumentation" xml:space="preserve"><value>Documentazione completa (in inglese): {0}</value></data>
