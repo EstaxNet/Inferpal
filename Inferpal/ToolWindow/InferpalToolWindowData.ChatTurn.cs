@@ -228,6 +228,9 @@ internal partial class InferpalToolWindowData
                     InsertThemed(ChatMessageItem.NoteMsg("note-" + ++_noteSeq, note, read: true));
                 ScrollToBottom();
             });
+            // ⚠ Kept as it leaves: the end of the turn saves again, but Visual Studio closed during a run never reaches
+            // it, and the question vanished with the run that changed the files. Reloaded, it gets its no-answer mark.
+            _ = AutoSaveAsync();
 
             // Build context-enriched history message (not shown in chat bubble).
             // The observable attachment chips are projected to the neutral (label, content)

@@ -271,7 +271,7 @@ public class VsAdapterRegressionTests
     [Fact]
     public void Clear_ArchivesOnlyAConversationWithContent()
     {
-        var clear = Method(Vm + "InferpalToolWindowData.Connection.cs", "ClearAsync");
+        var clear = Method(Vm + "InferpalToolWindowData.Connection.cs", "ClearUnderSaveGateAsync");
 
         var decision = clear.DescendantNodes().OfType<AssignmentExpressionSyntax>()
             .Where(a => a.Left is IdentifierNameSyntax { Identifier.Text: "hasMessages" })

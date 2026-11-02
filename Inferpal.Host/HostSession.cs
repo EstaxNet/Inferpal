@@ -185,6 +185,10 @@ internal sealed class HostSession : IDisposable
     /// again knows nothing yet: see <see cref="SessionManager.AutoSaveName"/>.</summary>
     public bool SessionNameKnown { get; private set; }
 
+    /// <summary>One <c>session/save</c> at a time, in the order they came: the save of a question sent and the save at the
+    /// end of its turn write the same slot, and the one that finished last would win with an older conversation.</summary>
+    public SemaphoreSlim SaveGate { get; } = new(1, 1);
+
     /// <summary>Prompt-section ids switched off from the Context X-Ray panel (session-scoped;
     /// consumed by the system-prompt builder so the next turns skip those layers).</summary>
     public HashSet<string> XrayDisabledSections { get; } = [];
@@ -268,6 +272,8 @@ internal sealed class HostSession : IDisposable
 
         try { Lsp.Dispose(); }
         catch (Exception ex) { Diagnostics.Swallow("HostSession.DisposeLsp", ex); }
+
+        SaveGate.Dispose();
 
         // ⚠ The code index watches the folder and re-embeds what changes: kept, every thread an ACP agent closed — to
         // make room, or for good — left one more indexer on the same folder, each save embedded once per dead thread.

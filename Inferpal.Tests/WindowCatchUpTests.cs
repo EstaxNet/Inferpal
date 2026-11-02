@@ -244,9 +244,11 @@ public sealed class WindowCatchUpTests : IDisposable
         Assert.Contains("ContextWindowChoice.FollowAsync(_config, _client, model,", pick);
         // A turn running reads the window at every request: a model picked in the header during it is followed once the
         // turn ends, never under it (the host holds the turn slot, VS Code holds the pick back).
-        var waits = pick.IndexOf("turn = IsLoading ? _turnDone?.Task : null", StringComparison.Ordinal);
+        var waits = pick.IndexOf("await AfterTheTurnAsync();", StringComparison.Ordinal);
         Assert.True(waits >= 0 && waits < pick.IndexOf("ContextWindowChoice.FollowAsync", StringComparison.Ordinal),
                     "the header's pick resizes the window under a running turn");
+        Assert.Contains("turn = IsLoading ? _turnDone?.Task : null",
+                        Member(Cs("Inferpal", "ToolWindow", "InferpalToolWindowData.Chrome.cs"), "private async Task AfterTheTurnAsync"));
         var model = Member(Cs("Inferpal", "ToolWindow", "InferpalToolWindowData.SlashCommands.cs"), "case SlashCommandId.Model:", "case SlashCommandId.Tools:");
         Assert.Contains("ContextWindowChoice.FollowAsync(_config, _client, parts[1], ct)", model);
     }

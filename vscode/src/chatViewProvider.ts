@@ -3151,6 +3151,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       if (named.length > 0) {
         this.nameAttachmentsInQuestion(named);
       }
+      // ⚠ Kept as it leaves, with what it carries named and its notes: the end of the turn saves again, but VS Code closed
+      // during a run never reaches it (the host stops first), and the question vanished with the run that changed the
+      // files. Reloaded, it gets its no-answer mark.
+      this.autoSaveLast();
       // Nothing awaited between this check and the request: a Stop that came earlier ends the turn unsent.
       if (this.stopPressed) {
         this.endStoppedBeforeTheHost();

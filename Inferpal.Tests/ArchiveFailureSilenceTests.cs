@@ -54,10 +54,10 @@ public sealed class ArchiveFailureSilenceTests
         var root = CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path).GetRoot();
 
         var method = root.DescendantNodes().OfType<MethodDeclarationSyntax>()
-                         .SingleOrDefault(m => m.Identifier.Text == "ClearAsync");
+                         .SingleOrDefault(m => m.Identifier.Text == "ClearUnderSaveGateAsync");
         // WITNESS: the method this test is about still exists under this name, in this file.
         Assert.True(method is not null,
-            "ClearAsync was not found: this test would have measured nothing.");
+            "ClearUnderSaveGateAsync was not found: this test would have measured nothing.");
 
         var catches = method!.DescendantNodes().OfType<CatchClauseSyntax>().ToList();
         Assert.True(catches.Count > 0, "the archive no longer catches anything: check what replaced it.");

@@ -145,11 +145,29 @@ internal partial class InferpalToolWindowData
         catch (Exception ex) { Diagnostics.Swallow("Session.Retitle", ex); }
     }
 
+    private async Task RetitleAfterTheTurnAsync(ArchivedSlot kept)
+    {
+        try { await AfterTheTurnAsync(); }
+        catch (Exception ex) { Diagnostics.Swallow("Session.RetitleKeptSlot", ex); }
+        await RetitleArchiveAsync(kept.Name, kept.SavedAtLocal, kept.FirstQuestion);
+    }
+
     /// <summary>Set when the auto-save last failed and the user was told; cleared by the next one
     /// that works.</summary>
     private bool _autoSaveFailureTold;
 
+    /// <summary>One auto-save at a time, each taking its snapshot in turn: the save of a question sent and the save at the
+    /// end of its turn write the same file, and the one that finished last would win with an older conversation.</summary>
+    private readonly SemaphoreSlim _autoSaveGate = new(1, 1);
+
     private async Task AutoSaveAsync()
+    {
+        await _autoSaveGate.WaitAsync();
+        try { await AutoSaveOnceAsync(); }
+        finally { _autoSaveGate.Release(); }
+    }
+
+    private async Task AutoSaveOnceAsync()
     {
         try
         {
@@ -157,6 +175,7 @@ internal partial class InferpalToolWindowData
             var templateSuffix = string.Empty;
             string? modeName = null;
             string? root = null;
+            var bindsNow = false;
             await RunOnVMContextAsync(() =>
             {
                 snapshot = SessionManager.BuildSnapshot(
@@ -164,8 +183,38 @@ internal partial class InferpalToolWindowData
                 templateSuffix = _activeTemplateSuffix;
                 modeName       = _heldMode?.Name;
                 // The conversation's workspace, not the one open now: another solution's slot holds its own conversation.
+                bindsNow = !_conversationRoot.IsBound;
                 root = _conversationRoot.For(_indexService.RootDir);
             });
+            // A conversation that never read this workspace's slot writes it for the first time: what the slot kept is
+            // archived first, never written over (the window may have been built before the solution was known).
+            if (bindsNow)
+            {
+                ArchivedSlot? kept;
+                try { kept = await ConversationArchive.KeepUnreadSlotAsync(_store, root, CancellationToken.None); }
+                catch (UnreadableSessionException damaged)
+                {
+                    // Damaged: the store kept a copy of it, named here before the slot is written.
+                    await RunOnVMContextAsync(() => InsertThemed(ChatMessageItem.NoticeMsg(damaged.Message)));
+                    kept = null;
+                }
+                catch
+                {
+                    // Nothing is written over a slot that could not be kept: unbound again, the next save tries again.
+                    await RunOnVMContextAsync(_conversationRoot.Discarded);
+                    throw;
+                }
+                if (kept is not null)
+                {
+                    await RunOnVMContextAsync(() =>
+                    {
+                        InsertThemed(ChatMessageItem.NoticeMsg(Strings.SessionSlotKept(kept.Name)));
+                        RefreshSessionsList();
+                    });
+                    // The title is a model call of its own: asked once the question being sent has its answer.
+                    _ = RetitleAfterTheTurnAsync(kept);
+                }
+            }
             await _store.AutoSaveAsync(snapshot, CancellationToken.None, root,
                                        currentName: string.IsNullOrEmpty(_currentSessionName) ? null : _currentSessionName,
                                        templateSuffix: templateSuffix, mode: modeName);

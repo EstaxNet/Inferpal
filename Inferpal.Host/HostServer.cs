@@ -1840,6 +1840,13 @@ internal sealed partial class HostServer : IDisposable
     public async Task SessionSaveAsync(SessionSaveParams p, CancellationToken ct)
     {
         var s = Session();
+        await s.SaveGate.WaitAsync(ct);
+        try { await SaveSessionAsync(s, p, ct); }
+        finally { s.SaveGate.Release(); }
+    }
+
+    private static async Task SaveSessionAsync(HostSession s, SessionSaveParams p, CancellationToken ct)
+    {
         // ⚠ The conversation saved again under its own name keeps the branch link its file holds: written without it, a
         // branch saved from VS Code, or an ACP thread reopened on one (saved after every turn), lost its family for good.
         var again = p.Name != "last_session" && !p.Archive
@@ -2469,7 +2476,10 @@ internal sealed partial class HostServer : IDisposable
         s.TemplateSuffix = templateSuffix;
         ResetHistory(s);
         s.CurrentSessionName = null;   // the archived conversation keeps its own file
-        if (await ArchiveTheSlotAsync(s)) await ForgetAutoSaveAsync(s);
+        // Behind the saves already sent: one still writing would put the discarded conversation back in the slot.
+        await s.SaveGate.WaitAsync();
+        try { if (await ArchiveTheSlotAsync(s)) await ForgetAutoSaveAsync(s); }
+        finally { s.SaveGate.Release(); }
     }
 
     /// <summary>

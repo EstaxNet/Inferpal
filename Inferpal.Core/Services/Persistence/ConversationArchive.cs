@@ -47,6 +47,30 @@ internal static class ConversationArchive
         }
     }
 
+    /// <summary>
+    /// Before a conversation that never read <paramref name="workspaceRoot"/>'s auto-save slot writes it for the first
+    /// time: the conversation kept there is archived under its first question, as <c>/clear</c> archives, never written
+    /// over. Returns the archive's name, or <c>null</c> when the slot holds no question.
+    /// </summary>
+    /// <remarks>⚠ Visual Studio builds its window before the solution is known: nothing is restored then, and the first
+    /// question's save, bound to the solution that opened meanwhile, replaced that solution's conversation — no archive, no
+    /// word. Every failure THROWS: a damaged slot as <see cref="UnreadableSessionException"/>, whose copy the store kept
+    /// and whose message names it (the caller says it, then may write); any other (the file held, the disk full) for the
+    /// caller to write nothing over the slot, and try again.</remarks>
+    public static async Task<ArchivedSlot?> KeepUnreadSlotAsync(ConversationStore store, string? workspaceRoot, CancellationToken ct)
+    {
+        // Only the file the save is about to write: an older shared slot it falls back to is left as it is, not replaced.
+        if (!File.Exists(store.AutoSaveFile(workspaceRoot))) return null;
+        var kept = await store.LoadAutoSaveAsync(workspaceRoot, ct).ConfigureAwait(false);
+        if (kept is null || !kept.Messages.Any(SessionManager.IsQuestion)) return null;
+        var at = kept.SavedAt.ToLocalTime();
+        var first = FirstQuestion(kept.Messages);
+        var name = FirstName(store, at, first);
+        await store.SaveAsync(name, kept.Messages, ct, workspaceRoot, templateSuffix: kept.TemplateSuffix, mode: kept.Mode)
+                   .ConfigureAwait(false);
+        return new ArchivedSlot(name, at, first);
+    }
+
     /// <summary>Asks the model for the title, then renames: what both editors run once the archive is on disk.</summary>
     public static async Task<string> RetitleAsync(ConversationStore store, string name, DateTime localNow, string firstQuestion,
                                                   IInferenceProvider client, InferpalConfig config)
@@ -56,3 +80,7 @@ internal static class ConversationArchive
         return Retitle(store, name, localNow, title);
     }
 }
+
+/// <summary>A conversation archived from an auto-save slot (<see cref="ConversationArchive.KeepUnreadSlotAsync"/>): its
+/// name, when it was last saved, and its first question — what retitling it needs.</summary>
+internal sealed record ArchivedSlot(string Name, DateTime SavedAtLocal, string FirstQuestion);

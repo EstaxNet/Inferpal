@@ -20,8 +20,16 @@ public sealed class ConversationRoot
     /// never written to any slot: discarding it leaves every slot as it is.</summary>
     public bool IsBound => _root is not null;
 
+    /// <summary>Whether the window ever held a conversation bound somewhere — restored, saved, or discarded since. A window
+    /// that never did is the only one a late restore may fill: one emptied by <c>/clear</c> was emptied on purpose.</summary>
+    public bool EverBound { get; private set; }
+
     /// <summary>The conversation restored into the window now belongs to <paramref name="workspaceRoot"/>.</summary>
-    public void Restored(string? workspaceRoot) => _root = workspaceRoot ?? string.Empty;
+    public void Restored(string? workspaceRoot)
+    {
+        _root = workspaceRoot ?? string.Empty;
+        EverBound = true;
+    }
 
     /// <summary>The conversation was discarded: the next one belongs where it is first saved.</summary>
     public void Discarded() => _root = null;
@@ -33,6 +41,7 @@ public sealed class ConversationRoot
     public string? For(string? current)
     {
         _root ??= current ?? string.Empty;
+        EverBound = true;
         return _root.Length == 0 ? null : _root;
     }
 }

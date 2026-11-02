@@ -53,7 +53,7 @@ public sealed class ClearForgetsAutoSaveTests : IDisposable
 
     [Theory]
     [InlineData("Inferpal.Host", "HostServer.cs", "StartNewConversationAsync", "ForgetAutoSaveAsync")]
-    [InlineData("Inferpal", "ToolWindow/InferpalToolWindowData.Connection.cs", "ClearAsync", "ForgetAutoSaveOrSayAsync")]
+    [InlineData("Inferpal", "ToolWindow/InferpalToolWindowData.Connection.cs", "ClearUnderSaveGateAsync", "ForgetAutoSaveOrSayAsync")]
     public void BothFrontEnds_ForgetTheSlot_WhenTheConversationIsDiscarded(string project, string file, string method,
                                                                              string call)
     {

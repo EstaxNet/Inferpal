@@ -146,7 +146,7 @@ public sealed class ConversationPersistenceSilenceTests
     [Fact]
     public void VisualStudio_SaysSo_WhenTheTurnCannotBeAutoSaved()
     {
-        var method = VmMethod("AutoSaveAsync");
+        var method = VmMethod("AutoSaveOnceAsync");
 
         var catches = method.DescendantNodes().OfType<CatchClauseSyntax>().ToList();
         Assert.True(catches.Count > 0, "the auto-save catches nothing any more: check what replaced it.");
@@ -158,7 +158,7 @@ public sealed class ConversationPersistenceSilenceTests
     [Fact]
     public void VisualStudio_TheAutoSaveNotice_IsSaidOnceAndRearmedWhenASaveWorksAgain()
     {
-        var method = VmMethod("AutoSaveAsync");
+        var method = VmMethod("AutoSaveOnceAsync");
         var body   = method.Body?.ToString() ?? string.Empty;
 
         Assert.Contains("_autoSaveFailureTold = true", body, StringComparison.Ordinal);

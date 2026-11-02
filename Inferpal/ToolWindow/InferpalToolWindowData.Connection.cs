@@ -137,6 +137,7 @@ internal partial class InferpalToolWindowData
             {
                 // Pin the workspace root (RAG on or off) and follow solution switches.
                 PinWorkspaceRoot();
+                await RestoreLateSlotAsync(ct);
 
                 var url = _config.BaseUrl;
                 // A backend switched in Settings applies at restart: probing the new address with the previous
@@ -202,6 +203,16 @@ internal partial class InferpalToolWindowData
     {
         // A turn in flight owns _history and the streaming bubble: let it unwind before the
         // conversation is replaced under it (see SettleCurrentTurnAsync).
+        await SettleCurrentTurnAsync();
+        // Behind the auto-saves already started: one still writing would put the discarded conversation back in the slot.
+        await _autoSaveGate.WaitAsync(CancellationToken.None);
+        try { await ClearUnderSaveGateAsync(ct); }
+        finally { _autoSaveGate.Release(); }
+    }
+
+    private async Task ClearUnderSaveGateAsync(CancellationToken ct)
+    {
+        // A turn sent while the gate was awaited is let unwind too: the conversation is replaced under nothing.
         await SettleCurrentTurnAsync();
 
         // Capture snapshot and first user message on the VM context before clearing.
@@ -282,6 +293,67 @@ internal partial class InferpalToolWindowData
             if (archiveFailed is not null) InsertThemed(ChatMessageItem.NoticeMsg(archiveFailed));
             if (notForgotten is not null) InsertThemed(ChatMessageItem.NoticeMsg(notForgotten));
         });
+    }
+
+    /// <summary>The root a late restore was already tried for (<see cref="RestoreLateSlotAsync"/>): once per root.</summary>
+    private string? _lateRestoreTried;
+
+    /// <summary>
+    /// ⚠ A window built before its solution is known restores nothing (no root yet, <see cref="LoadSessionAsync"/>). Once
+    /// the heartbeat pins the root, the solution's own conversation is restored — while nothing was asked in this window.
+    /// Without it, yesterday's conversation stayed unseen, and the first question's save replaced it.
+    /// </summary>
+    /// <remarks>Never throws but for a cancellation: it runs in the heartbeat, which a throw would end for good.</remarks>
+    private async Task RestoreLateSlotAsync(CancellationToken ct)
+    {
+        try
+        {
+            var root = _indexService.RootDir;
+            // A window that held a conversation (restored, saved, or emptied by /clear on purpose) is never filled behind
+            // the person's back: only the one built before its solution, still untouched.
+            if (_conversationRoot.EverBound || string.IsNullOrEmpty(root) || PathComparer.SameDirectory(root, _lateRestoreTried))
+                return;
+            // Busy now (a command, a send starting): tried again at the next tick, not given up.
+            if (await AskedInThisWindowAsync()) return;
+            _lateRestoreTried = root;
+
+            var session = await _store.LoadAutoSaveAsync(root, ct);
+            if (session is null || !session.Messages.Any(SessionManager.IsQuestion)) return;
+
+            // A turn begun while the slot was read ends first; the check below then sees its question.
+            await SettleCurrentTurnAsync();
+            await RunOnVMContextAsync(() =>
+            {
+                // Checked again where the conversation is replaced: a question sent meanwhile keeps its conversation, and
+                // the save that binds it archives the slot instead (ConversationArchive.KeepUnreadSlotAsync).
+                if (_conversationRoot.EverBound || AskedOnScreen()) return;
+                // What the window said before the solution was known (a first-run notice, a window resized) is said once:
+                // kept, after the conversation restored.
+                var said = Messages.Where(m => !ReferenceEquals(m, _anchor0) && !ReferenceEquals(m, _anchor1)).ToList();
+                RestoreConversation(session.Messages,
+                                    !string.IsNullOrEmpty(session.CurrentName) ? session.CurrentName : ConversationStore.AutoSaveSlot,
+                                    session.TemplateSuffix, session.Mode);
+                foreach (var item in said) InsertThemed(item);
+                _conversationRoot.Restored(root);
+                RefreshSessionsList();
+                ScrollToBottom();
+            });
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) { Diagnostics.Swallow("Session.LateRestore", ex); }
+    }
+
+    /// <summary>Whether a question was asked in this window, or one is on its way — or the person set the conversation up
+    /// (a <c>/template</c>, a mode held): a restore would replace what they chose.</summary>
+    private bool AskedOnScreen() =>
+        IsLoading || _sendStarting || !string.IsNullOrEmpty(_activeTemplateSuffix) || _heldMode is not null
+        || Messages.Any(m => m.Saved is var s && SessionManager.IsQuestion(new SavedMessage(s.Role, s.Content, s.ToolName)));
+
+    private async Task<bool> AskedInThisWindowAsync()
+    {
+        var asked = true;
+        await RunOnVMContextAsync(() => asked = AskedOnScreen());
+        return asked;
     }
 
     private async Task LoadSessionAsync(object? _, CancellationToken ct)

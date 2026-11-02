@@ -1406,6 +1406,8 @@ internal static class Strings
         Format(Get(nameof(SessionArchiveFailed)), reason);
     public static string SessionArchiveFailedSlotKept(string reason) =>
         Format(Get(nameof(SessionArchiveFailedSlotKept)), reason);
+    public static string SessionSlotKept(string sessionName) =>
+        Format(Get(nameof(SessionSlotKept)), sessionName);
 
     public static string SessionAutoSaveFailed(string reason) =>
         Format(Get(nameof(SessionAutoSaveFailed)), reason);

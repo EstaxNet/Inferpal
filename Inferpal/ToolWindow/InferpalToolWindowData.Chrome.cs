@@ -400,6 +400,18 @@ internal partial class InferpalToolWindowData
         });
     }
 
+    /// <summary>Returns once no turn runs in this window (one queued after it included).</summary>
+    private async Task AfterTheTurnAsync()
+    {
+        while (true)
+        {
+            Task? turn = null;
+            await RunOnVMContextAsync(() => turn = IsLoading ? _turnDone?.Task : null);
+            if (turn is null) return;
+            await turn;
+        }
+    }
+
     /// <summary>A model picked in the header becomes the chat model, as <c>/model</c> makes it — without a bubble: the
     /// button names it. An automatic context window follows it, said (<see cref="ContextWindowChoice.FollowAsync"/>).</summary>
     private async Task PickModelAsync(string model)
@@ -421,13 +433,7 @@ internal partial class InferpalToolWindowData
         }
         await RunOnVMContextAsync(() => ActiveModelLabel = model);
         // A running turn reads the window at every request: the window follows once it ends, never under it.
-        while (true)
-        {
-            Task? turn = null;
-            await RunOnVMContextAsync(() => turn = IsLoading ? _turnDone?.Task : null);
-            if (turn is null) break;
-            await turn;
-        }
+        await AfterTheTurnAsync();
         if (await ContextWindowChoice.FollowAsync(_config, _client, model, CancellationToken.None) is { } windowNotice)
             await ShowInfoAsync(windowNotice);
     }
