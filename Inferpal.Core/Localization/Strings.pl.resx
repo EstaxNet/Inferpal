@@ -55,6 +55,13 @@
   <data name="HintProvider" xml:space="preserve"><value>Ollama, LM Studio lub zgodny z OpenAI. Test go uzupełnia. Działa po ponownym wczytaniu edytora.</value></data>
   <data name="LabelApiKey" xml:space="preserve"><value>Klucz API</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>Tylko jeśli serwer go wymaga: Ollama i LM Studio go nie potrzebują.</value></data>
+  <data name="KeyShow" xml:space="preserve"><value>Pokaż</value></data>
+  <data name="KeyHide" xml:space="preserve"><value>Ukryj</value></data>
+  <data name="KeyChange" xml:space="preserve"><value>Zmień</value></data>
+  <data name="KeyKeepSaved" xml:space="preserve"><value>Zachowaj zapisany</value></data>
+  <data name="HintKeySaved" xml:space="preserve"><value>Zapisany. Wyświetlany tylko na żądanie.</value></data>
+  <data name="HintKeyShown" xml:space="preserve"><value>Zostanie ponownie ukryty po zamknięciu tego okna.</value></data>
+  <data name="HintKeyReplacing" xml:space="preserve"><value>Nowy klucz zastąpi zapisany po zapisaniu i od tej pory będzie ukryty. Pozostawienie pustego pola usuwa zapisany klucz.</value></data>
   <data name="LabelUrl" xml:space="preserve"><value>Adres serwera</value></data>
   <data name="HintUrl" xml:space="preserve"><value>Ollama (:11434), LM Studio (:1234) lub dowolny serwer zgodny z OpenAI. Test pokaże, który odpowiada.</value></data>
   <data name="LabelChatModel" xml:space="preserve"><value>Czat i agent</value></data>

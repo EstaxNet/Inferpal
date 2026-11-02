@@ -58,6 +58,13 @@
   <data name="HintProvider" xml:space="preserve"><value>Ollama, LM Studio ou compatible OpenAI. Tester le remplit. Prend effet au rechargement de l'éditeur.</value></data>
   <data name="LabelApiKey" xml:space="preserve"><value>Clé API</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>Seulement si votre serveur en demande une : Ollama et LM Studio n'en ont pas besoin.</value></data>
+  <data name="KeyShow" xml:space="preserve"><value>Afficher</value></data>
+  <data name="KeyHide" xml:space="preserve"><value>Masquer</value></data>
+  <data name="KeyChange" xml:space="preserve"><value>Changer</value></data>
+  <data name="KeyKeepSaved" xml:space="preserve"><value>Garder celle enregistrée</value></data>
+  <data name="HintKeySaved" xml:space="preserve"><value>Enregistrée. Affichée seulement à votre demande.</value></data>
+  <data name="HintKeyShown" xml:space="preserve"><value>Masquée de nouveau à la fermeture de cette fenêtre.</value></data>
+  <data name="HintKeyReplacing" xml:space="preserve"><value>La nouvelle clé remplace celle enregistrée quand vous enregistrez, et reste masquée ensuite. Laissée vide, la clé enregistrée est supprimée.</value></data>
   <data name="LabelUrl" xml:space="preserve"><value>Adresse du serveur</value></data>
   <data name="HintUrl" xml:space="preserve"><value>Ollama (:11434), LM Studio (:1234) ou tout serveur compatible OpenAI. Tester indique lequel répond.</value></data>
   <data name="LabelChatModel" xml:space="preserve"><value>Chat et agent</value></data>

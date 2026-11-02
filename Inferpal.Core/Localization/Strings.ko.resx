@@ -55,6 +55,13 @@
   <data name="HintProvider" xml:space="preserve"><value>Ollama, LM Studio 또는 OpenAI 호환. 테스트하면 채워집니다. 편집기를 다시 불러온 뒤 적용됩니다.</value></data>
   <data name="LabelApiKey" xml:space="preserve"><value>API 키</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>서버가 요구할 때만 필요합니다. Ollama와 LM Studio에는 필요 없습니다.</value></data>
+  <data name="KeyShow" xml:space="preserve"><value>표시</value></data>
+  <data name="KeyHide" xml:space="preserve"><value>숨기기</value></data>
+  <data name="KeyChange" xml:space="preserve"><value>변경</value></data>
+  <data name="KeyKeepSaved" xml:space="preserve"><value>저장된 키 유지</value></data>
+  <data name="HintKeySaved" xml:space="preserve"><value>저장됨. 요청할 때만 표시됩니다.</value></data>
+  <data name="HintKeyShown" xml:space="preserve"><value>이 창을 닫으면 다시 가려집니다.</value></data>
+  <data name="HintKeyReplacing" xml:space="preserve"><value>저장하면 새 키가 저장된 키를 대체하고, 이후로는 가려집니다. 비워 두면 저장된 키가 삭제됩니다.</value></data>
   <data name="LabelUrl" xml:space="preserve"><value>서버 주소</value></data>
   <data name="HintUrl" xml:space="preserve"><value>Ollama (:11434), LM Studio (:1234) 또는 OpenAI 호환 서버. 테스트하면 어느 쪽이 응답하는지 알려 줍니다.</value></data>
   <data name="LabelChatModel" xml:space="preserve"><value>채팅 및 에이전트</value></data>

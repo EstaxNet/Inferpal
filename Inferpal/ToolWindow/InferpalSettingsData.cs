@@ -50,7 +50,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     private string _labelProvider     = string.Empty;
     private string _hintProvider      = string.Empty;
     private string _labelApiKey       = string.Empty;
-    private string _hintApiKey        = string.Empty;
     private string? _selectedModel;
     private string? _selectedLanguage = string.Empty;
     private string _labelLanguage     = string.Empty;
@@ -357,6 +356,10 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         _selectedProvider     = ProviderOptions.FirstOrDefault(p => p.Code == config.Provider).Name
                                     is { Length: > 0 } pn ? pn : ProviderOptions[0].Name;
         _apiKey               = config.ApiKey;
+        // "Saved" is what the unsaved count compares with: the form's snapshot, never the live configuration.
+        MainKey               = new(() => (string?)_opened["apiKey"], () => ApiKey, v => ApiKey = v, RunOnVMContextAsync);
+        CompletionKey         = new(() => (string?)_opened["inlineCompletionApiKey"], () => CompletionApiKey, v => CompletionApiKey = v, RunOnVMContextAsync);
+        SearchKey             = new(() => (string?)_opened["ragEmbeddingApiKey"], () => SearchApiKey, v => SearchApiKey = v, RunOnVMContextAsync);
         _selectedModel        = config.DefaultModel;
         // Language is initialized in ApplyLabels() once LangAuto is resolved
         var matchedLang = LanguageOptions.FirstOrDefault(l => l.Code == config.Language);
@@ -426,6 +429,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         BuildSlashRows();
         BuildToolRows();
         InitRoleServers(config);   // after the chat's server and the models: the roles resolve against them
+        ResetKeys();               // the roles' keys are in their boxes only now
 
         SaveCommand           = new AsyncCommand(SaveAsync);
         TestConnectionCommand = new AsyncCommand(TestConnectionAsync);
@@ -549,7 +553,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         LabelProvider                = Strings.LabelProvider;
         HintProvider                 = Strings.HintProvider;
         LabelApiKey                  = Strings.LabelApiKey;
-        HintApiKey                   = Strings.HintApiKey;
+        MainKey.ApplyLabels(Strings.LabelApiKey, Strings.HintApiKey);
         LabelUrl                     = Strings.LabelUrl;
         HintUrl                      = Strings.HintUrl;
         LabelChatModel               = Strings.LabelChatModel;
@@ -802,7 +806,6 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string LabelProvider             { get => _labelProvider;             set => SetProperty(ref _labelProvider,             value); }
     [DataMember] public string HintProvider              { get => _hintProvider;              set => SetProperty(ref _hintProvider,              value); }
     [DataMember] public string LabelApiKey               { get => _labelApiKey;               set => SetProperty(ref _labelApiKey,               value); }
-    [DataMember] public string HintApiKey                { get => _hintApiKey;                set => SetProperty(ref _hintApiKey,                value); }
     [DataMember] public string LabelUrl                  { get => _labelUrl;                  set => SetProperty(ref _labelUrl,                  value); }
     [DataMember] public string HintUrl                   { get => _hintUrl;                   set => SetProperty(ref _hintUrl,                   value); }
     [DataMember] public string LabelChatModel            { get => _labelChatModel;            set => SetProperty(ref _labelChatModel,            value); }
@@ -1001,6 +1004,26 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     /// <summary>Visibility of the Inline Completions (FIM) section — unsupported on generic OpenAI servers.</summary>
     [DataMember] public bool   ShowInlineCompletions { get => _showInlineCompletions; set => SetProperty(ref _showInlineCompletions, value); }
     [DataMember] public string ApiKey               { get => _apiKey;               set => SetProperty(ref _apiKey,               value); }
+    /// <summary>The three keys of the server page, masked once saved.</summary>
+    [DataMember] public SecretFieldItem MainKey       { get; }
+    [DataMember] public SecretFieldItem CompletionKey { get; }
+    [DataMember] public SecretFieldItem SearchKey     { get; }
+
+    /// <summary>After a load, a Cancel or a Save: each box holds its saved key, masked when there is one.</summary>
+    private void ResetKeys()
+    {
+        MainKey.Reset();
+        CompletionKey.Reset();
+        SearchKey.Reset();
+    }
+
+    /// <summary>The window is closing: a key shown is masked again; one being typed stays.</summary>
+    internal void MaskShownKeys()
+    {
+        MainKey.MaskShown();
+        CompletionKey.MaskShown();
+        SearchKey.MaskShown();
+    }
     [DataMember] public string BaseUrl              { get => _baseUrl;              set => SetProperty(ref _baseUrl,              value); }
     [DataMember] public string? SelectedModel       { get => _selectedModel;        set => SetProperty(ref _selectedModel,        value); }
     // h/min/s composite: clamp each sub-field live (setters fire per-keystroke via
@@ -1431,6 +1454,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         _config.ApplyChangesFrom(edited, _opened);
         _config.Save();
         _opened = edited.SnapshotNow();
+        await RunOnVMContextAsync(ResetKeys);   // a key just saved is masked from now on
 
         // Reconnect MCP servers from the freshly-saved config and report status.
         //

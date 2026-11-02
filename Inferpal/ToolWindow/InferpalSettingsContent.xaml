@@ -721,9 +721,36 @@
                         </StackPanel>
                         <StackPanel Margin="0,0,16,16">
                             <TextBlock Text="{Binding LabelApiKey}" Style="{StaticResource FieldLabel}"/>
-                            <TextBox Text="{Binding ApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                     AutomationProperties.Name="{Binding LabelApiKey}"/>
-                            <TextBlock Text="{Binding HintApiKey}" Style="{StaticResource Hint}"/>
+                            <!-- A saved key is masked until asked for: Remote UI has no bindable PasswordBox. -->
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Text="{Binding MainKey.Mask, Mode=OneWay}" IsReadOnly="True" IsTabStop="False"
+                                         Visibility="{Binding MainKey.IsMasked, Converter={StaticResource b2v}}"
+                                         AutomationProperties.Name="{Binding LabelApiKey}" AutomationProperties.HelpText="{Binding MainKey.Hint}"/>
+                                <TextBox Text="{Binding ApiKey, Mode=OneWay}" IsReadOnly="True" FontFamily="Cascadia Mono, Consolas"
+                                         Visibility="{Binding MainKey.IsShown, Converter={StaticResource b2v}}"
+                                         AutomationProperties.Name="{Binding LabelApiKey}" AutomationProperties.HelpText="{Binding MainKey.Hint}"/>
+                                <TextBox Text="{Binding ApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         Visibility="{Binding MainKey.IsEditing, Converter={StaticResource b2v}}"
+                                         AutomationProperties.Name="{Binding LabelApiKey}" AutomationProperties.HelpText="{Binding MainKey.Hint}"/>
+                                <Button Grid.Column="1" Content="{Binding MainKey.ShowLabel}" Command="{Binding MainKey.ShowCommand}"
+                                        Visibility="{Binding MainKey.IsMasked, Converter={StaticResource b2v}}"
+                                        AutomationProperties.Name="{Binding MainKey.ShowName}" Padding="12,4" Margin="8,0,0,0"/>
+                                <Button Grid.Column="1" Content="{Binding MainKey.HideLabel}" Command="{Binding MainKey.HideCommand}"
+                                        Visibility="{Binding MainKey.IsShown, Converter={StaticResource b2v}}"
+                                        AutomationProperties.Name="{Binding MainKey.HideName}" Padding="12,4" Margin="8,0,0,0"/>
+                                <Button Grid.Column="1" Content="{Binding MainKey.KeepLabel}" Command="{Binding MainKey.KeepCommand}"
+                                        Visibility="{Binding MainKey.CanKeepSaved, Converter={StaticResource b2v}}"
+                                        AutomationProperties.Name="{Binding MainKey.KeepName}" Padding="12,4" Margin="8,0,0,0"/>
+                                <Button Grid.Column="2" Content="{Binding MainKey.ChangeLabel}" Command="{Binding MainKey.ChangeCommand}"
+                                        Visibility="{Binding MainKey.CanChange, Converter={StaticResource b2v}}"
+                                        AutomationProperties.Name="{Binding MainKey.ChangeName}" Padding="12,4" Margin="8,0,0,0"/>
+                            </Grid>
+                            <TextBlock Text="{Binding MainKey.Hint}" Style="{StaticResource Hint}"/>
                         </StackPanel>
                         <!-- A role's own server: its kind (its Test button fills it in) and its key, never the chat's. -->
                         <StackPanel Margin="0,0,16,16" Visibility="{Binding CompletionElsewhere, Converter={StaticResource b2v}}">
@@ -734,9 +761,35 @@
                         </StackPanel>
                         <StackPanel Margin="0,0,16,16" Visibility="{Binding CompletionElsewhere, Converter={StaticResource b2v}}">
                             <TextBlock Text="{Binding LabelCompletionApiKey}" Style="{StaticResource FieldLabel}"/>
-                            <TextBox Text="{Binding CompletionApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                     AutomationProperties.Name="{Binding LabelCompletionApiKey}"/>
-                            <TextBlock Text="{Binding HintApiKey}" Style="{StaticResource Hint}"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Text="{Binding CompletionKey.Mask, Mode=OneWay}" IsReadOnly="True" IsTabStop="False"
+                                         Visibility="{Binding CompletionKey.IsMasked, Converter={StaticResource b2v}}"
+                                         AutomationProperties.Name="{Binding LabelCompletionApiKey}" AutomationProperties.HelpText="{Binding CompletionKey.Hint}"/>
+                                <TextBox Text="{Binding CompletionApiKey, Mode=OneWay}" IsReadOnly="True" FontFamily="Cascadia Mono, Consolas"
+                                         Visibility="{Binding CompletionKey.IsShown, Converter={StaticResource b2v}}"
+                                         AutomationProperties.Name="{Binding LabelCompletionApiKey}" AutomationProperties.HelpText="{Binding CompletionKey.Hint}"/>
+                                <TextBox Text="{Binding CompletionApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         Visibility="{Binding CompletionKey.IsEditing, Converter={StaticResource b2v}}"
+                                         AutomationProperties.Name="{Binding LabelCompletionApiKey}" AutomationProperties.HelpText="{Binding CompletionKey.Hint}"/>
+                                <Button Grid.Column="1" Content="{Binding CompletionKey.ShowLabel}" Command="{Binding CompletionKey.ShowCommand}"
+                                        Visibility="{Binding CompletionKey.IsMasked, Converter={StaticResource b2v}}"
+                                        AutomationProperties.Name="{Binding CompletionKey.ShowName}" Padding="12,4" Margin="8,0,0,0"/>
+                                <Button Grid.Column="1" Content="{Binding CompletionKey.HideLabel}" Command="{Binding CompletionKey.HideCommand}"
+                                        Visibility="{Binding CompletionKey.IsShown, Converter={StaticResource b2v}}"
+                                        AutomationProperties.Name="{Binding CompletionKey.HideName}" Padding="12,4" Margin="8,0,0,0"/>
+                                <Button Grid.Column="1" Content="{Binding CompletionKey.KeepLabel}" Command="{Binding CompletionKey.KeepCommand}"
+                                        Visibility="{Binding CompletionKey.CanKeepSaved, Converter={StaticResource b2v}}"
+                                        AutomationProperties.Name="{Binding CompletionKey.KeepName}" Padding="12,4" Margin="8,0,0,0"/>
+                                <Button Grid.Column="2" Content="{Binding CompletionKey.ChangeLabel}" Command="{Binding CompletionKey.ChangeCommand}"
+                                        Visibility="{Binding CompletionKey.CanChange, Converter={StaticResource b2v}}"
+                                        AutomationProperties.Name="{Binding CompletionKey.ChangeName}" Padding="12,4" Margin="8,0,0,0"/>
+                            </Grid>
+                            <TextBlock Text="{Binding CompletionKey.Hint}" Style="{StaticResource Hint}"/>
                         </StackPanel>
                         <StackPanel Margin="0,0,16,16" Visibility="{Binding SearchElsewhere, Converter={StaticResource b2v}}">
                             <TextBlock Text="{Binding LabelSearchProvider}" Style="{StaticResource FieldLabel}"/>
@@ -746,9 +799,35 @@
                         </StackPanel>
                         <StackPanel Margin="0,0,16,16" Visibility="{Binding SearchElsewhere, Converter={StaticResource b2v}}">
                             <TextBlock Text="{Binding LabelSearchApiKey}" Style="{StaticResource FieldLabel}"/>
-                            <TextBox Text="{Binding SearchApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                     AutomationProperties.Name="{Binding LabelSearchApiKey}"/>
-                            <TextBlock Text="{Binding HintApiKey}" Style="{StaticResource Hint}"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Text="{Binding SearchKey.Mask, Mode=OneWay}" IsReadOnly="True" IsTabStop="False"
+                                         Visibility="{Binding SearchKey.IsMasked, Converter={StaticResource b2v}}"
+                                         AutomationProperties.Name="{Binding LabelSearchApiKey}" AutomationProperties.HelpText="{Binding SearchKey.Hint}"/>
+                                <TextBox Text="{Binding SearchApiKey, Mode=OneWay}" IsReadOnly="True" FontFamily="Cascadia Mono, Consolas"
+                                         Visibility="{Binding SearchKey.IsShown, Converter={StaticResource b2v}}"
+                                         AutomationProperties.Name="{Binding LabelSearchApiKey}" AutomationProperties.HelpText="{Binding SearchKey.Hint}"/>
+                                <TextBox Text="{Binding SearchApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         Visibility="{Binding SearchKey.IsEditing, Converter={StaticResource b2v}}"
+                                         AutomationProperties.Name="{Binding LabelSearchApiKey}" AutomationProperties.HelpText="{Binding SearchKey.Hint}"/>
+                                <Button Grid.Column="1" Content="{Binding SearchKey.ShowLabel}" Command="{Binding SearchKey.ShowCommand}"
+                                        Visibility="{Binding SearchKey.IsMasked, Converter={StaticResource b2v}}"
+                                        AutomationProperties.Name="{Binding SearchKey.ShowName}" Padding="12,4" Margin="8,0,0,0"/>
+                                <Button Grid.Column="1" Content="{Binding SearchKey.HideLabel}" Command="{Binding SearchKey.HideCommand}"
+                                        Visibility="{Binding SearchKey.IsShown, Converter={StaticResource b2v}}"
+                                        AutomationProperties.Name="{Binding SearchKey.HideName}" Padding="12,4" Margin="8,0,0,0"/>
+                                <Button Grid.Column="1" Content="{Binding SearchKey.KeepLabel}" Command="{Binding SearchKey.KeepCommand}"
+                                        Visibility="{Binding SearchKey.CanKeepSaved, Converter={StaticResource b2v}}"
+                                        AutomationProperties.Name="{Binding SearchKey.KeepName}" Padding="12,4" Margin="8,0,0,0"/>
+                                <Button Grid.Column="2" Content="{Binding SearchKey.ChangeLabel}" Command="{Binding SearchKey.ChangeCommand}"
+                                        Visibility="{Binding SearchKey.CanChange, Converter={StaticResource b2v}}"
+                                        AutomationProperties.Name="{Binding SearchKey.ChangeName}" Padding="12,4" Margin="8,0,0,0"/>
+                            </Grid>
+                            <TextBlock Text="{Binding SearchKey.Hint}" Style="{StaticResource Hint}"/>
                         </StackPanel>
                     </UniformGrid>
                 </StackPanel>

@@ -23,6 +23,11 @@ internal static class VsctMenus
     internal const uint AutosContext     = 0x0502;    // IDM_AUTOS_CONTEXT
     internal const uint CallStackContext = 0x0504;    // IDM_CALLSTACK_CONTEXT
 
+    /// <summary><c>guidTestWindowCmdSet</c>: Test Explorer's command table, read from the TestWindow package's
+    /// <c>Menus.ctmenu</c> — the same in Visual Studio 2026 and 2022.</summary>
+    internal static readonly Guid TestWindowCmdSet = new("1e198c22-5980-4e7e-92f3-f73168d1fb63");
+    internal const uint TestExplorerContext = 0x0002;   // menuidTestWindowContext — a test or group in Test Explorer
+
     /// <summary><c>UICONTEXT_Debugging</c>: a debug session, running or paused.</summary>
     internal static readonly Guid DebuggingContext = new("adfc4e61-0397-11d1-9f4e-00a0c911004f");
 }

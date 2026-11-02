@@ -55,6 +55,13 @@
   <data name="HintProvider" xml:space="preserve"><value>Ollama, LM Studio o compatibile OpenAI. Prova lo compila. Ha effetto al riavvio dell'editor.</value></data>
   <data name="LabelApiKey" xml:space="preserve"><value>Chiave API</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>Solo se il server la chiede: Ollama e LM Studio non ne hanno bisogno.</value></data>
+  <data name="KeyShow" xml:space="preserve"><value>Mostra</value></data>
+  <data name="KeyHide" xml:space="preserve"><value>Nascondi</value></data>
+  <data name="KeyChange" xml:space="preserve"><value>Cambia</value></data>
+  <data name="KeyKeepSaved" xml:space="preserve"><value>Mantieni quella salvata</value></data>
+  <data name="HintKeySaved" xml:space="preserve"><value>Salvata. Mostrata solo su richiesta.</value></data>
+  <data name="HintKeyShown" xml:space="preserve"><value>Nascosta di nuovo alla chiusura di questa finestra.</value></data>
+  <data name="HintKeyReplacing" xml:space="preserve"><value>La nuova chiave sostituisce quella salvata quando salvi, e da allora resta nascosta. Se la lasci vuota, la chiave salvata viene rimossa.</value></data>
   <data name="LabelUrl" xml:space="preserve"><value>Indirizzo del server</value></data>
   <data name="HintUrl" xml:space="preserve"><value>Ollama (:11434), LM Studio (:1234) o qualsiasi server compatibile OpenAI. Prova indica quale risponde.</value></data>
   <data name="LabelChatModel" xml:space="preserve"><value>Chat e agente</value></data>

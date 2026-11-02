@@ -55,6 +55,13 @@
   <data name="HintProvider" xml:space="preserve"><value>Ollama、LM Studio、または OpenAI 互換。テストで自動的に入ります。エディターの再読み込み後に有効になります。</value></data>
   <data name="LabelApiKey" xml:space="preserve"><value>API キー</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>サーバーが求める場合のみ。Ollama と LM Studio には不要です。</value></data>
+  <data name="KeyShow" xml:space="preserve"><value>表示</value></data>
+  <data name="KeyHide" xml:space="preserve"><value>非表示</value></data>
+  <data name="KeyChange" xml:space="preserve"><value>変更</value></data>
+  <data name="KeyKeepSaved" xml:space="preserve"><value>保存済みのキーを使う</value></data>
+  <data name="HintKeySaved" xml:space="preserve"><value>保存済みです。求めたときだけ表示されます。</value></data>
+  <data name="HintKeyShown" xml:space="preserve"><value>このウィンドウを閉じると再び隠されます。</value></data>
+  <data name="HintKeyReplacing" xml:space="preserve"><value>保存すると新しいキーが保存済みのキーに置き換わり、以後は隠されます。空のままにすると、保存済みのキーは削除されます。</value></data>
   <data name="LabelUrl" xml:space="preserve"><value>サーバーのアドレス</value></data>
   <data name="HintUrl" xml:space="preserve"><value>Ollama (:11434)、LM Studio (:1234)、または OpenAI 互換サーバー。テストで応答したサーバーがわかります。</value></data>
   <data name="LabelChatModel" xml:space="preserve"><value>チャットとエージェント</value></data>

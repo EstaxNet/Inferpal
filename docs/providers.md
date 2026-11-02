@@ -54,7 +54,8 @@ others.
    `8080` in older builds and in its Docker image), `http://localhost:8000` (vLLM), or any other `/v1` base URL (OpenAI-compatible).
 2. **Test** — names the server that answers, selects its type and lists its models.
 3. **Server type** and **API key** — under *Show advanced settings → Connection*. The key is only
-   needed for OpenAI-compatible endpoints that require auth.
+   needed for OpenAI-compatible endpoints that require auth. Once saved, it is masked: **Show** displays it until the
+   window closes, **Change** takes a new one (in Visual Studio; VS Code's box is a password field).
 
 ## VRAM budget
 

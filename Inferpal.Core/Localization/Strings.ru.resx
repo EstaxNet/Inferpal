@@ -55,6 +55,13 @@
   <data name="HintProvider" xml:space="preserve"><value>Ollama, LM Studio или OpenAI-совместимый. «Проверить» заполняет его. Действует после перезагрузки редактора.</value></data>
   <data name="LabelApiKey" xml:space="preserve"><value>Ключ API</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>Только если сервер его требует: Ollama и LM Studio он не нужен.</value></data>
+  <data name="KeyShow" xml:space="preserve"><value>Показать</value></data>
+  <data name="KeyHide" xml:space="preserve"><value>Скрыть</value></data>
+  <data name="KeyChange" xml:space="preserve"><value>Изменить</value></data>
+  <data name="KeyKeepSaved" xml:space="preserve"><value>Оставить сохранённый</value></data>
+  <data name="HintKeySaved" xml:space="preserve"><value>Сохранён. Показывается только по запросу.</value></data>
+  <data name="HintKeyShown" xml:space="preserve"><value>Снова скрывается при закрытии этого окна.</value></data>
+  <data name="HintKeyReplacing" xml:space="preserve"><value>Новый ключ заменит сохранённый при сохранении и с этого момента будет скрыт. Если оставить поле пустым, сохранённый ключ будет удалён.</value></data>
   <data name="LabelUrl" xml:space="preserve"><value>Адрес сервера</value></data>
   <data name="HintUrl" xml:space="preserve"><value>Ollama (:11434), LM Studio (:1234) или любой OpenAI-совместимый сервер. Кнопка «Проверить» покажет, какой отвечает.</value></data>
   <data name="LabelChatModel" xml:space="preserve"><value>Чат и агент</value></data>

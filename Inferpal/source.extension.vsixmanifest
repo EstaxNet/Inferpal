@@ -22,7 +22,7 @@
     <License>LICENSE.txt</License>
     <!-- These two fill the Marketplace listing ("Get Started" and "Release Notes") and accept
          a URL, unlike <License>, which requires a file embedded in the package. -->
-    <GettingStartedGuide>https://github.com/EstaxNet/Inferpal/blob/master/docs/getting-started.md</GettingStartedGuide>
+    <GettingStartedGuide>https://github.com/EstaxNet/Inferpal/blob/v1.8.8/docs/getting-started.md</GettingStartedGuide>
     <ReleaseNotes>https://github.com/EstaxNet/Inferpal/releases</ReleaseNotes>
     <Icon>assets\icon.png</Icon>
     <Tags>AI;local AI;agent;local LLM;Ollama;LM Studio;llama.cpp;vLLM;offline;private;Copilot alternative;MCP</Tags>

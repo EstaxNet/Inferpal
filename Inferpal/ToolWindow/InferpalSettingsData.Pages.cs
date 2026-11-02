@@ -466,6 +466,7 @@ internal partial class InferpalSettingsData
         ChatDensity = c.IsCompactChat ? "compact" : "comfortable";
         HistoryStorage = ShownHistoryStorage(c);
         LoadRoleServerFields(c);
+        ResetKeys();
         _ = ListRoleModelsAsync(force: false, CancellationToken.None);   // a server put back that was never listed
         ShowAdvanced = ModelRoleSettings.OpensAdvanced(c);
 

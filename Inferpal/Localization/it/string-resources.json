@@ -6,6 +6,7 @@
   "InferpalReviewCommitCommand": "Revisiona un commit...",
   "InferpalAskCompletionCommand": "Suggerisci o accetta un completamento",
   "InferpalFixErrorListCommand": "Correggi con Inferpal",
+  "InferpalFixFailingTestsCommand": "Correggi i test non superati con Inferpal",
   "InferpalAnalyzeStopCommand": "Analizza con Inferpal",
   "InferpalExplainItemCommand": "Spiega",
   "InferpalReviewItemCommand": "Revisiona modifiche",

@@ -58,6 +58,13 @@
   <data name="HintProvider" xml:space="preserve"><value>Ollama、LM Studio 或兼容 OpenAI。点击测试会自动填写。编辑器重新加载后生效。</value></data>
   <data name="LabelApiKey" xml:space="preserve"><value>API 密钥</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>仅当服务器要求时填写：Ollama 和 LM Studio 不需要。</value></data>
+  <data name="KeyShow" xml:space="preserve"><value>显示</value></data>
+  <data name="KeyHide" xml:space="preserve"><value>隐藏</value></data>
+  <data name="KeyChange" xml:space="preserve"><value>更改</value></data>
+  <data name="KeyKeepSaved" xml:space="preserve"><value>保留已保存的密钥</value></data>
+  <data name="HintKeySaved" xml:space="preserve"><value>已保存。仅在您要求时显示。</value></data>
+  <data name="HintKeyShown" xml:space="preserve"><value>关闭此窗口时将再次隐藏。</value></data>
+  <data name="HintKeyReplacing" xml:space="preserve"><value>保存时新密钥将替换已保存的密钥，此后将被隐藏。留空则会删除已保存的密钥。</value></data>
   <data name="LabelUrl" xml:space="preserve"><value>服务器地址</value></data>
   <data name="HintUrl" xml:space="preserve"><value>Ollama (:11434)、LM Studio (:1234) 或任何兼容 OpenAI 的服务器。点击测试可知道是哪一个在响应。</value></data>
   <data name="LabelChatModel" xml:space="preserve"><value>聊天与代理</value></data>

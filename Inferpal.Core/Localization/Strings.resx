@@ -58,6 +58,13 @@
   <data name="HintProvider" xml:space="preserve"><value>Ollama, LM Studio or OpenAI-compatible. Test fills it in. Takes effect after the editor reloads.</value></data>
   <data name="LabelApiKey" xml:space="preserve"><value>API key</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>Only if your server asks for one: Ollama and LM Studio need none.</value></data>
+  <data name="KeyShow" xml:space="preserve"><value>Show</value></data>
+  <data name="KeyHide" xml:space="preserve"><value>Hide</value></data>
+  <data name="KeyChange" xml:space="preserve"><value>Change</value></data>
+  <data name="KeyKeepSaved" xml:space="preserve"><value>Keep the saved one</value></data>
+  <data name="HintKeySaved" xml:space="preserve"><value>Saved. Shown only when you ask.</value></data>
+  <data name="HintKeyShown" xml:space="preserve"><value>Masked again when this window closes.</value></data>
+  <data name="HintKeyReplacing" xml:space="preserve"><value>The new key replaces the saved one when you save, and is masked from then on. Left empty, the saved key is removed.</value></data>
   <data name="LabelUrl" xml:space="preserve"><value>Server address</value></data>
   <data name="HintUrl" xml:space="preserve"><value>Ollama (:11434), LM Studio (:1234) or any OpenAI-compatible server. Test says which one answers.</value></data>
   <data name="LabelChatModel" xml:space="preserve"><value>Chat and agent</value></data>

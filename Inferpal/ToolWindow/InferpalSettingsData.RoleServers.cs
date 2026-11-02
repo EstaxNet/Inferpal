@@ -16,7 +16,8 @@ namespace Inferpal.ToolWindow;
 /// </summary>
 /// <remarks>
 /// ⚠ Flat properties, one set per role, not an object per role: rules 16 and 26 of <c>ConventionCoverageTests</c> derive
-/// the bound lists and properties from <c>{Binding Name}</c>, and a dotted path would hide them from both.
+/// the bound lists and properties from <c>{Binding Name}</c>, and a dotted path would hide them from both. The keys'
+/// mask (<see cref="SecretFieldItem"/>) is the exception: it binds no list and no selection, only what is shown.
 /// </remarks>
 internal partial class InferpalSettingsData
 {
@@ -160,6 +161,8 @@ internal partial class InferpalSettingsData
         LabelCompletionApiKey    = Strings.LabelCompletionApiKey;
         LabelSearchProvider      = Strings.LabelSearchProvider;
         LabelSearchApiKey        = Strings.LabelSearchApiKey;
+        CompletionKey.ApplyLabels(Strings.LabelCompletionApiKey, Strings.HintApiKey);
+        SearchKey.ApplyLabels(Strings.LabelSearchApiKey, Strings.HintApiKey);
         HintRoleProvider         = Strings.HintRoleProvider;
 
         AutomationCompletionRunsOn = $"{Strings.SettingsPageAutocomplete} — {Strings.LabelRunsOn}";
@@ -236,6 +239,8 @@ internal partial class InferpalSettingsData
         var draft = RoleDraft();
         CompletionElsewhere   = draft.InlineCompletionRunsOn == RoleServers.OnOther;
         SearchElsewhere       = draft.RagEmbeddingRunsOn == RoleServers.OnOther;
+        if (!CompletionElsewhere) CompletionKey.Hidden();
+        if (!SearchElsewhere)     SearchKey.Hidden();
         CompletionEmptyChoice = RoleServers.OnChatServer(draft, ServerRole.Completion) ? EmptySameAsChat : Strings.SettingsNoModelChosen;
         // No address yet: the probe would test the chat's server and name it as this one.
         TestCompletionServerCommand.CanExecute = draft.InlineCompletionBaseUrl.Length > 0;

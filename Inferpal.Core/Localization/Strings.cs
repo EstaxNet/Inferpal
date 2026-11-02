@@ -50,6 +50,13 @@ internal static class Strings
     public static string HintProvider         => Get(nameof(HintProvider));
     public static string LabelApiKey          => Get(nameof(LabelApiKey));
     public static string HintApiKey           => Get(nameof(HintApiKey));
+    public static string KeyShow              => Get(nameof(KeyShow));
+    public static string KeyHide              => Get(nameof(KeyHide));
+    public static string KeyChange            => Get(nameof(KeyChange));
+    public static string KeyKeepSaved         => Get(nameof(KeyKeepSaved));
+    public static string HintKeySaved         => Get(nameof(HintKeySaved));
+    public static string HintKeyShown         => Get(nameof(HintKeyShown));
+    public static string HintKeyReplacing     => Get(nameof(HintKeyReplacing));
     public static string LabelUrl             => Get(nameof(LabelUrl));
     public static string HintUrl              => Get(nameof(HintUrl));
     public static string LabelChatModel       => Get(nameof(LabelChatModel));

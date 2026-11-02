@@ -6,6 +6,7 @@
   "InferpalReviewCommitCommand": "コミットをレビュー...",
   "InferpalAskCompletionCommand": "補完候補を表示または確定",
   "InferpalFixErrorListCommand": "Inferpal で修正",
+  "InferpalFixFailingTestsCommand": "失敗したテストを Inferpal で修正",
   "InferpalAnalyzeStopCommand": "Inferpal で分析",
   "InferpalExplainItemCommand": "説明",
   "InferpalReviewItemCommand": "変更をレビュー",

@@ -34,6 +34,30 @@ public sealed class DocumentationAccessTests
     }
 
     /// <summary>
+    /// What is published beside a release — the two Marketplace listings, the VSIX manifest, the ACP registry entry, the
+    /// site — links the docs of the version it ships, like the product: a listing is only changed by publishing it, and
+    /// <c>master</c> describes what is not released yet. Red between a version bump and the links following it (the
+    /// release wizard's bump rewrites them; the registry entry takes the version it is built for).
+    /// </summary>
+    [Theory]
+    [InlineData("MARKETPLACE.md", true)]                          // private repo only
+    [InlineData("site/index.html", true)]                         // private repo only
+    [InlineData("vscode/README.md", false)]
+    [InlineData("Inferpal/source.extension.vsixmanifest", false)]
+    [InlineData("acp/registry-entry.ps1", false)]
+    public void TheListings_LinkTheDocsOfTheVersionTheyShip(string listing, bool privateOnly)
+    {
+        var path = Path.Combine(Root, listing);
+        if (privateOnly && !File.Exists(path)) return;
+        var version = Regex.Match(File.ReadAllText(Path.Combine(Root, "Directory.Build.props")), @"<Version>([^<]+)</Version>").Groups[1].Value;
+        var refs = Regex.Matches(File.ReadAllText(path), @"github\.com/EstaxNet/Inferpal/blob/([^/]+)/")
+                        .Select(m => m.Groups[1].Value).ToList();
+        Assert.NotEmpty(refs);   // witness: the listing still links the docs
+        var expected = listing.EndsWith(".ps1", StringComparison.Ordinal) ? "v$Version" : $"v{version}";
+        Assert.All(refs, r => Assert.Equal(expected, r));
+    }
+
+    /// <summary>
     /// <c>/help</c> ends on the documentation, its address the link's text: readable as it is wherever a link cannot be
     /// followed — a copy, an export.
     /// </summary>

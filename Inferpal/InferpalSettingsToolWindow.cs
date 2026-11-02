@@ -63,8 +63,24 @@ internal class InferpalSettingsToolWindow : VsToolWindow
         }
         _context.ShowSettingsPage = data.ShowPage;
         // Gone with its window: a later "Open time limits" then builds the next one on its page.
-        data.OnDetached = () => { if (_context.ShowSettingsPage == data.ShowPage) _context.ShowSettingsPage = null; };
+        data.OnDetached = () =>
+        {
+            if (_context.ShowSettingsPage == data.ShowPage) _context.ShowSettingsPage = null;
+            if (_data == data) _data = null;
+        };
+        _data = data;
         return Task.FromResult<IRemoteUserControl>(new InferpalSettingsContent(data));
+    }
+
+    /// <summary>The form the window shows now.</summary>
+    private InferpalSettingsData? _data;
+
+    /// <summary>A key shown is masked again as the window goes, as its hint says — whether Visual Studio then disposes
+    /// the form or only hides it (a docked tab left for another).</summary>
+    public override Task OnHideAsync(CancellationToken cancellationToken)
+    {
+        if (_data is { } data) data.SynchronizationContext.Post(_ => data.MaskShownKeys(), null);
+        return base.OnHideAsync(cancellationToken);
     }
 
     /// <summary>The settings' "Open Context X-Ray": the chat window, shown, with its panel open.</summary>

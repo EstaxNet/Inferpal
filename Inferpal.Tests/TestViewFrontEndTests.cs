@@ -10,10 +10,23 @@ namespace Inferpal.Tests;
 /// </summary>
 /// <remarks>The menus and the sends are held at the source: no test drives an editor. The Core's half is tested where it
 /// runs (<see cref="TestFailureExplainTests"/>, <c>HostServerTests.TestsExplain_*</c>). Visual Studio's Test Explorer
-/// publishes no selection to an extension: the gesture is VS Code's alone, and the docs say so.</remarks>
+/// publishes no selection to an extension: its menu runs <c>/tdd</c> on the whole suite, and the docs say so.</remarks>
 public sealed class TestViewFrontEndTests
 {
     private static string Root => ConversationPersistenceSilenceTests.RepoRoot();
+
+    /// <summary>Test Explorer's context menu (<c>guidTestWindowCmdSet</c>, <c>menuidTestWindowContext</c>, read from the
+    /// TestWindow package's command table in VS 2026 and 2022) sends <c>/tdd</c>, as if typed.</summary>
+    [Fact]
+    public void VisualStudiosTestExplorer_OffersTdd()
+    {
+        var menus = ConventionCoverageTests.CodeOnly(Path.Combine(Root, "Inferpal", "Commands", "VsctMenus.cs"));
+        Assert.Contains("TestWindowCmdSet = new(\"1e198c22-5980-4e7e-92f3-f73168d1fb63\")", menus, StringComparison.Ordinal);
+        Assert.Matches(@"TestExplorerContext\s*=\s*0x0002;", menus);
+        var command = ConventionCoverageTests.CodeOnly(Path.Combine(Root, "Inferpal", "Commands", "FixFailingTestsCommand.cs"));
+        Assert.Contains("GroupPlacement.VsctParent(VsctMenus.TestWindowCmdSet, VsctMenus.TestExplorerContext", command, StringComparison.Ordinal);
+        Assert.Matches(@"SetPendingPrompt\(""/tdd""\);\s*await Extensibility\.Shell\(\)\.ShowToolWindowAsync<InferpalToolWindow>", command);
+    }
 
     [Fact]
     public void TheTestViewMenus_OfferBothGestures_AndKeepThemOutOfThePalette()

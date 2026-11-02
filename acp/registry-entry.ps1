@@ -43,10 +43,10 @@ $entry = [ordered]@{
     version      = $Version
     description  = 'A coding agent that runs on your own model server (Ollama, LM Studio or any OpenAI-compatible endpoint): no account, no telemetry.'
     repository   = 'https://github.com/EstaxNet/Inferpal'
-    website      = 'https://github.com/EstaxNet/Inferpal/blob/master/docs/acp.md'
+    website      = "https://github.com/EstaxNet/Inferpal/blob/v$Version/docs/acp.md"
     authors      = @('EstaxNet')
     license      = 'GPL-3.0-only'
-    license_url  = 'https://github.com/EstaxNet/Inferpal/blob/master/LICENSE'
+    license_url  = "https://github.com/EstaxNet/Inferpal/blob/v$Version/LICENSE"
     icon         = 'https://raw.githubusercontent.com/EstaxNet/Inferpal/master/acp/icon.svg'
     distribution = [ordered]@{ binary = $binary }
 }

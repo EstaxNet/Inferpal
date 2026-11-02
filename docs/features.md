@@ -450,8 +450,9 @@ flowchart LR
   test, it asks about that message and the failing line without running anything. The name is a filter, matched by each
   runner its own way: tests whose name contains it run too, and a report that never names the clicked test is said to
   be about others. A test that passes, a run where nothing ran or that was stopped at its budget, is said; a running
-  test can be cancelled. Visual Studio's Test Explorer gives no extension the test you clicked: there, type
-  `/tdd <name>`.
+  test can be cancelled.
+- **Inferpal in Test Explorer (Visual Studio)** — right-click: **Fix Failing Tests with Inferpal** runs `/tdd` on the
+  whole suite. Test Explorer gives no extension the test you clicked: for one test, type `/tdd <name>`.
 
 </details>
 

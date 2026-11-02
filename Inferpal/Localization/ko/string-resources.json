@@ -6,6 +6,7 @@
   "InferpalReviewCommitCommand": "커밋 검토...",
   "InferpalAskCompletionCommand": "완성 제안 또는 수락",
   "InferpalFixErrorListCommand": "Inferpal로 수정",
+  "InferpalFixFailingTestsCommand": "Inferpal로 실패한 테스트 수정",
   "InferpalAnalyzeStopCommand": "Inferpal로 분석",
   "InferpalExplainItemCommand": "설명",
   "InferpalReviewItemCommand": "변경 검토",
