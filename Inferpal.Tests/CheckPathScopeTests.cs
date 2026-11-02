@@ -53,7 +53,9 @@ public sealed class CheckPathScopeTests : IDisposable
         Write("docs/Readme.md", "# Readme\n");
         await Git("add -A");
         await Git("-c commit.gpgsign=false commit -q -m base");
-        Write("src/Billing/Invoice.cs", "class Invoice { int Total = 1; }\n");
+        // Another size than the committed text: a same-size rewrite in the commit's own timestamp tick can read as unchanged
+        // to git (racy clean), and the change then vanishes from the diff.
+        Write("src/Billing/Invoice.cs", "class Invoice { int Total = 10; }\n");
         Write("src/Billing/New.cs", "class NewInBilling { }\n");
         Write("docs/draft.md", "OUTSIDE_THE_SCOPE\n");
     }
@@ -81,7 +83,7 @@ public sealed class CheckPathScopeTests : IDisposable
 
         var (message, sent) = await Check($"\"{Path.Combine(_repo, "src", "Billing")}\"");
 
-        Assert.Contains("+class Invoice { int Total = 1; }", sent);
+        Assert.Contains("+class Invoice { int Total = 10; }", sent);
         Assert.Contains("class NewInBilling", sent);
         Assert.DoesNotContain("OUTSIDE_THE_SCOPE", sent);   // a new file elsewhere is not this folder's change
         Assert.StartsWith(Strings.CheckPathLabel("src/Billing"), message);
@@ -95,7 +97,7 @@ public sealed class CheckPathScopeTests : IDisposable
 
         var (message, sent) = await Check($"\"{Path.Combine(_repo, "src", "Billing")}{Path.DirectorySeparatorChar}\"");
 
-        Assert.Contains("+class Invoice { int Total = 1; }", sent);
+        Assert.Contains("+class Invoice { int Total = 10; }", sent);
         Assert.StartsWith(Strings.CheckPathLabel("src/Billing"), message);
     }
 
@@ -107,7 +109,7 @@ public sealed class CheckPathScopeTests : IDisposable
 
         var (_, sent) = await Check(Path.Combine(_repo, "SRC", "billing"));
 
-        Assert.Contains("+class Invoice { int Total = 1; }", sent);
+        Assert.Contains("+class Invoice { int Total = 10; }", sent);
     }
 
     [Fact]
@@ -128,7 +130,7 @@ public sealed class CheckPathScopeTests : IDisposable
 
         var (message, sent) = await Check(Path.Combine("src", "Billing"));
 
-        Assert.Contains("+class Invoice { int Total = 1; }", sent);
+        Assert.Contains("+class Invoice { int Total = 10; }", sent);
         Assert.StartsWith(Strings.CheckPathStagedLabel("src/Billing"), message);
     }
 
