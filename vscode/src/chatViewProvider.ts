@@ -197,6 +197,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       openSettings: async () => {
         await vscode.commands.executeCommand('inferpal.openSettings');
       },
+      copy: async (text) => {
+        await vscode.env.clipboard.writeText(text);
+      },
     });
     this.watchBuilds();
   }
@@ -564,6 +567,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         this.post({ type: 'inputReceipt', id: receipt.id, saved: receipt.saved });
       },
       onSetupPullProgress: (progress) => this.setupFlow.onPullProgress(progress),
+      onSetupInstallProgress: (progress) => this.setupFlow.onInstallProgress(progress),
       onTool: (tool) => {
         const item: WvTranscriptItem = {
           role: 'tool',

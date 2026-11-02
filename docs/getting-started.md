@@ -86,7 +86,10 @@ on this computer (Ollama, LM Studio, llama-server, vLLM). When nothing was set u
 chosen), it takes the server that answers and picks a model, and says so in the chat; on Ollama, with the graphics card's
 memory known, it also sets the context window for the card ([Models](models.md#measured-results)) — an install
 set up before that gets it at its next start. `/setup` looks again, and says what each place answered when none
-does. To choose by hand:
+does. When none does, on Windows with winget, Inferpal offers to install Ollama for your account (about 1.6 GB, no
+administrator rights): the card shows the exact `winget` command before you click **Install**, then the steps; an
+Ollama already installed but not running is started instead. On macOS and Linux it shows the command to run in a
+terminal, and never runs it. The ACP setup (`Inferpal.Host --setup`) prints the command. To choose by hand:
 
 1. Open **Inferpal Settings** — the first page is **Server and models**.
 2. Set the server address (Ollama default: `http://localhost:11434`) and click **Test** beside it: it names the server that
@@ -122,7 +125,8 @@ Visual Studio-only for now: [the list](features.md#two-editors-one-engine).
    (or Extensions view → `…` → *Install from VSIX…*).
 2. Open the **Inferpal** view in the Activity Bar. The first time, a card looks for a
    model server on this computer and proposes the models that fit your card (**Start with these**); a server on
-   another machine is typed on the same card, and Ollama without a chat model gets a recommended one downloaded.
+   another machine is typed on the same card, and Ollama without a chat model gets a recommended one downloaded. With
+   no server at all, on Windows, the card can install Ollama (it shows the `winget` command first).
    `/setup` brings the card back. Then start chatting: streaming replies with full markdown, the agentic loop with approvals and a
    live plan block, collapsible tool bubbles, typed `@`-mentions, slash-command
    autocomplete, inline FIM completions, unsaved-buffer awareness and live diagnostics from

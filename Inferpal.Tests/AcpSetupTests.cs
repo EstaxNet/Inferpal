@@ -21,7 +21,29 @@ public sealed class AcpSetupTests
                           load: () => config ?? new InferpalConfig(),
                           save: saved.Add,
                           // Never this machine's real ports: what answers here is the test's to say.
-                          scan: (_, _) => Task.FromResult(places ?? []));
+                          scan: (_, _) => Task.FromResult(places ?? []),
+                          // Nor what this machine has installed.
+                          installOffer: () => new ServerInstallOffer(ServerInstallKind.NoWinget, null, [], ""));
+
+    /// <summary>Nothing answers: the terminal setup says how to get a server — the command to run by hand, never run for
+    /// the person — before it asks which server to set up.</summary>
+    [Fact]
+    public async Task NothingAnswers_TheCommandToInstallOllama_IsSaid()
+    {
+        var output = new StringWriter();
+        var install = ServerInstall.OfferFor(null, ServerInstall.HostOs.Windows, @"C:\w\winget.exe", installed: null);
+        await AcpSetup.RunAsync(new StringReader(""), output, CancellationToken.None,
+                                probe: (_, _, _) => Task.FromResult<(string?, string?)>((null, null)),
+                                listModels: (_, _) => Task.FromResult(ModelsByKind.ByName([])),
+                                load: () => new InferpalConfig(), save: _ => { },
+                                scan: (_, _) => Task.FromResult<IReadOnlyList<ServerPlace>>([]),
+                                installOffer: () => install);
+
+        var text = output.ToString();
+        Assert.Contains("  " + install.Command, text);
+        Assert.True(text.IndexOf(install.Command, StringComparison.Ordinal)
+                    < text.IndexOf(Localization.Strings.AcpSetupServerQuestion(1), StringComparison.Ordinal));
+    }
 
     /// <summary>The graphics memory set for one server never sizes another: a server elsewhere is set up with its card
     /// unknown, not with the old machine's figure.</summary>

@@ -208,17 +208,30 @@ internal partial class InferpalToolWindowData
             _config.FillFromFile(nameof(InferpalConfig.ApiKey));
             if (Services.Inference.ServerScan.ToAdopt(_config, places) is not { } found)
             {
+                var placesText = Strings.SetupNothingLead + "\n" + string.Join("\n", places.Select(p => "- " + p.Line));
                 // ⚠ Neither this branch nor the next one ENDS the first run: no model has been chosen, and spent here it
                 // left the code's default — a model the backend may not have — for every question to come. It completes
                 // when the connection comes back (heartbeat) or at the next start.
-                if (automatic) return;
+                if (automatic)
+                {
+                    // The heartbeat says the server is down; how to get one it cannot say: the install card, once per
+                    // Visual Studio, and only for someone who never chose a server (one who did is not sent to install
+                    // another) and whose server did not refuse a key (a refusal means one runs).
+                    if (client.ConnectionRefusal is null && Services.Inference.ServerScan.NothingChosen(_config)
+                        && Services.Inference.ServerInstall.Offers(places))
+                        await OfferServerInstallAsync($"**{Strings.SetupNothingTitle}**\n\n" + placesText, once: true)
+                            .ConfigureAwait(false);
+                    return;
+                }
                 // A server that refused the check (a wrong API key) is running: "start it" is the wrong remedy.
                 await present((client.ConnectionRefusal is { } refusal
                     ? Strings.MsgBackendRefused(url, refusal)
                     : Strings.MsgFirstRunBackendDown(
                         url, Services.Inference.InferenceProviderFactory.DisplayName(_config.Provider)))
-                    + "\n\n" + Strings.SetupNothingLead + "\n" + string.Join("\n", places.Select(p => "- " + p.Line)))
+                    + "\n\n" + placesText)
                     .ConfigureAwait(false);
+                if (client.ConnectionRefusal is null && Services.Inference.ServerInstall.Offers(places))
+                    await OfferServerInstallAsync(null, once: false).ConfigureAwait(false);
                 return;
             }
 

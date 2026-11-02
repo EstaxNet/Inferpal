@@ -3,7 +3,7 @@
 // types are shared instead of mirrored. No 'vscode' import — the webview bundle uses it.
 import type {
   ApprovalCard, CutCard, ImportCard, InputCard, InputFormAnswer, ModeInfo, ModeLabels, ModelWait, RewindCard, RunReview, RunSummary,
-  SavedMessage, SetupPlace,
+  SavedMessage, ServerInstallCard, ServerInstallReport, SetupPlace,
   SetupPlan,
   XRayPanel,
 } from './protocol';
@@ -29,6 +29,14 @@ export interface WvSetupView {
   busy?: boolean;
   /** What failed, said on the card. */
   error?: string | null;
+  /** The "no server yet" box for this machine (nothing), composed by the host. */
+  install?: ServerInstallCard | null;
+  /** The box shows the consent card (`consent`) or the install in progress (`running`); null: its offer. */
+  installStep?: 'consent' | 'running' | null;
+  /** winget's last line while it runs. */
+  installLine?: string;
+  /** How the last install or start ended, when it did not end with a server. */
+  installReport?: ServerInstallReport | null;
 }
 
 /** A gesture on the first-run card. */
@@ -40,7 +48,15 @@ export type WvSetupAction =
   | { action: 'chooseOther' }
   | { action: 'download'; tag: string }
   /** The server's graphics memory, chosen on the card. */
-  | { action: 'card'; gb: number };
+  | { action: 'card'; gb: number }
+  /** The "no server yet" box: its button (install asks first; start runs), the consent card's answer, Stop, the report's
+   *  retry, and the command to copy. */
+  | { action: 'install' }
+  | { action: 'installConfirm' }
+  | { action: 'installCancel' }
+  | { action: 'installStop' }
+  | { action: 'installRetry' }
+  | { action: 'copyCommand' };
 
 /** One rendered transcript entry (the extension host owns the list). */
 export interface WvTranscriptItem {

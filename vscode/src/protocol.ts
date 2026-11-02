@@ -1284,3 +1284,45 @@ export interface SetupPullProgress {
   status: string;
   percent?: number | null;
 }
+
+/**
+ * The "no server yet" box (`setup/scan`'s `install`, the Core's ServerInstallCard), composed by the host: `install` (a
+ * button, then the consent card), `start` (Ollama installed and stopped), `noWinget` (only the links), `command` (a command
+ * to copy, never run).
+ */
+export interface ServerInstallCard {
+  kind: 'install' | 'start' | 'noWinget' | 'command';
+  title: string;
+  lead: string;
+  button?: string | null;
+  detail?: string | null;
+  command?: string | null;
+  commandNote?: string | null;
+  othersLead: string;
+  consent?: {
+    title: string; size: string; runs: string; command: string; facts: string[]; confirm: string; cancel: string;
+  } | null;
+  running?: {
+    title: string; lead: string; steps: string[]; says: string; stop?: string | null; stopNote?: string | null;
+  } | null;
+}
+
+/** `setup/install` answer (the Core's ServerInstallReport): `answers` goes on to the models; `changed`: look again. */
+export interface ServerInstallReport {
+  outcome: 'answers' | 'failed' | 'noServer' | 'stopped' | 'busy' | 'notStarted' | 'changed';
+  answers: boolean;
+  title?: string | null;
+  cause?: string | null;
+  lastLines: string[];
+  lastLinesLabel?: string | null;
+  retry?: string | null;
+  retryKind?: 'install' | 'start' | null;
+  yourself?: string | null;
+  /** What the box says while the retry runs (a start is not an install). */
+  retryRunning?: ServerInstallCard['running'];
+}
+
+/** `setup/installProgress` notification: winget's last line, as it wrote it. */
+export interface SetupInstallProgress {
+  line: string;
+}

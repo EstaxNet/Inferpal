@@ -87,6 +87,9 @@ import {
   ModeSetResult,
   SetupPullProgress,
   SetupReason,
+  ServerInstallCard,
+  ServerInstallReport,
+  SetupInstallProgress,
   SelectionDto,
   SessionSwitches,
   TypingChip,
@@ -148,6 +151,8 @@ export interface ChatEvents {
   onInputReceipt?(receipt: InputReceiptNote): void;
   /** A model the first-run card downloads made progress (`setup/pullProgress`). */
   onSetupPullProgress?(progress: SetupPullProgress): void;
+  /** The server the first-run card installs wrote a line (`setup/installProgress`). */
+  onSetupInstallProgress?(progress: SetupInstallProgress): void;
 }
 
 export interface HostClientOptions {
@@ -393,6 +398,7 @@ export class HostClient {
     conn.onNotification('host/notice', (n: TextNote) => this.events.onNotice?.(n.text));
     conn.onNotification('chat/inputReceipt', (n: InputReceiptNote) => this.events.onInputReceipt?.(n));
     conn.onNotification('setup/pullProgress', (n: SetupPullProgress) => this.events.onSetupPullProgress?.(n));
+    conn.onNotification('setup/installProgress', (n: SetupInstallProgress) => this.events.onSetupInstallProgress?.(n));
 
     conn.onError((err) => this.options.log?.(`[rpc] error: ${String(err)}`));
     conn.listen();
@@ -666,8 +672,9 @@ export class HostClient {
   }
 
   /** `offered`: the address of the server to offer — the configured one when it answers (the host decides). */
-  setupScan(): Promise<{ places: SetupPlace[]; offered?: string | null }> {
-    return this.connection().sendRequest<{ places: SetupPlace[]; offered?: string | null }>('setup/scan');
+  setupScan(): Promise<{ places: SetupPlace[]; offered?: string | null; install?: ServerInstallCard | null }> {
+    return this.connection().sendRequest<{ places: SetupPlace[]; offered?: string | null; install?: ServerInstallCard | null }>(
+      'setup/scan');
   }
 
   /** The address the person typed, with the key they gave for it (none: no key is sent). */
@@ -682,6 +689,17 @@ export class HostClient {
 
   setupApply(params: SetupApplyParams): Promise<{ restartNeeded: boolean; windowText?: string | null }> {
     return this.connection().sendRequest<{ restartNeeded: boolean; windowText?: string | null }>('setup/apply', params);
+  }
+
+  /** Installs or starts Ollama on the card's click, its lines in `setup/installProgress`. Stopped by `setupInstallStop`
+   *  only: the request is never cancelled with the window. */
+  setupInstall(kind: 'install' | 'start'): Promise<ServerInstallReport> {
+    return this.connection().sendRequest<ServerInstallReport>('setup/install', { kind });
+  }
+
+  /** The card's Stop: ends winget, never the installer it may have started. */
+  setupInstallStop(): Promise<void> {
+    return this.connection().sendRequest<void>('setup/installStop');
   }
 
   /** Downloads a model to the server the card shows; progress arrives through `onSetupPullProgress`. */

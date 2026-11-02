@@ -2503,3 +2503,50 @@ kbd {
   width: 0;
   background: var(--vscode-progressBar-background, #7c4dff);
 }
+
+/* The "no server yet" box: a command shown whole (to copy, or before an install), the consent card, winget's lines. */
+.setup-command {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--vscode-textCodeBlock-background, rgba(128, 128, 128, 0.12));
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.setup-command-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.setup-command-row .setup-command {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.setup-consent {
+  border-color: var(--vscode-focusBorder, #7c4dff);
+}
+
+.setup-box a {
+  color: var(--vscode-textLink-foreground);
+}
+
+.setup-consent-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.setup-facts {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}

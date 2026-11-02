@@ -32,12 +32,15 @@ internal static class AcpSetup
     /// <param name="save">Test seam: where the settings go (default: <see cref="InferpalConfig.Save"/>).</param>
     /// <param name="scan">Test seam: where a model server answers (default: <see cref="ServerScan"/>, this machine's
     /// usual ports and the configured address).</param>
+    /// <param name="installOffer">Test seam: how this machine gets a server when none answers (default:
+    /// <see cref="ServerInstall.OfferFor(string?)"/>).</param>
     public static async Task<int> RunAsync(
         TextReader input, TextWriter output, CancellationToken ct,
         Func<string, string?, CancellationToken, Task<(string? Provider, string? Refusal)>>? probe = null,
         Func<InferpalConfig, CancellationToken, Task<ModelsByKind>>? listModels = null,
         Func<InferpalConfig>? load = null, Action<InferpalConfig>? save = null,
-        Func<InferpalConfig, CancellationToken, Task<IReadOnlyList<ServerPlace>>>? scan = null)
+        Func<InferpalConfig, CancellationToken, Task<IReadOnlyList<ServerPlace>>>? scan = null,
+        Func<ServerInstallOffer>? installOffer = null)
     {
         probe      ??= ProviderProbe.DetectWithRefusalAsync;
         listModels ??= static (cfg, token) => InferenceProviderFactory.Create(cfg).ListModelsByKindAsync(token);
@@ -56,6 +59,13 @@ internal static class AcpSetup
         foreach (var place in places) output.WriteLine("  " + place.Line);
         output.WriteLine();
         var answering = ServerScan.Offered(places, config.BaseUrl);
+        // Nothing answers: how to get a server, as a command to run by hand — a terminal setup runs nothing for the person.
+        if (answering is null && ServerInstall.Offers(places))
+        {
+            foreach (var line in ServerInstallCard.TerminalLines((installOffer ?? (() => ServerInstall.OfferFor(null)))()))
+                output.WriteLine(line);
+            output.WriteLine();
+        }
 
         // ── The server ─────────────────────────────────────────────────────────
         var offered = InferenceProviderFactory.Canonical(answering?.Provider ?? config.Provider);

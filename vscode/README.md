@@ -65,7 +65,7 @@ These were measured on one 24 GB card (LM Studio, 32K context), with its free me
 
 1. **Run a model server.** [Ollama](https://ollama.com) and [LM Studio](https://lmstudio.ai) are both free, and can run on this computer or on a machine you own. On a 24 GB card: `ollama pull qwen3.8`.
 2. **Open your project folder** in a trusted workspace.
-3. **Open Inferpal** from its activity-bar icon. The first time, it looks for a model server on this computer and proposes the models that fit your card: **Start with these**. For a server on another machine, type its address on the same card. On Ollama without a chat model, the card downloads one for you. `/setup` brings the card back.
+3. **Open Inferpal** from its activity-bar icon. The first time, it looks for a model server on this computer and proposes the models that fit your card: **Start with these**. For a server on another machine, type its address on the same card. On Ollama without a chat model, the card downloads one for you. With no server at all on Windows, the card can install Ollama for your account, showing the `winget` command first. `/setup` brings the card back.
 4. **Ask a question, or right-click a failing test.**
 
 **Coming from Continue or Roo Code?** `/import continue` or `/import roo` brings over your model server, models, rules, prompts, Roo's custom modes, MCP servers and documentation sites. A card shows what it will take, and nothing is written until you apply. See [Coming from Continue or Roo Code](https://github.com/EstaxNet/Inferpal/blob/v1.8.8/docs/coming-from-continue.md).

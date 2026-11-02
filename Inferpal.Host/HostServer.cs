@@ -38,6 +38,8 @@ internal sealed partial class HostServer : IDisposable
     private readonly Func<InferpalConfig, ServerRole, IInferenceProvider> _roleProviderFactory;
     private readonly Func<InferpalConfig> _configFactory;
     private readonly Func<InferpalConfig?> _fileSettings;
+    private readonly Func<string?, ServerInstallOffer> _serverInstallOffer;
+    private readonly Func<ServerInstallOffer, Action<string>, CancellationToken, Task<ServerInstallResult>> _serverInstallRun;
     private readonly TaskCompletionSource _shutdown = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly object _gate = new();
 
@@ -65,13 +67,21 @@ internal sealed partial class HostServer : IDisposable
     /// read (test seam; defaults to <see cref="InferpalConfig.LoadOwnCopyToFollow"/>).</param>
     /// <param name="roleProviderFactory">Test seam: the client of a role on a server of its own (completions, code search);
     /// defaults to <see cref="InferenceProviderFactory.Create(InferpalConfig, ServerRole)"/>.</param>
+    /// <param name="serverInstallOffer">Test seam: this machine's offer when no server answers, from the host's remote
+    /// name (default: <see cref="ServerInstall.OfferFor(string?)"/>).</param>
+    /// <param name="serverInstallRun">Test seam: runs an offer, each line to the callback (default:
+    /// <see cref="ServerInstall.RunAsync"/>).</param>
     public HostServer(Func<InferpalConfig, IInferenceProvider>? providerFactory = null,
                       Func<InferpalConfig>? configFactory = null,
                       Func<InferpalConfig?>? fileSettings = null,
-                      Func<InferpalConfig, ServerRole, IInferenceProvider>? roleProviderFactory = null)
+                      Func<InferpalConfig, ServerRole, IInferenceProvider>? roleProviderFactory = null,
+                      Func<string?, ServerInstallOffer>? serverInstallOffer = null,
+                      Func<ServerInstallOffer, Action<string>, CancellationToken, Task<ServerInstallResult>>? serverInstallRun = null)
     {
         _providerFactory = providerFactory ?? InferenceProviderFactory.Create;
         _roleProviderFactory = roleProviderFactory ?? InferenceProviderFactory.Create;
+        _serverInstallOffer = serverInstallOffer ?? ServerInstall.OfferFor;
+        _serverInstallRun   = serverInstallRun ?? ((offer, said, ct) => ServerInstall.RunAsync(offer, said, ct));
         // A copy of its own: several hosts can live in one process (an ACP agent's threads), and what one session
         // changes in memory — a model for its thread — is not the others'.
         _configFactory   = configFactory   ?? InferpalConfig.LoadOwnCopy;

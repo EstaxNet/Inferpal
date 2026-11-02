@@ -3,7 +3,7 @@
 // The webview decides nothing.
 import type { HostClient } from './hostClient';
 import { hostErrorText } from './hostStatus';
-import type { SetupPlace, SetupPullProgress, SetupReason } from './protocol';
+import type { ServerInstallCard, SetupInstallProgress, SetupPlace, SetupPullProgress, SetupReason } from './protocol';
 import type { WvSetupAction, WvSetupView } from './webviewMessages';
 
 export interface SetupFlowDeps {
@@ -15,6 +15,8 @@ export interface SetupFlowDeps {
   /** The card's choice is saved; `windowText`: the context window written, or why it stays, said in the chat. */
   applied(model: string, restartNeeded: boolean, windowText?: string | null): Promise<void>;
   openSettings(): Promise<void>;
+  /** Puts the command the card shows on the clipboard. */
+  copy(text: string): Promise<void>;
 }
 
 export class SetupFlow {
@@ -41,8 +43,9 @@ export class SetupFlow {
   async start(reason: SetupReason | 'command'): Promise<void> {
     const host = this.deps.host();
     if (!host) return;
-    // A download in progress keeps its card: looking again would drop the model it is about to adopt.
-    if (this.view?.pull) {
+    // A download or an install in progress keeps its card: looking again would drop the model it is about to adopt, or
+    // the Stop of the install and its ending.
+    if (this.view?.pull || this.view?.installStep === 'running') {
       this.deps.show(this.view);
       return;
     }
@@ -60,7 +63,7 @@ export class SetupFlow {
       const answering = scan.places.filter((p) => p.outcome === 'answers' && p.provider);
       const offered = answering.find((p) => p.url === scan.offered);
       if (!offered) {
-        this.draw({ phase: 'nothing', strings, places: scan.places, others: [] });
+        this.draw({ phase: 'nothing', strings, places: scan.places, others: [], install: scan.install ?? null });
         return;
       }
       await this.propose(g, offered, answering.filter((p) => p !== offered), scan.places, undefined, undefined);
@@ -72,6 +75,22 @@ export class SetupFlow {
   async onAction(a: WvSetupAction): Promise<void> {
     const host = this.deps.host();
     const view = this.view;
+    // Stop while the install runs (the card is busy) — without a new generation: the install's ending is still drawn.
+    if (a.action === 'installStop') {
+      if (view?.installStep !== 'running') return;
+      try {
+        await host?.setupInstallStop();
+      } catch (err) {
+        // The host gone, winget runs on out of reach: the install's own request ends on the same error, said on the card.
+        this.deps.log(`[setup] stop: ${String(err)}`);
+      }
+      return;
+    }
+    if (a.action === 'copyCommand') {
+      const command = view?.install?.command;
+      if (command) await this.deps.copy(command);
+      return;
+    }
     if (!host || !view || view.busy) return;
     if (a.action === 'lookAgain') {
       await this.start('command');
@@ -147,10 +166,67 @@ export class SetupFlow {
           await this.deps.applied(download.tag, result.restartNeeded, result.windowText);
           return;
         }
+        case 'install': {
+          const card = view.install;
+          if (!card?.button) return;
+          // An install asks first, on the card that names the command; starting an installed Ollama is the click itself.
+          if (card.kind === 'install') {
+            this.draw({ ...view, installStep: 'consent', installReport: null, error: null });
+            return;
+          }
+          await this.runInstall(g, 'start');
+          return;
+        }
+        case 'installConfirm':
+          if (view.installStep !== 'consent') return;
+          await this.runInstall(g, 'install');
+          return;
+        case 'installCancel':
+          this.draw({ ...view, installStep: null });
+          return;
+        case 'installRetry': {
+          const report = view.installReport;
+          if (!report?.retryKind) return;
+          // An install again shows its command again before it runs; a start is the click itself.
+          if (report.retryKind === 'install') {
+            if (view.install?.consent) this.draw({ ...view, installStep: 'consent', installReport: null });
+            return;
+          }
+          await this.runInstall(g, 'start', report.retryRunning ?? undefined);
+          return;
+        }
       }
     } catch (err) {
       this.fail(g, err);
     }
+  }
+
+  /** `setup/installProgress`: winget's last line, under the steps. */
+  onInstallProgress(p: SetupInstallProgress): void {
+    const view = this.view;
+    if (view?.installStep !== 'running') return;
+    this.draw({ ...view, installLine: p.line });
+  }
+
+  /**
+   * Installs or starts Ollama, then looks again: the scan finds the server and the card goes on to the models as for any
+   * server found. An ending without a server stays on the card, with its cause and what may work.
+   */
+  private async runInstall(g: number, kind: 'install' | 'start', running?: ServerInstallCard['running']): Promise<void> {
+    const host = this.deps.host();
+    const view = this.view;
+    if (!host || !view) return;
+    // A retry that starts what the scan offered to install says what a start says.
+    const install = running && view.install ? { ...view.install, running } : view.install;
+    this.draw({ ...view, install, busy: true, error: null, installStep: 'running', installLine: '', installReport: null });
+    const report = await host.setupInstall(kind);
+    if (g !== this.generation) return;
+    if (report.answers || report.outcome === 'changed') {
+      this.draw({ ...(this.view ?? view), busy: false, installStep: null });
+      await this.start('command');
+      return;
+    }
+    this.draw({ ...(this.view ?? view), busy: false, installStep: null, installReport: report });
   }
 
   /** `setup/pullProgress`: the download's line and bar. */
@@ -190,7 +266,9 @@ export class SetupFlow {
   private fail(g: number, err: unknown): void {
     this.deps.log(`[setup] ${String(err)}`);
     if (g === this.generation && this.view) {
-      this.draw({ ...this.view, busy: false, pull: null, error: hostErrorText(err) });
+      // An install that ended on an error is no longer running: its card would otherwise stay on "running", and every
+      // later search would keep it.
+      this.draw({ ...this.view, busy: false, pull: null, installStep: null, error: hostErrorText(err) });
     }
   }
 }

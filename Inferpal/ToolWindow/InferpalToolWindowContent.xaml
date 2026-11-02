@@ -2292,6 +2292,144 @@
                                 </Button>
                             </StackPanel>
                         </Border>
+
+                        <!-- ── A server install card: the command and what it does, then its progress, then how it ended ── -->
+                        <Border CornerRadius="10" BorderThickness="1"
+                                Background="{Binding DataContext.ThemeSurface, ElementName=root}"
+                                BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Role}" Value="serverinstall">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel>
+                                <StackPanel Margin="12,10,12,6">
+                                    <TextBlock Text="{Binding CardTitle}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap"
+                                               Foreground="{Binding ThemeText}"/>
+                                    <TextBlock Text="{Binding CardSubject}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"
+                                               Foreground="{Binding ThemeSubtleText}"/>
+                                </StackPanel>
+                                <!-- The exact command, before the click: what the person agrees to. -->
+                                <Border Margin="12,0,12,6" Padding="8,6" CornerRadius="6" BorderThickness="1"
+                                        Background="{Binding ThemeCodeBg}" BorderBrush="{Binding ThemeCodeBorder}"
+                                        Visibility="{Binding HasInstallCommandText, Converter={StaticResource b2v}}">
+                                    <TextBlock Text="{Binding InstallCommandText}" FontSize="12" TextWrapping="Wrap"
+                                               FontFamily="Cascadia Mono, Consolas" Foreground="{Binding ThemeText}"/>
+                                </Border>
+                                <TextBlock Text="{Binding InstallFacts}" FontSize="12" Margin="12,0,12,6" TextWrapping="Wrap"
+                                           Foreground="{Binding ThemeSubtleText}"/>
+                                <!-- Running: what runs and its steps; ended without a server: why, and what may work. -->
+                                <StackPanel Margin="12,4,12,4" Visibility="{Binding HasInstallStatus, Converter={StaticResource b2v}}">
+                                    <TextBlock Text="{Binding InstallStatus}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap"
+                                               Foreground="{Binding ThemeText}"/>
+                                    <TextBlock Text="{Binding InstallCause}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"
+                                               Foreground="{Binding ThemeText}"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding InstallLine}" FontSize="11" Margin="12,2,12,4" TextWrapping="Wrap"
+                                           FontFamily="Cascadia Mono, Consolas" Foreground="{Binding ThemeSubtleText}"
+                                           Visibility="{Binding HasInstallLine, Converter={StaticResource b2v}}"/>
+                                <WrapPanel Margin="12,4,12,12">
+                                    <Button Template="{StaticResource Flat6}" Height="32" Padding="12,0" Margin="0,0,8,0" BorderThickness="0" Cursor="Hand"
+                                            Background="{Binding DataContext.ThemeAccent, ElementName=root}"
+                                            Command="{Binding InstallPrimaryCommand}" AutomationProperties.Name="{Binding BtnInstallPrimary}"
+                                            Visibility="{Binding HasInstallPrimary, Converter={StaticResource b2v}}">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsAnswered}" Value="True">
+                                                        <Setter Property="IsEnabled" Value="False"/>
+                                                        <Setter Property="Opacity" Value="0.55"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsInstalling}" Value="True">
+                                                        <Setter Property="IsEnabled" Value="False"/>
+                                                        <Setter Property="Opacity" Value="0.55"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                        <TextBlock Text="{Binding BtnInstallPrimary}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
+                                                   Foreground="{Binding DataContext.ThemeOnAccent, ElementName=root}"/>
+                                    </Button>
+                                    <Button Template="{StaticResource Flat6}" Height="32" Padding="12,0" Margin="0,0,8,0" BorderThickness="1" Cursor="Hand"
+                                            Background="Transparent" BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                            Command="{Binding InstallStopCommand}" AutomationProperties.Name="{Binding BtnInstallStop}">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding IsInstalling}" Value="True"/>
+                                                            <Condition Binding="{Binding HasInstallStop}" Value="True"/>
+                                                        </MultiDataTrigger.Conditions>
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </MultiDataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                        <TextBlock Text="{Binding BtnInstallStop}" FontSize="13" VerticalAlignment="Center" Foreground="{Binding ThemeText}"/>
+                                    </Button>
+                                    <Button Template="{StaticResource Flat6}" Height="32" Padding="12,0" Margin="0,0,8,0" BorderThickness="1" Cursor="Hand"
+                                            Background="Transparent" BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                            Command="{Binding InstallLookAgainCommand}" AutomationProperties.Name="{Binding BtnInstallLookAgain}">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsAnswered}" Value="True">
+                                                        <Setter Property="IsEnabled" Value="False"/>
+                                                        <Setter Property="Opacity" Value="0.55"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsInstalling}" Value="True">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                        <TextBlock Text="{Binding BtnInstallLookAgain}" FontSize="13" VerticalAlignment="Center" Foreground="{Binding ThemeText}"/>
+                                    </Button>
+                                    <Button Template="{StaticResource Flat6}" Height="32" Padding="12,0" BorderThickness="1" Cursor="Hand"
+                                            Background="Transparent" BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                            Command="{Binding InstallNotNowCommand}" AutomationProperties.Name="{Binding BtnInstallNotNow}">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsAnswered}" Value="True">
+                                                        <Setter Property="IsEnabled" Value="False"/>
+                                                        <Setter Property="Opacity" Value="0.55"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsInstalling}" Value="True">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                        <TextBlock Text="{Binding BtnInstallNotNow}" FontSize="13" VerticalAlignment="Center" Foreground="{Binding ThemeText}"/>
+                                    </Button>
+                                </WrapPanel>
+                                <TextBlock Text="{Binding InstallStopNote}" FontSize="12" Margin="12,-6,12,12" TextWrapping="Wrap"
+                                           Foreground="{Binding ThemeSubtleText}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding IsInstalling}" Value="True"/>
+                                                        <Condition Binding="{Binding HasInstallStop}" Value="True"/>
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
                     </Grid>
                 </DataTemplate>
             </ListBox.ItemTemplate>

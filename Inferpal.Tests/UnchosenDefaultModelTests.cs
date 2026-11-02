@@ -89,10 +89,14 @@ public class UnchosenDefaultModelTests
             Path.Combine(root, "Inferpal", "ToolWindow", "InferpalToolWindowData.Rag.cs"));
         Assert.Contains("RunSetupDiscoveryAsync(FirstRunPresentAsync, CancellationToken.None, automatic: true)", rag);
         // The heartbeat's first failed check already says the backend is down: the first run, which resumes at every
-        // start until a model is chosen, said it a second time at every start.
+        // start until a model is chosen, said it a second time at every start. Its automatic branch returns before the
+        // message /setup presents, and presents nothing of its own (the install card it may offer is once per Visual Studio).
         var unreachable = rag[rag.IndexOf("if (!reachable)", StringComparison.Ordinal)..];
-        Assert.True(unreachable.IndexOf("if (automatic) return;", StringComparison.Ordinal)
-                    is var at and >= 0 && at < unreachable.IndexOf("await present(", StringComparison.Ordinal));
+        var auto        = unreachable.IndexOf("if (automatic)", StringComparison.Ordinal);
+        var returns     = auto < 0 ? -1 : unreachable.IndexOf("return;", auto, StringComparison.Ordinal);
+        var presents    = unreachable.IndexOf("await present(", StringComparison.Ordinal);
+        Assert.True(auto >= 0 && returns > auto && returns < presents, "the automatic branch no longer returns first");
+        Assert.DoesNotContain("present(", unreachable[auto..returns]);
     }
 
     // ── VS Code: the extension has no test runner, held on its source ──

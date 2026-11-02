@@ -73,6 +73,12 @@ public partial class HostServerTests
         [JsonRpcMethod("chat/thinking", UseSingleObjectParameterDeserialization = true)]
         public void ChatThinking(ThinkingNote note) => Thinking.Enqueue(note.Text);
 
+        /// <summary>Every line an install wrote (<c>setup/installProgress</c>, filled by the RPC dispatch thread).</summary>
+        public readonly System.Collections.Concurrent.ConcurrentQueue<string> InstallLines = new();
+
+        [JsonRpcMethod("setup/installProgress", UseSingleObjectParameterDeserialization = true)]
+        public void SetupInstallProgress(InstallLineNote note) => InstallLines.Enqueue(note.Line);
+
         /// <summary>Every <c>host/notice</c> received (filled by the RPC dispatch thread).</summary>
         public readonly System.Collections.Concurrent.ConcurrentQueue<string> HostNotices = new();
 
@@ -228,7 +234,9 @@ public partial class HostServerTests
     }
 
     private static Harness CreateHarness(Action<InferpalConfig>? configure = null, string? settingsFile = null,
-                                         Func<InferpalConfig, ServerRole, IInferenceProvider>? roleFactory = null)
+                                         Func<InferpalConfig, ServerRole, IInferenceProvider>? roleFactory = null,
+                                         Func<string?, ServerInstallOffer>? installOffer = null,
+                                         Func<ServerInstallOffer, Action<string>, CancellationToken, Task<ServerInstallResult>>? installRun = null)
     {
         var (clientStream, serverStream) = FullDuplexStream.CreatePair();
 
@@ -241,7 +249,10 @@ public partial class HostServerTests
             var cfg = new InferpalConfig { RagEnabled = false, SavePathForTests = settingsFile };
             configure?.Invoke(cfg);
             return cfg;
-        }, roleProviderFactory: roleFactory);
+        }, roleProviderFactory: roleFactory,
+           // Never this machine's installs, nor a real winget.
+           serverInstallOffer: installOffer ?? (_ => new ServerInstallOffer(ServerInstallKind.NoWinget, null, [], "")),
+           serverInstallRun: installRun ?? ((_, _, _) => throw new InvalidOperationException("No install in this test.")));
         var serverRpc = HostRpc.Create(serverStream, serverStream, server);
         server.Attach(serverRpc);
         serverRpc.StartListening();
@@ -3674,6 +3685,62 @@ public partial class HostServerTests
             Assert.Equal(("", ""), (c.InlineCompletionModel, c.RagEmbeddingModel));
         }
         finally { try { File.Delete(file); } catch { } }
+    }
+
+    /// <summary>A line an install wrote, as <c>setup/installProgress</c> carries it.</summary>
+    public sealed record InstallLineNote(string Line);
+
+    /// <summary>
+    /// <c>setup/install</c> runs only what the card consented to: a card that asked to start Ollama on a machine that now
+    /// offers an install gets "changed" (the card looks again), and nothing runs. The consented install runs, its lines
+    /// reach the editor, and a server that answers is said.
+    /// </summary>
+    [Fact]
+    public async Task SetupInstall_RunsOnlyWhatTheCardConsentedTo()
+    {
+        var install = ServerInstall.OfferFor(null, ServerInstall.HostOs.Windows, @"C:\w\winget.exe", installed: null);
+        var ran = new List<ServerInstallOffer>();
+        using var h = CreateHarness(installOffer: _ => install, installRun: (offer, said, _) =>
+        {
+            ran.Add(offer);
+            said("Downloading https://github.com/ollama/ollama/releases/download/v0.40.13/OllamaSetup.exe");
+            return Task.FromResult(new ServerInstallResult(ServerInstallOutcome.Answers, 0));
+        });
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var changed = await h.Client.InvokeWithParameterObjectAsync<ServerInstallReport>("setup/install", new { kind = "start" });
+        Assert.Equal(("changed", 0), (changed.Outcome, ran.Count));
+
+        var report = await h.Client.InvokeWithParameterObjectAsync<ServerInstallReport>("setup/install", new { kind = "install" });
+        Assert.True(report.Answers);
+        Assert.Equal([install], ran);
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (h.Target.InstallLines.IsEmpty && DateTime.UtcNow < deadline) await Task.Delay(20);
+        Assert.Contains(h.Target.InstallLines, l => l.Contains("OllamaSetup.exe", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// The card's Stop is its own request (<c>setup/installStop</c>), never the install request's token — which a
+    /// connection that ends (the editor closed) cancels: the install goes on then, and stops only when asked.
+    /// </summary>
+    [Fact]
+    public async Task SetupInstall_StopsOnTheCardsStop_Only()
+    {
+        var install = ServerInstall.OfferFor(null, ServerInstall.HostOs.Windows, @"C:\w\winget.exe", installed: null);
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var h = CreateHarness(installOffer: _ => install, installRun: async (_, _, ct) =>
+        {
+            started.TrySetResult();
+            try { await Task.Delay(Timeout.Infinite, ct); }
+            catch (OperationCanceledException) { return new ServerInstallResult(ServerInstallOutcome.Stopped); }
+            return new ServerInstallResult(ServerInstallOutcome.Answers, 0);
+        });
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var running = h.Client.InvokeWithParameterObjectAsync<ServerInstallReport>("setup/install", new { kind = "install" });
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        await h.Client.InvokeAsync("setup/installStop");
+        Assert.Equal("stopped", (await running.WaitAsync(TimeSpan.FromSeconds(30))).Outcome);
     }
 
     /// <summary>The card says code search stays on keywords only when <c>setup/apply</c> leaves it there: a search model it

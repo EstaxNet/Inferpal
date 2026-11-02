@@ -2472,6 +2472,128 @@ function setupText(tag: 'h1' | 'p' | 'div' | 'span', cls: string, text: string):
   return el;
 }
 
+/** The servers to install by hand: two that install with a model library and need no command line. */
+function setupInstallLinks(): HTMLElement {
+  const links = document.createElement('div');
+  links.className = 'setup-row';
+  for (const [name, url] of [['Ollama', 'https://ollama.com/download'], ['LM Studio', 'https://lmstudio.ai']]) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.textContent = name;
+    links.appendChild(a);
+  }
+  return links;
+}
+
+/** A command as the card shows it, whole, in a monospaced block. */
+function setupCommand(text: string): HTMLElement {
+  const pre = document.createElement('pre');
+  pre.className = 'setup-command';
+  pre.textContent = text;
+  return pre;
+}
+
+/**
+ * The "no server yet" box: the host's offer for this machine (install, start, a command to copy, or only the links), the
+ * consent card that names the command before an install, the install in progress, or how the last one ended. Without an
+ * offer from the host (an older host), the links, as before.
+ */
+function setupInstallBox(v: WvSetupView, s: Record<string, string>): HTMLElement {
+  const box = document.createElement('section');
+  box.className = 'setup-box';
+  const card = v.install;
+  if (!card) {
+    box.append(setupText('span', 'setup-label', s.noServerYet), setupText('p', 'setup-hint', s.installHint),
+      setupInstallLinks(), setupButton(s.lookAgain, { action: 'lookAgain' }));
+    return box;
+  }
+
+  if (v.installStep === 'consent' && card.consent) {
+    const c = card.consent;
+    box.classList.add('setup-consent');
+    box.setAttribute('role', 'group');
+    box.setAttribute('aria-label', c.title);
+    const head = document.createElement('div');
+    head.className = 'setup-consent-head';
+    head.append(icon('info', 16), setupText('span', 'setup-label', c.title), setupText('span', 'setup-hint', c.size));
+    const facts = document.createElement('ul');
+    facts.className = 'setup-facts';
+    for (const fact of c.facts) {
+      const li = document.createElement('li');
+      li.textContent = fact;
+      facts.appendChild(li);
+    }
+    const row = document.createElement('div');
+    row.className = 'setup-row';
+    row.append(setupButton(c.confirm, { action: 'installConfirm' }, true), setupButton(c.cancel, { action: 'installCancel' }));
+    box.append(head, setupText('span', 'setup-hint', c.runs), setupCommand(c.command), facts, row);
+    return box;
+  }
+
+  if (v.installStep === 'running' && card.running) {
+    const r = card.running;
+    box.setAttribute('aria-live', 'polite');
+    const steps = document.createElement('ol');
+    steps.className = 'setup-places';
+    r.steps.forEach((step, i) => {
+      const li = document.createElement('li');
+      li.className = 'setup-place' + (i === 0 ? '' : ' nothingListening');
+      li.append(icon(i === 0 ? 'running' : 'pending', 14), setupText('span', '', step));
+      steps.appendChild(li);
+    });
+    box.append(setupText('span', 'setup-label', r.title), setupText('p', 'setup-hint', r.lead), steps);
+    if (v.installLine) box.append(setupText('span', 'setup-hint', r.says), setupCommand(v.installLine));
+    if (r.stop) {
+      // Not a setupButton: the card is busy while the install runs, and Stop is the one gesture that must stay live.
+      const stop = document.createElement('button');
+      stop.className = 'setup-button';
+      stop.textContent = r.stop;
+      stop.addEventListener('click', () => post({ type: 'setupAction', action: 'installStop' }));
+      const row = document.createElement('div');
+      row.className = 'setup-row';
+      row.append(stop, setupText('span', 'setup-hint', r.stopNote ?? ''));
+      box.appendChild(row);
+    }
+    return box;
+  }
+
+  const report = v.installReport;
+  if (report && (report.title || report.cause)) {
+    // How the last install or start ended, and what may work: in place of the offer it answered.
+    const ended = document.createElement('div');
+    ended.className = 'welcome-banner';
+    ended.setAttribute('role', 'alert');
+    const body = document.createElement('div');
+    if (report.title) body.appendChild(setupText('span', 'setup-label', report.title));
+    if (report.cause) body.appendChild(setupText('p', 'setup-hint', report.cause));
+    if (report.lastLines.length > 0) {
+      if (report.lastLinesLabel) body.appendChild(setupText('span', 'setup-hint', report.lastLinesLabel));
+      body.appendChild(setupCommand(report.lastLines.join('\n')));
+    }
+    if (report.retry) body.appendChild(setupButton(report.retry, { action: 'installRetry' }, true));
+    ended.append(icon('warning', 14), body);
+    box.appendChild(ended);
+  } else {
+    box.append(setupText('span', 'setup-label', card.title), setupText('p', 'setup-hint', card.lead));
+    if (card.button) {
+      box.appendChild(setupButton(card.button, { action: 'install' }, true));
+      if (card.detail) box.appendChild(setupText('span', 'setup-hint', card.detail));
+    }
+    if (card.command && card.kind === 'command') {
+      const row = document.createElement('div');
+      row.className = 'setup-command-row';
+      const copy = iconButton('copy', s.copy ?? '', 14);
+      copy.addEventListener('click', () => post({ type: 'setupAction', action: 'copyCommand' }));
+      row.append(setupCommand(card.command), copy);
+      box.appendChild(row);
+      if (card.commandNote) box.appendChild(setupText('span', 'setup-hint', card.commandNote));
+    }
+  }
+  box.append(setupText('span', 'setup-hint', report?.yourself ?? card.othersLead), setupInstallLinks(),
+    setupButton(s.lookAgain, { action: 'lookAgain' }));
+  return box;
+}
+
 /** One place and what it answered; a place that asks for a key gets a field for it. */
 function setupPlaceRow(place: SetupPlace, s: Record<string, string>): HTMLElement {
   const li = document.createElement('li');
@@ -2596,6 +2718,11 @@ function renderSetupView(): void {
       break;
     }
     case 'nothing': {
+      // Asking before an install, or installing: the card alone under the title, its buttons in sight.
+      if (v.install && v.installStep) {
+        setupEl.append(setupText('h1', 'setup-title', s.nothingTitle), setupInstallBox(v, s));
+        break;
+      }
       setupEl.append(setupText('h1', 'setup-title', s.nothingTitle), setupText('p', 'setup-lead', s.nothingLead));
       const list = document.createElement('ul');
       list.className = 'setup-places';
@@ -2604,20 +2731,7 @@ function renderSetupView(): void {
       // Connected to WSL, an SSH server or a container: "here" is that machine, and the places above were looked at there.
       if (s.remoteNote) setupEl.appendChild(setupText('p', 'setup-hint', s.remoteNote));
       setupEl.appendChild(setupAddressForm(s, s.otherMachine));
-      const install = document.createElement('section');
-      install.className = 'setup-box';
-      // The servers the sentence names: two that install with a model library and need no command line.
-      const links = document.createElement('div');
-      links.className = 'setup-row';
-      for (const [name, url] of [['Ollama', 'https://ollama.com'], ['LM Studio', 'https://lmstudio.ai']]) {
-        const a = document.createElement('a');
-        a.href = url;
-        a.textContent = name;
-        links.appendChild(a);
-      }
-      install.append(setupText('span', 'setup-label', s.noServerYet), setupText('p', 'setup-hint', s.installHint), links,
-        setupButton(s.lookAgain, { action: 'lookAgain' }));
-      setupEl.appendChild(install);
+      setupEl.appendChild(setupInstallBox(v, s));
       break;
     }
     case 'found': {

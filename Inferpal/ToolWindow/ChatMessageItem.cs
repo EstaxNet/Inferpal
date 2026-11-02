@@ -313,6 +313,122 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     [DataMember] public bool ImportSkipsOpen { get => _importSkipsOpen; set => SetProperty(ref _importSkipsOpen, value); }
     [DataMember] public AsyncCommand ToggleImportSkipsCommand { get; }
 
+    // ── A server install card ("serverinstall"): Ollama installed or started from the first run — the command and what it
+    // does before the click, then its progress, then how it ended. Its title and summary are CardTitle and CardSubject;
+    // IsAnswered freezes it. Screen only (SessionManager.ScreenOnlyRoles): a saved conversation has no install to offer. ──
+    private Func<Task>? _onInstallPrimary, _onInstallLookAgain;
+    private Action? _onInstallStop;
+    private string _btnInstallPrimary = string.Empty, _installStatus = string.Empty, _installCause = string.Empty,
+                   _installLine = string.Empty, _btnInstallStop = string.Empty, _installStopNote = string.Empty;
+    private bool _hasInstallPrimary, _isInstalling, _hasInstallStatus, _hasInstallLine, _hasInstallStop;
+    /// <summary>What the primary button runs: <c>install</c> or <c>start</c> (the machine's offer is read again at the click).</summary>
+    internal string InstallKind { get; private set; } = string.Empty;
+    [DataMember] public string InstallCommandText  { get; private set; } = string.Empty;
+    [DataMember] public bool   HasInstallCommandText { get; private set; }
+    [DataMember] public string InstallFacts        { get; private set; } = string.Empty;
+    [DataMember] public string BtnInstallLookAgain { get; private set; } = string.Empty;
+    [DataMember] public string BtnInstallNotNow    { get; private set; } = string.Empty;
+    [DataMember] public string BtnInstallStop      { get => _btnInstallStop;    private set => SetProperty(ref _btnInstallStop,    value); }
+    [DataMember] public string InstallStopNote     { get => _installStopNote;   private set => SetProperty(ref _installStopNote,   value); }
+    /// <summary>What runs can be stopped (winget); a start only waits.</summary>
+    [DataMember] public bool   HasInstallStop      { get => _hasInstallStop;    private set => SetProperty(ref _hasInstallStop,    value); }
+    [DataMember] public string BtnInstallPrimary   { get => _btnInstallPrimary; private set => SetProperty(ref _btnInstallPrimary, value); }
+    [DataMember] public bool   HasInstallPrimary   { get => _hasInstallPrimary; private set => SetProperty(ref _hasInstallPrimary, value); }
+    /// <summary>The program runs: Stop shows, the other buttons wait.</summary>
+    [DataMember] public bool   IsInstalling        { get => _isInstalling;      private set => SetProperty(ref _isInstalling,      value); }
+    [DataMember] public string InstallStatus       { get => _installStatus;     private set => SetProperty(ref _installStatus,     value); }
+    [DataMember] public string InstallCause        { get => _installCause;      private set => SetProperty(ref _installCause,      value); }
+    [DataMember] public bool   HasInstallStatus    { get => _hasInstallStatus;  private set => SetProperty(ref _hasInstallStatus,  value); }
+    /// <summary>winget's last line while it runs; its last lines once it failed.</summary>
+    [DataMember] public string InstallLine         { get => _installLine;       private set => SetProperty(ref _installLine,       value); }
+    [DataMember] public bool   HasInstallLine      { get => _hasInstallLine;    private set => SetProperty(ref _hasInstallLine,    value); }
+    [DataMember] public AsyncCommand InstallPrimaryCommand   { get; }
+    [DataMember] public AsyncCommand InstallLookAgainCommand { get; }
+    [DataMember] public AsyncCommand InstallNotNowCommand    { get; }
+    [DataMember] public AsyncCommand InstallStopCommand      { get; }
+
+    /// <summary>The program started: what runs, and Stop when there is something to stop. VM context.</summary>
+    internal void InstallRunning(Services.Presentation.ServerInstallRunning running)
+    {
+        IsInstalling     = true;
+        // This run's own Stop: a retry that starts Ollama after an install has nothing to stop.
+        BtnInstallStop   = running.Stop ?? string.Empty;
+        InstallStopNote  = running.StopNote ?? string.Empty;
+        HasInstallStop   = running.Stop is not null;
+        InstallStatus    = running.Title;
+        InstallCause     = running.Lead + "\n" + string.Join("\n", running.Steps.Select(s => "• " + s));
+        HasInstallStatus = true;
+        InstallLine      = string.Empty;
+        HasInstallLine   = false;
+    }
+
+    /// <summary>A line winget wrote, under what <paramref name="says"/> introduces. VM context.</summary>
+    internal void InstallSaid(string says, string line)
+    {
+        InstallLine    = says + " " + line;
+        HasInstallLine = true;
+    }
+
+    /// <summary>How it ended: frozen when a server answers; otherwise the cause, winget's last lines, and what may work.
+    /// VM context.</summary>
+    internal void InstallEnded(Services.Presentation.ServerInstallReport report)
+    {
+        IsInstalling = false;
+        if (report.Answers || report.Outcome == "changed")
+        {
+            HasInstallStatus = false;
+            HasInstallLine   = false;
+            IsAnswered       = true;
+            return;
+        }
+        InstallStatus     = report.Title ?? string.Empty;
+        InstallCause      = string.Join("\n", new[] { report.Cause, report.Yourself is null ? null : report.Yourself + " https://ollama.com/download" }
+                                                  .Where(t => !string.IsNullOrEmpty(t)));
+        HasInstallStatus  = true;
+        InstallLine       = report.LastLines.Count == 0 ? string.Empty : (report.LastLinesLabel + "\n" + string.Join("\n", report.LastLines)).Trim();
+        HasInstallLine    = report.LastLines.Count > 0;
+        // ⚠ A retry never turns a start into an install: this card showed no command to consent to.
+        var retries = report.RetryKind is { } kind && (kind == "start" || InstallKind == "install");
+        BtnInstallPrimary = retries ? report.Retry ?? string.Empty : string.Empty;
+        HasInstallPrimary = retries && report.Retry is not null;
+        if (retries) InstallKind = report.RetryKind!;
+    }
+
+    /// <summary>
+    /// The first run's server install card, from the Core's <paramref name="card"/> (install: the consent's command and
+    /// facts, shown before the click; start: what is installed and not running).
+    /// </summary>
+    /// <param name="onPrimary">Install, Start, or the report's retry.</param>
+    /// <param name="onLookAgain">The first run's search again.</param>
+    /// <param name="onStop">Ends winget.</param>
+    internal static ChatMessageItem ServerInstallMsg(Services.Presentation.ServerInstallCard card,
+                                                     Func<Task> onPrimary, Func<Task> onLookAgain, Action onStop)
+    {
+        var consent = card.Consent;
+        var item = new ChatMessageItem
+        {
+            Role                  = "serverinstall",
+            CardTitle             = consent?.Title ?? card.Title,
+            CardSubject           = consent?.Size ?? card.Lead,
+            InstallKind           = card.Kind,
+            InstallCommandText    = consent?.Command ?? string.Empty,
+            HasInstallCommandText = consent is not null,
+            InstallFacts          = consent is not null ? string.Join("\n", consent.Facts.Select(f => "• " + f)) : card.Detail ?? string.Empty,
+            BtnInstallLookAgain   = Strings.SetupLookAgain,
+            BtnInstallNotNow      = Strings.SetupNotNow,
+            BtnInstallStop        = card.Running?.Stop ?? string.Empty,
+            InstallStopNote       = card.Running?.StopNote ?? string.Empty,
+            HasInstallStop        = card.Running?.Stop is not null,
+            Timestamp             = Now(),
+            _onInstallPrimary     = onPrimary,
+            _onInstallLookAgain   = onLookAgain,
+            _onInstallStop        = onStop,
+        };
+        item.BtnInstallPrimary = consent?.Confirm ?? card.Button ?? string.Empty;
+        item.HasInstallPrimary = item.BtnInstallPrimary.Length > 0;
+        return item;
+    }
+
     // ── An input card ("inputcard"): an MCP server's form, then Send, Decline, Cancel — the card the Core builds ──
     // Its title is CardTitle, IsAnswered freezes it. Screen only: what it leaves is a receipt ("input"), saved.
     private TaskCompletionSource<InputReply?>? _inputReply;
@@ -488,6 +604,21 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
         DenyCommand         = new AsyncCommand((_, _) => { Answer(ApprovalDecision.Deny);   return Task.CompletedTask; });
         OpenDiffCommand     = new AsyncCommand((_, _) => { _onOpenDiff?.Invoke(); return Task.CompletedTask; });
         ImportApplyCommand  = new AsyncCommand(ApplyImportAsync);
+        InstallPrimaryCommand   = new AsyncCommand(async (_, _) =>
+        {
+            if (IsAnswered || IsInstalling || !HasInstallPrimary || _onInstallPrimary is not { } run) return;
+            // Taken at the click, before any wait: a second click while the run gets going finds it taken.
+            IsInstalling = true;
+            await run();
+        });
+        InstallLookAgainCommand = new AsyncCommand(async (_, _) =>
+        {
+            if (IsAnswered || IsInstalling || _onInstallLookAgain is not { } look) return;
+            IsAnswered = true;   // the search that follows says what it finds, and offers a card again if it must
+            await look();
+        });
+        InstallNotNowCommand    = new AsyncCommand((_, _) => { if (!IsInstalling) IsAnswered = true; return Task.CompletedTask; });
+        InstallStopCommand      = new AsyncCommand((_, _) => { if (IsInstalling) _onInstallStop?.Invoke(); return Task.CompletedTask; });
         ToggleImportSkipsCommand = new AsyncCommand((_, _) => { ImportSkipsOpen = !ImportSkipsOpen; return Task.CompletedTask; });
         InputSendCommand    = new AsyncCommand((_, _) => { AnswerInput(Services.Mcp.McpInputAction.Accept);  return Task.CompletedTask; });
         InputDeclineCommand = new AsyncCommand((_, _) => { AnswerInput(Services.Mcp.McpInputAction.Decline); return Task.CompletedTask; });

@@ -2555,6 +2555,9 @@ public class ConventionCoverageTests
             ["ProcessLifetime.cs"] = "starts the group watchdog",
             // The browser or the editor the system opens a page or a file in must outlive the host.
             ["SystemOpener.cs"] = "what it opens outlives us",
+            // The model server installed or started from the first run must outlive the editor: bound, it would die with
+            // it (ServerInstallTests.WhatTheInstallStarts_IsNeverBoundToTheEditor holds the positive half).
+            ["ServerInstall.cs"] = "the server it installs or starts outlives us",
         };
 
         var offenders = new List<string>();

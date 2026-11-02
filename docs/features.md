@@ -859,7 +859,10 @@ Which model for which card: **[Models](models.md#by-graphics-card)**, measured o
   llama-server, vLLM) and says what each place answered. VS Code shows it on a card in the chat: the models proposed
   for your card, a server on another machine by its address, a key when a server asks for one, and — on Ollama
   without a chat model — a download of a recommended model. Visual Studio takes the server that answers when nothing
-  was set up yet, and says so; `/setup` looks again in both.
+  was set up yet, and says so; `/setup` looks again in both. When nothing answers, on Windows with winget, both offer
+  to install Ollama for your account — the exact `winget` command and what it does shown before the click, the
+  install stoppable while it downloads — or to start an Ollama installed but not running; macOS and Linux get the
+  command to copy, never run.
 - **Dynamic timeout engine** — Quick / Normal / Deep thresholds per task complexity.
 - **Heartbeat & connection guard** — a silent pre-flight before every send; the Send button
   greys out when the server is unreachable, and recovers automatically.

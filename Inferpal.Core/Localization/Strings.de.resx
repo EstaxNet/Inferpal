@@ -2043,4 +2043,51 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="RemoteSetupContainer" xml:space="preserve"><value>Inferpal läuft im Container, neben Ihren Dateien: Die Orte oben wurden von ihm aus geprüft, http://host.docker.internal eingeschlossen — der Rechner, der den Container ausführt, wie Docker Desktop ihn nennt (mit Docker Engine unter Linux fügen Sie --add-host=host.docker.internal:host-gateway zu den Startargumenten des Containers hinzu und lassen den Server über 127.0.0.1 hinaus lauschen).</value></data>
   <data name="RemoteLocalhostSsh" xml:space="preserve"><value>{1} unter {0} nicht erreichbar. Inferpal läuft auf dem entfernten Rechner, neben Ihren Dateien, und dort ist {0} dieser Rechner, nicht der Computer vor Ihnen. Wenn {1} dort läuft, starten Sie es. Wenn es auf Ihrem Computer läuft, bringen Sie es mit einem umgekehrten Tunnel zu diesem Rechner — `ssh -R {2}:localhost:{2} &lt;dieser Rechner&gt;` (jeder auf diesem Rechner kann es dann erreichen) — oder tragen Sie als URL einen Server ein, den dieser Rechner erreicht.</value></data>
   <data name="RemoteSetupSsh" xml:space="preserve"><value>Inferpal läuft auf dem entfernten Rechner, neben Ihren Dateien: Die Orte oben wurden dort geprüft, nicht auf Ihrem Computer. Starten Sie dort einen Server, geben Sie die Adresse eines Servers ein, den er erreicht, oder bringen Sie Ihren mit einem umgekehrten SSH-Tunnel zum Port Ihres Servers dorthin (ssh -R &lt;Port&gt;:localhost:&lt;Port&gt;).</value></data>
+  <data name="SetupInstallLead" xml:space="preserve"><value>Inferpal kann Ollama für Sie installieren und dann ein Chatmodell vorschlagen, das zur Grafikkarte dieses Computers passt.</value></data>
+  <data name="SetupInstallButton" xml:space="preserve"><value>Ollama installieren</value></data>
+  <data name="SetupInstallDetail" xml:space="preserve"><value>Etwa {0} GB Download · nur für Ihr Konto, ohne Administratorrechte</value></data>
+  <data name="SetupStartTitle" xml:space="preserve"><value>Ollama ist installiert, läuft aber nicht</value></data>
+  <data name="SetupStartLead" xml:space="preserve"><value>Es ist für Ihr Konto installiert; sein Server antwortet nicht unter {0}.</value></data>
+  <data name="SetupStartButton" xml:space="preserve"><value>Ollama starten</value></data>
+  <data name="SetupStartDetail" xml:space="preserve"><value>Kein Download nötig</value></data>
+  <data name="SetupNoWinget" xml:space="preserve"><value>Inferpal installiert Ollama mit winget, das auf diesem Computer fehlt.</value></data>
+  <data name="SetupCommandLeadMac" xml:space="preserve"><value>Installieren Sie Ollama mit Homebrew in einem Terminal und suchen Sie dann erneut:</value></data>
+  <data name="SetupCommandLeadLinux" xml:space="preserve"><value>Installieren Sie Ollama mit dem Befehl von seiner Website in einem Terminal und suchen Sie dann erneut:</value></data>
+  <data name="SetupCommandLeadRemote" xml:space="preserve"><value>Dieser Editor ist mit einem anderen Rechner verbunden: Installieren Sie Ollama dort in dessen Terminal und suchen Sie dann erneut:</value></data>
+  <data name="SetupCommandShownOnly" xml:space="preserve"><value>Inferpal zeigt diesen Befehl nur an; er führt ihn nie aus.</value></data>
+  <data name="SetupInstallOthers" xml:space="preserve"><value>Oder installieren Sie selbst einen:</value></data>
+  <data name="SetupConsentRuns" xml:space="preserve"><value>Inferpal führt diesen Befehl aus:</value></data>
+  <data name="SetupConsentSource" xml:space="preserve"><value>Aus dem Community-Repository von winget. Das Installationsprogramm stammt von github.com/ollama/ollama; winget prüft es vor dem Ausführen gegen seinen veröffentlichten SHA-256.</value></data>
+  <data name="SetupConsentAccount" xml:space="preserve"><value>Nur für Ihr Konto, in AppData\Local\Programs\Ollama. Ohne Administratorrechte.</value></data>
+  <data name="SetupConsentStartup" xml:space="preserve"><value>Ollama startet mit Windows und zeigt ein Symbol im Infobereich. Entfernen Sie es wie jedes Programm unter Einstellungen › Apps.</value></data>
+  <data name="SetupConsentNext" xml:space="preserve"><value>Der Befehl akzeptiert die Bedingungen der winget-Quelle für Sie. Danach schlägt Inferpal ein Chatmodell für Ihre Karte vor; nichts wird heruntergeladen, bevor Sie es wählen.</value></data>
+  <data name="SetupConsentInstall" xml:space="preserve"><value>Installieren</value></data>
+  <data name="SetupConsentCancel" xml:space="preserve"><value>Abbrechen</value></data>
+  <data name="SetupInstallingTitle" xml:space="preserve"><value>Ollama wird installiert</value></data>
+  <data name="SetupStartingTitle" xml:space="preserve"><value>Ollama wird gestartet</value></data>
+  <data name="SetupInstallingLead" xml:space="preserve"><value>Mit winget, für Ihr Konto. Sie können diesen Bereich schließen; Inferpal sucht den Server, wenn er wieder geöffnet wird.</value></data>
+  <data name="SetupStepInstall" xml:space="preserve"><value>Download und Installation — etwa {0} GB</value></data>
+  <data name="SetupStepServer" xml:space="preserve"><value>Der Server antwortet unter {0}</value></data>
+  <data name="SetupStepModels" xml:space="preserve"><value>Modelle, die zu Ihrer Karte passen — Sie wählen</value></data>
+  <data name="SetupWingetSays" xml:space="preserve"><value>winget meldet:</value></data>
+  <data name="SetupInstallStop" xml:space="preserve"><value>Stoppen</value></data>
+  <data name="SetupInstallStopNote" xml:space="preserve"><value>Stoppt winget. Eine bereits gestartete Installation kann trotzdem zu Ende laufen.</value></data>
+  <data name="SetupInstallFailedTitle" xml:space="preserve"><value>Ollama wurde nicht installiert</value></data>
+  <data name="SetupInstallFailedCause" xml:space="preserve"><value>winget wurde mit Code {0} beendet.</value></data>
+  <data name="SetupInstallLastLines" xml:space="preserve"><value>Die letzten Zeilen von winget:</value></data>
+  <data name="SetupInstallNoServerTitle" xml:space="preserve"><value>Ollama ist installiert, aber sein Server antwortet nicht</value></data>
+  <data name="SetupInstallNoServerCause" xml:space="preserve"><value>Unter {0} hat innerhalb von {1} Sekunden nichts geantwortet. Ollama startet vielleicht noch, oder sein Fenster fragt Sie etwas.</value></data>
+  <data name="SetupInstallStoppedTitle" xml:space="preserve"><value>Installation gestoppt</value></data>
+  <data name="SetupInstallStoppedCause" xml:space="preserve"><value>winget wurde gestoppt. Hatte es das Installationsprogramm schon gestartet, kann die Installation zu Ende laufen: Suchen Sie gleich erneut.</value></data>
+  <data name="SetupInstallBusy" xml:space="preserve"><value>winget installiert Ollama bereits. Suchen Sie erneut, sobald es fertig ist.</value></data>
+  <data name="SetupInstallNotStarted" xml:space="preserve"><value>{0} konnte nicht gestartet werden: {1}</value></data>
+  <data name="SetupInstallTryAgain" xml:space="preserve"><value>Erneut versuchen</value></data>
+  <data name="SetupInstallYourself" xml:space="preserve"><value>Oder laden Sie das Installationsprogramm selbst herunter:</value></data>
+  <data name="SetupNotNow" xml:space="preserve"><value>Nicht jetzt</value></data>
+  <data name="AcpSetupInstallLead" xml:space="preserve"><value>Auf diesem Computer antwortet kein Modellserver. Um Ollama zu installieren (etwa {0} GB Download, nur für Ihr Konto, ohne Administratorrechte), führen Sie in einem Terminal aus:</value></data>
+  <data name="AcpSetupStartLead" xml:space="preserve"><value>Auf diesem Computer antwortet kein Modellserver. Ollama ist installiert, läuft aber nicht: Starten Sie es über das Startmenü oder führen Sie aus:</value></data>
+  <data name="AcpSetupCommandLead" xml:space="preserve"><value>Hier antwortet kein Modellserver. Um Ollama zu installieren, führen Sie in einem Terminal aus:</value></data>
+  <data name="AcpSetupNoWinget" xml:space="preserve"><value>Auf diesem Computer antwortet kein Modellserver. Installieren Sie Ollama (ollama.com) oder LM Studio (lmstudio.ai) und führen Sie diese Einrichtung erneut aus.</value></data>
+  <data name="AcpSetupRunAgain" xml:space="preserve"><value>Führen Sie danach diese Einrichtung erneut aus.</value></data>
+  <data name="SetupStartingLead" xml:space="preserve"><value>Ollama startet seinen Server; Inferpal wartet unter {0} darauf.</value></data>
 </root>

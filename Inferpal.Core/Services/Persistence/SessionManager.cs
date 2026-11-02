@@ -116,7 +116,7 @@ internal static class SessionManager
     /// </summary>
     public static readonly IReadOnlySet<string> ScreenOnlyRoles =
         new HashSet<string>(StringComparer.Ordinal) { "anchor", "status", "turn", "run", "result", "review", "rewind", "approval", "mode",
-          Presentation.InputCard.CardRole };
+          Presentation.InputCard.CardRole, "serverinstall" };
 
     /// <summary>
     /// Maps the chat list to persistable messages: drops what only the screen holds (<see cref="ScreenOnlyRoles"/>),

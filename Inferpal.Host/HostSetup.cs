@@ -41,7 +41,48 @@ internal sealed partial class HostServer
     {
         var s = Session();
         var places = await ServerScan.ScanAsync(s.Config.BaseUrl, s.Config.ApiKey, _providerFactory, ct, s.RemoteName);
-        return new([.. places.Select(SetupPlaceDto.Of)], ServerScan.Offered(places, s.Config.BaseUrl)?.Url);
+        var offered = ServerScan.Offered(places, s.Config.BaseUrl)?.Url;
+        return new([.. places.Select(SetupPlaceDto.Of)], offered,
+                   offered is null && ServerInstall.Offers(places)
+                       ? ServerInstallCard.For(_serverInstallOffer(s.RemoteName), s.RemoteName) : null);
+    }
+
+    /// <summary>The card's Stop for the install running now (<c>setup/installStop</c>).</summary>
+    private CancellationTokenSource? _serverInstallStop;
+
+    /// <summary>
+    /// `setup/install` — installs or starts Ollama on the person's click, winget's lines in `setup/installProgress`
+    /// notifications. ⚠ The machine's offer is read again here, never taken from the card: an install runs only when the
+    /// card that consented to it asked for one ("changed" otherwise — the card looks again). ⚠ Only
+    /// <c>setup/installStop</c> stops it, never the request's token: a connection that ends (the editor closed) cancels
+    /// that token, and the install goes on, as the card says.
+    /// </summary>
+    [JsonRpcMethod("setup/install", UseSingleObjectParameterDeserialization = true)]
+    public async Task<ServerInstallReport> SetupInstallAsync(SetupInstallParams p)
+    {
+        var remote = Session().RemoteName;
+        var offer = _serverInstallOffer(remote);
+        var asked = p.Kind == "install" ? ServerInstallKind.Install : ServerInstallKind.Start;
+        if (offer.Kind != asked) return ServerInstallReport.Changed;
+        using var stop = new CancellationTokenSource();
+        _serverInstallStop = stop;
+        try
+        {
+            var result = await _serverInstallRun(offer, line => Notify("setup/installProgress", new { line }), stop.Token);
+            return ServerInstallReport.Of(result, offer, startsNow: _serverInstallOffer(remote).Kind == ServerInstallKind.Start);
+        }
+        finally
+        {
+            if (ReferenceEquals(_serverInstallStop, stop)) _serverInstallStop = null;
+        }
+    }
+
+    /// <summary>`setup/installStop` — the card's Stop: ends winget (an installer it started finishes on its own).</summary>
+    [JsonRpcMethod("setup/installStop")]
+    public void SetupInstallStop()
+    {
+        try { _serverInstallStop?.Cancel(); }
+        catch (ObjectDisposedException) { }   // the install ended between the click and here
     }
 
     /// <summary>`setup/examine` — the address the person typed, with the key they gave for it (none: no key is sent).</summary>
@@ -221,6 +262,7 @@ internal sealed partial class HostServer
         ["apiKey"]         = Strings.LabelApiKey,
         ["noModelTitle"]   = Strings.SetupNoModelTitle,
         ["downloadGoesOn"] = Strings.SetupDownloadGoesOn,
+        ["copy"]           = Strings.LabelCopyCode,
     };
 
     /// <summary>The percentage a pull status ends with ("pulling … (37%)"); null when it carries none.</summary>
@@ -298,8 +340,12 @@ internal sealed record SetupPlaceDto(
 }
 
 /// <summary>`setup/scan` answer, in the order the places were looked at; <c>Offered</c>: the address of the server to
-/// offer (<see cref="ServerScan.Offered"/>), null when none answers.</summary>
-internal sealed record SetupScanResult(List<SetupPlaceDto> Places, string? Offered);
+/// offer (<see cref="ServerScan.Offered"/>), null when none answers — and then <c>Install</c>, the "no server yet" box
+/// for this machine.</summary>
+internal sealed record SetupScanResult(List<SetupPlaceDto> Places, string? Offered, ServerInstallCard? Install = null);
+
+/// <summary>`setup/install` — what the card's button asked for: install | start.</summary>
+internal sealed record SetupInstallParams(string Kind);
 
 /// <summary>A server the card names: its address, its type, the key typed for it (null: none typed), and the graphics
 /// memory the person chose for it on the card (null: none chosen).</summary>
