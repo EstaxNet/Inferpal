@@ -33,10 +33,15 @@ $branch  = (git -C $Root rev-parse --abbrev-ref HEAD 2>$null)
 $dirty   = @(git -C $Root status --porcelain 2>$null).Count
 # Truncated on purpose: this repo writes long, explanatory commit subjects (by convention), and
 # printing one whole made the status page unreadable -- the useful lines scrolled out of sight.
+# git writes UTF-8 and PowerShell decodes a native command's output with the console's code page (850 here):
+# without the switch, every accent of a French subject prints as "├®". Restored at once: the console is the user's.
+$consoleEncoding = [Console]::OutputEncoding
+try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch { }
 $lastLog = (git -C $Root log -1 --format='%h %s' 2>$null)
+try { [Console]::OutputEncoding = $consoleEncoding } catch { }
 if ($lastLog.Length -gt 96) { $lastLog = $lastLog.Substring(0, 93) + '...' }
 Line 'Version'  $version 'Cyan'
-Line 'Branch'   ("$branch" + $(if ($dirty -gt 0) { "  ($dirty modified files)" } else { '  (clean)' })) $(if ($dirty -gt 0) { 'Yellow' } else { 'Green' })
+Line 'Branch'   ("$branch" + $(if ($dirty -gt 0) { "  ($dirty uncommitted file$(if ($dirty -gt 1) { 's' }))" } else { '  (clean)' })) $(if ($dirty -gt 0) { 'Yellow' } else { 'Green' })
 Line 'Last commit' $lastLog
 
 # ── Visual Studio 2026 ───────────────────────────────────────────────────────
@@ -94,7 +99,7 @@ if ($vsDll) {
     }
     if ($vsDlls.Count -gt 1) {
         # Another hive may belong to another VS instance (Preview, Exp): listed, never called dead.
-        Line 'Also installed' "$($vsDlls.Count - 1) other copies" 'Yellow'
+        Line 'Also installed' "$($vsDlls.Count - 1) other $(if ($vsDlls.Count -gt 2) { 'copies' } else { 'copy' })" 'Yellow'
         foreach ($d in ($vsDlls | Where-Object { $_.FullName -ne $vsDll.FullName })) {
             $dv = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($d.FullName).FileVersion
             # Stale: a copy in the out-of-proc root, or a second one in the machine root in use - delete it, VS closed.
