@@ -202,6 +202,27 @@ public sealed class ServerInstallTests
         Assert.Empty(ServerInstall.OfferFor(null, ServerInstall.HostOs.Windows, Winget, OllamaApp).Arguments);
     }
 
+    /// <summary>
+    /// ⚠ Ollama's application starts no server unless its own folder is on its PATH: its installer launches it with that
+    /// folder first, and an editor opened before the install has a PATH without it. A start hands it the same PATH,
+    /// whichever way Ollama was installed.
+    /// </summary>
+    [Fact]
+    public void AStart_PutsOllamasFolderFirstOnItsPath()
+    {
+        // Paths of this platform: a Windows path has no folder part elsewhere, and every assertion would hold on "".
+        var programs = Path.Combine(Path.GetTempPath(), "Programs");
+        foreach (var installed in new[] { Path.Combine(programs, "Ollama", "ollama app.exe"), Path.Combine(programs, "scoop", "ollama.exe") })
+        {
+            var start = ServerInstall.StartInfoFor(ServerInstall.OfferFor(null, ServerInstall.HostOs.Windows, Winget, installed));
+            var folder = Path.GetDirectoryName(installed)!;
+            Assert.NotEmpty(folder);
+            Assert.False(start.UseShellExecute);                        // the shell would hand it the editor's environment
+            Assert.StartsWith(folder + Path.PathSeparator, start.Environment["PATH"]);
+            Assert.Equal(folder, start.WorkingDirectory);
+        }
+    }
+
     /// <summary>A start says what a start does — no winget, nothing to stop — and Stop pressed once winget succeeded, while
     /// the server is waited for, is said as an installed Ollama that does not answer, never as "winget was stopped".</summary>
     [Fact]

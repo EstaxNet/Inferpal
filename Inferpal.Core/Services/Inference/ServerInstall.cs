@@ -233,14 +233,8 @@ internal static class ServerInstall
         KeepOwnStdioOutOfChildren();
         if (offer.Kind == ServerInstallKind.Start)
         {
-            var folder = Path.GetDirectoryName(offer.Program!)!;
-            var server = offer.Arguments.Count == 0
-                // The desktop application, as a person would start it: by the shell, which hands it none of our handles.
-                ? new ProcessStartInfo(offer.Program!) { UseShellExecute = true, WorkingDirectory = folder }
-                : new ProcessStartInfo(offer.Program!) { UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = folder };
-            foreach (var a in offer.Arguments) server.ArgumentList.Add(a);
             // Started, never waited for: it starts its server and stays.
-            using var started = Process.Start(server) ?? throw new InvalidOperationException($"{offer.Program} did not start.");
+            using var started = Process.Start(StartInfoFor(offer)) ?? throw new InvalidOperationException($"{offer.Program} did not start.");
             return 0;
         }
 
@@ -286,6 +280,21 @@ internal static class ServerInstall
             Volatile.Write(ref open, 0);
             if (winget.HasExited) try { File.Delete(pidPath); } catch { /* the next run judges it by its process */ }
         }
+    }
+
+    /// <summary>How a <see cref="ServerInstallKind.Start"/> starts Ollama, in its own folder.</summary>
+    internal static ProcessStartInfo StartInfoFor(ServerInstallOffer offer)
+    {
+        var folder = Path.GetDirectoryName(offer.Program!)!;
+        // ⚠ Not by the shell, which hands it this process's environment: Ollama's application starts no server unless
+        // its folder is on its PATH, and an editor opened before the install has a PATH without it. Its installer starts
+        // it with that folder first; so does this. The caller keeps our standard handles out (KeepOwnStdioOutOfChildren).
+        // CreateNoWindow is for `serve`, a console program; the application, a windowed one, ignores it.
+        var server = new ProcessStartInfo(offer.Program!) { UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = folder };
+        server.Environment.TryGetValue("PATH", out var path);
+        server.Environment["PATH"] = folder + Path.PathSeparator + path;
+        foreach (var a in offer.Arguments) server.ArgumentList.Add(a);
+        return server;
     }
 
     /// <summary>Writes which winget runs the install, for a window that would start another (<see cref="WingetStillRuns"/>).</summary>
