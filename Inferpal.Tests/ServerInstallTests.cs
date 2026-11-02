@@ -15,7 +15,8 @@ namespace Inferpal.Tests;
 public sealed class ServerInstallTests
 {
     private const string Winget = @"C:\Users\me\AppData\Local\Microsoft\WindowsApps\winget.exe";
-    private const string OllamaApp = @"C:\Users\me\AppData\Local\Programs\Ollama\ollama app.exe";
+    // A path of this platform: elsewhere a backslash path has no file name, and the application reads as a bare ollama.exe.
+    private static readonly string OllamaApp = TestPaths.P(@"C:\Users\me\AppData\Local\Programs\Ollama\ollama app.exe");
 
     private static ServerInstallOffer InstallOffer() =>
         ServerInstall.OfferFor(null, ServerInstall.HostOs.Windows, Winget, installed: null);
