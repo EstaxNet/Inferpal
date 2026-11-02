@@ -38,6 +38,8 @@ public class DoubleEscapeTests
         var root = ConversationPersistenceSilenceTests.RepoRoot();
         var chrome = ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal", "ToolWindow", "InferpalToolWindowData.Chrome.cs"));
         Assert.Contains("card.Answer(ApprovalDecision.Deny);", chrome, StringComparison.Ordinal);
+        // From an empty prompt only, as Enter and as VS Code: Esc while typing a note never refuses the card.
+        Assert.Contains("if (Prompt.Trim().Length > 0) return;", chrome, StringComparison.Ordinal);
         Assert.Contains("else if (IsLoading && _escape.Press(DateTime.UtcNow)) _currentCts?.Cancel();", chrome, StringComparison.Ordinal);
         var helpers = ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal", "ToolWindow", "InferpalToolWindowData.UiHelpers.cs"));
         Assert.Contains("_escape.Reset();", helpers, StringComparison.Ordinal);

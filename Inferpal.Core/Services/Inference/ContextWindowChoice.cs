@@ -188,9 +188,9 @@ internal static class ContextWindowChoice
     /// nothing above the factory window), nothing to say.
     /// </summary>
     /// <remarks>Never throws but for a cancellation: it runs at a start, where a failure has nobody to tell — traced. A
-    /// start that decided nothing is not asked again in this process for the same server, model and card
+    /// start that kept the factory window is not asked again in this process for the same server, model and card
     /// (<see cref="Settled"/>): an 8 GB card stays at the factory window for good, and every reconnection and every ACP
-    /// session would otherwise ask the server again.</remarks>
+    /// session would otherwise ask the server again. A start that learnt nothing (the server down) is asked again.</remarks>
     public static async Task<string?> CatchUpAsync(InferpalConfig config, IInferenceProvider client, string chatModel, CancellationToken ct)
     {
         try
@@ -198,7 +198,10 @@ internal static class ContextWindowChoice
             if (!Asks(config, client, chatModel) || !NeverSized(config) || Settled.ContainsKey(SettledKey(config, chatModel)))
                 return null;
             var advice = await AdviseForAsync(config, client, chatModel, ct).ConfigureAwait(false);
-            if (advice.Tokens is not { } tokens || tokens <= Factory)
+            // No size: nothing was known (a server down lists nothing, a model it does not show) — asked again at the next
+            // start, the reconnection included. Only a decision is settled.
+            if (advice.Tokens is not { } tokens) return null;
+            if (tokens <= Factory)
             {
                 // Keyed on the card as it is now: the advice may have just detected it.
                 Settled.TryAdd(SettledKey(config, chatModel), 0);

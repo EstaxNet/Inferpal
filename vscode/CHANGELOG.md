@@ -3,6 +3,25 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.8.9
+
+No model server yet? On Windows, Inferpal now installs Ollama for you, after showing you the command.
+
+- **Install Ollama from the first-run card** (Windows): the card shows the exact winget command, about 1.6 GB, for your
+  account only, no administrator rights, then the steps, **Stop**, and goes on to propose a chat model. An Ollama
+  installed but not running is started, never downloaded again. On macOS, Linux or a remote window, the card gives the
+  command to copy.
+- **Esc twice in the message box stops the answer**, never while an approval card waits.
+- **"Test" in the settings counts the models**: "✓ Ollama answered — 7 models installed".
+- **Modes are visible before you have one**: the list says where a mode goes and links to **Write a mode**.
+- **A context window that was never sized is sized for your graphics card** at startup (Ollama, an install from before
+  1.8.6), and an automatic window follows the model you pick.
+- **The header shows what the loaded models take in VRAM**, and an undone run says "Run undone · N changes kept".
+- **Alt+M is yours again**: no Inferpal command takes an Alt+letter shortcut by default.
+- **Fixed**: a question that got no answer is no longer merged into the next one; a server with only embedding models
+  says "no chat model"; undoing one change that breaks a C# or Razor file says so with the line; the same file attached
+  twice makes one chip; a repository instruction file cloned as a one-line link is read through its target.
+
 ## 1.8.8
 
 What you approve is what runs, and the assistant asks before it runs your project's own code.

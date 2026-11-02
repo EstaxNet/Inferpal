@@ -154,6 +154,9 @@ internal partial class InferpalToolWindowData
     /// <summary>Presenter used by the automatic first-run path: inserts a themed assistant bubble.</summary>
     private Task FirstRunPresentAsync(string text) => RunOnVMContextAsync(() =>
     {
+        // Two discoveries can find the same thing (an install's card, then the heartbeat that sees its server come back,
+        // on an Ollama still without a model): the same notice twice in a row says nothing new.
+        if (Messages.Count >= 3 && Messages[Messages.Count - 3] is { ToolName: SessionManager.NoticeMarker } last && last.Content == text) return;
         var msg = ChatMessageItem.NoticeMsg(text);
         ApplyItemTheme(msg);
         Messages.Insert(Messages.Count - 2, msg);
@@ -230,7 +233,10 @@ internal partial class InferpalToolWindowData
                         url, Services.Inference.InferenceProviderFactory.DisplayName(_config.Provider)))
                     + "\n\n" + placesText)
                     .ConfigureAwait(false);
-                if (client.ConnectionRefusal is null && Services.Inference.ServerInstall.Offers(places))
+                // Only where the installed server would be used: nothing chosen yet, or Ollama's own address chosen.
+                if (client.ConnectionRefusal is null && Services.Inference.ServerInstall.Offers(places)
+                    && (Services.Inference.ServerScan.NothingChosen(_config)
+                        || Services.Inference.ServerScan.SameAddress(url, Services.Inference.ServerInstall.OllamaAddress)))
                     await OfferServerInstallAsync(null, once: false).ConfigureAwait(false);
                 return;
             }

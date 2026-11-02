@@ -38,7 +38,17 @@ internal class InferpalConfig
 
     /// <summary>Test seam of ONE instance: where its <see cref="Save"/> writes. A test that needs a file of its own
     /// sets this — never <see cref="OverridePathForTests"/>, which belongs to the whole suite.</summary>
-    internal string? SavePathForTests { get; init; }
+    internal string? SavePathForTests { get; set; }
+
+    /// <summary>Test seam: the settings in <paramref name="path"/>, read as <see cref="LoadOwnCopy"/> reads them, and
+    /// saved, re-read and filled from that file only (<see cref="SavePathForTests"/>). A class that moves
+    /// <see cref="OverridePathForTests"/> instead receives every parallel test's save while it holds it.</summary>
+    internal static InferpalConfig LoadFileForTests(string path)
+    {
+        var cfg = LoadUncached(follow: false, file: path)!;
+        cfg.SavePathForTests = path;
+        return cfg;
+    }
 
     /// <summary>The file this instance saves to — the one an import copies aside before writing.</summary>
     internal string SaveFilePath => SavePathForTests ?? EffectiveConfigPath;
@@ -648,9 +658,10 @@ internal class InferpalConfig
 
     /// <param name="follow">For a copy that follows the file: an unreadable file is <c>null</c>, said once, instead of
     /// the factory values.</param>
-    private static InferpalConfig? LoadUncached(bool follow)
+    /// <param name="file">The file to read instead of the settings file (<see cref="LoadFileForTests"/>).</param>
+    private static InferpalConfig? LoadUncached(bool follow, string? file = null)
     {
-        var path = EffectiveConfigPath;
+        var path = file ?? EffectiveConfigPath;
         InferpalConfig cfg;
         var fromFile = false;
 

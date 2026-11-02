@@ -44,7 +44,11 @@ internal partial class InferpalToolWindowData
             item = ChatMessageItem.ServerInstallMsg(card,
                 onPrimary:   () => RunServerInstallAsync(item!),
                 onLookAgain: () => RunSetupDiscoveryAsync(FirstRunPresentAsync, CancellationToken.None),
-                onStop:      () => _serverInstallStop?.Cancel());
+                onStop:      () =>
+                {
+                    try { _serverInstallStop?.Cancel(); }
+                    catch (ObjectDisposedException) { }   // the install ended between the click and here
+                });
             ApplyItemTheme(item);
             Messages.Insert(Messages.Count - 2, item);
             ScrollToBottom();
@@ -72,7 +76,8 @@ internal partial class InferpalToolWindowData
             }
 
             using var stop = new CancellationTokenSource();
-            _serverInstallStop = stop;
+            // Taken only when no install holds it: a second click, told "busy", must not take the Stop of the one running.
+            Interlocked.CompareExchange(ref _serverInstallStop, stop, null);
             await RunOnVMContextAsync(() => card.InstallRunning(running));
             ServerInstallResult result;
             try

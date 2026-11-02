@@ -65,7 +65,8 @@ internal sealed partial class HostServer
         var asked = p.Kind == "install" ? ServerInstallKind.Install : ServerInstallKind.Start;
         if (offer.Kind != asked) return ServerInstallReport.Changed;
         using var stop = new CancellationTokenSource();
-        _serverInstallStop = stop;
+        // Taken only when no install holds it: a second request, told "busy", must not take the Stop of the one running.
+        Interlocked.CompareExchange(ref _serverInstallStop, stop, null);
         try
         {
             var result = await _serverInstallRun(offer, line => Notify("setup/installProgress", new { line }), stop.Token);

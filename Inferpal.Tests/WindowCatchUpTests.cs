@@ -15,24 +15,19 @@ namespace Inferpal.Tests;
 /// most questions about a real project overflow: at an editor's start, a window never sized is sized as the first run
 /// does, and said once. And a chat model changed by <c>/model</c> or a picker takes an automatic window with it.
 /// </summary>
-[Collection(GlobalConfigPathCollection.Name)]
 public sealed class WindowCatchUpTests : IDisposable
 {
     private const long Gb = 1L << 30;
     private static readonly ModelArchInfo Llama = new(32, 32, 8, 4096, 131072);
 
-    private readonly string? _previous = InferpalConfig.OverridePathForTests;
     private readonly string  _path = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"catchup-{Guid.NewGuid():N}.json");
 
-    public WindowCatchUpTests()
-    {
-        Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-        InferpalConfig.OverridePathForTests = _path;
-    }
+    // A file of its own, read and written through the instance seam: the suite's settings path stays where it is, and
+    // whatever another test (or a host it started) saves there never lands in this file.
+    public WindowCatchUpTests() => Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
 
     public void Dispose()
     {
-        InferpalConfig.OverridePathForTests = _previous;
         try { File.Delete(_path); } catch { }
     }
 
@@ -61,7 +56,7 @@ public sealed class WindowCatchUpTests : IDisposable
         file["inlineCompletionEnabled"] = false;
         change?.Invoke(file);
         File.WriteAllText(_path, file.ToJsonString(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
-        return InferpalConfig.Load();
+        return InferpalConfig.LoadFileForTests(_path);
     }
 
     private static Task<string?> CatchUp(InferpalConfig config, FakeInferenceProvider? server = null) =>
@@ -78,7 +73,7 @@ public sealed class WindowCatchUpTests : IDisposable
 
         var notice = await CatchUp(config);
 
-        var written = InferpalConfig.LoadOwnCopy();
+        var written = InferpalConfig.LoadFileForTests(_path);
         Assert.Equal(ContextWindowChoice.MeasuredCeiling, written.ContextWindowSize);
         Assert.Equal(written.ContextWindowSize, written.ContextWindowSizeAuto);
         Assert.Equal(Strings.WindowCaughtUp(ContextWindowChoice.MeasuredCeiling, ContextWindowChoice.Factory, "24",
@@ -87,7 +82,7 @@ public sealed class WindowCatchUpTests : IDisposable
         Assert.Contains(Strings.LabelContextWindowSize, notice, StringComparison.Ordinal);
 
         Assert.Null(await CatchUp(config));
-        Assert.Null(await CatchUp(InferpalConfig.Load()));
+        Assert.Null(await CatchUp(InferpalConfig.LoadFileForTests(_path)));
     }
 
     [Fact]
@@ -122,7 +117,7 @@ public sealed class WindowCatchUpTests : IDisposable
         Assert.False(ContextWindowChoice.IsAutomatic(config));
         Assert.Null(await CatchUp(config));
         Assert.Null(await Follow(config, "big:12b"));
-        Assert.Equal(ContextWindowChoice.Factory, InferpalConfig.LoadOwnCopy().ContextWindowSize);
+        Assert.Equal(ContextWindowChoice.Factory, InferpalConfig.LoadFileForTests(_path).ContextWindowSize);
     }
 
     private void WriteAsTheOtherEditor(int window, int mark)
@@ -143,7 +138,7 @@ public sealed class WindowCatchUpTests : IDisposable
         server.OnShow = m => { WriteAsTheOtherEditor(20480, 20480); return asked(m); };
 
         Assert.Null(await CatchUp(config, server));
-        Assert.Equal(20480, InferpalConfig.LoadOwnCopy().ContextWindowSize);
+        Assert.Equal(20480, InferpalConfig.LoadFileForTests(_path).ContextWindowSize);
     }
 
     /// <summary><c>Save</c> writes what the copy changed since it read the file: a size decided on the file that equals
@@ -157,7 +152,7 @@ public sealed class WindowCatchUpTests : IDisposable
         // big:12b leaves the card no room: back to the factory window — what this copy read, not what the file holds.
         Assert.NotNull(await Follow(mine, "big:12b"));
 
-        var file = InferpalConfig.LoadOwnCopy();
+        var file = InferpalConfig.LoadFileForTests(_path);
         Assert.Equal((ContextWindowChoice.Factory, 0), (file.ContextWindowSize, file.ContextWindowSizeAuto));
     }
 
@@ -178,23 +173,37 @@ public sealed class WindowCatchUpTests : IDisposable
         Assert.Equal(1, shown);
     }
 
+    /// <summary>A start while the server is down knew nothing (no list, no model shown): not settled, so the start after
+    /// the server answers — the reconnection, the next session — sizes the window.</summary>
+    [Fact]
+    public async Task AStartWhileTheServerIsDown_IsAskedAgain_OnceItAnswers()
+    {
+        var config = LoadAnOldInstall(change: f => f["defaultModel"] = "granite4.2:8b-down");
+        Assert.Null(await CatchUp(config, new FakeInferenceProvider()));   // lists nothing, shows nothing
+
+        var up = Server();
+        up.Installed.Add(new InstalledModelInfo("granite4.2:8b-down", 5 * Gb, ["completion", "tools"]));
+        up.OnShow = _ => Llama;
+        Assert.NotNull(await CatchUp(config, up));
+    }
+
     [Fact]
     public async Task AnAutomaticWindow_FollowsTheModel_DownToTheFactoryOne_AndSaysIt()
     {
         var config = LoadAnOldInstall(cardGb: 14);
         Assert.NotNull(await CatchUp(config));
-        Assert.True(InferpalConfig.LoadOwnCopy().ContextWindowSize > ContextWindowChoice.Factory);            // witness
+        Assert.True(InferpalConfig.LoadFileForTests(_path).ContextWindowSize > ContextWindowChoice.Factory);            // witness
 
         // big:12b leaves a 14 GB card no room for a window sized for it: the factory one, said — never "sized for the card".
         var notice = await Follow(config, "big:12b");
 
-        var written = InferpalConfig.LoadOwnCopy();
+        var written = InferpalConfig.LoadFileForTests(_path);
         Assert.Equal((ContextWindowChoice.Factory, 0), (written.ContextWindowSize, written.ContextWindowSizeAuto));
         Assert.Equal(Strings.WindowBackToFactory(ContextWindowChoice.Factory, "big:12b"), notice);
 
         // Back to the small model: the window grows again with it.
         Assert.NotNull(await Follow(config, "granite4.2:8b"));
-        Assert.True(InferpalConfig.LoadOwnCopy().ContextWindowSize > ContextWindowChoice.Factory);
+        Assert.True(InferpalConfig.LoadFileForTests(_path).ContextWindowSize > ContextWindowChoice.Factory);
         // The same model again: nothing changes, nothing said.
         Assert.Null(await Follow(config, "granite4.2:8b"));
     }
@@ -205,7 +214,7 @@ public sealed class WindowCatchUpTests : IDisposable
         var config = LoadAnOldInstall(change: f => f["contextWindowSize"] = 24576);
 
         Assert.Null(await Follow(config, "big:12b"));
-        Assert.Equal(24576, InferpalConfig.LoadOwnCopy().ContextWindowSize);
+        Assert.Equal(24576, InferpalConfig.LoadFileForTests(_path).ContextWindowSize);
     }
 
     // ── The callers: Visual Studio's view model and VS Code's extension do not run in the suite, held on their source ──
@@ -231,8 +240,13 @@ public sealed class WindowCatchUpTests : IDisposable
         Assert.True(adopt >= 0 && catchUp > adopt, "the window is sized before the model that answers is settled");
         Assert.Contains("FirstRunPresentAsync(windowNotice)", ensure[catchUp..]);
 
-        Assert.Contains("ContextWindowChoice.FollowAsync(_config, _client, model,",
-                        Member(Cs("Inferpal", "ToolWindow", "InferpalToolWindowData.Chrome.cs"), "private async Task PickModelAsync"));
+        var pick = Member(Cs("Inferpal", "ToolWindow", "InferpalToolWindowData.Chrome.cs"), "private async Task PickModelAsync");
+        Assert.Contains("ContextWindowChoice.FollowAsync(_config, _client, model,", pick);
+        // A turn running reads the window at every request: a model picked in the header during it is followed once the
+        // turn ends, never under it (the host holds the turn slot, VS Code holds the pick back).
+        var waits = pick.IndexOf("turn = IsLoading ? _turnDone?.Task : null", StringComparison.Ordinal);
+        Assert.True(waits >= 0 && waits < pick.IndexOf("ContextWindowChoice.FollowAsync", StringComparison.Ordinal),
+                    "the header's pick resizes the window under a running turn");
         var model = Member(Cs("Inferpal", "ToolWindow", "InferpalToolWindowData.SlashCommands.cs"), "case SlashCommandId.Model:", "case SlashCommandId.Tools:");
         Assert.Contains("ContextWindowChoice.FollowAsync(_config, _client, parts[1], ct)", model);
     }

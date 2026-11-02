@@ -206,8 +206,10 @@ internal partial class InferpalToolWindowData
         // DoubleEscape.Window stops it, as the Stop button's tooltip says.
         DenyApprovalCommand    = new AsyncCommand((_, _) => RunOnVMContextAsync(() =>
         {
-            if (_pendingApproval is { } card)
+            if (_pendingApproval is { IsAnswered: false } card)
             {
+                // From an empty prompt only, as Enter: a note being typed is never a "no" (and never a Stop while a card waits).
+                if (Prompt.Trim().Length > 0) return;
                 _escape.Reset();
                 card.Answer(ApprovalDecision.Deny);
             }
@@ -396,6 +398,14 @@ internal partial class InferpalToolWindowData
             return;   // the window is not sized for a model the file does not hold
         }
         await RunOnVMContextAsync(() => ActiveModelLabel = model);
+        // A running turn reads the window at every request: the window follows once it ends, never under it.
+        while (true)
+        {
+            Task? turn = null;
+            await RunOnVMContextAsync(() => turn = IsLoading ? _turnDone?.Task : null);
+            if (turn is null) break;
+            await turn;
+        }
         if (await ContextWindowChoice.FollowAsync(_config, _client, model, CancellationToken.None) is { } windowNotice)
             await ShowInfoAsync(windowNotice);
     }

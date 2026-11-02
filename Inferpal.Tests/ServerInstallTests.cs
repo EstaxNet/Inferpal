@@ -248,11 +248,13 @@ public sealed class ServerInstallTests
         foreach (var outcome in Enum.GetValues<ServerInstallOutcome>())
             Assert.NotEqual("install", ServerInstallReport.Of(new ServerInstallResult(outcome, 1), start, startsNow: false).RetryKind);
 
+#if WINDOWS
         // The Visual Studio card holds the same line whatever report it is handed.
         var card = ToolWindow.ChatMessageItem.ServerInstallMsg(ServerInstallCard.For(start, null),
             () => Task.CompletedTask, () => Task.CompletedTask, () => { });
         card.InstallEnded(ServerInstallReport.Of(new ServerInstallResult(ServerInstallOutcome.Failed, 1), InstallOffer(), startsNow: false));
         Assert.Equal(("start", false), (card.InstallKind, card.HasInstallPrimary));
+#endif
     }
 
     /// <summary>"Busy" follows winget itself: the lock ends with the editor, winget does not. The process named in the file
@@ -282,6 +284,33 @@ public sealed class ServerInstallTests
             lockPath: Path.Combine(file, "server-install.lock"), run: (_, _, _) => Task.FromResult(0));
         Assert.Equal(ServerInstallOutcome.NotStarted, result.Outcome);
         Assert.False(string.IsNullOrEmpty(result.Detail));
+    }
+
+    /// <summary>Visual Studio's <c>/setup</c> offers the install only where it helps: nothing chosen yet, or the address
+    /// chosen is Ollama's. Someone whose server is another one (LM Studio, a remote machine) is not sent to install
+    /// Ollama, which their settings would never use — as the first run already decides.</summary>
+    [Fact]
+    public void VisualStudio_SetupOffersTheInstall_OnlyWhereItsServerWouldBeUsed()
+    {
+        var rag = ConventionCoverageTests.CodeOnly(Path.Combine(
+            ConventionCoverageTests.RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowData.Rag.cs"));
+        Assert.Contains("if (client.ConnectionRefusal is null && Services.Inference.ServerInstall.Offers(places)\n"
+                        + "                    && (Services.Inference.ServerScan.NothingChosen(_config)\n"
+                        + "                        || Services.Inference.ServerScan.SameAddress(url, Services.Inference.ServerInstall.OllamaAddress)))\n"
+                        + "                    await OfferServerInstallAsync(null, once: false)",
+                        rag.Replace("\r\n", "\n"));
+    }
+
+    /// <summary>After an install that answers, the card's discovery and the heartbeat that sees the server come back both
+    /// find the fresh Ollama without a model: the first run's notice is posted once, not twice in a row.</summary>
+    [Fact]
+    public void VisualStudio_TheFirstRunsNotice_IsNotPostedTwiceInARow()
+    {
+        var rag = ConventionCoverageTests.CodeOnly(Path.Combine(
+            ConventionCoverageTests.RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowData.Rag.cs"));
+        var present = rag[rag.IndexOf("private Task FirstRunPresentAsync(string text)", StringComparison.Ordinal)..];
+        Assert.Contains("if (Messages.Count >= 3 && Messages[Messages.Count - 3] is { ToolName: SessionManager.NoticeMarker } last"
+                        + " && last.Content == text) return;", present[..present.IndexOf("});", StringComparison.Ordinal)]);
     }
 
     /// <summary>

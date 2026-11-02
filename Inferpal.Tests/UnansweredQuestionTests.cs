@@ -39,6 +39,10 @@ public class UnansweredQuestionTests
 
         Assert.Null(ChatTurnPolicy.LastAnswer([.. plan, new("user", "go"), ChatTurnPolicy.NoAnswer()]));
         Assert.Null(ChatTurnPolicy.LastAnswer([.. plan, new("user", "again"), ChatTurnPolicy.StoppedAnswer(null)]));
+        // A turn that failed leaves its question last, not yet closed: nothing to save either.
+        Assert.Null(ChatTurnPolicy.LastAnswer([.. plan, new("user", "go")]));
+        // An answer stopped partway is saved as far as it went, without the marker.
+        Assert.Equal("1. Move", ChatTurnPolicy.LastAnswer([.. plan, new("user", "again"), ChatTurnPolicy.StoppedAnswer("1. Move")]));
     }
 
     [Fact]

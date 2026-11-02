@@ -3730,6 +3730,8 @@ public partial class HostServerTests
         var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var h = CreateHarness(installOffer: _ => install, installRun: async (_, _, ct) =>
         {
+            // A second request while one runs is told "busy" at once, as the real run does under its lock.
+            if (started.Task.IsCompleted) return new ServerInstallResult(ServerInstallOutcome.Busy);
             started.TrySetResult();
             try { await Task.Delay(Timeout.Infinite, ct); }
             catch (OperationCanceledException) { return new ServerInstallResult(ServerInstallOutcome.Stopped); }
@@ -3739,6 +3741,9 @@ public partial class HostServerTests
 
         var running = h.Client.InvokeWithParameterObjectAsync<ServerInstallReport>("setup/install", new { kind = "install" });
         await started.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        // Another panel asks too: told busy, and the Stop still reaches the install that runs.
+        Assert.Equal("busy", (await h.Client.InvokeWithParameterObjectAsync<ServerInstallReport>(
+            "setup/install", new { kind = "install" }).WaitAsync(TimeSpan.FromSeconds(30))).Outcome);
         await h.Client.InvokeAsync("setup/installStop");
         Assert.Equal("stopped", (await running.WaitAsync(TimeSpan.FromSeconds(30))).Outcome);
     }

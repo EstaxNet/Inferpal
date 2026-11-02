@@ -1959,11 +1959,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       origin,
     };
     // Attached again: the same whole file, or the same text under the same name, is one chip, not two — a second one
-    // would send it twice (Visual Studio's AttachmentItem.Repeats).
-    const repeated = this.pendingAttachments.some((a) => a.sourcePath && chip.sourcePath
+    // would send it twice (Visual Studio's AttachmentItem.Repeats). The chip holds what was just attached: a file
+    // edited since the first attach goes as it is now.
+    const repeated = this.pendingAttachments.findIndex((a) => a.sourcePath && chip.sourcePath
       ? samePath(a.sourcePath, chip.sourcePath)
       : a.name === chip.name && a.content === chip.content);
-    if (!repeated) {
+    if (repeated >= 0) {
+      this.pendingAttachments[repeated] = chip;
+    } else {
       this.pendingAttachments.push(chip);
     }
     this.postChips();

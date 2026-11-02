@@ -277,9 +277,9 @@ internal partial class InferpalToolWindowData
         var capped = Services.Agent.AttachmentCap.Of(content);
         if (capped.Cut) label = Strings.AttachmentCutLabel(label, capped.Shown, capped.Total);
         content = capped.Text;
-        // Attached again — dropped twice, picked again with @: the chip already there is the file, a second one would
-        // send it twice.
-        if (Attachments.Any(a => !a.IsAutoAttach && a.Repeats(label, content, sourcePath))) return;
+        // Attached again — dropped twice, picked again with @: one chip, not two (a second would send it twice), holding
+        // what was just attached — a file edited since the first attach goes as it is now.
+        var repeat = Attachments.FirstOrDefault(a => !a.IsAutoAttach && a.Repeats(label, content, sourcePath));
         AttachmentItem? item = null;
         Action? onPin = sourcePath is null ? null : () => Post(() =>
         {
@@ -297,7 +297,9 @@ internal partial class InferpalToolWindowData
         item.Background  = chip.AttachChipBg;
         item.Foreground  = chip.AttachChipText;
         item.BorderColor = chip.AttachChipBorder;
-        Attachments.Add(item);
+        var at = repeat is null ? -1 : Attachments.IndexOf(repeat);
+        if (at >= 0) { Attachments.RemoveAt(at); Attachments.Insert(at, item); }
+        else Attachments.Add(item);
         HasAttachments = true;
     }
 

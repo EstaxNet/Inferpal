@@ -44,10 +44,16 @@ public class ChipAttachmentDedupeTests
         var chat = Chat().Replace("\r\n", "\n");
         Assert.Contains("private addChip(name: string, content: string, sourcePath?: string, origin?: string): void {", chat, StringComparison.Ordinal);   // witness
 
-        Assert.Contains("const repeated = this.pendingAttachments.some((a) => a.sourcePath && chip.sourcePath\n"
+        Assert.Contains("const repeated = this.pendingAttachments.findIndex((a) => a.sourcePath && chip.sourcePath\n"
                       + "      ? samePath(a.sourcePath, chip.sourcePath)\n"
                       + "      : a.name === chip.name && a.content === chip.content);", chat, StringComparison.Ordinal);
-        Assert.Contains("if (!repeated) {\n      this.pendingAttachments.push(chip);", chat, StringComparison.Ordinal);
+        // One chip, holding what was just attached: a file edited since the first attach goes as it is now.
+        Assert.Contains("if (repeated >= 0) {\n      this.pendingAttachments[repeated] = chip;\n    } else {\n"
+                      + "      this.pendingAttachments.push(chip);", chat, StringComparison.Ordinal);
+        // Visual Studio: the same, in its one funnel.
+        var vs = ConventionCoverageTests.CodeOnly(Path.Combine(ConversationPersistenceSilenceTests.RepoRoot(),
+            "Inferpal", "ToolWindow", "InferpalToolWindowData.Attachments.cs"));
+        Assert.Contains("if (at >= 0) { Attachments.RemoveAt(at); Attachments.Insert(at, item); }", vs, StringComparison.Ordinal);
     }
 
     [Fact]

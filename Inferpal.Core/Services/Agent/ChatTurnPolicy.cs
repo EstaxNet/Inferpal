@@ -410,11 +410,15 @@ internal static class ChatTurnPolicy
     /// front-ends.
     /// </summary>
     /// <remarks>⚠ Never an older answer in its place: saved as the latest, the plan of an earlier question reads as the
-    /// answer to the last one.</remarks>
-    public static string? LastAnswer(IEnumerable<ChatMessageDto> history) =>
-        history.LastOrDefault(m => m.Role == "assistant")?.Content is { } last && last is not (NoAnswerMarker or StoppedMarker)
-            ? last
-            : null;
+    /// answer to the last one — after a failed turn too, whose question stays last until the next one closes it. An
+    /// answer stopped partway is kept as far as it went, without the marker.</remarks>
+    public static string? LastAnswer(IEnumerable<ChatMessageDto> history)
+    {
+        if (history.LastOrDefault(m => m.Role is "user" or "assistant") is not { Role: "assistant", Content: { } last }
+            || last is NoAnswerMarker or StoppedMarker)
+            return null;
+        return last.EndsWith(StoppedMarker, StringComparison.Ordinal) ? last[..^StoppedMarker.Length].TrimEnd() : last;
+    }
 
     /// <summary>
     /// Closes <paramref name="history"/> with <see cref="NoAnswer"/> when its last message is still a question; returns
