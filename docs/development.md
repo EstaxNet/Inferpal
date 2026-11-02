@@ -5,8 +5,9 @@ How to build, test, extend, and contribute to Inferpal. For how the pieces fit t
 
 ## Prerequisites
 
-- **.NET 10 SDK**, and the **.NET 8 Desktop Runtime**: the test suite's Windows leg runs on it, as Visual Studio's
-  extension host runs the adapter and the Core
+- **.NET 10 SDK**, and the **.NET 8 Desktop Runtime**: the test suite runs on Windows twice, on .NET 8 and on .NET 10,
+  as Visual Studio's extension host runs the adapter and the Core on either (the manifest declares both, and Visual
+  Studio picks the highest it ships)
 - **Visual Studio 2026 (18.x)** with the Visual Studio extension development
   workload
 - **Node.js 22+** — only for the VS Code extension (`vscode/`); its packager, `@vscode/vsce` 4, requires it

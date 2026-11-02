@@ -36,8 +36,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # .NET 10 builds and runs the net10.0 test leg (the runtime the VS Code and ACP packages carry);
-      # .NET 8 runs the Windows leg, the runtime Visual Studio's extension host gives the adapter and the Core.
+      # Two whole-suite legs: net10.0-windows on .NET 10, the extension host Visual Studio picks (the manifest declares
+      # .NET 8 and 10, VS takes the highest it ships) and the runtime the VS Code and ACP packages carry; net8.0-windows
+      # on .NET 8, the host a Visual Studio without the .NET 10 one keeps.
       - name: Set up .NET 8 and 10
         uses: actions/setup-dotnet@v6
         with:
@@ -55,7 +56,7 @@ jobs:
         run: dotnet test Inferpal.Tests/Inferpal.Tests.csproj -c Release --no-restore
 
   # Editor-agnostic net10.0 leg (Core + Host) on the OSes the VS Code extension targets.
-  # The VSIX project only exists on the net8.0-windows TFM, which the csproj drops off-Windows,
+  # The VSIX project only exists on the Windows TFMs, which the csproj drops off-Windows,
   # so restore/build here never touch the VS SDK. This is also where the bash dialect of
   # ShellStateProtocol runs against a real /bin/bash.
   test-posix:

@@ -54,7 +54,11 @@
     <InstallationTarget Id="Microsoft.VisualStudio.Enterprise"   Version="[17.14,)">
       <ProductArchitecture>amd64</ProductArchitecture>
     </InstallationTarget>
-    <DotnetTargetVersions>net8.0-windows</DotnetTargetVersions>
+    <!-- The out-of-process half runs on the HIGHEST runtime both declared here and shipped by Visual Studio: VS 18 and
+         2022 17.14 ship a .NET 10 host beside the .NET 8 one, which they call "nearing end-of-life". The assembly stays
+         built for .NET 8, which a VS without the .NET 10 host keeps running. ⚠ net8.0 FIRST: Visual Studio cuts a value
+         at its first '-', so a reader that does not split the list still lands on .NET 8. -->
+    <DotnetTargetVersions>net8.0-windows;net10.0-windows</DotnetTargetVersions>
   </Installation>
 
   <Prerequisites>

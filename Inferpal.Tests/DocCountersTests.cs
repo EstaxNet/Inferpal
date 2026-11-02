@@ -158,8 +158,9 @@ public class DocCountersTests
     public void Readme_TestsBadge_MatchesThisAssembly()
     {
         // The cross-platform net10.0 leg deliberately omits the VSIX-dependent test files, so its own count
-        // can never match the badge — the badge is owned by the full net8.0-windows suite.
-#if WINDOWS
+        // can never match the badge — the badge is owned by the full net8.0-windows suite. ⚠ ONE Windows leg, never both:
+        // the two run at once, and in INFERPAL_UPDATE_DOCS mode both would rewrite README.md together.
+#if WINDOWS && !NET10_0_OR_GREATER
         var total = 0;
         foreach (var type in typeof(DocCountersTests).Assembly.GetTypes())
         {

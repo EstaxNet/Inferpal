@@ -1,16 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- Dual-targeted. net8.0-windows is the full suite (VS assembly + WPF included), on the
-         .NET 8 that Visual Studio's extension host runs the adapter and the Core on; net10.0 is
-         the editor-agnostic slice (Core + Host) on the runtime the VS Code and ACP packages
-         carry, and the one the ubuntu/macos CI legs run — the VSIX project cannot build
-         off-Windows, so its tests stay on the Windows TFM. -->
-    <TargetFrameworks>net8.0-windows;net10.0</TargetFrameworks>
-    <!-- Off-Windows only the agnostic leg exists at all: keeping the windows TFM in the list
+    <!-- Dual-targeted, both legs the full suite (VS assembly + WPF included) on Windows: Visual Studio runs the adapter
+         and the Core on its .NET 8 extension host, or on its .NET 10 one (the manifest declares both, and VS picks the
+         highest it ships), and .NET 10 is also the runtime the VS Code and ACP packages carry. Off Windows only the
+         editor-agnostic slice (Core + Host) exists, on net10.0 — the VSIX project cannot build there. -->
+    <TargetFrameworks>net8.0-windows;net10.0-windows</TargetFrameworks>
+    <!-- Off-Windows only the agnostic leg exists at all: keeping a windows TFM in the list
          would drag the VSIX project into restore/evaluation on ubuntu/macos runners. -->
     <TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('Windows'))">net10.0</TargetFrameworks>
-    <UseWPF Condition="'$(TargetFramework)' == 'net8.0-windows'">true</UseWPF>
+    <!-- By the platform the TFM names, never by its spelling: a versioned net10.0-windows10.0.19041.0 is a Windows leg too. -->
+    <IsWindowsLeg Condition="'$([MSBuild]::GetTargetPlatformIdentifier(`$(TargetFramework)`))' == 'windows'">true</IsWindowsLeg>
+    <UseWPF Condition="'$(IsWindowsLeg)' == 'true'">true</UseWPF>
     <!-- Nullable/ImplicitUsings/LangVersion inherited from the repo-root Directory.Build.props -->
     <IsPackable>false</IsPackable>
     <!-- Prevent VSIX generation in the test project -->
@@ -40,8 +41,8 @@
     <ProjectReference Include="..\Inferpal.Core\Inferpal.Core.csproj" />
   </ItemGroup>
 
-  <!-- The VSIX assembly and the tests that exercise it exist only on the Windows TFM. -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
+  <!-- The VSIX assembly and the tests that exercise it exist only on the Windows TFMs. -->
+  <ItemGroup Condition="'$(IsWindowsLeg)' == 'true'">
     <ProjectReference Include="..\Inferpal\Inferpal.csproj" />
     <!-- The in-process half. It SHIPS as net472 (devenv is a .NET Framework process); it
          carries a net8.0-windows leg for this reference only, without which its types would
@@ -55,7 +56,7 @@
     <!-- The window's observable items (NotifyPropertyChangedObject, AsyncCommand), built by MaskedApiKeyTests; the SDK's version. -->
     <PackageReference Include="Microsoft.VisualStudio.Extensibility.Framework" Version="17.14.2098" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'net8.0-windows'">
+  <ItemGroup Condition="'$(IsWindowsLeg)' != 'true'">
     <Compile Remove="InlineEditResponseTests.cs" />
     <Compile Remove="TestFilePathResolverTests.cs" />
     <Compile Remove="VsThemeDetectorTests.cs" />
@@ -79,7 +80,7 @@
        net472 one the in-process code ran its own copy of the signal bus, untouched by the test seams
        (InProcTestAssemblyTests). Only the direct reference's build belongs here. -->
   <Target Name="DropTheVsixNet472InProcCopy" AfterTargets="GetCopyToOutputDirectoryItems"
-          Condition="'$(TargetFramework)' == 'net8.0-windows'">
+          Condition="'$(IsWindowsLeg)' == 'true'">
     <ItemGroup>
       <_SourceItemsToCopyToOutputDirectory Remove="@(_SourceItemsToCopyToOutputDirectory)"
           Condition="$([System.String]::Copy('%(_SourceItemsToCopyToOutputDirectory.FullPath)').Contains('\net472\Inferpal.InProc.'))" />

@@ -59,12 +59,23 @@ if (Test-Path $vsWhere) {
 # without them, this line showed a dead machine copy while VS ran the Marketplace's.
 $vsDlls += @(Get-ChildItem "$env:LOCALAPPDATA\Microsoft\VisualStudio\18.0_*\Extensions" -Recurse `
                  -Filter 'Inferpal.dll' -ErrorAction SilentlyContinue)
-# Which copy runs: the one a running extension host has loaded; otherwise the highest version.
-$loaded = @(Get-Process -Name 'ServiceHub.Host.Extensibility*' -ErrorAction SilentlyContinue | ForEach-Object {
-    try { $_.Modules | Where-Object { $_.ModuleName -eq 'Inferpal.dll' } | ForEach-Object { $_.FileName } } catch { }
+# Which copy runs: the one a running extension host has loaded; otherwise the highest version. And on which runtime: VS
+# runs the out-of-process half on the highest one the manifest declares and it ships (a .NET 8 and a .NET 10 host), read
+# from the host's own coreclr.dll — the version folder of the shared runtime it loads from (…\Microsoft.NETCore.App\
+# 10.0.14\coreclr.dll). Its product version is no version ("8,0,3326,52219 @Commit: …"), and a folder that is not a
+# version names no runtime rather than a wrong one.
+$hosts = @(Get-Process -Name 'ServiceHub.Host.Extensibility*' -ErrorAction SilentlyContinue | ForEach-Object {
+    try {
+        $dll  = @($_.Modules | Where-Object { $_.ModuleName -eq 'Inferpal.dll' })[0]
+        $clr  = @($_.Modules | Where-Object { $_.ModuleName -eq 'coreclr.dll' })[0]
+        $ver  = if ($clr) { Split-Path (Split-Path $clr.FileName) -Leaf } else { '' }
+        if ($dll) { [pscustomobject]@{ Dll = $dll.FileName; Runtime = if ($ver -match '^\d+\.\d+\.\d+') { $ver } else { $null } } }
+    } catch { }
 })
+$loaded = @($hosts | ForEach-Object { $_.Dll })
 $vsDll = @($vsDlls | Where-Object { $loaded -contains $_.FullName })[0]
 $isLoaded = [bool]$vsDll
+$runtime = if ($isLoaded) { @($hosts | Where-Object { $_.Dll -eq $vsDll.FullName } | ForEach-Object { $_.Runtime })[0] } else { $null }
 if (-not $vsDll) {
     # Highest version; on a tie, never the VSExtensions\ copy (pure out-of-proc root, where the in-proc cannot load).
     $vsDll = @($vsDlls | Sort-Object @{ Expression = { [version][System.Diagnostics.FileVersionInfo]::GetVersionInfo($_.FullName).FileVersion }; Descending = $true },
@@ -73,7 +84,8 @@ if (-not $vsDll) {
 if ($vsDll) {
     $fv = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($vsDll.FullName).FileVersion
     # Not seen loaded is not "VS is closed": the window may never have been opened, or the host's modules unreadable.
-    $how = if ($isLoaded) { 'loaded by the running VS' } else { 'highest installed; not seen loaded by a running host' }
+    $how = if ($isLoaded) { 'loaded by the running VS' + $(if ($runtime) { " on .NET $runtime" } else { '' }) }
+           else { 'highest installed; not seen loaded by a running host' }
     Line 'Installed' "v$fv  (deployed $(Age $vsDll.LastWriteTime), $how)" $(if ($fv -like "$version*") { 'Green' } else { 'Yellow' })
     Line 'Location' $vsDll.DirectoryName
     # The root decides whether the in-proc can load at all (CLAUDE.md, "In-proc"): VSExtensions\ is out-of-proc only.

@@ -47,6 +47,42 @@ public class VsixPackagingTests
         Assert.Contains("ExtensionType=\"VSSDK+VisualStudio.Extensibility\"", File.ReadAllText(ManifestPath()));
     }
 
+    /// <summary>
+    /// Visual Studio runs the out-of-process half on the HIGHEST runtime that both the manifest declares and it ships.
+    /// Declared .NET 8 alone, it stays on a runtime VS calls "nearing end-of-life", and past it VS runs it on .NET 10 anyway,
+    /// "not guaranteed to work" — while VS 18.12 and 2022 17.14 both ship a .NET 10 host. Read as VS reads each value
+    /// (<c>DotnetRuntime.TryParse</c>: cut at the first '-', "net" dropped, a version). ⚠ .NET 8 FIRST: a reader that does
+    /// not split the list cuts the whole value at its first '-', and lands on .NET 8 as before.
+    /// </summary>
+    [Fact]
+    public void PackagedManifest_DeclaresDotNet8And10_Net8First() => AssertDeclaresDotNet8And10(ManifestPath());
+
+    /// <summary>The manifest the build writes into the VSIX, after the SDK's merge: a merge that rewrote the declaration
+    /// from the project's single target framework would ship .NET 8 alone under a green source.</summary>
+    [WindowsBuildOutputFact]
+    public void BuiltManifest_DeclaresDotNet8And10_Net8First()
+    {
+        var config = new DirectoryInfo(AppContext.BaseDirectory).Parent?.Name ?? "Debug";
+        var built  = Path.Combine(RepoRoot(), "Inferpal", "bin", config, "net8.0-windows", "extension.vsixmanifest");
+        Assert.True(File.Exists(built), $"extension.vsixmanifest introuvable ({built}) — construire Inferpal\\Inferpal.csproj d'abord.");
+        AssertDeclaresDotNet8And10(built);
+    }
+
+    private static void AssertDeclaresDotNet8And10(string manifest)
+    {
+        var declared = System.Xml.Linq.XDocument.Load(manifest).Descendants()
+            .Single(e => e.Name.LocalName == "DotnetTargetVersions").Value;
+        // Untrimmed, as VS reads it: "net8.0-windows; net10.0-windows" gives VS " net10.0", no "net" prefix, no .NET 10.
+        static Version? AsVsReadsIt(string value)
+        {
+            var cut = value.Split('-')[0];
+            return cut.StartsWith("net", StringComparison.OrdinalIgnoreCase) && Version.TryParse(cut[3..], out var v) ? v : null;
+        }
+
+        Assert.Equal([new Version(8, 0), new Version(10, 0)], declared.Split(';').Select(AsVsReadsIt));
+        Assert.Equal(new Version(8, 0), AsVsReadsIt(declared));   // the value unsplit
+    }
+
     [Fact]
     public void PackagedManifest_DerivesItsVersionFromTheBuild()
     {

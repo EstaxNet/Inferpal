@@ -5,7 +5,7 @@ C# (.NET 8, and .NET 10 for the VS Code host). The full technical reference live
 
 ## Getting set up
 
-- **.NET 10 SDK**, and the **.NET 8 Desktop Runtime** (the test suite's Windows leg runs on it)
+- **.NET 10 SDK**, and the **.NET 8 Desktop Runtime** (the test suite runs on Windows on both .NET 8 and .NET 10)
 - **Visual Studio 2026** with the extension-development workload (the development scripts target its
   experimental instance). The VSIX itself installs in Visual Studio 2026 and in Visual Studio 2022 from
   17.14 — one package: a change to the in-process half or to the extension's entry point has to hold in both.
