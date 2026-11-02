@@ -20,7 +20,7 @@ import { samePath } from './debugBridge';
 import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
 import {
   ApprovalCard, CodeActionResult, InputCard, InputFormAnswer, ProblemEntry, GestureQuestion, CommitMessageProposal,
-  ModelsByKind, SavedMessage, SessionSwitches, SlashEffect, TestsGenerateResult, TurnNote,
+  ModelsByKind, SavedMessage, SessionSwitches, SlashEffect, TestsGenerateResult, TurnNote, WindowNoticeResult,
 } from './protocol';
 import {
   WebviewToExt,
@@ -628,6 +628,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
     // The code's default model, absent from the server, is replaced first and said: the chat answers without a click.
     await this.adoptDefaultModel(host);
+    // Then a context window never sized, sized and said once — before the ring reads the window below.
+    await this.catchUpWindow(host, 'context/catchUp');
     // Then the first-run card, when nothing was chosen yet and the server does not answer, or it has no chat model.
     const setupReason = await host.setupNeeded().catch((err: unknown) => {
       this.log(`[chat] setup/needed failed: ${String(err)}`);
@@ -965,7 +967,33 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       this.log(`[chat] models/list after reconnection failed: ${String(err)}`);
     }
     await this.adoptDefaultModel(host);
+    await this.catchUpWindow(host, 'context/catchUp after reconnection');
     this.hydrate();
+  }
+
+  /** A context window never sized (an install from before the first run sized it for the card): sized by the host, its
+   *  sentence kept in the thread — drawn by the hydrate that follows both callers. */
+  private async catchUpWindow(host: HostClient, what: string): Promise<void> {
+    const caughtUp = await this.windowWritten(host, () => host.contextCatchUp(), what);
+    if (caughtUp) {
+      this.append({ role: 'assistant', text: caughtUp, timestamp: ChatViewProvider.now(), notice: true });
+    }
+  }
+
+  /** The context window the host just wrote (`context/catchUp`, `context/followModel`): the ring measures against it, an
+   *  open settings panel reads it again, and its sentence comes back to be said; null when nothing was written. */
+  private async windowWritten(host: HostClient, written: () => Promise<WindowNoticeResult>, what: string): Promise<string | null> {
+    try {
+      const { notice } = await written();
+      if (notice) {
+        this.contextWindow = await host.contextWindow().catch(() => this.contextWindow);
+        SettingsPanel.onSavedElsewhere();
+      }
+      return notice;
+    } catch (err) {
+      this.log(`[chat] ${what} failed: ${String(err)}`);
+      return null;
+    }
   }
 
   /** A default nobody chose, which the backend does not have: the host puts the best installed model in its place and
@@ -2297,6 +2325,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       if (cfg.defaultModel !== model) {
         cfg.defaultModel = model;
         await host.configUpdate(JSON.stringify(cfg));
+        // An automatic context window follows the model, said — as `/model` says it.
+        const window = await this.windowWritten(host, () => host.contextFollowModel(model), 'context/followModel');
+        if (window) {
+          this.sayOutOfTurn(window);
+        }
       }
       this.sharedEcho.defaultModel = model;
     } catch (err) {

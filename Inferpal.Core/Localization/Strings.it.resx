@@ -1467,6 +1467,8 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="WelcomeRemote" xml:space="preserve"><value>Il vostro codice viene inviato a {0}.</value></data>
   <data name="WindowChosen" xml:space="preserve"><value>Finestra di contesto: {0:N0} {0:token|token}, dimensionata per una scheda da {1} GB accanto agli altri modelli.</value></data>
   <data name="WindowUnknownCard" xml:space="preserve"><value>La finestra di contesto resta a {0:N0} {0:token|token}: la memoria della scheda grafica non è nota. Digitate `/hardware &lt;GB&gt;`, poi `/setup`.</value></data>
+  <data name="WindowCaughtUp" xml:space="preserve"><value>Finestra di contesto portata da {1:N0} a {0:N0} {0:token|token}, dimensionata per una scheda da {2} GB: a {1:N0}, una domanda su un progetto reale spesso non ci sta. Per cambiarla, o tenere {1:N0}: impostazioni, {3} → {4}.</value></data>
+  <data name="WindowBackToFactory" xml:space="preserve"><value>Finestra di contesto riportata a {0:N0} {0:token|token}: accanto a {1}, la scheda grafica non regge una finestra più grande che valga la pena.</value></data>
   <data name="WelcomeForFile" xml:space="preserve"><value>Per {0}, aperto nell'editor</value></data>
   <data name="WelcomeExplainFile" xml:space="preserve"><value>Spiega questo file</value></data>
   <data name="WelcomeExplainFileDesc" xml:space="preserve"><value>Cosa fa e come si collegano le parti</value></data>

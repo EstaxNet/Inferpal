@@ -166,9 +166,10 @@ internal class InferpalConfig
     public int ContextWindowSize { get; set; } = 8192;
 
     /// <summary>
-    /// The context window the first run, <c>/setup</c> or the setup card last sized for the card; 0 = none. While
-    /// <see cref="ContextWindowSize"/> holds it (or the factory value) the window is the product's to resize — another
-    /// chat model, another card; any other value is the person's (<c>ContextWindowChoice.IsAutomatic</c>).
+    /// The context window the product last sized for the card (first run, <c>/setup</c>, the setup card, an editor's
+    /// start, a model switch); 0 = none. While <see cref="ContextWindowSize"/> holds it — or the factory value when it is
+    /// 0 — the window is the product's to resize: another chat model, another card. Any other value is the person's, the
+    /// factory one set back by hand included (<c>ContextWindowChoice.IsAutomatic</c>).
     /// </summary>
     [JsonPropertyName("contextWindowSizeAuto")]
     public int ContextWindowSizeAuto { get; set; }
@@ -1018,6 +1019,26 @@ internal class InferpalConfig
         if (_baseline is not null) _baseline[key] = onDisk[key]?.DeepClone();
         _fileAsRead = onDisk;
         return true;
+    }
+
+    /// <summary>
+    /// Before a decision made on the FILE changes <paramref name="properties"/>: this copy takes the file's values, as the
+    /// file's — a later save writes them only if changed again.
+    /// </summary>
+    /// <remarks>⚠ <see cref="Save"/> writes what this copy changed since it was read. A value decided on the file that
+    /// equals what this copy read — the other editor wrote another since — would be no change, and never written.</remarks>
+    internal void TakeFromFile(params string[] properties)
+    {
+        if (!TryReadSnapshot(SavePathForTests ?? EffectiveConfigPath, out var onDisk)) return;
+        foreach (var property in properties)
+        {
+            var p = typeof(InferpalConfig).GetProperty(property)
+                    ?? throw new ArgumentException($"No setting named {property}.", nameof(properties));
+            var key = JsonNameOf(property);
+            p.SetValue(this, onDisk[key].Deserialize(p.PropertyType));
+            if (_baseline is not null) _baseline[key] = onDisk[key]?.DeepClone();
+        }
+        _fileAsRead = onDisk;
     }
 
     /// <summary>

@@ -1467,6 +1467,8 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="WelcomeRemote" xml:space="preserve"><value>コードは {0} に送信されます。</value></data>
   <data name="WindowChosen" xml:space="preserve"><value>コンテキストウィンドウ: {0:N0} トークン。{1} GB のカードで他のモデルと並べて動く大きさにしました。</value></data>
   <data name="WindowUnknownCard" xml:space="preserve"><value>コンテキストウィンドウは {0:N0} トークンのままです。グラフィックカードのメモリ量が不明です。`/hardware &lt;GB&gt;` と入力してから `/setup` を実行してください。</value></data>
+  <data name="WindowCaughtUp" xml:space="preserve"><value>コンテキストウィンドウを {1:N0} から {0:N0} トークンに広げました（{2} GB のカードに合わせた大きさ）。{1:N0} では、実際のプロジェクトについての質問が収まらないことがよくあります。変更する、または {1:N0} のままにするには: 設定、{3} → {4}。</value></data>
+  <data name="WindowBackToFactory" xml:space="preserve"><value>コンテキストウィンドウを {0:N0} トークンに戻しました。{1} と並べると、グラフィックカードには使う価値のあるより大きなウィンドウが収まりません。</value></data>
   <data name="WelcomeForFile" xml:space="preserve"><value>エディターで開いている {0} について</value></data>
   <data name="WelcomeExplainFile" xml:space="preserve"><value>このファイルを説明</value></data>
   <data name="WelcomeExplainFileDesc" xml:space="preserve"><value>何をしていて、各部分がどうつながるか</value></data>

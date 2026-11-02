@@ -23,26 +23,14 @@ namespace Inferpal.Tests;
 public sealed class ConfigCompatibilityTests : IDisposable
 {
     /// <summary>The last published version, whose files the fixtures are.</summary>
-    private const string Release = "1.8.3";
+    private const string Release = "1.8.8";
 
     /// <summary>
     /// The keys added since <see cref="Release"/>, each with the value a configuration written before it gets — the
     /// factory value — and why that keeps what the user had. ⚠ A key added without a line here fails the suite: say what
     /// the configurations already out there get before adding it.
     /// </summary>
-    private static readonly Dictionary<string, (string Json, string Why)> AddedSince = new(StringComparer.Ordinal)
-    {
-        ["inlineCompletionRunsOn"]   = ("\"chat\"", "completions stay on the chat's server, as before"),
-        ["inlineCompletionBaseUrl"]  = ("\"\"", "read only when completions run on another server"),
-        ["inlineCompletionProvider"] = ("\"\"", "read only when completions run on another server"),
-        ["inlineCompletionApiKey"]   = ("\"\"", "read only when completions run on another server"),
-        ["ragEmbeddingRunsOn"]       = ("\"chat\"", "code search stays on the chat's server, as before"),
-        ["ragEmbeddingBaseUrl"]      = ("\"\"", "read only when code search runs on another server"),
-        ["ragEmbeddingProvider"]     = ("\"\"", "read only when code search runs on another server"),
-        ["ragEmbeddingApiKey"]       = ("\"\"", "read only when code search runs on another server"),
-        ["inlineCompletionTrigger"]  = ("\"auto\"", "a suggestion after each pause in typing, as before"),
-        ["contextWindowSizeAuto"]    = ("0", "no window of the product's: a window other than the factory one stays the person's"),
-    };
+    private static readonly Dictionary<string, (string Json, string Why)> AddedSince = new(StringComparer.Ordinal);
 
     /// <summary>
     /// The factory values changed since <see cref="Release"/>, each with why. A user who saved once keeps the old value
@@ -185,18 +173,20 @@ public sealed class ConfigCompatibilityTests : IDisposable
         Assert.Equal("qwen3-coder-30b", RoleServers.CompletionModel(config, null));
     }
 
-    /// <summary>What the last version's settings did, they still do: completions and code search on the chat's server
-    /// with its key, the end of a long run announced or not as the user chose.</summary>
+    /// <summary>What the last version's settings did, they still do: completions and code search on the servers of their
+    /// own with their keys, the end of a long run announced or not as the user chose, the window the person set over the
+    /// product's left alone.</summary>
     [Fact]
     public void TheLastReleasesSettings_KeepTheirMeaning()
     {
         var config = LoadReleaseFile();
 
-        Assert.Equal((config.Provider, config.BaseUrl, config.ApiKey), RoleServers.Of(config, ServerRole.Completion));
-        Assert.Equal((config.Provider, config.BaseUrl, config.ApiKey), RoleServers.Of(config, ServerRole.Search));
+        Assert.Equal(("ollama", "http://192.168.1.30:11434", "k-2"), RoleServers.Of(config, ServerRole.Completion));
+        Assert.Equal(("ollama", "http://192.168.1.31:11434", "k-3"), RoleServers.Of(config, ServerRole.Search));
         Assert.Equal(config.InlineCompletionModel, RoleServers.CompletionModel(config, null));
         // The fixture's user turned the sound off: nothing announces a long run in either editor.
         Assert.False(config.RunEndSoundEnabled);
         Assert.False(Services.Agent.ChatTurnPolicy.AnnouncesEnd(config, TimeSpan.FromMinutes(5)));
+        Assert.False(ContextWindowChoice.IsAutomatic(config));
     }
 }

@@ -1173,6 +1173,31 @@ internal sealed partial class HostServer : IDisposable
     public Task<ModelsAdoptResult> AdoptDefaultModelAsync(CancellationToken ct) => AdoptDefaultModelAsync(Session(), ct);
 
     /// <summary>
+    /// A context window never sized — an install from before the first run sized it for the card — sized now for the model
+    /// this session answers with, and said once (<see cref="ContextWindowChoice.CatchUpAsync"/>). Asked by the editor at
+    /// its start and when the connection comes back, after <c>models/adoptDefault</c>.
+    /// </summary>
+    /// <remarks>⚠ Sized for the SHARED default model, as the file holds it: the window is shared too, and this session's
+    /// default may be a VS Code window's own model (<c>models/useForSession</c>), never saved — Visual Studio would then
+    /// run its model in a window sized for another. Under the turn slot: a running turn keeps the window it started with.</remarks>
+    [JsonRpcMethod("context/catchUp")]
+    public Task<WindowNoticeResult> CatchUpWindowAsync(CancellationToken ct)
+    {
+        var s = Session();
+        return WithTurnSlotAsync("context/catchUp", ct, async token => new WindowNoticeResult(await CatchUpWindowCoreAsync(s, token)));
+    }
+
+    /// <summary>The chat model picked in the editor: an automatic context window follows it, said
+    /// (<see cref="ContextWindowChoice.FollowAsync"/>) — as <c>/model</c> does. Under the turn slot, as the pick's save is.</summary>
+    [JsonRpcMethod("context/followModel", UseSingleObjectParameterDeserialization = true)]
+    public Task<WindowNoticeResult> FollowModelWindowAsync(WindowFollowParams p, CancellationToken ct)
+    {
+        var s = Session();
+        return WithTurnSlotAsync("context/followModel", ct, async token => new WindowNoticeResult(await RemeasuredAsync(s,
+            await ContextWindowChoice.FollowAsync(s.Config, s.Client, p.Model?.Trim() ?? "", token), token)));
+    }
+
+    /// <summary>
     /// This window's chat model, for this session only: every reader that falls back to the default model — bare
     /// <c>/model</c>, titles, compaction summaries, the recap, <c>/commit</c>, <c>/check</c>, <c>/task</c> — then
     /// answers with the model the window's chat uses.
@@ -1730,6 +1755,31 @@ internal sealed partial class HostServer : IDisposable
         await AfterSettingsChangedAsync(s, mcpBefore, ct);
     }
 
+    /// <summary>
+    /// The window in use measured again, and the prompt rebuilt for it. ⚠ The window in use is the one the LAST TURN
+    /// measured: after a new window or a new model, X-Ray and the gauge kept the old number until the next question, and
+    /// the prompt sized its files for it.
+    /// </summary>
+    private static async Task RemeasureWindowAsync(HostSession s, CancellationToken ct)
+    {
+        s.LastContextWindow = await Services.Agent.ContextManager.EffectiveWindowAsync(
+            s.Config, s.Client, ModelRouter.Resolve(s.Config, ModelRole.Chat), ct);
+        RefreshSystemPrompt(s);
+    }
+
+    /// <summary>A context window the product just wrote (<paramref name="notice"/> not null), measured again
+    /// (<see cref="RemeasureWindowAsync"/>); the notice, passed through.</summary>
+    private static async Task<string?> RemeasuredAsync(HostSession s, string? notice, CancellationToken ct)
+    {
+        if (notice is not null) await RemeasureWindowAsync(s, ct);
+        return notice;
+    }
+
+    /// <summary>A window never sized, sized for the shared default model (<see cref="CatchUpWindowAsync"/>), measured again.</summary>
+    private static async Task<string?> CatchUpWindowCoreAsync(HostSession s, CancellationToken ct) =>
+        await RemeasuredAsync(s, await ContextWindowChoice.CatchUpAsync(
+            s.Config, s.Client, (s.Config.ReadFileNow() ?? s.Config).DefaultModel, ct), ct);
+
     /// <summary>What follows a change of the session's settings, saved here or followed from the file.</summary>
     private async Task AfterSettingsChangedAsync(HostSession s, (bool McpEnabled, string McpServersJson) mcpBefore,
                                                  CancellationToken ct)
@@ -1738,11 +1788,7 @@ internal sealed partial class HostServer : IDisposable
         // VS settings window; going back to "Auto" returns to the editor's locale rather than
         // leaving whatever was last applied.
         ApplyLanguage(s.Config);
-        // ⚠ The window in use was the one the LAST TURN measured: after a new window or a new model, X-Ray and the
-        // gauge kept the old number until the next question, and the prompt rebuilt below sized its files for it.
-        s.LastContextWindow = await Services.Agent.ContextManager.EffectiveWindowAsync(
-            s.Config, s.Client, ModelRouter.Resolve(s.Config, ModelRole.Chat), ct);
-        RefreshSystemPrompt(s);
+        await RemeasureWindowAsync(s, ct);
 
         // MCP servers follow the saved settings, as the VS window does on save — only when those
         // settings changed: the chat's model picker saves through here too, and a refresh respawns

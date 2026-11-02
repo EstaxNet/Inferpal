@@ -3485,10 +3485,130 @@ public partial class HostServerTests
         Assert.Equal(Strings.MsgModelAdopted(configured, "qwen3:8b"), result.Notice);
     }
 
+    /// <summary>An Ollama session whose settings file is its own, on a 14 GB card (no probe), the index and completions
+    /// off: nothing lives beside the chat.</summary>
+    private static Harness WindowHarness(string file, Action<InferpalConfig>? configure = null)
+    {
+        var h = CreateHarness(cfg =>
+        {
+            cfg.Provider = "ollama"; cfg.BaseUrl = "http://192.0.2.7:11434"; cfg.DefaultModel = "granite4.2:8b";
+            cfg.VramBudgetGb = 14; cfg.InlineCompletionEnabled = false;
+            configure?.Invoke(cfg);
+        }, settingsFile: file);
+        var llama = new Models.ModelArchInfo(32, 32, 8, 4096, 131072);
+        h.Fake.ModelNames = ["granite4.2:8b", "big:12b"];
+        h.Fake.Installed  = [new("granite4.2:8b", 5L << 30, ["completion", "tools"]), new("big:12b", 12L << 30, ["completion", "tools"])];
+        h.Fake.OnShow     = m => m is "granite4.2:8b" or "big:12b" ? llama : null;
+        return h;
+    }
+
+    [Fact]
+    public async Task ContextCatchUp_SizesAWindowNeverSized_ForTheSessionsModel_AndSaysItOnce()
+    {
+        var file = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"catchup-host-{Guid.NewGuid():N}.json");
+        try
+        {
+            using var h = WindowHarness(file);
+            await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            var first  = await h.Client.InvokeAsync<Host.WindowNoticeResult>("context/catchUp");
+            var second = await h.Client.InvokeAsync<Host.WindowNoticeResult>("context/catchUp");
+
+            var config = h.Server.CurrentSession!.Config;
+            Assert.Equal((32768, 32768), (config.ContextWindowSize, config.ContextWindowSizeAuto));
+            Assert.Equal(Strings.WindowCaughtUp(32768, 8192, "14", Strings.SettingsPageServer, Strings.LabelContextWindowSize),
+                         first.Notice);
+            Assert.Null(second.Notice);
+        }
+        finally { try { File.Delete(file); } catch { } }
+    }
+
+    [Fact]
+    public async Task SlashModel_AnAutomaticWindow_FollowsTheModel_AndIsSaid_APersonsWindowDoesNot()
+    {
+        var file = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"follow-host-{Guid.NewGuid():N}.json");
+        try
+        {
+            using (var h = WindowHarness(file, cfg => { cfg.ContextWindowSize = 32768; cfg.ContextWindowSizeAuto = 32768; }))
+            {
+                await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+                h.Server.CurrentSession!.LastContextWindow = 32768;   // what the last turn measured
+
+                var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+                    "command/slash", new { text = "/model big:12b" });
+
+                // Measured again: the gauge and X-Ray read the window just written, not the last turn's.
+                Assert.Equal(8192, await h.Client.InvokeAsync<int>("context/window"));
+
+                Assert.EndsWith("\n\n" + Strings.WindowBackToFactory(8192, "big:12b"), result.Markdown);
+                Assert.Equal(8192, h.Server.CurrentSession!.Config.ContextWindowSize);
+                // The editor re-reads the window: its ring, an open settings panel.
+                Assert.Contains(result.Effects!, e => e.Kind == "configSaved");
+            }
+            File.Delete(file);
+            // Reference arm: the window the person set stays, and nothing is said about it.
+            using (var h = WindowHarness(file, cfg => cfg.ContextWindowSize = 32768))
+            {
+                await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+                var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
+                    "command/slash", new { text = "/model big:12b" });
+
+                Assert.DoesNotContain(Strings.WindowBackToFactory(8192, "big:12b"), result.Markdown);
+                Assert.DoesNotContain(result.Effects!, e => e.Kind == "configSaved");
+                Assert.Equal(32768, h.Server.CurrentSession!.Config.ContextWindowSize);
+                Assert.Equal("big:12b", h.Server.CurrentSession!.Config.DefaultModel);                      // witness
+            }
+        }
+        finally { try { File.Delete(file); } catch { } }
+    }
+
+    /// <summary>The window is shared, so it is sized for the shared default model — never for a VS Code window's own model
+    /// (<c>models/useForSession</c>, never saved), which Visual Studio does not run.</summary>
+    [Fact]
+    public async Task ContextCatchUp_SizesForTheSharedModel_NotAWindowsOwn()
+    {
+        var file = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"catchup-shared-{Guid.NewGuid():N}.json");
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+            File.WriteAllText(file, """{"provider":"ollama","defaultModel":"granite4.2:8b","contextWindowSize":8192,"vramBudgetGb":14}""");
+            using var h = WindowHarness(file);
+            await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            // This window's own model: big:12b leaves the 14 GB card no room for a window worth writing.
+            await h.Client.InvokeWithParameterObjectAsync("models/useForSession", new { model = "big:12b" });
+            Assert.Equal("big:12b", h.Server.CurrentSession!.Config.DefaultModel);                          // witness
+
+            var result = await h.Client.InvokeAsync<Host.WindowNoticeResult>("context/catchUp");
+
+            Assert.NotNull(result.Notice);
+            Assert.Equal(32768, h.Server.CurrentSession!.Config.ContextWindowSize);
+        }
+        finally { try { File.Delete(file); } catch { } }
+    }
+
+    [Fact]
+    public async Task ContextFollowModel_WithoutAModel_WritesNothing_AndDoesNotFail()
+    {
+        var file = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"follow-none-{Guid.NewGuid():N}.json");
+        try
+        {
+            using var h = WindowHarness(file, cfg => { cfg.ContextWindowSize = 32768; cfg.ContextWindowSizeAuto = 32768; });
+            await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            var result = await h.Client.InvokeWithParameterObjectAsync<Host.WindowNoticeResult>("context/followModel", new { });
+
+            Assert.Null(result.Notice);
+            Assert.Equal(32768, h.Server.CurrentSession!.Config.ContextWindowSize);
+        }
+        finally { try { File.Delete(file); } catch { } }
+    }
+
     [Fact]
     public async Task ModelsPull_TheFirstModelOfAFreshInstall_IsUsedAtOnce()
     {
-        using var h = CreateHarness();
+        // A settings file of its own: a pull sizes the window too, which may detect the card and save.
+        using var h = CreateHarness(settingsFile: Path.Combine(Path.GetTempPath(), "inferpal-tests", $"pull-{Guid.NewGuid():N}.json"));
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
         h.Fake.OnPull = m => { h.Fake.ModelNames = [m]; return true; };   // nothing installed until the pull
         var configured = h.Server.CurrentSession!.Config.DefaultModel;
@@ -3506,7 +3626,8 @@ public partial class HostServerTests
     [Fact]
     public async Task ModelsPull_LeavesAChosenModelAlone()
     {
-        using var h = CreateHarness(cfg => cfg.DefaultModel = "my-finetune");
+        using var h = CreateHarness(cfg => cfg.DefaultModel = "my-finetune",
+                                    settingsFile: Path.Combine(Path.GetTempPath(), "inferpal-tests", $"pull-{Guid.NewGuid():N}.json"));
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
         h.Fake.OnPull = m => { h.Fake.ModelNames = [m]; return true; };
 

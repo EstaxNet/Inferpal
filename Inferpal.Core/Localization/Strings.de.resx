@@ -1467,6 +1467,8 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="WelcomeRemote" xml:space="preserve"><value>Ihr Code wird an {0} gesendet.</value></data>
   <data name="WindowChosen" xml:space="preserve"><value>Kontextfenster: {0:N0} {0:Token|Token}, bemessen für eine Karte mit {1} GB neben den anderen Modellen.</value></data>
   <data name="WindowUnknownCard" xml:space="preserve"><value>Das Kontextfenster bleibt bei {0:N0} {0:Token|Token}: Der Speicher der Grafikkarte ist nicht bekannt. Geben Sie `/hardware &lt;GB&gt;` ein, dann `/setup`.</value></data>
+  <data name="WindowCaughtUp" xml:space="preserve"><value>Kontextfenster von {1:N0} auf {0:N0} {0:Token|Token} erhöht, bemessen für eine Karte mit {2} GB: Bei {1:N0} passt eine Frage zu einem echten Projekt oft nicht hinein. Zum Ändern oder um {1:N0} zu behalten: Einstellungen, {3} → {4}.</value></data>
+  <data name="WindowBackToFactory" xml:space="preserve"><value>Kontextfenster zurück auf {0:N0} {0:Token|Token}: Neben {1} fasst die Grafikkarte kein größeres Fenster, das sich lohnt.</value></data>
   <data name="WelcomeForFile" xml:space="preserve"><value>Für {0}, im Editor geöffnet</value></data>
   <data name="WelcomeExplainFile" xml:space="preserve"><value>Diese Datei erklären</value></data>
   <data name="WelcomeExplainFileDesc" xml:space="preserve"><value>Was sie tut und wie die Teile zusammenhängen</value></data>

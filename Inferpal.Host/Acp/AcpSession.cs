@@ -205,7 +205,7 @@ internal sealed class AcpSession : IAsyncDisposable
     /// <summary>
     /// The default model, when nobody chose it and the server does not have it, replaced by the best one installed —
     /// as VS Code does at start (<c>models/adoptDefault</c>), and said. Without it, a fresh machine with an Ollama
-    /// already running asked every question of a model that is not there.
+    /// already running asked every question of a model that is not there. Then the context window, when never sized.
     /// </summary>
     private async Task AdoptDefaultModelAsync(CancellationToken ct)
     {
@@ -216,6 +216,14 @@ internal sealed class AcpSession : IAsyncDisposable
             _startNotice = adopted.Notice;
         }
         catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("AcpSession.AdoptDefaultModel", ex); }
+        // Then a context window never sized, sized for that model — as VS Code does at start (`context/catchUp`).
+        try
+        {
+            var window = await _link.InvokeWithCancellationAsync<WindowNoticeResult>("context/catchUp", cancellationToken: ct);
+            if (window.Notice is { Length: > 0 } notice)
+                _startNotice = _startNotice is null ? notice : _startNotice + "\n\n" + notice;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("AcpSession.WindowCatchUp", ex); }
     }
 
     /// <summary>

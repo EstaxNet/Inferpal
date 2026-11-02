@@ -1467,6 +1467,8 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="WelcomeRemote" xml:space="preserve"><value>Twój kod jest wysyłany do {0}.</value></data>
   <data name="WindowChosen" xml:space="preserve"><value>Okno kontekstu: {0:N0} {0:token|tokeny|tokenów}, dobrane do karty {1} GB razem z pozostałymi modelami.</value></data>
   <data name="WindowUnknownCard" xml:space="preserve"><value>Okno kontekstu pozostaje na {0:N0} {0:tokenie|tokenach|tokenach}: pamięć karty graficznej nie jest znana. Wpisz `/hardware &lt;GB&gt;`, a potem `/setup`.</value></data>
+  <data name="WindowCaughtUp" xml:space="preserve"><value>Okno kontekstu: {0:N0} {0:token|tokeny|tokenów} zamiast {1:N0}, dobrane do karty {2} GB: przy {1:N0} pytanie o prawdziwy projekt często się nie mieści. Aby je zmienić lub zachować {1:N0}: ustawienia, {3} → {4}.</value></data>
+  <data name="WindowBackToFactory" xml:space="preserve"><value>Okno kontekstu wraca do {0:N0} {0:tokenu|tokenów|tokenów}: obok {1} karta graficzna nie pomieści większego okna, które by się opłacało.</value></data>
   <data name="WelcomeForFile" xml:space="preserve"><value>Dla {0}, otwartego w edytorze</value></data>
   <data name="WelcomeExplainFile" xml:space="preserve"><value>Wyjaśnij ten plik</value></data>
   <data name="WelcomeExplainFileDesc" xml:space="preserve"><value>Co robi i jak łączą się elementy</value></data>

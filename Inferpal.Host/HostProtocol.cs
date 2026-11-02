@@ -439,6 +439,13 @@ internal sealed record BackendStatusResult(bool Connected, string VramBadge, str
 /// the sentence that says so; both null when nothing changed.</summary>
 internal sealed record ModelsAdoptResult(string? Model, string? Notice);
 
+/// <summary>`context/catchUp` and `context/followModel` — the sentence that says the context window just written; null
+/// when nothing was written.</summary>
+internal sealed record WindowNoticeResult(string? Notice);
+
+/// <summary>`context/followModel` — the chat model just picked.</summary>
+internal sealed record WindowFollowParams(string? Model);
+
 /// <summary>`host/runningWork` — what this host runs beyond a turn, as the notice to show once it is stopped (null when
 /// nothing runs).</summary>
 internal sealed record RunningWorkResult(string? Notice, string? IfItCrashes = null);

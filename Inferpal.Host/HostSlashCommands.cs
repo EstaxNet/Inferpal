@@ -171,8 +171,14 @@ internal sealed partial class HostServer
                         return new SlashCommandResult(true, notForChat);
                     s.Config.DefaultModel = parts[1];
                     s.Config.Save();
-                    return new SlashCommandResult(true, await ModelsCommandHandler.SwitchMessageAsync(s.Client, parts[1], cts.Token),
-                        [new SlashEffectDto("stateChange", parts[1], "model")]);
+                    var switched = await ModelsCommandHandler.SwitchMessageAsync(s.Client, parts[1], cts.Token);
+                    // The window followed the model: measured again here, and re-read by the editor (its ring, an open
+                    // settings panel).
+                    return await RemeasuredAsync(s, await ContextWindowChoice.FollowAsync(s.Config, s.Client, parts[1], cts.Token),
+                                                 cts.Token) is { } window
+                        ? new SlashCommandResult(true, switched + "\n\n" + window,
+                            [new SlashEffectDto("stateChange", parts[1], "model"), new SlashEffectDto("configSaved")])
+                        : new SlashCommandResult(true, switched, [new SlashEffectDto("stateChange", parts[1], "model")]);
 
                 case SlashCommandId.Tools:
                 {
@@ -690,11 +696,16 @@ internal sealed partial class HostServer
                 status => Notify("chat/step", new { text = Strings.ModelsPullingStatus(model, status) }), ct);
             if (!ok) return new SlashCommandResult(true, Strings.ModelsPullFailed(model));
 
-            // The first model a fresh install gets: the default nobody chose is replaced now, not at the next start.
+            // The first model a fresh install gets: the default nobody chose is replaced now, not at the next start — and a
+            // window never sized is sized for it, as Visual Studio does after a pull.
             var adopted = await AdoptDefaultModelAsync(s, ct);
-            return adopted is { Model: { } m, Notice: { } notice }
-                ? new SlashCommandResult(true, Strings.ModelsPulled(model) + "\n\n" + notice, [new SlashEffectDto("stateChange", m, "model")])
-                : new SlashCommandResult(true, Strings.ModelsPulled(model));
+            var window  = await CatchUpWindowCoreAsync(s, ct);
+            List<SlashEffectDto> effects = [];
+            if (adopted is { Model: { } m, Notice: not null }) effects.Add(new SlashEffectDto("stateChange", m, "model"));
+            if (window is not null) effects.Add(new SlashEffectDto("configSaved"));
+            return new SlashCommandResult(true,
+                string.Join("\n\n", new[] { Strings.ModelsPulled(model), adopted.Notice, window }.Where(t => t is not null)),
+                effects.Count > 0 ? effects : null);
         }
 
         var result = await ModelsCommandHandler.HandleAsync(s.Client, s.Config, parts, ct);

@@ -1467,6 +1467,8 @@
   <data name="WelcomeRemote" xml:space="preserve"><value>Ваш код отправляется на {0}.</value></data>
   <data name="WindowChosen" xml:space="preserve"><value>Окно контекста: {0:N0} {0:токен|токена|токенов}, рассчитано на видеокарту с {1} ГБ вместе с остальными моделями.</value></data>
   <data name="WindowUnknownCard" xml:space="preserve"><value>Окно контекста оставлено на {0:N0} {0:токене|токенах|токенах}: объём памяти видеокарты неизвестен. Введите `/hardware &lt;ГБ&gt;`, затем `/setup`.</value></data>
+  <data name="WindowCaughtUp" xml:space="preserve"><value>Окно контекста: {0:N0} {0:токен|токена|токенов} вместо {1:N0}, рассчитано на видеокарту с {2} ГБ: при {1:N0} вопрос о реальном проекте часто не помещается. Чтобы изменить его или оставить {1:N0}: настройки, {3} → {4}.</value></data>
+  <data name="WindowBackToFactory" xml:space="preserve"><value>Окно контекста возвращено к {0:N0} {0:токену|токенам|токенам}: рядом с {1} видеокарта не вмещает окна побольше, которое стоило бы того.</value></data>
   <data name="WelcomeForFile" xml:space="preserve"><value>Для {0}, открытого в редакторе</value></data>
   <data name="WelcomeExplainFile" xml:space="preserve"><value>Объяснить этот файл</value></data>
   <data name="WelcomeExplainFileDesc" xml:space="preserve"><value>Что он делает и как связаны части</value></data>

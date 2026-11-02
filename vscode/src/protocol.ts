@@ -280,6 +280,12 @@ export interface ModelsAdoptResult {
   notice: string | null;
 }
 
+/** `context/catchUp` and `context/followModel` — the sentence that says the context window the host just wrote (already
+ *  localized); null when nothing was written. */
+export interface WindowNoticeResult {
+  notice: string | null;
+}
+
 /** `connection/check` — what the Test button found AT THE URL IT WAS GIVEN.
  *  `provider` is the detected backend code (`ollama` | `lmstudio` | `openai-compatible`), so the
  *  panel can pre-select it the way the Visual Studio window does; null when nothing answered. */

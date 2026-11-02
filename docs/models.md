@@ -376,8 +376,10 @@ memory is known, the first run, `/setup` and **Suggest the best models** set the
 largest that fits beside the search and autocomplete models, up to 32K. They set it only from 16K: at 11K (Granite on
 an 8 GB card) answers still overflowed or looped, so an 8 GB card keeps 8K. Gemma 4 12B also keeps 8K on a 12 GB card:
 Inferpal sizes the memory a window takes as if every layer attended to the whole window, which Gemma 4's sliding
-window does not, and its real footprint could not be read on the test server. A window you set yourself is never
-changed.
+window does not, and its real footprint could not be read on the test server. An install that still has the factory
+8K window — one set up before Inferpal sized it — gets the window for its card when the editor starts, said once in
+the chat. A window Inferpal set follows the chat model when you change it with `/model` or the model picker. A window
+you set yourself is never changed, 8K included once Inferpal has sized it: to keep 8K, set it back in the settings.
 
 | Model | Result | Measured |
 |---|---|---|

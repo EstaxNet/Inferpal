@@ -50,6 +50,7 @@ import {
   MentionItem,
   MentionResolveResult,
   ModelsAdoptResult,
+  WindowNoticeResult,
   RunningWorkResult,
   PlanNotice,
   SavedMessage,
@@ -637,6 +638,16 @@ export class HostClient {
 
   modelsAdoptDefault(): Promise<ModelsAdoptResult> {
     return this.connection().sendRequest<ModelsAdoptResult>('models/adoptDefault');
+  }
+
+  /** A context window never sized (an install from before the first run sized it for the card), sized now. */
+  contextCatchUp(): Promise<WindowNoticeResult> {
+    return this.connection().sendRequest<WindowNoticeResult>('context/catchUp');
+  }
+
+  /** The chat model just picked: an automatic context window follows it. */
+  contextFollowModel(model: string): Promise<WindowNoticeResult> {
+    return this.connection().sendRequest<WindowNoticeResult>('context/followModel', { model });
   }
 
   // ── First run: the same search and proposal as the ACP setup and Visual Studio (`setup/*`) ──

@@ -72,7 +72,8 @@ internal partial class InferpalToolWindowData
 
     /// <summary>
     /// The backend answers: an unfinished first run completes, otherwise a default model nobody chose that the backend
-    /// does not have is replaced by the best installed one, and said (<see cref="ModelCatalog.FirstModelToAdopt(InferpalConfig, ModelsByKind)"/>).
+    /// does not have is replaced by the best installed one, and said (<see cref="ModelCatalog.FirstModelToAdopt(InferpalConfig, ModelsByKind)"/>)
+    /// — then a context window never sized is sized for the model that answers (<see cref="ContextWindowChoice.CatchUpAsync"/>).
     /// </summary>
     private async Task EnsureChatModelAsync()
     {
@@ -85,18 +86,22 @@ internal partial class InferpalToolWindowData
         {
             // A model chosen in another window since this one read the settings is that choice, not a default to replace.
             if (_config.FillFromFile(nameof(InferpalConfig.DefaultModel)))
-            {
                 await RunOnVMContextAsync(() => ActiveModelLabel = _config.DefaultModel).ConfigureAwait(false);
-                return;
+            else
+            {
+                var listed = await _client.ListModelsByKindAsync(CancellationToken.None).ConfigureAwait(false);
+                if (ModelCatalog.FirstModelToAdopt(_config, listed) is { } adopted)
+                {
+                    var configured = _config.DefaultModel;
+                    _config.DefaultModel = adopted;
+                    _config.Save();
+                    await RunOnVMContextAsync(() => ActiveModelLabel = adopted).ConfigureAwait(false);
+                    await FirstRunPresentAsync(Strings.MsgModelAdopted(configured, adopted)).ConfigureAwait(false);
+                }
             }
-            var listed = await _client.ListModelsByKindAsync(CancellationToken.None).ConfigureAwait(false);
-            if (ModelCatalog.FirstModelToAdopt(_config, listed) is not { } adopted) return;
-
-            var configured = _config.DefaultModel;
-            _config.DefaultModel = adopted;
-            _config.Save();
-            await RunOnVMContextAsync(() => ActiveModelLabel = adopted).ConfigureAwait(false);
-            await FirstRunPresentAsync(Strings.MsgModelAdopted(configured, adopted)).ConfigureAwait(false);
+            if (await ContextWindowChoice.CatchUpAsync(_config, _client, _config.DefaultModel, CancellationToken.None).ConfigureAwait(false)
+                is { } windowNotice)
+                await FirstRunPresentAsync(windowNotice).ConfigureAwait(false);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { Diagnostics.Swallow("Connection.AdoptModel", ex); }

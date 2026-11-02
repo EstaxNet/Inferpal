@@ -377,7 +377,7 @@ internal partial class InferpalToolWindowData
     }
 
     /// <summary>A model picked in the header becomes the chat model, as <c>/model</c> makes it — without a bubble: the
-    /// button names it.</summary>
+    /// button names it. An automatic context window follows it, said (<see cref="ContextWindowChoice.FollowAsync"/>).</summary>
     private async Task PickModelAsync(string model)
     {
         await RunOnVMContextAsync(CloseMenus);
@@ -392,8 +392,12 @@ internal partial class InferpalToolWindowData
             // The choice holds for this session; unsaved, it reverts at the next start — said, not silent.
             Diagnostics.Swallow("Chat.PickModel", ex);
             await ShowInfoAsync(Strings.SettingsSaveFailed(ex.Message));
+            await RunOnVMContextAsync(() => ActiveModelLabel = model);
+            return;   // the window is not sized for a model the file does not hold
         }
         await RunOnVMContextAsync(() => ActiveModelLabel = model);
+        if (await ContextWindowChoice.FollowAsync(_config, _client, model, CancellationToken.None) is { } windowNotice)
+            await ShowInfoAsync(windowNotice);
     }
 
     /// <summary>The composer's switch: "found" while a mode found for the workspace holds the conversation (the

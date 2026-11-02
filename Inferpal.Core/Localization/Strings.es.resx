@@ -1467,6 +1467,8 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="WelcomeRemote" xml:space="preserve"><value>Su código se envía a {0}.</value></data>
   <data name="WindowChosen" xml:space="preserve"><value>Ventana de contexto: {0:N0} {0:token|tokens}, dimensionada para una tarjeta de {1} GB junto a los demás modelos.</value></data>
   <data name="WindowUnknownCard" xml:space="preserve"><value>La ventana de contexto se queda en {0:N0} {0:token|tokens}: no se conoce la memoria de la tarjeta gráfica. Escriba `/hardware &lt;GB&gt;` y después `/setup`.</value></data>
+  <data name="WindowCaughtUp" xml:space="preserve"><value>Ventana de contexto ampliada de {1:N0} a {0:N0} {0:token|tokens}, dimensionada para una tarjeta de {2} GB: con {1:N0}, una pregunta sobre un proyecto real a menudo no cabe. Para cambiarla, o mantener {1:N0}: ajustes, {3} → {4}.</value></data>
+  <data name="WindowBackToFactory" xml:space="preserve"><value>Ventana de contexto devuelta a {0:N0} {0:token|tokens}: junto a {1}, la tarjeta gráfica no admite una ventana mayor que valga la pena.</value></data>
   <data name="WelcomeForFile" xml:space="preserve"><value>Para {0}, abierto en el editor</value></data>
   <data name="WelcomeExplainFile" xml:space="preserve"><value>Explicar este archivo</value></data>
   <data name="WelcomeExplainFileDesc" xml:space="preserve"><value>Qué hace y cómo encajan las piezas</value></data>

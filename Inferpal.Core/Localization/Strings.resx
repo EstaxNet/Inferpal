@@ -1471,6 +1471,8 @@ What you save there applies from your next question, in this thread and the othe
   <data name="WelcomeRemote" xml:space="preserve"><value>Your code is sent to {0}.</value></data>
   <data name="WindowChosen" xml:space="preserve"><value>Context window: {0:N0} {0:token|tokens}, sized for a {1} GB card beside the other models.</value></data>
   <data name="WindowUnknownCard" xml:space="preserve"><value>Context window left at {0:N0} {0:token|tokens}: the graphics card's memory is not known. Type `/hardware &lt;GB&gt;`, then `/setup`.</value></data>
+  <data name="WindowCaughtUp" xml:space="preserve"><value>Context window raised from {1:N0} to {0:N0} {0:token|tokens}, sized for a {2} GB card: at {1:N0}, a question about a real project often does not fit. To change it, or to keep {1:N0}: settings, {3} → {4}.</value></data>
+  <data name="WindowBackToFactory" xml:space="preserve"><value>Context window back to {0:N0} {0:token|tokens}: beside {1}, the graphics card holds no larger window worth using.</value></data>
   <data name="WelcomeForFile" xml:space="preserve"><value>For {0}, open in the editor</value></data>
   <data name="WelcomeExplainFile" xml:space="preserve"><value>Explain this file</value></data>
   <data name="WelcomeExplainFileDesc" xml:space="preserve"><value>What it does and how the pieces connect</value></data>

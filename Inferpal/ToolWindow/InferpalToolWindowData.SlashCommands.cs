@@ -199,7 +199,9 @@ internal partial class InferpalToolWindowData
                 _config.DefaultModel = parts[1];
                 _config.Save();
                 await RunOnVMContextAsync(() => ActiveModelLabel = parts[1]);
-                await ShowInfoAsync(await Services.Commands.ModelsCommandHandler.SwitchMessageAsync(_client, parts[1], ct));
+                await ShowInfoAsync(await Services.Commands.ModelsCommandHandler.SwitchMessageAsync(_client, parts[1], ct)
+                                    + (await Services.Inference.ContextWindowChoice.FollowAsync(_config, _client, parts[1], ct) is { } window
+                                        ? "\n\n" + window : ""));
                 break;
 
             case SlashCommandId.Tools:

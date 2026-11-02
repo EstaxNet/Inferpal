@@ -1467,6 +1467,8 @@
   <data name="WelcomeRemote" xml:space="preserve"><value>你的代码会发送到 {0}。</value></data>
   <data name="WindowChosen" xml:space="preserve"><value>上下文窗口：{0:N0} 个令牌，按 {1} GB 显卡并为其他模型留出空间设定。</value></data>
   <data name="WindowUnknownCard" xml:space="preserve"><value>上下文窗口保持为 {0:N0} 个令牌：不知道显卡的显存大小。请输入 `/hardware &lt;GB&gt;`，然后输入 `/setup`。</value></data>
+  <data name="WindowCaughtUp" xml:space="preserve"><value>上下文窗口已从 {1:N0} 扩大到 {0:N0} 个令牌，按 {2} GB 显卡设定：在 {1:N0} 时，关于真实项目的问题常常放不下。要更改，或保留 {1:N0}：设置，{3} → {4}。</value></data>
+  <data name="WindowBackToFactory" xml:space="preserve"><value>上下文窗口已恢复为 {0:N0} 个令牌：与 {1} 一起时，显卡放不下值得使用的更大窗口。</value></data>
   <data name="WelcomeForFile" xml:space="preserve"><value>针对编辑器中打开的 {0}</value></data>
   <data name="WelcomeExplainFile" xml:space="preserve"><value>解释此文件</value></data>
   <data name="WelcomeExplainFileDesc" xml:space="preserve"><value>它做什么，各部分如何衔接</value></data>

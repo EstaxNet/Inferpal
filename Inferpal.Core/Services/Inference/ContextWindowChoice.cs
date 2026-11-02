@@ -19,10 +19,11 @@ internal sealed record WindowAdvice(int? Tokens, string? Sentence);
 /// <remarks>
 /// <para>⚠ Ollama only: the window is sized from the model's shape (<c>/api/show</c>), which no other server publishes,
 /// and LM Studio loads a model at its own size whatever the client asks.</para>
-/// <para>⚠ Only an AUTOMATIC window is resized (<see cref="IsAutomatic(InferpalConfig)"/>): the factory value, or the
-/// one the first run or <c>/setup</c> last wrote (<see cref="InferpalConfig.ContextWindowSizeAuto"/>), judged on the
-/// FILE. Any other value is the person's — a window "Suggest" proposed and the person saved included. The file is
-/// written whole at its first save, so a window typed at 8 192 cannot be told from the factory one.</para>
+/// <para>⚠ Only an AUTOMATIC window is resized (<see cref="IsAutomatic(InferpalConfig)"/>): the one the product last
+/// wrote (<see cref="InferpalConfig.ContextWindowSizeAuto"/>), or the factory value when it never wrote one, judged on
+/// the FILE. Any other value is the person's — a window "Suggest" proposed and the person saved included, and the
+/// factory one set back by hand over a window the product wrote. The file is written whole at its first save, so a
+/// window typed at 8 192 before the product ever sized one cannot be told from the factory one.</para>
 /// </remarks>
 internal static class ContextWindowChoice
 {
@@ -141,8 +142,8 @@ internal static class ContextWindowChoice
         InferenceProviderFactory.Canonical(provider) == InferenceProviderFactory.Ollama;
 
     /// <summary>
-    /// The window is still the product's to resize: the factory one, or the one the first run or <c>/setup</c> last
-    /// wrote — judged on the FILE, so a window the person set in the other editor since this copy was read stands.
+    /// The window is still the product's to resize: the one the product last wrote, or the factory one when it never
+    /// wrote one — judged on the FILE, so a window the person set in the other editor since this copy was read stands.
     /// Anything else is the person's, and nothing here writes or proposes over it.
     /// </summary>
     public static bool IsAutomatic(InferpalConfig config)
@@ -152,7 +153,9 @@ internal static class ContextWindowChoice
     }
 
     /// <summary>A window of <paramref name="window"/> is automatic when the product last wrote <paramref name="written"/>.</summary>
-    public static bool IsAutomatic(int window, int written) => window == Factory || (written > 0 && window == written);
+    /// <remarks>⚠ The product writes the factory window only with no mark (<see cref="Apply"/>): the factory window under a
+    /// mark is the person's, set back by hand after the product sized it — never resized over again.</remarks>
+    public static bool IsAutomatic(int window, int written) => written > 0 ? window == written : window == Factory;
 
     /// <summary>The window the product last wrote, as the FILE holds it (this copy's when the file cannot be read).</summary>
     public static int WrittenAuto(InferpalConfig config) =>
@@ -163,8 +166,110 @@ internal static class ContextWindowChoice
     public static bool Apply(InferpalConfig config, int tokens)
     {
         if (!IsAutomatic(config)) return false;
+        // Decided on the file: a size equal to what this copy read is still a change from what the file holds now.
+        config.TakeFromFile(nameof(InferpalConfig.ContextWindowSize), nameof(InferpalConfig.ContextWindowSizeAuto));
         config.ContextWindowSize     = tokens;
         config.ContextWindowSizeAuto = tokens == Factory ? 0 : tokens;
         return true;
+    }
+
+    /// <summary>The FILE holds the factory window and no mark: the window was never sized — an install from before the
+    /// first run sized it, or one whose card held nothing worth writing then.</summary>
+    private static bool NeverSized(InferpalConfig config)
+    {
+        var onDisk = config.ReadFileNow() ?? config;
+        return onDisk.ContextWindowSize == Factory && onDisk.ContextWindowSizeAuto == 0;
+    }
+
+    /// <summary>
+    /// At an editor's start: a window never sized (<see cref="NeverSized"/>) is sized for the card and
+    /// <paramref name="chatModel"/> as the first run does, saved, and the sentence that says it — once, since the window
+    /// written is no longer the factory one. <c>null</c>: nothing written (another server, an unknown card or model,
+    /// nothing above the factory window), nothing to say.
+    /// </summary>
+    /// <remarks>Never throws but for a cancellation: it runs at a start, where a failure has nobody to tell — traced. A
+    /// start that decided nothing is not asked again in this process for the same server, model and card
+    /// (<see cref="Settled"/>): an 8 GB card stays at the factory window for good, and every reconnection and every ACP
+    /// session would otherwise ask the server again.</remarks>
+    public static async Task<string?> CatchUpAsync(InferpalConfig config, IInferenceProvider client, string chatModel, CancellationToken ct)
+    {
+        try
+        {
+            if (!Asks(config, client, chatModel) || !NeverSized(config) || Settled.ContainsKey(SettledKey(config, chatModel)))
+                return null;
+            var advice = await AdviseForAsync(config, client, chatModel, ct).ConfigureAwait(false);
+            if (advice.Tokens is not { } tokens || tokens <= Factory)
+            {
+                // Keyed on the card as it is now: the advice may have just detected it.
+                Settled.TryAdd(SettledKey(config, chatModel), 0);
+                return null;
+            }
+            // Read again: the other editor may have sized it, or the person set it, while the server was asked.
+            if (!NeverSized(config) || !Apply(config, tokens)) return null;
+            config.Save();
+            return Strings.WindowCaughtUp(tokens, Factory, CardGb(config), Strings.SettingsPageServer, Strings.LabelContextWindowSize);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("ContextWindowChoice.CatchUp", ex);
+            return null;
+        }
+    }
+
+    /// <summary>The starts that decided nothing, by server, model and card (<see cref="CatchUpAsync"/>).</summary>
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> Settled = new(StringComparer.Ordinal);
+
+    private static string SettledKey(InferpalConfig config, string chatModel) =>
+        FormattableString.Invariant($"{config.BaseUrl}|{chatModel}|{config.VramBudgetGb}");
+
+    /// <summary>
+    /// After the chat model changed to <paramref name="chatModel"/>: an automatic window is sized for it — larger, smaller,
+    /// or back to the factory one —, saved, and said. <c>null</c>: the person's window, another server, an unknown card or
+    /// model, or the same size.
+    /// </summary>
+    /// <remarks>Never throws but for a cancellation: the model switch it follows is already saved, and its own sentence
+    /// and effects must not be lost to a failure here — traced.</remarks>
+    public static async Task<string?> FollowAsync(InferpalConfig config, IInferenceProvider client, string chatModel, CancellationToken ct)
+    {
+        try
+        {
+            if (!Asks(config, client, chatModel) || !IsAutomatic(config)) return null;
+            var advice = await AdviseForAsync(config, client, chatModel, ct).ConfigureAwait(false);
+            if (advice.Tokens is not { } tokens || tokens == (config.ReadFileNow() ?? config).ContextWindowSize
+                || !Apply(config, tokens))
+                return null;
+            config.Save();
+            // The factory window comes back unsaid by the advice: the model leaves the card no room, or none worth
+            // writing — never "sized for the card", which a model that overflows it is not.
+            return advice.Sentence ?? Strings.WindowBackToFactory(tokens, chatModel);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("ContextWindowChoice.Follow", ex);
+            return null;
+        }
+    }
+
+    private static string CardGb(InferpalConfig config) => config.VramBudgetGb.ToString("0.#", CultureInfo.CurrentCulture);
+
+    /// <summary>An Ollama server to ask, through a client of its type: a backend switched since the client was built
+    /// applies at restart, and its listing would come from the other protocol.</summary>
+    private static bool Asks(InferpalConfig config, IInferenceProvider client, string chatModel) =>
+        Applies(config.Provider) && !string.IsNullOrWhiteSpace(chatModel)
+        && InferenceProviderFactory.PendingSwitch(client, config.Provider) is null;
+
+    /// <summary><see cref="AdviseAsync"/> for <paramref name="chatModel"/> under <paramref name="config"/> as it stands, the
+    /// card's memory made known first as the first run does. A card still unknown decides nothing, and the server is not
+    /// listed for it: these run at every start and every model switch.</summary>
+    private static async Task<WindowAdvice> AdviseForAsync(InferpalConfig config, IInferenceProvider client, string chatModel,
+                                                           CancellationToken ct)
+    {
+        await HardwareProfile.EnsureBudgetAsync(config, ct).ConfigureAwait(false);
+        if (config.VramBudgetGb <= 0) return new(null, null);
+        var installed = await client.ListInstalledModelsAsync(ct).ConfigureAwait(false);
+        return await AdviseAsync(client, config.Provider, chatModel, Beside(config, chatModel, installed), installed,
+                                 config.VramBudgetGb, ct).ConfigureAwait(false);
     }
 }
