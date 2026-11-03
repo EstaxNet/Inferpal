@@ -251,7 +251,7 @@ public sealed class TestCoverageCommandTests : IDisposable
     [Fact]
     public async Task AFileExcludedFromAiTools_IsNeitherATargetNorRead()
     {
-        File.WriteAllText(Path.Combine(_root, ".inferpalignore"), "src/calc.py\n");
+        WriteIgnoreFile("src/calc.py\n");
         Answer((_, _) => "assert True\n# covers: 7,8,9");
 
         var report = await RunAsync();
@@ -378,11 +378,23 @@ public sealed class TestCoverageCommandTests : IDisposable
 
     private FileStream? _held;
 
+    /// <summary>
+    /// Writes the workspace's ignore file and says it changed, as the index's watcher does. ⚠ Not left to the watcher: the
+    /// rules are read again at most every two seconds (<c>ContentExclusions.RecheckEvery</c>) unless it reports the file,
+    /// and macOS delivers its file events late — the run then judged with the rules of before, one run in two.
+    /// </summary>
+    private void WriteIgnoreFile(string text)
+    {
+        var path = Path.Combine(_root, ".inferpalignore");
+        File.WriteAllText(path, text);
+        Assert.True(Services.Governance.ContentExclusions.Changed(path));   // witness: it is this workspace's
+    }
+
     [Fact]
     public async Task AWriteTheWorkspaceRefuses_IsNotSaidToBeThePersons()
     {
         // Excluded from AI tools: write_file refuses it before any card.
-        File.WriteAllText(Path.Combine(_root, ".inferpalignore"), "tests/test_calc_coverage.py\n");
+        WriteIgnoreFile("tests/test_calc_coverage.py\n");
         Answer((_, _) => "assert True\n# covers: 7,8,9");
 
         var report = await RunAsync();
