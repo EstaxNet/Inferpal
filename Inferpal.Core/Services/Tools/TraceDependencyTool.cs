@@ -38,6 +38,8 @@ internal class TraceDependencyTool : ITool
     // ── ITool ─────────────────────────────────────────────────────────────────
 
     public string Name => "trace_dependency";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
 
     public string Description =>
         "Traces the call graph from a source file: which methods are defined, what each " +

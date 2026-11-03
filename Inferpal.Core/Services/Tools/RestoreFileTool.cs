@@ -21,6 +21,8 @@ internal class RestoreFileTool : ITool
     }
 
     public string Name        => "restore_file";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Writes;
 
     /// <inheritdoc/>
     /// <remarks>Each file is backed up before it is written: its writes are in the run already.</remarks>

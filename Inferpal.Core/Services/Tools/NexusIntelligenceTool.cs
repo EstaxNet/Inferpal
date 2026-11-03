@@ -27,6 +27,8 @@ internal sealed class NexusIntelligenceTool : ITool
     public NexusIntelligenceTool(Func<string?> getRoot) => _getRoot = getRoot;
 
     public string Name => "trace_nexus";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
 
     public string Description =>
         "Maps cross-language dependency bridges between C# and TypeScript/JavaScript across the project. " +

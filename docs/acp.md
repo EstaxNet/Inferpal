@@ -183,6 +183,9 @@ then **New Session**.
 Seen with acp-ui 0.1.16 on Windows: answers with their thinking, the mode button, every change asked first, Stop, and
 the saved sessions reopened after a restart.
 
+- **Each tool call is drawn by what it does** — a read, an edit, a command, a fetch — as the tool declares it for
+  that call: your own shell tools show as commands, a polled background job as a read. A search and a deletion keep
+  their own kinds.
 - ⚠ **acp-ui's approval dialog shows the call's title (*Change a file · alpha.txt*) and its kind, not the diff**, and
   neither does the call's line afterwards: the change is seen in the file once it is made.
 - A reopened session has no mode button until a new one is started.

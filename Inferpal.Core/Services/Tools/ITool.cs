@@ -63,6 +63,12 @@ internal interface ITool
     /// unless the tool knows better from what the call names.</summary>
     bool NeedsWorkTreeWatchFor(JsonElement args) => NeedsWorkTreeWatch;
 
+    /// <summary>What this call, with <paramref name="args"/>, does to the world (<see cref="ToolEffect"/>).</summary>
+    /// <remarks>⚠ Every built-in tool declares it, held true to its code (a tool that asks, starts a process or reaches the
+    /// network says so); one that does not say has every effect — an MCP server's tool, whose annotations are not
+    /// trusted.</remarks>
+    ToolEffect EffectOf(JsonElement args) => ToolEffect.Unknown;
+
     /// <summary>
     /// Executes the tool and returns a human-readable result string.
     /// The result is appended to the conversation and fed back to the model.

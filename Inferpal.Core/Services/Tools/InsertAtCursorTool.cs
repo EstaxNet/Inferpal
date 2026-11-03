@@ -19,6 +19,8 @@ internal class InsertAtCursorTool : ITool
     }
 
     public string Name => "insert_at_cursor";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Writes;
 
     /// <inheritdoc/>
     /// <remarks>It writes the editor's buffer, never the disk.</remarks>

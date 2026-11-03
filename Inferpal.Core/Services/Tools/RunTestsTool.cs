@@ -28,6 +28,8 @@ internal class RunTestsTool : ITool
     }
 
     public string Name => "run_tests";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Runs;
 
     public string Description =>
         "Runs the test suite and returns a summary (passed/failed/skipped) with error details for each failure. " +

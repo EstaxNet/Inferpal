@@ -515,7 +515,7 @@ internal sealed partial class HostServer : IDisposable
                 // Plan mode restricts to read-only tools; step mode pauses after each call.
                 IToolRegistry effectiveTools = s.Tools;
                 if (s.PlanMode) effectiveTools = new PlanModeToolRegistry(effectiveTools);
-                if (s.ToolEvents) effectiveTools = Announced(effectiveTools);
+                if (s.ToolEvents) effectiveTools = Announced(effectiveTools, s.Tools);
                 if (s.StepMode) effectiveTools = new StepModeToolRegistry(effectiveTools, tok => PauseForStepAsync(s, tok));
 
                 // Only the question and one answer outlive the run, as in Visual Studio: its internal
@@ -537,7 +537,7 @@ internal sealed partial class HostServer : IDisposable
                                         steps = plan.Steps.Select(st => st.Description).ToArray(),
                                     }),
                     onStepUpdate:   (i, status) => Notify("chat/stepUpdate", new { index = i, status = $"{status}" }),
-                    onToolExecuted: te => Notify("chat/tool", ToolNotice.Of(te)),
+                    onToolExecuted: te => Notify("chat/tool", ToolNotice.Of(te) with { Effect = EffectName(s.Tools, te.Name, te.Input) }),
                     onStreamReset:  () => { streamed.Clear(); Notify("chat/streamReset", new { }); },
                     ct:             cts.Token,
                     onThinking:     OnThinking,
@@ -589,7 +589,7 @@ internal sealed partial class HostServer : IDisposable
                 // plan. Only `/tools off` and a code action are chat without tools.
                 IToolRegistry chatTools = ChatModes.ToolsFor(s.Tools, mode, RootOf(s));
                 if (s.PlanMode) chatTools = new PlanModeToolRegistry(chatTools);
-                if (s.ToolEvents) chatTools = Announced(chatTools);
+                if (s.ToolEvents) chatTools = Announced(chatTools, s.Tools);
                 if (s.StepMode) chatTools = new StepModeToolRegistry(chatTools, tok => PauseForStepAsync(s, tok));
 
                 // Same durable history as the agent path: the question and the answer the user saw.
@@ -602,7 +602,7 @@ internal sealed partial class HostServer : IDisposable
                     onToken:        OnToken,
                     ct:             cts.Token,
                     complexity:     ChatTurnPolicy.TurnComplexity(codeAction: false),
-                    onToolExecuted: te => Notify("chat/tool", ToolNotice.Of(te)),
+                    onToolExecuted: te => Notify("chat/tool", ToolNotice.Of(te) with { Effect = EffectName(s.Tools, te.Name, te.Input) }),
                     onThinking:     OnThinking,
                     effort:         ChatTurnPolicy.TurnEffort(s.Config, codeAction: false, mode),
                     steering:       steering);
@@ -741,11 +741,24 @@ internal sealed partial class HostServer : IDisposable
     private static string? Ended(bool iterationLimit, bool cut, bool repeating) =>
         iterationLimit ? "iterationLimit" : cut && !repeating ? "cut" : null;
 
-    /// <summary>The registry a turn uses, announcing each call (<see cref="ToolEventRegistry"/>).</summary>
-    private IToolRegistry Announced(IToolRegistry tools) => new ToolEventRegistry(
+    /// <summary>The registry a turn uses, announcing each call (<see cref="ToolEventRegistry"/>) with what it does — the
+    /// effect the tool declares for these arguments (<see cref="Services.Tools.ToolEffect"/>), which a client draws.</summary>
+    private IToolRegistry Announced(IToolRegistry tools, ToolRegistry declared) => new ToolEventRegistry(
         tools,
-        (id, name, input) => Notify("chat/toolStart", new { callId = id, name, input }),
+        (id, name, input) => Notify("chat/toolStart", new { callId = id, name, input, effect = EffectName(declared, name, input) }),
         (id, output, failed) => Notify("chat/toolEnd", new { callId = id, output, failed }));
+
+    /// <summary>The name of what the call does (<see cref="Services.Tools.ToolEffects.Name"/>); <c>unknown</c> for arguments that do not
+    /// read as JSON.</summary>
+    private static string EffectName(ToolRegistry declared, string name, string? input)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(input) ? "{}" : input);
+            return Services.Tools.ToolEffects.Name(declared.EffectOf(name, doc.RootElement));
+        }
+        catch (JsonException) { return Services.Tools.ToolEffects.Name(Services.Tools.ToolEffect.Unknown); }
+    }
 
     [JsonRpcMethod("chat/cancel")]
     public void ChatCancel() { lock (_gate) _chatCts?.Cancel(); }

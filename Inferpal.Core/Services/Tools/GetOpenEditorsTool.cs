@@ -13,6 +13,8 @@ internal class GetOpenEditorsTool : ITool
         => _editor = editor;
 
     public string Name => "get_open_editors";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
 
     /// <summary>Not offered where there is no editor at all (<see cref="IEditorSurface.HasEditor"/>).</summary>
     public bool IsOffered => _editor.HasEditor;

@@ -64,6 +64,8 @@ internal sealed class AcpSession : IAsyncDisposable
         public required string Title;
         /// <summary>Who the call is (<see cref="AcpToolCalls.CallKey"/>): its report from the loop is matched on it.</summary>
         public required string Key;
+        /// <summary>The kind the client draws, from what the call declares it does: its approval card is drawn the same.</summary>
+        public string? Kind;
         public List<object> Diffs = [];
         public bool Rejected;
     }
@@ -1326,13 +1328,14 @@ internal sealed class AcpSession : IAsyncDisposable
         var raw = AcpToolCalls.RawInput(note.Input ?? "{}");
         var args = raw ?? EmptyObject;
         var title = AcpToolCalls.Title(note.Name, args, Cwd);
-        _calls[note.CallId] = new ToolCallState { Name = note.Name, Title = title, Key = AcpToolCalls.CallKey(note.Input) };
+        var kind = AcpToolCalls.Kind(note.Name, note.Effect);
+        _calls[note.CallId] = new ToolCallState { Name = note.Name, Title = title, Key = AcpToolCalls.CallKey(note.Input), Kind = kind };
         Update(new
         {
             sessionUpdate = "tool_call",
             toolCallId    = note.CallId,
             title         = title,
-            kind          = AcpToolCalls.Kind(note.Name),
+            kind          = kind,
             status        = "in_progress",
             rawInput      = raw,
             locations     = Locations(args),
@@ -1392,7 +1395,7 @@ internal sealed class AcpSession : IAsyncDisposable
             sessionUpdate = "tool_call",
             toolCallId    = id,
             title         = note.Name,
-            kind          = AcpToolCalls.Kind(note.Name),
+            kind          = AcpToolCalls.Kind(note.Name, note.Effect),
             // HasErrors is get_diagnostics finding build errors; a call that did not do its work is the Core's one reader's.
             status        = note.HasErrors || Services.Execution.ToolFailure.IsFailure(output) ? "failed" : "completed",
             content       = new[] { TextContent(AcpToolCalls.Block(output)) },
@@ -1478,7 +1481,10 @@ internal sealed class AcpSession : IAsyncDisposable
             .Where(d => !string.IsNullOrWhiteSpace(d.Path))
             .Select(d => (object)new { type = "diff", path = d.Path, oldText = string.IsNullOrEmpty(d.OldText) ? null : d.OldText, newText = d.NewText ?? string.Empty })
             .ToList();
-        if (note.CallId is not null && _calls.TryGetValue(note.CallId, out var state)) state.Diffs = diffs;
+        // ⚠ The card of the call in progress only: another tool asks under the same call (Smart Fix's validators after a
+        // write) — its card neither replaces the write's diffs nor takes the write's kind.
+        var state = note.CallId is not null && _calls.TryGetValue(note.CallId, out var known) && known.Name == note.Tool ? known : null;
+        if (state is not null) state.Diffs = diffs;
 
         var title = note.Card is { Title: { Length: > 0 } t }
             ? t + (string.IsNullOrWhiteSpace(note.Card.Subject) ? string.Empty : " · " + note.Card.Subject)
@@ -1505,7 +1511,7 @@ internal sealed class AcpSession : IAsyncDisposable
                 {
                     toolCallId = id,
                     title,
-                    kind       = AcpToolCalls.Kind(note.Tool ?? string.Empty),
+                    kind       = state?.Kind ?? AcpToolCalls.Kind(note.Tool ?? string.Empty),
                     status     = "pending",
                     content,
                 },
@@ -1582,7 +1588,7 @@ internal sealed class AcpSession : IAsyncDisposable
     public sealed record TextNote(string? Text, string? Severity = null, bool Result = false);
     public sealed record PlanNote(string? Goal, List<string>? Steps);
     public sealed record StepUpdateNote(int Index, string? Status);
-    public sealed record ToolStartNote(string CallId, string Name, string? Input);
+    public sealed record ToolStartNote(string CallId, string Name, string? Input, string? Effect = null);
     /// <param name="Failed">The call did not do its work (<c>ToolFailure.IsFailure</c>, decided by the host).</param>
     public sealed record ToolEndNote(string CallId, string? Output, bool Failed = false);
     public sealed record WaitNote(ModelWaitDto? Wait);

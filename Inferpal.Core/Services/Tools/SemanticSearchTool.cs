@@ -39,6 +39,8 @@ internal sealed class SemanticSearchTool : ITool
     internal const int MaxTopK = 20;
 
     public string Name => "search_codebase";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
 
     /// <summary>Offered while the index has something to search or is writing it: with semantic search turned off
     /// and no index, its every answer is "not available" (see <see cref="ITool.IsOffered"/>).</summary>

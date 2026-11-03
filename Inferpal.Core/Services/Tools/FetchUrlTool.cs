@@ -39,6 +39,8 @@ internal class FetchUrlTool : ITool
     }
 
     public string Name        => "fetch_url";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Network;
     public string Description => "Fetches the readable text content of a web page. Use this to read documentation, articles, or any web page whose URL you already know.";
     public object Parameters  => new
     {

@@ -16,6 +16,8 @@ internal sealed class UserShellTool(string name, string command, IApprovalServic
     private bool HasPlaceholder => command.Contains(ArgsPlaceholder, StringComparison.Ordinal);
 
     public string Name        => name;
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Runs;
     public string Description => $"User-defined tool. Runs: {command}";
     public object Parameters  => new
     {

@@ -12,6 +12,8 @@ internal class GetActiveDocumentTool : ITool
     public GetActiveDocumentTool(IEditorSurface editor) => _editor = editor;
 
     public string Name => "get_active_document";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
 
     /// <summary>Not offered where there is no editor at all (<see cref="IEditorSurface.HasEditor"/>).</summary>
     public bool IsOffered => _editor.HasEditor;

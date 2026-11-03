@@ -15,6 +15,8 @@ internal sealed class GenerateProjectMapTool : ITool
         _mapService = mapService;
 
     public string Name => "generate_project_map";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
 
     public string Description =>
         "Generate a compact architectural map of the project's C# code: namespace distribution, " +

@@ -11,6 +11,8 @@ internal class GetDiagnosticsTool : ITool
 {
     internal const string ToolName = "get_diagnostics";
     public string Name => ToolName;
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Runs;
 
     private readonly Services.Editor.IEditorSurface? _editor;
     private readonly Func<string?> _getRoot;

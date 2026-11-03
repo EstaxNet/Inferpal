@@ -17,6 +17,8 @@ namespace Inferpal.Services.Tools;
 internal sealed class ReadSkillFileTool(Func<string?> getWorkspaceRoot, InferpalConfig config, Func<string?>? getHome = null) : ITool
 {
     public string Name => "read_skill_file";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
 
     public string Description =>
         "Reads a file of a skill — its SKILL.md to load it, or a file its instructions name — by the skill's name and the "

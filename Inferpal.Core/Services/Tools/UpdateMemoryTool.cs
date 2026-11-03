@@ -42,6 +42,8 @@ internal class UpdateMemoryTool : ITool
     }
 
     public string Name => "update_memory";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Writes;
 
     /// <inheritdoc/>
     /// <remarks>Each file is backed up before it is written: its writes are in the run already.</remarks>

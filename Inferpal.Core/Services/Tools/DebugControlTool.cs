@@ -34,6 +34,15 @@ internal sealed class DebugControlTool(
     public const string ToolName = "debug_control";
 
     public string Name => ToolName;
+    /// <inheritdoc/>
+    /// <remarks>Listing the breakpoints reads; setting or clearing one changes the debugger; starting, resuming, stepping
+    /// and stopping run the program.</remarks>
+    public ToolEffect EffectOf(JsonElement args) => args.Keyword("action") switch
+    {
+        "list_breakpoints"                   => ToolEffect.Reads,
+        "set_breakpoint" or "clear_breakpoint" => ToolEffect.Writes,
+        _                                    => ToolEffect.Runs,
+    };
 
     public string Description =>
         "Drives the debugger: set or clear breakpoints, start a debugging session, resume, and step. "

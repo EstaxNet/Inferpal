@@ -41,6 +41,8 @@ internal class WebSearchTool : ITool
     }
 
     public string Name        => "web_search";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Network;
     public string Description => "Searches the internet using DuckDuckGo and returns a list of results with title, URL, and snippet. Use this to find up-to-date information, documentation, or answers to factual questions.";
     public object Parameters  => new
     {

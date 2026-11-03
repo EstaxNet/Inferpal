@@ -22,6 +22,8 @@ internal class DeleteFileTool : ITool
     }
 
     public string Name        => "delete_file";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Writes;
 
     /// <inheritdoc/>
     /// <remarks>Each file is backed up before it is written: its writes are in the run already.</remarks>

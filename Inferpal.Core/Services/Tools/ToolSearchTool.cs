@@ -13,6 +13,8 @@ internal sealed class ToolSearchTool(OnDemandTools onDemand) : ITool
     internal const string ToolName = "tool_search";
 
     public string Name => ToolName;
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
 
     public string Description => onDemand.Description();
 

@@ -19,6 +19,8 @@ internal class ReplaceSelectionTool : ITool
     }
 
     public string Name => "replace_selection";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Writes;
 
     /// <inheritdoc/>
     /// <remarks>It writes the editor's buffer, never the disk.</remarks>

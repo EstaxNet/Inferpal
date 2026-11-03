@@ -33,6 +33,8 @@ internal class AnalyzeImpactTool : ITool
     // ── ITool ─────────────────────────────────────────────────────────────────
 
     public string Name => "analyze_impact";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
 
     // ⚠ This text is NOT what the model reads: this tool is reached through the `analyze_code`
     // facade, which carries its own description. It is therefore a spec for whoever reads this

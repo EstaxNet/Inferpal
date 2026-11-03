@@ -26,6 +26,8 @@ internal class GetGitStatusTool : ITool
         Math.Clamp(ToolOutputBudget.ListChars - reportSoFar - 400, 1_500, MaxDiffChars);
 
     public string Name => "get_git_status";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
 
     public string Description =>
         "Returns the state of the git repository: current branch, status of tracked/untracked files, " +

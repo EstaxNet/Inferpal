@@ -23,6 +23,8 @@ internal class ReadFileTool : ITool
     }
 
     public string Name => "read_file";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
     public string Description =>
         "Reads a text file. A file too long for one answer comes back in pages of whole lines, and the " +
         "answer says which start_line to pass to read on.";

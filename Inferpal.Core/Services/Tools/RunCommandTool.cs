@@ -32,6 +32,10 @@ internal sealed class RunCommandTool : ITool, IDisposable
     }
 
     public string Name => "run_command";
+    /// <inheritdoc/>
+    /// <remarks>Reading a background job's output or the list of jobs runs nothing; a command, or stopping a job, does.</remarks>
+    public ToolEffect EffectOf(JsonElement args) =>
+        args.Keyword("action") is "poll" or "list" ? ToolEffect.Reads : ToolEffect.Runs;
 
     /// <summary>
     /// How this machine's shell is named to the model, and how it sets an environment variable.

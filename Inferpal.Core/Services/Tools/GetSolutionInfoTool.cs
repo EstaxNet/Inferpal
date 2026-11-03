@@ -25,6 +25,8 @@ internal class GetSolutionInfoTool : ITool
     private const int NamesChars         = 2_400;
 
     public string Name        => "get_solution_info";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
     public string Description =>
         "Returns the structure of the .NET solution open in the workspace: solution name, projects with " +
         "their target frameworks, output types, project references, and NuGet packages.";

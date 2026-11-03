@@ -17,6 +17,8 @@ internal sealed class GetDebuggerStateTool(IDebugSession? session = null, Func<s
     public const string ToolName = "get_debugger_state";
 
     public string Name => ToolName;
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
 
     public string Description =>
         "Returns the editor's current debugger state when execution is paused at a breakpoint "

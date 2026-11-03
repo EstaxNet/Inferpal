@@ -62,6 +62,10 @@ internal sealed class McpTool : ITool
         ReferenceEquals(approval, _approval) ? this : new McpTool(this, approval);
 
     public string Name { get; }
+    /// <inheritdoc/>
+    /// <remarks>⚠ A server's own annotations (read-only, destructive) are not trusted: what its tool does is not known, and
+    /// every call goes to the card.</remarks>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Unknown;
     public string Description { get; }
     public object Parameters { get; }
 

@@ -254,7 +254,8 @@ internal sealed record RunFileResult(string Message, RunReviewDto? Review);
 /// <summary>`chat/tool` notification — one executed tool call (uncapped output, for the screen).</summary>
 /// <param name="Diff">The change a writing call made, in the lines the approval card showed (<c>+ - …</c> prefixes,
 /// context collapsed) — what Visual Studio draws in its tool bubble; null when the call wrote nothing.</param>
-internal sealed record ToolNotice(string Name, string Input, string Output, bool HasErrors, string? Diff = null)
+/// <param name="Effect">What the call declares it does (<see cref="Services.Tools.ToolEffects.Name"/>), which a client draws.</param>
+internal sealed record ToolNotice(string Name, string Input, string Output, bool HasErrors, string? Diff = null, string? Effect = null)
 {
     /// <summary>The notice of an executed call, its diff rendered as the approval card renders it, every line kept.</summary>
     public static ToolNotice Of(ToolExecution te) => new(te.Name, te.Input, te.Output, te.HasErrors,

@@ -29,6 +29,8 @@ internal sealed class AnalyzeCodeTool : ITool
     }
 
     public string Name => "analyze_code";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
 
     public string Description =>
         "Static code analysis. Choose 'mode':\n" +

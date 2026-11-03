@@ -537,6 +537,10 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// server does not serve is not.</remarks>
     public bool Knows(string name) => Served(name) is not null || _mcp.IsOfAServerNotConnected(name);
 
+    /// <summary>What the call of <paramref name="name"/> with <paramref name="args"/> does (<see cref="ToolEffect"/>); every
+    /// effect for a tool this registry does not hold.</summary>
+    internal ToolEffect EffectOf(string name, JsonElement args) => Served(name)?.EffectOf(args) ?? ToolEffect.Unknown;
+
     public async Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct)
     {
         if (!_tools.TryGetValue(name, out var tool))

@@ -66,10 +66,27 @@ internal sealed class AcpShownStream
 internal static class AcpToolCalls
 {
     /// <summary>
-    /// The ACP kind of a tool — the icon and grouping a client draws. A table, with <c>other</c> for everything it does
-    /// not name (MCP tools, the user's shell tools, a tool added later): a wrong icon at worst, never a wrong action.
+    /// The ACP kind of a tool call — the icon and grouping a client draws: a search or a deletion, finer than any effect;
+    /// otherwise what the call declares it does (<paramref name="effect"/>, the host's
+    /// <see cref="Services.Tools.ToolEffects.Name"/>: <c>run_command</c> polling a job reads); the table only for a call
+    /// that does not say (a session replayed from its file) — <c>other</c> for one the table does not name either.
     /// </summary>
-    public static string Kind(string tool) => tool switch
+    public static string Kind(string tool, string? effect = null) => tool switch
+    {
+        "search_in_files" or "search_codebase" or "search_docs" => "search",
+        "delete_file"                                           => "delete",
+        _ => effect switch
+        {
+            "network" => "fetch",
+            "runs"    => "execute",
+            "writes"  => "edit",
+            "reads"   => "read",
+            _         => Table(tool),
+        },
+    };
+
+    /// <summary>The kind of a tool by its name, for a call that does not say what it does.</summary>
+    private static string Table(string tool) => tool switch
     {
         "read_file" or "list_files" or "get_active_document" or "get_open_editors" or "get_git_status"
             or "get_solution_info" or "generate_project_map" or "read_skill_file" or "analyze_code"
@@ -80,6 +97,8 @@ internal static class AcpToolCalls
         "delete_file"                                                                 => "delete",
         "run_command" or "run_tests" or "get_diagnostics"                             => "execute",
         "fetch_url" or "web_search"                                                   => "fetch",
+        // The repository's own validators, run after a write (Smart Fix): a command, whatever the write was.
+        "smart_fix_validator"                                                         => "execute",
         _                                                                             => "other",
     };
 

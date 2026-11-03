@@ -1341,6 +1341,38 @@ public sealed class AcpAgentTests : IDisposable
         Assert.Equal(2, h.Client.Updates(sid, "tool_call_update").Count());
     }
 
+    /// <summary>
+    /// An ACP client draws a call the kind table does not name by what the tool declares it does — the host sends the
+    /// effect with the call's start —: the person's own shell tool is drawn as a command, and its approval card too,
+    /// never as "other".
+    /// </summary>
+    [Fact]
+    public async Task ACallTheKindTableDoesNotName_IsDrawnByWhatItDoes()
+    {
+        static InferpalConfig Settings() => new() { RagEnabled = false, DefaultModel = "test-model", CustomTools = "my_echo = echo hi" };
+        await using var h = await StartAsync(
+            fake: f => f.OnAgentRun = async (history, tools, reported, ct) =>
+            {
+                await Services.Agent.AgentOrchestrator.ExecuteToolSafeAsync(tools,
+                    new ToolCallFunction("my_echo", JsonDocument.Parse("{}").RootElement.Clone()), false, ct);
+                return new AgentResult("Done.", [], history);
+            },
+            host: p => new HostServer(_ => p, Settings, fileSettings: Settings));
+        h.Client.Answer = (method, _) => method == "session/request_permission"
+            ? new { outcome = new { outcome = "selected", optionId = "reject_once" } }
+            : null;
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+        Assert.Equal("other", AcpToolCalls.Kind("my_echo"));   // WITNESS: the table does not name it
+
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, sid, "go")));
+
+        var drawn = Assert.Single(h.Client.Updates(sid, "tool_call"), d => d.GetProperty("status").GetString() == "in_progress");
+        Assert.Equal("execute", drawn.GetProperty("kind").GetString());
+        var asked = Assert.Single(h.Client.Requests, r => r.GetProperty("method").GetString() == "session/request_permission");
+        Assert.Equal("execute", asked.GetProperty("params").GetProperty("toolCall").GetProperty("kind").GetString());
+    }
+
     [Fact]
     public async Task ARefusedPermission_WritesNothing_AndEndsTheCallFailed()
     {

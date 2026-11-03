@@ -35,6 +35,8 @@ internal sealed class ApplyEditsTool : ITool
     internal Func<bool>? RenameOffered { get; init; }
 
     public string Name => "apply_edits";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Writes;
 
     /// <inheritdoc/>
     /// <remarks>Each file is backed up before it is written: its writes are in the run already.</remarks>

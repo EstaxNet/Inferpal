@@ -29,6 +29,8 @@ internal class ApplyDiffTool : ITool
     internal Func<bool>? RenameOffered { get; init; }
 
     public string Name => "apply_diff";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Writes;
 
     /// <inheritdoc/>
     /// <remarks>Each file is backed up before it is written: its writes are in the run already.</remarks>

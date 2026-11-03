@@ -11,6 +11,8 @@ internal class ListFilesTool : ITool
     public ListFilesTool(Func<string?> getWorkspaceRoot) => _getWorkspaceRoot = getWorkspaceRoot;
 
     public string Name => "list_files";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
     public string Description => "Recursively lists files in a directory.";
     public object Parameters => new
     {

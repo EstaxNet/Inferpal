@@ -462,4 +462,121 @@ public sealed class OneTargetOneJudgeTests : IDisposable
         await tools.ExecuteAsync("run_command", Args(new { command = "git status", working_directory = ".." }), default);
         Assert.True(approval.Cards > before);
     }
+    // ── The corpus: every spelling of one file, every control ─────────────────────────────────────────────────────
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern uint GetShortPathNameW(string longPath, System.Text.StringBuilder shortPath, uint size);
+
+    private static string? ShortName(string full)
+    {
+        if (!OperatingSystem.IsWindows() || !File.Exists(full)) return null;
+        var sb = new System.Text.StringBuilder(1024);
+        var n = GetShortPathNameW(full, sb, (uint)sb.Capacity);
+        return n == 0 || string.Equals(sb.ToString(), full, StringComparison.OrdinalIgnoreCase) ? null : sb.ToString();
+    }
+
+    /// <summary>Every spelling of <paramref name="rel"/> the corpus names that this system can build.</summary>
+    private IEnumerable<(string Label, string Spelling)> Spellings(string rel, string? linked)
+    {
+        var abs = Path.Combine(W, rel.Replace('/', Path.DirectorySeparatorChar));
+        (string, string?)[] all =
+        [
+            ("as written", rel), ("./", "./" + rel), ("y/..", "docs/../" + rel), ("a/b/../..", "docs/x/../../" + rel),
+            ("absolute", abs), ("absolute, forward slashes", abs.Replace('\\', '/')), ("ab://..", "ab://../" + rel),
+            ("double separator", W + Path.DirectorySeparatorChar + Path.DirectorySeparatorChar + rel.Replace('/', Path.DirectorySeparatorChar)),
+            ("linked folder", linked), ("hard link", HardLink("hl-" + Guid.NewGuid().ToString("N")[..6] + ".bin", abs)),
+        ];
+        if (OperatingSystem.IsWindows())
+            all = [.. all, ("UPPER", rel.ToUpperInvariant()), ("::$DATA", rel + "::$DATA"), ("trailing dot", rel + "."),
+                   ("trailing space", rel + " "), ("8.3", ShortName(abs)), (@"\\?\", @"\\?\" + abs), (@"\\.\", @"\\.\" + abs),
+                   ("local share", @"\\localhost\" + abs[0] + "$" + abs[2..]), ("drive in lower case", char.ToLowerInvariant(abs[0]) + abs[1..])];
+        foreach (var (label, spelling) in all)
+            if (spelling is not null) yield return (label, spelling);
+    }
+
+    /// <summary>
+    /// Whether <paramref name="spelling"/>, read from the workspace as a tool reads it, opens <paramref name="file"/> itself:
+    /// under Windows the file held without sharing refuses a second opening by any of its names; elsewhere, by its existence.
+    /// </summary>
+    private bool Reaches(string spelling, string file)
+    {
+        string full;
+        try { full = Path.IsPathFullyQualified(spelling) ? spelling : Path.GetFullPath(spelling, W); }
+        catch (Exception) { return false; }
+        if (!OperatingSystem.IsWindows()) return File.Exists(full);
+        using var held = new FileStream(file, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+        try
+        {
+            using var other = new FileStream(full, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            return false;
+        }
+        catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException or UnauthorizedAccessException
+                                      or ArgumentException or NotSupportedException) { return false; }
+        catch (IOException) { return true; }   // a sharing violation: the same file
+    }
+
+    /// <summary>
+    /// ⚠ The property itself, on the whole corpus: every spelling that reaches a file gets the answer its own name gets — an
+    /// excluded file is never read nor written, a file outside the workspace never changed, the agent's instructions never
+    /// written without a card, a file a deny rule names never changed. Links lead into real folders, so that a name alone
+    /// never answers for the resolution.
+    /// </summary>
+    [Fact]
+    public async Task EverySpelling_OfOneFile_GetsTheAnswerOfItsName()
+    {
+        Directory.CreateDirectory(Path.Combine(W, "docs", "x"));
+        File.WriteAllText(Path.Combine(W, "AGENTS.md"), "v0\n");
+        var notes = Path.Combine(W, "docs", "notes.md");
+        File.WriteAllText(notes, "v0\n");
+        string? Linked(string link, string target, string file) => Link(Path.Combine(W, link), target) ? link + "/" + file : null;
+        var keyLink = Linked("lnk-secrets", Path.Combine(W, "secrets"), "key.pem");
+        var memoryLink = Linked("lnk-inferpal", Path.Combine(W, ".inferpal"), "memory.md");
+        var notesLink = Linked("lnk-docs", Path.Combine(W, "docs"), "notes.md");
+        var outsideLink = Linked("lnk-out", _base, "outside.txt");
+        var (tools, approval) = Registry(new InferpalConfig { PermissionRules = "deny write_file [\\\\/]docs[\\\\/]notes\\.md$" });
+        await GrantAsync(tools, approval, "write_file", W);
+        var divergent = new List<string>();
+        var played = 0;
+
+        var key = Path.Combine(W, "secrets", "key.pem");
+        foreach (var (label, spelling) in Spellings("secrets/key.pem", keyLink).Where(s => Reaches(s.Spelling, key)))
+        {
+            played++;
+            var read = await tools.ExecuteAsync("read_file", Args(new { path = spelling }), default);
+            if (read.Contains(Marker, StringComparison.Ordinal)) divergent.Add($"read excluded {label}: {spelling}");
+            await tools.ExecuteAsync("write_file", Args(new { path = spelling, content = "overwritten\n" }), default);
+            if (File.ReadAllText(key) != Marker + "_KEY\n") divergent.Add($"write excluded {label}: {spelling}");
+            File.WriteAllText(key, Marker + "_KEY\n");
+        }
+        var outside = Path.Combine(_base, "outside.txt");
+        foreach (var (label, spelling) in Spellings("../outside.txt", outsideLink).Where(s => Reaches(s.Spelling, outside)))
+        {
+            played++;
+            await tools.ExecuteAsync("write_file", Args(new { path = spelling, content = "escaped\n" }), default);
+            if (File.ReadAllText(outside) != "outside v0\n") divergent.Add($"confinement {label}: {spelling}");
+            File.WriteAllText(outside, "outside v0\n");
+        }
+        foreach (var (target, link) in new[] { (".inferpal/memory.md", memoryLink), ("AGENTS.md", null) })
+        {
+            var file = Path.Combine(W, target.Replace('/', Path.DirectorySeparatorChar));
+            foreach (var (label, spelling) in Spellings(target, link).Where(s => Reaches(s.Spelling, file)))
+            {
+                played++;
+                var before = approval.Cards;
+                await tools.ExecuteAsync("write_file", Args(new { path = spelling, content = "v0\ninjected\n" }), default);
+                if (File.ReadAllText(file) != "v0\n" && approval.Cards == before) divergent.Add($"forced card {target} {label}: {spelling}");
+                File.WriteAllText(file, "v0\n");
+            }
+        }
+        foreach (var (label, spelling) in Spellings("docs/notes.md", notesLink).Where(s => Reaches(s.Spelling, notes)))
+        {
+            played++;
+            await tools.ExecuteAsync("write_file", Args(new { path = spelling, content = "changed\n" }), default);
+            if (File.ReadAllText(notes) != "v0\n") divergent.Add($"deny {label}: {spelling}");
+            File.WriteAllText(notes, "v0\n");
+        }
+
+        Assert.True(played >= (OperatingSystem.IsWindows() ? 40 : 15), $"witness: {played} spellings reached their file");
+        Assert.Empty(divergent);
+    }
 }

@@ -34,6 +34,8 @@ internal sealed class SearchDocsTool : ITool
     }
 
     public string Name => "search_docs";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
 
     /// <summary>Offered once some documentation is indexed, or being indexed: until the user runs <c>/docs add</c> —
     /// most users never do — its every answer is "no documentation indexed" (see <see cref="ITool.IsOffered"/>).</summary>

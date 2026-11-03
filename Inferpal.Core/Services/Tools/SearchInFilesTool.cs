@@ -17,6 +17,8 @@ internal class SearchInFilesTool : ITool
     }
 
     public string Name => "search_in_files";
+    /// <inheritdoc/>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
     public string Description => "Searches for text or a regex pattern in files. Returns file:line:content.";
     public object Parameters => new
     {
