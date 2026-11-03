@@ -14,7 +14,7 @@ namespace Inferpal.Services.Persistence;
 /// A session file contains the <b>display</b> transcript — role, text, tool name, timestamp — and
 /// nothing else. ⚠ Not the API history: no <c>tool_calls</c>, no arguments, no call ids, so a
 /// reloaded session does not resume exactly where it left off. What gets rebuilt on load, and how,
-/// lives in <see cref="SessionManager.BuildRestoredHistory"/>.
+/// lives in <see cref="SessionManager.BuildRestoredHistory(string, IEnumerable{SavedMessage})"/>.
 /// The special name <c>"last_session"</c> is reserved for the auto-save slot.
 /// </remarks>
 internal class ConversationStore
@@ -523,12 +523,17 @@ internal record SessionData(
     [property: JsonPropertyName("tools_off")]       bool? ToolsOff = null,
     [property: JsonPropertyName("step_mode")]       bool? StepMode = null,
     [property: JsonPropertyName("xray_off")]        List<string>? XrayOff = null,
-    [property: JsonPropertyName("active_plan")]     string? ActivePlan = null)
+    [property: JsonPropertyName("active_plan")]     string? ActivePlan = null,
+    [property: JsonPropertyName("summary")]         Agent.HistorySummary? Summary = null,
+    [property: JsonPropertyName("recap")]           string? Recap = null,
+    [property: JsonPropertyName("recap_in_system")] string? RecapInSystem = null,
+    [property: JsonPropertyName("model")]           string? Model = null)
 {
     /// <summary>The conversation's state this file holds; a new conversation's for what it does not.</summary>
     [JsonIgnore]
     public SessionState State => new(CurrentName, TemplateSuffix, Mode, PlanMode == true, ToolsOff == true,
-                                     StepMode == true, XrayOff is { Count: > 0 } off ? off : null, ActivePlan);
+                                     StepMode == true, XrayOff is { Count: > 0 } off ? off : null, ActivePlan,
+                                     Summary is { Text.Length: > 0 } ? Summary : null, Recap, RecapInSystem, Model);
 
     /// <summary>A file of <paramref name="messages"/> holding <paramref name="state"/>, each value written only when it is
     /// not a new conversation's.</summary>
@@ -540,7 +545,11 @@ internal record SessionData(
             string.IsNullOrWhiteSpace(state.Mode) ? null : state.Mode,
             state.PlanMode ? true : null, state.ToolsOff ? true : null, state.StepMode ? true : null,
             state.XrayOffSections.Count > 0 ? [.. state.XrayOffSections] : null,
-            string.IsNullOrWhiteSpace(state.ActivePlan) ? null : state.ActivePlan);
+            string.IsNullOrWhiteSpace(state.ActivePlan) ? null : state.ActivePlan,
+            state.Summary,
+            string.IsNullOrWhiteSpace(state.Recap) ? null : state.Recap,
+            string.IsNullOrWhiteSpace(state.RecapInSystem) ? null : state.RecapInSystem,
+            string.IsNullOrWhiteSpace(state.Model) ? null : state.Model);
 }
 
 /// <param name="Run">The run of agent changes the turn this message closes made (<c>HistoryRun.Id</c>); absent when it

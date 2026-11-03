@@ -94,12 +94,41 @@ public partial class HostServerTests
     {
         var src    = SettingsSchemaDriftTests.NeutralizeTypeScriptComments(
                          File.ReadAllText(Path.Combine(ConversationPersistenceSilenceTests.RepoRoot(), "vscode", "src", "chatViewProvider.ts")));
-        var start  = src.IndexOf("} else if (result.cancelled) {", StringComparison.Ordinal);
-        Assert.True(start >= 0, "the stopped-turn branch was not found: this test would have measured nothing.");
-        var branch = src[start..src.IndexOf("t('Cancelled.')", start, StringComparison.Ordinal)];
+        // Stopped or failed: read before the branches that tell them apart.
+        var end    = src.IndexOf("if (result.error) {", StringComparison.Ordinal);
+        Assert.True(end >= 0, "the turn's end was not found: this test would have measured nothing.");
+        var before = src[src.LastIndexOf("this.promptTokens = result.nextTurnTokens", end, StringComparison.Ordinal)..end];
 
-        Assert.Contains("result.questionKept === false", branch, StringComparison.Ordinal);
-        Assert.Contains("asked.notice = true", branch, StringComparison.Ordinal);
+        Assert.Contains("result.questionKept === false", before, StringComparison.Ordinal);
+        Assert.Contains("asked.notice = true", before, StringComparison.Ordinal);
+    }
+
+    /// <summary>The host says a failure came before the question entered its history, as it says a Stop did.</summary>
+    [Fact]
+    public void TheHost_SaysAFailedTurnKeptNoQuestion()
+    {
+        var host = ConventionCoverageTests.CodeOnly(Path.Combine(ConversationPersistenceSilenceTests.RepoRoot(), "Inferpal.Host", "HostServer.cs"));
+        var send = host[host.IndexOf("catch (Exception ex)", host.IndexOf("QuestionKept: questionKept, RunId: ChangedRun(s, turnRunId)", StringComparison.Ordinal), StringComparison.Ordinal)..];
+        Assert.Contains("ex.Message, QuestionKept: questionKept,", send[..send.IndexOf("finally", StringComparison.Ordinal)], StringComparison.Ordinal);
+    }
+
+    /// <summary>As VS Code: a question the history never had is saved as a notice, never as a question the model was asked
+    /// — a kept summary is placed by counting the questions (<c>HistorySummaryKeptTests</c>).</summary>
+    [Fact]
+    public void VisualStudio_MarksAQuestionStoppedBeforeTheHistory_AsANotice()
+    {
+        var turn  = ConventionCoverageTests.CodeOnly(Path.Combine(
+            ConversationPersistenceSilenceTests.RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowData.ChatTurn.cs"));
+        var start = turn.IndexOf("catch (OperationCanceledException) when (localCts is { IsCancellationRequested: true })",
+                                 StringComparison.Ordinal);
+        Assert.True(start >= 0, "the stop during the context build was not found: this test would have measured nothing.");
+        // Stopped, then failed: both catches of the context build.
+        foreach (var at in new[] { start, turn.IndexOf("catch (Exception ex)", start, StringComparison.Ordinal) })
+        {
+            var branch = turn[at..turn.IndexOf("return;", at, StringComparison.Ordinal)];
+            Assert.Contains("!ReferenceEquals(_questionInHistory, asked)", branch, StringComparison.Ordinal);
+            Assert.Contains("asked.ToolName = SessionManager.NoticeMarker;", branch, StringComparison.Ordinal);
+        }
     }
 
     [Fact]

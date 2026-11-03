@@ -286,10 +286,84 @@ internal static class HistoryCompaction
     public static void ApplySummary(List<ChatMessageDto> history, CompactionPlan plan, string summary)
     {
         history.RemoveRange(plan.Start, plan.Count);
-        history.Insert(plan.Start, new ChatMessageDto("assistant", summary));
-        history.Insert(plan.Start, new ChatMessageDto("user", "[Context Summary]") { IsScaffolding = true });
+        history.InsertRange(plan.Start, SummaryPair(summary));
+    }
+
+    /// <summary>The user message a summary follows: the model knows what it reads next is a condensed past. Structural,
+    /// not localized.</summary>
+    public const string SummaryHeading = "[Context Summary]";
+
+    /// <summary>The two messages that stand for the summarised turns in a history.</summary>
+    public static ChatMessageDto[] SummaryPair(string summary) =>
+        [new("user", SummaryHeading) { IsScaffolding = true }, new("assistant", summary)];
+
+    /// <summary>
+    /// Rewrites <paramref name="history"/> by <paramref name="plan"/> — with <paramref name="summary"/>, or dropping the
+    /// turns behind a marker when it is <c>null</c> — and returns what the history holds then in place of the
+    /// conversation's first turns, <paramref name="held"/> being what it held: what a session file keeps of it
+    /// (<see cref="HistorySummary"/>).
+    /// </summary>
+    /// <returns><c>null</c> when nothing would place it in the saved conversation, which a restore then rebuilds whole and
+    /// the next question measures again: <paramref name="held"/> no longer where the history held it.</returns>
+    public static HistorySummary? Apply(List<ChatMessageDto> history, CompactionPlan plan, string? summary, HistorySummary? held)
+    {
+        // Counted before the rewrite: it takes away the questions the head then stands for.
+        var questions = QuestionsReplaced(held, history, plan);
+        if (summary is null) ApplyTruncation(history, plan);
+        else ApplySummary(history, plan, summary);
+        return questions is { } q
+            ? new HistorySummary(summary ?? history[plan.Start].Content ?? string.Empty, plan.Start - 1, q, Dropped: summary is null)
+            : null;
+    }
+
+    /// <summary>The messages that stand for the conversation's first turns after its anchors, as the history holds them.</summary>
+    public static ChatMessageDto[] Head(HistorySummary held) =>
+        held.Dropped ? [new("user", held.Text) { IsScaffolding = true }] : SummaryPair(held.Text);
+
+    /// <summary>The conversation's questions the history holds no longer once <paramref name="plan"/> is applied — anchors
+    /// included; <c>null</c> when they cannot be counted.</summary>
+    private static int? QuestionsReplaced(HistorySummary? held, IReadOnlyList<ChatMessageDto> history, CompactionPlan plan)
+    {
+        var end       = Math.Min(plan.Start + plan.Count, history.Count);
+        var from      = 1;
+        var questions = 0;
+        if (held is not null)
+        {
+            from = 1 + held.Anchors;
+            var head = Head(held);
+            // The head it holds is in what this plan replaces: a plan that keeps it as an anchor would stack two of them.
+            if (plan.Start > from || from + head.Length > end
+                || !history.Skip(from).Take(head.Length).Select(m => (m.Role, m.Content, m.IsScaffolding))
+                           .SequenceEqual(head.Select(m => (m.Role, m.Content, m.IsScaffolding)))) return null;
+            from     += head.Length;
+            questions = held.Questions;   // its anchors' questions included, whether they stay anchors or not
+        }
+        for (var i = from; i < end; i++)
+        {
+            if (history[i].IsScaffolding) return null;   // a head the conversation does not hold
+            if (history[i].Role == "user") questions++;
+        }
+        return questions;
     }
 }
+
+/// <summary>
+/// What a model's history holds in place of a conversation's first turns once they were compacted: its first
+/// <paramref name="Anchors"/> messages kept as they were, then the summary — or the marker of the turns dropped —,
+/// standing for the conversation's first <paramref name="Questions"/> questions (the anchors' included). A session file
+/// keeps it, so the history a restore rebuilds is the one the model had (<see cref="Persistence.SessionManager"/>).
+/// </summary>
+/// <remarks>⚠ Without it, a long conversation reopens whole, over the compaction trigger: its first question waits for a
+/// new summary of everything, written from a request whose budget no longer reaches the conversation's start — poorer
+/// than the one it replaces, and said so.</remarks>
+/// <param name="Text">The summary as the model reads it, its notes on what it lacks included; the marker when
+/// <paramref name="Dropped"/>.</param>
+/// <param name="Dropped">The turns were dropped, not summarised (<see cref="HistoryCompaction.TruncationMarker"/>).</param>
+internal sealed record HistorySummary(
+    [property: System.Text.Json.Serialization.JsonPropertyName("text")]      string Text,
+    [property: System.Text.Json.Serialization.JsonPropertyName("anchors")]   int Anchors,
+    [property: System.Text.Json.Serialization.JsonPropertyName("questions")] int Questions,
+    [property: System.Text.Json.Serialization.JsonPropertyName("dropped")]   bool Dropped = false);
 
 /// <summary>
 /// The safety fuse of a summarizing call: <see cref="HistoryCompaction.SummaryTimeout"/> until the first streamed

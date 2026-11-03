@@ -184,8 +184,8 @@ public class ContextManagerTests
         var code = ConventionCoverageTests.CodeOnly(file);
 
         Assert.Contains("ContextManager.PrepareAsync", code, StringComparison.Ordinal);
-        Assert.Contains("HistoryCompaction.ApplySummary", code, StringComparison.Ordinal);
-        Assert.Contains("HistoryCompaction.ApplyTruncation", code, StringComparison.Ordinal);
+        // The rewrite, summary or truncation, and the summary it leaves the conversation in one call.
+        Assert.Contains("HistoryCompaction.Apply(", code, StringComparison.Ordinal);
     }
 
     /// <summary>The host keeps the previous turn's prompt tokens — without them

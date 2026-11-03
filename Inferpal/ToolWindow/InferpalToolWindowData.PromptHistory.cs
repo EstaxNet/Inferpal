@@ -145,11 +145,11 @@ internal partial class InferpalToolWindowData
         var keepsAQuestion = plan.BranchMessages.Any(SessionManager.IsQuestion);
         if (keepsAQuestion)
             await _store.SaveAsync(plan.BranchName, plan.BranchMessages, ct, root,
-                                   parent: plan.ParentName, forkTurn: plan.ForkTurn, state: state);
+                                   parent: plan.ParentName, forkTurn: plan.ForkTurn, state: state.ForBranch());
 
         await RunOnVMContextAsync(() =>
         {
-            RestoreConversation(plan.BranchMessages, state with { CurrentName = keepsAQuestion ? plan.BranchName : null });
+            RestoreConversation(plan.BranchMessages, state.ForBranch() with { CurrentName = keepsAQuestion ? plan.BranchName : null });
             RefreshSessionsList();
             ScrollToBottom();
         });

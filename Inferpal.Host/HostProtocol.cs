@@ -456,8 +456,11 @@ internal sealed record WindowFollowParams(string? Model);
 /// nothing runs).</summary>
 internal sealed record RunningWorkResult(string? Notice, string? IfItCrashes = null);
 
-/// <summary>`models/useForSession` — the window's chat model, set for the host session without being saved.</summary>
-internal sealed record ModelUseParams(string Model);
+/// <summary>`models/useForSession` — the window's chat model, set for the host session without being saved in the
+/// settings.</summary>
+/// <param name="Conversation">The model is the conversation's own (an ACP thread's pick): kept with it
+/// (<see cref="HostSession.ConversationModel"/>), where a window's model is not.</param>
+internal sealed record ModelUseParams(string Model, bool Conversation = false);
 
 /// <summary>
 /// `connection/check` — what the settings panel's Test button found AT THE URL IT WAS GIVEN.
@@ -760,8 +763,10 @@ internal sealed record SessionListResult(List<SessionSummaryDto> Sessions, List<
 /// <param name="PlanMode">Plan mode, as the loaded conversation holds it: the editor's selector follows.</param>
 /// <param name="Switches">The loaded conversation's switches (<c>/tools off</c>, step mode, X-Ray sections): the editor's
 /// mirror follows, or a later restart would give the host back the previous conversation's.</param>
+/// <param name="Model">The model an ACP thread put the conversation on (<see cref="HostSession.ConversationModel"/>): the
+/// thread that loads it answers with it. VS Code keeps its window's.</param>
 internal sealed record SessionLoadResult(string Name, List<SavedMessageDto> Messages, int NextTurnTokens = 0, string? Mode = null,
-                                        bool PlanMode = false, SessionSwitchesDto? Switches = null);
+                                        bool PlanMode = false, SessionSwitchesDto? Switches = null, string? Model = null);
 
 /// <summary>`session/branch` — fork the adapter's transcript at 1-based <paramref name="Turn"/>.</summary>
 internal sealed record SessionBranchParams(int Turn, List<SavedMessageDto> Messages);

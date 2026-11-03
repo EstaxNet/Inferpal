@@ -476,10 +476,9 @@ internal sealed partial class HostServer : IDisposable
 
             if (ctxDecision.Outcome != Services.Agent.ContextOutcome.None)
             {
-                if (ctxDecision.Outcome == Services.Agent.ContextOutcome.Compacted)
-                    Services.Agent.HistoryCompaction.ApplySummary(s.History, ctxDecision.Plan, ctxDecision.Summary!);
-                else
-                    Services.Agent.HistoryCompaction.ApplyTruncation(s.History, ctxDecision.Plan);
+                // The summary it then holds is kept with the conversation: a restore rebuilds this history, not every turn.
+                s.Summary = Services.Agent.HistoryCompaction.Apply(s.History, ctxDecision.Plan,
+                    ctxDecision.Outcome == Services.Agent.ContextOutcome.Compacted ? ctxDecision.Summary : null, s.Summary);
                 // The one moment the session summary joins the system message: the turns it covers have just left.
                 s.RecapInSystem = s.OodaSummary;
                 RefreshSystemPrompt(s);
@@ -690,7 +689,9 @@ internal sealed partial class HostServer : IDisposable
             // through the History setter. Left as it was — or 0 after a compaction earlier in this turn — the measure
             // described the conversation before this question.
             s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
-            return new ChatSendResult(streamed.ToString(), false, 0, 0, ex.Message, RunId: ChangedRun(s, turnRunId),
+            // Failed before its question entered the history, the question is the editor's to mark (a notice), as a Stop.
+            return new ChatSendResult(streamed.ToString(), false, 0, 0, ex.Message, QuestionKept: questionKept,
+                                      RunId: ChangedRun(s, turnRunId),
                                       Cut: CutCardDto.Of(ex is AgentHttpException { PrefillOverran: true }, [], 0));
         }
         finally
@@ -1224,7 +1225,11 @@ internal sealed partial class HostServer : IDisposable
     {
         if (string.IsNullOrWhiteSpace(p.Model)) return;
         var s = Session();
-        WithTurnSlot("models/useForSession", () => s.Config.UseDefaultModelForSession(p.Model.Trim()));
+        WithTurnSlot("models/useForSession", () =>
+        {
+            s.Config.UseDefaultModelForSession(p.Model.Trim());
+            if (p.Conversation) s.ConversationModel = p.Model.Trim();
+        });
     }
 
     /// <summary>The adoption itself: also run after a <c>/models pull</c>, the gesture that makes a model installed —
@@ -1878,6 +1883,10 @@ internal sealed partial class HostServer : IDisposable
                 try { slot = await s.Store.LoadAutoSaveAsync(s.RootDir, ct); }
                 catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("HostServer.SessionSave.Slot", ex); }
             }
+            // ⚠ Only a slot whose conversation the screen continues: a session loaded on screen since the slot was written
+            // (the slot is written at the end of a turn) is another conversation, and took the slot's name, mode and
+            // summary — placed over its own first turns.
+            if (slot is not null && !SessionManager.Continues(p.Messages.Select(ToSaved), slot.Messages)) slot = null;
             state = state with { CurrentName = SessionManager.AutoSaveName(s.SessionNameKnown, s.CurrentSessionName, slot, s.RootDir) };
             // ⚠ A host started again saves the screen to the slot before loading it back: what it does not know yet (the
             // editor gives back Plan, the switches and the mode, not these) comes from the slot, or its own null would
@@ -1887,6 +1896,11 @@ internal sealed partial class HostServer : IDisposable
                 {
                     TemplateSuffix = state.TemplateSuffix ?? slot.TemplateSuffix,
                     ActivePlan     = state.ActivePlan ?? slot.ActivePlan,
+                    // Counted from the conversation's first question, the slot's summary stands for the screen's too.
+                    Summary        = state.Summary ?? slot.State.Summary,
+                    Recap          = state.Recap ?? slot.Recap,
+                    RecapInSystem  = state.RecapInSystem ?? slot.RecapInSystem,
+                    Model          = state.Model ?? slot.Model,
                 };
         }
         // The workspace for every save, not only the auto-save slot's: an Agent Client Protocol client lists the sessions
@@ -1925,9 +1939,8 @@ internal sealed partial class HostServer : IDisposable
             ? null
             : Strings.SessionsUnreadableListed(scan.Unreadable.Count, string.Join(", ", scan.Unreadable)));
 
-    /// <summary>Loads a session: the host history is rebuilt (fresh system prompt + every
-    /// conversational turn, tool results included as plain labelled turns — see
-    /// <c>SessionManager.BuildRestoredHistory</c>) and the transcript is returned for
+    /// <summary>Loads a session: the host history is rebuilt (fresh system prompt + the questions and answers, compacted
+    /// as the conversation was — see <c>SessionManager.BuildRestoredHistory</c>) and the transcript is returned for
     /// re-rendering. Null when the session doesn't exist.</summary>
     [JsonRpcMethod("session/load", UseSingleObjectParameterDeserialization = true)]
     public Task<SessionLoadResult?> SessionLoadAsync(SessionRefParams p, CancellationToken ct) =>
@@ -1965,17 +1978,24 @@ internal sealed partial class HostServer : IDisposable
             var held  = state.Mode is null ? null : ChatModes.For(s.Config, RootOf(s)).Find(state.Mode);
             if (held is null && state.Mode is not null)
                 Notify("host/notice", new { text = Strings.ModeGone(state.Mode), severity = "warning" });
+            ForgetConversationState(s);
             s.ApplyState(state with
             {
                 Mode        = held?.Name,
                 CurrentName = p.Name == ConversationStore.AutoSaveSlot ? data.CurrentName : p.Name,
             });
-            ForgetConversationState(s);
-            s.History = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), data.Messages);
+            // The history the model had: compacted as it was, its recap in the system message — restored whole, the turns
+            // that recap tells of are all there again.
+            var (history, summary) = SessionManager.BuildRestoredHistory(string.Empty, data.Messages, s.Summary);
+            s.Summary = summary;
+            if (summary is null) s.RecapInSystem = null;
+            history[0] = new ChatMessageDto("system", BuildSystemPromptText(s));
+            s.History = history;
+            s.ConversationTurnCount = data.Messages.Count(SessionManager.IsQuestion);   // the recap's count goes on
             return new SessionLoadResult(
                 p.Name,
                 data.Messages.Select(m => new SavedMessageDto(m.Role, m.Content, m.ToolName, m.Timestamp, m.Run)).ToList(),
-                NextTurnTokens(s), s.ModeName, s.PlanMode, SwitchesOf(s));
+                NextTurnTokens(s), s.ModeName, s.PlanMode, SwitchesOf(s), s.ConversationModel);
         });
 
     /// <summary>
@@ -2023,10 +2043,11 @@ internal sealed partial class HostServer : IDisposable
         var keepsAQuestion = plan.BranchMessages.Any(SessionManager.IsQuestion);
         if (keepsAQuestion)
             await s.Store.SaveAsync(plan.BranchName, plan.BranchMessages, token, workspaceRoot: s.RootDir,
-                                    parent: plan.ParentName, forkTurn: plan.ForkTurn, state: state);
+                                    parent: plan.ParentName, forkTurn: plan.ForkTurn, state: state.ForBranch());
 
         ForgetConversationState(s);
         s.History            = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), plan.BranchMessages);
+        s.ConversationTurnCount = plan.BranchMessages.Count(SessionManager.IsQuestion);   // the recap's count, as on a load
         s.CurrentSessionName = keepsAQuestion ? plan.BranchName : null;
 
         return new SessionBranchResult(
@@ -2459,6 +2480,7 @@ internal sealed partial class HostServer : IDisposable
     /// in the VS view model. Called before the new system prompt is built, which would otherwise carry the summary.</summary>
     private static void ForgetConversationState(HostSession s)
     {
+        s.Summary               = null;
         s.OodaSummary           = null;
         s.RecapInSystem         = null;
         s.ConversationTurnCount = 0;
@@ -2488,6 +2510,7 @@ internal sealed partial class HostServer : IDisposable
         s.DiscardedState = s.CaptureState();
         s.TemplateSuffix = templateSuffix;
         ResetHistory(s);
+        s.ConversationModel = null;   // the conversation's own: an ACP thread gives its pick back to the new one
         s.CurrentSessionName = null;   // the archived conversation keeps its own file
         // Behind the saves already sent: one still writing would put the discarded conversation back in the slot.
         await s.SaveGate.WaitAsync();

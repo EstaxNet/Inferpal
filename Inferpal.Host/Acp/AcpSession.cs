@@ -402,8 +402,9 @@ internal sealed class AcpSession : IAsyncDisposable
                 if (chosen is null || !offered.Contains(chosen, StringComparer.Ordinal))
                     throw AcpRpc.Error(AcpRpc.InvalidParams, $"Unknown model '{chosen}'.");
                 // The window's model for this session, as VS Code's per-window pick: every reader that falls back to the
-                // default model (titles, summaries) answers with it too. Never saved: the other editors keep theirs.
-                await _link.InvokeWithParameterObjectAsync("models/useForSession", new { model = chosen }, ct);
+                // default model (titles, summaries) answers with it too. Never saved in the settings — the other editors
+                // keep theirs —, kept with the thread's conversation.
+                await _link.InvokeWithParameterObjectAsync("models/useForSession", new { model = chosen, conversation = true }, ct);
                 _model = chosen;
                 break;
             default:
@@ -432,7 +433,7 @@ internal sealed class AcpSession : IAsyncDisposable
         if (kept.Mode != _mode) await HoldAgainAsync(kept.Mode, ct);
         if (kept.Model is not null && kept.Model != _model)
         {
-            await _link.InvokeWithParameterObjectAsync("models/useForSession", new { model = kept.Model }, ct);
+            await _link.InvokeWithParameterObjectAsync("models/useForSession", new { model = kept.Model, conversation = true }, ct);
             _model = kept.Model;
         }
         lock (_gate) _pending.AddRange(kept.Pending);
@@ -569,7 +570,7 @@ internal sealed class AcpSession : IAsyncDisposable
             _defaultModel = reloaded.DefaultModel;
             // The host took the file's model: the thread's own pick is put back, as its selector shows it.
             if (_model is not null)
-                await _link.InvokeWithParameterObjectAsync("models/useForSession", new { model = _model }, CancellationToken.None);
+                await _link.InvokeWithParameterObjectAsync("models/useForSession", new { model = _model, conversation = true }, CancellationToken.None);
         }
         if (reloaded.Taken.Contains("agentModel")) _agentRoleModel = reloaded.AgentModel.Trim();
         if (reloaded.ServerChanged) Say(Strings.AcpServerChangedNewThread + "\n\n");
@@ -695,6 +696,8 @@ internal sealed class AcpSession : IAsyncDisposable
                     ModeChanged(e.Value == "on" ? AcpModes.Plan : AcpModes.Default);
                     break;
                 case "stateChange" when e.Name == "model" && !string.IsNullOrEmpty(e.Value):
+                    // The thread's model from now on, kept with the conversation as the selector's pick is.
+                    await KeepThreadModelAsync(e.Value);
                     _model = e.Value;
                     Update(new { sessionUpdate = "config_option_update", configOptions = ConfigOptions() });
                     break;
@@ -716,6 +719,8 @@ internal sealed class AcpSession : IAsyncDisposable
                     break;
                 case "clearTranscript":
                     await ArchiveAndStartOverAsync();
+                    // The host's new conversation has no model of its own: the thread's selector still shows its pick.
+                    if (_model is not null) await KeepThreadModelAsync(_model);
                     break;
                 case "exportRequest":
                     // No file to save it into: the conversation as this thread showed it, rendered by the host as the
@@ -728,6 +733,17 @@ internal sealed class AcpSession : IAsyncDisposable
 
         var said = string.Join("\n\n", new[] { result.Markdown ?? string.Empty }.Concat(notes).Where(s => s.Length > 0));
         return SayNotice(typed, said);
+    }
+
+    /// <summary>Tells the host <paramref name="model"/> is the thread's own, kept with its conversation. A refusal (a turn
+    /// holding the host) is traced, never thrown into the reply of the command that changed the model.</summary>
+    private async Task KeepThreadModelAsync(string model)
+    {
+        try
+        {
+            await _link.InvokeWithParameterObjectAsync("models/useForSession", new { model, conversation = true }, CancellationToken.None);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("AcpSession.KeepThreadModel", ex); }
     }
 
     /// <summary>
@@ -1056,6 +1072,18 @@ internal sealed class AcpSession : IAsyncDisposable
         // here without it, or its first tool call would wait for good.
         if (loaded.Switches is { StepMode: true } switches)
             await _link.InvokeWithParameterObjectAsync<SessionSwitchesDto>("session/switches", switches with { StepMode = false }, ct);
+        // The model the thread was put on, put back: its selector and every reader that falls back to the default follow.
+        // One the server no longer serves is not: the thread opens on the default, and says why.
+        if (loaded.Model is { } model && model != _model)
+        {
+            if (_listed is not null && !_models.Contains(model, StringComparer.Ordinal))
+                Say(Strings.SlashModelNotServed(model) + "\n\n");
+            else
+            {
+                await _link.InvokeWithParameterObjectAsync("models/useForSession", new { model, conversation = true }, ct);
+                _model = model;
+            }
+        }
         lock (_gate) { _transcript.Clear(); _transcript.AddRange(loaded.Messages); }
         if (replay) Replay(loaded.Messages);
         await _agent.FlushAsync();

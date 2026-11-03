@@ -231,7 +231,9 @@ internal sealed class HostSession : IDisposable
     /// it, with <see cref="ApplyState"/> the only place that writes it (<see cref="SessionState"/>).</summary>
     public SessionState CaptureState() => new(
         CurrentSessionName, TemplateSuffix, ModeName, PlanMode, !ToolsEnabled, StepMode,
-        XrayDisabledSections.Count > 0 ? [.. XrayDisabledSections.Order(StringComparer.Ordinal)] : null, ActivePlan);
+        XrayDisabledSections.Count > 0 ? [.. XrayDisabledSections.Order(StringComparer.Ordinal)] : null, ActivePlan,
+        Summary, string.IsNullOrEmpty(OodaSummary) ? null : OodaSummary,
+        string.IsNullOrEmpty(RecapInSystem) ? null : RecapInSystem, ConversationModel);
 
     /// <summary>Holds <paramref name="state"/> in place of every value the conversation held — a load replaces them all.</summary>
     public void ApplyState(SessionState state)
@@ -245,7 +247,19 @@ internal sealed class HostSession : IDisposable
         XrayDisabledSections.Clear();
         XrayDisabledSections.UnionWith(state.XrayOffSections);
         ActivePlan         = state.ActivePlan;
+        Summary            = state.Summary;
+        OodaSummary        = state.Recap;
+        RecapInSystem      = state.RecapInSystem;
+        ConversationModel  = state.Model;
     }
+
+    /// <summary>What the history holds in place of the conversation's first turns, once compacted
+    /// (<see cref="Services.Agent.HistoryCompaction.Apply"/>); kept with the conversation.</summary>
+    public Services.Agent.HistorySummary? Summary { get; set; }
+
+    /// <summary>The model an ACP thread put the conversation on (<c>models/useForSession</c> with <c>conversation</c>);
+    /// kept with the conversation, applied by the thread that loads it. VS Code's window model is never this one.</summary>
+    public string? ConversationModel { get; set; }
 
     /// <summary>Pending step-mode pause; null when the agent is not paused.</summary>
     public TaskCompletionSource<bool>? StepResume;

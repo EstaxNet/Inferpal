@@ -256,9 +256,9 @@ public sealed class PromptPrefixStabilityTests : IDisposable
         Assert.Contains("\"\\n\\n## Session Summary\\n\\n\" + s.RecapInSystem", host, StringComparison.Ordinal);
         Assert.DoesNotContain("\"\\n\\n## Session Summary\\n\\n\" + s.OodaSummary", host, StringComparison.Ordinal);
         // And the compaction is the one place it is taken.
-        Assert.Contains("ApplyTruncation(_history,decision.Plan);_recapInSystem=_oodaSummary;",
+        Assert.Contains("decision.Summary:null,_summary);_recapInSystem=_oodaSummary;",
                         string.Concat(vm.Where(c => !char.IsWhiteSpace(c))), StringComparison.Ordinal);
-        Assert.Contains("ApplyTruncation(s.History,ctxDecision.Plan);s.RecapInSystem=s.OodaSummary;",
+        Assert.Contains("ctxDecision.Summary:null,s.Summary);s.RecapInSystem=s.OodaSummary;",
                         string.Concat(host.Where(c => !char.IsWhiteSpace(c))), StringComparison.Ordinal);
     }
 

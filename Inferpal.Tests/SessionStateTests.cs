@@ -31,6 +31,7 @@ public sealed class SessionStateTests : IDisposable
             object value = p.ParameterType == typeof(bool) ? true
                          : p.ParameterType == typeof(string) ? $"{p.Name}-value"
                          : p.ParameterType == typeof(IReadOnlyList<string>) ? new List<string> { "pinned", "rules" }
+                         : p.ParameterType == typeof(Services.Agent.HistorySummary) ? new Services.Agent.HistorySummary("summary", 2, 5)
                          : throw new InvalidOperationException($"SessionState.{p.Name}: a type this test cannot fill");
             var args = parameters.Select(q => q == p ? value : q.DefaultValue).ToArray();
             yield return (p.Name!, (SessionState)Activator.CreateInstance(typeof(SessionState), args)!);
@@ -77,7 +78,8 @@ public sealed class SessionStateTests : IDisposable
         var store = new ConversationStore(_dir);
         await store.SaveAsync("plain", [new("user", "q")], CancellationToken.None, workspaceRoot: null, state: SessionState.New);
         var json = await File.ReadAllTextAsync(Path.Combine(_dir, "plain.json"));
-        foreach (var key in new[] { "plan_mode", "tools_off", "step_mode", "xray_off", "active_plan", "mode", "template_suffix" })
+        foreach (var key in new[] { "plan_mode", "tools_off", "step_mode", "xray_off", "active_plan", "mode", "template_suffix",
+                                    "summary", "recap", "recap_in_system", "model" })
             Assert.DoesNotContain($"\"{key}\"", json, StringComparison.Ordinal);
     }
 
@@ -142,6 +144,22 @@ public sealed class SessionStateTests : IDisposable
         // ⚠ The restart does not: the window's mirrors were just given to the host, and one it refused stays for its next
         // start — taken from the answer, it was the host's default, and the slot recorded it.
         Assert.Contains("this.applySession(back.messages, back.nextTurnTokens ?? 0);", provider, StringComparison.Ordinal);
+    }
+
+    /// <summary>Visual Studio keeps the summary its compaction writes and restores the history with it, as the host does
+    /// (executed: <c>HostServerTests.AConversationCompactedBeforeARestart_*</c>).</summary>
+    [Fact]
+    public void VisualStudio_KeepsTheSummaryItsCompactionWrites_AndRestoresWithIt()
+    {
+        var dir = Path.Combine(ConventionCoverageTests.RepoRoot(), "Inferpal", "ToolWindow");
+        var rag = ConventionCoverageTests.CodeOnly(Path.Combine(dir, "InferpalToolWindowData.Rag.cs"));
+        Assert.Matches(@"_summary\s*=\s*Services\.Agent\.HistoryCompaction\.Apply\(_history,\s*decision\.Plan,[^;]*,\s*_summary\);", rag);
+        var connection = ConventionCoverageTests.CodeOnly(Path.Combine(dir, "InferpalToolWindowData.Connection.cs"));
+        Assert.Matches(@"\(_history,\s*_summary\)\s*=\s*SessionManager\.BuildRestoredHistory\(_baseSystemPrompt,\s*messages,\s*_summary\);"
+                       + @"\s*if \(_summary is null\) _recapInSystem = string\.Empty;\s*ApplySystemPrompt\(\);", connection);
+        // A branch starts without what was written of its turns.
+        var branch = ConventionCoverageTests.CodeOnly(Path.Combine(dir, "InferpalToolWindowData.PromptHistory.cs"));
+        Assert.Contains("RestoreConversation(plan.BranchMessages, state.ForBranch() with", branch, StringComparison.Ordinal);
     }
 
     /// <summary>Plan runs the agent loop in Visual Studio too, as on the host (<c>HostServer.TurnIsAgent</c>).</summary>

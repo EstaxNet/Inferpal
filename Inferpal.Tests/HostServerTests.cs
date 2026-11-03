@@ -2150,11 +2150,13 @@ public partial class HostServerTests
             await h.Client.InvokeWithParameterObjectAsync<object?>("session/save", new
             {
                 name     = "last_session",
-                messages = new object[] { new { role = "user", content = "review this, from the screen" } },
+                // The screen continues the slot's conversation (ARestartedHost_TakesFromTheSlot_OnlyForTheConversationItHolds).
+                messages = new object[] { new { role = "user", content = "review this" },
+                                          new { role = "assistant", content = "from the screen" } },
             }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
             var slot = await store.LoadAutoSaveAsync(root, CancellationToken.None);
-            Assert.Equal("review this, from the screen", slot!.Messages[0].Content);   // witness: the host's save is read
+            Assert.Equal("from the screen", slot!.Messages[^1].Content);   // witness: the host's save is read
             Assert.Equal("feature-x", slot.CurrentName);
             Assert.Equal(template, slot.TemplateSuffix);
             Assert.Equal("plans/feature-x.md", slot.ActivePlan);   // the plan it follows: the editor gives it no other way back

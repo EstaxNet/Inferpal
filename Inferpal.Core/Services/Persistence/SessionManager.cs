@@ -57,7 +57,7 @@ internal static class SessionManager
 
     /// <summary>
     /// The messages of a saved conversation, as a session listing counts them: its questions and answers — the history
-    /// the model has (<see cref="BuildRestoredHistory"/>), never the tool steps and notices saved with it.
+    /// the model has (<see cref="BuildRestoredHistory(string, IEnumerable{SavedMessage})"/>), never the tool steps and notices saved with it.
     /// </summary>
     /// <remarks>⚠ Counted on the whole transcript, two questions answered after thirty tool steps read "34 messages",
     /// beside a fork point counted in turns.</remarks>
@@ -212,6 +212,46 @@ internal static class SessionManager
         FoldNotes();
         // A last question without answer stays as it is: the next question closes it (ChatTurnPolicy.CloseUnanswered).
         return history;
+    }
+
+    /// <summary>
+    /// The restored history of a conversation compacted to <paramref name="summary"/>: its anchors, the summary (or the
+    /// marker of the turns dropped), then the turns after the questions it stands for — the history the model had live.
+    /// </summary>
+    /// <returns>The history, and the summary it holds: <c>null</c> when the summary does not fit the conversation (fewer
+    /// questions than it stands for, fewer messages than its anchors — another conversation's, or a file edited by hand),
+    /// and every turn is then restored.</returns>
+    public static (List<ChatMessageDto> History, Agent.HistorySummary? Summary) BuildRestoredHistory(
+        string systemPrompt, IReadOnlyList<SavedMessage> messages, Agent.HistorySummary? summary)
+    {
+        if (summary is null || summary.Anchors < 0 || summary.Questions < 0)
+            return (BuildRestoredHistory(systemPrompt, messages), null);
+        var asked = 0;
+        var from  = messages.Count;
+        for (var i = 0; i < messages.Count; i++)
+        {
+            if (!IsQuestion(messages[i])) continue;
+            if (asked == summary.Questions) { from = i; break; }
+            asked++;
+        }
+        // The anchors are the first messages of the turns the summary stands for, never of the ones after it.
+        var covered = BuildRestoredHistory(systemPrompt, messages.Take(from));
+        if (asked < summary.Questions || covered.Count <= summary.Anchors)
+            return (BuildRestoredHistory(systemPrompt, messages), null);
+
+        var history = covered.Take(1 + summary.Anchors).ToList();
+        history.AddRange(Agent.HistoryCompaction.Head(summary));
+        history.AddRange(BuildRestoredHistory(systemPrompt, messages.Skip(from)).Skip(1));
+        return (history, summary);
+    }
+
+    /// <summary>Whether <paramref name="screen"/> continues the conversation <paramref name="saved"/> holds: its questions
+    /// are the screen's first ones, in order — the screen may have more, never others.</summary>
+    public static bool Continues(IEnumerable<SavedMessage> screen, IEnumerable<SavedMessage> saved)
+    {
+        var asked = screen.Where(IsQuestion).Select(m => m.Content).ToList();
+        var held  = saved.Where(IsQuestion).Select(m => m.Content).ToList();
+        return held.Count <= asked.Count && held.SequenceEqual(asked.Take(held.Count), StringComparer.Ordinal);
     }
 
     /// <summary>

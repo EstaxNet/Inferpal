@@ -3217,21 +3217,22 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // The gauge shows what the NEXT question sends, as the X-Ray it opens does: the turn's own prompt measure
       // includes the agent run's internal transcript, which the next question does not carry.
       this.promptTokens = result.nextTurnTokens || result.promptTokens || this.promptTokens;
+      // Stopped or failed before the question entered the host's history (during the context build): a notice, like a
+      // refused request — the model never had it, and Regenerate resends it without taking back the exchange before it,
+      // which the screen still shows.
+      if (result.questionKept === false) {
+        const asked = this.lastQuestion();
+        if (asked) {
+          asked.notice = true;
+        }
+      }
       if (result.error) {
-        // ⚠ The question stays a question: an error the host ANSWERS comes after the question entered its history,
-        // which keeps it (like the Visual Studio window), so Regenerate must take it back. Marked a notice, it was
-        // resent on top of itself, and a reload dropped what the live history still held.
+        // ⚠ Otherwise the question stays a question: an error the host ANSWERS comes after the question entered its
+        // history, which keeps it (like the Visual Studio window), so Regenerate must take it back. Marked a notice, it
+        // was resent on top of itself, and a reload dropped what the live history still held.
         this.keepFailedPartial(finalText);
         this.append({ role: 'error', text: result.error, timestamp: ChatViewProvider.now(), cut: result.cut ?? null });
       } else if (result.cancelled) {
-        // Stopped before the question entered the host's history (during the context build): a notice, like a refused
-        // request — Regenerate resends it without taking back the exchange before it, which the screen still shows.
-        if (result.questionKept === false) {
-          const asked = this.lastQuestion();
-          if (asked) {
-            asked.notice = true;
-          }
-        }
         // Like the VS window: a visible partial answer stays, an empty one is not saved, and the stop
         // is a lasting line — the webview's own note is gone after a reload.
         if (finalText.trim().length > 0) {

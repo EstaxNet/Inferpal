@@ -16,7 +16,7 @@ namespace Inferpal.Services.Agent;
 /// strips the <c>tool_calls</c> to talk to an empty registry, and leaves the answers behind it).
 /// A restored session no longer carries tool results at all: the live history does not keep them
 /// past their run, and the restore rebuilds the live history
-/// (<see cref="Persistence.SessionManager.BuildRestoredHistory"/>).
+/// (<see cref="Persistence.SessionManager.BuildRestoredHistory(string, IEnumerable{Persistence.SavedMessage})"/>).
 /// </para>
 /// <para>
 /// The content is not lost for that: it becomes a labelled <c>user</c> turn, which both backends

@@ -280,6 +280,8 @@ internal partial class InferpalToolWindowData
             _history               = [new("system", _baseSystemPrompt)];
             _oodaSummary           = string.Empty;
             _recapInSystem         = string.Empty;
+            _summary               = null;
+            _conversationModel     = null;
             _conversationTurnCount = 0;
             _currentSessionName    = string.Empty;   // the archived conversation keeps its own file
             _conversationRoot.Discarded();           // the next conversation belongs where it is first saved
@@ -432,10 +434,12 @@ internal partial class InferpalToolWindowData
         _lastRegenerableMsg       = null;
         _lastContinuableMsg       = null;
         _baseSystemPrompt         = BuildSystemPrompt();
-        _history                  = SessionManager.BuildRestoredHistory(_baseSystemPrompt, messages);
-        _oodaSummary              = string.Empty;
-        _recapInSystem            = string.Empty;
-        _conversationTurnCount    = 0;
+        // The history the model had: compacted as it was, its recap in the system message — restored whole, the turns
+        // that recap tells of are all there again.
+        (_history, _summary)      = SessionManager.BuildRestoredHistory(_baseSystemPrompt, messages, _summary);
+        if (_summary is null) _recapInSystem = string.Empty;
+        ApplySystemPrompt();
+        _conversationTurnCount    = messages.Count(SessionManager.IsQuestion);   // the recap's count goes on
         ResetTurnAccounting();
         // ⚠ Then measured — its OWN measure, never the one of the conversation left: zero is a first turn's state, and
         // the first question after a reload (Visual Studio reloads the last session every time it opens) went out

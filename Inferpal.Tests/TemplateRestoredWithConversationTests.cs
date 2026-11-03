@@ -120,15 +120,15 @@ public partial class HostServerTests
         Assert.Contains("session.State with { CurrentName = name == \"last_session\" ? session.CurrentName : name });",
                         connection);   // a session loaded
         Assert.Contains("RestoreConversation(session.Messages, session.State with { CurrentName = target });", history);   // a branch switched to
-        Assert.Contains("RestoreConversation(plan.BranchMessages, state with { CurrentName = keepsAQuestion ? plan.BranchName : null });",
-                        history);   // a branch made
+        Assert.Contains("RestoreConversation(plan.BranchMessages, state.ForBranch() with { CurrentName = keepsAQuestion ? plan.BranchName : null });",
+                        history);   // a branch made: the conversation's mode, none of what was written of its turns
         // Saved with its mode: the auto-save slot, the archive of /clear (read with the snapshot), a branch.
         Assert.Contains("state = CaptureState();", pending);
         Assert.Contains("await _store.AutoSaveAsync(snapshot, CancellationToken.None, root, state);", pending);
         Assert.Contains("archived         = CaptureState() with { CurrentName = null };", connection);
         Assert.Contains("await _store.SaveAsync(name, snapshot, CancellationToken.None, root, state: archived);", connection);
         Assert.Equal(2, CountOf(history, "forkTurn: plan.ParentForkTurn, state: state);")
-                        + CountOf(history, "forkTurn: plan.ForkTurn, state: state);"));
+                        + CountOf(history, "forkTurn: plan.ForkTurn, state: state.ForBranch());"));
     }
 
     private static int CountOf(string text, string what) =>

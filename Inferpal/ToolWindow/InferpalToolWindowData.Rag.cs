@@ -456,10 +456,9 @@ internal partial class InferpalToolWindowData
 
         await RunOnVMContextAsync(() =>
         {
-            if (decision.Outcome == Services.Agent.ContextOutcome.Compacted)
-                Services.Agent.HistoryCompaction.ApplySummary(_history, decision.Plan, decision.Summary!);
-            else
-                Services.Agent.HistoryCompaction.ApplyTruncation(_history, decision.Plan);
+            // The summary it then holds is kept with the conversation: a restore rebuilds this history, not every turn.
+            _summary = Services.Agent.HistoryCompaction.Apply(_history, decision.Plan,
+                decision.Outcome == Services.Agent.ContextOutcome.Compacted ? decision.Summary : null, _summary);
             // The one moment the session summary joins the system message: the turns it covers have just left.
             _recapInSystem = _oodaSummary;
             ApplySystemPrompt();

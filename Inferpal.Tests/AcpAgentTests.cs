@@ -2048,6 +2048,41 @@ public sealed class AcpAgentTests : IDisposable
         Assert.False(session.ToolsEnabled);
     }
 
+    /// <summary>
+    /// A thread put on a model reloads on it: loaded by another process, it otherwise comes back on the default model, its
+    /// selector with it, and answers as another model than the one it was held on. A model the server no longer serves is
+    /// not put back: the thread opens on the default, and says why.
+    /// </summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task AThreadPutOnAModel_ReloadsOnIt(bool stillServed)
+    {
+        string sid;
+        await using (var first = await StartAsync(fake: f =>
+                     {
+                         f.ModelNames = ["test-model", "picked-model"];
+                         f.ChatResult = new ChatTurnResult("Saved answer.", null, 0, 0);
+                     }))
+        {
+            await first.Client.RequestAsync("initialize", Init());
+            sid = await NewSessionAsync(first);
+            var picked = await first.Client.RequestAsync("session/set_config_option", new { sessionId = sid, configId = "model", value = "picked-model" });
+            Assert.True(picked.TryGetProperty("result", out _), picked.ToString());
+            await PromptAsync(first, sid, "remember this question");
+        }
+
+        await using var second = await StartAsync(fake: f => f.ModelNames = stillServed ? ["test-model", "picked-model"] : ["test-model"]);
+        await second.Client.RequestAsync("initialize", Init());
+        var loaded = (await second.Client.RequestAsync("session/load", new { sessionId = sid, cwd = _root, mcpServers = Array.Empty<object>() }))
+            .GetProperty("result");
+
+        var model = loaded.GetProperty("configOptions").EnumerateArray().Single(o => o.GetProperty("id").GetString() == "model");
+        Assert.Equal(stillServed, model.GetProperty("currentValue").GetString() == "picked-model");
+        Assert.Equal(stillServed, second.Agent.Live(sid)!.HostSessionForTests!.Config.DefaultModel == "picked-model");
+        Assert.Equal(!stillServed, second.Client.Said(sid).Contains("picked-model", StringComparison.Ordinal));   // said why
+    }
+
     /// <summary>A thread held in a mode reopens in it — and when the mode's file is gone since, it still opens, in Default,
     /// the cause said; never a thread that cannot be loaded.</summary>
     [Fact]

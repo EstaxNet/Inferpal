@@ -302,6 +302,11 @@ internal partial class InferpalToolWindowData
         {
             await RunOnVMContextAsync(() =>
             {
+                // Stopped before the question entered the history: a notice in the user's place, as VS Code marks it.
+                // Saved as a question, the model never had it, and a kept summary counted from the first question is
+                // placed a turn early on restore. Regenerate still finds it (by role).
+                if (_lastSent?.Question is { } asked && !ReferenceEquals(_questionInHistory, asked))
+                    asked.ToolName = SessionManager.NoticeMarker;
                 InsertThemed(ChatMessageItem.NoticeMsg(Strings.MsgCancelled));
                 ScrollToBottom();
                 SettleNotes(steering, normal: false);
@@ -316,6 +321,9 @@ internal partial class InferpalToolWindowData
             var msg = ex.Message;
             await RunOnVMContextAsync(() =>
             {
+                // Failed before the question entered the history: a notice, as a Stop there (above).
+                if (_lastSent?.Question is { } asked && !ReferenceEquals(_questionInHistory, asked))
+                    asked.ToolName = SessionManager.NoticeMarker;
                 _sendStarting = false;
                 _turnFailed   = true;
                 SettleNotes(steering, normal: false);
