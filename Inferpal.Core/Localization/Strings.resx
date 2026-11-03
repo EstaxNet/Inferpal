@@ -1346,6 +1346,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="CompletionAskedNoEditor" xml:space="preserve"><value>Inferpal: put the cursor in a code editor, then press the key again.</value></data>
   <data name="CompletionAskedListHint" xml:space="preserve"><value>Inferpal: Tab goes to the open list; the key that asked takes the suggestion.</value></data>
   <data name="CompletionAskedExcluded" xml:space="preserve"><value>Inferpal: {0}</value></data>
+  <data name="CompletionPaused" xml:space="preserve"><value>Inferpal: inline completion is paused for 5 minutes — the completion server failed 5 times in a row. Check that it is running and has the completion model.</value></data>
   <data name="SettingsModelUsed" xml:space="preserve"><value>Model: {0}.</value></data>
   <data name="SettingsChangeInServer" xml:space="preserve"><value>Change it in Server and models</value></data>
   <data name="SlashColCommand" xml:space="preserve"><value>Command</value></data>

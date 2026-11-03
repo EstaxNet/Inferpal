@@ -179,8 +179,9 @@ function fitsTheList(document: vscode.TextDocument, context: vscode.InlineComple
   return selected.text.startsWith(typed) && (typed + completion).startsWith(selected.text);
 }
 
-/** A sentence in the status bar, long enough to be read: the key that asked waits for an answer there. */
-function say(text: string): void {
+/** A sentence in the status bar, long enough to be read: the key that asked waits for an answer there — and where
+ * completions that paused say so (`fim/notice`). */
+export function say(text: string): void {
   vscode.window.setStatusBarMessage(text, 6000);
 }
 

@@ -97,6 +97,38 @@ public sealed class FimChatIsolationTests : IDisposable
         Assert.InRange(server.Paths.Count(p => p.StartsWith("/api/generate", StringComparison.Ordinal)), 1, 5);
     }
 
+    /// <summary>
+    /// ⚠ Completions that pause after repeated failures say so once — not at every pause in typing that finds the breaker
+    /// open — and again after a Retry (or a completion that succeeds) if they pause again. Without it, automatic
+    /// completion that stopped said so only in /diagnostics.
+    /// </summary>
+    [Fact]
+    public async Task CompletionsThatPause_AreSaidOnce_AndAgainAfterARetry()
+    {
+        using var server = new LoopbackHttpServer(
+            path => path.StartsWith("/api/generate", StringComparison.Ordinal) ? "{\"error\":\"model runner has unexpectedly stopped\"}" : null,
+            _ => 500);
+        var client = new OllamaClient(new InferpalConfig { Provider = "ollama", BaseUrl = server.BaseUrl });
+
+        async Task<int> PausesSaidOver(int completions)
+        {
+            var said = 0;
+            for (var i = 0; i < completions; i++)
+            {
+                await CompleteAsync(client, "m");
+                if (client.TakeFimPaused()) said++;
+            }
+            return said;
+        }
+
+        Assert.Equal(0, await PausesSaidOver(4));   // reference arm: failures under the breaker's count say nothing
+        Assert.Equal(1, await PausesSaidOver(16));  // the fifth pauses them: said once, never at the pauses after
+        Assert.True(client.FimFailing);             // WITNESS: paused
+
+        client.ResetCircuit();                      // the manual Retry
+        Assert.Equal(1, await PausesSaidOver(10));
+    }
+
     /// <summary>A chat model on Ollama: refused with a suffix, served without one.</summary>
     private static LoopbackHttpServer ChatModelOnOllama(string model, string completion) => new(
         (path, request) => !path.StartsWith("/api/generate", StringComparison.Ordinal) ? null

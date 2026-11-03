@@ -149,6 +149,8 @@ export interface ChatEvents {
   onTaskFinished?(text: string): void;
   /** Something that failed after the fact (the auto-save slot not emptied…), said in the thread. */
   onNotice?(text: string): void;
+  /** Inline completions paused after repeated failures: said once, in the status bar. */
+  onFimNotice?(text: string): void;
   /** An input card was answered (or its turn stopped): the line it leaves where it was. */
   onInputReceipt?(receipt: InputReceiptNote): void;
   /** A model the first-run card downloads made progress (`setup/pullProgress`). */
@@ -398,6 +400,7 @@ export class HostClient {
     // setBusy(false) — a task finishing while the user looked away left no trace.
     conn.onNotification('task/finished', (n: TextNote) => this.events.onTaskFinished?.(n.text));
     conn.onNotification('host/notice', (n: TextNote) => this.events.onNotice?.(n.text));
+    conn.onNotification('fim/notice', (n: TextNote) => this.events.onFimNotice?.(n.text));
     conn.onNotification('chat/inputReceipt', (n: InputReceiptNote) => this.events.onInputReceipt?.(n));
     conn.onNotification('setup/pullProgress', (n: SetupPullProgress) => this.events.onSetupPullProgress?.(n));
     conn.onNotification('setup/installProgress', (n: SetupInstallProgress) => this.events.onSetupInstallProgress?.(n));

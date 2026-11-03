@@ -1249,6 +1249,62 @@ public sealed class AcpAgentTests : IDisposable
     }
 
     /// <summary>
+    /// A chat model the server does not list is said at a thread's first prompt — only in a thread it answers: one on a
+    /// model of its own (picked, or reopened with it) is not told about the default it never asks.
+    /// </summary>
+    [Fact]
+    public async Task AChatModelTheServerLacks_IsSaid_OnlyInAThreadItAnswers()
+    {
+        static InferpalConfig Settings() => new() { RagEnabled = false, DefaultModel = "gone-model" };
+        await using var h = await StartAsync(fake: p => p.ModelNames = ["test-model", "other-model"],
+                                             host: p => new HostServer(_ => p, Settings, fileSettings: Settings));
+        await h.Client.RequestAsync("initialize", Init());
+        var onDefault = await NewSessionAsync(h);
+        var onItsOwn = await NewSessionAsync(h);
+        await h.Client.RequestAsync("session/set_config_option", new { sessionId = onItsOwn, configId = "model", value = "other-model" });
+
+        await PromptAsync(h, onDefault, "hello");
+        await PromptAsync(h, onItsOwn, "hello");
+
+        var notice = Strings.SlashModelNotListed("gone-model");
+        Assert.Contains(notice, h.Client.Said(onDefault));                // WITNESS: the thread the default answers
+        Assert.DoesNotContain(notice, h.Client.Said(onItsOwn));
+    }
+
+    /// <summary>
+    /// ⚠ A repository's MCP servers follow its files from one prompt to the next: a <c>.mcp.json</c> a checkout changed is
+    /// read again before the next prompt (<c>config/reload</c>), and its server asked about again — never at a prompt
+    /// whose files did not change.
+    /// </summary>
+    [Fact]
+    public async Task ARepositorysMcpFileChangedBetweenTwoPrompts_IsReadAgain_BeforeTheNext()
+    {
+        var name = "repo" + Guid.NewGuid().ToString("N")[..8];
+        var file = Path.Combine(_root, ".mcp.json");
+        File.WriteAllText(file, "{\"mcpServers\":{\"" + name + "\":{\"command\":\"inferpal-no-such-program\"}}}");
+        static InferpalConfig Settings() => new() { RagEnabled = false, McpEnabled = true, DefaultModel = "test-model" };
+        await using var h = await StartAsync(host: p => new HostServer(_ => p, Settings, fileSettings: Settings));
+        h.Client.Answer = (method, _) => method == "session/request_permission"
+            ? new { outcome = new { outcome = "selected", optionId = "reject_once" } }
+            : null;
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+        int Asked() => h.Client.Requests.Count(r => r.GetProperty("method").GetString() == "session/request_permission");
+        // The start's refresh has decided about the server (held back until the client knows the thread).
+        for (var i = 0; i < 300 && !Services.Diagnostics.Snapshot().Any(e => e.Detail.Contains($"'{name}'", StringComparison.Ordinal)); i++)
+            await Task.Delay(100);
+
+        await PromptAsync(h, sid, "hello");
+        Assert.Equal(1, Asked());                                        // WITNESS: the first prompt asks
+        await PromptAsync(h, sid, "again");
+        Assert.Equal(1, Asked());                                        // reference arm: files unchanged
+
+        File.WriteAllText(file, "{\"mcpServers\":{\"" + name + "\":{\"command\":\"inferpal-no-such-program\",\"args\":[\"--x\"]}}}");
+        await PromptAsync(h, sid, "after the checkout");
+        Assert.Equal(2, Asked());
+    }
+
+    /// <summary>
     /// ⚠ In a batch of reads run in parallel, a call refused before any tool (its arguments cut mid-call) is drawn, and
     /// each call that ran is drawn once. The loop's report of a call was paired with the calls drawn by counting: the
     /// refusal, reported between two calls that ran, was taken for an echo and vanished, and the last call was drawn

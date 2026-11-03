@@ -45,4 +45,12 @@ internal static class AskedCompletion
 
     /// <summary>The sentence for an empty answer.</summary>
     public static string Empty(bool serverFailed) => serverFailed ? ServerFailed : Nothing;
+
+    /// <summary>
+    /// What a pause in typing says when completions just paused after repeated failures — once
+    /// (<see cref="IInferenceProvider.TakeFimPaused"/>) — or <c>null</c>. ⚠ Without it, automatic completion that stopped
+    /// said so only in <c>/diagnostics</c>: the person saw suggestions stop and nothing else.
+    /// </summary>
+    public static string? PauseNotice(IInferenceProvider completionServer) =>
+        completionServer.TakeFimPaused() ? Strings.CompletionPaused : null;
 }

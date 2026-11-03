@@ -31,6 +31,10 @@ for (var i = 0; i < args.Length - 1; i++)
 // changes, which is safer than a hot reload (switching backend in flight would leave an HttpClient
 // and a loaded model behind).
 var config = InferpalConfig.Load();
+// The sentences this process writes (the pause notice) in the person's language: the setting, else ("Auto") Visual
+// Studio's interface language, which devenv passes — not the operating system's.
+var uiCulture = Array.IndexOf(args, "--ui-culture") is var at and >= 0 && at + 1 < args.Length ? args[at + 1] : null;
+Inferpal.Localization.Strings.ApplyLanguage(string.IsNullOrEmpty(config.Language) ? uiCulture : config.Language);
 // The completion's server: the chat's, or one of its own (ghost text on this machine while the chat answers elsewhere).
 var client = InferenceProviderFactory.Create(config, ServerRole.Completion);
 
@@ -60,6 +64,6 @@ var loop = new FimRpcLoop(stdin, stdout, async (request, ct) =>
         model:       request.Model);
     // Without what already follows the caret: models repeat it, and accepted it is doubled.
     return FimCompletion.Finish(sb.ToString(), request.Suffix);
-}, () => client.FimFailing);
+}, () => client.FimFailing, () => AskedCompletion.PauseNotice(client));
 
 await loop.RunAsync(lifetime.Token);

@@ -1342,6 +1342,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="CompletionAskedNoEditor" xml:space="preserve"><value>Inferpal: mettete il cursore in un editor di codice, poi premete di nuovo il tasto.</value></data>
   <data name="CompletionAskedListHint" xml:space="preserve"><value>Inferpal: Tab va all'elenco aperto; il tasto che ha chiesto prende il suggerimento.</value></data>
   <data name="CompletionAskedExcluded" xml:space="preserve"><value>Inferpal: {0}</value></data>
+  <data name="CompletionPaused" xml:space="preserve"><value>Inferpal: il completamento è in pausa per 5 minuti — il server di completamento ha fallito 5 volte di seguito. Verificate che sia avviato e che abbia il modello di completamento.</value></data>
   <data name="SettingsModelUsed" xml:space="preserve"><value>Modello: {0}.</value></data>
   <data name="SettingsChangeInServer" xml:space="preserve"><value>Cambialo in Server e modelli</value></data>
   <data name="SlashColCommand" xml:space="preserve"><value>Comando</value></data>

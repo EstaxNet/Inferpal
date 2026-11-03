@@ -19,6 +19,9 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
     /// <summary>False = a server on another machine than the chat's: background work there does not wait for a chat.</summary>
     public bool SharesGpuWithChat { get; set; } = true;
     public bool FimFailing { get; set; }
+    /// <summary>Completions just paused after repeated failures: taken once (<see cref="TakeFimPaused"/>).</summary>
+    public bool FimPaused { get; set; }
+    public bool TakeFimPaused() { var paused = FimPaused; FimPaused = false; return paused; }
     public List<string>             ModelNames { get; set; } = [];
     public List<RunningModelInfo>   Running    { get; set; } = [];
     public List<InstalledModelInfo> Installed  { get; set; } = [];

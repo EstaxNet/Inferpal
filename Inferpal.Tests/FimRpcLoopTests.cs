@@ -137,6 +137,63 @@ public class FimRpcLoopTests
         await running;
     }
 
+    /// <summary>
+    /// Completions that just paused after repeated failures say so once (<c>"notice"</c>), on an empty answer: the ghost
+    /// text says it in the status bar even when no key asked. A completion never carries it, nor consumes it.
+    /// </summary>
+    [Theory]
+    [InlineData("", true)]
+    [InlineData("x + 1", false)]
+    public async Task APause_IsCarriedOnce_OnAnEmptyAnswer(string completion, bool carried)
+    {
+        var (client, server) = FullDuplexStream.CreatePair();
+        var taken = 0;
+        var loop = new FimRpcLoop(server, server, (_, _) => Task.FromResult(completion), () => true,
+                                  () => Interlocked.Increment(ref taken) == 1 ? "paused" : null);
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var running = loop.RunAsync(cts.Token);
+        await SendAsync(client, """{"jsonrpc":"2.0","id":4,"method":"fim/complete","params":{"prefix":"a","suffix":"b"}}""");
+
+        var length = await ReadHeadersAsync(client).WaitAsync(TimeSpan.FromSeconds(10));
+        var body = new byte[length];
+        for (var read = 0; read < length;) read += await client.ReadAsync(body.AsMemory(read, length - read));
+        using var doc = JsonDocument.Parse(Encoding.UTF8.GetString(body));
+
+        Assert.Equal(completion, doc.RootElement.GetProperty("result").GetString());   // witness: the answer itself
+        Assert.Equal(carried ? "paused" : null,
+                     doc.RootElement.TryGetProperty("notice", out var n) ? n.GetString() : null);
+        Assert.Equal(carried ? 1 : 0, taken);
+
+        client.Dispose();
+        await running;
+    }
+
+    /// <summary>
+    /// ⚠ Visual Studio says the pause where the person looks: the in-process half says <c>"notice"</c> in the status bar
+    /// as it arrives — before it looks for the request, which the next keystroke may have cancelled. Held on the source:
+    /// devenv is not in the suite.
+    /// </summary>
+    [Fact]
+    public void VisualStudio_SaysAPause_WhenNoKeyAsked()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "README.md"))) dir = dir.Parent;
+        Assert.NotNull(dir);
+        var sidecar = ConventionCoverageTests.CodeOnly(Path.Combine(dir!.FullName, "Inferpal.InProc", "Fim", "FimSidecar.cs"));
+        var ghost = ConventionCoverageTests.CodeOnly(Path.Combine(dir.FullName, "Inferpal.InProc", "GhostText", "GhostTextController.cs"));
+        var program = ConventionCoverageTests.CodeOnly(Path.Combine(dir.FullName, "Inferpal.Fim", "Program.cs"));
+
+        Assert.Contains("\"failing\"", sidecar);                                          // WITNESS
+        var said = sidecar.IndexOf("GhostText.CompletionAskWatcher.Say(paused);", StringComparison.Ordinal);
+        Assert.True(said > 0 && said < sidecar.IndexOf("!_pending.TryRemove(idElement.GetInt32()", StringComparison.Ordinal),
+                    "the pause is said before the request is looked for");
+        Assert.Contains("CompletionAskWatcher.Say(", ghost);                                        // WITNESS
+        Assert.Contains("AskedCompletion.PauseNotice(client)", program);
+        Assert.Contains("\"--ui-culture\"", program);                                       // Auto = Visual Studio's language
+        Assert.Contains("\" --ui-culture \"", sidecar);
+    }
+
     /// <summary>An empty answer from a server that failed says so (<c>"failing"</c>): the key of inline completion names
     /// the server, not the model. A completion, or an empty answer from a working server, carries no mark.</summary>
     [Theory]

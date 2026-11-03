@@ -611,6 +611,7 @@ internal static class Strings
     public static string CompletionAskedNoModel(string page) => Format(Get(nameof(CompletionAskedNoModel)), page);
     public static string CompletionAskedNothing              => Get(nameof(CompletionAskedNothing));
     public static string CompletionAskedServerFailed         => Get(nameof(CompletionAskedServerFailed));
+    public static string CompletionPaused                    => Get(nameof(CompletionPaused));
     public static string CompletionAskedNoEditor             => Get(nameof(CompletionAskedNoEditor));
     public static string CompletionAskedListHint             => Get(nameof(CompletionAskedListHint));
     public static string CompletionAskedExcluded(string why) => Format(Get(nameof(CompletionAskedExcluded)), why);

@@ -1342,6 +1342,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="CompletionAskedNoEditor" xml:space="preserve"><value>Inferpal: 코드 편집기에 커서를 둔 뒤 키를 다시 누르세요.</value></data>
   <data name="CompletionAskedListHint" xml:space="preserve"><value>Inferpal: Tab은 열린 목록으로 갑니다. 요청한 키로 제안을 수락하세요.</value></data>
   <data name="CompletionAskedExcluded" xml:space="preserve"><value>Inferpal: {0}</value></data>
+  <data name="CompletionPaused" xml:space="preserve"><value>Inferpal: 인라인 완성이 5분 동안 일시 중지되었습니다 — 완성 서버가 5번 연속으로 실패했습니다. 서버가 실행 중이고 완성 모델이 있는지 확인하세요.</value></data>
   <data name="SettingsModelUsed" xml:space="preserve"><value>모델: {0}.</value></data>
   <data name="SettingsChangeInServer" xml:space="preserve"><value>서버 및 모델에서 변경</value></data>
   <data name="SlashColCommand" xml:space="preserve"><value>명령</value></data>

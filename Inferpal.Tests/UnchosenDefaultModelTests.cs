@@ -140,4 +140,47 @@ public class UnchosenDefaultModelTests
         Assert.Contains("ModelCatalog.FirstModelToAdopt(_config, listed)", code);
         Assert.Contains("Strings.MsgModelAdopted(configured, adopted)", code);
     }
+
+    /// <summary>VS Code says a pause of its completions in the status bar: the host's <c>fim/notice</c> reaches it.</summary>
+    [Fact]
+    public void VsCode_SaysAPauseOfItsCompletions_InTheStatusBar()
+    {
+        var src = Path.Combine(RepoRoot(), "vscode", "src");
+        var client = SettingsSchemaDriftTests.NeutralizeTypeScriptComments(File.ReadAllText(Path.Combine(src, "hostClient.ts")));
+        var chat = SettingsSchemaDriftTests.NeutralizeTypeScriptComments(File.ReadAllText(Path.Combine(src, "chatViewProvider.ts")));
+
+        Assert.Contains("conn.onNotification('host/notice'", client);                                  // WITNESS
+        Assert.Contains("conn.onNotification('fim/notice', (n: TextNote) => this.events.onFimNotice?.(n.text));", client);
+        Assert.Contains("onFimNotice: (text) => sayInStatusBar(text),", chat);
+        Assert.Contains("import { say as sayInStatusBar } from './inlineCompletions';", chat);
+    }
+
+    /// <summary>
+    /// ⚠ A chosen model the server does not have is said when the editor connects, in both editors — before the first
+    /// question fails on the server's raw "not found". VS Code says the host's notice even when nothing was adopted, and
+    /// asks it for a window's own model too (the host never replaces that one: <c>AdoptDefault_AWindowsOwnPick_*</c>).
+    /// </summary>
+    [Fact]
+    public void AChosenModelTheServerLacks_IsSaid_WhenEitherEditorConnects()
+    {
+        var vs = ConventionCoverageTests.CodeOnly(
+            Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowData.Connection.cs"));
+        Assert.Contains("ModelCatalog.FirstModelToAdopt(_config, listed)", vs);                             // WITNESS
+        Assert.Contains("ModelCatalog.NotListedNotice(_config.DefaultModel, listed)", vs);
+
+        var ts = SettingsSchemaDriftTests.NeutralizeTypeScriptComments(
+            File.ReadAllText(Path.Combine(RepoRoot(), "vscode", "src", "chatViewProvider.ts")));
+        var adopt = TsMethod(ts, "adoptDefaultModel");
+        Assert.Contains("host.modelsAdoptDefault()", adopt);                                               // WITNESS
+        Assert.DoesNotContain("this.windowModel()", adopt);
+        // ⚠ What protects the window's pick instead: it is always told to the host — even when it equals the shared
+        // default —, and the host never replaces a model told (AdoptDefault_AWindowsOwnPick_*).
+        Assert.Contains("if (this.model && (this.windowModel() || this.model !== host.info?.defaultModel))",
+                        TsMethod(ts, "onHostReady"));
+        var model = adopt.IndexOf("if (adopted.model)", StringComparison.Ordinal);
+        var notice = adopt.IndexOf("if (adopted.notice)", StringComparison.Ordinal);
+        Assert.True(model >= 0 && notice > model, "both branches are read");
+        // The notice is its own branch, after the model's block closed — not nested in it.
+        Assert.Contains("}", adopt[model..notice]);
+    }
 }

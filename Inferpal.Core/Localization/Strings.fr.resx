@@ -1342,6 +1342,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="CompletionAskedNoEditor" xml:space="preserve"><value>Inferpal : placez le curseur dans un éditeur de code, puis appuyez de nouveau sur la touche.</value></data>
   <data name="CompletionAskedListHint" xml:space="preserve"><value>Inferpal : Tab va à la liste ouverte ; la touche qui a demandé prend la suggestion.</value></data>
   <data name="CompletionAskedExcluded" xml:space="preserve"><value>Inferpal : {0}</value></data>
+  <data name="CompletionPaused" xml:space="preserve"><value>Inferpal : la complétion est en pause pour 5 minutes — le serveur de complétion a échoué 5 fois de suite. Vérifiez qu'il tourne et qu'il a le modèle de complétion.</value></data>
   <data name="SettingsModelUsed" xml:space="preserve"><value>Modèle : {0}.</value></data>
   <data name="SettingsChangeInServer" xml:space="preserve"><value>Le changer dans Serveur et modèles</value></data>
   <data name="SlashColCommand" xml:space="preserve"><value>Commande</value></data>

@@ -1342,6 +1342,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="CompletionAskedNoEditor" xml:space="preserve"><value>Inferpal: Setzen Sie den Cursor in einen Code-Editor und drücken Sie die Taste erneut.</value></data>
   <data name="CompletionAskedListHint" xml:space="preserve"><value>Inferpal: Tab geht an die offene Liste; die Taste, die angefragt hat, übernimmt den Vorschlag.</value></data>
   <data name="CompletionAskedExcluded" xml:space="preserve"><value>Inferpal: {0}</value></data>
+  <data name="CompletionPaused" xml:space="preserve"><value>Inferpal: Die Inline-Vervollständigung pausiert 5 Minuten – der Vervollständigungsserver ist 5-mal in Folge fehlgeschlagen. Prüfen Sie, ob er läuft und das Vervollständigungsmodell hat.</value></data>
   <data name="SettingsModelUsed" xml:space="preserve"><value>Modell: {0}.</value></data>
   <data name="SettingsChangeInServer" xml:space="preserve"><value>In Server und Modelle ändern</value></data>
   <data name="SlashColCommand" xml:space="preserve"><value>Befehl</value></data>

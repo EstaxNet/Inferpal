@@ -127,6 +127,9 @@ The MCP servers a repository declares for other tools start beside yours — onc
   first — the server, its file and the command it runs — **even with approvals switched off and under an `allow`
   rule**. Your agreement is kept for that repository and that exact definition: change one argument and you are asked
   again. A declined server is asked about again at the next start.
+- **The servers follow the branch.** Before each question, Inferpal looks at these files again: when a checkout, a
+  pull or an edit changed one of them (or added one), the repository's servers are read again before the question â
+  a changed definition is asked about again, a server the files no longer declare stops. No restart, no command.
 - **Your agreement also covers the repository's files the server runs.** Inferpal looks for every file and folder of
   the repository the definition names — in its command, its arguments or its environment, variables replaced, and in
   the `package.json` script that `npm run` (or `pnpm`, `yarn`, `bun`) starts — and covers each named file with the

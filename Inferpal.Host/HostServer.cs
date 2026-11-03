@@ -1233,6 +1233,7 @@ internal sealed partial class HostServer : IDisposable
         WithTurnSlot("models/useForSession", () =>
         {
             s.Config.UseDefaultModelForSession(p.Model.Trim());
+            s.ModelPickedForSession = true;
             if (p.Conversation) s.ConversationModel = p.Model.Trim();
         });
     }
@@ -1241,12 +1242,15 @@ internal sealed partial class HostServer : IDisposable
     /// without it the model just downloaded was not used until the next start.</summary>
     private static async Task<ModelsAdoptResult> AdoptDefaultModelAsync(HostSession s, CancellationToken ct)
     {
+        // ⚠ A model the window or the thread picked (models/useForSession) is a choice, even the code's default: said when
+        // the server lacks it, never replaced — not by another editor's saved model, not by the best installed one.
+        var picked = s.ModelPickedForSession;
         // A model chosen in another window since this host read the settings is that choice, not a default to replace.
-        if (s.Config.FillFromFile(nameof(InferpalConfig.DefaultModel)))
+        if (!picked && s.Config.FillFromFile(nameof(InferpalConfig.DefaultModel)))
             return new ModelsAdoptResult(s.Config.DefaultModel, null);
         var listed = await s.Client.ListModelsByKindAsync(ct);
-        if (ModelCatalog.FirstModelToAdopt(s.Config, listed) is not { } adopted)
-            return new ModelsAdoptResult(null, null);
+        if (picked || ModelCatalog.FirstModelToAdopt(s.Config, listed) is not { } adopted)
+            return new ModelsAdoptResult(null, ModelCatalog.NotListedNotice(s.Config.DefaultModel, listed));
 
         var configured = s.Config.DefaultModel;
         s.Config.DefaultModel = adopted;
@@ -1476,8 +1480,11 @@ internal sealed partial class HostServer : IDisposable
 
         var sb = new StringBuilder();
         // The completion's server: the chat's, or its own (ghost text here while the chat answers on a team server).
-        await s.Roles.For(ServerRole.Completion).StreamFimAsync(p.Prefix, p.Suffix, p.MaxTokens ?? preset.MaxTokens,
-                                                                p.Temperature ?? preset.Temperature, t => sb.Append(t), ct, model);
+        var server = s.Roles.For(ServerRole.Completion);
+        await server.StreamFimAsync(p.Prefix, p.Suffix, p.MaxTokens ?? preset.MaxTokens,
+                                    p.Temperature ?? preset.Temperature, t => sb.Append(t), ct, model);
+        // Completions just paused after repeated failures: said once in the status bar, not left to /diagnostics.
+        if (Services.CodeActions.AskedCompletion.PauseNotice(server) is { } paused) Notify("fim/notice", new { text = paused });
         // Without what already follows the caret: models repeat it, and accepted it is doubled.
         return Services.CodeActions.FimCompletion.Finish(sb.ToString(), p.Suffix);
     }
@@ -1756,6 +1763,8 @@ internal sealed partial class HostServer : IDisposable
             var follow = Services.Inference.SettingsFollow.Take(s.Config, _fileSettings(), s.Client, ref followed);
             s.FileSettings = followed;
             if (follow.Taken.Count > 0) await AfterSettingsChangedAsync(s, mcpBefore, token);
+            // The repository's MCP files changed (a checkout): its servers are read again — before the question.
+            if (s.Mcp.RepositoryFilesChanged()) await s.Mcp.RefreshAsync();
             return new ConfigReloadResult(follow.Taken, s.Config.DefaultModel, follow.ServerChanged, s.Config.AgentModel,
                                           Unreadable: follow.Unreadable);
         });

@@ -262,6 +262,18 @@ internal static class ModelCatalog
     public static string? FirstModelToAdopt(Config.InferpalConfig config, IReadOnlyList<string> listed) =>
         FirstModelToAdopt(config, ModelsByKind.ByName(listed));
 
+    /// <summary>
+    /// The warning that <paramref name="model"/>, the chat model, is not among the models the server lists — said when
+    /// the editor connects, before a question fails on the server's raw "not found"; <c>null</c> when it is listed, or
+    /// when nothing is listed (an empty list cannot judge).
+    /// </summary>
+    /// <remarks>A warning, never a refusal or a replacement: a model chosen by someone stays theirs, and some servers
+    /// (llama.cpp) list one id and serve any name — as <c>/model</c> warns (<see cref="Commands.ModelsCommandHandler"/>).</remarks>
+    public static string? NotListedNotice(string? model, ModelsByKind listed) =>
+        string.IsNullOrWhiteSpace(model) || listed.Listed.Count == 0 || listed.Listed.Any(m => SameModelName(m, model))
+            ? null
+            : Strings.SlashModelNotListed(model);
+
     /// <inheritdoc cref="FirstModelToAdopt(Config.InferpalConfig, IReadOnlyList{string})"/>
     public static string? FirstModelToAdopt(Config.InferpalConfig config, ModelsByKind listed)
     {

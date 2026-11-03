@@ -79,6 +79,12 @@ public partial class HostServerTests
         [JsonRpcMethod("setup/installProgress", UseSingleObjectParameterDeserialization = true)]
         public void SetupInstallProgress(InstallLineNote note) => InstallLines.Enqueue(note.Line);
 
+        /// <summary>Every <c>fim/notice</c> received (filled by the RPC dispatch thread).</summary>
+        public readonly System.Collections.Concurrent.ConcurrentQueue<string> FimNotices = new();
+
+        [JsonRpcMethod("fim/notice", UseSingleObjectParameterDeserialization = true)]
+        public void FimNotice(TokenNote note) => FimNotices.Enqueue(note.Text);
+
         /// <summary>Every <c>host/notice</c> received (filled by the RPC dispatch thread).</summary>
         public readonly System.Collections.Concurrent.ConcurrentQueue<string> HostNotices = new();
 
@@ -466,6 +472,31 @@ public partial class HostServerTests
 
         Assert.Null(result.Text);
         Assert.Equal(AskedCompletion.Nothing, result.Notice);
+    }
+
+    /// <summary>
+    /// ⚠ VS Code's automatic completion that pauses after repeated failures says so once, in the status bar
+    /// (<c>fim/notice</c>) — the provider shows nothing for an empty answer, and the cause was only in /diagnostics.
+    /// </summary>
+    [Fact]
+    public async Task FimComplete_CompletionsThatPaused_AreSaidOnce()
+    {
+        using var signals = new SignalScratchDir();
+        using var h = CreateHarness(_ => { });
+        h.Fake.OnFim = (_, _) => "";
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        async Task CompleteAsync() =>
+            await h.Client.InvokeWithParameterObjectAsync<string>("fim/complete", new { prefix = "a", suffix = "b" })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        await CompleteAsync();                                 // reference arm: not paused, nothing said
+        h.Fake.FimPaused = true;
+        await CompleteAsync();
+        await CompleteAsync();                                 // still paused: not said again
+        for (var i = 0; i < 100 && h.Target.FimNotices.IsEmpty; i++) await Task.Delay(20);
+
+        Assert.Equal([Strings.CompletionPaused], h.Target.FimNotices.ToArray());
     }
 
     /// <summary>Nothing back from a server that failed (down, refused, paused): the server is named, not the caret.</summary>
@@ -3655,7 +3686,7 @@ public partial class HostServerTests
     [Fact]
     public async Task AdoptDefault_ReplacesAnUnchosenDefaultTheBackendLacks_SavesIt_AndSaysSo()
     {
-        using var h = CreateHarness();
+        using var h = CreateHarness(settingsFile: OwnSettingsFile());
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
         h.Fake.ModelNames = ["nomic-embed-text", "qwen3:8b"];
         var configured = h.Server.CurrentSession!.Config.DefaultModel;
@@ -3666,6 +3697,11 @@ public partial class HostServerTests
         Assert.Equal("qwen3:8b", h.Server.CurrentSession!.Config.DefaultModel);
         Assert.Equal(Strings.MsgModelAdopted(configured, "qwen3:8b"), result.Notice);
     }
+
+    /// <summary>A settings file of the test's own: the suite's shared one holds what other tests saved (a default model
+    /// read back as "chosen in another window").</summary>
+    private static string OwnSettingsFile() =>
+        Path.Combine(Directory.CreateTempSubdirectory("inferpal-adopt").FullName, "config.json");
 
     /// <summary>An Ollama session whose settings file is its own, on a 14 GB card (no probe), the index and completions
     /// off: nothing lives beside the chat.</summary>
@@ -3816,7 +3852,8 @@ public partial class HostServerTests
         var result = await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
             "command/slash", new { text = "/models pull qwen3:8b" });
 
-        Assert.Equal(Strings.ModelsPulled("qwen3:8b"), result.Markdown);
+        // Kept — and since the server still does not list it, said under the download.
+        Assert.Equal(Strings.ModelsPulled("qwen3:8b") + "\n\n" + Strings.SlashModelNotListed("my-finetune"), result.Markdown);
         Assert.Equal("my-finetune", h.Server.CurrentSession!.Config.DefaultModel);
     }
 
@@ -4225,18 +4262,47 @@ public partial class HostServerTests
         Assert.Equal([("pulling manifest", (int?)null), ("pulling 2b5d1e (37%)", 37)], h.Target.PullProgress.ToArray());
     }
 
+    /// <summary>
+    /// A chosen model is never replaced — and when the server does not have it, the connection says so, before a question
+    /// fails on the server's raw "not found". Listed (even as <c>:latest</c>), nothing is said.
+    /// </summary>
     [Fact]
-    public async Task AdoptDefault_LeavesAChosenModelAlone()
+    public async Task AdoptDefault_LeavesAChosenModelAlone_AndSaysTheServerLacksIt()
     {
-        using var h = CreateHarness(cfg => cfg.DefaultModel = "my-finetune");
+        using var h = CreateHarness(cfg => cfg.DefaultModel = "my-finetune", settingsFile: OwnSettingsFile());
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
         h.Fake.ModelNames = ["qwen3:8b"];
 
         var result = await h.Client.InvokeAsync<Host.ModelsAdoptResult>("models/adoptDefault");
 
         Assert.Null(result.Model);
-        Assert.Null(result.Notice);
+        Assert.Equal(Strings.SlashModelNotListed("my-finetune"), result.Notice);
         Assert.Equal("my-finetune", h.Server.CurrentSession!.Config.DefaultModel);
+
+        h.Fake.ModelNames = ["qwen3:8b", "my-finetune:latest"];                 // reference arm: the server has it
+        Assert.Null((await h.Client.InvokeAsync<Host.ModelsAdoptResult>("models/adoptDefault")).Notice);
+    }
+
+    /// <summary>
+    /// ⚠ The code's default, picked by a window (its workspace setting) or a thread, is a choice: when the server lacks it,
+    /// it is said and kept — never replaced by the best installed model and saved for every editor.
+    /// </summary>
+    [Fact]
+    public async Task AdoptDefault_AWindowsOwnPick_OfTheCodesDefault_IsSaid_NeverReplaced()
+    {
+        var file = OwnSettingsFile();
+        File.WriteAllText(file, """{ "defaultModel": "another-editors-model" }""");   // ⚠ not taken over the window's pick
+        using var h = CreateHarness(settingsFile: file);
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.ModelNames = ["qwen3:8b"];
+        var picked = new InferpalConfig().DefaultModel;
+        await h.Client.InvokeWithParameterObjectAsync("models/useForSession", new { model = picked });
+
+        var result = await h.Client.InvokeAsync<Host.ModelsAdoptResult>("models/adoptDefault");
+
+        Assert.Null(result.Model);
+        Assert.Equal(Strings.SlashModelNotListed(picked), result.Notice);
+        Assert.Equal(picked, h.Server.CurrentSession!.Config.DefaultModel);
     }
 
     [Fact]

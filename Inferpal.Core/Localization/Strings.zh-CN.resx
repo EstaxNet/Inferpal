@@ -1342,6 +1342,7 @@
   <data name="CompletionAskedNoEditor" xml:space="preserve"><value>Inferpal：请将光标放在代码编辑器中，然后再按一次该键。</value></data>
   <data name="CompletionAskedListHint" xml:space="preserve"><value>Inferpal：Tab 会交给打开的列表；请求时按的键可接受建议。</value></data>
   <data name="CompletionAskedExcluded" xml:space="preserve"><value>Inferpal：{0}</value></data>
+  <data name="CompletionPaused" xml:space="preserve"><value>Inferpal：内联补全已暂停 5 分钟 — 补全服务器连续 5 次失败。请检查它是否在运行并且有补全模型。</value></data>
   <data name="SettingsModelUsed" xml:space="preserve"><value>模型：{0}。</value></data>
   <data name="SettingsChangeInServer" xml:space="preserve"><value>在“服务器与模型”中更改</value></data>
   <data name="SlashColCommand" xml:space="preserve"><value>命令</value></data>

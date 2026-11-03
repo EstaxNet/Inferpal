@@ -43,6 +43,13 @@ internal interface IInferenceProvider : IChatTurnClient
     /// </summary>
     bool FimFailing => false;
 
+    /// <summary>
+    /// Whether inline completions just paused after repeated failures, not said yet: <c>true</c> once per pause, and
+    /// again only after a completion succeeded or a manual Retry — said in the status bar, never at each keystroke
+    /// (<c>AskedCompletion.PauseNotice</c>).
+    /// </summary>
+    bool TakeFimPaused() => false;
+
     /// <inheritdoc cref="InferenceProviderBase.RunAgentAsync"/>
     Task<AgentResult> RunAgentAsync(
         string model,

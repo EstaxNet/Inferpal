@@ -1342,6 +1342,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="CompletionAskedNoEditor" xml:space="preserve"><value>Inferpal: ponga el cursor en un editor de código y vuelva a pulsar la tecla.</value></data>
   <data name="CompletionAskedListHint" xml:space="preserve"><value>Inferpal: Tab va a la lista abierta; la tecla que la pidió toma la sugerencia.</value></data>
   <data name="CompletionAskedExcluded" xml:space="preserve"><value>Inferpal: {0}</value></data>
+  <data name="CompletionPaused" xml:space="preserve"><value>Inferpal: el autocompletado queda en pausa 5 minutos — el servidor de autocompletado falló 5 veces seguidas. Compruebe que está en marcha y que tiene el modelo de autocompletado.</value></data>
   <data name="SettingsModelUsed" xml:space="preserve"><value>Modelo: {0}.</value></data>
   <data name="SettingsChangeInServer" xml:space="preserve"><value>Cambiarlo en Servidor y modelos</value></data>
   <data name="SlashColCommand" xml:space="preserve"><value>Comando</value></data>

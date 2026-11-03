@@ -261,6 +261,10 @@ internal sealed class HostSession : IDisposable
     /// kept with the conversation, applied by the thread that loads it. VS Code's window model is never this one.</summary>
     public string? ConversationModel { get; set; }
 
+    /// <summary>The window or the thread put this session on a model of its own (<c>models/useForSession</c>): a choice,
+    /// which <c>models/adoptDefault</c> never replaces.</summary>
+    public bool ModelPickedForSession { get; set; }
+
     /// <summary>Pending step-mode pause; null when the agent is not paused.</summary>
     public TaskCompletionSource<bool>? StepResume;
 

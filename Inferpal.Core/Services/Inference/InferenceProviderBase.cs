@@ -95,6 +95,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     //    records its RecordFailure. A server that accepts then systematically dies therefore
     //    oscillates 1-0 without ever tripping the cooldown - accepted: the user sees every error,
     //    and cutting access would not help that case.
+    // ⚠ Strings.CompletionPaused says these two numbers for the completion's breaker.
     private const  int          MaxConsecutiveFailures = 5;
     private static readonly TimeSpan CooldownDuration = TimeSpan.FromMinutes(5);
 
@@ -160,6 +161,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         ResetChatCircuit();
         Interlocked.Exchange(ref _fimConsecutiveFailures, 0);
         Interlocked.Exchange(ref _fimCooldownUntilTicks,  0);
+        Interlocked.Exchange(ref _fimPause, 0);
     }
 
     /// <summary>
@@ -230,7 +232,14 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     {
         _fimLastFailed = false;
         Interlocked.Exchange(ref _fimConsecutiveFailures, 0);
+        Interlocked.Exchange(ref _fimPause, 0);
     }
+
+    // 0: nothing to say; 1: the breaker just paused completions; 2: said — until a completion succeeds.
+    private int _fimPause;
+
+    /// <inheritdoc cref="IInferenceProvider.TakeFimPaused"/>
+    public bool TakeFimPaused() => Interlocked.CompareExchange(ref _fimPause, 2, 1) == 1;
 
     /// <summary>A completion not asked because the server refuses it for a while: failed, without counting toward the
     /// breaker.</summary>
@@ -254,6 +263,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         {
             Interlocked.Exchange(ref _fimCooldownUntilTicks, (DateTime.UtcNow + CooldownDuration).Ticks);
             Interlocked.Exchange(ref _fimConsecutiveFailures, 0);
+            Interlocked.CompareExchange(ref _fimPause, 1, 0);   // said once — not at every pause that fails again
         }
     }
 

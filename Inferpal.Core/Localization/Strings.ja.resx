@@ -1342,6 +1342,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="CompletionAskedNoEditor" xml:space="preserve"><value>Inferpal: コードエディターにカーソルを置いてから、もう一度キーを押してください。</value></data>
   <data name="CompletionAskedListHint" xml:space="preserve"><value>Inferpal: Tab は開いている一覧に渡ります。求めたキーで候補を確定できます。</value></data>
   <data name="CompletionAskedExcluded" xml:space="preserve"><value>Inferpal: {0}</value></data>
+  <data name="CompletionPaused" xml:space="preserve"><value>Inferpal: インライン補完を 5 分間一時停止しました — 補完サーバーが 5 回続けて失敗しました。サーバーが起動していて補完用のモデルがあるか確認してください。</value></data>
   <data name="SettingsModelUsed" xml:space="preserve"><value>モデル: {0}。</value></data>
   <data name="SettingsChangeInServer" xml:space="preserve"><value>サーバーとモデルで変更</value></data>
   <data name="SlashColCommand" xml:space="preserve"><value>コマンド</value></data>

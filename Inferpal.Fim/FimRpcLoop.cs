@@ -37,19 +37,24 @@ internal sealed class FimRpcLoop
     private readonly Stream _output;
     private readonly Func<FimRequest, CancellationToken, Task<string>> _complete;
     private readonly Func<bool> _serverFailing;
+    private readonly Func<string?> _pauseNotice;
 
     private readonly object _gate = new();
     private readonly Dictionary<int, CancellationTokenSource> _inflight = [];
 
     /// <param name="serverFailing">Whether the server's last completion failed (<c>IInferenceProvider.FimFailing</c>):
     /// an empty answer then carries <c>"failing": true</c>, so the key's request says the server, not the model.</param>
+    /// <param name="pauseNotice">What an empty answer says once when completions just paused after repeated failures
+    /// (<c>AskedCompletion.PauseNotice</c>), carried as <c>"notice"</c>: the ghost text says it in the status bar.</param>
     internal FimRpcLoop(Stream input, Stream output,
-                        Func<FimRequest, CancellationToken, Task<string>> complete, Func<bool>? serverFailing = null)
+                        Func<FimRequest, CancellationToken, Task<string>> complete, Func<bool>? serverFailing = null,
+                        Func<string?>? pauseNotice = null)
     {
         _input         = input;
         _output        = output;
         _complete      = complete;
         _serverFailing = serverFailing ?? (() => false);
+        _pauseNotice   = pauseNotice ?? (() => null);
     }
 
     internal async Task RunAsync(CancellationToken ct)
@@ -115,7 +120,7 @@ internal sealed class FimRpcLoop
             {
                 lock (_gate) { if (_inflight.Remove(id)) cts.Dispose(); }
             }
-            WriteResult(id, text, failing: text.Length == 0 && _serverFailing());
+            WriteResult(id, text, failing: text.Length == 0 && _serverFailing(), notice: text.Length == 0 ? _pauseNotice() : null);
         }, CancellationToken.None);
     }
 
@@ -128,12 +133,13 @@ internal sealed class FimRpcLoop
 
     // ── Framing ───────────────────────────────────────────────────────────────
 
-    private void WriteResult(int id, string text, bool failing = false)
+    private void WriteResult(int id, string text, bool failing = false, string? notice = null)
     {
         try
         {
             var json = "{\"jsonrpc\":\"2.0\",\"id\":" + id + ",\"result\":"
-                       + JsonSerializer.Serialize(text) + (failing ? ",\"failing\":true" : "") + "}";
+                       + JsonSerializer.Serialize(text) + (failing ? ",\"failing\":true" : "")
+                       + (notice is null ? "" : ",\"notice\":" + JsonSerializer.Serialize(notice)) + "}";
             var body   = Encoding.UTF8.GetBytes(json);
             var header = Encoding.ASCII.GetBytes($"Content-Length: {body.Length}\r\n\r\n");
             lock (_output)

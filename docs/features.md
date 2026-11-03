@@ -550,6 +550,8 @@ suggestion right now: with *When I ask*, nothing is ever sent until you do.
   Keyboard Shortcuts (*Trigger Inline Suggestion*).
 - **When I ask** (*Autocomplete* page, or `inlineCompletionTrigger: "onDemand"`): only the key asks — nothing is sent
   after a pause in typing, so on a small card the chat never shares it with the completion.
+- **When the server keeps failing**, completions pause for five minutes after five failures in a row, and the status
+  bar says so once — not at each pause in typing. They say it again only if they pause again after one succeeded.
 - Suppressed while IntelliSense triggers are active. Supported on Ollama, LM Studio, and OpenAI-compatible servers that
   complete around the cursor (llama-server, Ollama's `/v1`) — see [Providers](providers.md).
 - **On a server of their own** — the chat on a team server, ghost text on this machine: *Runs on › Another server* on

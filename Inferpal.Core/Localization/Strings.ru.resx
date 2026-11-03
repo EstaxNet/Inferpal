@@ -1342,6 +1342,7 @@
   <data name="CompletionAskedNoEditor" xml:space="preserve"><value>Inferpal: поставьте курсор в редактор кода и нажмите клавишу ещё раз.</value></data>
   <data name="CompletionAskedListHint" xml:space="preserve"><value>Inferpal: Tab уходит в открытый список; клавиша запроса принимает подсказку.</value></data>
   <data name="CompletionAskedExcluded" xml:space="preserve"><value>Inferpal: {0}</value></data>
+  <data name="CompletionPaused" xml:space="preserve"><value>Inferpal: автодополнение приостановлено на 5 минут — сервер автодополнения 5 раз подряд не ответил. Проверьте, что он запущен и на нём есть модель автодополнения.</value></data>
   <data name="SettingsModelUsed" xml:space="preserve"><value>Модель: {0}.</value></data>
   <data name="SettingsChangeInServer" xml:space="preserve"><value>Изменить в разделе «Сервер и модели»</value></data>
   <data name="SlashColCommand" xml:space="preserve"><value>Команда</value></data>

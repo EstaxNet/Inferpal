@@ -77,7 +77,11 @@ internal sealed record RepoMcpServer(string Name, string Source, string Origin, 
 /// <summary>A server declaration that could not be read, and why.</summary>
 internal sealed record RepoMcpProblem(string Source, string? Name, string Reason);
 
-internal sealed record RepoMcpScan(string? Root, IReadOnlyList<RepoMcpServer> Servers, IReadOnlyList<RepoMcpProblem> Problems)
+/// <param name="Stamp">What the repository's MCP files were just BEFORE they were read (<see cref="RepoMcpServers.Stamp"/>):
+/// a change made while they were read is seen at the next question.</param>
+/// <param name="Content">Their content then (<see cref="RepoMcpServers.ContentStamp"/>).</param>
+internal sealed record RepoMcpScan(string? Root, IReadOnlyList<RepoMcpServer> Servers, IReadOnlyList<RepoMcpProblem> Problems,
+                                   string? Stamp = null, string? Content = null)
 {
     public static readonly RepoMcpScan None = new(null, [], []);
 }
@@ -107,6 +111,50 @@ internal static class RepoMcpServers
         new(".continue/mcpServers", "Continue", Folder: true),
     ];
 
+    /// <summary>
+    /// What the repository's MCP files under <paramref name="root"/> are now — each read file's time and size —, cheap
+    /// enough for every question: no git, no parse. Moved, <see cref="ContentStamp"/> says whether they really changed.
+    /// Never throws: a file that cannot be looked at is part of the stamp as such.
+    /// </summary>
+    internal static string Stamp(string root) =>
+        StampOf(root, file => { var info = new FileInfo(file); return $"{info.LastWriteTimeUtc.Ticks}:{info.Length}"; });
+
+    /// <summary>
+    /// What the repository's MCP files under <paramref name="root"/> hold — a hash of each read file. ⚠ Asked only when
+    /// <see cref="Stamp"/> moved: a branch switched there and back, or a save that wrote the same text, touches the times
+    /// and not the servers, and a refresh tears every server down, the person's own included.
+    /// </summary>
+    internal static string ContentStamp(string root) =>
+        StampOf(root, file =>
+        {
+            var info = new FileInfo(file);
+            if (info.Length > MaxFileBytes) return "large:" + info.Length;   // not read either: its size is all that counts
+            return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(file)));
+        });
+
+    /// <summary>Each file <see cref="Read"/> would read under <paramref name="root"/>, with what <paramref name="of"/> says
+    /// of it: a folder holding none of them stamps as no folder.</summary>
+    private static string StampOf(string root, Func<string, string> of)
+    {
+        var parts = new List<string>();
+        foreach (var format in Formats)
+        {
+            var path = Path.Combine(root, format.Location.Replace('/', Path.DirectorySeparatorChar));
+            try
+            {
+                var files = format.Folder ? Directory.Exists(path) ? FolderFiles(path) : []
+                          : File.Exists(path) ? [path] : new List<string>();
+                foreach (var file in files)
+                {
+                    try { parts.Add(file + ":" + of(file)); }
+                    catch (Exception ex) when (ex is not OperationCanceledException) { parts.Add(file + ":?"); }
+                }
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException) { parts.Add(format.Location + ":?"); }
+        }
+        return string.Join("|", parts);
+    }
+
     private const long MaxFileBytes = 1024 * 1024;
     private static readonly TimeSpan MatchTimeout = TimeSpan.FromMilliseconds(500);
     private static readonly Regex Variable = new(@"\$\{\{\s*([^}]*?)\s*\}\}|\$\{([^}]+)\}", RegexOptions.None, MatchTimeout);
@@ -126,18 +174,16 @@ internal static class RepoMcpServers
         }
         catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException) { return RepoMcpScan.None; }
 
+        // Before reading: a checkout that lands while the files are read leaves a stamp that differs from them.
+        var stamp = Stamp(root);
+        var content = ContentStamp(root);
         var servers = new List<RepoMcpServer>();
         var problems = new List<RepoMcpProblem>();
         foreach (var format in Formats)
         {
             var at = Path.Combine(root, format.Location.Replace('/', Path.DirectorySeparatorChar));
             var files = format.Folder
-                ? Directory.Exists(at)
-                    ? Directory.EnumerateFiles(at).Where(f => f.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase)
-                                                           || f.EndsWith(".yml", StringComparison.OrdinalIgnoreCase)
-                                                           || f.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
-                                                  .OrderBy(f => f, StringComparer.Ordinal).ToList()
-                    : []
+                ? Directory.Exists(at) ? FolderFiles(at) : []
                 : File.Exists(at) ? [at] : new List<string>();
             foreach (var file in files)
             {
@@ -153,8 +199,16 @@ internal static class RepoMcpServers
                 }
             }
         }
-        return new RepoMcpScan(root, servers, problems);
+        return new RepoMcpScan(root, servers, problems, stamp, content);
     }
+
+    /// <summary>The files of a folder format that are read — and stamped: an editor's swap file beside them changes
+    /// neither.</summary>
+    private static List<string> FolderFiles(string folder) =>
+        [.. Directory.EnumerateFiles(folder).Where(f => f.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase)
+                                                      || f.EndsWith(".yml", StringComparison.OrdinalIgnoreCase)
+                                                      || f.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+                                         .OrderBy(f => f, StringComparer.Ordinal)];
 
     private static void ReadFile(string file, string source, RepoMcpFormat format, List<RepoMcpServer> servers, List<RepoMcpProblem> problems)
     {

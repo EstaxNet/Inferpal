@@ -1342,6 +1342,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="CompletionAskedNoEditor" xml:space="preserve"><value>Inferpal: ustaw kursor w edytorze kodu i naciśnij klawisz ponownie.</value></data>
   <data name="CompletionAskedListHint" xml:space="preserve"><value>Inferpal: Tab trafia do otwartej listy; klawisz, który poprosił, przyjmuje podpowiedź.</value></data>
   <data name="CompletionAskedExcluded" xml:space="preserve"><value>Inferpal: {0}</value></data>
+  <data name="CompletionPaused" xml:space="preserve"><value>Inferpal: uzupełnianie wstrzymano na 5 minut — serwer uzupełniania zawiódł 5 razy z rzędu. Sprawdź, czy działa i czy ma model do uzupełniania.</value></data>
   <data name="SettingsModelUsed" xml:space="preserve"><value>Model: {0}.</value></data>
   <data name="SettingsChangeInServer" xml:space="preserve"><value>Zmień w: Serwer i modele</value></data>
   <data name="SlashColCommand" xml:space="preserve"><value>Polecenie</value></data>

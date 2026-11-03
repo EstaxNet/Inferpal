@@ -204,6 +204,9 @@ internal sealed class AcpSession : IAsyncDisposable
     /// <summary>What a session's start had to say, told at its first turn (the client did not know the session yet).</summary>
     private string? _startNotice;
 
+    // The model the server does not list, and the sentence that says so: said at the next prompt if it answers it.
+    private (string Model, string Text)? _missingModel;
+
     /// <summary>
     /// The default model, when nobody chose it and the server does not have it, replaced by the best one installed —
     /// as VS Code does at start (<c>models/adoptDefault</c>), and said. Without it, a fresh machine with an Ollama
@@ -215,7 +218,12 @@ internal sealed class AcpSession : IAsyncDisposable
         {
             var adopted = await _link.InvokeWithCancellationAsync<ModelsAdoptResult>("models/adoptDefault", cancellationToken: ct);
             if (adopted.Model is { Length: > 0 } model) _defaultModel = model;
-            _startNotice = adopted.Notice;
+            // Nothing adopted, a notice: the server lacks the model the host answers with — this thread's pick, else the
+            // default. Said at the first prompt only if that model still answers it (a reopened thread on its own model).
+            if (adopted.Model is null && adopted.Notice is { Length: > 0 } missing)
+                lock (_gate) _missingModel = (_model ?? _defaultModel, missing);
+            else
+                _startNotice = adopted.Notice;
         }
         catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("AcpSession.AdoptDefaultModel", ex); }
         // Then a context window never sized, sized for that model — as VS Code does at start (`context/catchUp`).
@@ -524,6 +532,10 @@ internal sealed class AcpSession : IAsyncDisposable
                 else Update(new { sessionUpdate = "config_option_update", configOptions = ConfigOptions() });
             }
             if (Interlocked.Exchange(ref _startNotice, null) is { Length: > 0 } notice) Notice("warning", notice, notice + "\n\n");
+            (string Model, string Text)? missing;
+            lock (_gate) { missing = _missingModel; _missingModel = null; }
+            if (missing is { } m && string.Equals(m.Model, CurrentModel, StringComparison.Ordinal))
+                Notice("warning", m.Text, m.Text + "\n\n");
             await FollowSettingsAsync();
             await AskAgainWhatWasAskedTooEarlyAsync();
             AnnounceModelIfChanged();

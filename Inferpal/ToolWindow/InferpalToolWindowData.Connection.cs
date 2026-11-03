@@ -98,6 +98,9 @@ internal partial class InferpalToolWindowData
                     await RunOnVMContextAsync(() => ActiveModelLabel = adopted).ConfigureAwait(false);
                     await FirstRunPresentAsync(Strings.MsgModelAdopted(configured, adopted)).ConfigureAwait(false);
                 }
+                // A chosen model the server does not have: said now, once per connection, not by the question's failure.
+                else if (ModelCatalog.NotListedNotice(_config.DefaultModel, listed) is { } missing)
+                    await FirstRunPresentAsync(missing).ConfigureAwait(false);
             }
             if (await ContextWindowChoice.CatchUpAsync(_config, _client, _config.DefaultModel, CancellationToken.None).ConfigureAwait(false)
                 is { } windowNotice)
@@ -118,8 +121,18 @@ internal partial class InferpalToolWindowData
         try
         {
             var follow = Services.Inference.SettingsFollow.TakeAndApply(_config, _client);
-            // The question answers with the MCP servers the other editor saved: started again before it, not after.
-            if (follow.Taken.Contains("mcpEnabled") || follow.Taken.Contains("mcpServersJson")) await RefreshMcpAsync();
+            // The question answers with the MCP servers the other editor saved, and the ones the repository declares now
+            // (a checkout changed its .mcp.json): started again before it, not after.
+            // ⚠ Never under a running turn: a refresh tears every server down, and a slash command (/resume during a
+            // step pause) runs this mid-run — then it waits for the turn to end (RefreshWhenIdleAsync says why).
+            if (follow.Taken.Contains("mcpEnabled") || follow.Taken.Contains("mcpServersJson")
+                || _tools.Mcp.RepositoryFilesChanged())
+            {
+                if (GpuScheduler.IsTurnInFlight)
+                    _ = _tools.Mcp.RefreshWhenIdleAsync(() => GpuScheduler.IsTurnInFlight, TimeSpan.FromMilliseconds(500));
+                else
+                    await RefreshMcpAsync();
+            }
         }
         catch (Exception ex) { Diagnostics.Swallow("Settings.Follow", ex); }
     }

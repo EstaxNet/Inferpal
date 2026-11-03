@@ -5,6 +5,7 @@ import * as vscode from 'vscode';
 import { t } from './i18n';
 import type { CancellationToken } from 'vscode-jsonrpc';
 import { HostClient } from './hostClient';
+import { say as sayInStatusBar } from './inlineCompletions';
 import { hostErrorText, hostUnavailableMessage, isConnectionLost, promptOpenFolder } from './hostStatus';
 import { mentionTokens, resolveMention } from './mentionPaths';
 import { followModelRouterSettings } from './modelRouterSettings';
@@ -608,13 +609,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // A persistent bubble, like the VS front-end — not an ephemeral status line wiped by the next setBusy.
       onTaskFinished: (text) => this.sayOutOfTurn(text),
       onNotice: (text) => this.sayOutOfTurn(text),
+      onFimNotice: (text) => sayInStatusBar(text),
     });
 
     this.model = this.windowModel() || host.info?.defaultModel || '';
     // ⚠ This window's model (windowModel) wins over the shared default, and the host must answer with it
     // too: bare `/model`, titles, compaction summaries, `/commit`, `/check`, `/task` read the host's default. For this
     // session only — opening a workspace is not a pick, and the other editor keeps its model.
-    if (this.model && this.model !== host.info?.defaultModel) {
+    // ⚠ Told even when it equals the shared default: a pick, it is never replaced by the host's first-model adoption.
+    if (this.model && (this.windowModel() || this.model !== host.info?.defaultModel)) {
       try {
         await host.modelsUseForSession(this.model);
       } catch (err) {
@@ -1048,10 +1051,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   /** A default nobody chose, which the backend does not have: the host puts the best installed model in its place and
-   *  says so — VS Code has no first run, and every question went to a model that is not there. */
+   *  says so — VS Code has no first run, and every question went to a model that is not there. A model someone chose
+   *  (this window's included) is never replaced: the host says the server lacks it, before a question fails on it. */
   private async adoptDefaultModel(host: HostClient): Promise<void> {
-    if (this.windowModel()
-        || !this.model || this.models.length === 0 || this.models.includes(this.model)) {
+    if (!this.model || this.models.length === 0 || this.models.includes(this.model)) {
       return;
     }
     try {
@@ -1059,9 +1062,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       if (adopted.model) {
         this.model = adopted.model;
         this.sharedEcho.defaultModel = adopted.model;
-        if (adopted.notice) {
-          this.append({ role: 'assistant', text: adopted.notice, timestamp: ChatViewProvider.now(), notice: true });
-        }
+      }
+      if (adopted.notice) {
+        this.append({ role: 'assistant', text: adopted.notice, timestamp: ChatViewProvider.now(), notice: true });
       }
     } catch (err) {
       this.log(`[chat] models/adoptDefault failed: ${String(err)}`);

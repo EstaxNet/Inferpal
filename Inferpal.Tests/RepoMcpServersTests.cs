@@ -310,6 +310,42 @@ public sealed class RepoMcpServersTests : IDisposable
         return (service, approval, started);
     }
 
+    /// <summary>
+    /// ⚠ The repository's servers follow its files: a checkout that changes <c>.mcp.json</c>, or adds another format's
+    /// file, is seen at the next question (asked before each), and the refresh it leads to reads the files again.
+    /// </summary>
+    [Fact]
+    public async Task ARepositorysMcpFiles_ChangedAfterTheRefresh_AreSeen_AndReadAgainByTheNext()
+    {
+        Write(".mcp.json", """{ "mcpServers": { "fs": { "command": "npx", "args": ["server"] } } }""");
+        var (service, approval, started) = Service();
+
+        await service.RefreshAsync();
+        Assert.False(service.RepositoryFilesChanged());                 // reference arm: nothing changed
+
+        // Touched, not changed (a branch switched there and back): no refresh — every server would be torn down.
+        var file = Path.Combine(_repo, ".mcp.json");
+        File.SetLastWriteTimeUtc(file, File.GetLastWriteTimeUtc(file).AddMinutes(1));
+        Assert.False(service.RepositoryFilesChanged());
+
+        Write(".mcp.json", """{ "mcpServers": { "fs": { "command": "npx", "args": ["server", "--write"] } } }""");
+        Assert.True(service.RepositoryFilesChanged());
+        await service.RefreshAsync();
+        Assert.False(service.RepositoryFilesChanged());
+        Assert.Equal(["server", "--write"], started[^1].Args);
+        Assert.Equal(2, approval.Prompts);                              // a changed definition: asked again
+
+        Write(".cursor/mcp.json", """{ "mcpServers": { "other": { "command": "srv" } } }""");
+        Assert.True(service.RepositoryFilesChanged());                  // a file that was not there
+        await service.RefreshAsync();
+
+        Write(".continue/mcpServers/notes.txt", "an editor's file beside the servers");
+        Assert.False(service.RepositoryFilesChanged());                 // a file that is not read is not stamped
+        Write(".continue/mcpServers/srv.yaml", "mcpServers:\n  - name: c\n    command: srv\n");
+        Assert.True(service.RepositoryFilesChanged());                  // WITNESS: the folder is stamped
+        await service.DisposeAsync();
+    }
+
     [Fact]
     public async Task AServerIsNotStarted_UntilTheUserAgrees()
     {

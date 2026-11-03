@@ -42,6 +42,17 @@ public sealed class RootStateTests : IDisposable
         }
     }
 
+    /// <summary>A write to the profile — tried again while the live watcher still reads it (Windows refuses a write or a
+    /// delete under a reader).</summary>
+    private static void WhileTheWatcherReads(Action write)
+    {
+        for (var tries = 0; ; tries++)
+        {
+            try { write(); return; }
+            catch (IOException) when (tries < 100) { Thread.Sleep(20); }
+        }
+    }
+
     /// <summary>The files the index of <paramref name="root"/> holds, built if it is not yet — as its first use builds it.</summary>
     private static int FilesSeen(string root)
     {
@@ -125,13 +136,13 @@ public sealed class RootStateTests : IDisposable
         }
         // Truncated before it is written again (a save in two steps): mid-save too.
         var whole = File.ReadAllText(profile);
-        File.WriteAllText(profile, "");
+        WhileTheWatcherReads(() => File.WriteAllText(profile, ""));
         Assert.False(svc.OnProfileChanged(profile));
         Assert.Equal(["generated/**"], svc.ProfileExcludes);
-        File.WriteAllText(profile, whole);
+        WhileTheWatcherReads(() => File.WriteAllText(profile, whole));
 
         // Gone: no exclusion.
-        File.Delete(profile);
+        WhileTheWatcherReads(() => File.Delete(profile));
         svc.OnProfileChanged(profile);
         Assert.Empty(svc.ProfileExcludes);
     }

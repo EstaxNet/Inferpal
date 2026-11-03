@@ -247,7 +247,10 @@ internal static class FimSidecar
         {
             var psi = new ProcessStartInfo(exe)
             {
-                Arguments              = "--vs-pid " + Process.GetCurrentProcess().Id,
+                // Visual Studio's interface language: the sentences the sidecar writes follow it when the setting is
+                // "Auto", not the operating system's.
+                Arguments              = "--vs-pid " + Process.GetCurrentProcess().Id
+                                         + (CultureInfo.CurrentUICulture.Name is { Length: > 0 } ui ? " --ui-culture " + ui : ""),
                 UseShellExecute        = false,
                 CreateNoWindow         = true,
                 RedirectStandardInput  = true,
@@ -448,6 +451,11 @@ internal static class FimSidecar
         {
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
+            // ⚠ Completions paused after repeated failures: said once, as it arrives — the request that carried it may
+            // have been cancelled by the next keystroke, and the sidecar never says it again for this pause.
+            if (root.TryGetProperty("notice", out var notice) && notice.ValueKind == JsonValueKind.String
+                && notice.GetString() is { Length: > 0 } paused)
+                GhostText.CompletionAskWatcher.Say(paused);
             if (!root.TryGetProperty("id", out var idElement) ||
                 idElement.ValueKind != JsonValueKind.Number ||
                 !_pending.TryRemove(idElement.GetInt32(), out var tcs))

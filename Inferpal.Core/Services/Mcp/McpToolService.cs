@@ -299,6 +299,37 @@ internal sealed class McpToolService : IAsyncDisposable
         }
     }
 
+    // The workspace, the folder the repository's MCP files were looked for in, and what they were then — times and
+    // content. Immutable, swapped whole: read by the question's thread while a refresh may set it.
+    private sealed record RepoRead(string? Workspace, string Root, string Stamp, string Content);
+    private volatile RepoRead? _repoRead;
+
+    /// <summary>
+    /// Whether the repository's MCP files changed since its servers were read — a checkout, a pull, a hand edit — while the
+    /// workspace stayed: asked before each question, so the servers follow the branch (a refresh asks the repository's
+    /// agreement again for what changed). Another workspace is the root switch's own refresh.
+    /// </summary>
+    public bool RepositoryFilesChanged()
+    {
+        if (_repoRead is not { } read || !PathComparer.SameDirectory(read.Workspace, WorkspaceRoot?.Invoke()))
+            return false;
+        try
+        {
+            var stamp = RepoMcpServers.Stamp(read.Root);
+            if (stamp == read.Stamp) return false;
+            // Touched, not changed (a branch switched there and back, a save of the same text): no refresh, and the new
+            // times are kept so the content is not read again at every question.
+            if (RepoMcpServers.ContentStamp(read.Root) != read.Content) return true;
+            _repoRead = read with { Stamp = stamp };
+            return false;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Diagnostics.Swallow("McpToolService.RepositoryStamp", ex);
+            return false;
+        }
+    }
+
     /// <summary>
     /// Tears down any running servers and re-connects from the current config. Safe to call
     /// repeatedly (e.g. after the user edits MCP settings); calls are serialized.
@@ -309,6 +340,7 @@ internal sealed class McpToolService : IAsyncDisposable
         try
         {
             await TeardownAsync().ConfigureAwait(false);
+            _repoRead = null;   // stamped again only by a scan that reads the repository's files
 
             var given = SessionServers;
             if (_disposed || (!_config.McpEnabled && given.Count == 0))
@@ -487,13 +519,16 @@ internal sealed class McpToolService : IAsyncDisposable
         RepoMcpScan scan;
         // ⚠ Any failure, not a list of them: this runs after the teardown, and an exception out of here left the user's
         // own servers stopped. The repository's servers are the ones that do not start.
-        try { scan = RepoMcpServers.Read(WorkspaceRoot?.Invoke()); }
+        var workspace = WorkspaceRoot?.Invoke();
+        try { scan = RepoMcpServers.Read(workspace); }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             Diagnostics.Swallow("McpToolService.RepositoryServers", ex);
             return (start, notStarted, names, agreedTo);
         }
         if (scan.Root is not { } root) return (start, notStarted, names, agreedTo);
+        // What these servers were read from: a later question compares it (RepositoryFilesChanged).
+        if (scan is { Stamp: { } stamp, Content: { } content }) _repoRead = new RepoRead(workspace, root, stamp, content);
 
         foreach (var p in scan.Problems)
         {
