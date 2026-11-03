@@ -34,6 +34,15 @@ internal static class TestConfigIsolation
         Inferpal.Services.Hardware.SleepGuard.Shared =
             new Inferpal.Services.Hardware.SleepGuard(new Inferpal.Services.Hardware.SleepGuard.Silent(), TimeSpan.Zero);
 
+        // And for the signal files, the channel between Inferpal processes: a test's chat lease would raise a busy marker
+        // the developer's own editor reads (its completion goes quiet, its indexing waits), and a test's background loop
+        // would wait for the developer's chat to end (GpuScheduler.WaitForChatIdleAsync yields to another process).
+        Inferpal.Services.Signals.SignalFile._directoryOverride = Path.Combine(root, $"signals-{Environment.ProcessId}");
+
+        // And for the grace a wait for a person keeps the GPU: a test that looks at the scheduler during a card sees the
+        // lease let go at once instead of ten seconds later (GpuSchedulerTests sets it back to measure the grace).
+        Inferpal.Services.Hardware.GpuScheduler.PauseGrace = TimeSpan.Zero;
+
         // And for the editors an ACP agent has told what it does not do in them.
         Inferpal.Host.Acp.AcpAgent.LimitsToldShared.PathOverride =
             Path.Combine(root, $"acp-limits-told-{Environment.ProcessId}.json");

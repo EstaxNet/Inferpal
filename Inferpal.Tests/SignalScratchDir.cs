@@ -68,12 +68,16 @@ internal sealed class SignalScratchDir : IDisposable
 
         // One assignment, because there is one directory: the seven channels stopped carrying
         // their own copy of where the folder is.
+        _previous = SignalFile._directoryOverride;
         SignalFile._directoryOverride = Path;
     }
 
+    /// <summary>The suite's own folder (<c>TestConfigIsolation</c>), given back after: never the machine's real one.</summary>
+    private readonly string? _previous;
+
     public void Dispose()
     {
-        SignalFile._directoryOverride      = null;
+        SignalFile._directoryOverride      = _previous;
         SignalFile._isProcessAliveOverride = null;
         SignalFile._nowOverride            = null;
         SignalScope.ResetForTests();

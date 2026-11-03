@@ -9,8 +9,9 @@ namespace Inferpal.Services.Tasks;
 /// </summary>
 /// <remarks>
 /// <para><b>One slot, chat first.</b> Inferpal talks to a single backend on a single GPU, so tasks
-/// run strictly one at a time and each one waits for the chat to go idle before taking the slot
-/// (<see cref="Hardware.GpuScheduler.WaitForChatIdleAsync"/>, injected). Granularity is the whole
+/// run strictly one at a time and each one waits for every turn to end before taking the slot — on the
+/// whole machine, a turn waiting for a person at a card included (<see cref="Hardware.GpuScheduler.WaitForTurnsToEndAsync"/>,
+/// injected): started beside it, the task would compete with the turn for the GPU as soon as the person answers. Granularity is the whole
 /// task: once started it holds its own chat lease through <c>RunAgentAsync</c>, so a chat turn
 /// opened meanwhile contends with it rather than preempting it — the honest limit of running an
 /// agent loop we cannot suspend mid-flight. Interactive work is never *blocked*, only slowed.</para>
@@ -192,7 +193,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
         Func<TimeSpan, CancellationToken, Task>? delay = null)
     {
         _runner            = runner;
-        _waitForChatIdle   = waitForChatIdle ?? Hardware.GpuScheduler.WaitForChatIdleAsync;
+        _waitForChatIdle   = waitForChatIdle ?? Hardware.GpuScheduler.WaitForTurnsToEndAsync;
         _now               = now ?? (() => DateTimeOffset.UtcNow);
         _currentRoot       = currentRoot;
         _submissionContext = submissionContext;

@@ -147,11 +147,12 @@ internal static class LoadedModelsCard
 /// </remarks>
 internal static class ModelUnloader
 {
-    /// <summary>Whether a question is being answered by this process or by any other Inferpal on the machine.</summary>
+    /// <summary>Whether a question is being answered by this process or by any other Inferpal on the machine — a turn
+    /// waiting for a person at an approval card included: its model is needed again at the answer.</summary>
     /// <remarks>⚠ The model server is shared — Visual Studio, VS Code, each Zed thread's agent: a lease held in THIS
     /// process alone lets the settings of one editor unload the model another is answering with
     /// (<see cref="ChatBusySignal"/> is the machine-wide channel the ghost text already reads).</remarks>
-    internal static bool AnsweringAnywhere() => GpuScheduler.IsChatActive || ChatBusySignal.IsBusy();
+    internal static bool AnsweringAnywhere() => GpuScheduler.IsTurnInFlight || ChatBusySignal.IsTurnInFlightElsewhere();
 
     /// <param name="only">The models to unload; <c>null</c> = every loaded one.</param>
     /// <param name="isAnswering">Whether a question is being answered; <c>null</c> = <see cref="AnsweringAnywhere"/>

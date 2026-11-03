@@ -158,9 +158,10 @@ internal abstract class ApprovalServiceBase : IApprovalService
         ApprovalDecision promptDecision;
         try
         {
-            // Nothing is in flight while a person reads the card: the machine may sleep meanwhile (SleepGuard), and a card
-            // left for an hour does not drain a laptop's battery. Only this turn's hold is let go.
-            using (Services.Hardware.SleepGuard.Shared.PauseThisFlow())
+            // Nothing is in flight while a person reads the card: the GPU goes to the other work of the machine (completion,
+            // indexing, another editor), and the machine may sleep — a card left overnight neither silences them nor drains
+            // a laptop's battery. Only this turn's lease is let go, held again at the answer.
+            using (Services.Hardware.GpuScheduler.PauseThisFlow())
                 promptDecision = await PromptUserAsync(
                     new Services.Presentation.ApprovalPrompt(toolName, details, subject, diff, message, rule), ct);
         }
@@ -242,7 +243,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
             try
             {
                 // As for an approval card: nothing is in flight while a person fills the form.
-                using (Services.Hardware.SleepGuard.Shared.PauseThisFlow())
+                using (Services.Hardware.GpuScheduler.PauseThisFlow())
                     reply = await PromptInputAsync(Services.Presentation.InputCard.Build(form, id, values, errors), ct);
             }
             catch (OperationCanceledException)

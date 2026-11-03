@@ -4,17 +4,19 @@ using System.Text.Json.Serialization;
 
 namespace Inferpal.Services.Signals;
 
-/// <summary>Payload of a chat-busy marker: which process holds a chat lease, and when it was set.</summary>
+/// <summary>Payload of a chat-busy marker: which process holds a chat lease, when it was set, and whether it waits.</summary>
+/// <param name="Paused">Every turn of the writer waits for a person (its leases let go); <c>null</c> from a writer
+/// older than the pause, which never lets its lease go.</param>
 internal sealed record ChatBusyState(
     [property: JsonPropertyName("pid")] int Pid,
-    [property: JsonPropertyName("ts")]  long Ts);
+    [property: JsonPropertyName("ts")]  long Ts,
+    [property: JsonPropertyName("paused")] bool? Paused = null);
 
 /// <summary>
-/// File-based IPC channel publishing "a chat/agent request is in flight" from the out-of-process
-/// extension host (where <see cref="GpuScheduler"/> lives) to the in-process ghost-text in
-/// devenv (<c>GhostTextController</c>), so FIM yields the shared GPU
-/// to the chat. The host writes and devenv reads, as <see cref="DebugCommandSignal"/> carries the host's debugger
-/// requests.
+/// File-based IPC channel publishing "a chat/agent request is in flight" from each Inferpal process that answers
+/// (where <see cref="GpuScheduler"/> lives) to every other one on the machine: the ghost text (FIM) yields the shared
+/// GPU to the chat, the other processes' background indexing waits for it, and nothing unloads the model of a turn or
+/// starts a <c>/task</c> beside it. Each process writes its own marker and reads the others'.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -62,12 +64,13 @@ internal static class ChatBusySignal
 
     // ── Host side (GpuScheduler) ────────────────────────────────────────────────
 
-    /// <summary>Marks the shared GPU as held by a chat/agent request (this process). Also called
+    /// <summary>Marks a chat/agent request of this process as in flight: working on the GPU, or
+    /// <paramref name="paused"/> while every turn of this process waits for a person. Also called
     /// periodically during long runs to keep the marker under <see cref="MaxAge"/>.</summary>
-    internal static void Write()
+    internal static void Write(bool paused = false)
     {
         SignalFile.Write(FilePath,
-            new ChatBusyState(Environment.ProcessId, SignalFile.Now.ToUnixTimeMilliseconds()),
+            new ChatBusyState(Environment.ProcessId, SignalFile.Now.ToUnixTimeMilliseconds(), paused),
             "ChatBusySignal.Write");
     }
 
@@ -77,20 +80,38 @@ internal static class ChatBusySignal
         SignalFile.Delete(FilePath);
     }
 
-    // ── Ghost-text side (devenv) ────────────────────────────────────────────────
+    // ── Readers (ghost text, the other processes) ───────────────────────────────
 
     /// <summary>
-    /// True when a chat/agent request is in flight <b>anywhere on the machine</b> (so FIM should
+    /// True when a chat/agent request works on the GPU <b>anywhere on the machine</b> (so FIM should
     /// skip): at least one marker — scoped or legacy — whose writer is alive and within
-    /// <see cref="MaxAge"/>.
+    /// <see cref="MaxAge"/>, and which does not say its turn waits for a person.
     /// </summary>
-    internal static bool IsBusy()
+    internal static bool IsBusy() => Any(skipThisProcess: false, s => s.Paused != true);
+
+    /// <summary>
+    /// True when a chat/agent request of ANOTHER process works on the GPU: what a background embedding loop of this
+    /// process yields to. This process's own marker is never counted — its leases are known exactly in memory
+    /// (<see cref="Hardware.GpuScheduler"/>). ⚠ Only a marker that says it works (<c>paused: false</c>): a writer older
+    /// than the pause never lets its lease go at an approval card, and its card left overnight would hold this
+    /// process's indexing all night.
+    /// </summary>
+    internal static bool IsBusyElsewhere() => Any(skipThisProcess: true, s => s.Paused == false);
+
+    /// <summary>
+    /// True when a chat/agent request of ANOTHER process is in flight, waiting for a person included: what must not be
+    /// cut or doubled under it (its model unloaded, a <c>/task</c> run started beside it).
+    /// </summary>
+    internal static bool IsTurnInFlightElsewhere() => Any(skipThisProcess: true, _ => true);
+
+    private static bool Any(bool skipThisProcess, Func<ChatBusyState, bool> counts)
     {
         var busy = false;
         foreach (var path in SignalFile.EnumerateKeyedPaths(BaseName))
         {
             var state = SignalFile.TryRead<ChatBusyState>(path);
             if (state is null) continue;   // unreadable = no signal; never delete what we can't judge
+            if (skipThisProcess && state.Pid == Environment.ProcessId) continue;
 
             if (!SignalFile.WriterAlive(state.Pid, state.Ts))
             {
@@ -98,13 +119,14 @@ internal static class ChatBusySignal
                 continue;
             }
 
-            if (IsFresh(state)) busy = true;
+            if (IsFresh(state) && counts(state)) busy = true;
             // Stale-but-alive: silent for FIM, but the file belongs to its (living) writer — leave it.
         }
 
         // Honour an old-version writer's unscoped marker (read-only — see the migration remark).
         var legacy = SignalFile.TryRead<ChatBusyState>(LegacyFilePath);
-        if (legacy is not null && SignalFile.WriterAlive(legacy.Pid, legacy.Ts) && IsFresh(legacy)) busy = true;
+        if (legacy is not null && !(skipThisProcess && legacy.Pid == Environment.ProcessId)
+            && SignalFile.WriterAlive(legacy.Pid, legacy.Ts) && IsFresh(legacy) && counts(legacy)) busy = true;
 
         return busy;
     }

@@ -1466,7 +1466,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         // holds a lease) and the background index loops already wait on it. Saving must not block
         // on a long run, so the reconnect is deferred rather than awaited: the configuration is
         // saved either way, and the servers pick it up as soon as the turn ends.
-        if (GpuScheduler.IsChatActive)
+        if (GpuScheduler.IsTurnInFlight)
             _ = ReconnectMcpWhenChatIdleAsync();
         else
             await ReconnectMcpAsync();
@@ -1776,7 +1776,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         {
             // Bounded: a run that never releases its lease must not strand the server list forever.
             using var budget = new CancellationTokenSource(TimeSpan.FromMinutes(10));
-            await GpuScheduler.WaitForChatIdleAsync(budget.Token);
+            await GpuScheduler.WaitForLocalTurnsToEndAsync(budget.Token);
         }
         catch (Exception ex) { Diagnostics.Swallow("Settings.WaitChatIdle", ex); }
 

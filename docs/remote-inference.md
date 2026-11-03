@@ -156,8 +156,9 @@ embedding, and inline completions. To stop background work from starving the int
 model, Inferpal routes all of it through a central GPU scheduler:
 
 - a chat/agent run takes a lease for its whole duration;
-- RAG and `@Docs` embedding loops wait while a chat/agent run holds the lease and resume
-  right after;
+- RAG and `@Docs` embedding loops and `/task` wait while a chat/agent run holds the lease — in
+  any Inferpal process on the machine — and resume right after; a run waiting on an approval
+  card lets the lease go until it is answered;
 - inline completions (which run in the VS process) yield via an IPC busy-signal so they
   don't compete with an active chat.
 

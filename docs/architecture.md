@@ -150,7 +150,16 @@ the request times out. A central scheduler enforces priority **chat > FIM > embe
 - A chat/agent run acquires a **lease** (`GpuScheduler`) for its whole duration — this covers
   chat, commit/title generation, synthesis, plan, and code actions.
 - Background embedding loops (`ProjectIndexService`, `DocsIndexService`) `await
-  WaitForChatIdleAsync` — they pause without losing progress and resume immediately.
+  WaitForChatIdleAsync` — they pause without losing progress and resume immediately; a `/task` run
+  waits for every turn to end before it starts (`WaitForTurnsToEndAsync`). They yield to a
+  chat of **any** Inferpal process on the machine (VS and VS Code share one GPU): besides this
+  process's leases, they wait while another process's `ChatBusySignal` marker is live.
+- A run that waits for a person (an approval card, a step pause, an MCP form) lets its lease go
+  after a 10 s grace, until the answer (`GpuScheduler.PauseThisFlow`): a card left open overnight
+  neither silences completion nor holds every process's indexing, and a card answered at once never
+  costs the chat model a reload. Its turn is still **in flight**: MCP servers are not restarted
+  under it, its model is not unloaded, and a `/task` run waits for it to end; its marker says
+  `paused`.
 - Inline completions run in `devenv.exe`, so they coordinate cross-process via `ChatBusySignal`
   markers (`%TEMP%/Inferpal/chat_busy.<pid>.json`, **one file per writer** — pid + timestamp,
   anti-stale, periodically re-stamped during long runs): FIM is skipped while *any* live marker
@@ -181,7 +190,7 @@ IPC channels:
 
 | Signal | Direction | Scope | Purpose |
 |---|---|---|---|
-| `ChatBusySignal` | host → devenv | machine-wide, one marker file per writer | FIM yields to an active chat anywhere on the box (one GPU) |
+| `ChatBusySignal` | host → devenv, host → host | machine-wide, one marker file per writer | FIM and the other processes' background indexing yield to an active chat anywhere on the box (one GPU) |
 | `DebugCommandSignal` | host → devenv | per VS instance (`<name>.<devenv pid>.json`) | carries `/debug` operations (breakpoints, step, continue…) to the in-process EnvDTE driver, and the break state `get_debugger_state` / `@debugger` ask for, captured when asked |
 | `BuildSignalFile` | devenv → host | per VS instance (`<name>.<devenv pid>.json`) | `VsBuildMonitor` surfaces VS build failures as the "Build Failed" banner |
 | `ActiveSolutionSignal` | devenv → host | per VS instance (`<name>.<devenv pid>.json`) | authoritative open solution for `/solution`, `/map`, RAG — its root is the folder holding the solution and its projects (`SolutionExtent`) |

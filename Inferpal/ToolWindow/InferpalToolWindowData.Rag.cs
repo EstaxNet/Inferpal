@@ -104,7 +104,7 @@ internal partial class InferpalToolWindowData
                 _ = RefreshModesQuietlyAsync();
                 // The repository's MCP servers are read from the root: a new one has its own to ask about — once the turn
                 // that pinned it has ended (a refresh tears every server down, InferpalSettingsData says why).
-                _ = _tools.Mcp.RefreshWhenIdleAsync(() => _sendStarting || IsLoading || GpuScheduler.IsChatActive,
+                _ = _tools.Mcp.RefreshWhenIdleAsync(() => _sendStarting || IsLoading || GpuScheduler.IsTurnInFlight,
                                                     TimeSpan.FromMilliseconds(500));
             }
             if (action == RootPinAction.Index) _indexService.StartIndexing(root!);

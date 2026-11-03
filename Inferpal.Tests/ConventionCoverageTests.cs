@@ -1087,6 +1087,9 @@ public class ConventionCoverageTests
         // work (it yields); embedding outside a loop is answering someone who is waiting (it never
         // does).
         const string Yield = "WaitForChatIdleAsync";
+        // Every wait on the chat leases, not only the GPU one: a query that waits for the turns to end (the one it is
+        // called from is in flight) waits for itself just the same.
+        string[] waits = [Yield, "WaitForTurnsToEndAsync", "WaitForLocalTurnsToEndAsync"];
 
         var loops = 0;
         var oneShots = 0;
@@ -1096,9 +1099,10 @@ public class ConventionCoverageTests
         // documenting the wait ("Yield the shared GPU...") would have satisfied the first half,
         // and a header comment would have failed the second. False green and false red in the same
         // expression - the first version of both checks carried them.
-        static bool Yields(SyntaxNode scope) =>
+        static bool Calls(SyntaxNode scope, params string[] names) =>
             scope.DescendantNodes().OfType<InvocationExpressionSyntax>().Any(i =>
-                i.Expression is MemberAccessExpressionSyntax m && m.Name.Identifier.ValueText == Yield);
+                i.Expression is MemberAccessExpressionSyntax m && names.Contains(m.Name.Identifier.ValueText));
+        static bool Yields(SyntaxNode scope) => Calls(scope, Yield);
 
         foreach (var file in CoreSources("Services"))
         {
@@ -1124,7 +1128,7 @@ public class ConventionCoverageTests
 
                 oneShots++;
                 var scope = call.Ancestors().FirstOrDefault(a => a is MethodDeclarationSyntax or LocalFunctionStatementSyntax);
-                if (scope is not null && Yields(scope))
+                if (scope is not null && Calls(scope, waits))
                     offenders.Add($"{Rel(file)}({line}): a query waiting for the GPU - deadlock");
             }
         }

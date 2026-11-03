@@ -697,7 +697,7 @@ internal partial class InferpalToolWindowData
     {
         if ((_config.McpEnabled, _config.McpServersJson) != mcpBefore)
         {
-            if (GpuScheduler.IsChatActive) _ = RefreshMcpWhenChatIdleAsync();
+            if (GpuScheduler.IsTurnInFlight) _ = RefreshMcpWhenChatIdleAsync();
             else await RefreshMcpAsync();
         }
         if (!string.Equals(_config.Language, languageBefore, StringComparison.Ordinal))
@@ -712,7 +712,7 @@ internal partial class InferpalToolWindowData
         try
         {
             using var budget = new CancellationTokenSource(TimeSpan.FromMinutes(10));
-            await GpuScheduler.WaitForChatIdleAsync(budget.Token);
+            await GpuScheduler.WaitForLocalTurnsToEndAsync(budget.Token);
         }
         catch (Exception ex) { Diagnostics.Swallow("ToolWindow.ImportWaitChatIdle", ex); }
         await RefreshMcpAsync();

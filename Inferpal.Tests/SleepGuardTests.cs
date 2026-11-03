@@ -253,15 +253,23 @@ public sealed class SleepGuardTests
         try
         {
             var duringPause = true;
+            var gpuDuringPause = true;
             var step = new Inferpal.Services.Execution.StepModeToolRegistry(
-                Inferpal.Services.Execution.EmptyToolRegistry.Instance, _ => { duringPause = guard.IsHeld; return Task.CompletedTask; });
+                Inferpal.Services.Execution.EmptyToolRegistry.Instance, _ =>
+                {
+                    duringPause = guard.IsHeld;
+                    gpuDuringPause = GpuScheduler.IsChatActive;
+                    return Task.CompletedTask;
+                });
 
             using (GpuScheduler.AcquireChatLease())
             {
                 await step.ExecuteAsync("read_file", System.Text.Json.JsonDocument.Parse("{}").RootElement, CancellationToken.None);
                 Assert.True(guard.IsHeld);   // resumed
+                Assert.True(GpuScheduler.IsChatActive);
             }
             Assert.False(duringPause);
+            Assert.False(gpuDuringPause);   // the GPU goes to the rest of the machine while the step waits
         }
         finally
         {
@@ -278,14 +286,18 @@ public sealed class SleepGuardTests
         var scheduler = ConventionCoverageTests.CodeOnly(Path.Combine(core, "Hardware", "GpuScheduler.cs"));
         Assert.Contains("SleepGuard.Shared.Hold()", scheduler, StringComparison.Ordinal);
         Assert.Contains("awake.Dispose()", scheduler, StringComparison.Ordinal);
+        // One way in for a wait for a person: the flow lets its GPU lease go, and the machine's sleep with it.
+        Assert.Contains("SleepGuard.Shared.PauseThisFlow()", scheduler, StringComparison.Ordinal);
 
         var approval = ConventionCoverageTests.CodeOnly(Path.Combine(core, "Execution", "ApprovalServiceBase.cs"));
-        Assert.Matches(new Regex(@"using \(Services\.Hardware\.SleepGuard\.Shared\.PauseThisFlow\(\)\)\s*promptDecision = await PromptUserAsync"),
+        Assert.Matches(new Regex(@"using \(Services\.Hardware\.GpuScheduler\.PauseThisFlow\(\)\)\s*promptDecision = await PromptUserAsync"),
+                       approval);
+        Assert.Matches(new Regex(@"using \(Services\.Hardware\.GpuScheduler\.PauseThisFlow\(\)\)\s*reply = await PromptInputAsync"),
                        approval);
 
         // A step pause waits for a person too, in the decorator both editors share.
         var step = ConventionCoverageTests.CodeOnly(Path.Combine(core, "Execution", "StepModeToolRegistry.cs"));
-        Assert.Matches(new Regex(@"using \(Services\.Hardware\.SleepGuard\.Shared\.PauseThisFlow\(\)\)\s*await onAfterTool\(ct\);"), step);
+        Assert.Matches(new Regex(@"using \(Services\.Hardware\.GpuScheduler\.PauseThisFlow\(\)\)\s*await onAfterTool\(ct\);"), step);
     }
 
     [Fact]

@@ -490,7 +490,7 @@ sequenceDiagram
 
 - **`/task <objective>`** — a background agent run, detached from the conversation: submitting
   returns at once and you keep working while it investigates. Tasks run one at a time and wait
-  for the chat to be idle before taking the GPU, so interactive work is never blocked. A notice
+  for the chat to be idle — in any editor on the machine — before taking the GPU, so interactive work is never blocked. A notice
   appears when the report is ready (`/task <id>` reads it, `/task` lists, `/task stop <id>`
   cancels, `/task retry <id>` runs it again under a new number). Background runs are **read-only** — they explore and
   report, never write, execute or reach the network, so nothing can interrupt you with an approval prompt.

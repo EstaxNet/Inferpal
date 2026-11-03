@@ -98,6 +98,241 @@ public class GpuSchedulerTests : IDisposable
         lease.Dispose();                       // second dispose must not under-count
         Assert.False(GpuScheduler.IsChatActive);
     }
+
+    // ── A wait for a person lets the GPU go, the turn stays in flight ───────────
+
+    /// <summary>What the scheduler and this process's marker say at one moment.</summary>
+    private readonly record struct Seen(bool Working, bool InFlight, bool? MarkerPaused);
+
+    private static Seen Now() => new(GpuScheduler.IsChatActive, GpuScheduler.IsTurnInFlight,
+        SignalFile.TryRead<ChatBusyState>(Inferpal.Services.Signals.ChatBusySignal.FilePath) is { } m ? m.Paused ?? false : null);
+
+    /// <summary>A card that records, while it waits, what the scheduler says, then allows.</summary>
+    private sealed class WatchingApproval(List<Seen> seen)
+        : Inferpal.Services.Execution.ApprovalServiceBase(new Inferpal.Config.InferpalConfig(), () => null)
+    {
+        protected override Task<Inferpal.Services.Execution.ApprovalDecision> PromptUserAsync(
+            string message, Inferpal.Services.CodeActions.DiffInfo? diff, CancellationToken ct)
+        {
+            seen.Add(Now());
+            return Task.FromResult(Inferpal.Services.Execution.ApprovalDecision.Once);
+        }
+    }
+
+    [Fact]
+    public async Task AnApprovalCard_LetsTheGpuGoWhileItWaits_TheTurnStaysInFlight_AndTheAnswerTakesItBack()
+    {
+        var seen = new List<Seen>();
+        var approval = new WatchingApproval(seen);
+        using (GpuScheduler.AcquireChatLease())
+        {
+            seen.Add(Now());
+            await Task.Yield();
+            await approval.RequestApprovalAsync("run_command", "dotnet test", CancellationToken.None);
+            seen.Add(Now());
+        }
+        seen.Add(Now());
+        Assert.Equal(
+        [
+            new Seen(true, true, false),     // working: the GPU is busy, the marker says so
+            new Seen(false, true, true),     // the card waits: the GPU is free, the turn still in flight, the marker paused
+            new Seen(true, true, false),     // answered: working again
+            new Seen(false, false, null),    // the run over: no marker at all
+        ], seen);
+    }
+
+    [Fact]
+    public async Task ATurnWaitingForAPerson_HoldsWhatMustNotBeCutUnderIt_NotTheGpu()
+    {
+        var lease = GpuScheduler.AcquireChatLease();
+        var pause = GpuScheduler.PauseThisFlow();
+        try
+        {
+            // The embedding loops go on; an MCP restart, an unload and a /task run wait for the turn.
+            Assert.True(await CompletesWithin(GpuScheduler.WaitForChatIdleAsync(CancellationToken.None), 2000));
+            var mcp = GpuScheduler.WaitForLocalTurnsToEndAsync(CancellationToken.None);
+            var task = GpuScheduler.WaitForTurnsToEndAsync(CancellationToken.None);
+            Assert.False(await CompletesWithin(Task.WhenAny(mcp, task), 200));
+            Assert.True(Inferpal.Services.Presentation.ModelUnloader.AnsweringAnywhere());
+
+            pause.Dispose();
+            lease.Dispose();
+            Assert.True(await CompletesWithin(Task.WhenAll(mcp, task), 30_000));
+        }
+        finally
+        {
+            pause.Dispose();
+            lease.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task ALoopAlreadyWaiting_GoesOnWhenTheCardOpens()
+    {
+        using var lease = GpuScheduler.AcquireChatLease();
+        var waiting = GpuScheduler.WaitForChatIdleAsync(CancellationToken.None);
+        Assert.False(await CompletesWithin(waiting, 200));
+        using (GpuScheduler.PauseThisFlow())
+            Assert.True(await CompletesWithin(waiting, 30_000));
+    }
+
+    [Fact]
+    public async Task AShortWait_KeepsTheGpu_ALongOneLetsItGo()
+    {
+        var grace = GpuScheduler.PauseGrace;
+        GpuScheduler.PauseGrace = TimeSpan.FromMilliseconds(300);
+        try
+        {
+            using var lease = GpuScheduler.AcquireChatLease();
+            using (GpuScheduler.PauseThisFlow())
+                Assert.True(GpuScheduler.IsChatActive);   // answered within the grace: the chat model never left
+            using (GpuScheduler.PauseThisFlow())
+            {
+                var deadline = DateTime.UtcNow.AddSeconds(30);
+                while (GpuScheduler.IsChatActive && DateTime.UtcNow < deadline) await Task.Delay(20);
+                Assert.False(GpuScheduler.IsChatActive);   // the card waits on: the GPU goes to the rest of the machine
+            }
+            Assert.True(GpuScheduler.IsChatActive);
+        }
+        finally
+        {
+            GpuScheduler.PauseGrace = grace;
+        }
+    }
+
+    [Fact]
+    public async Task ATask_DoesNotStartBesideATurnWaitingAtACard()
+    {
+        var started = new TaskCompletionSource();
+        using var queue = new Inferpal.Services.Tasks.BackgroundTaskQueue((_, _, _) =>
+        {
+            started.TrySetResult();
+            return Task.FromResult(Inferpal.Services.Tasks.BackgroundTaskQueue.TaskRunOutcome.Of("report"));
+        });
+        var lease = GpuScheduler.AcquireChatLease();
+        var pause = GpuScheduler.PauseThisFlow();
+        try
+        {
+            Assert.NotNull(queue.Submit("map the callers"));
+            // Started now, it would compete with the turn for the GPU as soon as the person answers.
+            Assert.False(await CompletesWithin(started.Task, 300));
+        }
+        finally
+        {
+            pause.Dispose();
+            lease.Dispose();
+        }
+        Assert.True(await CompletesWithin(started.Task, 30_000));
+    }
+
+    /// <summary>Visual Studio's MCP restarts (Settings, /import, a new solution) wait for the turn, a turn waiting at a
+    /// card included — read on the source: the view models cannot be built in the suite.</summary>
+    [Fact]
+    public void VisualStudiosMcpRestarts_WaitForTheTurn_NotForTheGpu()
+    {
+        var folder = Path.Combine(ConventionCoverageTests.RepoRoot(), "Inferpal", "ToolWindow");
+        var code = Directory.EnumerateFiles(folder, "*.cs").Select(ConventionCoverageTests.CodeOnly).ToList();
+        Assert.True(code.Count >= 10);   // witness: the folder was read
+        Assert.DoesNotContain(code, c => c.Contains("GpuScheduler.IsChatActive", StringComparison.Ordinal));
+        Assert.True(code.Sum(c => CountOf(c, "GpuScheduler.IsTurnInFlight")) >= 3);
+        Assert.True(code.Sum(c => CountOf(c, "GpuScheduler.WaitForLocalTurnsToEndAsync(")) >= 2);
+
+        static int CountOf(string text, string what) =>
+            (text.Length - text.Replace(what, string.Empty, StringComparison.Ordinal).Length) / what.Length;
+    }
+
+    [Fact]
+    public async Task APauseInAnotherFlow_LeavesThisTurnsLease()
+    {
+        var holding = new TaskCompletionSource();
+        var done    = new TaskCompletionSource();
+        var turn = Task.Run(async () =>
+        {
+            using var lease = GpuScheduler.AcquireChatLease();
+            holding.SetResult();
+            await done.Task;
+        });
+        await holding.Task;
+        // A dialog shown outside that turn (its own flow holds no lease) must not let the turn's lease go.
+        using (GpuScheduler.PauseThisFlow())
+            Assert.True(GpuScheduler.IsChatActive);
+        done.SetResult();
+        await turn;
+        Assert.False(GpuScheduler.IsChatActive);
+    }
+
+    [Fact]
+    public void NestedLeasesOfOneFlow_PauseAndResumeTogether_AndCountExactly()
+    {
+        var run  = GpuScheduler.AcquireChatLease();
+        var step = GpuScheduler.AcquireChatLease();   // a request inside the run, same flow
+        using (GpuScheduler.PauseThisFlow())
+            Assert.False(GpuScheduler.IsChatActive);
+        Assert.True(GpuScheduler.IsChatActive);
+        step.Dispose();
+        Assert.True(GpuScheduler.IsChatActive);
+        run.Dispose();
+        Assert.False(GpuScheduler.IsChatActive);
+        Assert.False(GpuScheduler.IsTurnInFlight);
+    }
+
+    [Fact]
+    public void ALeaseEndedDuringItsPause_IsNotTakenBackAtTheAnswer()
+    {
+        var lease = GpuScheduler.AcquireChatLease();
+        var pause = GpuScheduler.PauseThisFlow();
+        lease.Dispose();   // Stop on the card: the run ends while it waits
+        pause.Dispose();
+        Assert.Equal(new Seen(false, false, null), Now());
+    }
+
+    // ── Background loops yield to another process's chat ────────────────────────
+
+    [Fact]
+    public async Task ABackgroundWait_YieldsToAnotherProcessWorking_NotToAPausedOrOldOne_NorToItsOwnMarker()
+    {
+        SignalFile._isProcessAliveOverride = _ => true;
+        var poll = GpuScheduler.ElsewherePoll;
+        GpuScheduler.ElsewherePoll = TimeSpan.FromMilliseconds(20);
+        var other = SignalFile.KeyedPathFor("chat_busy", 424242);
+        void Other(bool? paused) =>
+            SignalFile.Write(other, new ChatBusyState(424242, SignalFile.Now.ToUnixTimeMilliseconds(), paused), "test");
+        // Past the cache of an idle answer (one look per poll period).
+        static Task PastTheCache() => Task.Delay(100);
+        try
+        {
+            // This process's own marker, without a lease: not waited for — its leases are known in memory.
+            Inferpal.Services.Signals.ChatBusySignal.Write();
+            Assert.True(await CompletesWithin(GpuScheduler.WaitForChatIdleAsync(CancellationToken.None), 2000));
+            Inferpal.Services.Signals.ChatBusySignal.Clear();
+
+            // Another editor's turn waiting at a card, and a writer older than the pause: the GPU is not theirs to keep,
+            // but a /task run does not start beside their turn.
+            foreach (var paused in new bool?[] { true, null })
+            {
+                Other(paused);
+                await PastTheCache();
+                Assert.True(await CompletesWithin(GpuScheduler.WaitForChatIdleAsync(CancellationToken.None), 2000));
+                Assert.False(await CompletesWithin(GpuScheduler.WaitForTurnsToEndAsync(CancellationToken.None), 200));
+            }
+
+            // Another editor's chat working on the same GPU: the loop waits, and goes on once that chat ends.
+            Other(false);
+            await PastTheCache();
+            var wait = GpuScheduler.WaitForChatIdleAsync(CancellationToken.None);
+            Assert.False(await CompletesWithin(wait, 300));
+            // An MCP restart waits for this process's turns only: another editor's chat does not hold it.
+            Assert.True(await CompletesWithin(GpuScheduler.WaitForLocalTurnsToEndAsync(CancellationToken.None), 2000));
+            SignalFile.Delete(other);
+            Assert.True(await CompletesWithin(wait, 30_000));
+        }
+        finally
+        {
+            SignalFile.Delete(other);
+            GpuScheduler.ElsewherePoll = poll;
+            SignalFile._isProcessAliveOverride = null;
+        }
+    }
 }
 
 [Collection(SignalCollection.Name)]
